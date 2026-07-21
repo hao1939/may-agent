@@ -24,7 +24,9 @@ mutating task
   -> one task branch
   -> reuse across retries and agent handoff
   -> commit and return branch/commit evidence
-  -> remove worktree after successful closeout
+  -> remain live while review or integration is pending
+  -> converge only after merge or explicit rejection
+  -> remove worktree and task branch after terminal closeout
 
 external wait
   -> task Condition plus remote branch/commit identity
@@ -213,15 +215,48 @@ infrastructure.
 After a successful attempt:
 
 - no-change task: remove the worktree and its empty local branch;
-- committed local result: remove the clean worktree and retain the branch only
-  when the result or a live successor explicitly owns that branch; otherwise
-  the task remains active or moves to attention;
-- pushed/pipeline result: remove the clean worktree; retain branch and commit
-  identity in the result or successor wait;
+- committed local result: remove the clean worktree, retain the branch, and
+  keep the same task live with an exact review or integration Condition;
+- pushed/pipeline result: remove the clean worktree and retain branch and
+  commit identity on that live wait;
 - already integrated result: remove worktree and delete the merged local
   branch; and
+- explicitly rejected result: restore the workspace to no-change with review
+  evidence, then remove the worktree and branch; and
 - dirty result: do not converge the task. Retain the workspace for recovery
   and move the task to visible attention.
+
+There is no terminal `branch-retained` outcome. `branch-retained` is only an
+observation on a live waiting or attention task. A commit, push, pull request,
+or pipeline run proves delivery progress; none alone proves the requested
+change reached `dev`.
+
+### Legacy branch reconciliation
+
+The pre-pilot branch population is a finite migration frontier. One maintain
+task, `legacy-branch-reconciliation`, observes unattached branches whose
+patches are absent from current `origin/dev`. It groups them by the convention
+of touched `features/<feature>` paths (or an exact multi-feature signature) and
+declares one family-review leaf at a time. The single-writer frontier keeps
+`origin/dev` integration mechanically serial without adding a merge queue. It
+does not schedule agents or store a second branch registry.
+
+Each family leaf uses one task-owned worktree and the reusable
+`legacy-branch-family-reconciliation` workflow:
+
+1. revalidate source branch names and heads against current Git state;
+2. review redo/repair/publication attempts as one change family;
+3. apply and verify the smallest accepted result, or explicitly reject every
+   source attempt with evidence;
+4. advance `origin/dev` only by a checked fast-forward from the reviewed base;
+5. remove the represented local and remote source refs; and
+6. let ordinary task-workspace finalization remove the integrated/no-change
+   task branch.
+
+Reconciled leaf events wake the same maintain task to refill capacity. There is
+no cron, branch database, archive state, or separate scheduler. Attached or
+dirty recovery worktrees are excluded from this clean-branch workflow and
+remain a second, explicit recovery-review phase.
 
 An exact pipeline or repository-ref wait needs `sourceCommit`, remote branch,
 base commit, and Condition identity. It does not need a checked-out local copy.
@@ -455,6 +490,8 @@ The migration and lifecycle are successful when:
    surfaced immediately.
 10. Task reconciliation, Conditions, and completion receipts remain the only
     work lifecycle; no workspace scheduler or registry is introduced.
+11. Every terminal task branch has been integrated into `dev` or explicitly
+    rejected, and the branch has been removed.
 
 ## Costs and risks
 

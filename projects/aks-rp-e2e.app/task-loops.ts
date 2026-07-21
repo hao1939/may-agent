@@ -8,11 +8,13 @@ import {
 export const specLoopTaskId = "aks-spec-verification-loop";
 export const featureCompactLoopTaskId = "aks-feature-compact-loop";
 export const scenarioNormalizationTaskId = "scenario-normalization";
+export const legacyBranchReconciliationTaskId = "legacy-branch-reconciliation";
 
 export type StandingLoopId =
   | typeof specLoopTaskId
   | typeof featureCompactLoopTaskId
-  | typeof scenarioNormalizationTaskId;
+  | typeof scenarioNormalizationTaskId
+  | typeof legacyBranchReconciliationTaskId;
 
 type StandingLoopDefinition = {
   id: StandingLoopId;
@@ -121,6 +123,24 @@ export const standingLoopDefinitions: Record<
       "Every missing adapterPath has exactly one scenario-loop representation.",
       "While eligible work exists, at most five actionable one-adapter leaves are represented; waits and attention do not consume that frontier.",
       "Zero missing adapters means inventory completion, not a live product verdict.",
+    ],
+    priority: "P0",
+  },
+  [legacyBranchReconciliationTaskId]: {
+    id: legacyBranchReconciliationTaskId,
+    action: "legacy-branch-reconciliation",
+    parentId: "group/app-operations",
+    owner: "app-ops",
+    workflow: "legacy-branch-reconciliation-controller",
+    frontierLimit: 1,
+    outcome:
+      "Reconcile every legacy task branch to one terminal outcome: its valuable change is integrated into origin/dev, or it is explicitly rejected; then remove the branch and any resolved workspace residue.",
+    acceptance: [
+      "Inventory branch content against current origin/dev rather than treating local or remote storage as completion.",
+      "Group redo, repair, and publication attempts into bounded change families before review.",
+      "Keep exactly one branch-family review actionable at once so origin/dev has one integration writer.",
+      "A family converges only after accepted changes reach origin/dev or rejected changes have an evidence-backed disposition, and all represented branch refs are removed.",
+      "Never delete an attached or dirty recovery workspace through the clean-branch controller.",
     ],
     priority: "P0",
   },

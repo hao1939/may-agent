@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   featureCompactLoopTaskId,
+  legacyBranchReconciliationTaskId,
   learnedCompactVerificationAcceptance,
   learnedScenarioNormalizationAcceptance,
   learnedSpecVerificationAcceptance,
@@ -25,6 +26,9 @@ describe("AKS standing-loop convention", () => {
     expect(standingLoopIntent(scenarioNormalizationTaskId).input).toEqual({
       frontierLimit: 5,
     });
+    expect(standingLoopIntent(legacyBranchReconciliationTaskId).input).toEqual({
+      frontierLimit: 1,
+    });
   });
 
   test("bakes learned worker practice into standing loop acceptance", () => {
@@ -37,6 +41,11 @@ describe("AKS standing-loop convention", () => {
     expect(standingLoopIntent(scenarioNormalizationTaskId).acceptance).toEqual(
       expect.arrayContaining(learnedScenarioNormalizationAcceptance),
     );
+    expect(
+      standingLoopIntent(legacyBranchReconciliationTaskId).acceptance.join(
+        "\n",
+      ),
+    ).toContain("reach origin/dev");
   });
 
   test("spec-loop worker practice preserves live-run and carrier-normalization lessons", () => {

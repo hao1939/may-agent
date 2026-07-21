@@ -15,6 +15,7 @@ import { observeScenarioTestInventory } from "./watchers/scenario-test-inventory
 import { observeWorkspaceIntegrityChanges } from "./watchers/workspace-integrity.js";
 import {
   featureCompactLoopTaskId,
+  legacyBranchReconciliationTaskId,
   loopRefillWakeForTaskEvent,
   scenarioNormalizationTaskId,
   specLoopTaskId,
@@ -200,6 +201,12 @@ export function resolveAksTask(
       }
       if (taskId === scenarioTestFrontierTaskId) {
         return standingLoopIntent(scenarioNormalizationTaskId);
+      }
+      if (
+        action === "legacy-branch-reconciliation" ||
+        taskId === legacyBranchReconciliationTaskId
+      ) {
+        return standingLoopIntent(legacyBranchReconciliationTaskId);
       }
       return null;
     }
@@ -829,6 +836,34 @@ export default defineProjectApp({
               min: scenarioTestFrontierMinLeaves,
               max: domainPolicyMaxConcurrent,
             },
+            params: input,
+          },
+        };
+      },
+    },
+    "pulse-legacy-branch-reconciliation": {
+      type: "async",
+      description:
+        "Reconcile legacy AKS task branches into origin/dev or an explicit rejected disposition.",
+      inputSchema: actionInputSchema,
+      event(params) {
+        const input =
+          params && typeof params === "object"
+            ? (params as Record<string, unknown>)
+            : {};
+        return {
+          type: "project.task.tick",
+          action: "legacy-branch-reconciliation",
+          target: {
+            project: projectId,
+            taskId: legacyBranchReconciliationTaskId,
+          },
+          data: {
+            project: projectId,
+            action: "legacy-branch-reconciliation",
+            taskId: legacyBranchReconciliationTaskId,
+            task_id: legacyBranchReconciliationTaskId,
+            reason: "manual-legacy-branch-reconciliation-pulse",
             params: input,
           },
         };
