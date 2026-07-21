@@ -733,6 +733,7 @@ describe("project app loader", () => {
       expect(ownerCalls[0]).toContain("Do not invent action names");
       expect(ownerCalls[0]).toContain("missing evidence is work to do");
       expect(ownerCalls[0]).toContain('Conditions belong only to the current task when you return state "waiting"');
+      expect(ownerCalls[0]).toContain("For a decomposition parent that creates child task actions");
       expect(ownerCalls[0]).toContain('If you return state "converged" with a successor wait task action');
       expect(ownerCalls[0]).toContain("Parent relationships express containment and decomposition only");
       expect(ownerCalls[0]).toContain("Use dependsOn for execution ordering");
@@ -1082,6 +1083,113 @@ describe("project app loader", () => {
         depends_on: ["external-ready"],
       });
       expect(tree.tasks.operations.children).toContain("work/followup");
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps a parent open when a converged owner result declares child work", async () => {
+    const f = fixture();
+    try {
+      writeApp(f.appDir);
+      const bus = new EventBus();
+      const events: any[] = [];
+      bus.subscribe((event) => events.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: {
+          hasAgent: () => true,
+          async callAgent(_agent: string, task: string) {
+            if (task.includes('"taskId": "work/parent-child-a"')) {
+              return {
+                sessionId: "owner-child-a",
+                status: "done",
+                structuredResult: {
+                  state: "waiting",
+                  summary: "child is waiting on external proof",
+                  evidence: ["child proof"],
+                  actions: [],
+                  conditions: [
+                    {
+                      id: "child-a-external-proof",
+                      type: "session.end",
+                      subject: "session:child-a",
+                      expected: "done",
+                    },
+                  ],
+                },
+                lastAssistantText: "child waiting",
+                messages: [],
+                duration: "0s",
+                outputDir: "",
+              };
+            }
+            return {
+              sessionId: "owner-parent-with-child",
+              status: "done",
+              structuredResult: {
+                state: "converged",
+                summary: "selected bounded child work",
+                evidence: ["owner selected child-a"],
+                actions: [
+                  {
+                    kind: "create-task",
+                    id: "work/parent-child-a",
+                    parentId: "work/parent",
+                    outcome: "Run child A",
+                    mode: "achieve",
+                    outputs: [],
+                    acceptance: ["Child A converges"],
+                    owner: "sample-owner",
+                  },
+                ],
+              },
+              lastAssistantText: "owner selected child work",
+              messages: [],
+              duration: "0s",
+              outputDir: "",
+            };
+          },
+        } as any,
+        bus,
+        agentCrons: new Map(),
+      });
+
+      bus.emit({ type: "sample.work", project: "sample", itemId: "parent", ownerOnly: true } as any);
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/parent" &&
+            event.data?.disposition === "waiting",
+        ),
+      );
+
+      const state = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
+      const tree = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "tree.json"), "utf8"));
+      expect(state.resources["work/parent"].status).toMatchObject({
+        phase: "waiting",
+        conditionIds: ["work-parent-child-work-parent-child-a-terminal"],
+      });
+      expect(state.conditions["work-parent-child-work-parent-child-a-terminal"].spec).toMatchObject({
+        type: "project.task.reconciled",
+        subject: "task:work/parent-child-a",
+      });
+      expect(tree.tasks["work/parent"]).toMatchObject({
+        phase: "waiting",
+        parent_id: "operations",
+      });
+      expect(tree.tasks["work/parent-child-a"]).toMatchObject({
+        parent_id: "work/parent",
+        owner: "sample-owner",
+      });
+      expect(["pending", "waiting"]).toContain(tree.tasks["work/parent-child-a"].phase);
+      expect(state.receipts?.["work/parent"]).toBeUndefined();
     } finally {
       closeDb(f.persistDir);
       rmSync(f.root, { recursive: true, force: true });

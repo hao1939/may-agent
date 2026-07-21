@@ -2283,6 +2283,77 @@ describe("project app task reconciler state", () => {
     expect(readTaskState(config).tasks["pipeline-monitor"].blocker).toBeUndefined();
   });
 
+  it("keeps a decomposition parent open while applying child task actions", () => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: intent("achieve"),
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+
+    expect(
+      deferProjectAppTask(config, claim, {
+        disposition: "waiting",
+        summary: "declared bounded child work for the parent",
+        evidence: ["frontier selected child-a and child-b"],
+        actions: [
+          {
+            kind: "create-task",
+            id: "work/child-a",
+            parentId: claim.taskId,
+            outcome: "Finish child A",
+            acceptance: ["Child A converges"],
+            mode: "achieve",
+            outputs: [],
+          },
+          {
+            kind: "create-task",
+            id: "work/child-b",
+            parentId: claim.taskId,
+            outcome: "Finish child B",
+            acceptance: ["Child B converges"],
+            mode: "achieve",
+            outputs: [],
+          },
+        ],
+        conditions: [
+          {
+            id: "evaluate-session-1-child-a-terminal",
+            type: "project.task.reconciled",
+            subject: "task:work/child-a",
+            expected: { field: "disposition", anyOf: ["converged", "attention"] },
+          },
+          {
+            id: "evaluate-session-1-child-b-terminal",
+            type: "project.task.reconciled",
+            subject: "task:work/child-b",
+            expected: { field: "disposition", anyOf: ["converged", "attention"] },
+          },
+        ],
+      }),
+    ).toMatchObject({
+      status: "applied",
+      actionsApplied: ["created work/child-a", "created work/child-b"],
+    });
+
+    const tree = readTaskState(config);
+    expect(tree.tasks[claim.taskId]).toMatchObject({
+      state: "blocked",
+      children: ["work/child-a", "work/child-b"],
+    });
+    expect(tree.resources?.[claim.taskId]?.status).toMatchObject({
+      phase: "waiting",
+      conditionIds: ["evaluate-session-1-child-a-terminal", "evaluate-session-1-child-b-terminal"],
+    });
+    expect(tree.tasks["work/child-a"]).toMatchObject({ parent_id: claim.taskId, state: "backlog" });
+    expect(tree.tasks["work/child-b"]).toMatchObject({ parent_id: claim.taskId, state: "backlog" });
+    expect(tree.conditions?.["evaluate-session-1-child-a-terminal"]?.spec).toMatchObject({
+      type: "project.task.reconciled",
+      subject: "task:work/child-a",
+    });
+  });
+
   it("filters task Conditions by subject and expected state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
