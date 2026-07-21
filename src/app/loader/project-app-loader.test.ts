@@ -1849,10 +1849,18 @@ describe("project app loader", () => {
         bus,
         projectId: "sample",
         actionId: "run",
-        params: { itemId: "action" },
+        params: { itemId: "action", action: "semantic-run" },
       });
       expect(receipt).toEqual({ eventId: 1, eventType: "sample.work" });
-      expect(events.some((event) => event.type === "sample.work" && event.data?.itemId === "action")).toBe(true);
+      expect(
+        events.some(
+          (event) =>
+            event.type === "sample.work" &&
+            event.data?.itemId === "action" &&
+            event.action === "semantic-run" &&
+            event.data?.action === undefined,
+        ),
+      ).toBe(true);
       expect(events.some((event) => event.type.startsWith("project.action."))).toBe(false);
       expect(() =>
         invokeLoadedProjectAppAction({

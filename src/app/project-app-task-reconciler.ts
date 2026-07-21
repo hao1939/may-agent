@@ -1537,8 +1537,8 @@ function validateTaskActions(
       throw new Error(`Handler update for ${action.taskId} contains no change`);
     }
     if (action.kind === "unblock-task") {
-      if (resource.status.phase !== "waiting") {
-        throw new Error(`Handler action task ${action.taskId} is not blocked`);
+      if (resource.status.phase !== "waiting" && resource.status.phase !== "attention") {
+        throw new Error(`Handler action task ${action.taskId} is not waiting or in attention`);
       }
     }
     if (action.kind === "update-task" && action.parentId !== undefined && action.parentId !== task.parent_id) {
