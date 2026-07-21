@@ -1125,7 +1125,7 @@ describe("project app task reconciler state", () => {
     });
   });
 
-  it("does not supersede a previous-runtime attempt during ordinary resync", () => {
+  it("claims a previous-runtime attempt with a persisted trigger during ordinary resync", () => {
     const { config } = fixture();
     const first = declareAndClaimTask(config, {
       intent: intent(),
@@ -1148,16 +1148,35 @@ describe("project app task reconciler state", () => {
       handler: "workflow:known-workflow",
       reason: "task-controller",
     });
-    expect(resync).toEqual({ kind: "busy", taskId: first.taskId, attemptId: first.attemptId });
+    expect(resync).toMatchObject({
+      kind: "claimed",
+      taskId: first.taskId,
+      generation: first.generation,
+      trigger: {
+        type: "session.end",
+        data: { project: "sample", sessionId: "session-1" },
+      },
+    });
+    if (resync.kind !== "claimed") throw new Error("expected reclaim");
+    expect(resync.attemptId).not.toBe(first.attemptId);
 
     const tree = readTaskState(config);
     expect(tree.attempts?.[first.attemptId]).toMatchObject({
       runtimeId: "previous-runtime",
+      state: "interrupted",
+    });
+    expect(tree.attempts?.[resync.attemptId]).toMatchObject({
+      runtimeId: expect.any(String),
       state: "running",
+      reason: "task-controller",
+      trigger: {
+        type: "session.end",
+        data: { project: "sample", sessionId: "session-1" },
+      },
     });
     expect(tree.resources?.[first.taskId].status).toMatchObject({
       phase: "running",
-      currentAttemptId: first.attemptId,
+      currentAttemptId: resync.attemptId,
     });
   });
 
