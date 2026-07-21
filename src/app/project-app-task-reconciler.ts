@@ -1102,7 +1102,7 @@ export function claimObservedProjectAppTask(
     const canRecoverPreviousRuntime = Boolean(
       previousAttempt &&
         previousAttempt.runtimeId !== reconcilerRuntimeId &&
-        input.reason === `attempt-recovery:${task.id}`,
+        (input.reason === `attempt-recovery:${task.id}` || previousAttempt.trigger),
     );
     const pendingTrigger = tree.taskTriggers?.[task.id];
     const hasTrigger = Boolean(pendingTrigger?.event ?? previousAttempt?.trigger);
