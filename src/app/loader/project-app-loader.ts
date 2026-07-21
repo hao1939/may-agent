@@ -147,9 +147,10 @@ function localAgents(appDir: string): Array<{ dirName: string; name: string }> {
   const agents: Array<{ dirName: string; name: string }> = [];
   for (const entry of readdirSync(agentsRoot, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
-    if (entry.name === "shared" || entry.name === "gym") continue;
     if (entry.name.startsWith(".") || entry.name.startsWith("_")) continue;
-    const name = configuredAgentName(join(agentsRoot, entry.name), entry.name);
+    const agentDir = join(agentsRoot, entry.name);
+    if (!existsSync(join(agentDir, "agent.json"))) continue;
+    const name = configuredAgentName(agentDir, entry.name);
     if (name) agents.push({ dirName: entry.name, name });
   }
   return agents;
