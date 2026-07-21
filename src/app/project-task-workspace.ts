@@ -75,6 +75,22 @@ function headAt(path: string): string {
   return git(path, ["rev-parse", "HEAD"]).stdout;
 }
 
+function isIntegrated(repoDir: string, metadata: ProjectAppTaskWorkspace): boolean {
+  return (
+    metadata.headCommit === metadata.baseCommit ||
+    git(repoDir, ["diff", "--quiet", metadata.baseCommit, metadata.headCommit], true).status === 0 ||
+    git(repoDir, ["merge-base", "--is-ancestor", metadata.headCommit, metadata.baseRef], true).status === 0
+  );
+}
+
+function unintegratedResult(metadata: ProjectAppTaskWorkspace): FinalizedTaskWorkspace {
+  return {
+    ok: false,
+    metadata,
+    reason: `Task branch ${metadata.branch} is not integrated into ${metadata.baseRef}; the task must wait for integration or explicitly remove the rejected branch`,
+  };
+}
+
 export function prepareProjectTaskWorkspace(input: {
   repoDir: string;
   workspaceRoot: string;
@@ -161,7 +177,19 @@ export function finalizeProjectTaskWorkspace(
   const { repoDir } = prepared;
   const metadata = { ...prepared.metadata };
   if (!existsSync(metadata.path)) {
-    metadata.disposition = refExists(repoDir, `refs/heads/${metadata.branch}`) ? "branch-retained" : "removed";
+    const branchRef = `refs/heads/${metadata.branch}`;
+    if (!refExists(repoDir, branchRef)) {
+      metadata.disposition = "removed";
+      return { ok: true, metadata };
+    }
+    metadata.headCommit = git(repoDir, ["rev-parse", branchRef]).stdout;
+    if (isIntegrated(repoDir, metadata)) {
+      git(repoDir, ["branch", "-D", metadata.branch]);
+      metadata.disposition = "removed";
+      return { ok: true, metadata };
+    }
+    metadata.disposition = "branch-retained";
+    if (outcome === "accepted") return unintegratedResult(metadata);
     return { ok: true, metadata };
   }
 
@@ -180,9 +208,7 @@ export function finalizeProjectTaskWorkspace(
     return { ok: true, metadata };
   }
 
-  const integrated =
-    metadata.headCommit === metadata.baseCommit ||
-    git(repoDir, ["merge-base", "--is-ancestor", metadata.headCommit, metadata.baseRef], true).status === 0;
+  const integrated = isIntegrated(repoDir, metadata);
   git(repoDir, ["worktree", "remove", metadata.path]);
   if (integrated && refExists(repoDir, `refs/heads/${metadata.branch}`)) {
     git(repoDir, ["branch", "-D", metadata.branch]);
@@ -190,5 +216,6 @@ export function finalizeProjectTaskWorkspace(
   } else {
     metadata.disposition = "branch-retained";
   }
+  if (outcome === "accepted" && !integrated) return unintegratedResult(metadata);
   return { ok: true, metadata };
 }
