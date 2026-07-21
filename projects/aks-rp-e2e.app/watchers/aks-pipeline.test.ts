@@ -1,10 +1,17 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import type { ProjectAppContext } from "@may-agent/sdk";
 import {
   observeAksPipelines,
+  pipelineLevelEvent,
   pipelineObservationEvents,
   scanPipelineResults,
 } from "./aks-pipeline.js";
@@ -71,6 +78,25 @@ describe("AKS pipeline watcher", () => {
     );
   });
 
+  test("contract bump keeps local result fingerprints stable", async () => {
+    const { ctx, emitted } = fixture();
+    await observeAksPipelines(ctx);
+    expect(emitted).toEqual([]);
+
+    const statePath = join(
+      ctx.appPath("."),
+      ".state/watchers/aks-pipeline.json",
+    );
+    const state = JSON.parse(readFileSync(statePath, "utf8"));
+    writeFileSync(
+      statePath,
+      JSON.stringify({ ...state, schemaVersion: "older-contract" }, null, 2),
+    );
+
+    await observeAksPipelines(ctx);
+    expect(emitted).toEqual([]);
+  });
+
   test("emits ADO facts with top-level fields for Condition matching", () => {
     const events = pipelineObservationEvents({
       runId: "172897811",
@@ -85,31 +111,45 @@ describe("AKS pipeline watcher", () => {
 
     expect(events).toContainEqual(
       expect.objectContaining({
-        type: "terminal-state",
+        type: "pipeline.completed",
         pipelineRunId: "172897811",
-        status: "completed",
+        state: "completed",
       }),
     );
     expect(events).toContainEqual(
       expect.objectContaining({
-        type: "status-equals",
+        type: "pipeline-run.state",
         pipelineRunId: "172897811",
-        status: "completed",
+        state: "completed",
+        terminal: true,
       }),
     );
     expect(events).toContainEqual(
       expect.objectContaining({
-        type: "artifact-present",
+        type: "pipeline-artifact.available",
         pipelineRunId: "172897811",
         artifactName: "slice-01-test-results",
       }),
     );
-    expect(events).toContainEqual(
-      expect.objectContaining({
-        type: "pipeline-run",
-        pipelineRunId: "172897811",
-        artifactsInclude: ["plan-inputs", "slice-01-test-results"],
+  });
+
+  test("emits a repeatable level event without task-tree knowledge", () => {
+    expect(
+      pipelineLevelEvent({
+        runId: "172897811",
+        fingerprint: "fp",
+        status: "inProgress",
+        result: "inProgress",
+        sourceBranch: "refs/heads/task/spec-example",
+        sourceVersion: "abc123",
+        finishTime: null,
+        artifacts: [],
       }),
-    );
+    ).toMatchObject({
+      type: "pipeline-run.state",
+      pipelineRunId: "172897811",
+      state: "inProgress",
+      terminal: false,
+    });
   });
 });

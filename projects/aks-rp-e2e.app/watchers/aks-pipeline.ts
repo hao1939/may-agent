@@ -57,11 +57,11 @@ type ObservedAdoRun = {
 
 const MAX_RESULTS_PER_SCAN = 200;
 const MAX_EVENTS_PER_SCAN = 20;
-const MAX_ADO_RUNS_PER_SCAN = 25;
+const MAX_ADO_RUNS_PER_SCAN = 100;
 const ADO_ORGANIZATION = "https://dev.azure.com/msazure";
 const ADO_PROJECT = "CloudNativeCompute";
 const ADO_PIPELINE_ID = "467665";
-const WATCHER_SCHEMA_VERSION = "2";
+const WATCHER_SCHEMA_VERSION = "5";
 const AZ_CLI =
   process.env.AZURE_CLI_PATH ||
   (existsSync("/app/.state/.local/bin/az")
@@ -127,6 +127,10 @@ function runAzJson(args: string[]): unknown {
     encoding: "utf8",
     timeout: 30_000,
     maxBuffer: 8 * 1024 * 1024,
+    env: {
+      ...process.env,
+      AZURE_CONFIG_DIR: process.env.AZURE_CONFIG_DIR || "/app/.state/.azure",
+    },
   });
   if (result.status !== 0) return null;
   try {
@@ -134,6 +138,54 @@ function runAzJson(args: string[]): unknown {
   } catch {
     return null;
   }
+}
+
+function adoRunFromApi(run: AdoRun): ObservedAdoRun | null {
+  const runId = String(run.id ?? "").trim();
+  if (!runId) return null;
+  const status = String(run.status ?? "unknown");
+  const result = String(run.result ?? status);
+  const observed = {
+    runId,
+    status,
+    result,
+    sourceBranch:
+      typeof run.sourceBranch === "string" ? run.sourceBranch : null,
+    sourceVersion:
+      typeof run.sourceVersion === "string" ? run.sourceVersion : null,
+    finishTime:
+      typeof run.finishTime === "string"
+        ? run.finishTime
+        : typeof (run as Record<string, unknown>).finishedDate === "string"
+          ? ((run as Record<string, unknown>).finishedDate as string)
+          : null,
+    // Artifact enumeration is intentionally deferred until a terminal
+    // transition is emitted. Level scans must remain one provider query.
+    artifacts: [],
+  };
+  return {
+    ...observed,
+    fingerprint: createHash("sha256")
+      .update(stableJson(observed))
+      .digest("hex"),
+  };
+}
+
+function getAdoRun(runId: string): ObservedAdoRun | null {
+  const run = runAzJson([
+    "pipelines",
+    "runs",
+    "show",
+    "--id",
+    runId,
+    "--organization",
+    ADO_ORGANIZATION,
+    "--project",
+    ADO_PROJECT,
+    "-o",
+    "json",
+  ]);
+  return run && typeof run === "object" ? adoRunFromApi(run as AdoRun) : null;
 }
 
 function listAdoArtifactNames(runId: string): string[] {
@@ -162,7 +214,9 @@ function listAdoArtifactNames(runId: string): string[] {
     .sort();
 }
 
-export function scanAdoPipelineRuns(): ObservedAdoRun[] {
+export function scanAdoPipelineRuns(
+  trackedRunIds: string[] = [],
+): ObservedAdoRun[] {
   if (process.env.MAY_AGENT_AKS_PIPELINE_WATCHER_ADO === "0") return [];
   const runs = runAzJson([
     "pipelines",
@@ -179,33 +233,19 @@ export function scanAdoPipelineRuns(): ObservedAdoRun[] {
     "-o",
     "json",
   ]);
-  if (!Array.isArray(runs)) return [];
+  const observed = Array.isArray(runs)
+    ? runs
+        .map((run: AdoRun): ObservedAdoRun | null => adoRunFromApi(run))
+        .filter((run): run is ObservedAdoRun => run !== null)
+    : [];
 
-  return runs
-    .map((run: AdoRun): ObservedAdoRun | null => {
-      const runId = String(run.id ?? "").trim();
-      if (!runId) return null;
-      const status = String(run.status ?? "unknown");
-      const result = String(run.result ?? status);
-      const observed = {
-        runId,
-        status,
-        result,
-        sourceBranch:
-          typeof run.sourceBranch === "string" ? run.sourceBranch : null,
-        sourceVersion:
-          typeof run.sourceVersion === "string" ? run.sourceVersion : null,
-        finishTime: typeof run.finishTime === "string" ? run.finishTime : null,
-        artifacts: status === "completed" ? listAdoArtifactNames(runId) : [],
-      };
-      return {
-        ...observed,
-        fingerprint: createHash("sha256")
-          .update(stableJson(observed))
-          .digest("hex"),
-      };
-    })
-    .filter((run): run is ObservedAdoRun => run !== null);
+  const byId = new Map(observed.map((run) => [run.runId, run]));
+  for (const runId of trackedRunIds.slice(-100)) {
+    if (byId.has(runId)) continue;
+    const run = getAdoRun(runId);
+    if (run) byId.set(runId, run);
+  }
+  return [...byId.values()];
 }
 
 function pipelineFactBase(observed: {
@@ -236,79 +276,69 @@ export function pipelineObservationEvents(
   observed: ObservedAdoRun,
 ): ProjectAppEvent[] {
   const base = pipelineFactBase(observed);
-  const events: ProjectAppEvent[] = [
-    {
-      type: "project.test_run.completed",
-      source: "aks-pipeline-watcher",
-      target: { project: "aks-rp-e2e" },
-      ...base,
-      data: base,
-    },
-  ];
+  const events: ProjectAppEvent[] = [];
 
   if (observed.status === "completed") {
     events.push(
       {
-        type: "terminal-state",
+        type: "project.test_run.completed",
         source: "aks-pipeline-watcher",
         target: { project: "aks-rp-e2e" },
         ...base,
-        status: "completed",
-        data: { ...base, status: "completed" },
+        data: base,
       },
       {
-        type: "status-equals",
+        type: "pipeline.completed",
         source: "aks-pipeline-watcher",
         target: { project: "aks-rp-e2e" },
         ...base,
         status: "completed",
-        data: { ...base, status: "completed" },
+        state: "completed",
+        data: { ...base, status: "completed", state: "completed" },
       },
       {
-        type: "pipeline-run-state",
+        type: "pipeline-run.state",
         source: "aks-pipeline-watcher",
         target: { project: "aks-rp-e2e" },
         ...base,
         status: "completed",
-        data: { ...base, status: "completed" },
-      },
-      {
-        type: "pipeline-run",
-        source: "aks-pipeline-watcher",
-        target: { project: "aks-rp-e2e" },
-        ...base,
-        status: "completed",
-        artifactsInclude: observed.artifacts,
+        state: "completed",
+        terminal: true,
         data: {
           ...base,
           status: "completed",
-          artifactsInclude: observed.artifacts,
+          state: "completed",
+          terminal: true,
         },
       },
     );
   }
 
   for (const artifact of observed.artifacts) {
-    events.push(
-      {
-        type: "artifact-present",
-        source: "aks-pipeline-watcher",
-        target: { project: "aks-rp-e2e" },
-        ...base,
-        artifactName: artifact,
-        data: { ...base, artifactName: artifact },
-      },
-      {
-        type: "pipeline-artifact-available",
-        source: "aks-pipeline-watcher",
-        target: { project: "aks-rp-e2e" },
-        ...base,
-        artifact,
-        data: { ...base, artifact },
-      },
-    );
+    events.push({
+      type: "pipeline-artifact.available",
+      source: "aks-pipeline-watcher",
+      target: { project: "aks-rp-e2e" },
+      ...base,
+      artifactName: artifact,
+      data: { ...base, artifactName: artifact },
+    });
   }
   return events;
+}
+
+export function pipelineLevelEvent(observed: ObservedAdoRun): ProjectAppEvent {
+  const base = pipelineFactBase(observed);
+  const terminal = observed.status === "completed";
+  return {
+    type: "pipeline-run.state",
+    source: "aks-pipeline-watcher",
+    target: { project: "aks-rp-e2e" },
+    ...base,
+    state: observed.status,
+    terminal,
+    data: { ...base, state: observed.status, terminal },
+  };
 }
 
 /** Observe domain pipeline artifacts and emit facts; never reads or mutates task state. */
@@ -320,8 +350,7 @@ export async function observeAksPipelines(
   const hasPriorState = Boolean(
     prior.schemaVersion || prior.fingerprints || prior.adoFingerprints,
   );
-  const priorFingerprints =
-    prior.schemaVersion === WATCHER_SCHEMA_VERSION ? prior.fingerprints : {};
+  const priorFingerprints = prior.fingerprints ?? {};
   const priorAdoFingerprints =
     prior.schemaVersion === WATCHER_SCHEMA_VERSION ? prior.adoFingerprints : {};
   const results = scanPipelineResults(
@@ -330,7 +359,7 @@ export async function observeAksPipelines(
   const fingerprints = Object.fromEntries(
     results.map((result) => [result.runId, result.fingerprint]),
   );
-  const adoRuns = scanAdoPipelineRuns();
+  const adoRuns = scanAdoPipelineRuns(Object.keys(priorAdoFingerprints));
   const adoFingerprints = Object.fromEntries(
     adoRuns.map((run) => [run.runId, run.fingerprint]),
   );
@@ -341,9 +370,13 @@ export async function observeAksPipelines(
     checkedAt: new Date().toISOString(),
   });
 
-  if (!hasPriorState) {
+  // Repeat the current level so a Condition registered after a transition can
+  // still observe it. The watcher observes ADO; it never discovers task state.
+  for (const observed of adoRuns) ctx.emit(pipelineLevelEvent(observed));
+
+  if (!hasPriorState && adoRuns.length === 0) {
     return ctx.noop(
-      `Pipeline watcher initialized from ${results.length} local result(s) and ${adoRuns.length} ADO run(s).`,
+      `Pipeline watcher initialized from ${results.length} local result(s) and no ADO runs.`,
     );
   }
 
@@ -379,7 +412,12 @@ export async function observeAksPipelines(
     .filter((run) => priorAdoFingerprints?.[run.runId] !== run.fingerprint)
     .slice(0, MAX_EVENTS_PER_SCAN);
   for (const observed of changedAdo) {
-    for (const event of pipelineObservationEvents(observed)) ctx.emit(event);
+    const withArtifacts =
+      observed.status === "completed"
+        ? { ...observed, artifacts: listAdoArtifactNames(observed.runId) }
+        : observed;
+    for (const event of pipelineObservationEvents(withArtifacts))
+      ctx.emit(event);
   }
 
   const observedCount = changed.length + changedAdo.length;

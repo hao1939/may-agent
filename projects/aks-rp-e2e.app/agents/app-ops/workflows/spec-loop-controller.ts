@@ -115,9 +115,11 @@ function representedTaskIdsForSpec(
   spec: SpecLoopSpecState,
 ): string[] {
   const representedTaskIds = new Set<string>();
-  const deterministicTaskId = workId(specId);
+  const deterministicTaskId = workId(specId, spec);
   if (represented(graph, deterministicTaskId))
     representedTaskIds.add(deterministicTaskId);
+  const legacyTaskId = `spec/${safeTaskIdForSpec(specId)}`;
+  if (represented(graph, legacyTaskId)) representedTaskIds.add(legacyTaskId);
   const deterministicDispositionRepairTaskId = dispositionRepairId(specId);
   if (represented(graph, deterministicDispositionRepairTaskId)) {
     representedTaskIds.add(deterministicDispositionRepairTaskId);
@@ -147,8 +149,8 @@ function workRevision(spec: SpecLoopSpecState): string {
   return createHash("sha256").update(source).digest("hex").slice(0, 10);
 }
 
-function workId(specId: string): string {
-  return `spec/${safeTaskIdForSpec(specId)}`;
+function workId(specId: string, spec: SpecLoopSpecState): string {
+  return `spec/${safeTaskIdForSpec(specId)}-${workRevision(spec)}`;
 }
 
 function dispositionRepairId(specId: string): string {
@@ -248,6 +250,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           outcome: `Repair the spec-loop representation for ${specId}: the ledger already has a structured reviewed disposition, but no live task holder and no terminalDisposition=true flag, so the controller cannot tell whether to wait, finish, or rerun.`,
           mode: "achieve",
           owner: "aks-explorer",
+          workflow: "domain-task-execution",
           input: {
             specId,
             loopId: specLoopTaskId,
@@ -268,11 +271,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       }
       return {
         kind: "create-task",
-        id: workId(specId),
+        id: workId(specId, spec),
         parentId: "group/spec-verification",
         outcome: `Reconcile ${specId} to a passing live result, an exact wait, or a reviewed terminal disposition.`,
         mode: "achieve",
         owner: "aks-explorer",
+        workflow: "spec-live-reconciliation",
         input: {
           specId,
           loopId: specLoopTaskId,
@@ -285,6 +289,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           ...learnedSpecVerificationAcceptance,
           "Current source, model, runner, and prior evidence are inspected before any rerun.",
           "A live pass is recorded, or one exact typed wait or reviewed terminal disposition preserves the next wake condition.",
+          "When source changes, keep edit, exact live verification, fix-forward, PR into dev, and merge verification in this same finite task and task branch.",
           "The loop state is updated with evidence before this task converges.",
         ],
         priority: "P1",

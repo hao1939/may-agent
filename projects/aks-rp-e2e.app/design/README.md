@@ -18,6 +18,10 @@ The implemented AKS-local workspace cleanup and task-owned Git lifecycle is
 recorded in
 [`task-workspace-and-git-lifecycle-proposal.md`](task-workspace-and-git-lifecycle-proposal.md).
 
+The finite edit, exact live-test, fix-forward, PR, and merge process for AKS
+spec changes is defined in
+[`spec-live-reconciliation.md`](spec-live-reconciliation.md).
+
 ## Current model
 
 ```text
@@ -63,6 +67,7 @@ Responsibilities are deliberately narrow:
 - `feature-compact-loop-controller`
 - `normalize-scenario-frontier`
 - `wait-for-repo-ref-advance`
+- `spec-live-reconciliation`
 
 The standing loop workflows observe their domain ledgers, count only actionable
 pending/running leaves against their bounded frontier, and converge once the
@@ -127,6 +132,12 @@ The practical loop is simple: learn from one real pass or failure, update the
 shared standing-loop checklist in `task-loops.ts`, and let the controllers put
 that checklist into every future spec or compact leaf. The app stays the
 organizer; the domain agent still decides from hot facts and current evidence.
+
+For an ordinary finite spec leaf, `spec-live-reconciliation` keeps source edit,
+exact live proof, fix-forward, PR into `dev`, and merge verification on the same
+task generation and task branch. Pipeline and PR watchers emit provider facts;
+the generic Condition tracker performs correlation. Disposition repair and
+non-mutating investigations do not use this workflow.
 
 ## Experience and finished work
 

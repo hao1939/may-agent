@@ -1,0 +1,85 @@
+import { describe, expect, test } from "bun:test";
+import {
+  matchingTaskRuns,
+  parseTaskPayload,
+  pipelineWaitCondition,
+  pullRequestSourceUpdateCondition,
+  pullRequestWaitCondition,
+} from "./spec-live-reconciliation.js";
+
+describe("spec-live-reconciliation workflow", () => {
+  test("parses the finite spec task identity and generation", () => {
+    expect(
+      parseTaskPayload(
+        `prefix\n## Reconciliation Task\n${JSON.stringify({
+          taskId: "spec/example-a1b2c3",
+          generation: 2,
+          input: { specId: "spec.example.lifecycle" },
+        })}`,
+      ),
+    ).toMatchObject({
+      taskId: "spec/example-a1b2c3",
+      generation: 2,
+      input: { specId: "spec.example.lifecycle" },
+    });
+  });
+
+  test("finds only an exact task-generation, spec, target, and source run", () => {
+    const exact = {
+      id: 42,
+      sourceVersion: "abc",
+      templateParameters: {
+        specs: "spec.example.lifecycle",
+        target: "staging",
+        metadata: JSON.stringify({
+          taskId: "spec/example-a1b2c3",
+          generation: 2,
+        }),
+      },
+    };
+    const wrongGeneration = {
+      ...exact,
+      id: 43,
+      templateParameters: {
+        ...exact.templateParameters,
+        metadata: JSON.stringify({
+          taskId: "spec/example-a1b2c3",
+          generation: 1,
+        }),
+      },
+    };
+
+    expect(
+      matchingTaskRuns([wrongGeneration, exact], {
+        taskId: "spec/example-a1b2c3",
+        generation: 2,
+        specId: "spec.example.lifecycle",
+        sourceCommit: "abc",
+      }),
+    ).toEqual([exact]);
+  });
+
+  test("uses exact pipeline and PR Conditions", () => {
+    expect(pipelineWaitCondition("42")).toEqual({
+      id: "pipeline-run-42-completed",
+      type: "pipeline-run.state",
+      subject: "pipeline-run:42",
+      expected: { field: "state", anyOf: ["completed"] },
+    });
+    expect(pullRequestWaitCondition("77")).toEqual({
+      id: "pull-request-77-changed",
+      type: "pull-request.state",
+      subject: "pull-request:77",
+      expected: {
+        field: "state",
+        anyOf: ["completed", "abandoned", "conflicted"],
+      },
+    });
+    expect(pullRequestSourceUpdateCondition("77", "abc")).toEqual({
+      id: "pull-request-77-source-not-abc",
+      type: "pull-request.state",
+      subject: "pull-request:77",
+      expected: { field: "sourceCommit", notEquals: "abc" },
+    });
+  });
+});

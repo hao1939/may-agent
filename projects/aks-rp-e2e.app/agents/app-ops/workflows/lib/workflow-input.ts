@@ -184,3 +184,9 @@ export function maxConcurrent(
     triggerNumber(trigger, "maxConcurrent") || fromTask || fallback,
   );
 }
+
+export function frontierLimit(raw: string, fallback: number): number {
+  const match = raw.match(/^frontierLimit:\s*(.+)$/m);
+  const configured = Number.parseInt(match?.[1]?.trim() ?? "", 10);
+  return Math.max(1, Number.isFinite(configured) ? configured : fallback);
+}

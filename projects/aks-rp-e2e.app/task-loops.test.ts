@@ -45,7 +45,7 @@ describe("AKS standing-loop convention", () => {
       standingLoopIntent(legacyBranchReconciliationTaskId).acceptance.join(
         "\n",
       ),
-    ).toContain("reach origin/dev");
+    ).toContain("reaches origin/dev");
   });
 
   test("spec-loop worker practice preserves live-run and carrier-normalization lessons", () => {

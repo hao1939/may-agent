@@ -10,6 +10,7 @@ import {
   type ProjectAppTaskIntent,
 } from "@may-agent/sdk";
 import { observeAksPipelines } from "./watchers/aks-pipeline.js";
+import { observeAksPullRequests } from "./watchers/aks-pull-request.js";
 import { observeRepoRefChanges } from "./watchers/repo-ref.js";
 import { observeScenarioTestInventory } from "./watchers/scenario-test-inventory.js";
 import { observeWorkspaceIntegrityChanges } from "./watchers/workspace-integrity.js";
@@ -21,6 +22,7 @@ import {
   specLoopTaskId,
   standingLoopIntent,
 } from "./task-loops.js";
+import { syncSpecLiveProof } from "./agents/app-ops/workflows/lib/spec-live-proof-sync.js";
 
 const projectId = "aks-rp-e2e";
 const domainPolicyMaxConcurrent = 5;
@@ -310,11 +312,17 @@ export async function routeAksEvent(
   event: Record<string, unknown>,
 ): Promise<unknown> {
   if (event.type === "project.task.reconciled") {
+    const reconciledTaskId = targetTaskId(event);
+    const specProof = reconciledTaskId
+      ? syncSpecLiveProof(ctx.appPath("."), reconciledTaskId)
+      : { changed: false };
     const wake = loopRefillWakeForTaskEvent(ctx.appPath("."), event);
     if (wake) ctx.emit(wake);
-    return { refillWake: Boolean(wake) };
+    return { refillWake: Boolean(wake), specProof };
   }
   if (event.type === "aks.pipeline.check") return observeAksPipelines(ctx);
+  if (event.type === "aks.pull-request.check")
+    return observeAksPullRequests(ctx);
   if (event.type === "aks.repo-ref.check") return observeRepoRefChanges(ctx);
   if (event.type === "aks.workspace.integrity.check")
     return observeWorkspaceIntegrityChanges(ctx);
@@ -397,6 +405,17 @@ export default defineProjectApp({
       emits: [
         {
           type: "aks.pipeline.check",
+          target: { project: projectId },
+        },
+      ],
+    },
+    {
+      id: "pull-request-observer",
+      enabled: true,
+      intervalMs: 300_000,
+      emits: [
+        {
+          type: "aks.pull-request.check",
           target: { project: projectId },
         },
       ],
@@ -575,6 +594,7 @@ export default defineProjectApp({
   events: [
     { type: "project.task.reconciled", target: projectTarget },
     { type: "aks.pipeline.check", target: projectTarget },
+    { type: "aks.pull-request.check", target: projectTarget },
     { type: "aks.repo-ref.check", target: projectTarget },
     { type: "aks.workspace.integrity.check", target: projectTarget },
     { type: "aks.workspace.integrity.changed", target: projectTarget },

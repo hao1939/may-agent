@@ -95,13 +95,14 @@ describe("spec loop reconciliation workflow", () => {
             kind: "create-task",
             parentId: "group/spec-verification",
             owner: "aks-explorer",
+            workflow: "spec-live-reconciliation",
             input: { specId: "spec.example" },
           },
         ],
       },
     });
     const [action] = result.output.actions;
-    expect(action.id).toBe("spec/verify-spec-example");
+    expect(action.id).toMatch(/^spec\/verify-spec-example-[a-f0-9]{10}$/);
     expect(Object.keys(action.input).sort()).toEqual([
       "loopId",
       "specId",
@@ -119,7 +120,7 @@ describe("spec loop reconciliation workflow", () => {
     expect(acceptance).toContain("mounted private AKS RP source");
     expect(acceptance).toContain("branch/commit ADO will run");
     expect(acceptance).toContain("A fast no-cluster pass is inconclusive");
-    expect(acceptance).toContain("queue a fresh ADO live run");
+    expect(acceptance).toContain("require a fresh ADO live run");
     expect(acceptance).toContain("structured backend, run id");
     expect(acceptance).toContain("terminal with no artifacts");
     expect(acceptance).toContain("same-spec child assertions");
@@ -513,6 +514,7 @@ describe("spec loop reconciliation workflow", () => {
             id: "spec/repair-verify-spec-reviewed-disposition-representation",
             parentId: "group/spec-verification",
             owner: "aks-explorer",
+            workflow: "domain-task-execution",
             input: { specId: "spec.reviewed" },
           },
         ],
