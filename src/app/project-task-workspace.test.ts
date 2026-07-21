@@ -73,7 +73,7 @@ describe("project task workspace", () => {
     expect(git(f.repo, "branch", "--list", prepared.metadata.branch)).toBe("");
   });
 
-  it("removes a clean committed worktree while retaining its task branch", () => {
+  it("retains a clean committed branch but refuses task completion before integration", () => {
     const f = fixture();
     const prepared = prepareProjectTaskWorkspace({
       repoDir: f.repo,
@@ -89,8 +89,53 @@ describe("project task workspace", () => {
 
     const finalized = finalizeProjectTaskWorkspace(prepared, "accepted");
 
+    expect(finalized).toMatchObject({
+      ok: false,
+      metadata: { disposition: "branch-retained" },
+      reason: expect.stringContaining("must wait for integration"),
+    });
+    expect(git(f.repo, "branch", "--list", prepared.metadata.branch)).toContain(prepared.metadata.branch);
+  });
+
+  it("allows a clean committed branch to remain while the task waits for integration", () => {
+    const f = fixture();
+    const prepared = prepareProjectTaskWorkspace({
+      repoDir: f.repo,
+      workspaceRoot: f.worktrees,
+      taskId: "waiting-change",
+      generation: 1,
+      baseBranch: "dev",
+      refreshRemote: false,
+    });
+    writeFileSync(join(prepared.metadata.path, "change.txt"), "done\n");
+    git(prepared.metadata.path, "add", "change.txt");
+    git(prepared.metadata.path, "commit", "-m", "change");
+
+    const finalized = finalizeProjectTaskWorkspace(prepared, "waiting");
+
     expect(finalized).toMatchObject({ ok: true, metadata: { disposition: "branch-retained" } });
     expect(git(f.repo, "branch", "--list", prepared.metadata.branch)).toContain(prepared.metadata.branch);
+  });
+
+  it("removes the task branch after its commit reaches the base branch", () => {
+    const f = fixture();
+    const prepared = prepareProjectTaskWorkspace({
+      repoDir: f.repo,
+      workspaceRoot: f.worktrees,
+      taskId: "integrated-change",
+      generation: 1,
+      baseBranch: "dev",
+      refreshRemote: false,
+    });
+    writeFileSync(join(prepared.metadata.path, "change.txt"), "done\n");
+    git(prepared.metadata.path, "add", "change.txt");
+    git(prepared.metadata.path, "commit", "-m", "change");
+    git(f.repo, "merge", "--ff-only", prepared.metadata.branch);
+
+    const finalized = finalizeProjectTaskWorkspace(prepared, "accepted");
+
+    expect(finalized).toMatchObject({ ok: true, metadata: { disposition: "removed" } });
+    expect(git(f.repo, "branch", "--list", prepared.metadata.branch)).toBe("");
   });
 
   it("refuses to close accepted work that still has uncommitted files", () => {

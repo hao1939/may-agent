@@ -383,7 +383,7 @@ describe("project app loader handler result normalization", () => {
 });
 
 describe("project app loader", () => {
-  it("prepares and finalizes a task worktree around an opted-in workflow", async () => {
+  it("keeps an opted-in mutation task open until its committed branch is integrated", async () => {
     const f = fixture();
     const projectDir = join(f.projectsRoot, "sample");
     try {
@@ -438,12 +438,23 @@ describe("project app loader", () => {
 
       bus.emit({ type: "sample.work", project: "sample" } as any);
       await waitUntil(() =>
-        events.some((event) => event.type === "project.task.reconciled" && event.data?.taskId === "work/isolated"),
+        events.some(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/isolated" &&
+            event.data?.disposition === "attention",
+        ),
       );
 
       const state = JSON.parse(readFileSync(join(f.appDir, ".state/tasks/state.json"), "utf8"));
-      const workspace = state.receipts["work/isolated"].workspace;
+      const attempt = Object.values(state.attempts).find((value: any) => value.taskId === "work/isolated") as any;
+      const workspace = attempt.workspace;
       expect(workspace).toMatchObject({ kind: "task-worktree", disposition: "branch-retained" });
+      expect(state.resources["work/isolated"].status).toMatchObject({
+        phase: "attention",
+        summary: expect.stringContaining("must wait for integration"),
+      });
+      expect(state.receipts?.["work/isolated"]).toBeUndefined();
       expect(existsSync(workspace.path)).toBe(false);
       expect(
         execFileSync("git", ["-C", projectDir, "branch", "--list", workspace.branch], { encoding: "utf8" }),
