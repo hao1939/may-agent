@@ -2607,6 +2607,87 @@ describe("project app task reconciler state", () => {
     ).toMatchObject([{ taskId: "pipeline-monitor", conditionId: "approval-returned" }]);
   });
 
+  it("matches owner decision conditions using allowedDecisions against event decision", () => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    deferProjectAppTask(config, claim, {
+      disposition: "waiting",
+      summary: "waiting for exact owner decision",
+      conditions: [
+        {
+          id: "owner-decision",
+          type: "project.owner-decision.recorded",
+          subject: "task:pipeline-monitor",
+          expected: {
+            taskBranch: "task/pipeline-monitor",
+            headCommit: "abc123",
+            allowedDecisions: ["abandon-legacy-merge", "extract-current-lineage-successor"],
+          },
+        },
+      ],
+    });
+
+    expect(
+      trackProjectAppConditionEvent(config, {
+        type: "project.owner-decision.recorded",
+        taskId: "pipeline-monitor",
+        taskBranch: "task/pipeline-monitor",
+        headCommit: "abc123",
+        decision: "hold",
+      }),
+    ).toEqual([]);
+    expect(
+      trackProjectAppConditionEvent(config, {
+        type: "project.owner-decision.recorded",
+        taskId: "pipeline-monitor",
+        taskBranch: "task/pipeline-monitor",
+        headCommit: "abc123",
+        decision: "extract-current-lineage-successor",
+      }),
+    ).toMatchObject([{ taskId: "pipeline-monitor", conditionId: "owner-decision" }]);
+  });
+
+  it("matches owner decision conditions using acceptedDecisions against event decision", () => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    deferProjectAppTask(config, claim, {
+      disposition: "waiting",
+      summary: "waiting for exact owner decision",
+      conditions: [
+        {
+          id: "owner-decision",
+          type: "project.owner-decision.recorded",
+          subject: "project:aks-rp-e2e",
+          expected: {
+            taskId: "pipeline-monitor",
+            sourceBranch: "codex/source",
+            acceptedDecisions: ["abandon-stale-lineage", "approve-fresh-current-lineage-app-routing-successor"],
+          },
+        },
+      ],
+    });
+
+    expect(
+      trackProjectAppConditionEvent(config, {
+        type: "project.owner-decision.recorded",
+        project: "aks-rp-e2e",
+        taskId: "pipeline-monitor",
+        sourceBranch: "codex/source",
+        decision: "approve-fresh-current-lineage-app-routing-successor",
+      }),
+    ).toMatchObject([{ taskId: "pipeline-monitor", conditionId: "owner-decision" }]);
+  });
+
   it("keeps waiting until the Condition observer reports state", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
@@ -2695,5 +2776,82 @@ describe("project app task reconciler state", () => {
         result: "succeeded",
       }),
     ).toMatchObject([{ taskId: "pipeline-monitor", conditionId: "pipeline-run:42" }]);
+  });
+
+  it("matches pull-request typed subjects through the generic Condition tracker", () => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    deferProjectAppTask(config, claim, {
+      disposition: "waiting",
+      summary: "waiting for PR merge or review change",
+      conditions: [
+        {
+          id: "pull-request-77-changed",
+          type: "pull-request.state",
+          subject: "pull-request:77",
+          expected: {
+            field: "state",
+            anyOf: ["completed", "abandoned", "conflicted", "source-updated"],
+          },
+        },
+      ],
+    });
+
+    expect(
+      trackProjectAppConditionEvent(config, {
+        type: "pull-request.state",
+        pullRequestId: "77",
+        state: "completed",
+      }),
+    ).toMatchObject([{ taskId: "pipeline-monitor", conditionId: "pull-request-77-changed" }]);
+  });
+
+  it("wakes when a level-observed PR source differs from the tested commit", () => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    deferProjectAppTask(config, claim, {
+      disposition: "waiting",
+      summary: "waiting for PR source update",
+      conditions: [
+        {
+          id: "pull-request-77-source-not-abc",
+          type: "pull-request.state",
+          subject: "pull-request:77",
+          expected: { field: "sourceCommit", notEquals: "abc" },
+        },
+      ],
+    });
+
+    expect(
+      trackProjectAppConditionEvent(config, {
+        type: "pull-request.state",
+        pullRequestId: "77",
+        sourceCommit: "abc",
+        state: "active",
+      }),
+    ).toEqual([]);
+    expect(
+      trackProjectAppConditionEvent(config, {
+        type: "pull-request.state",
+        pullRequestId: "77",
+        sourceCommit: "def",
+        state: "active",
+      }),
+    ).toMatchObject([
+      {
+        taskId: "pipeline-monitor",
+        conditionId: "pull-request-77-source-not-abc",
+      },
+    ]);
   });
 });

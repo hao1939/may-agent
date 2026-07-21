@@ -56,6 +56,10 @@ function normalizedState(value: unknown): string {
   return state;
 }
 
+function stableEquals(left: unknown, right: unknown): boolean {
+  return JSON.stringify(stableValue(left)) === JSON.stringify(stableValue(right));
+}
+
 function typedSubject(subject: string): { field: string; value: string } | null {
   const separator = subject.indexOf(":");
   if (separator <= 0 || separator === subject.length - 1) return null;
@@ -70,6 +74,7 @@ function typedSubject(subject: string): { field: string; value: string } | null 
         alert: "alertId",
         project: "project",
         "pipeline-run": "pipelineRunId",
+        "pull-request": "pullRequestId",
       } as Record<string, string>
     )[kind] ?? (/^[A-Za-z][A-Za-z0-9_.-]*$/.test(kind) ? kind : "");
   return field ? { field, value: subject.slice(separator + 1) } : null;
@@ -85,6 +90,7 @@ function fieldAliases(field: string): string[] {
       alertId: ["alertId", "alert_id"],
       project: ["project", "projectId", "project_id"],
       pipelineRunId: ["pipelineRunId", "pipeline_run_id", "runId", "run_id"],
+      pullRequestId: ["pullRequestId", "pull_request_id", "prId", "pr_id"],
     }[field] ?? [field]
   );
 }
@@ -101,26 +107,29 @@ function matches(condition: ProjectAppCondition, event: Record<string, unknown>)
       const actual = eventField(event, ...fieldAliases(expectedField));
       const anyOf = condition.spec.expected.anyOf;
       if (Array.isArray(anyOf)) {
-        return anyOf.some(
-          (candidate) => JSON.stringify(stableValue(candidate)) === JSON.stringify(stableValue(actual)),
-        );
+        return anyOf.some((candidate) => stableEquals(candidate, actual));
       }
       if ("equals" in condition.spec.expected) {
-        return JSON.stringify(stableValue(condition.spec.expected.equals)) === JSON.stringify(stableValue(actual));
+        return stableEquals(condition.spec.expected.equals, actual);
+      }
+      if ("notEquals" in condition.spec.expected) {
+        return actual !== undefined && !stableEquals(condition.spec.expected.notEquals, actual);
       }
     }
-    return Object.entries(condition.spec.expected).every(
-      ([field, expected]) =>
-        JSON.stringify(stableValue(eventField(event, ...fieldAliases(field)))) ===
-        JSON.stringify(stableValue(expected)),
-    );
+    return Object.entries(condition.spec.expected).every(([field, expected]) => {
+      if ((field === "allowedDecisions" || field === "acceptedDecisions") && Array.isArray(expected)) {
+        const actualDecision = eventField(event, "decision");
+        return expected.some((candidate) => stableEquals(candidate, actualDecision));
+      }
+      return stableEquals(eventField(event, ...fieldAliases(field)), expected);
+    });
   }
 
   const actual = eventField(event, "state", "status", "disposition", "result", "outcome");
   if (typeof condition.spec.expected === "string") {
     return normalizedState(actual) === normalizedState(condition.spec.expected);
   }
-  return JSON.stringify(stableValue(actual)) === JSON.stringify(stableValue(condition.spec.expected));
+  return stableEquals(actual, condition.spec.expected);
 }
 
 function observation(event: Record<string, unknown>): Record<string, unknown> {
@@ -131,6 +140,8 @@ function observation(event: Record<string, unknown>): Record<string, unknown> {
     sessionId: eventField(event, "sessionId", "session_id"),
     workflowRunId: eventField(event, "workflowRunId", "workflow_run_id", "runId"),
     pipelineRunId: eventField(event, "pipelineRunId", "pipeline_run_id", "runId", "run_id"),
+    pullRequestId: eventField(event, "pullRequestId", "pull_request_id", "prId", "pr_id"),
+    sourceCommit: eventField(event, "sourceCommit", "source_commit"),
     state: eventField(event, "state", "status", "disposition", "result", "outcome"),
     timestamp: event.timestamp,
   };
