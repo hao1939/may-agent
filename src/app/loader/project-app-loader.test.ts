@@ -509,6 +509,29 @@ describe("project app loader", () => {
     }
   });
 
+  it("treats a configured app agent named gym as a real local agent", () => {
+    const f = fixture();
+    try {
+      const gymAppDir = join(f.projectsRoot, "gym.app");
+      const gymAgentDir = join(gymAppDir, "agents", "gym");
+      mkdirSync(gymAgentDir, { recursive: true });
+      writeFileSync(
+        join(gymAgentDir, "agent.json"),
+        JSON.stringify({
+          name: "gym",
+          description: "Gym owner",
+          domain: "evaluation",
+          model: "test",
+          tools: [],
+        }),
+      );
+
+      expect(inferProjectAppOwner(gymAppDir)).toBe("gym");
+    } finally {
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
   it("validates the complete app cohort before creating state or host attachments", async () => {
     const f = fixture();
     try {
