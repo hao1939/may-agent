@@ -16,7 +16,6 @@ import {
   legacyBranchWorkRevision,
   safeLegacyBranchFamily,
 } from "./lib/legacy-branch-inventory.ts";
-import { frontierLimit } from "./lib/workflow-input.ts";
 
 export const name = "legacy-branch-reconciliation-controller";
 export const description =
@@ -49,7 +48,16 @@ const retryableAttentionSummaries = new Set([
   "Legacy branch family base changed; retry from current origin/dev",
   // Compatibility for the two reviews that lost the initial three-writer race.
   "Legacy branch family closeout failed safely",
+  // Compatibility for the app-monitoring review rejected by the removed
+  // whole-commit patch-equivalence check.
+  "Legacy branch family closeout requires owner review",
 ]);
+
+function configuredFrontierLimit(raw: string, fallback: number): number {
+  const match = raw.match(/^frontierLimit:\s*(.+)$/m);
+  const configured = Number.parseInt(match?.[1]?.trim() ?? "", 10);
+  return Math.max(1, Number.isFinite(configured) ? configured : fallback);
+}
 
 function readTasks(appDir: string): Record<string, GraphTask> {
   try {
@@ -77,7 +85,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       taskId,
       phase: task.phase ?? task.state,
     })),
-    Math.min(1, frontierLimit(ctx.task, 1)),
+    Math.min(1, configuredFrontierLimit(ctx.task, 1)),
   );
   const representedFamilies = new Set(
     represented.map(([, task]) => String(task.input?.workKey ?? "")),

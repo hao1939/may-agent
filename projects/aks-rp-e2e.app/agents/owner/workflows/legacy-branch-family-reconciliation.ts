@@ -370,7 +370,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return ctx.blocked(
       baseChanged
         ? "Legacy branch family base changed; retry from current origin/dev"
-        : "Legacy branch family closeout requires owner review",
+        : "Legacy branch family closeout failed; owner review required",
       {
         error: message,
         review,
