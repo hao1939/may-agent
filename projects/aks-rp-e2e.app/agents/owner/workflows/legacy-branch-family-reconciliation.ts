@@ -322,17 +322,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           "Task result is not a fast-forward descendant of reviewed origin/dev",
         );
       }
-      for (const decision of review.branchDecisions) {
-        if (decision.disposition !== "represented") continue;
-        const plus = git(repoDir, ["cherry", headCommit, decision.branch])
-          .stdout.split("\n")
-          .filter((line) => line.startsWith("+ "));
-        if (plus.length) {
-          throw new Error(
-            `Task result does not represent all patches from ${decision.branch}`,
-          );
-        }
-      }
       git(workspaceDir, ["push", "origin", "HEAD:dev"]);
       git(repoDir, ["fetch", "origin", "dev"]);
       if (git(repoDir, ["rev-parse", "origin/dev"]).stdout !== headCommit) {

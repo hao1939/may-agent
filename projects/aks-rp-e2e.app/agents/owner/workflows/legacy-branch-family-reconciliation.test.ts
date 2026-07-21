@@ -38,20 +38,37 @@ describe("legacy branch family reconciliation", () => {
       join(repo, "features", "localdns", "change.txt"),
       "accepted\n",
     );
+    writeFileSync(
+      join(repo, "features", "localdns", "already-integrated.txt"),
+      "already integrated\n",
+    );
     git(repo, "add", ".");
     git(repo, "commit", "-m", "accepted change");
     const sourceHead = git(repo, "rev-parse", "HEAD");
     git(repo, "push", "-u", "origin", "task/source");
     git(repo, "switch", "dev");
+    mkdirSync(join(repo, "features", "localdns"), { recursive: true });
+    writeFileSync(
+      join(repo, "features", "localdns", "already-integrated.txt"),
+      "already integrated\n",
+    );
+    git(repo, "add", ".");
+    git(repo, "commit", "-m", "integrate one source concern independently");
+    git(repo, "push", "origin", "dev");
     git(repo, "worktree", "add", "-b", "task/review", workspace, "origin/dev");
 
     const result = await execute({
-      task: `## Reconciliation Task\n\`\`\`json\n${JSON.stringify({ input: { branches: [{ branch: "task/source", head: sourceHead, files: ["features/localdns/change.txt"] }] } })}\n\`\`\``,
+      task: `## Reconciliation Task\n\`\`\`json\n${JSON.stringify({ input: { branches: [{ branch: "task/source", head: sourceHead, files: ["features/localdns/change.txt", "features/localdns/already-integrated.txt"] }] } })}\n\`\`\``,
       agent: "aks-explorer",
       projectDir: repo,
       workspaceDir: workspace,
       runAgent: (async () => {
-        git(workspace, "cherry-pick", sourceHead);
+        writeFileSync(
+          join(workspace, "features", "localdns", "change.txt"),
+          "accepted\n",
+        );
+        git(workspace, "add", ".");
+        git(workspace, "commit", "-m", "integrate remaining source concern");
         return {
           status: "done",
           sessionId: "review-session",
