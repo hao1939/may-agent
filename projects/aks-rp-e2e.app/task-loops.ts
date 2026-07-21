@@ -137,9 +137,10 @@ export const standingLoopDefinitions: Record<
       "Reconcile every legacy task branch to one terminal outcome: its valuable change is integrated into origin/dev, or it is explicitly rejected; then remove the branch and any resolved workspace residue.",
     acceptance: [
       "Inventory branch content against current origin/dev rather than treating local or remote storage as completion.",
-      "Group redo, repair, and publication attempts into bounded change families before review.",
-      "Keep exactly one branch-family review actionable at once so origin/dev has one integration writer.",
-      "A family converges only after accepted changes reach origin/dev or rejected changes have an evidence-backed disposition, and all represented branch refs are removed.",
+      "Keep exactly one exact-branch verification actionable at once so origin/dev has one integration writer.",
+      "Apply the branch to current origin/dev and rerun conventional scoped checks; allow existing base failures but reject any new failure or debt.",
+      "A branch converges only after its passing result reaches origin/dev, or its tree is already represented; then remove its local and remote refs.",
+      "Keep conflicting or failing source refs and report the exact evidence for focused repair.",
       "Never delete an attached or dirty recovery workspace through the clean-branch controller.",
     ],
     priority: "P0",

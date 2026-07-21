@@ -16,7 +16,7 @@ afterEach(() => {
   while (roots.length) rmSync(roots.pop()!, { recursive: true, force: true });
 });
 
-test("declares one bounded family review from current Git state", async () => {
+test("declares one exact-branch verification from current Git state", async () => {
   const root = mkdtempSync(join(tmpdir(), "aks-legacy-controller-"));
   roots.push(root);
   const repo = join(root, "repo");
@@ -36,6 +36,15 @@ test("declares one bounded family review from current Git state", async () => {
   );
   git(repo, "add", ".");
   git(repo, "commit", "-m", "localdns change");
+  git(repo, "switch", "dev");
+  git(repo, "switch", "-c", "task/two");
+  mkdirSync(join(repo, "features", "localdns", "specs"), { recursive: true });
+  writeFileSync(
+    join(repo, "features", "localdns", "specs", "two.json"),
+    "{}\n",
+  );
+  git(repo, "add", ".");
+  git(repo, "commit", "-m", "second localdns change");
   git(repo, "switch", "dev");
   mkdirSync(join(appDir, ".state", "tasks"), { recursive: true });
   writeFileSync(
@@ -59,8 +68,11 @@ test("declares one bounded family review from current Git state", async () => {
       actions: [
         expect.objectContaining({
           kind: "create-task",
-          workflow: "legacy-branch-family-reconciliation",
-          input: expect.objectContaining({ workKey: "localdns" }),
+          workflow: "legacy-branch-verification",
+          input: expect.objectContaining({
+            workKey: "task/one",
+            branches: [expect.objectContaining({ branch: "task/one" })],
+          }),
         }),
       ],
     },
@@ -77,6 +89,12 @@ test("declares one bounded family review from current Git state", async () => {
           input: {
             loopId: "legacy-branch-reconciliation",
             workKey: "localdns",
+            branches: [
+              {
+                branch: "task/one",
+                head: git(repo, "rev-parse", "task/one"),
+              },
+            ],
           },
         },
       },
