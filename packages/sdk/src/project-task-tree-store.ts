@@ -16,6 +16,7 @@ import type {
   ProjectAppTaskAttempt,
   ProjectAppTaskResource,
   ProjectAppTaskTrigger,
+  ProjectAppTaskWorkspace,
 } from "./project-app.js";
 import { projectRuntimePaths } from "./project-runtime-state.js";
 
@@ -157,6 +158,7 @@ export type TaskCompletionReceipt = {
   acceptanceBasis: ProjectAppTaskAcceptanceBasis;
   failureFingerprints: string[];
   completedAt: string;
+  workspace?: ProjectAppTaskWorkspace;
 };
 
 export type TaskTree = {

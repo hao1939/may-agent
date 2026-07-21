@@ -875,6 +875,8 @@ export interface WorkflowContext {
 export interface WorkflowModule {
   name: string;
   description: string;
+  /** Filesystem isolation convention interpreted by the embedding app runtime. */
+  workspace?: "shared" | "task";
   execute: (ctx: WorkflowContext) => Promise<WorkflowResult>;
   verify?: (context: unknown, result: unknown) => Promise<unknown>;
 }
@@ -950,6 +952,7 @@ export type {
   ProjectAppTaskVerificationContext,
   ProjectAppTaskVerificationResult,
   ProjectAppTaskVerifier,
+  ProjectAppTaskWorkspace,
   ProjectAppTasks,
 } from "./project-app.js";
 

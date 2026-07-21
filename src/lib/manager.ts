@@ -112,6 +112,8 @@ export interface RunOptions {
   outputSchema?: TSchema;
   /** Restrict the supplied capabilities for this session. */
   toolPolicy?: "full" | "readonly";
+  /** Effective filesystem root supplied by an enclosing workflow/task. */
+  executionRoot?: string;
 }
 
 interface ActiveSession {
@@ -145,6 +147,7 @@ interface ActiveSession {
   requireFinish: boolean;
   outputSchema?: TSchema;
   toolPolicy: "full" | "readonly";
+  executionRoot?: string;
 }
 
 type DispatchDedupDb = {
@@ -333,6 +336,7 @@ export class SubagentManager {
       requireFinish?: boolean;
       outputSchema?: TSchema;
       toolPolicy?: "full" | "readonly";
+      executionRoot?: string;
     },
   ): void {
     const resumeMessages = this.buildResumeMessages(sessionId);
@@ -399,6 +403,7 @@ export class SubagentManager {
         requireFinish: opts.requireFinish ?? meta.requireFinish,
         outputSchema: opts.outputSchema ?? meta.outputSchema,
         toolPolicy: opts.toolPolicy ?? meta.toolPolicy,
+        executionRoot: opts.executionRoot ?? meta.executionRoot,
       });
     } catch (err) {
       const reason = `Failed to resume session: ${err instanceof Error ? err.message : String(err)}`;
@@ -470,6 +475,7 @@ export class SubagentManager {
       requireFinish: opts?.requireFinish,
       outputSchema: opts?.outputSchema,
       toolPolicy,
+      executionRoot: opts?.executionRoot,
       promptTimestamp: this._promptTimestamp,
       ...(persistentChat
         ? {
@@ -566,6 +572,7 @@ export class SubagentManager {
       requireFinish,
       outputSchema,
       toolPolicy,
+      executionRoot: opts?.executionRoot,
     };
 
     const existingMeta = this._registry.getSession(sessionId);
@@ -597,6 +604,7 @@ export class SubagentManager {
       requireFinish,
       outputSchema: outputSchema ?? existingMeta?.outputSchema,
       toolPolicy,
+      executionRoot: opts?.executionRoot ?? existingMeta?.executionRoot,
     });
 
     // Register before publishing session.start so synchronous subscribers see
@@ -826,6 +834,7 @@ export class SubagentManager {
       requireFinish?: boolean;
       outputSchema?: TSchema;
       toolPolicy?: "full" | "readonly";
+      executionRoot?: string;
     },
   ): Promise<TaskResult & { messages: AgentMessage[] }> {
     const parentDepth = opts?.parentSessionId ? (this.callDepths.get(opts.parentSessionId) ?? 0) : 0;
@@ -854,6 +863,7 @@ export class SubagentManager {
       requireFinish: opts?.requireFinish,
       outputSchema: opts?.outputSchema,
       toolPolicy: opts?.toolPolicy,
+      executionRoot: opts?.executionRoot,
     });
     this.callDepths.set(sessionId, parentDepth + 1);
     const result = await this.waitFor(sessionId);
@@ -876,6 +886,7 @@ export class SubagentManager {
       requireFinish?: boolean;
       outputSchema?: TSchema;
       toolPolicy?: "full" | "readonly";
+      executionRoot?: string;
     },
   ): string {
     return this.run(agentName, task, {
@@ -892,6 +903,7 @@ export class SubagentManager {
       requireFinish: opts?.requireFinish,
       outputSchema: opts?.outputSchema,
       toolPolicy: opts?.toolPolicy,
+      executionRoot: opts?.executionRoot,
     });
   }
 

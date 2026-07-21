@@ -1,4 +1,5 @@
 import { describe, expect, it, spyOn } from "bun:test";
+import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -382,6 +383,78 @@ describe("project app loader handler result normalization", () => {
 });
 
 describe("project app loader", () => {
+  it("prepares and finalizes a task worktree around an opted-in workflow", async () => {
+    const f = fixture();
+    const projectDir = join(f.projectsRoot, "sample");
+    try {
+      execFileSync("git", ["init", "-b", "dev", projectDir]);
+      execFileSync("git", ["-C", projectDir, "config", "user.email", "test@example.com"]);
+      execFileSync("git", ["-C", projectDir, "config", "user.name", "Test"]);
+      writeFileSync(join(projectDir, "README.md"), "base\n");
+      execFileSync("git", ["-C", projectDir, "add", "README.md"]);
+      execFileSync("git", ["-C", projectDir, "commit", "-m", "base"]);
+      writeFileSync(
+        join(f.appDir, "app.ts"),
+        `export default {
+          id: "sample", version: 1, owner: "sample-owner", description: "sample",
+          workspace: { kind: "git", localPath: "../sample", branch: "dev" },
+          budget: { sessionsPerDay: 10, tokensPerDay: 10000, maxConcurrent: 1 },
+          tasks: {
+            accepts: [{ type: "sample.work", project: "sample" }],
+            resolve() { return { id: "work/isolated", parentId: "operations", outcome: "commit isolated change", acceptance: ["change committed"], mode: "achieve", workflow: "isolated", outputs: ["change.txt"] }; }
+          }
+        };\n`,
+      );
+      mkdirSync(join(f.appDir, "agents", "owner", "workflows"), { recursive: true });
+      writeFileSync(
+        join(f.appDir, "agents", "owner", "workflows", "isolated.ts"),
+        `import { writeFileSync } from "node:fs";
+         import { execFileSync } from "node:child_process";
+         import { join } from "node:path";
+         export const name = "isolated";
+         export const description = "isolated task mutation";
+         export const workspace = "task";
+         export async function execute(ctx) {
+           if (ctx.workspaceDir === ctx.projectDir) return ctx.blocked("workspace was not isolated");
+           writeFileSync(join(ctx.workspaceDir, "change.txt"), "isolated\\n");
+           execFileSync("git", ["-C", ctx.workspaceDir, "add", "change.txt"]);
+           execFileSync("git", ["-C", ctx.workspaceDir, "commit", "-m", "isolated change"]);
+           return ctx.done("committed", { state: "converged", summary: "committed", evidence: ["change.txt"], actions: [] });
+         }`,
+      );
+      const bus = new EventBus();
+      const events: any[] = [];
+      bus.subscribe((event) => events.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: manager([]),
+        bus,
+        agentCrons: new Map(),
+      });
+
+      bus.emit({ type: "sample.work", project: "sample" } as any);
+      await waitUntil(() =>
+        events.some((event) => event.type === "project.task.reconciled" && event.data?.taskId === "work/isolated"),
+      );
+
+      const state = JSON.parse(readFileSync(join(f.appDir, ".state/tasks/state.json"), "utf8"));
+      const workspace = state.receipts["work/isolated"].workspace;
+      expect(workspace).toMatchObject({ kind: "task-worktree", disposition: "branch-retained" });
+      expect(existsSync(workspace.path)).toBe(false);
+      expect(
+        execFileSync("git", ["-C", projectDir, "branch", "--list", workspace.branch], { encoding: "utf8" }),
+      ).toContain(workspace.branch);
+      expect(execFileSync("git", ["-C", projectDir, "status", "--porcelain"], { encoding: "utf8" })).toBe("");
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
   it("loads an owner-only app without creating or attaching task runtime state", async () => {
     const f = fixture();
     try {
