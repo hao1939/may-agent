@@ -274,6 +274,8 @@ export interface SessionHandle {
 export interface WorkflowModule {
   name: string;
   description: string;
+  /** Filesystem isolation convention interpreted by the embedding app runtime. */
+  workspace?: "shared" | "task";
   execute: (ctx: WorkflowContext) => Promise<WorkflowResult>;
   /** Optional app-level deterministic verifier; interpreted by the embedding infrastructure. */
   verify?: (context: unknown, result: unknown) => Promise<unknown>;

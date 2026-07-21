@@ -199,6 +199,17 @@ export type ProjectAppTaskAcceptanceBasis = {
   evidence: string[];
 };
 
+/** Observed Git workspace lineage for one task attempt; never desired task spec. */
+export type ProjectAppTaskWorkspace = {
+  kind: "task-worktree";
+  path: string;
+  baseRef: string;
+  baseCommit: string;
+  branch: string;
+  headCommit: string;
+  disposition: "active" | "retained-for-recovery" | "branch-retained" | "removed";
+};
+
 export type ProjectAppTaskVerificationResult = {
   accepted: boolean;
   summary: string;
@@ -282,6 +293,7 @@ export type ProjectAppTaskAttempt = {
   summary?: string;
   failureReason?: string;
   attentionNotifiedAt?: string;
+  workspace?: ProjectAppTaskWorkspace;
 };
 
 export type ProjectAppTaskTrigger = {

@@ -192,9 +192,13 @@ function pruneCompletedSteps(completedSteps: CompletedStep[]): void {
 }
 
 async function loadWorkflow(filePath: string, sourceScope: "agent" | "project"): Promise<WorkflowModule> {
-  const mod = await importRuntimeModule<{ name?: unknown; description?: unknown; execute?: unknown; verify?: unknown }>(
-    filePath,
-  );
+  const mod = await importRuntimeModule<{
+    name?: unknown;
+    description?: unknown;
+    workspace?: unknown;
+    execute?: unknown;
+    verify?: unknown;
+  }>(filePath);
   if (typeof mod.name !== "string" || !mod.name.trim()) {
     throw new Error(`Workflow file ${filePath} must export a non-empty 'name' string`);
   }
@@ -208,9 +212,13 @@ async function loadWorkflow(filePath: string, sourceScope: "agent" | "project"):
   if (mod.verify !== undefined && typeof mod.verify !== "function") {
     throw new Error(`Workflow file ${filePath} must export 'verify' as a function when present`);
   }
+  if (mod.workspace !== undefined && mod.workspace !== "shared" && mod.workspace !== "task") {
+    throw new Error(`Workflow file ${filePath} must export 'workspace' as "shared" or "task" when present`);
+  }
   return {
     name: mod.name.trim(),
     description: mod.description.trim(),
+    ...(mod.workspace ? { workspace: mod.workspace } : {}),
     execute: execute as WorkflowModule["execute"],
     ...(typeof mod.verify === "function" ? { verify: mod.verify as WorkflowModule["verify"] } : {}),
     sourcePath: filePath,
@@ -298,9 +306,13 @@ function findWorkflow(
 export async function inspectWorkflowDefinition(
   workflowDir: string,
   name: string,
-): Promise<{ available: boolean; error: string | null }> {
+): Promise<{ available: boolean; error: string | null; workspace: "shared" | "task" }> {
   const resolved = findWorkflow(await buildWorkflowCatalog(workflowDir), name);
-  return { available: resolved.workflow !== null, error: resolved.error };
+  return {
+    available: resolved.workflow !== null,
+    error: resolved.error,
+    workspace: resolved.workflow?.workspace ?? "shared",
+  };
 }
 
 // ── Guard Discovery ────────────────────────────────────────────────────
@@ -1110,6 +1122,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
               requireFinish: true,
               outputSchema: stepOpts?.schema,
               toolPolicy: stepOpts?.tools,
+              executionRoot: opts.executionPaths?.workspaceDir,
             });
             taskResult = await waitForStep(sid);
             taskResult = { ...taskResult, messages: manager.progress(sid, 1000) };
@@ -1133,6 +1146,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           requireFinish: true,
           outputSchema: stepOpts?.schema,
           toolPolicy: stepOpts?.tools,
+          executionRoot: opts.executionPaths?.workspaceDir,
         });
         sid = taskResult.sessionId;
       }

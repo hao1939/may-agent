@@ -64,10 +64,16 @@ import {
   recoverableProjectAppTaskAttempts,
   releaseInterruptedProjectAppTaskAttempt,
   releaseStaleProjectAppTaskResult,
+  recordProjectAppTaskAttemptWorkspace,
   taskReconciliationConfig,
   PROJECT_APP_TASK_RECOVERY_OWNER,
   type ProjectAppTaskClaim,
 } from "../project-app-task-reconciler.js";
+import {
+  finalizeProjectTaskWorkspace,
+  prepareProjectTaskWorkspace,
+  type PreparedTaskWorkspace,
+} from "../project-task-workspace.js";
 
 type ProjectReadModel = {
   id: string;
@@ -1089,6 +1095,7 @@ async function establishTaskAcceptance(input: {
   intent: ProjectAppTaskIntent;
   claim: ProjectAppTaskClaim;
   capability: TaskCapabilityRun;
+  executionPaths: ProjectAppExecutionPaths;
 }): Promise<
   { ok: true; acceptanceBasis: ProjectAppTaskAcceptanceBasis } | { ok: false; summary: string; evidence: string[] }
 > {
@@ -1124,7 +1131,7 @@ async function establishTaskAcceptance(input: {
         generation: claim.generation,
         appDir: descriptor.appDir,
         projectDir: descriptor.projectDir,
-        workspaceDir: descriptor.projectDir,
+        workspaceDir: input.executionPaths.workspaceDir,
         intent: structuredClone(intent),
       },
       capability.handlerResult as ProjectAppTaskHandlerResult,
@@ -1205,7 +1212,7 @@ async function reconcileTask(input: {
   }
   const intent = primary.intent;
   const event = primary.trigger as EventEnvelope | undefined;
-  const executionPaths = projectAppExecutionPaths(descriptor.appDir, descriptor.projectDir);
+  let executionPaths = projectAppExecutionPaths(descriptor.appDir, descriptor.projectDir);
   const declaredOutputPaths = primary.declaredOutputPaths;
   emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconcile.started", intent.id, {
     route: "task-controller",
@@ -1216,9 +1223,70 @@ async function reconcileTask(input: {
   });
 
   const workflowKey = primary.handler.startsWith("workflow:") ? primary.handler.slice("workflow:".length) : "";
-  let primaryResult: TaskCapabilityRun;
+  let taskWorkspace: PreparedTaskWorkspace | undefined;
+  let workspaceFinalized = false;
+  const finalizeWorkspace = (outcome: "accepted" | "waiting" | "failed") => {
+    if (!taskWorkspace || workspaceFinalized) return { ok: true as const };
+    try {
+      const finalized = finalizeProjectTaskWorkspace(taskWorkspace, outcome);
+      workspaceFinalized = true;
+      recordProjectAppTaskAttemptWorkspace(config, primary, finalized.metadata);
+      return finalized;
+    } catch (error) {
+      workspaceFinalized = true;
+      taskWorkspace.metadata.disposition = "retained-for-recovery";
+      recordProjectAppTaskAttemptWorkspace(config, primary, taskWorkspace.metadata);
+      return {
+        ok: false as const,
+        metadata: taskWorkspace.metadata,
+        reason: `Task workspace finalization failed and was retained for recovery: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      };
+    }
+  };
+  let primaryResult: TaskCapabilityRun | undefined;
   if (workflowKey) {
-    primaryResult = await runTaskCapability({
+    const workflowPaths = appWorkflowRuntimePaths(opts, descriptor, primary.owner);
+    const definition = await inspectWorkflowDefinition(workflowPaths.workflowDir, workflowKey);
+    if (definition.workspace === "task") {
+      try {
+        if (descriptor.app.workspace?.kind !== "git") {
+          throw new Error(`Workflow ${workflowKey} requires a task worktree but app workspace is not Git`);
+        }
+        const previous = Object.values(readTaskState(config).attempts ?? {})
+          .filter(
+            (attempt) =>
+              attempt.taskId === primary.taskId &&
+              attempt.taskGeneration === primary.generation &&
+              attempt.workspace?.kind === "task-worktree",
+          )
+          .sort((left, right) => right.startedAt.localeCompare(left.startedAt))[0]?.workspace;
+        taskWorkspace = prepareProjectTaskWorkspace({
+          repoDir: descriptor.projectDir,
+          workspaceRoot: join(opts.projectRoot, "worktrees", descriptor.id),
+          taskId: primary.taskId,
+          generation: primary.generation,
+          baseBranch: descriptor.app.workspace.branch ?? "dev",
+          previous,
+        });
+        executionPaths = { ...executionPaths, workspaceDir: taskWorkspace.metadata.path };
+        if (!recordProjectAppTaskAttemptWorkspace(config, primary, taskWorkspace.metadata)) {
+          throw new Error(`Task attempt ${primary.attemptId} became stale while preparing its workspace`);
+        }
+      } catch (error) {
+        primaryResult = {
+          handlerResult: {
+            state: "error",
+            summary: `Task workspace preparation failed: ${error instanceof Error ? error.message : String(error)}`,
+            evidence: [],
+            actions: [],
+          },
+          runId: null,
+        };
+      }
+    }
+    primaryResult ??= await runTaskCapability({
       opts,
       descriptor,
       capability: {
@@ -1255,6 +1323,8 @@ async function reconcileTask(input: {
     });
   }
 
+  if (!primaryResult) throw new Error(`Task ${primary.taskId} produced no handler result`);
+
   const primaryHandlerResult = primaryResult.handlerResult;
   if (primaryResult.unavailable) {
     emitTaskReconciliationEvent(opts, descriptor, event, "project.task.handler.unavailable", intent.id, {
@@ -1270,7 +1340,9 @@ async function reconcileTask(input: {
       intent,
       claim: primary,
       capability: primaryResult,
+      executionPaths,
     });
+    const acceptanceBasis = accepted.ok ? accepted.acceptanceBasis : undefined;
     if (!accepted.ok) {
       primaryHandlerResult.state = "error";
       primaryHandlerResult.summary = accepted.summary;
@@ -1284,12 +1356,20 @@ async function reconcileTask(input: {
         workflowRunId: primaryResult.runId,
       });
     } else {
+      const finalized = finalizeWorkspace("accepted");
+      if (!finalized.ok) {
+        primaryHandlerResult.state = "error";
+        primaryHandlerResult.summary = finalized.reason ?? "Task workspace finalization failed";
+        primaryHandlerResult.evidence = [taskWorkspace?.metadata.path ?? executionPaths.workspaceDir];
+      }
+    }
+    if (primaryHandlerResult.state === "converged" && acceptanceBasis) {
       try {
         const apply = completeProjectAppTask(config, primary, {
           summary: primaryHandlerResult.summary,
           evidence: primaryHandlerResult.evidence,
           actions: primaryHandlerResult.actions,
-          acceptanceBasis: accepted.acceptanceBasis,
+          acceptanceBasis,
         });
         const stale = apply.status === "stale" ? recoverStaleTaskResult(config, primary) : null;
         emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
@@ -1305,7 +1385,7 @@ async function reconcileTask(input: {
           input: intent.input ?? {},
           summary: primaryHandlerResult.summary,
           evidence: primaryHandlerResult.evidence,
-          acceptanceBasis: accepted.acceptanceBasis,
+          acceptanceBasis,
           actionsApplied: apply.actionsApplied,
           ...(stale ? { staleRecovery: stale.staleRecovery } : {}),
           workflowRunId: primaryResult.runId,
@@ -1344,6 +1424,15 @@ async function reconcileTask(input: {
         primaryHandlerResult.state = "error";
         primaryHandlerResult.summary = `Handler actions were rejected: ${error instanceof Error ? error.message : String(error)}`;
       }
+    }
+  }
+
+  if (primaryHandlerResult.state === "waiting") {
+    const finalized = finalizeWorkspace("waiting");
+    if (!finalized.ok) {
+      primaryHandlerResult.state = "error";
+      primaryHandlerResult.summary = finalized.reason ?? "Task workspace finalization failed";
+      primaryHandlerResult.evidence = [taskWorkspace?.metadata.path ?? executionPaths.workspaceDir];
     }
   }
 
@@ -1400,6 +1489,8 @@ async function reconcileTask(input: {
       primaryHandlerResult.summary = `Handler result was rejected: ${error instanceof Error ? error.message : String(error)}`;
     }
   }
+
+  finalizeWorkspace("failed");
 
   markProjectAppTaskAttention(config, primary, {
     summary: primaryHandlerResult.summary,

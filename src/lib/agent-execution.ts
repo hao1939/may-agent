@@ -20,6 +20,10 @@ import { createScrapeDedupGuard } from "./tools/scrape-dedup-guard.js";
 import { createSessionReadGuard } from "./tools/session-read-guard.js";
 import { createToolSchemaGuard } from "./tools/tool-schema-guard.js";
 import { createWorkflowFinishTool } from "./tools/workflow-finish.js";
+import { createReadTool } from "./tools/read.js";
+import { createBashTool } from "./tools/bash.js";
+import { createEditTool } from "./tools/edit.js";
+import { createWriteTool } from "./tools/write.js";
 import { createAgentRun, type AgentRunnerConfig, type AgentRuntimeListener } from "./agent-runner.js";
 import { extractFinishParams, type FinishParams } from "./agent-result.js";
 import {
@@ -64,6 +68,8 @@ export type AgentPreparationOptions = {
   requireFinish?: boolean;
   outputSchema?: TSchema;
   toolPolicy?: "full" | "readonly";
+  /** Override the registered agent's filesystem tools for this execution only. */
+  executionRoot?: string;
   promptTimestamp?: string;
   chatContext?: string;
   createFinish?: () => AgentTool;
@@ -72,6 +78,27 @@ export type AgentPreparationOptions = {
   onCompact?: (info: CompactionInfo, messages: AgentMessage[]) => void;
   onNotice?: (message: string) => void;
 };
+
+function definitionForExecution(options: AgentPreparationOptions): SubagentDefinition {
+  const root = options.executionRoot;
+  if (!root) return options.definition;
+  const agentName = options.definition.name;
+  const tools = options.definition.tools.map((tool) => {
+    switch (tool.name) {
+      case "read":
+        return createReadTool(root);
+      case "bash":
+        return createBashTool(root);
+      case "edit":
+        return createEditTool(root, { agentName, projectRoot: root });
+      case "write":
+        return createWriteTool(root, { agentName, projectRoot: root });
+      default:
+        return tool;
+    }
+  });
+  return { ...options.definition, projectRoot: root, tools };
+}
 
 export type DirectAgentExecutionResult = {
   status: "done" | "error" | "interrupted";
@@ -235,6 +262,8 @@ function resolveSystemPrompt(options: AgentPreparationOptions, tools: AgentTool[
  * the returned runner configuration.
  */
 export function prepareAgentExecution(options: AgentPreparationOptions): PreparedAgentExecution {
+  const definition = definitionForExecution(options);
+  options = { ...options, definition, projectRoot: options.executionRoot ?? options.projectRoot };
   const parsedSkill = parseExplicitSkill(options.task);
   const skillName = options.skill ?? parsedSkill.skill;
   const task = parsedSkill.skill ? parsedSkill.task : options.task;

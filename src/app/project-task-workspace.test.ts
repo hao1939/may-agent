@@ -1,0 +1,112 @@
+import { afterEach, describe, expect, it } from "bun:test";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { finalizeProjectTaskWorkspace, prepareProjectTaskWorkspace } from "./project-task-workspace.js";
+
+const roots: string[] = [];
+
+function git(cwd: string, ...args: string[]): string {
+  return execFileSync("git", ["-C", cwd, ...args], { encoding: "utf8" }).trim();
+}
+
+function fixture(): { root: string; repo: string; worktrees: string } {
+  const root = mkdtempSync(join(tmpdir(), "may-task-workspace-"));
+  roots.push(root);
+  const repo = join(root, "repo");
+  execFileSync("git", ["init", "-b", "dev", repo]);
+  git(repo, "config", "user.email", "test@example.com");
+  git(repo, "config", "user.name", "Test");
+  writeFileSync(join(repo, "README.md"), "base\n");
+  git(repo, "add", "README.md");
+  git(repo, "commit", "-m", "base");
+  return { root, repo, worktrees: join(root, "worktrees") };
+}
+
+afterEach(() => {
+  while (roots.length) rmSync(roots.pop()!, { recursive: true, force: true });
+});
+
+describe("project task workspace", () => {
+  it("reuses one deterministic worktree for retries of the same task generation", () => {
+    const f = fixture();
+    const first = prepareProjectTaskWorkspace({
+      repoDir: f.repo,
+      workspaceRoot: f.worktrees,
+      taskId: "domain/example",
+      generation: 2,
+      baseBranch: "dev",
+      refreshRemote: false,
+    });
+    writeFileSync(join(first.metadata.path, "unfinished.txt"), "recover me\n");
+
+    const retry = prepareProjectTaskWorkspace({
+      repoDir: f.repo,
+      workspaceRoot: f.worktrees,
+      taskId: "domain/example",
+      generation: 2,
+      baseBranch: "dev",
+      refreshRemote: false,
+      previous: first.metadata,
+    });
+
+    expect(retry.metadata.path).toBe(first.metadata.path);
+    expect(retry.metadata.branch).toBe(first.metadata.branch);
+    expect(finalizeProjectTaskWorkspace(retry, "failed").metadata.disposition).toBe("retained-for-recovery");
+  });
+
+  it("removes a clean no-change worktree and its empty task branch", () => {
+    const f = fixture();
+    const prepared = prepareProjectTaskWorkspace({
+      repoDir: f.repo,
+      workspaceRoot: f.worktrees,
+      taskId: "no-change",
+      generation: 1,
+      baseBranch: "dev",
+      refreshRemote: false,
+    });
+
+    const finalized = finalizeProjectTaskWorkspace(prepared, "accepted");
+
+    expect(finalized).toMatchObject({ ok: true, metadata: { disposition: "removed" } });
+    expect(git(f.repo, "branch", "--list", prepared.metadata.branch)).toBe("");
+  });
+
+  it("removes a clean committed worktree while retaining its task branch", () => {
+    const f = fixture();
+    const prepared = prepareProjectTaskWorkspace({
+      repoDir: f.repo,
+      workspaceRoot: f.worktrees,
+      taskId: "publishable-change",
+      generation: 1,
+      baseBranch: "dev",
+      refreshRemote: false,
+    });
+    writeFileSync(join(prepared.metadata.path, "change.txt"), "done\n");
+    git(prepared.metadata.path, "add", "change.txt");
+    git(prepared.metadata.path, "commit", "-m", "change");
+
+    const finalized = finalizeProjectTaskWorkspace(prepared, "accepted");
+
+    expect(finalized).toMatchObject({ ok: true, metadata: { disposition: "branch-retained" } });
+    expect(git(f.repo, "branch", "--list", prepared.metadata.branch)).toContain(prepared.metadata.branch);
+  });
+
+  it("refuses to close accepted work that still has uncommitted files", () => {
+    const f = fixture();
+    const prepared = prepareProjectTaskWorkspace({
+      repoDir: f.repo,
+      workspaceRoot: f.worktrees,
+      taskId: "dirty-change",
+      generation: 1,
+      baseBranch: "dev",
+      refreshRemote: false,
+    });
+    writeFileSync(join(prepared.metadata.path, "dirty.txt"), "not committed\n");
+
+    const finalized = finalizeProjectTaskWorkspace(prepared, "accepted");
+
+    expect(finalized).toMatchObject({ ok: false, metadata: { disposition: "retained-for-recovery" } });
+  });
+});
