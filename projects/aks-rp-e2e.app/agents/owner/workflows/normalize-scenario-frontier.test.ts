@@ -105,6 +105,7 @@ describe("normalize scenario frontier workflow", () => {
           kind: "create-task",
           parentId: "group/scenario-normalization",
           owner: "aks-explorer",
+          workflow: "domain-task-execution",
           input: {
             adapterPath: "features/feature-a/tests/case-a.test.ts",
             specId: "spec.feature-a.case-a",
@@ -114,6 +115,7 @@ describe("normalize scenario frontier workflow", () => {
           kind: "create-task",
           parentId: "group/scenario-normalization",
           owner: "aks-explorer",
+          workflow: "domain-task-execution",
           input: {
             adapterPath: "features/feature-a/tests/case-b.test.ts",
             specId: "spec.feature-a.case-b",

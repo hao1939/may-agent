@@ -12,6 +12,7 @@ import {
 import { observeAksPipelines } from "./watchers/aks-pipeline.js";
 import { observeRepoRefChanges } from "./watchers/repo-ref.js";
 import { observeScenarioTestInventory } from "./watchers/scenario-test-inventory.js";
+import { observeWorkspaceIntegrityChanges } from "./watchers/workspace-integrity.js";
 import {
   featureCompactLoopTaskId,
   loopRefillWakeForTaskEvent,
@@ -308,6 +309,20 @@ export async function routeAksEvent(
   }
   if (event.type === "aks.pipeline.check") return observeAksPipelines(ctx);
   if (event.type === "aks.repo-ref.check") return observeRepoRefChanges(ctx);
+  if (event.type === "aks.workspace.integrity.check")
+    return observeWorkspaceIntegrityChanges(ctx);
+  if (event.type === "aks.workspace.integrity.changed") {
+    ctx.emit({
+      type: "project.owner.requested",
+      target: { project: projectId },
+      data: {
+        project: projectId,
+        reason: "workspace-integrity-changed",
+        observation: eventDetails(event),
+      },
+    });
+    return { ownerReviewRequested: true };
+  }
   if (event.type === "aks.scenario-test-inventory.check")
     return observeScenarioTestInventory(ctx);
   if (event.type === "aks.scenario-test-inventory.observed") {
@@ -375,6 +390,17 @@ export default defineProjectApp({
       emits: [
         {
           type: "aks.pipeline.check",
+          target: { project: projectId },
+        },
+      ],
+    },
+    {
+      id: "workspace-integrity-observer",
+      enabled: true,
+      intervalMs: 3_600_000,
+      emits: [
+        {
+          type: "aks.workspace.integrity.check",
           target: { project: projectId },
         },
       ],
@@ -543,6 +569,8 @@ export default defineProjectApp({
     { type: "project.task.reconciled", target: projectTarget },
     { type: "aks.pipeline.check", target: projectTarget },
     { type: "aks.repo-ref.check", target: projectTarget },
+    { type: "aks.workspace.integrity.check", target: projectTarget },
+    { type: "aks.workspace.integrity.changed", target: projectTarget },
     { type: "aks.scenario-test-inventory.check", target: projectTarget },
     { type: "aks.scenario-test-inventory.observed", target: projectTarget },
   ],

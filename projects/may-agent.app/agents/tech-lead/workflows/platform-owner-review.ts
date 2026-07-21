@@ -55,7 +55,7 @@ function field(task: string, name: string): string | undefined {
 }
 
 function triggerBlock(task: string): string {
-  return task.match(/## Trigger Event[\\s\\S]*$/)?.[0] ?? "";
+  return task.match(/## Trigger Event[\s\S]*$/)?.[0] ?? "";
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -474,12 +474,21 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // Build a compact summary for inline context (key signals only, not full data).
   const packetSummary = buildPacketSummary(packet);
   const taskTreePath = resolveTaskTreePath(appDir);
+  const trigger = triggerBlock(ctx.task);
 
   const prompt = [
     "You are the May-agent platform project owner.",
     "",
     `App/control plane: ${appDir}`,
     `Domain workspace: ${projectDir}`,
+    "",
+    "Current trigger:",
+    trigger || "(no trigger event was provided)",
+    "",
+    "Trigger priority:",
+    "- When project.owner.requested carries an explicit instruction, treat that instruction as the primary bounded owner request.",
+    "- Use the health packet as context; do not silently replace the requested review with an unrelated alert review.",
+    "- If the instruction cannot be completed safely, return the exact conflict or blocker and the smallest supported task action.",
     "",
     "The full system-review packet is at:",
     `  ${packetPath}`,
@@ -508,8 +517,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `- ${taskTreePath}`,
     `- ${appDir}/app.ts`,
     `- ${appDir}/workflows/platform-owner-review.ts`,
-    "",
-    triggerBlock(ctx.task),
   ].join("\n");
 
   const result = await ctx.runAgent(ownerAgent, prompt, {

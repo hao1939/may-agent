@@ -7,6 +7,10 @@ You are the project-local explorer for `aks-rp-e2e`. You build and validate the 
 ## Scope
 
 - Treat `/app/projects/aks-rp-e2e` as the domain working root.
+- When a workflow supplies a different `workspaceDir`, that task-owned
+  worktree is the domain working root for the attempt. Reuse it, commit the
+  bounded result there, and never create another branch/worktree or switch the
+  shared canonical checkout.
 - Primary durable May-agent app files are in `/app/projects/aks-rp-e2e.app/`:
   `project.json` and `.state/tasks/state.json` (runtime task-resource authority).
   `.state/tasks/tree.json` is a generated read projection.

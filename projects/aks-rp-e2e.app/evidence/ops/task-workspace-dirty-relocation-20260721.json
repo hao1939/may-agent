@@ -1,0 +1,583 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-21T06:12:41.577Z",
+  "inventoryPath": "/app/projects/aks-rp-e2e.app/evidence/ops/task-workspace-migration-inventory-20260721.json",
+  "recoveryRoot": "/app/worktrees/aks-rp-e2e/recovery",
+  "counts": {
+    "candidates": 95,
+    "relocated": 95,
+    "retainedInPlace": 0
+  },
+  "results": [
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/publish-workload-autoscaler-keda-vm-prerelease-matrix-replacement-live-pass-172842634-522bcf3e-origin-dev-20260719-wt/workspace/publish-workload-autoscaler-keda-vm-prerelease-matrix-replacement-live-pass-172842634-522bcf3e-origin-dev-20260719/prepublish-origin-dev-e329accc5",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/prepublish-origin-dev-e329accc5-858582d6cf",
+      "head": "e329accc5e4b173727cbc4b104bd4b663b32d0a6",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/domain-normalize-direct-cluster-autoscaler-vm-prerelease-local-storage-runtime-profile-matrix-refs-20260719-origin-dev-dd409c40-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/domain-normalize-direct-cluster-autoscaler-vm-prerelease-local-storage-r-51b39e6d80",
+      "head": "dd409c40caffc58fd815c8891c93fa2a5b6ae87c",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/domain-reconcile-stale-ado-result-waits-172807654-172811395-20260718/20260718T173953Z/prepublish-checks/vm-mixed-sku-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/vm-mixed-sku-wt-cbb80e0544",
+      "head": "9ab4fe32f3b2d0e8926c99973f6ed5e2b6c3847b",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/domain-reconcile-stale-ado-result-waits-172807654-172811395-20260718/20260718T173953Z/prepublish-checks/rp-cluster-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/rp-cluster-wt-4d36f51190",
+      "head": "9ab4fe32f3b2d0e8926c99973f6ed5e2b6c3847b",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/publish-workload-autoscaler-keda-vm-prerelease-matrix-replacement-live-pass-172842634-522bcf3e-origin-dev-20260719-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/publish-workload-autoscaler-keda-vm-prerelease-matrix-replacement-live-p-bd777874ab",
+      "head": "7f28a0421e734104bb74a871d090c471414bdfd1",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/fix-forward-network-cni-vm-prerelease-cilium-matrix-current-origin-dev-after-run-172675000-20260718-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/fix-forward-network-cni-vm-prerelease-cilium-matrix-current-origin-dev-a-a60e24093e",
+      "head": "a7d700ea7a0198284ad1756c5a0c040797404428",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/publish-net-integration-nsg-route-table-in-use-vm-prerelease-live-pass-47b39006-origin-dev-e1456b18-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/publish-net-integration-nsg-route-table-in-use-vm-prerelease-live-pass-4-dec04a416e",
+      "head": "16f16bca48a103a850ce63fc526fa5cb26815840",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/fix-forward-egress-lockdown-vm-prerelease-vhd-matrix-run-172761385-row77-create-400-origin-dev-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/fix-forward-egress-lockdown-vm-prerelease-vhd-matrix-run-172761385-row77-798fd6e6d9",
+      "head": "98fef3da68e379d45f8fba44803d33c7cee3f6d5",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/domain-normalize-direct-egress-lockdown-vm-prerelease-vhd-matrix-20260719-origin-dev-b29874d6-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/domain-normalize-direct-egress-lockdown-vm-prerelease-vhd-matrix-2026071-43270551ff",
+      "head": "b29874d629ee55127724f3c2acafc0778b35d499",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/normalize-scenario-node-pool-config-disable-ssh-lifecycle-isolated-origin-dev-rerun-20260717-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/normalize-scenario-node-pool-config-disable-ssh-lifecycle-isolated-origi-ba3fcc76c2",
+      "head": "650c9c5ecdd44ace408db5af3a0fd0234295f44f",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/normalize-upgrade-vm-prerelease-deprecated-api-detection-adapter-current-origin-dev-20260719-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/normalize-upgrade-vm-prerelease-deprecated-api-detection-adapter-current-7d278c72a6",
+      "head": "b9e2f0163f0e8b39535609ddad03fa105bcd8970",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/publish-virtualmachines-mixed-sku-upgrade-normalization-20260718/published-origin-dev-eac5f6398",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/published-origin-dev-eac5f6398-d149e37722",
+      "head": "eac5f6398c9e841123e2f044632e73f73a8819da",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/normalize-serverless-virtual-nodes-multi-pod-burst-adapter-current-origin-dev-20260719-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/normalize-serverless-virtual-nodes-multi-pod-burst-adapter-current-origi-16982af789",
+      "head": "ef499323858fe056faab56983788925c2bd05d5b",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/fix-network-cni-cilium-enterprise-addon-lifecycle-run-172310203-domain-followup-queue-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/fix-network-cni-cilium-enterprise-addon-lifecycle-run-172310203-domain-f-e6daacd389",
+      "head": "4b7d304791aa10cade8d8345f5657c0d7e76403a",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/publish-secops-fips-ubuntu-compat-live-pass-172848423-source-4f875e69-redo-isolation-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/publish-secops-fips-ubuntu-compat-live-pass-172848423-source-4f875e69-re-853032cfba",
+      "head": "c1291a82dd7e48ba4ecc37e87781552aa57b4912",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e-worktrees/repair-network-isolated-managed-acr-outbound-none-vm-prerelease-model-linkage-20260719",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/repair-network-isolated-managed-acr-outbound-none-vm-prerelease-model-li-9dec011961",
+      "head": "faecf418a51b075dab0f4a5cd14c6b58c2b6e8a3",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/publish-airlock-agent-lifecycle-normalization-20260717/prepublish-origin-dev-992781510",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/prepublish-origin-dev-992781510-18d1c814a4",
+      "head": "992781510774d36458dc2abf90165b9f19dc0dc8",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e-worktrees/domain-live-proof-upgrade-vm-prerelease-blocking-pdb-current-carrier-20260720-refresh",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/domain-live-proof-upgrade-vm-prerelease-blocking-pdb-current-carrier-202-a1308ffbd2",
+      "head": "ab44abb6dbcd53d5b1df1bd7e3cca51702bc660f",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/normalize-scenario-planned-maintenance-configuration-crud-lifecycle-20260716-isolated",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/normalize-scenario-planned-maintenance-configuration-crud-lifecycle-2026-9f6078dffb",
+      "head": "717e283ecf11c0f61b60f02d6eca9d0564dfa8a9",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/repair-origin-dev-runner-format-after-windows-gpu-compact-target-repair-20260720-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/repair-origin-dev-runner-format-after-windows-gpu-compact-target-repair--d3d6f6170f",
+      "head": "c7db615eab90d868a567ff5d8702cb87a580e974",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/domain-normalize-direct-network-cni-vm-prerelease-npm-uninstall-matrix-20260719-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/domain-normalize-direct-network-cni-vm-prerelease-npm-uninstall-matrix-2-8137322d49",
+      "head": "dd409c40caffc58fd815c8891c93fa2a5b6ae87c",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/domain-normalize-direct-network-cni-vm-prerelease-npm-uninstall-matrix-20260720-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/domain-normalize-direct-network-cni-vm-prerelease-npm-uninstall-matrix-2-95eaaf219d",
+      "head": "1c7ac320914090a7ed8bb98d5b2cdd730ca89e42",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/fix-network-cni-cilium-enterprise-addon-lifecycle-run-172310203-domain-followup-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/fix-network-cni-cilium-enterprise-addon-lifecycle-run-172310203-domain-f-c1b74d1a9a",
+      "head": "3bd1ecdd86d419a62fcdd79119dd42d63824c2a9",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/domain-land-net-integration-static-egress-vmss-clean-commit-4879c6fbf-20260716-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/domain-land-net-integration-static-egress-vmss-clean-commit-4879c6fbf-20-46d02ec749",
+      "head": "2c7fc815f6545b96d71aad15ede83e1e2c104131",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/clear-runtime-data-policy-blocker-for-cilium-dataplane-publication-20260717-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/clear-runtime-data-policy-blocker-for-cilium-dataplane-publication-20260-c600e62a1e",
+      "head": "e89677f6eaa1cc5e531077c7a1ff54267aaf77cd",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e-worktrees/domain-live-proof-upgrade-vm-prerelease-blocking-pdb-current-carrier-20260720",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/domain-live-proof-upgrade-vm-prerelease-blocking-pdb-current-carrier-202-33fa7a651e",
+      "head": "1c7ac320914090a7ed8bb98d5b2cdd730ca89e42",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/normalize-gpu-vm-prerelease-provisioner-matrix-current-origin-dev-20260718-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/normalize-gpu-vm-prerelease-provisioner-matrix-current-origin-dev-202607-44a8e2f0d5",
+      "head": "3ec80e088ac967d2d1825ae5f5322c8db495a386",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/normalize-scenario-net-integration-outbound-migration-natgw-to-lb-20260716-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/normalize-scenario-net-integration-outbound-migration-natgw-to-lb-202607-90591b6d3e",
+      "head": "aa309bf50e57b3929d6b1ac8cd2a19898991ab00",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/rebuild-net-integration-outbound-lb-custom-ip-clean-carrier-rerun-20260716-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/rebuild-net-integration-outbound-lb-custom-ip-clean-carrier-rerun-202607-71df418b4a",
+      "head": "f7d88f285fdbfa6e5b01856507c4038ea9676d5f",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/domain-publish-scenario-tests-four-spec-direct-carriers-543d769-20260716-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/domain-publish-scenario-tests-four-spec-direct-carriers-543d769-20260716-c42381fe16",
+      "head": "32a5c7ecedca821d79d1c3260f2a99398269d6c5",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/fix-network-cni-vm-prerelease-azure-overlay-upgrade-matrix-run-172675000-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/fix-network-cni-vm-prerelease-azure-overlay-upgrade-matrix-run-172675000-d110b45d25",
+      "head": "6989d391a8fd4c3f2a6d0b11ec71e775e6e0bf32",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/fix-private-cluster-private-endpoint-connections-lifecycle-run-172513872-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/fix-private-cluster-private-endpoint-connections-lifecycle-run-172513872-3e53c711cc",
+      "head": "532bca57e10aa4673cde2167df6b19bb3af9a849",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/normalize-direct-secops-fips-ubuntu-compat-20260718-origin-dev-bfb49a2-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/normalize-direct-secops-fips-ubuntu-compat-20260718-origin-dev-bfb49a2-w-676fe4755a",
+      "head": "bfb49a2eb5ee613a1795b25fc1c7cbb96a38b856",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/reconcile-app-monitoring-publication-blocker-origin-dev-check-20260719-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/reconcile-app-monitoring-publication-blocker-origin-dev-check-20260719-w-8721bdf6d8",
+      "head": "faecf418a51b075dab0f4a5cd14c6b58c2b6e8a3",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/verify-spec-policy-addon-vm-prerelease-basic-pubsub-matrix-20260718-proof",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/verify-spec-policy-addon-vm-prerelease-basic-pubsub-matrix-20260718-proo-f530c261ad",
+      "head": "a720426e26051a0649360900808aff650dea5fe0",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/publish-secops-fips-ubuntu-compat-live-pass-172848423-source-4f875e69-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/publish-secops-fips-ubuntu-compat-live-pass-172848423-source-4f875e69-wt-14bf5b9d02",
+      "head": "c0d9f66aeb24eecbf2777a3bbbc5ce86da21e3d8",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/repair-origin-dev-runner-wiring-after-format-repair-20260720-baseline-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/repair-origin-dev-runner-wiring-after-format-repair-20260720-baseline-wt-f897adc7c1",
+      "head": "c7db615eab90d868a567ff5d8702cb87a580e974",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/fix-network-acns-retina-enterprise-update-basic-retina-run-172310203-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/fix-network-acns-retina-enterprise-update-basic-retina-run-172310203-wt-94a9afa415",
+      "head": "8c2971581d18300ea0097d8194824b3ef3a7a987",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/queue-direct-network-cni-vm-prerelease-npm-uninstall-matrix-20260719-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/queue-direct-network-cni-vm-prerelease-npm-uninstall-matrix-20260719-wt-5a6477f19e",
+      "head": "5fb6e8c1d5d90e194c4749b03bbc92c4f99bad4d",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/normalize-direct-traffic-azure-service-mesh-addonv2-matrix-20260717-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/normalize-direct-traffic-azure-service-mesh-addonv2-matrix-20260717-wt-dccf0201fb",
+      "head": "3acab19bea87e1694918c0f99c9a84262044accb",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/normalize-scenario-runtime-container-kscr-rotation-matrix-20260716-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/normalize-scenario-runtime-container-kscr-rotation-matrix-20260716-wt-3a39822381",
+      "head": "c08ed606c14319cd84b2e0c71ef44dd48a1202d2",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/publish-rp-master-validation-spot-pool-current-origin-dev-20260720-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/publish-rp-master-validation-spot-pool-current-origin-dev-20260720-wt-8c1de42a4e",
+      "head": "95bf8bb9d6e1a86a61bd36821f7cf62cff98efed",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/fix-network-swift-v1-vnetscale-dual-stack-basic-datapath-followup-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/fix-network-swift-v1-vnetscale-dual-stack-basic-datapath-followup-wt-707085f20f",
+      "head": "48fe3efe305f192312860d51197716ef11bc0051",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/normalize-scenario-net-integration-outbound-lb-custom-ip-20260716-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/normalize-scenario-net-integration-outbound-lb-custom-ip-20260716-wt-733f67b2bb",
+      "head": "59a9c36906af5188d48cca0ccb7330ce2ef44529",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/repair-rp-preflight-validation-isolated-origin-dev-rerun-20260717-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/repair-rp-preflight-validation-isolated-origin-dev-rerun-20260717-wt-2653488712",
+      "head": "ed9bcf570e84a874d6117bf20f68f759fe5cd476",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/fix-net-integration-outbound-migration-natgw-to-lb-run-172534702-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/fix-net-integration-outbound-migration-natgw-to-lb-run-172534702-wt-201d974aca",
+      "head": "6c797c8b47da6c54a0255fd03a876225a3d19307",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/fix-network-acns-retina-enterprise-run-172310203-domain-followup-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/fix-network-acns-retina-enterprise-run-172310203-domain-followup-wt-caa3cebc70",
+      "head": "413904a7983dd96fd95ca17170bf74aeb7efc653",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/normalize-scenario-industry-node-restriction-compliance-20260716-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/normalize-scenario-industry-node-restriction-compliance-20260716-wt-926e17cb04",
+      "head": "f35e58654cc1afaddc8bff8f4579c80dfeae06c1",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/normalize-scenario-net-integration-authorized-ip-ranges-20260716-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/normalize-scenario-net-integration-authorized-ip-ranges-20260716-wt-7deb7b3544",
+      "head": "d81817fa17dfdeeab926c008517ce86b774fa311",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/fix-network-cni-azure-overlay-dual-stack-windows2022-run-172310203",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/fix-network-cni-azure-overlay-dual-stack-windows2022-run-172310203-8d52edd267",
+      "head": "d7ce1125bfb8f424113d2dd963f30de0aab2cf3a",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/normalize-direct-rp-regional-quota-public-create-path-20260717-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/normalize-direct-rp-regional-quota-public-create-path-20260717-wt-15b2ff882b",
+      "head": "3367198b60c308dd1616b0906d3d5b6b00b27b27",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/normalize-scenario-net-integration-static-egress-vmss-20260716-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/normalize-scenario-net-integration-static-egress-vmss-20260716-wt-7fa47b71a5",
+      "head": "4879c6fbf541b0ea86d987db13dd7897d7b4e3aa",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/reconcile-current-origin-dev-app-monitoring-publication-20260719",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/reconcile-current-origin-dev-app-monitoring-publication-20260719-32b3c49508",
+      "head": "faecf418a51b075dab0f4a5cd14c6b58c2b6e8a3",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/domain-land-normalization-verified-commits-into-dev-20260716-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/domain-land-normalization-verified-commits-into-dev-20260716-wt-e87478a3be",
+      "head": "0517e6db19ce1a99c4b895903fa60fcad9ae06ea",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/normalize-direct-virtualmachines-spot-pool-eviction-20260717-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/normalize-direct-virtualmachines-spot-pool-eviction-20260717-wt-49afce5cb4",
+      "head": "cbd263dec702348ae8352ab9c39ffce3c70a18a0",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/repair-origin-dev-runner-wiring-after-format-repair-20260720-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/repair-origin-dev-runner-wiring-after-format-repair-20260720-wt-c859af2df3",
+      "head": "c7db615eab90d868a567ff5d8702cb87a580e974",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/tmp-managementplane-addon-addonv2-create-scale-upgrade-baseline",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/tmp-managementplane-addon-addonv2-create-scale-upgrade-baseline-669f769450",
+      "head": "fac5a5176c5439e76a07e3fb5de6ab716bb266b6",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/normalize-scenario-net-integration-five-spec-batch-20260716-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/normalize-scenario-net-integration-five-spec-batch-20260716-wt-80de5e700b",
+      "head": "911dc20effeea006a77f5e2fdb92b90d8f25c229",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/domain-normalize-direct-rp-new-vnet-vm-prerelease-20260717-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/domain-normalize-direct-rp-new-vnet-vm-prerelease-20260717-wt-536cad96b5",
+      "head": "64fc8a3f57f3f6b9d80be3290dbeb040183b9d5f",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/normalize-direct-managed-gateway-create-lifecycle-20260717-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/normalize-direct-managed-gateway-create-lifecycle-20260717-wt-ffe93126f5",
+      "head": "a543d1904d930f16108d184b342f86bf16d199c9",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/reconcile-secops-fips-ubuntu-compat-origin-dev-faecf-20260719",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/reconcile-secops-fips-ubuntu-compat-origin-dev-faecf-20260719-9b9ab2595a",
+      "head": "faecf418a51b075dab0f4a5cd14c6b58c2b6e8a3",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/normalize-scenario-cloud-provider-ccm-lifecycle-20260716-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/normalize-scenario-cloud-provider-ccm-lifecycle-20260716-wt-c41ccb3370",
+      "head": "0ce5cf8e2082552069618a7ff7e7f44ff8bd3561",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/repair-rp-preflight-validation-refined-contract-20260716-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/repair-rp-preflight-validation-refined-contract-20260716-wt-c13f4ce5d3",
+      "head": "7f5d5ce5042e718712e8cd97a25fbef9612bdc09",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/rp-regional-quota-public-create-path-clean-verify-20260715",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/rp-regional-quota-public-create-path-clean-verify-20260715-9c137d03c9",
+      "head": "723c238b6c37594bc130e92a9bb9ea84bf9dc1cf",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/normalize-direct-network-cni-cilium-dataplane-20260717-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/normalize-direct-network-cni-cilium-dataplane-20260717-wt-058bdf63e5",
+      "head": "f4d2ba463b8d14e92ba770876bcc6cb05e81119a",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/normalize-direct-windows-virtualmachines-pool-20260717-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/normalize-direct-windows-virtualmachines-pool-20260717-wt-293ff291b4",
+      "head": "ec30c344afc952eda8d839f0aba7dc35d669a8fc",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/rp-nodepool-agentpool-operations-verify-clean-20260715-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/rp-nodepool-agentpool-operations-verify-clean-20260715-wt-55d88bb492",
+      "head": "070b30151939d1c1a07434eb166c30e37620d244",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/diagnose-windows-gpu-compact-plan-targets-drift-20260719",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/diagnose-windows-gpu-compact-plan-targets-drift-20260719-6ea4ead1c4",
+      "head": "25de5f0bf75bc5a60ea0669efd076cf9bb1d73b4",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/fix-storage-csi-disk-pvc-compact-direct-path-20260716-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/fix-storage-csi-disk-pvc-compact-direct-path-20260716-wt-dc0ea3ce40",
+      "head": "5ff88ba0ff66cfa4f8da85e5fb71ac22cefd3740",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/fix-network-cni-cilium-preview-upgrade-domain-repair-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/fix-network-cni-cilium-preview-upgrade-domain-repair-wt-7524bb6f9d",
+      "head": "01c08f185165e130b3949afb7cbab8a23b061ef5",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/rp-nodepool-agentpool-operations-land-merge-20260716-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/rp-nodepool-agentpool-operations-land-merge-20260716-wt-34bf44a112",
+      "head": "20bac692440ae2be54084b2167e006726c065786",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/normalize-direct-rp-multi-agentpool-runner-20260717-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/normalize-direct-rp-multi-agentpool-runner-20260717-wt-e91b09115a",
+      "head": "8a5851e4d3473a839e95de9565e9f2d3642452b0",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/refill-scenario-tests-batch-dev-infra-core-20260716-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/refill-scenario-tests-batch-dev-infra-core-20260716-wt-b31af8b6bd",
+      "head": "543d76926ff4ea571231aa713ca952f1bddcaf2c",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/rp-master-validation-spot-pool-direct-test-20260715-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/rp-master-validation-spot-pool-direct-test-20260715-wt-d1f59e841e",
+      "head": "a445ae5c0377d3d125f8be4bd77ef46471449153",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/normalize-direct-rp-nodepool-scale-manual-20260717-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/normalize-direct-rp-nodepool-scale-manual-20260717-wt-230109fb56",
+      "head": "c23ce8f63b84e5dce928d50a22a7088695feca7b",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/reconcile-windows-gpu-origin-dev-check-20260719-clean",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/reconcile-windows-gpu-origin-dev-check-20260719-clean-5457e4ca1b",
+      "head": "faecf418a51b075dab0f4a5cd14c6b58c2b6e8a3",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/fix-network-cni-none-byo-cni-vmprofile-run-172715269",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/fix-network-cni-none-byo-cni-vmprofile-run-172715269-5b0d1247b6",
+      "head": "45ce0d2010a77af67251c54cdb46ef1ed870c7cb",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/normalize-direct-kms-v2plus-public-pmk-20260717-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/normalize-direct-kms-v2plus-public-pmk-20260717-wt-aae16b428b",
+      "head": "879e803c3c8993b382fb16cb51ff47a2744b83b7",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/network-cni-windows2022-direct-clean-20260716-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/network-cni-windows2022-direct-clean-20260716-wt-544725caa3",
+      "head": "d0e3ef8c61e078883756e805f980778dd1921b99",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/align-storage-csi-disk-direct-live-20260716-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/align-storage-csi-disk-direct-live-20260716-wt-1fe8d95e82",
+      "head": "e378771a027feeabab791ac2852437993d732df2",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/normalize-batch-trusted-traffic-wi-20260716-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/normalize-batch-trusted-traffic-wi-20260716-wt-71ff4edb2f",
+      "head": "8e0621568ea8979dc03d782a0dc3aa4758906a9f",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/publish-scenario-authoring-guard-dev-20260716",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/publish-scenario-authoring-guard-dev-20260716-d7ef347467",
+      "head": "6989d391a8fd4c3f2a6d0b11ec71e775e6e0bf32",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/agents/owner/workspace/publish-vm-managedsystem-slice-20260718-origin-dev",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/publish-vm-managedsystem-slice-20260718-origin-dev-fe1a8e4c93",
+      "head": "c545e8ea80a2302f9b15bafd6ace8c6823882b9c",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/agents/owner/workspace/wgpu-vm-prerelease-origin-dev-publication-20260719",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/wgpu-vm-prerelease-origin-dev-publication-20260719-af28a70cfa",
+      "head": "5b5630e0c39aa4b1fd6c33cba9a9fd270fb5ca5e",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/align-storage-csi-direct-live-20260716-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/align-storage-csi-direct-live-20260716-wt-9d0c210494",
+      "head": "896e436a76e3b9854eb5b17976229d30cbfa207d",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/publish-scenario-authoring-guard-20260716",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/publish-scenario-authoring-guard-20260716-822c62fadb",
+      "head": "2a9eff66e04990ad66ab6636802808b4e4abe4c3",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/tmp-row166-origin-dev-baseline-20260717",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/tmp-row166-origin-dev-baseline-20260717-189a5cc8b3",
+      "head": "6989d391a8fd4c3f2a6d0b11ec71e775e6e0bf32",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e.app/.state/scenario-test-inventory/origin-dev",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/origin-dev-4e77233ea5",
+      "head": "faecf418a51b075dab0f4a5cd14c6b58c2b6e8a3",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/standalone-dual-target-20260720-wt",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/standalone-dual-target-20260720-wt-93f772814c",
+      "head": "0d83e0fb7e020e8cb2200710cb267e63b4cbf283",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/projects/aks-rp-e2e/workspace/reconcile-rp-spot-pool-20260720b",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/reconcile-rp-spot-pool-20260720b-e12c68243e",
+      "head": "a82aca2dee9c6d521fa29533826c868d282028e4",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/agents/owner/workspace/secops-fips-windows-review-ref",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/secops-fips-windows-review-ref-23df8cd2da",
+      "head": "a82aca2dee9c6d521fa29533826c868d282028e4",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/worktrees/aks-rp-e2e-node-pool-ephemeral-clean-v2",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/aks-rp-e2e-node-pool-ephemeral-clean-v2-055f53c73c",
+      "head": "71995a4620297e0d1c9f9bb21276d36ed66aa1a3",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/worktrees/aks-rp-e2e-master-validation-codex",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/aks-rp-e2e-master-validation-codex-ad59075f58",
+      "head": "4cf05d024bfef4707f436a0189f51de471990001",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/worktrees/aks-rp-e2e-rp-preflight-clean-v2",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/aks-rp-e2e-rp-preflight-clean-v2-5560482d72",
+      "head": "e378771a027feeabab791ac2852437993d732df2",
+      "status": "relocated"
+    },
+    {
+      "oldPath": "/app/worktrees/aks-rp-e2e-master-validation",
+      "newPath": "/app/worktrees/aks-rp-e2e/recovery/aks-rp-e2e-master-validation-5ed2ef47db",
+      "head": "4e319ec55aeb3c6e0e03470fd16b9f200a597f2d",
+      "status": "relocated"
+    }
+  ]
+}

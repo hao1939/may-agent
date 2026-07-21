@@ -4,10 +4,10 @@
 **Implementation status:** Implemented for validated per-invocation catalog
 snapshots, project-over-agent precedence, entry-file provenance, durable
 lifecycle events, guards, nesting, revision/task-safe resume, skill-bearing
-agent steps, and workflow-authored structured agent results. Full imported
-dependency fingerprints and registration-time catalog reloads remain
-follow-up. Workflows remain ordered synchronous blocks; durable waits split
-across event-linked runs.
+agent steps, workflow-authored structured agent results, and optional
+workflow-owned task-worktree selection. Full imported dependency fingerprints
+and registration-time catalog reloads remain follow-up. Workflows remain
+ordered synchronous blocks; durable waits split across event-linked runs.
 
 ## Purpose
 
@@ -131,6 +131,33 @@ Flat files remain the canonical format because most workflows need no private
 resource bundle. If repeated cases require workflow-private references,
 fixtures, or helpers, a later design may add `workflows/<name>/workflow.ts`.
 Do not migrate existing workflows until that need and loader contract exist.
+
+## Workspace convention
+
+Workflows use the app/domain shared workspace by default. A reusable process
+that performs one independent Git patch may opt into infrastructure-owned
+task isolation:
+
+```ts
+export const workspace = "task";
+```
+
+For a project task, the reconciler then prepares one deterministic worktree
+from the app's configured base branch, records its path, base ref/commit,
+branch, head, and disposition on the current attempt, and supplies that path as
+both `ctx.workspaceDir` and the real filesystem root for agent-step tools.
+Retries and replacement agents for the same task generation reuse it.
+
+The workflow must return a clean committed result or an explicit no-change
+before convergence. A dirty result is retained for recovery and moves the task
+to attention. Clean closeout removes the worktree; a useful unmerged branch is
+retained, while an empty or already-integrated branch is removed. The bounded
+Git lineage is copied into an achieve receipt.
+
+This is a workflow convention, not a per-task setting. Do not use it for
+observation, app state, shared ledgers, exact external waits, or workflows that
+need one canonical integration workspace. Do not create another workspace
+registry or ask the agent to choose paths and branch names.
 
 ## Scope And Ownership
 

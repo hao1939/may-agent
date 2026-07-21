@@ -357,6 +357,7 @@ function actionForRow(
     outcome: `Reconcile current origin/dev missing scenario adapter ${row.adapterPath} for ${row.specId || "the owning spec"} into exactly one next truthful state: absorbed, publish/rebase/recheck, smallest same-spec repair, exact external wait, terminal disposition, or escalation.`,
     mode: "achieve",
     owner: "aks-explorer",
+    workflow: "domain-task-execution",
     input: {
       workflow: name,
       frontierTaskId,

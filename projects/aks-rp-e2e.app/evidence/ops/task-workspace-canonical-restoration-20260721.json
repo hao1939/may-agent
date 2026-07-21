@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-21T06:13:44.312Z",
+  "canonical": {
+    "path": "/app/projects/aks-rp-e2e",
+    "branch": "dev",
+    "head": "c7db615eab90d868a567ff5d8702cb87a580e974",
+    "clean": true
+  },
+  "quarantine": {
+    "path": "/app/worktrees/aks-rp-e2e/recovery/canonical-root-quarantine-20260721",
+    "branch": "aks-explorer/queue-rp-operation-status-polling-managed-cluster-lineage-20260720",
+    "head": "a82aca2dee9c6d521fa29533826c868d282028e4",
+    "statusEntries": 198,
+    "scratchWorkspaceMoved": true
+  },
+  "recoveryStash": {
+    "commit": "66f2d6c5fbe68bd6f1df9f523fcb158b17c048ca",
+    "droppedAfterReadback": true
+  }
+}

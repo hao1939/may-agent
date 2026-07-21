@@ -192,4 +192,31 @@ describe("platform-owner-review", () => {
       expect.objectContaining({ type: "project.owner.reviewed" }),
     );
   });
+
+  it("makes an explicit owner instruction the primary review request", async () => {
+    const harness = makeHarness("done");
+    harness.ctx.task = [
+      `app: ${harness.appDir}`,
+      "## Trigger Event",
+      JSON.stringify({
+        type: "project.owner.requested",
+        params: {
+          instruction: "Review the task workspace convention proposal.",
+        },
+      }),
+    ].join("\n");
+
+    await execute(harness.ctx);
+    harness.runtime.close();
+
+    expect(harness.observed.prompt).toContain(
+      "Review the task workspace convention proposal.",
+    );
+    expect(harness.observed.prompt).toContain(
+      "treat that instruction as the primary bounded owner request",
+    );
+    expect(harness.observed.prompt.indexOf("Current trigger:")).toBeLessThan(
+      harness.observed.prompt.indexOf("The full system-review packet is at:"),
+    );
+  });
 });

@@ -263,6 +263,13 @@ Infrastructure resolves `appDir`, `projectDir`, and `workspaceDir` before
 invoking a handler. Declared outputs are resolved once and admitted only inside
 the app and domain roots.
 
+`workspaceDir` normally equals `projectDir`. When the selected workflow exports
+`workspace = "task"`, infrastructure prepares and reuses a task-generation Git
+worktree before handler execution. Workspace lineage is observed attempt and
+receipt metadata; it is not desired task spec or a second scheduling record.
+The workflow runtime supplies the same directory to nested agent tools as their
+actual execution root.
+
 Output admission validates the task contract; it is not a filesystem sandbox.
 Tool policy and process isolation still constrain actual writes.
 

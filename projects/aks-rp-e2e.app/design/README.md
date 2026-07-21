@@ -14,6 +14,10 @@ The implemented AKS-specific task-state cleanup is recorded in
 The implemented standing-loop contract and liveness refinement is recorded in
 [`loop-task-contract-and-liveness-proposal.md`](loop-task-contract-and-liveness-proposal.md).
 
+The implemented AKS-local workspace cleanup and task-owned Git lifecycle is
+recorded in
+[`task-workspace-and-git-lifecycle-proposal.md`](task-workspace-and-git-lifecycle-proposal.md).
+
 ## Current model
 
 ```text
