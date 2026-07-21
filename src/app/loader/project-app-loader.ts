@@ -624,6 +624,55 @@ export function normalizeTaskHandlerResult(
   };
 }
 
+function taskConditionIdPart(value: string): string {
+  return value
+    .trim()
+    .replace(/[^A-Za-z0-9_.-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 120);
+}
+
+function childTaskWaitConditions(
+  config: ReturnType<typeof taskReconciliationConfig>,
+  taskId: string,
+  actions: ProjectAppTaskAction[],
+): ProjectAppConditionSpec[] {
+  const tree = readTaskState(config);
+  const existingChildren = (tree.tasks[taskId]?.children ?? []).filter((childId) => Boolean(tree.tasks[childId]));
+  const createdChildren = actions.flatMap((action) => (action.kind === "create-task" ? [action.id] : []));
+  const childIds = [...new Set([...existingChildren, ...createdChildren])];
+  const parentPart = taskConditionIdPart(taskId) || "parent";
+  return childIds.map((childId) => ({
+    id: `${parentPart}-child-${taskConditionIdPart(childId) || "task"}-terminal`,
+    type: "project.task.reconciled",
+    subject: `task:${childId}`,
+    expected: { field: "disposition", anyOf: ["converged", "attention"] },
+  }));
+}
+
+function unappliedTaskActions(
+  config: ReturnType<typeof taskReconciliationConfig>,
+  actions: ProjectAppTaskAction[],
+): ProjectAppTaskAction[] {
+  const tree = readTaskState(config);
+  return actions.filter(
+    (action) => action.kind !== "create-task" || (!tree.tasks[action.id] && !tree.resources?.[action.id]),
+  );
+}
+
+function isRecoverableConvergedParentChildActionError(
+  error: unknown,
+  taskId: string,
+  actions: ProjectAppTaskAction[],
+): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  if (message.includes("cannot converge while it has live children")) return true;
+  return (
+    message.includes("Handler action task already exists") &&
+    actions.some((action) => action.kind === "create-task" && action.parentId === taskId)
+  );
+}
+
 async function runTaskCapability(input: {
   opts: ProjectAppLoaderOptions;
   descriptor: ProjectAppDescriptor;
@@ -866,6 +915,7 @@ async function runTaskOwner(input: {
     'For mode "achieve", missing evidence is work to do, not by itself a reason to create another task. If the task asks to queue, run, publish, verify, inspect, or repair something, either do that concrete work now and report the evidence, or absorb the failed carrier through a converged result with exact failure evidence and a bounded successor/escalation action.',
     "Create a successor task only when this carrier cannot do the work because the target is stale, the task is too broad for one bounded attempt, or a real evidenced blocker requires different follow-up.",
     "Use waiting only when there is a real machine-observable wake event. Every Condition must be an object with id, type, subject, and expected.",
+    'For a decomposition parent that creates child task actions and cannot yet satisfy its own acceptance, return state "waiting" with exact task Conditions for the created or remaining child tasks, for example subject "task:<childId>" and expected terminal/attention state. Do not return "converged" just because the child tasks were declared.',
     'Conditions belong only to the current task when you return state "waiting". If you return state "converged" with a successor wait task action, put the wake facts in that task action input/acceptance and omit top-level conditions.',
     "Condition subjects must use typed forms the app can observe, for example task:<taskId>, session:<sessionId>, workflow-run:<runId>, pipeline-run:<runId>, metric:<metricId>, alert:<alertId>, or project:<projectId>.",
     "Do not put blocker prose, resumeCondition, requiredEvidence, allowedChangedFiles, or other human notes directly in conditions. Put that detail in summary/evidence, or create/update a concrete follow-up task.",
@@ -1421,6 +1471,55 @@ async function reconcileTask(input: {
           });
           emitOwnerResultForTask(opts, descriptor, event, intent.id, summary, "stale");
           return stale.reconcileTaskIds;
+        }
+        if (
+          primaryHandlerResult.actions.length > 0 &&
+          isRecoverableConvergedParentChildActionError(error, intent.id, primaryHandlerResult.actions)
+        ) {
+          try {
+            const conditions = childTaskWaitConditions(config, intent.id, primaryHandlerResult.actions);
+            if (conditions.length > 0) {
+              const actions = unappliedTaskActions(config, primaryHandlerResult.actions);
+              const summary = `${primaryHandlerResult.summary} Parent remains open while child work completes.`;
+              const apply = deferProjectAppTask(config, primary, {
+                disposition: "waiting",
+                summary,
+                evidence: primaryHandlerResult.evidence,
+                actions,
+                conditions,
+              });
+              const retryStale = apply.status === "stale" ? recoverStaleTaskResult(config, primary) : null;
+              emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
+                generation: primary.generation,
+                attemptId: primary.attemptId,
+                handler: primary.handler,
+                disposition: apply.status === "applied" ? "waiting" : "stale",
+                outcome: intent.outcome,
+                mode: intent.mode,
+                owner: intent.owner ?? descriptor.owner,
+                ...(intent.workflow ? { workflow: intent.workflow } : {}),
+                acceptance: intent.acceptance,
+                input: intent.input ?? {},
+                summary,
+                evidence: primaryHandlerResult.evidence,
+                actionsApplied: apply.actionsApplied,
+                conditions,
+                ...(retryStale ? { staleRecovery: retryStale.staleRecovery } : {}),
+                workflowRunId: primaryResult.runId,
+              });
+              emitOwnerResultForTask(
+                opts,
+                descriptor,
+                event,
+                intent.id,
+                summary,
+                apply.status === "applied" ? "waiting" : "stale",
+              );
+              return retryStale?.reconcileTaskIds ?? apply.reconcileTaskIds;
+            }
+          } catch {
+            // Fall through to the ordinary rejected-handler path with the original error.
+          }
         }
         primaryHandlerResult.state = "error";
         primaryHandlerResult.summary = `Handler actions were rejected: ${error instanceof Error ? error.message : String(error)}`;
