@@ -1603,7 +1603,6 @@ export function invokeLoadedProjectAppAction(input: {
   semanticRecord.data = {
     ...data,
     project: projectValue(flattenEvent(semantic)) || descriptor.id,
-    action: input.actionId,
     ...(input.idempotencyKey?.trim() ? { idempotencyKey: input.idempotencyKey.trim() } : {}),
   };
   if (input.ingressSource) {

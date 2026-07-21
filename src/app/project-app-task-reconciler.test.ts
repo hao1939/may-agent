@@ -1819,6 +1819,58 @@ describe("project app task reconciler state", () => {
     });
   });
 
+  it("lets a controller retry a known transient attention task without changing its generation", () => {
+    const { config } = fixture();
+    const retryIntent = {
+      id: "retry-after-base-race",
+      parentId: "operations",
+      outcome: "Retry after the integration base moves",
+      acceptance: ["The same task generation retries from current evidence"],
+      mode: "achieve",
+      workflow: "known-workflow",
+    } as const;
+    const failed = declareAndClaimTask(config, {
+      intent: retryIntent,
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (failed.kind !== "claimed") throw new Error("expected failed claim");
+    expect(
+      markProjectAppTaskAttention(config, failed, {
+        summary: "integration base changed",
+        reason: "transient-base-race",
+      }),
+    ).toBe("applied");
+
+    const controller = declareAndClaimTask(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      handler: "workflow:controller",
+    });
+    if (controller.kind !== "claimed") throw new Error("expected controller claim");
+    expect(
+      completeProjectAppTask(config, controller, {
+        summary: "retry transient attention",
+        evidence: ["the integration base has stabilized"],
+        actions: [
+          {
+            kind: "unblock-task",
+            taskId: retryIntent.id,
+            expectedGeneration: 1,
+            reason: "Retry the same review against current origin/dev",
+          },
+        ],
+      }),
+    ).toMatchObject({
+      status: "applied",
+      actionsApplied: ["unblocked retry-after-base-race"],
+    });
+    expect(readTaskState(config).resources?.[retryIntent.id]).toMatchObject({
+      metadata: { generation: 1 },
+      status: { phase: "pending", observedGeneration: 0 },
+    });
+  });
+
   it("rejects project as a fake workflow in observed intent", () => {
     const { config } = fixture();
     expect(() =>
