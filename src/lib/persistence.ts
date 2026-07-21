@@ -68,6 +68,8 @@ export interface PersistedSession {
   outputSchema?: TSchema;
   /** Per-session capability restriction applied by the runtime. */
   toolPolicy?: "full" | "readonly";
+  /** Effective filesystem root supplied by the enclosing workflow/task runtime. */
+  executionRoot?: string;
 }
 
 /** Shape of the registry data (in-memory view).

@@ -23,6 +23,7 @@ import {
   releaseHandlerUnavailableProjectAppTask,
   releaseInterruptedProjectAppTaskAttempt,
   releaseStaleProjectAppTaskResult,
+  recordProjectAppTaskAttemptWorkspace,
   taskReconciliationConfig,
 } from "./project-app-task-reconciler.ts";
 
@@ -131,6 +132,30 @@ afterEach(() => {
 });
 
 describe("project app task reconciler state", () => {
+  it("carries observed workspace lineage from the attempt into its completion receipt", () => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: intent("achieve"),
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    const workspace = {
+      kind: "task-worktree" as const,
+      path: "/tmp/worktrees/example",
+      baseRef: "origin/dev",
+      baseCommit: "a".repeat(40),
+      branch: "task/example",
+      headCommit: "b".repeat(40),
+      disposition: "branch-retained" as const,
+    };
+
+    expect(recordProjectAppTaskAttemptWorkspace(config, claim, workspace)).toBe(true);
+    expect(completeProjectAppTask(config, claim, { summary: "completed in isolated workspace" }).status).toBe(
+      "applied",
+    );
+    expect(readTaskState(config).receipts?.[claim.taskId]?.workspace).toEqual(workspace);
+  });
   it("rejects a missing or completed parent instead of creating an orphan", () => {
     const { config } = fixture();
 

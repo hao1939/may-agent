@@ -97,4 +97,31 @@ describe("shared agent execution preparation", () => {
     expect(prepared.systemPrompt).toContain("Complete it only by calling finish()");
     expect((prepared.tools[0]!.parameters as any).required).toContain("result");
   });
+
+  test("rebases filesystem tools onto the workflow execution root", async () => {
+    const registeredRoot = mkdtempSync(join(tmpdir(), "agent-registered-root-"));
+    const executionRoot = mkdtempSync(join(tmpdir(), "agent-execution-root-"));
+    roots.push(registeredRoot, executionRoot);
+    writeFileSync(join(executionRoot, "proof.txt"), "task workspace\n");
+
+    const prepared = prepareAgentExecution({
+      definition: {
+        name: "sample",
+        description: "sample",
+        domain: "tests",
+        systemPrompt: "identity",
+        projectRoot: registeredRoot,
+        model: { contextWindow: 10_000 } as any,
+        tools: [tool("read")],
+      },
+      projectRoot: registeredRoot,
+      executionRoot,
+      sessionId: "isolated-1",
+      task: "read proof",
+    });
+
+    const result = await prepared.tools[0]!.execute("call-1", { path: "proof.txt" } as never);
+    expect(JSON.stringify(result)).toContain("task workspace");
+    expect(prepared.definition.projectRoot).toBe(executionRoot);
+  });
 });

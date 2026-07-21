@@ -18,6 +18,7 @@ import {
   type ProjectAppConditionSpec,
   type ProjectAppTaskAttempt,
   type ProjectAppTaskResource,
+  type ProjectAppTaskWorkspace,
   type TaskNode,
   type TaskTree,
   type TaskStateConfig,
@@ -1299,6 +1300,23 @@ export function releaseStaleProjectAppTaskResult(
   });
 }
 
+/** Attach observed workspace lineage to the current attempt without changing desired task state. */
+export function recordProjectAppTaskAttemptWorkspace(
+  config: TaskStateConfig,
+  claim: ProjectAppTaskClaim,
+  workspace: ProjectAppTaskWorkspace,
+): boolean {
+  return withTaskStateLock(config, () => {
+    const tree = readTaskState(config);
+    const match = matchingTask(tree, claim);
+    if (!match) return false;
+    match.attempt.metadata.resourceVersion += 1;
+    match.attempt.workspace = structuredClone(workspace);
+    saveTaskState(config, tree);
+    return true;
+  });
+}
+
 function requireNonEmptyString(value: unknown, label: string): string {
   if (typeof value !== "string" || !value.trim()) throw new Error(`${label} requires a non-empty string`);
   return value.trim();
@@ -1735,6 +1753,13 @@ function applyTaskActions(
             acceptanceBasis: structuredClone(acceptanceBasis),
             failureFingerprints,
             completedAt: now,
+            ...(latestTaskAttempt(tree, task.id, resource.metadata.generation)?.workspace
+              ? {
+                  workspace: structuredClone(
+                    latestTaskAttempt(tree, task.id, resource.metadata.generation)!.workspace!,
+                  ),
+                }
+              : {}),
           },
         };
         const parent = task.parent_id ? tree.tasks[task.parent_id] : undefined;
@@ -1856,6 +1881,7 @@ export function completeProjectAppTask(
           acceptanceBasis: structuredClone(acceptanceBasis),
           failureFingerprints,
           completedAt: now,
+          ...(match.attempt.workspace ? { workspace: structuredClone(match.attempt.workspace) } : {}),
         },
       };
       const parent = task.parent_id ? tree.tasks[task.parent_id] : undefined;
