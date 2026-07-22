@@ -57,7 +57,8 @@ Every handler returns one envelope:
 ```
 
 - `converged` means the current generation satisfies its acceptance criteria.
-- `waiting` must carry exact typed Conditions.
+- `waiting` must carry exact typed Conditions or leave at least one live direct
+  child after its actions are admitted.
 - `needs-owner` deliberately hands the task to its accountable owner.
 
 The selected handler may be a direct owner agent or an owner-owned workflow.
@@ -72,11 +73,22 @@ Actions create, update, close, or unblock resources. Updates use
 `expectedGeneration`; the reconciler checks generation and resource version,
 then commits task state, receipts, Conditions, and dependent wakeups atomically.
 
-Parent relationships express containment and decomposition only. They do not
-schedule children, establish ordering, or make child completion satisfy parent
-acceptance. Use `dependsOn` for ordering. Use a structural group when a node has
-no independently reconcilable outcome. An achieve task cannot close while it
-still contains live child tasks.
+An executable parent owns decomposition and aggregate acceptance. It may return
+`waiting` while creating direct child tasks. Those children run as independent
+keys in the same app controller and do not hold the parent's worker slot. Child
+convergence or attention durably wakes the parent, which rereads bounded live
+child state and completion receipts before refilling, repairing, or accepting
+the aggregate result. Do not author task-lifecycle Conditions or an app-local
+refill event for this path.
+
+Count only direct children as the parent's in-flight work. A related task under
+another parent is evidence, not a child representation.
+
+Parent status does not automatically follow child status. The parent still
+decides whether its own acceptance is satisfied. Use `dependsOn` for ordering,
+exact Conditions for facts outside the task graph, and a structural group when
+a node has no independently reconcilable outcome. An achieve task cannot close
+while it still contains live child tasks.
 
 A running handler must not include an update, close, unblock, or rebind action
 for its own task. Its admitted `converged` or `waiting` result owns that

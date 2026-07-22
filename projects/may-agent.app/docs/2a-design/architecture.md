@@ -15,6 +15,14 @@ contract.
 
 ## Core flow
 
+The primary mental model for durable app work is deliberately small:
+
+```text
+event -> task -> workflow or owner -> result or Condition
+```
+
+The expanded runtime path is:
+
 ```text
 signal
   -> typed event or explicit control action
@@ -23,12 +31,20 @@ signal
   -> one app queue receives a stable task ID
   -> generic controller claims current canonical state
   -> explicitly bound workflow or resolved owner runs
-  -> structured result and evidence are admitted atomically
+  -> structured result, evidence, and pending event intents are admitted atomically
+  -> infrastructure dispatches those events idempotently
   -> completion, exact Condition wait, or attention
 ```
 
 Tasks are optional. A direct, Gym, chat, or standalone workflow run uses the
 same prepared agent capability without attaching task infrastructure.
+
+Persistence, queues, deduplication, attempts, retry/backoff, restart recovery,
+Conditions, watchdogs, metrics, stale-state repair, escalation delivery, and
+traces support this path. They are essential runtime mechanics, but they do not
+add another app-level loop or decide domain strategy. See
+[agent-app.md](agent-app.md#supporting-reliability-infrastructure) for the
+boundary and recovery order.
 
 ## Boundaries
 
@@ -95,6 +111,12 @@ Each task-enabled app has one resolver, one controller, and one deduplicating
 key queue. Loops, focus plans, and one-off work are task resources, not
 controller types.
 
+An executable parent may declare child tasks and wait without holding a worker.
+The children run as ordinary keys in that queue. Child convergence or attention
+durably wakes the parent, which rereads current child state and receipts before
+refilling, repairing, or accepting the aggregate result. Structural groups stay
+passive, and dependencies continue to express ordering rather than containment.
+
 Handler resolution is convention-based:
 
 ```text
@@ -136,6 +158,12 @@ outcome directed to an app
   -> project.comment.created receipt or typed app event
   -> app owner result
   -> optional durable task
+
+human judgment requested by an owner
+  -> escalation.created with exact question and evidence
+  -> resolved approval, rejection, advice, or action
+  -> waiting Condition updates and same task key wakes
+  -> dismissal instead returns the task to attention
 ```
 
 Both use the same event-native ingress, receipts, traces, and agent runtime. An
@@ -144,6 +172,11 @@ conversation. Persistent chat is a conversation container; each human turn has
 its own trace. Chat and bounded jobs use different lifecycle policies but share
 agent preparation, session persistence, event tracing, and interface
 boundaries.
+
+Infrastructure provides escalation persistence, human-channel delivery,
+deduplication, reply correlation, overdue detection, and task wakeup. The agent
+decides when human judgment is needed and applies the response; infrastructure
+does not make the decision.
 
 See [human-control-surfaces.md](human-control-surfaces.md),
 [sessions.md](sessions.md), [webui.md](webui.md), and
@@ -165,16 +198,16 @@ authority. See [storage.md](storage.md).
 
 ## Runtime code map
 
-| Area                        | Current implementation                                                             |
-| --------------------------- | ---------------------------------------------------------------------------------- |
-| Daemon assembly             | `projects/may-agent/src/app/app-runtime.ts`, `projects/may-agent/src/app/daemon.ts`                                      |
-| Agent preparation/execution | `projects/may-agent/src/app/loader/`, `projects/may-agent/src/lib/agent-execution.ts`, `projects/may-agent/src/lib/agent-runner.ts`         |
-| Agent App hosting           | `projects/may-agent/src/app/loader/project-app-loader.ts`                                             |
-| Task mechanics              | `projects/may-agent/src/app/project-app-task-controller.ts`, `projects/may-agent/src/app/project-app-task-reconciler.ts` |
-| Events and persistence      | `projects/may-agent/src/app/event-bus.ts`, `projects/may-agent/src/lib/db/`                                              |
-| Workflow runtime            | `projects/may-agent/src/lib/workflow-tool.ts`                                                         |
-| HTTP/UI                     | `projects/may-agent/src/app/http/`, `projects/may-agent/packages/webui/`                                                 |
-| Public SDK                  | `projects/may-agent/packages/sdk/`                                                                    |
+| Area                        | Current implementation                                                                                                              |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Daemon assembly             | `projects/may-agent/src/app/app-runtime.ts`, `projects/may-agent/src/app/daemon.ts`                                                 |
+| Agent preparation/execution | `projects/may-agent/src/app/loader/`, `projects/may-agent/src/lib/agent-execution.ts`, `projects/may-agent/src/lib/agent-runner.ts` |
+| Agent App hosting           | `projects/may-agent/src/app/loader/project-app-loader.ts`                                                                           |
+| Task mechanics              | `projects/may-agent/src/app/project-app-task-controller.ts`, `projects/may-agent/src/app/project-app-task-reconciler.ts`            |
+| Events and persistence      | `projects/may-agent/src/app/event-bus.ts`, `projects/may-agent/src/lib/db/`                                                         |
+| Workflow runtime            | `projects/may-agent/src/lib/workflow-tool.ts`                                                                                       |
+| HTTP/UI                     | `projects/may-agent/src/app/http/`, `projects/may-agent/packages/webui/`                                                            |
+| Public SDK                  | `projects/may-agent/packages/sdk/`                                                                                                  |
 
 ## Invariants
 
@@ -190,6 +223,11 @@ authority. See [storage.md](storage.md).
 8. Human and system interfaces translate intent; they do not bypass canonical
    admission.
 9. Evidence precedes closure.
+10. Recovery and metrics preserve the same domain identity; they do not create
+    a second planner.
+11. Durable work is acknowledged only after its continuation is recoverable.
+12. Task results and their follow-up event intents survive as one admitted
+    state transition.
 
 ## Contract ownership
 

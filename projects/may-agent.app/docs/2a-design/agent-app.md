@@ -1,7 +1,8 @@
 # Agent App Contract
 
 **Design status:** Accepted.
-**Implementation status:** Implemented.
+**Implementation status:** Core contract implemented; removal of duplicate
+app-specific recovery paths is incremental.
 
 An Agent App packages one accountable owner, optional supporting agents,
 domain context, and optional autonomous hosting. The app organizes capability;
@@ -20,6 +21,51 @@ The public unit is the app. The execution unit remains an agent.
 See [Projects](projects.md) for durable project posture,
 [Task Resource Engine](task-resource-engine.md) for optional task autonomy, and
 [Workflows](workflows.md) for reusable process ownership.
+
+## Primary mental model
+
+For durable autonomous work, an app has one visible loop:
+
+```text
+event -> task -> workflow or owner -> result or Condition
+```
+
+- An event says that intent or an observed fact changed.
+- A task records the desired outcome and current observed state.
+- A bound workflow applies reusable experience; otherwise the accountable
+  owner uses judgment directly.
+- A result updates the task, while a Condition records the exact fact that must
+  arrive before reconciliation can continue.
+
+One app controller keeps applying this loop to current task state. The task
+tree explains relationships and progress; it does not schedule the work.
+Apps that do not need durable work may route an event directly to an owner or
+run an agent directly without installing the task attachment.
+
+## Supporting reliability infrastructure
+
+The primary loop runs on necessary infrastructure:
+
+```text
+persistence + delivery + deduplicating queue + attempts + leases
++ retry/backoff + restart recovery + Conditions + watchdogs
++ metrics + stale-state repair + escalation delivery + operational traces
+```
+
+These capabilities make autonomy durable and observable, but they are not a
+second app workflow. They preserve and recover the same event, task, attempt,
+or Condition instead of inventing project strategy. Most app and workflow code
+should not need to mention them.
+
+Escalation is part of this infrastructure. An agent may request human approval,
+advice, or action with one durable, deduplicated event. Infrastructure delivers
+and correlates the response; an exact Condition wakes the same task when that
+response is required for continuation.
+
+Reliability attaches by convention. Declaring tasks installs the standard
+controller, queue, persistence, recovery, and observation behavior with host
+defaults. An app overrides a mechanical default only for a measured provider
+or domain constraint; it does not declare its own reliability pipeline.
 
 ## Package layout
 
@@ -99,7 +145,9 @@ same-name identity is not required.
 | Task runtime                        | Canonical task/Condition mutation, claims, result admission, receipts, and projections.                                |
 
 Agents and workflows do not edit task storage directly. Infrastructure does
-not decide app strategy or domain meaning.
+not decide app strategy or domain meaning. An app adds domain-specific
+watchers and exceptional policy only when the generic host cannot know the
+external fact or business rule.
 
 ## Shared agent execution
 
@@ -137,6 +185,32 @@ storage.
 Targeted task wakes, Condition observations, recovery, and passive resync do
 not need app-specific routes. They enqueue stable IDs into the same app
 controller. The queue never carries copied task specs.
+
+## Recovery boundary
+
+Recovery follows one convention:
+
+```text
+known transient failure
+  -> bounded retry of delivery or execution
+  -> repair stale mechanical state
+  -> requeue the same persisted task
+  -> attention when judgment is required
+  -> one coalesced wake to the accountable owner with accumulated evidence
+  -> explicit escalation only across a real ownership boundary
+```
+
+Infrastructure owns the first three steps because they do not require domain
+judgment. The owner or its workflow decides what an ambiguous failure means and
+how desired work should change. Repeated equivalent recovery or metric signals
+are deduplicated into the existing task/alert context; they do not create
+parallel owner-review loops.
+
+An app may declare a watcher for a domain-specific external level, but it
+should not reproduce generic attempt recovery through overlapping heartbeat,
+stall, watchdog, and metric handlers. Metrics observe the loop and may trigger
+a known mechanical repair or one coalesced owner wake. They never become a
+second planner.
 
 ## Handler convention
 
@@ -223,6 +297,17 @@ from the amount of open work.
 9. App loading is atomic: a failed reload leaves the previous installation
    active.
 10. Read projections never become mutation authority.
+11. Recovery preserves the current task identity and does not invent desired
+    state.
+12. Equivalent safety signals are coalesced before waking an owner.
+13. Reliability infrastructure never becomes a second app planner or domain
+    controller.
+14. A human disposition required by a task wakes that same task identity.
+15. Child tasks use the same app controller, and meaningful child transitions
+    wake their executable parent without app-specific routing.
+16. A replacement app controller waits for the previous instance's active
+    attempts to drain before claiming work, so hot reload cannot multiply the
+    app concurrency budget.
 
 Focused tests cover owner-only loading, hosted/direct preparation parity,
 scoped selectors, action translation, concurrency, restart recovery,
