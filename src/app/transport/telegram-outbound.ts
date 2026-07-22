@@ -51,6 +51,24 @@ function approvalConversationContext(message: Record<string, unknown>): Record<s
   const waitId = typeof message.waitId === "string" ? message.waitId : typeof approval?.waitId === "string" ? approval.waitId : undefined;
   const pathId = typeof message.pathId === "string" ? message.pathId : typeof approval?.pathId === "string" ? approval.pathId : undefined;
   const packetPath = typeof message.packetPath === "string" ? message.packetPath : typeof approval?.packetPath === "string" ? approval.packetPath : undefined;
+  const taskId =
+    typeof message.taskId === "string"
+      ? message.taskId
+      : typeof approval?.taskId === "string"
+        ? approval.taskId
+        : undefined;
+  const taskGeneration =
+    typeof message.taskGeneration === "number"
+      ? message.taskGeneration
+      : typeof approval?.taskGeneration === "number"
+        ? approval.taskGeneration
+        : undefined;
+  const artifactFingerprint =
+    typeof message.artifactFingerprint === "string"
+      ? message.artifactFingerprint
+      : typeof approval?.artifactFingerprint === "string"
+        ? approval.artifactFingerprint
+        : undefined;
   const requestedAction = typeof message.requestedAction === "string" ? message.requestedAction : undefined;
   const reason = typeof message.reason === "string" ? message.reason : undefined;
   const expectedResponse =
@@ -74,6 +92,9 @@ function approvalConversationContext(message: Record<string, unknown>): Record<s
       waitId,
       pathId,
       packetPath,
+      taskId,
+      taskGeneration,
+      artifactFingerprint,
       requestedAction,
       reason,
       expectedResponse,
@@ -249,6 +270,9 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
           "waitId",
           "pathId",
           "packetPath",
+          "taskId",
+          "taskGeneration",
+          "artifactFingerprint",
           "reportPath",
           "targetProject",
           "verdict",

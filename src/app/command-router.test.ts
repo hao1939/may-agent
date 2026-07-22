@@ -44,6 +44,63 @@ function fixture() {
 }
 
 describe("command router human intent contract", () => {
+  it("returns an exact Telegram approval identity and artifact fingerprint", () => {
+    const { root, bus, router } = fixture();
+    const observed: Array<Record<string, unknown>> = [];
+    const unsubscribe = bus.subscribe((event) => {
+      if (event.type === "project.approval.submitted") {
+        observed.push(event as unknown as Record<string, unknown>);
+      }
+    });
+    try {
+      bus.emit({
+        type: "human.input.received",
+        source: "telegram",
+        owner: "agent:may",
+        data: {
+          actor: "human",
+          text: "approve",
+          context: {
+            telegramReply: {
+              conversationId: "approval:gym-agent-g2",
+              originalIssue: {
+                eventType: "project.approval.requested",
+                approvalKind: "agent-improvement",
+                approvalId: "gym-agent-g2",
+                expectedResponse: {
+                  type: "project.approval.submitted",
+                  approvalId: "gym-agent-g2",
+                  taskId: "improve/may",
+                  taskGeneration: 2,
+                  artifactFingerprint: "sha256:abc123",
+                },
+              },
+              expectedClosure: ["project.approval.submitted"],
+            },
+          },
+        },
+      });
+
+      expect(observed).toHaveLength(1);
+      expect(observed[0]).toMatchObject({
+        type: "project.approval.submitted",
+        data: {
+          approvalKind: "agent-improvement",
+          approvalId: "gym-agent-g2",
+          taskId: "improve/may",
+          taskGeneration: 2,
+          artifactFingerprint: "sha256:abc123",
+          decision: "approve",
+        },
+      });
+    } finally {
+      unsubscribe();
+      router.close();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("propagates one human-rooted trace into an existing chat turn", () => {
     const { root, bus, router, sent } = fixture();
     try {

@@ -53,6 +53,12 @@ function stringField(value: unknown, key: string): string | null {
   return nonEmptyString(value[key]);
 }
 
+function integerField(value: unknown, key: string): number | null {
+  if (!isRecord(value)) return null;
+  const next = value[key];
+  return typeof next === "number" && Number.isInteger(next) ? next : null;
+}
+
 function stringList(value: unknown): string[] {
   return Array.isArray(value)
     ? value.map((item) => (typeof item === "string" ? item.trim() : "")).filter(Boolean)
@@ -324,6 +330,13 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
           waitId: stringField(issue, "waitId") ?? stringField(expectedResponse, "waitId") ?? undefined,
           pathId: stringField(issue, "pathId") ?? stringField(expectedResponse, "pathId") ?? undefined,
           packetPath: stringField(issue, "packetPath") ?? undefined,
+          taskId: stringField(issue, "taskId") ?? stringField(expectedResponse, "taskId") ?? undefined,
+          taskGeneration:
+            integerField(issue, "taskGeneration") ?? integerField(expectedResponse, "taskGeneration") ?? undefined,
+          artifactFingerprint:
+            stringField(issue, "artifactFingerprint") ??
+            stringField(expectedResponse, "artifactFingerprint") ??
+            undefined,
           projectPath: normalizedProjectPath ?? undefined,
           projectId: normalizedProjectPath ?? undefined,
           targetProject: stringField(issue, "targetProject") ?? undefined,
