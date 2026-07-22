@@ -5,7 +5,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Cron } from "../cron";
 import { EVENT_ROW_ID, EventBus } from "../event-bus";
-import { closeDb } from "../../lib/requests";
+import { closeDb, upsertSession } from "../../lib/requests";
+import { readSessionMeta, writeSessionMeta } from "../../lib/persistence";
 import { projectRuntimePaths } from "@may-agent/sdk";
 import {
   inferProjectAppOwner,
@@ -193,7 +194,7 @@ describe("project app loader handler result normalization", () => {
     });
   });
 
-  it("rejects waiting without an exact Condition", () => {
+  it("leaves contextual waiting validation to the task reconciler", () => {
     expect(
       normalizeTaskHandlerResult(
         {
@@ -205,8 +206,8 @@ describe("project app loader handler result normalization", () => {
         { type: "done", summary: "fallback", runId: "s_owner" },
       ),
     ).toMatchObject({
-      state: "error",
-      summary: "Handler result was rejected: waiting requires at least one exact Condition",
+      state: "waiting",
+      summary: "wait later",
       actions: [],
     });
   });
@@ -735,7 +736,7 @@ describe("project app loader", () => {
       expect(ownerCalls[0]).toContain('Conditions belong only to the current task when you return state "waiting"');
       expect(ownerCalls[0]).toContain("For a decomposition parent that creates child task actions");
       expect(ownerCalls[0]).toContain('If you return state "converged" with a successor wait task action');
-      expect(ownerCalls[0]).toContain("Parent relationships express containment and decomposition only");
+      expect(ownerCalls[0]).toContain("An executable parent relationship expresses decomposition and aggregate ownership");
       expect(ownerCalls[0]).toContain("Use dependsOn for execution ordering");
       expect(ownerCalls[0]).toContain("Do not close an achieve task while it still contains live child tasks");
       expect(ownerCalls[0]).toContain("Do not include an action for the current Reconciliation Task taskId");
@@ -1089,7 +1090,7 @@ describe("project app loader", () => {
     }
   });
 
-  it("keeps a parent open when a converged owner result declares child work", async () => {
+  it("keeps a waiting parent open while its child work runs", async () => {
     const f = fixture();
     try {
       writeApp(f.appDir);
@@ -1133,7 +1134,7 @@ describe("project app loader", () => {
               sessionId: "owner-parent-with-child",
               status: "done",
               structuredResult: {
-                state: "converged",
+                state: "waiting",
                 summary: "selected bounded child work",
                 evidence: ["owner selected child-a"],
                 actions: [
@@ -1174,12 +1175,9 @@ describe("project app loader", () => {
       const tree = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "tree.json"), "utf8"));
       expect(state.resources["work/parent"].status).toMatchObject({
         phase: "waiting",
-        conditionIds: ["work-parent-child-work-parent-child-a-terminal"],
+        conditionIds: [],
       });
-      expect(state.conditions["work-parent-child-work-parent-child-a-terminal"].spec).toMatchObject({
-        type: "project.task.reconciled",
-        subject: "task:work/parent-child-a",
-      });
+      expect(state.conditions?.["child-a-external-proof"]).toBeTruthy();
       expect(tree.tasks["work/parent"]).toMatchObject({
         phase: "waiting",
         parent_id: "operations",
@@ -1941,6 +1939,121 @@ describe("project app loader", () => {
         expect.objectContaining({
           type: "project.owner.requested",
           source: "project-app:sample:task-recovery",
+        }),
+      );
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("interrupts orphaned owner sessions when startup recovery releases a previous-runtime task", async () => {
+    const f = fixture();
+    try {
+      writeApp(f.appDir);
+      mkdirSync(join(f.appDir, ".state", "tasks"), { recursive: true });
+      writeFileSync(
+        join(f.appDir, ".state", "tasks", "state.json"),
+        JSON.stringify({
+          root_task_id: "root",
+          groups: {
+            root: {
+              id: "root",
+              parent_id: null,
+              state: "backlog",
+              owner: "sample-owner",
+              children: ["operations"],
+            },
+            operations: { id: "operations", parent_id: "root", state: "backlog", children: [] },
+          },
+          active_task_ids: ["work/orphan-owner"],
+          active_task_id: "work/orphan-owner",
+          resources: {
+            "work/orphan-owner": {
+              metadata: { id: "work/orphan-owner", generation: 1, resourceVersion: 1 },
+              spec: {
+                parentId: "operations",
+                outcome: "Process orphan owner session",
+                acceptance: ["Work converges"],
+                mode: "achieve",
+                workflow: "worker",
+                input: { itemId: "orphan-owner" },
+              },
+              status: {
+                observedGeneration: 0,
+                phase: "running",
+                currentAttemptId: "r_orphan_owner",
+                updatedAt: "2026-07-19T00:00:00.000Z",
+              },
+            },
+          },
+          attempts: {
+            r_orphan_owner: {
+              metadata: { id: "r_orphan_owner", resourceVersion: 1 },
+              taskId: "work/orphan-owner",
+              taskGeneration: 1,
+              specHash: "old",
+              owner: "sample-owner",
+              handler: "owner:sample-owner",
+              runtimeId: "previous-runtime",
+              state: "running",
+              startedAt: "2026-07-19T00:00:00.000Z",
+              sessionId: "owner-old",
+            },
+          },
+        }),
+      );
+      writeSessionMeta(f.persistDir, "owner-old", {
+        agent: "sample-owner",
+        task: "Recover old owner session",
+        status: "running",
+        startedAt: Date.now() - 60_000,
+        source: "project-app-task-owner",
+        projectId: "sample",
+        recoveryOwner: "project-app-task-reconciler",
+        kind: "call",
+      });
+      upsertSession(f.persistDir, {
+        sessionId: "owner-old",
+        agent: "sample-owner",
+        task: "Recover old owner session",
+        status: "running",
+        source: "project-app-task-owner",
+        projectId: "sample",
+        startedAt: Date.now() - 60_000,
+      });
+
+      const bus = new EventBus();
+      const events: any[] = [];
+      bus.subscribe((event) => events.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: {
+          ...manager([]),
+          hasActiveSession: () => false,
+          cancel: () => {
+            throw new Error("startup recovery should reconcile the persisted session directly");
+          },
+        } as any,
+        bus,
+        agentCrons: new Map(),
+      });
+
+      expect(readSessionMeta(f.persistDir, "owner-old")).toMatchObject({
+        status: "interrupted",
+        error: "Recovered task work/orphan-owner interrupted an orphaned owner session from a previous runtime",
+      });
+      expect(events).toContainEqual(
+        expect.objectContaining({
+          type: "session.end",
+          data: expect.objectContaining({
+            sessionId: "owner-old",
+            status: "interrupted",
+          }),
         }),
       );
     } finally {

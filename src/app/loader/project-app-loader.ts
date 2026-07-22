@@ -8,8 +8,9 @@ import { Check, Errors } from "typebox/value";
 import { buildRuntimeCtx } from "../../lib/runtime-ctx.js";
 import { importRuntimeModule } from "../../lib/runtime-import.js";
 import { inspectWorkflowDefinition, runWorkflowDirect, WorkflowHandlerUnavailable } from "../../lib/workflow-tool.js";
-import { getDb } from "../../lib/requests.js";
+import { getDb, updateSessionDb } from "../../lib/requests.js";
 import { createQueryService } from "../../lib/query-service.js";
+import { markSessionInactive, readSessionMeta, writeSessionMeta } from "../../lib/persistence.js";
 import {
   admitProjectAppTaskHandlerResult,
   admitProjectAppTaskVerificationResult,
@@ -55,6 +56,7 @@ import {
   isProjectAppTaskActionStaleError,
   observeProjectAppTaskIntent,
   pendingProjectAppTaskRecoveryAttention,
+  readProjectAppTaskChildContext,
   readProjectAppTaskIntent,
   readProjectAppTaskTrigger,
   recordProjectAppTaskTrigger,
@@ -64,9 +66,11 @@ import {
   recoverableProjectAppTaskAttempts,
   releaseInterruptedProjectAppTaskAttempt,
   releaseStaleProjectAppTaskResult,
+  recordProjectAppTaskAttemptSession,
   recordProjectAppTaskAttemptWorkspace,
   taskReconciliationConfig,
   PROJECT_APP_TASK_RECOVERY_OWNER,
+  type ProjectAppTaskChildContext,
   type ProjectAppTaskClaim,
 } from "../project-app-task-reconciler.js";
 import {
@@ -624,55 +628,6 @@ export function normalizeTaskHandlerResult(
   };
 }
 
-function taskConditionIdPart(value: string): string {
-  return value
-    .trim()
-    .replace(/[^A-Za-z0-9_.-]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 120);
-}
-
-function childTaskWaitConditions(
-  config: ReturnType<typeof taskReconciliationConfig>,
-  taskId: string,
-  actions: ProjectAppTaskAction[],
-): ProjectAppConditionSpec[] {
-  const tree = readTaskState(config);
-  const existingChildren = (tree.tasks[taskId]?.children ?? []).filter((childId) => Boolean(tree.tasks[childId]));
-  const createdChildren = actions.flatMap((action) => (action.kind === "create-task" ? [action.id] : []));
-  const childIds = [...new Set([...existingChildren, ...createdChildren])];
-  const parentPart = taskConditionIdPart(taskId) || "parent";
-  return childIds.map((childId) => ({
-    id: `${parentPart}-child-${taskConditionIdPart(childId) || "task"}-terminal`,
-    type: "project.task.reconciled",
-    subject: `task:${childId}`,
-    expected: { field: "disposition", anyOf: ["converged", "attention"] },
-  }));
-}
-
-function unappliedTaskActions(
-  config: ReturnType<typeof taskReconciliationConfig>,
-  actions: ProjectAppTaskAction[],
-): ProjectAppTaskAction[] {
-  const tree = readTaskState(config);
-  return actions.filter(
-    (action) => action.kind !== "create-task" || (!tree.tasks[action.id] && !tree.resources?.[action.id]),
-  );
-}
-
-function isRecoverableConvergedParentChildActionError(
-  error: unknown,
-  taskId: string,
-  actions: ProjectAppTaskAction[],
-): boolean {
-  const message = error instanceof Error ? error.message : String(error);
-  if (message.includes("cannot converge while it has live children")) return true;
-  return (
-    message.includes("Handler action task already exists") &&
-    actions.some((action) => action.kind === "create-task" && action.parentId === taskId)
-  );
-}
-
 async function runTaskCapability(input: {
   opts: ProjectAppLoaderOptions;
   descriptor: ProjectAppDescriptor;
@@ -682,6 +637,7 @@ async function runTaskCapability(input: {
   defaultParentId: string;
   executionPaths: ProjectAppExecutionPaths;
   declaredOutputPaths: string[];
+  childContext: ProjectAppTaskChildContext;
   event?: EventEnvelope;
   fallbackReason?: string;
 }): Promise<TaskCapabilityRun> {
@@ -709,6 +665,7 @@ async function runTaskCapability(input: {
         outcome: intent.outcome,
         acceptance: intent.acceptance,
         input: intent.input ?? {},
+        children: input.childContext,
         paths: input.executionPaths,
         declaredOutputs: input.declaredOutputPaths,
         fallbackReason: input.fallbackReason ?? null,
@@ -847,6 +804,59 @@ async function runTaskCapability(input: {
   }
 }
 
+function interruptSupersededOwnerSession(
+  opts: ProjectAppLoaderOptions,
+  sessionId: string,
+  reason: string,
+): void {
+  const cleanSessionId = sessionId.trim();
+  if (!cleanSessionId) return;
+  if (opts.manager.hasActiveSession(cleanSessionId)) {
+    opts.manager.cancel(cleanSessionId);
+    return;
+  }
+
+  const meta = opts.persistDir ? readSessionMeta(opts.persistDir, cleanSessionId) : null;
+  if (!meta || (meta.status !== "running" && meta.status !== "idle")) return;
+  const endedAt = Date.now();
+  writeSessionMeta(opts.persistDir!, cleanSessionId, {
+    ...meta,
+    status: "interrupted",
+    endedAt,
+    error: reason,
+  });
+  updateSessionDb(opts.persistDir!, cleanSessionId, {
+    status: "interrupted",
+    endedAt,
+    error: reason,
+    outcome: reason,
+    lastActivityAt: endedAt,
+  });
+  markSessionInactive(opts.persistDir!, cleanSessionId);
+  opts.bus.emit({
+    type: "session.end",
+    source: meta.source ?? "project-app-task-reconciler",
+    owner: `agent:${meta.agent}`,
+    timestamp: endedAt,
+    data: {
+      sessionId: cleanSessionId,
+      agent: meta.agent,
+      outcome: "interrupted",
+      summary: reason,
+      error: reason,
+      durationMs: Math.max(0, endedAt - meta.startedAt),
+      status: "interrupted",
+      task: meta.task,
+      parentSessionId: meta.parentSessionId,
+      workflowRunId: meta.workflowRunId,
+      projectId: meta.projectId,
+      kind: meta.kind,
+      requestId: meta.requestId,
+      stepLabel: meta.stepLabel,
+    },
+  } as AgentEvent);
+}
+
 async function runTaskOwner(input: {
   opts: ProjectAppLoaderOptions;
   descriptor: ProjectAppDescriptor;
@@ -855,6 +865,7 @@ async function runTaskOwner(input: {
   defaultParentId: string;
   executionPaths: ProjectAppExecutionPaths;
   declaredOutputPaths: string[];
+  childContext: ProjectAppTaskChildContext;
   event?: EventEnvelope;
   fallbackReason?: string;
 }): Promise<TaskCapabilityRun> {
@@ -910,18 +921,18 @@ async function runTaskOwner(input: {
       2,
     ),
     "```",
-    'You are already the resolved owner; do not return state "needs-owner". Decide converged or waiting with exact Conditions.',
+    'You are already the resolved owner; do not return state "needs-owner". Decide converged or waiting. Waiting requires exact Conditions or live direct children.',
     "Valid states for this owner result are exactly: converged or waiting.",
     'For mode "achieve", missing evidence is work to do, not by itself a reason to create another task. If the task asks to queue, run, publish, verify, inspect, or repair something, either do that concrete work now and report the evidence, or absorb the failed carrier through a converged result with exact failure evidence and a bounded successor/escalation action.',
     "Create a successor task only when this carrier cannot do the work because the target is stale, the task is too broad for one bounded attempt, or a real evidenced blocker requires different follow-up.",
-    "Use waiting only when there is a real machine-observable wake event. Every Condition must be an object with id, type, subject, and expected.",
-    'For a decomposition parent that creates child task actions and cannot yet satisfy its own acceptance, return state "waiting" with exact task Conditions for the created or remaining child tasks, for example subject "task:<childId>" and expected terminal/attention state. Do not return "converged" just because the child tasks were declared.',
+    "Use waiting only when there is a real machine-observable wake event or live direct child work. Every authored Condition must be an object with id, type, subject, and expected.",
+    'For a decomposition parent that creates child task actions and cannot yet satisfy its own acceptance, return state "waiting". Infrastructure tracks live direct children and wakes this parent when a child converges or needs attention; do not author task lifecycle Conditions or return "converged" merely because child tasks were declared.',
     'Conditions belong only to the current task when you return state "waiting". If you return state "converged" with a successor wait task action, put the wake facts in that task action input/acceptance and omit top-level conditions.',
     "Condition subjects must use typed forms the app can observe, for example task:<taskId>, session:<sessionId>, workflow-run:<runId>, pipeline-run:<runId>, metric:<metricId>, alert:<alertId>, or project:<projectId>.",
     "Do not put blocker prose, resumeCondition, requiredEvidence, allowedChangedFiles, or other human notes directly in conditions. Put that detail in summary/evidence, or create/update a concrete follow-up task.",
     "If no exact machine-observable Condition exists, do not return waiting. Return converged with exact evidence and supported successor/escalation actions when this carrier is finished; execution errors are reported by the runtime, not as a fourth task state.",
     "Use actions only for supported task-tree mutations.",
-    "Parent relationships express containment and decomposition only. They do not schedule children, establish ordering, or make child completion satisfy parent acceptance.",
+    "An executable parent relationship expresses decomposition and aggregate ownership. Infrastructure runs children independently and wakes the parent on meaningful child transitions; the parent still decides aggregate acceptance.",
     "Use dependsOn for execution ordering. Use a structural group when a node has no independently reconcilable outcome.",
     "Do not close an achieve task while it still contains live child tasks; finish or relocate the represented children first.",
     "",
@@ -950,6 +961,7 @@ async function runTaskOwner(input: {
         outcome: intent.outcome,
         acceptance: intent.acceptance,
         input: intent.input ?? {},
+        children: input.childContext,
         paths: input.executionPaths,
         declaredOutputs: input.declaredOutputPaths,
         fallbackReason: input.fallbackReason ?? null,
@@ -961,16 +973,45 @@ async function runTaskOwner(input: {
     ...(event ? ["", "## Trigger Observation", "```json", JSON.stringify(event, null, 2), "```"] : []),
   ].join("\n");
 
-  const result = await opts.manager.callAgent(claim.owner, prompt, {
+  const ownerOptions = {
     source: "project-app-task-owner",
     projectId: descriptor.id,
     recoveryOwner: PROJECT_APP_TASK_RECOVERY_OWNER,
     trace,
     requireFinish: true,
     outputSchema: projectAppTaskOwnerResultSchema,
-    toolPolicy: "full",
+    toolPolicy: "full" as const,
     timeout: PROJECT_APP_TASK_OWNER_TIMEOUT_MS,
-  });
+  };
+  const result =
+    typeof opts.manager.run === "function" &&
+    typeof opts.manager.waitFor === "function" &&
+    typeof opts.manager.progress === "function"
+      ? await (async () => {
+          const sessionId = opts.manager.run(claim.owner, prompt, {
+            source: ownerOptions.source,
+            kind: "call",
+            projectId: ownerOptions.projectId,
+            recoveryOwner: ownerOptions.recoveryOwner,
+            trace: ownerOptions.trace,
+            requireFinish: ownerOptions.requireFinish,
+            outputSchema: ownerOptions.outputSchema,
+            toolPolicy: ownerOptions.toolPolicy,
+            timeoutMs: ownerOptions.timeout,
+          });
+          recordProjectAppTaskAttemptSession(taskReconciliationConfig({
+            appDir: descriptor.appDir,
+            projectDir: descriptor.projectDir,
+            owner: descriptor.owner,
+            maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
+          }), claim, sessionId);
+          const waited = await opts.manager.waitFor(sessionId);
+          return {
+            ...waited,
+            messages: opts.manager.progress(sessionId, 1000),
+          };
+        })()
+      : await opts.manager.callAgent(claim.owner, prompt, ownerOptions);
   const done = result.status === "done";
   const handlerResult = normalizeTaskHandlerResult(
     done ? result.structuredResult : undefined,
@@ -1251,7 +1292,9 @@ async function reconcileTask(input: {
         : primary.kind === "waiting"
           ? primary.dependencyIds?.length
             ? { reason: "dependencies-open", dependencyIds: primary.dependencyIds }
-            : { reason: "conditions-open", conditionIds: primary.conditionIds }
+            : primary.childIds?.length
+              ? { reason: "children-open", childIds: primary.childIds }
+              : { reason: "conditions-open", conditionIds: primary.conditionIds }
           : primary.kind === "attention"
             ? { reason: "attention-required", generation: primary.generation, summary: primary.summary }
             : { reason: "already-completed", generation: primary.generation };
@@ -1261,8 +1304,16 @@ async function reconcileTask(input: {
     });
     return [];
   }
+  for (const sessionId of primary.supersededSessionIds ?? []) {
+    interruptSupersededOwnerSession(
+      opts,
+      sessionId,
+      `Task ${primary.taskId} superseded an orphaned owner session while recovering the current generation`,
+    );
+  }
   const intent = primary.intent;
   const event = primary.trigger as EventEnvelope | undefined;
+  const childContext = readProjectAppTaskChildContext(config, primary.taskId);
   let executionPaths = projectAppExecutionPaths(descriptor.appDir, descriptor.projectDir);
   const declaredOutputPaths = primary.declaredOutputPaths;
   emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconcile.started", intent.id, {
@@ -1350,6 +1401,7 @@ async function reconcileTask(input: {
       defaultParentId,
       executionPaths,
       declaredOutputPaths,
+      childContext,
       event,
     });
   } else {
@@ -1361,6 +1413,7 @@ async function reconcileTask(input: {
       defaultParentId,
       executionPaths,
       declaredOutputPaths,
+      childContext,
       event,
       ...(primary.handoff
         ? {
@@ -1472,55 +1525,6 @@ async function reconcileTask(input: {
           emitOwnerResultForTask(opts, descriptor, event, intent.id, summary, "stale");
           return stale.reconcileTaskIds;
         }
-        if (
-          primaryHandlerResult.actions.length > 0 &&
-          isRecoverableConvergedParentChildActionError(error, intent.id, primaryHandlerResult.actions)
-        ) {
-          try {
-            const conditions = childTaskWaitConditions(config, intent.id, primaryHandlerResult.actions);
-            if (conditions.length > 0) {
-              const actions = unappliedTaskActions(config, primaryHandlerResult.actions);
-              const summary = `${primaryHandlerResult.summary} Parent remains open while child work completes.`;
-              const apply = deferProjectAppTask(config, primary, {
-                disposition: "waiting",
-                summary,
-                evidence: primaryHandlerResult.evidence,
-                actions,
-                conditions,
-              });
-              const retryStale = apply.status === "stale" ? recoverStaleTaskResult(config, primary) : null;
-              emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
-                generation: primary.generation,
-                attemptId: primary.attemptId,
-                handler: primary.handler,
-                disposition: apply.status === "applied" ? "waiting" : "stale",
-                outcome: intent.outcome,
-                mode: intent.mode,
-                owner: intent.owner ?? descriptor.owner,
-                ...(intent.workflow ? { workflow: intent.workflow } : {}),
-                acceptance: intent.acceptance,
-                input: intent.input ?? {},
-                summary,
-                evidence: primaryHandlerResult.evidence,
-                actionsApplied: apply.actionsApplied,
-                conditions,
-                ...(retryStale ? { staleRecovery: retryStale.staleRecovery } : {}),
-                workflowRunId: primaryResult.runId,
-              });
-              emitOwnerResultForTask(
-                opts,
-                descriptor,
-                event,
-                intent.id,
-                summary,
-                apply.status === "applied" ? "waiting" : "stale",
-              );
-              return retryStale?.reconcileTaskIds ?? apply.reconcileTaskIds;
-            }
-          } catch {
-            // Fall through to the ordinary rejected-handler path with the original error.
-          }
-        }
         primaryHandlerResult.state = "error";
         primaryHandlerResult.summary = `Handler actions were rejected: ${error instanceof Error ? error.message : String(error)}`;
       }
@@ -1592,7 +1596,8 @@ async function reconcileTask(input: {
 
   finalizeWorkspace("failed");
 
-  markProjectAppTaskAttention(config, primary, {
+  const ownerHandoff = Boolean(workflowKey && primaryHandlerResult.state === "needs-owner");
+  const attention = markProjectAppTaskAttention(config, primary, {
     summary: primaryHandlerResult.summary,
     evidence: primaryHandlerResult.evidence,
     reason: primaryResult.unavailable
@@ -1600,8 +1605,8 @@ async function reconcileTask(input: {
       : primaryHandlerResult.state === "needs-owner"
         ? "needs-owner"
         : "handler-blocked",
+    wakeParent: !ownerHandoff,
   });
-  const ownerHandoff = Boolean(workflowKey && primaryHandlerResult.state === "needs-owner");
   if (!ownerHandoff) {
     emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
       generation: primary.generation,
@@ -1612,7 +1617,7 @@ async function reconcileTask(input: {
       summary: primaryHandlerResult.summary,
     });
     emitOwnerResultForTask(opts, descriptor, event, intent.id, primaryHandlerResult.summary, "attention");
-    return [];
+    return attention.status === "applied" && attention.parentTaskId ? [attention.parentTaskId] : [];
   }
   emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
     generation: primary.generation,
@@ -1753,7 +1758,12 @@ function installConventionTaskControllers(
   opts: ProjectAppLoaderOptions,
   descriptors: ProjectAppDescriptor[],
 ): Map<string, ProjectAppTaskController> {
-  for (const controller of appTaskControllersByBus.get(opts.bus)?.values() ?? []) controller.close();
+  const previousControllers = appTaskControllersByBus.get(opts.bus);
+  const startAfterByApp = new Map<string, Promise<void>>();
+  for (const [appId, controller] of previousControllers ?? []) {
+    controller.close();
+    startAfterByApp.set(appId, controller.whenDrained());
+  }
   const controllers = new Map<string, ProjectAppTaskController>();
 
   for (const descriptor of descriptors) {
@@ -1776,6 +1786,7 @@ function installConventionTaskControllers(
     let controller: ProjectAppTaskController;
     controller = new ProjectAppTaskController({
       maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
+      startAfter: startAfterByApp.get(descriptor.id),
       maxRetries: 3,
       resync: {
         intervalMs: tasks.resyncIntervalMs ?? 60_000,
@@ -1832,11 +1843,18 @@ function recoverInterruptedProjectAppTasks(
         if (controller && !descriptor.reconciliationPaused) controller.enqueue(recovery.taskId);
         continue;
       }
-      releaseInterruptedProjectAppTaskAttempt(
+      const released = releaseInterruptedProjectAppTaskAttempt(
         config,
         recovery.taskId,
         `Interrupted reconciliation ${recovery.taskId} cannot resume because its previous runtime did not persist the trigger packet`,
       );
+      for (const sessionId of released.sessionIds) {
+        interruptSupersededOwnerSession(
+          opts,
+          sessionId,
+          `Recovered task ${recovery.taskId} interrupted an orphaned owner session from a previous runtime`,
+        );
+      }
     }
     const missingAttemptRepairs = repairRunningProjectAppTasksWithoutAttempt(config);
     for (const repair of missingAttemptRepairs) {

@@ -6,6 +6,8 @@ export type ProjectAppTaskControllerOptions = {
   onError?(taskId: string, error: unknown, willRetry: boolean): void;
   maxRetries?: number;
   retryDelayMs?: (attempt: number) => number;
+  /** Do not claim work until the controller instance being replaced has drained. */
+  startAfter?: PromiseLike<void>;
   resync?: {
     intervalMs: number;
     taskIds(): Iterable<string>;
@@ -18,10 +20,19 @@ export class ProjectAppTaskController {
   private readonly failures = new Map<string, number>();
   private scheduled = false;
   private closed = false;
+  private startReady: boolean;
+  private readonly drainWaiters = new Set<() => void>();
   private readonly resyncTimer?: ReturnType<typeof setInterval>;
 
   constructor(private readonly options: ProjectAppTaskControllerOptions) {
     this.queue = new ProjectAppTaskQueue(options.maxConcurrent);
+    this.startReady = !options.startAfter;
+    if (options.startAfter) {
+      void Promise.resolve(options.startAfter).then(
+        () => this.releaseStartGate(),
+        () => this.releaseStartGate(),
+      );
+    }
     if (options.resync) {
       if (!Number.isFinite(options.resync.intervalMs) || options.resync.intervalMs <= 0) {
         throw new Error("ProjectAppTaskController resync interval must be positive");
@@ -47,6 +58,13 @@ export class ProjectAppTaskController {
   close(): void {
     this.closed = true;
     if (this.resyncTimer) clearInterval(this.resyncTimer);
+    this.resolveDrainWaiters();
+  }
+
+  /** Resolves after this closed controller and every inherited predecessor have drained. */
+  whenDrained(): Promise<void> {
+    if (this.isDrained()) return Promise.resolve();
+    return new Promise((resolve) => this.drainWaiters.add(resolve));
   }
 
   snapshot(): ReturnType<ProjectAppTaskQueue["snapshot"]> {
@@ -54,7 +72,7 @@ export class ProjectAppTaskController {
   }
 
   private schedulePump(): void {
-    if (this.scheduled || this.closed) return;
+    if (this.scheduled || this.closed || !this.startReady) return;
     this.scheduled = true;
     queueMicrotask(() => {
       this.scheduled = false;
@@ -87,7 +105,24 @@ export class ProjectAppTaskController {
       })
       .finally(() => {
         this.queue.complete(taskId);
+        this.resolveDrainWaiters();
         this.schedulePump();
       });
+  }
+
+  private releaseStartGate(): void {
+    this.startReady = true;
+    this.resolveDrainWaiters();
+    this.schedulePump();
+  }
+
+  private isDrained(): boolean {
+    return this.closed && this.startReady && this.queue.snapshot().running.length === 0;
+  }
+
+  private resolveDrainWaiters(): void {
+    if (!this.isDrained()) return;
+    for (const resolve of this.drainWaiters) resolve();
+    this.drainWaiters.clear();
   }
 }

@@ -207,13 +207,13 @@ describe("project task handler contract", () => {
     ).toBe(false);
   });
 
-  it("requires an exact typed Condition for waiting", () => {
+  it("admits waiting for runtime validation against Conditions or live children", () => {
     expect(
       admitProjectAppTaskHandlerResult(
         { state: "waiting", summary: "Waiting", evidence: [], conditions: [] },
         workflowOptions,
-      ),
-    ).toEqual({ ok: false, error: "waiting requires at least one exact Condition" });
+      ).ok,
+    ).toBe(true);
 
     expect(
       admitProjectAppTaskHandlerResult(

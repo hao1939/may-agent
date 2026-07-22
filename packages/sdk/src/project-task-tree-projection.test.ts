@@ -7,6 +7,7 @@ function resource(
   phase: ProjectAppTaskResource["status"]["phase"],
   options: {
     mode?: "achieve" | "maintain";
+    parentId?: string;
     dependsOn?: string[];
     conditionIds?: string[];
     currentAttemptId?: string;
@@ -16,7 +17,7 @@ function resource(
   return {
     metadata: { id, generation: 2, resourceVersion: 3 },
     spec: {
-      parentId: "root",
+      parentId: options.parentId ?? "root",
       outcome: `Outcome ${id}`,
       acceptance: [`Accept ${id}`],
       mode: options.mode ?? "achieve",
@@ -52,12 +53,14 @@ function projection(
 }
 
 describe("canonical project task projection", () => {
-  it("classifies ready, dependency-bound, waiting, and healthy standing work", () => {
+  it("classifies ready, dependency-bound, condition-waiting, child-waiting, and healthy standing work", () => {
     const result = projection(
       {
         ready: resource("ready", "pending"),
         held: resource("held", "pending", { dependsOn: ["missing"] }),
         waiting: resource("waiting", "waiting", { conditionIds: ["credential-ready:xhs"] }),
+        parent: resource("parent", "waiting"),
+        child: resource("child", "pending", { parentId: "parent" }),
         standing: resource("standing", "converged", { mode: "maintain" }),
       },
       {
@@ -82,6 +85,11 @@ describe("canonical project task projection", () => {
       reason: "Waiting for credential-ready:xhs",
       related_ids: ["credential-ready:xhs"],
     });
+    expect(result.tasks.parent.readiness).toEqual({
+      state: "child-blocked",
+      reason: "Waiting for child work: child",
+      related_ids: ["child"],
+    });
     expect(result.tasks.standing).toMatchObject({
       mode: "maintain",
       phase: "converged",
@@ -103,7 +111,7 @@ describe("canonical project task projection", () => {
 
     expect(result.tasks.pending.readiness).toMatchObject({ state: "capacity-blocked" });
     expect(result.integrity.map((finding) => finding.code)).toEqual(
-      expect.arrayContaining(["running-without-attempt", "waiting-without-condition"]),
+      expect.arrayContaining(["running-without-attempt", "waiting-without-condition-or-child"]),
     );
   });
 
