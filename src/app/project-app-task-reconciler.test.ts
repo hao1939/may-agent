@@ -23,6 +23,7 @@ import {
   releaseHandlerUnavailableProjectAppTask,
   releaseInterruptedProjectAppTaskAttempt,
   releaseStaleProjectAppTaskResult,
+  recordProjectAppTaskAttemptSession,
   recordProjectAppTaskAttemptWorkspace,
   taskReconciliationConfig,
 } from "./project-app-task-reconciler.ts";
@@ -1180,7 +1181,33 @@ describe("project app task reconciler state", () => {
     });
   });
 
-  it("requeues a manually orphaned previous-runtime attempt when no trigger was persisted", () => {
+  it("returns superseded owner-session ids when reclaiming a previous-runtime attempt", () => {
+    const { config } = fixture();
+    const first = declareAndClaimTask(config, {
+      intent: intent(),
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (first.kind !== "claimed") throw new Error("expected claim");
+    expect(recordProjectAppTaskAttemptSession(config, first, "session-old")).toBe(true);
+
+    const interrupted = readTaskState(config);
+    interrupted.attempts![first.attemptId].runtimeId = "previous-runtime";
+    saveTaskState(config, interrupted);
+
+    const reclaimed = declareAndClaimTask(config, {
+      intent: intent(),
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+      reason: `attempt-recovery:${first.taskId}`,
+    });
+    expect(reclaimed).toMatchObject({
+      kind: "claimed",
+      supersededSessionIds: ["session-old"],
+    });
+  });
+
+  it("returns orphaned owner-session ids when requeueing a previous-runtime attempt without a trigger", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent(),
@@ -1188,6 +1215,7 @@ describe("project app task reconciler state", () => {
       handler: "workflow:known-workflow",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
+    expect(recordProjectAppTaskAttemptSession(config, claim, "session-old")).toBe(true);
 
     const interrupted = readTaskState(config);
     interrupted.attempts![claim.attemptId].runtimeId = "previous-runtime";
@@ -1197,9 +1225,10 @@ describe("project app task reconciler state", () => {
     const [recovery] = recoverableProjectAppTaskAttempts(config);
     expect(recovery.taskId).toBe(claim.taskId);
     expect(recovery.trigger).toBeUndefined();
-    expect(releaseInterruptedProjectAppTaskAttempt(config, claim.taskId, "trigger packet was not persisted")).toBe(
-      true,
-    );
+    expect(releaseInterruptedProjectAppTaskAttempt(config, claim.taskId, "trigger packet was not persisted")).toEqual({
+      released: true,
+      sessionIds: ["session-old"],
+    });
 
     const released = readTaskState(config);
     expect(released.tasks[claim.taskId]).toMatchObject({
@@ -1591,7 +1620,7 @@ describe("project app task reconciler state", () => {
         summary: "workflow could not classify the task",
         reason: "needs-owner",
       }),
-    ).toBe("applied");
+    ).toMatchObject({ status: "applied" });
 
     const fallback = declareAndClaimTask(config, {
       intent: intent(),
@@ -1634,7 +1663,7 @@ describe("project app task reconciler state", () => {
         summary: "reviewer must decide the next move",
         reason: "handler-blocked",
       }),
-    ).toBe("applied");
+    ).toMatchObject({ status: "applied" });
 
     expect(
       declareAndClaimTask(config, {
@@ -1840,7 +1869,7 @@ describe("project app task reconciler state", () => {
         summary: "integration base changed",
         reason: "transient-base-race",
       }),
-    ).toBe("applied");
+    ).toMatchObject({ status: "applied" });
 
     const controller = declareAndClaimTask(config, {
       intent: intent("maintain"),
@@ -2317,20 +2346,6 @@ describe("project app task reconciler state", () => {
             outputs: [],
           },
         ],
-        conditions: [
-          {
-            id: "evaluate-session-1-child-a-terminal",
-            type: "project.task.reconciled",
-            subject: "task:work/child-a",
-            expected: { field: "disposition", anyOf: ["converged", "attention"] },
-          },
-          {
-            id: "evaluate-session-1-child-b-terminal",
-            type: "project.task.reconciled",
-            subject: "task:work/child-b",
-            expected: { field: "disposition", anyOf: ["converged", "attention"] },
-          },
-        ],
       }),
     ).toMatchObject({
       status: "applied",
@@ -2344,14 +2359,14 @@ describe("project app task reconciler state", () => {
     });
     expect(tree.resources?.[claim.taskId]?.status).toMatchObject({
       phase: "waiting",
-      conditionIds: ["evaluate-session-1-child-a-terminal", "evaluate-session-1-child-b-terminal"],
+      conditionIds: [],
     });
     expect(tree.tasks["work/child-a"]).toMatchObject({ parent_id: claim.taskId, state: "backlog" });
     expect(tree.tasks["work/child-b"]).toMatchObject({ parent_id: claim.taskId, state: "backlog" });
-    expect(tree.conditions?.["evaluate-session-1-child-a-terminal"]?.spec).toMatchObject({
-      type: "project.task.reconciled",
-      subject: "task:work/child-a",
-    });
+    expect(tree.conditions ?? {}).toEqual({});
+    expect(listRunnableProjectAppTaskIds(config)).toEqual(
+      expect.arrayContaining(["work/child-a", "work/child-b"]),
+    );
   });
 
   it("filters task Conditions by subject and expected state", () => {

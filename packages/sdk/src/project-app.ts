@@ -293,6 +293,7 @@ export type ProjectAppTaskAttempt = {
   summary?: string;
   failureReason?: string;
   attentionNotifiedAt?: string;
+  sessionId?: string;
   workspace?: ProjectAppTaskWorkspace;
 };
 

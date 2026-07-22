@@ -417,9 +417,6 @@ export function admitProjectAppTaskHandlerResult(
     if (typeof normalized === "string") return { ok: false, error: normalized };
     conditions.push(normalized);
   }
-  if (output.state === "waiting" && conditions.length === 0) {
-    return { ok: false, error: "waiting requires at least one exact Condition" };
-  }
   if (output.state !== "waiting" && conditions.length > 0) {
     return { ok: false, error: "Conditions are valid only for waiting" };
   }

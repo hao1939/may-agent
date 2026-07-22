@@ -120,4 +120,47 @@ describe("ProjectAppTaskController", () => {
     expect(controller.snapshot().running.length).toBeLessThanOrEqual(1);
     controller.close();
   });
+
+  it("keeps replacement controllers behind the draining predecessor chain", async () => {
+    const started: string[] = [];
+    let releaseOld: (() => void) | undefined;
+    const old = new ProjectAppTaskController({
+      maxConcurrent: 1,
+      reconcile: (taskId) =>
+        new Promise<void>((resolve) => {
+          started.push(taskId);
+          releaseOld = resolve;
+        }),
+    });
+    old.enqueue("old");
+    await waitUntil(() => started.length === 1);
+    old.close();
+
+    const replacedBeforeStart = new ProjectAppTaskController({
+      maxConcurrent: 1,
+      startAfter: old.whenDrained(),
+      reconcile: async (taskId) => {
+        started.push(taskId);
+      },
+    });
+    replacedBeforeStart.enqueue("discarded-on-reload");
+    replacedBeforeStart.close();
+
+    const current = new ProjectAppTaskController({
+      maxConcurrent: 1,
+      startAfter: replacedBeforeStart.whenDrained(),
+      reconcile: async (taskId) => {
+        started.push(taskId);
+      },
+    });
+    current.enqueue("current");
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    expect(started).toEqual(["old"]);
+
+    releaseOld?.();
+    await waitUntil(() => started.includes("current"));
+    expect(started).toEqual(["old", "current"]);
+    current.close();
+    await current.whenDrained();
+  });
 });

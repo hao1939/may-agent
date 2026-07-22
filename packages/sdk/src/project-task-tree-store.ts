@@ -68,7 +68,14 @@ export type TaskNode = {
 export type ProjectTaskPhase = ProjectAppTaskResource["status"]["phase"];
 
 export type ProjectTaskReadiness = {
-  state: "ready" | "dependency-blocked" | "condition-blocked" | "capacity-blocked" | "paused" | "not-applicable";
+  state:
+    | "ready"
+    | "dependency-blocked"
+    | "condition-blocked"
+    | "child-blocked"
+    | "capacity-blocked"
+    | "paused"
+    | "not-applicable";
   reason: string;
   related_ids: string[];
 };
@@ -118,7 +125,7 @@ export type ProjectTaskIntegrityFinding = {
     | "missing-parent"
     | "missing-dependency"
     | "missing-condition"
-    | "waiting-without-condition"
+    | "waiting-without-condition-or-child"
     | "running-without-attempt"
     | "generation-inversion";
   task_id: string;
@@ -624,6 +631,14 @@ function projectTaskReadiness(
 ): ProjectTaskReadiness {
   const conditionIds = [...(resource.status.conditionIds ?? [])];
   if (resource.status.phase === "waiting") {
+    const childIds = (tree.tasks[resource.metadata.id]?.children ?? []).filter((id) => Boolean(tree.resources?.[id]));
+    if (!conditionIds.length && childIds.length) {
+      return {
+        state: "child-blocked",
+        reason: `Waiting for child work: ${childIds.join(", ")}`,
+        related_ids: childIds,
+      };
+    }
     return {
       state: "condition-blocked",
       reason: conditionIds.length ? `Waiting for ${conditionIds.join(", ")}` : "Waiting without a linked Condition",
@@ -785,12 +800,16 @@ export function buildProjectTaskTreeProjection(
         message: "Running task has no current attempt",
       });
     }
-    if (task.phase === "waiting" && !(task.condition_ids ?? []).length) {
+    if (
+      task.phase === "waiting" &&
+      !(task.condition_ids ?? []).length &&
+      !(task.children ?? []).some((childId) => tasks[childId]?.item_type === "task")
+    ) {
       integrity.push({
-        code: "waiting-without-condition",
+        code: "waiting-without-condition-or-child",
         task_id: task.id,
         related_ids: [],
-        message: "Waiting task has no linked Condition",
+        message: "Waiting task has neither a linked Condition nor live child work",
       });
     }
     const missingConditions = (task.condition_ids ?? []).filter((id) => !tree.conditions?.[id]);

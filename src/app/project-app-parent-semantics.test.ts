@@ -6,7 +6,10 @@ import {
   claimObservedProjectAppTask,
   completeProjectAppTask,
   deferProjectAppTask,
+  listRunnableProjectAppTaskIds,
+  markProjectAppTaskAttention,
   readProjectAppTaskIntent,
+  readProjectAppTaskTrigger,
   taskReconciliationConfig,
 } from "./project-app-task-reconciler.ts";
 
@@ -35,8 +38,8 @@ function fixture() {
               mode: "maintain",
             },
             status: {
-              observedGeneration: 0,
-              phase: "pending",
+              observedGeneration: 1,
+              phase: "waiting",
               updatedAt: "2026-07-20T00:00:00.000Z",
             },
           },
@@ -84,18 +87,26 @@ afterEach(() => {
 });
 
 describe("project app parent semantics", () => {
-  it("does not schedule a parent merely because its child completes", () => {
+  it("durably wakes an executable parent when its child completes", () => {
     const config = fixture();
+    expect(listRunnableProjectAppTaskIds(config)).toEqual(["child"]);
     const result = completeProjectAppTask(config, claimChild(config), {
       summary: "child complete",
       evidence: ["proof"],
     });
 
-    expect(result).toMatchObject({ status: "applied", dependentTaskIds: [] });
+    expect(result).toMatchObject({ status: "applied", dependentTaskIds: ["parent"] });
+    expect(readProjectAppTaskTrigger(config, "parent")).toMatchObject({
+      type: "project.task.child-transitioned",
+      taskId: "parent",
+      childTaskId: "child",
+      disposition: "converged",
+    });
     expect(readProjectAppTaskIntent(config, "parent")).not.toBeNull();
+    expect(listRunnableProjectAppTaskIds(config)).toEqual(["parent"]);
   });
 
-  it("does not schedule a parent merely because its child starts waiting", () => {
+  it("does not wake a parent merely because its child starts an external wait", () => {
     const config = fixture();
     const result = deferProjectAppTask(config, claimChild(config), {
       disposition: "waiting",
@@ -112,6 +123,23 @@ describe("project app parent semantics", () => {
     });
 
     expect(result).toMatchObject({ status: "applied", reconcileTaskIds: [] });
+    expect(readProjectAppTaskTrigger(config, "parent")).toBeUndefined();
     expect(readProjectAppTaskIntent(config, "parent")).not.toBeNull();
+  });
+
+  it("durably wakes an executable parent when its child needs attention", () => {
+    const config = fixture();
+    const result = markProjectAppTaskAttention(config, claimChild(config), {
+      summary: "child needs parent judgment",
+      reason: "handler-blocked",
+      evidence: ["child:blocked"],
+    });
+
+    expect(result).toEqual({ status: "applied", parentTaskId: "parent" });
+    expect(readProjectAppTaskTrigger(config, "parent")).toMatchObject({
+      type: "project.task.child-transitioned",
+      childTaskId: "child",
+      disposition: "attention",
+    });
   });
 });
