@@ -44,6 +44,11 @@ dispatch a workflow.
 
 ### Cron (--cron mode)
 
+The process running with `--cron` is the single autonomous Agent App host. It
+installs app event routes, schedules, queues, task controllers, recovery, and
+resync. Direct task, one-shot, status, workflow, and Web-only processes reuse
+agent preparation without attaching that host.
+
 | Entry type | Execution |
 |-----------|-----------|
 | JS handler | In-process function, no direct LLM unless the handler/workflow calls one |

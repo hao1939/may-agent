@@ -123,6 +123,12 @@ resync. An app without schedules installs no Cron entries. Direct and Gym
 execution load only the requested agent preparation; they do not attach the
 autonomous host.
 
+The long-running `--cron` daemon is the single autonomous host. Other CLI
+modes may reuse the same agents and workflows, but they do not install app
+event routes, schedules, queues, task controllers, recovery, or resync. This
+keeps a direct workflow, one-shot task, status command, and Web UI process from
+claiming work owned by the daemon.
+
 `budget.maxConcurrent` bounds the app task controller. `sessionsPerDay` and
 `tokensPerDay` are currently planning and observation metadata, not enforced
 daily quotas. Schedules must therefore be designed below the planning envelope,
@@ -308,6 +314,8 @@ from the amount of open work.
 16. A replacement app controller waits for the previous instance's active
     attempts to drain before claiming work, so hot reload cannot multiply the
     app concurrency budget.
+17. Only the long-running autonomous daemon attaches app task controllers;
+    direct and read-only processes cannot become competing reconcilers.
 
 Focused tests cover owner-only loading, hosted/direct preparation parity,
 scoped selectors, action translation, concurrency, restart recovery,
