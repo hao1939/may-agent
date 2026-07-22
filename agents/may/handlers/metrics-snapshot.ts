@@ -1268,7 +1268,7 @@ export const create: HandlerModule["create"] = (
           WHERE NOT EXISTS (
             SELECT 1
               FROM events follow
-             WHERE follow.timestamp >= s.timestamp
+             WHERE follow.timestamp >= s.timestamp - 1000
                AND follow.timestamp <= s.timestamp + 2 * 60 * 1000
                AND follow.event_type IN (
                  'handler.started',
@@ -1280,16 +1280,7 @@ export const create: HandlerModule["create"] = (
                )
                AND (
                  (
-                   follow.event_type = 'handler.started'
-                   AND json_valid(follow.data)
-                   AND json_extract(follow.data, '$.handler') NOT IN (
-                     s.app_id || '-schedule-' || s.schedule_id,
-                     s.app_id || '-' || s.schedule_id
-                   )
-                   AND follow.owner = s.owner
-                 )
-                 OR (
-                   follow.event_type = 'handler.completed'
+                   follow.event_type IN ('handler.started', 'handler.completed')
                    AND json_valid(follow.data)
                    AND json_extract(follow.data, '$.handler') IN (
                      s.app_id || '-schedule-' || s.schedule_id,
