@@ -124,26 +124,28 @@ export async function prepareDaemonAgents(opts: {
     return true;
   };
 
-  const projectAppOpts = {
-    projectsRoot: opts.projectsRoot,
-    projectRoot: opts.projectRoot,
-    persistDir: opts.persistDir,
-    agentsRoot: opts.agentsRoot,
-    sharedRoot: opts.sharedRoot,
-    manager: opts.manager,
-    bus: opts.bus,
-    agentCrons: getAgentCrons(),
-    registerLocalAgent,
-  };
+  if (opts.cronEnabled) {
+    const projectAppOpts = {
+      projectsRoot: opts.projectsRoot,
+      projectRoot: opts.projectRoot,
+      persistDir: opts.persistDir,
+      agentsRoot: opts.agentsRoot,
+      sharedRoot: opts.sharedRoot,
+      manager: opts.manager,
+      bus: opts.bus,
+      agentCrons: getAgentCrons(),
+      registerLocalAgent,
+    };
 
-  const appResult = await installProjectApps(projectAppOpts);
-  if (appResult.installed.length > 0) {
-    opts.bus.emit({
-      type: "info",
-      message: `[project-app] Installed ${appResult.installed.length} app(s), ${appResult.entries} trigger(s): ${appResult.installed.map((app) => `${app.id}->${app.owner}`).join(", ")}`,
-    });
+    const appResult = await installProjectApps(projectAppOpts);
+    if (appResult.installed.length > 0) {
+      opts.bus.emit({
+        type: "info",
+        message: `[project-app] Installed ${appResult.installed.length} app(s), ${appResult.entries} trigger(s): ${appResult.installed.map((app) => `${app.id}->${app.owner}`).join(", ")}`,
+      });
+    }
+    startProjectAppWatcher(projectAppOpts);
   }
-  startProjectAppWatcher(projectAppOpts);
 
   // Cron subscribe + start is handled by cron-startup.ts in one centralized
   // loop after all crons (agent-level and app-level) are created and loaded.
