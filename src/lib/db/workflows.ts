@@ -1,4 +1,5 @@
 import { getDb } from "./connection.js";
+import { withSqliteBusyRetry } from "./busy-retry.js";
 import {
   describeText,
   readJsonArtifact,
@@ -69,19 +70,21 @@ function writeWorkflowRunArtifact(persistDir: string, run: WorkflowRunRecord): W
 export function insertWorkflowRun(persistDir: string, run: WorkflowRunRecord): void {
   const persisted = writeWorkflowRunArtifact(persistDir, run);
   const db = getDb(persistDir);
-  db.run(
-    `INSERT OR REPLACE INTO workflow_runs
-      (runId, workflow, task, task_ref, task_sha256, task_bytes, artifact_ref, artifact_sha256, artifact_bytes, parentSessionId, parentWorkflowRunId, projectId, depth, status, startedAt, endedAt, result_summary, result_reason, resumedFromRunId, sourcePath, sourceScope, entryContentHash)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      persisted.runId, persisted.workflow, taskPreview(persisted.task),
-      persisted.task_ref, persisted.task_sha256, persisted.task_bytes,
-      persisted.artifact_ref, persisted.artifact_sha256, persisted.artifact_bytes,
-      persisted.parentSessionId, persisted.parentWorkflowRunId,
-      persisted.projectId ?? null, persisted.depth, persisted.status, persisted.startedAt, persisted.endedAt,
-      persisted.result_summary, persisted.result_reason, persisted.resumedFromRunId,
-      persisted.sourcePath ?? null, persisted.sourceScope ?? null, persisted.entryContentHash ?? null,
-    ],
+  withSqliteBusyRetry(`insert workflow_run ${run.runId}`, () =>
+    db.run(
+      `INSERT OR REPLACE INTO workflow_runs
+        (runId, workflow, task, task_ref, task_sha256, task_bytes, artifact_ref, artifact_sha256, artifact_bytes, parentSessionId, parentWorkflowRunId, projectId, depth, status, startedAt, endedAt, result_summary, result_reason, resumedFromRunId, sourcePath, sourceScope, entryContentHash)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        persisted.runId, persisted.workflow, taskPreview(persisted.task),
+        persisted.task_ref, persisted.task_sha256, persisted.task_bytes,
+        persisted.artifact_ref, persisted.artifact_sha256, persisted.artifact_bytes,
+        persisted.parentSessionId, persisted.parentWorkflowRunId,
+        persisted.projectId ?? null, persisted.depth, persisted.status, persisted.startedAt, persisted.endedAt,
+        persisted.result_summary, persisted.result_reason, persisted.resumedFromRunId,
+        persisted.sourcePath ?? null, persisted.sourceScope ?? null, persisted.entryContentHash ?? null,
+      ],
+    ),
   );
 }
 
@@ -106,18 +109,20 @@ export function updateWorkflowRun(
       result_reason: fields.result_reason ?? full?.result_reason ?? current.result_reason,
     });
   }
-  db.run(
-    `UPDATE workflow_runs SET status = ?, endedAt = COALESCE(?, endedAt), result_summary = COALESCE(?, result_summary), result_reason = COALESCE(?, result_reason), artifact_ref = COALESCE(?, artifact_ref), artifact_sha256 = COALESCE(?, artifact_sha256), artifact_bytes = COALESCE(?, artifact_bytes) WHERE runId = ?`,
-    [
-      fields.status,
-      fields.endedAt ?? null,
-      fields.result_summary ?? null,
-      fields.result_reason ?? null,
-      artifact?.artifact_ref ?? null,
-      artifact?.artifact_sha256 ?? null,
-      artifact?.artifact_bytes ?? null,
-      runId,
-    ],
+  withSqliteBusyRetry(`update workflow_run ${runId}`, () =>
+    db.run(
+      `UPDATE workflow_runs SET status = ?, endedAt = COALESCE(?, endedAt), result_summary = COALESCE(?, result_summary), result_reason = COALESCE(?, result_reason), artifact_ref = COALESCE(?, artifact_ref), artifact_sha256 = COALESCE(?, artifact_sha256), artifact_bytes = COALESCE(?, artifact_bytes) WHERE runId = ?`,
+      [
+        fields.status,
+        fields.endedAt ?? null,
+        fields.result_summary ?? null,
+        fields.result_reason ?? null,
+        artifact?.artifact_ref ?? null,
+        artifact?.artifact_sha256 ?? null,
+        artifact?.artifact_bytes ?? null,
+        runId,
+      ],
+    ),
   );
 }
 
