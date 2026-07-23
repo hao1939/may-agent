@@ -1022,6 +1022,14 @@ export type ProjectAppTaskHandlerRepairCandidate = {
   workflow: string;
 };
 
+export type ProjectAppTaskExecutionRepairCandidate = {
+  taskId: string;
+  owner: string;
+  failedAt: string;
+  failureReason: "HandlerExecutionFailed" | "handler-blocked";
+  sessionId?: string;
+};
+
 /** Bindings to retry once their owning app reload proves the workflow now resolves. */
 export function listHandlerUnavailableProjectAppTasks(
   config: TaskStateConfig,
@@ -1057,6 +1065,95 @@ export function releaseHandlerUnavailableProjectAppTask(config: TaskStateConfig,
     const attempt = latestTaskAttempt(tree, taskId, resource.metadata.generation);
     if (!attempt?.handler.startsWith("workflow:") || attempt.failureReason !== "HandlerUnavailable") return false;
     const summary = `Workflow binding ${attempt.handler} resolved after app reload; retrying current task generation`;
+    touchResource(resource, {
+      phase: "pending",
+      observedGeneration: Math.max(0, resource.metadata.generation - 1),
+      currentAttemptId: undefined,
+      summary,
+      conditionIds: [],
+    });
+    syncTaskProjection(task, resource, attempt.owner);
+    refreshActiveTaskProjection(tree);
+    saveTaskState(config, tree);
+    return true;
+  });
+}
+
+/** Executions to retry only after a later successful session proves their owner is runnable again. */
+export function listHandlerExecutionFailedProjectAppTasks(
+  config: TaskStateConfig,
+): ProjectAppTaskExecutionRepairCandidate[] {
+  return withTaskStateLock(config, () => {
+    const tree = readTaskState(config);
+    return Object.values(tree.resources ?? {})
+      .flatMap((resource): ProjectAppTaskExecutionRepairCandidate[] => {
+        if (resource.status.phase !== "attention") return [];
+        const attempt = latestTaskAttempt(tree, resource.metadata.id, resource.metadata.generation);
+        if (!attempt?.finishedAt) return [];
+        if (attempt.failureReason === "HandlerExecutionFailed") {
+          return [
+            {
+              taskId: resource.metadata.id,
+              owner: attempt.owner,
+              failedAt: attempt.finishedAt,
+              failureReason: "HandlerExecutionFailed",
+              ...(attempt.sessionId ? { sessionId: attempt.sessionId } : {}),
+            },
+          ];
+        }
+        // Compatibility for direct-owner failures recorded before execution
+        // failures received their own structured reason. The loader must prove
+        // the referenced session itself ended in error before releasing it.
+        if (
+          attempt.failureReason === "handler-blocked" &&
+          attempt.handler === `owner:${attempt.owner}` &&
+          attempt.sessionId
+        ) {
+          return [
+            {
+              taskId: resource.metadata.id,
+              owner: attempt.owner,
+              failedAt: attempt.finishedAt,
+              failureReason: "handler-blocked",
+              sessionId: attempt.sessionId,
+            },
+          ];
+        }
+        return [];
+      })
+      .sort((left, right) => left.failedAt.localeCompare(right.failedAt) || left.taskId.localeCompare(right.taskId));
+  });
+}
+
+/** Release one execution failure after structured evidence from a newer successful owner session. */
+export function releaseHandlerExecutionFailedProjectAppTask(
+  config: TaskStateConfig,
+  taskId: string,
+  evidence: {
+    owner: string;
+    sessionId: string;
+    observedAt: string;
+    allowLegacyHandlerBlocked?: boolean;
+  },
+): boolean {
+  return withTaskStateLock(config, () => {
+    const tree = readTaskState(config);
+    const resource = tree.resources?.[taskId];
+    const task = tree.tasks[taskId];
+    if (!resource || !task || resource.status.phase !== "attention") return false;
+    const attempt = latestTaskAttempt(tree, taskId, resource.metadata.generation);
+    if (!attempt?.finishedAt || attempt.owner !== evidence.owner) return false;
+    const executionFailed = attempt.failureReason === "HandlerExecutionFailed";
+    const legacyExecutionFailed =
+      evidence.allowLegacyHandlerBlocked === true &&
+      attempt.failureReason === "handler-blocked" &&
+      attempt.handler === `owner:${attempt.owner}` &&
+      Boolean(attempt.sessionId);
+    if (!executionFailed && !legacyExecutionFailed) return false;
+    const observedAt = Date.parse(evidence.observedAt);
+    const failedAt = Date.parse(attempt.finishedAt);
+    if (!Number.isFinite(observedAt) || !Number.isFinite(failedAt) || observedAt <= failedAt) return false;
+    const summary = `Owner ${evidence.owner} completed session ${evidence.sessionId} after the failed execution; retrying current task generation`;
     touchResource(resource, {
       phase: "pending",
       observedGeneration: Math.max(0, resource.metadata.generation - 1),
@@ -1169,8 +1266,8 @@ export function claimObservedProjectAppTask(
     }
     const canRecoverPreviousRuntime = Boolean(
       previousAttempt &&
-        previousAttempt.runtimeId !== reconcilerRuntimeId &&
-        (input.reason === `attempt-recovery:${task.id}` || previousAttempt.trigger),
+      previousAttempt.runtimeId !== reconcilerRuntimeId &&
+      (input.reason === `attempt-recovery:${task.id}` || previousAttempt.trigger),
     );
     const supersededSessionIds = new Set<string>();
     const pendingTrigger = tree.taskTriggers?.[task.id];
