@@ -132,6 +132,11 @@ describe("normalize scenario frontier workflow", () => {
       workKey: "features/feature-a/tests/case-a.test.ts",
       workRevision: expect.any(String),
     });
+    expect(result.output.actions[0].acceptance).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("explicit owner=aks-explorer"),
+      ]),
+    );
   });
 
   test("declares at most five exact leaves when the red frontier has free capacity", async () => {

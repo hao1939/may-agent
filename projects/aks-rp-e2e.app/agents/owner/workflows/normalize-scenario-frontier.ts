@@ -387,7 +387,7 @@ function actionForRow(
     outputs: ["evidence/archive/", row.adapterPath, row.legacyPath],
     acceptance: [
       ...learnedScenarioNormalizationAcceptance,
-      "If the exact external wait is repo-ref movement such as origin/dev publication, create or update that wait with workflow wait-for-repo-ref-advance and structured input.baseRef plus input.resumeBaselineCommit instead of making prose successor waits.",
+      "If the exact external wait is repo-ref movement such as origin/dev publication, create or update that wait with workflow wait-for-repo-ref-advance, structured input.baseRef plus input.resumeBaselineCommit, and explicit owner=aks-explorer instead of making prose successor waits.",
     ],
     priority: "P1",
     category: "domain_leaf",

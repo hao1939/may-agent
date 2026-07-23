@@ -256,7 +256,7 @@ export function resolveAksTask(
             instructions: [
               "Treat runtime phase=waiting as the current blocked representation; do not search only for the retired blocked phase.",
               "Requeue the same task when its exact Condition is already true.",
-              "Route valid repository waits through wait-for-repo-ref-advance using aks.repo-ref.observed.",
+              "Route valid repository waits through wait-for-repo-ref-advance using aks.repo-ref.observed, and preserve owner=aks-explorer whenever the bounded post-wake recheck is still AKS domain judgment.",
               "Return stale Conditions with no current producer to the task owner for fresh judgment.",
               "Preserve a human or external wait only with exact correlation and durable send proof.",
               "Review attention tasks that have no active retry or recovery consumer.",
