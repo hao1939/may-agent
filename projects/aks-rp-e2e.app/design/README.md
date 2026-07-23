@@ -106,6 +106,13 @@ actionable slot. A reconciled structured leaf wakes its loop through one app
 event fan-in; periodic pulses remain recovery. External waits belong to finite
 leaves and use exact typed Conditions.
 
+A repo-ref wait is scoped to both the ref and the commit being waited past.
+Its Condition identity includes that baseline commit, and its expected fact is
+`observed commit != baseline commit`. An event that advanced the ref _to_ the
+baseline cannot satisfy a later wait for the next advance. Reusing a generic
+"origin/dev changed" Condition across baselines creates stale-true waits and
+must not be used.
+
 For strict scenario-test inventory, the cleanliness standard is row coverage:
 zero missing adapters, or every current missing adapter represented by exact
 actionable work, exact accepted wait, reviewed terminal disposition, or

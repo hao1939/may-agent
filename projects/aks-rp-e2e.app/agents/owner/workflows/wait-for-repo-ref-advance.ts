@@ -94,9 +94,12 @@ export function parseReconciliationTaskPayload(
   }
 }
 
-function repoRefAdvanceCondition(repoRef: string): ProjectAppConditionSpec {
+function repoRefAdvanceCondition(
+  repoRef: string,
+  baselineCommit: string,
+): ProjectAppConditionSpec {
   const digest = createHash("sha256")
-    .update(repoRef)
+    .update(`${repoRef}\n${baselineCommit}`)
     .digest("hex")
     .slice(0, 12);
   return {
@@ -104,8 +107,8 @@ function repoRefAdvanceCondition(repoRef: string): ProjectAppConditionSpec {
     type: "aks.repo-ref.changed",
     subject: `repoRef:${repoRef}`,
     expected: {
-      field: "repoRef",
-      equals: repoRef,
+      field: "commit",
+      notEquals: baselineCommit,
     },
     owner: "app-ops",
   };
@@ -156,7 +159,9 @@ export function decideRepoRefAdvanceGate(input: RepoAdvanceGateInput): {
       state: "waiting",
       summary: `Keep ${input.taskId} waiting on a supported repo-ref wake: ${input.repoRef} is still baseline ${input.baselineCommit}${scope}${publication}${sourceCommit}, so the exact same-spec recheck should sleep until the ref advances.`,
       evidence,
-      conditions: [repoRefAdvanceCondition(input.repoRef)],
+      conditions: [
+        repoRefAdvanceCondition(input.repoRef, input.baselineCommit),
+      ],
     };
   }
 

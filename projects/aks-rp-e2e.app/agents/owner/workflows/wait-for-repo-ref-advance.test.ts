@@ -39,10 +39,29 @@ describe("wait-for-repo-ref-advance workflow", () => {
         {
           type: "aks.repo-ref.changed",
           subject: "repoRef:origin/dev",
-          expected: { field: "repoRef", equals: "origin/dev" },
+          expected: { field: "commit", notEquals: "abc" },
         },
       ],
     });
+  });
+
+  test("uses a distinct Condition for each baseline commit", () => {
+    const first = decideRepoRefAdvanceGate({
+      taskId: "domain/example",
+      repoRef: "origin/dev",
+      baselineCommit: "abc",
+      currentCommit: "abc",
+    });
+    const second = decideRepoRefAdvanceGate({
+      taskId: "domain/example",
+      repoRef: "origin/dev",
+      baselineCommit: "def",
+      currentCommit: "def",
+    });
+
+    expect(first.conditions?.[0]?.id).toBeTruthy();
+    expect(second.conditions?.[0]?.id).toBeTruthy();
+    expect(first.conditions?.[0]?.id).not.toBe(second.conditions?.[0]?.id);
   });
 
   test("hands the task back to the owner after the watched ref advances", () => {
