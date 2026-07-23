@@ -3,18 +3,20 @@ set -e
 
 export HOME="${HOME:-/app/.state}"
 export PROJECT_ROOT="${PROJECT_ROOT:-/app}"
-export MODEL_API_KEY="${MODEL_API_KEY:-${LITELLM_API_KEY:-not-needed}}"
+export MODEL_BASE_URL="${MODEL_BASE_URL:-http://host.docker.internal:4000}"
+export MODEL_API_KEY="${MODEL_API_KEY:-not-needed}"
+codex_home="${CODEX_HOME:-${MAY_CODEX_HOME:-${HOME}/.codex}}"
 
 codex_model="${CODEX_MODEL:-gpt-5.5}"
-codex_base_url="${CODEX_BASE_URL:-${MODEL_BASE_URL:-http://host.docker.internal:4000}}"
+codex_base_url="${MODEL_BASE_URL}"
 codex_base_url="${codex_base_url%/}"
 case "${codex_base_url}" in
   */v1) ;;
   *) codex_base_url="${codex_base_url}/v1" ;;
 esac
 
-mkdir -p "${HOME}/.codex"
-cat > "${HOME}/.codex/config.toml" <<EOF
+mkdir -p "${codex_home}"
+cat > "${codex_home}/config.toml" <<EOF
 model_provider = "model_endpoint"
 model = "${codex_model}"
 model_reasoning_effort = "high"
@@ -37,7 +39,7 @@ else
   codex_current_version="0.0.0"
 fi
 if command -v node >/dev/null 2>&1; then
-  node - "${HOME}/.codex/version.json" "${codex_current_version:-0.0.0}" <<'NODE'
+  node - "${codex_home}/version.json" "${codex_current_version:-0.0.0}" <<'NODE'
 const fs = require("node:fs");
 const [file, currentVersion] = process.argv.slice(2);
 let state = {};
@@ -53,6 +55,6 @@ NODE
 fi
 
 if [ "$(id -u)" = "0" ] && id mayagent >/dev/null 2>&1; then
-  chown mayagent:mayagent "${HOME}/.codex" "${HOME}/.codex/config.toml" "${HOME}/.codex/version.json" 2>/dev/null || true
-  [ -d "${HOME}/.codex/tmp" ] && chown -R mayagent:mayagent "${HOME}/.codex/tmp" 2>/dev/null || true
+  chown mayagent:mayagent "${codex_home}" "${codex_home}/config.toml" "${codex_home}/version.json" 2>/dev/null || true
+  [ -d "${codex_home}/tmp" ] && chown -R mayagent:mayagent "${codex_home}/tmp" 2>/dev/null || true
 fi

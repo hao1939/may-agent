@@ -130,9 +130,6 @@ COPY --from=builder /build/node_modules/@xterm/xterm/lib/xterm.js /app/projects/
 COPY --from=builder /build/node_modules/@xterm/xterm/css/xterm.css /app/projects/platform/ui/vendor/xterm/xterm.css
 COPY --from=builder /build/node_modules/@xterm/addon-fit/lib/addon-fit.js /app/projects/platform/ui/vendor/xterm/addon-fit.js
 
-# CLI agent config (Codex needs config.toml for the shared model endpoint).
-COPY container/codex-config.toml /etc/codex/config.toml
-
 # Copy supervisord config
 COPY container/supervisord.conf /etc/supervisord.conf
 RUN mkdir -p /app/.state/runtime-logs && chown -R mayagent:mayagent /app/.state/runtime-logs

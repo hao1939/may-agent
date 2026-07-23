@@ -16,7 +16,6 @@ import {
 import { EventBus } from "./event-bus.js";
 import { startInterfaceRuntime } from "./interface-startup.js";
 import type { ModelRegistry } from "./model-registry.js";
-import { waitForModelEndpoint } from "./model-endpoint-health.js";
 import { parseWebPort, startWebMode } from "./modes/web.js";
 import { runRequestedExitMode } from "./runtime-exit-modes.js";
 import { attachConsoleUI } from "./transport/console.js";
@@ -25,9 +24,7 @@ import { attachTelegramBot } from "./transport/telegram.js";
 
 export async function runAppRuntime(opts: {
   appArgs: AppArgs;
-  models: ModelRegistry["models"];
-  baseUrl: string;
-  anthropicDirect: boolean;
+  models: ModelRegistry;
   projectRoot: string;
   agentsRoot: string;
   sharedRoot: string;
@@ -71,18 +68,6 @@ export async function runAppRuntime(opts: {
     type: "info",
     message: `[may.ts] Starting (pid=${process.pid}, instance=${opts.instanceLabel}, root=${opts.projectRoot})`,
   });
-
-  if (opts.anthropicDirect) {
-    bus.emit({
-      type: "info",
-      message: "[may.ts] Anthropic direct mode: opus routing to api.anthropic.com (prompt caching enabled)",
-    });
-  } else {
-    bus.emit({
-      type: "info",
-      message: `[may.ts] Model endpoint: ${opts.baseUrl} (prompt caching may be limited)`,
-    });
-  }
 
   const manager = new SubagentManager({
     persistDir: opts.persistDir,
@@ -206,12 +191,6 @@ export async function runAppRuntime(opts: {
   });
 
   if (CRON_ENABLED) {
-    await waitForModelEndpoint({
-      baseUrl: opts.baseUrl,
-      bus,
-      timeoutMs:
-        Number(process.env.MODEL_ENDPOINT_READY_TIMEOUT_MS || process.env.MODEL_PROXY_READY_TIMEOUT_MS) || 120_000,
-    });
     await startCronRuntime({
       manager,
       bus,

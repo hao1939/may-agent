@@ -377,13 +377,14 @@ function writeStructuredResult(record: CliTaskRecord): void {
 }
 
 function cliEnv(): NodeJS.ProcessEnv {
-  const modelApiKey = process.env.MODEL_API_KEY || process.env.LITELLM_API_KEY || "sk-local";
+  const modelApiKey = process.env.MODEL_API_KEY || "not-needed";
+  const modelBaseUrl = process.env.MODEL_BASE_URL || "http://localhost:4000";
   const env: NodeJS.ProcessEnv = {
     ...process.env,
     HOME: process.env.HOME || "/app/.state",
     MODEL_API_KEY: modelApiKey,
-    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY || modelApiKey,
-    ANTHROPIC_BASE_URL: process.env.ANTHROPIC_BASE_URL || process.env.MODEL_BASE_URL || "http://localhost:4000",
+    ANTHROPIC_API_KEY: modelApiKey,
+    ANTHROPIC_BASE_URL: modelBaseUrl,
   };
   const codexHome = process.env.CODEX_HOME || process.env.MAY_CODEX_HOME;
   if (codexHome) env.CODEX_HOME = codexHome;
