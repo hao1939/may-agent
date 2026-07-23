@@ -857,6 +857,7 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
          FROM event_pair_runs p
          LEFT JOIN events e ON e.id = p.open_event_id
          WHERE p.status = 'orphan'
+           AND p.closed_at IS NULL
            AND p.opened_at >= ?
          ORDER BY p.expected_close_at ASC, p.id ASC
          LIMIT ?`,
