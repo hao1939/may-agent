@@ -347,8 +347,11 @@ the app and domain roots.
 
 `workspaceDir` normally equals `projectDir`. When the selected workflow exports
 `workspace = "task"`, infrastructure prepares and reuses a task-generation Git
-worktree before handler execution. Workspace lineage is observed attempt and
-receipt metadata; it is not desired task spec or a second scheduling record.
+worktree from the app workspace branch before handler execution. A workflow
+that intentionally integrates elsewhere may instead export
+`workspace = { kind: "task", baseBranch: "main" }`; the runtime uses that exact
+branch as the worktree base. Workspace lineage is observed attempt and receipt
+metadata; it is not desired task spec or a second scheduling record.
 The workflow runtime supplies the same directory to nested agent tools as their
 actual execution root.
 

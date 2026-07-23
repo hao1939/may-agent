@@ -148,6 +148,16 @@ task isolation:
 export const workspace = "task";
 ```
 
+The string form uses the app workspace branch. A workflow that owns changes
+for a different integration branch may declare it explicitly:
+
+```ts
+export const workspace = { kind: "task", baseBranch: "main" } as const;
+```
+
+This is still the same task-worktree convention, not per-task scheduling or a
+second workspace registry.
+
 For a project task, the reconciler then prepares one deterministic worktree
 from the app's configured base branch, records its path, base ref/commit,
 branch, head, and disposition on the current attempt, and supplies that path as
