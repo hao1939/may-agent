@@ -7,6 +7,7 @@ import type { WorkflowContext } from "@may-agent/sdk";
 import {
   execute,
   integratedAttentionSourceReady,
+  patchEquivalentAttentionSourceReady,
   retryableAttentionSummary,
 } from "./legacy-branch-reconciliation-controller.ts";
 
@@ -32,6 +33,38 @@ test("retries hard-admission repair and transient workspace failures", () => {
 
 function git(cwd: string, ...args: string[]): string {
   return execFileSync("git", ["-C", cwd, ...args], { encoding: "utf8" }).trim();
+}
+
+function patchEquivalentFixture(prefix: string): {
+  root: string;
+  repo: string;
+  sourceHead: string;
+} {
+  const root = mkdtempSync(join(tmpdir(), prefix));
+  roots.push(root);
+  const repo = join(root, "repo");
+  execFileSync("git", ["init", "-b", "dev", repo]);
+  git(repo, "config", "user.email", "test@example.com");
+  git(repo, "config", "user.name", "Test");
+  writeFileSync(join(repo, "README.md"), "base\n");
+  git(repo, "add", ".");
+  git(repo, "commit", "-m", "base");
+  git(repo, "switch", "-c", "task/equivalent");
+  writeFileSync(join(repo, "one.txt"), "one\n");
+  git(repo, "add", ".");
+  git(repo, "commit", "-m", "first source change");
+  const firstSource = git(repo, "rev-parse", "HEAD");
+  writeFileSync(join(repo, "two.txt"), "two\n");
+  git(repo, "add", ".");
+  git(repo, "commit", "-m", "second source change");
+  const sourceHead = git(repo, "rev-parse", "HEAD");
+  git(repo, "switch", "dev");
+  writeFileSync(join(repo, "base-only.txt"), "diverge hashes\n");
+  git(repo, "add", ".");
+  git(repo, "commit", "-m", "independent base change");
+  git(repo, "cherry-pick", firstSource, sourceHead);
+  git(repo, "branch", "origin/dev");
+  return { root, repo, sourceHead };
 }
 
 afterEach(() => {
@@ -210,6 +243,123 @@ test("replays the same attention task when its absent source is already integrat
       ],
     },
   });
+});
+
+test("replays the same task when every recorded source commit is patch-equivalent", async () => {
+  const { root, repo, sourceHead } = patchEquivalentFixture(
+    "aks-legacy-controller-equivalent-",
+  );
+  const appDir = join(root, "app");
+  const taskId = "ops/patch-equivalent-source";
+  const task = {
+    generation: 1,
+    phase: "attention",
+    summary: "Legacy branch merge conflict requires focused repair",
+    input: {
+      loopId: "legacy-branch-reconciliation",
+      workKey: "task/equivalent",
+      branches: [{ branch: "task/equivalent", head: sourceHead }],
+    },
+  };
+  git(repo, "switch", "-c", "task/novel");
+  writeFileSync(join(repo, "novel.txt"), "novel\n");
+  git(repo, "add", ".");
+  git(repo, "commit", "-m", "novel retry source");
+  const novelHead = git(repo, "rev-parse", "HEAD");
+  git(repo, "switch", "dev");
+  mkdirSync(join(appDir, ".state", "tasks"), { recursive: true });
+  writeFileSync(
+    join(appDir, ".state", "tasks", "tree.json"),
+    JSON.stringify({
+      tasks: {
+        "ops/aaa-ordinary-retry": {
+          generation: 1,
+          phase: "attention",
+          summary: "Legacy branch merge conflict requires focused repair",
+          input: {
+            loopId: "legacy-branch-reconciliation",
+            workKey: "task/novel",
+            branches: [{ branch: "task/novel", head: novelHead }],
+          },
+        },
+        [taskId]: task,
+      },
+    }),
+  );
+
+  expect(git(repo, "cherry", "origin/dev", "task/equivalent")).toMatch(
+    /(^|\n)- [0-9a-f]{40}/,
+  );
+  expect(patchEquivalentAttentionSourceReady(repo, task)).toBe(true);
+  const result = await execute({
+    task: "frontierLimit: 1",
+    agent: "app-ops",
+    appDir,
+    projectDir: repo,
+    workspaceDir: repo,
+    done: (summary, output) => ({ type: "done", summary, output }),
+  } as WorkflowContext);
+
+  expect(result).toMatchObject({
+    type: "done",
+    output: {
+      actions: [
+        {
+          kind: "unblock-task",
+          taskId,
+          expectedGeneration: 1,
+          reason:
+            "Reconcile the same task after its recorded source became patch-equivalent to origin/dev",
+        },
+      ],
+    },
+  });
+});
+
+test("does not replay a source when any commit is not patch-equivalent", () => {
+  const { repo, sourceHead } = patchEquivalentFixture(
+    "aks-legacy-controller-partial-",
+  );
+  git(repo, "switch", "task/equivalent");
+  writeFileSync(join(repo, "novel.txt"), "novel\n");
+  git(repo, "add", ".");
+  git(repo, "commit", "-m", "novel source change");
+  const novelHead = git(repo, "rev-parse", "HEAD");
+  git(repo, "switch", "dev");
+
+  expect(sourceHead).not.toBe(novelHead);
+  expect(
+    patchEquivalentAttentionSourceReady(repo, {
+      input: {
+        branches: [{ branch: "task/equivalent", head: novelHead }],
+      },
+    }),
+  ).toBe(false);
+});
+
+test("preserves moved, attached, and dirty patch-equivalent sources", () => {
+  const { root, repo, sourceHead } = patchEquivalentFixture(
+    "aks-legacy-controller-equivalent-safety-",
+  );
+  const task = {
+    input: {
+      branches: [{ branch: "task/equivalent", head: sourceHead }],
+    },
+  };
+
+  const attached = join(root, "attached-equivalent");
+  git(repo, "worktree", "add", attached, "task/equivalent");
+  expect(patchEquivalentAttentionSourceReady(repo, task)).toBe(false);
+  git(repo, "worktree", "remove", attached);
+
+  const dirty = join(root, "dirty-equivalent");
+  git(repo, "worktree", "add", "--detach", dirty, sourceHead);
+  writeFileSync(join(dirty, "uncommitted.txt"), "keep\n");
+  expect(patchEquivalentAttentionSourceReady(repo, task)).toBe(false);
+  git(repo, "worktree", "remove", "--force", dirty);
+
+  git(repo, "branch", "-f", "task/equivalent", "origin/dev");
+  expect(patchEquivalentAttentionSourceReady(repo, task)).toBe(false);
 });
 
 test("does not replay an absent source without integration proof", () => {

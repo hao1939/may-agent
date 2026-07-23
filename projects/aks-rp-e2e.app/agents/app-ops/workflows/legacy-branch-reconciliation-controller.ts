@@ -189,6 +189,48 @@ export function integratedAttentionSourceReady(
   return true;
 }
 
+export function patchEquivalentAttentionSourceReady(
+  repoDir: string,
+  task: GraphTask,
+  baseRef = "origin/dev",
+  observedWorktrees: WorktreeObservation[] | null = worktreeObservations(
+    repoDir,
+  ),
+): boolean {
+  const source = recordedSource(task);
+  if (!source) return false;
+
+  const local = git(repoDir, [
+    "rev-parse",
+    "--verify",
+    `refs/heads/${source.branch}^{commit}`,
+  ]);
+  if (local.status !== 0 || local.stdout !== source.head) return false;
+
+  if (!observedWorktrees) return false;
+  for (const worktree of observedWorktrees) {
+    if (worktree.branch === source.branch) return false;
+    if (worktree.head !== source.head) continue;
+    const status = git(worktree.path, [
+      "status",
+      "--porcelain=v1",
+      "--untracked-files=all",
+    ]);
+    if (status.status !== 0 || status.stdout) return false;
+  }
+
+  const cherry = git(repoDir, ["cherry", baseRef, source.branch]);
+  if (cherry.status !== 0) return false;
+  const commits = cherry.stdout
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  return (
+    commits.length > 0 &&
+    commits.every((line) => /^- [0-9a-f]{40}$/i.test(line))
+  );
+}
+
 function configuredFrontierLimit(raw: string, fallback: number): number {
   const match = raw.match(/^frontierLimit:\s*(.+)$/m);
   const configured = Number.parseInt(match?.[1]?.trim() ?? "", 10);
@@ -293,6 +335,23 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         : [],
     ),
   );
+  const patchEquivalentAttentionTaskIds = new Set(
+    represented.flatMap(([taskId, task]) => {
+      const source = recordedSource(task);
+      return (task.phase ?? task.state) === "attention" &&
+        source &&
+        !presentBranches.has(source.branch) &&
+        !integratedAttentionTaskIds.has(taskId) &&
+        patchEquivalentAttentionSourceReady(
+          projectDir,
+          task,
+          "origin/dev",
+          observedWorktrees,
+        )
+        ? [taskId]
+        : [];
+    }),
+  );
 
   const retryActions: ProjectAppTaskAction[] = represented
     .filter(([taskId, task]) => {
@@ -301,12 +360,24 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         (task.phase ?? task.state) === "attention" &&
         ((retryableAttentionTask(taskId, task, persistedState) &&
           (byFamily.has(workKey) || presentBranches.has(workKey))) ||
-          integratedAttentionTaskIds.has(taskId)) &&
+          integratedAttentionTaskIds.has(taskId) ||
+          patchEquivalentAttentionTaskIds.has(taskId)) &&
         Number.isInteger(task.generation) &&
         Number(task.generation) > 0
       );
     })
-    .sort(([left], [right]) => left.localeCompare(right))
+    .sort(([left], [right]) => {
+      const replayPriority = (taskId: string): number =>
+        integratedAttentionTaskIds.has(taskId)
+          ? 0
+          : patchEquivalentAttentionTaskIds.has(taskId)
+            ? 1
+            : 2;
+      return (
+        replayPriority(left) - replayPriority(right) ||
+        left.localeCompare(right)
+      );
+    })
     .slice(0, accounting.available)
     .map(([taskId, task]) => ({
       kind: "unblock-task" as const,
@@ -314,7 +385,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       expectedGeneration: Number(task.generation),
       reason: integratedAttentionTaskIds.has(taskId)
         ? "Reconcile the same task after its recorded source commit reached origin/dev"
-        : "Retry the same branch verification against current origin/dev",
+        : patchEquivalentAttentionTaskIds.has(taskId)
+          ? "Reconcile the same task after its recorded source became patch-equivalent to origin/dev"
+          : "Retry the same branch verification against current origin/dev",
     }));
   const unresolvedAttention = represented.filter(
     ([, task]) =>
@@ -370,7 +443,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const actions = [...retryActions, ...createActions];
 
   const summary = rows.length
-    ? `Legacy branch reconciliation found ${rows.length} unattached branch(es) with patches outside origin/dev across ${byFamily.size} family/families; declared ${createActions.length} verification task(s), retried ${retryActions.length} transient attention task(s), and observed ${accounting.actionableTaskIds.length} already actionable.`
+    ? `Legacy branch reconciliation found ${rows.length} unattached branch(es) with patches outside origin/dev across ${byFamily.size} family/families; declared ${createActions.length} verification task(s), retried ${retryActions.length} replayable attention task(s), and observed ${accounting.actionableTaskIds.length} already actionable.`
     : "Legacy clean-branch reconciliation converged: no unattached local branch has a patch outside origin/dev. Attached recovery work remains a separate explicit review frontier.";
   return ctx.done(summary, {
     state: "converged",
@@ -379,6 +452,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `base-ref:origin/dev`,
       `unattached-novel-branches:${rows.length}`,
       `families:${byFamily.size}`,
+      `patch-equivalent-attention:${patchEquivalentAttentionTaskIds.size}`,
     ],
     actions,
   });

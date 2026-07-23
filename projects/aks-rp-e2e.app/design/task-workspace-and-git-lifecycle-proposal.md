@@ -269,6 +269,22 @@ The maintain controller recovers this case through the same task:
    still point at the recorded commit, and return ordinary convergence; and
 6. let task-workspace finalization perform normal closeout.
 
+A second mechanically equivalent recovery applies when the exact recorded
+source ref still exists but its commits are patch-equivalent to current
+`origin/dev`. The controller may use `git cherry origin/dev <source>` only as
+replay eligibility evidence: the source ref must still point at the recorded
+head, every reported commit must be `-`, and no attached or dirty recovery
+worktree may own that source. It then unblocks the same task. It does not close
+the task, delete refs, or decide that the source intent is semantically
+accepted. The domain workflow performs its normal merge/no-diff check and
+closeout, so ambiguous, moved, partially represented, or workspace-owned
+sources remain visible for agent judgment.
+
+Exact integrated and patch-equivalent postcondition replays take the single
+writer slot before ordinary retryable attention. This prevents mechanically
+closable tasks from being starved behind a large retry frontier; it does not
+change the domain decision or widen the eligibility gate.
+
 An absent source ref is not itself success. Without exact ancestry proof, or
 when a ref moved or recoverable worktree remains, the controller leaves the
 task visible for owner judgment. Code gathers and validates these Git facts;
