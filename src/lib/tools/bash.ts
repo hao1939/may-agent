@@ -2,7 +2,14 @@ import { randomBytes } from "node:crypto";
 import { createWriteStream, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { AgentTool } from "@earendil-works/pi-agent-core";
+import {
+	DEFAULT_MAX_BYTES,
+	DEFAULT_MAX_LINES,
+	formatSize,
+	truncateTail,
+	type AgentTool,
+	type TruncationResult,
+} from "@earendil-works/pi-agent-core";
 import { Type } from "@earendil-works/pi-ai";
 import type { TSchema } from "@earendil-works/pi-ai";
 import { spawn } from "child_process";
@@ -27,7 +34,6 @@ function killProcessTree(pid: number): void {
 		try { process.kill(pid, "SIGKILL"); } catch { /* already dead */ }
 	}
 }
-import { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, formatSize, type TruncationResult, truncateTail } from "./truncate.js";
 
 /**
  * Default timeout for bash commands (seconds).

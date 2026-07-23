@@ -56,7 +56,7 @@ export interface CompletenessGuardOptions {
  *
  * Scans all assistant messages for tool calls to write(), edit(), or bash()
  * that reference the checklist filename. This is transcript-based detection
- * with no filesystem access — same pattern as tool-schema-guard.ts.
+ * with no filesystem access.
  *
  * @param messages - The session transcript messages
  * @param checklistFileName - The filename to search for (without extension)

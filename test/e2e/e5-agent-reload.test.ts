@@ -58,7 +58,7 @@ describe("E5: agent reload", () => {
             name: "newcomer",
             description: "Late-arriving fixture agent",
             domain: "e2e",
-            model: "opus",
+            model: "claude-opus-4-6",
             tools: [],
           },
           null,
@@ -102,7 +102,7 @@ describe("E5: agent reload", () => {
         name: "may",
         description: `Fixture interface agent for e2e tests (updated at ${Date.now()})`,
         domain: "e2e",
-        model: "opus",
+        model: "claude-opus-4-6",
         tools: ["cron"],
       };
       writeFileSync(mayConfigPath, JSON.stringify(updated, null, 2));

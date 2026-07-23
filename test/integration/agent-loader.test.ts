@@ -17,15 +17,14 @@ import { join, resolve } from "node:path";
 const AGENTS_ROOT = "/app/agents";
 
 const fakeModels = {
-  opus: { id: "opus", provider: "anthropic" },
-  "opus-4.7": { id: "claude-opus-4.7", provider: "github-copilot" },
+  "claude-opus-4-6": { id: "claude-opus-4-6", provider: "anthropic" },
+  "claude-opus-4.7": { id: "claude-opus-4.7", provider: "github-copilot" },
   "claude-sonnet-4-20250514": { id: "claude-sonnet-4-20250514", provider: "anthropic" },
-  gpt52: { id: "gpt52", provider: "openai" },
+  "gpt-5.2": { id: "gpt-5.2", provider: "openai" },
   "gpt-5.4": { id: "gpt-5.4", provider: "github-copilot" },
   "gpt-5.5": { id: "gpt-5.5", provider: "github-copilot" },
-  gemini3pro: { id: "gemini3pro", provider: "openai" },
-  "gemini-3.1-pro": { id: "gemini-3.1-pro-preview", provider: "github-copilot" },
-  kimi: { id: "kimi", provider: "openai" },
+  "gemini-3.1-pro-preview": { id: "gemini-3.1-pro-preview", provider: "github-copilot" },
+  "kimi-k2.5": { id: "kimi-k2.5", provider: "openai" },
 };
 
 describe("validateAgentConfig", () => {
@@ -34,7 +33,7 @@ describe("validateAgentConfig", () => {
       name: "coder",
       description: "Writes code",
       domain: "coding",
-      model: "opus",
+      model: "claude-opus-4-6",
       tools: ["coding"],
     };
     const errors = validateAgentConfig(config, fakeModels, AGENTS_ROOT);
@@ -68,7 +67,7 @@ describe("validateAgentConfig", () => {
       name: "test",
       description: "test",
       domain: "test",
-      model: "opus",
+      model: "claude-opus-4-6",
       tools: ["read-write", "fly-to-moon"],
     };
     const errors = validateAgentConfig(config, fakeModels, AGENTS_ROOT);
@@ -114,7 +113,7 @@ describe("validateAgentConfig", () => {
           name: "all-presets",
           description: "All preset smoke test",
           domain: "test",
-          model: "opus",
+          model: "claude-opus-4-6",
           tools: [...VALID_TOOL_PRESETS],
         }),
       );
@@ -138,7 +137,7 @@ describe("validateAgentConfig", () => {
         sharedRoot: join(root, "shared"),
         projectsRoot: join(root, "projects"),
         persistDir: join(root, ".state"),
-        models: { opus: { id: "opus", provider: "test", apiKey: "test" } } as any,
+        models: { "claude-opus-4-6": { id: "claude-opus-4-6", provider: "test", apiKey: "test" } } as any,
         manager: manager as any,
         bus: { emit: (event: { message?: string }) => { if (event.message) messages.push(event.message); } } as any,
         cronEnabled: false,
@@ -241,7 +240,7 @@ describe("agent loader boundaries", () => {
           name: "aks-explorer",
           description: "Project-local AKS explorer",
           domain: "AKS e2e",
-          model: "opus",
+          model: "claude-opus-4-6",
           tools: ["query_db"],
         }),
       );
@@ -258,7 +257,7 @@ describe("agent loader boundaries", () => {
         sharedRoot,
         projectsRoot,
         persistDir: join(root, ".state"),
-        models: { opus: { id: "opus", provider: "test", apiKey: "test" } } as any,
+        models: { "claude-opus-4-6": { id: "claude-opus-4-6", provider: "test", apiKey: "test" } } as any,
         manager: manager as any,
         bus: { emit: () => undefined } as any,
         cronEnabled: false,
@@ -286,7 +285,7 @@ describe("agent loader boundaries", () => {
           name: "silenced",
           description: "agent with cron.json but no cron tool",
           domain: "test",
-          model: "opus",
+          model: "claude-opus-4-6",
           tools: ["query_db"], // no "cron"
         }),
       );
@@ -301,7 +300,7 @@ describe("agent loader boundaries", () => {
         sharedRoot,
         projectsRoot: join(root, "projects"),
         persistDir: join(root, ".state"),
-        models: { opus: { id: "opus", provider: "test", apiKey: "test" } } as any,
+        models: { "claude-opus-4-6": { id: "claude-opus-4-6", provider: "test", apiKey: "test" } } as any,
         manager: manager as any,
         bus: { emit: (e: any) => events.push(e) } as any,
         cronEnabled: false,
@@ -332,7 +331,7 @@ describe("agent loader boundaries", () => {
           name: "enabled",
           description: "agent with cron.json and cron tool",
           domain: "test",
-          model: "opus",
+          model: "claude-opus-4-6",
           tools: ["cron"],
         }),
       );
@@ -347,7 +346,7 @@ describe("agent loader boundaries", () => {
         sharedRoot,
         projectsRoot: join(root, "projects"),
         persistDir: join(root, ".state"),
-        models: { opus: { id: "opus", provider: "test", apiKey: "test" } } as any,
+        models: { "claude-opus-4-6": { id: "claude-opus-4-6", provider: "test", apiKey: "test" } } as any,
         manager: manager as any,
         bus: { emit: (e: any) => events.push(e) } as any,
         cronEnabled: false,

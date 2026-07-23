@@ -488,7 +488,6 @@ export class SubagentManager {
           projectRoot: def.projectRoot ?? this._projectRoot,
           persistDir: this._persistDir,
         }),
-      dynamicApiKey: () => this.getCopilotToken(),
       onGuard: ({ context, guard, block, reason }) => {
         this.bus?.emit({
           type: "guard.triggered",
@@ -1569,17 +1568,6 @@ export class SubagentManager {
   }
 
   // ── Private ──
-
-  private getCopilotToken(): string {
-    try {
-      const { readFileSync } = require("node:fs");
-      const tokenPath = process.env.COPILOT_TOKEN_PATH || "/app/.copilot/api-key.json";
-      const data = JSON.parse(readFileSync(tokenPath, "utf-8"));
-      return data.token || "";
-    } catch {
-      return "";
-    }
-  }
 
   private async executeSession(session: ActiveSession): Promise<TaskResult> {
     const { agent, sessionId, agentName, task, startedAt } = session;

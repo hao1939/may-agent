@@ -19,7 +19,6 @@ export default [
       "src/lib/tools/bash.ts",
       "src/lib/tools/edit.ts",
       "src/lib/tools/edit-diff.ts",
-      "src/lib/tools/truncate.ts",
       "src/lib/tools/path-utils.ts",
       "src/lib/tools/write.ts",
     ],
