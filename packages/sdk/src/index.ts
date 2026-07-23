@@ -876,7 +876,7 @@ export interface WorkflowModule {
   name: string;
   description: string;
   /** Filesystem isolation convention interpreted by the embedding app runtime. */
-  workspace?: "shared" | "task";
+  workspace?: "shared" | "task" | { kind: "task"; baseBranch: string };
   execute: (ctx: WorkflowContext) => Promise<WorkflowResult>;
   verify?: (context: unknown, result: unknown) => Promise<unknown>;
 }

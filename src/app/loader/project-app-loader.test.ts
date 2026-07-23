@@ -394,6 +394,7 @@ describe("project app loader", () => {
       writeFileSync(join(projectDir, "README.md"), "base\n");
       execFileSync("git", ["-C", projectDir, "add", "README.md"]);
       execFileSync("git", ["-C", projectDir, "commit", "-m", "base"]);
+      execFileSync("git", ["-C", projectDir, "branch", "main"]);
       writeFileSync(
         join(f.appDir, "app.ts"),
         `export default {
@@ -414,7 +415,7 @@ describe("project app loader", () => {
          import { join } from "node:path";
          export const name = "isolated";
          export const description = "isolated task mutation";
-         export const workspace = "task";
+         export const workspace = { kind: "task", baseBranch: "main" };
          export async function execute(ctx) {
            if (ctx.workspaceDir === ctx.projectDir) return ctx.blocked("workspace was not isolated");
            writeFileSync(join(ctx.workspaceDir, "change.txt"), "isolated\\n");
@@ -450,7 +451,11 @@ describe("project app loader", () => {
       const state = JSON.parse(readFileSync(join(f.appDir, ".state/tasks/state.json"), "utf8"));
       const attempt = Object.values(state.attempts).find((value: any) => value.taskId === "work/isolated") as any;
       const workspace = attempt.workspace;
-      expect(workspace).toMatchObject({ kind: "task-worktree", disposition: "branch-retained" });
+      expect(workspace).toMatchObject({
+        kind: "task-worktree",
+        baseRef: "main",
+        disposition: "branch-retained",
+      });
       expect(state.resources["work/isolated"].status).toMatchObject({
         phase: "attention",
         summary: expect.stringContaining("must wait for integration"),
