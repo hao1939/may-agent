@@ -267,6 +267,13 @@ change generation.
 Triggers, timestamps, attempt summaries, Condition observations, and read
 projections never change task generation.
 
+An unresolved explicit owner input (`project.owner.requested` or
+`project.comment.created`) remains the primary persisted trigger until the
+reconciler emits its correlated owner result. Routine watcher, metric, and
+pipeline events may make the same task dirty, but they must not replace that
+owner input payload before the owner has processed it. A later owner input may
+become primary only while retaining every unresolved owner event reference.
+
 ## Conditions and watchers
 
 A Condition describes one exact external observation:
