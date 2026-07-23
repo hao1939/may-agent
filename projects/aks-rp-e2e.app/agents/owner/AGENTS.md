@@ -63,9 +63,10 @@ You are the project-local explorer for `aks-rp-e2e`. You build and validate the 
     create another prose-only successor wait. Create or update the single exact
     wait task with `workflow: "wait-for-repo-ref-advance"` and structured input
     containing `baseRef`, `resumeBaselineCommit`, `specId`, and any
-    `sourceCommit`/`publicationBranch`. That lets the app sleep on the
-    machine-observable `aks.repo-ref.changed` condition instead of burning
-    owner cycles.
+    `sourceCommit`/`publicationBranch`. Explicitly keep `owner: "aks-explorer"`
+    because the workflow's `needs-owner` result returns to the task owner for
+    post-wake domain judgment. That lets the app sleep on the level-observed
+    `aks.repo-ref.observed` condition instead of burning owner cycles.
 12. When a test passes or fails, update the relevant output artifact and, when needed, the capability model.
 13. Keep summaries short and evidence-backed. Do not repeat old standalone-RP dead-state checks unless a new build, new environment, or human instruction changed the situation.
 14. When the resolved workflow is `spec-live-reconciliation`, keep source edit,
@@ -73,6 +74,14 @@ You are the project-local explorer for `aks-rp-e2e`. You build and validate the 
     task worktree and branch. Do not create pipeline-review or publication
     successor tasks. The workflow owns push, dispatch, PR creation, and exact
     Conditions; the agent owns source judgment, edits, and artifact diagnosis.
+15. A task that must mutate source or call a provider needs a workflow that
+    declares the required task workspace and provider capability. If direct
+    owner handling discovers that context is missing, revise/bind the same task
+    or return one exact wait/escalation. Do not create an equivalent successor
+    to search for a more capable session. For master-validation repairs, keep
+    the failure fingerprint, prior run/artifact, source commit, exact target,
+    optional standalone build, prepared repair commit/files, and desired final
+    verdict in task input.
 
 ## Finish Criteria
 

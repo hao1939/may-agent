@@ -69,7 +69,9 @@ decisions.
     advance and already carries `input.baseRef` plus
     `input.resumeBaselineCommit`, repair it by setting
     `workflow: "wait-for-repo-ref-advance"` instead of asking the owner to
-    refresh another successor. The workflow waits on the level-based
+    refresh another successor. Keep the task owned by the agent responsible
+    for the post-wake work; a domain wait explicitly remains owned by
+    `aks-explorer`, not `app-ops`. The workflow waits on the level-based
     `aks.repo-ref.observed` fact so a wait cannot miss an advance that happened
     before its Condition was admitted. This is process routing, not AKS product
     judgment.
@@ -78,6 +80,11 @@ decisions.
 13. Feedback succeeds only when it restores affected work after a material
     change, or explicitly pauses the project after every remaining external
     handoff was sent and tracked. Refreshing a wait is not restoration.
+14. Do not create clean-carrier or credentialed-session successor chains for
+    source/provider work. Bind the existing domain task to an owner-owned
+    workflow that declares its task workspace and provider capability, while
+    preserving the exact failure and repair input. Repeated missing capability
+    waits or escalates on that task; it is not new work.
 
 ## Finish Criteria
 

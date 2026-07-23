@@ -203,10 +203,11 @@ lane without moving judgment into code: code schedules the review and the
 next action for each sampled task. The reviewer prioritizes old attention with
 no active attempt or controller and producerless waits; it does not compete
 with a fresh Condition wake or the workflow-to-owner fallback already in
-flight. It re-reads the selected task immediately before returning one
-state-changing action. If that target advances concurrently, task mechanics
-treat the result as stale and rerun this same reviewer from current facts
-instead of creating another attention item.
+flight. It may select up to the configured bounded sample, then re-reads every
+selected task immediately before returning state-changing actions. If any
+target advances concurrently, task mechanics treat the atomic result as stale
+and rerun this same reviewer from current facts instead of creating another
+attention item.
 
 ## Loop 1: spec verification
 

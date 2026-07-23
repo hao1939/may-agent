@@ -76,6 +76,10 @@ safe in-scope moves.
 
 - `app-ops` owns app organization and unfamiliar semantic events.
 - `aks-explorer` owns AKS domain judgment.
+- A wait remains owned by the agent that must act after the Condition wakes.
+  `needs-owner` returns to the task owner, so a domain repo-ref wait explicitly
+  keeps `owner: "aks-explorer"`; attaching a wait workflow must not transfer it
+  to `app-ops`.
 - Repeated domain processes become workflows; one-off work can go directly to
   its owner.
 - Finished achieve tasks are absorbed into receipts and removed from the live
