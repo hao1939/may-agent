@@ -18,6 +18,7 @@ import {
   readProjectAppTaskTrigger,
   recordProjectAppTaskTrigger,
   pendingProjectAppTaskRecoveryAttention,
+  ProjectAppTaskActionStaleError,
   repairPreviousRuntimeRecoveryAttention,
   repairRunningProjectAppTasksWithoutAttempt,
   recoverableProjectAppTaskAttempts,
@@ -1951,6 +1952,45 @@ describe("project app task reconciler state", () => {
     expect(readTaskState(config).resources?.[retryIntent.id]).toMatchObject({
       metadata: { generation: 1 },
       status: { phase: "pending", observedGeneration: 0 },
+    });
+  });
+
+  it("treats an unblock action whose target already advanced as stale", () => {
+    const { config } = fixture();
+    observeProjectAppTaskIntent(config, {
+      intent: {
+        id: "already-advancing",
+        parentId: "operations",
+        outcome: "Continue work already admitted by another reconciliation",
+        acceptance: ["The task is reconciled once"],
+        mode: "achieve",
+      },
+      appOwner: "app-owner",
+    });
+    const controller = declareAndClaimTask(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      handler: "workflow:controller",
+    });
+    if (controller.kind !== "claimed") throw new Error("expected controller claim");
+
+    expect(() =>
+      completeProjectAppTask(config, controller, {
+        summary: "retry from the earlier snapshot",
+        evidence: ["target was waiting when reviewed"],
+        actions: [
+          {
+            kind: "unblock-task",
+            taskId: "already-advancing",
+            expectedGeneration: 1,
+            reason: "Resume the target",
+          },
+        ],
+      }),
+    ).toThrow(ProjectAppTaskActionStaleError);
+    expect(readTaskState(config).resources?.["already-advancing"]).toMatchObject({
+      metadata: { generation: 1 },
+      status: { phase: "pending" },
     });
   });
 
