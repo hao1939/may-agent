@@ -101,7 +101,26 @@ export function repoRefChangedEvent(
   };
 }
 
-/** Observe remote-tracking repo refs and emit a semantic fact only when a ref advances. */
+export function repoRefObservedEvent(
+  observation: RepoRefObservation,
+): ProjectAppEvent {
+  return {
+    type: "aks.repo-ref.observed",
+    source: "aks-repo-ref-watcher",
+    target: { project: projectId },
+    data: {
+      project: projectId,
+      repoRef: observation.repoRef,
+      commit: observation.commit,
+      changed: observation.changed,
+      ...(observation.previousCommit
+        ? { previousCommit: observation.previousCommit }
+        : {}),
+    },
+  };
+}
+
+/** Observe remote-tracking repo refs as levels and separately report actual advances. */
 export async function observeRepoRefChanges(
   ctx: ProjectAppContext,
 ): Promise<unknown> {
@@ -126,7 +145,9 @@ export async function observeRepoRefChanges(
   });
 
   for (const observation of observations) {
-    if (observation?.changed) ctx.emit(repoRefChangedEvent(observation));
+    if (!observation) continue;
+    ctx.emit(repoRefObservedEvent(observation));
+    if (observation.changed) ctx.emit(repoRefChangedEvent(observation));
   }
 
   return {

@@ -415,6 +415,14 @@ export async function routeAksEvent(
   if (event.type === "aks.pull-request.check")
     return observeAksPullRequests(ctx);
   if (event.type === "aks.repo-ref.check") return observeRepoRefChanges(ctx);
+  if (event.type === "aks.repo-ref.observed") {
+    const details = eventDetails(event);
+    return {
+      observed: true,
+      repoRef: stringDetail(details, "repoRef", "repo_ref"),
+      commit: stringDetail(details, "commit"),
+    };
+  }
   if (event.type === "aks.repo-ref.changed") {
     const details = eventDetails(event);
     const repoRef = stringDetail(details, "repoRef", "repo_ref");
@@ -666,7 +674,7 @@ export default defineProjectApp({
     {
       id: "blocked-frontier-app-ops-review",
       enabled: true,
-      intervalMs: 7_200_000,
+      intervalMs: 1_800_000,
       emits: [
         {
           type: "project.owner.requested",
@@ -678,13 +686,13 @@ export default defineProjectApp({
             params: {
               maxConcurrent: domainPolicyMaxConcurrent,
               instruction:
-                "Periodic blocked-frontier app-ops review: re-examine blocked and dependency-waiting task leaves and push sampled blockers toward final state. Unblock or replace stale blockers whose resume condition is satisfied, create/link problem-solving work for local/tooling/environment root causes, mark proven terminal/product/environment dispositions done with evidence, convert true external waits into sent/escalated asks or precise response-await tasks, and dispatch unrelated runnable work so the project keeps moving.",
+                "Periodic waiting/attention frontier review: read current task state and hot external facts, then push a bounded sample toward final state. Treat runtime phase=waiting as the current blocked representation; do not search only for the retired blocked phase. Requeue the same task when its exact Condition is already true, route repo waits through wait-for-repo-ref-advance using aks.repo-ref.observed, and send stale Conditions with no current producer back to their owner for fresh judgment. Preserve a human or external wait only with exact correlation and durable send proof. Also review attention tasks that have no active retry/recovery consumer.",
               reviewChecklist: [
-                "Do not treat blocked as final.",
-                "Do not retry a blocked leaf unchanged.",
-                "Do not assign blocked work back to the same worker without a changed condition or a new bounded task.",
+                "Do not treat waiting or attention as final.",
+                "Read the current external fact instead of trusting the stored wait summary.",
+                "Do not retry an unchanged domain failure; a satisfied or invalid Condition is changed process evidence.",
                 "Prefer one shared problem/unblock task for a shared root cause.",
-                "Every sampled blocked task should leave review with a path toward closure: solved, reworked, escalated/sent, terminal-done, or a precise response-await with next review trigger.",
+                "Every sampled task should leave review with an active consumer: same-task retry, exact observed wait, sent escalation, or truthful terminal disposition.",
               ],
             },
           },
@@ -735,6 +743,7 @@ export default defineProjectApp({
     { type: "aks.pipeline.check", target: projectTarget },
     { type: "aks.pull-request.check", target: projectTarget },
     { type: "aks.repo-ref.check", target: projectTarget },
+    { type: "aks.repo-ref.observed", target: projectTarget },
     { type: "aks.repo-ref.changed", target: projectTarget },
     { type: "aks.workspace.integrity.check", target: projectTarget },
     { type: "aks.workspace.integrity.changed", target: projectTarget },

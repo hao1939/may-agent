@@ -2,7 +2,11 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { repoRefChangedEvent, observeRepoRef } from "./repo-ref.js";
+import {
+  observeRepoRef,
+  repoRefChangedEvent,
+  repoRefObservedEvent,
+} from "./repo-ref.js";
 
 function git(cwd: string, command: string): void {
   const proc = Bun.spawnSync(command.split(" "), {
@@ -16,6 +20,26 @@ function git(cwd: string, command: string): void {
 }
 
 describe("repo ref watcher", () => {
+  test("emits the current repo-ref level even when it did not move", () => {
+    const event = repoRefObservedEvent({
+      repoRef: "origin/dev",
+      commit: "currentcommit",
+      previousCommit: "currentcommit",
+      changed: false,
+    });
+
+    expect(event).toMatchObject({
+      type: "aks.repo-ref.observed",
+      target: { project: "aks-rp-e2e" },
+      data: {
+        repoRef: "origin/dev",
+        commit: "currentcommit",
+        previousCommit: "currentcommit",
+        changed: false,
+      },
+    });
+  });
+
   test("emits a semantic repo-ref change fact only after a prior commit exists", () => {
     const event = repoRefChangedEvent({
       repoRef: "origin/dev",

@@ -618,7 +618,7 @@ describe("app event contract", () => {
 
     expect(schedule).toMatchObject({
       enabled: true,
-      intervalMs: 7_200_000,
+      intervalMs: 1_800_000,
       emits: [
         {
           type: "project.owner.requested",

@@ -179,6 +179,19 @@ A repository watcher is not a publication producer. A pipeline watcher is not
 a pipeline dispatcher. An approval Condition is not evidence that an approval
 packet was delivered.
 
+Repository-ref Conditions use a level observation, not a one-time edge. The
+repo watcher emits `aks.repo-ref.observed` on every successful poll with the
+current commit; `aks.repo-ref.changed` remains the separate fact that the
+watcher's previously observed commit actually moved. A wait compares the
+observed commit with its own baseline. This prevents a Condition admitted after
+an advance from sleeping until an unrelated later commit.
+
+Runtime phase `waiting` is the current blocked-work representation. Operations
+review and metrics must inspect `waiting` and `attention`; querying only the
+retired `blocked` phase can report a false healthy zero. A stale wait is a
+signal for owner reevaluation, not permission for code to infer the domain
+decision from its prose.
+
 ## Loop 1: spec verification
 
 ### Purpose

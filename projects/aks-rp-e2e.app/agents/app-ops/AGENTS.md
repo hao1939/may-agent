@@ -34,8 +34,12 @@ decisions.
    under `group/app-operations`.
 3. A task describes desired and observed state, not an assignment. Let the
    controller resolve its owner or owner-owned workflow and apply the result.
-4. `blocked` is not done. A valid blocked item names the exact wait, owner,
-   observer, check method, fallback, and affected scope.
+4. `waiting` is the current runtime representation of blocked work and is not
+   done. A valid wait names the exact fact, owner, observer, check method,
+   fallback, and affected scope. Read the current fact before preserving an old
+   Condition; if it is already true, requeue the same task. If its event type
+   has no current producer, return the task to owner judgment instead of
+   leaving it asleep.
 5. Metrics and watchdog are fallback. If the same fallback repeats, create or
    fix systemic `ops/*` repair work instead of repeating the same recovery.
 6. Code collects facts. Agent judgment decides the next process move.
@@ -65,7 +69,9 @@ decisions.
     advance and already carries `input.baseRef` plus
     `input.resumeBaselineCommit`, repair it by setting
     `workflow: "wait-for-repo-ref-advance"` instead of asking the owner to
-    refresh another successor. This is process routing, not AKS product
+    refresh another successor. The workflow waits on the level-based
+    `aks.repo-ref.observed` fact so a wait cannot miss an advance that happened
+    before its Condition was admitted. This is process routing, not AKS product
     judgment.
 12. Preserve the project root goal from `project.json`. Temporary recovery,
     focus, and blocked-frontier work belongs below the root.

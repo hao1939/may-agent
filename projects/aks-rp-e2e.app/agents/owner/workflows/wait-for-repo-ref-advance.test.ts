@@ -37,7 +37,7 @@ describe("wait-for-repo-ref-advance workflow", () => {
       state: "waiting",
       conditions: [
         {
-          type: "aks.repo-ref.changed",
+          type: "aks.repo-ref.observed",
           subject: "repoRef:origin/dev",
           expected: { field: "commit", notEquals: "abc" },
         },

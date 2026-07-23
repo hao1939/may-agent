@@ -104,7 +104,7 @@ function repoRefAdvanceCondition(
     .slice(0, 12);
   return {
     id: `repo-ref-advance-${digest}`,
-    type: "aks.repo-ref.changed",
+    type: "aks.repo-ref.observed",
     subject: `repoRef:${repoRef}`,
     expected: {
       field: "commit",
