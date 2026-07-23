@@ -6,6 +6,7 @@ export interface DbMaintenanceResult {
 }
 
 const DAY_MS = 86_400_000;
+const ORPHAN_ACTIONABLE_MS = 4 * 60 * 60 * 1000;
 const DEFAULT_BATCH_SIZE = 500;
 
 function changes(result: unknown): number {
@@ -42,6 +43,22 @@ export function runDbMaintenancePass(
        ORDER BY expected_close_at LIMIT ?
      )`,
     [now, batchSize],
+  );
+
+  deleted.retiredOrphans = changes(
+    db.run(
+      `UPDATE event_pair_runs
+       SET closed_at = ?,
+           note = COALESCE(note || '; ', '') || 'retired stale orphan'
+       WHERE rowid IN (
+         SELECT rowid FROM event_pair_runs
+         WHERE status = 'orphan'
+           AND closed_at IS NULL
+           AND expected_close_at < ?
+         ORDER BY expected_close_at LIMIT ?
+       )`,
+      [now, now - ORPHAN_ACTIONABLE_MS, batchSize],
+    ),
   );
 
   // Remove expired closed/orphan commitments first. Open commitments keep their
