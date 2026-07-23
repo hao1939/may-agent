@@ -272,7 +272,9 @@ An unresolved explicit owner input (`project.owner.requested` or
 reconciler emits its correlated owner result. Routine watcher, metric, and
 pipeline events may make the same task dirty, but they must not replace that
 owner input payload before the owner has processed it. A later owner input may
-become primary only while retaining every unresolved owner event reference.
+become primary only while retaining every unresolved owner event reference and
+its structured input, so one coalesced owner run can judge every request before
+emitting their correlated results.
 
 ## Conditions and watchers
 
