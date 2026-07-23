@@ -16,7 +16,7 @@ import {
 import { EventBus } from "./event-bus.js";
 import { startInterfaceRuntime } from "./interface-startup.js";
 import type { ModelRegistry } from "./model-registry.js";
-import { waitForModelProxy } from "./model-proxy-health.js";
+import { waitForModelEndpoint } from "./model-endpoint-health.js";
 import { parseWebPort, startWebMode } from "./modes/web.js";
 import { runRequestedExitMode } from "./runtime-exit-modes.js";
 import { attachConsoleUI } from "./transport/console.js";
@@ -26,8 +26,7 @@ import { attachTelegramBot } from "./transport/telegram.js";
 export async function runAppRuntime(opts: {
   appArgs: AppArgs;
   models: ModelRegistry["models"];
-  modelBaseUrl: string;
-  litellmApiKey: string;
+  baseUrl: string;
   anthropicDirect: boolean;
   projectRoot: string;
   agentsRoot: string;
@@ -81,7 +80,7 @@ export async function runAppRuntime(opts: {
   } else {
     bus.emit({
       type: "info",
-      message: `[may.ts] LiteLLM proxy mode: all models via ${opts.modelBaseUrl} (prompt caching may be limited)`,
+      message: `[may.ts] Model endpoint: ${opts.baseUrl} (prompt caching may be limited)`,
     });
   }
 
@@ -171,8 +170,6 @@ export async function runAppRuntime(opts: {
     persistDir: opts.persistDir,
     bus,
     manager,
-    models: opts.models,
-    litellmApiKey: opts.litellmApiKey,
   });
 
   ({ taskSessionId, chatSession } = await startRequestedSession({
@@ -209,10 +206,11 @@ export async function runAppRuntime(opts: {
   });
 
   if (CRON_ENABLED) {
-    await waitForModelProxy({
-      baseUrl: opts.modelBaseUrl,
+    await waitForModelEndpoint({
+      baseUrl: opts.baseUrl,
       bus,
-      timeoutMs: Number(process.env.MODEL_PROXY_READY_TIMEOUT_MS) || 120_000,
+      timeoutMs:
+        Number(process.env.MODEL_ENDPOINT_READY_TIMEOUT_MS || process.env.MODEL_PROXY_READY_TIMEOUT_MS) || 120_000,
     });
     await startCronRuntime({
       manager,

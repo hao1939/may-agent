@@ -105,7 +105,7 @@ describe("query_db tool", () => {
           name: "sample",
           description: "Sample agent",
           domain: "test",
-          model: "opus",
+          model: "claude-opus-4-6",
           tools: ["read-only", "query_db"],
         }),
       );
@@ -122,7 +122,7 @@ describe("query_db tool", () => {
         agentsRoot,
         projectRoot: root,
         persistDir: join(root, ".state"),
-        models: { opus: { id: "opus", provider: "test", apiKey: "test" } } as any,
+        models: { "claude-opus-4-6": { id: "claude-opus-4-6", provider: "test", apiKey: "test" } } as any,
         manager: manager as any,
         bus: { emit: () => undefined } as any,
         cronEnabled: false,

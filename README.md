@@ -231,7 +231,7 @@ agents/
 
 ## Requirements
 
-Node.js ≥ 20. Peer dependencies: `@earendil-works/pi-agent-core`, `@earendil-works/pi-ai`.
+Node.js ≥ 22.19. Runtime dependencies: `@earendil-works/pi-agent-core`, `@earendil-works/pi-ai`.
 
 ## License
 

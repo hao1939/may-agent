@@ -21,7 +21,6 @@ services:
     volumes:
       - /app:/app
       - /home/example-user/alpha-source:/app/sources/alpha-source:ro
-      - /home/example-user/litellm/github_copilot:/app/.copilot:ro
     environment:
       - INSTANCE=${INSTANCE:-background}
       - MAY_WEB_TERMINAL=${MAY_WEB_TERMINAL:-1}

@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "dependencies": {
-    "@earendil-works/pi-ai": "0.80.7",
+    "@earendil-works/pi-ai": "0.81.1",
     "typebox": "1.1.38"
   },
   "exports": {

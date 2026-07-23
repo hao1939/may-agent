@@ -6,7 +6,10 @@
  * the newest messages verbatim.
  */
 
-import { estimateTokens as estimatePiMessageTokens } from "@earendil-works/pi-agent-core";
+import {
+  estimateContextTokens,
+  estimateTokens as estimatePiMessageTokens,
+} from "@earendil-works/pi-agent-core";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import type { Model, ToolResultMessage } from "@earendil-works/pi-ai";
 
@@ -77,8 +80,12 @@ function estimateMessageTokens(message: AgentMessage): number {
   return Math.max(Math.ceil(messageText(message).length / 3), estimatePiMessageTokens(message));
 }
 
-function estimateTokens(messages: AgentMessage[]): number {
+function estimateTranscriptTokens(messages: AgentMessage[]): number {
   return messages.reduce((sum, message) => sum + estimateMessageTokens(message), 0);
+}
+
+function estimateTokens(messages: AgentMessage[]): number {
+  return Math.max(estimateTranscriptTokens(messages), estimateContextTokens(messages).tokens);
 }
 
 function truncateWithEllipsis(text: string, maxLength: number): string {
@@ -314,7 +321,7 @@ function buildSummary(messages: AgentMessage[], previousSummary: string | null):
 }
 
 function splitMessages(messages: AgentMessage[], keepRatio: number): number {
-  const keepTokenBudget = Math.max(1, Math.floor(estimateTokens(messages) * keepRatio));
+  const keepTokenBudget = Math.max(1, Math.floor(estimateTranscriptTokens(messages) * keepRatio));
   let keptTokens = 0;
   let splitAt = messages.length - 1;
 

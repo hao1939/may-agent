@@ -1,5 +1,5 @@
-ARG NODE_IMAGE=node:22-bookworm-slim@sha256:9c2c405e3ff9b9afb2873232d24bb06367d649aa3e6259cbe314da59578e81e9
-ARG DEBIAN_IMAGE=debian:bookworm-slim@sha256:74d56e3931e0d5a1dd51f8c8a2466d21de84a271cd3b5a733b803aa91abf4421
+ARG NODE_IMAGE=node:24-bookworm-slim@sha256:6f7b03f7c2c8e2e784dcf9295400527b9b1270fd37b7e9a7285cf83b6951452d
+ARG DEBIAN_IMAGE=debian:bookworm-slim@sha256:7b140f374b289a7c2befc338f42ebe6441b7ea838a042bbd5acbfca6ec875818
 
 # ── Builder stage: compile standalone binary ──────────────────────────────
 FROM ${NODE_IMAGE} AS builder
@@ -94,17 +94,17 @@ WORKDIR /app
 RUN useradd -u 1000 -d /app/.state -s /bin/bash mayagent 2>/dev/null || true
 
 # Runtime Node/npm comes from the pinned builder image. This avoids the extra
-# NodeSource apt repository while keeping agent shell commands on Node 22.
+# NodeSource apt repository while keeping agent shell commands on Node 24 LTS.
 COPY --from=builder /usr/local/bin/node /usr/local/bin/node
 COPY --from=builder /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/npm
 RUN ln -sf ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm && \
     ln -sf ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
 
-# Install CLI agent tools (claude-code, codex) used as worker agents. They
-# route through litellm proxy for model access; keep versions pinned so image
-# rebuilds do not silently change agent behavior.
-ARG CLAUDE_CODE_VERSION=2.1.215
-ARG CODEX_VERSION=0.144.6
+# Install CLI agent tools (claude-code, codex) used as worker agents. They use
+# the configured model endpoint; keep versions pinned so image rebuilds do not
+# silently change agent behavior.
+ARG CLAUDE_CODE_VERSION=2.1.218
+ARG CODEX_VERSION=0.145.0
 RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION} @openai/codex@${CODEX_VERSION} \
     && test "$(claude --version | awk '{print $1}')" = "${CLAUDE_CODE_VERSION}" \
     && test "$(codex --version | awk '{print $2}')" = "${CODEX_VERSION}" \
@@ -130,7 +130,7 @@ COPY --from=builder /build/node_modules/@xterm/xterm/lib/xterm.js /app/projects/
 COPY --from=builder /build/node_modules/@xterm/xterm/css/xterm.css /app/projects/platform/ui/vendor/xterm/xterm.css
 COPY --from=builder /build/node_modules/@xterm/addon-fit/lib/addon-fit.js /app/projects/platform/ui/vendor/xterm/addon-fit.js
 
-# CLI agent configs (codex needs config.toml to route through litellm)
+# CLI agent config (Codex needs config.toml for the shared model endpoint).
 COPY container/codex-config.toml /etc/codex/config.toml
 
 # Copy supervisord config

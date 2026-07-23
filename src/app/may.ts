@@ -94,13 +94,12 @@ if (WEB_ONLY_MODE) {
 
 // ── Models ──────────────────────────────────────────────────────────────
 
-const { models, modelBaseUrl, apiKey: LITELLM_API_KEY, anthropicDirect } = createModelRegistry();
+const { models, baseUrl, anthropicDirect } = createModelRegistry();
 
 await runAppRuntime({
   appArgs,
   models,
-  modelBaseUrl,
-  litellmApiKey: LITELLM_API_KEY,
+  baseUrl,
   anthropicDirect,
   projectRoot: PROJECT_ROOT,
   agentsRoot: AGENTS_ROOT,

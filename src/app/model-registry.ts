@@ -1,39 +1,40 @@
 import { getBuiltinModel } from "@earendil-works/pi-ai/providers/all";
 import type { ModelWithApiKey } from "../lib/types.js";
 
-// These are routing limits verified for May's proxy, not upstream catalog
-// capabilities. Keep them explicit so a catalog refresh cannot silently delay
-// compaction past the gateway's configured context window.
-const PROXY_CONTEXT_WINDOWS = {
-  opus: 72_000,
-  gpt52: 400_000,
+// These are limits verified for May's configured model endpoint, not upstream
+// catalog capabilities. Keep them explicit so a catalog refresh cannot
+// silently delay compaction past the endpoint's context window.
+const ENDPOINT_CONTEXT_WINDOWS = {
+  "claude-opus-4-6": 72_000,
+  "gpt-5.2": 400_000,
   "gpt-5.4": 400_000,
   "gpt-5.5": 400_000,
-  "opus-4.7": 200_000,
-  "gemini-3.1-pro": 200_000,
+  "claude-opus-4.7": 200_000,
+  "gemini-3.1-pro-preview": 200_000,
 } as const;
 
 export interface ModelRegistry {
   models: Record<string, ModelWithApiKey>;
-  modelBaseUrl: string;
+  baseUrl: string;
   apiKey: string;
   anthropicDirect: boolean;
 }
 
 export function createModelRegistry(env: NodeJS.ProcessEnv = process.env): ModelRegistry {
-  const modelBaseUrl = env.MODEL_BASE_URL || "http://localhost:4000";
-  const apiKey = env.LITELLM_API_KEY || env.ANTHROPIC_API_KEY || "not-needed";
+  const baseUrl = env.MODEL_BASE_URL || "http://localhost:4000";
+  // LITELLM_API_KEY remains a compatibility fallback for existing deployments.
+  const apiKey = env.MODEL_API_KEY || env.LITELLM_API_KEY || env.ANTHROPIC_API_KEY || "not-needed";
   const anthropicDirect = Boolean(env.ANTHROPIC_API_KEY);
   const anthropicRoute = anthropicDirect
     ? { baseUrl: "https://api.anthropic.com", apiKey: env.ANTHROPIC_API_KEY! }
-    : { baseUrl: modelBaseUrl, apiKey };
+    : { baseUrl, apiKey };
 
   return {
-    modelBaseUrl,
+    baseUrl,
     apiKey,
     anthropicDirect,
     models: {
-      opus: anthropicDirect
+      "claude-opus-4-6": anthropicDirect
         ? {
             ...getBuiltinModel("anthropic", "claude-opus-4-6"),
             contextWindow: 200_000,
@@ -42,23 +43,23 @@ export function createModelRegistry(env: NodeJS.ProcessEnv = process.env): Model
           }
         : {
             ...getBuiltinModel("anthropic", "claude-opus-4-6"),
-            contextWindow: PROXY_CONTEXT_WINDOWS.opus,
-            baseUrl: modelBaseUrl,
+            contextWindow: ENDPOINT_CONTEXT_WINDOWS["claude-opus-4-6"],
+            baseUrl,
             apiKey,
           },
-      gpt52: {
+      "gpt-5.2": {
         ...getBuiltinModel("openai", "gpt-5.2"),
-        contextWindow: PROXY_CONTEXT_WINDOWS.gpt52,
-        baseUrl: modelBaseUrl,
+        contextWindow: ENDPOINT_CONTEXT_WINDOWS["gpt-5.2"],
+        baseUrl,
         apiKey,
       },
       "gpt-5.4": {
         ...getBuiltinModel("github-copilot", "gpt-5.4"),
-        contextWindow: PROXY_CONTEXT_WINDOWS["gpt-5.4"],
-        baseUrl: modelBaseUrl,
+        contextWindow: ENDPOINT_CONTEXT_WINDOWS["gpt-5.4"],
+        baseUrl,
         apiKey,
       },
-      kimi: {
+      "kimi-k2.5": {
         ...getBuiltinModel("openai", "gpt-4o"),
         api: "openai-completions" as const,
         id: "kimi-k2.5",
@@ -68,20 +69,20 @@ export function createModelRegistry(env: NodeJS.ProcessEnv = process.env): Model
       },
       "gpt-5.5": {
         ...getBuiltinModel("github-copilot", "gpt-5.5"),
-        contextWindow: PROXY_CONTEXT_WINDOWS["gpt-5.5"],
-        baseUrl: modelBaseUrl,
+        contextWindow: ENDPOINT_CONTEXT_WINDOWS["gpt-5.5"],
+        baseUrl,
         apiKey,
       },
-      "opus-4.7": {
+      "claude-opus-4.7": {
         ...getBuiltinModel("github-copilot", "claude-opus-4.7"),
-        contextWindow: PROXY_CONTEXT_WINDOWS["opus-4.7"],
-        baseUrl: modelBaseUrl,
+        contextWindow: ENDPOINT_CONTEXT_WINDOWS["claude-opus-4.7"],
+        baseUrl,
         apiKey,
       },
-      "gemini-3.1-pro": {
+      "gemini-3.1-pro-preview": {
         ...getBuiltinModel("github-copilot", "gemini-3.1-pro-preview"),
-        contextWindow: PROXY_CONTEXT_WINDOWS["gemini-3.1-pro"],
-        baseUrl: modelBaseUrl,
+        contextWindow: ENDPOINT_CONTEXT_WINDOWS["gemini-3.1-pro-preview"],
+        baseUrl,
         apiKey,
       },
     },

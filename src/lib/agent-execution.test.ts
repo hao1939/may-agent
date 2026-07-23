@@ -72,6 +72,10 @@ describe("shared agent execution preparation", () => {
     expect(prepared.task).toBe("do the work");
     expect(prepared.prompt).toBe("do the work");
     expect(prepared.tools.map((candidate) => candidate.name)).toEqual(["read", "finish"]);
+    expect(prepared.tools.find((candidate) => candidate.name === "read")?.executionMode).toBeUndefined();
+    expect(prepared.tools.find((candidate) => candidate.name === "finish")?.executionMode).toBe("sequential");
+    expect(prepared.runner.sessionId).toBe("direct-1");
+    expect(prepared.runner.streamFn).toBeFunction();
     expect(prepared.systemPrompt).toContain("shared rules\n\nsample identity");
     expect(prepared.systemPrompt).toContain("Available tools: read, finish");
     expect(prepared.systemPrompt).toContain("Current time: 2026-07-19T00:00:00.000Z");
