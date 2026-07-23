@@ -234,6 +234,15 @@ A thrown exception, timeout, unavailable runtime, invalid envelope, rejected
 action batch, or verifier rejection fails the attempt. `failed` is an attempt
 state, not a handler decision.
 
+Action admission remains atomic, but an `unblock-task` action can race normal
+reconciliation after the handler reads state. If the named generation is still
+current but the target has already moved from `waiting` or `attention` to
+`pending`, `running`, or `converged`, the action result is stale rather than an
+invalid handler judgment. Release and requeue the calling task from current
+state; do not strand it in `attention`. A generation mismatch remains the same
+stale-result case, while a missing target without a completion receipt remains
+an invalid action.
+
 ## Acceptance
 
 Mechanical admission proves that a result is safe to apply; it does not prove

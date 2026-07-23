@@ -258,6 +258,8 @@ export function resolveAksTask(
               "Requeue the same task when its exact Condition is already true.",
               "Route valid repository waits through wait-for-repo-ref-advance using aks.repo-ref.observed.",
               "Return stale Conditions with no current producer to the task owner for fresh judgment.",
+              "Do not act on a fresh Condition wake or workflow-to-owner fallback that is already in flight; inspect current attempts and controller coverage first.",
+              "Choose one uncovered task, re-read its current generation and phase immediately before finishing, and return at most one state-changing task action per pass.",
               "Preserve a human or external wait only with exact correlation and durable send proof.",
               "Review attention tasks that have no active retry or recovery consumer.",
             ],

@@ -200,7 +200,13 @@ unrelated recovery request even when the request is retained. A dedicated
 maintenance task gives this recurring responsibility a fair reconciliation
 lane without moving judgment into code: code schedules the review and the
 `app-ops` agent reads hot facts, selects a bounded sample, and decides the
-next action for each sampled task.
+next action for each sampled task. The reviewer prioritizes old attention with
+no active attempt or controller and producerless waits; it does not compete
+with a fresh Condition wake or the workflow-to-owner fallback already in
+flight. It re-reads the selected task immediately before returning one
+state-changing action. If that target advances concurrently, task mechanics
+treat the result as stale and rerun this same reviewer from current facts
+instead of creating another attention item.
 
 ## Loop 1: spec verification
 
