@@ -47,8 +47,7 @@ At least one of `--chat`, `--cron`, `--task`, `--oneshot`, `--status`,
 | Variable | Effect |
 |----------|--------|
 | `MODEL_BASE_URL` | Shared model API URL used by Pi, Codex, and Claude. |
-| `MODEL_API_KEY` | Credential for the shared model API. `LITELLM_API_KEY` remains a compatibility fallback during migration. |
-| `MODEL_ENDPOINT_READY_TIMEOUT_MS` | Maximum startup wait for the configured model endpoint when cron is enabled. |
+| `MODEL_API_KEY` | Credential for the shared model API. Defaults to `not-needed` for an unauthenticated local endpoint. |
 | `MAY_DAEMON_QUIET=1` | Suppresses the daemon-mode `info` log forwarder. By default, when neither `--console` nor `--chat` is enabled, the daemon forwards `bus.emit({type:"info"})` events through `log()` so operator-facing messages (reload summaries, telegram diagnostics, startup checks) are visible. Set this to `1` to opt out. |
 
 When `--console` or `--chat` IS enabled, `attachConsoleUI` handles `info`

@@ -371,23 +371,18 @@ If a native CLI requires a PTY in a specific version or environment, the PTY is
 an adapter implementation detail. May should still expose the same durable
 `cli.task.*` events rather than terminal polling as the public model.
 
-## Runtime Auth
+## Runtime Model Endpoint
 
-May should use the same native CLI authentication that works for the daemon
-user. Do not silently point Codex at a fresh empty `CODEX_HOME`; that creates a
-clean session directory with no auth and the worker fails with 401.
+May, Codex, and Claude use the shared model API configured by
+`MODEL_BASE_URL` and `MODEL_API_KEY`. The clients only depend on their standard
+wire protocols; LiteLLM is the current external implementation, not a runtime
+concept.
 
-Codex auth rule:
-
-- If `CODEX_HOME` is set, pass it through.
-- Else if `MAY_CODEX_HOME` is set, use it for May's Codex workers.
-- Else leave `CODEX_HOME` unset and let Codex use its normal authenticated
-  home for the daemon user.
-
-Claude auth/base URL rule:
-
-- Pass through `ANTHROPIC_API_KEY` and `ANTHROPIC_BASE_URL` when configured.
-- Otherwise use the local LiteLLM defaults already used by May's container.
+At container startup, May writes Codex's endpoint configuration into
+`CODEX_HOME`, then `MAY_CODEX_HOME`, then `$HOME/.codex`, in that order. The CLI
+runner uses the same precedence so native session state and configuration stay
+together. Claude receives the shared URL and credential through its
+`ANTHROPIC_BASE_URL` and `ANTHROPIC_API_KEY` interface.
 
 The practical check is simple:
 
@@ -396,8 +391,8 @@ codex exec --json --skip-git-repo-check --sandbox read-only -o /tmp/codex-smoke.
 ```
 
 If that works for the daemon user, May can launch Codex through
-`run_cli_agent`. If it fails only when `CODEX_HOME` points at a new directory,
-the issue is missing native CLI auth, not the event adapter.
+`run_cli_agent`. A custom Codex home must contain the generated endpoint
+configuration before the worker starts.
 
 ## Result Contract
 
