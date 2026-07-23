@@ -9,6 +9,7 @@ import {
   completeProjectAppTask,
   deferProjectAppTask,
   acknowledgeProjectAppTaskRecoveryAttention,
+  listHandlerExecutionFailedProjectAppTasks,
   listHandlerUnavailableProjectAppTasks,
   markProjectAppTaskAttention,
   observeProjectAppTaskIntent,
@@ -20,6 +21,7 @@ import {
   repairPreviousRuntimeRecoveryAttention,
   repairRunningProjectAppTasksWithoutAttempt,
   recoverableProjectAppTaskAttempts,
+  releaseHandlerExecutionFailedProjectAppTask,
   releaseHandlerUnavailableProjectAppTask,
   releaseInterruptedProjectAppTaskAttempt,
   releaseStaleProjectAppTaskResult,
@@ -1719,6 +1721,58 @@ describe("project app task reconciler state", () => {
     expect(readTaskState(config).attempts?.[next.attemptId]).toMatchObject({
       trigger: { type: "project.problem.resolved" },
     });
+  });
+
+  it("releases execution failure only after newer success from the same owner", () => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: intent(),
+      appOwner: "app-owner",
+      handler: "owner:branch-owner",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    recordProjectAppTaskAttemptSession(config, claim, "failed-owner-session");
+    markProjectAppTaskAttention(config, claim, {
+      summary: "owner execution ended without a decision",
+      reason: "HandlerExecutionFailed",
+    });
+
+    const [candidate] = listHandlerExecutionFailedProjectAppTasks(config);
+    expect(candidate).toMatchObject({
+      taskId: claim.taskId,
+      owner: "branch-owner",
+      failureReason: "HandlerExecutionFailed",
+      sessionId: "failed-owner-session",
+    });
+    expect(
+      releaseHandlerExecutionFailedProjectAppTask(config, claim.taskId, {
+        owner: "other-owner",
+        sessionId: "unrelated-success",
+        observedAt: "2099-01-01T00:00:00.000Z",
+      }),
+    ).toBe(false);
+    expect(
+      releaseHandlerExecutionFailedProjectAppTask(config, claim.taskId, {
+        owner: "branch-owner",
+        sessionId: "new-success",
+        observedAt: "invalid",
+      }),
+    ).toBe(false);
+    expect(
+      releaseHandlerExecutionFailedProjectAppTask(config, claim.taskId, {
+        owner: "branch-owner",
+        sessionId: "new-success",
+        observedAt: "2000-01-01T00:00:00.000Z",
+      }),
+    ).toBe(false);
+    expect(
+      releaseHandlerExecutionFailedProjectAppTask(config, claim.taskId, {
+        owner: "branch-owner",
+        sessionId: "new-success",
+        observedAt: "2099-01-01T00:00:00.000Z",
+      }),
+    ).toBe(true);
+    expect(readTaskState(config).resources?.[claim.taskId].status.phase).toBe("pending");
   });
 
   it("accepts the current attempt after a status-only resource version change", () => {
