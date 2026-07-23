@@ -1110,7 +1110,11 @@ function emitOwnerResultForTask(
   }
 }
 
-type OwnerIntentRef = { eventId: number; eventType: string };
+type OwnerIntentRef = {
+  eventId: number;
+  eventType: string;
+  data?: Record<string, unknown>;
+};
 
 function isOwnerIntentType(value: unknown): value is "project.owner.requested" | "project.comment.created" {
   return value === "project.owner.requested" || value === "project.comment.created";
@@ -1122,7 +1126,7 @@ function ownerIntentRefs(event: Record<string, unknown>): OwnerIntentRef[] {
     if (!isRecord(value)) return [];
     const eventId = Number(value.eventId);
     return Number.isInteger(eventId) && eventId > 0 && isOwnerIntentType(value.eventType)
-      ? [{ eventId, eventType: value.eventType }]
+      ? [{ eventId, eventType: value.eventType, ...(isRecord(value.data) ? { data: value.data } : {}) }]
       : [];
   });
   const inputEventId = Number(event.inputEventId);
@@ -1132,11 +1136,12 @@ function ownerIntentRefs(event: Record<string, unknown>): OwnerIntentRef[] {
     refs.push({
       eventId: inputEventId,
       eventType: inputEventType,
+      ...(isRecord(event.data) ? { data: event.data } : {}),
     });
   } else {
     const eventId = Number(event.eventId);
     if (Number.isInteger(eventId) && eventId > 0 && isOwnerIntentType(event.type)) {
-      refs.push({ eventId, eventType: event.type });
+      refs.push({ eventId, eventType: event.type, ...(isRecord(event.data) ? { data: event.data } : {}) });
     }
   }
   return [...new Map(refs.map((ref) => [ref.eventId, ref])).values()];
