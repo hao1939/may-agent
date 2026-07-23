@@ -414,13 +414,46 @@ export async function routeAksEvent(
   event: Record<string, unknown>,
 ): Promise<unknown> {
   if (event.type === "project.task.reconciled") {
+    const details = eventDetails(event);
     const reconciledTaskId = targetTaskId(event);
     const specProof = reconciledTaskId
       ? syncSpecLiveProof(ctx.appPath("."), reconciledTaskId)
       : { changed: false };
     const wake = loopRefillWakeForTaskEvent(ctx.appPath("."), event);
     if (wake) ctx.emit(wake);
-    return { refillWake: Boolean(wake), specProof };
+    const actionsApplied = Array.isArray(details.actionsApplied)
+      ? details.actionsApplied.filter(
+          (entry): entry is string =>
+            typeof entry === "string" && Boolean(entry.trim()),
+        )
+      : [];
+    const continueWaitingFrontierReview =
+      reconciledTaskId === waitingFrontierReviewTaskId &&
+      details.disposition === "converged" &&
+      actionsApplied.length > 0;
+    if (continueWaitingFrontierReview) {
+      ctx.emit({
+        type: "project.task.tick",
+        source: "aks-rp-e2e-app",
+        target: {
+          project: projectId,
+          taskId: waitingFrontierReviewTaskId,
+        },
+        urgency: "high",
+        action: "waiting-frontier-review",
+        data: {
+          project: projectId,
+          taskId: waitingFrontierReviewTaskId,
+          task_id: waitingFrontierReviewTaskId,
+          reason: "continue-after-applied-recovery-actions",
+        },
+      });
+    }
+    return {
+      refillWake: Boolean(wake),
+      waitingFrontierContinuation: continueWaitingFrontierReview,
+      specProof,
+    };
   }
   if (event.type === "aks.pipeline.check") return observeAksPipelines(ctx);
   if (event.type === "pipeline.queue.overdue") {

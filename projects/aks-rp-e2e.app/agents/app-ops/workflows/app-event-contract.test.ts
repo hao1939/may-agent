@@ -273,6 +273,77 @@ describe("app event contract", () => {
     ]);
   });
 
+  test("continues a productive waiting-frontier review from structured actions", async () => {
+    const emitted: Record<string, unknown>[] = [];
+    const result = await routeAksEvent(
+      {
+        appPath: () => resolve(import.meta.dir, "../../.."),
+        emit: (value: Record<string, unknown>) => emitted.push(value),
+      } as never,
+      {
+        type: "project.task.reconciled",
+        target: {
+          project: projectId,
+          taskId: waitingFrontierReviewTaskId,
+        },
+        data: {
+          project: projectId,
+          taskId: waitingFrontierReviewTaskId,
+          disposition: "converged",
+          actionsApplied: ["unblocked stale-wait"],
+        },
+      },
+    );
+
+    expect(result).toMatchObject({
+      waitingFrontierContinuation: true,
+    });
+    expect(emitted).toContainEqual({
+      type: "project.task.tick",
+      source: "aks-rp-e2e-app",
+      target: {
+        project: projectId,
+        taskId: waitingFrontierReviewTaskId,
+      },
+      urgency: "high",
+      action: "waiting-frontier-review",
+      data: {
+        project: projectId,
+        taskId: waitingFrontierReviewTaskId,
+        task_id: waitingFrontierReviewTaskId,
+        reason: "continue-after-applied-recovery-actions",
+      },
+    });
+  });
+
+  test("stops waiting-frontier continuation when the agent applied no actions", async () => {
+    const emitted: Record<string, unknown>[] = [];
+    const result = await routeAksEvent(
+      {
+        appPath: () => resolve(import.meta.dir, "../../.."),
+        emit: (value: Record<string, unknown>) => emitted.push(value),
+      } as never,
+      {
+        type: "project.task.reconciled",
+        target: {
+          project: projectId,
+          taskId: waitingFrontierReviewTaskId,
+        },
+        data: {
+          project: projectId,
+          taskId: waitingFrontierReviewTaskId,
+          disposition: "converged",
+          actionsApplied: [],
+        },
+      },
+    );
+
+    expect(result).toMatchObject({
+      waitingFrontierContinuation: false,
+    });
+    expect(emitted).toEqual([]);
+  });
+
   test("turns one overdue pipeline fact into an operator message without a task", async () => {
     const event = {
       type: "pipeline.queue.overdue",

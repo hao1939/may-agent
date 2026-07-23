@@ -209,6 +209,14 @@ target advances concurrently, task mechanics treat the atomic result as stale
 and rerun this same reviewer from current facts instead of creating another
 attention item.
 
+A review pass that successfully applies one or more structured task actions
+immediately schedules one more tick for the same maintenance task. This is a
+continuation signal, not a code-side judgment that another task is broken: the
+next `app-ops` pass re-reads hot facts and may return no actions. The chain
+stops when a pass applies no actions, while the periodic schedule remains the
+fallback for later drift. Event coalescing and the normal app concurrency limit
+still prevent overlapping reviewer attempts.
+
 ## Loop 1: spec verification
 
 ### Purpose
