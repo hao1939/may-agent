@@ -437,9 +437,13 @@ describe("CLI task runner", () => {
     const bus = new EventBus();
     let spawnedEnv: NodeJS.ProcessEnv | undefined;
     const originalModelApiKey = process.env.MODEL_API_KEY;
+    const originalModelBaseUrl = process.env.MODEL_BASE_URL;
     const originalAnthropicApiKey = process.env.ANTHROPIC_API_KEY;
+    const originalAnthropicBaseUrl = process.env.ANTHROPIC_BASE_URL;
     process.env.MODEL_API_KEY = "endpoint-key";
-    delete process.env.ANTHROPIC_API_KEY;
+    process.env.MODEL_BASE_URL = "http://model-endpoint:4000";
+    process.env.ANTHROPIC_API_KEY = "direct-key";
+    process.env.ANTHROPIC_BASE_URL = "https://api.anthropic.com";
     attachCliTaskRunner({
       bus,
       persistDir,
@@ -466,11 +470,16 @@ describe("CLI task runner", () => {
       await waitFor(() => Boolean(spawnedEnv));
       expect(spawnedEnv?.MODEL_API_KEY).toBe("endpoint-key");
       expect(spawnedEnv?.ANTHROPIC_API_KEY).toBe("endpoint-key");
+      expect(spawnedEnv?.ANTHROPIC_BASE_URL).toBe("http://model-endpoint:4000");
     } finally {
       if (originalModelApiKey === undefined) delete process.env.MODEL_API_KEY;
       else process.env.MODEL_API_KEY = originalModelApiKey;
+      if (originalModelBaseUrl === undefined) delete process.env.MODEL_BASE_URL;
+      else process.env.MODEL_BASE_URL = originalModelBaseUrl;
       if (originalAnthropicApiKey === undefined) delete process.env.ANTHROPIC_API_KEY;
       else process.env.ANTHROPIC_API_KEY = originalAnthropicApiKey;
+      if (originalAnthropicBaseUrl === undefined) delete process.env.ANTHROPIC_BASE_URL;
+      else process.env.ANTHROPIC_BASE_URL = originalAnthropicBaseUrl;
       rmSync(root, { recursive: true, force: true });
     }
   });
