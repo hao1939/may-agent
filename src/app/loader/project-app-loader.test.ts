@@ -1441,6 +1441,22 @@ describe("project app loader", () => {
           hasAgent: () => true,
           async callAgent(_agent: string, task: string) {
             ownerCalls.push(task);
+            if (ownerCalls.length > 1) {
+              return {
+                sessionId: "owner-recovered-session",
+                status: "done",
+                structuredResult: {
+                  state: "converged",
+                  summary: "owner recovered and completed the task",
+                  evidence: ["fresh owner decision"],
+                  actions: [],
+                },
+                lastAssistantText: "owner recovered",
+                messages: [],
+                duration: "0s",
+                outputDir: "",
+              };
+            }
             return {
               sessionId: "owner-error-session",
               status: "error",
@@ -1482,6 +1498,50 @@ describe("project app loader", () => {
         summary: "provider returned 429",
         evidence: ["workflow-run:owner-error-session"],
       });
+      expect(Object.values(state.attempts)).toContainEqual(
+        expect.objectContaining({
+          taskId: "work/owner-error",
+          failureReason: "HandlerExecutionFailed",
+        }),
+      );
+
+      writeSessionMeta(f.persistDir, "owner-error-session", {
+        agent: "sample-owner",
+        task: "failed owner task",
+        status: "error",
+        startedAt: Date.now() - 10_000,
+        endedAt: Date.now() - 5_000,
+        error: "structured test failure",
+      });
+      bus.emit({
+        type: "session.end",
+        source: "runtime",
+        owner: "agent:sample-owner",
+        timestamp: Date.now() + 1_000,
+        data: {
+          sessionId: "independent-owner-success",
+          agent: "sample-owner",
+          status: "done",
+          outcome: "done",
+          summary: "owner runtime is working again",
+          durationMs: 1,
+        },
+      } as any);
+      await waitUntil(() => {
+        const current = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
+        return Boolean(current.receipts?.["work/owner-error"]);
+      });
+      expect(ownerCalls).toHaveLength(2);
+      expect(events).toContainEqual(
+        expect.objectContaining({
+          type: "project.task.handler.recovered",
+          data: expect.objectContaining({
+            taskId: "work/owner-error",
+            reason: "owner-session-succeeded-after-handler-execution-failure",
+            evidenceSessionId: "independent-owner-success",
+          }),
+        }),
+      );
     } finally {
       closeDb(f.persistDir);
       rmSync(f.root, { recursive: true, force: true });

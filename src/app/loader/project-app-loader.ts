@@ -49,6 +49,7 @@ import {
   claimObservedProjectAppTask,
   completeProjectAppTask,
   deferProjectAppTask,
+  listHandlerExecutionFailedProjectAppTasks,
   listHandlerUnavailableProjectAppTasks,
   markProjectAppTaskAttention,
   listProjectAppTaskIntents,
@@ -60,6 +61,7 @@ import {
   readProjectAppTaskIntent,
   readProjectAppTaskTrigger,
   recordProjectAppTaskTrigger,
+  releaseHandlerExecutionFailedProjectAppTask,
   releaseHandlerUnavailableProjectAppTask,
   repairPreviousRuntimeRecoveryAttention,
   repairRunningProjectAppTasksWithoutAttempt,
@@ -575,6 +577,7 @@ type TaskCapabilityRun = {
   runId: string | null;
   verifier?: { name: string; sourcePath: string; verify: ProjectAppTaskVerifier };
   unavailable?: boolean;
+  executionFailed?: boolean;
 };
 
 type WorkflowCapability = {
@@ -761,6 +764,7 @@ async function runTaskCapability(input: {
     return {
       handlerResult,
       runId,
+      ...(!done ? { executionFailed: true } : {}),
       ...(verifier
         ? {
             verifier: {
@@ -800,6 +804,7 @@ async function runTaskCapability(input: {
       },
       runId: null,
       ...(unavailable ? { unavailable: true } : {}),
+      ...(!unavailable ? { executionFailed: true } : {}),
     };
   }
 }
@@ -1028,7 +1033,11 @@ async function runTaskOwner(input: {
       rootParentAliases: [input.descriptor.id, basename(input.descriptor.projectDir)],
     },
   );
-  return { handlerResult, runId: result.sessionId || null };
+  return {
+    handlerResult,
+    runId: result.sessionId || null,
+    ...(!done ? { executionFailed: true } : {}),
+  };
 }
 
 function emitTaskReconciliationEvent(
@@ -1621,9 +1630,11 @@ async function reconcileTask(input: {
     evidence: primaryHandlerResult.evidence,
     reason: primaryResult.unavailable
       ? "HandlerUnavailable"
-      : primaryHandlerResult.state === "needs-owner"
-        ? "needs-owner"
-        : "handler-blocked",
+      : primaryResult.executionFailed
+        ? "HandlerExecutionFailed"
+        : primaryHandlerResult.state === "needs-owner"
+          ? "needs-owner"
+          : "handler-blocked",
     wakeParent: !ownerHandoff,
   });
   if (!ownerHandoff) {
@@ -1975,9 +1986,59 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
   appRouterDescriptorsByBus.set(opts.bus, descriptors);
   opts.bus.subscribe((rawEvent): DeliveryResult | void => {
     const event = flattenEvent(rawEvent);
+    const successfulOwner =
+      event.type === "session.end" &&
+      event.status === "done" &&
+      typeof event.agent === "string" &&
+      event.agent.trim() &&
+      typeof event.sessionId === "string" &&
+      event.sessionId.trim()
+        ? {
+            owner: event.agent.trim(),
+            sessionId: event.sessionId.trim(),
+            observedAt: new Date(typeof event.timestamp === "number" ? event.timestamp : Date.now()).toISOString(),
+          }
+        : null;
     for (const descriptor of appRouterDescriptorsByBus.get(opts.bus) ?? []) {
       if (descriptor.reconciliationPaused) continue;
       const taskController = appTaskControllersByBus.get(opts.bus)?.get(descriptor.id);
+      if (successfulOwner && taskController && descriptor.app.tasks) {
+        const config = taskReconciliationConfig({
+          appDir: descriptor.appDir,
+          projectDir: descriptor.projectDir,
+          owner: descriptor.owner,
+          maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
+        });
+        for (const candidate of listHandlerExecutionFailedProjectAppTasks(config)) {
+          if (candidate.owner !== successfulOwner.owner) continue;
+          const legacySession = candidate.failureReason === "handler-blocked" ? candidate.sessionId : undefined;
+          const allowLegacyHandlerBlocked = Boolean(
+            legacySession && opts.persistDir && readSessionMeta(opts.persistDir, legacySession)?.status === "error",
+          );
+          if (
+            !releaseHandlerExecutionFailedProjectAppTask(config, candidate.taskId, {
+              ...successfulOwner,
+              allowLegacyHandlerBlocked,
+            })
+          ) {
+            continue;
+          }
+          taskController.enqueue(candidate.taskId);
+          opts.bus.emit({
+            type: "project.task.handler.recovered",
+            source: `project-app:${descriptor.id}:task-recovery`,
+            owner: `agent:${candidate.owner}`,
+            target: { project: descriptor.id, taskId: candidate.taskId },
+            data: {
+              project: descriptor.id,
+              taskId: candidate.taskId,
+              handler: "owner-execution",
+              reason: "owner-session-succeeded-after-handler-execution-failure",
+              evidenceSessionId: successfulOwner.sessionId,
+            },
+          } as unknown as AgentEvent);
+        }
+      }
       if (
         descriptor.app.tasks &&
         (isProjectScopedForApp(event, descriptor.id) || ownerValue(event) === descriptor.owner)
