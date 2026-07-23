@@ -94,13 +94,11 @@ if (WEB_ONLY_MODE) {
 
 // ── Models ──────────────────────────────────────────────────────────────
 
-const { models, baseUrl, anthropicDirect } = createModelRegistry();
+const models = createModelRegistry();
 
 await runAppRuntime({
   appArgs,
   models,
-  baseUrl,
-  anthropicDirect,
   projectRoot: PROJECT_ROOT,
   agentsRoot: AGENTS_ROOT,
   sharedRoot: ROOTS.sharedRoot,
