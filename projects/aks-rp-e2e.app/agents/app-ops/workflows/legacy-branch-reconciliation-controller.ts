@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   resolveTaskTreePath,
   workflowResultVersion,
@@ -44,6 +45,17 @@ type GraphTask = {
   input?: Record<string, unknown>;
 };
 
+type PersistedAttempt = {
+  taskId?: string;
+  handler?: string;
+  summary?: string;
+  failureReason?: string;
+};
+
+type PersistedTaskState = {
+  attempts?: Record<string, PersistedAttempt>;
+};
+
 const retryableAttentionSummaries = new Set([
   "Legacy branch family base changed; retry from current origin/dev",
   // Compatibility for the two reviews that lost the initial three-writer race.
@@ -54,6 +66,10 @@ const retryableAttentionSummaries = new Set([
   "Legacy branch family closeout failed; owner review required",
   "Legacy branch base changed; retry verification against current origin/dev",
   "Legacy branch verification closeout failed safely",
+  // Compatibility for attention created before branch verification learned to
+  // repair conflicts and failed checks inside the same task.
+  "Legacy branch merge conflict requires focused repair",
+  "Legacy branch verification failed",
 ]);
 
 function configuredFrontierLimit(raw: string, fallback: number): number {
@@ -75,11 +91,47 @@ function readTasks(appDir: string): Record<string, GraphTask> {
   }
 }
 
+function readTaskState(appDir: string): PersistedTaskState {
+  try {
+    return JSON.parse(
+      readFileSync(join(appDir, ".state", "tasks", "state.json"), "utf8"),
+    ) as PersistedTaskState;
+  } catch {
+    return {};
+  }
+}
+
+function taskAttemptsFor(
+  taskId: string,
+  persistedState: PersistedTaskState,
+): PersistedAttempt[] {
+  return Object.values(persistedState.attempts ?? {}).filter(
+    (attempt) => attempt.taskId === taskId,
+  );
+}
+
+function retryableAttentionTask(
+  taskId: string,
+  task: GraphTask,
+  persistedState: PersistedTaskState,
+): boolean {
+  const summary = String(task.summary ?? "");
+  if (retryableAttentionSummaries.has(summary)) return true;
+  if (summary !== "Connection error.") return false;
+  return taskAttemptsFor(taskId, persistedState).some(
+    (attempt) =>
+      attempt.handler === "workflow:legacy-branch-verification" &&
+      attempt.failureReason === "needs-owner" &&
+      String(attempt.summary ?? "").includes("owner judgment in the same task"),
+  );
+}
+
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const projectDir = ctx.projectDir ?? "/app/projects/aks-rp-e2e";
   const appDir = ctx.appDir ?? "/app/projects/aks-rp-e2e.app";
   const rows = legacyBranchInventory(projectDir);
   const tasks = readTasks(appDir);
+  const persistedState = readTaskState(appDir);
   const represented = Object.entries(tasks).filter(
     ([, task]) => task.input?.loopId === legacyBranchReconciliationTaskId,
   );
@@ -111,11 +163,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   const retryActions: ProjectAppTaskAction[] = represented
-    .filter(([, task]) => {
+    .filter(([taskId, task]) => {
       const workKey = String(task.input?.workKey ?? "");
       return (
         (task.phase ?? task.state) === "attention" &&
-        retryableAttentionSummaries.has(String(task.summary ?? "")) &&
+        retryableAttentionTask(taskId, task, persistedState) &&
         (byFamily.has(workKey) || presentBranches.has(workKey)) &&
         Number.isInteger(task.generation) &&
         Number(task.generation) > 0
@@ -129,6 +181,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       expectedGeneration: Number(task.generation),
       reason: "Retry the same branch verification against current origin/dev",
     }));
+  const unresolvedAttention = represented.filter(
+    ([, task]) =>
+      (task.phase ?? task.state) === "attention" &&
+      (byFamily.has(String(task.input?.workKey ?? "")) ||
+        Array.isArray(task.input?.branches)),
+  );
+  const createBudget = unresolvedAttention.length
+    ? 0
+    : Math.max(0, accounting.available - retryActions.length);
   const createActions: ProjectAppTaskAction[] = rows
     .filter((row) => !representedBranches.has(row.branch))
     .sort(
@@ -136,7 +197,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         left.family.localeCompare(right.family) ||
         left.branch.localeCompare(right.branch),
     )
-    .slice(0, Math.max(0, accounting.available - retryActions.length))
+    .slice(0, createBudget)
     .map((row) => {
       const revision = legacyBranchWorkRevision([row]);
       return {

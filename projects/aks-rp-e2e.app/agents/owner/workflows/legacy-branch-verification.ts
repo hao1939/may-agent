@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 import {
+  Type,
   type WorkflowContext,
   type WorkflowIoContract,
   type WorkflowResult,
@@ -27,11 +28,46 @@ export const workflowContract: WorkflowIoContract = {
     version: workflowResultVersion,
     fields: ["state", "summary", "evidence", "actions"],
     description:
-      "Converges only after pass+merge+ref cleanup or already-represented cleanup; conflicts and failed checks remain visible.",
+      "Reconciles conflicts and failed checks through bounded agent repair; converges only after verified merge, represented cleanup, or explicit rejection.",
   },
 };
 
 type SourceBranch = { branch: string; head: string; files?: string[] };
+
+export type LegacyRepairRequest = {
+  cause: "merge-conflict" | "verification-failure";
+  source: SourceBranch;
+  workspaceDir: string;
+  baseCommit: string;
+  candidateHead: string;
+  attempt: number;
+  conflicts: string[];
+  failureEvidence: string[];
+  feedback: string;
+};
+
+export type LegacyRepairDecision = {
+  decision: "repaired" | "retry" | "reject" | "needs-owner";
+  summary: string;
+  evidence: string[];
+};
+
+export type LegacyRepairAgent = (
+  request: LegacyRepairRequest,
+) => Promise<LegacyRepairDecision>;
+
+const repairSchema = Type.Object({
+  decision: Type.Union([
+    Type.Literal("repaired"),
+    Type.Literal("retry"),
+    Type.Literal("reject"),
+    Type.Literal("needs-owner"),
+  ]),
+  summary: Type.String({ minLength: 1 }),
+  evidence: Type.Array(Type.String({ minLength: 1 })),
+});
+
+const maxRepairIterations = 3;
 
 function matchingJsonObject(text: string, start: number): string | null {
   let depth = 0;
@@ -172,6 +208,163 @@ function stepEvidence(verification: LegacyBranchVerification): string[] {
   );
 }
 
+function ownerReviewEvidence(
+  source: SourceBranch,
+  baseCommit: string,
+  candidateHead: string,
+  verification: LegacyBranchVerification,
+): string[] {
+  return [
+    `branch:${source.branch}@${source.head}:verification-failed`,
+    `base-commit:${baseCommit}`,
+    `candidate-commit:${candidateHead}`,
+    `changed-files:${verification.changedFiles.join(",")}`,
+    ...(verification.reason
+      ? [`verification-reason:${verification.reason}`]
+      : []),
+    ...stepEvidence(verification),
+  ];
+}
+
+function restoreBase(workspaceDir: string, baseCommit: string): void {
+  git(workspaceDir, ["merge", "--abort"], true);
+  git(workspaceDir, ["reset", "--hard", baseCommit]);
+}
+
+function workspaceProblems(
+  workspaceDir: string,
+  baseCommit: string,
+  priorHead: string,
+  decision: LegacyRepairDecision["decision"],
+  cause: LegacyRepairRequest["cause"],
+): string[] {
+  const conflicts = git(workspaceDir, [
+    "diff",
+    "--name-only",
+    "--diff-filter=U",
+  ])
+    .stdout.split("\n")
+    .filter(Boolean);
+  const dirty = git(workspaceDir, [
+    "status",
+    "--porcelain=v1",
+    "--untracked-files=all",
+  ])
+    .stdout.split("\n")
+    .filter(Boolean);
+  const head = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+  const problems: string[] = [];
+  if (conflicts.length)
+    problems.push(`unresolved conflicts: ${conflicts.join(", ")}`);
+  if (dirty.length) problems.push(`uncommitted files: ${dirty.join(", ")}`);
+  if (
+    git(workspaceDir, ["merge-base", "--is-ancestor", baseCommit, head], true)
+      .status !== 0
+  ) {
+    problems.push(`candidate ${head} is not based on ${baseCommit}`);
+  }
+  if (decision === "repaired" && head === priorHead) {
+    problems.push(
+      "repair reported success without changing the candidate commit",
+    );
+  }
+  if (decision === "retry" && cause !== "verification-failure") {
+    problems.push("unchanged retry is valid only after verification failure");
+  }
+  return problems;
+}
+
+async function runRepairAgent(
+  ctx: WorkflowContext,
+  request: LegacyRepairRequest,
+): Promise<LegacyRepairDecision> {
+  const result = await ctx.runAgent(
+    ctx.agent,
+    [
+      `Continue the same legacy-branch task after ${request.cause}.`,
+      `Work only in ${request.workspaceDir}. Do not create another branch or worktree, push, delete refs, or edit task state.`,
+      `Current integration base: origin/dev@${request.baseCommit}`,
+      `Exact source: ${request.source.branch}@${request.source.head}`,
+      `Source-declared files: ${(request.source.files ?? []).join(", ") || "not recorded"}`,
+      request.cause === "merge-conflict"
+        ? "The worktree contains the attempted merge and its conflicts. Inspect current origin/dev and the source intent. If useful changes remain, resolve them in a new clean commit. If the source is stale, duplicated, incorrect, or superseded, abort the merge and return reject with a clean worktree."
+        : "The worktree contains a clean committed candidate that failed verification. Diagnose the exact evidence, make and commit the smallest useful correction, and leave the worktree clean.",
+      "Return repaired only after producing a new clean commit. Return retry only when fresh evidence justifies rerunning verification without a source change. Return reject only when current evidence proves the legacy source is stale, incorrect, duplicated, or superseded and should not land. Use needs-owner only for an exceptional ambiguity that this bounded domain process cannot safely resolve.",
+      request.conflicts.length
+        ? `Conflict files:\n${request.conflicts.join("\n")}`
+        : "Conflict files: none",
+      request.failureEvidence.length
+        ? `Verification evidence:\n${request.failureEvidence.join("\n")}`
+        : "Verification evidence: none",
+      request.feedback ? `Prior iteration feedback:\n${request.feedback}` : "",
+      "Task:",
+      ctx.task,
+    ]
+      .filter(Boolean)
+      .join("\n\n"),
+    { timeoutMs: 1_800_000, schema: repairSchema },
+  );
+  if (result.status === "error" || result.status === "interrupted") {
+    throw new Error(
+      `Legacy branch repair agent ${result.status}: ${result.lastAssistantText || result.sessionId}`,
+    );
+  }
+  const decision = result.structuredResult as LegacyRepairDecision;
+  return {
+    ...decision,
+    evidence: [...decision.evidence, `repair-session:${result.sessionId}`],
+  };
+}
+
+type RepairOutcome =
+  | { state: "candidate"; head: string; evidence: string[] }
+  | { state: "reject"; summary: string; evidence: string[] }
+  | { state: "needs-owner"; summary: string; evidence: string[] };
+
+async function repairCandidate(
+  ctx: WorkflowContext,
+  repairAgent: LegacyRepairAgent,
+  request: Omit<LegacyRepairRequest, "attempt" | "feedback">,
+): Promise<RepairOutcome> {
+  let feedback = "";
+  const evidence: string[] = [];
+  for (let attempt = 1; attempt <= maxRepairIterations; attempt += 1) {
+    const priorHead = git(request.workspaceDir, ["rev-parse", "HEAD"]).stdout;
+    const decision = await repairAgent({ ...request, attempt, feedback });
+    evidence.push(
+      `repair-iteration:${attempt}:${decision.decision}:${decision.summary}`,
+      ...decision.evidence,
+    );
+    if (decision.decision === "reject") {
+      return { state: "reject", summary: decision.summary, evidence };
+    }
+    if (decision.decision === "needs-owner") {
+      return { state: "needs-owner", summary: decision.summary, evidence };
+    }
+    const problems = workspaceProblems(
+      request.workspaceDir,
+      request.baseCommit,
+      priorHead,
+      decision.decision,
+      request.cause,
+    );
+    if (!problems.length) {
+      return {
+        state: "candidate",
+        head: git(request.workspaceDir, ["rev-parse", "HEAD"]).stdout,
+        evidence,
+      };
+    }
+    feedback = problems.join("; ");
+    evidence.push(`repair-validation-failed:${feedback}`);
+  }
+  return {
+    state: "needs-owner",
+    summary: `Legacy branch repair exhausted ${maxRepairIterations} changed iterations without a valid candidate.`,
+    evidence,
+  };
+}
+
 export type LegacyCandidateVerifier = (
   workspaceDir: string,
   projectDir: string,
@@ -185,6 +378,7 @@ export async function executeWithVerifier(
   ctx: WorkflowContext,
   verifier: LegacyCandidateVerifier,
   baselineProvider: LegacyBaselineProvider = captureLegacyVerificationBaseline,
+  repairAgent: LegacyRepairAgent = (request) => runRepairAgent(ctx, request),
 ): Promise<WorkflowResult> {
   const repoDir = ctx.projectDir ?? "/app/projects/aks-rp-e2e";
   const workspaceDir = ctx.workspaceDir ?? repoDir;
@@ -225,26 +419,64 @@ export async function executeWithVerifier(
       ["merge", "--no-ff", "--no-edit", source.branch],
       true,
     );
+    const repairEvidence: string[] = [];
     if (merge.status !== 0) {
       const conflicts = git(workspaceDir, [
         "diff",
         "--name-only",
         "--diff-filter=U",
       ]).stdout;
-      git(workspaceDir, ["merge", "--abort"], true);
-      git(workspaceDir, ["reset", "--hard", baseCommit]);
-      return ctx.blocked(
-        "Legacy branch merge conflict requires focused repair",
-        {
-          branch: source.branch,
-          head: source.head,
-          conflicts: conflicts.split("\n").filter(Boolean),
-          error: merge.stderr || merge.stdout,
-        },
-      );
+      const repair = await repairCandidate(ctx, repairAgent, {
+        cause: "merge-conflict",
+        source,
+        workspaceDir,
+        baseCommit,
+        candidateHead: baseCommit,
+        conflicts: conflicts.split("\n").filter(Boolean),
+        failureEvidence: [merge.stderr || merge.stdout].filter(Boolean),
+      });
+      repairEvidence.push(...repair.evidence);
+      if (repair.state === "reject") {
+        restoreBase(workspaceDir, baseCommit);
+        const residue = git(workspaceDir, [
+          "status",
+          "--porcelain=v1",
+          "--untracked-files=all",
+        ]).stdout;
+        if (residue) {
+          throw new Error(
+            `Rejected legacy repair left workspace residue:\n${residue}`,
+          );
+        }
+        cleanSourceRefs(repoDir, source);
+        const summary = `Rejected and removed ${source.branch}: ${repair.summary}`;
+        return ctx.done(summary, {
+          state: "converged",
+          summary,
+          evidence: [
+            `branch:${source.branch}@${source.head}:rejected`,
+            `base-commit:${baseCommit}`,
+            ...repairEvidence,
+          ],
+          actions: [],
+        });
+      }
+      if (repair.state === "needs-owner") {
+        restoreBase(workspaceDir, baseCommit);
+        const summary = `${repair.summary} The same task requires exceptional owner judgment; no source refs were changed.`;
+        return ctx.done(summary, {
+          state: "needs-owner",
+          summary,
+          evidence: [
+            `branch:${source.branch}@${source.head}:repair-exhausted`,
+            `base-commit:${baseCommit}`,
+            ...repairEvidence,
+          ],
+        });
+      }
     }
 
-    const candidateHead = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+    let candidateHead = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
     if (
       git(workspaceDir, ["diff", "--quiet", baseCommit, candidateHead], true)
         .status === 0
@@ -263,16 +495,75 @@ export async function executeWithVerifier(
       });
     }
 
-    const verification = verifier(workspaceDir, repoDir, baseCommit, baseline);
-    if (!verification.passed) {
-      return ctx.blocked("Legacy branch verification failed", {
-        branch: source.branch,
-        head: source.head,
+    let verification = verifier(workspaceDir, repoDir, baseCommit, baseline);
+    for (
+      let iteration = 1;
+      !verification.passed && iteration <= maxRepairIterations;
+      iteration += 1
+    ) {
+      const repair = await repairCandidate(ctx, repairAgent, {
+        cause: "verification-failure",
+        source,
+        workspaceDir,
         baseCommit,
         candidateHead,
-        changedFiles: verification.changedFiles,
-        reason: verification.reason,
-        steps: verification.steps,
+        conflicts: [],
+        failureEvidence: ownerReviewEvidence(
+          source,
+          baseCommit,
+          candidateHead,
+          verification,
+        ),
+      });
+      repairEvidence.push(...repair.evidence);
+      if (repair.state === "reject") {
+        restoreBase(workspaceDir, baseCommit);
+        cleanSourceRefs(repoDir, source);
+        const summary = `Rejected and removed ${source.branch} after verification review: ${repair.summary}`;
+        return ctx.done(summary, {
+          state: "converged",
+          summary,
+          evidence: [
+            `branch:${source.branch}@${source.head}:rejected`,
+            `base-commit:${baseCommit}`,
+            ...repairEvidence,
+          ],
+          actions: [],
+        });
+      }
+      if (repair.state === "needs-owner") {
+        const summary = `${repair.summary} The same task requires exceptional owner judgment; no source refs were changed.`;
+        return ctx.done(summary, {
+          state: "needs-owner",
+          summary,
+          evidence: [
+            ...ownerReviewEvidence(
+              source,
+              baseCommit,
+              candidateHead,
+              verification,
+            ),
+            ...repairEvidence,
+          ],
+        });
+      }
+      candidateHead = repair.head;
+      verification = verifier(workspaceDir, repoDir, baseCommit, baseline);
+    }
+    if (!verification.passed) {
+      const summary = `Legacy branch verification exhausted ${maxRepairIterations} repair rounds: ${verification.reason ?? "verification failed without an explicit reason"}.`;
+      return ctx.done(summary, {
+        state: "needs-owner",
+        summary,
+        evidence: [
+          ...ownerReviewEvidence(
+            source,
+            baseCommit,
+            candidateHead,
+            verification,
+          ),
+          ...repairEvidence,
+        ],
       });
     }
 
@@ -323,6 +614,7 @@ export async function executeWithVerifier(
         `base-commit:${baseCommit}`,
         `result-commit:${candidateHead}`,
         `changed-files:${verification.changedFiles.join(",")}`,
+        ...repairEvidence,
         ...stepEvidence(verification),
       ],
       actions: [],

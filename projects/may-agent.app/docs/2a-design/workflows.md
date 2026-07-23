@@ -93,24 +93,30 @@ export const description =
   "Implement a change, run deterministic checks, and return the verified result.";
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  const implementation = await ctx.runAgent("dev", ctx.task);
-  if (implementation.status === "error") {
-    return ctx.blocked("Implementation failed", {
-      sessionId: implementation.sessionId,
-    });
-  }
+  let feedback = "";
+  for (let iteration = 1; iteration <= 3; iteration += 1) {
+    const implementation = await ctx.runAgent(
+      "dev",
+      [ctx.task, feedback].filter(Boolean).join("\n\n"),
+    );
+    if (implementation.status === "error") {
+      return ctx.blocked("Agent execution failed", {
+        sessionId: implementation.sessionId,
+      });
+    }
 
-  const verification = await ctx.runFunction("verify", async () => {
-    const { execSync } = await import("node:child_process");
-    return execSync("bun test", { encoding: "utf8" });
+    const verification = await ctx.runFunction("verify", async () => {
+      const { execSync } = await import("node:child_process");
+      return execSync("bun test", { encoding: "utf8" });
+    });
+    if (verification.status !== "error") {
+      return ctx.done("Implemented and verified");
+    }
+    feedback = `Iteration ${iteration} verification failed:\n${verification.lastAssistantText}`;
+  }
+  return ctx.blocked("Bounded repair loop did not produce a verified result", {
+    feedback,
   });
-  if (verification.status === "error") {
-    return ctx.blocked("Verification failed", {
-      output: verification.lastAssistantText,
-    });
-  }
-
-  return ctx.done("Implemented and verified");
 }
 ```
 
@@ -224,6 +230,14 @@ contract, not whether its TypeScript uses `await`: steps execute in declared
 order, each step resolves before the next begins, and the caller receives one
 terminal result from that run.
 
+For a task-bound domain workflow, this run is one bounded reconciliation
+iteration, not the lifetime of the task. The same task may invoke the workflow
+again after an exact Condition changes or after recoverable execution failure.
+Within the current run, expected in-scope failures feed evidence back to an
+agent step and continue through a bounded repair-and-verify loop. Do not turn a
+merge conflict, failed test, or rejected implementation into a durable wait or
+immediate owner handoff merely because the first attempt failed.
+
 Keep a wait inside one workflow only when it is bounded and expected to resolve
 within the current execution, such as:
 
@@ -300,6 +314,19 @@ failed attempt and task attention; the task controller passes explicit binding
 metadata and the workflow runner does not infer binding from prompt text. Only
 an admitted `needs-owner` task result causes sequential owner handoff. Nested
 workflows return their result to their parent synchronously.
+
+For task-bound domain work, use these outcomes consistently:
+
+- continue locally when the workflow and its owning agent can still make a
+  useful in-scope repair;
+- return an exact task `waiting` result only after establishing the external
+  Condition and any required request or dispatch;
+- return `needs-owner` only for an exceptional same-owner judgment that the
+  learned workflow could not safely resolve;
+- create an explicit escalation only after agent judgment identifies a real
+  cross-owner action; and
+- use `ctx.blocked` for workflow execution failure or inability to produce a
+  safe structured result, not as an ordinary domain branch.
 
 Resume creates a new run linked to the prior run. It must resolve the same
 workflow identity deliberately. If the original content hash is unavailable,

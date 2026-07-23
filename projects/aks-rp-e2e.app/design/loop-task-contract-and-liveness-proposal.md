@@ -73,8 +73,9 @@ Use these terms consistently:
 - **actionable**: the finite leaf can usefully execute now;
 - **waiting**: execution would be untruthful until a typed external fact
   changes;
-- **attention**: the current representation is invalid, ambiguous, rejected,
-  or requires owner repair;
+- **attention**: workflow execution, owner recovery, or result admission did
+  not produce an applicable result; it is process-recovery evidence, not a
+  normal domain disposition;
 - **terminal**: the current objective has an accepted final disposition and
   no automatic resume is expected;
 - **frontier limit**: the maximum number of actionable leaves the controller
@@ -107,7 +108,11 @@ The controller never waits on all leaves and never owns their completion
 lifecycle. Periodic resync remains the simple recovery path.
 
 One invalid unit does not stop unrelated eligible work. Its attention resource
-remains visible while the controller fills other free actionable slots.
+remains visible while the controller fills other free actionable slots. A
+controller with an explicit serial safety invariant, such as one integration
+writer for `origin/dev`, must recover or escalate that serial slot before
+opening the next writer; this is an eligibility rule, not generic runtime
+capacity accounting.
 `needs-owner` is reserved for a frontier with no truthful action/wait path, or
 for an unreadable or globally inconsistent authority.
 

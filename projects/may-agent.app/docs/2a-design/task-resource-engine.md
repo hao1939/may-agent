@@ -174,6 +174,14 @@ workflow-to-owner handoff, and it creates at most one sequential owner attempt.
 Missing, blocked, thrown, timed-out, and invalid workflows do not imply
 handoff.
 
+`needs-owner` is an exception to a learned process, not its normal failure
+branch. A domain workflow is expected to invoke its owning agent for in-scope
+repair and verification before handing the same task back to the owner. Merge
+conflicts, failed tests, and rejected hypotheses are ordinary domain feedback.
+They become `needs-owner` only after the workflow has exhausted its bounded,
+safe in-scope moves. Work that requires another owner is an explicit
+escalation, not `needs-owner`.
+
 ## One executable result contract
 
 The SDK owns the exact model schema and runtime admission contract:
@@ -343,8 +351,9 @@ Tool policy and process isolation still constrain actual writes.
 - `pending`: current desired state still needs reconciliation;
 - `running`: one current attempt owns the generation;
 - `waiting`: exact Conditions remain open;
-- `attention`: normal workflow/owner recovery could not produce an applicable
-  result; and
+- `attention`: workflow execution, owner recovery, or result admission could
+  not produce an applicable result; it is a process-recovery state, not an
+  ordinary domain outcome; and
 - `converged`: a `maintain` task currently satisfies desired state.
 
 `achieve` is finite. On convergence the engine atomically applies actions,
@@ -419,6 +428,12 @@ Recovery uses the same task resource and the same app controller:
 4. move the task to `attention` when progress requires domain judgment;
 5. wake the accountable owner once with accumulated, deduplicated evidence;
 6. escalate only when the next action crosses an ownership boundary.
+
+The ladder begins after the domain workflow has performed its normal work.
+Expected domain failures stay inside the task's reconciliation loop: collect
+current evidence, let the agent choose a changed repair, verify it, and repeat
+within a bound. Recovery must not blindly rerun an unchanged deterministic
+failure, and it must not convert ordinary domain difficulty into attention.
 
 Watchdogs and metrics may detect that this ladder is needed. They do not create
 a replacement task, change desired state, or run an app-specific recovery

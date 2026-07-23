@@ -22,6 +22,10 @@ The finite edit, exact live-test, fix-forward, PR, and merge process for AKS
 spec changes is defined in
 [`spec-live-reconciliation.md`](spec-live-reconciliation.md).
 
+The autonomous six-hour `main` master-validation cycle, progressive failure
+handling, exact test-fix proof, and product-recovery rules are defined in
+[`master-validation-reconciliation.md`](master-validation-reconciliation.md).
+
 ## Current model
 
 ```text
@@ -43,6 +47,30 @@ Responsibilities are deliberately narrow:
 - Agent: provides adaptive capability and the accountability fallback.
 - Runtime: schedules attempts, enforces concurrency, persists state, rejects
   stale results, wakes Conditions, and performs recovery.
+
+## Domain task reconciliation
+
+The task owns the durable loop; one workflow run is one bounded iteration:
+
+```text
+same AKS task
+  -> read current repository/provider/artifact facts
+  -> aks-explorer chooses and performs the next in-scope move
+  -> workflow verifies mechanically
+  -> local failure feeds a changed repair iteration
+  -> external fact becomes an exact Condition
+  -> later fact wakes the same task and workflow
+  -> accepted proof converges the task
+```
+
+Domain workflows handle the work they know how to do. Merge conflicts, test
+failures, stale implementations, and rejected hypotheses are feedback for the
+agent inside the same task; they are not `blocked`, `attention`, or a reason to
+create a repair task. A workflow run remains bounded and yields while ADO, a
+pull request, or another external fact is pending. Escalation is reserved for
+a required action outside `aks-explorer` ownership. `needs-owner` is only the
+exceptional same-owner fallback after the learned workflow has exhausted its
+safe in-scope moves.
 
 ## AKS conventions
 
@@ -68,6 +96,8 @@ Responsibilities are deliberately narrow:
 - `normalize-scenario-frontier`
 - `wait-for-repo-ref-advance`
 - `spec-live-reconciliation`
+- `master-validation-cycle`
+- `master-validation-failure`
 
 The standing loop workflows observe their domain ledgers, count only actionable
 pending/running leaves against their bounded frontier, and converge once the

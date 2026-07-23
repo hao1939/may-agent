@@ -21,13 +21,15 @@ Use it only when another owner must decide or act.
 
 ## Boundary
 
-| Situation | Correct representation |
-| --- | --- |
-| Workflow cannot continue locally | `ctx.blocked(reason, context)` |
-| Project task has a local failure/root cause | Owner repair or `project.problem.investigation.requested` |
-| Known external condition will change later | Persist exact wait/resume condition |
-| Another owner or human must act | `escalation.created` |
-| Agent attempt is incomplete | Honest session `partial`/`blocked` result |
+| Situation                                       | Correct representation                               |
+| ----------------------------------------------- | ---------------------------------------------------- |
+| Workflow has another useful in-scope repair     | Continue the bounded workflow iteration              |
+| Workflow exhausts its safe same-owner process   | Structured `needs-owner` for the same task           |
+| Workflow execution cannot produce a safe result | `ctx.blocked(reason, context)` and process attention |
+| Project task has a local failure/root cause     | Domain workflow/owner repairs the same task          |
+| Known external condition will change later      | Persist exact wait/resume condition                  |
+| Another owner or human must act                 | `escalation.created`                                 |
+| Agent attempt is incomplete                     | Honest session `partial`/`blocked` result            |
 
 A caller or owner may promote local blocked evidence into an escalation after
 judging that the next action truly crosses ownership.
@@ -46,9 +48,9 @@ const ref = sdk.escalate("Production decision required", {
   sourceSessionId,
   resume: {
     kind: "session",
-    checkpointRef: "before-production-rollout"
+    checkpointRef: "before-production-rollout",
   },
-  dedupKey: "my-project:production-rollout-approval"
+  dedupKey: "my-project:production-rollout-approval",
 });
 ```
 
@@ -139,9 +141,7 @@ The receiving owner emits a terminal event:
   "trace": {
     "traceId": "event:100",
     "parentEventId": 110,
-    "links": [
-      { "eventId": 100, "type": "closure", "label": "resolves" }
-    ]
+    "links": [{ "eventId": 100, "type": "closure", "label": "resolves" }]
   },
   "data": {
     "outcome": "approved",
@@ -206,9 +206,11 @@ return ctx.blocked("cannot continue locally", { evidence });
 
 `ctx.blocked` is local and synchronous. It does not emit an escalation. Nested
 workflows return it to their parent. Top-level runtime boundaries route blocked
-task evidence to the project owner or blocked non-project work to
-`workflow.owner.requested`. The caller/owner decides whether external
-escalation is justified.
+non-project work to their caller. For task-bound workflows it records a failed
+attempt and task attention; it does not automatically invoke the owner. An
+explicit `needs-owner` result performs the one same-task owner handoff. The
+owner decides whether a required next action truly crosses a boundary and
+therefore justifies escalation.
 
 ## Deduplication And Health
 

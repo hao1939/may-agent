@@ -61,6 +61,30 @@ workflow needs-owner    -> owner judges the exception once
 workflow unavailable    -> attention until the binding is repaired
 ```
 
+The task, not one workflow run, owns the durable reconciliation loop:
+
+```text
+same task
+  -> workflow reads current facts
+  -> agent judges and performs the next in-scope move
+  -> workflow verifies the result
+  -> local failure feeds the next bounded repair iteration
+  -> exact external wait ends this run with a Condition
+  -> the observed fact wakes the same task and workflow again
+  -> accepted proof converges the task
+```
+
+A workflow run is a bounded iteration of this loop. It may perform several
+immediate repair-and-verify steps, but it does not remain alive across a
+pipeline, pull request, timer, human reply, or other durable wait.
+
+Expected domain difficulty is not `needs-owner`, `attention`, or escalation.
+The workflow should use its owning agent to handle merge conflicts, failed
+tests, rejected hypotheses, and similar in-scope work. `needs-owner` is the
+exception path when the reusable process has exhausted its safe in-scope moves
+and the accountable owner must re-evaluate the same task. Escalation is used
+only when the required action crosses to another owner or a human.
+
 Do not create a workflow merely because work uses an agent or repeats on a
 schedule. Extract one when a stable sequence, branching rule, retry, safety
 step, or verifier is worth preserving and testing.
