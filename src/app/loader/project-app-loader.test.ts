@@ -2240,4 +2240,103 @@ describe("project app loader", () => {
       rmSync(f.root, { recursive: true, force: true });
     }
   });
+
+  it("preserves pending owner instructions across routine task wakes", async () => {
+    const f = fixture();
+    try {
+      writeApp(f.appDir);
+      const bus = new EventBus();
+      const events: any[] = [];
+      const ownerCalls: string[] = [];
+      let nextEventId = 1;
+      let releaseFirstOwner!: () => void;
+      const firstOwnerHeld = new Promise<void>((resolve) => {
+        releaseFirstOwner = resolve;
+      });
+      bus.setPersistenceSubscriber((event) => {
+        (event as any)[EVENT_ROW_ID] = nextEventId++;
+      });
+      bus.subscribe((event) => events.push(event));
+      const heldManager = {
+        hasAgent: () => true,
+        async callAgent(_agent: string, task: string) {
+          ownerCalls.push(task);
+          if (ownerCalls.length === 1) await firstOwnerHeld;
+          return {
+            sessionId: `owner-session-${ownerCalls.length}`,
+            status: "done",
+            structuredResult: {
+              state: "converged",
+              summary: "owner done",
+              evidence: ["owner proof"],
+              actions: [],
+            },
+            lastAssistantText: "owner done",
+            messages: [],
+            duration: "0s",
+            outputDir: "",
+          };
+        },
+      } as any;
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: heldManager,
+        bus,
+        agentCrons: new Map(),
+      });
+
+      bus.emit({
+        type: "project.owner.requested",
+        project: "sample",
+        itemId: "owner-review",
+        mode: "maintain",
+        ownerOnly: true,
+        instruction: "first owner instruction",
+      } as any);
+      await waitUntil(() => ownerCalls.length === 1);
+
+      const secondOwnerRequest = bus.emit({
+        type: "project.owner.requested",
+        project: "sample",
+        itemId: "owner-review",
+        mode: "maintain",
+        ownerOnly: true,
+        instruction: "preserve-this-owner-instruction",
+      } as any);
+      const secondOwnerEventId = (secondOwnerRequest as any)[EVENT_ROW_ID];
+      bus.emit({
+        type: "sample.work",
+        project: "sample",
+        itemId: "owner-review",
+        mode: "maintain",
+        ownerOnly: true,
+        observation: "routine pipeline wake",
+        target: { project: "sample", taskId: "work/owner-review" },
+      } as any);
+
+      releaseFirstOwner();
+      await waitUntil(
+        () =>
+          ownerCalls.length >= 2 &&
+          events.some(
+            (event) =>
+              event.type === "project.owner.reviewed" && event.data?.openEventId === secondOwnerEventId,
+          ),
+      );
+
+      expect(ownerCalls[1]).toContain("preserve-this-owner-instruction");
+      expect(
+        events.filter(
+          (event) => event.type === "project.owner.reviewed" && event.data?.openEventId === secondOwnerEventId,
+        ),
+      ).toHaveLength(1);
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
 });

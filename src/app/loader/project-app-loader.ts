@@ -1141,8 +1141,11 @@ function taskTriggerWithOwnerIntents(
   taskId: string,
   event: Record<string, unknown>,
 ): Record<string, unknown> {
-  if (event.type !== "project.owner.requested" && event.type !== "project.comment.created") return event;
   const previous = readProjectAppTaskTrigger(config, taskId);
+  const isOwnerIntent = event.type === "project.owner.requested" || event.type === "project.comment.created";
+  const previousIsOwnerIntent =
+    previous?.type === "project.owner.requested" || previous?.type === "project.comment.created";
+  if (!isOwnerIntent) return previousIsOwnerIntent ? previous : event;
   const refs = [...(previous ? ownerIntentRefs(previous) : []), ...ownerIntentRefs(event)];
   return {
     ...event,
