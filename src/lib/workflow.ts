@@ -275,7 +275,7 @@ export interface WorkflowModule {
   name: string;
   description: string;
   /** Filesystem isolation convention interpreted by the embedding app runtime. */
-  workspace?: "shared" | "task";
+  workspace?: "shared" | "task" | { kind: "task"; baseBranch: string };
   execute: (ctx: WorkflowContext) => Promise<WorkflowResult>;
   /** Optional app-level deterministic verifier; interpreted by the embedding infrastructure. */
   verify?: (context: unknown, result: unknown) => Promise<unknown>;

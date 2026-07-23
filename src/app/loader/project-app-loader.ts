@@ -1364,7 +1364,10 @@ async function reconcileTask(input: {
   if (workflowKey) {
     const workflowPaths = appWorkflowRuntimePaths(opts, descriptor, primary.owner);
     const definition = await inspectWorkflowDefinition(workflowPaths.workflowDir, workflowKey);
-    if (definition.workspace === "task") {
+    if (
+      definition.workspace === "task" ||
+      (typeof definition.workspace === "object" && definition.workspace.kind === "task")
+    ) {
       try {
         if (descriptor.app.workspace?.kind !== "git") {
           throw new Error(`Workflow ${workflowKey} requires a task worktree but app workspace is not Git`);
@@ -1382,7 +1385,10 @@ async function reconcileTask(input: {
           workspaceRoot: join(opts.projectRoot, "worktrees", descriptor.id),
           taskId: primary.taskId,
           generation: primary.generation,
-          baseBranch: descriptor.app.workspace.branch ?? "dev",
+          baseBranch:
+            typeof definition.workspace === "object"
+              ? definition.workspace.baseBranch
+              : (descriptor.app.workspace.branch ?? "dev"),
           previous,
         });
         executionPaths = { ...executionPaths, workspaceDir: taskWorkspace.metadata.path };
