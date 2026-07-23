@@ -2,7 +2,7 @@
   "name": "coach",
   "description": "Supervises and trains agents through process-isolated coaching sessions with real exercises",
   "domain": "agent coaching and training",
-  "model": "opus",
+  "model": "claude-opus-4-6",
   "heartbeat": false,
   "tools": ["coding", "agents", "message", "workflow", "checkpoint", "finish"],
   "memoryLimit": 10,

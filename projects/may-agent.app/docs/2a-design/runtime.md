@@ -115,12 +115,13 @@ Stable across sessions for LLM prefix caching. `DOMAIN.md`, `TOOLS.md`,
 ```
 
 **Compaction:** May supplies Pi's `Agent.transformContext` hook. At 60% of the
-configured model context, it combines Pi's message-aware token estimator with
-May's conservative estimate, keeps the newest 35% by estimated tokens, and
-deterministically summarizes the older prefix. The summary preserves the
-original task, file/tool/agent facts, and latest substantial reasoning. The
-append-only transcript remains unchanged; a separate compact snapshot is used
-for active context and restart recovery.
+configured model context, it combines Pi's provider-usage-aware context
+estimate and message estimator with May's conservative estimate, keeps the
+newest 35% by estimated transcript tokens, and deterministically summarizes
+the older prefix. The summary preserves the original task, file/tool/agent
+facts, and latest substantial reasoning. The append-only transcript remains
+unchanged; a separate compact snapshot is used for active context and restart
+recovery.
 
 Pi's full harness compactor is intentionally not used here. It is an
 LLM-powered operation built around Pi session-tree entries, stable entry IDs,
@@ -135,6 +136,35 @@ whole.
 **Overflow recovery:** A context-overflow terminal result is handled by the
 normal session recovery/digest path. Any new session receives an explicit
 handoff task; the runtime does not silently continue the old context.
+
+### Pi Runtime Boundary
+
+May passes an explicit Pi stream function into every run and forwards the May
+session id as Pi's provider session id. Pi owns provider request construction,
+stream parsing, tool-argument validation, tool execution, steering/follow-up
+queues, cancellation, and agent lifecycle events. May must not recreate those
+mechanics in guards or adapters.
+
+Agent configuration uses canonical model IDs. May supplies Pi model objects
+with the configured endpoint, credentials, and verified context-window
+overrides. The endpoint is an external deployment dependency; May does not
+depend on its implementation. The runner receives one explicit Pi stream
+function rather than acquiring a second provider dispatcher.
+
+Pi validates TypeBox tool arguments before `beforeToolCall`. May guards operate
+only on already-valid calls and therefore cover semantic or safety policy, not
+missing or malformed schema fields. Pi's validation error is the feedback sent
+to the model.
+
+Read-only tools may execute concurrently. Tools that mutate files, processes,
+sessions, schedules, messages, or workflow state are marked `sequential` using
+Pi's per-tool execution policy. If one such tool appears in a batch, Pi
+preserves source order for the entire batch.
+
+May reuses Pi's public head/tail truncation helpers for read and shell output.
+May still owns the bounded shell process implementation because it adds a
+rolling memory cap, full-output artifact, timeout/process-tree control, and
+runtime-specific error guidance.
 
 ### What the LLM Doesn't See
 
@@ -191,7 +221,7 @@ Source lives in `projects/may-agent/` (not bare `src/`).
   subscribers, agent startup, session startup, and loop modules
 - **Agent loading:** `projects/may-agent/src/app/agent-loader.ts`, `projects/may-agent/src/app/loader/*`
 - **Session management:** `projects/may-agent/src/lib/manager.ts`
-- **System prompt assembly:** `projects/may-agent/src/lib/manager.ts` → `resolveSystemPrompt()`
+- **System prompt assembly:** `projects/may-agent/src/lib/agent-execution.ts` → `resolveSystemPrompt()`
 - **Compaction:** pi-agent runtime `Agent` class + may-agent extensions
 - **Socket protocol/server/client:** `projects/may-agent/packages/control/src/*`
 - **Telegram adapter:** `projects/may-agent/src/app/transport/telegram.ts`,

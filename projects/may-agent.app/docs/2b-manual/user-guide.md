@@ -46,6 +46,9 @@ At least one of `--chat`, `--cron`, `--task`, `--oneshot`, `--status`,
 
 | Variable | Effect |
 |----------|--------|
+| `MODEL_BASE_URL` | Shared model API URL used by Pi, Codex, and Claude. |
+| `MODEL_API_KEY` | Credential for the shared model API. `LITELLM_API_KEY` remains a compatibility fallback during migration. |
+| `MODEL_ENDPOINT_READY_TIMEOUT_MS` | Maximum startup wait for the configured model endpoint when cron is enabled. |
 | `MAY_DAEMON_QUIET=1` | Suppresses the daemon-mode `info` log forwarder. By default, when neither `--console` nor `--chat` is enabled, the daemon forwards `bus.emit({type:"info"})` events through `log()` so operator-facing messages (reload summaries, telegram diagnostics, startup checks) are visible. Set this to `1` to opt out. |
 
 When `--console` or `--chat` IS enabled, `attachConsoleUI` handles `info`
@@ -127,7 +130,7 @@ roster because app ownership and model selection change independently.
   "name": "dev",
   "description": "Investigates runtime failures and improves observability",
   "domain": "system reliability, metrics, debugging",
-  "model": "opus",
+  "model": "claude-opus-4-6",
   "tools": ["coding", "query_db", "finish"],
   "compaction": true
 }
@@ -138,7 +141,7 @@ roster because app ownership and model selection change independently.
 | `name` | Yes | Must match directory name |
 | `description` | Yes | Role summary (visible to other agents) |
 | `domain` | Yes | Domain of expertise |
-| `model` | Yes | Model key: `opus`, `gpt52`, `gpt-5.4`, `gemini-3.1-pro`, etc. |
+| `model` | Yes | Canonical model ID, such as `claude-opus-4-6` or `gpt-5.4`. |
 | `tools` | Yes | Tool presets (see below) |
 | `memoryLimit` | No | Retained compatibility field; omit in new configs because it does not affect current prompt assembly |
 | `compaction` | No | Enable automatic context compaction for long sessions |

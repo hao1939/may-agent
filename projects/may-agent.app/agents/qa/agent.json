@@ -2,7 +2,7 @@
   "name": "qa",
   "description": "Reviews code changes for correctness, quality, and requirement compliance",
   "domain": "code quality review",
-  "model": "gpt52",
+  "model": "gpt-5.2",
   "heartbeat": false,
   "tools": ["coding", "workflow", "checkpoint", "finish"],
   "context_files": ["context.md", "last-eval.md"]

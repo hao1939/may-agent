@@ -138,7 +138,7 @@ sessions, not normal agent configuration.
   "name": "dev",
   "description": "Investigates runtime failures and returns verified fixes",
   "domain": "may-agent implementation",
-  "model": "opus",
+  "model": "claude-opus-4-6",
   "tools": ["coding", "agents", "finish"],
   "compaction": true
 }
