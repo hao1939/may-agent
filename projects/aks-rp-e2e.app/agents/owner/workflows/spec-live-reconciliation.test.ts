@@ -1,13 +1,63 @@
 import { describe, expect, test } from "bun:test";
 import {
+  agentConditionProblem,
   matchingTaskRuns,
   parseTaskPayload,
   pipelineWaitCondition,
   pullRequestSourceUpdateCondition,
   pullRequestWaitCondition,
+  resolveIntegrationTarget,
 } from "./spec-live-reconciliation.js";
 
 describe("spec-live-reconciliation workflow", () => {
+  test("validates agent waits without replacing agent judgment", () => {
+    expect(
+      agentConditionProblem({
+        decision: "waiting",
+        summary: "wait for recovery",
+        evidence: ["run:42"],
+        condition: {
+          id: "recovery",
+          type: "pipeline.spec.observed",
+          subject: "later proof for spec.example",
+          expected: { status: "pass" },
+        },
+      }),
+    ).toContain("must be typed");
+
+    expect(
+      agentConditionProblem({
+        decision: "waiting",
+        summary: "wait for recovery",
+        evidence: ["run:42"],
+        condition: {
+          id: "recovery",
+          type: "pipeline.spec.observed",
+          subject: "project:aks-rp-e2e",
+          expected: { pipelineRunIdGreaterThan: "42" },
+        },
+      }),
+    ).toContain("unsupported comparison fields");
+
+    expect(
+      agentConditionProblem({
+        decision: "waiting",
+        summary: "wait for recovery",
+        evidence: ["run:42"],
+        condition: {
+          id: "recovery",
+          type: "pipeline.spec.observed",
+          subject: "project:aks-rp-e2e",
+          expected: {
+            specId: "spec.example",
+            status: "pass",
+            sourceBranch: "refs/heads/main",
+          },
+        },
+      }),
+    ).toBeNull();
+  });
+
   test("parses the finite spec task identity and generation", () => {
     expect(
       parseTaskPayload(
@@ -81,5 +131,17 @@ describe("spec-live-reconciliation workflow", () => {
       subject: "pull-request:77",
       expected: { field: "sourceCommit", notEquals: "abc" },
     });
+  });
+
+  test("uses dev by convention and allows the master-validation workflow to target main", () => {
+    expect(resolveIntegrationTarget()).toEqual({
+      targetBranch: "dev",
+      targetRef: "origin/dev",
+    });
+    expect(resolveIntegrationTarget("main")).toEqual({
+      targetBranch: "main",
+      targetRef: "origin/main",
+    });
+    expect(() => resolveIntegrationTarget("bad branch")).toThrow();
   });
 });

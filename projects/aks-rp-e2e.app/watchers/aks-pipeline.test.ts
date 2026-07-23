@@ -11,8 +11,12 @@ import { dirname, join, resolve } from "node:path";
 import type { ProjectAppContext } from "@may-agent/sdk";
 import {
   observeAksPipelines,
+  artifactDirectoryReady,
   pipelineLevelEvent,
   pipelineObservationEvents,
+  pipelineQueueOverdueEvent,
+  shouldEmitPipelineLevel,
+  shouldScanProgressiveArtifacts,
   scanPipelineResults,
 } from "./aks-pipeline.js";
 
@@ -22,6 +26,73 @@ afterEach(() => {
   for (const root of roots.splice(0))
     rmSync(root, { recursive: true, force: true });
   delete process.env.MAY_AGENT_AKS_PIPELINE_WATCHER_ADO;
+});
+
+describe("progressive artifact scan selection", () => {
+  const completed = {
+    runId: "123",
+    fingerprint: "completed:failed",
+    status: "completed",
+    result: "failed",
+    sourceBranch: "refs/heads/main",
+    sourceVersion: "abc",
+    finishTime: "2026-07-23T00:00:00Z",
+    queueTime: "2026-07-22T23:00:00Z",
+    artifacts: [],
+    progressive: true,
+  };
+
+  test("scans active, newly completed, and still-draining runs only", () => {
+    expect(
+      shouldScanProgressiveArtifacts({
+        run: { ...completed, status: "inProgress" },
+        wasTracked: false,
+        priorFingerprint: completed.fingerprint,
+      }),
+    ).toBe(true);
+    expect(
+      shouldScanProgressiveArtifacts({
+        run: completed,
+        wasTracked: false,
+        priorFingerprint: "inProgress:",
+      }),
+    ).toBe(true);
+    expect(
+      shouldScanProgressiveArtifacts({
+        run: completed,
+        wasTracked: true,
+        priorFingerprint: completed.fingerprint,
+      }),
+    ).toBe(true);
+    expect(
+      shouldScanProgressiveArtifacts({
+        run: completed,
+        wasTracked: false,
+        priorFingerprint: completed.fingerprint,
+      }),
+    ).toBe(false);
+  });
+
+  test("repeats live levels but emits terminal levels only when changed", () => {
+    expect(
+      shouldEmitPipelineLevel({
+        run: { ...completed, status: "inProgress" },
+        priorFingerprint: completed.fingerprint,
+      }),
+    ).toBe(true);
+    expect(
+      shouldEmitPipelineLevel({
+        run: completed,
+        priorFingerprint: "inProgress:",
+      }),
+    ).toBe(true);
+    expect(
+      shouldEmitPipelineLevel({
+        run: completed,
+        priorFingerprint: completed.fingerprint,
+      }),
+    ).toBe(false);
+  });
 });
 
 function fixture() {
@@ -106,6 +177,7 @@ describe("AKS pipeline watcher", () => {
       sourceBranch: "refs/heads/dev",
       sourceVersion: "abc123",
       finishTime: "2026-07-20T03:28:29Z",
+      queueTime: "2026-07-20T01:00:00Z",
       artifacts: ["plan-inputs", "slice-01-test-results"],
     });
 
@@ -143,6 +215,7 @@ describe("AKS pipeline watcher", () => {
         sourceBranch: "refs/heads/task/spec-example",
         sourceVersion: "abc123",
         finishTime: null,
+        queueTime: "2026-07-20T03:00:00Z",
         artifacts: [],
       }),
     ).toMatchObject({
@@ -151,5 +224,50 @@ describe("AKS pipeline watcher", () => {
       state: "inProgress",
       terminal: false,
     });
+  });
+
+  test("emits one actionable fact only after a master-validation queue is overdue", () => {
+    const observed = {
+      runId: "173408245",
+      fingerprint: "fp",
+      status: "notStarted",
+      result: "notStarted",
+      sourceBranch: "refs/heads/main",
+      sourceVersion: "abc123",
+      finishTime: null,
+      queueTime: "2026-07-23T01:00:00.000Z",
+      artifacts: [],
+      progressive: true,
+    };
+    expect(
+      pipelineQueueOverdueEvent(
+        observed,
+        Date.parse("2026-07-23T02:29:59.999Z"),
+      ),
+    ).toBeNull();
+    expect(
+      pipelineQueueOverdueEvent(
+        observed,
+        Date.parse("2026-07-23T02:30:00.000Z"),
+      ),
+    ).toMatchObject({
+      type: "pipeline.queue.overdue",
+      pipelineRunId: "173408245",
+      queueTime: "2026-07-23T01:00:00.000Z",
+      queueAgeMs: 5_400_000,
+    });
+  });
+
+  test("does not accept an empty or malformed artifact directory", () => {
+    const root = mkdtempSync(join(tmpdir(), "aks-pipeline-artifact-"));
+    roots.push(root);
+    expect(artifactDirectoryReady(root)).toBe(false);
+    writeFileSync(join(root, "result.json"), "not-json");
+    expect(artifactDirectoryReady(root)).toBe(false);
+    writeFileSync(
+      join(root, "result.json"),
+      JSON.stringify({ status: "pass" }),
+    );
+    expect(artifactDirectoryReady(root)).toBe(true);
   });
 });

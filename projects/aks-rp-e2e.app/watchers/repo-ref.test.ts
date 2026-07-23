@@ -35,6 +35,24 @@ describe("repo ref watcher", () => {
     });
   });
 
+  test("uses the same semantic fact for origin main advancement", () => {
+    expect(
+      repoRefChangedEvent({
+        repoRef: "origin/main",
+        commit: "new-main",
+        previousCommit: "old-main",
+        changed: true,
+      }),
+    ).toMatchObject({
+      type: "aks.repo-ref.changed",
+      data: {
+        repoRef: "origin/main",
+        commit: "new-main",
+        previousCommit: "old-main",
+      },
+    });
+  });
+
   test("detects current origin/dev movement from a fetched remote-tracking ref", () => {
     const root = mkdtempSync(join(tmpdir(), "repo-ref-watcher-"));
     const remote = join(root, "remote.git");

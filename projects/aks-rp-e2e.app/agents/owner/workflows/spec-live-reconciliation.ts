@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   Type,
+  isTypedProjectAppConditionSubject,
   workflowResultVersion,
   type ProjectAppConditionSpec,
   type WorkflowContext,
@@ -20,8 +21,7 @@ const organization = "https://dev.azure.com/msazure";
 const adoProject = "CloudNativeCompute";
 const repository = "aks-e2e-spec-runner";
 const pipelineId = "467665";
-const targetBranch = "dev";
-const targetRef = "origin/dev";
+const defaultTargetBranch = "dev";
 const targetEnvironment = "staging";
 const azCli =
   process.env.AZURE_CLI_PATH ||
@@ -109,6 +109,21 @@ type RunReceipt = {
   queuedAt: string;
 };
 
+export type SpecLiveReconciliationOptions = {
+  targetBranch?: string;
+};
+
+export function resolveIntegrationTarget(targetBranch = defaultTargetBranch): {
+  targetBranch: string;
+  targetRef: string;
+} {
+  const normalized = targetBranch.trim();
+  if (!normalized || !/^[A-Za-z0-9._/-]+$/.test(normalized)) {
+    throw new Error(`Invalid integration target branch: ${targetBranch}`);
+  }
+  return { targetBranch: normalized, targetRef: `origin/${normalized}` };
+}
+
 const decisionSchema = Type.Object({
   decision: Type.Union([
     Type.Literal("committed"),
@@ -124,12 +139,51 @@ const decisionSchema = Type.Object({
     Type.Object({
       id: Type.String({ minLength: 1 }),
       type: Type.String({ minLength: 1 }),
-      subject: Type.String({ minLength: 3 }),
+      subject: Type.String({
+        minLength: 3,
+        pattern: "^[A-Za-z][A-Za-z0-9_.-]*:.+$",
+        description:
+          "A typed machine subject such as project:aks-rp-e2e, pipeline-run:123, pull-request:456, or task:task-id; never prose.",
+      }),
       expected: Type.Any(),
       owner: Type.Optional(Type.String({ minLength: 1 })),
     }),
   ),
 });
+
+const conditionInstruction =
+  'A waiting Condition must use a typed subject such as project:aks-rp-e2e, pipeline-run:<id>, pull-request:<id>, or task:<id>. Its expected value supports exact field equality, or { field, equals|anyOf|notEquals }; do not invent comparison operators or put prose in subject. For a later current-main same-spec recovery, use type=pipeline.spec.observed, subject=project:aks-rp-e2e, expected={ specId: "<exact spec id>", status: "pass", sourceBranch: "refs/heads/main" }.';
+
+export function agentConditionProblem(decision: AgentDecision): string | null {
+  if (decision.decision !== "waiting") return null;
+  const condition = decision.condition;
+  if (!condition) return "decision=waiting requires one exact Condition";
+  if (!isTypedProjectAppConditionSubject(condition.subject)) {
+    return `Condition subject must be typed, not prose: ${condition.subject}`;
+  }
+  if (
+    condition.expected &&
+    typeof condition.expected === "object" &&
+    !Array.isArray(condition.expected)
+  ) {
+    const expected = condition.expected as Record<string, unknown>;
+    const unsupported = Object.keys(expected).filter((field) =>
+      /(greater|less|before|after|regex|matches)/i.test(field),
+    );
+    if (unsupported.length) {
+      return `Condition expected contains unsupported comparison fields: ${unsupported.join(", ")}`;
+    }
+    if (typeof expected.field === "string") {
+      const operators = ["equals", "anyOf", "notEquals"].filter(
+        (operator) => operator in expected,
+      );
+      if (operators.length !== 1) {
+        return "A field-based Condition must use exactly one of equals, anyOf, or notEquals";
+      }
+    }
+  }
+  return null;
+}
 
 function nonEmptyString(value: unknown): string {
   if (typeof value === "string" && value.trim()) return value.trim();
@@ -431,7 +485,11 @@ function queueRun(
   return value as PipelineRun;
 }
 
-function pullRequests(repoDir: string, sourceBranch: string): PullRequest[] {
+function pullRequests(
+  repoDir: string,
+  sourceBranch: string,
+  targetBranch: string,
+): PullRequest[] {
   const value = azJson(repoDir, [
     "repos",
     "pr",
@@ -463,6 +521,7 @@ function createPullRequest(
     sourceBranch: string;
     sourceCommit: string;
     runId: string;
+    targetBranch: string;
   },
 ): PullRequest {
   const description = [
@@ -470,8 +529,8 @@ function createPullRequest(
     `Spec: ${input.specId}`,
     `Live-tested source commit: ${input.sourceCommit}`,
     `Azure DevOps run: ${input.runId}`,
-    "Target: dev",
-    "Merge convention: use a merge commit (no-fast-forward) so the exact live-tested source commit remains in dev ancestry.",
+    `Target: ${input.targetBranch}`,
+    `Merge convention: use a merge commit (no-fast-forward) so the exact live-tested source commit remains in ${input.targetBranch} ancestry.`,
   ].join("\n\n");
   const value = azJson(repoDir, [
     "repos",
@@ -482,7 +541,7 @@ function createPullRequest(
     "--source-branch",
     input.sourceBranch,
     "--target-branch",
-    targetBranch,
+    input.targetBranch,
     "--title",
     `test: reconcile ${input.specId}`,
     "--description",
@@ -530,12 +589,32 @@ async function askAgent(
   ctx: WorkflowContext,
   prompt: string,
 ): Promise<AgentDecision | null> {
-  const result = await ctx.runAgent(ctx.agent, prompt, {
-    timeoutMs: 1_800_000,
-    schema: decisionSchema,
-  });
-  if (result.status === "error" || result.status === "interrupted") return null;
-  return result.structuredResult as AgentDecision;
+  let nextPrompt = `${prompt}\n\n${conditionInstruction}`;
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    const result = await ctx.runAgent(ctx.agent, nextPrompt, {
+      timeoutMs: 1_800_000,
+      schema: decisionSchema,
+    });
+    if (result.status === "error" || result.status === "interrupted") {
+      return null;
+    }
+    const decision = result.structuredResult as AgentDecision;
+    const problem = agentConditionProblem(decision);
+    if (!problem) return decision;
+    nextPrompt = [
+      "Correct the structured result from your immediately preceding domain judgment.",
+      `Hard validation failure: ${problem}.`,
+      conditionInstruction,
+      "Do not repeat provider operations, queue work, or change source merely to correct the result. Preserve the prior domain judgment unless current evidence proves it wrong.",
+      `Prior structured result:\n${JSON.stringify(decision, null, 2)}`,
+    ].join("\n\n");
+  }
+  return {
+    decision: "needs-owner",
+    summary:
+      "The agent exhausted structured-result correction without producing an observable waiting Condition.",
+    evidence: ["condition-validation:failed-after-two-agent-judgments"],
+  };
 }
 
 function waitingResult(
@@ -562,11 +641,16 @@ function ownerResult(
     state: "needs-owner",
     summary,
     evidence,
-    actions: [],
   });
 }
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
+export async function reconcileSpecLive(
+  ctx: WorkflowContext,
+  options: SpecLiveReconciliationOptions = {},
+): Promise<WorkflowResult> {
+  const { targetBranch, targetRef } = resolveIntegrationTarget(
+    options.targetBranch,
+  );
   const payload = parseTaskPayload(ctx.task);
   const taskId = nonEmptyString(payload?.taskId);
   const generation = Number(payload?.generation ?? 1);
@@ -664,7 +748,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     let sourceCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
     const baseCommit = git(repoDir, ["rev-parse", targetRef]).stdout;
 
-    const existingPr = pullRequests(repoDir, sourceBranch)[0];
+    const existingPr = pullRequests(repoDir, sourceBranch, targetBranch)[0];
     if (
       !existingPr &&
       sourceCommit !== baseCommit &&
@@ -973,7 +1057,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       });
     }
 
-    let pr = pullRequests(repoDir, sourceBranch)[0];
+    let pr = pullRequests(repoDir, sourceBranch, targetBranch)[0];
     if (!pr) {
       pr = createPullRequest(repoDir, {
         taskId,
@@ -981,6 +1065,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         sourceBranch,
         sourceCommit,
         runId,
+        targetBranch,
       });
     }
     const prId = nonEmptyString(pr.pullRequestId);
@@ -1136,4 +1221,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `workspace:${workspaceDir}`,
     ]);
   }
+}
+
+export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
+  return reconcileSpecLive(ctx);
 }

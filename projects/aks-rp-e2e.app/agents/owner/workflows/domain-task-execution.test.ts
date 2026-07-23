@@ -69,6 +69,8 @@ describe("domain task execution", () => {
 
     expect(prompt).toContain("/worktrees/task-1");
     expect(prompt).toContain("Do not create another branch or worktree");
+    expect(prompt).toContain("subject project:aks-rp-e2e");
+    expect(prompt).toContain('specId: "<spec id>"');
     expect(result).toMatchObject({
       type: "done",
       output: { state: "converged", summary: "done" },

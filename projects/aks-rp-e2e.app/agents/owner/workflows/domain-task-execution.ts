@@ -29,6 +29,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     "Inspect current source and task evidence, make only the smallest accepted domain change, run scoped verification, and commit every accepted file change on the supplied task branch.",
     "A converged result must leave the worktree clean. If work cannot be committed cleanly, return needs-owner with exact recovery evidence; use waiting only for an external fact with an exact Condition.",
     "The generic reconciler alone mutates task state. Return task changes only through typed actions.",
+    'For a master-validation product-recovery wait, use the semantic pass event: type pipeline.spec.observed, subject project:aks-rp-e2e, expected { specId: "<spec id>", status: "pass", sourceBranch: "refs/heads/main" }. The project subject is the routing scope; the expected fields select the exact proof.',
     "",
     ctx.task,
   ].join("\n");

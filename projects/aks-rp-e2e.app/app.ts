@@ -30,6 +30,7 @@ const appOpsSupportConcurrent = 3;
 const appControllerMaxConcurrent =
   domainPolicyMaxConcurrent + appOpsSupportConcurrent;
 const scenarioTestFrontierTaskId = scenarioNormalizationTaskId;
+export const masterValidationCycleTaskId = "master-validation-staging-cycle";
 const scenarioTestFrontierMinLeaves = 3;
 const actionInputSchema = Type.Object({}, { additionalProperties: true });
 const targetedTaskActionInputSchema = Type.Object(
@@ -107,6 +108,7 @@ const ownerReviewEventTypes = new Set([
 
 const aksTaskSelectors: EventSelector[] = [
   { type: "project.task.tick", target: projectTarget },
+  { type: "pipeline.failure.observed", target: projectTarget },
   { type: "project.owner.requested", target: projectTarget },
   { type: "project.comment.created", target: projectTarget },
   { type: "project.approval.submitted", target: projectTarget },
@@ -141,6 +143,46 @@ export function resolveAksTask(
 
   const details = eventDetails(event);
   const taskId = targetTaskId(event);
+
+  if (event.type === "pipeline.failure.observed") {
+    const specId = stringDetail(details, "specId", "spec_id");
+    const failureFingerprint = stringDetail(
+      details,
+      "failureFingerprint",
+      "fingerprint",
+    );
+    if (!specId || !failureFingerprint) return null;
+    return {
+      id: `domain/master-validation-failure/${safeTaskIdPart(specId, "spec")}/${safeTaskIdPart(failureFingerprint, "failure")}`,
+      parentId: "group/domain-work",
+      outcome: `Classify and resolve the progressively observed master-validation failure for ${specId} without waiting for the aggregate pipeline to finish.`,
+      acceptance: [
+        "The failure is classified as test_issue, prod_issue, or inconclusive from the completed slice artifact.",
+        "A test issue remains open until the exact fix has a passing staging proof and the proven change is merged into main, or a later full current-main master-validation run passes it.",
+        "A product issue leaves source unchanged, notifies the human operator through message.created for Telegram delivery, and remains open until a deployed product fix passes the affected spec from current main.",
+        "Classification, notification, PR creation, and PR merge are progress evidence; none alone is final verification.",
+      ],
+      mode: "achieve",
+      owner: "aks-explorer",
+      workflow: "master-validation-failure",
+      input: {
+        validationTaskId: masterValidationCycleTaskId,
+        specId,
+        failureFingerprint,
+        pipelineRunId: stringDetail(details, "pipelineRunId", "runId"),
+        sourceBranch: stringDetail(details, "sourceBranch") || "main",
+        sourceCommit: stringDetail(details, "sourceCommit", "sourceVersion"),
+        sliceId: stringDetail(details, "sliceId"),
+        status: stringDetail(details, "status"),
+        category: stringDetail(details, "category"),
+        reason: stringDetail(details, "reason"),
+        artifactName: stringDetail(details, "artifactName"),
+        artifactPath: stringDetail(details, "artifactPath"),
+      },
+      priority: "P0",
+      category: "domain",
+    };
+  }
 
   if (event.type === "project.stall.reviewed") {
     const stallReview = recordDetail(details, "stallReview", "stall_review");
@@ -203,6 +245,32 @@ export function resolveAksTask(
       }
       if (taskId === scenarioTestFrontierTaskId) {
         return standingLoopIntent(scenarioNormalizationTaskId);
+      }
+      if (taskId === masterValidationCycleTaskId) {
+        return {
+          id: masterValidationCycleTaskId,
+          parentId: "group/domain-work",
+          outcome:
+            "Continuously validate the master-validation feature set against staging from the exact current main commit every six hours, with immediate per-slice failure investigation.",
+          acceptance: [
+            "Each due cycle queues pipeline 467665 with feature_set=master-validation, target=staging, slices=12, slice_max_parallel=6, branch main, and the exact resolved origin/main commit.",
+            "Only one aggregate master-validation cycle is active at a time.",
+            "Completed slice artifacts are observed while the aggregate run is still active and each nonpassing spec becomes one stable fingerprinted child task.",
+            "A failed run remains explicitly open after classification, notification, or merge; only a later passing full run from current main verifies the standing task green.",
+          ],
+          mode: "maintain",
+          owner: "app-ops",
+          workflow: "master-validation-cycle",
+          input: {
+            featureSet: "master-validation",
+            intervalMs: 21_600_000,
+            pipelineId: "467665",
+            sourceBranch: "main",
+            target: "staging",
+          },
+          priority: "P0",
+          category: "domain",
+        };
       }
       if (
         action === "legacy-branch-reconciliation" ||
@@ -321,9 +389,57 @@ export async function routeAksEvent(
     return { refillWake: Boolean(wake), specProof };
   }
   if (event.type === "aks.pipeline.check") return observeAksPipelines(ctx);
+  if (event.type === "pipeline.queue.overdue") {
+    const details = eventDetails(event);
+    const runId = stringDetail(details, "pipelineRunId", "runId");
+    const queueTime = stringDetail(details, "queueTime");
+    const message = {
+      project: projectId,
+      from: "app-ops",
+      to: "human:operator",
+      intent: "master-validation-queue-overdue",
+      priority: "P2",
+      pipelineRunId: runId,
+      queueTime,
+      content: `AKS master-validation run ${runId || "unknown"} has waited at least 90 minutes for hosted-agent capacity. Queue position is preserved; the app did not cancel or duplicate the run.`,
+    };
+    ctx.emit({
+      type: "message.created",
+      source: "aks-rp-e2e-app",
+      target: { project: projectId, human: true },
+      ...message,
+      data: message,
+    });
+    return { operatorNotified: true, pipelineRunId: runId };
+  }
   if (event.type === "aks.pull-request.check")
     return observeAksPullRequests(ctx);
   if (event.type === "aks.repo-ref.check") return observeRepoRefChanges(ctx);
+  if (event.type === "aks.repo-ref.changed") {
+    const details = eventDetails(event);
+    const repoRef = stringDetail(details, "repoRef", "repo_ref");
+    if (repoRef !== "origin/main") {
+      return { masterValidationWake: false, repoRef };
+    }
+    const commit = stringDetail(details, "commit");
+    ctx.emit({
+      type: "project.task.tick",
+      source: "aks-rp-e2e-app",
+      target: {
+        project: projectId,
+        taskId: masterValidationCycleTaskId,
+      },
+      action: "master-validation-cycle",
+      data: {
+        project: projectId,
+        taskId: masterValidationCycleTaskId,
+        reason: "master-validation-main-advanced",
+        repoRef,
+        commit,
+      },
+    });
+    return { masterValidationWake: true, repoRef, commit };
+  }
   if (event.type === "aks.workspace.integrity.check")
     return observeWorkspaceIntegrityChanges(ctx);
   if (event.type === "aks.workspace.integrity.changed") {
@@ -406,6 +522,29 @@ export default defineProjectApp({
         {
           type: "aks.pipeline.check",
           target: { project: projectId },
+        },
+      ],
+    },
+    {
+      id: "master-validation-staging-cycle",
+      enabled: true,
+      // The workflow receipt owns the six-hour due rule. Keep the level
+      // reconciliation pulse short so daemon/app reloads cannot postpone a due
+      // cycle by another six hours.
+      intervalMs: 300_000,
+      emits: [
+        {
+          type: "project.task.tick",
+          target: {
+            project: projectId,
+            taskId: masterValidationCycleTaskId,
+          },
+          action: "master-validation-cycle",
+          data: {
+            project: projectId,
+            taskId: masterValidationCycleTaskId,
+            reason: "scheduled-six-hour-master-validation",
+          },
         },
       ],
     },
@@ -596,10 +735,17 @@ export default defineProjectApp({
     { type: "aks.pipeline.check", target: projectTarget },
     { type: "aks.pull-request.check", target: projectTarget },
     { type: "aks.repo-ref.check", target: projectTarget },
+    { type: "aks.repo-ref.changed", target: projectTarget },
     { type: "aks.workspace.integrity.check", target: projectTarget },
     { type: "aks.workspace.integrity.changed", target: projectTarget },
     { type: "aks.scenario-test-inventory.check", target: projectTarget },
     { type: "aks.scenario-test-inventory.observed", target: projectTarget },
+    { type: "pipeline-run.state", target: projectTarget },
+    { type: "pipeline.completed", target: projectTarget },
+    { type: "pipeline.run.completed", target: projectTarget },
+    { type: "pipeline-artifact.available", target: projectTarget },
+    { type: "pipeline.spec.observed", target: projectTarget },
+    { type: "pipeline.queue.overdue", target: projectTarget },
   ],
   onEvent: routeAksEvent,
 

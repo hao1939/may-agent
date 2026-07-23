@@ -16,7 +16,7 @@ type RepoRefObservation = {
 };
 
 const projectId = "aks-rp-e2e";
-const watchedRepoRef = "origin/dev";
+const watchedRepoRefs = ["origin/dev", "origin/main"] as const;
 
 function readState(path: string): RepoRefWatcherState {
   if (!existsSync(path)) return {};
@@ -108,42 +108,36 @@ export async function observeRepoRefChanges(
   const statePath = ctx.appPath(".state/watchers/repo-ref.json");
   const state = readState(statePath);
   const projectDir = ctx.appPath("../aks-rp-e2e");
-  const previousCommit = state.refs?.[watchedRepoRef];
-  const observation = observeRepoRef(
-    projectDir,
-    watchedRepoRef,
-    previousCommit,
-  );
   const checkedAt = new Date().toISOString();
-
-  if (!observation) {
-    saveState(statePath, {
-      ...state,
-      checkedAt,
-    });
-    return {
-      observed: false,
-      repoRef: watchedRepoRef,
-      reason: "unresolved",
-    };
-  }
+  const observations = watchedRepoRefs.map((repoRef) =>
+    observeRepoRef(projectDir, repoRef, state.refs?.[repoRef]),
+  );
 
   saveState(statePath, {
     refs: {
       ...(state.refs ?? {}),
-      [watchedRepoRef]: observation.commit,
+      ...Object.fromEntries(
+        observations
+          .filter((value): value is RepoRefObservation => value !== null)
+          .map((value) => [value.repoRef, value.commit]),
+      ),
     },
     checkedAt,
   });
 
-  if (observation.changed) {
-    ctx.emit(repoRefChangedEvent(observation));
+  for (const observation of observations) {
+    if (observation?.changed) ctx.emit(repoRefChangedEvent(observation));
   }
 
   return {
-    observed: true,
-    repoRef: watchedRepoRef,
-    commit: observation.commit,
-    changed: observation.changed,
+    observed: observations.filter(Boolean).length,
+    refs: observations.map(
+      (observation, index) =>
+        observation ?? {
+          repoRef: watchedRepoRefs[index],
+          changed: false,
+          reason: "unresolved",
+        },
+    ),
   };
 }

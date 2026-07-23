@@ -3,6 +3,7 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import app, {
   resolveAksTask,
+  routeAksEvent,
   scenarioTestFrontierWakeEvent,
 } from "../../../app.ts";
 
@@ -232,6 +233,78 @@ describe("app event contract", () => {
     expect(eventIsHandled(event)).toBe(true);
   });
 
+  test("turns an origin main advance into one targeted validation wake", async () => {
+    const emitted: Record<string, unknown>[] = [];
+    const result = await routeAksEvent(
+      {
+        emit: (value: Record<string, unknown>) => emitted.push(value),
+      } as never,
+      {
+        type: "aks.repo-ref.changed",
+        target: { project: projectId },
+        data: {
+          project: projectId,
+          repoRef: "origin/main",
+          previousCommit: "old-main",
+          commit: "new-main",
+        },
+      },
+    );
+
+    expect(result).toEqual({
+      masterValidationWake: true,
+      repoRef: "origin/main",
+      commit: "new-main",
+    });
+    expect(emitted).toEqual([
+      expect.objectContaining({
+        type: "project.task.tick",
+        action: "master-validation-cycle",
+        target: {
+          project: projectId,
+          taskId: "master-validation-staging-cycle",
+        },
+        data: expect.objectContaining({
+          reason: "master-validation-main-advanced",
+          commit: "new-main",
+        }),
+      }),
+    ]);
+  });
+
+  test("turns one overdue pipeline fact into an operator message without a task", async () => {
+    const event = {
+      type: "pipeline.queue.overdue",
+      target: { project: projectId },
+      data: {
+        pipelineRunId: "173408245",
+        queueTime: "2026-07-23T01:22:57Z",
+      },
+    };
+    const emitted: Record<string, unknown>[] = [];
+    const result = await routeAksEvent(
+      {
+        emit: (value: Record<string, unknown>) => emitted.push(value),
+      } as never,
+      event,
+    );
+
+    expect(resolveAksTask(event)).toBeNull();
+    expect(eventIsHandled(event)).toBe(true);
+    expect(result).toEqual({
+      operatorNotified: true,
+      pipelineRunId: "173408245",
+    });
+    expect(emitted).toContainEqual(
+      expect.objectContaining({
+        type: "message.created",
+        intent: "master-validation-queue-overdue",
+        pipelineRunId: "173408245",
+        content: expect.stringContaining("did not cancel or duplicate"),
+      }),
+    );
+  });
+
   test("resolver maps semantic events to stable domain tasks", () => {
     const ownerA = resolveAksTask({
       type: "project.owner.requested",
@@ -342,6 +415,41 @@ describe("app event contract", () => {
         }),
       ]),
     );
+  });
+
+  test("master validation reconciles frequently while the workflow owns the six-hour due rule", () => {
+    const schedule = appManifest.schedules?.find(
+      (entry) => entry.id === "master-validation-staging-cycle",
+    );
+    expect(schedule?.intervalMs).toBe(300_000);
+    expect(scheduleEvents("master-validation-staging-cycle")).toEqual([
+      expect.objectContaining({
+        type: "project.task.tick",
+        action: "master-validation-cycle",
+        target: {
+          project: projectId,
+          taskId: "master-validation-staging-cycle",
+        },
+        data: expect.objectContaining({
+          reason: "scheduled-six-hour-master-validation",
+        }),
+      }),
+    ]);
+    expect(
+      resolveAksTask({
+        type: "project.task.tick",
+        action: "master-validation-cycle",
+        target: {
+          project: projectId,
+          taskId: "master-validation-staging-cycle",
+        },
+        data: {
+          project: projectId,
+          taskId: "master-validation-staging-cycle",
+          reason: "scheduled-six-hour-master-validation",
+        },
+      }),
+    ).toMatchObject({ input: { intervalMs: 21_600_000 } });
   });
 
   test("manual actions emit explicit target events", () => {
