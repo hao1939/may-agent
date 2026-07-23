@@ -4,6 +4,7 @@ import type {
   BeforeToolCallContext as PiBeforeToolCallContext,
 } from "@earendil-works/pi-agent-core";
 import type { TSchema } from "@earendil-works/pi-ai";
+import { streamSimple } from "@earendil-works/pi-ai/compat";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { createCompactionTransform, type CompactionInfo } from "./compaction.js";
@@ -12,13 +13,11 @@ import type { SubagentDefinition } from "./types.js";
 import { composeGuards, toGuardContext, type BeforeToolCallHook } from "./tools/compose-guards.js";
 import { createCommitGuard } from "./tools/commit-guard.js";
 import { createCompletenessGuard } from "./tools/completeness-guard.js";
-import { createEmptyArgsGuard } from "./tools/empty-args-guard.js";
 import { createFinishGuard } from "./tools/finish-guard.js";
 import { createPathHallucinationGuard } from "./tools/path-hallucination-guard.js";
 import { createReadDedupGuard } from "./tools/read-dedup-guard.js";
 import { createScrapeDedupGuard } from "./tools/scrape-dedup-guard.js";
 import { createSessionReadGuard } from "./tools/session-read-guard.js";
-import { createToolSchemaGuard } from "./tools/tool-schema-guard.js";
 import { createWorkflowFinishTool } from "./tools/workflow-finish.js";
 import { createReadTool } from "./tools/read.js";
 import { createBashTool } from "./tools/bash.js";
@@ -45,6 +44,20 @@ const CHAT_TOOL_DENYLIST = new Set([
 ]);
 
 const READONLY_TOOL_ALLOWLIST = new Set(["finish", "query_db", "read", "scrape_webpage", "system_status"]);
+
+const SEQUENTIAL_TOOL_NAMES = new Set([
+  "agents",
+  "background_exec",
+  "bash",
+  "checkpoint",
+  "cron",
+  "edit",
+  "finish",
+  "message",
+  "run_cli_agent",
+  "workflow",
+  "write",
+]);
 
 export type PreparedAgentExecution = {
   definition: SubagentDefinition;
@@ -73,7 +86,6 @@ export type AgentPreparationOptions = {
   promptTimestamp?: string;
   chatContext?: string;
   createFinish?: () => AgentTool;
-  dynamicApiKey?: () => string;
   onGuard?: (observation: { context: PiBeforeToolCallContext; guard: string; block: boolean; reason: string }) => void;
   onCompact?: (info: CompactionInfo, messages: AgentMessage[]) => void;
   onNotice?: (message: string) => void;
@@ -182,7 +194,7 @@ function resolveTools(options: AgentPreparationOptions, requireFinish: boolean):
   if (options.toolPolicy === "readonly") {
     tools = tools.filter((tool) => READONLY_TOOL_ALLOWLIST.has(tool.name));
   }
-  if (!requireFinish) return tools;
+  if (!requireFinish) return applyToolExecutionPolicy(tools);
 
   const baseFinish =
     tools.find((tool) => tool.name === "finish") ??
@@ -193,7 +205,15 @@ function resolveTools(options: AgentPreparationOptions, requireFinish: boolean):
   }
   const finish = createWorkflowFinishTool(baseFinish, options.outputSchema);
   const index = tools.findIndex((tool) => tool.name === "finish");
-  return index < 0 ? [...tools, finish] : tools.map((tool, offset) => (offset === index ? finish : tool));
+  return applyToolExecutionPolicy(
+    index < 0 ? [...tools, finish] : tools.map((tool, offset) => (offset === index ? finish : tool)),
+  );
+}
+
+function applyToolExecutionPolicy(tools: AgentTool[]): AgentTool[] {
+  return tools.map((tool) =>
+    SEQUENTIAL_TOOL_NAMES.has(tool.name) ? { ...tool, executionMode: "sequential" } : tool,
+  );
 }
 
 function buildGuards(definition: SubagentDefinition, projectRoot: string): BeforeToolCallHook[] {
@@ -204,8 +224,6 @@ function buildGuards(definition: SubagentDefinition, projectRoot: string): Befor
       return result ? { ...result, guardName: result.guardName ?? guardName } : undefined;
     };
   return [
-    named("empty-args", createEmptyArgsGuard()),
-    named("tool-schema", createToolSchemaGuard()),
     named("path-hallucination", createPathHallucinationGuard()),
     named("completeness", createCompletenessGuard(definition.name)),
     named("finish-evidence", createFinishGuard()),
@@ -320,6 +338,8 @@ export function prepareAgentExecution(options: AgentPreparationOptions): Prepare
     systemPrompt,
     tools,
     runner: {
+      streamFn: streamSimple,
+      sessionId: options.sessionId,
       initialState: {
         systemPrompt,
         model: options.definition.model,
@@ -327,12 +347,7 @@ export function prepareAgentExecution(options: AgentPreparationOptions): Prepare
       },
       beforeToolCall,
       transformContext,
-      getApiKey:
-        options.definition.apiKey === "dynamic"
-          ? options.dynamicApiKey
-          : options.definition.apiKey
-            ? () => options.definition.apiKey!
-            : undefined,
+      getApiKey: options.definition.apiKey ? () => options.definition.apiKey! : undefined,
     },
   };
 }

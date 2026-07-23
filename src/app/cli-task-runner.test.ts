@@ -430,6 +430,51 @@ describe("CLI task runner", () => {
     }
   });
 
+  it("passes the generic model endpoint credentials to CLI workers", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-cli-model-endpoint-"));
+    const persistDir = join(root, ".state");
+    mkdirSync(persistDir, { recursive: true });
+    const bus = new EventBus();
+    let spawnedEnv: NodeJS.ProcessEnv | undefined;
+    const originalModelApiKey = process.env.MODEL_API_KEY;
+    const originalAnthropicApiKey = process.env.ANTHROPIC_API_KEY;
+    process.env.MODEL_API_KEY = "endpoint-key";
+    delete process.env.ANTHROPIC_API_KEY;
+    attachCliTaskRunner({
+      bus,
+      persistDir,
+      projectRoot: root,
+      spawnCommand: ((command: string, args: string[], options: { env?: NodeJS.ProcessEnv }) => {
+        spawnedEnv = options.env;
+        return fakeSpawn(command, args);
+      }) as any,
+    });
+
+    const tool = createRunCliAgentTool({
+      agentName: "may",
+      projectRoot: root,
+      persistDir,
+      emit: (event) => bus.emit(event as any),
+    });
+
+    try {
+      await tool.execute("call-1", {
+        tool: "claude",
+        prompt: "Use the configured endpoint.",
+        cwd: root,
+      });
+      await waitFor(() => Boolean(spawnedEnv));
+      expect(spawnedEnv?.MODEL_API_KEY).toBe("endpoint-key");
+      expect(spawnedEnv?.ANTHROPIC_API_KEY).toBe("endpoint-key");
+    } finally {
+      if (originalModelApiKey === undefined) delete process.env.MODEL_API_KEY;
+      else process.env.MODEL_API_KEY = originalModelApiKey;
+      if (originalAnthropicApiKey === undefined) delete process.env.ANTHROPIC_API_KEY;
+      else process.env.ANTHROPIC_API_KEY = originalAnthropicApiKey;
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("runs Claude patch tasks with non-interactive write permissions", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-cli-claude-patch-"));
     const persistDir = join(root, ".state");

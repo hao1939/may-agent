@@ -2,7 +2,6 @@ import type { SubagentManager } from "../lib/index.js";
 import type { AppArgs } from "./app-args.js";
 import { formatDurationMs } from "./daemon.js";
 import type { EventBus } from "./event-bus.js";
-import type { ModelRegistry } from "./model-registry.js";
 import { runMessageMode, runStatusMode } from "./modes/command.js";
 import { runOneshotMode } from "./modes/oneshot.js";
 import { runWorkflowMode } from "./modes/run-workflow.js";
@@ -16,8 +15,6 @@ export async function runRequestedExitMode(opts: {
   persistDir: string;
   bus: EventBus;
   manager: SubagentManager;
-  models: ModelRegistry["models"];
-  litellmApiKey: string;
 }): Promise<void> {
   const {
     chatMode,

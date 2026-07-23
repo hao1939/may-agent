@@ -1,11 +1,11 @@
-model_provider = "litellm"
+model_provider = "model_endpoint"
 model = "gpt-5.5"
 model_reasoning_effort = "high"
 personality = "pragmatic"
 check_for_update_on_startup = false
 
-[model_providers.litellm]
-name = "LiteLLM"
+[model_providers.model_endpoint]
+name = "Configured model endpoint"
 base_url = "http://host.docker.internal:4000/v1"
-env_key = "LITELLM_API_KEY"
+env_key = "MODEL_API_KEY"
 wire_api = "responses"

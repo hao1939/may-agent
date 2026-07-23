@@ -2,6 +2,6 @@
   "name": "may",
   "description": "Fixture interface agent for e2e tests",
   "domain": "e2e",
-  "model": "opus",
+  "model": "claude-opus-4-6",
   "tools": ["cron"]
 }

@@ -3,7 +3,7 @@ set -e
 
 export HOME="${HOME:-/app/.state}"
 export PROJECT_ROOT="${PROJECT_ROOT:-/app}"
-export LITELLM_API_KEY="${LITELLM_API_KEY:-not-needed}"
+export MODEL_API_KEY="${MODEL_API_KEY:-${LITELLM_API_KEY:-not-needed}}"
 
 codex_model="${CODEX_MODEL:-gpt-5.5}"
 codex_base_url="${CODEX_BASE_URL:-${MODEL_BASE_URL:-http://host.docker.internal:4000}}"
@@ -15,16 +15,16 @@ esac
 
 mkdir -p "${HOME}/.codex"
 cat > "${HOME}/.codex/config.toml" <<EOF
-model_provider = "litellm"
+model_provider = "model_endpoint"
 model = "${codex_model}"
 model_reasoning_effort = "high"
 personality = "pragmatic"
 check_for_update_on_startup = false
 
-[model_providers.litellm]
-name = "LiteLLM"
+[model_providers.model_endpoint]
+name = "Configured model endpoint"
 base_url = "${codex_base_url}"
-env_key = "LITELLM_API_KEY"
+env_key = "MODEL_API_KEY"
 wire_api = "responses"
 
 [projects."${PROJECT_ROOT}"]

@@ -12,13 +12,19 @@
  * - Abort signal support
  */
 
-import type { AgentTool } from "@earendil-works/pi-agent-core";
+import {
+  DEFAULT_MAX_BYTES,
+  DEFAULT_MAX_LINES,
+  formatSize,
+  truncateHead,
+  type AgentTool,
+  type TruncationResult,
+} from "@earendil-works/pi-agent-core";
 import { Type } from "@earendil-works/pi-ai";
 import type { TSchema } from "@earendil-works/pi-ai";
 import { constants } from "fs";
 import { access as fsAccess, readFile as fsReadFile } from "fs/promises";
 import { resolveReadPath } from "./path-utils.js";
-import { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, formatSize, type TruncationResult, truncateHead } from "./truncate.js";
 import { withAbortSignal } from "./abort-utils.js";
 
 const readSchema: TSchema = Type.Object({

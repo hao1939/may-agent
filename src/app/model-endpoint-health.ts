@@ -10,7 +10,7 @@ function healthUrl(baseUrl: string): string {
   return `${root}/health/liveliness`;
 }
 
-export async function waitForModelProxy(opts: {
+export async function waitForModelEndpoint(opts: {
   baseUrl: string;
   bus?: EventBus;
   timeoutMs?: number;
@@ -25,7 +25,7 @@ export async function waitForModelProxy(opts: {
 
   opts.bus?.emit({
     type: "info",
-    message: `[startup] Waiting for model proxy liveliness: ${url}`,
+    message: `[startup] Waiting for model endpoint: ${url}`,
   });
 
   while (Date.now() < deadline) {
@@ -35,7 +35,7 @@ export async function waitForModelProxy(opts: {
       if (response.ok) {
         opts.bus?.emit({
           type: "info",
-          message: `[startup] Model proxy is live after ${attempts} attempt(s)`,
+          message: `[startup] Model endpoint is live after ${attempts} attempt(s)`,
         });
         return;
       }
@@ -46,5 +46,7 @@ export async function waitForModelProxy(opts: {
     await sleep(intervalMs);
   }
 
-  throw new Error(`Model proxy not live after ${Math.round(timeoutMs / 1000)}s at ${url}: ${lastError || "no response"}`);
+  throw new Error(
+    `Model endpoint not live after ${Math.round(timeoutMs / 1000)}s at ${url}: ${lastError || "no response"}`,
+  );
 }
