@@ -68,15 +68,24 @@ export class ProjectAppTaskActionStaleError extends Error {
   readonly taskId: string;
   readonly expectedGeneration: number;
   readonly currentGeneration: number;
+  readonly currentPhase?: ProjectAppTaskResource["status"]["phase"];
 
-  constructor(input: { taskId: string; expectedGeneration: number; currentGeneration: number }) {
+  constructor(input: {
+    taskId: string;
+    expectedGeneration: number;
+    currentGeneration: number;
+    currentPhase?: ProjectAppTaskResource["status"]["phase"];
+  }) {
     super(
-      `Handler action for ${input.taskId} is stale: expected generation ${input.expectedGeneration}, current ${input.currentGeneration}`,
+      input.currentPhase
+        ? `Handler action for ${input.taskId} is stale: target phase is now ${input.currentPhase}`
+        : `Handler action for ${input.taskId} is stale: expected generation ${input.expectedGeneration}, current ${input.currentGeneration}`,
     );
     this.name = "ProjectAppTaskActionStaleError";
     this.taskId = input.taskId;
     this.expectedGeneration = input.expectedGeneration;
     this.currentGeneration = input.currentGeneration;
+    this.currentPhase = input.currentPhase;
   }
 }
 
@@ -1735,7 +1744,12 @@ function validateTaskActions(
     }
     if (action.kind === "unblock-task") {
       if (resource.status.phase !== "waiting" && resource.status.phase !== "attention") {
-        throw new Error(`Handler action task ${action.taskId} is not waiting or in attention`);
+        throw new ProjectAppTaskActionStaleError({
+          taskId: action.taskId,
+          expectedGeneration: action.expectedGeneration,
+          currentGeneration: resource.metadata.generation,
+          currentPhase: resource.status.phase,
+        });
       }
     }
     if (action.kind === "update-task" && action.parentId !== undefined && action.parentId !== task.parent_id) {
