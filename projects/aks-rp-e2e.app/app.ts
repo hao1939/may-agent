@@ -31,6 +31,7 @@ const appControllerMaxConcurrent =
   domainPolicyMaxConcurrent + appOpsSupportConcurrent;
 const scenarioTestFrontierTaskId = scenarioNormalizationTaskId;
 export const masterValidationCycleTaskId = "master-validation-staging-cycle";
+export const waitingFrontierReviewTaskId = "runtime/waiting-frontier-review";
 const scenarioTestFrontierMinLeaves = 3;
 const actionInputSchema = Type.Object({}, { additionalProperties: true });
 const targetedTaskActionInputSchema = Type.Object(
@@ -234,6 +235,37 @@ export function resolveAksTask(
   switch (event.type) {
     case "project.task.tick": {
       const action = stringDetail(details, "action");
+      if (
+        action === "waiting-frontier-review" ||
+        taskId === waitingFrontierReviewTaskId
+      ) {
+        return {
+          id: waitingFrontierReviewTaskId,
+          parentId: "group/app-operations",
+          outcome:
+            "Continuously review waiting and attention work from current facts and restore a bounded sample to an active recovery path.",
+          acceptance: [
+            "Read current task state and hot external facts instead of trusting stored summaries.",
+            "For each sampled task, choose one truthful outcome: same-task retry after changed evidence, an exact observed wait, a sent escalation across an ownership boundary, or a terminal disposition with evidence.",
+            "Do not leave a satisfied Condition, a producerless Condition, or an unattended attention task asleep.",
+          ],
+          mode: "maintain",
+          owner: "app-ops",
+          input: {
+            maxConcurrent: domainPolicyMaxConcurrent,
+            instructions: [
+              "Treat runtime phase=waiting as the current blocked representation; do not search only for the retired blocked phase.",
+              "Requeue the same task when its exact Condition is already true.",
+              "Route valid repository waits through wait-for-repo-ref-advance using aks.repo-ref.observed.",
+              "Return stale Conditions with no current producer to the task owner for fresh judgment.",
+              "Preserve a human or external wait only with exact correlation and durable send proof.",
+              "Review attention tasks that have no active retry or recovery consumer.",
+            ],
+          },
+          priority: "P0",
+          category: "ops",
+        };
+      }
       if (action === "spec-loop" || taskId === specLoopTaskId) {
         return standingLoopIntent(specLoopTaskId);
       }
@@ -677,24 +709,15 @@ export default defineProjectApp({
       intervalMs: 1_800_000,
       emits: [
         {
-          type: "project.owner.requested",
-          target: { project: projectId },
+          type: "project.task.tick",
+          target: { project: projectId, taskId: waitingFrontierReviewTaskId },
           urgency: "high",
+          action: "waiting-frontier-review",
           data: {
             project: projectId,
+            taskId: waitingFrontierReviewTaskId,
+            task_id: waitingFrontierReviewTaskId,
             reason: "scheduled-blocked-frontier-review",
-            params: {
-              maxConcurrent: domainPolicyMaxConcurrent,
-              instruction:
-                "Periodic waiting/attention frontier review: read current task state and hot external facts, then push a bounded sample toward final state. Treat runtime phase=waiting as the current blocked representation; do not search only for the retired blocked phase. Requeue the same task when its exact Condition is already true, route repo waits through wait-for-repo-ref-advance using aks.repo-ref.observed, and send stale Conditions with no current producer back to their owner for fresh judgment. Preserve a human or external wait only with exact correlation and durable send proof. Also review attention tasks that have no active retry/recovery consumer.",
-              reviewChecklist: [
-                "Do not treat waiting or attention as final.",
-                "Read the current external fact instead of trusting the stored wait summary.",
-                "Do not retry an unchanged domain failure; a satisfied or invalid Condition is changed process evidence.",
-                "Prefer one shared problem/unblock task for a shared root cause.",
-                "Every sampled task should leave review with an active consumer: same-task retry, exact observed wait, sent escalation, or truthful terminal disposition.",
-              ],
-            },
           },
         },
       ],

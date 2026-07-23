@@ -5,6 +5,7 @@ import app, {
   resolveAksTask,
   routeAksEvent,
   scenarioTestFrontierWakeEvent,
+  waitingFrontierReviewTaskId,
 } from "../../../app.ts";
 
 type EventSelector =
@@ -611,7 +612,7 @@ describe("app event contract", () => {
     });
   });
 
-  test("blocked-frontier review remains scheduled", () => {
+  test("waiting-frontier review has an independent scheduled task lane", () => {
     const schedule = appManifest.schedules?.find(
       (entry) => entry.id === "blocked-frontier-app-ops-review",
     );
@@ -621,15 +622,31 @@ describe("app event contract", () => {
       intervalMs: 1_800_000,
       emits: [
         {
-          type: "project.owner.requested",
-          target: { project: projectId },
+          type: "project.task.tick",
+          target: {
+            project: projectId,
+            taskId: waitingFrontierReviewTaskId,
+          },
+          action: "waiting-frontier-review",
           data: {
             project: projectId,
+            taskId: waitingFrontierReviewTaskId,
             reason: "scheduled-blocked-frontier-review",
           },
           urgency: "high",
         },
       ],
+    });
+
+    expect(
+      resolveAksTask(schedule?.emits?.[0] as Record<string, unknown>),
+    ).toMatchObject({
+      id: waitingFrontierReviewTaskId,
+      parentId: "group/app-operations",
+      mode: "maintain",
+      owner: "app-ops",
+      priority: "P0",
+      category: "ops",
     });
   });
 

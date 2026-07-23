@@ -192,6 +192,16 @@ retired `blocked` phase can report a false healthy zero. A stale wait is a
 signal for owner reevaluation, not permission for code to infer the domain
 decision from its prose.
 
+The waiting-frontier watchdog is its own stable `maintain` task. Its periodic
+schedule emits a direct task tick instead of adding another request to the
+general owner-review task. General owner review intentionally coalesces many
+project signals, so a busy stream of focus or workspace events can delay an
+unrelated recovery request even when the request is retained. A dedicated
+maintenance task gives this recurring responsibility a fair reconciliation
+lane without moving judgment into code: code schedules the review and the
+`app-ops` agent reads hot facts, selects a bounded sample, and decides the
+next action for each sampled task.
+
 ## Loop 1: spec verification
 
 ### Purpose
