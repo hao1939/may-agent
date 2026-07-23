@@ -51,6 +51,7 @@ type PersistedAttempt = {
   handler?: string;
   summary?: string;
   failureReason?: string;
+  startedAt?: string;
 };
 
 type PersistedTaskState = {
@@ -269,6 +270,71 @@ function taskAttemptsFor(
   );
 }
 
+function representedFiles(task: GraphTask): string[] {
+  const branches = task.input?.branches;
+  if (!Array.isArray(branches)) return [];
+  return [
+    ...new Set(
+      branches.flatMap((branch) => {
+        if (!branch || typeof branch !== "object" || Array.isArray(branch))
+          return [];
+        const files = (branch as Record<string, unknown>).files;
+        return Array.isArray(files)
+          ? files.filter(
+              (file): file is string =>
+                typeof file === "string" && file.length > 0,
+            )
+          : [];
+      }),
+    ),
+  ];
+}
+
+function representedFeatureCount(task: GraphTask): number {
+  return new Set(
+    representedFiles(task).flatMap((file) => {
+      const match = /^features\/([^/]+)\//.exec(file);
+      return match ? [match[1]] : [];
+    }),
+  ).size;
+}
+
+function oldestAttemptAt(
+  taskId: string,
+  persistedState: PersistedTaskState,
+): string {
+  return (
+    taskAttemptsFor(taskId, persistedState)
+      .flatMap((attempt) => (attempt.startedAt ? [attempt.startedAt] : []))
+      .sort()[0] ?? "9999-12-31T23:59:59.999Z"
+  );
+}
+
+export function compareLegacyAttentionCost(
+  left: readonly [string, GraphTask],
+  right: readonly [string, GraphTask],
+  persistedState: PersistedTaskState,
+): number {
+  const leftFiles = representedFiles(left[1]);
+  const rightFiles = representedFiles(right[1]);
+  const leftFileCost = leftFiles.length || Number.MAX_SAFE_INTEGER;
+  const rightFileCost = rightFiles.length || Number.MAX_SAFE_INTEGER;
+  const leftFeatureCost = leftFiles.length
+    ? representedFeatureCount(left[1])
+    : Number.MAX_SAFE_INTEGER;
+  const rightFeatureCost = rightFiles.length
+    ? representedFeatureCount(right[1])
+    : Number.MAX_SAFE_INTEGER;
+  return (
+    leftFeatureCost - rightFeatureCost ||
+    leftFileCost - rightFileCost ||
+    oldestAttemptAt(left[0], persistedState).localeCompare(
+      oldestAttemptAt(right[0], persistedState),
+    ) ||
+    left[0].localeCompare(right[0])
+  );
+}
+
 function retryableAttentionTask(
   taskId: string,
   task: GraphTask,
@@ -366,7 +432,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         Number(task.generation) > 0
       );
     })
-    .sort(([left], [right]) => {
+    .sort(([leftId, leftTask], [rightId, rightTask]) => {
       const replayPriority = (taskId: string): number =>
         integratedAttentionTaskIds.has(taskId)
           ? 0
@@ -374,8 +440,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
             ? 1
             : 2;
       return (
-        replayPriority(left) - replayPriority(right) ||
-        left.localeCompare(right)
+        replayPriority(leftId) - replayPriority(rightId) ||
+        compareLegacyAttentionCost(
+          [leftId, leftTask],
+          [rightId, rightTask],
+          persistedState,
+        )
       );
     })
     .slice(0, accounting.available)

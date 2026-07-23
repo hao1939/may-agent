@@ -285,6 +285,13 @@ writer slot before ordinary retryable attention. This prevents mechanically
 closable tasks from being starved behind a large retry frontier; it does not
 change the domain decision or widen the eligibility gate.
 
+Within ordinary retryable attention, the controller orders only by bounded
+mechanical cost: fewer represented feature roots, fewer changed files, then
+the oldest recorded attempt and stable task ID. This lets the single writer
+clear small branches first without code deciding whether a patch is useful.
+The reconciliation agent still reviews, repairs, accepts, or rejects each
+branch from current Git evidence.
+
 An absent source ref is not itself success. Without exact ancestry proof, or
 when a ref moved or recoverable worktree remains, the controller leaves the
 task visible for owner judgment. Code gathers and validates these Git facts;

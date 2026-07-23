@@ -169,6 +169,14 @@ generation. An unavailable workflow records `HandlerUnavailable` and moves the
 task to `attention`; it is not replaced by direct owner execution. A successful
 app reload enqueues the task once after the named workflow resolves again.
 
+An owner or workflow execution that ends without a valid handler decision
+records `HandlerExecutionFailed`. It remains in `attention` until fresh
+structured runtime evidence proves that the same owner can execute again, such
+as a later successful session for that owner. The controller then requeues the
+same task generation once. It does not inspect provider error prose, assume
+that time alone repaired the runtime, or apply this recovery to a completed but
+invalid/rejected handler decision.
+
 A workflow may return `needs-owner` explicitly. This is the only automatic
 workflow-to-owner handoff, and it creates at most one sequential owner attempt.
 Missing, blocked, thrown, timed-out, and invalid workflows do not imply
@@ -440,6 +448,14 @@ Recovery uses the same task resource and the same app controller:
 4. move the task to `attention` when progress requires domain judgment;
 5. wake the accountable owner once with accumulated, deduplicated evidence;
 6. escalate only when the next action crosses an ownership boundary.
+
+Execution recovery is evidence gated. `HandlerExecutionFailed` means the
+selected handler produced no applicable decision because its execution did not
+complete. A later successful session for the same owner is sufficient evidence
+to retry that task once through the ordinary controller. A schema-invalid
+decision, rejected action, failed acceptance check, or workspace admission
+failure is a different `handler-blocked` condition and is not released by
+unrelated runtime success.
 
 The ladder begins after the domain workflow has performed its normal work.
 Expected domain failures stay inside the task's reconciliation loop: collect

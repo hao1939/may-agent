@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { WorkflowContext } from "@may-agent/sdk";
 import {
+  compareLegacyAttentionCost,
   execute,
   integratedAttentionSourceReady,
   patchEquivalentAttentionSourceReady,
@@ -29,6 +30,40 @@ test("retries hard-admission repair and transient workspace failures", () => {
       "Task workspace preparation failed: task branch name is invalid",
     ),
   ).toBe(false);
+});
+
+test("orders ordinary attention by bounded branch cost before task id", () => {
+  const small = [
+    "ops/zzz-small",
+    {
+      input: {
+        branches: [
+          {
+            files: ["features/network-cni/specs/one.json"],
+          },
+        ],
+      },
+    },
+  ] as const;
+  const broad = [
+    "ops/aaa-broad",
+    {
+      input: {
+        branches: [
+          {
+            files: [
+              "features/network-cni/specs/one.json",
+              "features/localdns/specs/two.json",
+              "features/ccp-coredns/specs/three.json",
+            ],
+          },
+        ],
+      },
+    },
+  ] as const;
+
+  expect(compareLegacyAttentionCost(small, broad, {})).toBeLessThan(0);
+  expect(compareLegacyAttentionCost(broad, small, {})).toBeGreaterThan(0);
 });
 
 function git(cwd: string, ...args: string[]): string {
