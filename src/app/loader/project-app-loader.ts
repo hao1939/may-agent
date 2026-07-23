@@ -1112,24 +1112,30 @@ function emitOwnerResultForTask(
 
 type OwnerIntentRef = { eventId: number; eventType: string };
 
+function isOwnerIntentType(value: unknown): value is "project.owner.requested" | "project.comment.created" {
+  return value === "project.owner.requested" || value === "project.comment.created";
+}
+
 function ownerIntentRefs(event: Record<string, unknown>): OwnerIntentRef[] {
   const declared = Array.isArray(event.ownerIntentRefs) ? event.ownerIntentRefs : [];
   const refs: OwnerIntentRef[] = declared.flatMap((value) => {
     if (!isRecord(value)) return [];
     const eventId = Number(value.eventId);
-    return Number.isInteger(eventId) && eventId > 0 && typeof value.eventType === "string"
+    return Number.isInteger(eventId) && eventId > 0 && isOwnerIntentType(value.eventType)
       ? [{ eventId, eventType: value.eventType }]
       : [];
   });
   const inputEventId = Number(event.inputEventId);
   if (Number.isInteger(inputEventId) && inputEventId > 0) {
+    const inputEventType = typeof event.inputEventType === "string" ? event.inputEventType : "project.comment.created";
+    if (!isOwnerIntentType(inputEventType)) return [...new Map(refs.map((ref) => [ref.eventId, ref])).values()];
     refs.push({
       eventId: inputEventId,
-      eventType: typeof event.inputEventType === "string" ? event.inputEventType : "project.comment.created",
+      eventType: inputEventType,
     });
   } else {
     const eventId = Number(event.eventId);
-    if (Number.isInteger(eventId) && eventId > 0 && typeof event.type === "string") {
+    if (Number.isInteger(eventId) && eventId > 0 && isOwnerIntentType(event.type)) {
       refs.push({ eventId, eventType: event.type });
     }
   }
@@ -1142,9 +1148,8 @@ function taskTriggerWithOwnerIntents(
   event: Record<string, unknown>,
 ): Record<string, unknown> {
   const previous = readProjectAppTaskTrigger(config, taskId);
-  const isOwnerIntent = event.type === "project.owner.requested" || event.type === "project.comment.created";
-  const previousIsOwnerIntent =
-    previous?.type === "project.owner.requested" || previous?.type === "project.comment.created";
+  const isOwnerIntent = isOwnerIntentType(event.type);
+  const previousIsOwnerIntent = isOwnerIntentType(previous?.type);
   if (!isOwnerIntent) return previousIsOwnerIntent ? previous : event;
   const refs = [...(previous ? ownerIntentRefs(previous) : []), ...ownerIntentRefs(event)];
   return {

@@ -2289,14 +2289,16 @@ describe("project app loader", () => {
         agentCrons: new Map(),
       });
 
-      bus.emit({
-        type: "project.owner.requested",
+      const firstRoutineWake = bus.emit({
+        type: "sample.work",
         project: "sample",
         itemId: "owner-review",
         mode: "maintain",
         ownerOnly: true,
-        instruction: "first owner instruction",
+        observation: "first routine pipeline wake",
+        target: { project: "sample", taskId: "work/owner-review" },
       } as any);
+      const firstRoutineEventId = (firstRoutineWake as any)[EVENT_ROW_ID];
       await waitUntil(() => ownerCalls.length === 1);
 
       const secondOwnerRequest = bus.emit({
@@ -2308,7 +2310,7 @@ describe("project app loader", () => {
         instruction: "preserve-this-owner-instruction",
       } as any);
       const secondOwnerEventId = (secondOwnerRequest as any)[EVENT_ROW_ID];
-      bus.emit({
+      const secondRoutineWake = bus.emit({
         type: "sample.work",
         project: "sample",
         itemId: "owner-review",
@@ -2317,6 +2319,7 @@ describe("project app loader", () => {
         observation: "routine pipeline wake",
         target: { project: "sample", taskId: "work/owner-review" },
       } as any);
+      const secondRoutineEventId = (secondRoutineWake as any)[EVENT_ROW_ID];
 
       releaseFirstOwner();
       await waitUntil(
@@ -2334,6 +2337,13 @@ describe("project app loader", () => {
           (event) => event.type === "project.owner.reviewed" && event.data?.openEventId === secondOwnerEventId,
         ),
       ).toHaveLength(1);
+      expect(
+        events.filter(
+          (event) =>
+            event.type === "project.owner.reviewed" &&
+            [firstRoutineEventId, secondRoutineEventId].includes(event.data?.openEventId),
+        ),
+      ).toHaveLength(0);
     } finally {
       closeDb(f.persistDir);
       rmSync(f.root, { recursive: true, force: true });
