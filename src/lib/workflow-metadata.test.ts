@@ -45,6 +45,19 @@ describe("workflow workspace metadata", () => {
     });
   });
 
+  it("allows a task-worktree workflow to choose its integration branch", async () => {
+    const dir = workflow(`
+      export const name = "sample";
+      export const description = "sample workflow";
+      export const workspace = { kind: "task", baseBranch: "main" };
+      export async function execute(ctx) { return ctx.done("done"); }
+    `);
+    expect(await inspectWorkflowDefinition(dir, "sample")).toMatchObject({
+      available: true,
+      workspace: { kind: "task", baseBranch: "main" },
+    });
+  });
+
   it("rejects unknown workspace modes as a catalog diagnostic", async () => {
     const dir = workflow(`
       export const name = "sample";
@@ -54,6 +67,6 @@ describe("workflow workspace metadata", () => {
     `);
     const result = await inspectWorkflowDefinition(dir, "sample");
     expect(result.available).toBe(false);
-    expect(result.error).toContain('workspace\' as "shared" or "task"');
+    expect(result.error).toContain('workspace\' as "shared", "task", or { kind: "task", baseBranch }');
   });
 });

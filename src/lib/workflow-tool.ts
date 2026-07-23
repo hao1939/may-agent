@@ -212,13 +212,31 @@ async function loadWorkflow(filePath: string, sourceScope: "agent" | "project"):
   if (mod.verify !== undefined && typeof mod.verify !== "function") {
     throw new Error(`Workflow file ${filePath} must export 'verify' as a function when present`);
   }
-  if (mod.workspace !== undefined && mod.workspace !== "shared" && mod.workspace !== "task") {
-    throw new Error(`Workflow file ${filePath} must export 'workspace' as "shared" or "task" when present`);
+  const taskWorkspace =
+    mod.workspace !== null &&
+    typeof mod.workspace === "object" &&
+    !Array.isArray(mod.workspace) &&
+    (mod.workspace as Record<string, unknown>).kind === "task" &&
+    typeof (mod.workspace as Record<string, unknown>).baseBranch === "string" &&
+    Boolean(String((mod.workspace as Record<string, unknown>).baseBranch).trim());
+  if (mod.workspace !== undefined && mod.workspace !== "shared" && mod.workspace !== "task" && !taskWorkspace) {
+    throw new Error(
+      `Workflow file ${filePath} must export 'workspace' as "shared", "task", or { kind: "task", baseBranch } when present`,
+    );
   }
   return {
     name: mod.name.trim(),
     description: mod.description.trim(),
-    ...(mod.workspace ? { workspace: mod.workspace } : {}),
+    ...(mod.workspace
+      ? {
+          workspace: taskWorkspace
+            ? {
+                kind: "task" as const,
+                baseBranch: String((mod.workspace as Record<string, unknown>).baseBranch).trim(),
+              }
+            : (mod.workspace as "shared" | "task"),
+        }
+      : {}),
     execute: execute as WorkflowModule["execute"],
     ...(typeof mod.verify === "function" ? { verify: mod.verify as WorkflowModule["verify"] } : {}),
     sourcePath: filePath,
@@ -306,7 +324,11 @@ function findWorkflow(
 export async function inspectWorkflowDefinition(
   workflowDir: string,
   name: string,
-): Promise<{ available: boolean; error: string | null; workspace: "shared" | "task" }> {
+): Promise<{
+  available: boolean;
+  error: string | null;
+  workspace: "shared" | "task" | { kind: "task"; baseBranch: string };
+}> {
   const resolved = findWorkflow(await buildWorkflowCatalog(workflowDir), name);
   return {
     available: resolved.workflow !== null,
