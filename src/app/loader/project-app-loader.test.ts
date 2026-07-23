@@ -2307,9 +2307,18 @@ describe("project app loader", () => {
         itemId: "owner-review",
         mode: "maintain",
         ownerOnly: true,
-        instruction: "preserve-this-owner-instruction",
+        data: { project: "sample", instruction: "preserve-this-owner-instruction" },
       } as any);
       const secondOwnerEventId = (secondOwnerRequest as any)[EVENT_ROW_ID];
+      const thirdOwnerRequest = bus.emit({
+        type: "project.owner.requested",
+        project: "sample",
+        itemId: "owner-review",
+        mode: "maintain",
+        ownerOnly: true,
+        data: { project: "sample", instruction: "latest-owner-instruction" },
+      } as any);
+      const thirdOwnerEventId = (thirdOwnerRequest as any)[EVENT_ROW_ID];
       const secondRoutineWake = bus.emit({
         type: "sample.work",
         project: "sample",
@@ -2332,11 +2341,14 @@ describe("project app loader", () => {
       );
 
       expect(ownerCalls[1]).toContain("preserve-this-owner-instruction");
+      expect(ownerCalls[1]).toContain("latest-owner-instruction");
       expect(
         events.filter(
-          (event) => event.type === "project.owner.reviewed" && event.data?.openEventId === secondOwnerEventId,
+          (event) =>
+            event.type === "project.owner.reviewed" &&
+            [secondOwnerEventId, thirdOwnerEventId].includes(event.data?.openEventId),
         ),
-      ).toHaveLength(1);
+      ).toHaveLength(2);
       expect(
         events.filter(
           (event) =>
