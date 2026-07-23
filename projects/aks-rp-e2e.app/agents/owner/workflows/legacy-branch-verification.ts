@@ -68,6 +68,21 @@ const repairSchema = Type.Object({
 });
 
 const maxRepairIterations = 3;
+const maxWorkflowEvidence = 32;
+
+export function boundedWorkflowEvidence(values: string[]): string[] {
+  const entries = [
+    ...new Set(values.map((value) => value.trim()).filter(Boolean)),
+  ];
+  if (entries.length <= maxWorkflowEvidence) return entries;
+  const retainedHead = entries.slice(0, maxWorkflowEvidence - 4);
+  const retainedTail = entries.slice(-3);
+  return [
+    ...retainedHead,
+    `evidence-omitted:${entries.length - retainedHead.length - retainedTail.length}`,
+    ...retainedTail,
+  ];
+}
 
 function matchingJsonObject(text: string, start: number): string | null {
   let depth = 0;
@@ -453,11 +468,11 @@ export async function executeWithVerifier(
         return ctx.done(summary, {
           state: "converged",
           summary,
-          evidence: [
+          evidence: boundedWorkflowEvidence([
             `branch:${source.branch}@${source.head}:rejected`,
             `base-commit:${baseCommit}`,
             ...repairEvidence,
-          ],
+          ]),
           actions: [],
         });
       }
@@ -467,11 +482,11 @@ export async function executeWithVerifier(
         return ctx.done(summary, {
           state: "needs-owner",
           summary,
-          evidence: [
+          evidence: boundedWorkflowEvidence([
             `branch:${source.branch}@${source.head}:repair-exhausted`,
             `base-commit:${baseCommit}`,
             ...repairEvidence,
-          ],
+          ]),
         });
       }
     }
@@ -523,11 +538,11 @@ export async function executeWithVerifier(
         return ctx.done(summary, {
           state: "converged",
           summary,
-          evidence: [
+          evidence: boundedWorkflowEvidence([
             `branch:${source.branch}@${source.head}:rejected`,
             `base-commit:${baseCommit}`,
             ...repairEvidence,
-          ],
+          ]),
           actions: [],
         });
       }
@@ -536,7 +551,7 @@ export async function executeWithVerifier(
         return ctx.done(summary, {
           state: "needs-owner",
           summary,
-          evidence: [
+          evidence: boundedWorkflowEvidence([
             ...ownerReviewEvidence(
               source,
               baseCommit,
@@ -544,7 +559,7 @@ export async function executeWithVerifier(
               verification,
             ),
             ...repairEvidence,
-          ],
+          ]),
         });
       }
       candidateHead = repair.head;
@@ -555,7 +570,7 @@ export async function executeWithVerifier(
       return ctx.done(summary, {
         state: "needs-owner",
         summary,
-        evidence: [
+        evidence: boundedWorkflowEvidence([
           ...ownerReviewEvidence(
             source,
             baseCommit,
@@ -563,7 +578,7 @@ export async function executeWithVerifier(
             verification,
           ),
           ...repairEvidence,
-        ],
+        ]),
       });
     }
 
@@ -609,14 +624,14 @@ export async function executeWithVerifier(
     return ctx.done(summary, {
       state: "converged",
       summary,
-      evidence: [
+      evidence: boundedWorkflowEvidence([
         `branch:${source.branch}@${source.head}:verified-merged`,
         `base-commit:${baseCommit}`,
         `result-commit:${candidateHead}`,
         `changed-files:${verification.changedFiles.join(",")}`,
         ...repairEvidence,
         ...stepEvidence(verification),
-      ],
+      ]),
       actions: [],
     });
   } catch (error) {

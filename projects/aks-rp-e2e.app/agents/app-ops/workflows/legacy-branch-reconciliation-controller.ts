@@ -70,7 +70,16 @@ const retryableAttentionSummaries = new Set([
   // repair conflicts and failed checks inside the same task.
   "Legacy branch merge conflict requires focused repair",
   "Legacy branch verification failed",
+  "Handler result was rejected: evidence exceeds the 32-entry limit",
 ]);
+
+export function retryableAttentionSummary(summary: string): boolean {
+  if (retryableAttentionSummaries.has(summary)) return true;
+  if (!summary.startsWith("Task workspace preparation failed:")) return false;
+  return /\b(429|503)\b|connection|temporar|timed?\s*out|could not resolve|tls/i.test(
+    summary,
+  );
+}
 
 function configuredFrontierLimit(raw: string, fallback: number): number {
   const match = raw.match(/^frontierLimit:\s*(.+)$/m);
@@ -116,7 +125,7 @@ function retryableAttentionTask(
   persistedState: PersistedTaskState,
 ): boolean {
   const summary = String(task.summary ?? "");
-  if (retryableAttentionSummaries.has(summary)) return true;
+  if (retryableAttentionSummary(summary)) return true;
   if (summary !== "Connection error.") return false;
   return taskAttemptsFor(taskId, persistedState).some(
     (attempt) =>

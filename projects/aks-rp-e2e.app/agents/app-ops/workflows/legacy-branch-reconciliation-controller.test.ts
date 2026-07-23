@@ -4,9 +4,30 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { WorkflowContext } from "@may-agent/sdk";
-import { execute } from "./legacy-branch-reconciliation-controller.ts";
+import {
+  execute,
+  retryableAttentionSummary,
+} from "./legacy-branch-reconciliation-controller.ts";
 
 const roots: string[] = [];
+
+test("retries hard-admission repair and transient workspace failures", () => {
+  expect(
+    retryableAttentionSummary(
+      "Handler result was rejected: evidence exceeds the 32-entry limit",
+    ),
+  ).toBe(true);
+  expect(
+    retryableAttentionSummary(
+      "Task workspace preparation failed: git fetch origin dev returned 503",
+    ),
+  ).toBe(true);
+  expect(
+    retryableAttentionSummary(
+      "Task workspace preparation failed: task branch name is invalid",
+    ),
+  ).toBe(false);
+});
 
 function git(cwd: string, ...args: string[]): string {
   return execFileSync("git", ["-C", cwd, ...args], { encoding: "utf8" }).trim();

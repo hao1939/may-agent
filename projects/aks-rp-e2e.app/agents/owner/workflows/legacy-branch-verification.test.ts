@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import type { WorkflowContext } from "@may-agent/sdk";
 import {
+  boundedWorkflowEvidence,
   executeWithVerifier,
   type LegacyCandidateVerifier,
   type LegacyRepairAgent,
@@ -101,6 +102,16 @@ afterEach(() => {
 });
 
 describe("legacy branch verification workflow", () => {
+  test("bounds workflow evidence while retaining both ends", () => {
+    const evidence = boundedWorkflowEvidence(
+      Array.from({ length: 40 }, (_, index) => `evidence:${index + 1}`),
+    );
+    expect(evidence).toHaveLength(32);
+    expect(evidence[0]).toBe("evidence:1");
+    expect(evidence).toContain("evidence-omitted:9");
+    expect(evidence.at(-1)).toBe("evidence:40");
+  });
+
   test("merges a passing branch and removes its source refs", async () => {
     const value = fixture();
     const result = await executeWithVerifier(
