@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import {
   resolveTaskTreePath,
@@ -56,6 +57,17 @@ type PersistedTaskState = {
   attempts?: Record<string, PersistedAttempt>;
 };
 
+type RecordedSource = {
+  branch: string;
+  head: string;
+};
+
+type WorktreeObservation = {
+  path: string;
+  head?: string;
+  branch?: string;
+};
+
 const retryableAttentionSummaries = new Set([
   "Legacy branch family base changed; retry from current origin/dev",
   // Compatibility for the two reviews that lost the initial three-writer race.
@@ -79,6 +91,102 @@ export function retryableAttentionSummary(summary: string): boolean {
   return /\b(429|503)\b|connection|temporar|timed?\s*out|could not resolve|tls/i.test(
     summary,
   );
+}
+
+function git(
+  repoDir: string,
+  args: string[],
+): { status: number; stdout: string } {
+  const result = spawnSync("git", ["-C", repoDir, ...args], {
+    encoding: "utf8",
+    timeout: 120_000,
+    maxBuffer: 32 * 1024 * 1024,
+  });
+  return {
+    status: result.status ?? 1,
+    stdout: result.stdout?.trim() ?? "",
+  };
+}
+
+function recordedSource(task: GraphTask): RecordedSource | null {
+  const branches = task.input?.branches;
+  if (!Array.isArray(branches) || branches.length !== 1) return null;
+  const source = branches[0];
+  if (!source || typeof source !== "object" || Array.isArray(source))
+    return null;
+  const branch = (source as Record<string, unknown>).branch;
+  const head = (source as Record<string, unknown>).head;
+  if (typeof branch !== "string" || !branch) return null;
+  if (typeof head !== "string" || !/^[0-9a-f]{40}$/i.test(head)) return null;
+  return { branch, head };
+}
+
+function worktreeObservations(repoDir: string): WorktreeObservation[] | null {
+  const result = git(repoDir, ["worktree", "list", "--porcelain"]);
+  if (result.status !== 0) return null;
+  return result.stdout.split(/\n\n+/).flatMap((block) => {
+    const values = new Map(
+      block
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => {
+          const separator = line.indexOf(" ");
+          return separator < 0
+            ? [line, ""]
+            : [line.slice(0, separator), line.slice(separator + 1)];
+        }),
+    );
+    const path = values.get("worktree");
+    if (!path) return [];
+    const branch = values.get("branch")?.replace(/^refs\/heads\//, "");
+    return [{ path, head: values.get("HEAD"), branch }];
+  });
+}
+
+export function integratedAttentionSourceReady(
+  repoDir: string,
+  task: GraphTask,
+  baseRef = "origin/dev",
+  observedWorktrees: WorktreeObservation[] | null = worktreeObservations(
+    repoDir,
+  ),
+): boolean {
+  const source = recordedSource(task);
+  if (!source) return false;
+
+  const sourceCommit = git(repoDir, [
+    "rev-parse",
+    "--verify",
+    `${source.head}^{commit}`,
+  ]);
+  if (sourceCommit.status !== 0 || sourceCommit.stdout !== source.head)
+    return false;
+  if (
+    git(repoDir, ["merge-base", "--is-ancestor", source.head, baseRef])
+      .status !== 0
+  )
+    return false;
+
+  const local = git(repoDir, [
+    "rev-parse",
+    "--verify",
+    `refs/heads/${source.branch}^{commit}`,
+  ]);
+  if (local.status === 0 && local.stdout !== source.head) return false;
+
+  if (!observedWorktrees) return false;
+  for (const worktree of observedWorktrees) {
+    if (worktree.branch === source.branch) return false;
+    if (worktree.head !== source.head) continue;
+    const status = git(worktree.path, [
+      "status",
+      "--porcelain=v1",
+      "--untracked-files=all",
+    ]);
+    if (status.status !== 0 || status.stdout) return false;
+  }
+  return true;
 }
 
 function configuredFrontierLimit(raw: string, fallback: number): number {
@@ -171,13 +279,29 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     byFamily.set(row.family, familyRows);
   }
 
+  const observedWorktrees = worktreeObservations(projectDir);
+  const integratedAttentionTaskIds = new Set(
+    represented.flatMap(([taskId, task]) =>
+      (task.phase ?? task.state) === "attention" &&
+      integratedAttentionSourceReady(
+        projectDir,
+        task,
+        "origin/dev",
+        observedWorktrees,
+      )
+        ? [taskId]
+        : [],
+    ),
+  );
+
   const retryActions: ProjectAppTaskAction[] = represented
     .filter(([taskId, task]) => {
       const workKey = String(task.input?.workKey ?? "");
       return (
         (task.phase ?? task.state) === "attention" &&
-        retryableAttentionTask(taskId, task, persistedState) &&
-        (byFamily.has(workKey) || presentBranches.has(workKey)) &&
+        ((retryableAttentionTask(taskId, task, persistedState) &&
+          (byFamily.has(workKey) || presentBranches.has(workKey))) ||
+          integratedAttentionTaskIds.has(taskId)) &&
         Number.isInteger(task.generation) &&
         Number(task.generation) > 0
       );
@@ -188,7 +312,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       kind: "unblock-task" as const,
       taskId,
       expectedGeneration: Number(task.generation),
-      reason: "Retry the same branch verification against current origin/dev",
+      reason: integratedAttentionTaskIds.has(taskId)
+        ? "Reconcile the same task after its recorded source commit reached origin/dev"
+        : "Retry the same branch verification against current origin/dev",
     }));
   const unresolvedAttention = represented.filter(
     ([, task]) =>

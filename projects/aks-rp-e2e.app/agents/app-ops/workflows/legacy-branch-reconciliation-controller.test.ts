@@ -6,6 +6,7 @@ import { join } from "node:path";
 import type { WorkflowContext } from "@may-agent/sdk";
 import {
   execute,
+  integratedAttentionSourceReady,
   retryableAttentionSummary,
 } from "./legacy-branch-reconciliation-controller.ts";
 
@@ -144,6 +145,137 @@ test("declares one exact-branch verification from current Git state", async () =
   expect(
     (retry as { output?: { actions?: unknown[] } }).output?.actions,
   ).toHaveLength(1);
+});
+
+test("replays the same attention task when its absent source is already integrated", async () => {
+  const root = mkdtempSync(join(tmpdir(), "aks-legacy-controller-stale-"));
+  roots.push(root);
+  const repo = join(root, "repo");
+  const appDir = join(root, "app");
+  execFileSync("git", ["init", "-b", "dev", repo]);
+  git(repo, "config", "user.email", "test@example.com");
+  git(repo, "config", "user.name", "Test");
+  writeFileSync(join(repo, "README.md"), "base\n");
+  git(repo, "add", ".");
+  git(repo, "commit", "-m", "base");
+  git(repo, "branch", "origin/dev");
+  git(repo, "switch", "-c", "task/integrated");
+  writeFileSync(join(repo, "integrated.txt"), "integrated\n");
+  git(repo, "add", ".");
+  git(repo, "commit", "-m", "integrated source");
+  const sourceHead = git(repo, "rev-parse", "HEAD");
+  git(repo, "switch", "dev");
+  git(repo, "merge", "--ff-only", "task/integrated");
+  git(repo, "branch", "-f", "origin/dev", "dev");
+  git(repo, "branch", "-D", "task/integrated");
+
+  const taskId = "ops/stale-integrated-source";
+  const task = {
+    generation: 1,
+    phase: "attention",
+    summary: "Handler result was rejected: evidence exceeds the 32-entry limit",
+    input: {
+      loopId: "legacy-branch-reconciliation",
+      workKey: "task/integrated",
+      branches: [{ branch: "task/integrated", head: sourceHead }],
+    },
+  };
+  mkdirSync(join(appDir, ".state", "tasks"), { recursive: true });
+  writeFileSync(
+    join(appDir, ".state", "tasks", "tree.json"),
+    JSON.stringify({ tasks: { [taskId]: task } }),
+  );
+
+  expect(integratedAttentionSourceReady(repo, task)).toBe(true);
+  const result = await execute({
+    task: "frontierLimit: 1",
+    agent: "app-ops",
+    appDir,
+    projectDir: repo,
+    workspaceDir: repo,
+    done: (summary, output) => ({ type: "done", summary, output }),
+  } as WorkflowContext);
+
+  expect(result).toMatchObject({
+    type: "done",
+    output: {
+      actions: [
+        {
+          kind: "unblock-task",
+          taskId,
+          expectedGeneration: 1,
+          reason:
+            "Reconcile the same task after its recorded source commit reached origin/dev",
+        },
+      ],
+    },
+  });
+});
+
+test("does not replay an absent source without integration proof", () => {
+  const root = mkdtempSync(join(tmpdir(), "aks-legacy-controller-absent-"));
+  roots.push(root);
+  const repo = join(root, "repo");
+  execFileSync("git", ["init", "-b", "dev", repo]);
+  git(repo, "config", "user.email", "test@example.com");
+  git(repo, "config", "user.name", "Test");
+  writeFileSync(join(repo, "README.md"), "base\n");
+  git(repo, "add", ".");
+  git(repo, "commit", "-m", "base");
+  git(repo, "branch", "origin/dev");
+  git(repo, "switch", "-c", "task/lost");
+  writeFileSync(join(repo, "lost.txt"), "lost\n");
+  git(repo, "add", ".");
+  git(repo, "commit", "-m", "unintegrated source");
+  const sourceHead = git(repo, "rev-parse", "HEAD");
+  git(repo, "switch", "dev");
+  git(repo, "branch", "-D", "task/lost");
+
+  expect(
+    integratedAttentionSourceReady(repo, {
+      generation: 1,
+      phase: "attention",
+      input: {
+        branches: [{ branch: "task/lost", head: sourceHead }],
+      },
+    }),
+  ).toBe(false);
+});
+
+test("preserves attached and dirty source recovery worktrees", () => {
+  const root = mkdtempSync(join(tmpdir(), "aks-legacy-controller-recovery-"));
+  roots.push(root);
+  const repo = join(root, "repo");
+  execFileSync("git", ["init", "-b", "dev", repo]);
+  git(repo, "config", "user.email", "test@example.com");
+  git(repo, "config", "user.name", "Test");
+  writeFileSync(join(repo, "README.md"), "base\n");
+  git(repo, "add", ".");
+  git(repo, "commit", "-m", "base");
+  git(repo, "switch", "-c", "task/source");
+  writeFileSync(join(repo, "source.txt"), "source\n");
+  git(repo, "add", ".");
+  git(repo, "commit", "-m", "source");
+  const sourceHead = git(repo, "rev-parse", "HEAD");
+  git(repo, "switch", "dev");
+  git(repo, "merge", "--ff-only", "task/source");
+  git(repo, "branch", "origin/dev");
+  const task = {
+    generation: 1,
+    phase: "attention",
+    input: { branches: [{ branch: "task/source", head: sourceHead }] },
+  };
+
+  const attached = join(root, "attached");
+  git(repo, "worktree", "add", attached, "task/source");
+  expect(integratedAttentionSourceReady(repo, task)).toBe(false);
+  git(repo, "worktree", "remove", attached);
+  git(repo, "branch", "-D", "task/source");
+
+  const dirty = join(root, "dirty");
+  git(repo, "worktree", "add", "--detach", dirty, sourceHead);
+  writeFileSync(join(dirty, "uncommitted.txt"), "keep\n");
+  expect(integratedAttentionSourceReady(repo, task)).toBe(false);
 });
 
 test("retries connection-error review when legacy verification already produced same-task owner judgment", async () => {

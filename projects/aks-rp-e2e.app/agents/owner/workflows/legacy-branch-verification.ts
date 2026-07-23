@@ -214,6 +214,67 @@ function cleanSourceRefs(repoDir: string, source: SourceBranch): void {
   git(repoDir, ["branch", "-D", "--", source.branch]);
 }
 
+function reconcileIntegratedSource(
+  repoDir: string,
+  workspaceDir: string,
+  source: SourceBranch,
+  baseCommit: string,
+): boolean {
+  if (
+    git(repoDir, ["merge-base", "--is-ancestor", source.head, baseCommit], true)
+      .status !== 0
+  )
+    return false;
+
+  const worktrees = git(repoDir, ["worktree", "list", "--porcelain"])
+    .stdout.split(/\n\n+/)
+    .map((block) => {
+      const path = block.match(/^worktree (.+)$/m)?.[1];
+      const head = block.match(/^HEAD (.+)$/m)?.[1];
+      const branch = block.match(/^branch refs\/heads\/(.+)$/m)?.[1]?.trim();
+      return { path, head, branch };
+    });
+  if (worktrees.some((entry) => entry.branch === source.branch)) {
+    throw new Error(`Source branch is worktree-attached: ${source.branch}`);
+  }
+  for (const entry of worktrees) {
+    if (
+      !entry.path ||
+      entry.path === workspaceDir ||
+      entry.head !== source.head
+    )
+      continue;
+    const dirty = git(entry.path, [
+      "status",
+      "--porcelain=v1",
+      "--untracked-files=all",
+    ]).stdout;
+    if (dirty) {
+      throw new Error(
+        `Recorded source head has a dirty recovery worktree at ${entry.path}`,
+      );
+    }
+  }
+
+  const local = refHead(repoDir, source.branch);
+  if (local && local !== source.head) {
+    throw new Error(
+      `Source branch ${source.branch} moved from ${source.head} to ${local}`,
+    );
+  }
+  const remote = remoteHead(repoDir, source.branch);
+  if (remote && remote !== source.head) {
+    throw new Error(
+      `Remote source ${source.branch} moved from ${source.head} to ${remote}`,
+    );
+  }
+
+  git(workspaceDir, ["reset", "--hard", baseCommit]);
+  if (remote) git(repoDir, ["push", "origin", "--delete", source.branch]);
+  if (local) git(repoDir, ["branch", "-D", "--", source.branch]);
+  return true;
+}
+
 function stepEvidence(verification: LegacyBranchVerification): string[] {
   return verification.steps.map(
     (step) =>
@@ -407,7 +468,6 @@ export async function executeWithVerifier(
 
   try {
     git(repoDir, ["fetch", "origin", "dev"]);
-    assertSource(repoDir, source);
     const dirty = git(workspaceDir, [
       "status",
       "--porcelain=v1",
@@ -416,6 +476,19 @@ export async function executeWithVerifier(
     if (dirty)
       throw new Error(`Task worktree is dirty before verification:\n${dirty}`);
     const baseCommit = git(repoDir, ["rev-parse", "origin/dev"]).stdout;
+    if (reconcileIntegratedSource(repoDir, workspaceDir, source, baseCommit)) {
+      const summary = `Recorded source ${source.branch}@${source.head} is already integrated in origin/dev; reconciled its remaining refs.`;
+      return ctx.done(summary, {
+        state: "converged",
+        summary,
+        evidence: [
+          `branch:${source.branch}@${source.head}:integrated-postcondition`,
+          `base-commit:${baseCommit}`,
+        ],
+        actions: [],
+      });
+    }
+    assertSource(repoDir, source);
     git(workspaceDir, ["reset", "--hard", baseCommit]);
     const baseline = baselineProvider(workspaceDir);
     const baselineDirty = git(workspaceDir, [

@@ -158,6 +158,37 @@ describe("legacy branch verification workflow", () => {
     ).toBe("");
   });
 
+  test("converges after an accepted result was lost following Git closeout", async () => {
+    const value = fixture();
+    git(value.repo, "merge", "--ff-only", "task/source");
+    git(value.repo, "push", "origin", "dev");
+    git(value.repo, "push", "origin", "--delete", "task/source");
+    git(value.repo, "branch", "-D", "task/source");
+    git(value.workspace, "reset", "--hard", "origin/dev");
+    let verifierCalled = false;
+
+    const result = await executeWithVerifier(
+      value.context,
+      () => {
+        verifierCalled = true;
+        return { passed: true, changedFiles: [], steps: [] };
+      },
+      baseline,
+    );
+
+    expect(result).toMatchObject({
+      type: "done",
+      output: {
+        state: "converged",
+        evidence: expect.arrayContaining([
+          `branch:task/source@${value.sourceHead}:integrated-postcondition`,
+        ]),
+      },
+    });
+    expect(verifierCalled).toBe(false);
+    expect(git(value.workspace, "status", "--porcelain=v1")).toBe("");
+  });
+
   test("feeds failed verification back to the agent and verifies the repaired candidate", async () => {
     const value = fixture();
     let verificationCount = 0;
@@ -277,7 +308,9 @@ describe("legacy branch verification workflow", () => {
     expect(prompt).toContain(
       "If the source is stale, duplicated, incorrect, or superseded, abort the merge and return reject with a clean worktree.",
     );
-    expect(prompt).not.toContain("resolve the useful current result, commit it");
+    expect(prompt).not.toContain(
+      "resolve the useful current result, commit it",
+    );
     expect(result).toMatchObject({
       type: "done",
       output: {

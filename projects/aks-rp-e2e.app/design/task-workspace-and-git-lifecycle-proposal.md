@@ -253,6 +253,27 @@ Each family leaf uses one task-owned worktree and the reusable
 6. let ordinary task-workspace finalization remove the integrated/no-change
    task branch.
 
+Git closeout and task-result admission are two durable boundaries. A process
+can therefore merge a verified candidate, remove its source refs, and then
+fail before the task result is accepted. That does not create new domain work
+and must not strand the old task in attention.
+
+The maintain controller recovers this case through the same task:
+
+1. read the task's exact recorded source branch and commit;
+2. prove the recorded commit is an ancestor of current `origin/dev`;
+3. prove a same-named local source ref has not moved and that no attached or
+   dirty source recovery worktree would be discarded;
+4. unblock the existing task, rather than closing it or creating a successor;
+5. let the domain workflow re-read local and remote refs, remove only refs that
+   still point at the recorded commit, and return ordinary convergence; and
+6. let task-workspace finalization perform normal closeout.
+
+An absent source ref is not itself success. Without exact ancestry proof, or
+when a ref moved or recoverable worktree remains, the controller leaves the
+task visible for owner judgment. Code gathers and validates these Git facts;
+it does not infer whether ambiguous source intent should be accepted.
+
 Reconciled leaf events wake the same maintain task to refill capacity. There is
 no cron, branch database, archive state, or separate scheduler. Attached or
 dirty recovery worktrees are excluded from this clean-branch workflow and
