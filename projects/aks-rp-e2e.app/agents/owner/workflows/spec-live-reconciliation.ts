@@ -14,9 +14,7 @@ import {
 import {
   scenarioNormalizationInvariant,
   scenarioNormalizationSpecIds,
-  sourceOnlyScenarioNormalizationPosture,
   type ScenarioNormalizationInput,
-  type SourceOnlyNormalizationPosture,
 } from "./lib/scenario-normalization-invariant.js";
 
 export const name = "spec-live-reconciliation";
@@ -91,7 +89,6 @@ type AgentDecision = {
     | "committed"
     | "test-current"
     | "accepted-pass"
-    | "accepted-nonlive"
     | "retry-transient"
     | "waiting"
     | "needs-owner";
@@ -131,6 +128,11 @@ type CollectedRunEvidence = {
   artifactListPath: string;
   artifactPaths: string[];
   errors: string[];
+};
+
+export type LiveDispatchAdmission = {
+  accepted: boolean;
+  evidence: string[];
 };
 
 export type SpecLiveReconciliationOptions = {
@@ -178,7 +180,6 @@ const decisionSchema = Type.Object({
     Type.Literal("committed"),
     Type.Literal("test-current"),
     Type.Literal("accepted-pass"),
-    Type.Literal("accepted-nonlive"),
     Type.Literal("retry-transient"),
     Type.Literal("waiting"),
     Type.Literal("needs-owner"),
@@ -235,34 +236,6 @@ export function agentConditionProblem(decision: AgentDecision): string | null {
   return null;
 }
 
-export function sourceOnlyDecisionProblem(
-  decision: AgentDecision,
-  posture: SourceOnlyNormalizationPosture,
-): string | null {
-  if (decision.decision !== "accepted-nonlive" || posture.accepted) return null;
-  const affected = [...posture.missingSpecIds, ...posture.rejectedSpecIds];
-  return [
-    "decision=accepted-nonlive requires explicit structured source-only posture for every consuming spec",
-    affected.length
-      ? `affected specs: ${affected.join(", ")}`
-      : "no accepted source-only posture was found",
-  ].join("; ");
-}
-
-export function sourceOnlyReviewInstruction(
-  posture: SourceOnlyNormalizationPosture,
-): string {
-  if (posture.accepted) {
-    return "Current structured spec policy permits accepted-nonlive only if your independent review confirms that source-only posture remains truthful; this records no live-pass claim.";
-  }
-  const affected = [...posture.missingSpecIds, ...posture.rejectedSpecIds];
-  return [
-    `Current structured spec policy does not permit accepted-nonlive${affected.length ? ` for ${affected.join(", ")}` : ""}.`,
-    "Do not choose accepted-nonlive for this run.",
-    "A policy or dependency preflight rejection is not itself a source-only posture: diagnose and repair the carrier/spec, justify an exact transient retry or external wait, or request a genuine ownership-boundary decision.",
-  ].join(" ");
-}
-
 export function scenarioNormalizationWaitProblem(
   decision: AgentDecision,
 ): string | null {
@@ -281,7 +254,7 @@ export function scenarioNormalizationWaitProblem(
   return [
     "scenario normalization cannot wait for a future main-branch spec observation",
     "that observation would not verify or publish this task-owned source commit",
-    "use an exact task-source run or capability fact, commit a truthful explicit source-only posture, or request owner judgment",
+    "use an exact task-source run or capability fact, implement an observable live negative contract, or request owner judgment",
   ].join("; ");
 }
 
@@ -371,6 +344,43 @@ function command(
     );
   }
   return output;
+}
+
+export function checkLiveDispatchAdmission(
+  workspaceDir: string,
+  specId: string,
+  run: (
+    executable: string,
+    args: string[],
+    cwd: string,
+  ) => { status: number; stdout: string; stderr: string } = (
+    executable,
+    args,
+    cwd,
+  ) => command(executable, args, { cwd, allowFailure: true }),
+): LiveDispatchAdmission {
+  const checks = [
+    ["runner/check-private-source-policy.ts", "private-source-policy"],
+    ["runner/check-live-admission.ts", "live-admission"],
+  ] as const;
+  const evidence: string[] = [];
+  let accepted = true;
+
+  for (const [script, label] of checks) {
+    const args = [script, "--specs", specId];
+    const result = run("bun", args, workspaceDir);
+    const output = [result.stdout, result.stderr].filter(Boolean).join("\n");
+    evidence.push(
+      [
+        `dispatch-check:${label}:${result.status === 0 ? "pass" : "fail"}`,
+        `command:bun ${args.join(" ")}`,
+        output ? `output:${output}` : "output:(none)",
+      ].join("\n"),
+    );
+    if (result.status !== 0) accepted = false;
+  }
+
+  return { accepted, evidence };
 }
 
 function git(
@@ -973,224 +983,6 @@ function ownerResult(
   });
 }
 
-async function integrateSourceOnlyNormalization(
-  ctx: WorkflowContext,
-  input: {
-    targetBranch: string;
-    targetRef: string;
-    taskId: string;
-    generation: number;
-    specId: string;
-    repoDir: string;
-    workspaceDir: string;
-    sourceBranch: string;
-    sourceCommit: string;
-    normalizationInput: ScenarioNormalizationInput | undefined;
-    posture: SourceOnlyNormalizationPosture;
-    decisionSummary: string;
-    decisionEvidence: string[];
-  },
-): Promise<WorkflowResult> {
-  if (integrationMode(input.targetBranch) !== "direct") {
-    return ownerResult(
-      ctx,
-      "Explicit source-only normalization supports direct dev integration only; main promotion needs separate owner judgment.",
-      [
-        `task:${input.taskId}@${input.generation}`,
-        `spec:${input.specId}`,
-        `target-ref:${input.targetRef}`,
-      ],
-    );
-  }
-  if (!input.posture.accepted) {
-    return ownerResult(
-      ctx,
-      "Agent selected accepted-nonlive, but current structured spec metadata does not prove an explicit source-only posture for every consuming spec.",
-      [
-        ...input.decisionEvidence,
-        ...input.posture.missingSpecIds.map(
-          (specId) => `source-only-spec-missing:${specId}`,
-        ),
-        ...input.posture.rejectedSpecIds.map(
-          (specId) => `source-only-posture-rejected:${specId}`,
-        ),
-      ],
-    );
-  }
-  const initialInvariant = scenarioNormalizationInvariant(
-    input.workspaceDir,
-    input.normalizationInput,
-  );
-  if (initialInvariant?.stillListed) {
-    return ownerResult(
-      ctx,
-      "Explicit source-only disposition was refused because the exact scenario-normalization inventory row is still present.",
-      [
-        ...input.decisionEvidence,
-        `normalization-path:${initialInvariant.path}`,
-      ],
-    );
-  }
-
-  let sourceCommit = input.sourceCommit;
-  let integratedCommit = "";
-  let lastPushError = "";
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
-    git(input.repoDir, ["fetch", "origin", input.targetBranch]);
-    if (
-      git(
-        input.repoDir,
-        ["merge-base", "--is-ancestor", sourceCommit, input.targetRef],
-        true,
-      ).status === 0
-    ) {
-      integratedCommit = git(input.repoDir, [
-        "rev-parse",
-        input.targetRef,
-      ]).stdout;
-      break;
-    }
-
-    if (
-      git(
-        input.workspaceDir,
-        ["merge-base", "--is-ancestor", input.targetRef, "HEAD"],
-        true,
-      ).status !== 0
-    ) {
-      const beforeMerge = git(input.workspaceDir, ["rev-parse", "HEAD"]).stdout;
-      const merge = git(
-        input.workspaceDir,
-        ["merge", "--no-ff", "--no-edit", input.targetRef],
-        true,
-      );
-      if (merge.status !== 0) {
-        const decision = await askAgent(
-          ctx,
-          [
-            `${input.specId} has an accepted explicit source-only normalization posture, but direct integration conflicts with current ${input.targetRef}.`,
-            `Resolve only the current merge in ${input.workspaceDir}, preserve the normalized direct carrier and structured nonlive policy, run scoped checks plus bun scripts/check-scenario-tests.ts --strict --json, commit the resolved source, leave the worktree clean, and return decision=committed.`,
-            "Do not push, queue ADO, create a PR, create another task, or edit app state. The workflow will revalidate the source-only and strict-inventory invariants before integration.",
-            "Task:",
-            ctx.task,
-          ].join("\n\n"),
-          { scenarioNormalization: true },
-        );
-        if (!decision || decision.decision !== "committed") {
-          return ownerResult(
-            ctx,
-            decision?.summary ||
-              `Direct ${input.targetBranch} source-only conflict repair failed for ${input.specId}.`,
-            decision?.evidence || [
-              `source-commit:${sourceCommit}`,
-              `target-ref:${input.targetRef}`,
-              `merge-error:${merge.stderr || merge.stdout}`,
-            ],
-          );
-        }
-        const resolvedCommit = git(input.workspaceDir, [
-          "rev-parse",
-          "HEAD",
-        ]).stdout;
-        if (
-          resolvedCommit === beforeMerge ||
-          cleanWorkspace(input.workspaceDir)
-        ) {
-          return ownerResult(
-            ctx,
-            `Direct ${input.targetBranch} source-only conflict repair did not leave one new clean commit.`,
-            decision.evidence,
-          );
-        }
-      }
-      sourceCommit = git(input.workspaceDir, ["rev-parse", "HEAD"]).stdout;
-    }
-
-    const currentPosture = sourceOnlyScenarioNormalizationPosture(
-      input.workspaceDir,
-      input.normalizationInput,
-    );
-    const currentInvariant = scenarioNormalizationInvariant(
-      input.workspaceDir,
-      input.normalizationInput,
-    );
-    if (!currentPosture.accepted || currentInvariant?.stillListed) {
-      return ownerResult(
-        ctx,
-        "Current dev integration changed the normalized source-only contract; fresh domain judgment is required before publication.",
-        [
-          ...input.decisionEvidence,
-          ...currentPosture.missingSpecIds.map(
-            (specId) => `source-only-spec-missing:${specId}`,
-          ),
-          ...currentPosture.rejectedSpecIds.map(
-            (specId) => `source-only-posture-rejected:${specId}`,
-          ),
-          ...(currentInvariant?.stillListed
-            ? [`normalization-path:${currentInvariant.path}`]
-            : []),
-        ],
-      );
-    }
-
-    git(input.workspaceDir, ["push", "origin", input.sourceBranch]);
-    const push = git(
-      input.workspaceDir,
-      ["push", "origin", `HEAD:${input.targetBranch}`],
-      true,
-    );
-    if (push.status !== 0) {
-      lastPushError = push.stderr || push.stdout;
-      continue;
-    }
-    git(input.repoDir, ["fetch", "origin", input.targetBranch]);
-    if (
-      git(
-        input.repoDir,
-        ["merge-base", "--is-ancestor", sourceCommit, input.targetRef],
-        true,
-      ).status === 0
-    ) {
-      integratedCommit = git(input.repoDir, [
-        "rev-parse",
-        input.targetRef,
-      ]).stdout;
-      break;
-    }
-  }
-
-  if (!integratedCommit) {
-    return ownerResult(
-      ctx,
-      `Could not integrate explicit source-only normalization for ${input.specId} into current ${input.targetBranch} after three refreshed fast-forward attempts.`,
-      [
-        `source-commit:${sourceCommit}`,
-        `target-ref:${input.targetRef}`,
-        ...(lastPushError ? [`push-error:${lastPushError}`] : []),
-      ],
-    );
-  }
-
-  const summary = `${input.specId} normalized under its explicit source-only contract and directly integrated ${sourceCommit} into ${input.targetBranch}@${integratedCommit}; no live-pass claim was made.`;
-  return ctx.done(summary, {
-    state: "converged",
-    summary,
-    evidence: [
-      ...input.decisionEvidence,
-      ...input.posture.evidence,
-      `source-only-decision-summary:${input.decisionSummary}`,
-      `task:${input.taskId}@${input.generation}`,
-      `spec:${input.specId}`,
-      `source-branch:${input.sourceBranch}`,
-      `source-commit:${sourceCommit}`,
-      `integrated-commit:${integratedCommit}`,
-      `target-ref:${input.targetRef}`,
-      "live-proof:none-explicit-source-only",
-    ],
-    actions: [],
-  });
-}
-
 export async function reconcileSpecLive(
   ctx: WorkflowContext,
   options: SpecLiveReconciliationOptions = {},
@@ -1361,6 +1153,112 @@ export async function reconcileSpecLive(
     let sourceCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
     const baseCommit = git(repoDir, ["rev-parse", targetRef]).stdout;
 
+    const prepareLiveDispatch = async (
+      candidateCommit: string,
+      reason: string,
+    ): Promise<
+      | { state: "ready"; sourceCommit: string; evidence: string[] }
+      | { state: "result"; result: WorkflowResult }
+    > => {
+      let currentCommit = candidateCommit;
+      const accumulatedEvidence: string[] = [];
+
+      for (let attempt = 1; attempt <= 3; attempt += 1) {
+        const admission = checkLiveDispatchAdmission(workspaceDir, specId);
+        accumulatedEvidence.push(...admission.evidence);
+        if (admission.accepted) {
+          return {
+            state: "ready",
+            sourceCommit: currentCommit,
+            evidence: accumulatedEvidence,
+          };
+        }
+
+        const beforeRepair = currentCommit;
+        const decision = await askAgent(
+          ctx,
+          [
+            `ADO dispatch is refused for ${specId} at ${currentCommit}.`,
+            `Dispatch context: ${reason}.`,
+            "The workflow ran the same private-source and live-admission checks used by the pipeline in the exact task worktree. Inspect the current source and the raw findings below; do not trust this summary alone.",
+            ...admission.evidence,
+            "Continue this same task. For a carrier/spec defect, make the smallest repair, run the same checks plus scoped tests, commit it, leave the worktree clean, and return decision=committed.",
+            "Unsupported product behavior is not automatically nonlive. If the public API exposes an observable rejection or no-op contract, implement a truthful live negative test for that behavior.",
+            "A source-only check is diagnostic evidence, not completion. If no truthful staging-observable contract exists, return one exact external wait or needs-owner with the concrete ownership boundary; do not mark the task complete.",
+            "Use waiting only for one exact externally observable condition and needs-owner only for a genuine ownership-boundary decision. Do not push, queue ADO, create another task, or edit app state.",
+            "Task:",
+            ctx.task,
+          ].join("\n\n"),
+          {
+            scenarioNormalization: Boolean(normalizationInput),
+            continueDomainWorkOnValidation: true,
+          },
+        );
+        if (!decision) {
+          return {
+            state: "result",
+            result: ownerResult(
+              ctx,
+              "Live-dispatch admission repair session failed.",
+              accumulatedEvidence,
+            ),
+          };
+        }
+        if (decision.decision === "waiting" && decision.condition) {
+          return {
+            state: "result",
+            result: waitingResult(
+              ctx,
+              decision.summary,
+              [...accumulatedEvidence, ...decision.evidence],
+              decision.condition,
+            ),
+          };
+        }
+        if (decision.decision === "needs-owner") {
+          return {
+            state: "result",
+            result: ownerResult(ctx, decision.summary, [
+              ...accumulatedEvidence,
+              ...decision.evidence,
+            ]),
+          };
+        }
+        if (decision.decision !== "committed") {
+          return {
+            state: "result",
+            result: ownerResult(
+              ctx,
+              `Live-dispatch admission repair returned unsupported decision ${decision.decision}.`,
+              [...accumulatedEvidence, ...decision.evidence],
+            ),
+          };
+        }
+
+        currentCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+        if (currentCommit === beforeRepair || cleanWorkspace(workspaceDir)) {
+          return {
+            state: "result",
+            result: ownerResult(
+              ctx,
+              "Live-dispatch admission repair did not leave one new clean task commit.",
+              [...accumulatedEvidence, ...decision.evidence],
+            ),
+          };
+        }
+        accumulatedEvidence.push(...decision.evidence);
+      }
+
+      return {
+        state: "result",
+        result: ownerResult(
+          ctx,
+          "Live-dispatch admission remained red after three bounded domain repair iterations.",
+          accumulatedEvidence,
+        ),
+      };
+    };
+
     const normalizationInvariant = scenarioNormalizationInvariant(
       workspaceDir,
       normalizationInput,
@@ -1481,91 +1379,6 @@ export async function reconcileSpecLive(
     let latestRun = runs[0];
 
     if (!latestRun) {
-      const sourceOnlyPosture = sourceOnlyScenarioNormalizationPosture(
-        workspaceDir,
-        normalizationInput,
-      );
-      if (sourceOnlyPosture.accepted) {
-        const beforePostureReview = sourceCommit;
-        const decision = await askAgent(
-          ctx,
-          [
-            `Review the current explicit source-only posture for scenario normalization of ${specId}.`,
-            "Every consuming spec currently has structured no-execution-coverage plus accepted nonlive metadata. Inspect the current spec, direct carrier, authoritative contract evidence, and strict inventory; do not trust this summary alone.",
-            "Return accepted-nonlive only if the structured nonlive posture remains truthful and this normalized carrier should integrate without a live-pass claim.",
-            "If the spec should now be directly runnable, make the smallest correction, run scoped local checks, commit it, leave the worktree clean, and return committed; the workflow will then require exact live proof.",
-            "Use waiting only for one exact observable condition and needs-owner only for a concrete ownership-boundary decision. Do not push, queue ADO, create a PR/task, or edit app state.",
-            "Task:",
-            ctx.task,
-          ].join("\n\n"),
-          { scenarioNormalization: true },
-        );
-        if (!decision) {
-          return ownerResult(
-            ctx,
-            "Explicit source-only posture review session failed.",
-            [`task:${taskId}`, `spec:${specId}`],
-          );
-        }
-        if (decision.decision === "waiting" && decision.condition) {
-          return waitingResult(
-            ctx,
-            decision.summary,
-            decision.evidence,
-            decision.condition,
-          );
-        }
-        if (decision.decision === "needs-owner") {
-          return ownerResult(ctx, decision.summary, decision.evidence);
-        }
-        if (decision.decision === "accepted-nonlive") {
-          return integrateSourceOnlyNormalization(ctx, {
-            targetBranch,
-            targetRef,
-            taskId,
-            generation,
-            specId,
-            repoDir,
-            workspaceDir,
-            sourceBranch,
-            sourceCommit,
-            normalizationInput,
-            posture: sourceOnlyPosture,
-            decisionSummary: decision.summary,
-            decisionEvidence: decision.evidence,
-          });
-        }
-        if (decision.decision !== "committed") {
-          return ownerResult(
-            ctx,
-            `Explicit source-only posture review returned unsupported decision ${decision.decision}.`,
-            decision.evidence,
-          );
-        }
-        sourceCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
-        if (
-          sourceCommit === beforePostureReview ||
-          cleanWorkspace(workspaceDir)
-        ) {
-          return ownerResult(
-            ctx,
-            "Agent reported a source-only posture correction but did not leave one new clean task commit.",
-            decision.evidence,
-          );
-        }
-        const remainingPosture = sourceOnlyScenarioNormalizationPosture(
-          workspaceDir,
-          normalizationInput,
-        );
-        if (remainingPosture.accepted) {
-          return ownerResult(
-            ctx,
-            "Agent changed the source but left every consuming spec explicitly nonlive; fresh accepted-nonlive judgment is required instead of dispatching an impossible run.",
-            [...decision.evidence, ...remainingPosture.evidence],
-          );
-        }
-      }
-
       const branchHasChange = sourceCommit !== baseCommit;
       if (!branchHasChange) {
         const decision = await askAgent(
@@ -1628,6 +1441,12 @@ export async function reconcileSpecLive(
         sourceCommit = after;
       }
 
+      const dispatch = await prepareLiveDispatch(
+        sourceCommit,
+        "initial exact live verification",
+      );
+      if (dispatch.state === "result") return dispatch.result;
+      sourceCommit = dispatch.sourceCommit;
       git(workspaceDir, ["push", "--set-upstream", "origin", sourceBranch]);
       latestRun = queueRun(repoDir, {
         taskId,
@@ -1652,6 +1471,7 @@ export async function reconcileSpecLive(
           ...(standaloneBuildId
             ? [`standalone-build-id:${standaloneBuildId}`]
             : []),
+          ...dispatch.evidence,
           `pipeline-run:${runId}`,
         ],
         pipelineWaitCondition(runId),
@@ -1696,10 +1516,6 @@ export async function reconcileSpecLive(
             nonEmptyString(run.result),
           ),
       ).length;
-      const sourceOnlyPosture = sourceOnlyScenarioNormalizationPosture(
-        workspaceDir,
-        normalizationInput,
-      );
       const runContextDir = terminalRunContextDir(contextDir, runId);
       const collectedRunEvidence = collectTerminalRunEvidence(
         repoDir,
@@ -1717,9 +1533,7 @@ export async function reconcileSpecLive(
           `Use ${runContextDir} exclusively for diagnosis for this run. Do not reuse task-root or earlier-run evidence, do not scrape Azure DevOps web pages, and do not write runtime artifacts into tracked source paths.`,
           "Inspect run metadata, plan inputs, per-spec result, live resource identity, assertions, and cleanup proof. The aggregate provider result alone is not a spec verdict.",
           "Return accepted-pass only for exact same-spec live proof on this source commit.",
-          ...(normalizationInput
-            ? [sourceOnlyReviewInstruction(sourceOnlyPosture)]
-            : []),
+          "A source-only check or admission refusal is diagnostic evidence, not completion. Implement an observable live negative test when the API contract permits it; otherwise return an exact external wait or a genuine ownership-boundary decision.",
           "For a carrier/spec defect, make the smallest fix in the task worktree, run scoped local checks, commit, leave the worktree clean, and return committed.",
           failedRunsForCommit >= 2
             ? "The same source commit already has at least two terminal nonpassing runs. Do not request another unchanged retry; commit a fix, return an exact wait, or request owner judgment."
@@ -1731,8 +1545,6 @@ export async function reconcileSpecLive(
         {
           scenarioNormalization: Boolean(normalizationInput),
           continueDomainWorkOnValidation: true,
-          validateDecision: (candidate) =>
-            sourceOnlyDecisionProblem(candidate, sourceOnlyPosture),
         },
       );
       if (!decision) {
@@ -1753,27 +1565,6 @@ export async function reconcileSpecLive(
       if (decision.decision === "needs-owner") {
         return ownerResult(ctx, decision.summary, decision.evidence);
       }
-      if (decision.decision === "accepted-nonlive") {
-        return integrateSourceOnlyNormalization(ctx, {
-          targetBranch,
-          targetRef,
-          taskId,
-          generation,
-          specId,
-          repoDir,
-          workspaceDir,
-          sourceBranch,
-          sourceCommit,
-          normalizationInput,
-          posture: sourceOnlyPosture,
-          decisionSummary: decision.summary,
-          decisionEvidence: [
-            ...decision.evidence,
-            `admission-run:${runId}`,
-            `admission-run-result:${runResult}`,
-          ],
-        });
-      }
       if (decision.decision === "retry-transient") {
         if (failedRunsForCommit >= 2) {
           return ownerResult(
@@ -1781,6 +1572,17 @@ export async function reconcileSpecLive(
             "An unchanged live retry was refused after repeated nonpassing runs on the same source commit.",
             [...decision.evidence, `source-commit:${sourceCommit}`],
           );
+        }
+        const retrySourceCommit = sourceCommit;
+        const dispatch = await prepareLiveDispatch(
+          sourceCommit,
+          `diagnosed transient retry after run ${runId}`,
+        );
+        if (dispatch.state === "result") return dispatch.result;
+        sourceCommit = dispatch.sourceCommit;
+        const unchangedRetry = sourceCommit === retrySourceCommit;
+        if (!unchangedRetry) {
+          git(workspaceDir, ["push", "origin", sourceBranch]);
         }
         const retry = queueRun(repoDir, {
           taskId,
@@ -1790,16 +1592,19 @@ export async function reconcileSpecLive(
           sourceCommit,
           target: liveTarget,
           standaloneBuildId,
-          retryOfRunId: runId,
+          ...(unchangedRetry ? { retryOfRunId: runId } : {}),
         });
         saveRunReceipt(contextDir, retry, sourceCommit);
         const retryId = nonEmptyString(retry.id);
         return waitingResult(
           ctx,
-          `Queued one diagnosed transient retry ${retryId} for ${specId} at unchanged commit ${sourceCommit}.`,
+          unchangedRetry
+            ? `Queued one diagnosed transient retry ${retryId} for ${specId} at unchanged commit ${sourceCommit}.`
+            : `Local dispatch admission required a repair before retry; queued replacement run ${retryId} for ${specId} at ${sourceCommit}.`,
           [
             ...decision.evidence,
-            `retry-of-run:${runId}`,
+            ...dispatch.evidence,
+            ...(unchangedRetry ? [`retry-of-run:${runId}`] : []),
             `pipeline-run:${retryId}`,
             `source-commit:${sourceCommit}`,
           ],
@@ -1807,7 +1612,7 @@ export async function reconcileSpecLive(
         );
       }
       if (decision.decision === "committed") {
-        const nextCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+        let nextCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
         if (nextCommit === sourceCommit || cleanWorkspace(workspaceDir)) {
           return ownerResult(
             ctx,
@@ -1815,6 +1620,12 @@ export async function reconcileSpecLive(
             decision.evidence,
           );
         }
+        const dispatch = await prepareLiveDispatch(
+          nextCommit,
+          `replacement after terminal run ${runId}`,
+        );
+        if (dispatch.state === "result") return dispatch.result;
+        nextCommit = dispatch.sourceCommit;
         git(workspaceDir, ["push", "origin", sourceBranch]);
         const nextRun = queueRun(repoDir, {
           taskId,
@@ -1832,6 +1643,7 @@ export async function reconcileSpecLive(
           `Committed a fix for run ${runId} and queued exact replacement run ${nextRunId} at ${nextCommit}.`,
           [
             ...decision.evidence,
+            ...dispatch.evidence,
             `replaces-run:${runId}`,
             `source-commit:${nextCommit}`,
             `pipeline-run:${nextRunId}`,
@@ -1919,7 +1731,7 @@ export async function reconcileSpecLive(
                 ],
               );
             }
-            const resolvedCommit = git(workspaceDir, [
+            let resolvedCommit = git(workspaceDir, [
               "rev-parse",
               "HEAD",
             ]).stdout;
@@ -1933,6 +1745,12 @@ export async function reconcileSpecLive(
                 decision.evidence,
               );
             }
+            const dispatch = await prepareLiveDispatch(
+              resolvedCommit,
+              `replacement after direct ${targetBranch} integration conflict for run ${runId}`,
+            );
+            if (dispatch.state === "result") return dispatch.result;
+            resolvedCommit = dispatch.sourceCommit;
             git(workspaceDir, ["push", "origin", sourceBranch]);
             const replacement = queueRun(repoDir, {
               taskId,
@@ -1950,6 +1768,7 @@ export async function reconcileSpecLive(
               `Resolved direct ${targetBranch} integration conflict and queued replacement live run ${replacementId} at ${resolvedCommit}.`,
               [
                 ...decision.evidence,
+                ...dispatch.evidence,
                 `replaces-run:${runId}`,
                 `source-commit:${resolvedCommit}`,
                 `pipeline-run:${replacementId}`,
@@ -2160,7 +1979,7 @@ export async function reconcileSpecLive(
           decision?.evidence || [`pull-request:${prId}`],
         );
       }
-      const resolvedCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+      let resolvedCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
       if (resolvedCommit === sourceCommit || cleanWorkspace(workspaceDir)) {
         return ownerResult(
           ctx,
@@ -2168,6 +1987,12 @@ export async function reconcileSpecLive(
           decision.evidence,
         );
       }
+      const dispatch = await prepareLiveDispatch(
+        resolvedCommit,
+        `replacement after PR ${prId} integration conflict`,
+      );
+      if (dispatch.state === "result") return dispatch.result;
+      resolvedCommit = dispatch.sourceCommit;
       git(workspaceDir, ["push", "origin", sourceBranch]);
       const replacement = queueRun(repoDir, {
         taskId,
@@ -2185,6 +2010,7 @@ export async function reconcileSpecLive(
         `Resolved PR ${prId} conflict and queued replacement live run ${replacementId} at ${resolvedCommit}.`,
         [
           ...decision.evidence,
+          ...dispatch.evidence,
           `pull-request:${prId}`,
           `source-commit:${resolvedCommit}`,
           `pipeline-run:${replacementId}`,

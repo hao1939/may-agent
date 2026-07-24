@@ -17,19 +17,6 @@ One task declares the desired result:
 > This spec has an accepted live result, and every source change used by that
 > result is merged into its integration branch.
 
-Scenario normalization has one explicit nonlive variant. If every active spec
-that consumes the carrier declares a current structured source-only posture,
-the desired result is instead:
-
-> The carrier is normalized and merged into its integration branch without
-> claiming live execution evidence that the spec contract explicitly forbids.
-
-This is not inferred from prose or from a failed pipeline alone. The domain
-agent decides whether the nonlive posture remains truthful, and workflow code
-validates the current spec fields: `metadata.noExecutionCoverageClaim=true`
-plus an explicit nonlive `metadata.acceptedExecutionPosture.decision` or
-`metadata.executeMode.status` for every consuming spec.
-
 The owner-owned workflow reconciles current Git and Azure DevOps facts toward
 that result:
 
@@ -77,13 +64,19 @@ verifies publication. The agent edits source, resolves semantic conflicts, and
 judges exact terminal artifacts. The app projects an accepted proof into the
 spec-loop read model after the task receipt is persisted.
 
-Before dispatching scenario-normalization work, the agent may return
-`accepted-nonlive` only for the explicit structured source-only variant above.
-Code revalidates that posture and the exact strict-inventory row, then
-integrates the clean task commit directly into `dev`. This disposition records
-source-only evidence, never a live pass. A known nonpassing verdict, missing
-runner gate, or shared-cluster dependency is not this disposition; those cases
-remain fix-forward work, an exact wait, or an escalation.
+Before every ADO dispatch, including a replacement run after a repair or merge
+conflict, workflow code runs the repository's own private-source and live
+admission checks in the exact task worktree. These are hard dispatch
+invariants, not a spec verdict. If either check fails, no run is queued: the
+same domain agent receives the exact command output and continues repairing the
+same task. A commit produced by that repair is checked again before dispatch.
+An unsupported product behavior is not automatically nonlive; when the public
+API exposes an observable rejection or no-op contract, the agent should model
+and verify that behavior as a live negative test. If no truthful staging-
+observable contract exists, the agent records an exact external wait or
+escalates the ownership boundary. A source-only check is useful diagnostic
+evidence, but it is not completion and is never integrated as accepted live
+normalization.
 
 A source- or provider-mutating repair must use this workflow (or another
 workflow that explicitly declares the same capabilities). Its task input keeps
@@ -119,11 +112,11 @@ cannot prove or publish the task-owned normalization commit. A normalization
 wait must name a fact that can actually advance this task: the exact queued run
 for its source commit, an exact external capability/dependency with a real
 producer, or an ownership-boundary decision. If direct execution is
-intentionally unsupported, the agent must make and defend the explicit
-structured source-only contract before integration; otherwise it fixes the
-task source or escalates the genuine external limitation. The current-main
-same-spec pass Condition remains a master-validation product-recovery pattern,
-not a scenario-normalization escape path.
+intentionally unsupported, the agent implements an observable live negative
+contract where possible; otherwise it keeps the same task on an exact external
+wait or escalates the genuine external limitation. The current-main same-spec
+pass Condition remains a master-validation product-recovery pattern, not a
+scenario-normalization escape path.
 
 ## Recovery and idempotency
 
@@ -143,21 +136,14 @@ not a scenario-normalization escape path.
   else. Its terminal artifact is repair context; proof for a different task
   source commit still requires an exact run.
 - An attempt discovers an existing exact run before dispatching another.
-- A terminal admission-preflight refusal may be accepted as nonlive only when
-  the agent chooses `accepted-nonlive` and current structured spec metadata for
-  every selected spec independently satisfies the source-only invariant.
-- The terminal-review prompt states that current structured fact explicitly.
-  When the invariant is not satisfied, it does not advertise
-  `accepted-nonlive` as an available outcome; the agent must diagnose and
-  repair the source, justify an exact transient retry or external wait, or
-  request a genuine ownership-boundary decision. A policy preflight rejection
-  is not itself a source-only execution posture.
-- If an agent chooses `accepted-nonlive` without that structured posture, code
-  returns the validation finding and the full terminal-run context to the same
-  agent immediately. The agent continues the same bounded diagnosis/repair;
-  this is not a result-shape-only retry that forbids the source change now
-  proven necessary. It does not close the task, create a successor, or leave a
-  routine correction in the owner-attention queue.
+- Every new source commit passes `runner/check-private-source-policy.ts` and
+  `runner/check-live-admission.ts` for the exact selected spec set before ADO is
+  queued. A failed local dispatch gate returns its raw findings to the same
+  agent for bounded fix-forward work; it is never spent as a known-failing ADO
+  run.
+- A terminal admission-preflight refusal is repair evidence, not a passing or
+  accepted-nonlive result. The same task must become live-admissible, wait on an
+  exact external fact, or escalate a genuine ownership boundary.
 - If an agent invocation ends before producing a structured judgment, the
   workflow retries that invocation once with the same task worktree and hot
   evidence. An empty or interrupted invocation is a runtime failure, not an
@@ -185,11 +171,6 @@ spec, live target/build, source branch and commit, accepted run, and
 artifact-backed verdict. A changed task converges only after the exact tested
 source commit is present in the integration branch ancestry. For `dev`, this is
 proved after direct integration; for `main`, it is proved after PR completion.
-
-An explicit source-only scenario-normalization task retains a distinct compact
-disposition containing the validated spec-policy signals, normalized source
-commit, and integrated `dev` commit. It cannot populate a live-pass proof or be
-projected as one.
 
 Main-promotion PRs therefore use a no-fast-forward merge commit. If a reviewed
 PR is squash/rebase merged, the existing exact proof is insufficient; a

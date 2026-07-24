@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
   existsSync,
-  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -12,6 +11,7 @@ import { join } from "node:path";
 import {
   askAgent,
   agentConditionProblem,
+  checkLiveDispatchAdmission,
   collectTerminalRunEvidence,
   decisionCorrectionPrompt,
   integrationMode,
@@ -25,17 +25,44 @@ import {
   resolveLiveExecutionTarget,
   runMatchesPriorVerification,
   scenarioNormalizationWaitProblem,
-  sourceOnlyDecisionProblem,
-  sourceOnlyReviewInstruction,
   terminalRunContextDir,
 } from "./spec-live-reconciliation.js";
 import {
   isRunnableScenarioNormalization,
   scenarioNormalizationSpecIds,
-  sourceOnlyScenarioNormalizationPosture,
 } from "./lib/scenario-normalization-invariant.js";
 
 describe("spec-live-reconciliation workflow", () => {
+  test("runs the pipeline's hard admission checks before live dispatch", () => {
+    const calls: string[] = [];
+    const result = checkLiveDispatchAdmission(
+      "/task/worktree",
+      "spec.example.live",
+      (executable, args, cwd) => {
+        calls.push(`${cwd}:${executable} ${args.join(" ")}`);
+        const failed = args[0] === "runner/check-live-admission.ts";
+        return {
+          status: failed ? 1 : 0,
+          stdout: failed ? "" : "private-source policy passed",
+          stderr: failed ? "source-check-only carrier" : "",
+        };
+      },
+    );
+
+    expect(result.accepted).toBe(false);
+    expect(calls).toEqual([
+      "/task/worktree:bun runner/check-private-source-policy.ts --specs spec.example.live",
+      "/task/worktree:bun runner/check-live-admission.ts --specs spec.example.live",
+    ]);
+    expect(result.evidence.join("\n")).toContain(
+      "dispatch-check:private-source-policy:pass",
+    );
+    expect(result.evidence.join("\n")).toContain(
+      "dispatch-check:live-admission:fail",
+    );
+    expect(result.evidence.join("\n")).toContain("source-check-only carrier");
+  });
+
   test("collects terminal evidence before asking the agent to judge it", () => {
     const root = mkdtempSync(join(tmpdir(), "terminal-evidence-"));
     try {
@@ -133,108 +160,16 @@ describe("spec-live-reconciliation workflow", () => {
     ).toBe(false);
   });
 
-  test("accepts source-only normalization only from explicit structured policy for every spec", () => {
-    const root = mkdtempSync(join(tmpdir(), "source-only-normalization-"));
-    const specsDir = join(root, "features", "example", "specs");
-    mkdirSync(specsDir, { recursive: true });
-    try {
-      writeFileSync(
-        join(specsDir, "source-only.json"),
-        JSON.stringify({
-          id: "spec.example.source-only",
-          metadata: {
-            noExecutionCoverageClaim: true,
-            acceptedExecutionPosture: {
-              decision: "remain-nonlive-source-grounded",
-            },
-          },
-        }),
-      );
-      writeFileSync(
-        join(specsDir, "runnable.json"),
-        JSON.stringify({
-          id: "spec.example.runnable",
-          metadata: { noExecutionCoverageClaim: false },
-        }),
-      );
-
-      const accepted = sourceOnlyScenarioNormalizationPosture(root, {
-        loopId: "scenario-normalization",
-        specIds: ["spec.example.source-only"],
-      });
-      expect(accepted.accepted).toBe(true);
-      expect(accepted.evidence).toContain(
-        "source-only-accepted-decision:remain-nonlive-source-grounded",
-      );
-
-      const mixed = sourceOnlyScenarioNormalizationPosture(root, {
-        loopId: "scenario-normalization",
-        specIds: ["spec.example.source-only", "spec.example.runnable"],
-      });
-      expect(mixed.accepted).toBe(false);
-      expect(mixed.rejectedSpecIds).toEqual(["spec.example.runnable"]);
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  test("returns an invalid nonlive judgment to the agent when structured policy is absent", () => {
-    const decision = {
-      decision: "accepted-nonlive" as const,
-      summary: "treat this as source only",
-      evidence: ["pipeline-run:42"],
-    };
-    expect(
-      sourceOnlyDecisionProblem(decision, {
-        accepted: false,
-        specIds: ["spec.example.runnable"],
-        missingSpecIds: [],
-        rejectedSpecIds: ["spec.example.runnable"],
-        evidence: [],
-      }),
-    ).toContain("spec.example.runnable");
-    expect(
-      sourceOnlyDecisionProblem(decision, {
-        accepted: true,
-        specIds: ["spec.example.source-only"],
-        missingSpecIds: [],
-        rejectedSpecIds: [],
-        evidence: ["source-only-spec:spec.example.source-only"],
-      }),
-    ).toBeNull();
-  });
-
-  test("advertises nonlive review only when current structured policy permits it", () => {
-    expect(
-      sourceOnlyReviewInstruction({
-        accepted: false,
-        specIds: ["spec.example.runnable"],
-        missingSpecIds: [],
-        rejectedSpecIds: ["spec.example.runnable"],
-        evidence: [],
-      }),
-    ).toContain("does not permit accepted-nonlive for spec.example.runnable");
-    expect(
-      sourceOnlyReviewInstruction({
-        accepted: true,
-        specIds: ["spec.example.source-only"],
-        missingSpecIds: [],
-        rejectedSpecIds: [],
-        evidence: ["source-only-spec:spec.example.source-only"],
-      }),
-    ).toContain("permits accepted-nonlive");
-  });
-
   test("keeps full terminal context when a domain judgment needs correction", () => {
     const prompt = decisionCorrectionPrompt({
       originalPrompt:
         "Review terminal run 42 and repair the carrier when needed.",
       decision: {
-        decision: "accepted-nonlive",
-        summary: "skip it",
+        decision: "retry-transient",
+        summary: "retry it",
         evidence: ["run:42"],
       },
-      problem: "accepted-nonlive is unavailable",
+      problem: "unchanged retry is unavailable after repeated failures",
       continueDomainWork: true,
     });
     expect(prompt).toContain("Review terminal run 42");
