@@ -1762,7 +1762,7 @@ export function invokeLoadedProjectAppAction(input: {
 }
 const appTaskControllersByBus = new WeakMap<EventBus, Map<string, ProjectAppTaskController>>();
 const appTaskCapacityByBus = new WeakMap<EventBus, ProjectAppTaskCapacity>();
-const DEFAULT_GLOBAL_PROJECT_APP_CONCURRENCY = 3;
+const DEFAULT_GLOBAL_PROJECT_APP_CONCURRENCY = 10;
 
 function globalProjectAppConcurrency(): number {
   const configured = Number(process.env.MAY_PROJECT_APP_GLOBAL_CONCURRENCY ?? DEFAULT_GLOBAL_PROJECT_APP_CONCURRENCY);
