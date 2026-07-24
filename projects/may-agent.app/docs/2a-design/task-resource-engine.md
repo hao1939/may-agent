@@ -490,6 +490,10 @@ chosen when capacity becomes available. Releasing one shared slot grants one
 app another choice from its current queue; it does not reserve that slot for an
 older task key selected while capacity was unavailable.
 
+Front promotion is an urgent FIFO lane, not a LIFO stack. Targeted wakes and
+newly admitted dependent work run before ordinary queued work, while later
+front promotions do not continually overtake an earlier promoted key.
+
 On pause or shutdown, the controller stops claiming new keys, allows a bounded
 drain period, and records unfinished attempts as interrupted before exit when
 possible. Restart recovery rereads canonical state and requeues the same task
