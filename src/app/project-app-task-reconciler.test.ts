@@ -2272,7 +2272,7 @@ describe("project app task reconciler state", () => {
     expect(readTaskState(config).tasks["must-not-escape"]).toBeUndefined();
   });
 
-  it("treats actions against already receipted tasks as stale no-ops", () => {
+  it("treats repeated close actions against already receipted tasks as idempotent", () => {
     const { config } = fixture();
     const first = declareAndClaimTask(config, {
       intent: intent("maintain"),
@@ -2332,6 +2332,120 @@ describe("project app task reconciler state", () => {
     expect(tree.tasks["categorized-task"]).toBeUndefined();
     expect(tree.receipts?.["categorized-task"]).toBeDefined();
     expect(tree.tasks["route-review"]).toBeUndefined();
+  });
+
+  it("rejects update actions against completed task receipts", () => {
+    const { config } = fixture();
+    const first = declareAndClaimTask(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      handler: "owner:branch-owner",
+    });
+    if (first.kind !== "claimed") throw new Error("expected first claim");
+    completeProjectAppTask(config, first, {
+      summary: "close completed child",
+      evidence: ["first reconciliation"],
+      actions: [
+        {
+          kind: "close-task",
+          taskId: "categorized-task",
+          expectedGeneration: 1,
+          summary: "child finished",
+        },
+      ],
+    });
+
+    const review = declareAndClaimTask(config, {
+      intent: {
+        id: "receipt-update-review",
+        parentId: "operations",
+        outcome: "Review a completed task",
+        acceptance: ["Completed work is handled truthfully"],
+        mode: "maintain",
+      },
+      appOwner: "app-owner",
+      handler: "owner:branch-owner",
+    });
+    if (review.kind !== "claimed") throw new Error("expected review claim");
+
+    expect(() =>
+      completeProjectAppTask(config, review, {
+        summary: "attempted completed-task update",
+        evidence: ["receipt inspection"],
+        actions: [
+          {
+            kind: "update-task",
+            taskId: "categorized-task",
+            expectedGeneration: 1,
+            mode: "maintain",
+          },
+        ],
+      }),
+    ).toThrow(
+      "Handler update-task action cannot mutate completed task categorized-task; create a new linked task",
+    );
+
+    const tree = readTaskState(config);
+    expect(tree.tasks["receipt-update-review"]?.state).toBe("active");
+    expect(tree.receipts?.["categorized-task"]).toBeDefined();
+  });
+
+  it("rejects create actions that reuse a completed task identity", () => {
+    const { config } = fixture();
+    const first = declareAndClaimTask(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      handler: "owner:branch-owner",
+    });
+    if (first.kind !== "claimed") throw new Error("expected first claim");
+    completeProjectAppTask(config, first, {
+      summary: "close completed child",
+      evidence: ["first reconciliation"],
+      actions: [
+        {
+          kind: "close-task",
+          taskId: "categorized-task",
+          expectedGeneration: 1,
+          summary: "child finished",
+        },
+      ],
+    });
+
+    const review = declareAndClaimTask(config, {
+      intent: {
+        id: "receipt-create-review",
+        parentId: "operations",
+        outcome: "Review a completed task identity",
+        acceptance: ["Completed identities are not reused"],
+        mode: "maintain",
+      },
+      appOwner: "app-owner",
+      handler: "owner:branch-owner",
+    });
+    if (review.kind !== "claimed") throw new Error("expected review claim");
+
+    expect(() =>
+      completeProjectAppTask(config, review, {
+        summary: "attempted completed-task recreation",
+        evidence: ["receipt inspection"],
+        actions: [
+          {
+            kind: "create-task",
+            id: "categorized-task",
+            parentId: "operations",
+            outcome: "Reuse a completed identity",
+            acceptance: ["This action must be rejected"],
+            mode: "achieve",
+            outputs: [],
+            priority: "P2",
+          },
+        ],
+      }),
+    ).toThrow("Handler action task already exists or completed: categorized-task");
+
+    const tree = readTaskState(config);
+    expect(tree.tasks["receipt-create-review"]?.state).toBe("active");
+    expect(tree.receipts?.["categorized-task"]).toBeDefined();
   });
 
   it("rejects malformed action payloads and blank evidence before mutation", () => {
