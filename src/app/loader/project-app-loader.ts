@@ -1924,10 +1924,12 @@ function installConventionTaskControllers(
         });
         for (const dependentTaskId of dependentTaskIds) {
           const activeController = appTaskControllersByBus.get(opts.bus)?.get(descriptor.id) ?? controller;
-          // Reconciliation-created work is ordinary runnable work. Explicit
-          // targeted events use the front lane below; promoting every new
-          // child/dependent here can indefinitely starve older recovered work.
-          activeController.enqueue(dependentTaskId);
+          // A same-task result is an immediate continuation, such as a
+          // workflow-to-owner handoff. Other children/dependents remain
+          // ordinary work so they cannot starve the existing backlog.
+          activeController.enqueue(dependentTaskId, {
+            front: dependentTaskId === taskId,
+          });
         }
       },
       onError: (taskId, error, willRetry) => {
