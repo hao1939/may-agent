@@ -497,6 +497,18 @@ export function releaseInterruptedProjectAppTaskAttempt(
     const now = new Date().toISOString();
     const recoveredSummary = `${summary}; retrying from current task evidence`;
     const sessionIds = attempt.sessionId ? [attempt.sessionId] : [];
+    if (attempt.trigger && !tree.taskTriggers?.[taskId]) {
+      tree.taskTriggers = {
+        ...(tree.taskTriggers ?? {}),
+        [taskId]: {
+          taskId,
+          taskGeneration: resource.metadata.generation,
+          resourceVersion: 1,
+          event: structuredClone(attempt.trigger),
+          observedAt: now,
+        },
+      };
+    }
     finishAttempt(tree, resource, "interrupted", recoveredSummary, now);
     attempt.metadata.resourceVersion += 1;
     attempt.failureReason = "previous-runtime-attempt-requeued";
