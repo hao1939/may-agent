@@ -1272,6 +1272,7 @@ async function reviewFailedCandidate(
         "Review this failed May candidate before deciding what changes next.",
         "Read the baseline, comparison, failed decisions, approved expected answers, scorer checks, prompt/model provenance, and runtime evidence.",
         "Use revise-candidate only when the evidence still establishes a May behavior gap.",
+        "When the failed candidate text was present in the actual prompt but behavior did not improve, propose a different learning mechanism instead of stronger wording in the same file.",
         "Use review-benchmark, review-scorer, review-runtime, or needs-human for the responsible alternative.",
         `Failure family: ${plan.focus.failureFamily}`,
         `Original finding: ${plan.focus.summary}`,
@@ -1431,6 +1432,10 @@ async function runCandidateIteration(
               `Previous review: ${plan.revision.summary}`,
               `Proposed revision: ${plan.revision.proposedChange}`,
               `Previous verification: ${plan.revision.previousVerificationDir}`,
+              "Mechanism change required: valid verification already showed that the previous candidate did not solve the gap.",
+              "Compare the previous candidate with the prepared May base. Do not merely strengthen or lengthen the same AGENTS.md guidance.",
+              "Inspect May's skill-discovery and preparation model and use one distinct supported mechanism, such as a narrowly described task-triggered skill, when the evidence supports it.",
+              "If no distinct mechanism is justified, make no artifact change so the workflow stops instead of spending another wording-only iteration.",
             ]
           : []),
         `Candidate overlay directory: ${candidateDir}`,

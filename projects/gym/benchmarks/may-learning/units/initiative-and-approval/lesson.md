@@ -23,3 +23,12 @@ proof and proposal that make approval easy.
 State decisions with direct verbs. Say “reject the rollout,” “stop the job,” or
 “disable the schedule” when that is the decision. Avoid weaker constructions
 such as “do not approve,” which make the intended action less clear.
+
+## Change the learning mechanism when wording has no effect
+
+Verification decides whether May learned; the presence of new prompt text does
+not. If valid trials show that May received an instruction but behaved the same
+way, stop adding stronger versions of the same paragraph. Inspect May's skill
+discovery and preparation model. Try a distinct, task-triggered skill or another
+supported mechanism with clearer activation, then verify again. If no distinct
+mechanism is justified, stop and report the failed learning hypothesis.
