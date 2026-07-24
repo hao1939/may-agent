@@ -34,6 +34,20 @@ describe("ProjectAppTaskQueue", () => {
     expect(queue.take()).toBe("urgent-b");
   });
 
+  it("runs oldest ordinary work after a bounded urgent burst", () => {
+    const queue = new ProjectAppTaskQueue(1);
+    queue.enqueue("old-a");
+    queue.enqueue("old-b");
+    for (const taskId of ["urgent-a", "urgent-b", "urgent-c", "urgent-d", "urgent-e"]) {
+      queue.enqueue(taskId, { front: true });
+    }
+
+    for (const taskId of ["urgent-a", "urgent-b", "urgent-c", "old-a", "urgent-d"]) {
+      expect(queue.take()).toBe(taskId);
+      queue.complete(taskId);
+    }
+  });
+
   it("preserves front promotion for a wake received while running", () => {
     const queue = new ProjectAppTaskQueue(1);
     queue.enqueue("goal");
