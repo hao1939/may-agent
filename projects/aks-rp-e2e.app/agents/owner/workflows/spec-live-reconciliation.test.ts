@@ -16,6 +16,7 @@ import {
   runMatchesPriorVerification,
   scenarioNormalizationWaitProblem,
   sourceOnlyDecisionProblem,
+  sourceOnlyReviewInstruction,
 } from "./spec-live-reconciliation.js";
 import {
   isRunnableScenarioNormalization,
@@ -110,6 +111,27 @@ describe("spec-live-reconciliation workflow", () => {
         evidence: ["source-only-spec:spec.example.source-only"],
       }),
     ).toBeNull();
+  });
+
+  test("advertises nonlive review only when current structured policy permits it", () => {
+    expect(
+      sourceOnlyReviewInstruction({
+        accepted: false,
+        specIds: ["spec.example.runnable"],
+        missingSpecIds: [],
+        rejectedSpecIds: ["spec.example.runnable"],
+        evidence: [],
+      }),
+    ).toContain("does not permit accepted-nonlive for spec.example.runnable");
+    expect(
+      sourceOnlyReviewInstruction({
+        accepted: true,
+        specIds: ["spec.example.source-only"],
+        missingSpecIds: [],
+        rejectedSpecIds: [],
+        evidence: ["source-only-spec:spec.example.source-only"],
+      }),
+    ).toContain("permits accepted-nonlive");
   });
 
   test("validates agent waits without replacing agent judgment", () => {

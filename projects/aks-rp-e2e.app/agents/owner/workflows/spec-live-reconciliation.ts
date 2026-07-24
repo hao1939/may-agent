@@ -242,6 +242,20 @@ export function sourceOnlyDecisionProblem(
   ].join("; ");
 }
 
+export function sourceOnlyReviewInstruction(
+  posture: SourceOnlyNormalizationPosture,
+): string {
+  if (posture.accepted) {
+    return "Current structured spec policy permits accepted-nonlive only if your independent review confirms that source-only posture remains truthful; this records no live-pass claim.";
+  }
+  const affected = [...posture.missingSpecIds, ...posture.rejectedSpecIds];
+  return [
+    `Current structured spec policy does not permit accepted-nonlive${affected.length ? ` for ${affected.join(", ")}` : ""}.`,
+    "Do not choose accepted-nonlive for this run.",
+    "A policy or dependency preflight rejection is not itself a source-only posture: diagnose and repair the carrier/spec, justify an exact transient retry or external wait, or request a genuine ownership-boundary decision.",
+  ].join(" ");
+}
+
 export function scenarioNormalizationWaitProblem(
   decision: AgentDecision,
 ): string | null {
@@ -1534,7 +1548,9 @@ export async function reconcileSpecLive(
           `Use ${contextDir} for downloaded artifacts and diagnosis. Do not write runtime artifacts into tracked source paths.`,
           "Inspect run metadata, plan inputs, per-spec result, live resource identity, assertions, and cleanup proof. The aggregate provider result alone is not a spec verdict.",
           "Return accepted-pass only for exact same-spec live proof on this source commit.",
-          "For scenario normalization only, return accepted-nonlive when current structured spec policy explicitly forbids direct live execution and your independent review confirms that source-only posture remains truthful; this records no live-pass claim.",
+          ...(normalizationInput
+            ? [sourceOnlyReviewInstruction(sourceOnlyPosture)]
+            : []),
           "For a carrier/spec defect, make the smallest fix in the task worktree, run scoped local checks, commit, leave the worktree clean, and return committed.",
           failedRunsForCommit >= 2
             ? "The same source commit already has at least two terminal nonpassing runs. Do not request another unchanged retry; commit a fix, return an exact wait, or request owner judgment."

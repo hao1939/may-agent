@@ -135,6 +135,12 @@ not a scenario-normalization escape path.
 - A terminal admission-preflight refusal may be accepted as nonlive only when
   the agent chooses `accepted-nonlive` and current structured spec metadata for
   every selected spec independently satisfies the source-only invariant.
+- The terminal-review prompt states that current structured fact explicitly.
+  When the invariant is not satisfied, it does not advertise
+  `accepted-nonlive` as an available outcome; the agent must diagnose and
+  repair the source, justify an exact transient retry or external wait, or
+  request a genuine ownership-boundary decision. A policy preflight rejection
+  is not itself a source-only execution posture.
 - If an agent chooses `accepted-nonlive` without that structured posture, code
   returns the validation finding to the same agent immediately for a corrected
   judgment. It does not close the task or leave a routine correction in the
