@@ -86,9 +86,9 @@ export class ProjectAppTaskController {
     }
   }
 
-  enqueue(taskId: string): boolean {
+  enqueue(taskId: string, opts: { front?: boolean } = {}): boolean {
     if (this.closed) return false;
-    const added = this.queue.enqueue(taskId);
+    const added = this.queue.enqueue(taskId, opts);
     this.schedulePump();
     return added;
   }
