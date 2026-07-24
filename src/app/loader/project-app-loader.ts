@@ -51,6 +51,7 @@ import {
   deferProjectAppTask,
   listHandlerExecutionFailedProjectAppTasks,
   listHandlerUnavailableProjectAppTasks,
+  listWorkspacePreparationFailedProjectAppTasks,
   markProjectAppTaskAttention,
   listProjectAppTaskIntents,
   listRunnableProjectAppTaskIds,
@@ -63,6 +64,7 @@ import {
   recordProjectAppTaskTrigger,
   releaseHandlerExecutionFailedProjectAppTask,
   releaseHandlerUnavailableProjectAppTask,
+  releaseWorkspacePreparationFailedProjectAppTask,
   repairPreviousRuntimeRecoveryAttention,
   repairRunningProjectAppTasksWithoutAttempt,
   recoverableProjectAppTaskAttempts,
@@ -578,6 +580,7 @@ type TaskCapabilityRun = {
   verifier?: { name: string; sourcePath: string; verify: ProjectAppTaskVerifier };
   unavailable?: boolean;
   executionFailed?: boolean;
+  workspacePreparationFailed?: boolean;
 };
 
 type WorkflowCapability = {
@@ -1414,6 +1417,7 @@ async function reconcileTask(input: {
             actions: [],
           },
           runId: null,
+          workspacePreparationFailed: true,
         };
       }
     }
@@ -1639,9 +1643,11 @@ async function reconcileTask(input: {
       ? "HandlerUnavailable"
       : primaryResult.executionFailed
         ? "HandlerExecutionFailed"
-        : primaryHandlerResult.state === "needs-owner"
-          ? "needs-owner"
-          : "handler-blocked",
+        : primaryResult.workspacePreparationFailed
+          ? "WorkspacePreparationFailed"
+          : primaryHandlerResult.state === "needs-owner"
+            ? "needs-owner"
+            : "handler-blocked",
     wakeParent: !ownerHandoff,
   });
   if (!ownerHandoff) {
@@ -2039,6 +2045,47 @@ async function requeueRepairedProjectAppTaskHandlers(
       owner: descriptor.owner,
       maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
     });
+    for (const candidate of listWorkspacePreparationFailedProjectAppTasks(config, descriptor.owner)) {
+      const paths = appWorkflowRuntimePaths(opts, descriptor, candidate.owner);
+      const definition = await inspectWorkflowDefinition(paths.workflowDir, candidate.workflow);
+      if (
+        !definition.available ||
+        (definition.workspace !== "task" &&
+          !(typeof definition.workspace === "object" && definition.workspace.kind === "task")) ||
+        descriptor.app.workspace?.kind !== "git"
+      ) {
+        continue;
+      }
+      try {
+        prepareProjectTaskWorkspace({
+          repoDir: descriptor.projectDir,
+          workspaceRoot: join(opts.projectRoot, "worktrees", descriptor.id),
+          taskId: candidate.taskId,
+          generation: candidate.generation,
+          baseBranch:
+            typeof definition.workspace === "object"
+              ? definition.workspace.baseBranch
+              : (descriptor.app.workspace.branch ?? "dev"),
+          previous: candidate.previous,
+        });
+      } catch {
+        continue;
+      }
+      if (!releaseWorkspacePreparationFailedProjectAppTask(config, candidate.taskId, candidate.generation)) continue;
+      controller.enqueue(candidate.taskId);
+      opts.bus.emit({
+        type: "project.task.handler.recovered",
+        source: `project-app:${descriptor.id}:task-recovery`,
+        owner: `agent:${candidate.owner}`,
+        target: { project: descriptor.id, taskId: candidate.taskId },
+        data: {
+          project: descriptor.id,
+          taskId: candidate.taskId,
+          handler: `workflow:${candidate.workflow}`,
+          reason: "task-workspace-preparation-succeeded-after-app-reload",
+        },
+      } as unknown as AgentEvent);
+    }
     for (const candidate of listHandlerUnavailableProjectAppTasks(config, descriptor.owner)) {
       const paths = appWorkflowRuntimePaths(opts, descriptor, candidate.owner);
       const key = `${paths.workflowDir}\0${candidate.workflow}`;
