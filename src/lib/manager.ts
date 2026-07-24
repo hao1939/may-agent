@@ -485,7 +485,7 @@ export class SubagentManager {
       createFinish: () =>
         createFinishTool({
           agentName: def.name,
-          projectRoot: def.projectRoot ?? this._projectRoot,
+          projectRoot: opts?.executionRoot ?? def.projectRoot ?? this._projectRoot,
           persistDir: this._persistDir,
         }),
       onGuard: ({ context, guard, block, reason }) => {

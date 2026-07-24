@@ -196,7 +196,9 @@ function resolveTools(options: AgentPreparationOptions, requireFinish: boolean):
   }
   if (!requireFinish) return applyToolExecutionPolicy(tools);
 
+  const scopedFinish = options.executionRoot ? options.createFinish?.() : undefined;
   const baseFinish =
+    scopedFinish ??
     tools.find((tool) => tool.name === "finish") ??
     definition.tools.find((tool) => tool.name === "finish") ??
     options.createFinish?.();
