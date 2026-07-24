@@ -97,6 +97,7 @@ export class ProjectAppTaskController {
       }
       this.resyncTimer = setInterval(() => this.resync(options.resync!.taskIds()), options.resync.intervalMs);
       this.resyncTimer.unref?.();
+      if (this.startReady) this.resync(options.resync.taskIds());
     }
   }
 
@@ -204,6 +205,7 @@ export class ProjectAppTaskController {
 
   private releaseStartGate(): void {
     this.startReady = true;
+    if (this.options.resync) this.resync(this.options.resync.taskIds());
     this.resolveDrainWaiters();
     this.schedulePump();
   }

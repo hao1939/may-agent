@@ -203,6 +203,42 @@ describe("ProjectAppTaskController", () => {
     controller.close();
   });
 
+  it("resyncs runnable state as soon as a replacement controller becomes active", async () => {
+    const started: string[] = [];
+    let releaseOld: (() => void) | undefined;
+    const old = new ProjectAppTaskController({
+      maxConcurrent: 1,
+      reconcile: () =>
+        new Promise<void>((resolve) => {
+          started.push("old");
+          releaseOld = resolve;
+        }),
+    });
+    old.enqueue("old");
+    await waitUntil(() => started.length === 1);
+    old.close();
+
+    const current = new ProjectAppTaskController({
+      maxConcurrent: 1,
+      startAfter: old.whenDrained(),
+      resync: {
+        intervalMs: 60_000,
+        taskIds: () => ["recovered-runnable-task"],
+      },
+      reconcile: async (taskId) => {
+        started.push(taskId);
+      },
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    expect(started).toEqual(["old"]);
+    releaseOld?.();
+    await waitUntil(() => started.includes("recovered-runnable-task"));
+    expect(started).toEqual(["old", "recovered-runnable-task"]);
+    current.close();
+    await current.whenDrained();
+  });
+
   it("keeps replacement controllers behind the draining predecessor chain", async () => {
     const started: string[] = [];
     let releaseOld: (() => void) | undefined;
