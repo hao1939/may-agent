@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Cron } from "../cron";
 import { EVENT_ROW_ID, EventBus } from "../event-bus";
-import { closeDb, upsertSession } from "../../lib/requests";
+import { closeDb, getDb, upsertSession } from "../../lib/requests";
 import { readSessionMeta, writeSessionMeta } from "../../lib/persistence";
 import { projectRuntimePaths } from "@may-agent/sdk";
 import {
@@ -1771,6 +1771,218 @@ describe("project app loader", () => {
         trigger: { type: "project.task.tick", reason: "test-direct-wake-override" },
       });
       expect(tree.resources["work/maintain-wake"].status.phase).toBe("converged");
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("immediately replays persisted events when a new wait is already true", async () => {
+    const f = fixture();
+    try {
+      writeApp(f.appDir);
+      const bus = new EventBus();
+      const events: any[] = [];
+      let ownerCalls = 0;
+      bus.subscribe((event) => events.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: {
+          hasAgent: () => true,
+          async callAgent() {
+            ownerCalls += 1;
+            return ownerCalls === 1
+              ? {
+                  sessionId: "owner-stale-wait-1",
+                  status: "done",
+                  structuredResult: {
+                    state: "waiting",
+                    summary: "waiting for the already-recorded note",
+                    evidence: ["owner requested an exact stale-true wait"],
+                    actions: [],
+                    conditions: [
+                      {
+                        id: "note-ready",
+                        type: "sample.note",
+                        subject: "project:sample",
+                        expected: { itemId: "ready" },
+                      },
+                    ],
+                  },
+                  lastAssistantText: "waiting",
+                  messages: [],
+                  duration: "0s",
+                  outputDir: "",
+                }
+              : {
+                  sessionId: "owner-stale-wait-2",
+                  status: "done",
+                  structuredResult: {
+                    state: "converged",
+                    summary: "replayed condition woke the same task immediately",
+                    evidence: ["replayed:event:sample.note"],
+                    actions: [],
+                  },
+                  lastAssistantText: "converged",
+                  messages: [],
+                  duration: "0s",
+                  outputDir: "",
+                };
+          },
+        } as any,
+        bus,
+        agentCrons: new Map(),
+      });
+
+      const db = getDb(f.persistDir);
+      db.run(
+        `INSERT INTO events (event_type, data, timestamp, project_id, idempotency_scope, ingress_source)
+         VALUES (?, ?, ?, ?, '', '')`,
+        [
+          "sample.note",
+          JSON.stringify({ type: "sample.note", target: { project: "sample" }, project: "sample", itemId: "ready" }),
+          Date.now(),
+          "sample",
+        ],
+      );
+      bus.emit({ type: "sample.work", project: "sample", itemId: "stale-wait", ownerOnly: true, mode: "maintain" } as any);
+
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/stale-wait" &&
+            event.data?.disposition === "converged",
+        ),
+      );
+
+      const state = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
+      expect(ownerCalls).toBe(2);
+      expect(state.resources["work/stale-wait"].status.phase).toBe("converged");
+      expect(state.conditions?.["note-ready"]).toBeUndefined();
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("replays persisted matching events on startup so waiting tasks do not sleep past true conditions", async () => {
+    const f = fixture();
+    try {
+      writeApp(f.appDir);
+      const bus = new EventBus();
+      const firstEvents: any[] = [];
+      bus.subscribe((event) => firstEvents.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: {
+          hasAgent: () => true,
+          async callAgent() {
+            return {
+              sessionId: "owner-startup-wait-1",
+              status: "done",
+              structuredResult: {
+                state: "waiting",
+                summary: "waiting for exact startup proof",
+                evidence: ["queued exact wait before restart"],
+                actions: [],
+                conditions: [
+                  {
+                    id: "startup-note-ready",
+                    type: "sample.note",
+                    subject: "project:sample",
+                    expected: { itemId: "startup-ready" },
+                  },
+                ],
+              },
+              lastAssistantText: "waiting",
+              messages: [],
+              duration: "0s",
+              outputDir: "",
+            };
+          },
+        } as any,
+        bus,
+        agentCrons: new Map(),
+      });
+
+      bus.emit({ type: "sample.work", project: "sample", itemId: "startup-wait", ownerOnly: true, mode: "maintain" } as any);
+      await waitUntil(() =>
+        firstEvents.some(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/startup-wait" &&
+            event.data?.disposition === "waiting",
+        ),
+      );
+
+      const db = getDb(f.persistDir);
+      db.run(
+        `INSERT INTO events (event_type, data, timestamp, project_id, idempotency_scope, ingress_source)
+         VALUES (?, ?, ?, ?, '', '')`,
+        [
+          "sample.note",
+          JSON.stringify({ type: "sample.note", target: { project: "sample" }, project: "sample", itemId: "startup-ready" }),
+          Date.now(),
+          "sample",
+        ],
+      );
+
+      const replayBus = new EventBus();
+      const replayEvents: any[] = [];
+      let replayCalls = 0;
+      replayBus.subscribe((event) => replayEvents.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: {
+          hasAgent: () => true,
+          async callAgent() {
+            replayCalls += 1;
+            return {
+              sessionId: "owner-startup-wait-2",
+              status: "done",
+              structuredResult: {
+                state: "converged",
+                summary: "startup replay woke the waiting task",
+                evidence: ["replayed:event:sample.note"],
+                actions: [],
+              },
+              lastAssistantText: "converged",
+              messages: [],
+              duration: "0s",
+              outputDir: "",
+            };
+          },
+        } as any,
+        bus: replayBus,
+        agentCrons: new Map(),
+      });
+
+      await waitUntil(() =>
+        replayEvents.some(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/startup-wait" &&
+            event.data?.disposition === "converged",
+        ),
+      );
+
+      const state = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
+      expect(replayCalls).toBe(1);
+      expect(state.resources["work/startup-wait"].status.phase).toBe("converged");
+      expect(state.conditions?.["startup-note-ready"]).toBeUndefined();
     } finally {
       closeDb(f.persistDir);
       rmSync(f.root, { recursive: true, force: true });

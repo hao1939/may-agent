@@ -34,8 +34,8 @@ import {
   type ProjectAppExecutionPaths,
 } from "@may-agent/sdk";
 import { Cron } from "../cron.js";
-import { ProjectAppTaskController } from "../project-app-task-controller.js";
-import { trackProjectAppConditionEvent } from "../project-app-condition-tracker.js";
+import { ProjectAppTaskCapacity, ProjectAppTaskController } from "../project-app-task-controller.js";
+import { trackProjectAppConditionEvent, trackProjectAppConditionEvents } from "../project-app-condition-tracker.js";
 import {
   childEventTrace,
   EVENT_INGRESS_SOURCE,
@@ -809,11 +809,7 @@ async function runTaskCapability(input: {
   }
 }
 
-function interruptSupersededOwnerSession(
-  opts: ProjectAppLoaderOptions,
-  sessionId: string,
-  reason: string,
-): void {
+function interruptSupersededOwnerSession(opts: ProjectAppLoaderOptions, sessionId: string, reason: string): void {
   const cleanSessionId = sessionId.trim();
   if (!cleanSessionId) return;
   if (opts.manager.hasActiveSession(cleanSessionId)) {
@@ -1004,12 +1000,16 @@ async function runTaskOwner(input: {
             toolPolicy: ownerOptions.toolPolicy,
             timeoutMs: ownerOptions.timeout,
           });
-          recordProjectAppTaskAttemptSession(taskReconciliationConfig({
-            appDir: descriptor.appDir,
-            projectDir: descriptor.projectDir,
-            owner: descriptor.owner,
-            maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
-          }), claim, sessionId);
+          recordProjectAppTaskAttemptSession(
+            taskReconciliationConfig({
+              appDir: descriptor.appDir,
+              projectDir: descriptor.projectDir,
+              owner: descriptor.owner,
+              maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
+            }),
+            claim,
+            sessionId,
+          );
           const waited = await opts.manager.waitFor(sessionId);
           return {
             ...waited,
@@ -1598,7 +1598,13 @@ async function reconcileTask(input: {
         primaryHandlerResult.summary,
         apply.status === "applied" ? primaryHandlerResult.state : "stale",
       );
-      return stale?.reconcileTaskIds ?? apply.reconcileTaskIds;
+      const replayedTaskIds =
+        apply.status === "applied"
+          ? replayPersistedConditionEvents(opts, descriptor, config, {
+              conditionIds: primaryHandlerResult.conditions?.map((condition) => condition.id),
+            })
+          : [];
+      return [...new Set([...(stale?.reconcileTaskIds ?? apply.reconcileTaskIds), ...replayedTaskIds])];
     } catch (error) {
       const stale = recoverStaleTaskActionResult(config, primary, error);
       if (stale) {
@@ -1754,6 +1760,21 @@ export function invokeLoadedProjectAppAction(input: {
   return { eventId, eventType: semantic.type };
 }
 const appTaskControllersByBus = new WeakMap<EventBus, Map<string, ProjectAppTaskController>>();
+const appTaskCapacityByBus = new WeakMap<EventBus, ProjectAppTaskCapacity>();
+const DEFAULT_GLOBAL_PROJECT_APP_CONCURRENCY = 3;
+
+function globalProjectAppConcurrency(): number {
+  const configured = Number(process.env.MAY_PROJECT_APP_GLOBAL_CONCURRENCY ?? DEFAULT_GLOBAL_PROJECT_APP_CONCURRENCY);
+  return Number.isInteger(configured) && configured > 0 ? configured : DEFAULT_GLOBAL_PROJECT_APP_CONCURRENCY;
+}
+
+function taskCapacityForBus(bus: EventBus): ProjectAppTaskCapacity {
+  const existing = appTaskCapacityByBus.get(bus);
+  if (existing) return existing;
+  const capacity = new ProjectAppTaskCapacity(globalProjectAppConcurrency());
+  appTaskCapacityByBus.set(bus, capacity);
+  return capacity;
+}
 
 function taskIdFromEvent(event: Record<string, unknown>): string {
   const direct = event.taskId ?? event.task_id;
@@ -1784,6 +1805,69 @@ function projectAppTaskDelivery(descriptor: ProjectAppDescriptor, taskId: string
   };
 }
 
+function isOpenProjectCondition(value: unknown): value is { spec: { type: string } } {
+  if (!isRecord(value) || !isRecord(value.spec) || !isRecord(value.status)) return false;
+  return typeof value.spec.type === "string" && value.status.state !== "true";
+}
+
+function replayPersistedConditionEvents(
+  opts: ProjectAppLoaderOptions,
+  descriptor: ProjectAppDescriptor,
+  config: ReturnType<typeof taskReconciliationConfig>,
+  input: { conditionIds?: string[] } = {},
+): string[] {
+  if (!opts.persistDir) return [];
+  const tree = readTaskState(config);
+  const relevantIds = input.conditionIds?.length ? new Set(input.conditionIds) : null;
+  const eventTypes = [
+    ...new Set(
+      Object.entries(tree.conditions ?? {})
+        .filter(([id, value]) => (!relevantIds || relevantIds.has(id)) && isOpenProjectCondition(value))
+        .map(([, value]) => value.spec.type.trim())
+        .filter(Boolean),
+    ),
+  ];
+  if (eventTypes.length === 0) return [];
+
+  const placeholders = eventTypes.map(() => "?").join(", ");
+  const db = getDb(opts.persistDir);
+  const rows = db
+    .prepare(
+      `SELECT event_type, source, timestamp, data
+       FROM events
+       WHERE project_id = ?
+         AND event_type IN (${placeholders})
+       ORDER BY id DESC
+       LIMIT 2000`,
+    )
+    .all(descriptor.id, ...eventTypes) as Array<{
+    event_type?: unknown;
+    source?: unknown;
+    timestamp?: unknown;
+    data?: unknown;
+  }>;
+
+  const events: Record<string, unknown>[] = [];
+  for (const row of rows.reverse()) {
+    if (typeof row.data !== "string" || !row.data.trim()) continue;
+    try {
+      const parsed = JSON.parse(row.data);
+      if (!isRecord(parsed)) continue;
+      const event: Record<string, unknown> = {
+        ...parsed,
+        type: typeof row.event_type === "string" ? row.event_type : parsed.type,
+        ...(typeof row.source === "string" && row.source.trim() ? { source: row.source } : {}),
+        ...(typeof row.timestamp === "number" ? { timestamp: row.timestamp } : {}),
+      };
+      events.push(event);
+    } catch {
+      // Ignore malformed persisted events; they cannot prove a Condition.
+    }
+  }
+
+  return trackProjectAppConditionEvents(config, events).map((wake) => wake.taskId);
+}
+
 function installConventionTaskControllers(
   opts: ProjectAppLoaderOptions,
   descriptors: ProjectAppDescriptor[],
@@ -1795,6 +1879,7 @@ function installConventionTaskControllers(
     startAfterByApp.set(appId, controller.whenDrained());
   }
   const controllers = new Map<string, ProjectAppTaskController>();
+  const capacity = taskCapacityForBus(opts.bus);
 
   for (const descriptor of descriptors) {
     const tasks = descriptor.app.tasks;
@@ -1816,6 +1901,7 @@ function installConventionTaskControllers(
     let controller: ProjectAppTaskController;
     controller = new ProjectAppTaskController({
       maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
+      capacity,
       startAfter: startAfterByApp.get(descriptor.id),
       maxRetries: 3,
       resync: {
@@ -1830,7 +1916,8 @@ function installConventionTaskControllers(
           reason: "task-controller",
         });
         for (const dependentTaskId of dependentTaskIds) {
-          controller.enqueue(dependentTaskId);
+          const timer = setTimeout(() => controller.enqueue(dependentTaskId), 0);
+          timer.unref?.();
         }
       },
       onError: (taskId, error, willRetry) => {
@@ -1910,6 +1997,9 @@ function recoverInterruptedProjectAppTasks(
           controller.enqueue(repair.taskId);
         }
       }
+    }
+    for (const taskId of replayPersistedConditionEvents(opts, descriptor, config)) {
+      if (controller && !descriptor.reconciliationPaused) controller.enqueue(taskId);
     }
     const attentions = pendingProjectAppTaskRecoveryAttention(config);
     if (attentions.length === 0) continue;

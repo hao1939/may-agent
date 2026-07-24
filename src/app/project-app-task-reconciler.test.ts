@@ -3034,4 +3034,54 @@ describe("project app task reconciler state", () => {
       },
     ]);
   });
+
+  it("supports future-only comparisons for level-based pipeline artifact facts", () => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    deferProjectAppTask(config, claim, {
+      disposition: "waiting",
+      summary: "waiting for the first later artifact",
+      conditions: [
+        {
+          id: "artifact-after-100",
+          type: "pipeline-artifact.available",
+          subject: "project:sample",
+          expected: {
+            artifactName: "slice-06-test-results",
+            sourceBranch: "refs/heads/main",
+            pipelineRunId: { gt: "100" },
+          },
+        },
+      ],
+    });
+
+    expect(
+      trackProjectAppConditionEvent(config, {
+        type: "pipeline-artifact.available",
+        project: "sample",
+        artifactName: "slice-06-test-results",
+        sourceBranch: "refs/heads/main",
+        pipelineRunId: "100",
+      }),
+    ).toEqual([]);
+    expect(
+      trackProjectAppConditionEvent(config, {
+        type: "pipeline-artifact.available",
+        project: "sample",
+        artifactName: "slice-06-test-results",
+        sourceBranch: "refs/heads/main",
+        pipelineRunId: "101",
+      }),
+    ).toMatchObject([
+      {
+        taskId: "pipeline-monitor",
+        conditionId: "artifact-after-100",
+      },
+    ]);
+  });
 });
