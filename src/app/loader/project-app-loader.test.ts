@@ -853,6 +853,7 @@ describe("project app loader", () => {
       expect(ownerCalls[0]).toContain("An executable parent relationship expresses decomposition and aggregate ownership");
       expect(ownerCalls[0]).toContain("Use dependsOn for execution ordering");
       expect(ownerCalls[0]).toContain("Do not close an achieve task while it still contains live child tasks");
+      expect(ownerCalls[0]).toContain("A completed task receipt is immutable");
       expect(ownerCalls[0]).toContain("Do not include an action for the current Reconciliation Task taskId");
       expect(ownerOptions[0]).toMatchObject({
         projectId: "sample",
