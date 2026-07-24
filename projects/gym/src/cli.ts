@@ -108,6 +108,7 @@ interface AdapterResult {
   sessionId: string;
   status: string;
   sessionPath: string;
+  systemPrompt?: string;
   executionManifest?: AgentExecutionManifest;
 }
 
@@ -167,15 +168,19 @@ const GYM_TOOL_DENIAL_REASONS: Readonly<Record<string, string>> = {
   message: "isolated Gym scenarios must not notify real users or agents",
   cron: "isolated Gym scenarios must not change autonomous schedules",
   checkpoint: "the direct Gym adapter has no hosted durable checkpoint service",
-  "cli-delegation": "isolated Gym scenarios do not delegate to external agent CLIs",
-  "system-status": "isolated Gym scenarios do not expose production system state",
+  "cli-delegation":
+    "isolated Gym scenarios do not delegate to external agent CLIs",
+  "system-status":
+    "isolated Gym scenarios do not expose production system state",
   system_status: "isolated Gym scenarios do not expose production system state",
   query_db: "isolated Gym scenarios do not expose the production database",
   "query-db": "isolated Gym scenarios do not expose the production database",
 };
 
 function gymToolDenials(agentDir: string): ToolDenial[] {
-  const config = JSON.parse(readFileSync(join(agentDir, "agent.json"), "utf8")) as { tools?: unknown };
+  const config = JSON.parse(
+    readFileSync(join(agentDir, "agent.json"), "utf8"),
+  ) as { tools?: unknown };
   if (!Array.isArray(config.tools)) return [];
   return config.tools.flatMap((name) => {
     if (typeof name !== "string") return [];
@@ -285,6 +290,7 @@ function createMayAgentAdapter(): Adapter {
           workRoot: workDir,
           agentsRoot,
           globalAgentsRoot: join(REPO_ROOT, "agents"),
+          visibleAgentDir: agentDest,
           sharedRoot: join(REPO_ROOT, "shared"),
           projectsRoot: join(REPO_ROOT, "projects"),
           outputRoot: gymState,
@@ -299,12 +305,15 @@ function createMayAgentAdapter(): Adapter {
             `effective ${result.executionManifest.effectiveTools.length}`,
         );
         if (result.executionManifest.deniedTools.length > 0) {
-          console.error(`  denied: ${result.executionManifest.deniedTools.map((item) => item.name).join(", ")}`);
+          console.error(
+            `  denied: ${result.executionManifest.deniedTools.map((item) => item.name).join(", ")}`,
+          );
         }
         return {
           sessionId: result.sessionId,
           status: result.status === "done" ? "success" : "error",
           sessionPath: result.sessionPath,
+          systemPrompt: result.systemPrompt,
           executionManifest: result.executionManifest,
         };
       } catch (error) {
@@ -899,7 +908,7 @@ async function runMultiSessionScenario(
           : APP_AGENTS_ROOT;
       const frameworkSha = computeFrameworkSha();
       const model = readAgentModel(effectiveAgentsRoot, agentName);
-      const prompt = assembleEffectivePrompt(effectiveAgentsRoot, agentName);
+      const prompt = observedPrompt(lastResult, effectiveAgentsRoot, agentName);
 
       return {
         scenario: scenarioName,
@@ -1057,7 +1066,7 @@ async function runMultiSessionScenario(
       : APP_AGENTS_ROOT;
   const frameworkSha = computeFrameworkSha();
   const model = readAgentModel(effectiveAgentsRoot, agentName);
-  const prompt = assembleEffectivePrompt(effectiveAgentsRoot, agentName);
+  const prompt = observedPrompt(lastResult, effectiveAgentsRoot, agentName);
 
   return {
     scenario: scenarioName,
@@ -1367,7 +1376,7 @@ async function runScenario(
       : APP_AGENTS_ROOT;
   const frameworkSha = computeFrameworkSha();
   const model = readAgentModel(effectiveAgentsRoot, agentName);
-  const prompt = assembleEffectivePrompt(effectiveAgentsRoot, agentName);
+  const prompt = observedPrompt(lastResult, effectiveAgentsRoot, agentName);
 
   return {
     scenario: scenarioName,
@@ -1430,8 +1439,26 @@ function readAgentModel(agentsRoot: string, agentName: string): string | null {
   }
 }
 
+function observedPrompt(
+  result: AdapterResult,
+  agentsRoot: string,
+  agentName: string,
+): { hash: string; text: string } | null {
+  if (result.systemPrompt) {
+    return {
+      hash: createHash("sha256")
+        .update(result.systemPrompt)
+        .digest("hex")
+        .slice(0, 12),
+      text: result.systemPrompt,
+    };
+  }
+  return assembleEffectivePrompt(agentsRoot, agentName);
+}
+
 /**
- * Assemble the effective system prompt, mirroring resolveSystemPrompt() in manager.ts.
+ * Assemble fallback prompt provenance for adapters that cannot return the
+ * exact prompt observed by the runtime.
  *
  * This reproduces the exact prompt the agent sees during a gym run:
  *   1. common-sense.md (shared behavioral rules)

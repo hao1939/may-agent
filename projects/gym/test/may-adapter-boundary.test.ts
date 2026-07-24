@@ -8,6 +8,8 @@ describe("May Gym adapter boundary", () => {
       "utf8",
     );
     expect(source).toContain("runDirectAgent");
+    expect(source).toContain("visibleAgentDir: agentDest");
+    expect(source).toContain("systemPrompt: result.systemPrompt");
     expect(source).toContain("toolDenials: gymToolDenials(agentDir)");
     expect(source).toContain("execution_manifest");
     expect(source).toContain("tools: configured");
