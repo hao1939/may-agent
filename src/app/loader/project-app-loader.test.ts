@@ -763,6 +763,57 @@ describe("project app loader", () => {
     }
   });
 
+  it("marks workflow step sessions as owned by task reconciliation", async () => {
+    const f = fixture();
+    const ownerCalls: string[] = [];
+    const ownerOptions: Array<Record<string, unknown>> = [];
+    try {
+      writeApp(f.appDir);
+      writeFileSync(
+        join(f.appDir, "agents", "owner", "workflows", "worker.ts"),
+        `export const name = "worker";
+         export const description = "task-owned workflow step";
+         export async function execute(ctx) {
+           await ctx.runAgent("sample-owner", "inspect the bounded task");
+           return ctx.done("done", { state: "converged", summary: "workflow done", evidence: ["proof"], actions: [] });
+         }`,
+      );
+      const bus = new EventBus();
+      const events: any[] = [];
+      bus.subscribe((event) => events.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: manager(ownerCalls, ownerOptions),
+        bus,
+        agentCrons: new Map(),
+      });
+
+      bus.emit({ type: "sample.work", project: "sample", itemId: "workflow-owned-step" } as any);
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/workflow-owned-step" &&
+            event.data?.disposition === "converged",
+        ),
+      );
+
+      expect(ownerCalls).toEqual(["inspect the bounded task"]);
+      expect(ownerOptions[0]).toMatchObject({
+        projectId: "sample",
+        recoveryOwner: "project-app-task-reconciler",
+        source: "workflow:worker",
+      });
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
   it("records deterministic workflow verification in the completion receipt", async () => {
     const f = fixture();
     try {

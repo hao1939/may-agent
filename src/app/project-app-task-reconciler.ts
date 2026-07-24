@@ -1018,10 +1018,15 @@ function isRunnableOnPassiveResync(tree: TaskTree, resource: ProjectAppTaskResou
 export function listRunnableProjectAppTaskIds(config: TaskStateConfig): string[] {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
+    const priorityOrder = { P0: 0, P1: 1, P2: 2, P3: 3 } as const;
     return Object.values(tree.resources ?? {})
       .filter((resource) => isRunnableOnPassiveResync(tree, resource))
-      .map((resource) => resource.metadata.id)
-      .sort();
+      .sort((left, right) => {
+        const leftPriority = priorityOrder[left.spec.priority ?? "P2"];
+        const rightPriority = priorityOrder[right.spec.priority ?? "P2"];
+        return leftPriority - rightPriority || left.metadata.id.localeCompare(right.metadata.id);
+      })
+      .map((resource) => resource.metadata.id);
   });
 }
 
