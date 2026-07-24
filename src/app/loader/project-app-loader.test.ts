@@ -872,6 +872,133 @@ describe("project app loader", () => {
     }
   });
 
+  it("does not let newly declared work overtake an older recovered task", async () => {
+    const f = fixture();
+    const orderPath = join(f.root, "reconcile-order.json");
+    let releaseSeed: (() => void) | undefined;
+    try {
+      writeApp(f.appDir);
+      const appPath = join(f.appDir, "app.ts");
+      writeFileSync(
+        appPath,
+        readFileSync(appPath, "utf8").replace(
+          "budget: { sessionsPerDay: 10, tokensPerDay: 10000, maxConcurrent: 2 }",
+          "budget: { sessionsPerDay: 10, tokensPerDay: 10000, maxConcurrent: 1 }",
+        ),
+      );
+      writeFileSync(
+        join(f.appDir, "agents", "owner", "workflows", "flaky.ts"),
+        `import { existsSync, readFileSync, writeFileSync } from "node:fs";
+         export const name = "flaky";
+         export const description = "fail once, then record retry order";
+         export async function execute(ctx) {
+           const marker = ${JSON.stringify(join(f.root, "flaky-failed"))};
+           if (!existsSync(marker)) {
+             writeFileSync(marker, "failed");
+             return ctx.blocked("transient provider failure");
+           }
+           const path = ${JSON.stringify(orderPath)};
+           const order = existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : [];
+           order.push("old");
+           writeFileSync(path, JSON.stringify(order));
+           return ctx.done("retried", { state: "converged", summary: "old task retried", evidence: ["old proof"], actions: [] });
+         }`,
+      );
+      writeFileSync(
+        join(f.appDir, "agents", "owner", "workflows", "ordered.ts"),
+        `import { existsSync, readFileSync, writeFileSync } from "node:fs";
+         export const name = "ordered";
+         export const description = "record reconciliation order";
+         export async function execute(ctx) {
+           const path = ${JSON.stringify(orderPath)};
+           const order = existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : [];
+           order.push("new");
+           writeFileSync(path, JSON.stringify(order));
+           return ctx.done("new", { state: "converged", summary: "new task ran", evidence: ["new proof"], actions: [] });
+         }`,
+      );
+
+      const bus = new EventBus();
+      const events: any[] = [];
+      bus.subscribe((event) => events.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: {
+          hasAgent: () => true,
+          async callAgent() {
+            await new Promise<void>((resolve) => (releaseSeed = resolve));
+            return {
+              sessionId: "seed-owner-session",
+              status: "done",
+              structuredResult: {
+                state: "converged",
+                summary: "seed declared new work",
+                evidence: ["seed proof"],
+                actions: [
+                  {
+                    kind: "create-task",
+                    id: "work/new",
+                    parentId: "operations",
+                    outcome: "Run newly declared work",
+                    acceptance: ["New work converges"],
+                    mode: "achieve",
+                    owner: "sample-owner",
+                    workflow: "ordered",
+                  },
+                ],
+              },
+              lastAssistantText: "seed done",
+              messages: [],
+              duration: "0s",
+              outputDir: "",
+            };
+          },
+        } as any,
+        bus,
+        agentCrons: new Map(),
+      });
+
+      bus.emit({ type: "sample.work", project: "sample", itemId: "old", workflow: "flaky" } as any);
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/old" &&
+            event.data?.disposition === "attention",
+        ),
+      );
+
+      bus.emit({ type: "sample.work", project: "sample", itemId: "seed", ownerOnly: true } as any);
+      await waitUntil(() => Boolean(releaseSeed));
+      bus.emit({
+        type: "session.end",
+        source: "runtime",
+        timestamp: Date.now() + 1_000,
+        data: {
+          sessionId: "owner-runtime-recovered",
+          agent: "sample-owner",
+          status: "done",
+          outcome: "done",
+        },
+      } as any);
+      await waitUntil(() => {
+        const state = JSON.parse(readFileSync(join(f.appDir, ".state/tasks/state.json"), "utf8"));
+        return state.resources["work/old"]?.status?.phase === "pending";
+      });
+
+      releaseSeed?.();
+      await waitUntil(() => existsSync(orderPath) && JSON.parse(readFileSync(orderPath, "utf8")).length === 2);
+      expect(JSON.parse(readFileSync(orderPath, "utf8"))).toEqual(["old", "new"]);
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
   it("marks workflow step sessions as owned by task reconciliation", async () => {
     const f = fixture();
     const ownerCalls: string[] = [];
