@@ -340,6 +340,29 @@ describe("project app task reconciler state", () => {
     expect(claimedTree.tasks["pipeline-monitor"].trace?.reconciliation).toBeUndefined();
   });
 
+  it("orders runnable tasks by declared priority before task id", () => {
+    const { config } = fixture();
+    for (const [id, priority] of [
+      ["work/p2", "P2"],
+      ["work/p0-z", "P0"],
+      ["work/p1", "P1"],
+      ["work/p0-a", "P0"],
+    ] as const) {
+      observeProjectAppTaskIntent(config, {
+        intent: { ...intent("achieve"), id, priority },
+        appOwner: "app-owner",
+      });
+    }
+
+    expect(listRunnableProjectAppTaskIds(config)).toEqual([
+      "work/p0-a",
+      "work/p0-z",
+      "work/p1",
+      "categorized-task",
+      "work/p2",
+    ]);
+  });
+
   it("persists the exact Condition observation as the next attempt trigger", () => {
     const { config } = fixture();
     const waitingIntent = {
