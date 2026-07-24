@@ -1044,6 +1044,78 @@ export type ProjectAppTaskExecutionRepairCandidate = {
   sessionId?: string;
 };
 
+export type ProjectAppTaskWorkspaceRepairCandidate = {
+  taskId: string;
+  generation: number;
+  owner: string;
+  workflow: string;
+  previous?: ProjectAppTaskWorkspace;
+};
+
+/** Workspace failures to re-check mechanically when the app/runtime reloads. */
+export function listWorkspacePreparationFailedProjectAppTasks(
+  config: TaskStateConfig,
+  appOwner: string,
+): ProjectAppTaskWorkspaceRepairCandidate[] {
+  return withTaskStateLock(config, () => {
+    const tree = readTaskState(config);
+    return Object.values(tree.resources ?? {})
+      .flatMap((resource): ProjectAppTaskWorkspaceRepairCandidate[] => {
+        if (resource.status.phase !== "attention" || !resource.spec.workflow?.trim()) return [];
+        const attempt = latestTaskAttempt(tree, resource.metadata.id, resource.metadata.generation);
+        if (attempt?.failureReason !== "WorkspacePreparationFailed") return [];
+        const previous = Object.values(tree.attempts ?? {})
+          .filter(
+            (candidate) =>
+              candidate.taskId === resource.metadata.id &&
+              candidate.taskGeneration === resource.metadata.generation &&
+              candidate.workspace?.kind === "task-worktree",
+          )
+          .sort((left, right) => right.startedAt.localeCompare(left.startedAt))[0]?.workspace;
+        const intent = resourceIntent(resource);
+        return [
+          {
+            taskId: resource.metadata.id,
+            generation: resource.metadata.generation,
+            owner: resolvedOwner(tree, intent, appOwner),
+            workflow: intent.workflow!.trim(),
+            ...(previous ? { previous } : {}),
+          },
+        ];
+      })
+      .sort((left, right) => left.taskId.localeCompare(right.taskId));
+  });
+}
+
+/** Release attention after workspace preparation succeeds for this generation. */
+export function releaseWorkspacePreparationFailedProjectAppTask(
+  config: TaskStateConfig,
+  taskId: string,
+  generation: number,
+): boolean {
+  return withTaskStateLock(config, () => {
+    const tree = readTaskState(config);
+    const resource = tree.resources?.[taskId];
+    const task = tree.tasks[taskId];
+    if (!resource || !task || resource.status.phase !== "attention" || resource.metadata.generation !== generation) {
+      return false;
+    }
+    const attempt = latestTaskAttempt(tree, taskId, generation);
+    if (attempt?.failureReason !== "WorkspacePreparationFailed") return false;
+    touchResource(resource, {
+      phase: "pending",
+      observedGeneration: Math.max(0, generation - 1),
+      currentAttemptId: undefined,
+      summary: "Task workspace preparation succeeded after app reload; retrying current task generation",
+      conditionIds: [],
+    });
+    syncTaskProjection(task, resource, attempt.owner);
+    refreshActiveTaskProjection(tree);
+    saveTaskState(config, tree);
+    return true;
+  });
+}
+
 /** Bindings to retry once their owning app reload proves the workflow now resolves. */
 export function listHandlerUnavailableProjectAppTasks(
   config: TaskStateConfig,

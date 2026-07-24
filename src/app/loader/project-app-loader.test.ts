@@ -8,6 +8,7 @@ import { EVENT_ROW_ID, EventBus } from "../event-bus";
 import { closeDb, getDb, upsertSession } from "../../lib/requests";
 import { readSessionMeta, writeSessionMeta } from "../../lib/persistence";
 import { projectRuntimePaths } from "@may-agent/sdk";
+import { prepareProjectTaskWorkspace } from "../project-task-workspace";
 import {
   inferProjectAppOwner,
   installProjectApps,
@@ -384,6 +385,114 @@ describe("project app loader handler result normalization", () => {
 });
 
 describe("project app loader", () => {
+  it("rechecks a failed task workspace on reload and requeues the same generation when it becomes recoverable", async () => {
+    const f = fixture();
+    const projectDir = join(f.projectsRoot, "sample");
+    try {
+      execFileSync("git", ["init", "-b", "dev", projectDir]);
+      execFileSync("git", ["-C", projectDir, "config", "user.email", "test@example.com"]);
+      execFileSync("git", ["-C", projectDir, "config", "user.name", "Test"]);
+      writeFileSync(join(projectDir, "README.md"), "base\n");
+      execFileSync("git", ["-C", projectDir, "add", "README.md"]);
+      execFileSync("git", ["-C", projectDir, "commit", "-m", "base"]);
+      writeFileSync(
+        join(f.appDir, "app.ts"),
+        `export default {
+          id: "sample", version: 1, owner: "sample-owner", description: "sample",
+          workspace: { kind: "git", localPath: "../sample", branch: "dev" },
+          budget: { sessionsPerDay: 10, tokensPerDay: 10000, maxConcurrent: 1 },
+          tasks: {
+            accepts: [{ type: "sample.work", project: "sample" }],
+            resolve() { return { id: "work/workspace-recovery", parentId: "operations", outcome: "resume exact task workspace", acceptance: ["workflow sees the recovered workspace"], mode: "achieve", workflow: "workspace-recovery", outputs: ["handled.txt"] }; }
+          }
+        };\n`,
+      );
+      mkdirSync(join(f.appDir, "agents", "owner", "workflows"), { recursive: true });
+      writeFileSync(
+        join(f.appDir, "agents", "owner", "workflows", "workspace-recovery.ts"),
+        `import { writeFileSync } from "node:fs";
+         import { join } from "node:path";
+         export const name = "workspace-recovery";
+         export const description = "observe recovered task workspace";
+         export const workspace = { kind: "task", baseBranch: "dev" };
+         export async function execute(ctx) {
+           writeFileSync(join(ctx.workspaceDir, "handled.txt"), "handled\\n");
+           return ctx.done("workspace workflow ran", { state: "needs-owner", summary: "workspace workflow ran", evidence: ["handled.txt"], actions: [] });
+         }`,
+      );
+      const bus = new EventBus();
+      const events: any[] = [];
+      bus.subscribe((event) => events.push(event));
+      const installOptions = {
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: manager([]),
+        bus,
+        agentCrons: new Map(),
+      };
+      await installProjectApps(installOptions);
+
+      const prepared = prepareProjectTaskWorkspace({
+        repoDir: projectDir,
+        workspaceRoot: join(f.root, "worktrees", "sample"),
+        taskId: "work/workspace-recovery",
+        generation: 1,
+        baseBranch: "dev",
+        refreshRemote: false,
+      });
+      execFileSync("git", ["-C", prepared.metadata.path, "checkout", "--detach"]);
+
+      bus.emit({ type: "sample.work", project: "sample" } as any);
+      await waitUntil(() => {
+        const state = JSON.parse(readFileSync(join(f.appDir, ".state/tasks/state.json"), "utf8"));
+        return state.resources["work/workspace-recovery"]?.status.phase === "attention";
+      });
+      const failedState = JSON.parse(readFileSync(join(f.appDir, ".state/tasks/state.json"), "utf8"));
+      expect(Object.values(failedState.attempts)).toContainEqual(
+        expect.objectContaining({
+          taskId: "work/workspace-recovery",
+          taskGeneration: 1,
+          failureReason: "WorkspacePreparationFailed",
+        }),
+      );
+
+      const attemptCount = Object.keys(failedState.attempts).length;
+      await installProjectApps(installOptions);
+      const stillRejected = JSON.parse(readFileSync(join(f.appDir, ".state/tasks/state.json"), "utf8"));
+      expect(stillRejected.resources["work/workspace-recovery"].status.phase).toBe("attention");
+      expect(Object.keys(stillRejected.attempts)).toHaveLength(attemptCount);
+
+      const rebaseDir = execFileSync("git", ["-C", prepared.metadata.path, "rev-parse", "--git-path", "rebase-merge"], {
+        encoding: "utf8",
+      }).trim();
+      mkdirSync(rebaseDir, { recursive: true });
+      writeFileSync(join(rebaseDir, "head-name"), `refs/heads/${prepared.metadata.branch}\n`);
+
+      await installProjectApps(installOptions);
+      await waitUntil(() => existsSync(join(prepared.metadata.path, "handled.txt")));
+      const recoveredState = JSON.parse(readFileSync(join(f.appDir, ".state/tasks/state.json"), "utf8"));
+      expect(recoveredState.resources["work/workspace-recovery"].metadata.generation).toBe(1);
+      expect(recoveredState.resources["work/workspace-recovery"].status.phase).toBe("attention");
+      expect(Object.keys(recoveredState.attempts).length).toBeGreaterThan(attemptCount);
+      expect(readFileSync(join(prepared.metadata.path, "handled.txt"), "utf8")).toBe("handled\n");
+      expect(events).toContainEqual(
+        expect.objectContaining({
+          type: "project.task.handler.recovered",
+          data: expect.objectContaining({
+            taskId: "work/workspace-recovery",
+            reason: "task-workspace-preparation-succeeded-after-app-reload",
+          }),
+        }),
+      );
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
   it("keeps an opted-in mutation task open until its committed branch is integrated", async () => {
     const f = fixture();
     const projectDir = join(f.projectsRoot, "sample");

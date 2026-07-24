@@ -11,6 +11,7 @@ import {
   acknowledgeProjectAppTaskRecoveryAttention,
   listHandlerExecutionFailedProjectAppTasks,
   listHandlerUnavailableProjectAppTasks,
+  listWorkspacePreparationFailedProjectAppTasks,
   markProjectAppTaskAttention,
   observeProjectAppTaskIntent,
   listRunnableProjectAppTaskIds,
@@ -24,6 +25,7 @@ import {
   recoverableProjectAppTaskAttempts,
   releaseHandlerExecutionFailedProjectAppTask,
   releaseHandlerUnavailableProjectAppTask,
+  releaseWorkspacePreparationFailedProjectAppTask,
   releaseInterruptedProjectAppTaskAttempt,
   releaseStaleProjectAppTaskResult,
   recordProjectAppTaskAttemptSession,
@@ -289,6 +291,50 @@ describe("project app task reconciler state", () => {
       "work/unavailable",
       "work/waiting",
     ]);
+  });
+
+  it("lists and releases only structured workspace preparation failures for the current generation", () => {
+    const { config } = fixture();
+    const workspaceIntent = {
+      ...intent(),
+      id: "work/workspace-failed",
+      outcome: "Resume a task workspace",
+      workflow: "workspace-worker",
+    };
+    observeProjectAppTaskIntent(config, { intent: workspaceIntent, appOwner: "app-owner" });
+    const claim = claimObservedProjectAppTask(config, {
+      taskId: workspaceIntent.id,
+      appOwner: "app-owner",
+      handler: "workflow:workspace-worker",
+      reason: "task-controller",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected workspace claim");
+    recordProjectAppTaskAttemptWorkspace(config, claim, {
+      kind: "task-worktree",
+      path: "/tmp/workspace-failed",
+      baseRef: "origin/dev",
+      baseCommit: "base",
+      branch: "task/workspace-failed",
+      headCommit: "head",
+      disposition: "active",
+    });
+    markProjectAppTaskAttention(config, claim, {
+      summary: "workspace preparation failed",
+      reason: "WorkspacePreparationFailed",
+    });
+
+    expect(listWorkspacePreparationFailedProjectAppTasks(config, "app-owner")).toEqual([
+      {
+        taskId: "work/workspace-failed",
+        generation: 1,
+        owner: "branch-owner",
+        workflow: "workspace-worker",
+        previous: expect.objectContaining({ path: "/tmp/workspace-failed" }),
+      },
+    ]);
+    expect(releaseWorkspacePreparationFailedProjectAppTask(config, workspaceIntent.id, 2)).toBe(false);
+    expect(releaseWorkspacePreparationFailedProjectAppTask(config, workspaceIntent.id, 1)).toBe(true);
+    expect(readTaskState(config).resources?.[workspaceIntent.id].status.phase).toBe("pending");
   });
 
   it("separates desired-state observation from attempt claiming", () => {
