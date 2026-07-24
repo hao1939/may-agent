@@ -496,9 +496,12 @@ chosen when capacity becomes available. Releasing one shared slot grants one
 app another choice from its current queue; it does not reserve that slot for an
 older task key selected while capacity was unavailable.
 
-Front promotion is an urgent FIFO lane, not a LIFO stack. Targeted wakes and
-newly admitted dependent work run before ordinary queued work, while later
-front promotions do not continually overtake an earlier promoted key.
+Front promotion is an urgent FIFO lane, not a LIFO stack. Explicit targeted
+wakes run before ordinary queued work, while reconciler-created child and
+dependent work joins the ordinary FIFO lane so it cannot displace an older
+recovered task. After a bounded burst of urgent work, the controller chooses
+the oldest ordinary key; a continuing stream of targeted wakes therefore
+cannot starve durable runnable work.
 
 On pause or shutdown, the controller stops claiming new keys, allows a bounded
 drain period, and records unfinished attempts as interrupted before exit when
