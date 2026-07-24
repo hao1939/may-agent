@@ -1966,14 +1966,10 @@ function recoverInterruptedProjectAppTasks(
       maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
     });
     for (const recovery of recoverableProjectAppTaskAttempts(config)) {
-      if (recovery.trigger) {
-        if (controller && !descriptor.reconciliationPaused) controller.enqueue(recovery.taskId);
-        continue;
-      }
       const released = releaseInterruptedProjectAppTaskAttempt(
         config,
         recovery.taskId,
-        `Interrupted reconciliation ${recovery.taskId} cannot resume because its previous runtime did not persist the trigger packet`,
+        `Interrupted reconciliation ${recovery.taskId} belonged to a previous runtime`,
       );
       for (const sessionId of released.sessionIds) {
         interruptSupersededOwnerSession(
@@ -1981,6 +1977,9 @@ function recoverInterruptedProjectAppTasks(
           sessionId,
           `Recovered task ${recovery.taskId} interrupted an orphaned owner session from a previous runtime`,
         );
+      }
+      if (released.released && controller && !descriptor.reconciliationPaused) {
+        controller.enqueue(recovery.taskId);
       }
     }
     const missingAttemptRepairs = repairRunningProjectAppTasksWithoutAttempt(config);

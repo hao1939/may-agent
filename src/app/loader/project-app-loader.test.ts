@@ -2503,7 +2503,7 @@ describe("project app loader", () => {
         state: "interrupted",
         failureReason: "previous-runtime-attempt-requeued",
         summary:
-          "Interrupted reconciliation work/orphan cannot resume because its previous runtime did not persist the trigger packet; retrying from current task evidence",
+          "Interrupted reconciliation work/orphan belonged to a previous runtime; retrying from current task evidence",
       });
       expect(state.resources?.["work/orphan"]).toBeUndefined();
       expect(tree.tasks["work/orphan"]).toBeUndefined();
