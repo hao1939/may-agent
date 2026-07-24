@@ -8,9 +8,11 @@ import { prepareDirectAgentExecution, resolveDirectToolPolicy, runDirectAgent } 
 describe("direct agent tool policy", () => {
   test("derives effective tools from configured tools and explicit denials in stable order", () => {
     expect(
-      resolveDirectToolPolicy("may", ["coding", "message", "finish"], [
-        { name: "message", reason: "isolated benchmark must not notify users" },
-      ]),
+      resolveDirectToolPolicy(
+        "may",
+        ["coding", "message", "finish"],
+        [{ name: "message", reason: "isolated benchmark must not notify users" }],
+      ),
     ).toEqual({
       agent: "may",
       configuredTools: ["coding", "message", "finish"],
@@ -20,14 +22,18 @@ describe("direct agent tool policy", () => {
   });
 
   test("rejects unknown, duplicate, and unexplained denials", () => {
+    expect(() => resolveDirectToolPolicy("may", ["coding"], [{ name: "message", reason: "not configured" }])).toThrow(
+      "unconfigured tool",
+    );
     expect(() =>
-      resolveDirectToolPolicy("may", ["coding"], [{ name: "message", reason: "not configured" }]),
-    ).toThrow("unconfigured tool");
-    expect(() =>
-      resolveDirectToolPolicy("may", ["coding"], [
-        { name: "coding", reason: "first" },
-        { name: "coding", reason: "second" },
-      ]),
+      resolveDirectToolPolicy(
+        "may",
+        ["coding"],
+        [
+          { name: "coding", reason: "first" },
+          { name: "coding", reason: "second" },
+        ],
+      ),
     ).toThrow("more than once");
     expect(() => resolveDirectToolPolicy("may", ["coding"], [{ name: "coding", reason: " " }])).toThrow(
       "requires a reason",
@@ -125,6 +131,62 @@ describe("direct agent tool policy", () => {
       expect(parityView(direct.prepared)).toEqual(parityView(hosted));
       expect(direct.prepared.systemPrompt).toContain(`- Current time: ${timestamp}`);
       expect(direct.prepared.definition.contextFiles).toEqual([join(agentDir, "context.md")]);
+    } finally {
+      direct?.cleanup();
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("loads identity and skills from the readable isolated agent copy", async () => {
+    const root = await mkdtemp(join(tmpdir(), "may-direct-visible-agent-"));
+    const sourceAgentDir = join(root, "agents", "example");
+    const workRoot = join(root, "work");
+    const visibleAgentDir = join(workRoot, "agents", "example");
+    await mkdir(sourceAgentDir, { recursive: true });
+    await mkdir(join(visibleAgentDir, "skills", "proof-first"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(sourceAgentDir, "agent.json"),
+      JSON.stringify({
+        name: "example",
+        description: "example",
+        domain: "test",
+        model: "test",
+        tools: ["read-only"],
+      }),
+    );
+    await writeFile(join(visibleAgentDir, "AGENTS.md"), "Visible identity.");
+    await writeFile(
+      join(visibleAgentDir, "skills", "proof-first", "SKILL.md"),
+      [
+        "---",
+        "name: proof-first",
+        "description: Use for broad changes that need proof before rollout.",
+        "---",
+        "Run the bounded proof.",
+      ].join("\n"),
+    );
+
+    let direct: Awaited<ReturnType<typeof prepareDirectAgentExecution>> | undefined;
+    try {
+      direct = await prepareDirectAgentExecution({
+        agentName: "example",
+        task: "Review a broad rollout",
+        projectRoot: root,
+        workRoot,
+        agentsRoot: join(root, "agents"),
+        globalAgentsRoot: join(root, "agents"),
+        visibleAgentDir,
+        sharedRoot: join(root, "shared"),
+        outputRoot: join(root, "output"),
+        models: { test: { id: "test-model" } as any },
+      });
+
+      expect(direct.prepared.definition.agentDir).toBe(visibleAgentDir);
+      expect(direct.prepared.systemPrompt).toContain("Visible identity.");
+      expect(direct.prepared.systemPrompt).toContain("proof-first");
+      expect(direct.prepared.systemPrompt).toContain(join(visibleAgentDir, "skills", "proof-first", "SKILL.md"));
     } finally {
       direct?.cleanup();
       await rm(root, { recursive: true, force: true });

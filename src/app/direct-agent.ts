@@ -40,6 +40,12 @@ export type DirectAgentRunOptions = {
   sharedRoot: string;
   projectsRoot?: string;
   globalAgentsRoot?: string;
+  /**
+   * Agent files exposed inside an isolated execution root. Configuration and
+   * local tools still load from agentsRoot, while prompt identity and skills
+   * resolve from this readable copy.
+   */
+  visibleAgentDir?: string;
   outputRoot: string;
   models: Record<string, ModelWithApiKey>;
   toolDenials?: ToolDenial[];
@@ -178,9 +184,10 @@ export async function prepareDirectAgentExecution(options: DirectAgentRunOptions
   if (!model) throw new Error(`Agent ${config.name} uses unknown model ${config.model}`);
   const executionManifest = resolveDirectToolPolicy(config.name, config.tools, options.toolDenials);
   const { tools, cleanup } = await buildDirectTools(config, source, options, executionManifest.effectiveTools);
+  const definitionSource = options.visibleAgentDir ? { ...source, dir: resolve(options.visibleAgentDir) } : source;
   const definition = await buildAgentDefinition({
     config,
-    source,
+    source: definitionSource,
     model,
     tools,
     projectRoot: options.workRoot,
