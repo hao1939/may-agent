@@ -900,6 +900,8 @@ describe("single agent-improvement loop", () => {
       unknown
     >;
     expect(result.state).toBe("needs-owner");
+    expect(result).not.toHaveProperty("actions");
+    expect(result).not.toHaveProperty("conditions");
     expect(verifyCount).toBe(0);
     expect(
       existsSync(

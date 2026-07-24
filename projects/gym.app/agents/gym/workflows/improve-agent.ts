@@ -1507,7 +1507,6 @@ async function runCandidateIteration(
       state: "needs-owner",
       summary,
       evidence: [candidateCheckpointPath, durableCandidate],
-      actions: [],
     });
   }
 
@@ -1746,12 +1745,19 @@ async function runCandidateIteration(
     resultPath,
   });
   if (approval) dispatchApproval(ctx, approval);
+  if (!approval) {
+    return ctx.done(summary, {
+      state: "needs-owner",
+      summary,
+      evidence: boundedEvidence(evidence),
+    });
+  }
   return ctx.done(summary, {
-    state: workflowState,
+    state: "waiting",
     summary,
     evidence: boundedEvidence(evidence),
     actions: [],
-    ...(approval ? { conditions: [approval.condition] } : {}),
+    conditions: [approval.condition],
   });
 }
 
@@ -1775,7 +1781,6 @@ async function runCandidate(
         state: previous.state,
         summary: previous.summary,
         evidence: previous.evidence,
-        actions: [],
       });
     }
     const response = approvalDecision(ctx.task, previous.approval);
@@ -1829,7 +1834,6 @@ async function runCandidate(
           state: "needs-owner",
           summary,
           evidence: [resultPath, artifactPath],
-          actions: [],
         });
       }
       recordOperatingMetrics(ctx, {
@@ -1878,7 +1882,6 @@ async function runCandidate(
         state: "needs-owner",
         summary,
         evidence: [...previous.evidence, decisionPath],
-        actions: [],
       });
     }
     plan = {
