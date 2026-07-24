@@ -483,6 +483,13 @@ agent sessions. One app must not monopolize all runtime capacity. Pressure may
 delay execution, but it must not discard canonical task state or fabricate
 completion.
 
+Shared capacity is acquired before an app removes a task key from its local
+queue. A capacity-starved app keeps at most one shared-capacity waiter, so its
+local running slots remain truthful and a later front promotion can still be
+chosen when capacity becomes available. Releasing one shared slot grants one
+app another choice from its current queue; it does not reserve that slot for an
+older task key selected while capacity was unavailable.
+
 On pause or shutdown, the controller stops claiming new keys, allows a bounded
 drain period, and records unfinished attempts as interrupted before exit when
 possible. Restart recovery rereads canonical state and requeues the same task
