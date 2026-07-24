@@ -7,7 +7,7 @@ export interface DbMaintenanceResult {
 
 const DAY_MS = 86_400_000;
 const ORPHAN_ACTIONABLE_MS = 4 * 60 * 60 * 1000;
-const DEFAULT_BATCH_SIZE = 500;
+const DEFAULT_BATCH_SIZE = 2000;
 
 function changes(result: unknown): number {
   return Number((result as { changes?: number } | null)?.changes ?? 0);

@@ -236,6 +236,22 @@ function isRetryableTaskTreeReadError(error: unknown): boolean {
   return error.message.includes("ENOENT") || error.message.includes("EAGAIN");
 }
 
+function taskStateLockOwnerIsDead(lockPath: string): boolean {
+  try {
+    const owner = JSON.parse(readFileSync(join(lockPath, "owner.json"), "utf8")) as { pid?: unknown };
+    const pid = Number(owner.pid);
+    if (!Number.isInteger(pid) || pid <= 0 || pid === process.pid) return false;
+    try {
+      process.kill(pid, 0);
+      return false;
+    } catch (error) {
+      return (error as NodeJS.ErrnoException).code === "ESRCH";
+    }
+  } catch {
+    return false;
+  }
+}
+
 export function withTaskStateLock<T>(config: TaskStateConfig, operation: () => T): T {
   const lockPath = `${config.statePath}.lock`;
   const waitMs = timeoutFromAnyEnv(["PROJECT_TREE_LOCK_WAIT_MS", "AKS_RP_E2E_TREE_LOCK_WAIT_MS"], 30_000);
@@ -244,10 +260,14 @@ export function withTaskStateLock<T>(config: TaskStateConfig, operation: () => T
   while (true) {
     try {
       mkdirSync(lockPath);
+      writeFileSync(
+        join(lockPath, "owner.json"),
+        `${JSON.stringify({ pid: process.pid, acquiredAt: new Date().toISOString() })}\n`,
+      );
       break;
     } catch {
       try {
-        if (Date.now() - statSync(lockPath).mtimeMs > staleMs) {
+        if (taskStateLockOwnerIsDead(lockPath) || Date.now() - statSync(lockPath).mtimeMs > staleMs) {
           rmSync(lockPath, { recursive: true, force: true });
           continue;
         }
@@ -469,9 +489,7 @@ export function migrateTaskState(
   return withTaskStateLock(config, () => {
     const revision = storedTaskStateRevision(config);
     if (input.expectedRevision && revision !== input.expectedRevision) {
-      throw new Error(
-        `Task state changed after review: expected ${input.expectedRevision}, found ${revision}`,
-      );
+      throw new Error(`Task state changed after review: expected ${input.expectedRevision}, found ${revision}`);
     }
     const current = readTaskState(config);
     if (normalizedLifecycle(current.project_lifecycle) !== "paused") {
