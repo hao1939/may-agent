@@ -5,6 +5,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { prepareAgentExecution } from "./agent-execution.js";
+import { createFinishTool } from "./tools/lifecycle.js";
 
 const roots: string[] = [];
 
@@ -127,5 +128,40 @@ describe("shared agent execution preparation", () => {
     const result = await prepared.tools[0]!.execute("call-1", { path: "proof.txt" } as never);
     expect(JSON.stringify(result)).toContain("task workspace");
     expect(prepared.definition.projectRoot).toBe(executionRoot);
+  });
+
+  test("rebases finish deliverable validation onto the workflow execution root", async () => {
+    const registeredRoot = mkdtempSync(join(tmpdir(), "agent-finish-registered-root-"));
+    const executionRoot = mkdtempSync(join(tmpdir(), "agent-finish-execution-root-"));
+    roots.push(registeredRoot, executionRoot);
+    writeFileSync(join(executionRoot, "proof.txt"), "task workspace\n");
+
+    const prepared = prepareAgentExecution({
+      definition: {
+        name: "sample",
+        description: "sample",
+        domain: "tests",
+        systemPrompt: "identity",
+        projectRoot: registeredRoot,
+        model: { contextWindow: 10_000 } as any,
+        tools: [createFinishTool({ agentName: "sample", projectRoot: registeredRoot })],
+      },
+      projectRoot: registeredRoot,
+      executionRoot,
+      sessionId: "isolated-finish-1",
+      task: "finish with proof",
+      requireFinish: true,
+      createFinish: () => createFinishTool({ agentName: "sample", projectRoot: executionRoot }),
+    });
+
+    const finish = prepared.tools.find((candidate) => candidate.name === "finish");
+    const result = await finish!.execute("call-1", {
+      status: "success",
+      summary: "verified worktree evidence",
+      deliverables: [{ path: "proof.txt", description: "worktree proof" }],
+      verification_evidence: ["read(proof.txt) showed task workspace"],
+    } as never);
+    expect(JSON.stringify(result)).not.toContain("Deliverables not found on disk");
+    expect(JSON.stringify(result)).toContain("SUCCESS");
   });
 });
