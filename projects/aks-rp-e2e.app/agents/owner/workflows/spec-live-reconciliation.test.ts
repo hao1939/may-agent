@@ -3,6 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  askAgent,
   agentConditionProblem,
   decisionCorrectionPrompt,
   integrationMode,
@@ -27,6 +28,40 @@ import {
 } from "./lib/scenario-normalization-invariant.js";
 
 describe("spec-live-reconciliation workflow", () => {
+  test("retries an agent runtime failure inside the same workflow", async () => {
+    const prompts: string[] = [];
+    const decisions = [
+      { status: "error" },
+      {
+        status: "done",
+        structuredResult: {
+          decision: "accepted-pass",
+          summary: "exact run passed",
+          evidence: ["pipeline-run:42"],
+        },
+      },
+    ];
+    const ctx = {
+      agent: "aks-explorer",
+      runAgent: async (_agent: string, prompt: string) => {
+        prompts.push(prompt);
+        return decisions.shift();
+      },
+    };
+
+    const result = await askAgent(
+      ctx as never,
+      "Review terminal run 42 from the task worktree.",
+    );
+
+    expect(result?.decision).toBe("accepted-pass");
+    expect(prompts).toHaveLength(2);
+    expect(prompts[1]).toContain(
+      "ended before producing a structured judgment",
+    );
+    expect(prompts[1]).toContain("same bounded task");
+  });
+
   test("isolates terminal evidence by exact pipeline run", () => {
     const contextDir = "/tmp/task-generation";
     expect(terminalRunContextDir(contextDir, "173647479")).toBe(

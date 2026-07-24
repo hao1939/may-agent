@@ -771,7 +771,7 @@ export function decisionCorrectionPrompt(input: {
   ].join("\n\n");
 }
 
-async function askAgent(
+export async function askAgent(
   ctx: WorkflowContext,
   prompt: string,
   options: {
@@ -788,6 +788,16 @@ async function askAgent(
       schema: decisionSchema,
     });
     if (result.status === "error" || result.status === "interrupted") {
+      lastProblem = `agent invocation ${result.status} before structured judgment`;
+      if (attempt < 2) {
+        nextPrompt = [
+          prompt,
+          "The immediately preceding agent invocation ended before producing a structured judgment.",
+          "Continue the same bounded task from the current task worktree and hot evidence. Inspect any work already left there before deciding or editing; do not treat the runtime interruption as a domain blocker or ownership boundary.",
+          conditionInstruction,
+        ].join("\n\n");
+        continue;
+      }
       return null;
     }
     const decision = result.structuredResult as AgentDecision;

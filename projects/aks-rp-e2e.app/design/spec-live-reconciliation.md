@@ -153,6 +153,11 @@ not a scenario-normalization escape path.
   this is not a result-shape-only retry that forbids the source change now
   proven necessary. It does not close the task, create a successor, or leave a
   routine correction in the owner-attention queue.
+- If an agent invocation ends before producing a structured judgment, the
+  workflow retries that invocation once with the same task worktree and hot
+  evidence. An empty or interrupted invocation is a runtime failure, not an
+  agent decision and not an ownership-boundary handoff. Only a returned
+  `needs-owner` judgment may enter the accountable-owner path.
 - An interrupted dirty task worktree is given back to the owner agent to finish,
   validate, and commit or to remove only proven task-generated residue. Ambiguous
   ownership requires owner review; it is never silently discarded.
