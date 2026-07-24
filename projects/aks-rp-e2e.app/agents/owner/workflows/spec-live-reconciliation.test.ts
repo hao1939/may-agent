@@ -18,6 +18,7 @@ import {
   scenarioNormalizationWaitProblem,
   sourceOnlyDecisionProblem,
   sourceOnlyReviewInstruction,
+  terminalRunContextDir,
 } from "./spec-live-reconciliation.js";
 import {
   isRunnableScenarioNormalization,
@@ -26,6 +27,16 @@ import {
 } from "./lib/scenario-normalization-invariant.js";
 
 describe("spec-live-reconciliation workflow", () => {
+  test("isolates terminal evidence by exact pipeline run", () => {
+    const contextDir = "/tmp/task-generation";
+    expect(terminalRunContextDir(contextDir, "173647479")).toBe(
+      "/tmp/task-generation/runs/173647479",
+    );
+    const unusual = terminalRunContextDir(contextDir, "run/with spaces");
+    expect(unusual).toStartWith("/tmp/task-generation/runs/run-with-spaces-");
+    expect(unusual).not.toContain("/with spaces");
+  });
+
   test("selects every active spec for one runnable normalization carrier", () => {
     const input = {
       loopId: "scenario-normalization",
@@ -137,7 +148,8 @@ describe("spec-live-reconciliation workflow", () => {
 
   test("keeps full terminal context when a domain judgment needs correction", () => {
     const prompt = decisionCorrectionPrompt({
-      originalPrompt: "Review terminal run 42 and repair the carrier when needed.",
+      originalPrompt:
+        "Review terminal run 42 and repair the carrier when needed.",
       decision: {
         decision: "accepted-nonlive",
         summary: "skip it",

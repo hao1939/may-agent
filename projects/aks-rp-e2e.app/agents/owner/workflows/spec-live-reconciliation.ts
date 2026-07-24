@@ -512,6 +512,14 @@ function currentRunPath(contextDir: string): string {
   return join(contextDir, "current-run.json");
 }
 
+export function terminalRunContextDir(
+  contextDir: string,
+  runId: string,
+): string {
+  const runPart = /^\d+$/.test(runId) ? runId : safePart(runId);
+  return join(contextDir, "runs", runPart);
+}
+
 function readRunReceipt(contextDir: string): RunReceipt | null {
   const path = currentRunPath(contextDir);
   if (!existsSync(path)) return null;
@@ -1564,13 +1572,15 @@ export async function reconcileSpecLive(
         workspaceDir,
         normalizationInput,
       );
+      const runContextDir = terminalRunContextDir(contextDir, runId);
+      mkdirSync(runContextDir, { recursive: true });
       const decision = await askAgent(
         ctx,
         [
           `Review terminal Azure DevOps run ${runId} for ${specId}.`,
           `The exact source is ${sourceBranch}@${sourceCommit}; provider result is ${runResult}.`,
           `The exact live target is ${liveTarget}${standaloneBuildId ? ` with standalone_build_id=${standaloneBuildId}` : ""}.`,
-          `Use ${contextDir} for downloaded artifacts and diagnosis. Do not write runtime artifacts into tracked source paths.`,
+          `Use ${runContextDir} exclusively for downloaded artifacts and diagnosis for this run. Do not reuse task-root or earlier-run evidence, and do not write runtime artifacts into tracked source paths.`,
           "Inspect run metadata, plan inputs, per-spec result, live resource identity, assertions, and cleanup proof. The aggregate provider result alone is not a spec verdict.",
           "Return accepted-pass only for exact same-spec live proof on this source commit.",
           ...(normalizationInput

@@ -64,8 +64,11 @@ derives the next step from the task branch, exact-run metadata, PR state, and
   `staging`
 - Integration target: direct push to `dev` by convention
 - PR target: `main` when a workflow explicitly requests main promotion
-- Runtime artifacts: `workspace/tasks/<task-generation>/` in the canonical
-  domain workspace
+- Runtime control artifacts: `workspace/tasks/<task-generation>/` in the
+  canonical domain workspace
+- Terminal run evidence: `workspace/tasks/<task-generation>/runs/<runId>/`;
+  evidence for one ADO run must never share a download directory with another
+  run
 - Source artifacts: only committed files on the task branch
 
 The workflow, not the agent, pushes the branch, discovers or dispatches runs,
@@ -126,6 +129,9 @@ not a scenario-normalization escape path.
 
 - Run metadata contains task id, generation, spec id, branch, source commit,
   pipeline target, optional standalone build id, and optional retry parent.
+- Each terminal review receives a run-specific evidence directory keyed by the
+  exact ADO run id. A later review cannot infer checkout lineage, results, or
+  cleanup from files downloaded for an earlier run of the same task.
 - A previously dispatched exact run may be preserved as
   `input.priorVerificationRunId`. The workflow validates its spec, source,
   target, and standalone build, then waits for it before dispatching anything
