@@ -1904,6 +1904,79 @@ describe("project app loader", () => {
     }
   });
 
+  it("runs a same-task owner handoff before unrelated queued backlog", async () => {
+    const f = fixture();
+    const ownerCalls: string[] = [];
+    try {
+      writeApp(f.appDir);
+      writeFileSync(
+        join(f.appDir, "agents", "owner", "workflows", "blocker.ts"),
+        `export const name = "blocker";
+         export const description = "hold one worker slot";
+         export async function execute(ctx) {
+           await new Promise((resolve) => setTimeout(resolve, 300));
+           return ctx.done("blocker done", { state: "converged", summary: "blocker done", evidence: ["proof"], actions: [] });
+         }`,
+      );
+      writeFileSync(
+        join(f.appDir, "agents", "owner", "workflows", "owner-needed.ts"),
+        `export const name = "owner-needed";
+         export const description = "request owner judgment after queued work exists";
+         export async function execute(ctx) {
+           await new Promise((resolve) => setTimeout(resolve, 50));
+           return ctx.done("owner judgment required", {
+             state: "needs-owner",
+             summary: "workflow needs owner judgment",
+             evidence: ["workflow classified the exception"],
+           });
+         }`,
+      );
+      const bus = new EventBus();
+      const events: any[] = [];
+      bus.subscribe((event) => events.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: manager(ownerCalls),
+        bus,
+        agentCrons: new Map(),
+      });
+
+      bus.emit({ type: "sample.work", project: "sample", itemId: "blocker", workflow: "blocker" } as any);
+      bus.emit({
+        type: "sample.work",
+        project: "sample",
+        itemId: "owner-needed",
+        workflow: "owner-needed",
+      } as any);
+      bus.emit({ type: "sample.work", project: "sample", itemId: "older" } as any);
+
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/older" &&
+            event.data?.disposition === "converged",
+        ),
+      );
+      const starts = events.filter((event) => event.type === "project.task.reconcile.started");
+      const ownerHandoffIndex = starts.findIndex(
+        (event) => event.data?.taskId === "work/owner-needed" && event.data?.handler === "owner:sample-owner",
+      );
+      const olderIndex = starts.findIndex(
+        (event) => event.data?.taskId === "work/older" && event.data?.handler === "workflow:worker",
+      );
+      expect(ownerHandoffIndex).toBeGreaterThanOrEqual(0);
+      expect(olderIndex).toBeGreaterThan(ownerHandoffIndex);
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
   it("reconciles two maintain tasks through the same workflow independently", async () => {
     const f = fixture();
     try {
