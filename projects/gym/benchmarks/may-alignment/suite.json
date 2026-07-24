@@ -13,8 +13,8 @@
     "may-align-design-critical-review",
     "may-align-concise-status",
     "may-align-concise-status-explicit",
-    "may-align-clarify-destructive-ambiguity",
-    "may-align-clarify-specified-cleanup",
+    "may-align-infer-safe-cleanup",
+    "may-align-remove-specified-cleanup",
     "may-align-learn-new-guidance",
     "may-align-proof-before-adopt-explicit"
   ]

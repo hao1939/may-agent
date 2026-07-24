@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "id": "initiative-and-approval",
+  "version": 1,
+  "status": "pilot",
+  "title": "Act on bounded evidence; wait only at consequential mutation",
+  "lesson": "lesson.md",
+  "practice": "practice.md",
+  "evidence": "evidence.jsonl",
+  "competencies": [
+    "authority.act-vs-approve",
+    "judgment.infer-bounded-intent",
+    "evidence.propose-after-proof"
+  ],
+  "sources": [
+    {
+      "path": "../may-agent.app/docs/1-principles/core-principles.md",
+      "section": "Evidence before systems"
+    },
+    {
+      "path": "../may-agent.app/docs/1-principles/work-model.md",
+      "section": "Choosing the mechanism"
+    },
+    {
+      "path": "../may-agent.app/docs/2a-design/system-model.md",
+      "section": "Execution boundaries"
+    }
+  ],
+  "benchmark": "may-alignment",
+  "release_benchmark": "may-learning-transfer",
+  "practice_scenarios": [],
+  "development_scenarios": [
+    "may-align-proof-before-adopt",
+    "may-align-local-guidance-wins",
+    "may-align-infer-safe-cleanup",
+    "may-align-remove-specified-cleanup"
+  ],
+  "release_scenarios": [
+    "may-learn-proof-before-config-rollout",
+    "may-learn-infer-bounded-maintenance"
+  ]
+}

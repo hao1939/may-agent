@@ -1,0 +1,37 @@
+{
+  "human_answer": "Ask Arc to review the overall design and Tech Lead to review build and migration safety. Have them review it separately, combine what they find, review the result again, and test the migration on a small prototype before coding starts.",
+  "exact": {
+    "needs_clarification": false
+  },
+  "contains_groups": {
+    "understood_intent": [
+      ["implementation-ready", "ready to implement", "safe to implement"],
+      ["risk", "mistake", "safe", "coherence"]
+    ],
+    "mode": [["review", "design"]],
+    "priority": [["architecture", "retention", "risk"]],
+    "next_action": [
+      ["synthesize", "combine", "integrate findings"],
+      ["second", "another", "follow-up"],
+      ["prototype", "migration rehearsal", "rehearsal"]
+    ],
+    "constraints": [
+      ["implementation", "coding", "deploy"],
+      ["review", "critical"],
+      ["evidence", "prototype", "rehearsal"]
+    ]
+  },
+  "empty": ["preference_updates"],
+  "excludes_all": {
+    "next_action": ["start implementation", "deploy", "code now"]
+  },
+  "delegations": {
+    "min": 2,
+    "max": 2,
+    "allowed_agents": ["arc", "tech-lead"],
+    "required_agents": ["arc", "tech-lead"],
+    "async_required": true
+  },
+  "response_target_words": 70,
+  "response_hard_max_words": 90
+}

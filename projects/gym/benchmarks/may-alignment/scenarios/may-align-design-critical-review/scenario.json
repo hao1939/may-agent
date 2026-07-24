@@ -1,0 +1,10 @@
+{
+  "name": "may-align-design-critical-review",
+  "description": "May obtains plural peer review and a critical pass before implementation of a shared design.",
+  "categories": ["deputy-alignment", "preference-application"],
+  "tags": ["may-alignment", "preference", "design-review"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false
+}

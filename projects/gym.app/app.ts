@@ -7,9 +7,11 @@ import {
   type ProjectAppEvent,
   type ProjectAppTaskIntent,
 } from "@may-agent/sdk";
+import mayCanary from "../gym/benchmarks/may-alignment/canary.json";
 
 const projectId = "gym";
 const actionInputSchema = Type.Object({}, { additionalProperties: true });
+const mayCanaryScenarios = mayCanary.scenarios;
 
 function params(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -24,7 +26,7 @@ function regressionRequested(input: unknown = {}): ProjectAppEvent {
     params: {
       benchmark: "may-alignment",
       agent: "may",
-      trials: 3,
+      trials: mayCanary.development_trials,
       ...params(input),
     },
   };
@@ -35,6 +37,20 @@ function incidentDetected(input: unknown = {}): ProjectAppEvent {
     type: "gym.incident.detected",
     project: projectId,
     params: params(input),
+  };
+}
+
+function improvementRequested(input: unknown = {}): ProjectAppEvent {
+  return {
+    type: "gym.improvement.requested",
+    project: projectId,
+    params: {
+      agent: "may",
+      benchmark: "may-alignment",
+      scenarios: [...mayCanaryScenarios],
+      trials: 3,
+      ...params(input),
+    },
   };
 }
 
@@ -57,6 +73,21 @@ function isMayFailure(event: Record<string, unknown>): boolean {
       "blocked",
     ].includes(verdict)
   );
+}
+
+function isMayEvaluation(event: Record<string, unknown>): boolean {
+  return String(eventDetails(event).agent ?? "").toLowerCase() === "may";
+}
+
+function learningEvidenceObserved(
+  polarity: "positive" | "negative",
+  evaluation: Record<string, unknown>,
+): ProjectAppEvent {
+  return {
+    type: "gym.learning.evidence.observed",
+    project: projectId,
+    params: { polarity, evaluation },
+  };
 }
 
 function durableEventId(event: Record<string, unknown>): number | null {
@@ -95,7 +126,6 @@ export function resolveGymTask(
   if (!eventId) return null;
 
   switch (event.type) {
-    case "project.comment.created":
     case "project.owner.requested":
       return {
         id: "runtime/owner-review",
@@ -107,6 +137,48 @@ export function resolveGymTask(
         ],
         mode: "maintain",
         owner: "gym",
+        priority: "P1",
+      };
+    case "project.comment.created":
+    case "gym.improvement.requested":
+    case "agent.revision.changed":
+      return {
+        id: "improve/may",
+        parentId: "regression-assurance",
+        outcome:
+          "Keep May on the best behavior supported by approved Gym evidence and bring one verified improvement proposal to Hao when a better candidate is ready.",
+        acceptance: [
+          "The selected benchmark truth is human-approved before agent failures are acted on.",
+          "Every non-pass is assigned to May, benchmark truth, scoring, runtime, or non-actionable noise.",
+          "An exact candidate passes targeted and full approved verification without regression before promotion is requested.",
+          "Production May changes only after approval of the exact fingerprinted artifact.",
+        ],
+        mode: "maintain",
+        workflow: "improve-agent",
+        input: {
+          agent: "may",
+          benchmark: "may-alignment",
+          reason:
+            event.type === "agent.revision.changed"
+              ? "may-revision-confirmation"
+              : event.type === "project.comment.created"
+                ? "project-intent"
+                : String(details.reason ?? "manual"),
+          ...selected(details, [
+            "revision",
+            "artifactFingerprint",
+            "approvalId",
+            "scenario",
+            "scenarios",
+            "trials",
+          ]),
+        },
+        outputs: [
+          ".state/assessments",
+          ".state/candidates",
+          ".state/metrics",
+          "../gym/.state/benchmarks",
+        ],
         priority: "P1",
       };
     case "gym.incident.detected": {
@@ -142,6 +214,41 @@ export function resolveGymTask(
         },
         outputs: [".state/incidents"],
         priority: "P1",
+      };
+    }
+    case "gym.learning.evidence.observed": {
+      const evaluation = params(details.evaluation);
+      const evidenceIdentity =
+        evaluation.reviewSessionId ??
+        evaluation.sessionId ??
+        details.sessionId ??
+        `event-${eventId}`;
+      return {
+        id: taskIdentity("learning-evidence", evidenceIdentity),
+        parentId: "incident-learning",
+        outcome:
+          "Preserve one reviewed May session as positive or negative learning evidence without starting an expensive improvement run.",
+        acceptance: [
+          "The observation is recorded once with its polarity and source evaluation evidence.",
+        ],
+        mode: "achieve",
+        workflow: "learning-evidence-intake",
+        input: {
+          kind: "learning-evidence",
+          polarity: String(details.polarity ?? "unknown"),
+          ...selected(evaluation, [
+            "agent",
+            "artifactFound",
+            "artifactPath",
+            "lane",
+            "reviewedVerdict",
+            "reviewSessionId",
+            "sessionId",
+            "verdict",
+          ]),
+        },
+        outputs: [".state/learning/evidence"],
+        priority: "P2",
       };
     }
     case "gym.regression.requested":
@@ -203,15 +310,23 @@ export async function routeGymEvent(
   event: Record<string, unknown>,
 ): Promise<unknown> {
   if (event.type === "evaluation.reviewed") {
-    if (!isMayFailure(event)) {
-      return ctx.noop("evaluation is not an actionable May failure");
+    if (!isMayEvaluation(event)) {
+      return ctx.noop("evaluation is not for May");
     }
-    return ctx.emit(
-      incidentDetected({
-        reason: "may-evaluation-failure",
-        evaluation: eventDetails(event),
-      }),
+    const details = eventDetails(event);
+    const failure = isMayFailure(event);
+    ctx.emit(
+      learningEvidenceObserved(failure ? "negative" : "positive", details),
     );
+    if (failure) {
+      return ctx.emit(
+        incidentDetected({
+          reason: "may-evaluation-failure",
+          evaluation: details,
+        }),
+      );
+    }
+    return { recorded: "positive-learning-evidence" };
   }
 
   return undefined;
@@ -229,19 +344,19 @@ export default defineProjectApp({
   },
 
   budget: {
-    sessionsPerDay: 20,
-    tokensPerDay: 500_000,
-    maxConcurrent: 2,
+    sessionsPerDay: 6,
+    tokensPerDay: 250_000,
+    maxConcurrent: 1,
   },
 
   schedules: [
     {
-      id: "may-alignment-nightly",
-      enabled: true,
-      intervalMs: 86_400_000,
+      id: "may-improvement-weekly",
+      enabled: mayCanary.automatic_schedule_enabled,
+      intervalMs: 604_800_000,
       emits: [
-        regressionRequested({
-          reason: "nightly",
+        improvementRequested({
+          reason: "weekly",
           trials: 3,
         }),
       ],
@@ -251,17 +366,35 @@ export default defineProjectApp({
   tasks: {
     accepts: [
       "gym.incident.detected",
+      "gym.learning.evidence.observed",
       "gym.regression.requested",
       "gym.review.requested",
+      "gym.improvement.requested",
+      { type: "agent.revision.changed", agents: ["may"] },
       { type: "project.comment.created", project: projectId },
       { type: "project.owner.requested", project: projectId },
     ],
     resolve: resolveGymTask,
   },
 
-  events: ["evaluation.reviewed"],
+  events: [
+    {
+      type: "evaluation.reviewed",
+      agents: ["may"],
+      lanes: ["needs_triage", "success_candidate"],
+    },
+  ],
 
   actions: {
+    "improve-may-now": {
+      type: "async",
+      description:
+        "Run one bounded May improvement cycle against approved Gym evidence.",
+      inputSchema: actionInputSchema,
+      event(input) {
+        return improvementRequested({ reason: "manual", ...params(input) });
+      },
+    },
     "run-regression": {
       type: "async",
       description:

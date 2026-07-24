@@ -1,0 +1,33 @@
+{
+  "human_answer": "Fix reply delivery today. Ask Tech Lead to find and verify the cause without blocking this conversation. Wait on the memory graph until replies are stable and the new idea has test evidence.",
+  "exact": {
+    "needs_clarification": false
+  },
+  "contains_all": {
+    "next_action": ["reply", "root"]
+  },
+  "contains_groups": {
+    "understood_intent": [
+      ["choose", "decide", "whether", "what should"],
+      ["today"]
+    ],
+    "mode": [["stabilize", "incident", "triage"]],
+    "priority": [["reply", "delivery", "regression"]],
+    "constraints": [
+      ["memory", "graph", "new feature"],
+      ["evidence", "prototype", "benchmark", "prove"]
+    ]
+  },
+  "excludes_all": {
+    "next_action": ["build memory", "implement memory", "ship memory"]
+  },
+  "delegations": {
+    "min": 1,
+    "max": 1,
+    "allowed_agents": ["tech-lead"],
+    "async_required": true
+  },
+  "empty": ["preference_updates"],
+  "response_target_words": 55,
+  "response_hard_max_words": 75
+}

@@ -1,0 +1,18 @@
+{
+  "human_answer": "Archive legacy-alerts and keep all of its audit records. Leave memory-research paused and auth-recovery active. Do not delete or change either one.",
+  "exact": { "needs_clarification": false },
+  "contains_all": {
+    "understood_intent": ["archive", "superseded"],
+    "next_action": ["legacy-alerts", "archive", "audit"],
+    "constraints": ["paused", "active", "evidence"]
+  },
+  "contains_groups": {
+    "mode": [["archive", "cleanup", "triage"]],
+    "priority": [["legacy-alerts", "audit", "evidence"]]
+  },
+  "excludes_all": { "next_action": ["memory-research", "auth-recovery", "delete"] },
+  "delegations": { "min": 0, "max": 1, "allowed_agents": ["tech-lead"], "async_required": true },
+  "empty": ["preference_updates"],
+  "response_target_words": 65,
+  "response_hard_max_words": 85
+}

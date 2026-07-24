@@ -1,0 +1,10 @@
+{
+  "name": "gym-implementer",
+  "description": "Builds isolated agent or benchmark candidates from reviewed Gym evidence without modifying production.",
+  "domain": "isolated Gym candidate implementation",
+  "model": "gpt-5.5",
+  "heartbeat": false,
+  "tools": ["coding", "finish"],
+  "context_files": [],
+  "memoryLimit": 5
+}

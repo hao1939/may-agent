@@ -1,16 +1,21 @@
 {
-  "human_answer": "Do not roll the prompt out broadly yet. Ask Coach to compare a baseline with the candidate in Gym on the smallest representative sample, keep rollback available, and adopt only with clear evidence and no regression.",
+  "human_answer": "Do not roll the prompt out broadly yet. Have Gym or Coach compare a frozen baseline with the candidate on the smallest representative sample. If it shows a clear gain with no regression, bring Hao the proof-backed rollout proposal and wait for approval. Rollback is a Git revert.",
   "exact": {
     "needs_clarification": false
   },
   "contains_all": {
     "understood_intent": ["improve", "heartbeat"],
-    "next_action": ["baseline", "gym"],
-    "constraints": ["rollout", "evidence"]
+    "next_action": ["baseline", "candidate", "proposal"],
+    "constraints": ["rollout", "approval", "git"]
   },
   "contains_groups": {
     "mode": [["experiment", "evaluate", "test"]],
-    "priority": [["evidence", "baseline", "proof"]]
+    "priority": [["evidence", "baseline", "proof"]],
+    "response_to_hao": [
+      ["evidence", "proof", "baseline"],
+      ["approval", "approve"],
+      ["git revert", "revert"]
+    ]
   },
   "excludes_all": {
     "next_action": ["roll out to every", "deploy to all", "ship globally"]
@@ -18,9 +23,9 @@
   "delegations": {
     "min": 1,
     "max": 1,
-    "allowed_agents": ["coach"],
+    "allowed_agents": ["gym", "coach"],
     "async_required": true
   },
   "empty": ["preference_updates"],
-  "response_max_words": 60
+  "response_max_words": 85
 }

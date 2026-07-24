@@ -1,0 +1,20 @@
+{
+  "human_answer": "Record this as a standing rule: send work only when its value is clear, and stop using 'keep agents busy' as a goal. Agents may still explore when they have a useful, specific question. Do not send any work now.",
+  "exact": {
+    "needs_clarification": false
+  },
+  "contains_groups": {
+    "mode": [["acknowledge", "learn", "preference", "guidance"]],
+    "priority": [["expected value", "dispatch"]],
+    "understood_intent": [["standing", "going forward"], ["guidance", "decision rule", "preference"]],
+    "preference_updates": [["expected value"], ["utilization", "keep agents busy", "idle"]],
+    "constraints": [["autonomy", "discovery"], ["expected value"], ["utilization", "keep agents busy"]],
+    "response_to_hao": [["expected value"], ["standing", "going forward", "retired"]]
+  },
+  "delegations": {
+    "min": 0,
+    "max": 0
+  },
+  "response_target_words": 45,
+  "response_hard_max_words": 65
+}

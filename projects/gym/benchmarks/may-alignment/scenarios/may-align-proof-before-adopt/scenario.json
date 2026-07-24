@@ -1,0 +1,10 @@
+{
+  "name": "may-align-proof-before-adopt",
+  "description": "May converts an untested broad rollout into a bounded experiment before adoption.",
+  "categories": ["deputy-alignment", "preference-application"],
+  "tags": ["may-alignment", "preference", "evidence-first"],
+  "tier": "smoke",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false
+}

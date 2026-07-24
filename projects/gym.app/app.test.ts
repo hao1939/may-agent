@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import type { ProjectAppContext } from "@may-agent/sdk";
+import mayCanary from "../gym/benchmarks/may-alignment/canary.json";
 import gymApp, { resolveGymTask, routeGymEvent } from "./app.ts";
 
 function context(emitted: Array<Record<string, unknown>>): ProjectAppContext {
@@ -22,19 +23,34 @@ describe("gym app manifest", () => {
     expect(gymApp.workspace.localPath).toBe("../gym");
     expect(gymApp.schedules).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ id: "may-alignment-nightly", enabled: true }),
+        expect.objectContaining({
+          id: "may-improvement-weekly",
+          enabled: false,
+        }),
       ]),
     );
     expect(gymApp.tasks?.resolve).toBe(resolveGymTask);
-    expect(gymApp.tasks?.accepts).toHaveLength(5);
+    expect(gymApp.tasks?.accepts).toHaveLength(8);
     expect(gymApp.taskRoutes).toBeUndefined();
     expect(gymApp.taskWorkflows).toBeUndefined();
     expect(gymApp.ownerEntry).toBeUndefined();
     expect(gymApp.eventGraph).toBeUndefined();
     expect(Object.keys(gymApp.actions)).toEqual([
+      "improve-may-now",
       "run-regression",
       "report-incident",
     ]);
+    const improveAction = gymApp.actions["improve-may-now"]!;
+    if (improveAction.type !== "async") throw new Error("unexpected action");
+    expect(improveAction.event({})).toMatchObject({
+      type: "gym.improvement.requested",
+      params: {
+        agent: "may",
+        benchmark: "may-alignment",
+        trials: 3,
+        scenarios: mayCanary.scenarios,
+      },
+    });
     const ownerConfig = JSON.parse(
       readFileSync(new URL("./agents/gym/agent.json", import.meta.url), "utf8"),
     );
@@ -43,6 +59,33 @@ describe("gym app manifest", () => {
 });
 
 describe("gym task reconciliation", () => {
+  test("turns each reviewed session into idempotent learning evidence intake", () => {
+    const first = resolveGymTask({
+      type: "gym.learning.evidence.observed",
+      eventId: 91,
+      params: {
+        polarity: "positive",
+        evaluation: { agent: "may", sessionId: "s_good" },
+      },
+    });
+    const duplicate = resolveGymTask({
+      type: "gym.learning.evidence.observed",
+      eventId: 92,
+      params: {
+        polarity: "positive",
+        evaluation: { agent: "may", sessionId: "s_good" },
+      },
+    });
+
+    expect(first?.id).toBe(duplicate?.id);
+    expect(first).toMatchObject({
+      parentId: "incident-learning",
+      mode: "achieve",
+      workflow: "learning-evidence-intake",
+      input: { kind: "learning-evidence", polarity: "positive" },
+    });
+  });
+
   test("deduplicates incident and review work by semantic identity", () => {
     const firstIncident = resolveGymTask({
       type: "gym.incident.detected",
@@ -106,6 +149,34 @@ describe("gym task reconciliation", () => {
   test("requires a durable event identity", () => {
     expect(resolveGymTask({ type: "gym.regression.requested" })).toBeNull();
   });
+
+  test("reconciles every improvement wake into one maintain task", () => {
+    for (const event of [
+      {
+        type: "gym.improvement.requested",
+        eventId: 301,
+        params: { reason: "manual", trials: 3 },
+      },
+      {
+        type: "agent.revision.changed",
+        eventId: 302,
+        agent: "may",
+        revision: "sha256:revision",
+      },
+      {
+        type: "project.comment.created",
+        eventId: 303,
+        project: "gym",
+      },
+    ]) {
+      expect(resolveGymTask(event)).toMatchObject({
+        id: "improve/may",
+        mode: "maintain",
+        workflow: "improve-agent",
+        input: { agent: "may", benchmark: "may-alignment" },
+      });
+    }
+  });
 });
 
 describe("gym app event routing", () => {
@@ -120,8 +191,16 @@ describe("gym app event routing", () => {
       sessionId: "s_bad_may_run",
     });
 
-    expect(emitted).toHaveLength(1);
+    expect(emitted).toHaveLength(2);
     expect(emitted[0]).toMatchObject({
+      type: "gym.learning.evidence.observed",
+      project: "gym",
+      params: {
+        polarity: "negative",
+        evaluation: { sessionId: "s_bad_may_run" },
+      },
+    });
+    expect(emitted[1]).toMatchObject({
       type: "gym.incident.detected",
       project: "gym",
       params: {
@@ -131,27 +210,36 @@ describe("gym app event routing", () => {
     });
   });
 
-  test("ignores good and non-May evaluations", async () => {
-    for (const event of [
-      {
-        type: "evaluation.reviewed",
-        agent: "may",
-        lane: "success_candidate",
-        reviewedVerdict: "good",
-      },
-      {
-        type: "evaluation.reviewed",
-        agent: "coder",
-        lane: "needs_triage",
-        reviewedVerdict: "needs_improvement",
-      },
-    ]) {
-      const emitted: Array<Record<string, unknown>> = [];
-      const result = await routeGymEvent(context(emitted), event);
-      expect(emitted).toHaveLength(0);
-      expect(result).toEqual({
-        reason: "evaluation is not an actionable May failure",
-      });
-    }
+  test("preserves good May evaluations as positive learning evidence", async () => {
+    const emitted: Array<Record<string, unknown>> = [];
+    const result = await routeGymEvent(context(emitted), {
+      type: "evaluation.reviewed",
+      agent: "may",
+      lane: "success_candidate",
+      reviewedVerdict: "good",
+      sessionId: "s_good_may_run",
+    });
+    expect(emitted).toEqual([
+      expect.objectContaining({
+        type: "gym.learning.evidence.observed",
+        params: {
+          polarity: "positive",
+          evaluation: expect.objectContaining({ sessionId: "s_good_may_run" }),
+        },
+      }),
+    ]);
+    expect(result).toEqual({ recorded: "positive-learning-evidence" });
+  });
+
+  test("ignores non-May evaluations", async () => {
+    const emitted: Array<Record<string, unknown>> = [];
+    const result = await routeGymEvent(context(emitted), {
+      type: "evaluation.reviewed",
+      agent: "coder",
+      lane: "needs_triage",
+      reviewedVerdict: "needs_improvement",
+    });
+    expect(emitted).toHaveLength(0);
+    expect(result).toEqual({ reason: "evaluation is not for May" });
   });
 });

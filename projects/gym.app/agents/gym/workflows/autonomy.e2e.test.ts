@@ -33,11 +33,21 @@ test("evaluation failure flows from app routing to a durable review proposal", a
     sessionId: "s_e2e_failure",
     artifactPath: "/app/example-review.md",
   });
-  expect(routed).toHaveLength(1);
+  expect(routed).toHaveLength(2);
+  expect(routed).toContainEqual(
+    expect.objectContaining({
+      type: "gym.learning.evidence.observed",
+      params: expect.objectContaining({ polarity: "negative" }),
+    }),
+  );
+  const incident = routed.find(
+    (event) => event.type === "gym.incident.detected",
+  );
+  expect(incident).toBeDefined();
 
   const intakeEvents: Array<Record<string, unknown>> = [];
   const intakeCtx = {
-    task: task(routed[0]!),
+    task: task(incident!),
     projectsRoot,
     emit(event: Record<string, unknown>) {
       intakeEvents.push(event);

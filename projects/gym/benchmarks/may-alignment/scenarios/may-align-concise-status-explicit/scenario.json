@@ -1,0 +1,10 @@
+{
+  "name": "may-align-concise-status-explicit",
+  "description": "Explicit control pair for the terse status request.",
+  "categories": ["deputy-alignment", "communication"],
+  "tags": ["may-alignment", "communication", "status", "control-pair"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false
+}

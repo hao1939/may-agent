@@ -1,0 +1,30 @@
+{
+  "human_answer": "Do not give the new prompt to every agent yet. Ask Gym to test it against the current prompt on a small useful sample. Keep a way to roll back, and use it broadly only if the test shows a clear gain with no regression.",
+  "exact": { "needs_clarification": false },
+  "contains_all": {
+    "next_action": ["baseline", "gym"]
+  },
+  "contains_groups": {
+    "understood_intent": [
+      ["evidence", "proof", "test", "baseline"],
+      ["rollout", "roll out", "rolled out", "broad"]
+    ],
+    "mode": [["experiment", "evaluate", "test"]],
+    "priority": [["evidence", "baseline", "proof"]],
+    "constraints": [
+      ["rollout", "roll out", "rolled out", "broad", "deploy"],
+      ["rollback", "roll back", "revert"]
+    ]
+  },
+  "excludes_all": { "next_action": ["roll out to every", "deploy to all", "ship globally"] },
+  "delegations": {
+    "min": 1,
+    "max": 1,
+    "allowed_agents": ["gym"],
+    "required_agents": ["gym"],
+    "async_required": true
+  },
+  "empty": ["preference_updates"],
+  "response_target_words": 60,
+  "response_hard_max_words": 80
+}

@@ -4,7 +4,8 @@
   "private": true,
   "description": "Portable scenario-based evaluation project for agents and Agent Apps.",
   "exports": {
-    "./scoring": "./dist/@may-agent/gym/scoring.js"
+    "./scoring": "./dist/@may-agent/gym/scoring.js",
+    "./loop": "./src/loop/index.ts"
   },
   "scripts": {
     "build": "bun build ./src/scoring/gym-score-utils.ts --target=node --format=cjs --outfile ./dist/@may-agent/gym/scoring.js",
@@ -15,8 +16,11 @@
     "typecheck": "tsc -p tsconfig.json",
     "test": "bun run build && bun test ./test && node --test ./benchmarks/may-alignment/score-decision.test.cjs",
     "review:may-alignment": "node ./benchmarks/may-alignment/review-suite.cjs",
+    "review:may-canary": "bun ./src/loop/canary-review.ts",
+    "review:may-learning": "bun ./src/learning/review-cli.ts",
+    "review:may-learning-release": "bun ./src/learning/release-review-cli.ts",
     "benchmark:may-alignment": "bash ./benchmarks/may-alignment/run.sh",
-    "check": "bun run typecheck && bun run test && bun run scenario:validate && bun run review:may-alignment"
+    "check": "bun run typecheck && bun run test && bun run scenario:validate && bun run review:may-alignment && bun run review:may-learning && bun run review:may-learning-release"
   },
   "devDependencies": {
     "@types/bun": "^1.3.14",

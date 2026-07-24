@@ -1,11 +1,7 @@
 export type MachineVerdict = "pass" | "fail" | "invalid";
 export type HumanVerdict = "pass" | "fail";
 export type ReviewClassification =
-  | "may_behavior"
-  | "ground_truth"
-  | "scorer"
-  | "harness"
-  | "unclear";
+  "may_behavior" | "ground_truth" | "scorer" | "harness" | "unclear";
 export type ReviewReasonCode =
   | "intent_misread"
   | "preference_missed"
@@ -87,10 +83,16 @@ export interface StoredTrial {
   result_path: string;
   artifact_path: string | null;
   transcript_path: string | null;
+  duration_ms: number | null;
+  provenance: {
+    prompt_fingerprint: string | null;
+    framework_revision: string | null;
+    model: string | null;
+  };
 }
 
 export interface LoopRunManifest {
-  schema_version: 1;
+  schema_version: 2;
   run_id: string;
   phase: "test" | "verify";
   benchmark: string;
@@ -102,6 +104,14 @@ export interface LoopRunManifest {
   scenarios: string[];
   started_at: string;
   completed_at: string | null;
+  proof: {
+    input_fingerprint: string;
+    label_set_fingerprint: string | null;
+    candidate_fingerprint: string | null;
+    agent_prompt_fingerprints: string[];
+    framework_revisions: string[];
+    models: string[];
+  };
   source: {
     suite_path: string;
     labels_path: string | null;

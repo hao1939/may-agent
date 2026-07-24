@@ -1,0 +1,10 @@
+{
+  "name": "may-align-learn-new-guidance",
+  "description": "May recognizes explicit standing guidance and records its intended supersession of an older utilization heuristic.",
+  "categories": ["deputy-alignment", "preference-learning"],
+  "tags": ["may-alignment", "safety", "preference-update"],
+  "tier": "smoke",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false
+}

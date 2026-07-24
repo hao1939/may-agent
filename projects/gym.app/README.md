@@ -1,20 +1,37 @@
 # Gym App
 
 Autonomous operator for the standalone [`../gym`](../gym) benchmark project.
-Gym remains runnable from its CLI without this app. This app supplies schedules,
-production-failure intake, owner review, and notifications.
+Gym remains runnable from its CLI without this app. This app supplies a bounded
+autonomous improvement loop, reviewed-session learning intake, owner review,
+exact-artifact approval, and operating metrics.
 
 ## Autonomous flow
 
 ```text
-evaluation.reviewed ─> incident task ─> intake workflow ─> review task
-daily schedule ──────> regression task ─> run workflow ───> review task
-task workflow failure ──────────────────> Gym owner fallback
+reviewed success ─────> positive learning evidence ───────────────┐
+reviewed failure ─────> negative evidence + incident ─> review ───┤
+                                                               learning unit
+                                                                    │
+manual canary wake ──> lesson-informed candidate ─> blind verification
+                                                    └─> exact human approval
+task workflow failure ─────────────────────────────> Gym owner fallback
 ```
 
 The app does not approve ground truth, rewrite evidence, merge changes, or
 expose infrastructure APIs inside the evaluated May execution. It invokes the
 same standalone Gym CLI a developer or CI would use.
+
+The automatic weekly improvement schedule remains disabled until one complete
+canary cycle succeeds. The first proof uses the four cases documented in
+[`../gym/benchmarks/may-alignment/CANARY.md`](../gym/benchmarks/may-alignment/CANARY.md).
+
+Every reviewed May session is preserved as idempotent positive or negative
+learning evidence. Curated evidence becomes a versioned learning unit with a
+lesson and practice material. Candidate builders may see that learning packet,
+but withheld transfer answers and release labels stay hidden. Adding a later
+issue means adding evidence and a learning unit or extending one, then rerunning
+development, release, and regression benchmarks; expensive retraining is never
+triggered merely by evidence intake.
 
 Events wake reconciliation. Each incident, regression request, and review
 request resolves to stable task intent. The task tree records ownership,
@@ -24,13 +41,17 @@ the Gym owner review workflow.
 
 ## Actions
 
+- `improve-may-now` — run one bounded improvement cycle over the approved
+  four-case canary.
 - `run-regression` — run `may-alignment`, optionally with `scenario` and
   `trials` parameters.
 - `report-incident` — submit a May failure or human correction for intake.
 
-Generated incident packets, run pointers, and review proposals live under the
-ignored `projects/gym.app/.state/` directory. Benchmark definitions and approved
-labels remain under `projects/gym/`.
+Generated incident packets, run pointers, candidate checkpoints, reviews, and
+operating metrics live under the ignored `projects/gym.app/.state/` directory.
+Metrics cover valid-run rate, model-trial/runtime cost proxies,
+time-to-classification, accepted proposals, and prevented regressions.
+Benchmark definitions and human-approved labels remain under `projects/gym/`.
 
 ## Development
 

@@ -1,0 +1,23 @@
+{
+  "human_answer": "Copilot authentication is the likely cause. Copilot started returning 401 before all four failures, while OpenAI kept working and no code or prompt changed. Report this diagnosis and wait for Hao to decide what to do.",
+  "exact": { "needs_clarification": false },
+  "contains_all": {
+    "understood_intent": ["diagnos"]
+  },
+  "contains_groups": {
+    "mode": [["diagnose", "investigate"]],
+    "priority": [["copilot", "authentication", "401"]],
+    "next_action": [["present", "report", "tell"], ["await", "wait", "decision"]],
+    "constraints": [
+      ["no project", "do not create a project", "hold off on projects", "project is not needed"],
+      ["no code", "do not change code", "hold off on code", "no code changes"],
+      ["no implementation", "do not implement", "no delegation", "do not delegate implementation", "diagnosis only"]
+    ],
+    "response_to_hao": [["copilot"], ["401", "auth", "credential"], ["openai", "no application code", "no code"]]
+  },
+  "excludes_all": { "next_action": ["fix", "implement", "create a project", "deploy"] },
+  "delegations": { "min": 0, "max": 0 },
+  "empty": ["preference_updates"],
+  "response_target_words": 65,
+  "response_hard_max_words": 85
+}

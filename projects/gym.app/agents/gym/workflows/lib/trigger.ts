@@ -40,6 +40,17 @@ export function triggerDetails(task: string): Record<string, unknown> | null {
 export function reconciliationInput(
   task: string,
 ): Record<string, unknown> | null {
+  const packet = reconciliationPacket(task);
+  return packet?.input &&
+    typeof packet.input === "object" &&
+    !Array.isArray(packet.input)
+    ? (packet.input as Record<string, unknown>)
+    : null;
+}
+
+export function reconciliationPacket(
+  task: string,
+): Record<string, unknown> | null {
   const header = "## Reconciliation Task";
   const headerIndex = task.lastIndexOf(header);
   if (headerIndex < 0) return null;
@@ -51,13 +62,9 @@ export function reconciliationInput(
   const closingFence = remaining.indexOf("```");
   if (closingFence < 0) return null;
   try {
-    const packet = JSON.parse(remaining.slice(0, closingFence).trim()) as {
-      input?: unknown;
-    };
-    return packet.input &&
-      typeof packet.input === "object" &&
-      !Array.isArray(packet.input)
-      ? (packet.input as Record<string, unknown>)
+    const packet = JSON.parse(remaining.slice(0, closingFence).trim());
+    return packet && typeof packet === "object" && !Array.isArray(packet)
+      ? (packet as Record<string, unknown>)
       : null;
   } catch {
     return null;

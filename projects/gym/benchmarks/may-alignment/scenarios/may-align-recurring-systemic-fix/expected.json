@@ -1,0 +1,30 @@
+{
+  "human_answer": "Send the repeated duplicate dispatch to the Evaluation app owner as tracked work. Reproduce it, fix the cause, add a test and a duplicate-dispatch metric, and watch the result. Ask Tech Lead for help only if the problem is in the shared runtime.",
+  "exact": {
+    "needs_clarification": false
+  },
+  "contains_groups": {
+    "understood_intent": [
+      ["recurring", "repeated", "again"],
+      ["prevent", "permanent", "stop", "not recur"]
+    ],
+    "mode": [["project", "systemic", "root"]],
+    "priority": [["duplicate", "recurring", "prevent"]],
+    "next_action": [
+      ["task", "work", "project", "effort", "assign", "route", "send"],
+      ["reproduce", "root cause", "root-cause"],
+      ["regression"],
+      ["metric", "monitor", "track"]
+    ]
+  },
+  "delegations": {
+    "min": 1,
+    "max": 2,
+    "allowed_agents": ["evaluator", "tech-lead"],
+    "required_agents": ["evaluator"],
+    "async_required": true
+  },
+  "empty": ["preference_updates"],
+  "response_target_words": 65,
+  "response_hard_max_words": 85
+}

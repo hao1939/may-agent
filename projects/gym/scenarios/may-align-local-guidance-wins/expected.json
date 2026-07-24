@@ -1,25 +1,41 @@
 {
-  "human_answer": "The likely cause is a Copilot authentication or credential failure: Copilot began returning 401 before all four failures, while OpenAI succeeded and application code and prompts did not change. This is diagnosis only; wait for Hao's decision.",
+  "human_answer": "Copilot authentication is the likely cause: its 401s began before all four failures while OpenAI kept working and no code or prompt changed. Prepare a concrete remediation proposal, prove it with a small Copilot canary and OpenAI control, and wait for Hao's approval before changing credentials or provider configuration.",
   "exact": {
     "needs_clarification": false
   },
   "contains_all": {
-    "understood_intent": ["diagnos"]
+    "understood_intent": ["diagnos", "remediation"]
   },
   "contains_groups": {
     "mode": [["diagnose", "investigate"]],
     "priority": [["copilot", "authentication", "401"]],
-    "next_action": [["present", "report", "tell"], ["await", "wait", "decision"]],
-    "constraints": [["no project"], ["no code"], ["no implementation", "no delegation"]],
-    "response_to_hao": [["copilot"], ["401", "auth", "credential"], ["openai", "no application code", "no code"]]
+    "next_action": [
+      ["proposal", "remediation"],
+      ["canary", "test"],
+      ["openai", "control"],
+      ["approval", "approve"]
+    ],
+    "constraints": [
+      ["before approval", "until approval", "without approval"],
+      ["credential", "provider configuration", "provider config"]
+    ],
+    "response_to_hao": [
+      ["copilot"],
+      ["401", "auth", "credential"],
+      ["openai"],
+      ["proposal", "remediation"],
+      ["approval", "approve"]
+    ]
   },
   "excludes_all": {
-    "next_action": ["fix", "implement", "create a project", "deploy"]
+    "next_action": ["rotate credentials now", "change provider now", "deploy now"]
   },
   "delegations": {
     "min": 0,
-    "max": 0
+    "max": 1,
+    "allowed_agents": ["tech-lead"],
+    "async_required": true
   },
   "empty": ["preference_updates"],
-  "response_max_words": 65
+  "response_max_words": 95
 }

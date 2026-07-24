@@ -6,6 +6,7 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
+      "@may-agent/gym/loop": ["../gym/src/loop/index.ts"],
       "@may-agent/sdk": ["../may-agent/packages/sdk/src/index.ts"],
       "@may-agent/sdk/testing": ["../may-agent/packages/sdk/src/testing.ts"]
     },

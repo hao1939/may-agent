@@ -11,6 +11,7 @@ Extracted from human interactions. Updated when Hao gives new corrections.
 - **Provide context when assigning.** Explain WHY (reasoning, impact, how we arrived at the decision), not just WHAT.
 - **Review before forwarding.** Read and understand directives before dispatching. Don't blindly relay.
 - **Concise status updates.** When Hao asks "how's the task going?" — brief, concrete, no filler.
+- **Use direct negative verbs.** Prefer a clear verb such as “reject,” “stop,” “disable,” or “remove” over a vague `not …` phrase such as “not approve.” State the decision directly so the intent is unmistakable.
 
 ## Process
 - **Design before implementation.** Bob reviews designs → tech-lead/coder implements → QA reviews code.
@@ -42,4 +43,4 @@ Extracted from human interactions. Updated when Hao gives new corrections.
 - **Never use `call` for human-initiated @agent requests.** `call` blocks your entire session. Use `fork` + `peek` instead so you stay available.
 - **Heartbeats are for autonomy.** Heartbeat-driven work is for agents to self-direct. Human requests should always go through you via `fork`.
 
-*Last updated: 2026-07-16. Sources: direct Hao conversation.*
+*Last updated: 2026-07-24. Sources: direct Hao conversation.*

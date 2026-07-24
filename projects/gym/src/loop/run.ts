@@ -1,10 +1,10 @@
-import { createHash } from "node:crypto";
-import { existsSync, lstatSync, readFileSync, readdirSync, readlinkSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 
 import { compareRuns, renderReport } from "./report";
 import {
   createRunManifest,
+  fingerprintTree,
   gymRoot,
   loadLabels,
   loadSuite,
@@ -14,7 +14,11 @@ import {
   storeTrial,
   writeManifest,
 } from "./store";
-import type { LoopRunManifest, RunComparison, ScenarioRunResult } from "./types";
+import type {
+  LoopRunManifest,
+  RunComparison,
+  ScenarioRunResult,
+} from "./types";
 
 export interface RunOptions {
   phase: "test" | "verify";
@@ -25,6 +29,7 @@ export interface RunOptions {
   trials: number;
   baselineRunId?: string;
   timeout?: number;
+  agentsRoot?: string;
 }
 
 export interface ExecutionResult {
@@ -38,9 +43,14 @@ export type ScenarioExecutor = (input: {
   agent: string;
   candidate: string;
   timeout?: number;
+  agentsRoot?: string;
 }) => Promise<ExecutionResult>;
 
-function parseResult(stdout: string, scenario: string, agent: string): ScenarioRunResult {
+function parseResult(
+  stdout: string,
+  scenario: string,
+  agent: string,
+): ScenarioRunResult {
   try {
     return JSON.parse(stdout.trim()) as ScenarioRunResult;
   } catch (error) {
@@ -56,50 +66,99 @@ function parseResult(stdout: string, scenario: string, agent: string): ScenarioR
 }
 
 export const executeScenario: ScenarioExecutor = async (input) => {
-  const args = [join(gymRoot, "src", "cli.ts"), input.scenario, "--agent", input.agent];
+  const args = [
+    join(gymRoot, "src", "cli.ts"),
+    input.scenario,
+    "--agent",
+    input.agent,
+  ];
   if (input.candidate !== "baseline") args.push("--lab", input.candidate);
   if (input.timeout) args.push("--timeout", String(input.timeout));
-  const child = Bun.spawn([process.execPath, ...args], {
+  const child = Bun.spawn([process.env["BUN_EXEC_PATH"] || "bun", ...args], {
     cwd: gymRoot,
-    env: { ...process.env, GYM_SCENARIOS_DIR: input.scenariosDir },
+    env: {
+      ...process.env,
+      GYM_SCENARIOS_DIR: input.scenariosDir,
+      ...(input.agentsRoot ? { GYM_AGENTS_ROOT: input.agentsRoot } : {}),
+    },
     stdout: "pipe",
     stderr: "pipe",
   });
-  const [stdout, stderr] = await Promise.all([new Response(child.stdout).text(), new Response(child.stderr).text()]);
+  const [stdout, stderr] = await Promise.all([
+    new Response(child.stdout).text(),
+    new Response(child.stderr).text(),
+  ]);
   await child.exited;
   return { result: parseResult(stdout, input.scenario, input.agent), stderr };
 };
 
-function hashTree(path: string): string {
-  const hash = createHash("sha256");
-  const visit = (current: string, relativePath: string): void => {
-    const stat = lstatSync(current);
-    hash.update(`${relativePath}\0${stat.isSymbolicLink() ? "link" : stat.isDirectory() ? "dir" : "file"}\0`);
-    if (stat.isSymbolicLink()) {
-      hash.update(readlinkSync(current));
-    } else if (stat.isDirectory()) {
-      for (const entry of readdirSync(current).sort()) visit(join(current, entry), join(relativePath, entry));
-    } else {
-      hash.update(readFileSync(current));
-    }
-  };
-  visit(path, ".");
-  return hash.digest("hex");
-}
-
 function assertSameFile(current: string, frozen: string, label: string): void {
-  if (!existsSync(current) || !existsSync(frozen) || hashTree(current) !== hashTree(frozen)) {
-    throw new Error(`Frozen benchmark input changed (${label}); create a new baseline`);
+  if (
+    !existsSync(current) ||
+    !existsSync(frozen) ||
+    fingerprintTree(current) !== fingerprintTree(frozen)
+  ) {
+    throw new Error(
+      `Frozen benchmark input changed (${label}); create a new baseline`,
+    );
   }
 }
 
-function assertFrozenInputs(baselineDir: string, baseline: LoopRunManifest): void {
+function candidateFingerprint(
+  candidate: string,
+  configuredAgentsRoot?: string,
+): string | null {
+  if (candidate === "baseline") return null;
+  const agentsRoot = resolve(
+    configuredAgentsRoot ||
+      process.env["GYM_AGENTS_ROOT"] ||
+      process.env["AGENTS_ROOT"] ||
+      join(gymRoot, "../../agents"),
+  );
+  const candidatePath = join(agentsRoot, ".lab", candidate);
+  if (!existsSync(candidatePath)) {
+    throw new Error(`Candidate not found: ${candidatePath}`);
+  }
+  return fingerprintTree(candidatePath);
+}
+
+function refreshObservedProvenance(manifest: LoopRunManifest): void {
+  const unique = (values: Array<string | null>): string[] =>
+    [
+      ...new Set(values.filter((value): value is string => Boolean(value))),
+    ].sort();
+  manifest.proof.agent_prompt_fingerprints = unique(
+    manifest.trials.map((trial) => trial.provenance.prompt_fingerprint),
+  );
+  manifest.proof.framework_revisions = unique(
+    manifest.trials.map((trial) => trial.provenance.framework_revision),
+  );
+  manifest.proof.models = unique(
+    manifest.trials.map((trial) => trial.provenance.model),
+  );
+}
+
+function assertFrozenInputs(
+  baselineDir: string,
+  baseline: LoopRunManifest,
+): void {
   const { suite, path: suitePath } = loadSuite(baseline.benchmark);
-  assertSameFile(suitePath, join(baselineDir, baseline.source.suite_snapshot), "suite.json");
+  assertSameFile(
+    suitePath,
+    join(baselineDir, baseline.source.suite_snapshot),
+    "suite.json",
+  );
   const { path: labelsPath } = loadLabels(baseline.benchmark, suite);
   if (baseline.source.labels_snapshot) {
-    if (!labelsPath) throw new Error("Frozen labels exist but current labels are missing; create a new baseline");
-    assertSameFile(labelsPath, join(baselineDir, baseline.source.labels_snapshot), "labels.json");
+    if (!labelsPath)
+      throw new Error(
+        "Frozen labels exist but current labels are missing; create a new baseline",
+      );
+    assertSameFile(
+      labelsPath,
+      join(baselineDir, baseline.source.labels_snapshot),
+      "labels.json",
+    );
   }
   if (baseline.source.evaluator_snapshot && suite.evaluator) {
     assertSameFile(
@@ -109,21 +168,38 @@ function assertFrozenInputs(baselineDir: string, baseline: LoopRunManifest): voi
     );
   }
   for (const scenario of baseline.scenarios) {
-    const frozenCase = join(baselineDir, baseline.source.scenarios_snapshot, safeName(scenario));
+    const frozenCase = join(
+      baselineDir,
+      baseline.source.scenarios_snapshot,
+      safeName(scenario),
+    );
     const currentCase = join(gymRoot, "scenarios", scenario);
     assertSameFile(currentCase, frozenCase, scenario);
   }
 }
 
-export async function runLoop(options: RunOptions, executor: ScenarioExecutor = executeScenario): Promise<{
+export async function runLoop(
+  options: RunOptions,
+  executor: ScenarioExecutor = executeScenario,
+): Promise<{
   runDir: string;
   manifest: LoopRunManifest;
 }> {
   const { suite, path: suitePath } = loadSuite(options.benchmark);
-  const { catalog: labels, path: labelsPath } = loadLabels(options.benchmark, suite);
-  const scenarios = options.scenarios?.length ? options.scenarios : suite.scenarios;
-  const unknown = scenarios.filter((scenario) => !suite.scenarios.includes(scenario));
-  if (unknown.length) throw new Error(`Scenarios are not in ${options.benchmark}: ${unknown.join(", ")}`);
+  const { catalog: labels, path: labelsPath } = loadLabels(
+    options.benchmark,
+    suite,
+  );
+  const scenarios = options.scenarios?.length
+    ? options.scenarios
+    : suite.scenarios;
+  const unknown = scenarios.filter(
+    (scenario) => !suite.scenarios.includes(scenario),
+  );
+  if (unknown.length)
+    throw new Error(
+      `Scenarios are not in ${options.benchmark}: ${unknown.join(", ")}`,
+    );
 
   const created = createRunManifest({
     phase: options.phase,
@@ -136,29 +212,44 @@ export async function runLoop(options: RunOptions, executor: ScenarioExecutor = 
     agent: options.agent,
     trials: options.trials,
     scenarios,
+    candidateFingerprint: candidateFingerprint(
+      options.candidate,
+      options.agentsRoot,
+    ),
   });
 
   for (const scenario of scenarios) {
     for (let trial = 1; trial <= options.trials; trial++) {
-      process.stderr.write(`${scenario} trial ${trial}/${options.trials} (${options.candidate})... `);
+      process.stderr.write(
+        `${scenario} trial ${trial}/${options.trials} (${options.candidate})... `,
+      );
       const execution = await executor({
         scenario,
-        scenariosDir: join(created.runDir, created.manifest.source.scenarios_snapshot),
+        scenariosDir: join(
+          created.runDir,
+          created.manifest.source.scenarios_snapshot,
+        ),
         agent: options.agent,
         candidate: options.candidate,
         timeout: options.timeout,
+        agentsRoot: options.agentsRoot,
       });
       const stored = storeTrial({
         runDir: created.runDir,
         suite,
         labels,
-        scenarioDir: join(created.runDir, created.manifest.source.scenarios_snapshot, safeName(scenario)),
+        scenarioDir: join(
+          created.runDir,
+          created.manifest.source.scenarios_snapshot,
+          safeName(scenario),
+        ),
         scenario,
         trial,
         result: execution.result,
         stderr: execution.stderr,
       });
       created.manifest.trials.push(stored);
+      refreshObservedProvenance(created.manifest);
       writeManifest(created.runDir, created.manifest);
       process.stderr.write(`${stored.machine_verdict}\n`);
     }
@@ -174,7 +265,12 @@ export async function verifyLoop(input: {
   candidate: string;
   trials?: number;
   timeout?: number;
-}): Promise<{ runDir: string; manifest: LoopRunManifest; comparison: RunComparison }> {
+  agentsRoot?: string;
+}): Promise<{
+  runDir: string;
+  manifest: LoopRunManifest;
+  comparison: RunComparison;
+}> {
   const baselineDir = resolveRunDir(input.baseline);
   const baseline = readManifest(baselineDir);
   assertFrozenInputs(baselineDir, baseline);
@@ -193,12 +289,21 @@ export async function verifyLoop(input: {
     trials,
     baselineRunId: baseline.run_id,
     timeout: input.timeout,
+    agentsRoot: input.agentsRoot,
   });
   const labels = baseline.source.labels_snapshot
-    ? JSON.parse(readFileSync(join(baselineDir, baseline.source.labels_snapshot), "utf-8"))
+    ? JSON.parse(
+        readFileSync(
+          join(baselineDir, baseline.source.labels_snapshot),
+          "utf-8",
+        ),
+      )
     : null;
   const comparison = compareRuns(baseline, created.manifest, labels);
-  writeFileSync(join(created.runDir, "comparison.json"), `${JSON.stringify(comparison, null, 2)}\n`);
+  writeFileSync(
+    join(created.runDir, "comparison.json"),
+    `${JSON.stringify(comparison, null, 2)}\n`,
+  );
   renderReport(created.runDir, created.manifest, comparison);
   return { ...created, comparison };
 }

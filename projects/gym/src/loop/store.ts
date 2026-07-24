@@ -1,13 +1,17 @@
+import { createHash } from "node:crypto";
 import {
   appendFileSync,
   copyFileSync,
   cpSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   readFileSync,
+  readdirSync,
+  readlinkSync,
   writeFileSync,
 } from "node:fs";
-import { basename, join, relative, resolve } from "node:path";
+import { basename, dirname, join, relative, resolve } from "node:path";
 
 import type {
   BenchmarkSuite,
@@ -19,10 +23,40 @@ import type {
   StoredTrial,
 } from "./types";
 
-export const gymRoot = resolve(import.meta.dirname, "../..");
+export let gymRoot = resolve(import.meta.dirname, "../..");
+
+export function configureGymRoot(path: string): void {
+  gymRoot = resolve(path);
+}
+
+export function fingerprintTree(path: string): string {
+  const hash = createHash("sha256");
+  const visit = (current: string, relativePath: string): void => {
+    const stat = lstatSync(current);
+    hash.update(
+      `${relativePath}\0${
+        stat.isSymbolicLink() ? "link" : stat.isDirectory() ? "dir" : "file"
+      }\0`,
+    );
+    if (stat.isSymbolicLink()) {
+      hash.update(readlinkSync(current));
+    } else if (stat.isDirectory()) {
+      for (const entry of readdirSync(current).sort()) {
+        visit(join(current, entry), join(relativePath, entry));
+      }
+    } else {
+      hash.update(readFileSync(current));
+    }
+  };
+  visit(path, ".");
+  return hash.digest("hex");
+}
 
 function timestampId(): string {
-  return new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+  return new Date()
+    .toISOString()
+    .replace(/[-:]/g, "")
+    .replace(/\.\d{3}Z$/, "Z");
 }
 
 export function safeName(value: string): string {
@@ -33,11 +67,18 @@ export function benchmarkDir(benchmark: string): string {
   return join(gymRoot, "benchmarks", benchmark);
 }
 
-export function loadSuite(benchmark: string): { suite: BenchmarkSuite; path: string } {
+export function loadSuite(benchmark: string): {
+  suite: BenchmarkSuite;
+  path: string;
+} {
   const path = join(benchmarkDir(benchmark), "suite.json");
   if (!existsSync(path)) throw new Error(`Benchmark suite not found: ${path}`);
   const suite = JSON.parse(readFileSync(path, "utf-8")) as BenchmarkSuite;
-  if (!suite.name || !Array.isArray(suite.scenarios) || suite.scenarios.length === 0) {
+  if (
+    !suite.name ||
+    !Array.isArray(suite.scenarios) ||
+    suite.scenarios.length === 0
+  ) {
     throw new Error(`Invalid benchmark suite: ${path}`);
   }
   return { suite, path };
@@ -47,9 +88,18 @@ export function loadLabels(
   benchmark: string,
   suite: BenchmarkSuite,
 ): { catalog: GroundTruthCatalog | null; path: string | null } {
-  const path = join(benchmarkDir(benchmark), suite.labels_file ?? "labels.json");
+  const path = join(
+    benchmarkDir(benchmark),
+    suite.labels_file ?? "labels.json",
+  );
   if (!existsSync(path)) return { catalog: null, path: null };
-  return { catalog: JSON.parse(readFileSync(path, "utf-8")) as GroundTruthCatalog, path };
+  const catalog = JSON.parse(readFileSync(path, "utf-8")) as GroundTruthCatalog;
+  if (catalog.benchmark !== benchmark) {
+    throw new Error(
+      `Label catalog benchmark mismatch: expected ${benchmark}, found ${catalog.benchmark}`,
+    );
+  }
+  return { catalog, path };
 }
 
 export function stateRoot(): string {
@@ -75,6 +125,7 @@ export function createRunManifest(input: {
   agent: string;
   trials: number;
   scenarios: string[];
+  candidateFingerprint: string | null;
 }): { manifest: LoopRunManifest; runDir: string } {
   const runId = `${safeName(input.benchmark)}-${input.phase}-${timestampId()}-${crypto.randomUUID().slice(0, 8)}`;
   const runDir = join(stateRoot(), "benchmarks", runId);
@@ -82,26 +133,44 @@ export function createRunManifest(input: {
   const inputsDir = join(runDir, "inputs");
   mkdirSync(inputsDir, { recursive: true });
   const sourceBenchmarkDir = benchmarkDir(input.benchmark);
-  const frozenBenchmarkDir = join(inputsDir, "benchmarks", safeName(input.benchmark));
+  const frozenBenchmarkDir = join(
+    inputsDir,
+    "benchmarks",
+    safeName(input.benchmark),
+  );
   cpSync(sourceBenchmarkDir, frozenBenchmarkDir, { recursive: true });
-  const suiteSnapshot = join(frozenBenchmarkDir, relative(sourceBenchmarkDir, input.suitePath));
+  const suiteSnapshot = join(
+    frozenBenchmarkDir,
+    relative(sourceBenchmarkDir, input.suitePath),
+  );
   const labelsSnapshot = input.labelsPath
     ? join(frozenBenchmarkDir, relative(sourceBenchmarkDir, input.labelsPath))
     : null;
   const evaluatorSource = input.suite.evaluator
     ? join(sourceBenchmarkDir, input.suite.evaluator)
     : null;
-  const evaluatorSnapshot = evaluatorSource && existsSync(evaluatorSource)
-    ? join(frozenBenchmarkDir, input.suite.evaluator!)
-    : null;
+  const evaluatorSnapshot =
+    evaluatorSource && existsSync(evaluatorSource)
+      ? join(frozenBenchmarkDir, input.suite.evaluator!)
+      : null;
+  if (
+    evaluatorSource &&
+    evaluatorSnapshot &&
+    !existsSync(evaluatorSnapshot)
+  ) {
+    mkdirSync(dirname(evaluatorSnapshot), { recursive: true });
+    copyFileSync(evaluatorSource, evaluatorSnapshot);
+  }
   const scenariosSnapshot = join(inputsDir, "scenarios");
   for (const scenario of input.scenarios) {
     const source = join(gymRoot, "scenarios", scenario);
     if (!existsSync(source)) throw new Error(`Scenario not found: ${source}`);
-    cpSync(source, join(scenariosSnapshot, safeName(scenario)), { recursive: true });
+    cpSync(source, join(scenariosSnapshot, safeName(scenario)), {
+      recursive: true,
+    });
   }
   const manifest: LoopRunManifest = {
-    schema_version: 1,
+    schema_version: 2,
     run_id: runId,
     phase: input.phase,
     benchmark: input.benchmark,
@@ -113,12 +182,26 @@ export function createRunManifest(input: {
     scenarios: input.scenarios,
     started_at: new Date().toISOString(),
     completed_at: null,
+    proof: {
+      input_fingerprint: fingerprintTree(inputsDir),
+      label_set_fingerprint: labelsSnapshot
+        ? fingerprintTree(labelsSnapshot)
+        : null,
+      candidate_fingerprint: input.candidateFingerprint,
+      agent_prompt_fingerprints: [],
+      framework_revisions: [],
+      models: [],
+    },
     source: {
       suite_path: relative(gymRoot, input.suitePath),
-      labels_path: input.labelsPath ? relative(gymRoot, input.labelsPath) : null,
+      labels_path: input.labelsPath
+        ? relative(gymRoot, input.labelsPath)
+        : null,
       suite_snapshot: relative(runDir, suiteSnapshot),
       labels_snapshot: labelsSnapshot ? relative(runDir, labelsSnapshot) : null,
-      evaluator_snapshot: evaluatorSnapshot ? relative(runDir, evaluatorSnapshot) : null,
+      evaluator_snapshot: evaluatorSnapshot
+        ? relative(runDir, evaluatorSnapshot)
+        : null,
       scenarios_snapshot: relative(runDir, scenariosSnapshot),
     },
     trials: [],
@@ -128,26 +211,43 @@ export function createRunManifest(input: {
 }
 
 export function readManifest(runDir: string): LoopRunManifest {
-  return JSON.parse(readFileSync(join(runDir, "manifest.json"), "utf-8")) as LoopRunManifest;
+  return JSON.parse(
+    readFileSync(join(runDir, "manifest.json"), "utf-8"),
+  ) as LoopRunManifest;
 }
 
 export function writeManifest(runDir: string, manifest: LoopRunManifest): void {
-  writeFileSync(join(runDir, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
+  writeFileSync(
+    join(runDir, "manifest.json"),
+    `${JSON.stringify(manifest, null, 2)}\n`,
+  );
 }
 
-export function machineVerdict(result: ScenarioRunResult): { verdict: MachineVerdict; reason: string | null } {
-  if (result.agent_status === "error") return { verdict: "invalid", reason: "agent runtime returned error" };
+export function machineVerdict(result: ScenarioRunResult): {
+  verdict: MachineVerdict;
+  reason: string | null;
+} {
+  if (result.agent_status === "error")
+    return { verdict: "invalid", reason: "agent runtime returned error" };
   if (!Array.isArray(result.checks) || result.checks.length === 0) {
     return { verdict: "invalid", reason: "scorer returned no checks" };
   }
-  const harnessFailure = result.checks.find((check) => !check.passed && check.category === "harness");
+  const harnessFailure = result.checks.find(
+    (check) => !check.passed && check.category === "harness",
+  );
   if (harnessFailure) {
-    return { verdict: "invalid", reason: harnessFailure.detail || harnessFailure.name };
+    return {
+      verdict: "invalid",
+      reason: harnessFailure.detail || harnessFailure.name,
+    };
   }
   return { verdict: result.passed ? "pass" : "fail", reason: null };
 }
 
-function copyIfPresent(source: string | undefined, destination: string): string | null {
+function copyIfPresent(
+  source: string | undefined,
+  destination: string,
+): string | null {
   if (!source || !existsSync(source)) return null;
   copyFileSync(source, destination);
   return destination;
@@ -163,28 +263,50 @@ export function storeTrial(input: {
   result: ScenarioRunResult;
   stderr: string;
 }): StoredTrial {
-  const caseDir = join(input.runDir, "cases", safeName(input.scenario), `trial-${input.trial}`);
+  const caseDir = join(
+    input.runDir,
+    "cases",
+    safeName(input.scenario),
+    `trial-${input.trial}`,
+  );
   mkdirSync(caseDir, { recursive: true });
 
   const resultPath = join(caseDir, "result.json");
   writeFileSync(resultPath, `${JSON.stringify(input.result, null, 2)}\n`);
-  writeFileSync(join(caseDir, "checks.json"), `${JSON.stringify(input.result.checks ?? [], null, 2)}\n`);
+  writeFileSync(
+    join(caseDir, "checks.json"),
+    `${JSON.stringify(input.result.checks ?? [], null, 2)}\n`,
+  );
   writeFileSync(join(caseDir, "runner.stderr.log"), input.stderr);
 
-  for (const name of ["task.md", "expected.json", "scenario.json", "success_criteria.js"]) {
-    if (existsSync(join(input.scenarioDir, name))) copyFileSync(join(input.scenarioDir, name), join(caseDir, name));
+  for (const name of [
+    "task.md",
+    "expected.json",
+    "scenario.json",
+    "success_criteria.js",
+  ]) {
+    if (existsSync(join(input.scenarioDir, name)))
+      copyFileSync(join(input.scenarioDir, name), join(caseDir, name));
   }
   if (existsSync(join(input.scenarioDir, "environment"))) {
-    cpSync(join(input.scenarioDir, "environment"), join(caseDir, "environment"), { recursive: true });
+    cpSync(
+      join(input.scenarioDir, "environment"),
+      join(caseDir, "environment"),
+      { recursive: true },
+    );
   }
 
   const artifactName = input.suite.artifact ?? "alignment-decision.json";
   const artifactPath = copyIfPresent(
-    input.result.work_dir ? join(input.result.work_dir, artifactName) : undefined,
+    input.result.work_dir
+      ? join(input.result.work_dir, artifactName)
+      : undefined,
     join(caseDir, basename(artifactName)),
   );
   const transcriptPath = copyIfPresent(
-    input.result.work_dir ? join(input.result.work_dir, "transcript.jsonl") : undefined,
+    input.result.work_dir
+      ? join(input.result.work_dir, "transcript.jsonl")
+      : undefined,
     join(caseDir, "transcript.jsonl"),
   );
 
@@ -203,14 +325,31 @@ export function storeTrial(input: {
     label_status: labelStatus,
     result_path: relative(input.runDir, resultPath),
     artifact_path: artifactPath ? relative(input.runDir, artifactPath) : null,
-    transcript_path: transcriptPath ? relative(input.runDir, transcriptPath) : null,
+    transcript_path: transcriptPath
+      ? relative(input.runDir, transcriptPath)
+      : null,
+    duration_ms: input.result.duration_ms ?? null,
+    provenance: {
+      prompt_fingerprint: input.result.prompt_hash ?? null,
+      framework_revision: input.result.framework_sha ?? null,
+      model: input.result.model ?? null,
+    },
   };
-  writeFileSync(join(caseDir, "evaluation.json"), `${JSON.stringify(stored, null, 2)}\n`);
+  writeFileSync(
+    join(caseDir, "evaluation.json"),
+    `${JSON.stringify(stored, null, 2)}\n`,
+  );
   return stored;
 }
 
-export function appendAdjudication(runDir: string, adjudication: HumanAdjudication): void {
-  appendFileSync(join(runDir, "reviews.jsonl"), `${JSON.stringify(adjudication)}\n`);
+export function appendAdjudication(
+  runDir: string,
+  adjudication: HumanAdjudication,
+): void {
+  appendFileSync(
+    join(runDir, "reviews.jsonl"),
+    `${JSON.stringify(adjudication)}\n`,
+  );
 }
 
 export function readAdjudications(runDir: string): HumanAdjudication[] {
