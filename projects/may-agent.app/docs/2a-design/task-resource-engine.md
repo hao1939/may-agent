@@ -506,7 +506,10 @@ cannot starve durable runnable work.
 On pause or shutdown, the controller stops claiming new keys, allows a bounded
 drain period, and records unfinished attempts as interrupted before exit when
 possible. Restart recovery rereads canonical state and requeues the same task
-keys; it does not resume an in-memory workflow stack.
+keys; it does not resume an in-memory workflow stack. A previous-runtime
+attempt is released to pending state immediately, while its persisted trigger
+is retained as the next durable wake. Capacity pressure may delay the new
+attempt, but must not leave the dead attempt projected as running.
 
 On app or workflow hot reload, the replacement controller may collect durable
 wake hints immediately but does not claim them until the prior controller's
