@@ -179,6 +179,9 @@ invalid/rejected handler decision.
 
 A workflow may return `needs-owner` explicitly. This is the only automatic
 workflow-to-owner handoff, and it creates at most one sequential owner attempt.
+That same-task continuation enters the controller's bounded front lane instead
+of waiting behind the whole runnable backlog. Existing front-lane fairness still
+admits ordinary older work after a short burst.
 Missing, blocked, thrown, timed-out, and invalid workflows do not imply
 handoff.
 
@@ -510,6 +513,11 @@ keys; it does not resume an in-memory workflow stack. A previous-runtime
 attempt is released to pending state immediately, while its persisted trigger
 is retained as the next durable wake. Capacity pressure may delay the new
 attempt, but must not leave the dead attempt projected as running.
+
+Task-state locks record their owning process. After a forced runtime recovery,
+the successor may reclaim a lock only when that owner process is gone; a live
+owner remains protected by the normal wait and stale-lock bounds. This avoids a
+restart loop without weakening single-writer task-state admission.
 
 On app or workflow hot reload, the replacement controller may collect durable
 wake hints immediately but does not claim them until the prior controller's
