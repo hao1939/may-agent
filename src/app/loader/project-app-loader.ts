@@ -724,6 +724,7 @@ async function runTaskCapability(input: {
         taskId: claim.taskId,
         generation: claim.generation,
       },
+      recoveryOwner: PROJECT_APP_TASK_RECOVERY_OWNER,
       trace,
       executionPaths: input.executionPaths,
     });
