@@ -1917,8 +1917,7 @@ function installConventionTaskControllers(
           reason: "task-controller",
         });
         for (const dependentTaskId of dependentTaskIds) {
-          const timer = setTimeout(() => controller.enqueue(dependentTaskId, { front: true }), 0);
-          timer.unref?.();
+          controller.enqueue(dependentTaskId, { front: true });
         }
       },
       onError: (taskId, error, willRetry) => {
