@@ -2193,7 +2193,7 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
         });
         const conditionWakes = trackProjectAppConditionEvent(config, event);
         for (const wake of conditionWakes) {
-          taskController?.enqueue(wake.taskId);
+          taskController?.enqueue(wake.taskId, { front: true });
         }
       }
       if (taskController && descriptor.app.tasks) {

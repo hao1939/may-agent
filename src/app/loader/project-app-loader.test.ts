@@ -1977,6 +1977,86 @@ describe("project app loader", () => {
     }
   });
 
+  it("runs a satisfied Condition continuation before unrelated queued backlog", async () => {
+    const f = fixture();
+    try {
+      writeApp(f.appDir);
+      const appPath = join(f.appDir, "app.ts");
+      writeFileSync(appPath, readFileSync(appPath, "utf8").replace("maxConcurrent: 2", "maxConcurrent: 1"));
+      writeFileSync(
+        join(f.appDir, "agents", "owner", "workflows", "blocker.ts"),
+        `export const name = "blocker";
+         export const description = "hold the only worker slot";
+         export async function execute(ctx) {
+           await new Promise((resolve) => setTimeout(resolve, 300));
+           return ctx.done("blocker done", { state: "converged", summary: "blocker done", evidence: ["proof"], actions: [] });
+         }`,
+      );
+      writeFileSync(
+        join(f.appDir, "agents", "owner", "workflows", "waiter.ts"),
+        `export const name = "waiter";
+         export const description = "wait for one exact note";
+         export async function execute(ctx) {
+           if (ctx.task.includes('"ready": true')) {
+             return ctx.done("condition observed", { state: "converged", summary: "condition observed", evidence: ["sample.note"], actions: [] });
+           }
+           return ctx.done("waiting", {
+             state: "waiting",
+             summary: "waiting for sample note",
+             evidence: ["condition:note-ready"],
+             actions: [],
+             conditions: [{ id: "note-ready", type: "sample.note", subject: "project:sample", expected: { ready: true } }],
+           });
+         }`,
+      );
+      const bus = new EventBus();
+      const events: any[] = [];
+      bus.subscribe((event) => events.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: manager([]),
+        bus,
+        agentCrons: new Map(),
+      });
+
+      bus.emit({ type: "sample.work", project: "sample", itemId: "waiter", workflow: "waiter" } as any);
+      await waitUntil(() => {
+        const state = JSON.parse(readFileSync(projectRuntimePaths(f.appDir).taskStatePath, "utf8"));
+        return state.resources?.["work/waiter"]?.status?.phase === "waiting";
+      });
+      events.length = 0;
+      bus.emit({ type: "sample.work", project: "sample", itemId: "blocker", workflow: "blocker" } as any);
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconcile.started" && event.data?.taskId === "work/blocker",
+        ),
+      );
+      bus.emit({ type: "sample.work", project: "sample", itemId: "older" } as any);
+      bus.emit({ type: "sample.note", project: "sample", ready: true } as any);
+
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/older" &&
+            event.data?.disposition === "converged",
+        ),
+      );
+      const starts = events
+        .filter((event) => event.type === "project.task.reconcile.started")
+        .map((event) => event.data?.taskId);
+      expect(starts).toEqual(["work/blocker", "work/waiter", "work/older"]);
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
   it("reconciles two maintain tasks through the same workflow independently", async () => {
     const f = fixture();
     try {
