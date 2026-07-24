@@ -228,6 +228,20 @@ export function agentConditionProblem(decision: AgentDecision): string | null {
   return null;
 }
 
+export function sourceOnlyDecisionProblem(
+  decision: AgentDecision,
+  posture: SourceOnlyNormalizationPosture,
+): string | null {
+  if (decision.decision !== "accepted-nonlive" || posture.accepted) return null;
+  const affected = [...posture.missingSpecIds, ...posture.rejectedSpecIds];
+  return [
+    "decision=accepted-nonlive requires explicit structured source-only posture for every consuming spec",
+    affected.length
+      ? `affected specs: ${affected.join(", ")}`
+      : "no accepted source-only posture was found",
+  ].join("; ");
+}
+
 function nonEmptyString(value: unknown): string {
   if (typeof value === "string" && value.trim()) return value.trim();
   if (typeof value === "number" && Number.isFinite(value)) return String(value);
@@ -691,8 +705,10 @@ function cleanWorkspace(workspaceDir: string): string {
 async function askAgent(
   ctx: WorkflowContext,
   prompt: string,
+  validateDecision?: (decision: AgentDecision) => string | null,
 ): Promise<AgentDecision | null> {
   let nextPrompt = `${prompt}\n\n${conditionInstruction}`;
+  let lastProblem = "";
   for (let attempt = 1; attempt <= 2; attempt += 1) {
     const result = await ctx.runAgent(ctx.agent, nextPrompt, {
       timeoutMs: 1_800_000,
@@ -702,8 +718,10 @@ async function askAgent(
       return null;
     }
     const decision = result.structuredResult as AgentDecision;
-    const problem = agentConditionProblem(decision);
+    const problem =
+      agentConditionProblem(decision) ?? validateDecision?.(decision) ?? null;
     if (!problem) return decision;
+    lastProblem = problem;
     nextPrompt = [
       "Correct the structured result from your immediately preceding domain judgment.",
       `Hard validation failure: ${problem}.`,
@@ -715,8 +733,11 @@ async function askAgent(
   return {
     decision: "needs-owner",
     summary:
-      "The agent exhausted structured-result correction without producing an observable waiting Condition.",
-    evidence: ["condition-validation:failed-after-two-agent-judgments"],
+      "The agent exhausted structured-result correction after a hard validation failure.",
+    evidence: [
+      "decision-validation:failed-after-two-agent-judgments",
+      ...(lastProblem ? [`validation-problem:${lastProblem}`] : []),
+    ],
   };
 }
 
@@ -1465,6 +1486,10 @@ export async function reconcileSpecLive(
             nonEmptyString(run.result),
           ),
       ).length;
+      const sourceOnlyPosture = sourceOnlyScenarioNormalizationPosture(
+        workspaceDir,
+        normalizationInput,
+      );
       const decision = await askAgent(
         ctx,
         [
@@ -1483,6 +1508,7 @@ export async function reconcileSpecLive(
           "Task:",
           ctx.task,
         ].join("\n\n"),
+        (candidate) => sourceOnlyDecisionProblem(candidate, sourceOnlyPosture),
       );
       if (!decision) {
         return ownerResult(
@@ -1514,10 +1540,7 @@ export async function reconcileSpecLive(
           sourceBranch,
           sourceCommit,
           normalizationInput,
-          posture: sourceOnlyScenarioNormalizationPosture(
-            workspaceDir,
-            normalizationInput,
-          ),
+          posture: sourceOnlyPosture,
           decisionSummary: decision.summary,
           decisionEvidence: [
             ...decision.evidence,

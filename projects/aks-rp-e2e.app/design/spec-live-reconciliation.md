@@ -123,6 +123,10 @@ to the agent for repair and a fresh exact live run.
 - A terminal admission-preflight refusal may be accepted as nonlive only when
   the agent chooses `accepted-nonlive` and current structured spec metadata for
   every selected spec independently satisfies the source-only invariant.
+- If an agent chooses `accepted-nonlive` without that structured posture, code
+  returns the validation finding to the same agent immediately for a corrected
+  judgment. It does not close the task or leave a routine correction in the
+  owner-attention queue.
 - An interrupted dirty task worktree is given back to the owner agent to finish,
   validate, and commit or to remove only proven task-generated residue. Ambiguous
   ownership requires owner review; it is never silently discarded.

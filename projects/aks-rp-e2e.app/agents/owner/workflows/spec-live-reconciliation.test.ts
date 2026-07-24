@@ -14,6 +14,7 @@ import {
   resolveIntegrationTarget,
   resolveLiveExecutionTarget,
   runMatchesPriorVerification,
+  sourceOnlyDecisionProblem,
 } from "./spec-live-reconciliation.js";
 import {
   isRunnableScenarioNormalization,
@@ -82,6 +83,32 @@ describe("spec-live-reconciliation workflow", () => {
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
+  });
+
+  test("returns an invalid nonlive judgment to the agent when structured policy is absent", () => {
+    const decision = {
+      decision: "accepted-nonlive" as const,
+      summary: "treat this as source only",
+      evidence: ["pipeline-run:42"],
+    };
+    expect(
+      sourceOnlyDecisionProblem(decision, {
+        accepted: false,
+        specIds: ["spec.example.runnable"],
+        missingSpecIds: [],
+        rejectedSpecIds: ["spec.example.runnable"],
+        evidence: [],
+      }),
+    ).toContain("spec.example.runnable");
+    expect(
+      sourceOnlyDecisionProblem(decision, {
+        accepted: true,
+        specIds: ["spec.example.source-only"],
+        missingSpecIds: [],
+        rejectedSpecIds: [],
+        evidence: ["source-only-spec:spec.example.source-only"],
+      }),
+    ).toBeNull();
   });
 
   test("validates agent waits without replacing agent judgment", () => {
