@@ -9,6 +9,28 @@ describe("ProjectAppTaskQueue", () => {
     expect(queue.snapshot()).toEqual({ pending: ["task-a"], running: [], dirty: [] });
   });
 
+  it("promotes targeted pending work without duplicating it", () => {
+    const queue = new ProjectAppTaskQueue(1);
+    queue.enqueue("old-a");
+    queue.enqueue("goal");
+    queue.enqueue("old-b");
+
+    expect(queue.enqueue("goal", { front: true })).toBe(true);
+    expect(queue.snapshot().pending).toEqual(["goal", "old-a", "old-b"]);
+    expect(queue.enqueue("goal", { front: true })).toBe(false);
+  });
+
+  it("preserves front promotion for a wake received while running", () => {
+    const queue = new ProjectAppTaskQueue(1);
+    queue.enqueue("goal");
+    expect(queue.take()).toBe("goal");
+    queue.enqueue("old-a");
+    queue.enqueue("goal", { front: true });
+
+    queue.complete("goal");
+    expect(queue.snapshot().pending).toEqual(["goal", "old-a"]);
+  });
+
   it("enforces app concurrency and preserves FIFO order", () => {
     const queue = new ProjectAppTaskQueue(1);
     queue.enqueue("task-a");

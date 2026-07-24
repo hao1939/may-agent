@@ -1917,7 +1917,7 @@ function installConventionTaskControllers(
           reason: "task-controller",
         });
         for (const dependentTaskId of dependentTaskIds) {
-          const timer = setTimeout(() => controller.enqueue(dependentTaskId), 0);
+          const timer = setTimeout(() => controller.enqueue(dependentTaskId, { front: true }), 0);
           timer.unref?.();
         }
       },
@@ -2181,7 +2181,7 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
             taskTriggerWithOwnerIntents(config, targetedTaskId, event),
           );
           if (triggerResult.kind === "recorded") {
-            taskController.enqueue(targetedTaskId);
+            taskController.enqueue(targetedTaskId, { front: true });
             return projectAppTaskDelivery(descriptor, targetedTaskId, "existing targeted task wake accepted");
           }
           if (triggerResult.kind === "waiting") {
@@ -2207,7 +2207,9 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
                 appOwner: descriptor.owner,
                 trigger,
               });
-              if (observation.kind === "observed") taskController.enqueue(observation.taskId);
+              if (observation.kind === "observed") {
+                taskController.enqueue(observation.taskId, { front: true });
+              }
               return projectAppTaskDelivery(descriptor, targetedTaskId, "new targeted task wake accepted");
             }
           }

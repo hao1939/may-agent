@@ -10,6 +10,7 @@ export class ProjectAppTaskQueue {
   private readonly queued = new Set<string>();
   private readonly running = new Set<string>();
   private readonly dirty = new Set<string>();
+  private readonly dirtyFront = new Set<string>();
 
   constructor(readonly maxConcurrent: number) {
     if (!Number.isInteger(maxConcurrent) || maxConcurrent < 1) {
@@ -17,17 +18,25 @@ export class ProjectAppTaskQueue {
     }
   }
 
-  enqueue(taskId: string): boolean {
+  enqueue(taskId: string, opts: { front?: boolean } = {}): boolean {
     const key = taskId.trim();
     if (!key) throw new Error("ProjectAppTaskQueue requires a non-empty task ID");
     if (this.running.has(key)) {
       const alreadyDirty = this.dirty.has(key);
       this.dirty.add(key);
+      if (opts.front) this.dirtyFront.add(key);
       return !alreadyDirty;
     }
-    if (this.queued.has(key)) return false;
+    if (this.queued.has(key)) {
+      if (!opts.front || this.pending[0] === key) return false;
+      const index = this.pending.indexOf(key);
+      if (index >= 0) this.pending.splice(index, 1);
+      this.pending.unshift(key);
+      return true;
+    }
     this.queued.add(key);
-    this.pending.push(key);
+    if (opts.front) this.pending.unshift(key);
+    else this.pending.push(key);
     return true;
   }
 
@@ -44,7 +53,10 @@ export class ProjectAppTaskQueue {
     if (!this.running.delete(taskId)) {
       throw new Error(`ProjectAppTaskQueue cannot complete task that is not running: ${taskId}`);
     }
-    if (this.dirty.delete(taskId)) this.enqueue(taskId);
+    if (this.dirty.delete(taskId)) {
+      const front = this.dirtyFront.delete(taskId);
+      this.enqueue(taskId, { front });
+    }
   }
 
   get pendingCount(): number {
