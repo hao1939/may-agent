@@ -19,7 +19,7 @@ export type ProjectAppTaskControllerOptions = {
 /** Mechanical backpressure shared by every app task controller in one daemon. */
 export class ProjectAppTaskCapacity {
   private running = 0;
-  private readonly waiters: Array<() => void> = [];
+  private readonly waiters: Array<(release: () => void) => void> = [];
 
   constructor(readonly maxConcurrent: number) {
     if (!Number.isInteger(maxConcurrent) || maxConcurrent < 1) {
@@ -28,30 +28,43 @@ export class ProjectAppTaskCapacity {
   }
 
   async run<T>(work: () => Promise<T>): Promise<T> {
-    await this.acquire();
+    const release = await this.acquire();
     try {
       return await work();
     } finally {
-      this.release();
+      release();
     }
+  }
+
+  tryAcquire(): (() => void) | null {
+    if (this.running >= this.maxConcurrent) return null;
+    this.running += 1;
+    return this.releaseHandle();
+  }
+
+  acquire(): Promise<() => void> {
+    const release = this.tryAcquire();
+    if (release) return Promise.resolve(release);
+    return new Promise((resolve) => this.waiters.push(resolve));
   }
 
   snapshot(): { running: number; waiting: number } {
     return { running: this.running, waiting: this.waiters.length };
   }
 
-  private acquire(): Promise<void> {
-    if (this.running < this.maxConcurrent) {
-      this.running += 1;
-      return Promise.resolve();
-    }
-    return new Promise((resolve) => this.waiters.push(resolve));
+  private releaseHandle(): () => void {
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      this.release();
+    };
   }
 
   private release(): void {
     const next = this.waiters.shift();
     if (next) {
-      next();
+      next(this.releaseHandle());
       return;
     }
     this.running -= 1;
@@ -65,6 +78,7 @@ export class ProjectAppTaskController {
   private scheduled = false;
   private closed = false;
   private startReady: boolean;
+  private waitingForCapacity = false;
   private readonly drainWaiters = new Set<() => void>();
   private readonly resyncTimer?: ReturnType<typeof setInterval>;
 
@@ -126,14 +140,46 @@ export class ProjectAppTaskController {
 
   private pump(): void {
     if (this.closed) return;
+    if (this.options.capacity) {
+      while (this.queue.pendingCount > 0 && this.queue.runningCount < this.queue.maxConcurrent) {
+        const release = this.options.capacity.tryAcquire();
+        if (!release) {
+          this.waitForCapacity();
+          return;
+        }
+        const taskId = this.queue.take();
+        if (!taskId) {
+          release();
+          return;
+        }
+        this.run(taskId, release);
+      }
+      return;
+    }
     let taskId: string | null;
     while ((taskId = this.queue.take())) this.run(taskId);
   }
 
-  private run(taskId: string): void {
+  private waitForCapacity(): void {
+    if (this.waitingForCapacity || this.closed || !this.startReady || !this.options.capacity) return;
+    this.waitingForCapacity = true;
+    void this.options.capacity.acquire().then((release) => {
+      this.waitingForCapacity = false;
+      if (this.closed || !this.startReady) {
+        release();
+        this.resolveDrainWaiters();
+        return;
+      }
+      const taskId = this.queue.take();
+      if (taskId) this.run(taskId, release);
+      else release();
+      this.schedulePump();
+    });
+  }
+
+  private run(taskId: string, capacityRelease?: () => void): void {
     const reconcile = () => (this.closed ? Promise.resolve() : this.options.reconcile(taskId));
-    const execution = this.options.capacity ? this.options.capacity.run(reconcile) : reconcile();
-    void execution
+    void reconcile()
       .then(() => {
         this.failures.delete(taskId);
       })
@@ -150,6 +196,7 @@ export class ProjectAppTaskController {
       })
       .finally(() => {
         this.queue.complete(taskId);
+        capacityRelease?.();
         this.resolveDrainWaiters();
         this.schedulePump();
       });

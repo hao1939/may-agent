@@ -101,6 +101,51 @@ describe("ProjectAppTaskController", () => {
     controllerB.close();
   });
 
+  it("chooses the current front task only after shared capacity is available", async () => {
+    const capacity = new ProjectAppTaskCapacity(1);
+    const started: string[] = [];
+    let releaseBlocker: (() => void) | undefined;
+    let releaseGoal: (() => void) | undefined;
+    const blocker = new ProjectAppTaskController({
+      maxConcurrent: 1,
+      capacity,
+      reconcile: () =>
+        new Promise<void>((resolve) => {
+          started.push("blocker");
+          releaseBlocker = resolve;
+        }),
+    });
+    const goal = new ProjectAppTaskController({
+      maxConcurrent: 2,
+      capacity,
+      reconcile: (taskId) =>
+        new Promise<void>((resolve) => {
+          started.push(taskId);
+          releaseGoal = resolve;
+        }),
+    });
+
+    blocker.enqueue("blocker");
+    await waitUntil(() => started.length === 1);
+    goal.enqueue("older-a");
+    goal.enqueue("older-b");
+    await waitUntil(() => capacity.snapshot().waiting === 1);
+    goal.enqueue("urgent-goal", { front: true });
+
+    expect(goal.snapshot()).toMatchObject({
+      pending: ["urgent-goal", "older-a", "older-b"],
+      running: [],
+    });
+    releaseBlocker?.();
+    await waitUntil(() => started.length === 2);
+    expect(started).toEqual(["blocker", "urgent-goal"]);
+
+    blocker.close();
+    goal.close();
+    releaseGoal?.();
+    await waitUntil(() => capacity.snapshot().running === 0);
+  });
+
   it("performs a fresh pass for a wake received during a run", async () => {
     let runs = 0;
     let release: (() => void) | undefined;
