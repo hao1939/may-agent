@@ -1413,6 +1413,27 @@ describe("project app task reconciler state", () => {
       },
     });
 
+    expect(releaseInterruptedProjectAppTaskAttempt(config, claim.taskId, "previous runtime stopped")).toEqual({
+      released: true,
+      sessionIds: [],
+    });
+    const pending = readTaskState(config);
+    expect(pending.resources?.[claim.taskId].status).toMatchObject({
+      phase: "pending",
+    });
+    expect(pending.resources?.[claim.taskId].status.currentAttemptId).toBeUndefined();
+    expect(pending.attempts?.[claim.attemptId]).toMatchObject({
+      state: "interrupted",
+      failureReason: "previous-runtime-attempt-requeued",
+    });
+    expect(pending.taskTriggers?.[claim.taskId]?.event).toMatchObject({
+      type: "project.task.tick",
+      source: "project-app:sample:task-controller",
+      target: { project: "sample", taskId: "evaluate:session-1" },
+      reason: "task-controller",
+    });
+    expect(listRunnableProjectAppTaskIds(config)).toContain(claim.taskId);
+
     const reclaimed = declareAndClaimTask(config, {
       intent: intent(),
       appOwner: "app-owner",
