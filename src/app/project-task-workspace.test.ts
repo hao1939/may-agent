@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { finalizeProjectTaskWorkspace, prepareProjectTaskWorkspace } from "./project-task-workspace.js";
@@ -54,6 +54,50 @@ describe("project task workspace", () => {
     expect(retry.metadata.path).toBe(first.metadata.path);
     expect(retry.metadata.branch).toBe(first.metadata.branch);
     expect(finalizeProjectTaskWorkspace(retry, "failed").metadata.disposition).toBe("retained-for-recovery");
+  });
+
+  it("returns an interrupted rebase on the exact task branch to the same task", () => {
+    const f = fixture();
+    const prepared = prepareProjectTaskWorkspace({
+      repoDir: f.repo,
+      workspaceRoot: f.worktrees,
+      taskId: "interrupted-rebase",
+      generation: 1,
+      baseBranch: "dev",
+      refreshRemote: false,
+    });
+    git(prepared.metadata.path, "checkout", "--detach");
+
+    expect(() =>
+      prepareProjectTaskWorkspace({
+        repoDir: f.repo,
+        workspaceRoot: f.worktrees,
+        taskId: "interrupted-rebase",
+        generation: 1,
+        baseBranch: "dev",
+        refreshRemote: false,
+        previous: prepared.metadata,
+      }),
+    ).toThrow("registered to detached HEAD");
+
+    const rebaseDir = git(prepared.metadata.path, "rev-parse", "--git-path", "rebase-merge");
+    mkdirSync(rebaseDir, { recursive: true });
+    writeFileSync(join(rebaseDir, "head-name"), `refs/heads/${prepared.metadata.branch}\n`);
+
+    const recovered = prepareProjectTaskWorkspace({
+      repoDir: f.repo,
+      workspaceRoot: f.worktrees,
+      taskId: "interrupted-rebase",
+      generation: 1,
+      baseBranch: "dev",
+      refreshRemote: false,
+      previous: prepared.metadata,
+    });
+    expect(recovered.metadata).toMatchObject({
+      path: prepared.metadata.path,
+      branch: prepared.metadata.branch,
+      disposition: "active",
+    });
   });
 
   it("removes a clean no-change worktree and its empty task branch", () => {

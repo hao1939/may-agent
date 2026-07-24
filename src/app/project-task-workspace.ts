@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, realpathSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import type { ProjectAppTaskWorkspace } from "@may-agent/sdk";
@@ -36,10 +36,12 @@ function git(repoDir: string, args: string[], allowFailure = false): GitResult {
 }
 
 function safePart(value: string): string {
-  return value
-    .replace(/[^A-Za-z0-9._-]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 72) || "task";
+  return (
+    value
+      .replace(/[^A-Za-z0-9._-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 72) || "task"
+  );
 }
 
 function identity(taskId: string, generation: number): { leaf: string; branch: string } {
@@ -73,6 +75,16 @@ function remoteExists(repoDir: string, remote: string): boolean {
 
 function headAt(path: string): string {
   return git(path, ["rev-parse", "HEAD"]).stdout;
+}
+
+function interruptedOperationBranch(path: string): string | undefined {
+  for (const marker of ["rebase-merge/head-name", "rebase-apply/head-name"]) {
+    const markerPath = resolve(path, git(path, ["rev-parse", "--git-path", marker]).stdout);
+    if (!existsSync(markerPath)) continue;
+    const branch = readFileSync(markerPath, "utf8").trim();
+    if (branch) return branch;
+  }
+  return undefined;
 }
 
 function isIntegrated(repoDir: string, metadata: ProjectAppTaskWorkspace): boolean {
@@ -137,8 +149,11 @@ export function prepareProjectTaskWorkspace(input: {
   }
 
   if (registered) {
-    if (registered.branch !== branchRef) {
-      throw new Error(`Task workspace ${path} is registered to ${registered.branch ?? "detached HEAD"}, expected ${branch}`);
+    const interruptedBranch = registered.branch ? undefined : interruptedOperationBranch(path);
+    if (registered.branch !== branchRef && interruptedBranch !== branchRef) {
+      throw new Error(
+        `Task workspace ${path} is registered to ${registered.branch ?? "detached HEAD"}, expected ${branch}`,
+      );
     }
   } else {
     if (existsSync(path)) {
