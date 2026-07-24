@@ -110,6 +110,18 @@ facts and wakes the task. Direct `dev` integration has no review wait: push
 failure is retried from refreshed remote facts, while a merge conflict returns
 to the agent for repair and a fresh exact live run.
 
+A scenario-normalization task must not wait for a later `refs/heads/main`
+same-spec pass. That pass would test a different source lineage and therefore
+cannot prove or publish the task-owned normalization commit. A normalization
+wait must name a fact that can actually advance this task: the exact queued run
+for its source commit, an exact external capability/dependency with a real
+producer, or an ownership-boundary decision. If direct execution is
+intentionally unsupported, the agent must make and defend the explicit
+structured source-only contract before integration; otherwise it fixes the
+task source or escalates the genuine external limitation. The current-main
+same-spec pass Condition remains a master-validation product-recovery pattern,
+not a scenario-normalization escape path.
+
 ## Recovery and idempotency
 
 - Run metadata contains task id, generation, spec id, branch, source commit,

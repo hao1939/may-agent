@@ -195,7 +195,7 @@ const decisionSchema = Type.Object({
 });
 
 const conditionInstruction =
-  'A waiting Condition must use a typed subject such as project:aks-rp-e2e, pipeline-run:<id>, pull-request:<id>, or task:<id>. Its expected value supports exact field equality, or { field, equals|anyOf|notEquals }; do not invent comparison operators or put prose in subject. For a later current-main same-spec recovery, use type=pipeline.spec.observed, subject=project:aks-rp-e2e, expected={ specId: "<exact spec id>", status: "pass", sourceBranch: "refs/heads/main" }.';
+  "A waiting Condition must use a typed subject such as project:aks-rp-e2e, pipeline-run:<id>, pull-request:<id>, or task:<id>. Its expected value supports exact field equality, or { field, equals|anyOf|notEquals }; do not invent comparison operators or put prose in subject. The observed fact must be able to advance this exact task and source lineage; do not wait for a hypothetical pass on unrelated source.";
 
 export function agentConditionProblem(decision: AgentDecision): string | null {
   if (decision.decision !== "waiting") return null;
@@ -239,6 +239,28 @@ export function sourceOnlyDecisionProblem(
     affected.length
       ? `affected specs: ${affected.join(", ")}`
       : "no accepted source-only posture was found",
+  ].join("; ");
+}
+
+export function scenarioNormalizationWaitProblem(
+  decision: AgentDecision,
+): string | null {
+  if (decision.decision !== "waiting") return null;
+  const condition = decision.condition;
+  if (condition?.type !== "pipeline.spec.observed") return null;
+  if (
+    !condition.expected ||
+    typeof condition.expected !== "object" ||
+    Array.isArray(condition.expected)
+  ) {
+    return null;
+  }
+  const expected = condition.expected as Record<string, unknown>;
+  if (expected.sourceBranch !== "refs/heads/main") return null;
+  return [
+    "scenario normalization cannot wait for a future main-branch spec observation",
+    "that observation would not verify or publish this task-owned source commit",
+    "use an exact task-source run or capability fact, commit a truthful explicit source-only posture, or request owner judgment",
   ].join("; ");
 }
 
@@ -705,7 +727,10 @@ function cleanWorkspace(workspaceDir: string): string {
 async function askAgent(
   ctx: WorkflowContext,
   prompt: string,
-  validateDecision?: (decision: AgentDecision) => string | null,
+  options: {
+    validateDecision?: (decision: AgentDecision) => string | null;
+    scenarioNormalization?: boolean;
+  } = {},
 ): Promise<AgentDecision | null> {
   let nextPrompt = `${prompt}\n\n${conditionInstruction}`;
   let lastProblem = "";
@@ -719,7 +744,12 @@ async function askAgent(
     }
     const decision = result.structuredResult as AgentDecision;
     const problem =
-      agentConditionProblem(decision) ?? validateDecision?.(decision) ?? null;
+      agentConditionProblem(decision) ??
+      (options.scenarioNormalization
+        ? scenarioNormalizationWaitProblem(decision)
+        : null) ??
+      options.validateDecision?.(decision) ??
+      null;
     if (!problem) return decision;
     lastProblem = problem;
     nextPrompt = [
@@ -869,6 +899,7 @@ async function integrateSourceOnlyNormalization(
             "Task:",
             ctx.task,
           ].join("\n\n"),
+          { scenarioNormalization: true },
         );
         if (!decision || decision.decision !== "committed") {
           return ownerResult(
@@ -1114,6 +1145,7 @@ export async function reconcileSpecLive(
           "Task:",
           ctx.task,
         ].join("\n\n"),
+        { scenarioNormalization: Boolean(normalizationInput) },
       );
       if (!recovery) {
         return ownerResult(ctx, "Task worktree recovery session failed.", [
@@ -1170,6 +1202,7 @@ export async function reconcileSpecLive(
           "Task:",
           ctx.task,
         ].join("\n\n"),
+        { scenarioNormalization: true },
       );
       if (!decision) {
         return ownerResult(
@@ -1290,6 +1323,7 @@ export async function reconcileSpecLive(
             "Task:",
             ctx.task,
           ].join("\n\n"),
+          { scenarioNormalization: true },
         );
         if (!decision) {
           return ownerResult(
@@ -1375,6 +1409,7 @@ export async function reconcileSpecLive(
             "Task:",
             ctx.task,
           ].join("\n\n"),
+          { scenarioNormalization: Boolean(normalizationInput) },
         );
         if (!decision) {
           return ownerResult(ctx, "Spec preparation agent session failed.", [
@@ -1508,7 +1543,11 @@ export async function reconcileSpecLive(
           "Task:",
           ctx.task,
         ].join("\n\n"),
-        (candidate) => sourceOnlyDecisionProblem(candidate, sourceOnlyPosture),
+        {
+          scenarioNormalization: Boolean(normalizationInput),
+          validateDecision: (candidate) =>
+            sourceOnlyDecisionProblem(candidate, sourceOnlyPosture),
+        },
       );
       if (!decision) {
         return ownerResult(
@@ -1680,6 +1719,7 @@ export async function reconcileSpecLive(
                 "Task:",
                 ctx.task,
               ].join("\n\n"),
+              { scenarioNormalization: Boolean(normalizationInput) },
             );
             if (!decision || decision.decision !== "committed") {
               return ownerResult(
@@ -1925,6 +1965,7 @@ export async function reconcileSpecLive(
           "Task:",
           ctx.task,
         ].join("\n\n"),
+        { scenarioNormalization: Boolean(normalizationInput) },
       );
       if (!decision || decision.decision !== "committed") {
         return ownerResult(

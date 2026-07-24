@@ -14,6 +14,7 @@ import {
   resolveIntegrationTarget,
   resolveLiveExecutionTarget,
   runMatchesPriorVerification,
+  scenarioNormalizationWaitProblem,
   sourceOnlyDecisionProblem,
 } from "./spec-live-reconciliation.js";
 import {
@@ -154,6 +155,38 @@ describe("spec-live-reconciliation workflow", () => {
             status: "pass",
             sourceBranch: "refs/heads/main",
           },
+        },
+      }),
+    ).toBeNull();
+  });
+
+  test("rejects a future main pass as proof for task-owned scenario normalization", () => {
+    const futureMainPass = {
+      decision: "waiting" as const,
+      summary: "wait for a later main pass",
+      evidence: ["spec:spec.example"],
+      condition: {
+        id: "future-main-pass",
+        type: "pipeline.spec.observed",
+        subject: "project:aks-rp-e2e",
+        expected: {
+          specId: "spec.example",
+          status: "pass",
+          sourceBranch: "refs/heads/main",
+        },
+      },
+    };
+    expect(scenarioNormalizationWaitProblem(futureMainPass)).toContain(
+      "would not verify or publish this task-owned source commit",
+    );
+    expect(
+      scenarioNormalizationWaitProblem({
+        ...futureMainPass,
+        condition: {
+          ...futureMainPass.condition,
+          subject: "pipeline-run:42",
+          type: "pipeline.run.observed",
+          expected: { state: "completed" },
         },
       }),
     ).toBeNull();
