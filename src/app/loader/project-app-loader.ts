@@ -940,6 +940,7 @@ async function runTaskOwner(input: {
     "An executable parent relationship expresses decomposition and aggregate ownership. Infrastructure runs children independently and wakes the parent on meaningful child transitions; the parent still decides aggregate acceptance.",
     "Use dependsOn for execution ordering. Use a structural group when a node has no independently reconcilable outcome.",
     "Do not close an achieve task while it still contains live child tasks; finish or relocate the represented children first.",
+    "A completed task receipt is immutable. Do not update, unblock, or recreate its task ID; represent correction or renewed work as a new linked task.",
     "",
     "Allowed actions:",
     '- create a task: { kind: "create-task", id, outcome, acceptance, parentId?, mode?, outputs?, priority?, owner?, workflow?, input?, dependsOn?, category? }',
