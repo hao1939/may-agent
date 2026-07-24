@@ -185,6 +185,11 @@ admits ordinary older work after a short burst.
 Missing, blocked, thrown, timed-out, and invalid workflows do not imply
 handoff.
 
+The same bounded front lane applies when an exact task Condition becomes true.
+The observed fact is the continuation of that waiting task, not unrelated new
+work; delaying it behind the full backlog would turn a correct wait into a
+dead-looking task.
+
 `needs-owner` is an exception to a learned process, not its normal failure
 branch. A domain workflow is expected to invoke its owning agent for in-scope
 repair and verification before handing the same task back to the owner. Merge
