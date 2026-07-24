@@ -20,6 +20,20 @@ describe("ProjectAppTaskQueue", () => {
     expect(queue.enqueue("goal", { front: true })).toBe(false);
   });
 
+  it("preserves FIFO order within the front lane", () => {
+    const queue = new ProjectAppTaskQueue(1);
+    queue.enqueue("old-a");
+    queue.enqueue("urgent-a", { front: true });
+    queue.enqueue("old-b");
+    queue.enqueue("urgent-b", { front: true });
+    queue.enqueue("old-b", { front: true });
+
+    expect(queue.snapshot().pending).toEqual(["urgent-a", "urgent-b", "old-b", "old-a"]);
+    expect(queue.take()).toBe("urgent-a");
+    queue.complete("urgent-a");
+    expect(queue.take()).toBe("urgent-b");
+  });
+
   it("preserves front promotion for a wake received while running", () => {
     const queue = new ProjectAppTaskQueue(1);
     queue.enqueue("goal");

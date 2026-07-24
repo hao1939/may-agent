@@ -8,6 +8,7 @@
 export class ProjectAppTaskQueue {
   private readonly pending: string[] = [];
   private readonly queued = new Set<string>();
+  private readonly frontQueued = new Set<string>();
   private readonly running = new Set<string>();
   private readonly dirty = new Set<string>();
   private readonly dirtyFront = new Set<string>();
@@ -28,15 +29,20 @@ export class ProjectAppTaskQueue {
       return !alreadyDirty;
     }
     if (this.queued.has(key)) {
-      if (!opts.front || this.pending[0] === key) return false;
+      if (!opts.front || this.frontQueued.has(key)) return false;
       const index = this.pending.indexOf(key);
       if (index >= 0) this.pending.splice(index, 1);
-      this.pending.unshift(key);
+      this.pending.splice(this.frontQueued.size, 0, key);
+      this.frontQueued.add(key);
       return true;
     }
     this.queued.add(key);
-    if (opts.front) this.pending.unshift(key);
-    else this.pending.push(key);
+    if (opts.front) {
+      this.pending.splice(this.frontQueued.size, 0, key);
+      this.frontQueued.add(key);
+    } else {
+      this.pending.push(key);
+    }
     return true;
   }
 
@@ -45,6 +51,7 @@ export class ProjectAppTaskQueue {
     const taskId = this.pending.shift();
     if (!taskId) return null;
     this.queued.delete(taskId);
+    this.frontQueued.delete(taskId);
     this.running.add(taskId);
     return taskId;
   }
