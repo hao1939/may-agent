@@ -1923,7 +1923,8 @@ function installConventionTaskControllers(
           reason: "task-controller",
         });
         for (const dependentTaskId of dependentTaskIds) {
-          controller.enqueue(dependentTaskId, { front: true });
+          const activeController = appTaskControllersByBus.get(opts.bus)?.get(descriptor.id) ?? controller;
+          activeController.enqueue(dependentTaskId, { front: true });
         }
       },
       onError: (taskId, error, willRetry) => {

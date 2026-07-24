@@ -2294,7 +2294,7 @@ describe("project app loader", () => {
     }
   });
 
-  it("releases previous-runtime active tasks without trigger packets on startup", async () => {
+  it("requeues previous-runtime active tasks without trigger packets on startup", async () => {
     const f = fixture();
     try {
       writeApp(f.appDir);
@@ -2362,16 +2362,31 @@ describe("project app loader", () => {
         bus,
         agentCrons: new Map(),
       });
+      await waitUntil(() => {
+        const current = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
+        return Boolean(current.receipts?.["work/orphan"]);
+      });
       const state = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
       const tree = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "tree.json"), "utf8"));
-      expect(tree.tasks["work/orphan"]).toMatchObject({
-        phase: "pending",
+      expect(state.receipts["work/orphan"]).toMatchObject({
+        summary: "workflow done",
+        handler: "workflow:worker",
+      });
+      expect(state.attempts.r_orphan).toMatchObject({
+        state: "interrupted",
+        failureReason: "previous-runtime-attempt-requeued",
         summary:
           "Interrupted reconciliation work/orphan cannot resume because its previous runtime did not persist the trigger packet; retrying from current task evidence",
       });
-      expect(state.resources["work/orphan"].status.phase).toBe("pending");
-      expect(state.resources["work/orphan"].status.currentAttemptId).toBeUndefined();
+      expect(state.resources?.["work/orphan"]).toBeUndefined();
+      expect(tree.tasks["work/orphan"]).toBeUndefined();
       expect(tree.active_task_ids).not.toContain("work/orphan");
+      expect(events).toContainEqual(
+        expect.objectContaining({
+          type: "project.task.reconcile.started",
+          data: expect.objectContaining({ taskId: "work/orphan" }),
+        }),
+      );
       expect(events).not.toContainEqual(
         expect.objectContaining({
           type: "project.owner.requested",
