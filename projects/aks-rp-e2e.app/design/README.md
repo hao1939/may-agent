@@ -175,10 +175,23 @@ that checklist into every future spec or compact leaf. The app stays the
 organizer; the domain agent still decides from hot facts and current evidence.
 
 For an ordinary finite spec leaf, `spec-live-reconciliation` keeps source edit,
-exact live proof, fix-forward, PR into `dev`, and merge verification on the same
-task generation and task branch. Pipeline and PR watchers emit provider facts;
-the generic Condition tracker performs correlation. Disposition repair and
+exact live proof, fix-forward, direct integration into `dev`, and ancestry
+verification on the same task generation and task branch. If current `dev`
+advanced, the workflow merges it into the tested task branch so the tested
+commit remains in ancestry; a conflict returns to agent repair and requires a
+fresh live run. Pull requests are reserved for promotion into `main`. Pipeline
+and PR watchers emit provider facts where those facts are actually needed; the
+generic Condition tracker performs correlation. Disposition repair and
 non-mutating investigations do not use this workflow.
+
+For bounded normalization and other locally verified domain patches,
+`domain-task-execution` follows the same publication rule: the agent judges and
+commits the bounded change, then workflow code integrates the clean branch
+directly into `dev`. A conflict returns to the same agent and task for repair;
+an unintegrated task branch cannot converge. Its structured result is the
+current task's state transition, so typed actions may change other tasks but
+must never target the currently running task; an invalid self-action is fed
+back to the same agent for correction before the result reaches the reconciler.
 
 ## Experience and finished work
 

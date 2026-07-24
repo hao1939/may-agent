@@ -1,12 +1,16 @@
 import { describe, expect, test } from "bun:test";
 import {
   agentConditionProblem,
+  integrationMode,
   matchingTaskRuns,
   parseTaskPayload,
   pipelineWaitCondition,
+  pipelineRunState,
   pullRequestSourceUpdateCondition,
   pullRequestWaitCondition,
   resolveIntegrationTarget,
+  resolveLiveExecutionTarget,
+  runMatchesPriorVerification,
 } from "./spec-live-reconciliation.js";
 
 describe("spec-live-reconciliation workflow", () => {
@@ -109,7 +113,79 @@ describe("spec-live-reconciliation workflow", () => {
     ).toEqual([exact]);
   });
 
+  test("preserves an exact standalone live target across recovery", () => {
+    const exact = {
+      id: 52,
+      sourceVersion: "repair-commit",
+      templateParameters: {
+        specs: "spec.rp-cluster-lifecycle.nginx-large-header",
+        target: "standalone-rp-ingress",
+        standalone_build_id: "173469496",
+        metadata: JSON.stringify({
+          taskId: "domain/nginx-repair",
+          generation: 3,
+        }),
+      },
+    };
+    const wrongBuild = {
+      ...exact,
+      id: 53,
+      templateParameters: {
+        ...exact.templateParameters,
+        standalone_build_id: "173469497",
+      },
+    };
+
+    expect(
+      matchingTaskRuns([wrongBuild, exact], {
+        taskId: "domain/nginx-repair",
+        generation: 3,
+        specId: "spec.rp-cluster-lifecycle.nginx-large-header",
+        sourceCommit: "repair-commit",
+        target: "standalone-rp-ingress",
+        standaloneBuildId: "173469496",
+      }),
+    ).toEqual([exact]);
+    expect(
+      resolveLiveExecutionTarget({
+        target: "standalone-rp-ingress",
+        standaloneBuildId: 173469496,
+      }),
+    ).toEqual({
+      target: "standalone-rp-ingress",
+      standaloneBuildId: "173469496",
+    });
+    expect(resolveLiveExecutionTarget()).toEqual({
+      target: "staging",
+      standaloneBuildId: "",
+    });
+    expect(() =>
+      resolveLiveExecutionTarget({ standaloneBuildId: "latest" }),
+    ).toThrow();
+
+    expect(
+      runMatchesPriorVerification(exact, {
+        specId: "spec.rp-cluster-lifecycle.nginx-large-header",
+        target: "standalone-rp-ingress",
+        standaloneBuildId: "173469496",
+        sourceCommit: "repair-commit",
+      }),
+    ).toBe(true);
+    expect(
+      runMatchesPriorVerification(wrongBuild, {
+        specId: "spec.rp-cluster-lifecycle.nginx-large-header",
+        target: "standalone-rp-ingress",
+        standaloneBuildId: "173469496",
+        sourceCommit: "repair-commit",
+      }),
+    ).toBe(false);
+  });
+
   test("uses exact pipeline and PR Conditions", () => {
+    expect(pipelineRunState({ state: "inProgress" })).toBe("inProgress");
+    expect(pipelineRunState({ status: "completed", state: "inProgress" })).toBe(
+      "completed",
+    );
     expect(pipelineWaitCondition("42")).toEqual({
       id: "pipeline-run-42-completed",
       type: "pipeline-run.state",
@@ -142,6 +218,8 @@ describe("spec-live-reconciliation workflow", () => {
       targetBranch: "main",
       targetRef: "origin/main",
     });
+    expect(integrationMode("dev")).toBe("direct");
+    expect(integrationMode("main")).toBe("pull-request");
     expect(() => resolveIntegrationTarget("bad branch")).toThrow();
   });
 });

@@ -70,10 +70,12 @@ You are the project-local explorer for `aks-rp-e2e`. You build and validate the 
 12. When a test passes or fails, update the relevant output artifact and, when needed, the capability model.
 13. Keep summaries short and evidence-backed. Do not repeat old standalone-RP dead-state checks unless a new build, new environment, or human instruction changed the situation.
 14. When the resolved workflow is `spec-live-reconciliation`, keep source edit,
-    exact live verification, fix-forward, PR, and merge review in that same
-    task worktree and branch. Do not create pipeline-review or publication
-    successor tasks. The workflow owns push, dispatch, PR creation, and exact
-    Conditions; the agent owns source judgment, edits, and artifact diagnosis.
+    exact live verification, fix-forward, and integration in that same task
+    worktree and branch. Verified changes integrate directly into `dev`; PRs
+    are reserved for `main`. Do not create pipeline-review or publication
+    successor tasks. The workflow owns push, dispatch, direct-dev integration,
+    main PR creation, and exact Conditions; the agent owns source judgment,
+    edits, conflict repair, and artifact diagnosis.
 15. A task that must mutate source or call a provider needs a workflow that
     declares the required task workspace and provider capability. If direct
     owner handling discovers that context is missing, revise/bind the same task

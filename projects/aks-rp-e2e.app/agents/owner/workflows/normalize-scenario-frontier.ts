@@ -56,10 +56,25 @@ type InventoryReport = {
   repoPlainScenarioFileCount?: number;
 };
 
+type InventoryGuard = {
+  passed?: unknown;
+  remainingSpecReferencedPlainScenarioUnits?: unknown;
+  remainingRepoPlainScenarioFiles?: unknown;
+};
+
 type SpecRecord = {
   id?: string;
   probeRef?: string;
   implementation?: { path?: string };
+};
+
+type ScenarioUnit = {
+  scenarioTestPath?: unknown;
+  adapterPath?: unknown;
+  directVitestImplementation?: unknown;
+  featureIds?: unknown;
+  specIds?: unknown;
+  activeSpecCount?: unknown;
 };
 
 type FrontierRow = {
@@ -75,6 +90,19 @@ type FrontierRow = {
   residueTaskIds: string[];
 };
 
+type PlainCarrierRow = {
+  scenarioTestPath: string;
+  adapterPath: string;
+  specIds: string[];
+  featureIds: string[];
+  activeSpecCount: number;
+  branchCandidates: string[];
+  representedTaskIds: string[];
+  actionableTaskIds: string[];
+  waitingTaskIds: string[];
+  residueTaskIds: string[];
+};
+
 type GraphNode = {
   id: string;
   state: string;
@@ -83,6 +111,7 @@ type GraphNode = {
 };
 
 const frontierTaskId = scenarioNormalizationTaskId;
+const maxWorkflowEvidenceEntries = 32;
 
 function digest(value: string, length = 10): string {
   return createHash("sha256").update(value).digest("hex").slice(0, length);
@@ -205,9 +234,56 @@ function loadSpecs(worktreeDir: string): SpecRecord[] {
     .filter((spec) => typeof spec.id === "string" && spec.id.trim());
 }
 
+function normalizeScenarioUnits(value: unknown): PlainCarrierRow[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((entry) => {
+      const unit = entry as ScenarioUnit;
+      const scenarioTestPath =
+        typeof unit.scenarioTestPath === "string"
+          ? unit.scenarioTestPath.trim()
+          : "";
+      if (!scenarioTestPath || scenarioTestPath.endsWith(".test.ts")) {
+        return null;
+      }
+      const adapterPath =
+        typeof unit.adapterPath === "string" ? unit.adapterPath.trim() : "";
+      const specIds = Array.isArray(unit.specIds)
+        ? unit.specIds.filter(
+            (specId): specId is string =>
+              typeof specId === "string" && specId.trim().length > 0,
+          )
+        : [];
+      const featureIds = Array.isArray(unit.featureIds)
+        ? unit.featureIds.filter(
+            (featureId): featureId is string =>
+              typeof featureId === "string" && featureId.trim().length > 0,
+          )
+        : [];
+      return {
+        scenarioTestPath,
+        adapterPath,
+        specIds: [...new Set(specIds)],
+        featureIds: [...new Set(featureIds)],
+        activeSpecCount: Number(unit.activeSpecCount) || specIds.length,
+        branchCandidates: [],
+        representedTaskIds: [],
+        actionableTaskIds: [],
+        waitingTaskIds: [],
+        residueTaskIds: [],
+      } satisfies PlainCarrierRow;
+    })
+    .filter((row): row is PlainCarrierRow => Boolean(row));
+}
+
 function missingAdaptersFromInventory(worktreeDir: string): {
   report: InventoryReport;
+  guard: InventoryGuard;
   missingAdapterFiles: string[];
+  strictPassed: boolean | null;
+  remainingSpecReferencedPlainScenarioUnits: PlainCarrierRow[];
+  remainingSpecReferencedPlainScenarioUnitCount: number;
+  remainingRepoPlainScenarioFileCount: number;
   error?: string;
 } {
   const result = run(
@@ -216,19 +292,48 @@ function missingAdaptersFromInventory(worktreeDir: string): {
     worktreeDir,
   );
   try {
-    const parsed = JSON.parse(result.stdout) as { report?: InventoryReport };
+    const parsed = JSON.parse(result.stdout) as {
+      report?: InventoryReport;
+      guard?: InventoryGuard;
+    };
     const report = parsed.report ?? {};
+    const guard = parsed.guard ?? {};
     const missingAdapterFiles = Array.isArray(report.missingAdapterFiles)
       ? report.missingAdapterFiles.filter(
           (value): value is string =>
             typeof value === "string" && value.endsWith(".test.ts"),
         )
       : [];
-    return { report, missingAdapterFiles };
+    const strictPassed =
+      typeof guard.passed === "boolean" ? guard.passed : null;
+    const remainingSpecReferencedPlainScenarioUnits = normalizeScenarioUnits(
+      guard.remainingSpecReferencedPlainScenarioUnits,
+    );
+    const remainingSpecReferencedPlainScenarioUnitCount =
+      remainingSpecReferencedPlainScenarioUnits.length;
+    const remainingRepoPlainScenarioFileCount = Array.isArray(
+      guard.remainingRepoPlainScenarioFiles,
+    )
+      ? guard.remainingRepoPlainScenarioFiles.length
+      : 0;
+    return {
+      report,
+      guard,
+      missingAdapterFiles,
+      strictPassed,
+      remainingSpecReferencedPlainScenarioUnits,
+      remainingSpecReferencedPlainScenarioUnitCount,
+      remainingRepoPlainScenarioFileCount,
+    };
   } catch {
     return {
       report: {},
+      guard: {},
       missingAdapterFiles: [],
+      strictPassed: null,
+      remainingSpecReferencedPlainScenarioUnits: [],
+      remainingSpecReferencedPlainScenarioUnitCount: 0,
+      remainingRepoPlainScenarioFileCount: 0,
       error:
         result.stderr.trim() ||
         `strict inventory returned unparsable JSON with status ${String(result.status)}`,
@@ -240,11 +345,17 @@ function originCommit(worktreeDir: string): string {
   return run("git", ["rev-parse", "HEAD"], worktreeDir).stdout.trim();
 }
 
-function branchCandidates(projectDir: string, adapterPath: string): string[] {
-  const legacyPath = adapterPath.replace(/\.test\.ts$/, ".ts");
+function branchCandidatesForPaths(
+  projectDir: string,
+  ...paths: Array<string | null | undefined>
+): string[] {
+  const candidatePaths = [
+    ...new Set(paths.map((value) => value?.trim()).filter(Boolean)),
+  ] as string[];
+  if (candidatePaths.length === 0) return [];
   const result = run(
     "git",
-    ["log", "--all", "--format=%h %D %s", "--", adapterPath, legacyPath],
+    ["log", "--all", "--format=%h %D %s", "--", ...candidatePaths],
     projectDir,
   );
   return result.stdout
@@ -331,6 +442,13 @@ function canRepresentFrontierRow(node: GraphNode): boolean {
   return true;
 }
 
+function isScenarioFrontierParent(parentId: string): boolean {
+  return (
+    parentId === "group/scenario-normalization" ||
+    parentId === scenarioNormalizationTaskId
+  );
+}
+
 function rowMatchesNode(row: FrontierRow, node: GraphNode): boolean {
   if (!canRepresentFrontierRow(node)) return false;
   if (node.input.loopId === scenarioNormalizationTaskId) {
@@ -338,9 +456,26 @@ function rowMatchesNode(row: FrontierRow, node: GraphNode): boolean {
   }
   if (node.input.loopId) return false;
   return (
-    node.parentId === "group/scenario-normalization" &&
+    isScenarioFrontierParent(node.parentId) &&
     (node.input.adapterPath === row.adapterPath ||
       (Boolean(row.specId) && node.input.specId === row.specId))
+  );
+}
+
+function plainRowMatchesNode(row: PlainCarrierRow, node: GraphNode): boolean {
+  if (!canRepresentFrontierRow(node)) return false;
+  if (node.input.loopId === scenarioNormalizationTaskId) {
+    return node.input.workKey === row.scenarioTestPath;
+  }
+  if (node.input.loopId) return false;
+  return (
+    isScenarioFrontierParent(node.parentId) &&
+    (node.input.scenarioTestPath === row.scenarioTestPath ||
+      row.specIds.some((specId) => node.input.specId === specId) ||
+      (Array.isArray(node.input.specIds) &&
+        row.specIds.some((specId) =>
+          (node.input.specIds as unknown[]).includes(specId),
+        )))
   );
 }
 
@@ -354,7 +489,7 @@ function actionForRow(
     kind: "create-task",
     id,
     parentId: "group/scenario-normalization",
-    outcome: `Reconcile current origin/dev missing scenario adapter ${row.adapterPath} for ${row.specId || "the owning spec"} into exactly one next truthful state: absorbed, publish/rebase/recheck, smallest same-spec repair, exact external wait, terminal disposition, or escalation.`,
+    outcome: `Reconcile current origin/dev missing scenario adapter ${row.adapterPath} for ${row.specId || "the owning spec"} into exactly one next truthful state: integrated directly into dev, smallest same-spec repair, exact external wait, terminal disposition, or escalation.`,
     mode: "achieve",
     owner: "aks-explorer",
     workflow: "domain-task-execution",
@@ -387,7 +522,59 @@ function actionForRow(
     outputs: ["evidence/archive/", row.adapterPath, row.legacyPath],
     acceptance: [
       ...learnedScenarioNormalizationAcceptance,
-      "If the exact external wait is repo-ref movement such as origin/dev publication, create or update that wait with workflow wait-for-repo-ref-advance, structured input.baseRef plus input.resumeBaselineCommit, and explicit owner=aks-explorer instead of making prose successor waits.",
+      "A verified task branch must integrate directly into dev; use a repo-ref wait only when an exact external restriction prevents this workflow from performing that integration.",
+    ],
+    priority: "P1",
+    category: "domain_leaf",
+  };
+}
+
+function actionForPlainCarrierRow(
+  row: PlainCarrierRow,
+  originDevCommit: string,
+  report: InventoryReport,
+): ProjectAppTaskAction {
+  const id = `domain/normalize-plain-scenario-carrier-${safeTaskIdPart(row.scenarioTestPath)}`;
+  return {
+    kind: "create-task",
+    id,
+    parentId: "group/scenario-normalization",
+    outcome: `Normalize current origin/dev plain scenario carrier ${row.scenarioTestPath} for ${row.specIds.join(", ") || "the owning spec"} into exactly one next truthful state: direct .test.ts equivalent integrated into dev, smallest same-spec repair, exact external wait, terminal disposition, or escalation.`,
+    mode: "achieve",
+    owner: "aks-explorer",
+    workflow: "domain-task-execution",
+    input: {
+      workflow: name,
+      frontierTaskId,
+      loopId: scenarioNormalizationTaskId,
+      workKey: row.scenarioTestPath,
+      workRevision: digest(`${originDevCommit}:${row.scenarioTestPath}`),
+      originDevCommit,
+      scenarioTestPath: row.scenarioTestPath,
+      adapterPath: row.adapterPath || null,
+      specIds: row.specIds,
+      specId: row.specIds[0] ?? null,
+      featureIds: row.featureIds,
+      activeSpecCount: row.activeSpecCount,
+      branchCandidates: row.branchCandidates,
+      representedTaskIds: row.representedTaskIds,
+      residueTaskIds: row.residueTaskIds,
+      strictInventory: {
+        generatedAt: report.generatedAt ?? null,
+        directVitestImplementationCount:
+          report.directVitestImplementationCount ?? null,
+        referencedPlainActiveSpecCount:
+          report.referencedPlainActiveSpecCount ?? null,
+        referencedPlainScenarioCount:
+          report.referencedPlainScenarioCount ?? null,
+        repoPlainScenarioFileCount: report.repoPlainScenarioFileCount ?? null,
+      },
+    },
+    outputs: ["evidence/archive/", row.scenarioTestPath, row.adapterPath],
+    acceptance: [
+      ...learnedScenarioNormalizationAcceptance,
+      "Normalize the plain .ts carrier to current-line direct .test.ts coverage or record the exact blocker/disposition keeping strict inventory red for that scenarioTestPath.",
+      "A verified task branch must integrate directly into dev; use a repo-ref wait only when an exact external restriction prevents this workflow from performing that integration.",
     ],
     priority: "P1",
     category: "domain_leaf",
@@ -414,7 +601,11 @@ function buildRows(
       specId: String(spec.id ?? ""),
       probeRef: String(spec.probeRef ?? ""),
       implementationPath: String(spec.implementation?.path ?? ""),
-      branchCandidates: branchCandidates(projectDir, adapterPath),
+      branchCandidates: branchCandidatesForPaths(
+        projectDir,
+        adapterPath,
+        legacyPath,
+      ),
       representedTaskIds: [],
       actionableTaskIds: [],
       waitingTaskIds: [],
@@ -436,6 +627,64 @@ function buildRows(
   });
 }
 
+function buildPlainCarrierRows(
+  projectDir: string,
+  units: PlainCarrierRow[],
+  nodes: GraphNode[],
+): PlainCarrierRow[] {
+  return units.map((unit) => {
+    const row: PlainCarrierRow = {
+      ...unit,
+      branchCandidates: branchCandidatesForPaths(
+        projectDir,
+        unit.scenarioTestPath,
+        unit.adapterPath,
+      ),
+      representedTaskIds: [],
+      actionableTaskIds: [],
+      waitingTaskIds: [],
+      residueTaskIds: [],
+    };
+    const matches = nodes.filter((node) => plainRowMatchesNode(row, node));
+    row.representedTaskIds = [...new Set(matches.map((node) => node.id))];
+    const accounting = loopFrontierAccounting(
+      matches.map((node) => ({ taskId: node.id, phase: node.state })),
+      0,
+    );
+    row.actionableTaskIds = accounting.actionableTaskIds;
+    row.waitingTaskIds = accounting.waitingTaskIds;
+    row.residueTaskIds = [
+      ...accounting.attentionTaskIds,
+      ...accounting.terminalTaskIds,
+    ];
+    return row;
+  });
+}
+
+function capEvidence<Row>(
+  baseEvidence: string[],
+  rows: Row[],
+  render: (row: Row) => string,
+): string[] {
+  if (baseEvidence.length >= maxWorkflowEvidenceEntries) {
+    return baseEvidence.slice(0, maxWorkflowEvidenceEntries);
+  }
+
+  const remaining = maxWorkflowEvidenceEntries - baseEvidence.length;
+  if (rows.length <= remaining) {
+    return [...baseEvidence, ...rows.map(render)];
+  }
+
+  const detailBudget = Math.max(0, remaining - 1);
+  const bounded = rows.slice(0, detailBudget).map(render);
+  const omitted = rows.length - detailBudget;
+  return [
+    ...baseEvidence,
+    ...bounded,
+    `evidence-truncated:${omitted}-row(s)-omitted-to-stay-within-${maxWorkflowEvidenceEntries}`,
+  ];
+}
+
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const projectDir = resolveProjectDir(ctx);
   const appDir = resolveAppDir(ctx, projectDir);
@@ -445,14 +694,24 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const nodes = graphNodes(appDir);
 
   return withCleanOriginDev(projectDir, (worktreeDir, source) => {
-    const { report, missingAdapterFiles, error } =
-      missingAdaptersFromInventory(worktreeDir);
+    const {
+      report,
+      missingAdapterFiles,
+      strictPassed,
+      remainingSpecReferencedPlainScenarioUnits,
+      remainingSpecReferencedPlainScenarioUnitCount,
+      remainingRepoPlainScenarioFileCount,
+      error,
+    } = missingAdaptersFromInventory(worktreeDir);
     const originDevCommit = originCommit(worktreeDir);
     const evidence = [
       `inventory-source:${source}`,
       `inventory-root:${relative(projectDir, worktreeDir) || "."}`,
       `origin-dev-commit:${originDevCommit}`,
+      `strict-passed:${strictPassed === null ? "unknown" : String(strictPassed)}`,
       `missing-adapters:${missingAdapterFiles.length}`,
+      `remaining-spec-referenced-plain-scenario-units:${remainingSpecReferencedPlainScenarioUnitCount}`,
+      `remaining-repo-plain-scenario-files:${remainingRepoPlainScenarioFileCount}`,
       `desired-runnable-min:${minRunnableLeaves}`,
       ...(error ? [`inventory-error:${error}`] : []),
     ];
@@ -467,6 +726,48 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     }
 
     if (missingAdapterFiles.length === 0) {
+      if (strictPassed === false) {
+        const rows = buildPlainCarrierRows(
+          projectDir,
+          remainingSpecReferencedPlainScenarioUnits,
+          nodes,
+        );
+        const rowsNeedingWork = rows.filter(
+          (row) => row.representedTaskIds.length === 0,
+        );
+        const accounting = loopFrontierAccounting(
+          rows.flatMap((row) =>
+            row.representedTaskIds.map((taskId) => ({
+              taskId,
+              phase: nodes.find((node) => node.id === taskId)?.state,
+            })),
+          ),
+          maxLeaves,
+        );
+        const actions = rowsNeedingWork
+          .slice(0, accounting.available)
+          .map((row) => actionForPlainCarrierRow(row, originDevCommit, report));
+        const residueCount = rows.filter(
+          (row) =>
+            row.actionableTaskIds.length === 0 &&
+            row.waitingTaskIds.length === 0 &&
+            row.residueTaskIds.length > 0,
+        ).length;
+        const summary = rows.length
+          ? `Scenario frontier remains strict-red on ${source} ${originDevCommit} with zero missing adapter files: declared ${actions.length} bounded plain-carrier normalization task action(s), observed ${accounting.actionableTaskIds.length} actionable and ${accounting.waitingTaskIds.length} waiting plain-carrier task(s), found ${rows.length} current spec-referenced plain scenario unit(s), ${remainingRepoPlainScenarioFileCount} remaining repo plain scenario file(s), and ${residueCount} row(s) represented only by attention or stale terminal residue.`
+          : `Scenario frontier remains strict-red on ${source} ${originDevCommit} with zero missing adapter files and ${remainingRepoPlainScenarioFileCount} remaining repo plain scenario file(s), but there are no current spec-referenced plain scenario units left to refill as exact normalization work.`;
+        return ctx.done(summary, {
+          state: "converged",
+          summary,
+          evidence: capEvidence(
+            evidence,
+            rows,
+            (row) =>
+              `plain-row:${row.scenarioTestPath};specs=${row.specIds.join(",") || "unknown"};actionable=${row.actionableTaskIds.length};waiting=${row.waitingTaskIds.length};residue=${row.residueTaskIds.length};branches=${row.branchCandidates.length}`,
+          ),
+          actions,
+        });
+      }
       const summary =
         "Scenario frontier converged: clean origin/dev strict inventory reports zero missing adapter files.";
       return ctx.done(summary, {
@@ -509,13 +810,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       accounting.waitingTaskIds.length > 0
         ? "converged"
         : "needs-owner";
-    const resultEvidence = [
-      ...evidence,
-      ...rows.map(
-        (row) =>
-          `row:${row.adapterPath};spec=${row.specId || "unknown"};actionable=${row.actionableTaskIds.length};waiting=${row.waitingTaskIds.length};residue=${row.residueTaskIds.length};branches=${row.branchCandidates.length}`,
-      ),
-    ];
+    const resultEvidence = capEvidence(
+      evidence,
+      rows,
+      (row) =>
+        `row:${row.adapterPath};spec=${row.specId || "unknown"};actionable=${row.actionableTaskIds.length};waiting=${row.waitingTaskIds.length};residue=${row.residueTaskIds.length};branches=${row.branchCandidates.length}`,
+    );
     if (resultState === "needs-owner") {
       return ctx.done(summary, {
         state: resultState,

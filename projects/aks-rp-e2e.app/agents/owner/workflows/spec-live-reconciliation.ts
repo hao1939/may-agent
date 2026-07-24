@@ -14,7 +14,7 @@ import {
 
 export const name = "spec-live-reconciliation";
 export const description =
-  "Reconcile one AKS spec through a task-owned source branch, exact live ADO verification, fix-forward retries, and a PR into dev.";
+  "Reconcile one AKS spec through a task-owned source branch, exact live ADO verification, fix-forward retries, and integration into dev.";
 export const workspace = "task";
 
 const organization = "https://dev.azure.com/msazure";
@@ -22,7 +22,7 @@ const adoProject = "CloudNativeCompute";
 const repository = "aks-e2e-spec-runner";
 const pipelineId = "467665";
 const defaultTargetBranch = "dev";
-const targetEnvironment = "staging";
+const defaultLiveTarget = "staging";
 const azCli =
   process.env.AZURE_CLI_PATH ||
   (existsSync("/app/.state/.local/bin/az")
@@ -31,18 +31,24 @@ const azCli =
 
 export const workflowContract: WorkflowIoContract = {
   workflow: name,
-  version: "spec-live-reconciliation-v1",
+  version: "spec-live-reconciliation-v2",
   input: {
     required: ["input.specId"],
-    optional: ["input.desiredChange", "input.workRevision"],
+    optional: [
+      "input.desiredChange",
+      "input.workRevision",
+      "input.target",
+      "input.standaloneBuildId",
+      "input.priorVerificationRunId",
+    ],
     description:
-      "Use only for a finite spec verification/change lifecycle that may require source mutation, exact live verification, and PR integration.",
+      "Use only for a finite spec verification/change lifecycle that may require source mutation, exact live verification, and branch integration. target defaults to staging; standaloneBuildId selects an exact standalone RP build.",
   },
   output: {
     version: workflowResultVersion,
     fields: ["state", "summary", "evidence", "actions", "conditions"],
     description:
-      "Keeps the same task and branch across edit, live-run, fix-forward, PR, and merge waits.",
+      "Keeps the same task and branch across edit, live-run, fix-forward, direct-dev integration, and optional main PR waits.",
   },
 };
 
@@ -55,6 +61,7 @@ type TaskPayload = {
 type PipelineRun = {
   id?: unknown;
   status?: unknown;
+  state?: unknown;
   result?: unknown;
   sourceBranch?: unknown;
   sourceVersion?: unknown;
@@ -90,6 +97,8 @@ type ReviewedRunProof = {
   taskId: string;
   generation: number;
   specId: string;
+  target: string;
+  standaloneBuildId?: string;
   sourceBranch: string;
   sourceCommit: string;
   runId: string;
@@ -113,6 +122,25 @@ export type SpecLiveReconciliationOptions = {
   targetBranch?: string;
 };
 
+export type LiveExecutionTarget = {
+  target: string;
+  standaloneBuildId: string;
+};
+
+export function resolveLiveExecutionTarget(
+  input: Record<string, unknown> = {},
+): LiveExecutionTarget {
+  const target = nonEmptyString(input.target) || defaultLiveTarget;
+  const standaloneBuildId = nonEmptyString(input.standaloneBuildId);
+  if (!/^[A-Za-z0-9._-]+$/.test(target)) {
+    throw new Error(`Invalid live target: ${target}`);
+  }
+  if (standaloneBuildId && !/^\d+$/.test(standaloneBuildId)) {
+    throw new Error(`Invalid standalone build id: ${standaloneBuildId}`);
+  }
+  return { target, standaloneBuildId };
+}
+
 export function resolveIntegrationTarget(targetBranch = defaultTargetBranch): {
   targetBranch: string;
   targetRef: string;
@@ -122,6 +150,12 @@ export function resolveIntegrationTarget(targetBranch = defaultTargetBranch): {
     throw new Error(`Invalid integration target branch: ${targetBranch}`);
   }
   return { targetBranch: normalized, targetRef: `origin/${normalized}` };
+}
+
+export function integrationMode(
+  targetBranch: string,
+): "direct" | "pull-request" {
+  return targetBranch === defaultTargetBranch ? "direct" : "pull-request";
 }
 
 const decisionSchema = Type.Object({
@@ -189,6 +223,10 @@ function nonEmptyString(value: unknown): string {
   if (typeof value === "string" && value.trim()) return value.trim();
   if (typeof value === "number" && Number.isFinite(value)) return String(value);
   return "";
+}
+
+export function pipelineRunState(run: PipelineRun): string {
+  return nonEmptyString(run.status) || nonEmptyString(run.state) || "unknown";
 }
 
 function matchingJsonObject(text: string, start: number): string | null {
@@ -324,8 +362,12 @@ export function matchingTaskRuns(
     generation: number;
     specId: string;
     sourceCommit: string;
+    target?: string;
+    standaloneBuildId?: string;
   },
 ): PipelineRun[] {
+  const target = input.target || defaultLiveTarget;
+  const standaloneBuildId = input.standaloneBuildId || "";
   return runs
     .filter((run) => {
       const parameters =
@@ -338,12 +380,38 @@ export function matchingTaskRuns(
       return (
         nonEmptyString(run.sourceVersion) === input.sourceCommit &&
         nonEmptyString(parameters.specs) === input.specId &&
-        nonEmptyString(parameters.target) === targetEnvironment &&
+        nonEmptyString(parameters.target) === target &&
+        nonEmptyString(parameters.standalone_build_id) === standaloneBuildId &&
         nonEmptyString(metadata.taskId) === input.taskId &&
         Number(metadata.generation) === input.generation
       );
     })
     .sort((left, right) => Number(right.id ?? 0) - Number(left.id ?? 0));
+}
+
+export function runMatchesPriorVerification(
+  run: PipelineRun,
+  input: {
+    specId: string;
+    target: string;
+    standaloneBuildId: string;
+    sourceCommit?: string;
+  },
+): boolean {
+  const parameters =
+    run.templateParameters &&
+    typeof run.templateParameters === "object" &&
+    !Array.isArray(run.templateParameters)
+      ? (run.templateParameters as Record<string, unknown>)
+      : {};
+  return (
+    nonEmptyString(parameters.specs) === input.specId &&
+    nonEmptyString(parameters.target) === input.target &&
+    nonEmptyString(parameters.standalone_build_id) ===
+      input.standaloneBuildId &&
+    (!input.sourceCommit ||
+      nonEmptyString(run.sourceVersion) === input.sourceCommit)
+  );
 }
 
 export function pipelineWaitCondition(runId: string): ProjectAppConditionSpec {
@@ -448,6 +516,8 @@ function queueRun(
     specId: string;
     sourceBranch: string;
     sourceCommit: string;
+    target: string;
+    standaloneBuildId: string;
     retryOfRunId?: string;
   },
 ): PipelineRun {
@@ -457,6 +527,10 @@ function queueRun(
     specId: input.specId,
     sourceBranch: input.sourceBranch,
     sourceCommit: input.sourceCommit,
+    target: input.target,
+    ...(input.standaloneBuildId
+      ? { standaloneBuildId: input.standaloneBuildId }
+      : {}),
     ...(input.retryOfRunId ? { retryOfRunId: input.retryOfRunId } : {}),
   });
   const value = azJson(repoDir, [
@@ -470,7 +544,10 @@ function queueRun(
     input.sourceCommit,
     "--parameters",
     `specs=${input.specId}`,
-    `target=${targetEnvironment}`,
+    `target=${input.target}`,
+    ...(input.standaloneBuildId
+      ? [`standalone_build_id=${input.standaloneBuildId}`]
+      : []),
     "slices=1",
     "slice_max_parallel=1",
     `metadata=${metadata}`,
@@ -555,6 +632,23 @@ function createPullRequest(
     throw new Error("Azure DevOps did not return a pull request id");
   }
   return value as PullRequest;
+}
+
+function abandonPullRequest(repoDir: string, pullRequestId: string): boolean {
+  try {
+    azJson(repoDir, [
+      "repos",
+      "pr",
+      "update",
+      "--id",
+      pullRequestId,
+      "--status",
+      "abandoned",
+    ]);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function proofPath(contextDir: string): string {
@@ -655,6 +749,21 @@ export async function reconcileSpecLive(
   const taskId = nonEmptyString(payload?.taskId);
   const generation = Number(payload?.generation ?? 1);
   const specId = nonEmptyString(payload?.input?.specId);
+  let liveExecution: LiveExecutionTarget;
+  try {
+    liveExecution = resolveLiveExecutionTarget(payload?.input);
+  } catch (error) {
+    return ownerResult(
+      ctx,
+      error instanceof Error ? error.message : String(error),
+      [`task:${taskId || "missing"}`, `spec:${specId || "missing"}`],
+    );
+  }
+  const { target: liveTarget, standaloneBuildId } = liveExecution;
+  const priorVerificationRunId = nonEmptyString(
+    payload?.input?.priorVerificationRunId,
+  );
+  const preparedSourceCommit = nonEmptyString(payload?.input?.carrierCommit);
   const repoDir = ctx.projectDir ?? "/app/projects/aks-rp-e2e";
   const workspaceDir = ctx.workspaceDir ?? repoDir;
 
@@ -682,6 +791,53 @@ export async function reconcileSpecLive(
 
   try {
     git(repoDir, ["fetch", "origin", targetBranch]);
+    let priorVerificationSummary = "";
+    if (priorVerificationRunId) {
+      const priorRun = getPipelineRun(repoDir, priorVerificationRunId);
+      if (
+        !priorRun ||
+        !runMatchesPriorVerification(priorRun, {
+          specId,
+          target: liveTarget,
+          standaloneBuildId,
+          ...(preparedSourceCommit
+            ? { sourceCommit: preparedSourceCommit }
+            : {}),
+        })
+      ) {
+        return ownerResult(
+          ctx,
+          `Prior verification run ${priorVerificationRunId} does not match the task's exact spec, source, target, and standalone build context.`,
+          [
+            `pipeline-run:${priorVerificationRunId}`,
+            `spec:${specId}`,
+            `live-target:${liveTarget}`,
+            ...(preparedSourceCommit
+              ? [`prepared-source-commit:${preparedSourceCommit}`]
+              : []),
+          ],
+        );
+      }
+      const priorStatus = pipelineRunState(priorRun);
+      const priorResult = nonEmptyString(priorRun.result) || priorStatus;
+      if (priorStatus !== "completed") {
+        return waitingResult(
+          ctx,
+          `Prior exact verification run ${priorVerificationRunId} is ${priorStatus}; wait before preparing or dispatching another run.`,
+          [
+            `pipeline-run:${priorVerificationRunId}`,
+            `pipeline-status:${priorStatus}`,
+            `spec:${specId}`,
+            `live-target:${liveTarget}`,
+            ...(standaloneBuildId
+              ? [`standalone-build-id:${standaloneBuildId}`]
+              : []),
+          ],
+          pipelineWaitCondition(priorVerificationRunId),
+        );
+      }
+      priorVerificationSummary = `Prior exact verification run ${priorVerificationRunId} is terminal with provider result ${priorResult}. Treat its artifacts as repair context; current-task proof still requires the exact task source commit.`;
+    }
     const sourceBranch = git(workspaceDir, [
       "symbolic-ref",
       "--quiet",
@@ -795,6 +951,8 @@ export async function reconcileSpecLive(
       generation,
       specId,
       sourceCommit,
+      target: liveTarget,
+      standaloneBuildId,
     });
     let latestRun = runs[0];
 
@@ -805,6 +963,8 @@ export async function reconcileSpecLive(
           ctx,
           [
             `Reconcile ${specId} for one exact live verification/change lifecycle.`,
+            `The required live target is ${liveTarget}${standaloneBuildId ? ` with standalone_build_id=${standaloneBuildId}` : ""}.`,
+            ...(priorVerificationSummary ? [priorVerificationSummary] : []),
             `Work only in ${workspaceDir}; durable non-source artifacts belong in ${contextDir}.`,
             `Current integration authority is ${targetRef}@${baseCommit}.`,
             "Inspect the current spec, model, direct carrier, nearby good/bad examples, and prior evidence.",
@@ -865,6 +1025,8 @@ export async function reconcileSpecLive(
         specId,
         sourceBranch,
         sourceCommit,
+        target: liveTarget,
+        standaloneBuildId,
       });
       saveRunReceipt(contextDir, latestRun, sourceCommit);
       const runId = nonEmptyString(latestRun.id);
@@ -876,6 +1038,10 @@ export async function reconcileSpecLive(
           `spec:${specId}`,
           `source-branch:${sourceBranch}`,
           `source-commit:${sourceCommit}`,
+          `live-target:${liveTarget}`,
+          ...(standaloneBuildId
+            ? [`standalone-build-id:${standaloneBuildId}`]
+            : []),
           `pipeline-run:${runId}`,
         ],
         pipelineWaitCondition(runId),
@@ -883,7 +1049,7 @@ export async function reconcileSpecLive(
     }
 
     const runId = nonEmptyString(latestRun.id);
-    const runStatus = nonEmptyString(latestRun.status) || "unknown";
+    const runStatus = pipelineRunState(latestRun);
     const runResult = nonEmptyString(latestRun.result) || runStatus;
     if (runStatus !== "completed") {
       return waitingResult(
@@ -893,6 +1059,10 @@ export async function reconcileSpecLive(
           `task:${taskId}@${generation}`,
           `spec:${specId}`,
           `source-commit:${sourceCommit}`,
+          `live-target:${liveTarget}`,
+          ...(standaloneBuildId
+            ? [`standalone-build-id:${standaloneBuildId}`]
+            : []),
           `pipeline-run:${runId}`,
           `pipeline-status:${runStatus}`,
         ],
@@ -905,11 +1075,13 @@ export async function reconcileSpecLive(
       !proof ||
       proof.runId !== runId ||
       proof.sourceCommit !== sourceCommit ||
-      proof.specId !== specId
+      proof.specId !== specId ||
+      proof.target !== liveTarget ||
+      (proof.standaloneBuildId || "") !== standaloneBuildId
     ) {
       const failedRunsForCommit = runs.filter(
         (run) =>
-          nonEmptyString(run.status) === "completed" &&
+          pipelineRunState(run) === "completed" &&
           !["succeeded", "partiallySucceeded"].includes(
             nonEmptyString(run.result),
           ),
@@ -919,6 +1091,7 @@ export async function reconcileSpecLive(
         [
           `Review terminal Azure DevOps run ${runId} for ${specId}.`,
           `The exact source is ${sourceBranch}@${sourceCommit}; provider result is ${runResult}.`,
+          `The exact live target is ${liveTarget}${standaloneBuildId ? ` with standalone_build_id=${standaloneBuildId}` : ""}.`,
           `Use ${contextDir} for downloaded artifacts and diagnosis. Do not write runtime artifacts into tracked source paths.`,
           "Inspect run metadata, plan inputs, per-spec result, live resource identity, assertions, and cleanup proof. The aggregate provider result alone is not a spec verdict.",
           "Return accepted-pass only for exact same-spec live proof on this source commit.",
@@ -963,6 +1136,8 @@ export async function reconcileSpecLive(
           specId,
           sourceBranch,
           sourceCommit,
+          target: liveTarget,
+          standaloneBuildId,
           retryOfRunId: runId,
         });
         saveRunReceipt(contextDir, retry, sourceCommit);
@@ -995,6 +1170,8 @@ export async function reconcileSpecLive(
           specId,
           sourceBranch,
           sourceCommit: nextCommit,
+          target: liveTarget,
+          standaloneBuildId,
         });
         saveRunReceipt(contextDir, nextRun, nextCommit);
         const nextRunId = nonEmptyString(nextRun.id);
@@ -1022,6 +1199,8 @@ export async function reconcileSpecLive(
         taskId,
         generation,
         specId,
+        target: liveTarget,
+        ...(standaloneBuildId ? { standaloneBuildId } : {}),
         sourceBranch,
         sourceCommit,
         runId,
@@ -1032,6 +1211,168 @@ export async function reconcileSpecLive(
         reviewedAt: new Date().toISOString(),
       };
       saveProof(contextDir, proof);
+    }
+
+    if (integrationMode(targetBranch) === "direct") {
+      let integratedCommit = "";
+      let lastPushError = "";
+
+      for (let attempt = 1; attempt <= 3; attempt += 1) {
+        git(repoDir, ["fetch", "origin", targetBranch]);
+        if (
+          git(
+            repoDir,
+            ["merge-base", "--is-ancestor", sourceCommit, targetRef],
+            true,
+          ).status === 0
+        ) {
+          integratedCommit = git(repoDir, ["rev-parse", targetRef]).stdout;
+          break;
+        }
+
+        if (
+          git(
+            workspaceDir,
+            ["merge-base", "--is-ancestor", targetRef, "HEAD"],
+            true,
+          ).status !== 0
+        ) {
+          const beforeMerge = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+          const merge = git(
+            workspaceDir,
+            ["merge", "--no-ff", "--no-edit", targetRef],
+            true,
+          );
+          if (merge.status !== 0) {
+            const decision = await askAgent(
+              ctx,
+              [
+                `${specId} passed exact live run ${runId} at ${sourceCommit}, but direct integration now conflicts with current ${targetRef}.`,
+                `Resolve only the current merge in ${workspaceDir}, preserve the accepted task intent, run scoped checks, commit the resolved source, leave the worktree clean, and return decision=committed.`,
+                "Do not push, queue ADO, create a PR, create another task, or edit app state. The workflow will push the resolved branch and require a fresh exact live run before integration.",
+                "Task:",
+                ctx.task,
+              ].join("\n\n"),
+            );
+            if (!decision || decision.decision !== "committed") {
+              return ownerResult(
+                ctx,
+                decision?.summary ||
+                  `Direct ${targetBranch} integration conflict repair failed for ${specId}.`,
+                decision?.evidence || [
+                  `source-commit:${sourceCommit}`,
+                  `target-ref:${targetRef}`,
+                  `merge-error:${merge.stderr || merge.stdout}`,
+                ],
+              );
+            }
+            const resolvedCommit = git(workspaceDir, [
+              "rev-parse",
+              "HEAD",
+            ]).stdout;
+            if (
+              resolvedCommit === beforeMerge ||
+              cleanWorkspace(workspaceDir)
+            ) {
+              return ownerResult(
+                ctx,
+                `Direct ${targetBranch} conflict repair did not leave one new clean commit.`,
+                decision.evidence,
+              );
+            }
+            git(workspaceDir, ["push", "origin", sourceBranch]);
+            const replacement = queueRun(repoDir, {
+              taskId,
+              generation,
+              specId,
+              sourceBranch,
+              sourceCommit: resolvedCommit,
+              target: liveTarget,
+              standaloneBuildId,
+            });
+            saveRunReceipt(contextDir, replacement, resolvedCommit);
+            const replacementId = nonEmptyString(replacement.id);
+            return waitingResult(
+              ctx,
+              `Resolved direct ${targetBranch} integration conflict and queued replacement live run ${replacementId} at ${resolvedCommit}.`,
+              [
+                ...decision.evidence,
+                `replaces-run:${runId}`,
+                `source-commit:${resolvedCommit}`,
+                `pipeline-run:${replacementId}`,
+                `target-ref:${targetRef}`,
+              ],
+              pipelineWaitCondition(replacementId),
+            );
+          }
+          git(workspaceDir, ["push", "origin", sourceBranch]);
+        }
+
+        const push = git(
+          workspaceDir,
+          ["push", "origin", `HEAD:${targetBranch}`],
+          true,
+        );
+        if (push.status !== 0) {
+          lastPushError = push.stderr || push.stdout;
+          continue;
+        }
+        git(repoDir, ["fetch", "origin", targetBranch]);
+        if (
+          git(
+            repoDir,
+            ["merge-base", "--is-ancestor", sourceCommit, targetRef],
+            true,
+          ).status === 0
+        ) {
+          integratedCommit = git(repoDir, ["rev-parse", targetRef]).stdout;
+          break;
+        }
+      }
+
+      if (!integratedCommit) {
+        return ownerResult(
+          ctx,
+          `Could not integrate ${specId} into current ${targetBranch} after three refreshed fast-forward attempts.`,
+          [
+            `source-commit:${sourceCommit}`,
+            `target-ref:${targetRef}`,
+            ...(lastPushError ? [`push-error:${lastPushError}`] : []),
+          ],
+        );
+      }
+
+      const existingPrId = nonEmptyString(existingPr?.pullRequestId);
+      const abandonedExistingPr =
+        existingPrId && nonEmptyString(existingPr?.status) === "active"
+          ? abandonPullRequest(repoDir, existingPrId)
+          : false;
+      proof = {
+        ...proof,
+        targetRef,
+        mergedCommit: integratedCommit,
+      };
+      saveProof(contextDir, proof);
+      const summary = `${specId} passed run ${runId} at ${sourceCommit} and directly integrated that tested commit into ${targetBranch}@${integratedCommit}.`;
+      return ctx.done(summary, {
+        state: "converged",
+        summary,
+        evidence: [
+          ...proof.evidence,
+          `proof:${proofPath(contextDir)}`,
+          `pipeline-run:${runId}`,
+          `source-commit:${sourceCommit}`,
+          `integrated-commit:${integratedCommit}`,
+          `target-ref:${targetRef}`,
+          ...(existingPrId
+            ? [
+                `obsolete-pull-request:${existingPrId}`,
+                `obsolete-pull-request-abandoned:${String(abandonedExistingPr)}`,
+              ]
+            : []),
+        ],
+        actions: [],
+      });
     }
 
     const branchHasChange = existingPr
@@ -1180,6 +1521,8 @@ export async function reconcileSpecLive(
         specId,
         sourceBranch,
         sourceCommit: resolvedCommit,
+        target: liveTarget,
+        standaloneBuildId,
       });
       saveRunReceipt(contextDir, replacement, resolvedCommit);
       const replacementId = nonEmptyString(replacement.id);

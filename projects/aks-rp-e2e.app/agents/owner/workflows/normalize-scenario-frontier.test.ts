@@ -6,6 +6,9 @@ import { execute } from "./normalize-scenario-frontier";
 
 async function workspace(input: {
   missingAdapterFiles: string[];
+  strictPassed?: boolean;
+  remainingSpecReferencedPlainScenarioUnits?: unknown[];
+  remainingRepoPlainScenarioFiles?: unknown[];
   tasks?: Record<string, Record<string, unknown>>;
   resources?: Record<string, unknown>;
 }) {
@@ -36,7 +39,16 @@ async function workspace(input: {
       "  repoPlainScenarioFileCount: 1,",
       `  missingAdapterFiles: ${JSON.stringify(input.missingAdapterFiles)}`,
       "};",
-      "console.log(JSON.stringify({ report, guard: { passed: false } }));",
+      "const guard = {",
+      `  passed: ${JSON.stringify(input.strictPassed ?? false)},`,
+      `  remainingSpecReferencedPlainScenarioUnits: ${JSON.stringify(
+        input.remainingSpecReferencedPlainScenarioUnits ?? [],
+      )},`,
+      `  remainingRepoPlainScenarioFiles: ${JSON.stringify(
+        input.remainingRepoPlainScenarioFiles ?? [],
+      )},`,
+      "};",
+      "console.log(JSON.stringify({ report, guard }));",
       "process.exit(1);",
       "",
     ].join("\n"),
@@ -134,7 +146,7 @@ describe("normalize scenario frontier workflow", () => {
     });
     expect(result.output.actions[0].acceptance).toEqual(
       expect.arrayContaining([
-        expect.stringContaining("explicit owner=aks-explorer"),
+        expect.stringContaining("integrate directly into dev"),
       ]),
     );
   });
@@ -162,6 +174,28 @@ describe("normalize scenario frontier workflow", () => {
         ),
       ).size,
     ).toBe(5);
+  });
+
+  test("caps overflow-sized missing-adapter evidence at the workflow limit", async () => {
+    const missingAdapterFiles = Array.from(
+      { length: 30 },
+      (_, index) =>
+        `features/feature-a/tests/case-${String(index + 1).padStart(2, "0")}.test.ts`,
+    );
+    const ws = await workspace({ missingAdapterFiles });
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+
+    expect(result.output.state).toBe("converged");
+    expect(result.output.actions).toHaveLength(5);
+    expect(result.output.evidence).toHaveLength(32);
+    expect(result.output.evidence.at(-1)).toBe(
+      "evidence-truncated:7-row(s)-omitted-to-stay-within-32",
+    );
+    expect(
+      result.output.evidence.filter((entry: string) => entry.startsWith("row:"))
+        .length,
+    ).toBe(23);
+    expect(result.output.summary).toContain("30 current missing adapter");
   });
 
   test("subtracts represented leaves from scenario capacity", async () => {
@@ -239,6 +273,141 @@ describe("normalize scenario frontier workflow", () => {
       state: "converged",
       actions: [],
     });
+  });
+
+  test("treats current scenario-normalization direct children as represented missing-adapter work", async () => {
+    const ws = await workspace({
+      missingAdapterFiles: ["features/feature-a/tests/case-a.test.ts"],
+      resources: {
+        "domain/existing-case-a": {
+          spec: {
+            parentId: "scenario-normalization",
+            input: {
+              adapterPath: "features/feature-a/tests/case-a.test.ts",
+              specId: "spec.feature-a.case-a",
+            },
+          },
+          status: {
+            phase: "running",
+          },
+        },
+      },
+    });
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+    expect(result.output).toMatchObject({
+      state: "converged",
+      actions: [],
+    });
+    expect(result.output.summary).toContain("observed 1 actionable");
+  });
+
+  test("treats current scenario-normalization direct children as represented plain-carrier work", async () => {
+    const ws = await workspace({
+      missingAdapterFiles: [],
+      strictPassed: false,
+      remainingSpecReferencedPlainScenarioUnits: [
+        {
+          scenarioTestPath: "features/feature-a/tests/case-a.ts",
+          adapterPath: "features/feature-a/tests/case-a.test.ts",
+          specIds: ["spec.feature-a.case-a"],
+          featureIds: ["feature-a"],
+          activeSpecCount: 1,
+        },
+      ],
+      resources: {
+        "domain/existing-case-a": {
+          spec: {
+            parentId: "scenario-normalization",
+            input: {
+              scenarioTestPath: "features/feature-a/tests/case-a.ts",
+              specId: "spec.feature-a.case-a",
+            },
+          },
+          status: {
+            phase: "waiting",
+          },
+        },
+      },
+    });
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+    expect(result.output).toMatchObject({
+      state: "converged",
+      actions: [],
+    });
+    expect(result.output.summary).toContain(
+      "observed 0 actionable and 1 waiting",
+    );
+    expect(result.output.evidence).toContain(
+      "plain-row:features/feature-a/tests/case-a.ts;specs=spec.feature-a.case-a;actionable=0;waiting=1;residue=0;branches=0",
+    );
+  });
+
+  test("declares bounded plain-carrier normalization work when strict inventory stays red without missing adapters", async () => {
+    const ws = await workspace({
+      missingAdapterFiles: [],
+      strictPassed: false,
+      remainingSpecReferencedPlainScenarioUnits: [
+        {
+          scenarioTestPath: "features/feature-a/tests/case-a.ts",
+          adapterPath: "features/feature-a/tests/case-a.test.ts",
+          specIds: ["spec.feature-a.case-a"],
+          featureIds: ["feature-a"],
+          activeSpecCount: 1,
+        },
+      ],
+      remainingRepoPlainScenarioFiles: ["features/plain/test-a.ts"],
+    });
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+    expect(result.output).toMatchObject({
+      state: "converged",
+      actions: [
+        {
+          kind: "create-task",
+          parentId: "group/scenario-normalization",
+          owner: "aks-explorer",
+          workflow: "domain-task-execution",
+          input: {
+            scenarioTestPath: "features/feature-a/tests/case-a.ts",
+            adapterPath: "features/feature-a/tests/case-a.test.ts",
+            specId: "spec.feature-a.case-a",
+            specIds: ["spec.feature-a.case-a"],
+          },
+        },
+      ],
+    });
+    expect(result.output.summary).toContain("remains strict-red");
+    expect(result.output.summary).toContain("zero missing adapter files");
+    expect(result.output.summary).toContain(
+      "bounded plain-carrier normalization task action",
+    );
+    expect(result.output.evidence).toContain("strict-passed:false");
+    expect(result.output.evidence).toContain(
+      "remaining-spec-referenced-plain-scenario-units:1",
+    );
+    expect(result.output.evidence).toContain(
+      "remaining-repo-plain-scenario-files:1",
+    );
+    expect(result.output.evidence).toContain(
+      "plain-row:features/feature-a/tests/case-a.ts;specs=spec.feature-a.case-a;actionable=0;waiting=0;residue=0;branches=0",
+    );
+  });
+
+  test("converges truthfully when strict-red zero-missing inventory has no exact plain-carrier refill rows", async () => {
+    const ws = await workspace({
+      missingAdapterFiles: [],
+      strictPassed: false,
+      remainingSpecReferencedPlainScenarioUnits: [],
+      remainingRepoPlainScenarioFiles: ["features/plain/test-a.ts"],
+    });
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+    expect(result.output).toMatchObject({
+      state: "converged",
+      actions: [],
+    });
+    expect(result.output.summary).toContain("remains strict-red");
+    expect(result.output.summary).toContain(
+      "no current spec-referenced plain scenario units left to refill as exact normalization work",
+    );
   });
 
   test("does not count broad family waits as exact adapter-row work", async () => {
