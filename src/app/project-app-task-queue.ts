@@ -6,12 +6,14 @@
  * schedules exactly one fresh pass after the current pass completes.
  */
 export class ProjectAppTaskQueue {
+  private static readonly maxFrontBurst = 3;
   private readonly pending: string[] = [];
   private readonly queued = new Set<string>();
   private readonly frontQueued = new Set<string>();
   private readonly running = new Set<string>();
   private readonly dirty = new Set<string>();
   private readonly dirtyFront = new Set<string>();
+  private consecutiveFrontTakes = 0;
 
   constructor(readonly maxConcurrent: number) {
     if (!Number.isInteger(maxConcurrent) || maxConcurrent < 1) {
@@ -48,10 +50,15 @@ export class ProjectAppTaskQueue {
 
   take(): string | null {
     if (this.running.size >= this.maxConcurrent) return null;
-    const taskId = this.pending.shift();
+    const frontCount = this.frontQueued.size;
+    const takeOrdinary =
+      frontCount < this.pending.length &&
+      this.consecutiveFrontTakes >= ProjectAppTaskQueue.maxFrontBurst;
+    const [taskId] = this.pending.splice(takeOrdinary ? frontCount : 0, 1);
     if (!taskId) return null;
     this.queued.delete(taskId);
-    this.frontQueued.delete(taskId);
+    if (this.frontQueued.delete(taskId)) this.consecutiveFrontTakes += 1;
+    else this.consecutiveFrontTakes = 0;
     this.running.add(taskId);
     return taskId;
   }
