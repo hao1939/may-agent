@@ -132,6 +132,11 @@ not a scenario-normalization escape path.
 - Each terminal review receives a run-specific evidence directory keyed by the
   exact ADO run id. A later review cannot infer checkout lineage, results, or
   cleanup from files downloaded for an earlier run of the same task.
+- Before terminal agent judgment, workflow code uses the authenticated Azure
+  DevOps CLI to collect exact run metadata, the artifact list, and each
+  available artifact into that run-specific directory. Code collects these
+  facts; the agent judges the spec verdict and next domain move. Agents do not
+  scrape Azure DevOps web pages or treat a sign-in response as missing proof.
 - A previously dispatched exact run may be preserved as
   `input.priorVerificationRunId`. The workflow validates its spec, source,
   target, and standalone build, then waits for it before dispatching anything

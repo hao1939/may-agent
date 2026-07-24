@@ -1,10 +1,18 @@
 import { describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   askAgent,
   agentConditionProblem,
+  collectTerminalRunEvidence,
   decisionCorrectionPrompt,
   integrationMode,
   matchingTaskRuns,
@@ -28,6 +36,42 @@ import {
 } from "./lib/scenario-normalization-invariant.js";
 
 describe("spec-live-reconciliation workflow", () => {
+  test("collects terminal evidence before asking the agent to judge it", () => {
+    const root = mkdtempSync(join(tmpdir(), "terminal-evidence-"));
+    try {
+      const result = collectTerminalRunEvidence(
+        root,
+        root,
+        "42",
+        {
+          id: 42,
+          status: "completed",
+          result: "succeeded",
+        },
+        {
+          listArtifacts: () => [
+            { name: "plan-inputs" },
+            { name: "test results" },
+          ],
+          downloadArtifact: (name, downloadDir) => {
+            writeFileSync(join(downloadDir, `${name}.txt`), "collected\n");
+            return { status: 0, stdout: "", stderr: "" };
+          },
+        },
+      );
+
+      expect(result.errors).toEqual([]);
+      expect(result.artifactPaths).toHaveLength(2);
+      expect(existsSync(join(root, "ado-run-show.json"))).toBe(true);
+      expect(existsSync(join(root, "ado-artifacts.json"))).toBe(true);
+      expect(
+        JSON.parse(readFileSync(join(root, "collection.json"), "utf8")),
+      ).toMatchObject({ runId: "42", errors: [] });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   test("retries an agent runtime failure inside the same workflow", async () => {
     const prompts: string[] = [];
     const decisions = [

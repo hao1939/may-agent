@@ -126,6 +126,13 @@ type RunReceipt = {
   queuedAt: string;
 };
 
+type CollectedRunEvidence = {
+  runPath: string;
+  artifactListPath: string;
+  artifactPaths: string[];
+  errors: string[];
+};
+
 export type SpecLiveReconciliationOptions = {
   targetBranch?: string;
 };
@@ -393,6 +400,117 @@ function azJson(cwd: string, args: string[]): unknown {
   } catch {
     throw new Error(`Azure CLI returned invalid JSON for ${args.join(" ")}`);
   }
+}
+
+function artifactPart(value: string): string {
+  return value
+    .replace(/[^A-Za-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+
+export function collectTerminalRunEvidence(
+  repoDir: string,
+  runContextDir: string,
+  runId: string,
+  run: PipelineRun,
+  dependencies: {
+    listArtifacts?: () => unknown;
+    downloadArtifact?: (
+      name: string,
+      downloadDir: string,
+    ) => { status: number; stdout: string; stderr: string };
+  } = {},
+): CollectedRunEvidence {
+  mkdirSync(runContextDir, { recursive: true });
+  const runPath = join(runContextDir, "ado-run-show.json");
+  writeFileSync(runPath, `${JSON.stringify(run, null, 2)}\n`);
+
+  const artifactListPath = join(runContextDir, "ado-artifacts.json");
+  const artifactPaths: string[] = [];
+  const errors: string[] = [];
+  let artifacts: unknown = [];
+  try {
+    artifacts = dependencies.listArtifacts
+      ? dependencies.listArtifacts()
+      : azJson(repoDir, [
+          "pipelines",
+          "runs",
+          "artifact",
+          "list",
+          "--run-id",
+          runId,
+        ]);
+  } catch (error) {
+    errors.push(
+      `artifact-list: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+  writeFileSync(artifactListPath, `${JSON.stringify(artifacts, null, 2)}\n`);
+
+  for (const artifact of Array.isArray(artifacts) ? artifacts : []) {
+    const name = nonEmptyString(
+      artifact && typeof artifact === "object"
+        ? (artifact as { name?: unknown }).name
+        : "",
+    );
+    if (!name) continue;
+    const downloadDir = join(
+      runContextDir,
+      "artifacts",
+      artifactPart(name) || "artifact",
+    );
+    const markerPath = join(downloadDir, ".download-complete");
+    if (existsSync(markerPath)) {
+      artifactPaths.push(downloadDir);
+      continue;
+    }
+    mkdirSync(downloadDir, { recursive: true });
+    const result = dependencies.downloadArtifact
+      ? dependencies.downloadArtifact(name, downloadDir)
+      : command(
+          azCli,
+          [
+            "pipelines",
+            "runs",
+            "artifact",
+            "download",
+            "--run-id",
+            runId,
+            "--artifact-name",
+            name,
+            "--path",
+            downloadDir,
+            "--organization",
+            organization,
+            "--project",
+            adoProject,
+          ],
+          {
+            cwd: repoDir,
+            allowFailure: true,
+            timeoutMs: 10 * 60_000,
+          },
+        );
+    if (result.status === 0) {
+      writeFileSync(markerPath, `${new Date().toISOString()}\n`);
+      artifactPaths.push(downloadDir);
+    } else {
+      errors.push(
+        `artifact-download:${name}: ${result.stderr || result.stdout || `exit ${result.status}`}`,
+      );
+    }
+  }
+
+  writeFileSync(
+    join(runContextDir, "collection.json"),
+    `${JSON.stringify(
+      { runId, runPath, artifactListPath, artifactPaths, errors },
+      null,
+      2,
+    )}\n`,
+  );
+  return { runPath, artifactListPath, artifactPaths, errors };
 }
 
 function metadataOf(run: PipelineRun): Record<string, unknown> {
@@ -1583,14 +1701,20 @@ export async function reconcileSpecLive(
         normalizationInput,
       );
       const runContextDir = terminalRunContextDir(contextDir, runId);
-      mkdirSync(runContextDir, { recursive: true });
+      const collectedRunEvidence = collectTerminalRunEvidence(
+        repoDir,
+        runContextDir,
+        runId,
+        latestRun,
+      );
       const decision = await askAgent(
         ctx,
         [
           `Review terminal Azure DevOps run ${runId} for ${specId}.`,
           `The exact source is ${sourceBranch}@${sourceCommit}; provider result is ${runResult}.`,
           `The exact live target is ${liveTarget}${standaloneBuildId ? ` with standalone_build_id=${standaloneBuildId}` : ""}.`,
-          `Use ${runContextDir} exclusively for downloaded artifacts and diagnosis for this run. Do not reuse task-root or earlier-run evidence, and do not write runtime artifacts into tracked source paths.`,
+          `Workflow code collected authenticated run evidence in ${runContextDir}. Run metadata: ${collectedRunEvidence.runPath}. Artifact list: ${collectedRunEvidence.artifactListPath}. Downloaded artifact directories: ${collectedRunEvidence.artifactPaths.join(", ") || "none"}. Collection errors: ${collectedRunEvidence.errors.join(" | ") || "none"}.`,
+          `Use ${runContextDir} exclusively for diagnosis for this run. Do not reuse task-root or earlier-run evidence, do not scrape Azure DevOps web pages, and do not write runtime artifacts into tracked source paths.`,
           "Inspect run metadata, plan inputs, per-spec result, live resource identity, assertions, and cleanup proof. The aggregate provider result alone is not a spec verdict.",
           "Return accepted-pass only for exact same-spec live proof on this source commit.",
           ...(normalizationInput
