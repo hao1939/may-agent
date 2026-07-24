@@ -1,4 +1,5 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
 import { compareRuns, renderReport } from "./report";
@@ -18,6 +19,7 @@ import type {
   LoopRunManifest,
   RunComparison,
   ScenarioRunResult,
+  StoredTrial,
 } from "./types";
 
 export interface RunOptions {
@@ -45,6 +47,21 @@ export type ScenarioExecutor = (input: {
   timeout?: number;
   agentsRoot?: string;
 }) => Promise<ExecutionResult>;
+
+function cleanupScenarioSandbox(result: ScenarioRunResult): void {
+  if (!result.gym_root) return;
+  const root = resolve(result.gym_root);
+  const tempRoot = `${resolve(tmpdir())}/`;
+  const name = root.slice(tempRoot.length);
+  if (
+    !root.startsWith(tempRoot) ||
+    (!name.startsWith("gym-run-") && !name.startsWith("gym-multi-")) ||
+    name.includes("/")
+  ) {
+    return;
+  }
+  rmSync(root, { recursive: true, force: true });
+}
 
 function parseResult(
   stdout: string,
@@ -234,20 +251,25 @@ export async function runLoop(
         timeout: options.timeout,
         agentsRoot: options.agentsRoot,
       });
-      const stored = storeTrial({
-        runDir: created.runDir,
-        suite,
-        labels,
-        scenarioDir: join(
-          created.runDir,
-          created.manifest.source.scenarios_snapshot,
-          safeName(scenario),
-        ),
-        scenario,
-        trial,
-        result: execution.result,
-        stderr: execution.stderr,
-      });
+      let stored: StoredTrial;
+      try {
+        stored = storeTrial({
+          runDir: created.runDir,
+          suite,
+          labels,
+          scenarioDir: join(
+            created.runDir,
+            created.manifest.source.scenarios_snapshot,
+            safeName(scenario),
+          ),
+          scenario,
+          trial,
+          result: execution.result,
+          stderr: execution.stderr,
+        });
+      } finally {
+        cleanupScenarioSandbox(execution.result);
+      }
       created.manifest.trials.push(stored);
       refreshObservedProvenance(created.manifest);
       writeManifest(created.runDir, created.manifest);

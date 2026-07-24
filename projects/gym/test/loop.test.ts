@@ -1,5 +1,13 @@
 import { describe, expect, it } from "bun:test";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { compareRuns, renderReport } from "../src/loop/report";
@@ -147,7 +155,8 @@ describe("loop evaluation", () => {
     withTempDirAsync(async (root) => {
       const previousState = process.env["GYM_STATE_DIR"];
       process.env["GYM_STATE_DIR"] = join(root, "state");
-      const workDir = join(root, "agent-work");
+      const scenarioSandbox = mkdtempSync(join(tmpdir(), "gym-run-"));
+      const workDir = join(scenarioSandbox, "work");
       mkdirSync(workDir);
       writeFileSync(
         join(workDir, "alignment-decision.json"),
@@ -191,6 +200,7 @@ describe("loop evaluation", () => {
                 checks: [{ name: "decision", passed: true }],
                 agent_status: "success",
                 work_dir: workDir,
+                gym_root: scenarioSandbox,
               },
             };
           },
@@ -221,6 +231,7 @@ describe("loop evaluation", () => {
         expect(
           existsSync(join(created.runDir, stored.trials[0]!.transcript_path!)),
         ).toBe(true);
+        expect(existsSync(scenarioSandbox)).toBe(false);
 
         const rescored = rescoreRun(created.runDir);
         expect(rescored.trials[0]?.original_verdict).toBe("pass");
@@ -247,6 +258,7 @@ describe("loop evaluation", () => {
           readFileSync(join(created.runDir, "reviews.jsonl"), "utf-8"),
         ).toContain('"reviewer":"hao"');
       } finally {
+        rmSync(scenarioSandbox, { recursive: true, force: true });
         if (previousState === undefined) delete process.env["GYM_STATE_DIR"];
         else process.env["GYM_STATE_DIR"] = previousState;
       }
