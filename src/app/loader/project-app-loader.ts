@@ -1924,7 +1924,10 @@ function installConventionTaskControllers(
         });
         for (const dependentTaskId of dependentTaskIds) {
           const activeController = appTaskControllersByBus.get(opts.bus)?.get(descriptor.id) ?? controller;
-          activeController.enqueue(dependentTaskId, { front: true });
+          // Reconciliation-created work is ordinary runnable work. Explicit
+          // targeted events use the front lane below; promoting every new
+          // child/dependent here can indefinitely starve older recovered work.
+          activeController.enqueue(dependentTaskId);
         }
       },
       onError: (taskId, error, willRetry) => {
