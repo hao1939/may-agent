@@ -695,7 +695,10 @@ export async function prepareAssessment(
     .sort();
   const runDirs = [screening.runDir, ...(retry ? [retry.runDir] : [])];
   const sourceRuns = [screening, ...(retry ? [retry] : [])];
-  const classified = await classifyFailures(ctx, failing, runDirs);
+  let classified = await classifyFailures(ctx, failing, runDirs);
+  if (!classified && failing.length) {
+    classified = await classifyFailures(ctx, failing, runDirs);
+  }
   if (!classified) {
     throw new Error("Gym could not classify every valid failing scenario");
   }

@@ -287,9 +287,17 @@ describe("single agent-improvement loop", () => {
         throw new Error("verification is not used by assessment");
       },
     };
+    let classificationAttempts = 0;
     const ctx = {
       projectsRoot,
       async runAgent() {
+        classificationAttempts++;
+        if (classificationAttempts === 1) {
+          return {
+            status: "error",
+            error: "Agent ended with an empty assistant turn",
+          };
+        }
         return {
           status: "done",
           structuredResult: {
@@ -330,6 +338,7 @@ describe("single agent-improvement loop", () => {
       ]),
     );
     expect(prepared.assessment.baseline_run_id).toBe("run-3");
+    expect(classificationAttempts).toBe(2);
     expect(
       JSON.parse(
         readFileSync(
