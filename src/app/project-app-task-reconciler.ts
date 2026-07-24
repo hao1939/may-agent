@@ -1721,8 +1721,8 @@ function validateTaskActions(
       if (action.id.startsWith("runtime/")) {
         throw new Error("Handler actions cannot create reconciler-owned runtime tasks");
       }
-      if (tree.tasks[action.id] || tree.resources?.[action.id]) {
-        throw new Error(`Handler action task already exists: ${action.id}`);
+      if (tree.tasks[action.id] || tree.resources?.[action.id] || tree.receipts?.[action.id]) {
+        throw new Error(`Handler action task already exists or completed: ${action.id}`);
       }
       validateParentReference(validationTree, action.id, action.parentId);
       const parent = validationTree.tasks[action.parentId];
@@ -1803,7 +1803,12 @@ function validateTaskActions(
     if (action.kind === "unblock-task") {
       requireNonEmptyString(action.reason, `Handler unblock for ${action.taskId} reason`);
     }
-    if (actionTargetAlreadyReceipted(validationTree, action)) continue;
+    if (actionTargetAlreadyReceipted(validationTree, action)) {
+      if (action.kind === "close-task") continue;
+      throw new Error(
+        `Handler ${action.kind} action cannot mutate completed task ${action.taskId}; create a new linked task`,
+      );
+    }
     const { task, resource } = mutableActionResource(validationTree, action);
     if (action.kind === "close-task") {
       const liveChildren = liveChildTaskIds(validationTree, task);
@@ -1910,7 +1915,7 @@ function applyTaskActions(
     if (action.kind !== "create-task" && action.taskId === claim.taskId) {
       throw new Error(`Handler action cannot mutate its own running task ${claim.taskId}`);
     }
-    if (action.kind !== "create-task" && actionTargetAlreadyReceipted(tree, action)) {
+    if (action.kind === "close-task" && actionTargetAlreadyReceipted(tree, action)) {
       applied.push(`already completed ${action.taskId}`);
       continue;
     }
