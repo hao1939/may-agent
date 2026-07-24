@@ -738,12 +738,38 @@ function cleanWorkspace(workspaceDir: string): string {
   ]).stdout;
 }
 
+export function decisionCorrectionPrompt(input: {
+  originalPrompt: string;
+  decision: AgentDecision;
+  problem: string;
+  continueDomainWork: boolean;
+}): string {
+  if (input.continueDomainWork) {
+    return [
+      input.originalPrompt,
+      "Your immediately preceding structured result failed a hard invariant.",
+      `Validation finding: ${input.problem}.`,
+      "Continue this same bounded task from current hot evidence. Re-evaluate the prior judgment and perform any source diagnosis, repair, and local checks allowed by the original instructions when the finding proves they are necessary.",
+      "Do not queue provider work or create another task; the workflow still owns dispatch after a valid result.",
+      `Invalid prior structured result:\n${JSON.stringify(input.decision, null, 2)}`,
+    ].join("\n\n");
+  }
+  return [
+    "Correct the structured result from your immediately preceding domain judgment.",
+    `Hard validation failure: ${input.problem}.`,
+    conditionInstruction,
+    "Do not repeat provider operations, queue work, or change source merely to correct the result. Preserve the prior domain judgment unless current evidence proves it wrong.",
+    `Prior structured result:\n${JSON.stringify(input.decision, null, 2)}`,
+  ].join("\n\n");
+}
+
 async function askAgent(
   ctx: WorkflowContext,
   prompt: string,
   options: {
     validateDecision?: (decision: AgentDecision) => string | null;
     scenarioNormalization?: boolean;
+    continueDomainWorkOnValidation?: boolean;
   } = {},
 ): Promise<AgentDecision | null> {
   let nextPrompt = `${prompt}\n\n${conditionInstruction}`;
@@ -766,13 +792,12 @@ async function askAgent(
       null;
     if (!problem) return decision;
     lastProblem = problem;
-    nextPrompt = [
-      "Correct the structured result from your immediately preceding domain judgment.",
-      `Hard validation failure: ${problem}.`,
-      conditionInstruction,
-      "Do not repeat provider operations, queue work, or change source merely to correct the result. Preserve the prior domain judgment unless current evidence proves it wrong.",
-      `Prior structured result:\n${JSON.stringify(decision, null, 2)}`,
-    ].join("\n\n");
+    nextPrompt = decisionCorrectionPrompt({
+      originalPrompt: prompt,
+      decision,
+      problem,
+      continueDomainWork: Boolean(options.continueDomainWorkOnValidation),
+    });
   }
   return {
     decision: "needs-owner",
@@ -1561,6 +1586,7 @@ export async function reconcileSpecLive(
         ].join("\n\n"),
         {
           scenarioNormalization: Boolean(normalizationInput),
+          continueDomainWorkOnValidation: true,
           validateDecision: (candidate) =>
             sourceOnlyDecisionProblem(candidate, sourceOnlyPosture),
         },

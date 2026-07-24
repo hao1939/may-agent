@@ -142,9 +142,11 @@ not a scenario-normalization escape path.
   request a genuine ownership-boundary decision. A policy preflight rejection
   is not itself a source-only execution posture.
 - If an agent chooses `accepted-nonlive` without that structured posture, code
-  returns the validation finding to the same agent immediately for a corrected
-  judgment. It does not close the task or leave a routine correction in the
-  owner-attention queue.
+  returns the validation finding and the full terminal-run context to the same
+  agent immediately. The agent continues the same bounded diagnosis/repair;
+  this is not a result-shape-only retry that forbids the source change now
+  proven necessary. It does not close the task, create a successor, or leave a
+  routine correction in the owner-attention queue.
 - An interrupted dirty task worktree is given back to the owner agent to finish,
   validate, and commit or to remove only proven task-generated residue. Ambiguous
   ownership requires owner review; it is never silently discarded.

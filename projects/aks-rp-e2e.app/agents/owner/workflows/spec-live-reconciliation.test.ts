@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   agentConditionProblem,
+  decisionCorrectionPrompt,
   integrationMode,
   matchingTaskRuns,
   parseTaskPayload,
@@ -132,6 +133,22 @@ describe("spec-live-reconciliation workflow", () => {
         evidence: ["source-only-spec:spec.example.source-only"],
       }),
     ).toContain("permits accepted-nonlive");
+  });
+
+  test("keeps full terminal context when a domain judgment needs correction", () => {
+    const prompt = decisionCorrectionPrompt({
+      originalPrompt: "Review terminal run 42 and repair the carrier when needed.",
+      decision: {
+        decision: "accepted-nonlive",
+        summary: "skip it",
+        evidence: ["run:42"],
+      },
+      problem: "accepted-nonlive is unavailable",
+      continueDomainWork: true,
+    });
+    expect(prompt).toContain("Review terminal run 42");
+    expect(prompt).toContain("perform any source diagnosis, repair");
+    expect(prompt).toContain("workflow still owns dispatch");
   });
 
   test("validates agent waits without replacing agent judgment", () => {
