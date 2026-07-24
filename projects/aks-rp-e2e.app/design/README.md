@@ -184,14 +184,21 @@ and PR watchers emit provider facts where those facts are actually needed; the
 generic Condition tracker performs correlation. Disposition repair and
 non-mutating investigations do not use this workflow.
 
-For bounded normalization and other locally verified domain patches,
-`domain-task-execution` follows the same publication rule: the agent judges and
-commits the bounded change, then workflow code integrates the clean branch
-directly into `dev`. A conflict returns to the same agent and task for repair;
-an unintegrated task branch cannot converge. Its structured result is the
-current task's state transition, so typed actions may change other tasks but
-must never target the currently running task; an invalid self-action is fed
-back to the same agent for correction before the result reaches the reconciler.
+For bounded source-only patches, `domain-task-execution` lets the agent judge
+and commit the change, then workflow code integrates the clean branch directly
+into `dev`. Scenario normalization is source-only only when strict inventory
+shows no active consuming spec. A changed runnable scenario carrier instead
+uses the same exact lifecycle as spec reconciliation: push the task branch,
+queue ADO pipeline `467665` for every consuming spec at that commit, wait on the
+exact run, let the agent diagnose and repair any failure in the same worktree,
+and integrate only the passing tested commit into `dev`. A local check or an
+untested merge cannot converge runnable normalization work.
+
+A conflict returns to the same agent and task for repair; an unintegrated task
+branch cannot converge. Its structured result is the current task's state
+transition, so typed actions may change other tasks but must never target the
+currently running task; an invalid self-action is fed back to the same agent for
+correction before the result reaches the reconciler.
 
 ## Experience and finished work
 

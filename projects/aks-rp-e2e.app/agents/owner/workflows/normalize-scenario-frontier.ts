@@ -84,6 +84,7 @@ type FrontierRow = {
   probeRef: string;
   implementationPath: string;
   branchCandidates: string[];
+  branchCandidatesInspected: boolean;
   representedTaskIds: string[];
   actionableTaskIds: string[];
   waitingTaskIds: string[];
@@ -91,12 +92,14 @@ type FrontierRow = {
 };
 
 type PlainCarrierRow = {
+  scope: "spec-referenced" | "repository-only";
   scenarioTestPath: string;
   adapterPath: string;
   specIds: string[];
   featureIds: string[];
   activeSpecCount: number;
   branchCandidates: string[];
+  branchCandidatesInspected: boolean;
   representedTaskIds: string[];
   actionableTaskIds: string[];
   waitingTaskIds: string[];
@@ -237,7 +240,7 @@ function loadSpecs(worktreeDir: string): SpecRecord[] {
 function normalizeScenarioUnits(value: unknown): PlainCarrierRow[] {
   if (!Array.isArray(value)) return [];
   return value
-    .map((entry) => {
+    .map((entry): PlainCarrierRow | null => {
       const unit = entry as ScenarioUnit;
       const scenarioTestPath =
         typeof unit.scenarioTestPath === "string"
@@ -261,12 +264,14 @@ function normalizeScenarioUnits(value: unknown): PlainCarrierRow[] {
           )
         : [];
       return {
+        scope: "spec-referenced" as const,
         scenarioTestPath,
         adapterPath,
         specIds: [...new Set(specIds)],
         featureIds: [...new Set(featureIds)],
         activeSpecCount: Number(unit.activeSpecCount) || specIds.length,
         branchCandidates: [],
+        branchCandidatesInspected: false,
         representedTaskIds: [],
         actionableTaskIds: [],
         waitingTaskIds: [],
@@ -282,6 +287,7 @@ function missingAdaptersFromInventory(worktreeDir: string): {
   missingAdapterFiles: string[];
   strictPassed: boolean | null;
   remainingSpecReferencedPlainScenarioUnits: PlainCarrierRow[];
+  remainingRepoPlainScenarioFiles: string[];
   remainingSpecReferencedPlainScenarioUnitCount: number;
   remainingRepoPlainScenarioFileCount: number;
   error?: string;
@@ -311,17 +317,23 @@ function missingAdaptersFromInventory(worktreeDir: string): {
     );
     const remainingSpecReferencedPlainScenarioUnitCount =
       remainingSpecReferencedPlainScenarioUnits.length;
-    const remainingRepoPlainScenarioFileCount = Array.isArray(
+    const remainingRepoPlainScenarioFiles = Array.isArray(
       guard.remainingRepoPlainScenarioFiles,
     )
-      ? guard.remainingRepoPlainScenarioFiles.length
-      : 0;
+      ? guard.remainingRepoPlainScenarioFiles.filter(
+          (value): value is string =>
+            typeof value === "string" && value.endsWith(".ts"),
+        )
+      : [];
+    const remainingRepoPlainScenarioFileCount =
+      remainingRepoPlainScenarioFiles.length;
     return {
       report,
       guard,
       missingAdapterFiles,
       strictPassed,
       remainingSpecReferencedPlainScenarioUnits,
+      remainingRepoPlainScenarioFiles,
       remainingSpecReferencedPlainScenarioUnitCount,
       remainingRepoPlainScenarioFileCount,
     };
@@ -332,6 +344,7 @@ function missingAdaptersFromInventory(worktreeDir: string): {
       missingAdapterFiles: [],
       strictPassed: null,
       remainingSpecReferencedPlainScenarioUnits: [],
+      remainingRepoPlainScenarioFiles: [],
       remainingSpecReferencedPlainScenarioUnitCount: 0,
       remainingRepoPlainScenarioFileCount: 0,
       error:
@@ -363,6 +376,40 @@ function branchCandidatesForPaths(
     .map((line) => line.trim())
     .filter(Boolean)
     .slice(0, 8);
+}
+
+function inspectFrontierRowBranches(
+  projectDir: string,
+  row: FrontierRow,
+): FrontierRow {
+  row.branchCandidates = branchCandidatesForPaths(
+    projectDir,
+    row.adapterPath,
+    row.legacyPath,
+  );
+  row.branchCandidatesInspected = true;
+  return row;
+}
+
+function inspectPlainCarrierRowBranches(
+  projectDir: string,
+  row: PlainCarrierRow,
+): PlainCarrierRow {
+  row.branchCandidates = branchCandidatesForPaths(
+    projectDir,
+    row.scenarioTestPath,
+    row.adapterPath,
+  );
+  row.branchCandidatesInspected = true;
+  return row;
+}
+
+function branchCandidateEvidence(
+  row: Pick<FrontierRow, "branchCandidates" | "branchCandidatesInspected">,
+): string {
+  return row.branchCandidatesInspected
+    ? String(row.branchCandidates.length)
+    : "unchecked";
 }
 
 function graphNodes(appDir: string): GraphNode[] {
@@ -492,7 +539,7 @@ function actionForRow(
     outcome: `Reconcile current origin/dev missing scenario adapter ${row.adapterPath} for ${row.specId || "the owning spec"} into exactly one next truthful state: integrated directly into dev, smallest same-spec repair, exact external wait, terminal disposition, or escalation.`,
     mode: "achieve",
     owner: "aks-explorer",
-    workflow: "domain-task-execution",
+    workflow: row.specId ? "spec-live-reconciliation" : "domain-task-execution",
     input: {
       workflow: name,
       frontierTaskId,
@@ -519,12 +566,12 @@ function actionForRow(
         repoPlainScenarioFileCount: report.repoPlainScenarioFileCount ?? null,
       },
     },
-    outputs: ["evidence/archive/", row.adapterPath, row.legacyPath],
+    outputs: ["evidence/archive/", row.adapterPath],
     acceptance: [
       ...learnedScenarioNormalizationAcceptance,
       "A verified task branch must integrate directly into dev; use a repo-ref wait only when an exact external restriction prevents this workflow from performing that integration.",
     ],
-    priority: "P1",
+    priority: standingLoopDefinitions[scenarioNormalizationTaskId].priority,
     category: "domain_leaf",
   };
 }
@@ -535,14 +582,17 @@ function actionForPlainCarrierRow(
   report: InventoryReport,
 ): ProjectAppTaskAction {
   const id = `domain/normalize-plain-scenario-carrier-${safeTaskIdPart(row.scenarioTestPath)}`;
+  const owningSpecs = row.specIds.join(", ") || "its current consumers";
   return {
     kind: "create-task",
     id,
     parentId: "group/scenario-normalization",
-    outcome: `Normalize current origin/dev plain scenario carrier ${row.scenarioTestPath} for ${row.specIds.join(", ") || "the owning spec"} into exactly one next truthful state: direct .test.ts equivalent integrated into dev, smallest same-spec repair, exact external wait, terminal disposition, or escalation.`,
+    outcome: `Normalize current origin/dev plain scenario carrier ${row.scenarioTestPath} for ${owningSpecs} into exactly one next truthful state: direct .test.ts implementation integrated into dev, smallest same-scope repair, exact external wait, terminal disposition, or escalation.`,
     mode: "achieve",
     owner: "aks-explorer",
-    workflow: "domain-task-execution",
+    workflow: row.specIds.length
+      ? "spec-live-reconciliation"
+      : "domain-task-execution",
     input: {
       workflow: name,
       frontierTaskId,
@@ -550,6 +600,7 @@ function actionForPlainCarrierRow(
       workKey: row.scenarioTestPath,
       workRevision: digest(`${originDevCommit}:${row.scenarioTestPath}`),
       originDevCommit,
+      normalizationScope: row.scope,
       scenarioTestPath: row.scenarioTestPath,
       adapterPath: row.adapterPath || null,
       specIds: row.specIds,
@@ -570,20 +621,21 @@ function actionForPlainCarrierRow(
         repoPlainScenarioFileCount: report.repoPlainScenarioFileCount ?? null,
       },
     },
-    outputs: ["evidence/archive/", row.scenarioTestPath, row.adapterPath],
+    outputs: ["evidence/archive/", row.adapterPath],
     acceptance: [
       ...learnedScenarioNormalizationAcceptance,
+      "Completion requires the current strict inventory to stop listing scenarioTestPath in both remainingSpecReferencedPlainScenarioUnits and remainingRepoPlainScenarioFiles; pointing a spec at a sibling wrapper while leaving the plain .ts carrier is progress, not completion.",
+      "Preserve every active spec and import path. If a sibling .test.ts imports the plain carrier, move the required behavior into the direct .test.ts implementation or a shared library outside features/*/tests/*.ts before removing the plain carrier.",
       "Normalize the plain .ts carrier to current-line direct .test.ts coverage or record the exact blocker/disposition keeping strict inventory red for that scenarioTestPath.",
       "A verified task branch must integrate directly into dev; use a repo-ref wait only when an exact external restriction prevents this workflow from performing that integration.",
     ],
-    priority: "P1",
+    priority: standingLoopDefinitions[scenarioNormalizationTaskId].priority,
     category: "domain_leaf",
   };
 }
 
 function buildRows(
   worktreeDir: string,
-  projectDir: string,
   missingAdapterFiles: string[],
   nodes: GraphNode[],
 ): FrontierRow[] {
@@ -601,11 +653,8 @@ function buildRows(
       specId: String(spec.id ?? ""),
       probeRef: String(spec.probeRef ?? ""),
       implementationPath: String(spec.implementation?.path ?? ""),
-      branchCandidates: branchCandidatesForPaths(
-        projectDir,
-        adapterPath,
-        legacyPath,
-      ),
+      branchCandidates: [],
+      branchCandidatesInspected: false,
       representedTaskIds: [],
       actionableTaskIds: [],
       waitingTaskIds: [],
@@ -628,18 +677,14 @@ function buildRows(
 }
 
 function buildPlainCarrierRows(
-  projectDir: string,
   units: PlainCarrierRow[],
   nodes: GraphNode[],
 ): PlainCarrierRow[] {
   return units.map((unit) => {
     const row: PlainCarrierRow = {
       ...unit,
-      branchCandidates: branchCandidatesForPaths(
-        projectDir,
-        unit.scenarioTestPath,
-        unit.adapterPath,
-      ),
+      branchCandidates: [],
+      branchCandidatesInspected: false,
       representedTaskIds: [],
       actionableTaskIds: [],
       waitingTaskIds: [],
@@ -659,6 +704,46 @@ function buildPlainCarrierRows(
     ];
     return row;
   });
+}
+
+function buildRepositoryOnlyPlainCarrierRows(
+  worktreeDir: string,
+  repoPlainScenarioFiles: string[],
+  specReferencedRows: PlainCarrierRow[],
+  nodes: GraphNode[],
+): PlainCarrierRow[] {
+  const referenced = new Set(
+    specReferencedRows.map((row) => row.scenarioTestPath),
+  );
+  const specs = loadSpecs(worktreeDir);
+  const rows = repoPlainScenarioFiles
+    .filter((scenarioTestPath) => !referenced.has(scenarioTestPath))
+    .map((scenarioTestPath) => {
+      const adapterPath = scenarioTestPath.replace(/\.ts$/, ".test.ts");
+      const specIds = specs
+        .filter(
+          (spec) =>
+            spec.probeRef === adapterPath ||
+            spec.implementation?.path === adapterPath,
+        )
+        .map((spec) => String(spec.id))
+        .filter(Boolean);
+      return {
+        scope: "repository-only" as const,
+        scenarioTestPath,
+        adapterPath,
+        specIds: [...new Set(specIds)],
+        featureIds: [scenarioTestPath.split("/")[1] ?? ""].filter(Boolean),
+        activeSpecCount: specIds.length,
+        branchCandidates: [],
+        branchCandidatesInspected: false,
+        representedTaskIds: [],
+        actionableTaskIds: [],
+        waitingTaskIds: [],
+        residueTaskIds: [],
+      } satisfies PlainCarrierRow;
+    });
+  return buildPlainCarrierRows(rows, nodes);
 }
 
 function capEvidence<Row>(
@@ -699,6 +784,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       missingAdapterFiles,
       strictPassed,
       remainingSpecReferencedPlainScenarioUnits,
+      remainingRepoPlainScenarioFiles,
       remainingSpecReferencedPlainScenarioUnitCount,
       remainingRepoPlainScenarioFileCount,
       error,
@@ -727,11 +813,18 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
     if (missingAdapterFiles.length === 0) {
       if (strictPassed === false) {
-        const rows = buildPlainCarrierRows(
-          projectDir,
+        const specReferencedRows = buildPlainCarrierRows(
           remainingSpecReferencedPlainScenarioUnits,
           nodes,
         );
+        const rows = specReferencedRows.length
+          ? specReferencedRows
+          : buildRepositoryOnlyPlainCarrierRows(
+              worktreeDir,
+              remainingRepoPlainScenarioFiles,
+              specReferencedRows,
+              nodes,
+            );
         const rowsNeedingWork = rows.filter(
           (row) => row.representedTaskIds.length === 0,
         );
@@ -746,6 +839,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         );
         const actions = rowsNeedingWork
           .slice(0, accounting.available)
+          .map((row) => inspectPlainCarrierRowBranches(projectDir, row))
           .map((row) => actionForPlainCarrierRow(row, originDevCommit, report));
         const residueCount = rows.filter(
           (row) =>
@@ -753,9 +847,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
             row.waitingTaskIds.length === 0 &&
             row.residueTaskIds.length > 0,
         ).length;
+        const rowScope = specReferencedRows.length
+          ? "current spec-referenced plain scenario unit"
+          : "repository-only plain scenario file";
         const summary = rows.length
-          ? `Scenario frontier remains strict-red on ${source} ${originDevCommit} with zero missing adapter files: declared ${actions.length} bounded plain-carrier normalization task action(s), observed ${accounting.actionableTaskIds.length} actionable and ${accounting.waitingTaskIds.length} waiting plain-carrier task(s), found ${rows.length} current spec-referenced plain scenario unit(s), ${remainingRepoPlainScenarioFileCount} remaining repo plain scenario file(s), and ${residueCount} row(s) represented only by attention or stale terminal residue.`
-          : `Scenario frontier remains strict-red on ${source} ${originDevCommit} with zero missing adapter files and ${remainingRepoPlainScenarioFileCount} remaining repo plain scenario file(s), but there are no current spec-referenced plain scenario units left to refill as exact normalization work.`;
+          ? `Scenario frontier remains strict-red on ${source} ${originDevCommit} with zero missing adapter files: declared ${actions.length} bounded plain-carrier normalization task action(s), observed ${accounting.actionableTaskIds.length} actionable and ${accounting.waitingTaskIds.length} waiting plain-carrier task(s), found ${rows.length} ${rowScope}(s), ${remainingRepoPlainScenarioFileCount} remaining repo plain scenario file(s), and ${residueCount} row(s) represented only by attention or stale terminal residue.`
+          : `Scenario frontier remains strict-red on ${source} ${originDevCommit} with zero missing adapter files and ${remainingRepoPlainScenarioFileCount} remaining repo plain scenario file(s), but the inventory did not provide an exact plain-carrier row to reconcile.`;
         return ctx.done(summary, {
           state: "converged",
           summary,
@@ -763,7 +860,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
             evidence,
             rows,
             (row) =>
-              `plain-row:${row.scenarioTestPath};specs=${row.specIds.join(",") || "unknown"};actionable=${row.actionableTaskIds.length};waiting=${row.waitingTaskIds.length};residue=${row.residueTaskIds.length};branches=${row.branchCandidates.length}`,
+              `${row.scope === "repository-only" ? "repo-plain-row" : "plain-row"}:${row.scenarioTestPath};specs=${row.specIds.join(",") || "unknown"};actionable=${row.actionableTaskIds.length};waiting=${row.waitingTaskIds.length};residue=${row.residueTaskIds.length};branches=${branchCandidateEvidence(row)}`,
           ),
           actions,
         });
@@ -778,7 +875,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       });
     }
 
-    const rows = buildRows(worktreeDir, projectDir, missingAdapterFiles, nodes);
+    const rows = buildRows(worktreeDir, missingAdapterFiles, nodes);
     const rowsNeedingWork = rows.filter(
       (row) => row.representedTaskIds.length === 0,
     );
@@ -794,6 +891,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     const actionBudget = accounting.available;
     const actions = rowsNeedingWork
       .slice(0, actionBudget)
+      .map((row) => inspectFrontierRowBranches(projectDir, row))
       .map((row) => actionForRow(row, originDevCommit, report));
     const residueCount = rows.filter(
       (row) =>
@@ -814,7 +912,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       evidence,
       rows,
       (row) =>
-        `row:${row.adapterPath};spec=${row.specId || "unknown"};actionable=${row.actionableTaskIds.length};waiting=${row.waitingTaskIds.length};residue=${row.residueTaskIds.length};branches=${row.branchCandidates.length}`,
+        `row:${row.adapterPath};spec=${row.specId || "unknown"};actionable=${row.actionableTaskIds.length};waiting=${row.waitingTaskIds.length};residue=${row.residueTaskIds.length};branches=${branchCandidateEvidence(row)}`,
     );
     if (resultState === "needs-owner") {
       return ctx.done(summary, {

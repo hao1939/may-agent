@@ -117,7 +117,12 @@ describe("normalize scenario frontier workflow", () => {
           kind: "create-task",
           parentId: "group/scenario-normalization",
           owner: "aks-explorer",
-          workflow: "domain-task-execution",
+          workflow: "spec-live-reconciliation",
+          priority: "P0",
+          outputs: [
+            "evidence/archive/",
+            "features/feature-a/tests/case-a.test.ts",
+          ],
           input: {
             adapterPath: "features/feature-a/tests/case-a.test.ts",
             specId: "spec.feature-a.case-a",
@@ -127,7 +132,12 @@ describe("normalize scenario frontier workflow", () => {
           kind: "create-task",
           parentId: "group/scenario-normalization",
           owner: "aks-explorer",
-          workflow: "domain-task-execution",
+          workflow: "spec-live-reconciliation",
+          priority: "P0",
+          outputs: [
+            "evidence/archive/",
+            "features/feature-a/tests/case-b.test.ts",
+          ],
           input: {
             adapterPath: "features/feature-a/tests/case-b.test.ts",
             specId: "spec.feature-a.case-b",
@@ -338,7 +348,7 @@ describe("normalize scenario frontier workflow", () => {
       "observed 0 actionable and 1 waiting",
     );
     expect(result.output.evidence).toContain(
-      "plain-row:features/feature-a/tests/case-a.ts;specs=spec.feature-a.case-a;actionable=0;waiting=1;residue=0;branches=0",
+      "plain-row:features/feature-a/tests/case-a.ts;specs=spec.feature-a.case-a;actionable=0;waiting=1;residue=0;branches=unchecked",
     );
   });
 
@@ -365,7 +375,12 @@ describe("normalize scenario frontier workflow", () => {
           kind: "create-task",
           parentId: "group/scenario-normalization",
           owner: "aks-explorer",
-          workflow: "domain-task-execution",
+          workflow: "spec-live-reconciliation",
+          priority: "P0",
+          outputs: [
+            "evidence/archive/",
+            "features/feature-a/tests/case-a.test.ts",
+          ],
           input: {
             scenarioTestPath: "features/feature-a/tests/case-a.ts",
             adapterPath: "features/feature-a/tests/case-a.test.ts",
@@ -392,21 +407,45 @@ describe("normalize scenario frontier workflow", () => {
     );
   });
 
-  test("converges truthfully when strict-red zero-missing inventory has no exact plain-carrier refill rows", async () => {
+  test("continues with repository-only plain carriers after spec references are normalized", async () => {
     const ws = await workspace({
       missingAdapterFiles: [],
       strictPassed: false,
       remainingSpecReferencedPlainScenarioUnits: [],
-      remainingRepoPlainScenarioFiles: ["features/plain/test-a.ts"],
+      remainingRepoPlainScenarioFiles: ["features/feature-a/tests/case-a.ts"],
     });
     const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
     expect(result.output).toMatchObject({
       state: "converged",
-      actions: [],
+      actions: [
+        {
+          kind: "create-task",
+          parentId: "group/scenario-normalization",
+          owner: "aks-explorer",
+          workflow: "domain-task-execution",
+          input: {
+            normalizationScope: "repository-only",
+            scenarioTestPath: "features/feature-a/tests/case-a.ts",
+            adapterPath: "features/feature-a/tests/case-a.test.ts",
+            specIds: [],
+          },
+        },
+      ],
     });
     expect(result.output.summary).toContain("remains strict-red");
     expect(result.output.summary).toContain(
-      "no current spec-referenced plain scenario units left to refill as exact normalization work",
+      "1 repository-only plain scenario file",
+    );
+    expect(result.output.evidence).toContain(
+      "repo-plain-row:features/feature-a/tests/case-a.ts;specs=unknown;actionable=0;waiting=0;residue=0;branches=0",
+    );
+    expect(result.output.actions[0].acceptance).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining(
+          "remainingSpecReferencedPlainScenarioUnits and remainingRepoPlainScenarioFiles",
+        ),
+        expect.stringContaining("move the required behavior"),
+      ]),
     );
   });
 

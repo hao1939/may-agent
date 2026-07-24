@@ -353,8 +353,10 @@ The definition and validator must make the same choice.
 
 ### Purpose
 
-Narrow this loop to source inventory normalization. Spec behavior and live
-verification remain owned by the spec loop.
+Narrow this loop to source inventory normalization. It drives the strict
+scenario inventory all the way to zero spec-referenced plain scenario units
+and zero repository plain scenario files. Spec behavior and live verification
+remain owned by the spec loop.
 
 ### Task definition
 
@@ -367,19 +369,38 @@ workflow: normalize-scenario-frontier
 frontierLimit: 5
 
 outcome:
-  Keep clean current origin/dev free of missing direct scenario-test adapters;
-  each missing adapter is absorbed, represented by one actionable
-  normalization/publication leaf, held by one exact publication wait, or
-  covered by one reviewed terminal exception.
+  Make clean current origin/dev pass the strict scenario-test inventory: no
+  missing direct adapters, no spec-referenced plain scenario units, and no
+  repository plain scenario files. Each remaining row is absorbed,
+  represented by one actionable normalization/publication leaf, held by one
+  exact publication wait, or covered by one reviewed terminal disposition.
 
 acceptance:
   - Inventory is generated from a clean, identified origin/dev revision.
-  - Every missing adapterPath has exactly one scenario-loop representation.
+  - Every missing adapterPath or remaining plain scenarioTestPath has exactly
+    one scenario-loop representation.
+  - A spec pointing at a sibling `.test.ts` wrapper is progress, not completion,
+    while the original plain `.ts` carrier remains in the strict inventory.
+  - After spec-referenced plain rows reach zero, repository-only plain carriers
+    remain actionable until they are consolidated, relocated outside the test
+    carrier surface, removed with reference proof, or given an exact terminal
+    disposition.
   - Publication work owns or requests the intended landing before waiting.
   - While eligible work exists, at most five actionable one-adapter leaves are
     kept represented; waits and attention do not consume that frontier.
-  - Zero missing adapters means inventory completion only, not a live product
-    verdict.
+  - A changed runnable carrier is not complete after local checks or source
+    integration alone. Before integration, its exact task commit must be pushed
+    and every active spec that consumes the carrier must pass a fresh staging
+    run in ADO pipeline `467665`. The task waits on the exact run ID, and a
+    failure returns to the same task and worktree for diagnosis and repair.
+  - A repository-only carrier with no active consuming spec may use source-only
+    proof because there is no runnable live selection. The evidence must state
+    that the strict inventory found zero active specs for that carrier.
+  - Loop completion requires `strict-passed: true`, zero spec-referenced plain
+    scenario units, zero repository plain scenario files on clean current
+    origin/dev, and fresh accepted ADO proof for every runnable normalization
+    change made by this loop. Local checks, an old run, or an untested merge
+    into `dev` are progress, not completion.
 ```
 
 ### Authority and identity
@@ -387,12 +408,14 @@ acceptance:
 Do not add another mutable loop ledger. The clean strict inventory is the
 source, and canonical task resources provide current representation.
 
-Use stable IDs derived only from `adapterPath`; put the observed `origin/dev`
-revision in `workRevision`. Do not create a new identity for every ref movement
-or represented-task set.
+Use stable IDs derived only from `adapterPath` for missing adapters and from
+`scenarioTestPath` for plain carriers; put the observed `origin/dev` revision
+in `workRevision`. Do not create a new identity for every ref movement or
+represented-task set.
 
-Match only exact structured `adapterPath` identity. Do not count a spec-loop or
-compact-loop leaf merely because its prose mentions the same spec or file.
+Match only exact structured `adapterPath` or `scenarioTestPath` identity. Do not
+count a spec-loop or compact-loop leaf merely because its prose mentions the
+same spec or file.
 
 ### Publication waits
 

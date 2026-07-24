@@ -6,6 +6,12 @@ import {
   type WorkflowResult,
 } from "@may-agent/sdk";
 import { integrateDirectlyIntoDev } from "./lib/direct-dev-integration.js";
+import {
+  isRunnableScenarioNormalization,
+  scenarioNormalizationInvariant,
+  type ScenarioNormalizationInput,
+} from "./lib/scenario-normalization-invariant.js";
+import { reconcileSpecLive } from "./spec-live-reconciliation.js";
 
 export const name = "domain-task-execution";
 export const description =
@@ -55,7 +61,14 @@ function matchingJsonObject(text: string, start: number): string | null {
   return null;
 }
 
-export function reconciliationTaskId(raw: string): string | null {
+type ReconciliationTaskPayload = {
+  taskId?: unknown;
+  input?: ScenarioNormalizationInput;
+};
+
+function reconciliationTaskPayload(
+  raw: string,
+): ReconciliationTaskPayload | null {
   const marker = raw.indexOf("## Reconciliation Task");
   if (marker < 0) return null;
   const scoped = raw.slice(marker);
@@ -63,11 +76,15 @@ export function reconciliationTaskId(raw: string): string | null {
   const object = start >= 0 ? matchingJsonObject(scoped, start) : null;
   if (!object) return null;
   try {
-    const taskId = (JSON.parse(object) as { taskId?: unknown }).taskId;
-    return typeof taskId === "string" && taskId.trim() ? taskId.trim() : null;
+    return JSON.parse(object) as ReconciliationTaskPayload;
   } catch {
     return null;
   }
+}
+
+export function reconciliationTaskId(raw: string): string | null {
+  const taskId = reconciliationTaskPayload(raw)?.taskId;
+  return typeof taskId === "string" && taskId.trim() ? taskId.trim() : null;
 }
 
 function selfTargetingActionIndexes(
@@ -140,6 +157,176 @@ async function correctSelfTargetingActions(input: {
   return corrected;
 }
 
+function waitsOnDirectChild(
+  result: ProjectAppTaskHandlerResult,
+  taskId: string | null,
+): boolean {
+  if (!taskId) return false;
+  return (result.actions ?? []).some(
+    (action) => action.kind === "create-task" && action.parentId === taskId,
+  );
+}
+
+function waitingCoverageProblem(
+  result: ProjectAppTaskHandlerResult,
+  taskId: string | null,
+): string | null {
+  if (result.state !== "waiting") return null;
+  if ((result.conditions?.length ?? 0) > 0) return null;
+  if (waitsOnDirectChild(result, taskId)) return null;
+  return `Waiting result for ${taskId ?? "the current task"} requires one exact Condition or a direct child task created with parentId ${taskId ?? "<current-task-id>"}`;
+}
+
+async function correctWaitingCoverage(input: {
+  ctx: WorkflowContext;
+  currentTaskId: string | null;
+  phase: string;
+  sessionId: string;
+  result: ProjectAppTaskHandlerResult;
+}): Promise<ProjectAppTaskHandlerResult> {
+  let ownerResult = input.result;
+  let sessionId = input.sessionId;
+
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    const problem = waitingCoverageProblem(ownerResult, input.currentTaskId);
+    if (!problem) return ownerResult;
+
+    const prompt = [
+      `Correct the structured result from the ${input.phase} phase; do not redo the domain work.`,
+      `Hard validation failure: ${problem}.`,
+      `If ${input.currentTaskId ?? "the current task"} should keep waiting, either attach one exact machine-observable Condition to the current task or create one direct child task under ${input.currentTaskId ?? "the current task"} that truthfully carries the wait, then return state "waiting" for the parent.`,
+      "If your earlier evidence only proves an already-completed holder or stale wait, do not leave the current task waiting without new coverage; either converge the current task or create the replacement direct child that now carries the wait.",
+      "Preserve the prior domain judgment and evidence unless the current facts force a different next step.",
+      "Previous result:",
+      JSON.stringify(ownerResult, null, 2),
+    ].join("\n\n");
+    const correction = input.ctx.runAgentSession
+      ? await input.ctx.runAgentSession(input.ctx.agent, prompt, sessionId, {
+          timeoutMs: 600_000,
+          schema: projectAppTaskHandlerResultSchema,
+        })
+      : await input.ctx.runAgent(input.ctx.agent, prompt, {
+          timeoutMs: 600_000,
+          schema: projectAppTaskHandlerResultSchema,
+        });
+    if (correction.status === "error" || correction.status === "interrupted") {
+      return {
+        state: "needs-owner",
+        summary: `The ${input.phase} result could not be corrected to an exact wait shape`,
+        evidence: [
+          `task:${input.currentTaskId ?? "unknown"}`,
+          `waiting-validation:${attempt}`,
+          `correction-session:${correction.sessionId}`,
+        ],
+      };
+    }
+
+    sessionId = correction.sessionId;
+    ownerResult = await correctSelfTargetingActions({
+      ctx: input.ctx,
+      currentTaskId: input.currentTaskId,
+      phase: `${input.phase} wait-shape correction`,
+      sessionId,
+      result: correction.structuredResult as ProjectAppTaskHandlerResult,
+    });
+  }
+
+  const problem = waitingCoverageProblem(ownerResult, input.currentTaskId);
+  if (!problem) return ownerResult;
+  return {
+    state: "needs-owner",
+    summary: `The ${input.phase} result still lacks exact waiting coverage after correction`,
+    evidence: [
+      ...(ownerResult.evidence ?? []),
+      `task:${input.currentTaskId ?? "unknown"}`,
+      `waiting-validation:failed`,
+      `waiting-problem:${problem}`,
+    ],
+  };
+}
+
+async function completeScenarioNormalization(input: {
+  ctx: WorkflowContext;
+  currentTaskId: string | null;
+  sessionId: string;
+  normalizationInput: ScenarioNormalizationInput | undefined;
+  result: ProjectAppTaskHandlerResult;
+}): Promise<ProjectAppTaskHandlerResult> {
+  const scenarioTestPath =
+    typeof input.normalizationInput?.scenarioTestPath === "string"
+      ? input.normalizationInput.scenarioTestPath.trim()
+      : "";
+  if (!scenarioTestPath || input.result.state !== "converged") {
+    return input.result;
+  }
+
+  let ownerResult = input.result;
+  let sessionId = input.sessionId;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    const invariant = scenarioNormalizationInvariant(
+      input.ctx.workspaceDir!,
+      input.normalizationInput,
+    );
+    if (!invariant?.stillListed) return ownerResult;
+
+    const prompt = [
+      "Continue the same bounded scenario-normalization task; it is not complete yet.",
+      `The strict inventory still lists ${scenarioTestPath}.`,
+      "A sibling .test.ts wrapper that still imports the plain .ts carrier is progress, not completion.",
+      "Preserve behavior and active spec coverage, move required code into the direct .test.ts implementation or a shared library outside features/*/tests/*.ts, remove the plain carrier, rerun scoped checks plus the strict inventory, commit all accepted changes, and leave the worktree clean.",
+      "Do not create another task, branch, worktree, push, PR, or app-state change. Return the structured result for this same task.",
+      "Task:",
+      input.ctx.task,
+    ].join("\n\n");
+    const correction = input.ctx.runAgentSession
+      ? await input.ctx.runAgentSession(input.ctx.agent, prompt, sessionId, {
+          timeoutMs: 1_800_000,
+          schema: projectAppTaskHandlerResultSchema,
+        })
+      : await input.ctx.runAgent(input.ctx.agent, prompt, {
+          timeoutMs: 1_800_000,
+          schema: projectAppTaskHandlerResultSchema,
+        });
+    if (correction.status === "error" || correction.status === "interrupted") {
+      return {
+        state: "needs-owner",
+        summary: "Scenario normalization correction session failed",
+        evidence: [
+          `task:${input.currentTaskId ?? "unknown"}`,
+          `scenario-test-path:${scenarioTestPath}`,
+          `correction-session:${correction.sessionId}`,
+          `correction-attempt:${attempt}`,
+        ],
+      };
+    }
+    sessionId = correction.sessionId;
+    ownerResult = await correctSelfTargetingActions({
+      ctx: input.ctx,
+      currentTaskId: input.currentTaskId,
+      phase: "scenario normalization correction",
+      sessionId,
+      result: correction.structuredResult as ProjectAppTaskHandlerResult,
+    });
+    if (ownerResult.state !== "converged") return ownerResult;
+  }
+
+  const invariant = scenarioNormalizationInvariant(
+    input.ctx.workspaceDir!,
+    input.normalizationInput,
+  );
+  return {
+    state: "needs-owner",
+    summary:
+      "Scenario normalization remains incomplete after three correction turns",
+    evidence: [
+      ...(ownerResult.evidence ?? []),
+      `task:${input.currentTaskId ?? "unknown"}`,
+      `scenario-test-path:${scenarioTestPath}`,
+      `strict-inventory-still-lists:${String(invariant?.stillListed ?? "unknown")}`,
+    ],
+  };
+}
+
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   if (!ctx.workspaceDir || ctx.workspaceDir === ctx.projectDir) {
     return ctx.blocked(
@@ -152,6 +339,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   const currentTaskId = reconciliationTaskId(ctx.task);
+  const taskPayload = reconciliationTaskPayload(ctx.task);
+  const normalizationInput = taskPayload?.input;
+  if (isRunnableScenarioNormalization(normalizationInput)) {
+    return reconcileSpecLive(ctx);
+  }
   const prompt = [
     "Execute the bounded AKS reconciliation task below.",
     "",
@@ -160,6 +352,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     "Inspect current source and task evidence, make only the smallest accepted domain change, run scoped verification, and commit every accepted file change on the supplied task branch.",
     "Do not push or create a pull request. After your converged judgment, this workflow integrates the clean accepted branch directly into dev; a dev conflict returns to you on the same task for repair.",
     "A converged result must leave the worktree clean. If work cannot be committed cleanly, return needs-owner with exact recovery evidence; use waiting only for an external fact with an exact Condition.",
+    `If the truthful next step is carried by another task, create or update that holder as a direct child of ${currentTaskId ?? "the current task"} and return waiting only after the child exists or the current task has its own exact Condition.`,
     `The currently running task is ${currentTaskId ?? "identified in the Reconciliation Task payload"}. The workflow result itself updates this task. Never return an update-task, close-task, or unblock-task action targeting it.`,
     "The generic reconciler alone mutates task state. Use typed actions only for other tasks that independently need a change.",
     'For a master-validation product-recovery wait, use the semantic pass event: type pipeline.spec.observed, subject project:aks-rp-e2e, expected { specId: "<spec id>", status: "pass", sourceBranch: "refs/heads/main" }. The project subject is the routing scope; the expected fields select the exact proof.',
@@ -186,6 +379,27 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     phase: "domain execution",
     sessionId: result.sessionId,
     result: result.structuredResult as ProjectAppTaskHandlerResult,
+  });
+  ownerResult = await correctWaitingCoverage({
+    ctx,
+    currentTaskId,
+    phase: "domain execution",
+    sessionId: result.sessionId,
+    result: ownerResult,
+  });
+  ownerResult = await completeScenarioNormalization({
+    ctx,
+    currentTaskId,
+    sessionId: result.sessionId,
+    normalizationInput,
+    result: ownerResult,
+  });
+  ownerResult = await correctWaitingCoverage({
+    ctx,
+    currentTaskId,
+    phase: "domain execution",
+    sessionId: result.sessionId,
+    result: ownerResult,
   });
   if (ownerResult.state !== "converged") {
     return ctx.done(ownerResult.summary, ownerResult);
@@ -243,12 +457,19 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         workspaceDir,
       });
     }
-    const conflictOwnerResult = await correctSelfTargetingActions({
+    let conflictOwnerResult = await correctSelfTargetingActions({
       ctx,
       currentTaskId,
       phase: "integration conflict repair",
       sessionId: conflictResult.sessionId,
       result: conflictResult.structuredResult as ProjectAppTaskHandlerResult,
+    });
+    conflictOwnerResult = await correctWaitingCoverage({
+      ctx,
+      currentTaskId,
+      phase: "integration conflict repair",
+      sessionId: conflictResult.sessionId,
+      result: conflictOwnerResult,
     });
     if (conflictOwnerResult.state !== "converged") {
       return ctx.done(conflictOwnerResult.summary, conflictOwnerResult);

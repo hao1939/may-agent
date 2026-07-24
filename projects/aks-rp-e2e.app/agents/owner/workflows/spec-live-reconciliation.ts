@@ -11,6 +11,11 @@ import {
   type WorkflowIoContract,
   type WorkflowResult,
 } from "@may-agent/sdk";
+import {
+  scenarioNormalizationInvariant,
+  scenarioNormalizationSpecIds,
+  type ScenarioNormalizationInput,
+} from "./lib/scenario-normalization-invariant.js";
 
 export const name = "spec-live-reconciliation";
 export const description =
@@ -748,7 +753,10 @@ export async function reconcileSpecLive(
   const payload = parseTaskPayload(ctx.task);
   const taskId = nonEmptyString(payload?.taskId);
   const generation = Number(payload?.generation ?? 1);
-  const specId = nonEmptyString(payload?.input?.specId);
+  const normalizationInput = payload?.input as
+    ScenarioNormalizationInput | undefined;
+  const selectedSpecIds = scenarioNormalizationSpecIds(normalizationInput);
+  const specId = selectedSpecIds.join(",");
   let liveExecution: LiveExecutionTarget;
   try {
     liveExecution = resolveLiveExecutionTarget(payload?.input);
@@ -903,6 +911,72 @@ export async function reconcileSpecLive(
 
     let sourceCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
     const baseCommit = git(repoDir, ["rev-parse", targetRef]).stdout;
+
+    const normalizationInvariant = scenarioNormalizationInvariant(
+      workspaceDir,
+      normalizationInput,
+    );
+    if (normalizationInvariant?.stillListed) {
+      const beforeNormalization = sourceCommit;
+      const decision = await askAgent(
+        ctx,
+        [
+          "Continue the same bounded scenario-normalization task; the source invariant is still red and no live run may be queued yet.",
+          `Strict inventory still lists ${normalizationInvariant.kind} ${normalizationInvariant.path}.`,
+          "Preserve behavior and every active spec. Complete the direct .test.ts implementation, remove or relocate the plain carrier as required, run scoped checks plus bun scripts/check-scenario-tests.ts --strict --json, commit the bounded correction, and leave the worktree clean.",
+          "Return decision=committed only after the strict inventory no longer lists this exact row. Do not push, queue ADO, create a PR, create another task, or edit app state.",
+          "Task:",
+          ctx.task,
+        ].join("\n\n"),
+      );
+      if (!decision) {
+        return ownerResult(
+          ctx,
+          "Scenario normalization agent session failed.",
+          [
+            `task:${taskId}`,
+            `normalization-path:${normalizationInvariant.path}`,
+          ],
+        );
+      }
+      if (decision.decision === "waiting" && decision.condition) {
+        return waitingResult(
+          ctx,
+          decision.summary,
+          decision.evidence,
+          decision.condition,
+        );
+      }
+      if (decision.decision === "needs-owner") {
+        return ownerResult(ctx, decision.summary, decision.evidence);
+      }
+      sourceCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+      if (
+        decision.decision !== "committed" ||
+        sourceCommit === beforeNormalization ||
+        cleanWorkspace(workspaceDir)
+      ) {
+        return ownerResult(
+          ctx,
+          "Scenario normalization did not leave one new clean task commit.",
+          decision.evidence,
+        );
+      }
+      const afterNormalization = scenarioNormalizationInvariant(
+        workspaceDir,
+        normalizationInput,
+      );
+      if (afterNormalization?.stillListed) {
+        return ownerResult(
+          ctx,
+          "Scenario normalization commit still fails the exact strict inventory invariant.",
+          [
+            ...decision.evidence,
+            `normalization-path:${afterNormalization.path}`,
+          ],
+        );
+      }
+    }
 
     const existingPr = pullRequests(repoDir, sourceBranch, targetBranch)[0];
     if (

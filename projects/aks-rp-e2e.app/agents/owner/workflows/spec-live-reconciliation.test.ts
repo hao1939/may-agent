@@ -12,8 +12,29 @@ import {
   resolveLiveExecutionTarget,
   runMatchesPriorVerification,
 } from "./spec-live-reconciliation.js";
+import {
+  isRunnableScenarioNormalization,
+  scenarioNormalizationSpecIds,
+} from "./lib/scenario-normalization-invariant.js";
 
 describe("spec-live-reconciliation workflow", () => {
+  test("selects every active spec for one runnable normalization carrier", () => {
+    const input = {
+      loopId: "scenario-normalization",
+      specId: "spec.b",
+      specIds: ["spec.a", "spec.b"],
+      scenarioTestPath: "features/example/tests/carrier.ts",
+    };
+    expect(scenarioNormalizationSpecIds(input)).toEqual(["spec.a", "spec.b"]);
+    expect(isRunnableScenarioNormalization(input)).toBe(true);
+    expect(
+      isRunnableScenarioNormalization({
+        loopId: "scenario-normalization",
+        specIds: [],
+      }),
+    ).toBe(false);
+  });
+
   test("validates agent waits without replacing agent judgment", () => {
     expect(
       agentConditionProblem({
