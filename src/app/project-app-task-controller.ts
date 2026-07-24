@@ -2,6 +2,8 @@ import { ProjectAppTaskQueue } from "./project-app-task-queue.js";
 
 export type ProjectAppTaskControllerOptions = {
   maxConcurrent: number;
+  /** Shared daemon capacity. App-local limits still apply independently. */
+  capacity?: ProjectAppTaskCapacity;
   reconcile(taskId: string): Promise<void>;
   onError?(taskId: string, error: unknown, willRetry: boolean): void;
   maxRetries?: number;
@@ -13,6 +15,48 @@ export type ProjectAppTaskControllerOptions = {
     taskIds(): Iterable<string>;
   };
 };
+
+/** Mechanical backpressure shared by every app task controller in one daemon. */
+export class ProjectAppTaskCapacity {
+  private running = 0;
+  private readonly waiters: Array<() => void> = [];
+
+  constructor(readonly maxConcurrent: number) {
+    if (!Number.isInteger(maxConcurrent) || maxConcurrent < 1) {
+      throw new Error("ProjectAppTaskCapacity maxConcurrent must be a positive integer");
+    }
+  }
+
+  async run<T>(work: () => Promise<T>): Promise<T> {
+    await this.acquire();
+    try {
+      return await work();
+    } finally {
+      this.release();
+    }
+  }
+
+  snapshot(): { running: number; waiting: number } {
+    return { running: this.running, waiting: this.waiters.length };
+  }
+
+  private acquire(): Promise<void> {
+    if (this.running < this.maxConcurrent) {
+      this.running += 1;
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => this.waiters.push(resolve));
+  }
+
+  private release(): void {
+    const next = this.waiters.shift();
+    if (next) {
+      next();
+      return;
+    }
+    this.running -= 1;
+  }
+}
 
 /** One level-based reconciliation worker pool for one Agent App. */
 export class ProjectAppTaskController {
@@ -87,8 +131,9 @@ export class ProjectAppTaskController {
   }
 
   private run(taskId: string): void {
-    void this.options
-      .reconcile(taskId)
+    const reconcile = () => (this.closed ? Promise.resolve() : this.options.reconcile(taskId));
+    const execution = this.options.capacity ? this.options.capacity.run(reconcile) : reconcile();
+    void execution
       .then(() => {
         this.failures.delete(taskId);
       })

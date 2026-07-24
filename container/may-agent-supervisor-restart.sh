@@ -8,12 +8,13 @@ install_tmp="${target}.next.$$"
 backup="${target}.prev.$$"
 services_stopped=0
 deployed=0
+runtime_services="may-agent may-agent-web"
 
 cleanup() {
   rm -f "$install_tmp"
   rm -f "$backup"
   if [ "$services_stopped" = "1" ]; then
-    supervisorctl start may-agent may-agent-web || true
+    supervisorctl start $runtime_services || true
   fi
 }
 
@@ -28,9 +29,10 @@ if [ -e "$deploy_marker" ]; then
     exit 1
   fi
   echo "[may-agent-restarter] staged deploy detected: $bundle -> $target"
+  runtime_services="$runtime_services may-agent-maintenance"
 fi
 
-supervisorctl stop may-agent may-agent-web || true
+supervisorctl stop $runtime_services || true
 services_stopped=1
 
 if [ -e "$deploy_marker" ]; then
@@ -41,9 +43,9 @@ if [ -e "$deploy_marker" ]; then
   deployed=1
 fi
 
-supervisorctl start may-agent may-agent-web
+supervisorctl start $runtime_services
 services_stopped=0
-supervisorctl status may-agent may-agent-web || true
+supervisorctl status $runtime_services || true
 
 if [ "$deployed" = "1" ]; then
   health_ok=0
@@ -51,8 +53,9 @@ if [ "$deployed" = "1" ]; then
   delay="${MAY_AGENT_HEALTH_DELAY:-1}"
   i=1
   while [ "$i" -le "$attempts" ]; do
-    if supervisorctl status may-agent may-agent-web | grep -q "^may-agent[[:space:]].*RUNNING" \
-      && supervisorctl status may-agent may-agent-web | grep -q "^may-agent-web[[:space:]].*RUNNING" \
+    if supervisorctl status $runtime_services | grep -q "^may-agent[[:space:]].*RUNNING" \
+      && supervisorctl status $runtime_services | grep -q "^may-agent-web[[:space:]].*RUNNING" \
+      && supervisorctl status $runtime_services | grep -q "^may-agent-maintenance[[:space:]].*RUNNING" \
       && curl -fsS "http://127.0.0.1:${WEB_PORT:-8080}/api/projects" >/dev/null 2>&1; then
       health_ok=1
       break
@@ -63,12 +66,12 @@ if [ "$deployed" = "1" ]; then
 
   if [ "$health_ok" != "1" ]; then
     echo "[may-agent-restarter] health check failed after deploy; rolling back to previous binary" >&2
-    supervisorctl stop may-agent may-agent-web || true
+    supervisorctl stop $runtime_services || true
     services_stopped=1
     install -m 755 -o mayagent -g mayagent "$backup" "$target"
-    supervisorctl start may-agent may-agent-web
+    supervisorctl start $runtime_services
     services_stopped=0
-    supervisorctl status may-agent may-agent-web || true
+    supervisorctl status $runtime_services || true
     exit 1
   fi
 fi

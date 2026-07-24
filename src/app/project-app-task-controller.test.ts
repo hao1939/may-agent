@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { ProjectAppTaskController } from "./project-app-task-controller.js";
+import { ProjectAppTaskCapacity, ProjectAppTaskController } from "./project-app-task-controller.js";
 
 async function waitUntil(predicate: () => boolean, timeoutMs = 1_000): Promise<void> {
   const started = Date.now();
@@ -62,6 +62,43 @@ describe("ProjectAppTaskController", () => {
     releases.get("focus-c")?.();
     await waitUntil(() => !controller.snapshot().running.length);
     controller.close();
+  });
+
+  it("shares one daemon capacity across independent app controllers", async () => {
+    const capacity = new ProjectAppTaskCapacity(1);
+    const started: string[] = [];
+    const releases = new Map<string, () => void>();
+    const controllerA = new ProjectAppTaskController({
+      maxConcurrent: 2,
+      capacity,
+      reconcile: (taskId) =>
+        new Promise<void>((resolve) => {
+          started.push(`a:${taskId}`);
+          releases.set(`a:${taskId}`, resolve);
+        }),
+    });
+    const controllerB = new ProjectAppTaskController({
+      maxConcurrent: 2,
+      capacity,
+      reconcile: (taskId) =>
+        new Promise<void>((resolve) => {
+          started.push(`b:${taskId}`);
+          releases.set(`b:${taskId}`, resolve);
+        }),
+    });
+
+    controllerA.enqueue("one");
+    controllerB.enqueue("two");
+    await waitUntil(() => started.length === 1);
+    expect(capacity.snapshot()).toEqual({ running: 1, waiting: 1 });
+
+    releases.get(started[0])?.();
+    await waitUntil(() => started.length === 2);
+    expect(new Set(started)).toEqual(new Set(["a:one", "b:two"]));
+    releases.get(started[1])?.();
+    await waitUntil(() => capacity.snapshot().running === 0);
+    controllerA.close();
+    controllerB.close();
   });
 
   it("performs a fresh pass for a wake received during a run", async () => {

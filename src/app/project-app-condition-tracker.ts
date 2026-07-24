@@ -4,6 +4,7 @@ import {
   withTaskStateLock,
   type ProjectAppCondition,
   type TaskStateConfig,
+  type TaskTree,
 } from "@may-agent/sdk";
 
 export type ProjectAppConditionWake = {
@@ -58,6 +59,41 @@ function normalizedState(value: unknown): string {
 
 function stableEquals(left: unknown, right: unknown): boolean {
   return JSON.stringify(stableValue(left)) === JSON.stringify(stableValue(right));
+}
+
+function orderedComparablePair(left: unknown, right: unknown): [number | string, number | string] | null {
+  const leftNumber = typeof left === "number" ? left : typeof left === "string" ? Number(left) : NaN;
+  const rightNumber = typeof right === "number" ? right : typeof right === "string" ? Number(right) : NaN;
+  if (Number.isFinite(leftNumber) && Number.isFinite(rightNumber)) return [leftNumber, rightNumber];
+  if (typeof left === "string" && typeof right === "string") return [left, right];
+  return null;
+}
+
+function matchesComparator(actual: unknown, expected: unknown): boolean {
+  if (!isRecord(expected)) return false;
+  const operators = ["gt", "gte", "lt", "lte"].filter((key) => key in expected);
+  if (operators.length === 0) return false;
+  const pair = operators
+    .map((operator) => [operator, orderedComparablePair(actual, expected[operator])] as const)
+    .every(([, comparable]) => comparable !== null);
+  if (!pair) return false;
+  return operators.every((operator) => {
+    const comparable = orderedComparablePair(actual, expected[operator]);
+    if (!comparable) return false;
+    const [left, right] = comparable;
+    switch (operator) {
+      case "gt":
+        return left > right;
+      case "gte":
+        return left >= right;
+      case "lt":
+        return left < right;
+      case "lte":
+        return left <= right;
+      default:
+        return false;
+    }
+  });
 }
 
 function typedSubject(subject: string): { field: string; value: string } | null {
@@ -115,13 +151,17 @@ function matches(condition: ProjectAppCondition, event: Record<string, unknown>)
       if ("notEquals" in condition.spec.expected) {
         return actual !== undefined && !stableEquals(condition.spec.expected.notEquals, actual);
       }
+      if (matchesComparator(actual, condition.spec.expected)) {
+        return true;
+      }
     }
     return Object.entries(condition.spec.expected).every(([field, expected]) => {
       if ((field === "allowedDecisions" || field === "acceptedDecisions") && Array.isArray(expected)) {
         const actualDecision = eventField(event, "decision");
         return expected.some((candidate) => stableEquals(candidate, actualDecision));
       }
-      return stableEquals(eventField(event, ...fieldAliases(field)), expected);
+      const actual = eventField(event, ...fieldAliases(field));
+      return matchesComparator(actual, expected) || stableEquals(actual, expected);
     });
   }
 
@@ -147,60 +187,83 @@ function observation(event: Record<string, unknown>): Record<string, unknown> {
   };
 }
 
-/** Correlate a semantic observation with durable Conditions; never observes the domain source itself. */
-export function trackProjectAppConditionEvent(
-  config: TaskStateConfig,
+function applyConditionEvent(
+  tree: TaskTree,
   event: Record<string, unknown>,
+  wakes: Map<string, ProjectAppConditionWake>,
+): boolean {
+  const now = new Date().toISOString();
+  let changed = false;
+  const eventWakes = new Map<string, ProjectAppConditionWake>();
+
+  for (const [id, condition] of Object.entries(tree.conditions ?? {})) {
+    if (!isCondition(condition)) continue;
+    if (!matches(condition, event)) continue;
+    if (condition.status.state !== "true") {
+      condition.metadata.resourceVersion += 1;
+      condition.status = {
+        observedGeneration: condition.metadata.generation,
+        state: "true",
+        observed: observation(event),
+        observedAt: now,
+        evidence: [`event:${String(event.type)}`, ...(event.source ? [`source:${String(event.source)}`] : [])],
+      };
+      changed = true;
+    }
+    for (const resource of Object.values(tree.resources ?? {})) {
+      if (resource.status.phase !== "waiting" || !resource.status.conditionIds?.includes(id)) continue;
+      const taskId = resource.metadata.id;
+      if (eventWakes.has(taskId)) continue;
+      eventWakes.set(taskId, {
+        conditionId: id,
+        taskId,
+      });
+    }
+  }
+
+  for (const wake of eventWakes.values()) {
+    const resource = tree.resources?.[wake.taskId];
+    if (!resource) continue;
+    const previous = tree.taskTriggers?.[wake.taskId];
+    tree.taskTriggers = {
+      ...(tree.taskTriggers ?? {}),
+      [wake.taskId]: {
+        taskId: wake.taskId,
+        taskGeneration: resource.metadata.generation,
+        resourceVersion: (previous?.resourceVersion ?? 0) + 1,
+        event: structuredClone(event),
+        observedAt: now,
+      },
+    };
+    wakes.set(wake.taskId, wake);
+    changed = true;
+  }
+
+  return changed;
+}
+
+/** Correlate semantic observations with durable Conditions in one state transaction. */
+export function trackProjectAppConditionEvents(
+  config: TaskStateConfig,
+  events: Iterable<Record<string, unknown>>,
 ): ProjectAppConditionWake[] {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
-    const now = new Date().toISOString();
-    let changed = false;
     const wakes = new Map<string, ProjectAppConditionWake>();
-
-    for (const [id, condition] of Object.entries(tree.conditions ?? {})) {
-      if (!isCondition(condition)) continue;
-      if (!matches(condition, event)) continue;
-      if (condition.status.state !== "true") {
-        condition.metadata.resourceVersion += 1;
-        condition.status = {
-          observedGeneration: condition.metadata.generation,
-          state: "true",
-          observed: observation(event),
-          observedAt: now,
-          evidence: [`event:${String(event.type)}`, ...(event.source ? [`source:${String(event.source)}`] : [])],
-        };
-        changed = true;
-      }
-      for (const resource of Object.values(tree.resources ?? {})) {
-        if (resource.status.phase !== "waiting" || !resource.status.conditionIds?.includes(id)) continue;
-        const taskId = resource.metadata.id;
-        if (wakes.has(taskId)) continue;
-        wakes.set(taskId, {
-          conditionId: id,
-          taskId,
-        });
-      }
-    }
-
-    for (const wake of wakes.values()) {
-      const resource = tree.resources?.[wake.taskId];
-      if (!resource) continue;
-      const previous = tree.taskTriggers?.[wake.taskId];
-      tree.taskTriggers = {
-        ...(tree.taskTriggers ?? {}),
-        [wake.taskId]: {
-          taskId: wake.taskId,
-          taskGeneration: resource.metadata.generation,
-          resourceVersion: (previous?.resourceVersion ?? 0) + 1,
-          event: structuredClone(event),
-          observedAt: now,
-        },
-      };
-      changed = true;
+    let changed = false;
+    for (const event of events) {
+      changed = applyConditionEvent(tree, event, wakes) || changed;
     }
 
     if (changed) saveTaskState(config, tree);
     return [...wakes.values()];
   });
+}
+
+/** Correlate one semantic observation with durable Conditions; never observes the domain source itself. */
+export function trackProjectAppConditionEvent(
+  config: TaskStateConfig,
+  event: Record<string, unknown>,
+): ProjectAppConditionWake[] {
+  return trackProjectAppConditionEvents(config, [event]);
 }
