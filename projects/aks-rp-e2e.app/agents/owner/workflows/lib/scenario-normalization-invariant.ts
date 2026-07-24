@@ -1,4 +1,6 @@
 import { spawnSync } from "node:child_process";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 
 export type ScenarioNormalizationInput = {
   loopId?: unknown;
@@ -14,8 +16,118 @@ export type ScenarioNormalizationInvariant = {
   stillListed: boolean;
 };
 
+export type SourceOnlyNormalizationPosture = {
+  accepted: boolean;
+  specIds: string[];
+  evidence: string[];
+  missingSpecIds: string[];
+  rejectedSpecIds: string[];
+};
+
 function text(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function record(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function loadFeatureSpecs(
+  workspaceDir: string,
+): Map<string, { path: string; body: Record<string, unknown> }> {
+  const featuresDir = join(workspaceDir, "features");
+  const specs = new Map<
+    string,
+    { path: string; body: Record<string, unknown> }
+  >();
+  if (!existsSync(featuresDir)) return specs;
+  for (const feature of readdirSync(featuresDir, { withFileTypes: true })) {
+    if (!feature.isDirectory()) continue;
+    const specsDir = join(featuresDir, feature.name, "specs");
+    if (!existsSync(specsDir)) continue;
+    for (const entry of readdirSync(specsDir, { withFileTypes: true })) {
+      if (!entry.isFile() || !entry.name.endsWith(".json")) continue;
+      const absolutePath = join(specsDir, entry.name);
+      try {
+        const body = record(JSON.parse(readFileSync(absolutePath, "utf8")));
+        const id = text(body.id);
+        if (id) {
+          specs.set(id, {
+            path: `features/${feature.name}/specs/${entry.name}`,
+            body,
+          });
+        }
+      } catch {
+        // Invalid spec JSON is rejected below as a missing structured posture.
+      }
+    }
+  }
+  return specs;
+}
+
+export function sourceOnlyScenarioNormalizationPosture(
+  workspaceDir: string,
+  input: ScenarioNormalizationInput | undefined,
+): SourceOnlyNormalizationPosture {
+  const specIds = scenarioNormalizationSpecIds(input);
+  if (input?.loopId !== "scenario-normalization" || specIds.length === 0) {
+    return {
+      accepted: false,
+      specIds,
+      evidence: [],
+      missingSpecIds: [],
+      rejectedSpecIds: specIds,
+    };
+  }
+
+  const catalog = loadFeatureSpecs(workspaceDir);
+  const evidence: string[] = [];
+  const missingSpecIds: string[] = [];
+  const rejectedSpecIds: string[] = [];
+  for (const specId of specIds) {
+    const entry = catalog.get(specId);
+    if (!entry) {
+      missingSpecIds.push(specId);
+      continue;
+    }
+    const metadata = record(entry.body.metadata);
+    const acceptedExecutionPosture = record(metadata.acceptedExecutionPosture);
+    const executeMode = record(metadata.executeMode);
+    const acceptedDecision = text(
+      acceptedExecutionPosture.decision,
+    ).toLowerCase();
+    const executeStatus = text(executeMode.status).toLowerCase();
+    const explicitNonlive =
+      acceptedDecision.includes("nonlive") ||
+      executeStatus.includes("source-check-only") ||
+      executeStatus.includes("nonlive");
+    if (metadata.noExecutionCoverageClaim !== true || !explicitNonlive) {
+      rejectedSpecIds.push(specId);
+      continue;
+    }
+    evidence.push(`source-only-spec:${specId}`);
+    evidence.push(`source-only-spec-path:${entry.path}`);
+    evidence.push("source-only-no-execution-coverage:true");
+    if (acceptedDecision) {
+      evidence.push(`source-only-accepted-decision:${acceptedDecision}`);
+    }
+    if (executeStatus) {
+      evidence.push(`source-only-execute-status:${executeStatus}`);
+    }
+  }
+
+  return {
+    accepted:
+      missingSpecIds.length === 0 &&
+      rejectedSpecIds.length === 0 &&
+      evidence.length > 0,
+    specIds,
+    evidence: [...new Set(evidence)],
+    missingSpecIds,
+    rejectedSpecIds,
+  };
 }
 
 export function scenarioNormalizationSpecIds(

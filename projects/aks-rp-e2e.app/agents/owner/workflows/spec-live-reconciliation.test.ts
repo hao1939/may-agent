@@ -1,4 +1,7 @@
 import { describe, expect, test } from "bun:test";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
   agentConditionProblem,
   integrationMode,
@@ -15,6 +18,7 @@ import {
 import {
   isRunnableScenarioNormalization,
   scenarioNormalizationSpecIds,
+  sourceOnlyScenarioNormalizationPosture,
 } from "./lib/scenario-normalization-invariant.js";
 
 describe("spec-live-reconciliation workflow", () => {
@@ -33,6 +37,51 @@ describe("spec-live-reconciliation workflow", () => {
         specIds: [],
       }),
     ).toBe(false);
+  });
+
+  test("accepts source-only normalization only from explicit structured policy for every spec", () => {
+    const root = mkdtempSync(join(tmpdir(), "source-only-normalization-"));
+    const specsDir = join(root, "features", "example", "specs");
+    mkdirSync(specsDir, { recursive: true });
+    try {
+      writeFileSync(
+        join(specsDir, "source-only.json"),
+        JSON.stringify({
+          id: "spec.example.source-only",
+          metadata: {
+            noExecutionCoverageClaim: true,
+            acceptedExecutionPosture: {
+              decision: "remain-nonlive-source-grounded",
+            },
+          },
+        }),
+      );
+      writeFileSync(
+        join(specsDir, "runnable.json"),
+        JSON.stringify({
+          id: "spec.example.runnable",
+          metadata: { noExecutionCoverageClaim: false },
+        }),
+      );
+
+      const accepted = sourceOnlyScenarioNormalizationPosture(root, {
+        loopId: "scenario-normalization",
+        specIds: ["spec.example.source-only"],
+      });
+      expect(accepted.accepted).toBe(true);
+      expect(accepted.evidence).toContain(
+        "source-only-accepted-decision:remain-nonlive-source-grounded",
+      );
+
+      const mixed = sourceOnlyScenarioNormalizationPosture(root, {
+        loopId: "scenario-normalization",
+        specIds: ["spec.example.source-only", "spec.example.runnable"],
+      });
+      expect(mixed.accepted).toBe(false);
+      expect(mixed.rejectedSpecIds).toEqual(["spec.example.runnable"]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   test("validates agent waits without replacing agent judgment", () => {

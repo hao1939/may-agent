@@ -186,13 +186,15 @@ non-mutating investigations do not use this workflow.
 
 For bounded source-only patches, `domain-task-execution` lets the agent judge
 and commit the change, then workflow code integrates the clean branch directly
-into `dev`. Scenario normalization is source-only only when strict inventory
-shows no active consuming spec. A changed runnable scenario carrier instead
-uses the same exact lifecycle as spec reconciliation: push the task branch,
-queue ADO pipeline `467665` for every consuming spec at that commit, wait on the
-exact run, let the agent diagnose and repair any failure in the same worktree,
-and integrate only the passing tested commit into `dev`. A local check or an
-untested merge cannot converge runnable normalization work.
+into `dev`. Scenario normalization is source-only only when every consuming
+spec has explicit structured nonlive policy and the domain agent confirms that
+posture from current evidence; code validates the policy and records no live
+pass. A changed runnable scenario carrier instead uses the same exact lifecycle
+as spec reconciliation: push the task branch, queue ADO pipeline `467665` for
+every consuming spec at that commit, wait on the exact run, let the agent
+diagnose and repair any failure in the same worktree, and integrate only the
+passing tested commit into `dev`. A local check or an untested merge cannot
+converge runnable normalization work.
 
 A conflict returns to the same agent and task for repair; an unintegrated task
 branch cannot converge. Its structured result is the current task's state
