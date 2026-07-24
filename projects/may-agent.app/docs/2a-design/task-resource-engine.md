@@ -372,6 +372,12 @@ metadata; it is not desired task spec or a second scheduling record.
 The workflow runtime supplies the same directory to nested agent tools as their
 actual execution root.
 
+An interrupted Git operation is recoverable task state. A detached worktree is
+re-admitted only when Git's operation metadata names the exact expected task
+branch; the same owner then decides whether to continue or abort the operation.
+Arbitrary detached worktrees and worktrees attached to another branch remain
+hard admission failures.
+
 Output admission validates the task contract; it is not a filesystem sandbox.
 Tool policy and process isolation still constrain actual writes.
 
