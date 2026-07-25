@@ -395,6 +395,11 @@ acceptance:
   - Publication work owns or requests the intended landing before waiting.
   - While eligible work exists, at most five actionable one-adapter leaves are
     kept represented; waits and attention do not consume that frontier.
+  - When several eligible rows can fill free slots, prefer feature scopes not
+    already represented in the live frontier, then prefer one row per feature
+    before taking a second row from the same feature. Fill any remaining slots
+    in stable inventory order. This preserves bounded parallelism without
+    needlessly making same-feature branches invalidate each other's live proof.
   - A changed runnable carrier is not complete after local checks or source
     integration alone. Before integration, its exact task commit must be pushed
     and every active spec that consumes the carrier must pass a fresh staging

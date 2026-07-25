@@ -541,6 +541,45 @@ function liveExecutionCapacity(
   };
 }
 
+function plainCarrierFeatureScope(row: PlainCarrierRow): string {
+  const pathScope = row.scenarioTestPath.split("/")[1]?.trim() ?? "";
+  if (pathScope) return pathScope;
+  const declared = row.featureIds
+    .map((featureId) => featureId.trim())
+    .filter(Boolean)
+    .sort();
+  return declared.join(",");
+}
+
+function selectPlainCarrierRows(
+  rows: PlainCarrierRow[],
+  limit: number,
+  occupiedFeatureScopes: ReadonlySet<string>,
+): PlainCarrierRow[] {
+  if (limit <= 0) return [];
+
+  const selected: PlainCarrierRow[] = [];
+  const deferred: PlainCarrierRow[] = [];
+  const selectedScopes = new Set(occupiedFeatureScopes);
+
+  for (const row of rows) {
+    const scope = plainCarrierFeatureScope(row);
+    if (scope && selectedScopes.has(scope)) {
+      deferred.push(row);
+      continue;
+    }
+    selected.push(row);
+    if (scope) selectedScopes.add(scope);
+    if (selected.length === limit) return selected;
+  }
+
+  for (const row of deferred) {
+    selected.push(row);
+    if (selected.length === limit) break;
+  }
+  return selected;
+}
+
 function canRepresentFrontierRow(node: GraphNode): boolean {
   if (node.id === frontierTaskId) return false;
   if (node.id === "project") return false;
@@ -951,15 +990,22 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           .map((row) => workflowRepairForPlainCarrierRow(row, nodesById))
           .filter((action): action is ProjectAppTaskAction => Boolean(action))
           .slice(0, maxLeaves);
+        const actionBudget = Math.min(
+          capacity.available,
+          Math.max(0, maxLeaves - workflowRepairs.length),
+        );
+        const occupiedFeatureScopes = new Set(
+          rows
+            .filter((row) => row.representedTaskIds.length > 0)
+            .map(plainCarrierFeatureScope)
+            .filter(Boolean),
+        );
         const actions = workflowRepairs.concat(
-          rowsNeedingWork
-            .slice(
-              0,
-              Math.min(
-                capacity.available,
-                Math.max(0, maxLeaves - workflowRepairs.length),
-              ),
-            )
+          selectPlainCarrierRows(
+            rowsNeedingWork,
+            actionBudget,
+            occupiedFeatureScopes,
+          )
             .map((row) => inspectPlainCarrierRowBranches(projectDir, row))
             .map((row) =>
               actionForPlainCarrierRow(row, originDevCommit, report),

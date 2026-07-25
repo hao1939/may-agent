@@ -651,6 +651,57 @@ describe("normalize scenario frontier workflow", () => {
     );
   });
 
+  test("fills plain-carrier capacity from disjoint feature scopes first", async () => {
+    const row = (featureId: string, caseId: string) => ({
+      scenarioTestPath: `features/${featureId}/tests/${caseId}.ts`,
+      adapterPath: `features/${featureId}/tests/${caseId}.test.ts`,
+      specIds: [`spec.${featureId}.${caseId}`],
+      featureIds: [featureId],
+      activeSpecCount: 1,
+    });
+    const representedPath = "features/feature-a/tests/running.ts";
+    const ws = await workspace({
+      missingAdapterFiles: [],
+      strictPassed: false,
+      remainingSpecReferencedPlainScenarioUnits: [
+        row("feature-a", "running"),
+        row("feature-a", "case-a"),
+        row("feature-a", "case-b"),
+        row("feature-b", "case-a"),
+        row("feature-c", "case-a"),
+        row("feature-d", "case-a"),
+        row("feature-e", "case-a"),
+      ],
+      resources: {
+        "domain/feature-a-running": {
+          metadata: { generation: 1 },
+          spec: {
+            parentId: "group/scenario-normalization",
+            workflow: "spec-live-reconciliation",
+            input: {
+              loopId: "scenario-normalization",
+              workKey: representedPath,
+              scenarioTestPath: representedPath,
+            },
+          },
+          status: { phase: "running" },
+        },
+      },
+    });
+
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+    const selectedPaths = result.output.actions.map(
+      (action: any) => action.input.scenarioTestPath,
+    );
+
+    expect(selectedPaths).toEqual([
+      "features/feature-b/tests/case-a.ts",
+      "features/feature-c/tests/case-a.ts",
+      "features/feature-d/tests/case-a.ts",
+      "features/feature-e/tests/case-a.ts",
+    ]);
+  });
+
   test("rebinds a pending spec-backed normalization leaf that lost its workflow", async () => {
     const scenarioTestPath = "features/feature-a/tests/case-a.ts";
     const taskId =
