@@ -419,8 +419,14 @@ describe("project app task reconciler state", () => {
       intent: { ...intent("maintain"), id: "runtime/owner-review", priority: "P1" },
       appOwner: "app-owner",
       trigger: {
-        type: "project.comment.created",
-        data: { comment: "Review current project direction" },
+        type: "project.owner.requested",
+        ownerIntentRefs: [
+          {
+            eventId: 42,
+            eventType: "project.comment.created",
+            data: { comment: "Review current project direction" },
+          },
+        ],
       },
     });
 
