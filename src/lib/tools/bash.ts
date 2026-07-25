@@ -1,12 +1,5 @@
 import { randomBytes } from "node:crypto";
-import {
-	closeSync,
-	createWriteStream,
-	existsSync,
-	openSync,
-	readSync,
-	unlinkSync,
-} from "node:fs";
+import { createWriteStream, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -19,7 +12,6 @@ import {
 } from "@earendil-works/pi-agent-core";
 import { Type } from "@earendil-works/pi-ai";
 import type { TSchema } from "@earendil-works/pi-ai";
-import { spawn } from "child_process";
 // Inlined shell utilities (may-agent runs on Linux/Docker only)
 function getShellConfig(): { shell: string; args: string[] } {
 	return { shell: "/bin/bash", args: ["-c"] };
@@ -94,133 +86,107 @@ export interface BashOperations {
 	) => Promise<{ exitCode: number | null }>;
 }
 
+interface NativeBunSubprocess {
+	pid: number;
+	exited: Promise<number>;
+	stdout: ReadableStream<Uint8Array>;
+	stderr: ReadableStream<Uint8Array>;
+}
+
+interface NativeBunRuntime {
+	spawn(
+		command: string[],
+		options: {
+			cwd: string;
+			env: NodeJS.ProcessEnv;
+			stdin: "ignore";
+			stdout: "pipe";
+			stderr: "pipe";
+		},
+	): NativeBunSubprocess;
+}
+
+function nativeBunRuntime(): NativeBunRuntime {
+	const runtime = (globalThis as typeof globalThis & { Bun?: NativeBunRuntime }).Bun;
+	if (!runtime) throw new Error("Bun runtime is required for shell execution");
+	return runtime;
+}
+
+async function pumpOutput(stream: ReadableStream<Uint8Array>, onData: (data: Buffer) => void): Promise<void> {
+	const reader = stream.getReader();
+	try {
+		while (true) {
+			const { done, value } = await reader.read();
+			if (done) return;
+			if (value.byteLength > 0) onData(Buffer.from(value));
+		}
+	} finally {
+		reader.releaseLock();
+	}
+}
+
 /**
  * Default bash operations using local shell
  */
 const defaultBashOperations: BashOperations = {
-	exec: (command, cwd, { onData, signal, timeout, env }) => {
-		return new Promise((resolve, reject) => {
-			const { shell, args } = getShellConfig();
+	exec: async (command, cwd, { onData, signal, timeout, env }) => {
+		const { shell, args } = getShellConfig();
+		if (!existsSync(cwd)) {
+			throw new Error(`Working directory does not exist: ${cwd}\nCannot execute bash commands.`);
+		}
+		if (signal?.aborted) throw new Error("aborted");
 
-			if (!existsSync(cwd)) {
-				reject(new Error(`Working directory does not exist: ${cwd}\nCannot execute bash commands.`));
-				return;
-			}
-
-			const capturePath = getTempFilePath();
-			const captureFd = openSync(capturePath, "w+");
-			const child = spawn(shell, [...args, command], {
-				cwd,
-				detached: true,
-				env: env ?? getShellEnv(),
-				stdio: ["ignore", captureFd, captureFd],
-			});
-
-			let timedOut = false;
-			let settled = false;
-			let captureOffset = 0;
-			let captureClosed = false;
-			let capturePollHandle: NodeJS.Timeout | undefined;
-
-			const flushCapture = () => {
-				if (captureClosed) return;
-				const buffer = Buffer.allocUnsafe(64 * 1024);
-				while (true) {
-					const bytesRead = readSync(captureFd, buffer, 0, buffer.length, captureOffset);
-					if (bytesRead === 0) return;
-					captureOffset += bytesRead;
-					onData(buffer.subarray(0, bytesRead));
-				}
-			};
-
-			const cleanup = () => {
-				if (timeoutHandle) clearTimeout(timeoutHandle);
-				if (capturePollHandle) clearInterval(capturePollHandle);
-				if (signal) signal.removeEventListener("abort", onAbort);
-				if (!captureClosed) {
-					flushCapture();
-					captureClosed = true;
-					closeSync(captureFd);
-					try {
-						unlinkSync(capturePath);
-					} catch {
-						// The capture file may already have been removed during shutdown.
-					}
-				}
-			};
-			const settleResolve = (code: number | null) => {
-				if (settled) return;
-				settled = true;
-				cleanup();
-				resolve({ exitCode: code });
-			};
-			const settleReject = (error: Error) => {
-				if (settled) return;
-				settled = true;
-				cleanup();
-				reject(error);
-			};
-
-			// Set timeout if provided
-			let timeoutHandle: NodeJS.Timeout | undefined;
-			if (timeout !== undefined && timeout > 0) {
-				timeoutHandle = setTimeout(() => {
-					timedOut = true;
-					if (child.pid) {
-						killProcessTree(child.pid);
-					}
-					settleReject(new Error(`timeout:${timeout}`));
-				}, timeout * 1000);
-			}
-
-			// A regular file cannot be held open as a process-lifecycle pipe by a
-			// background descendant. Poll it to preserve incremental tool updates.
-			capturePollHandle = setInterval(flushCapture, 100);
-
-			// Handle shell spawn errors
-			child.on("error", (err) => {
-				settleReject(err);
-			});
-
-			// Handle abort signal - kill entire process tree
-			const onAbort = () => {
-				if (child.pid) {
-					killProcessTree(child.pid);
-				}
-				settleReject(new Error("aborted"));
-			};
-
-			if (signal) {
-				if (signal.aborted) {
-					onAbort();
-				} else {
-					signal.addEventListener("abort", onAbort, { once: true });
-				}
-			}
-
-			// Once the requested shell exits, terminate any background descendants
-			// and drain their final captured output.
-			child.on("exit", (code) => {
-				if (settled) return;
-				if (child.pid) killProcessTree(child.pid);
-				settleResolve(code);
-			});
-
-			// Handle process and pipe close
-			child.on("close", (code) => {
-				if (signal?.aborted) {
-					settleReject(new Error("aborted"));
-					return;
-				}
-
-				if (timedOut) {
-					settleReject(new Error(`timeout:${timeout}`));
-					return;
-				}
-
-				settleResolve(code);
-			});
+		// `setsid` gives each invocation an exact process group. Bun's native
+		// subprocess promise tracks the invoked shell independently of inherited
+		// output pipes, unlike the Node-compatible child_process layer.
+		const child = nativeBunRuntime().spawn(["/usr/bin/setsid", shell, ...args, command], {
+			cwd,
+			env: env ?? getShellEnv(),
+			stdin: "ignore",
+			stdout: "pipe",
+			stderr: "pipe",
 		});
+		let outputError: Error | undefined;
+		const outputDone = Promise.all([
+			pumpOutput(child.stdout, onData).catch((error) => {
+				outputError = error instanceof Error ? error : new Error(String(error));
+			}),
+			pumpOutput(child.stderr, onData).catch((error) => {
+				outputError = error instanceof Error ? error : new Error(String(error));
+			}),
+		]);
+
+		let cancel!: (error: Error) => void;
+		const canceled = new Promise<never>((_, reject) => {
+			cancel = reject;
+		});
+		const onAbort = () => {
+			killProcessTree(child.pid);
+			cancel(new Error("aborted"));
+		};
+		if (signal) signal.addEventListener("abort", onAbort, { once: true });
+
+		let timeoutHandle: NodeJS.Timeout | undefined;
+		if (timeout !== undefined && timeout > 0) {
+			timeoutHandle = setTimeout(() => {
+				killProcessTree(child.pid);
+				cancel(new Error(`timeout:${timeout}`));
+			}, timeout * 1000);
+		}
+
+		try {
+			const exitCode = await Promise.race([child.exited, canceled]);
+			killProcessTree(child.pid);
+			await Promise.race([
+				outputDone,
+				new Promise<void>((resolve) => setTimeout(resolve, 1_000)),
+			]);
+			if (outputError) throw outputError;
+			return { exitCode };
+		} finally {
+			if (timeoutHandle) clearTimeout(timeoutHandle);
+			if (signal) signal.removeEventListener("abort", onAbort);
+		}
 	},
 };
 
