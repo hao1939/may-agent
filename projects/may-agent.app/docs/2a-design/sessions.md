@@ -133,13 +133,15 @@ long-running session timeout.
 
 Job and call sessions also have a five-minute **no-observation deadline** at
 the manager boundary. The deadline starts when execution starts and resets on
-every agent observation, including streamed model output and tool start,
-update, and end events. If the manager observes nothing before the deadline,
-it cancels the agent and concludes the session as interrupted so the owning
-workflow or task reconciler can recover and capacity is released. This catches
-stalls before a provider stream exists as well as stalls outside the provider
-request itself. Persistent chat sessions are excluded because an idle chat is
-waiting for a human, not stalled work.
+usable progress: a completed model message, a tool start/update/end event, or a
+turn boundary. Partial model deltas alone do not extend it; a provider that
+streams partial tokens forever has still failed to return a usable agent move.
+If the manager observes no usable progress before the deadline, it cancels the
+agent and concludes the session as interrupted so the owning workflow or task
+reconciler can recover and capacity is released. This catches stalls before a
+provider stream exists as well as stalls outside the provider request itself.
+Persistent chat sessions are excluded because an idle chat is waiting for a
+human, not stalled work.
 
 The no-observation deadline is not the session's total runtime budget. Active
 work may continue beyond five minutes while it produces observations; the
