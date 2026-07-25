@@ -954,7 +954,7 @@ async function runTaskOwner(input: {
           conditions: [
             {
               id: "pipeline-run:123-completed",
-              type: "pipeline.run.completed",
+              type: "pipeline-run.state",
               subject: "pipeline-run:123",
               expected: { field: "state", equals: "completed" },
             },
