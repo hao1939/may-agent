@@ -648,6 +648,10 @@ The pilot is implemented while the app remains paused for final verification:
   real execution root;
 - AKS scenario-adapter leaves bind to the owner workflow
   `domain-task-execution`; shared ledger and observation workflows do not;
+- repo-ref wakes, disposition rechecks, and other non-mutating reviews return
+  evidence in their structured task result and do not bind to
+  `domain-task-execution` merely to publish a memo; only a real bounded source
+  repair enters that direct-integration workflow;
 - an hourly deterministic integrity watcher emits
   `aks.workspace.integrity.changed` only when its fingerprint changes and asks
   the existing app owner path for judgment; and

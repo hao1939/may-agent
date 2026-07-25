@@ -96,6 +96,12 @@ decisions.
     workflow-owned source edits, provider dispatch, proof acceptance, or
     integration directly. Put the corrected judgment/input back on the same
     task and resume it through the same workflow.
+    Do not bind a repo-ref wake, disposition recheck, or unchanged wait to
+    `domain-task-execution`; that workflow exists for a real bounded source
+    patch and directly integrates accepted changes into `dev`. Non-mutating
+    review evidence belongs in the structured task result, not an evidence-only
+    domain commit. If the review discovers a concrete source repair, return the
+    same task to its source-owning workflow.
 16. Treat a draft repair PR as internal verification state, not a human
     handoff. After exact campaign proof makes the fix ready, publish it as
     non-draft, call it review-ready rather than merge-ready, send one retry-safe

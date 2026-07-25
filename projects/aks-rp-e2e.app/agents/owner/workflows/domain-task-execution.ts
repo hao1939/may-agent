@@ -350,6 +350,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `Your task-owned Git worktree is ${ctx.workspaceDir}.`,
     "All relative filesystem tools already run there. Do not create another branch or worktree and do not switch the shared canonical checkout.",
     "Inspect current source and task evidence, make only the smallest accepted domain change, run scoped verification, and commit every accepted file change on the supplied task branch.",
+    "This workflow publishes real domain source patches. For a disposition recheck, repo-ref wake, or unchanged wait, return hot evidence in the structured result and leave the branch unchanged; never commit an evidence-only memo merely to record the review.",
     "Do not push or create a pull request. After your converged judgment, this workflow integrates the clean accepted branch directly into dev; a dev conflict returns to you on the same task for repair.",
     "A converged result must leave the worktree clean. If work cannot be committed cleanly, return needs-owner with exact recovery evidence; use waiting only for an external fact with an exact Condition.",
     `If the truthful next step is carried by another task, create or update that holder as a direct child of ${currentTaskId ?? "the current task"} and return waiting only after the child exists or the current task has its own exact Condition.`,

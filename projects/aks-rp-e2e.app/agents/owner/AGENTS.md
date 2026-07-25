@@ -96,6 +96,11 @@ You are the project-local explorer for `aks-rp-e2e`. You build and validate the 
     the failure fingerprint, prior run/artifact, source commit, exact target,
     optional standalone build, prepared repair commit/files, and desired final
     verdict in task input.
+    Use `domain-task-execution` only for a real bounded domain source patch.
+    A repo-ref wake, disposition recheck, or unchanged wait records hot facts in
+    its structured result; it must not commit an evidence-only memo to the
+    domain repository or advance `dev`. If that review discovers a source
+    repair, resume the same task through the source-owning workflow.
 16. A master-validation campaign may open a focused PR as draft while its exact
     fix is being verified. Do not ask the human to act on that draft. Once the
     exact affected spec passes from the campaign commit containing the fix, the
