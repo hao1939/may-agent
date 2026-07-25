@@ -108,6 +108,26 @@ const defaultBashOperations: BashOperations = {
 			});
 
 			let timedOut = false;
+			let settled = false;
+			let exitFallbackHandle: NodeJS.Timeout | undefined;
+
+			const cleanup = () => {
+				if (timeoutHandle) clearTimeout(timeoutHandle);
+				if (exitFallbackHandle) clearTimeout(exitFallbackHandle);
+				if (signal) signal.removeEventListener("abort", onAbort);
+			};
+			const settleResolve = (code: number | null) => {
+				if (settled) return;
+				settled = true;
+				cleanup();
+				resolve({ exitCode: code });
+			};
+			const settleReject = (error: Error) => {
+				if (settled) return;
+				settled = true;
+				cleanup();
+				reject(error);
+			};
 
 			// Set timeout if provided
 			let timeoutHandle: NodeJS.Timeout | undefined;
@@ -117,6 +137,7 @@ const defaultBashOperations: BashOperations = {
 					if (child.pid) {
 						killProcessTree(child.pid);
 					}
+					settleReject(new Error(`timeout:${timeout}`));
 				}, timeout * 1000);
 			}
 
@@ -130,9 +151,7 @@ const defaultBashOperations: BashOperations = {
 
 			// Handle shell spawn errors
 			child.on("error", (err) => {
-				if (timeoutHandle) clearTimeout(timeoutHandle);
-				if (signal) signal.removeEventListener("abort", onAbort);
-				reject(err);
+				settleReject(err);
 			});
 
 			// Handle abort signal - kill entire process tree
@@ -140,6 +159,7 @@ const defaultBashOperations: BashOperations = {
 				if (child.pid) {
 					killProcessTree(child.pid);
 				}
+				settleReject(new Error("aborted"));
 			};
 
 			if (signal) {
@@ -150,22 +170,30 @@ const defaultBashOperations: BashOperations = {
 				}
 			}
 
-			// Handle process exit
-			child.on("close", (code) => {
-				if (timeoutHandle) clearTimeout(timeoutHandle);
-				if (signal) signal.removeEventListener("abort", onAbort);
+			// `close` waits for every inherited output pipe. A background
+			// descendant can keep those pipes open after the requested shell exits,
+			// so use a short drain window and then close the whole process group.
+			child.on("exit", (code) => {
+				if (settled) return;
+				exitFallbackHandle = setTimeout(() => {
+					if (child.pid) killProcessTree(child.pid);
+					settleResolve(code);
+				}, 1_000);
+			});
 
+			// Handle process and pipe close
+			child.on("close", (code) => {
 				if (signal?.aborted) {
-					reject(new Error("aborted"));
+					settleReject(new Error("aborted"));
 					return;
 				}
 
 				if (timedOut) {
-					reject(new Error(`timeout:${timeout}`));
+					settleReject(new Error(`timeout:${timeout}`));
 					return;
 				}
 
-				resolve({ exitCode: code });
+				settleResolve(code);
 			});
 		});
 	},
