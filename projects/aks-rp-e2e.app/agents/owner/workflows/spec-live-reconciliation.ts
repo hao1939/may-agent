@@ -267,6 +267,22 @@ export function scenarioNormalizationReplayRequired(input: {
   );
 }
 
+export function scenarioNormalizationReplayBase(input: {
+  recordedTaskBase: string;
+  priorReplayBase?: string;
+  inferredMergeBase?: string;
+  recordedFirstParentMergeCount: number;
+}): string {
+  if (input.priorReplayBase) return input.priorReplayBase;
+  if (
+    input.recordedFirstParentMergeCount === 0 &&
+    input.inferredMergeBase
+  ) {
+    return input.inferredMergeBase;
+  }
+  return input.recordedTaskBase;
+}
+
 export function directIntegrationAction(input: {
   sourceIsInTarget: boolean;
   targetIsInSource: boolean;
@@ -1634,7 +1650,34 @@ export async function reconcileSpecLive(
         ).status === 0
           ? priorReplay.replayBase
           : "";
-      const taskBase = priorReplayBase || recordedTaskBase;
+      const recordedFirstParentMerges = git(workspaceDir, [
+        "rev-list",
+        "--first-parent",
+        "--merges",
+        `${recordedTaskBase}..HEAD`,
+      ])
+        .stdout.split(/\r?\n/)
+        .filter(Boolean);
+      const mergeBase = git(
+        workspaceDir,
+        ["merge-base", "HEAD", targetRef],
+        true,
+      ).stdout;
+      const inferredMergeBase =
+        /^[0-9a-f]{40}$/i.test(mergeBase) &&
+        git(
+          workspaceDir,
+          ["merge-base", "--is-ancestor", recordedTaskBase, mergeBase],
+          true,
+        ).status === 0
+          ? mergeBase
+          : "";
+      const taskBase = scenarioNormalizationReplayBase({
+        recordedTaskBase,
+        priorReplayBase,
+        inferredMergeBase,
+        recordedFirstParentMergeCount: recordedFirstParentMerges.length,
+      });
       const sourceIsInTarget =
         git(
           repoDir,

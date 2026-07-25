@@ -30,6 +30,7 @@ import {
   resolveIntegrationTarget,
   resolveLiveExecutionTarget,
   runMatchesPriorVerification,
+  scenarioNormalizationReplayBase,
   scenarioNormalizationReplayRequired,
   shouldFastForwardIntegratedSource,
   shouldReviewBeforeInitialLiveDispatch,
@@ -731,6 +732,31 @@ describe("spec-live-reconciliation workflow", () => {
         firstParentMergeCount: 0,
       }),
     ).toBe(false);
+  });
+
+  test("resumes a clean interrupted replay from its inferred merge base", () => {
+    expect(
+      scenarioNormalizationReplayBase({
+        recordedTaskBase: "recorded",
+        inferredMergeBase: "latest-clean-base",
+        recordedFirstParentMergeCount: 0,
+      }),
+    ).toBe("latest-clean-base");
+    expect(
+      scenarioNormalizationReplayBase({
+        recordedTaskBase: "recorded",
+        inferredMergeBase: "unsafe-merge-base",
+        recordedFirstParentMergeCount: 1,
+      }),
+    ).toBe("recorded");
+    expect(
+      scenarioNormalizationReplayBase({
+        recordedTaskBase: "recorded",
+        priorReplayBase: "checkpointed-base",
+        inferredMergeBase: "latest-clean-base",
+        recordedFirstParentMergeCount: 0,
+      }),
+    ).toBe("checkpointed-base");
   });
 
   test("reverifies a direct candidate whenever the target advanced after its live run", () => {
