@@ -17,6 +17,9 @@ import {
   completedPullRequestIntegration,
   decisionCorrectionPrompt,
   directIntegrationAction,
+  proofPreservingScenarioIntegration,
+  proofProtectedScenarioPaths,
+  shouldReplayScenarioBeforeRunReview,
   existingRecoveryProblem,
   integrationMode,
   liveDispatchTargetRefreshRequired,
@@ -681,6 +684,13 @@ describe("spec-live-reconciliation workflow", () => {
         branchHasChange: true,
       }),
     ).toBe(false);
+    expect(
+      shouldReviewBeforeInitialLiveDispatch({
+        hasExactRun: false,
+        branchHasChange: true,
+        reviewedScenarioPatch: true,
+      }),
+    ).toBe(false);
   });
 
   test("keeps an invalid preparation verdict inside structured correction", () => {
@@ -796,6 +806,72 @@ describe("spec-live-reconciliation workflow", () => {
         targetIsInSource: false,
       }),
     ).toBe("reverify-updated-source");
+  });
+
+  test("preserves scenario proof only for disjoint domain-path target advances", () => {
+    expect(
+      proofPreservingScenarioIntegration({
+        sourcePaths: [
+          "features/net-integration/tests/external-acr.test.ts",
+          "model/specs/net-integration/external-acr.json",
+        ],
+        targetPaths: [
+          "features/managementplane-addon/tests/version-upgrade.test.ts",
+          "model/specs/managementplane-addon/version-upgrade.json",
+        ],
+      }),
+    ).toBe(true);
+    expect(
+      proofPreservingScenarioIntegration({
+        sourcePaths: ["features/net-integration/tests/external-acr.test.ts"],
+        targetPaths: ["features/net-integration/tests/external-acr.test.ts"],
+      }),
+    ).toBe(false);
+    expect(
+      proofPreservingScenarioIntegration({
+        sourcePaths: [
+          "features/net-integration/compact/staging.plan.json",
+          "features/net-integration/tests/external-acr.test.ts",
+        ],
+        targetPaths: [
+          "features/net-integration/compact/staging.plan.json",
+          "features/net-integration/tests/external-keyvault.test.ts",
+        ],
+      }),
+    ).toBe(true);
+    expect(
+      proofProtectedScenarioPaths([
+        "features/net-integration/compact/staging.plan.json",
+        "features/net-integration/tests/external-acr.test.ts",
+      ]),
+    ).toEqual(["features/net-integration/tests/external-acr.test.ts"]);
+    expect(
+      proofPreservingScenarioIntegration({
+        sourcePaths: ["features/net-integration/tests/external-acr.test.ts"],
+        targetPaths: ["runner/queue-ado.ts"],
+      }),
+    ).toBe(false);
+    expect(
+      proofPreservingScenarioIntegration({
+        sourcePaths: [],
+        targetPaths: ["design/scenario-normalization.md"],
+      }),
+    ).toBe(false);
+  });
+
+  test("reviews an exact terminal run before replaying scenario source", () => {
+    expect(
+      shouldReplayScenarioBeforeRunReview({
+        directScenarioNormalization: true,
+        terminalExactRun: true,
+      }),
+    ).toBe(false);
+    expect(
+      shouldReplayScenarioBeforeRunReview({
+        directScenarioNormalization: true,
+        terminalExactRun: false,
+      }),
+    ).toBe(true);
   });
 
   test("refreshes a stale scenario candidate before live dispatch", () => {

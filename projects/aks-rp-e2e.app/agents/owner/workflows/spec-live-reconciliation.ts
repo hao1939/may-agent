@@ -176,6 +176,7 @@ export type SpecLiveReconciliationOptions = {
   targetBranch?: string;
   existingRecoveryAfterRunId?: string;
   reusePriorIntegratedProof?: boolean;
+  reviewedScenarioPatch?: boolean;
 };
 
 export type LiveExecutionTarget = {
@@ -232,9 +233,10 @@ export function shouldFastForwardIntegratedSource(input: {
 export function shouldReviewBeforeInitialLiveDispatch(input: {
   hasExactRun: boolean;
   branchHasChange: boolean;
+  reviewedScenarioPatch?: boolean;
 }): boolean {
   void input.branchHasChange;
-  return !input.hasExactRun;
+  return !input.hasExactRun && !input.reviewedScenarioPatch;
 }
 
 export function preparationDecisionProblem(
@@ -302,6 +304,49 @@ export function directIntegrationAction(input: {
   return input.targetIsInSource
     ? "publish-tested-source"
     : "reverify-updated-source";
+}
+
+function proofPreservingTargetPath(path: string): boolean {
+  return (
+    path.startsWith("features/") ||
+    path.startsWith("model/specs/") ||
+    path.startsWith("model/features/") ||
+    path.startsWith("evidence/") ||
+    path.startsWith("design/")
+  );
+}
+
+function mergeSafeScenarioAggregatePath(path: string): boolean {
+  return /^features\/[^/]+\/compact\/staging\.plan\.json$/.test(path);
+}
+
+export function proofProtectedScenarioPaths(paths: string[]): string[] {
+  return paths.filter((path) => path && !mergeSafeScenarioAggregatePath(path));
+}
+
+export function proofPreservingScenarioIntegration(input: {
+  sourcePaths: string[];
+  targetPaths: string[];
+}): boolean {
+  const sourcePaths = new Set(proofProtectedScenarioPaths(input.sourcePaths));
+  if (
+    input.sourcePaths.filter(Boolean).length === 0 ||
+    input.targetPaths.length === 0
+  ) {
+    return false;
+  }
+  return input.targetPaths.every(
+    (path) =>
+      proofPreservingTargetPath(path) &&
+      (!sourcePaths.has(path) || mergeSafeScenarioAggregatePath(path)),
+  );
+}
+
+export function shouldReplayScenarioBeforeRunReview(input: {
+  directScenarioNormalization: boolean;
+  terminalExactRun: boolean;
+}): boolean {
+  return input.directScenarioNormalization && !input.terminalExactRun;
 }
 
 const decisionSchema = Type.Object({
@@ -1678,7 +1723,10 @@ export async function reconcileSpecLive(
         ) {
           return {
             state: "result",
-            result: await reconcileSpecLive(ctx, options),
+            result: await reconcileSpecLive(ctx, {
+              ...options,
+              reviewedScenarioPatch: true,
+            }),
           };
         }
       }
@@ -1698,9 +1746,25 @@ export async function reconcileSpecLive(
       };
     };
 
+    const terminalExactRunBeforeReplay = matchingTaskRuns(
+      taskRuns(repoDir, contextDir),
+      {
+        taskId,
+        generation,
+        specId,
+        sourceCommit,
+        target: liveTarget,
+        standaloneBuildId,
+      },
+    ).some((run) => pipelineRunState(run) === "completed");
+
     if (
-      integrationMode(targetBranch) === "direct" &&
-      normalizationInput?.loopId === "scenario-normalization"
+      shouldReplayScenarioBeforeRunReview({
+        directScenarioNormalization:
+          integrationMode(targetBranch) === "direct" &&
+          normalizationInput?.loopId === "scenario-normalization",
+        terminalExactRun: terminalExactRunBeforeReplay,
+      })
     ) {
       const recordedTaskBase = nonEmptyString(
         normalizationInput.originDevCommit,
@@ -2044,6 +2108,7 @@ export async function reconcileSpecLive(
       shouldReviewBeforeInitialLiveDispatch({
         hasExactRun: Boolean(latestRun),
         branchHasChange: sourceDiffersFromBase,
+        reviewedScenarioPatch: options.reviewedScenarioPatch,
       })
     ) {
       const decision = await askAgent(
@@ -2438,7 +2503,109 @@ export async function reconcileSpecLive(
 
         if (integrationAction === "reverify-updated-source") {
           if (normalizationInput?.loopId === "scenario-normalization") {
-            return reconcileSpecLive(ctx, options);
+            const mergeBase = git(
+              repoDir,
+              ["merge-base", sourceCommit, targetRef],
+              true,
+            );
+            const sourcePathResult =
+              mergeBase.status === 0
+                ? git(
+                    repoDir,
+                    [
+                      "diff",
+                      "--name-only",
+                      mergeBase.stdout,
+                      sourceCommit,
+                      "--",
+                    ],
+                    true,
+                  )
+                : null;
+            const targetPathResult =
+              mergeBase.status === 0
+                ? git(
+                    repoDir,
+                    ["diff", "--name-only", mergeBase.stdout, targetRef, "--"],
+                    true,
+                  )
+                : null;
+            const sourcePaths =
+              sourcePathResult?.status === 0
+                ? sourcePathResult.stdout.split(/\r?\n/).filter(Boolean)
+                : [];
+            const targetPaths =
+              targetPathResult?.status === 0
+                ? targetPathResult.stdout.split(/\r?\n/).filter(Boolean)
+                : [];
+            const proofPreserving = proofPreservingScenarioIntegration({
+              sourcePaths,
+              targetPaths,
+            });
+
+            if (!proofPreserving) return reconcileSpecLive(ctx, options);
+
+            const merge = git(
+              workspaceDir,
+              ["merge", "--no-ff", "--no-commit", targetRef],
+              true,
+            );
+            if (merge.status !== 0) {
+              git(workspaceDir, ["merge", "--abort"], true);
+              return reconcileSpecLive(ctx, options);
+            }
+
+            const protectedSourcePaths =
+              proofProtectedScenarioPaths(sourcePaths);
+            const changedTestedPath = protectedSourcePaths.length
+              ? git(
+                  workspaceDir,
+                  [
+                    "diff",
+                    "--quiet",
+                    sourceCommit,
+                    "--",
+                    ...protectedSourcePaths,
+                  ],
+                  true,
+                ).status
+              : 0;
+            if (changedTestedPath !== 0) {
+              git(workspaceDir, ["merge", "--abort"], true);
+              return reconcileSpecLive(ctx, options);
+            }
+
+            const mergeCommit = git(
+              workspaceDir,
+              ["commit", "--no-edit"],
+              true,
+            );
+            if (mergeCommit.status !== 0) {
+              git(workspaceDir, ["merge", "--abort"], true);
+              return reconcileSpecLive(ctx, options);
+            }
+
+            const push = git(
+              workspaceDir,
+              ["push", "origin", `HEAD:${targetBranch}`],
+              true,
+            );
+            if (push.status !== 0) {
+              lastPushError = push.stderr || push.stdout;
+              continue;
+            }
+            git(repoDir, ["fetch", "origin", targetBranch]);
+            if (
+              git(
+                repoDir,
+                ["merge-base", "--is-ancestor", sourceCommit, targetRef],
+                true,
+              ).status === 0
+            ) {
+              integratedCommit = git(repoDir, ["rev-parse", targetRef]).stdout;
+              break;
+            }
+            continue;
           }
           const beforeMerge = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
           const merge = git(

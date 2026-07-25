@@ -165,6 +165,17 @@ unrelated merge.
   else. Its terminal artifact is repair context; proof for a different task
   source commit still requires an exact run.
 - An attempt discovers an existing exact run before dispatching another.
+- If `origin/dev` advances after the agent has judged the task patch but before
+  dispatch, a conflict-free scenario replay retains that judgment. The
+  workflow reruns deterministic admission and requires a fresh exact live run;
+  it asks the agent again only when replay conflicts or the replayed source
+  fails admission.
+- An exact terminal run for the current task source is collected and judged
+  before scenario-normalization replay considers a newer `origin/dev`. A failed
+  run is domain evidence, not stale source to discard. If that judgment commits
+  a repair, the repaired source is then replayed onto current `dev` before its
+  next live dispatch; an exact wait or escalation remains attached to the
+  reviewed run without another unchanged provider attempt.
 - Every new source commit passes `runner/check-private-source-policy.ts` and
   `runner/check-live-admission.ts` for the exact selected spec set before ADO is
   queued. A failed local dispatch gate returns its raw findings to the same
@@ -231,10 +242,19 @@ unrelated merge.
   the same task; the repaired commit must receive a fresh exact live run before
   integration.
 - More generally, if `origin/dev` advances after the accepted live run and is
-  no longer in the tested source ancestry, the workflow first updates the task
-  source and then live-tests that new commit. This applies to a clean merge as
-  well as a conflict repair: direct integration never publishes an untested
-  merge commit.
+  no longer in the tested source ancestry, the workflow compares the tested
+  task paths with the target advance before deciding whether proof remains
+  valid. A target advance is proof-preserving only when every target-side path
+  is an independent scenario/model/evidence/design path and none overlaps a
+  path changed by the tested source. The workflow may then create a clean merge
+  that preserves the exact tested source commit as an ancestor and verifies
+  that the merge did not change any tested task path. The feature-local
+  `compact/staging.plan.json` is the sole merge-safe aggregate exception: clean
+  Git combination may preserve independent path entries in that file, while a
+  conflict still invalidates proof. This lets independent normalization passes
+  integrate without repeatedly invalidating one another. Any other overlapping
+  path, runner/CI/config change, merge conflict, or changed tested path requires
+  replay onto current `dev` and a fresh exact live run.
 - For `main`, a PR is discovered by exact source branch and target before
   creation. Reviewer changes invalidate the old proof, and an abandoned PR is
   an owner decision rather than permission to recreate it.
