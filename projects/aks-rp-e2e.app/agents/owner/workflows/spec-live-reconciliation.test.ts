@@ -19,6 +19,7 @@ import {
   directIntegrationAction,
   existingRecoveryProblem,
   integrationMode,
+  liveDispatchTargetRefreshRequired,
   matchingTaskRuns,
   parseTaskPayload,
   pipelineWaitCondition,
@@ -795,5 +796,26 @@ describe("spec-live-reconciliation workflow", () => {
         targetIsInSource: false,
       }),
     ).toBe("reverify-updated-source");
+  });
+
+  test("refreshes a stale scenario candidate before live dispatch", () => {
+    expect(
+      liveDispatchTargetRefreshRequired({
+        directScenarioNormalization: true,
+        targetIsInSource: false,
+      }),
+    ).toBe(true);
+    expect(
+      liveDispatchTargetRefreshRequired({
+        directScenarioNormalization: true,
+        targetIsInSource: true,
+      }),
+    ).toBe(false);
+    expect(
+      liveDispatchTargetRefreshRequired({
+        directScenarioNormalization: false,
+        targetIsInSource: false,
+      }),
+    ).toBe(false);
   });
 });

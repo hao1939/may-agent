@@ -90,6 +90,15 @@ escalates the ownership boundary. A source-only check is useful diagnostic
 evidence, but it is not completion and is never integrated as accepted live
 normalization.
 
+Immediately before queueing each direct scenario-normalization run, after the
+candidate branch is pushed, the workflow fetches `origin/dev` again. The run is
+queued only when that latest target commit is already in the candidate's
+ancestry. If `dev` advanced while the agent was reviewing or repairing the
+source, the workflow replays only the task-owned patches onto the new target
+and reviews the new exact commit before spending a live run. The terminal
+integration check remains the final race guard, but a target advance already
+known at dispatch time must not create a predictably stale live run.
+
 A source- or provider-mutating repair must use this workflow (or another
 workflow that explicitly declares the same capabilities). Its task input keeps
 the decision context—spec, failure, prior proof, and desired result—while the
@@ -161,6 +170,9 @@ unrelated merge.
   queued. A failed local dispatch gate returns its raw findings to the same
   agent for bounded fix-forward work; it is never spent as a known-failing ADO
   run.
+- Every direct scenario-normalization dispatch re-fetches `origin/dev` after
+  its source branch push. If current `dev` is not an ancestor of that exact
+  source, reconciliation refreshes the candidate before queueing provider work.
 - A terminal admission-preflight refusal is repair evidence, not a passing or
   accepted-nonlive result. The same task must become live-admissible, wait on an
   exact external fact, or escalate a genuine ownership boundary.

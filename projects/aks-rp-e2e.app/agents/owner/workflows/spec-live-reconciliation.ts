@@ -267,6 +267,13 @@ export function scenarioNormalizationReplayRequired(input: {
   );
 }
 
+export function liveDispatchTargetRefreshRequired(input: {
+  directScenarioNormalization: boolean;
+  targetIsInSource: boolean;
+}): boolean {
+  return input.directScenarioNormalization && !input.targetIsInSource;
+}
+
 export function scenarioNormalizationReplayBase(input: {
   recordedTaskBase: string;
   priorReplayBase?: string;
@@ -274,10 +281,7 @@ export function scenarioNormalizationReplayBase(input: {
   recordedFirstParentMergeCount: number;
 }): string {
   if (input.priorReplayBase) return input.priorReplayBase;
-  if (
-    input.recordedFirstParentMergeCount === 0 &&
-    input.inferredMergeBase
-  ) {
+  if (input.recordedFirstParentMergeCount === 0 && input.inferredMergeBase) {
     return input.inferredMergeBase;
   }
   return input.recordedTaskBase;
@@ -1639,6 +1643,61 @@ export async function reconcileSpecLive(
       };
     };
 
+    const queueFreshRun = async (
+      candidateCommit: string,
+      retryOfRunId?: string,
+    ): Promise<
+      | { state: "queued"; run: PipelineRun }
+      | { state: "result"; result: WorkflowResult }
+    > => {
+      const directScenarioNormalization =
+        integrationMode(targetBranch) === "direct" &&
+        normalizationInput?.loopId === "scenario-normalization";
+      if (directScenarioNormalization) {
+        git(repoDir, ["fetch", "origin", targetBranch]);
+        const latestTargetCommit = git(repoDir, [
+          "rev-parse",
+          targetRef,
+        ]).stdout;
+        const targetIsInSource =
+          git(
+            workspaceDir,
+            [
+              "merge-base",
+              "--is-ancestor",
+              latestTargetCommit,
+              candidateCommit,
+            ],
+            true,
+          ).status === 0;
+        if (
+          liveDispatchTargetRefreshRequired({
+            directScenarioNormalization,
+            targetIsInSource,
+          })
+        ) {
+          return {
+            state: "result",
+            result: await reconcileSpecLive(ctx, options),
+          };
+        }
+      }
+
+      return {
+        state: "queued",
+        run: queueRun(repoDir, {
+          taskId,
+          generation,
+          specId,
+          sourceBranch,
+          sourceCommit: candidateCommit,
+          target: liveTarget,
+          standaloneBuildId,
+          ...(retryOfRunId ? { retryOfRunId } : {}),
+        }),
+      };
+    };
+
     if (
       integrationMode(targetBranch) === "direct" &&
       normalizationInput?.loopId === "scenario-normalization"
@@ -1751,11 +1810,7 @@ export async function reconcileSpecLive(
             [`source-branch:${sourceBranch}`, `task:${taskId}`],
           );
         }
-        const cherry = git(
-          workspaceDir,
-          ["cherry", targetRef, "HEAD"],
-          true,
-        );
+        const cherry = git(workspaceDir, ["cherry", targetRef, "HEAD"], true);
         if (cherry.status !== 0) {
           return ownerResult(
             ctx,
@@ -2147,15 +2202,9 @@ export async function reconcileSpecLive(
       if (dispatch.state === "result") return dispatch.result;
       sourceCommit = dispatch.sourceCommit;
       git(workspaceDir, ["push", "--set-upstream", "origin", sourceBranch]);
-      latestRun = queueRun(repoDir, {
-        taskId,
-        generation,
-        specId,
-        sourceBranch,
-        sourceCommit,
-        target: liveTarget,
-        standaloneBuildId,
-      });
+      const queued = await queueFreshRun(sourceCommit);
+      if (queued.state === "result") return queued.result;
+      latestRun = queued.run;
       saveRunReceipt(contextDir, latestRun, sourceCommit);
       const runId = nonEmptyString(latestRun.id);
       return waitingResult(
@@ -2277,16 +2326,12 @@ export async function reconcileSpecLive(
         if (!unchangedRetry) {
           git(workspaceDir, ["push", "origin", sourceBranch]);
         }
-        const retry = queueRun(repoDir, {
-          taskId,
-          generation,
-          specId,
-          sourceBranch,
+        const queued = await queueFreshRun(
           sourceCommit,
-          target: liveTarget,
-          standaloneBuildId,
-          ...(unchangedRetry ? { retryOfRunId: runId } : {}),
-        });
+          unchangedRetry ? runId : undefined,
+        );
+        if (queued.state === "result") return queued.result;
+        const retry = queued.run;
         saveRunReceipt(contextDir, retry, sourceCommit);
         const retryId = nonEmptyString(retry.id);
         return waitingResult(
@@ -2320,15 +2365,9 @@ export async function reconcileSpecLive(
         if (dispatch.state === "result") return dispatch.result;
         nextCommit = dispatch.sourceCommit;
         git(workspaceDir, ["push", "origin", sourceBranch]);
-        const nextRun = queueRun(repoDir, {
-          taskId,
-          generation,
-          specId,
-          sourceBranch,
-          sourceCommit: nextCommit,
-          target: liveTarget,
-          standaloneBuildId,
-        });
+        const queued = await queueFreshRun(nextCommit);
+        if (queued.state === "result") return queued.result;
+        const nextRun = queued.run;
         saveRunReceipt(contextDir, nextRun, nextCommit);
         const nextRunId = nonEmptyString(nextRun.id);
         return waitingResult(
@@ -2441,15 +2480,9 @@ export async function reconcileSpecLive(
           if (dispatch.state === "result") return dispatch.result;
           updatedCommit = dispatch.sourceCommit;
           git(workspaceDir, ["push", "origin", sourceBranch]);
-          const replacement = queueRun(repoDir, {
-            taskId,
-            generation,
-            specId,
-            sourceBranch,
-            sourceCommit: updatedCommit,
-            target: liveTarget,
-            standaloneBuildId,
-          });
+          const queued = await queueFreshRun(updatedCommit);
+          if (queued.state === "result") return queued.result;
+          const replacement = queued.run;
           saveRunReceipt(contextDir, replacement, updatedCommit);
           const replacementId = nonEmptyString(replacement.id);
           return waitingResult(
@@ -2700,15 +2733,9 @@ export async function reconcileSpecLive(
       if (dispatch.state === "result") return dispatch.result;
       resolvedCommit = dispatch.sourceCommit;
       git(workspaceDir, ["push", "origin", sourceBranch]);
-      const replacement = queueRun(repoDir, {
-        taskId,
-        generation,
-        specId,
-        sourceBranch,
-        sourceCommit: resolvedCommit,
-        target: liveTarget,
-        standaloneBuildId,
-      });
+      const queued = await queueFreshRun(resolvedCommit);
+      if (queued.state === "result") return queued.result;
+      const replacement = queued.run;
       saveRunReceipt(contextDir, replacement, resolvedCommit);
       const replacementId = nonEmptyString(replacement.id);
       return waitingResult(
