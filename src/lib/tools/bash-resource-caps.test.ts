@@ -34,6 +34,17 @@ describe("P113 Bash Resource Caps", () => {
     expect(result.content[0].text).toContain("P113 resource caps working");
   });
 
+  it("does not let a background descendant hold the tool call open", async () => {
+    const tool = createBashTool("/tmp", { defaultTimeout: 10 });
+    const startedAt = Date.now();
+    const result = await tool.execute("id", {
+      command: "sleep 30 & echo parent-exited",
+    });
+
+    expect(result.content[0].text).toContain("parent-exited");
+    expect(Date.now() - startedAt).toBeLessThan(5_000);
+  });
+
   it("tool description mentions the default timeout", () => {
     const tool = createBashTool("/tmp");
     expect(tool.description).toContain("120s");
