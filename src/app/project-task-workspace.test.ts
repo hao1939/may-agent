@@ -161,6 +161,46 @@ describe("project task workspace", () => {
     expect(git(f.repo, "branch", "--list", prepared.metadata.branch)).toContain(prepared.metadata.branch);
   });
 
+  it("restores a cleaned waiting branch from origin instead of a newer base head", () => {
+    const f = fixture();
+    const remote = join(f.root, "remote.git");
+    execFileSync("git", ["init", "--bare", remote]);
+    git(f.repo, "remote", "add", "origin", remote);
+    git(f.repo, "push", "-u", "origin", "dev");
+
+    const prepared = prepareProjectTaskWorkspace({
+      repoDir: f.repo,
+      workspaceRoot: f.worktrees,
+      taskId: "waiting-live-proof",
+      generation: 1,
+      baseBranch: "dev",
+    });
+    const testedCommit = prepared.metadata.headCommit;
+    git(prepared.metadata.path, "push", "-u", "origin", prepared.metadata.branch);
+
+    const finalized = finalizeProjectTaskWorkspace(prepared, "waiting");
+    expect(finalized).toMatchObject({ ok: true, metadata: { disposition: "removed" } });
+    expect(git(f.repo, "branch", "--list", prepared.metadata.branch)).toBe("");
+
+    writeFileSync(join(f.repo, "advanced.txt"), "new base\n");
+    git(f.repo, "add", "advanced.txt");
+    git(f.repo, "commit", "-m", "advance dev");
+    git(f.repo, "push", "origin", "dev");
+    const advancedBase = git(f.repo, "rev-parse", "HEAD");
+
+    const retry = prepareProjectTaskWorkspace({
+      repoDir: f.repo,
+      workspaceRoot: f.worktrees,
+      taskId: "waiting-live-proof",
+      generation: 1,
+      baseBranch: "dev",
+      previous: finalized.metadata,
+    });
+
+    expect(retry.metadata.headCommit).toBe(testedCommit);
+    expect(retry.metadata.headCommit).not.toBe(advancedBase);
+  });
+
   it("removes the task branch after its commit reaches the base branch", () => {
     const f = fixture();
     const prepared = prepareProjectTaskWorkspace({

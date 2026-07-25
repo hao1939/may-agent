@@ -123,8 +123,10 @@ export function prepareProjectTaskWorkspace(input: {
   const hasRemote = remoteExists(repoDir, remote);
   if (hasRemote && input.refreshRemote !== false) {
     git(repoDir, ["fetch", "--prune", remote, input.baseBranch]);
+    git(repoDir, ["fetch", remote, `+refs/heads/${branch}:refs/remotes/${remote}/${branch}`], true);
   }
   const remoteRef = `refs/remotes/${remote}/${input.baseBranch}`;
+  const remoteTaskRef = `refs/remotes/${remote}/${branch}`;
   const localRef = `refs/heads/${input.baseBranch}`;
   const baseRef = refExists(repoDir, remoteRef)
     ? `${remote}/${input.baseBranch}`
@@ -143,6 +145,7 @@ export function prepareProjectTaskWorkspace(input: {
 
   const branchRef = `refs/heads/${branch}`;
   const branchExists = refExists(repoDir, branchRef);
+  const remoteTaskBranchExists = refExists(repoDir, remoteTaskRef);
   const branchRegistration = entries.find((entry) => entry.branch === branchRef && entry.path !== path);
   if (branchRegistration) {
     throw new Error(`Task branch ${branch} is already checked out at ${branchRegistration.path}`);
@@ -161,14 +164,23 @@ export function prepareProjectTaskWorkspace(input: {
     }
     mkdirSync(dirname(path), { recursive: true });
     if (branchExists) git(repoDir, ["worktree", "add", path, branch]);
-    else git(repoDir, ["worktree", "add", "-b", branch, path, currentBaseCommit]);
+    else {
+      git(repoDir, [
+        "worktree",
+        "add",
+        "-b",
+        branch,
+        path,
+        remoteTaskBranchExists ? `${remote}/${branch}` : currentBaseCommit,
+      ]);
+    }
   }
 
   const headCommit = headAt(path);
   const baseCommit =
     input.previous?.branch === branch && input.previous.baseCommit
       ? input.previous.baseCommit
-      : branchExists
+      : branchExists || remoteTaskBranchExists
         ? git(repoDir, ["merge-base", headCommit, currentBaseCommit]).stdout || currentBaseCommit
         : currentBaseCommit;
   return {
