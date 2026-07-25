@@ -33,6 +33,10 @@ type RunResult = {
   startedAt?: string;
   completedAt?: string;
   endedAt?: string;
+  updatedAt?: string;
+  target?: {
+    surface?: string;
+  } | null;
   probeEvidence?: {
     mode?: string;
     status?: string;
@@ -209,14 +213,29 @@ function specMetrics(projectDir: string): {
   return { total: specs.length, unverified, failed };
 }
 
-function runResults(projectDir: string): Array<RunResult & { path: string }> {
-  const roots = [
-    join(projectDir, "runs", "executions"),
-    join(projectDir, "runs", "runs", "executions"),
+function runResults(
+  projectDir: string,
+  appDir?: string,
+): Array<RunResult & { path: string }> {
+  const roots: Array<{ root: string; aggregateOnly?: boolean }> = [
+    { root: join(projectDir, "runs", "executions") },
+    { root: join(projectDir, "runs", "runs", "executions") },
+    ...(appDir
+      ? [
+          {
+            root: join(appDir, ".state", "watchers", "aks-pipeline-artifacts"),
+            aggregateOnly: true,
+          },
+        ]
+      : []),
   ];
   const seen = new Set<string>();
-  return roots.flatMap((root) =>
-    listFiles(root, (path) => path.endsWith("/result.json"))
+  return roots.flatMap(({ root, aggregateOnly }) =>
+    listFiles(root, (path) => {
+      if (!path.endsWith("/result.json")) return false;
+      if (!aggregateOnly) return true;
+      return /\/runs\/test-results\/[^/]+\/result\.json$/.test(path);
+    })
       .filter((path) => {
         if (seen.has(path)) return false;
         seen.add(path);
@@ -233,12 +252,18 @@ function isLiveRun(run: RunResult): boolean {
     run.mode === "executing" ||
     run.probeEvidence?.mode === "execute" ||
     run.probeEvidence?.mode === "executing" ||
-    run.probeEvidence?.mode === "cloud-execution"
+    run.probeEvidence?.mode === "cloud-execution" ||
+    run.target?.surface === "live-azure-run"
   );
 }
 
 function runTime(run: RunResult): number | null {
-  for (const value of [run.completedAt, run.endedAt, run.startedAt]) {
+  for (const value of [
+    run.completedAt,
+    run.endedAt,
+    run.updatedAt,
+    run.startedAt,
+  ]) {
     if (!value) continue;
     const parsed = Date.parse(value);
     if (Number.isFinite(parsed)) return parsed;
@@ -246,9 +271,12 @@ function runTime(run: RunResult): number | null {
   return null;
 }
 
-function liveRuns24h(projectDir: string): Array<RunResult & { path: string }> {
+function liveRuns24h(
+  projectDir: string,
+  appDir?: string,
+): Array<RunResult & { path: string }> {
   const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
-  return runResults(projectDir).filter((run) => {
+  return runResults(projectDir, appDir).filter((run) => {
     if (!isLiveRun(run)) return false;
     const ts = runTime(run);
     return ts != null && ts >= dayAgo;
@@ -258,6 +286,7 @@ function liveRuns24h(projectDir: string): Array<RunResult & { path: string }> {
 export function sampleFocusMetric(
   projectDir: string,
   metricId: FocusMetricId,
+  options: { appDir?: string } = {},
 ): MetricSample {
   switch (metricId) {
     case "aks-rp-e2e.model.unknown-path-count":
@@ -281,19 +310,19 @@ export function sampleFocusMetric(
       };
     }
     case "aks-rp-e2e.run.live-started-24h": {
-      const live = liveRuns24h(projectDir);
+      const live = liveRuns24h(projectDir, options.appDir);
       return {
         value: live.length,
         measuredAt: Date.now(),
         sampleSize: live.length,
         note: {
-          source: "runs/executions result.json",
+          source: "project executions and app pipeline artifacts",
           samplePaths: live.slice(0, 5).map((run) => run.path),
         },
       };
     }
     case "aks-rp-e2e.run.live-succeeded-24h": {
-      const live = liveRuns24h(projectDir);
+      const live = liveRuns24h(projectDir, options.appDir);
       const succeeded = live.filter(
         (run) => normalizedStatus(run.status) === "passed",
       );
@@ -302,7 +331,7 @@ export function sampleFocusMetric(
         measuredAt: Date.now(),
         sampleSize: live.length,
         note: {
-          source: "runs/executions result.json",
+          source: "project executions and app pipeline artifacts",
           samplePaths: succeeded.slice(0, 5).map((run) => run.path),
         },
       };
@@ -310,15 +339,20 @@ export function sampleFocusMetric(
   }
 }
 
-export function sampleFocusMetrics(projectDir: string): FocusMetricsSnapshot {
+export function sampleFocusMetrics(
+  projectDir: string,
+  options: { appDir?: string } = {},
+): FocusMetricsSnapshot {
   return {
     liveRunsStarted24h: sampleFocusMetric(
       projectDir,
       "aks-rp-e2e.run.live-started-24h",
+      options,
     ).value,
     liveRunsSucceeded24h: sampleFocusMetric(
       projectDir,
       "aks-rp-e2e.run.live-succeeded-24h",
+      options,
     ).value,
     specUnverifiedCount: sampleFocusMetric(
       projectDir,

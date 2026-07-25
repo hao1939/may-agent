@@ -14,6 +14,10 @@ import {
   loopFrontierAccounting,
 } from "../../../task-loops.ts";
 import {
+  activeDomainPathOwners,
+  type LegacyOwnershipTask,
+} from "../../../legacy-branch-active-ownership.ts";
+import {
   legacyBranchInventory,
   legacyBranchWorkRevision,
   safeLegacyBranchFamily,
@@ -38,12 +42,9 @@ export const workflowContract: WorkflowIoContract = {
   },
 };
 
-type GraphTask = {
+type GraphTask = LegacyOwnershipTask & {
   generation?: number;
-  phase?: string;
-  state?: string;
   summary?: string;
-  input?: Record<string, unknown>;
 };
 
 type PersistedAttempt = {
@@ -356,6 +357,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const appDir = ctx.appDir ?? "/app/projects/aks-rp-e2e.app";
   const rows = legacyBranchInventory(projectDir);
   const tasks = readTasks(appDir);
+  const activeDomainOverlaps = new Map(
+    rows.map((row) => [row.branch, activeDomainPathOwners(tasks, row.files)]),
+  );
+  const eligibleRows = rows.filter(
+    (row) => !(activeDomainOverlaps.get(row.branch)?.length ?? 0),
+  );
   const persistedState = readTaskState(appDir);
   const represented = Object.entries(tasks).filter(
     ([, task]) => task.input?.loopId === legacyBranchReconciliationTaskId,
@@ -468,7 +475,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const createBudget = unresolvedAttention.length
     ? 0
     : Math.max(0, accounting.available - retryActions.length);
-  const createActions: ProjectAppTaskAction[] = rows
+  const createActions: ProjectAppTaskAction[] = eligibleRows
     .filter((row) => !representedBranches.has(row.branch))
     .sort(
       (left, right) =>
@@ -504,6 +511,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           "Run changed check-mode carriers/tests plus the repository scenario and runner guards without accepting new failures over the current base.",
           "A passing candidate reaches origin/dev by checked fast-forward and its local/remote source refs are removed.",
           "An already represented branch is removed without creating an empty merge.",
+          "A superseded or terminally rejected branch is complete only after its local and remote source refs are removed; if the refs must be retained, keep the task waiting on an exact blocker instead of converging it.",
           "A conflict or verification failure keeps the source refs and records the exact failing command or conflict for focused repair.",
           "Do not touch attached or dirty recovery worktrees in this clean-branch task.",
         ],
@@ -512,8 +520,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     });
   const actions = [...retryActions, ...createActions];
 
+  const deferredOverlapCount = rows.length - eligibleRows.length;
   const summary = rows.length
-    ? `Legacy branch reconciliation found ${rows.length} unattached branch(es) with patches outside origin/dev across ${byFamily.size} family/families; declared ${createActions.length} verification task(s), retried ${retryActions.length} replayable attention task(s), and observed ${accounting.actionableTaskIds.length} already actionable.`
+    ? `Legacy branch reconciliation found ${rows.length} unattached branch(es) with patches outside origin/dev across ${byFamily.size} family/families; declared ${createActions.length} verification task(s), retried ${retryActions.length} replayable attention task(s), deferred ${deferredOverlapCount} branch(es) owned by active domain tasks, and observed ${accounting.actionableTaskIds.length} already actionable.`
     : "Legacy clean-branch reconciliation converged: no unattached local branch has a patch outside origin/dev. Attached recovery work remains a separate explicit review frontier.";
   return ctx.done(summary, {
     state: "converged",
@@ -522,6 +531,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `base-ref:origin/dev`,
       `unattached-novel-branches:${rows.length}`,
       `families:${byFamily.size}`,
+      `active-domain-path-overlaps:${deferredOverlapCount}`,
       `patch-equivalent-attention:${patchEquivalentAttentionTaskIds.size}`,
     ],
     actions,

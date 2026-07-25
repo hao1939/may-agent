@@ -21,8 +21,13 @@ import {
   passingRecoveryObservation,
   priorProductClassification,
   preserveVerificationAfterNestedReconciliation,
+  priorStandaloneVerification,
   productRecoveryCondition,
+  requiresStandaloneVerification,
   shouldReconcileTestFix,
+  standaloneRecoveryChild,
+  standaloneRecoveryChildAction,
+  standaloneRecoveryCompletionProblem,
   workspace,
 } from "./master-validation-failure.js";
 
@@ -187,6 +192,105 @@ ${JSON.stringify({
         campaignBaseCommit: "base123",
       }),
     ).toContain("Do not merge the campaign branch itself");
+  });
+
+  test("routes a wrong-target aggregate failure through one exact standalone child", () => {
+    const root = mkdtempSync(join(tmpdir(), "master-validation-route-proof-"));
+    try {
+      mkdirSync(join(root, ".state", "tasks"), { recursive: true });
+      writeFileSync(
+        join(root, ".state", "tasks", "state.json"),
+        JSON.stringify({
+          receipts: {
+            "domain/prior-standalone-proof": {
+              summary:
+                "spec.rp-cluster-lifecycle.nginx-large-header passed exact standalone run 120 and merged into main.",
+              evidence: [
+                "pipeline-run:120",
+                "source-commit:proof123",
+                "standalone-build-id:110",
+              ],
+              completedAt: "2026-07-23T18:00:00Z",
+            },
+          },
+        }),
+      );
+      const failure = parseFailureInput(`
+## Reconciliation Task
+${JSON.stringify({
+  taskId: "domain/master-validation-failure/spec.nginx/fp",
+  input: {
+    specId: "spec.rp-cluster-lifecycle.nginx-large-header",
+    pipelineRunId: "130",
+    failureFingerprint: "fp",
+    sourceCommit: "old123",
+    category: "environment_blocker",
+    reason:
+      "Standalone RP ingress target required: the generic staging target cannot exercise this claim.",
+  },
+})}
+`)!;
+      expect(requiresStandaloneVerification(failure)).toBe(true);
+      const prior = priorStandaloneVerification(root, failure.specId)!;
+      expect(prior).toMatchObject({
+        taskId: "domain/prior-standalone-proof",
+        pipelineRunId: "120",
+        sourceCommit: "proof123",
+        standaloneBuildId: "110",
+      });
+      const action = standaloneRecoveryChildAction({
+        failure,
+        currentMainCommit: "main123",
+        prior,
+      });
+      expect(action).toMatchObject({
+        kind: "create-task",
+        parentId: failure.taskId,
+        workflow: "master-validation-route-verification",
+        input: {
+          specId: failure.specId,
+          standaloneBuildId: "110",
+          currentMainCommit: "main123",
+        },
+      });
+      const raw = `## Reconciliation Task\n${JSON.stringify({
+        children: { live: [{ taskId: (action as { id: string }).id }] },
+      })}`;
+      expect(
+        standaloneRecoveryChild(raw, failure, "main123", "110", "live"),
+      ).toMatchObject({ taskId: (action as { id: string }).id });
+      expect(
+        standaloneRecoveryCompletionProblem({
+          taskId: (action as { id: string }).id,
+          evidence: ["pipeline-run:140", "target-ref:origin/dev"],
+        }),
+      ).toContain("origin/main");
+      expect(
+        standaloneRecoveryCompletionProblem({
+          taskId: (action as { id: string }).id,
+          evidence: ["pipeline-run:140", "target-ref:origin/main"],
+        }),
+      ).toBeNull();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("does not reinterpret an ordinary environment failure as standalone routing", () => {
+    const failure = parseFailureInput(`
+## Reconciliation Task
+${JSON.stringify({
+  taskId: "domain/master-validation-failure/spec.example/fp",
+  input: {
+    specId: "spec.example",
+    pipelineRunId: "130",
+    failureFingerprint: "fp",
+    category: "environment_blocker",
+    reason: "Cluster create returned HTTP 500.",
+  },
+})}
+`)!;
+    expect(requiresStandaloneVerification(failure)).toBe(false);
   });
 
   test("only relevant main changes defer failure repair", () => {
@@ -519,10 +623,9 @@ ${JSON.stringify({
     });
     expect(
       priorProductClassification(
-        raw.replace(/product recovery/g, "test repair").replace(
-          "classification=prod_issue",
-          "classification=test_issue",
-        ),
+        raw
+          .replace(/product recovery/g, "test repair")
+          .replace("classification=prod_issue", "classification=test_issue"),
       ),
     ).toBeNull();
   });
@@ -618,10 +721,7 @@ ${JSON.stringify({
       output: {
         state: "converged",
         summary: "Later current-main run 124 passed spec.example.",
-        evidence: [
-          "recovery-pipeline-run:124",
-          "source-commit:recovered-main",
-        ],
+        evidence: ["recovery-pipeline-run:124", "source-commit:recovered-main"],
       },
     });
   });

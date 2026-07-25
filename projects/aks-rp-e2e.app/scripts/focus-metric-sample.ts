@@ -28,13 +28,12 @@ function usage(): never {
 
 const args = process.argv.slice(2);
 const metricId = args.find((arg) => !arg.startsWith("--")) as
-  | FocusMetricId
-  | undefined;
+  FocusMetricId | undefined;
 const asJson = args.includes("--json");
 
 if (!metricId || !supportedMetrics.includes(metricId)) usage();
 
-const sample = sampleFocusMetric(projectDir, metricId);
+const sample = sampleFocusMetric(projectDir, metricId, { appDir });
 if (asJson) {
   console.log(JSON.stringify(sample, null, 2));
 } else {

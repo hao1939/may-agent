@@ -1,11 +1,20 @@
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import {
   Type,
+  resolveTaskTreePath,
+  type ProjectAppConditionSpec,
   type WorkflowContext,
   type WorkflowIoContract,
   type WorkflowResult,
   workflowResultVersion,
 } from "@may-agent/sdk";
+import {
+  activeDomainPathOwners,
+  type ActiveDomainPathOwner,
+  type LegacyOwnershipTask,
+} from "../../../legacy-branch-active-ownership.ts";
 import {
   captureLegacyVerificationBaseline,
   verifyLegacyBranchCandidate,
@@ -138,6 +147,40 @@ function sourceBranch(raw: string): SourceBranch | null {
   }
 }
 
+function taskGraph(appDir: string): Record<string, LegacyOwnershipTask> {
+  try {
+    const value = JSON.parse(
+      readFileSync(resolveTaskTreePath(appDir), "utf8"),
+    ) as {
+      tasks?: Record<string, LegacyOwnershipTask>;
+    };
+    return value.tasks ?? {};
+  } catch {
+    return {};
+  }
+}
+
+function ownershipWaitConditions(
+  owners: ActiveDomainPathOwner[],
+): ProjectAppConditionSpec[] {
+  return owners.map((owner) => {
+    const digest = createHash("sha256")
+      .update(`${owner.taskId}\n${owner.resourceVersion}`)
+      .digest("hex")
+      .slice(0, 12);
+    return {
+      id: `legacy-domain-owner-${digest}`,
+      type: "project.task.reconciled",
+      subject: `task:${owner.taskId}`,
+      expected: {
+        field: "disposition",
+        anyOf: ["converged", "owner-handoff"],
+      },
+      owner: "app-ops",
+    } satisfies ProjectAppConditionSpec;
+  });
+}
+
 function git(
   cwd: string,
   args: string[],
@@ -193,11 +236,7 @@ type SourceState = {
 function sourceState(repoDir: string, source: SourceBranch): SourceState {
   const attachedPath = git(
     repoDir,
-    [
-      "for-each-ref",
-      "--format=%(worktreepath)",
-      `refs/heads/${source.branch}`,
-    ],
+    ["for-each-ref", "--format=%(worktreepath)", `refs/heads/${source.branch}`],
     true,
   ).stdout;
   return {
@@ -543,6 +582,7 @@ export async function executeWithVerifier(
   repairAgent: LegacyRepairAgent = (request) => runRepairAgent(ctx, request),
 ): Promise<WorkflowResult> {
   const repoDir = ctx.projectDir ?? "/app/projects/aks-rp-e2e";
+  const appDir = ctx.appDir ?? "/app/projects/aks-rp-e2e.app";
   const workspaceDir = ctx.workspaceDir ?? repoDir;
   const source = sourceBranch(ctx.task);
   if (workspaceDir === repoDir || !source) {
@@ -585,6 +625,27 @@ export async function executeWithVerifier(
           `base-commit:${baseCommit}`,
         ],
         actions: [],
+      });
+    }
+    const pathOwners = activeDomainPathOwners(
+      taskGraph(appDir),
+      source.files ?? [],
+    );
+    if (pathOwners.length) {
+      const summary = `Deferred ${source.branch}@${source.head}: active domain task ownership must finish before legacy reconciliation can write the same path.`;
+      return ctx.done(summary, {
+        state: "waiting",
+        summary,
+        evidence: boundedWorkflowEvidence([
+          `branch:${source.branch}@${source.head}:deferred-active-domain-owner`,
+          `base-commit:${baseCommit}`,
+          ...pathOwners.flatMap((owner) => [
+            `domain-owner:${owner.taskId}:${owner.phase}@${owner.resourceVersion}`,
+            ...owner.paths.map((path) => `overlap-path:${path}`),
+          ]),
+        ]),
+        actions: [],
+        conditions: ownershipWaitConditions(pathOwners),
       });
     }
     const staleBeforeVerification = sourceStateNeedsOwner(repoDir, source, [

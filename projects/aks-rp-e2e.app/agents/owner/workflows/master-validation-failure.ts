@@ -63,6 +63,14 @@ type LiveChild = {
   phase: string;
 };
 
+type StandaloneVerification = {
+  taskId: string;
+  pipelineRunId: string;
+  sourceCommit: string;
+  standaloneBuildId: string;
+  evidence: string[];
+};
+
 type Decision = {
   classification: "test_issue" | "prod_issue" | "inconclusive";
   summary: string;
@@ -363,11 +371,7 @@ export function currentRecoveryBaselineRunId(
     const cycle = record(
       JSON.parse(
         readFileSync(
-          join(
-            ctx.appDir,
-            ".state",
-            "master-validation-cycle.json",
-          ),
+          join(ctx.appDir, ".state", "master-validation-cycle.json"),
           "utf8",
         ),
       ),
@@ -379,6 +383,165 @@ export function currentRecoveryBaselineRunId(
   return laterRun(currentRunId, input.pipelineRunId)
     ? currentRunId
     : input.pipelineRunId;
+}
+
+export function requiresStandaloneVerification(input: FailureInput): boolean {
+  return (
+    input.category === "environment_blocker" &&
+    /standalone(?:\s+rp[- ]ingress)?\s+target\s+required/i.test(input.reason)
+  );
+}
+
+function evidenceValue(evidence: string[], prefix: string): string {
+  return (
+    evidence
+      .find((entry) => entry.startsWith(prefix))
+      ?.slice(prefix.length)
+      .trim() ?? ""
+  );
+}
+
+export function priorStandaloneVerification(
+  appDir: string,
+  specId: string,
+): StandaloneVerification | null {
+  try {
+    const state = record(
+      JSON.parse(
+        readFileSync(join(appDir, ".state", "tasks", "state.json"), "utf8"),
+      ),
+    );
+    return (
+      Object.entries(record(state.receipts))
+        .map(([taskId, value]) => {
+          const receipt = record(value);
+          const evidence = Array.isArray(receipt.evidence)
+            ? receipt.evidence.map(text).filter(Boolean)
+            : [];
+          const corpus = [
+            text(receipt.outcome),
+            text(receipt.summary),
+            ...evidence,
+          ].join("\n");
+          const standaloneBuildId = evidenceValue(
+            evidence,
+            "standalone-build-id:",
+          );
+          const pipelineRunId = evidenceValue(evidence, "pipeline-run:");
+          const sourceCommit = evidenceValue(evidence, "source-commit:");
+          return {
+            taskId,
+            pipelineRunId,
+            sourceCommit,
+            standaloneBuildId,
+            evidence,
+            completedAt: text(receipt.completedAt),
+            matches:
+              corpus.includes(specId) &&
+              /\bpass(?:ed)?\b/i.test(corpus) &&
+              /^\d+$/.test(standaloneBuildId) &&
+              Boolean(pipelineRunId && sourceCommit),
+          };
+        })
+        .filter((candidate) => candidate.matches)
+        .sort((left, right) =>
+          right.completedAt.localeCompare(left.completedAt),
+        )
+        .map(
+          ({ completedAt: _completedAt, matches: _matches, ...candidate }) =>
+            candidate,
+        )[0] ?? null
+    );
+  } catch {
+    return null;
+  }
+}
+
+function standaloneRecoveryChildId(
+  input: FailureInput,
+  currentMainCommit: string,
+  standaloneBuildId: string,
+): string {
+  const revision = createHash("sha256")
+    .update(`${input.specId}:${currentMainCommit}:${standaloneBuildId}`)
+    .digest("hex")
+    .slice(0, 12);
+  return `domain/master-validation-route-verification/${input.specId}/${revision}`;
+}
+
+export function standaloneRecoveryChildAction(input: {
+  failure: FailureInput;
+  currentMainCommit: string;
+  prior: StandaloneVerification;
+}): ProjectAppTaskAction {
+  const childId = standaloneRecoveryChildId(
+    input.failure,
+    input.currentMainCommit,
+    input.prior.standaloneBuildId,
+  );
+  return {
+    kind: "create-task",
+    id: childId,
+    parentId: input.failure.taskId,
+    outcome: `Verify ${input.failure.specId} from current main on its required standalone RP-ingress target, then integrate any required repair into main.`,
+    mode: "achieve",
+    owner: "aks-explorer",
+    workflow: "master-validation-route-verification",
+    priority: "P0",
+    category: "domain_leaf",
+    input: {
+      specId: input.failure.specId,
+      target: "staging",
+      standaloneBuildId: input.prior.standaloneBuildId,
+      recoveryOf: input.failure.taskId,
+      blockingPipelineRunId: input.failure.pipelineRunId,
+      priorStandalonePipelineRunId: input.prior.pipelineRunId,
+      currentMainCommit: input.currentMainCommit,
+    },
+    acceptance: [
+      `Run ${input.failure.specId} against standalone_build_id=${input.prior.standaloneBuildId}; generic staging is not the claim-bearing target.`,
+      "A real same-spec standalone pass is required; local checks or aggregate exclusion are not pass proof.",
+      "If source changes, publish a focused non-draft PR and keep the task open until the tested repair is present in current main.",
+    ],
+  };
+}
+
+function childRecords(
+  raw: string,
+  kind: "live" | "completed",
+): Record<string, unknown>[] {
+  const children = record(reconciliationPayload(raw)?.children)[kind];
+  return Array.isArray(children) ? children.map(record) : [];
+}
+
+export function standaloneRecoveryChild(
+  raw: string,
+  input: FailureInput,
+  currentMainCommit: string,
+  standaloneBuildId: string,
+  kind: "live" | "completed",
+): Record<string, unknown> | null {
+  const expectedId = standaloneRecoveryChildId(
+    input,
+    currentMainCommit,
+    standaloneBuildId,
+  );
+  return (
+    childRecords(raw, kind).find(
+      (child) => text(child.taskId ?? child.id) === expectedId,
+    ) ?? null
+  );
+}
+
+export function standaloneRecoveryCompletionProblem(
+  child: Record<string, unknown>,
+): string | null {
+  const evidence = Array.isArray(child.evidence)
+    ? child.evidence.map(text).filter(Boolean)
+    : [];
+  return evidence.includes("target-ref:origin/main")
+    ? null
+    : "standalone recovery child lacks exact target-ref:origin/main integration proof";
 }
 
 function pipelineMainRecoveryCondition(
@@ -636,6 +799,21 @@ function waiting(
     evidence: boundedEvidence(evidence),
     actions,
     conditions: [condition],
+  });
+}
+
+function waitingOnChild(
+  ctx: WorkflowContext,
+  summary: string,
+  evidence: string[],
+  actions: ProjectAppTaskAction[] = [],
+): WorkflowResult {
+  return ctx.done(summary, {
+    state: "waiting",
+    summary,
+    evidence: boundedEvidence(evidence),
+    actions,
+    conditions: [],
   });
 }
 
@@ -985,13 +1163,85 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       );
     }
     git(repoDir, ["fetch", "origin", targetBranch]);
+    const baseCommit = git(repoDir, ["rev-parse", targetRef]).stdout;
+    const priorStandalone = requiresStandaloneVerification(input)
+      ? priorStandaloneVerification(
+          ctx.appDir ?? "/app/projects/aks-rp-e2e.app",
+          input.specId,
+        )
+      : null;
+    if (priorStandalone) {
+      const completedChild = standaloneRecoveryChild(
+        ctx.task,
+        input,
+        baseCommit,
+        priorStandalone.standaloneBuildId,
+        "completed",
+      );
+      if (completedChild) {
+        const childEvidence = Array.isArray(completedChild.evidence)
+          ? completedChild.evidence.map(text).filter(Boolean)
+          : [];
+        if (standaloneRecoveryCompletionProblem(completedChild)) {
+          const summary = `${input.specId} route verification completed without exact origin/main integration proof; the master-validation failure cannot close.`;
+          return doneWithEvidence(ctx, "needs-owner", summary, [
+            `blocking-pipeline-run:${input.pipelineRunId}`,
+            `verification-child:${text(completedChild.taskId ?? completedChild.id)}`,
+            ...childEvidence,
+          ]);
+        }
+        const summary = `${input.specId} recovered on its required standalone RP-ingress route from current main; the earlier aggregate failure was a routing defect, not a reason to wait for an impossible staging verdict.`;
+        return doneWithEvidence(
+          ctx,
+          "converged",
+          summary,
+          [
+            `blocking-pipeline-run:${input.pipelineRunId}`,
+            `verification-route:standalone_build_id=${priorStandalone.standaloneBuildId}`,
+            `verification-child:${text(completedChild.taskId ?? completedChild.id)}`,
+            ...childEvidence,
+          ],
+          { actions: absorbLegacyRecoveryActions(ctx.task) },
+        );
+      }
+      const liveChild = standaloneRecoveryChild(
+        ctx.task,
+        input,
+        baseCommit,
+        priorStandalone.standaloneBuildId,
+        "live",
+      );
+      const action = standaloneRecoveryChildAction({
+        failure: input,
+        currentMainCommit: baseCommit,
+        prior: priorStandalone,
+      });
+      const childId = text(
+        liveChild?.taskId ?? liveChild?.id ?? record(action).id,
+      );
+      const summary = liveChild
+        ? `${input.specId} is being reverified from current main on its required standalone RP-ingress route by ${childId}.`
+        : `${input.specId} requires standalone RP-ingress verification, so current-main recovery is delegated to one exact spec-live child instead of waiting for a generic staging pass that cannot exercise the claim.`;
+      return waitingOnChild(
+        ctx,
+        summary,
+        [
+          `blocking-pipeline-run:${input.pipelineRunId}`,
+          `prior-standalone-pipeline-run:${priorStandalone.pipelineRunId}`,
+          `prior-standalone-source-commit:${priorStandalone.sourceCommit}`,
+          `standalone-build-id:${priorStandalone.standaloneBuildId}`,
+          `current-main-commit:${baseCommit}`,
+          `verification-child:${childId}`,
+        ],
+        liveChild ? [] : [action],
+      );
+    }
     const sourceBranch = git(workspaceDir, [
       "symbolic-ref",
       "--quiet",
       "--short",
       "HEAD",
     ]).stdout;
-    const baseCommit = git(repoDir, ["rev-parse", targetRef]).stdout;
     const frozenBaseCommit = frozenCampaignBaseForFailure(
       input,
       ctx.appDir ?? "/app/projects/aks-rp-e2e.app",

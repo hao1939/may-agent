@@ -32,6 +32,7 @@ function commit(repo: string, message: string): string {
 }
 
 type Fixture = {
+  appDir: string;
   repo: string;
   workspace: string;
   sourceHead: string;
@@ -45,6 +46,7 @@ function fixture(options: { devChange?: string } = {}): Fixture {
   const remote = join(root, "remote.git");
   const repo = join(root, "repo");
   const workspace = join(root, "workspace");
+  const appDir = join(root, "app");
   execFileSync("git", ["init", "--bare", remote]);
   execFileSync("git", ["clone", remote, repo]);
   git(repo, "switch", "-c", "dev");
@@ -66,15 +68,21 @@ function fixture(options: { devChange?: string } = {}): Fixture {
   }
   const baseHead = git(repo, "rev-parse", "HEAD");
   git(repo, "worktree", "add", "-b", "task/review", workspace, "origin/dev");
+  mkdirSync(join(appDir, ".state", "tasks"), { recursive: true });
+  writeFileSync(
+    join(appDir, ".state", "tasks", "tree.json"),
+    JSON.stringify({ tasks: {} }),
+  );
   const context = {
-    task: `## Reconciliation Task\n\`\`\`json\n${JSON.stringify({ input: { branches: [{ branch: "task/source", head: sourceHead, files: ["candidate.txt"] }] } })}\n\`\`\``,
+    task: `## Reconciliation Task\n\`\`\`json\n${JSON.stringify({ taskId: "ops/verify-source", input: { branches: [{ branch: "task/source", head: sourceHead, files: ["candidate.txt"] }] } })}\n\`\`\``,
     agent: "aks-explorer",
+    appDir,
     projectDir: repo,
     workspaceDir: workspace,
     done: (summary, output) => ({ type: "done", summary, output }),
     blocked: (reason, context) => ({ type: "blocked", reason, context }),
   } as WorkflowContext;
-  return { repo, workspace, sourceHead, baseHead, context };
+  return { appDir, repo, workspace, sourceHead, baseHead, context };
 }
 
 const baseline = () => ({
@@ -132,6 +140,52 @@ describe("legacy branch verification workflow", () => {
     expect(
       git(value.repo, "ls-remote", "--heads", "origin", "task/source"),
     ).toBe("");
+  });
+
+  test("waits instead of publishing over an active domain-owned path", async () => {
+    const value = fixture();
+    writeFileSync(
+      join(value.appDir, ".state", "tasks", "tree.json"),
+      JSON.stringify({
+        tasks: {
+          "domain/normalize-candidate": {
+            category: "domain_leaf",
+            phase: "waiting",
+            resource_version: 9,
+            input: { scenarioTestPath: "candidate.txt" },
+          },
+        },
+      }),
+    );
+    let verifierCalled = false;
+
+    const result = await executeWithVerifier(
+      value.context,
+      (...args) => {
+        verifierCalled = true;
+        return passingVerifier(...args);
+      },
+      baseline,
+    );
+
+    expect(verifierCalled).toBe(false);
+    expect(result).toMatchObject({
+      type: "done",
+      output: {
+        state: "waiting",
+        evidence: expect.arrayContaining([
+          "domain-owner:domain/normalize-candidate:waiting@9",
+          "overlap-path:candidate.txt",
+        ]),
+        conditions: [
+          expect.objectContaining({
+            type: "project.task.reconciled",
+            subject: "task:domain/normalize-candidate",
+          }),
+        ],
+      },
+    });
+    expect(git(value.repo, "rev-parse", "origin/dev")).toBe(value.baseHead);
   });
 
   test("removes an already represented branch without an empty merge", async () => {

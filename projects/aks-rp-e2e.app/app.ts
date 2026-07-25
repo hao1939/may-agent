@@ -33,6 +33,7 @@ import {
 const projectId = "aks-rp-e2e";
 const domainPolicyMaxConcurrent = 5;
 const appOpsSupportConcurrent = 3;
+// The runtime shares this budget across hot-reload controller generations.
 const appControllerMaxConcurrent =
   domainPolicyMaxConcurrent + appOpsSupportConcurrent;
 const scenarioTestFrontierTaskId = scenarioNormalizationTaskId;
@@ -410,7 +411,8 @@ export function resolveAksTask(
         : [
             "The failure is classified as test_issue, prod_issue, or inconclusive from the completed slice artifact or machine-readable admission report.",
             "A temporary admission exclusion keeps unrelated slices running but remains a test issue until the intended carrier is admitted and later passes from current main.",
-            "A branch-targeted or standalone pass may prepare a PR, but the issue remains open after merge until a later current-main observation passes the same spec through the intended master-validation execution path.",
+            "Recovery follows the claim-bearing execution route. Usually that is the current-main aggregate; when generic staging cannot exercise the claim, one direct spec-live child must produce an applicable current-main pass on the recorded standalone target and integrate any repair.",
+            "Excluding a misrouted spec may keep the aggregate moving, but exclusion alone never verifies the claim and never closes the issue.",
             "A squash or rebase merge is valid when Azure reports the exact tested PR head and its resulting merged commit is present in main; the PR head itself does not need to remain in main ancestry.",
             "A product issue leaves source unchanged, notifies the human operator through message.created for Telegram delivery, and remains open until a deployed product fix passes the affected spec from current main.",
             "Repeated observations revise this stable fingerprinted task and its Condition; they do not create per-run recovery tasks.",

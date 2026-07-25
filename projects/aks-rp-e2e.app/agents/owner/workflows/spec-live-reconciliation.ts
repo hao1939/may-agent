@@ -1472,10 +1472,10 @@ export async function reconcileSpecLive(
   ctx: WorkflowContext,
   options: SpecLiveReconciliationOptions = {},
 ): Promise<WorkflowResult> {
+  const payload = parseTaskPayload(ctx.task);
   const { targetBranch, targetRef } = resolveIntegrationTarget(
     options.targetBranch,
   );
-  const payload = parseTaskPayload(ctx.task);
   const taskId = nonEmptyString(payload?.taskId);
   const generation = Number(payload?.generation ?? 1);
   const normalizationInput = payload?.input as

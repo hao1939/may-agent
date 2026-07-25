@@ -159,6 +159,9 @@ test("declares one exact-branch verification from current Git state", async () =
         expect.objectContaining({
           kind: "create-task",
           workflow: "legacy-branch-verification",
+          acceptance: expect.arrayContaining([
+            "A superseded or terminally rejected branch is complete only after its local and remote source refs are removed; if the refs must be retained, keep the task waiting on an exact blocker instead of converging it.",
+          ]),
           input: expect.objectContaining({
             workKey: "task/one",
             branches: [expect.objectContaining({ branch: "task/one" })],
@@ -213,6 +216,59 @@ test("declares one exact-branch verification from current Git state", async () =
   expect(
     (retry as { output?: { actions?: unknown[] } }).output?.actions,
   ).toHaveLength(1);
+});
+
+test("does not declare a legacy writer over an active domain-owned path", async () => {
+  const root = mkdtempSync(join(tmpdir(), "aks-legacy-controller-owner-"));
+  roots.push(root);
+  const repo = join(root, "repo");
+  const appDir = join(root, "app");
+  execFileSync("git", ["init", "-b", "dev", repo]);
+  git(repo, "config", "user.email", "test@example.com");
+  git(repo, "config", "user.name", "Test");
+  writeFileSync(join(repo, "README.md"), "base\n");
+  git(repo, "add", ".");
+  git(repo, "commit", "-m", "base");
+  git(repo, "branch", "origin/dev");
+  git(repo, "switch", "-c", "task/domain-source");
+  const ownedPath = "features/localdns/tests/owned.ts";
+  mkdirSync(join(repo, "features", "localdns", "tests"), { recursive: true });
+  writeFileSync(join(repo, ownedPath), "export const owned = true;\n");
+  git(repo, "add", ".");
+  git(repo, "commit", "-m", "domain source");
+  git(repo, "switch", "dev");
+  mkdirSync(join(appDir, ".state", "tasks"), { recursive: true });
+  writeFileSync(
+    join(appDir, ".state", "tasks", "tree.json"),
+    JSON.stringify({
+      tasks: {
+        "domain/normalize-owned": {
+          category: "domain_leaf",
+          phase: "waiting",
+          resource_version: 7,
+          input: { scenarioTestPath: ownedPath },
+        },
+      },
+    }),
+  );
+
+  const result = await execute({
+    task: "frontierLimit: 1",
+    agent: "app-ops",
+    appDir,
+    projectDir: repo,
+    workspaceDir: repo,
+    done: (summary, output) => ({ type: "done", summary, output }),
+  } as WorkflowContext);
+
+  expect(result).toMatchObject({
+    type: "done",
+    output: {
+      state: "converged",
+      evidence: expect.arrayContaining(["active-domain-path-overlaps:1"]),
+      actions: [],
+    },
+  });
 });
 
 test("replays the same attention task when its absent source is already integrated", async () => {

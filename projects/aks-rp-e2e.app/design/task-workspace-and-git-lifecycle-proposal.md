@@ -241,6 +241,17 @@ declares one family-review leaf at a time. The single-writer frontier keeps
 `origin/dev` integration mechanically serial without adding a merge queue. It
 does not schedule agents or store a second branch registry.
 
+The single-writer rule also applies across frontiers. A legacy branch is not
+eligible while a nonterminal domain task owns an exact path touched by that
+branch. The controller does not declare new overlapping verification work,
+and the verification workflow rechecks the same invariant before it changes
+Git. An already-declared legacy task waits only on the owning task's
+reconciliation, then rereads current state. An unrelated `origin/dev` advance
+cannot release exact path ownership and must not create a repeated no-op
+verification cycle. This is an exact file-path guard, not a feature-wide lock.
+In particular, local/check-mode legacy verification must never publish over a
+same-spec task that is waiting for exact ADO live evidence.
+
 Each family leaf uses one task-owned worktree and the reusable
 `legacy-branch-family-reconciliation` workflow:
 
@@ -279,6 +290,16 @@ the task, delete refs, or decide that the source intent is semantically
 accepted. The domain workflow performs its normal merge/no-diff check and
 closeout, so ambiguous, moved, partially represented, or workspace-owned
 sources remain visible for agent judgment.
+
+If the recorded source head has moved, disappeared without proof of
+integration, or become attached to another worktree, clean legacy verification
+must not retry the unchanged task or infer the source owner's intent. The
+workflow returns `needs-owner` on the same task with the recorded head, current
+local and remote heads, attachment state, and any verification evidence. The
+owner then decides from current Git and domain evidence whether the source was
+superseded, should be repaired in its owning workspace, or represents a real
+remaining change. This is an ownership handoff inside one task, not a new
+repair task or a terminal blocker.
 
 Exact integrated and patch-equivalent postcondition replays take the single
 writer slot before ordinary retryable attention. This prevents mechanically

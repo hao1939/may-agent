@@ -626,7 +626,9 @@ export function syncOwnerVisibleReadout(
     const frontier = computeVisibleFrontier(tree, {
       excludeTaskIds: options.excludeTaskIds,
     });
-    const metrics = sampleFocusMetrics(options.projectDir ?? appDir);
+    const metrics = sampleFocusMetrics(options.projectDir ?? appDir, {
+      appDir,
+    });
     const narrative = focusReviewNarrative(tree, frontier, metrics);
     const liveIds = new Set(Object.keys(tree.tasks ?? {}));
     const projectJsonPath = join(appDir, "project.json");

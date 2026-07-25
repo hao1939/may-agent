@@ -103,6 +103,12 @@ safe in-scope moves.
 - `master-validation-cycle`
 - `master-validation-failure`
 
+Focus planning reads the current task projection and durable local runtime
+evidence. Its live-run metrics count aggregate pipeline result artifacts kept
+by the app observer as well as repository execution results; they do not query
+the provider or infer "no live work" merely because the repository has no
+local `runs/executions` copy.
+
 The standing loop workflows observe their domain ledgers, count only actionable
 pending/running leaves against their bounded frontier, and converge once the
 current pass is synced. Exact waits preserve coverage without consuming an

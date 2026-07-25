@@ -30,6 +30,7 @@ existing pipeline watcher
 stable failure task
   -> agent classifies current artifact
   -> test issue: focused branch and PR to main
+  -> wrong execution target: one exact spec-live child on the claim-bearing target
   -> product issue: notify human -> wait for later current-main pass
 
 failed aggregate
@@ -66,7 +67,11 @@ health.
   ingestion. It does not read task state.
 - `master-validation-failure` owns classification. Product issues wait on a
   semantic later pass. Test issues reuse finite spec live reconciliation with
-  integration target `main`.
+  integration target `main`. When aggregate staging cannot exercise the
+  claim, it reuses the same spec-live implementation through a thin main-based
+  workflow binding with the exact intended target. The separate binding exists
+  only so infrastructure creates the worktree from `main`; it does not invent a
+  second recovery process or wait for an impossible aggregate verdict.
 - The agent owns artifact diagnosis and bounded source judgment inside the
   task worktree. It does not queue pipelines, push, create PRs, schedule
   retries, or edit task state.
@@ -221,6 +226,13 @@ issue ledger or workflow phase database is introduced.
   run as the lower bound, not merely the original failure run. An older pass
   invalidated by later relevant source changes must not repeatedly satisfy the
   new wait; only a newer main observation may wake it.
+- Run ordering is the causal gate for product recovery, not for a source-route
+  correction on a frozen branch. A frozen campaign may expose an old misroute
+  after current main already contains a newer intended-target proof. In that
+  case, reuse the recorded target context to create one current-main
+  `spec-live-reconciliation` child. The child must produce a fresh applicable
+  live pass (and integrate any repair); the parent must not demand a later
+  same-spec event from an aggregate that intentionally cannot select it.
 - If a workflow revision or explicit replay wakes an older stable issue after
   an earlier generation integrated an exact live-tested PR, reuse that durable
   run/PR/merged-commit proof when the spec and live target are unchanged. The
@@ -287,13 +299,17 @@ bounded fix commit and focused PR to main
 
 Targeted branch or standalone proof shows that a repair is safe in isolation;
 the campaign proves the accumulated execution context before merge. Neither
-proves current main. The issue task remains open after merge until a later
-observation from current `main`
-passes the same spec through its intended master-validation path. If the
-intended repair is exclusion, the current-main plan must prove exclusion before
-execution. The aggregate standing task remains open until a full current-main
-master-validation run passes. A PR, merge, targeted pass, classification, or
-notification is progress evidence, never aggregate completion.
+proves current main unless it ran from applicable current-main source and the
+tested repair is integrated. The issue task remains open after merge until the
+same claim passes through its intended execution path. Usually that is the
+current-main aggregate. If generic staging cannot exercise the claim, a direct
+child runs the same spec from current main on the recorded standalone target;
+the parent closes only after that child has real pass and integration proof.
+The aggregate plan must independently prove that the misrouted spec is no
+longer admitted. The aggregate standing task still remains open until a full
+current-main master-validation run passes. A PR, merge, exclusion,
+classification, or notification alone is progress evidence, never aggregate
+completion.
 
 Source repair and provider dispatch require a workflow-bound task. The
 workflow supplies the main-based task worktree, infrastructure Azure CLI/config
@@ -403,6 +419,9 @@ The design is working when:
 - a focused fix PR can be opened before aggregate proof so the campaign can
   consume it; proof determines readiness, not whether the repair may be tested;
 - a test-failure task cannot converge merely because a PR merged;
+- a wrong-target failure neither waits for an impossible generic-staging pass
+  nor closes on exclusion alone: one current-main intended-target child must
+  pass and integrate;
 - a product failure cannot converge without a later passing `main` observation;
 - a passing stale-main result triggers latest-main verification immediately,
   while a failed snapshot finishes its frozen campaign before one coalesced
