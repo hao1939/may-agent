@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "id": "evidence.propose-after-proof",
+  "version": 1,
+  "objective": "Diagnose and prove a proposal before requesting approval for consequential change.",
+  "criticality": "high",
+  "sources": [
+    {
+      "path": "../may-agent.app/docs/1-principles/core-principles.md",
+      "section": "Evidence before systems"
+    }
+  ],
+  "prerequisites": ["authority.act-vs-approve"],
+  "dimensions": ["evidence", "communication"],
+  "tiers": [1, 3, 4]
+}

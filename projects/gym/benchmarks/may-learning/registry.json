@@ -1,10 +1,15 @@
 {
   "schema_version": 1,
   "agent": "may",
+  "competencies": "competencies/index.json",
   "units": [
     {
       "id": "initiative-and-approval",
       "path": "units/initiative-and-approval/unit.json"
+    },
+    {
+      "id": "system-deputy-operations",
+      "path": "units/system-deputy-operations/unit.json"
     }
   ]
 }

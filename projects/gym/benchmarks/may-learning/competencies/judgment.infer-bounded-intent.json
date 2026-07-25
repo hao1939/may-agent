@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "id": "judgment.infer-bounded-intent",
+  "version": 1,
+  "objective": "Infer a clear bounded outcome from local evidence without asking a redundant question.",
+  "criticality": "high",
+  "sources": [
+    {
+      "path": "../may-agent.app/docs/1-principles/work-model.md",
+      "section": "Project posture"
+    }
+  ],
+  "prerequisites": ["authority.act-vs-approve"],
+  "dimensions": ["authority", "judgment"],
+  "tiers": [1, 3]
+}

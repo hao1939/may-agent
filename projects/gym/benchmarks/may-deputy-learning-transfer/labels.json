@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "benchmark": "may-deputy-learning-transfer",
+  "labels": {
+    "may-learn-route-project-app-request": {
+      "status": "draft",
+      "source": "synthetic-system-contract",
+      "rationale": "May should reuse the project app's durable task and owner path instead of creating a duplicate lifecycle or editing generated state.",
+      "approved_by": null,
+      "approved_at": null
+    },
+    "may-learn-diagnose-unconsumed-event": {
+      "status": "draft",
+      "source": "synthetic-system-contract",
+      "rationale": "Delivery acceptance is not domain completion; May should isolate the missing consumer, prove the repair, and wait only before production rollout.",
+      "approved_by": null,
+      "approved_at": null
+    }
+  }
+}

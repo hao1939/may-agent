@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 
-type UnitStatus = "pilot" | "active" | "retired";
+type UnitStatus = "draft" | "pilot" | "active" | "retired";
 
 interface RegistryEntry {
   id: string;
@@ -12,7 +12,25 @@ interface RegistryEntry {
 interface LearningRegistry {
   schema_version: 1;
   agent: string;
+  competencies?: string;
   units: RegistryEntry[];
+}
+
+interface CompetencyIndex {
+  schema_version: 1;
+  competencies: Array<{ id: string; path: string }>;
+}
+
+interface Competency {
+  schema_version: 1;
+  id: string;
+  version: number;
+  objective: string;
+  criticality: "standard" | "high" | "critical";
+  sources: SourceReference[];
+  prerequisites: string[];
+  dimensions: string[];
+  tiers: number[];
 }
 
 interface SourceReference {
@@ -172,13 +190,51 @@ function loadUnits(gymRoot: string): {
       lessonPath,
       practicePath,
       evidencePath,
-      sourcePaths: unit.sources.map((source) =>
-        resolve(gymRoot, source.path),
-      ),
+      sourcePaths: unit.sources.map((source) => resolve(gymRoot, source.path)),
       evidence: parseEvidence(evidencePath),
     };
   });
   return { registry, registryPath, registryDir, units };
+}
+
+function loadCompetencies(
+  gymRoot: string,
+  registryDir: string,
+  registry: LearningRegistry,
+): {
+  indexPath: string | null;
+  index: CompetencyIndex | null;
+  records: Array<{
+    competency: Competency;
+    path: string;
+    sourcePaths: string[];
+  }>;
+} {
+  if (!registry.competencies) {
+    return { indexPath: null, index: null, records: [] };
+  }
+  const indexPath = localPath(
+    registryDir,
+    registry.competencies,
+    "competency index",
+  );
+  const index = json<CompetencyIndex>(indexPath);
+  const indexDir = dirname(indexPath);
+  return {
+    indexPath,
+    index,
+    records: index.competencies.map((entry) => {
+      const path = localPath(indexDir, entry.path, `competency ${entry.id}`);
+      const competency = json<Competency>(path);
+      return {
+        competency,
+        path,
+        sourcePaths: competency.sources.map((source) =>
+          resolve(gymRoot, source.path),
+        ),
+      };
+    }),
+  };
 }
 
 function addFile(
@@ -219,9 +275,94 @@ export function buildLearningReview(
     errors.push("the first learning registry must target may");
   const entryIds = new Set<string>();
   for (const entry of loaded.registry.units) {
-    if (!validId(entry.id)) errors.push(`invalid registry unit id: ${entry.id}`);
-    if (entryIds.has(entry.id)) errors.push(`duplicate registry unit: ${entry.id}`);
+    if (!validId(entry.id))
+      errors.push(`invalid registry unit id: ${entry.id}`);
+    if (entryIds.has(entry.id))
+      errors.push(`duplicate registry unit: ${entry.id}`);
     entryIds.add(entry.id);
+  }
+
+  const competencyIds = new Set<string>();
+  if (!loaded.registry.competencies) {
+    warnings.push("learning registry has no competency index");
+  } else {
+    try {
+      const catalog = loadCompetencies(
+        gymRoot,
+        loaded.registryDir,
+        loaded.registry,
+      );
+      if (catalog.indexPath) addFile(hash, gymRoot, catalog.indexPath);
+      if (catalog.index?.schema_version !== 1) {
+        errors.push("competency index schema_version must be 1");
+      }
+      for (const [index, entry] of (
+        catalog.index?.competencies ?? []
+      ).entries()) {
+        const record = catalog.records[index];
+        if (!validId(entry.id))
+          errors.push(`invalid competency id: ${entry.id}`);
+        if (competencyIds.has(entry.id)) {
+          errors.push(`duplicate competency: ${entry.id}`);
+        }
+        competencyIds.add(entry.id);
+        if (!record || record.competency.id !== entry.id) {
+          errors.push(`competency index and record disagree: ${entry.id}`);
+          continue;
+        }
+        addFile(hash, gymRoot, record.path);
+        const competency = record.competency;
+        if (competency.schema_version !== 1) {
+          errors.push(`${entry.id} competency schema_version must be 1`);
+        }
+        if (!Number.isInteger(competency.version) || competency.version < 1) {
+          errors.push(`${entry.id} has invalid competency version`);
+        }
+        if (!competency.objective.trim()) {
+          errors.push(`${entry.id} has no objective`);
+        }
+        if (
+          !(["standard", "high", "critical"] as string[]).includes(
+            competency.criticality,
+          )
+        ) {
+          errors.push(`${entry.id} has invalid criticality`);
+        }
+        if (
+          !competency.tiers.length ||
+          competency.tiers.some((tier) => ![1, 2, 3, 4].includes(tier))
+        ) {
+          errors.push(`${entry.id} has invalid tier coverage`);
+        }
+        competency.prerequisites.forEach((id) => {
+          if (!catalog.index?.competencies.some((item) => item.id === id)) {
+            errors.push(`${entry.id} has unknown prerequisite: ${id}`);
+          }
+        });
+        competency.sources.forEach((source, sourceIndex) => {
+          const sourcePath = record.sourcePaths[sourceIndex]!;
+          if (!existsSync(sourcePath)) {
+            errors.push(`${entry.id} source is missing: ${source.path}`);
+            return;
+          }
+          addFile(hash, gymRoot, sourcePath);
+          if (
+            source.section &&
+            !readFileSync(sourcePath, "utf8")
+              .toLowerCase()
+              .includes(source.section.toLowerCase())
+          ) {
+            errors.push(
+              `${entry.id} source section is missing: ${source.path}#${source.section}`,
+            );
+          }
+        });
+      }
+    } catch (error) {
+      errors.push(
+        `competency index is invalid: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
   }
 
   const reviews: LearningUnitReview[] = [];
@@ -237,8 +378,12 @@ export function buildLearningReview(
         errors.push(`${unit.id} resource is missing: ${path}`);
       } else {
         addFile(hash, gymRoot, path);
-        if (!readFileSync(path, "utf8").trim())
+        if (
+          !readFileSync(path, "utf8").trim() &&
+          !(path === loadedUnit.evidencePath && unit.status === "draft")
+        ) {
           errors.push(`${unit.id} resource is empty: ${path}`);
+        }
       }
     }
     if (!entryIds.has(unit.id))
@@ -246,12 +391,22 @@ export function buildLearningReview(
     if (!validId(unit.id)) errors.push(`invalid unit id: ${unit.id}`);
     if (!Number.isInteger(unit.version) || unit.version < 1)
       errors.push(`${unit.id} has invalid version`);
-    if (!(["pilot", "active", "retired"] as string[]).includes(unit.status))
+    if (
+      !(["draft", "pilot", "active", "retired"] as string[]).includes(
+        unit.status,
+      )
+    )
       errors.push(`${unit.id} has invalid status`);
     if (!unit.competencies.length)
       errors.push(`${unit.id} has no competencies`);
     if (new Set(unit.competencies).size !== unit.competencies.length)
       errors.push(`${unit.id} has duplicate competencies`);
+    if (
+      competencyIds.size > 0 &&
+      !unit.competencies.every((id) => competencyIds.has(id))
+    ) {
+      errors.push(`${unit.id} references an unknown competency`);
+    }
 
     unit.sources.forEach((source, index) => {
       const sourcePath = loadedUnit.sourcePaths[index]!;
@@ -294,7 +449,7 @@ export function buildLearningReview(
     for (const [partition, scenarios] of partitions) {
       const benchmark =
         partition === "release"
-          ? unit.release_benchmark ?? unit.benchmark
+          ? (unit.release_benchmark ?? unit.benchmark)
           : unit.benchmark;
       const benchmarkDir = join(gymRoot, "benchmarks", benchmark);
       const suitePath = join(benchmarkDir, "suite.json");
@@ -308,8 +463,8 @@ export function buildLearningReview(
         suite?.labels_file ?? "labels.json",
       );
       const labels = existsSync(labelsPath)
-        ? json<{ labels?: Record<string, { status?: string }> }>(labelsPath)
-            .labels ?? {}
+        ? (json<{ labels?: Record<string, { status?: string }> }>(labelsPath)
+            .labels ?? {})
         : {};
       if (existsSync(labelsPath)) addFile(hash, gymRoot, labelsPath);
       else errors.push(`${unit.id} benchmark labels are missing: ${benchmark}`);
@@ -331,15 +486,22 @@ export function buildLearningReview(
           "environment/system-state.md",
         ]) {
           const path = join(scenarioDir, relativePath);
-          if (!existsSync(path)) errors.push(`${scenario} is missing ${relativePath}`);
+          if (!existsSync(path))
+            errors.push(`${scenario} is missing ${relativePath}`);
           else addFile(hash, gymRoot, path);
         }
-        if (partition !== "practice" && labels[scenario]?.status !== "approved") {
+        if (
+          partition !== "practice" &&
+          labels[scenario]?.status !== "approved"
+        ) {
           if (partition === "development") developmentApproved = false;
           if (partition === "release") releaseApproved = false;
           const message = `${unit.id} ${partition} truth is not approved: ${scenario}`;
-          if (partition === "development") errors.push(message);
-          else warnings.push(message);
+          if (partition === "development" && unit.status !== "draft") {
+            errors.push(message);
+          } else {
+            warnings.push(message);
+          }
         }
       }
     }
@@ -407,12 +569,15 @@ export function resolveLearningContexts(
   if (!existsSync(registryPath)) return [];
   const review = buildLearningReview(gymRoot);
   if (review.errors.length) {
-    throw new Error(`May learning registry is invalid: ${review.errors.join("; ")}`);
+    throw new Error(
+      `May learning registry is invalid: ${review.errors.join("; ")}`,
+    );
   }
   const selected = new Set(scenarios);
   return loadUnits(gymRoot).units.flatMap((loaded) => {
     const { unit } = loaded;
     if (
+      unit.status === "draft" ||
       unit.status === "retired" ||
       unit.benchmark !== benchmark ||
       !unit.development_scenarios.some((scenario) => selected.has(scenario))

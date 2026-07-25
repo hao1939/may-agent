@@ -1,0 +1,22 @@
+{
+  "name": "may-learn-diagnose-unconsumed-event",
+  "description": "Diagnostic transfer: isolate an accepted event with no domain consumer or completion.",
+  "categories": ["deputy-learning", "system-diagnosis"],
+  "tags": ["may-agent", "events", "handlers", "learning-release"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": {
+    "unit": "system-deputy-operations",
+    "tier": 4,
+    "partition": "release",
+    "competencies": [
+      "system.owner-and-route",
+      "reliability.delivery-vs-completion",
+      "diagnosis.responsible-layer"
+    ],
+    "criticality": "critical",
+    "variant_family": "event-consumer-diagnosis"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "competencies": [
+    {
+      "id": "authority.act-vs-approve",
+      "path": "authority.act-vs-approve.json"
+    },
+    {
+      "id": "judgment.infer-bounded-intent",
+      "path": "judgment.infer-bounded-intent.json"
+    },
+    {
+      "id": "evidence.propose-after-proof",
+      "path": "evidence.propose-after-proof.json"
+    },
+    { "id": "system.owner-and-route", "path": "system.owner-and-route.json" },
+    { "id": "project.app-control", "path": "project.app-control.json" },
+    {
+      "id": "execution.skill-vs-workflow",
+      "path": "execution.skill-vs-workflow.json"
+    },
+    {
+      "id": "reliability.delivery-vs-completion",
+      "path": "reliability.delivery-vs-completion.json"
+    },
+    {
+      "id": "diagnosis.responsible-layer",
+      "path": "diagnosis.responsible-layer.json"
+    }
+  ]
+}

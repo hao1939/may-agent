@@ -10,7 +10,7 @@ import { buildLearningReleaseReview } from "../src/learning/release-review";
 const gymRoot = resolve(import.meta.dirname, "..");
 
 describe("May learning registry", () => {
-  test("loads one evidence-backed pilot unit", () => {
+  test("loads the active pilot and staged system-deputy unit", () => {
     const review = buildLearningReview(gymRoot);
 
     expect(review.errors).toEqual([]);
@@ -24,8 +24,36 @@ describe("May learning registry", () => {
         ready_for_release: true,
         evidence: { positive: 1, negative: 2, contrast: 1 },
       }),
+      expect.objectContaining({
+        id: "system-deputy-operations",
+        version: 1,
+        status: "draft",
+        ready_for_development: false,
+        ready_for_release: false,
+        evidence: { positive: 0, negative: 0, contrast: 0 },
+      }),
     ]);
-    expect(review.warnings).toEqual([]);
+    expect(review.warnings).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining(
+          "system-deputy-operations development truth is not approved",
+        ),
+        expect.stringContaining(
+          "system-deputy-operations release truth is not approved",
+        ),
+        "system-deputy-operations has no positive evidence",
+        "system-deputy-operations has no negative evidence",
+        "system-deputy-operations has no contrast evidence",
+      ]),
+    );
+  });
+
+  test("keeps draft learning out of candidate-visible contexts", () => {
+    expect(
+      resolveLearningContexts(gymRoot, "may-deputy-learning", [
+        "may-learn-select-skill-or-workflow",
+      ]),
+    ).toEqual([]);
   });
 
   test("selects candidate-visible learning without exposing release truth", () => {
@@ -75,6 +103,29 @@ describe("May learning registry", () => {
         id: "may-learn-infer-bounded-maintenance",
         status: "approved",
         human_answer: expect.stringContaining("Remove digest-v1"),
+      }),
+    ]);
+  });
+
+  test("builds a plain-language packet for system-deputy release truth", () => {
+    const review = buildLearningReleaseReview(
+      gymRoot,
+      "may-deputy-learning-transfer",
+    );
+
+    expect(review.approval_fingerprint).toMatch(/^sha256:[a-f0-9]{64}$/);
+    expect(review.scenarios).toEqual([
+      expect.objectContaining({
+        id: "may-learn-route-project-app-request",
+        status: "draft",
+        human_answer: expect.stringContaining(
+          "existing reconcile/invoices task",
+        ),
+      }),
+      expect.objectContaining({
+        id: "may-learn-diagnose-unconsumed-event",
+        status: "draft",
+        human_answer: expect.stringContaining("missing consumer"),
       }),
     ]);
   });

@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "id": "system-deputy-operations",
+  "version": 1,
+  "status": "draft",
+  "title": "Operate May-agent and project apps as Hao's deputy",
+  "lesson": "lesson.md",
+  "practice": "practice.md",
+  "evidence": "evidence.jsonl",
+  "competencies": [
+    "system.owner-and-route",
+    "project.app-control",
+    "execution.skill-vs-workflow",
+    "reliability.delivery-vs-completion",
+    "diagnosis.responsible-layer"
+  ],
+  "sources": [
+    {
+      "path": "../may-agent.app/docs/2a-design/system-model.md",
+      "section": "One-Sentence Model"
+    },
+    {
+      "path": "../may-agent.app/docs/2a-design/agent-app.md",
+      "section": "Primary mental model"
+    },
+    {
+      "path": "../may-agent.app/docs/2a-design/events.md",
+      "section": "Lifecycle Separation"
+    },
+    {
+      "path": "../may-agent.app/docs/2a-design/skills.md",
+      "section": "Skill And Workflow Boundary"
+    },
+    {
+      "path": "../../agents/may/skills/may-agent-system/SKILL.md",
+      "section": "Operating Loop"
+    }
+  ],
+  "benchmark": "may-deputy-learning",
+  "release_benchmark": "may-deputy-learning-transfer",
+  "practice_scenarios": [],
+  "development_scenarios": [
+    "may-learn-reject-stale-app-approval",
+    "may-learn-select-skill-or-workflow"
+  ],
+  "release_scenarios": [
+    "may-learn-route-project-app-request",
+    "may-learn-diagnose-unconsumed-event"
+  ]
+}

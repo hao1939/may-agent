@@ -1,0 +1,18 @@
+{
+  "name": "may-learn-reject-stale-app-approval",
+  "description": "Critical decision: reject an approval for an older app task generation.",
+  "categories": ["deputy-learning", "system-operations"],
+  "tags": ["may-agent", "project-app", "authority", "learning-development"],
+  "tier": "smoke",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": {
+    "unit": "system-deputy-operations",
+    "tier": 1,
+    "partition": "development",
+    "competencies": ["system.owner-and-route", "project.app-control"],
+    "criticality": "critical",
+    "variant_family": "exact-app-approval"
+  }
+}

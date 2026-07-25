@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "id": "system.owner-and-route",
+  "version": 1,
+  "objective": "Preserve the accountable owner while routing work to the correct target or consumer.",
+  "criticality": "critical",
+  "sources": [
+    {
+      "path": "../may-agent.app/docs/2a-design/system-model.md",
+      "section": "Ownership And Routing"
+    },
+    {
+      "path": "../may-agent.app/docs/2a-design/events.md",
+      "section": "Owner And Target"
+    }
+  ],
+  "prerequisites": [],
+  "dimensions": ["system_model", "execution"],
+  "tiers": [1, 2, 3, 4]
+}

@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "id": "authority.act-vs-approve",
+  "version": 1,
+  "objective": "Act on bounded evidence and wait only at a real authority boundary.",
+  "criticality": "critical",
+  "sources": [
+    {
+      "path": "../may-agent.app/docs/1-principles/core-principles.md",
+      "section": "Evidence before systems"
+    }
+  ],
+  "prerequisites": [],
+  "dimensions": ["authority", "evidence"],
+  "tiers": [1, 3, 4]
+}

@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "id": "reliability.delivery-vs-completion",
+  "version": 1,
+  "objective": "Distinguish event persistence and delivery from typed response, trace closure, and domain completion.",
+  "criticality": "critical",
+  "sources": [
+    {
+      "path": "../may-agent.app/docs/2a-design/events.md",
+      "section": "Delivery Acceptance"
+    },
+    {
+      "path": "../may-agent.app/docs/2a-design/events.md",
+      "section": "Lifecycle Separation"
+    }
+  ],
+  "prerequisites": ["system.owner-and-route"],
+  "dimensions": ["system_model", "evidence", "closure"],
+  "tiers": [1, 2, 3, 4]
+}

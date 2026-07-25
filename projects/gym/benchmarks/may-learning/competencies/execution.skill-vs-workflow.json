@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "id": "execution.skill-vs-workflow",
+  "version": 1,
+  "objective": "Choose advisory skill guidance or enforced workflow orchestration from the observed cause.",
+  "criticality": "high",
+  "sources": [
+    {
+      "path": "../may-agent.app/docs/2a-design/skills.md",
+      "section": "Skill And Workflow Boundary"
+    },
+    {
+      "path": "../may-agent.app/docs/2a-design/workflows.md",
+      "section": "Skill And Workflow Boundary"
+    }
+  ],
+  "prerequisites": ["system.owner-and-route"],
+  "dimensions": ["system_model", "discovery"],
+  "tiers": [2, 3, 4]
+}

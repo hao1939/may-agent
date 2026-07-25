@@ -19,8 +19,10 @@
     "review:may-canary": "bun ./src/loop/canary-review.ts",
     "review:may-learning": "bun ./src/learning/review-cli.ts",
     "review:may-learning-release": "bun ./src/learning/release-review-cli.ts",
+    "review:may-deputy-learning": "bun ./src/learning/release-review-cli.ts may-deputy-learning",
+    "review:may-deputy-learning-release": "bun ./src/learning/release-review-cli.ts may-deputy-learning-transfer",
     "benchmark:may-alignment": "bash ./benchmarks/may-alignment/run.sh",
-    "check": "bun run typecheck && bun run test && bun run scenario:validate && bun run review:may-alignment && bun run review:may-learning && bun run review:may-learning-release"
+    "check": "bun run typecheck && bun run test && bun run scenario:validate && bun run review:may-alignment && bun run review:may-learning && bun run review:may-learning-release && bun run review:may-deputy-learning && bun run review:may-deputy-learning-release"
   },
   "devDependencies": {
     "@types/bun": "^1.3.14",
