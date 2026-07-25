@@ -29,12 +29,18 @@ existing pipeline watcher
 
 stable failure task
   -> agent classifies current artifact
-  -> test issue: exact live proof -> fix-forward -> PR to main -> merge proof
+  -> test issue: focused branch and PR to main
   -> product issue: notify human -> wait for later current-main pass
 
-aggregate completion
-  -> stale at any result: immediately verify latest main
-  -> failed at current main: keep standing task red while failures repair
+failed aggregate
+  -> freeze one campaign branch at the exact tested main commit
+  -> merge focused unmerged fix heads into that branch
+  -> run -> observe -> fix -> merge another fix head -> rerun
+  -> do not rebase the red campaign when main advances
+  -> green campaign: wait for its focused PRs to merge
+  -> verify latest main once
+
+healthy aggregate completion
   -> passed at current main: record health and sleep until the next due cycle
 ```
 
@@ -54,7 +60,8 @@ health.
 - The app defines the standing task, stable failure-task identity, ownership,
   workflow binding, and notification policy.
 - `master-validation-cycle` owns the six-hour due rule, exact `main` commit,
-  one-active-run invariant, and aggregate convergence decision.
+  frozen campaign branch, one-active-run invariant, and aggregate convergence
+  decision.
 - The existing pipeline watcher owns Azure DevOps observation and artifact
   ingestion. It does not read task state.
 - `master-validation-failure` owns classification. Product issues wait on a
@@ -83,17 +90,73 @@ pulse; the receipt owns the six-hour due decision. A full pass means healthy
 now, not finished forever: the maintain task remains live and queues another
 full run when the six-hour interval becomes due.
 
-Every completed result is compared with current `origin/main` before its
-pass/fail meaning is considered. If `main` advanced while the run queued or
-executed, the app queues the latest commit immediately after the active run
-finishes, whether the stale result passed or failed. Multiple advances coalesce
-into that one latest-main run. The app does not cancel the active run, overlap
-aggregate runs, wait another six hours, or call a stale result current-main
-proof.
+Every passing main result is compared with current `origin/main` before it is
+accepted. If `main` advanced during a passing run, the app queues the latest
+commit immediately. A failed main run is different: its exact tested commit
+becomes the immutable base of one repair campaign. Later main advances are
+recorded but do not continuously move that red campaign. They coalesce into one
+latest-main verification after the campaign is green and its focused PRs merge.
 
-The six-hour interval is the healthy periodic cadence. It never delays a
-replacement after `main` changes. The repo-ref watcher emits the change as a
-targeted wake; the five-minute reconciliation pulse remains delivery recovery.
+The six-hour interval is the healthy periodic cadence. During repair, the same
+five-minute reconciliation pulse observes the campaign branch, fix PR heads,
+and active run. A changed campaign head runs immediately. An unchanged red
+campaign runs again after six hours so a deployed product or environment
+recovery can be observed without changing the source snapshot.
+The wait requires a schedule event created after the Condition was admitted;
+an older manual wake with an arbitrarily large pulse value cannot be replayed
+into an immediate reconciliation loop.
+
+## Frozen repair campaign
+
+The campaign branch is a temporary execution surface, not another task, PR,
+controller, or source of truth:
+
+```text
+main@M0
+  -> fork validation/master-validation-<failed-run-id>
+  -> merge exact head of focused PR A
+  -> run the branch
+  -> merge exact head of focused PR B
+  -> rerun the same branch
+  -> repeat until green
+```
+
+- There is at most one active campaign branch.
+- Its base is the exact commit tested by the failed main run.
+- That base never moves. Do not merge or rebase newer `main` into the campaign,
+  including indirectly through a fix branch forked from newer `main`.
+- Each repository-owned issue still has one focused branch and PR targeting
+  `main`. The campaign merges the PR head without completing the PR.
+- Before new repair work starts, a clean task workspace with no task-only
+  commits is aligned to the frozen base. A retained workspace with unmerged
+  task work is preserved and reconciled explicitly; it is never reset merely
+  because `main` moved.
+- A focused fix branch may fork from the frozen base, an ancestor already in
+  that base, or existing approved campaign lineage. The campaign controller
+  rejects a PR head whose fork point would import newer `main`; the focused
+  change must be transplanted back onto the frozen lineage first.
+- Merge every available focused fix onto the campaign in stable PR order, then
+  test the resulting exact branch head. There is no separate candidate branch,
+  dependency plan, or blocker ranking.
+- The failed main run already tested the untouched base, so creating the branch
+  does not queue a duplicate run. A fix changing the branch head queues the
+  next campaign run immediately.
+- If no repository fix changes the head, a red campaign reruns that exact head
+  every six hours. This is the recovery probe for product and environment
+  failures; it does not merge newer `main`.
+- Published fix branches are append-only during a campaign. A later repair adds
+  a commit; it does not rewrite a head already merged into the campaign.
+- The branch history and compact app receipt are the durable composition. No
+  task-tree issue ledger or workflow phase database is added.
+- A red campaign ignores newer main commits. Once it passes and all included
+  PRs merge, one full run from latest main decides health.
+- When a campaign first passes, the app sends one deduplicated human message
+  listing the focused PRs proven together. Those PRs merge individually; the
+  message never asks anyone to merge the campaign branch.
+- The campaign branch is deleted after that current-main run passes. It is
+  never merged into `main`.
+- Queueing uses one short app-local claim around provider submission so daemon
+  recovery and a simultaneous wake cannot create duplicate aggregate runs.
 
 ## Progressive observation
 
@@ -115,20 +178,89 @@ runnable durable task while the remaining slices continue. The stable identity
 is spec plus normalized failure fingerprint, so repeated scans and later runs
 do not create duplicate tasks.
 
+The watcher also maintains one replace-in-place provider projection at
+`.state/watchers/aks-pipeline-progress.json`. It combines the immutable plan
+inputs with completed slice verdicts and reports selected, observed, pending,
+pass, fail, error, skipped, and temporarily excluded counts without putting
+progress into task state or emitting pass events for presentation. Operators
+can read the same model with `bun run master-validation:status [--json]`.
+Fine-grained phase reporting inside a still-running slice remains the separate
+live-progress proposal.
+
+Live-admission drift is isolated, not hidden. A master-validation batch writes
+one machine-readable admission report, removes excluded specs from that run's
+slice matrix, and lets every admitted spec execute. Each exclusion is observed
+from the plan artifact as `pipeline.failure.observed`, so it creates the same
+stable repair task as a runtime failure. A closeout job then keeps the aggregate
+run non-green while any exclusion exists. Thus one broken carrier cannot block
+unrelated coverage, but exclusion can never satisfy the standing goal or lose
+its repair obligation. Direct single-spec dispatch remains fail-fast because
+there is no unrelated work to preserve.
+
 ## Known issues and parallel repair
 
 Live `master-validation-failure` tasks are the known-issue list. No separate
 issue ledger or workflow phase database is introduced.
 
 - The task input records `validationTaskId`, spec, normalized fingerprint,
-  first/current pipeline evidence, and artifact path.
+  first/current pipeline evidence, artifact path, source commit, and desired
+  terminal verdict. A prepared repair also records its exact commit/files and
+  live target; standalone work records the exact build id.
 - The same spec and fingerprint update the same task when observed again.
+- Once that stable fingerprint has durable product-classification evidence, a
+  repeated matching observation preserves the classification and refreshes its
+  recovery wait. It does not forget task history and downgrade the same known
+  issue to inconclusive unless new contradictory evidence is recorded.
+- The stable task itself owns the recovery Condition. Do not create
+  `verify-...after-<run>` children; each later failure only revises the task's
+  latest observed run, source commit, artifact, and generation.
+- The recovery Condition identity includes the blocking pipeline run. A later
+  failure must not reuse a previously satisfied pass Condition from an older
+  failure episode, even when the normalized failure fingerprint is unchanged.
+- When a task enters or re-enters recovery wait, use the latest known aggregate
+  run as the lower bound, not merely the original failure run. An older pass
+  invalidated by later relevant source changes must not repeatedly satisfy the
+  new wait; only a newer main observation may wake it.
+- If a workflow revision or explicit replay wakes an older stable issue after
+  an earlier generation integrated an exact live-tested PR, reuse that durable
+  run/PR/merged-commit proof when the spec and live target are unchanged. The
+  issue returns to its current-main verification wait instead of creating a new
+  repair commit or live run. Without integrated proof, owner review may still
+  identify an already-recorded later current-main same-spec pass, but code must
+  validate its provider run, artifact verdict, ancestry, and intervening
+  relevant changes before closeout; this is recovery proof, not ordinary
+  preparation readiness.
+- Legacy publication/recovery children are migrated into the stable failure
+  task when encountered. The parent resumes the finite source lifecycle first
+  and absorbs the inactive child only after the parent has integration or
+  superseding current-main proof; it must not discard the child's useful branch
+  or proof by merely closing it.
 - A materially different failure fingerprint creates another task.
-- If the failure artifact came from an older `main`, the task waits for the
-  newer current-main spec verdict instead of editing already-changed source;
-  another failure on current `main` updates the task and resumes repair.
+- A newer `main` commit does not defer repair inside the frozen campaign. Main
+  drift is reconciled once, after the campaign passes; any resulting failure
+  becomes the next exact snapshot campaign rather than invalidating work in
+  progress.
 - Independent issue tasks may diagnose, run targeted proof, and prepare fixes
   concurrently within normal app capacity while the aggregate run continues.
+- As soon as a focused fix head is available, the standing workflow may merge
+  it into the frozen campaign and continue aggregate discovery without waiting
+  for that PR to merge into `main`.
+- A campaign failure does not require a separate targeted live run before its
+  focused PR can join the campaign. The repair workflow runs scoped local
+  checks, publishes a draft focused PR, and wakes the campaign immediately.
+  Use a targeted live run only when it answers a narrower safety question; the
+  full campaign rerun is the required integration proof.
+- Draft means the fix is still being verified. As soon as the affected spec
+  passes from the exact campaign commit containing that PR head, publish the PR
+  as non-draft and notify the human merge owner, even if unrelated campaign
+  specs remain red. A fully green campaign also publishes any remaining
+  included drafts before asking for merges. The app never merges a focused PR
+  into `main`; the human remains the merge authority. Draft preparation is an
+  internal campaign event, not an actionable human notification. The human is
+  notified once, retry-safely, only after the PR is non-draft and ready to
+  merge. This exact verified-pass event explicitly wakes the standing cycle
+  through its open aggregate-run wait; it does not wait for unrelated slices
+  to finish.
 - A resolved issue leaves the live graph through its ordinary completion
   receipt; reusable lessons belong in workflow/tests/domain evidence.
 
@@ -142,19 +274,32 @@ Classification alone does not close a failure. For a test issue, the same
 task-owned branch and worktree follow the finite live-reconciliation contract:
 
 ```text
-bounded fix commit
-  -> targeted staging run for that exact commit and spec
-  -> artifact-backed verdict review
-  -> fix and rerun when the carrier still fails
-  -> create PR into main only after accepted live proof
-  -> wait for merge or source change
-  -> require the exact tested commit in origin/main ancestry
-  -> converge the failure task
+bounded fix commit and focused PR to main
+  -> merge the exact unmerged head into the frozen campaign
+  -> targeted proof only when useful; full campaign proof is the integration gate
+  -> fix and rerun when either path still fails
+  -> green campaign may wait for focused PR merge
+  -> full latest-main verification after all included PRs merge
+  -> converge only after the same spec passes through that main path
 ```
 
-The aggregate standing task remains open until a full current-main
+Targeted branch or standalone proof shows that a repair is safe in isolation;
+the campaign proves the accumulated execution context before merge. Neither
+proves current main. The issue task remains open after merge until a later
+observation from current `main`
+passes the same spec through its intended master-validation path. If the
+intended repair is exclusion, the current-main plan must prove exclusion before
+execution. The aggregate standing task remains open until a full current-main
 master-validation run passes. A PR, merge, targeted pass, classification, or
 notification is progress evidence, never aggregate completion.
+
+Source repair and provider dispatch require a workflow-bound task. The
+workflow supplies the main-based task worktree, infrastructure Azure CLI/config
+convention, exact queue parameters, Conditions, and PR/merge handling. The
+agent supplies source and artifact judgment inside that workflow. If a direct
+owner attempt discovers that capability is missing, the app revises the same
+task to bind the workflow and preserves its repair context; it does not create
+clean-carrier, credentialed-session, publish, or review successor chains.
 
 ## Product issue path
 
@@ -169,33 +314,58 @@ expected:
   specId: <spec id>
   status: pass
   sourceBranch: refs/heads/main
+  pipelineRunId: { gt: <blocking run id> }
 ```
 
 The project subject is the routing scope; the expected fields identify the
-exact spec and proof. Only a later run may satisfy recovery. The product
-failure stays live until the deployed product behavior passes from `main`.
+exact spec and require a run later than the blocking observation. This causal
+boundary prevents persisted-event replay from satisfying a new wait with an
+older pass. The Condition is only a wake. Before convergence, the
+workflow fetches `origin/main` and requires the observation's source commit to
+be in its history with no later spec, runner, suite, or infrastructure change
+that can affect the verdict. Unrelated commits do not invalidate a completed
+run, while a run from relevant stale `main` source cannot close the issue. The
+product failure stays live until the deployed product behavior passes from
+applicable current `main` source.
+
+When that current-main pass arrives, the workflow also abandons any still-open
+PR whose description names the exact stable task. The passing main observation
+has superseded those proposed repairs; leaving them open creates misleading
+work.
 
 ## Queue-delay behavior
 
 Hosted-agent scarcity is a provider condition, not task failure. The app must
 preserve queue position and must not automatically cancel or duplicate the
-run. When a scheduled master-validation run remains `notStarted` for 90
-minutes, the watcher emits one deduplicated `pipeline.queue.overdue` fact. The
-app sends one operator notification and continues waiting.
+run. After 90 minutes, the watcher emits one deduplicated
+`pipeline.queue.overdue` fact when either the aggregate has not started or its
+planning job completed while every test slice still awaits an agent. The app
+sends one operator notification and continues waiting.
 
 This replaces manual polling while keeping scheduling out of the task tree.
 
 ## Recovery and failure handling
 
 - Process reload: discover the receipt and exact active run; do not overlap.
+- Unresponsive shared runtime: the independent infrastructure maintenance
+  process probes the control socket and requests the existing supervisor-owned
+  restarter after a bounded consecutive-failure threshold. App task state is
+  untouched; ordinary controller recovery resumes it after restart.
 - Late Condition registration: repeat the current run level so the Condition
   can observe it.
 - Artifact download failure: retry from a fresh temporary directory.
 - Agent interruption: keep the task/worktree; retry through normal runtime
   recovery.
+- Failed pipeline execution before any parseable spec verdict: create a stable
+  repository-owned pipeline/bootstrap failure task. It is actionable repair,
+  never a reason to wait for a hypothetical current-main spec pass.
+- A deliberately canceled duplicate or stale run is not a pipeline failure and
+  does not create or revise repair work.
 - Ordinary diagnosis, source, verification, and provider-command failures:
   feed exact evidence into the next bounded agent repair iteration on the same
   task. A real external provider state becomes an exact Condition.
+- A repeated identical missing-capability result waits or escalates on that
+  task. It never creates an equivalent successor task.
 - The agent chooses whether an external wait is meaningful. Code validates
   that its Condition has a typed subject and only supported exact-match
   operators. Invalid Condition structure is returned to the agent for one
@@ -206,8 +376,10 @@ This replaces manual polling while keeping scheduling out of the task tree.
   does not decide that one is needed.
 - PR conflict or changed source: invalidate the old proof, repair the same
   branch, and run the new exact commit.
-- Squash/rebase merge that does not preserve the tested commit: require an
-  exact merged-revision proof before closeout.
+- Squash/rebase merge is normal: Azure must report the exact tested PR head and
+  a resulting merged commit present in `main`. Do not require the PR head
+  itself to remain in `main` ancestry. Integration is progress evidence; the
+  issue still waits for the later current-main spec pass before closeout.
 
 ## Acceptance
 
@@ -216,14 +388,23 @@ The design is working when:
 - a due cycle survives reloads and never creates overlapping aggregate runs;
 - a healthy current-main pass still leads to another full run at the regular
   six-hour cadence;
+- a failed main run freezes one campaign at the tested commit and does not chase
+  later main commits while red;
+- each focused test fix remains one PR to main while its exact head can be
+  tested immediately in the campaign;
+- a red campaign reruns after accumulated fix heads change and never waits only
+  because those PRs are unmerged;
+- only a green campaign may wait for its focused PRs to merge;
 - each slice is ingested once only after a complete download;
 - each failure becomes one stable task before aggregate completion;
 - independent known failures can repair while the aggregate run continues;
-- a test fix cannot produce a PR before an accepted exact staging proof;
+- a focused fix PR can be opened before aggregate proof so the campaign can
+  consume it; proof determines readiness, not whether the repair may be tested;
 - a test-failure task cannot converge merely because a PR merged;
 - a product failure cannot converge without a later passing `main` observation;
-- no aggregate result, passing or failing, can delay latest-main verification
-  after `origin/main` advances;
+- a passing stale-main result triggers latest-main verification immediately,
+  while a failed snapshot finishes its frozen campaign before one coalesced
+  latest-main verification;
 - a queue wait produces at most one overdue notification and never an
   automatic duplicate run;
 - only a full pass at current `main` converges the standing task.
@@ -231,6 +412,7 @@ The design is working when:
 ## Non-goals
 
 - Automatically merging pull requests.
+- Merging the campaign branch into `main`.
 - Treating queue age as test failure.
 - Creating tasks for passing specs or progress heartbeats.
 - Adding a second watcher, scheduler, controller queue, or task archive.

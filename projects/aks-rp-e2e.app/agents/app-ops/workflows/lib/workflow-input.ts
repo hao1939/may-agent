@@ -89,6 +89,24 @@ export function parseTriggerEvent(raw: string): TriggerEvent | null {
   }
 }
 
+export function parseReconciliationTaskPayload(
+  raw: string,
+): Record<string, unknown> | null {
+  const marker = raw.indexOf("## Reconciliation Task");
+  if (marker < 0) return null;
+  const scoped = raw.slice(marker);
+  const firstBrace = scoped.indexOf("{");
+  if (firstBrace < 0) return null;
+  const objectText = matchingJsonObject(scoped, firstBrace);
+  if (!objectText) return null;
+  try {
+    const parsed = JSON.parse(objectText) as Record<string, unknown>;
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 export function triggerValue(event: TriggerEvent | null, key: string): unknown {
   if (event?.data && typeof event.data === "object") {
     const data = event.data as Record<string, unknown>;

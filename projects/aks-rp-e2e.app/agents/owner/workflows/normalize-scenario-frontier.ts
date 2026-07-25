@@ -640,7 +640,8 @@ function actionForRow(
   originDevCommit: string,
   report: InventoryReport,
 ): ProjectAppTaskAction {
-  const id = `domain/reconcile-scenario-adapter-${safeTaskIdPart(row.adapterPath)}`;
+  const workRevision = digest(`${originDevCommit}:${row.adapterPath}`);
+  const id = `domain/reconcile-scenario-adapter-${safeTaskIdPart(row.adapterPath)}-${workRevision.slice(0, 8)}`;
   return {
     kind: "create-task",
     id,
@@ -654,7 +655,7 @@ function actionForRow(
       frontierTaskId,
       loopId: scenarioNormalizationTaskId,
       workKey: row.adapterPath,
-      workRevision: digest(`${originDevCommit}:${row.adapterPath}`),
+      workRevision,
       originDevCommit,
       adapterPath: row.adapterPath,
       legacyPath: row.legacyPath,
@@ -690,7 +691,8 @@ function actionForPlainCarrierRow(
   originDevCommit: string,
   report: InventoryReport,
 ): ProjectAppTaskAction {
-  const id = `domain/normalize-plain-scenario-carrier-${safeTaskIdPart(row.scenarioTestPath)}`;
+  const workRevision = digest(`${originDevCommit}:${row.scenarioTestPath}`);
+  const id = `domain/normalize-plain-scenario-carrier-${safeTaskIdPart(row.scenarioTestPath)}-${workRevision.slice(0, 8)}`;
   const owningSpecs = row.specIds.join(", ") || "its current consumers";
   return {
     kind: "create-task",
@@ -707,7 +709,7 @@ function actionForPlainCarrierRow(
       frontierTaskId,
       loopId: scenarioNormalizationTaskId,
       workKey: row.scenarioTestPath,
-      workRevision: digest(`${originDevCommit}:${row.scenarioTestPath}`),
+      workRevision,
       originDevCommit,
       normalizationScope: row.scope,
       scenarioTestPath: row.scenarioTestPath,
@@ -748,11 +750,11 @@ function workflowRepairForPlainCarrierRow(
   nodesById: ReadonlyMap<string, GraphNode>,
 ): ProjectAppTaskAction | null {
   if (row.specIds.length === 0) return null;
-  const taskId = `domain/normalize-plain-scenario-carrier-${safeTaskIdPart(row.scenarioTestPath)}`;
-  const node = nodesById.get(taskId);
+  const node = [...nodesById.values()].find(
+    (candidate) => plainRowMatchesNode(row, candidate) && !candidate.workflow,
+  );
   if (
     !node ||
-    node.workflow ||
     node.state !== "pending" ||
     !Number.isInteger(node.generation) ||
     node.generation < 1
@@ -761,7 +763,7 @@ function workflowRepairForPlainCarrierRow(
   }
   return {
     kind: "update-task",
-    taskId,
+    taskId: node.id,
     expectedGeneration: node.generation,
     owner: "aks-explorer",
     workflow: "spec-live-reconciliation",

@@ -7,6 +7,7 @@ import {
 } from "@may-agent/sdk";
 import {
   field,
+  parseReconciliationTaskPayload,
   parseTriggerEvent,
   resolveAppDir,
   triggerString,
@@ -25,12 +26,21 @@ function finishApprovalDispatch(
     evidence: string[];
   },
 ): WorkflowResult {
-  return ctx.done(input.summary, {
-    state: input.state,
-    summary: input.summary,
-    evidence: input.evidence,
-    actions: [],
-  });
+  return ctx.done(
+    input.summary,
+    input.state === "converged"
+      ? {
+          state: input.state,
+          summary: input.summary,
+          evidence: input.evidence,
+          actions: [],
+        }
+      : {
+          state: input.state,
+          summary: input.summary,
+          evidence: input.evidence,
+        },
+  );
 }
 
 function truncate(text: string, max = 1800): string {
@@ -48,6 +58,17 @@ function stableIdPart(value: string): string {
     .replace(/[^a-z0-9._-]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 120);
+}
+
+function recordValue(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function approvalDispatchTaskInput(raw: string): Record<string, unknown> | null {
+  const payload = parseReconciliationTaskPayload(raw);
+  return recordValue(payload?.input);
 }
 
 function packetAbsolutePath(input: {
@@ -184,8 +205,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const appDir =
     ctx.appDir ?? resolveAppDir(projectDir, field(ctx.task, "app"));
   const trigger = parseTriggerEvent(ctx.task);
+  const taskInput = approvalDispatchTaskInput(ctx.task);
+  const recoveredFromTaskTick =
+    trigger?.type === "project.task.tick" && Boolean(taskInput);
 
-  if (trigger?.type !== "project.approval.requested") {
+  if (trigger?.type !== "project.approval.requested" && !recoveredFromTaskTick) {
     return finishApprovalDispatch(ctx, {
       state: "needs-owner",
       summary: `Approval dispatch ignored trigger ${String(trigger?.type ?? "unknown")}; use project.approval.requested.`,
@@ -197,38 +221,51 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     triggerString(trigger, "packetPath") ||
     triggerString(trigger, "packet_path") ||
     stringValue(triggerValue(trigger, "packetPath")) ||
-    stringValue(triggerValue(trigger, "packet_path"));
+    stringValue(triggerValue(trigger, "packet_path")) ||
+    stringValue(taskInput?.packetPath) ||
+    stringValue(taskInput?.packet_path);
   const pathId =
     triggerString(trigger, "pathId") ||
     triggerString(trigger, "path_id") ||
     stringValue(triggerValue(trigger, "pathId")) ||
-    stringValue(triggerValue(trigger, "path_id"));
+    stringValue(triggerValue(trigger, "path_id")) ||
+    stringValue(taskInput?.pathId) ||
+    stringValue(taskInput?.path_id);
   const requestedAction =
     triggerString(trigger, "requestedAction") ||
     triggerString(trigger, "requested_action") ||
     stringValue(triggerValue(trigger, "requestedAction")) ||
-    stringValue(triggerValue(trigger, "requested_action"));
+    stringValue(triggerValue(trigger, "requested_action")) ||
+    stringValue(taskInput?.requestedAction) ||
+    stringValue(taskInput?.requested_action);
   const reason =
     triggerString(trigger, "reason") ||
     stringValue(triggerValue(trigger, "reason")) ||
+    stringValue(taskInput?.reason) ||
     "Approval packet dispatch requested";
   const summary =
     triggerString(trigger, "summary") ||
-    stringValue(triggerValue(trigger, "summary"));
+    stringValue(triggerValue(trigger, "summary")) ||
+    stringValue(taskInput?.summary);
   const target =
     triggerString(trigger, "target") ||
     stringValue(triggerValue(trigger, "target")) ||
+    stringValue(taskInput?.target) ||
     "human";
   const explicitApprovalId =
     triggerString(trigger, "approvalId") ||
     triggerString(trigger, "approval_id") ||
     stringValue(triggerValue(trigger, "approvalId")) ||
-    stringValue(triggerValue(trigger, "approval_id"));
+    stringValue(triggerValue(trigger, "approval_id")) ||
+    stringValue(taskInput?.approvalId) ||
+    stringValue(taskInput?.approval_id);
   const explicitWaitId =
     triggerString(trigger, "waitId") ||
     triggerString(trigger, "wait_id") ||
     stringValue(triggerValue(trigger, "waitId")) ||
-    stringValue(triggerValue(trigger, "wait_id"));
+    stringValue(triggerValue(trigger, "wait_id")) ||
+    stringValue(taskInput?.waitId) ||
+    stringValue(taskInput?.wait_id);
   const sender =
     field(ctx.task, "owner") ?? field(ctx.task, "agent") ?? ctx.agent;
 

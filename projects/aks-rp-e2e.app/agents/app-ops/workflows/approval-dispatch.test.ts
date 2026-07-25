@@ -17,6 +17,10 @@ function triggerEvent(event: Record<string, unknown>): string {
   return `## Trigger Event\n\`\`\`json\n${JSON.stringify(event, null, 2)}\n\`\`\``;
 }
 
+function reconciliationTask(task: Record<string, unknown>): string {
+  return `## Reconciliation Task\n\`\`\`json\n${JSON.stringify(task, null, 2)}\n\`\`\``;
+}
+
 describe("approval-dispatch workflow", () => {
   test("returns owner fallback when the requested packet is unavailable", async () => {
     const { appDir, projectDir } = await makeWorkspace();
@@ -52,7 +56,108 @@ describe("approval-dispatch workflow", () => {
         state: "needs-owner",
         summary: expect.stringContaining("was not found"),
         evidence: ["approval-dispatch:path.missing-packet:packet-not-found"],
+      },
+    });
+    expect(result.output).not.toHaveProperty("actions");
+  });
+
+  test("recovers packet delivery from a task tick when the runtime task preserves the approval tuple", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const packetPath =
+      "evidence/archive/localdns-auto-default-mirrored-slice-cleanup-approval.md";
+    await writeFile(
+      join(projectDir, packetPath),
+      "# exact packet\n\nApprove this exact mirrored-slice cleanup ask.\n",
+      "utf8",
+    );
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: app-ops",
+        reconciliationTask({
+          input: {
+            approvalId:
+              "aks-rp-e2e:approval:ops/request-approval-localdns-auto-default-mirrored-slice-cleanup-20260723:evidence-archive-localdns-auto-default-mirrored-slice-cleanup-approval.md",
+            packetPath,
+            pathId:
+              "ops/request-approval-localdns-auto-default-mirrored-slice-cleanup-20260723",
+            reason: "manual-approval-packet-dispatch-request",
+            requestedAction:
+              "Route this exact LocalDNS mirrored-slice cleanup packet through the human:operator lane.",
+            summary:
+              "Use the attached packet unchanged to request one bounded operator decision.",
+            target: "human:operator",
+            waitId:
+              "wait:aks-rp-e2e:approval:ops/request-approval-localdns-auto-default-mirrored-slice-cleanup-20260723:evidence-archive-localdns-auto-default-mirrored-slice-cleanup-approval.md",
+          },
+        }),
+        triggerEvent({
+          type: "project.task.tick",
+          source: "control",
+          owner: "project:aks-rp-e2e",
+          target: {
+            project: "aks-rp-e2e",
+            taskId:
+              "runtime/approval-dispatch/aks-rp-e2e-approval-ops-request-approval-localdns-auto-default-mirrored-slice-clean-9d041b4b0dff",
+          },
+          reason: "manual-runtime-approval-dispatch-pulse",
+          data: {
+            project: "aks-rp-e2e",
+            taskId:
+              "runtime/approval-dispatch/aks-rp-e2e-approval-ops-request-approval-localdns-auto-default-mirrored-slice-clean-9d041b4b0dff",
+            task_id:
+              "runtime/approval-dispatch/aks-rp-e2e-approval-ops-request-approval-localdns-auto-default-mirrored-slice-clean-9d041b4b0dff",
+            reason: "manual-runtime-approval-dispatch-pulse",
+          },
+        }),
+      ].join("\n"),
+      agent: "app-ops",
+      done: (message: string, output?: unknown) => ({
+        status: "done",
+        message,
+        output,
+      }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(result).toMatchObject({
+      output: {
+        state: "converged",
+        summary: expect.stringContaining(
+          "Approval dispatch emitted message.created",
+        ),
+        evidence: [
+          "approval-dispatch:aks-rp-e2e:approval:ops-request-approval-localdns-auto-default-mirrored-slice-cleanup-20260723:evidence-archive-localdns-auto-default-mirrored-slice-cleanup-approval.md",
+        ],
         actions: [],
+      },
+    });
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]).toMatchObject({
+      type: "message.created",
+      payload: {
+        packetPath,
+        pathId:
+          "ops/request-approval-localdns-auto-default-mirrored-slice-cleanup-20260723",
+        requestedAction:
+          "Route this exact LocalDNS mirrored-slice cleanup packet through the human:operator lane.",
+        approvalId:
+          "aks-rp-e2e:approval:ops/request-approval-localdns-auto-default-mirrored-slice-cleanup-20260723:evidence-archive-localdns-auto-default-mirrored-slice-cleanup-approval.md",
+        waitId:
+          "wait:aks-rp-e2e:approval:ops/request-approval-localdns-auto-default-mirrored-slice-cleanup-20260723:evidence-archive-localdns-auto-default-mirrored-slice-cleanup-approval.md",
       },
     });
   });

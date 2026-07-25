@@ -150,8 +150,8 @@ describe("normalize scenario frontier workflow", () => {
       ],
     });
     expect(result.output.summary).toContain("2 current missing adapter");
-    expect(result.output.actions[0].id).toBe(
-      "domain/reconcile-scenario-adapter-feature-a-tests-case-a",
+    expect(result.output.actions[0].id).toMatch(
+      /^domain\/reconcile-scenario-adapter-feature-a-tests-case-a-[a-f0-9]{8}$/,
     );
     expect(result.output.actions[0].input).toMatchObject({
       loopId: "scenario-normalization",
@@ -591,6 +591,9 @@ describe("normalize scenario frontier workflow", () => {
         input: { scenarioTestPath },
       },
     ]);
+    expect(result.output.actions[0].id).toMatch(
+      /^domain\/normalize-plain-scenario-carrier-feature-a-tests-case-a\.ts-[a-f0-9]{8}$/,
+    );
   });
 
   test("declares bounded plain-carrier normalization work when strict inventory stays red without missing adapters", async () => {
@@ -695,6 +698,44 @@ describe("normalize scenario frontier workflow", () => {
         workflow: "spec-live-reconciliation",
       },
     ]);
+  });
+
+  test("renews a still-red row with a revision-qualified id after a completed receipt", async () => {
+    const scenarioTestPath = "features/feature-a/tests/case-a.ts";
+    const completedId =
+      "domain/normalize-plain-scenario-carrier-feature-a-tests-case-a.ts";
+    const ws = await workspace({
+      missingAdapterFiles: [],
+      strictPassed: false,
+      remainingSpecReferencedPlainScenarioUnits: [
+        {
+          scenarioTestPath,
+          adapterPath: "features/feature-a/tests/case-a.test.ts",
+          specIds: ["spec.feature-a.case-a"],
+          featureIds: ["feature-a"],
+          activeSpecCount: 1,
+        },
+      ],
+      remainingRepoPlainScenarioFiles: [scenarioTestPath],
+    });
+    await writeFile(
+      join(ws.appDir, ".state", "tasks", "state.json"),
+      JSON.stringify({
+        resources: {},
+        conditions: {},
+        receipts: { [completedId]: { metadata: { id: completedId } } },
+      }),
+    );
+
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+
+    expect(result.output.actions).toHaveLength(1);
+    expect(result.output.actions[0]).toMatchObject({
+      kind: "create-task",
+      input: { scenarioTestPath },
+    });
+    expect(result.output.actions[0].id).not.toBe(completedId);
+    expect(result.output.actions[0].id).toMatch(/-[a-f0-9]{8}$/);
   });
 
   test("continues with repository-only plain carriers after spec references are normalized", async () => {

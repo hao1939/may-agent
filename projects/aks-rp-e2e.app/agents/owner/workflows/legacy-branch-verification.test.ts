@@ -282,6 +282,91 @@ describe("legacy branch verification workflow", () => {
     expect(git(value.workspace, "status", "--porcelain=v1")).toBe("");
   });
 
+  test("restores a conflicted worktree after a closeout failure so the next retry starts clean", async () => {
+    const value = fixture({ devChange: "dev\n" });
+
+    const failed = await executeWithVerifier(
+      value.context,
+      passingVerifier,
+      baseline,
+      async () => {
+        throw new Error("repair worker interrupted");
+      },
+    );
+
+    expect(failed).toMatchObject({
+      type: "blocked",
+      reason: "Legacy branch verification closeout failed safely",
+      context: {
+        error: "repair worker interrupted",
+        recoveryBaseCommit: value.baseHead,
+        recoveryResidue: [],
+      },
+    });
+    expect(git(value.workspace, "rev-parse", "HEAD")).toBe(value.baseHead);
+    expect(git(value.workspace, "status", "--porcelain=v1")).toBe("");
+
+    const recovered = await executeWithVerifier(
+      value.context,
+      passingVerifier,
+      baseline,
+      async (request) => {
+        write(request.workspaceDir, "shared.txt", "resolved\n");
+        git(request.workspaceDir, "add", "shared.txt", "candidate.txt");
+        git(request.workspaceDir, "commit", "-m", "resolve source conflict");
+        return {
+          decision: "repaired",
+          summary: "Resolved the current source intent against dev.",
+          evidence: ["conflict:shared.txt:resolved"],
+        };
+      },
+    );
+
+    expect(recovered).toMatchObject({
+      type: "done",
+      output: { state: "converged" },
+    });
+  });
+
+  test("auto-recovers a stale dirty task worktree before verification", async () => {
+    const value = fixture({ devChange: "dev\n" });
+    try {
+      git(value.workspace, "merge", "--no-ff", "--no-edit", "task/source");
+      throw new Error("expected merge conflict to dirty the retained task worktree");
+    } catch {
+      // expected: leave the worktree in the same conflicted state a failed retained retry would reuse
+    }
+    expect(git(value.workspace, "status", "--porcelain=v1")).not.toBe("");
+
+    const result = await executeWithVerifier(
+      value.context,
+      passingVerifier,
+      baseline,
+      async (request) => {
+        write(request.workspaceDir, "shared.txt", "resolved\n");
+        git(request.workspaceDir, "add", "shared.txt", "candidate.txt");
+        git(request.workspaceDir, "commit", "-m", "resolve source conflict");
+        return {
+          decision: "repaired",
+          summary: "Resolved the recovered current source intent against dev.",
+          evidence: ["conflict:shared.txt:resolved-after-auto-recovery"],
+        };
+      },
+    );
+
+    expect(result).toMatchObject({
+      type: "done",
+      output: {
+        state: "converged",
+        evidence: expect.arrayContaining([
+          "conflict:shared.txt:resolved-after-auto-recovery",
+        ]),
+      },
+    });
+    expect(git(value.workspace, "status", "--porcelain=v1")).toBe("");
+    expect(git(value.repo, "show", "origin/dev:shared.txt")).toBe("resolved");
+  });
+
   test("tells the repair agent to reject superseded conflict source without committing it", async () => {
     const value = fixture({ devChange: "dev\n" });
     let prompt = "";

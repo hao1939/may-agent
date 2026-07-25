@@ -9,7 +9,6 @@ import {
   type TaskStateConfig,
   type TaskTree,
 } from "@may-agent/sdk";
-import { computeVisibleFrontier } from "../agents/app-ops/workflows/lib/owner-visible-readout-sync.ts";
 
 type MetricSampleOutput = {
   value: number;
@@ -64,10 +63,37 @@ function isLeaf(task: Record<string, unknown> | undefined): boolean {
   return !Array.isArray(task?.children) || task.children.length === 0;
 }
 
+function isVisibleTask(tree: TaskTree, taskId: string): boolean {
+  return taskId !== tree.root_task_id && !taskId.startsWith("runtime/");
+}
+
+function visibleTaskCount(tree: TaskTree, phases: string[]): number {
+  return Object.keys(tree.tasks ?? {}).filter(
+    (taskId) =>
+      isVisibleTask(tree, taskId) && phases.includes(taskPhase(tree, taskId)),
+  ).length;
+}
+
+function runnableLeafCount(tree: TaskTree): number {
+  return Object.entries(tree.tasks ?? {}).filter(([taskId, task]) => {
+    if (!isVisibleTask(tree, taskId) || !isLeaf(task as any)) return false;
+    const phase = taskPhase(tree, taskId);
+    const readiness = String((task as any)?.readiness?.state ?? "");
+    return (
+      ["backlog", "pending", "ready"].includes(phase) &&
+      readiness !== "dependency-blocked"
+    );
+  }).length;
+}
+
 function blockedLeafCount(tree: TaskTree): number {
   return Object.entries(tree.tasks ?? {}).filter(([taskId, task]) => {
     const taskRecord = task as Record<string, unknown> | undefined;
-    return isLeaf(taskRecord) && taskPhase(tree, taskId) === "waiting";
+    return (
+      isVisibleTask(tree, taskId) &&
+      isLeaf(taskRecord) &&
+      taskPhase(tree, taskId) === "waiting"
+    );
   }).length;
 }
 
@@ -127,22 +153,21 @@ function plannerTimeoutCount24h(): number {
 
 function sampleFor(metricId: string): MetricSampleOutput {
   const tree = loadTree();
-  const frontier = computeVisibleFrontier(tree);
 
   switch (metricId) {
     case "aks-rp-e2e.task.active-count":
       return {
-        value: frontier.counts.active,
+        value: visibleTaskCount(tree, ["active", "running"]),
         measuredAt: Date.now(),
         treePath,
-        note: { source: "computeVisibleFrontier", packet: "active" },
+        note: { source: "task-state", phases: ["active", "running"] },
       };
     case "aks-rp-e2e.task.ready-count":
       return {
-        value: frontier.counts.runnable,
+        value: runnableLeafCount(tree),
         measuredAt: Date.now(),
         treePath,
-        note: { source: "computeVisibleFrontier", packet: "runnable" },
+        note: { source: "task-state", leavesOnly: true },
       };
     case "aks-rp-e2e.task.blocked-count":
       return {

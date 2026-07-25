@@ -307,6 +307,31 @@ function restoreBase(workspaceDir: string, baseCommit: string): void {
   git(workspaceDir, ["reset", "--hard", baseCommit]);
 }
 
+function recoverWorkspaceToCurrentBase(
+  repoDir: string,
+  workspaceDir: string,
+): { baseCommit: string | null; residue: string[] } {
+  git(workspaceDir, ["merge", "--abort"], true);
+  const fetched = git(repoDir, ["fetch", "origin", "dev"], true);
+  const baseCommit =
+    fetched.status === 0 ? git(repoDir, ["rev-parse", "origin/dev"], true) : null;
+  if (baseCommit?.status === 0 && baseCommit.stdout) {
+    git(workspaceDir, ["reset", "--hard", baseCommit.stdout], true);
+  }
+  const residue = git(
+    workspaceDir,
+    ["status", "--porcelain=v1", "--untracked-files=all"],
+    true,
+  ).stdout
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  return {
+    baseCommit: baseCommit?.status === 0 ? baseCommit.stdout : null,
+    residue,
+  };
+}
+
 function workspaceProblems(
   workspaceDir: string,
   baseCommit: string,
@@ -468,14 +493,27 @@ export async function executeWithVerifier(
 
   try {
     git(repoDir, ["fetch", "origin", "dev"]);
+    let baseCommit = git(repoDir, ["rev-parse", "origin/dev"]).stdout;
     const dirty = git(workspaceDir, [
       "status",
       "--porcelain=v1",
       "--untracked-files=all",
     ]).stdout;
-    if (dirty)
-      throw new Error(`Task worktree is dirty before verification:\n${dirty}`);
-    const baseCommit = git(repoDir, ["rev-parse", "origin/dev"]).stdout;
+    if (dirty) {
+      const recovery = recoverWorkspaceToCurrentBase(repoDir, workspaceDir);
+      if (!recovery.baseCommit || recovery.residue.length) {
+        throw new Error(
+          [
+            `Task worktree is dirty before verification:\n${dirty}`,
+            `recoveryBaseCommit:${recovery.baseCommit ?? "missing"}`,
+            recovery.residue.length
+              ? `recoveryResidue:${recovery.residue.join(" | ")}`
+              : "recoveryResidue:<clean>",
+          ].join("\n"),
+        );
+      }
+      baseCommit = recovery.baseCommit;
+    }
     if (reconcileIntegratedSource(repoDir, workspaceDir, source, baseCommit)) {
       const summary = `Recorded source ${source.branch}@${source.head} is already integrated in origin/dev; reconciled its remaining refs.`;
       return ctx.done(summary, {
@@ -708,10 +746,13 @@ export async function executeWithVerifier(
       actions: [],
     });
   } catch (error) {
+    const recovery = recoverWorkspaceToCurrentBase(repoDir, workspaceDir);
     return ctx.blocked("Legacy branch verification closeout failed safely", {
       branch: source.branch,
       head: source.head,
       error: error instanceof Error ? error.message : String(error),
+      recoveryBaseCommit: recovery.baseCommit,
+      recoveryResidue: recovery.residue,
     });
   }
 }

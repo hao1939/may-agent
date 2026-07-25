@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve, sep } from "node:path";
 import {
   Type,
   isTypedProjectAppConditionSubject,
@@ -84,6 +84,30 @@ type PullRequest = {
   url?: unknown;
 };
 
+export function completedPullRequestIntegration(input: {
+  mergeStatus: string;
+  testedSourceCommit: string;
+  mergedSourceCommit: string;
+  mergeCommit: string;
+}):
+  | { status: "integrated"; targetCommit: string }
+  | {
+      status: "unproven";
+      reason:
+        "merge-not-succeeded" | "source-mismatch" | "merge-commit-missing";
+    } {
+  if (input.mergeStatus !== "succeeded") {
+    return { status: "unproven", reason: "merge-not-succeeded" };
+  }
+  if (input.mergedSourceCommit !== input.testedSourceCommit) {
+    return { status: "unproven", reason: "source-mismatch" };
+  }
+  if (!input.mergeCommit) {
+    return { status: "unproven", reason: "merge-commit-missing" };
+  }
+  return { status: "integrated", targetCommit: input.mergeCommit };
+}
+
 type AgentDecision = {
   decision:
     | "committed"
@@ -95,6 +119,12 @@ type AgentDecision = {
   summary: string;
   evidence: string[];
   condition?: ProjectAppConditionSpec;
+  recovery?: {
+    pipelineRunId: string;
+    sourceBranch: string;
+    sourceCommit: string;
+    artifactPath: string;
+  };
 };
 
 type ReviewedRunProof = {
@@ -137,6 +167,8 @@ export type LiveDispatchAdmission = {
 
 export type SpecLiveReconciliationOptions = {
   targetBranch?: string;
+  existingRecoveryAfterRunId?: string;
+  reusePriorIntegratedProof?: boolean;
 };
 
 export type LiveExecutionTarget = {
@@ -190,6 +222,25 @@ export function shouldFastForwardIntegratedSource(input: {
   );
 }
 
+export function shouldReviewBeforeInitialLiveDispatch(input: {
+  hasExactRun: boolean;
+  branchHasChange: boolean;
+}): boolean {
+  void input.branchHasChange;
+  return !input.hasExactRun;
+}
+
+export function scenarioNormalizationReplayRequired(input: {
+  sourceIsInTarget: boolean;
+  targetIsInSource: boolean;
+  firstParentMergeCount: number;
+}): boolean {
+  return (
+    !input.sourceIsInTarget &&
+    (!input.targetIsInSource || input.firstParentMergeCount > 0)
+  );
+}
+
 const decisionSchema = Type.Object({
   decision: Type.Union([
     Type.Literal("committed"),
@@ -215,7 +266,119 @@ const decisionSchema = Type.Object({
       owner: Type.Optional(Type.String({ minLength: 1 })),
     }),
   ),
+  recovery: Type.Optional(
+    Type.Object({
+      pipelineRunId: Type.String({ minLength: 1 }),
+      sourceBranch: Type.String({ minLength: 1 }),
+      sourceCommit: Type.String({ minLength: 1 }),
+      artifactPath: Type.String({ minLength: 1 }),
+    }),
+  ),
 });
+
+export function sourceChangeMayAffectSpec(
+  specId: string,
+  changedFiles: string[],
+): boolean {
+  const feature = specId.replace(/^spec\./, "").split(".")[0];
+  const sharedPrefixes = [
+    ".ado/",
+    ".azure-pipelines/",
+    "ci/",
+    "infra/",
+    "pipelines/",
+    "runner/",
+    "scripts/",
+  ];
+  const sharedFiles = new Set([
+    "azurepipelines-coverage.yml",
+    "bun.lock",
+    "package.json",
+    "spec-runner.yaml",
+    "tsconfig.json",
+    "tsconfig.runner.json",
+    "vitest.config.ts",
+  ]);
+  return changedFiles.some((path) => {
+    const normalized = path.replace(/^\.\//, "");
+    return (
+      (feature && normalized.startsWith(`features/${feature}/`)) ||
+      sharedPrefixes.some((prefix) => normalized.startsWith(prefix)) ||
+      sharedFiles.has(normalized)
+    );
+  });
+}
+
+function laterRun(candidate: string, baseline: string): boolean {
+  const candidateNumber = Number(candidate);
+  const baselineNumber = Number(baseline);
+  return Number.isFinite(candidateNumber) && Number.isFinite(baselineNumber)
+    ? candidateNumber > baselineNumber
+    : Boolean(candidate && baseline && candidate !== baseline);
+}
+
+function artifactProvesSpecPass(path: string, specId: string): boolean {
+  try {
+    const value = JSON.parse(readFileSync(path, "utf8")) as {
+      specResults?: Array<Record<string, unknown>>;
+    };
+    return Boolean(
+      value.specResults?.some(
+        (result) =>
+          nonEmptyString(result.specId ?? result.spec_id) === specId &&
+          ["pass", "passed"].includes(
+            nonEmptyString(result.status).toLowerCase(),
+          ),
+      ),
+    );
+  } catch {
+    return false;
+  }
+}
+
+export function existingRecoveryProblem(input: {
+  baselineRunId: string;
+  specId: string;
+  currentMainCommit: string;
+  recovery?: AgentDecision["recovery"];
+  providerRun: PipelineRun | null;
+  sourceIsAncestor: boolean;
+  changedFiles: string[] | null;
+  artifactInWatcherRoot: boolean;
+  artifactProvesPass: boolean;
+}): string | null {
+  const recovery = input.recovery;
+  if (!recovery) return "missing structured recovery proof";
+  if (!laterRun(recovery.pipelineRunId, input.baselineRunId)) {
+    return "recovery run is not later than the blocking run";
+  }
+  if (recovery.sourceBranch !== "refs/heads/main") {
+    return "recovery run is not from main";
+  }
+  if (
+    !input.providerRun ||
+    nonEmptyString(input.providerRun.id) !== recovery.pipelineRunId ||
+    nonEmptyString(input.providerRun.sourceBranch) !== recovery.sourceBranch ||
+    nonEmptyString(input.providerRun.sourceVersion) !== recovery.sourceCommit ||
+    pipelineRunState(input.providerRun) !== "completed"
+  ) {
+    return "provider run does not match the recovery claim";
+  }
+  if (!input.sourceIsAncestor) {
+    return "recovery source is not in current main ancestry";
+  }
+  if (
+    recovery.sourceCommit !== input.currentMainCommit &&
+    (input.changedFiles === null ||
+      sourceChangeMayAffectSpec(input.specId, input.changedFiles))
+  ) {
+    return "relevant main changes invalidate the recovery observation";
+  }
+  if (!input.artifactInWatcherRoot || !input.artifactProvesPass) {
+    return "recovery artifact does not prove this exact spec passed";
+  }
+  return null;
+}
 
 const conditionInstruction =
   "A waiting Condition must use a typed subject such as project:aks-rp-e2e, pipeline-run:<id>, pull-request:<id>, or task:<id>. Its expected value supports exact field equality, or { field, equals|anyOf|notEquals }; do not invent comparison operators or put prose in subject. The observed fact must be able to advance this exact task and source lineage; do not wait for a hypothetical pass on unrelated source.";
@@ -265,6 +428,13 @@ export function scenarioNormalizationWaitProblem(
 ): string | null {
   if (decision.decision !== "waiting") return null;
   const condition = decision.condition;
+  if (condition?.type === "aks.repo-ref.observed") {
+    return [
+      "scenario normalization cannot wait for an arbitrary repository advance",
+      "a repo-ref change does not by itself repair or verify this task-owned source",
+      "continue the same-spec repair, name the exact external producer that can change the row, or request a genuine ownership-boundary decision",
+    ].join("; ");
+  }
   if (condition?.type !== "pipeline.spec.observed") return null;
   if (
     !condition.expected ||
@@ -340,6 +510,19 @@ function safePart(value: string): string {
     .slice(0, 80);
   const digest = createHash("sha256").update(value).digest("hex").slice(0, 10);
   return `${normalized || "task"}-${digest}`;
+}
+
+export function taskContextDir(
+  repoDir: string,
+  taskId: string,
+  generation: number,
+): string {
+  return join(
+    repoDir,
+    "workspace",
+    "tasks",
+    safePart(`${taskId}@${generation}`),
+  );
 }
 
 function command(
@@ -634,6 +817,21 @@ export function pipelineWaitCondition(runId: string): ProjectAppConditionSpec {
   };
 }
 
+export function taskScopedAgentCondition(
+  taskId: string,
+  generation: number,
+  condition: ProjectAppConditionSpec,
+): ProjectAppConditionSpec {
+  const taskScope = createHash("sha256")
+    .update(`${taskId}@${generation}`)
+    .digest("hex")
+    .slice(0, 12);
+  return {
+    ...condition,
+    id: `${condition.id}:task-${taskScope}`,
+  };
+}
+
 export function pullRequestWaitCondition(
   pullRequestId: string,
 ): ProjectAppConditionSpec {
@@ -826,7 +1024,7 @@ function createPullRequest(
     `Live-tested source commit: ${input.sourceCommit}`,
     `Azure DevOps run: ${input.runId}`,
     `Target: ${input.targetBranch}`,
-    `Merge convention: use a merge commit (no-fast-forward) so the exact live-tested source commit remains in ${input.targetBranch} ancestry.`,
+    `Integration proof: Azure must report this exact live-tested source commit as the completed PR head and its resulting target commit in ${input.targetBranch} ancestry. Squash, rebase, and merge-commit completion are supported.`,
   ].join("\n\n");
   const value = azJson(repoDir, [
     "repos",
@@ -885,6 +1083,36 @@ function readProof(contextDir: string): ReviewedRunProof | null {
   }
 }
 
+export function priorIntegratedProof(input: {
+  repoDir: string;
+  taskId: string;
+  generation: number;
+  specId: string;
+  target: string;
+  standaloneBuildId: string;
+}): { proof: ReviewedRunProof; path: string } | null {
+  for (
+    let generation = input.generation - 1;
+    generation >= 1;
+    generation -= 1
+  ) {
+    const path = taskContextDir(input.repoDir, input.taskId, generation);
+    const proof = readProof(path);
+    if (
+      proof?.taskId === input.taskId &&
+      proof.specId === input.specId &&
+      proof.target === input.target &&
+      (proof.standaloneBuildId || "") === input.standaloneBuildId &&
+      proof.pullRequestId &&
+      proof.mergedCommit &&
+      proof.targetRef
+    ) {
+      return { proof, path: proofPath(path) };
+    }
+  }
+  return null;
+}
+
 function saveProof(contextDir: string, proof: ReviewedRunProof): void {
   mkdirSync(contextDir, { recursive: true });
   writeFileSync(proofPath(contextDir), `${JSON.stringify(proof, null, 2)}\n`);
@@ -930,8 +1158,9 @@ export async function askAgent(
     validateDecision?: (decision: AgentDecision) => string | null;
     scenarioNormalization?: boolean;
     continueDomainWorkOnValidation?: boolean;
+    retryDelayMs?: number;
   } = {},
-): Promise<AgentDecision | null> {
+): Promise<AgentDecision> {
   let nextPrompt = `${prompt}\n\n${conditionInstruction}`;
   let lastProblem = "";
   for (let attempt = 1; attempt <= 2; attempt += 1) {
@@ -942,6 +1171,8 @@ export async function askAgent(
     if (result.status === "error" || result.status === "interrupted") {
       lastProblem = `agent invocation ${result.status} before structured judgment`;
       if (attempt < 2) {
+        const retryDelayMs = options.retryDelayMs ?? 5_000;
+        if (retryDelayMs > 0) await Bun.sleep(retryDelayMs);
         nextPrompt = [
           prompt,
           "The immediately preceding agent invocation ended before producing a structured judgment.",
@@ -950,7 +1181,9 @@ export async function askAgent(
         ].join("\n\n");
         continue;
       }
-      return null;
+      throw new Error(
+        `Agent invocation failed before structured judgment after two attempts: ${lastProblem}`,
+      );
     }
     const decision = result.structuredResult as AgentDecision;
     const problem =
@@ -969,15 +1202,9 @@ export async function askAgent(
       continueDomainWork: Boolean(options.continueDomainWorkOnValidation),
     });
   }
-  return {
-    decision: "needs-owner",
-    summary:
-      "The agent exhausted structured-result correction after a hard validation failure.",
-    evidence: [
-      "decision-validation:failed-after-two-agent-judgments",
-      ...(lastProblem ? [`validation-problem:${lastProblem}`] : []),
-    ],
-  };
+  throw new Error(
+    `Agent exhausted structured-result correction after a hard validation failure${lastProblem ? `: ${lastProblem}` : ""}`,
+  );
 }
 
 function waitingResult(
@@ -1053,12 +1280,7 @@ export async function reconcileSpecLive(
     );
   }
 
-  const contextDir = join(
-    repoDir,
-    "workspace",
-    "tasks",
-    safePart(`${taskId}@${generation}`),
-  );
+  const contextDir = taskContextDir(repoDir, taskId, generation);
   mkdirSync(contextDir, { recursive: true });
 
   try {
@@ -1138,12 +1360,6 @@ export async function reconcileSpecLive(
         ].join("\n\n"),
         { scenarioNormalization: Boolean(normalizationInput) },
       );
-      if (!recovery) {
-        return ownerResult(ctx, "Task worktree recovery session failed.", [
-          `workspace:${workspaceDir}`,
-          `source-branch:${sourceBranch}`,
-        ]);
-      }
       if (recovery.decision === "needs-owner") {
         return ownerResult(ctx, recovery.summary, recovery.evidence);
       }
@@ -1176,6 +1392,46 @@ export async function reconcileSpecLive(
 
     let sourceCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
     const baseCommit = git(repoDir, ["rev-parse", targetRef]).stdout;
+    const priorProof = options.reusePriorIntegratedProof
+      ? priorIntegratedProof({
+          repoDir,
+          taskId,
+          generation,
+          specId,
+          target: liveTarget,
+          standaloneBuildId,
+        })
+      : null;
+    if (
+      priorProof &&
+      priorProof.proof.targetRef === targetRef &&
+      git(
+        repoDir,
+        [
+          "merge-base",
+          "--is-ancestor",
+          priorProof.proof.mergedCommit!,
+          targetRef,
+        ],
+        true,
+      ).status === 0
+    ) {
+      const proof = priorProof.proof;
+      const summary = `${specId} retains exact live proof from run ${proof.runId}; PR ${proof.pullRequestId} integrated it as ${proof.mergedCommit} in ${targetBranch}.`;
+      return ctx.done(summary, {
+        state: "converged",
+        summary,
+        evidence: [
+          `pipeline-run:${proof.runId}`,
+          `pull-request:${proof.pullRequestId}`,
+          `source-commit:${proof.sourceCommit}`,
+          `merged-commit:${proof.mergedCommit}`,
+          `target-ref:${targetRef}`,
+          `proof:${priorProof.path}`,
+        ],
+        actions: [],
+      });
+    }
 
     const prepareLiveDispatch = async (
       candidateCommit: string,
@@ -1218,16 +1474,6 @@ export async function reconcileSpecLive(
             continueDomainWorkOnValidation: true,
           },
         );
-        if (!decision) {
-          return {
-            state: "result",
-            result: ownerResult(
-              ctx,
-              "Live-dispatch admission repair session failed.",
-              accumulatedEvidence,
-            ),
-          };
-        }
         if (decision.decision === "waiting" && decision.condition) {
           return {
             state: "result",
@@ -1235,7 +1481,7 @@ export async function reconcileSpecLive(
               ctx,
               decision.summary,
               [...accumulatedEvidence, ...decision.evidence],
-              decision.condition,
+              taskScopedAgentCondition(taskId, generation, decision.condition),
             ),
           };
         }
@@ -1283,6 +1529,154 @@ export async function reconcileSpecLive(
       };
     };
 
+    if (
+      integrationMode(targetBranch) === "direct" &&
+      normalizationInput?.loopId === "scenario-normalization"
+    ) {
+      const taskBase = nonEmptyString(normalizationInput.originDevCommit);
+      const sourceIsInTarget =
+        git(
+          repoDir,
+          ["merge-base", "--is-ancestor", sourceCommit, targetRef],
+          true,
+        ).status === 0;
+      if (!/^[0-9a-f]{40}$/i.test(taskBase)) {
+        return ownerResult(
+          ctx,
+          "Scenario normalization cannot replay a stale task branch without its exact recorded origin/dev base.",
+          [
+            `task:${taskId}`,
+            `source-commit:${sourceCommit}`,
+            `origin-dev-commit:${taskBase || "missing"}`,
+          ],
+        );
+      }
+      if (
+        git(workspaceDir, ["cat-file", "-e", `${taskBase}^{commit}`], true)
+          .status !== 0 ||
+        git(
+          workspaceDir,
+          ["merge-base", "--is-ancestor", taskBase, "HEAD"],
+          true,
+        ).status !== 0
+      ) {
+        return ownerResult(
+          ctx,
+          "The recorded scenario-normalization base is not an ancestor of the task branch, so task-owned commits cannot be isolated safely.",
+          [
+            `task:${taskId}`,
+            `source-commit:${sourceCommit}`,
+            `origin-dev-commit:${taskBase}`,
+          ],
+        );
+      }
+
+      const targetIsInSource =
+        git(
+          workspaceDir,
+          ["merge-base", "--is-ancestor", targetRef, "HEAD"],
+          true,
+        ).status === 0;
+      const firstParentMerges = git(workspaceDir, [
+        "rev-list",
+        "--first-parent",
+        "--merges",
+        `${taskBase}..HEAD`,
+      ])
+        .stdout.split(/\r?\n/)
+        .filter(Boolean);
+
+      if (
+        scenarioNormalizationReplayRequired({
+          sourceIsInTarget,
+          targetIsInSource,
+          firstParentMergeCount: firstParentMerges.length,
+        })
+      ) {
+        if (!sourceBranch.startsWith("task/")) {
+          return ownerResult(
+            ctx,
+            "Scenario normalization replay may update only its dedicated task branch.",
+            [`source-branch:${sourceBranch}`, `task:${taskId}`],
+          );
+        }
+        const taskCommits = git(workspaceDir, [
+          "rev-list",
+          "--first-parent",
+          "--reverse",
+          "--no-merges",
+          `${taskBase}..HEAD`,
+        ])
+          .stdout.split(/\r?\n/)
+          .filter(Boolean);
+        const expectedRemoteCommit = git(
+          workspaceDir,
+          ["rev-parse", `refs/remotes/origin/${sourceBranch}`],
+          true,
+        ).stdout;
+        if (!expectedRemoteCommit) {
+          return ownerResult(
+            ctx,
+            "Scenario normalization replay could not identify the current remote task-branch revision for lease protection.",
+            [`source-branch:${sourceBranch}`, `source-commit:${sourceCommit}`],
+          );
+        }
+
+        git(workspaceDir, ["reset", "--hard", targetRef]);
+        const replay = taskCommits.length
+          ? git(workspaceDir, ["cherry-pick", ...taskCommits], true)
+          : { status: 0, stdout: "", stderr: "" };
+        let replayEvidence = [
+          `origin-dev-commit:${taskBase}`,
+          `replay-target:${targetRef}@${baseCommit}`,
+          `task-owned-commits:${taskCommits.join(",") || "none"}`,
+          `discarded-first-parent-merges:${firstParentMerges.join(",") || "none"}`,
+        ];
+        if (replay.status !== 0) {
+          const decision = await askAgent(
+            ctx,
+            [
+              `Replay only the task-owned commits for ${specId} onto current ${targetRef} in ${workspaceDir}.`,
+              `The workflow reset the dedicated task branch to ${baseCommit} and started one cherry-pick sequence containing: ${taskCommits.join(", ") || "none"}.`,
+              `The sequence stopped with: ${replay.stderr || replay.stdout}.`,
+              "Resolve only conflicts caused by these task-owned commits, finish or abort the complete cherry-pick sequence, run scoped checks, leave one clean task branch, and return decision=committed.",
+              "Do not merge either repository history wholesale, push, queue ADO, create another branch/task, or edit app state. The workflow will lease-update the task branch and require a fresh exact live run.",
+              "Task:",
+              ctx.task,
+            ].join("\n\n"),
+            { scenarioNormalization: true },
+          );
+          if (decision.decision !== "committed") {
+            return ownerResult(ctx, decision.summary, [
+              ...replayEvidence,
+              ...decision.evidence,
+            ]);
+          }
+          replayEvidence = [...replayEvidence, ...decision.evidence];
+        }
+
+        const replayedCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+        if (
+          cleanWorkspace(workspaceDir) ||
+          git(workspaceDir, ["rev-parse", "--verify", "CHERRY_PICK_HEAD"], true)
+            .status === 0
+        ) {
+          return ownerResult(
+            ctx,
+            "Scenario normalization replay did not leave one clean completed task lineage.",
+            [...replayEvidence, `workspace:${workspaceDir}`],
+          );
+        }
+        git(workspaceDir, [
+          "push",
+          `--force-with-lease=refs/heads/${sourceBranch}:${expectedRemoteCommit}`,
+          "origin",
+          `HEAD:refs/heads/${sourceBranch}`,
+        ]);
+        sourceCommit = replayedCommit;
+      }
+    }
+
     const normalizationInvariant = scenarioNormalizationInvariant(
       workspaceDir,
       normalizationInput,
@@ -1301,22 +1695,12 @@ export async function reconcileSpecLive(
         ].join("\n\n"),
         { scenarioNormalization: true },
       );
-      if (!decision) {
-        return ownerResult(
-          ctx,
-          "Scenario normalization agent session failed.",
-          [
-            `task:${taskId}`,
-            `normalization-path:${normalizationInvariant.path}`,
-          ],
-        );
-      }
       if (decision.decision === "waiting" && decision.condition) {
         return waitingResult(
           ctx,
           decision.summary,
           decision.evidence,
-          decision.condition,
+          taskScopedAgentCondition(taskId, generation, decision.condition),
         );
       }
       if (decision.decision === "needs-owner") {
@@ -1418,69 +1802,154 @@ export async function reconcileSpecLive(
     });
     let latestRun = runs[0];
 
-    if (!latestRun) {
-      const branchHasChange = sourceCommit !== baseCommit;
-      if (!branchHasChange) {
-        const decision = await askAgent(
+    const sourceDiffersFromBase = sourceCommit !== baseCommit;
+    if (
+      shouldReviewBeforeInitialLiveDispatch({
+        hasExactRun: Boolean(latestRun),
+        branchHasChange: sourceDiffersFromBase,
+      })
+    ) {
+      const decision = await askAgent(
+        ctx,
+        [
+          `Reconcile ${specId} for one exact live verification/change lifecycle.`,
+          `The required live target is ${liveTarget}${standaloneBuildId ? ` with standalone_build_id=${standaloneBuildId}` : ""}.`,
+          ...(priorVerificationSummary ? [priorVerificationSummary] : []),
+          `Work only in ${workspaceDir}; durable non-source artifacts belong in ${contextDir}.`,
+          `Current integration authority is ${targetRef}@${baseCommit}.`,
+          sourceDiffersFromBase
+            ? `Current task source ${sourceCommit} already differs from integration authority after an earlier repair. Treat that commit as evidence to review, not automatic permission to dispatch.`
+            : `Current task source ${sourceCommit} still matches integration authority.`,
+          "Inspect the original task, current spec status, model, direct carrier, nearby good/bad examples, and prior evidence. Decide whether this exact source is genuinely ready for live execution.",
+          "If a bounded repo change is needed, make it, run scoped local checks, commit it, leave the worktree clean, and return decision=committed.",
+          "If current source is already the exact content that should be live-tested, leave it unchanged and return decision=test-current.",
+          ...(options.existingRecoveryAfterRunId
+            ? [
+                `This is recovery work for blocking run ${options.existingRecoveryAfterRunId}. If a later current-main run already passed this exact spec and still applies to current main, leave source unchanged and return decision=accepted-pass. Populate recovery={pipelineRunId,sourceBranch,sourceCommit,artifactPath} with the aggregate result artifact that contains this spec verdict, and cite ancestry/relevant-change evidence. Do not dispatch redundant proof.`,
+              ]
+            : []),
+          "A blocked spec, reviewed exception, or intentionally paused execution path is not live-ready merely because its file layout is normalized. Implement a truthful observable contract, return an exact wait, or identify the genuine ownership boundary.",
+          "Do not queue ADO, create a PR, create another branch/worktree, or edit app task state; this workflow owns those steps.",
+          "Use waiting only with one exact machine-observable Condition. Use needs-owner only for a concrete decision that source facts cannot resolve.",
+          "Task:",
+          ctx.task,
+        ].join("\n\n"),
+        { scenarioNormalization: Boolean(normalizationInput) },
+      );
+      if (decision.decision === "waiting" && decision.condition) {
+        return waitingResult(
           ctx,
-          [
-            `Reconcile ${specId} for one exact live verification/change lifecycle.`,
-            `The required live target is ${liveTarget}${standaloneBuildId ? ` with standalone_build_id=${standaloneBuildId}` : ""}.`,
-            ...(priorVerificationSummary ? [priorVerificationSummary] : []),
-            `Work only in ${workspaceDir}; durable non-source artifacts belong in ${contextDir}.`,
-            `Current integration authority is ${targetRef}@${baseCommit}.`,
-            "Inspect the current spec, model, direct carrier, nearby good/bad examples, and prior evidence.",
-            "If a bounded repo change is needed, make it, run scoped local checks, commit it, leave the worktree clean, and return decision=committed.",
-            "If current source is already the exact content that should be live-tested, leave it unchanged and return decision=test-current.",
-            "Do not queue ADO, create a PR, create another branch/worktree, or edit app task state; this workflow owns those steps.",
-            "Use waiting only with one exact machine-observable Condition. Use needs-owner only for a concrete decision that source facts cannot resolve.",
-            "Task:",
-            ctx.task,
-          ].join("\n\n"),
-          { scenarioNormalization: Boolean(normalizationInput) },
+          decision.summary,
+          decision.evidence,
+          taskScopedAgentCondition(taskId, generation, decision.condition),
         );
-        if (!decision) {
-          return ownerResult(ctx, "Spec preparation agent session failed.", [
-            `task:${taskId}`,
-            `spec:${specId}`,
-          ]);
-        }
-        if (decision.decision === "waiting" && decision.condition) {
-          return waitingResult(
-            ctx,
-            decision.summary,
-            decision.evidence,
-            decision.condition,
-          );
-        }
-        if (decision.decision === "needs-owner") {
-          return ownerResult(ctx, decision.summary, decision.evidence);
-        }
-        const after = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
-        if (cleanWorkspace(workspaceDir)) {
-          return ownerResult(
-            ctx,
-            "Agent preparation left the task worktree dirty; deterministic dispatch was refused.",
-            [...decision.evidence, `workspace:${workspaceDir}`],
-          );
-        }
-        if (decision.decision === "committed" && after === sourceCommit) {
-          return ownerResult(
-            ctx,
-            "Agent reported a committed change but task HEAD did not move.",
-            decision.evidence,
-          );
-        }
-        if (!["committed", "test-current"].includes(decision.decision)) {
-          return ownerResult(
-            ctx,
-            `Unsupported preparation decision ${decision.decision}.`,
-            decision.evidence,
-          );
-        }
-        sourceCommit = after;
       }
+      if (decision.decision === "needs-owner") {
+        return ownerResult(ctx, decision.summary, decision.evidence);
+      }
+      const after = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+      if (cleanWorkspace(workspaceDir)) {
+        return ownerResult(
+          ctx,
+          "Agent preparation left the task worktree dirty; deterministic dispatch was refused.",
+          [...decision.evidence, `workspace:${workspaceDir}`],
+        );
+      }
+      if (decision.decision === "committed" && after === sourceCommit) {
+        return ownerResult(
+          ctx,
+          "Agent reported a committed change but task HEAD did not move.",
+          decision.evidence,
+        );
+      }
+      if (
+        decision.decision === "accepted-pass" &&
+        options.existingRecoveryAfterRunId
+      ) {
+        const recovery = decision.recovery;
+        const providerRun = recovery
+          ? getPipelineRun(repoDir, recovery.pipelineRunId)
+          : null;
+        const artifactPath = recovery ? resolve(recovery.artifactPath) : "";
+        const watcherRoot = recovery
+          ? resolve(
+              ctx.appDir ?? "/app/projects/aks-rp-e2e.app",
+              ".state",
+              "watchers",
+              "aks-pipeline-artifacts",
+              recovery.pipelineRunId,
+            )
+          : "";
+        const diff = recovery
+          ? git(
+              repoDir,
+              [
+                "diff",
+                "--name-only",
+                `${recovery.sourceCommit}..${baseCommit}`,
+                "--",
+              ],
+              true,
+            )
+          : null;
+        const changedFiles =
+          diff && diff.status === 0
+            ? diff.stdout
+                .split(/\r?\n/)
+                .map((value) => value.trim())
+                .filter(Boolean)
+            : null;
+        const problem = existingRecoveryProblem({
+          baselineRunId: options.existingRecoveryAfterRunId,
+          specId,
+          currentMainCommit: baseCommit,
+          recovery,
+          providerRun,
+          sourceIsAncestor: Boolean(
+            recovery &&
+            git(
+              repoDir,
+              ["merge-base", "--is-ancestor", recovery.sourceCommit, targetRef],
+              true,
+            ).status === 0,
+          ),
+          changedFiles,
+          artifactInWatcherRoot: Boolean(
+            artifactPath &&
+            watcherRoot &&
+            (artifactPath === watcherRoot ||
+              artifactPath.startsWith(`${watcherRoot}${sep}`)),
+          ),
+          artifactProvesPass: Boolean(
+            artifactPath && artifactProvesSpecPass(artifactPath, specId),
+          ),
+        });
+        if (problem) {
+          return ownerResult(
+            ctx,
+            `Existing recovery proof was rejected: ${problem}.`,
+            decision.evidence,
+          );
+        }
+        return ctx.done(decision.summary, {
+          state: "existing-recovery",
+          summary: decision.summary,
+          evidence: decision.evidence,
+          recovery,
+          actions: [],
+        });
+      }
+      if (!["committed", "test-current"].includes(decision.decision)) {
+        return ownerResult(
+          ctx,
+          `Unsupported preparation decision ${decision.decision}.`,
+          decision.evidence,
+        );
+      }
+      sourceCommit = after;
+    }
 
+    if (!latestRun) {
       const dispatch = await prepareLiveDispatch(
         sourceCommit,
         "initial exact live verification",
@@ -1588,19 +2057,12 @@ export async function reconcileSpecLive(
           validateDecision: terminalRunDecisionProblem,
         },
       );
-      if (!decision) {
-        return ownerResult(
-          ctx,
-          `Terminal run ${runId} review session failed.`,
-          [`pipeline-run:${runId}`, `source-commit:${sourceCommit}`],
-        );
-      }
       if (decision.decision === "waiting" && decision.condition) {
         return waitingResult(
           ctx,
           decision.summary,
           decision.evidence,
-          decision.condition,
+          taskScopedAgentCondition(taskId, generation, decision.condition),
         );
       }
       if (decision.decision === "needs-owner") {
@@ -1742,83 +2204,15 @@ export async function reconcileSpecLive(
             true,
           ).status !== 0
         ) {
-          const beforeMerge = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
-          const merge = git(
-            workspaceDir,
-            ["merge", "--no-ff", "--no-edit", targetRef],
-            true,
+          return ownerResult(
+            ctx,
+            `Direct ${targetBranch} integration requires the task source to be replayed onto current ${targetRef} before publication.`,
+            [
+              `source-commit:${sourceCommit}`,
+              `target-ref:${targetRef}`,
+              "reconcile-again:task-owned-replay",
+            ],
           );
-          if (merge.status !== 0) {
-            const decision = await askAgent(
-              ctx,
-              [
-                `${specId} passed exact live run ${runId} at ${sourceCommit}, but direct integration now conflicts with current ${targetRef}.`,
-                `Resolve only the current merge in ${workspaceDir}, preserve the accepted task intent, run scoped checks, commit the resolved source, leave the worktree clean, and return decision=committed.`,
-                "Do not push, queue ADO, create a PR, create another task, or edit app state. The workflow will push the resolved branch and require a fresh exact live run before integration.",
-                "Task:",
-                ctx.task,
-              ].join("\n\n"),
-              { scenarioNormalization: Boolean(normalizationInput) },
-            );
-            if (!decision || decision.decision !== "committed") {
-              return ownerResult(
-                ctx,
-                decision?.summary ||
-                  `Direct ${targetBranch} integration conflict repair failed for ${specId}.`,
-                decision?.evidence || [
-                  `source-commit:${sourceCommit}`,
-                  `target-ref:${targetRef}`,
-                  `merge-error:${merge.stderr || merge.stdout}`,
-                ],
-              );
-            }
-            let resolvedCommit = git(workspaceDir, [
-              "rev-parse",
-              "HEAD",
-            ]).stdout;
-            if (
-              resolvedCommit === beforeMerge ||
-              cleanWorkspace(workspaceDir)
-            ) {
-              return ownerResult(
-                ctx,
-                `Direct ${targetBranch} conflict repair did not leave one new clean commit.`,
-                decision.evidence,
-              );
-            }
-            const dispatch = await prepareLiveDispatch(
-              resolvedCommit,
-              `replacement after direct ${targetBranch} integration conflict for run ${runId}`,
-            );
-            if (dispatch.state === "result") return dispatch.result;
-            resolvedCommit = dispatch.sourceCommit;
-            git(workspaceDir, ["push", "origin", sourceBranch]);
-            const replacement = queueRun(repoDir, {
-              taskId,
-              generation,
-              specId,
-              sourceBranch,
-              sourceCommit: resolvedCommit,
-              target: liveTarget,
-              standaloneBuildId,
-            });
-            saveRunReceipt(contextDir, replacement, resolvedCommit);
-            const replacementId = nonEmptyString(replacement.id);
-            return waitingResult(
-              ctx,
-              `Resolved direct ${targetBranch} integration conflict and queued replacement live run ${replacementId} at ${resolvedCommit}.`,
-              [
-                ...decision.evidence,
-                ...dispatch.evidence,
-                `replaces-run:${runId}`,
-                `source-commit:${resolvedCommit}`,
-                `pipeline-run:${replacementId}`,
-                `target-ref:${targetRef}`,
-              ],
-              pipelineWaitCondition(replacementId),
-            );
-          }
-          git(workspaceDir, ["push", "origin", sourceBranch]);
         }
 
         const push = git(
@@ -1926,6 +2320,7 @@ export async function reconcileSpecLive(
     const prStatus = nonEmptyString(pr.status) || "unknown";
     const mergeStatus = nonEmptyString(pr.mergeStatus) || "unknown";
     const prSourceCommit = nonEmptyString(pr.lastMergeSourceCommit?.commitId);
+    const mergedCommit = nonEmptyString(pr.lastMergeCommit?.commitId);
 
     if (prStatus === "abandoned") {
       return ownerResult(
@@ -1940,14 +2335,26 @@ export async function reconcileSpecLive(
       );
     }
     if (prStatus === "completed") {
-      if (mergeStatus !== "succeeded") {
+      const integration = completedPullRequestIntegration({
+        mergeStatus,
+        testedSourceCommit: sourceCommit,
+        mergedSourceCommit: prSourceCommit,
+        mergeCommit: mergedCommit,
+      });
+      if (
+        integration.status === "unproven" &&
+        integration.reason === "merge-not-succeeded"
+      ) {
         return ownerResult(
           ctx,
           `PR ${prId} is completed but mergeStatus=${mergeStatus}; integration cannot be proven.`,
           [`pull-request:${prId}`, `merge-status:${mergeStatus}`],
         );
       }
-      if (prSourceCommit && prSourceCommit !== sourceCommit) {
+      if (
+        integration.status === "unproven" &&
+        integration.reason === "source-mismatch"
+      ) {
         return ownerResult(
           ctx,
           `PR ${prId} merged source ${prSourceCommit}, but the accepted live proof is for ${sourceCommit}.`,
@@ -1958,34 +2365,44 @@ export async function reconcileSpecLive(
           ],
         );
       }
+      if (integration.status === "unproven") {
+        return ownerResult(
+          ctx,
+          `PR ${prId} completed without an identifiable merged revision; integration cannot be proven.`,
+          [
+            `pull-request:${prId}`,
+            `tested-source-commit:${sourceCommit}`,
+            "merged-commit:missing",
+          ],
+        );
+      }
       git(repoDir, ["fetch", "origin", targetBranch]);
       if (
         git(
           repoDir,
-          ["merge-base", "--is-ancestor", sourceCommit, targetRef],
+          ["merge-base", "--is-ancestor", integration.targetCommit, targetRef],
           true,
         ).status !== 0
       ) {
         return ownerResult(
           ctx,
-          `PR ${prId} merged without preserving tested commit ${sourceCommit} in ${targetRef} ancestry. Queue a replacement exact-merged-revision live proof before closeout.`,
+          `PR ${prId} reports merged revision ${integration.targetCommit}, but that revision is not present in ${targetRef}.`,
           [
             `pull-request:${prId}`,
-            `source-commit:${sourceCommit}`,
+            `tested-source-commit:${sourceCommit}`,
+            `merged-commit:${integration.targetCommit}`,
             `target-ref:${targetRef}`,
-            "merge-convention:no-fast-forward-required",
           ],
         );
       }
-      const mergedCommit = nonEmptyString(pr.lastMergeCommit?.commitId);
       proof = {
         ...proof,
         pullRequestId: prId,
         targetRef,
-        ...(mergedCommit ? { mergedCommit } : {}),
+        mergedCommit: integration.targetCommit,
       };
       saveProof(contextDir, proof);
-      const summary = `${specId} passed run ${runId} at ${sourceCommit} and PR ${prId} merged that exact tested commit into ${targetBranch}.`;
+      const summary = `${specId} passed run ${runId} at ${sourceCommit} and PR ${prId} integrated that tested source as ${integration.targetCommit} into ${targetBranch}.`;
       return ctx.done(summary, {
         state: "converged",
         summary,
@@ -1995,7 +2412,7 @@ export async function reconcileSpecLive(
           `pipeline-run:${runId}`,
           `pull-request:${prId}`,
           `source-commit:${sourceCommit}`,
-          ...(mergedCommit ? [`merged-commit:${mergedCommit}`] : []),
+          `merged-commit:${integration.targetCommit}`,
           `target-ref:${targetRef}`,
         ],
         actions: [],
@@ -2013,12 +2430,8 @@ export async function reconcileSpecLive(
         ].join("\n\n"),
         { scenarioNormalization: Boolean(normalizationInput) },
       );
-      if (!decision || decision.decision !== "committed") {
-        return ownerResult(
-          ctx,
-          decision?.summary || `PR ${prId} conflict repair session failed.`,
-          decision?.evidence || [`pull-request:${prId}`],
-        );
+      if (decision.decision !== "committed") {
+        return ownerResult(ctx, decision.summary, decision.evidence);
       }
       let resolvedCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
       if (resolvedCommit === sourceCommit || cleanWorkspace(workspaceDir)) {

@@ -12,6 +12,7 @@ import type { ProjectAppContext } from "@may-agent/sdk";
 import {
   observeAksPipelines,
   artifactDirectoryReady,
+  masterValidationNoVerdictFailure,
   pipelineLevelEvent,
   pipelineObservationEvents,
   pipelineQueueOverdueEvent,
@@ -92,6 +93,57 @@ describe("progressive artifact scan selection", () => {
         priorFingerprint: completed.fingerprint,
       }),
     ).toBe(false);
+  });
+});
+
+describe("master-validation pipeline failures", () => {
+  test("turns a failed aggregate with no spec verdict into a repair issue", () => {
+    expect(
+      masterValidationNoVerdictFailure({
+        pipelineRunId: "173655312",
+        sourceBranch: "refs/heads/validation/master-validation-173646937",
+        sourceCommit: "candidate123",
+        status: "completed",
+        result: "failed",
+        progressive: true,
+        artifactsReady: true,
+        observedVerdictCount: 0,
+        observedFailureCount: 0,
+      }),
+    ).toMatchObject({
+      specId: "pipeline.master-validation.bootstrap",
+      category: "pipeline_failure",
+      artifactPath: "ado://build/173655312",
+    });
+  });
+
+  test("does not duplicate a real spec or admission failure", () => {
+    expect(
+      masterValidationNoVerdictFailure({
+        pipelineRunId: "123",
+        sourceBranch: "refs/heads/main",
+        sourceCommit: "main123",
+        status: "completed",
+        result: "failed",
+        progressive: true,
+        artifactsReady: true,
+        observedVerdictCount: 0,
+        observedFailureCount: 1,
+      }),
+    ).toBeNull();
+    expect(
+      masterValidationNoVerdictFailure({
+        pipelineRunId: "124",
+        sourceBranch: "refs/heads/main",
+        sourceCommit: "main123",
+        status: "completed",
+        result: "canceled",
+        progressive: true,
+        artifactsReady: true,
+        observedVerdictCount: 0,
+        observedFailureCount: 0,
+      }),
+    ).toBeNull();
   });
 });
 
@@ -256,6 +308,82 @@ describe("AKS pipeline watcher", () => {
       queueTime: "2026-07-23T01:00:00.000Z",
       queueAgeMs: 5_400_000,
     });
+  });
+
+  test("detects slice jobs still awaiting agents after planning completed", () => {
+    const observed = {
+      runId: "173695985",
+      fingerprint: "fp",
+      status: "inProgress",
+      result: "inProgress",
+      sourceBranch: "refs/heads/validation/master-validation-173646937",
+      sourceVersion: "f65a9354",
+      finishTime: null,
+      queueTime: "2026-07-24T20:00:34.000Z",
+      artifacts: [],
+      progressive: true,
+    };
+    const timeline = [
+      {
+        type: "Job",
+        name: "Plan AKS RP E2E specs",
+        state: "completed",
+        finishTime: "2026-07-24T20:07:33.000Z",
+      },
+      { type: "Job", name: "Execute slice slice_01", state: "pending" },
+      { type: "Job", name: "Execute slice slice_02", state: "pending" },
+    ];
+    expect(
+      pipelineQueueOverdueEvent(
+        observed,
+        Date.parse("2026-07-24T21:37:32.999Z"),
+        timeline,
+      ),
+    ).toBeNull();
+    expect(
+      pipelineQueueOverdueEvent(
+        observed,
+        Date.parse("2026-07-24T21:37:33.000Z"),
+        timeline,
+      ),
+    ).toMatchObject({
+      type: "pipeline.queue.overdue",
+      pipelineRunId: "173695985",
+      queueTime: "2026-07-24T20:07:33.000Z",
+      queueAgeMs: 5_400_000,
+      queueScope: "slice-jobs",
+    });
+    expect(
+      pipelineQueueOverdueEvent(
+        observed,
+        Date.parse("2026-07-24T22:30:00.000Z"),
+        [
+          timeline[0]!,
+          {
+            type: "Job",
+            name: "Execute slice slice_01",
+            state: "completed",
+            finishTime: "2026-07-24T21:00:00.000Z",
+          },
+          { type: "Job", name: "Execute slice slice_02", state: "pending" },
+        ],
+      ),
+    ).toMatchObject({
+      type: "pipeline.queue.overdue",
+      queueTime: "2026-07-24T21:00:00.000Z",
+      queueAgeMs: 5_400_000,
+      queueScope: "slice-jobs",
+    });
+    expect(
+      pipelineQueueOverdueEvent(observed, Date.now(), [
+        ...timeline.slice(0, 2),
+        {
+          type: "Job",
+          name: "Execute slice slice_02",
+          state: "inProgress",
+        },
+      ]),
+    ).toBeNull();
   });
 
   test("does not accept an empty or malformed artifact directory", () => {

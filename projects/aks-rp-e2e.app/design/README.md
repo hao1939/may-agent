@@ -112,10 +112,14 @@ leaves and use exact typed Conditions.
 
 A repo-ref wait is scoped to both the ref and the commit being waited past.
 Its Condition identity includes that baseline commit, and its expected fact is
-`observed commit != baseline commit`. An event that advanced the ref _to_ the
-baseline cannot satisfy a later wait for the next advance. Reusing a generic
-"origin/dev changed" Condition across baselines creates stale-true waits and
-must not be used.
+`observed commit != baseline commit`. When multiple unrelated holders can wait
+on the same repo ref from the same baseline, the Condition identity must also
+include holder scope (for example the waiting task id) so those waits can sleep
+independently without colliding on one shared condition row. An event that
+advanced the ref _to_ the baseline cannot satisfy a later wait for the next
+advance. Reusing a generic "origin/dev changed" Condition across baselines or
+across unrelated same-baseline holders creates stale-true waits or rejected
+rebinds and must not be used.
 
 For strict scenario-test inventory, the cleanliness standard is row coverage:
 zero missing adapters, or every current missing adapter represented by exact

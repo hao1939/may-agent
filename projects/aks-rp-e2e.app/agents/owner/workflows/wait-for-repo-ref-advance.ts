@@ -94,12 +94,34 @@ export function parseReconciliationTaskPayload(
   }
 }
 
+function parseTriggerEvent(raw: string): Record<string, unknown> | null {
+  for (const marker of ["## Trigger Observation", "## Trigger Event"]) {
+    const start = raw.indexOf(marker);
+    if (start < 0) continue;
+    const scoped = raw.slice(start);
+    const firstBrace = scoped.indexOf("{");
+    if (firstBrace < 0) continue;
+    const objectText = matchingJsonObject(scoped, firstBrace);
+    if (!objectText) continue;
+    try {
+      const parsed = JSON.parse(objectText);
+      if (parsed && typeof parsed === "object") {
+        return parsed as Record<string, unknown>;
+      }
+    } catch {
+      // Try the next supported marker.
+    }
+  }
+  return null;
+}
+
 function repoRefAdvanceCondition(
+  taskId: string,
   repoRef: string,
   baselineCommit: string,
 ): ProjectAppConditionSpec {
   const digest = createHash("sha256")
-    .update(`${repoRef}\n${baselineCommit}`)
+    .update(`${taskId}\n${repoRef}\n${baselineCommit}`)
     .digest("hex")
     .slice(0, 12);
   return {
@@ -131,6 +153,18 @@ function runGit(
   };
 }
 
+function fetchRepoRef(
+  projectDir: string,
+  repoRef: string,
+): { status: number | null; stdout: string; stderr: string } {
+  const [remote, ...branchParts] = repoRef.split("/");
+  const branch = branchParts.join("/").trim();
+  if (!remote?.trim() || !branch) {
+    return { status: 0, stdout: "", stderr: "" };
+  }
+  return runGit(projectDir, ["fetch", remote.trim(), branch]);
+}
+
 export function decideRepoRefAdvanceGate(input: RepoAdvanceGateInput): {
   state: "waiting" | "needs-owner";
   summary: string;
@@ -160,7 +194,11 @@ export function decideRepoRefAdvanceGate(input: RepoAdvanceGateInput): {
       summary: `Keep ${input.taskId} waiting on a supported repo-ref wake: ${input.repoRef} is still baseline ${input.baselineCommit}${scope}${publication}${sourceCommit}, so the exact same-spec recheck should sleep until the ref advances.`,
       evidence,
       conditions: [
-        repoRefAdvanceCondition(input.repoRef, input.baselineCommit),
+        repoRefAdvanceCondition(
+          input.taskId,
+          input.repoRef,
+          input.baselineCommit,
+        ),
       ],
     };
   }
@@ -174,13 +212,14 @@ export function decideRepoRefAdvanceGate(input: RepoAdvanceGateInput): {
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const payload = parseReconciliationTaskPayload(ctx.task);
+  const trigger = parseTriggerEvent(ctx.task);
   const taskId = nonEmptyString(payload?.taskId) || "unknown-task";
   const workflowInput = payload?.input ?? {};
   const repoRef = nonEmptyString(workflowInput.baseRef) || "origin/dev";
   const baselineCommit = nonEmptyString(workflowInput.resumeBaselineCommit);
   const projectDir =
-    ctx.projectDir ||
     nonEmptyString(payload?.paths?.projectDir) ||
+    ctx.projectDir ||
     "/app/projects/aks-rp-e2e";
 
   if (!baselineCommit) {
@@ -189,6 +228,21 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       state: "needs-owner",
       summary,
       evidence: [`workflow:${name}`, `task:${taskId}`],
+    });
+  }
+
+  const fetched = fetchRepoRef(projectDir, repoRef);
+  if (fetched.status !== 0) {
+    const summary = `${taskId} cannot refresh ${repoRef} for ${name}: ${fetched.stderr.trim() || `git fetch exited ${fetched.status}`}`;
+    return ctx.done(summary, {
+      state: "needs-owner",
+      summary,
+      evidence: [
+        `workflow:${name}`,
+        `repo-ref:${repoRef}`,
+        `resume-baseline:${baselineCommit}`,
+        `project-dir:${projectDir}`,
+      ],
     });
   }
 
@@ -202,6 +256,36 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         `workflow:${name}`,
         `repo-ref:${repoRef}`,
         `resume-baseline:${baselineCommit}`,
+        `project-dir:${projectDir}`,
+      ],
+    });
+  }
+
+  const currentCommit = current.stdout.trim();
+  const triggerType = nonEmptyString(trigger?.type);
+  const triggerData =
+    trigger?.data && typeof trigger.data === "object"
+      ? (trigger.data as Record<string, unknown>)
+      : {};
+  const triggerCommit =
+    nonEmptyString(trigger?.commit) || nonEmptyString(triggerData.commit);
+  if (
+    currentCommit === baselineCommit &&
+    triggerType === "aks.repo-ref.observed" &&
+    triggerCommit &&
+    triggerCommit !== baselineCommit
+  ) {
+    const summary = `${taskId} received a stale satisfied repo-ref wake for ${repoRef}: the trigger observed ${triggerCommit}, but current repo state in ${projectDir} is still baseline ${baselineCommit}. Hand the task back to the owner to rebind or retry from current repo truth instead of preserving a stale true wait.`;
+    return ctx.done(summary, {
+      state: "needs-owner",
+      summary,
+      evidence: [
+        `workflow:${name}`,
+        `repo-ref:${repoRef}`,
+        `resume-baseline:${baselineCommit}`,
+        `trigger-commit:${triggerCommit}`,
+        `current-commit:${currentCommit}`,
+        `project-dir:${projectDir}`,
       ],
     });
   }
@@ -210,7 +294,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     taskId,
     repoRef,
     baselineCommit,
-    currentCommit: current.stdout.trim(),
+    currentCommit,
     specId: nonEmptyString(workflowInput.specId),
     sourceCommit: nonEmptyString(workflowInput.sourceCommit),
     publicationBranch: nonEmptyString(workflowInput.publicationBranch),

@@ -128,8 +128,12 @@ input: {
 }
 ```
 
-`loopId + workKey` is the representation key. `workRevision` changes desired
-generation when source truth changes; it does not create a new identity.
+`loopId + workKey` is the representation key. While a leaf is live,
+`workRevision` changes desired generation rather than creating identity churn.
+After an achieve leaf becomes an immutable completion receipt, a still-red row
+is renewed with a revision-qualified resource ID. Controllers still match the
+renewed leaf by `loopId + workKey`; they never mutate or recreate the completed
+receipt.
 
 Controllers do not infer ownership from summaries, acceptance prose, feature
 prefixes, arbitrary conflict scopes, or branch names. Work from another loop
@@ -408,10 +412,11 @@ acceptance:
 Do not add another mutable loop ledger. The clean strict inventory is the
 source, and canonical task resources provide current representation.
 
-Use stable IDs derived only from `adapterPath` for missing adapters and from
-`scenarioTestPath` for plain carriers; put the observed `origin/dev` revision
-in `workRevision`. Do not create a new identity for every ref movement or
-represented-task set.
+Use IDs derived from `adapterPath` or `scenarioTestPath` plus the bounded
+`workRevision`. Live leaves retain their ID and update generation. A new
+revision-qualified ID is used only after the prior ID became an immutable
+completion receipt while the exact inventory row remains red. Do not create a
+new identity for every unrelated ref movement or represented-task set.
 
 Match only exact structured `adapterPath` or `scenarioTestPath` identity. Do not
 count a spec-loop or compact-loop leaf merely because its prose mentions the
@@ -499,7 +504,8 @@ The core liveness slice is implemented:
 2. New leaves carry `loopId`, `workKey`, and `workRevision`.
 3. The three controllers count only actionable representations against their
    frontier and no longer infer representation from prose or feature families.
-4. Scenario leaf IDs are stable across `origin/dev` revisions.
+4. Scenario leaf IDs stay stable while live; renewed work after an immutable
+   receipt uses the exact current `workRevision` suffix.
 5. Reconciled structured leaves fan back into their controller immediately;
    periodic pulses remain recovery.
 6. `tasks/seed.json` contains structure only.

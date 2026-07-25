@@ -421,12 +421,11 @@ Commands you may use:
 - cd ${input.appDir} && bun run task-tree summary
 - cd ${input.appDir} && bun run task-tree packet
 - cd ${input.appDir} && bun run task-tree frontier
-- cd ${input.appDir} && bun run metrics:sample aks-rp-e2e.task.completed-24h
-- cd ${input.appDir} && bun run metrics:sample aks-rp-e2e.run.live-started-24h
-- cd ${input.appDir} && bun run metrics:sample aks-rp-e2e.run.live-succeeded-24h
-- cd ${input.appDir} && bun run metrics:sample aks-rp-e2e.spec.unverified-count
-- cd ${input.appDir} && bun run metrics:sample aks-rp-e2e.spec.failed-count
-- cd ${input.appDir} && bun run metrics:sample aks-rp-e2e.model.unknown-path-count
+- cd ${input.appDir} && bun run focus:metric-sample aks-rp-e2e.run.live-started-24h --json
+- cd ${input.appDir} && bun run focus:metric-sample aks-rp-e2e.run.live-succeeded-24h --json
+- cd ${input.appDir} && bun run focus:metric-sample aks-rp-e2e.spec.unverified-count --json
+- cd ${input.appDir} && bun run focus:metric-sample aks-rp-e2e.spec.failed-count --json
+- cd ${input.appDir} && bun run focus:metric-sample aks-rp-e2e.model.unknown-path-count --json
 - cd ${input.projectDir} && bun run status -- --gaps
 - cd ${input.projectDir} && bun run status -- --json
 - cd ${input.projectDir} && git status --short

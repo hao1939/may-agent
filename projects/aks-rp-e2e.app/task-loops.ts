@@ -64,9 +64,13 @@ export const learnedCompactVerificationAcceptance = [
 
 export const learnedScenarioNormalizationAcceptance = [
   "Start from clean current origin/dev, not the dirty local repair branch.",
-  "Read the owning spec JSON and prove the exact probeRef/implementation path for each adapter row.",
+  "Read the owning spec JSON and prove the exact probeRef/implementation path for each adapter or plain-carrier row.",
   "Inspect same-spec branch, ADO run, artifact, and task evidence before deciding the next move.",
   "Choose exactly one next state: origin/dev absorbed/equivalent, publish/rebase/recheck, smallest same-spec repair, exact external wait with observer/resume condition, terminal disposition, or escalation.",
+  "After the required scoped and live proof passes, integrate the tested commit directly into dev and verify it is reachable from origin/dev; do not open or wait on a PR merely to reach dev.",
+  "A task branch, pushed commit, passing run, or active PR is progress evidence, not completion. The row is normalized only when current origin/dev contains the accepted carrier or an exact terminal disposition.",
+  "For a plain scenario carrier, completion requires current strict inventory to stop listing scenarioTestPath in both remainingSpecReferencedPlainScenarioUnits and remainingRepoPlainScenarioFiles; a sibling .test.ts wrapper that still imports the plain .ts carrier is progress, not completion.",
+  "Preserve active behavior while removing a plain carrier by moving reusable code into the direct .test.ts implementation or a shared library outside features/*/tests/*.ts.",
   "Do not close from filename similarity, stale task summaries, broad plain-TS counters, or review/attention residue alone.",
 ];
 
@@ -116,13 +120,14 @@ export const standingLoopDefinitions: Record<
     workflow: "normalize-scenario-frontier",
     frontierLimit: 5,
     outcome:
-      "Keep clean current origin/dev free of missing direct scenario-test adapters; represent every missing adapter by one actionable normalization/publication leaf, exact publication wait, or reviewed terminal exception.",
+      "Drive clean current origin/dev to a passing strict scenario inventory; represent every missing adapter, spec-referenced plain scenario carrier, and repository-only plain scenario carrier by one actionable normalization leaf, exact external wait, or reviewed terminal disposition until none remain.",
     acceptance: [
       "Inventory is generated from a clean identified origin/dev revision.",
       ...learnedScenarioNormalizationAcceptance,
-      "Every missing adapterPath has exactly one scenario-loop representation.",
+      "Every remaining missing adapter or plain-carrier strict-inventory row has exactly one scenario-loop representation.",
       "While eligible work exists, at most five actionable one-adapter leaves are represented; waits and attention do not consume that frontier.",
-      "Zero missing adapters means inventory completion, not a live product verdict.",
+      "Outstanding normalization live-execution slots are separately capped at five total actionable or exact pipeline-backed wait holders so queued/notStarted and inProgress ADO runs cannot grow beyond the intended frontier while earlier runs drain.",
+      "Completion requires strict-passed true, zero spec-referenced plain scenario units, and zero repository plain scenario files on clean current origin/dev; this is source-inventory completion, not a live product verdict.",
     ],
     priority: "P0",
   },
@@ -255,11 +260,13 @@ export function loopRefillWakeForTaskEvent(
   const taskId = eventTaskId(event);
   if (!taskId || isStandingLoopId(taskId)) return null;
 
+  const data =
+    event.data && typeof event.data === "object" && !Array.isArray(event.data)
+      ? (event.data as Record<string, unknown>)
+      : {};
   const eventInput =
-    event.input &&
-    typeof event.input === "object" &&
-    !Array.isArray(event.input)
-      ? (event.input as Record<string, unknown>)
+    data.input && typeof data.input === "object" && !Array.isArray(data.input)
+      ? (data.input as Record<string, unknown>)
       : undefined;
   let input = eventInput;
   if (!input) {
@@ -276,7 +283,7 @@ export function loopRefillWakeForTaskEvent(
   if (!isStandingLoopId(loopId)) return null;
   const definition = standingLoopDefinitions[loopId];
   const disposition =
-    typeof event.disposition === "string" ? event.disposition : undefined;
+    typeof data.disposition === "string" ? data.disposition : undefined;
 
   return {
     type: "project.task.tick",

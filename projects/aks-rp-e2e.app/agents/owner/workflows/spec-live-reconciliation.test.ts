@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -13,19 +14,27 @@ import {
   agentConditionProblem,
   checkLiveDispatchAdmission,
   collectTerminalRunEvidence,
+  completedPullRequestIntegration,
   decisionCorrectionPrompt,
+  existingRecoveryProblem,
   integrationMode,
   matchingTaskRuns,
   parseTaskPayload,
   pipelineWaitCondition,
   pipelineRunState,
+  priorIntegratedProof,
   pullRequestSourceUpdateCondition,
   pullRequestWaitCondition,
   resolveIntegrationTarget,
   resolveLiveExecutionTarget,
   runMatchesPriorVerification,
+  scenarioNormalizationReplayRequired,
   shouldFastForwardIntegratedSource,
+  shouldReviewBeforeInitialLiveDispatch,
   scenarioNormalizationWaitProblem,
+  sourceChangeMayAffectSpec,
+  taskContextDir,
+  taskScopedAgentCondition,
   terminalRunDecisionProblem,
   terminalRunContextDir,
 } from "./spec-live-reconciliation.js";
@@ -35,6 +44,142 @@ import {
 } from "./lib/scenario-normalization-invariant.js";
 
 describe("spec-live-reconciliation workflow", () => {
+  test("accepts a squash merge by tracking the merged target revision", () => {
+    expect(
+      completedPullRequestIntegration({
+        mergeStatus: "succeeded",
+        testedSourceCommit: "tested-pr-head",
+        mergedSourceCommit: "tested-pr-head",
+        mergeCommit: "squash-merge-commit",
+      }),
+    ).toEqual({
+      status: "integrated",
+      targetCommit: "squash-merge-commit",
+    });
+  });
+
+  test("requires the provider to identify the exact tested PR head", () => {
+    expect(
+      completedPullRequestIntegration({
+        mergeStatus: "succeeded",
+        testedSourceCommit: "tested-pr-head",
+        mergedSourceCommit: "",
+        mergeCommit: "squash-merge-commit",
+      }),
+    ).toEqual({ status: "unproven", reason: "source-mismatch" });
+  });
+
+  test("accepts only exact later current-main recovery proof", () => {
+    const recovery = {
+      pipelineRunId: "124",
+      sourceBranch: "refs/heads/main",
+      sourceCommit: "tested-main",
+      artifactPath: "/watcher/124/result.json",
+    };
+    expect(
+      existingRecoveryProblem({
+        baselineRunId: "123",
+        specId: "spec.example.lifecycle",
+        currentMainCommit: "current-main",
+        recovery,
+        providerRun: {
+          id: "124",
+          status: "completed",
+          result: "succeeded",
+          sourceBranch: "refs/heads/main",
+          sourceVersion: "tested-main",
+        },
+        sourceIsAncestor: true,
+        changedFiles: ["owners.txt"],
+        artifactInWatcherRoot: true,
+        artifactProvesPass: true,
+      }),
+    ).toBeNull();
+    expect(
+      existingRecoveryProblem({
+        baselineRunId: "123",
+        specId: "spec.example.lifecycle",
+        currentMainCommit: "current-main",
+        recovery,
+        providerRun: {
+          id: "124",
+          status: "completed",
+          result: "succeeded",
+          sourceBranch: "refs/heads/main",
+          sourceVersion: "tested-main",
+        },
+        sourceIsAncestor: true,
+        changedFiles: ["features/example/tests/lifecycle.test.ts"],
+        artifactInWatcherRoot: true,
+        artifactProvesPass: true,
+      }),
+    ).toBe("relevant main changes invalidate the recovery observation");
+    expect(
+      sourceChangeMayAffectSpec("spec.example.lifecycle", [
+        "features/example/tests/lifecycle.test.ts",
+      ]),
+    ).toBe(true);
+  });
+
+  test("reuses durable integrated proof across a workflow-only task revision", () => {
+    const repoDir = mkdtempSync(join(tmpdir(), "prior-integrated-proof-"));
+    try {
+      const taskId = "domain/master-validation-failure/spec.example/fp";
+      const priorDir = taskContextDir(repoDir, taskId, 1);
+      mkdirSync(priorDir, { recursive: true });
+      writeFileSync(
+        join(priorDir, "proof.json"),
+        JSON.stringify({
+          version: 1,
+          taskId,
+          generation: 1,
+          specId: "spec.example",
+          target: "staging",
+          sourceBranch: "task/example",
+          sourceCommit: "tested-source",
+          runId: "123",
+          runResult: "succeeded",
+          verdict: "pass",
+          summary: "passed",
+          evidence: ["artifact:result.json"],
+          reviewedAt: "2026-07-25T00:00:00Z",
+          pullRequestId: "456",
+          targetRef: "origin/main",
+          mergedCommit: "merged-target",
+        }),
+      );
+      expect(
+        priorIntegratedProof({
+          repoDir,
+          taskId,
+          generation: 2,
+          specId: "spec.example",
+          target: "staging",
+          standaloneBuildId: "",
+        }),
+      ).toMatchObject({
+        proof: {
+          runId: "123",
+          pullRequestId: "456",
+          mergedCommit: "merged-target",
+        },
+        path: join(priorDir, "proof.json"),
+      });
+      expect(
+        priorIntegratedProof({
+          repoDir,
+          taskId,
+          generation: 2,
+          specId: "spec.changed",
+          target: "staging",
+          standaloneBuildId: "",
+        }),
+      ).toBeNull();
+    } finally {
+      rmSync(repoDir, { recursive: true, force: true });
+    }
+  });
+
   test("runs the pipeline's hard admission checks before live dispatch", () => {
     const calls: string[] = [];
     const result = checkLiveDispatchAdmission(
@@ -125,6 +270,7 @@ describe("spec-live-reconciliation workflow", () => {
     const result = await askAgent(
       ctx as never,
       "Review terminal run 42 from the task worktree.",
+      { retryDelayMs: 0 },
     );
 
     expect(result?.decision).toBe("accepted-pass");
@@ -133,6 +279,19 @@ describe("spec-live-reconciliation workflow", () => {
       "ended before producing a structured judgment",
     );
     expect(prompts[1]).toContain("same bounded task");
+  });
+
+  test("does not synthesize owner judgment when agent runtime retries fail", async () => {
+    const ctx = {
+      agent: "aks-explorer",
+      runAgent: async () => ({ status: "error" }),
+    };
+
+    await expect(
+      askAgent(ctx as never, "Review terminal run 42.", {
+        retryDelayMs: 0,
+      }),
+    ).rejects.toThrow("failed before structured judgment after two attempts");
   });
 
   test("isolates terminal evidence by exact pipeline run", () => {
@@ -274,6 +433,25 @@ describe("spec-live-reconciliation workflow", () => {
         },
       }),
     ).toBeNull();
+  });
+
+  test("rejects an arbitrary repo advance as scenario-normalization progress", () => {
+    expect(
+      scenarioNormalizationWaitProblem({
+        decision: "waiting",
+        summary: "wait for any later dev merge",
+        evidence: ["same-spec carrier still needs repair"],
+        condition: {
+          id: "origin-dev-advance",
+          type: "aks.repo-ref.observed",
+          subject: "repo-ref:origin/dev",
+          expected: {
+            field: "commit",
+            notEquals: "abc",
+          },
+        },
+      }),
+    ).toContain("cannot wait for an arbitrary repository advance");
   });
 
   test("parses the finite spec task identity and generation", () => {
@@ -423,6 +601,27 @@ describe("spec-live-reconciliation workflow", () => {
     });
   });
 
+  test("gives agent-authored waits stable task-local identities", () => {
+    const condition = {
+      id: "approval-return:underlay",
+      type: "project.approval.submitted",
+      subject: "project:aks-rp-e2e",
+      expected: { pathId: "path.example" },
+    };
+
+    const first = taskScopedAgentCondition("domain/example-a", 2, condition);
+    expect(first).toEqual({
+      ...condition,
+      id: expect.stringMatching(/^approval-return:underlay:task-[a-f0-9]{12}$/),
+    });
+    expect(taskScopedAgentCondition("domain/example-a", 2, condition)).toEqual(
+      first,
+    );
+    expect(
+      taskScopedAgentCondition("domain/example-b", 2, condition).id,
+    ).not.toBe(first.id);
+  });
+
   test("uses dev by convention and allows the master-validation workflow to target main", () => {
     expect(resolveIntegrationTarget()).toEqual({
       targetBranch: "dev",
@@ -456,5 +655,57 @@ describe("spec-live-reconciliation workflow", () => {
         matchingRunCount: 0,
       }),
     ).toBe(true);
+  });
+
+  test("requires agent live-readiness judgment even after source changed", () => {
+    expect(
+      shouldReviewBeforeInitialLiveDispatch({
+        hasExactRun: false,
+        branchHasChange: true,
+      }),
+    ).toBe(true);
+    expect(
+      shouldReviewBeforeInitialLiveDispatch({
+        hasExactRun: false,
+        branchHasChange: false,
+      }),
+    ).toBe(true);
+    expect(
+      shouldReviewBeforeInitialLiveDispatch({
+        hasExactRun: true,
+        branchHasChange: true,
+      }),
+    ).toBe(false);
+  });
+
+  test("replays a stale scenario branch and any branch containing first-parent merges", () => {
+    expect(
+      scenarioNormalizationReplayRequired({
+        sourceIsInTarget: false,
+        targetIsInSource: false,
+        firstParentMergeCount: 0,
+      }),
+    ).toBe(true);
+    expect(
+      scenarioNormalizationReplayRequired({
+        sourceIsInTarget: false,
+        targetIsInSource: true,
+        firstParentMergeCount: 1,
+      }),
+    ).toBe(true);
+    expect(
+      scenarioNormalizationReplayRequired({
+        sourceIsInTarget: true,
+        targetIsInSource: false,
+        firstParentMergeCount: 1,
+      }),
+    ).toBe(false);
+    expect(
+      scenarioNormalizationReplayRequired({
+        sourceIsInTarget: false,
+        targetIsInSource: true,
+        firstParentMergeCount: 0,
+      }),
+    ).toBe(false);
   });
 });

@@ -1,21 +1,43 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import {
+  closeSync,
+  existsSync,
+  mkdirSync,
+  openSync,
+  readFileSync,
+  statSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
 import type {
   ProjectAppConditionSpec,
   WorkflowContext,
   WorkflowResult,
 } from "@may-agent/sdk";
+import {
+  campaignFixFromPullRequest,
+  campaignReceiptPath,
+  composeFrozenCampaign,
+  readCampaignReceipt,
+  type CampaignReceipt,
+  type CampaignFix,
+} from "./lib/master-validation-campaign.js";
 
 export const name = "master-validation-cycle";
 export const description =
-  "Queue one six-hourly master-validation run from the exact current main commit, keep failed validation open, and converge only after a passing full-main proof.";
+  "Run six-hourly master validation from main; after failure, freeze that main snapshot and continuously test a campaign branch containing focused unmerged fixes until current main passes.";
 
 const organization = "https://dev.azure.com/msazure";
 const adoProject = "CloudNativeCompute";
 const pipelineId = "467665";
+const repository = "aks-e2e-spec-runner";
+const targetBranch = "main";
 const sourceBranch = "main";
 const sourceRef = "origin/main";
+const scheduledPurpose = "scheduled-master-validation";
+const campaignPurpose = "master-validation-campaign";
 const featureSet = "master-validation";
 const target = "staging";
 const cycleIntervalMs = 21_600_000;
@@ -34,9 +56,31 @@ type PipelineRun = {
   templateParameters?: unknown;
 };
 
+type PullRequest = {
+  pullRequestId?: unknown;
+  status?: unknown;
+  mergeStatus?: unknown;
+  title?: unknown;
+  description?: unknown;
+  sourceRefName?: unknown;
+  targetRefName?: unknown;
+  lastMergeSourceCommit?: { commitId?: unknown };
+  isDraft?: unknown;
+};
+
+type FixVerificationTrigger = {
+  specId: string;
+  pipelineRunId: string;
+  sourceBranch: string;
+  sourceCommit: string;
+  pullRequestIds: string[];
+};
+
 type CycleReceipt = {
   runId: string;
   sourceCommit: string;
+  sourceBranch?: string;
+  purpose?: typeof scheduledPurpose | typeof campaignPurpose;
   queuedAt: string;
 };
 
@@ -70,8 +114,7 @@ export function isMasterValidationCycle(run: PipelineRun): boolean {
   return (
     text(parameters.feature_set) === featureSet &&
     text(parameters.target) === target &&
-    ["main", "refs/heads/main"].includes(text(run.sourceBranch)) &&
-    text(metadata.purpose) === "scheduled-master-validation"
+    [scheduledPurpose, campaignPurpose].includes(text(metadata.purpose))
   );
 }
 
@@ -85,7 +128,9 @@ export function activeMasterValidationRun(
         return (
           text(parameters.feature_set) === featureSet &&
           text(parameters.target) === target &&
-          ["main", "refs/heads/main"].includes(text(run.sourceBranch))
+          [scheduledPurpose, campaignPurpose].includes(
+            text(parseMetadata(run).purpose),
+          )
         );
       })
       .filter((run) => !["completed", "canceled"].includes(text(run.status)))
@@ -102,13 +147,12 @@ export function completedCycleState(result: string): "converged" | "waiting" {
     : "waiting";
 }
 
-export function completedCycleDecision(input: {
-  result: string;
-  testedCommit: string;
-  currentMainCommit: string;
-}): "converged" | "waiting" | "stale" {
-  if (input.testedCommit !== input.currentMainCommit) return "stale";
-  return completedCycleState(input.result);
+export function campaignRecoveryDue(
+  queuedAt: string,
+  nowMs = Date.now(),
+): boolean {
+  const queuedAtMs = Date.parse(queuedAt);
+  return Number.isFinite(queuedAtMs) && nowMs - queuedAtMs >= cycleIntervalMs;
 }
 
 export function buildMasterValidationQueueArgs(input: {
@@ -116,14 +160,28 @@ export function buildMasterValidationQueueArgs(input: {
   generation: number;
   sourceCommit: string;
   queuedAt: string;
+  sourceBranch?: string;
+  purpose?: typeof scheduledPurpose | typeof campaignPurpose;
+  campaign?: CampaignReceipt | null;
 }): string[] {
+  const runBranch = input.sourceBranch || sourceBranch;
+  const purpose = input.purpose || scheduledPurpose;
   const metadata = JSON.stringify({
     taskId: input.taskId,
     generation: String(input.generation),
-    purpose: "scheduled-master-validation",
-    sourceBranch,
+    purpose,
+    sourceBranch: runBranch,
     sourceCommit: input.sourceCommit,
     cycleKey: input.queuedAt,
+    ...(input.campaign
+      ? {
+          campaignBaseCommit: input.campaign.baseCommit,
+          campaignBaselineRunId: input.campaign.baselineRunId,
+          campaignFixPullRequests: input.campaign.integratedFixes
+            .map((fix) => fix.pullRequestId)
+            .join(","),
+        }
+      : {}),
   });
   return [
     "pipelines",
@@ -131,7 +189,7 @@ export function buildMasterValidationQueueArgs(input: {
     "--id",
     pipelineId,
     "--branch",
-    sourceBranch,
+    runBranch,
     "--commit-id",
     input.sourceCommit,
     "--parameters",
@@ -165,15 +223,19 @@ function command(
   };
 }
 
-function azJson(args: string[], cwd: string): unknown {
+function azJson(
+  args: string[],
+  cwd: string,
+  options: { projectScoped?: boolean } = {},
+): unknown {
+  const projectScoped = options.projectScoped !== false;
   const result = command(
     azCli,
     [
       ...args,
       "--organization",
       organization,
-      "--project",
-      adoProject,
+      ...(projectScoped ? ["--project", adoProject] : []),
       "-o",
       "json",
     ],
@@ -222,6 +284,59 @@ function taskPayload(raw: string): {
   }
 }
 
+function triggerEvent(raw: string): Record<string, unknown> {
+  for (const marker of ["## Trigger Event", "## Trigger Observation"]) {
+    const markerAt = raw.indexOf(marker);
+    if (markerAt < 0) continue;
+    const scoped = raw.slice(markerAt);
+    const start = scoped.indexOf("{");
+    if (start < 0) continue;
+    let depth = 0;
+    let inString = false;
+    let escaping = false;
+    for (let index = start; index < scoped.length; index += 1) {
+      const char = scoped[index];
+      if (escaping) escaping = false;
+      else if (char === "\\") escaping = true;
+      else if (char === '"') inString = !inString;
+      if (!inString && char === "{") depth += 1;
+      if (!inString && char === "}" && --depth === 0) {
+        try {
+          return record(JSON.parse(scoped.slice(start, index + 1)));
+        } catch {
+          break;
+        }
+      }
+    }
+  }
+  return {};
+}
+
+export function fixVerificationTrigger(
+  raw: string,
+): FixVerificationTrigger | null {
+  const trigger = triggerEvent(raw);
+  const data = record(trigger.data);
+  const value = (key: string) => text(trigger[key] ?? data[key]);
+  const pullRequestIds = Array.isArray(data.pullRequestIds)
+    ? data.pullRequestIds.map(text).filter(Boolean)
+    : [];
+  return value("reason") === "master-validation-fix-verified" &&
+    value("specId") &&
+    value("pipelineRunId") &&
+    value("sourceBranch") &&
+    value("sourceCommit") &&
+    pullRequestIds.length
+    ? {
+        specId: value("specId"),
+        pipelineRunId: value("pipelineRunId"),
+        sourceBranch: value("sourceBranch"),
+        sourceCommit: value("sourceCommit"),
+        pullRequestIds,
+      }
+    : null;
+}
+
 function receiptPath(ctx: WorkflowContext): string {
   return join(
     ctx.appDir ?? "/app/projects/aks-rp-e2e.app",
@@ -256,39 +371,104 @@ function waitCondition(runId: string): ProjectAppConditionSpec {
   };
 }
 
-export function nextScheduledCycleCondition(): ProjectAppConditionSpec {
+export function campaignPulseAt(nowMs = Date.now()): number {
+  return Math.floor(nowMs / 300_000);
+}
+
+export function nextCampaignPulseCondition(
+  notBeforeMs: number,
+): ProjectAppConditionSpec {
+  const currentPulse = campaignPulseAt(notBeforeMs);
   return {
-    id: "master-validation-next-scheduled-cycle",
+    id: `master-validation-campaign-pulse-after-${currentPulse}-${notBeforeMs}`,
     type: "project.task.tick",
     subject: "task:master-validation-staging-cycle",
     expected: {
-      field: "reason",
-      anyOf: [
-        "scheduled-six-hour-master-validation",
-        "master-validation-main-advanced",
-      ],
+      reason: "master-validation-campaign-reconcile",
+      pulse: { gt: currentPulse },
+      timestamp: { gte: notBeforeMs },
     },
   };
+}
+
+export function transientMasterValidationAccessFailure(
+  message: string,
+): boolean {
+  return /\b(408|409|423|425|429|500|502|503|504)\b|connection|temporar|timed?\s*out|could not resolve|tls|reset by peer|unable to access|AADSTS|interactive authentication|could not read username|credential/i.test(
+    message,
+  );
 }
 
 function waiting(
   ctx: WorkflowContext,
   runId: string,
+  runBranch: string,
   sourceCommit: string,
   summary: string,
+  extraEvidence: string[] = [],
 ): WorkflowResult {
   return ctx.done(summary, {
     state: "waiting",
     summary,
     evidence: [
       `pipeline-run:${runId}`,
-      `source-branch:${sourceBranch}`,
+      `source-branch:${runBranch}`,
       `source-commit:${sourceCommit}`,
       `feature-set:${featureSet}`,
       `target:${target}`,
+      ...extraEvidence,
     ],
     actions: [],
     conditions: [waitCondition(runId)],
+  });
+}
+
+function waitForCampaignChange(
+  ctx: WorkflowContext,
+  campaign: CampaignReceipt,
+  summary: string,
+  evidence: string[] = [],
+): WorkflowResult {
+  const notBeforeMs = Date.now();
+  return ctx.done(summary, {
+    state: "waiting",
+    summary,
+    evidence: [
+      `campaign-branch:${campaign.branch}`,
+      `campaign-base:${campaign.baseCommit}`,
+      `campaign-commit:${campaign.currentCommit}`,
+      ...evidence,
+    ],
+    actions: [],
+    conditions: [nextCampaignPulseCondition(notBeforeMs)],
+  });
+}
+
+function waitForTransientAccessRecovery(
+  ctx: WorkflowContext,
+  appDir: string,
+  summary: string,
+  message: string,
+): WorkflowResult {
+  const notBeforeMs = Date.now();
+  const campaign = readCampaignReceipt(appDir);
+  return ctx.done(summary, {
+    state: "waiting",
+    summary,
+    evidence: [
+      `transient-ado-access:${message}`,
+      `pipeline:${pipelineId}`,
+      `source-ref:${sourceRef}`,
+      ...(campaign
+        ? [
+            `campaign-branch:${campaign.branch}`,
+            `campaign-base:${campaign.baseCommit}`,
+            `campaign-commit:${campaign.currentCommit}`,
+          ]
+        : []),
+    ],
+    actions: [],
+    conditions: [nextCampaignPulseCondition(notBeforeMs)],
   });
 }
 
@@ -302,38 +482,340 @@ function resolveCurrentMain(repoDir: string): string {
   return resolved.stdout;
 }
 
+function activeCampaignFixes(repoDir: string): CampaignFix[] {
+  const value = azJson(
+    [
+      "repos",
+      "pr",
+      "list",
+      "--repository",
+      repository,
+      "--target-branch",
+      targetBranch,
+      "--status",
+      "active",
+      "--top",
+      "100",
+    ],
+    repoDir,
+  );
+  return Array.isArray(value)
+    ? value.flatMap((pullRequest) => {
+        const fix = campaignFixFromPullRequest(pullRequest as PullRequest);
+        return fix ? [fix] : [];
+      })
+    : [];
+}
+
+function pullRequest(repoDir: string, pullRequestId: string): PullRequest {
+  return record(
+    azJson(["repos", "pr", "show", "--id", pullRequestId], repoDir, {
+      projectScoped: false,
+    }),
+  ) as PullRequest;
+}
+
+function integratedPullRequestStates(
+  repoDir: string,
+  campaign: CampaignReceipt,
+): Array<{ fix: CampaignFix; state: string; mergeStatus: string }> {
+  return campaign.integratedFixes.map((fix) => {
+    const current = pullRequest(repoDir, fix.pullRequestId);
+    return {
+      fix,
+      state: text(current.status) || "unknown",
+      mergeStatus: text(current.mergeStatus) || "unknown",
+    };
+  });
+}
+
+function publishPullRequest(
+  repoDir: string,
+  pullRequestId: string,
+): { evidence: string; actionable: boolean } {
+  const current = pullRequest(repoDir, pullRequestId);
+  if (text(current.status) !== "active") {
+    return {
+      evidence: `pull-request:${pullRequestId}:${text(current.status) || "unknown"}`,
+      actionable: false,
+    };
+  }
+  if (current.isDraft !== true) {
+    return {
+      evidence: `pull-request:${pullRequestId}:published`,
+      actionable: true,
+    };
+  }
+  const updated = record(
+    azJson(
+      ["repos", "pr", "update", "--id", pullRequestId, "--draft", "false"],
+      repoDir,
+      { projectScoped: false },
+    ),
+  ) as PullRequest;
+  if (updated.isDraft === true) {
+    throw new Error(`PR ${pullRequestId} remained draft after publication`);
+  }
+  return {
+    evidence: `pull-request:${pullRequestId}:published`,
+    actionable: true,
+  };
+}
+
+function publishVerifiedFixes(
+  ctx: WorkflowContext,
+  repoDir: string,
+  campaign: CampaignReceipt | null,
+  trigger: FixVerificationTrigger | null,
+): string[] {
+  if (
+    !campaign ||
+    !trigger ||
+    trigger.sourceBranch !== campaign.branch ||
+    trigger.sourceCommit !== campaign.currentCommit
+  ) {
+    return [];
+  }
+  const included = new Set(
+    campaign.integratedFixes.map((fix) => fix.pullRequestId),
+  );
+  const pullRequestIds = [...new Set(trigger.pullRequestIds)].filter((id) =>
+    included.has(id),
+  );
+  const publications = pullRequestIds.map((id) => ({
+    pullRequestId: id,
+    ...publishPullRequest(repoDir, id),
+  }));
+  const evidence = publications.map((publication) => publication.evidence);
+  if (!pullRequestIds.length) return evidence;
+  const appDir = ctx.appDir ?? "/app/projects/aks-rp-e2e.app";
+  const notificationKey = [
+    trigger.pipelineRunId,
+    trigger.specId,
+    trigger.sourceCommit,
+    ...pullRequestIds.slice().sort(),
+  ].join(":");
+  const notificationReceipt = join(
+    appDir,
+    ".state",
+    "master-validation-fix-ready",
+    `${createHash("sha256").update(notificationKey).digest("hex")}.json`,
+  );
+  if (existsSync(notificationReceipt)) {
+    return [...evidence, "fix-ready-notification:already-sent"];
+  }
+  const actionablePullRequestIds = publications
+    .filter((publication) => publication.actionable)
+    .map((publication) => publication.pullRequestId);
+  if (!actionablePullRequestIds.length) return evidence;
+  ctx.dispatchEvent("message.created", {
+    target: { project: "aks-rp-e2e", human: true },
+    from: "app-ops",
+    to: "human:operator",
+    intent: "master-validation-fix-ready",
+    priority: "P1",
+    project: "aks-rp-e2e",
+    pipelineRunId: trigger.pipelineRunId,
+    specId: trigger.specId,
+    pullRequestIds: actionablePullRequestIds,
+    content: [
+      `AKS master-validation fix for ${trigger.specId} passed campaign run ${trigger.pipelineRunId}.`,
+      `Published merge-ready PR(s): ${actionablePullRequestIds.join(", ")}.`,
+      "Please merge them individually into main; the app will keep the frozen campaign moving and later verify current main.",
+    ].join("\n"),
+  });
+  mkdirSync(dirname(notificationReceipt), { recursive: true });
+  writeFileSync(
+    notificationReceipt,
+    `${JSON.stringify(
+      {
+        notificationKey,
+        pipelineRunId: trigger.pipelineRunId,
+        specId: trigger.specId,
+        sourceCommit: trigger.sourceCommit,
+        pullRequestIds: actionablePullRequestIds,
+        matchedPullRequestIds: pullRequestIds,
+        sentAt: new Date().toISOString(),
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  return [...evidence, "fix-ready-notification:sent"];
+}
+
+function clearCampaign(
+  appDir: string,
+  repoDir: string,
+  campaign: CampaignReceipt,
+): string[] {
+  const deleted = command(
+    "git",
+    ["push", "origin", "--delete", campaign.branch],
+    repoDir,
+  );
+  const path = campaignReceiptPath(appDir);
+  if (existsSync(path)) unlinkSync(path);
+  return [
+    deleted.status === 0
+      ? `campaign-branch-deleted:${campaign.branch}`
+      : `campaign-branch-delete-deferred:${campaign.branch}`,
+  ];
+}
+
+function notifyCampaignTasks(
+  ctx: WorkflowContext,
+  campaign: CampaignReceipt,
+  input: {
+    reason: "master-validation-main-passed";
+    runId: string;
+    sourceCommit: string;
+  },
+): void {
+  for (const taskId of new Set(
+    campaign.integratedFixes
+      .map((fix) => fix.taskId)
+      .filter((value) => value.startsWith("domain/master-validation-failure/")),
+  )) {
+    ctx.dispatchEvent("project.task.tick", {
+      target: { project: "aks-rp-e2e", taskId },
+      project: "aks-rp-e2e",
+      taskId,
+      task_id: taskId,
+      reason: input.reason,
+      campaignBaselineRunId: campaign.baselineRunId,
+      pipelineRunId: input.runId,
+      sourceCommit: input.sourceCommit,
+    });
+  }
+}
+
+function notifyCampaignReady(
+  ctx: WorkflowContext,
+  campaign: CampaignReceipt,
+  runId: string,
+  pullRequestIds: string[],
+): void {
+  const appDir = ctx.appDir ?? "/app/projects/aks-rp-e2e.app";
+  const key = `${campaign.baselineRunId}:${campaign.currentCommit}:${pullRequestIds.join(",")}`;
+  const receipt = join(
+    appDir,
+    ".state",
+    "master-validation-campaign-ready",
+    `${createHash("sha256").update(key).digest("hex")}.json`,
+  );
+  if (existsSync(receipt)) return;
+  ctx.dispatchEvent("message.created", {
+    target: { project: "aks-rp-e2e", human: true },
+    from: "app-ops",
+    to: "human:operator",
+    intent: "master-validation-campaign-ready",
+    priority: "P1",
+    project: "aks-rp-e2e",
+    pipelineRunId: runId,
+    campaignBranch: campaign.branch,
+    campaignCommit: campaign.currentCommit,
+    pullRequestIds,
+    content: [
+      `AKS master-validation campaign run ${runId} passed at ${campaign.branch}@${campaign.currentCommit}.`,
+      `Focused PRs verified together: ${pullRequestIds.join(", ") || "none"}.`,
+      "Merge the focused PRs individually into main; the app will then run one full latest-main verification. Do not merge the campaign branch.",
+    ].join("\n"),
+  });
+  mkdirSync(dirname(receipt), { recursive: true });
+  writeFileSync(
+    receipt,
+    `${JSON.stringify({ key, runId, pullRequestIds, sentAt: new Date().toISOString() }, null, 2)}\n`,
+  );
+}
+
 function queueCycle(
   ctx: WorkflowContext,
   repoDir: string,
   payload: { taskId: string; generation: number },
+  runBranch: string,
   sourceCommit: string,
+  purpose: typeof scheduledPurpose | typeof campaignPurpose,
+  campaign?: CampaignReceipt | null,
   staleRunId?: string,
 ): WorkflowResult {
-  const queuedAt = new Date().toISOString();
-  const queued = record(
-    azJson(
-      buildMasterValidationQueueArgs({
-        taskId: payload.taskId,
-        generation: payload.generation,
-        sourceCommit,
-        queuedAt,
-      }),
-      repoDir,
-    ),
+  const queueClaimPath = join(
+    ctx.appDir ?? "/app/projects/aks-rp-e2e.app",
+    ".state",
+    "master-validation-queue.claim",
   );
-  const runId = text(queued.id);
-  if (!runId) throw new Error("Azure DevOps did not return a pipeline run id");
-  saveReceipt(receiptPath(ctx), { runId, sourceCommit, queuedAt });
-  const summary = staleRunId
-    ? `Master-validation run ${staleRunId} completed against an older main commit; queued replacement run ${runId} from current ${sourceRef}@${sourceCommit}.`
-    : `Queued master-validation run ${runId} from exact ${sourceRef}@${sourceCommit}; progressive slice observation continues while the aggregate run executes.`;
-  return waiting(ctx, runId, sourceCommit, summary);
+  let queueClaim: number | null = null;
+  if (campaign) {
+    mkdirSync(dirname(queueClaimPath), { recursive: true });
+    if (
+      existsSync(queueClaimPath) &&
+      Date.now() - statSync(queueClaimPath).mtimeMs >= 5 * 60_000
+    ) {
+      unlinkSync(queueClaimPath);
+    }
+    try {
+      queueClaim = openSync(queueClaimPath, "wx");
+      writeFileSync(
+        queueClaim,
+        `${JSON.stringify({ runBranch, sourceCommit, claimedAt: new Date().toISOString() })}\n`,
+      );
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+      return waitForCampaignChange(
+        ctx,
+        campaign,
+        `Another reconciliation is already queueing ${runBranch}@${sourceCommit}; wait for its durable receipt instead of creating a duplicate run.`,
+        ["campaign-queue-claim:in-flight"],
+      );
+    }
+  }
+  const queuedAt = new Date().toISOString();
+  try {
+    const queued = record(
+      azJson(
+        buildMasterValidationQueueArgs({
+          taskId: payload.taskId,
+          generation: payload.generation,
+          sourceBranch: runBranch,
+          sourceCommit,
+          queuedAt,
+          purpose,
+          campaign,
+        }),
+        repoDir,
+      ),
+    );
+    const runId = text(queued.id);
+    if (!runId)
+      throw new Error("Azure DevOps did not return a pipeline run id");
+    saveReceipt(receiptPath(ctx), {
+      runId,
+      sourceBranch: runBranch,
+      sourceCommit,
+      purpose,
+      queuedAt,
+    });
+    const summary = staleRunId
+      ? `Master-validation run ${staleRunId} was superseded; queued replacement run ${runId} from ${runBranch}@${sourceCommit}.`
+      : `Queued master-validation run ${runId} from exact ${runBranch}@${sourceCommit}; progressive slice observation continues while the aggregate run executes.`;
+    return waiting(ctx, runId, runBranch, sourceCommit, summary);
+  } finally {
+    if (queueClaim !== null) closeSync(queueClaim);
+    if (campaign && existsSync(queueClaimPath)) unlinkSync(queueClaimPath);
+  }
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const repoDir = ctx.projectDir ?? "/app/projects/aks-rp-e2e";
+  const appDir = ctx.appDir ?? "/app/projects/aks-rp-e2e.app";
   const payload = taskPayload(ctx.task);
   try {
+    const fixPublicationEvidence = publishVerifiedFixes(
+      ctx,
+      repoDir,
+      readCampaignReceipt(appDir),
+      fixVerificationTrigger(ctx.task),
+    );
     const listActive = (status: "inProgress" | "notStarted") =>
       azJson(
         [
@@ -360,67 +842,252 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       return waiting(
         ctx,
         text(active.id),
+        text(active.sourceBranch).replace(/^refs\/heads\//, "") || sourceBranch,
         text(active.sourceVersion),
         `Master validation run ${text(active.id)} is already active; no overlapping run was queued.`,
+        fixPublicationEvidence,
       );
     }
 
     const prior = readReceipt(receiptPath(ctx));
-    if (
-      prior &&
-      Date.now() - Date.parse(prior.queuedAt) < cycleIntervalMs - 60_000
-    ) {
+    if (prior) {
       const exact = record(
         azJson(["pipelines", "runs", "show", "--id", prior.runId], repoDir),
       ) as PipelineRun;
+      const priorBranch =
+        prior.sourceBranch ||
+        text(exact.sourceBranch).replace(/^refs\/heads\//, "") ||
+        sourceBranch;
+      const priorPurpose =
+        prior.purpose ||
+        (priorBranch.startsWith("validation/master-validation-")
+          ? campaignPurpose
+          : scheduledPurpose);
       if (text(exact.status) !== "completed") {
         return waiting(
           ctx,
           prior.runId,
+          priorBranch,
           prior.sourceCommit,
           `Master validation run ${prior.runId} is ${text(exact.status) || "still active"}; no overlapping run was queued.`,
         );
       }
       const result = text(exact.result) || "unknown";
-      const currentMainCommit = resolveCurrentMain(repoDir);
-      const decision = completedCycleDecision({
-        result,
-        testedCommit: prior.sourceCommit,
-        currentMainCommit,
-      });
-      if (decision === "stale") {
+
+      if (priorPurpose === campaignPurpose) {
+        const campaign = readCampaignReceipt(appDir);
+        if (!campaign) {
+          throw new Error(
+            `Campaign run ${prior.runId} has no durable campaign receipt`,
+          );
+        }
+        const composed = composeFrozenCampaign({
+          appDir,
+          repoDir,
+          baselineRunId: campaign.baselineRunId,
+          baseCommit: campaign.baseCommit,
+          fixes: activeCampaignFixes(repoDir),
+          prior: campaign,
+        });
+        if (composed.receipt.currentCommit !== prior.sourceCommit) {
+          return queueCycle(
+            ctx,
+            repoDir,
+            payload,
+            composed.receipt.branch,
+            composed.receipt.currentCommit,
+            campaignPurpose,
+            composed.receipt,
+            prior.runId,
+          );
+        }
+        if (completedCycleState(result) !== "converged") {
+          if (campaignRecoveryDue(prior.queuedAt)) {
+            return queueCycle(
+              ctx,
+              repoDir,
+              payload,
+              composed.receipt.branch,
+              composed.receipt.currentCommit,
+              campaignPurpose,
+              composed.receipt,
+              prior.runId,
+            );
+          }
+          return waitForCampaignChange(
+            ctx,
+            composed.receipt,
+            `Campaign run ${prior.runId} failed on the frozen ${composed.receipt.baseCommit} snapshot. A new focused PR head reruns immediately; otherwise the same snapshot reruns at the six-hour recovery cadence.`,
+            [
+              `pipeline-run:${prior.runId}`,
+              `pipeline-result:${result}`,
+              ...composed.receipt.integratedFixes.map(
+                (fix) =>
+                  `fix-pull-request:${fix.pullRequestId}@${fix.sourceCommit}`,
+              ),
+            ],
+          );
+        }
+
+        const states = integratedPullRequestStates(repoDir, composed.receipt);
+        const invalid = states.filter(
+          ({ state, mergeStatus }) =>
+            state === "abandoned" ||
+            (state === "completed" && mergeStatus !== "succeeded"),
+        );
+        if (invalid.length) {
+          const summary = `Campaign ${composed.receipt.branch} passed, but ${invalid.length} included fix PR(s) cannot integrate into main.`;
+          return ctx.done(summary, {
+            state: "needs-owner",
+            summary,
+            evidence: invalid.map(
+              ({ fix, state, mergeStatus }) =>
+                `pull-request:${fix.pullRequestId}:${state}/${mergeStatus}`,
+            ),
+          });
+        }
+        const open = states.filter(({ state }) => state === "active");
+        if (open.length) {
+          const publicationEvidence = open.map(({ fix }) =>
+            publishPullRequest(repoDir, fix.pullRequestId).evidence,
+          );
+          notifyCampaignReady(
+            ctx,
+            composed.receipt,
+            prior.runId,
+            open.map(({ fix }) => fix.pullRequestId),
+          );
+          return waitForCampaignChange(
+            ctx,
+            composed.receipt,
+            `Campaign run ${prior.runId} passed. The repair loop may now wait for its ${open.length} focused PR(s) to merge into main.`,
+            [
+              `pipeline-run:${prior.runId}`,
+              "campaign-result:passed",
+              ...open.map(
+                ({ fix }) => `awaiting-pull-request:${fix.pullRequestId}`,
+              ),
+              ...publicationEvidence,
+            ],
+          );
+        }
         return queueCycle(
           ctx,
           repoDir,
           payload,
-          currentMainCommit,
+          sourceBranch,
+          resolveCurrentMain(repoDir),
+          scheduledPurpose,
+          composed.receipt,
           prior.runId,
         );
       }
-      const state = decision === "converged" ? "converged" : "waiting";
-      const summary =
-        state === "converged"
-          ? `Master validation run ${prior.runId} passed on ${sourceBranch}@${prior.sourceCommit}; the full validation task is verified green.`
-          : `Master validation run ${prior.runId} completed with result ${result}; validation remains open until a later full run from current ${sourceBranch} passes after the fixes are available. The next scheduled verification remains due six hours after ${prior.queuedAt}.`;
-      return ctx.done(summary, {
-        state,
-        summary,
-        evidence: [
+
+      const currentMainCommit = resolveCurrentMain(repoDir);
+
+      if (completedCycleState(result) === "converged") {
+        if (prior.sourceCommit !== currentMainCommit) {
+          return queueCycle(
+            ctx,
+            repoDir,
+            payload,
+            sourceBranch,
+            currentMainCommit,
+            scheduledPurpose,
+            readCampaignReceipt(appDir),
+            prior.runId,
+          );
+        }
+        const campaign = readCampaignReceipt(appDir);
+        if (campaign) {
+          notifyCampaignTasks(ctx, campaign, {
+            reason: "master-validation-main-passed",
+            runId: prior.runId,
+            sourceCommit: prior.sourceCommit,
+          });
+        }
+        const cleanupEvidence = campaign
+          ? clearCampaign(appDir, repoDir, campaign)
+          : [];
+        const age = Date.now() - Date.parse(prior.queuedAt);
+        if (age >= cycleIntervalMs - 60_000) {
+          return queueCycle(
+            ctx,
+            repoDir,
+            payload,
+            sourceBranch,
+            currentMainCommit,
+            scheduledPurpose,
+            null,
+          );
+        }
+        const summary = `Master validation run ${prior.runId} passed on current ${sourceBranch}@${prior.sourceCommit}; the standing health task is green until the next six-hour cycle.`;
+        return ctx.done(summary, {
+          state: "converged",
+          summary,
+          evidence: [
+            `pipeline-run:${prior.runId}`,
+            "pipeline-result:succeeded",
+            `source-commit:${prior.sourceCommit}`,
+            `queued-at:${prior.queuedAt}`,
+            ...cleanupEvidence,
+          ],
+          actions: [],
+        });
+      }
+
+      const existingCampaign = readCampaignReceipt(appDir);
+      const campaign = composeFrozenCampaign({
+        appDir,
+        repoDir,
+        baselineRunId: prior.runId,
+        baseCommit: prior.sourceCommit,
+        fixes: activeCampaignFixes(repoDir),
+        prior:
+          existingCampaign?.baselineRunId === prior.runId
+            ? existingCampaign
+            : null,
+      }).receipt;
+      if (campaign.currentCommit !== campaign.baseCommit) {
+        return queueCycle(
+          ctx,
+          repoDir,
+          payload,
+          campaign.branch,
+          campaign.currentCommit,
+          campaignPurpose,
+          campaign,
+          prior.runId,
+        );
+      }
+      return waitForCampaignChange(
+        ctx,
+        campaign,
+        `Main run ${prior.runId} failed at frozen commit ${prior.sourceCommit}. The campaign branch is ready and will run as soon as a focused repair PR is available.`,
+        [
           `pipeline-run:${prior.runId}`,
           `pipeline-result:${result}`,
-          `source-commit:${prior.sourceCommit}`,
-          `queued-at:${prior.queuedAt}`,
+          `pending-main:${currentMainCommit}`,
         ],
-        actions: [],
-        ...(state === "waiting"
-          ? { conditions: [nextScheduledCycleCondition()] }
-          : {}),
-      });
+      );
     }
 
-    return queueCycle(ctx, repoDir, payload, resolveCurrentMain(repoDir));
+    return queueCycle(
+      ctx,
+      repoDir,
+      payload,
+      sourceBranch,
+      resolveCurrentMain(repoDir),
+      scheduledPurpose,
+      null,
+    );
   } catch (error) {
-    const summary = `Master validation cycle could not queue or observe its run: ${error instanceof Error ? error.message : String(error)}`;
+    const message = error instanceof Error ? error.message : String(error);
+    if (transientMasterValidationAccessFailure(message)) {
+      const summary = `Master validation cycle hit a transient Azure DevOps access failure while queueing or observing its run: ${message}. Wait for the next master-validation reconcile pulse before retrying instead of sending repeated blind owner retries.`;
+      return waitForTransientAccessRecovery(ctx, appDir, summary, message);
+    }
+    const summary = `Master validation cycle could not queue or observe its run: ${message}`;
     return ctx.done(summary, {
       state: "needs-owner",
       summary,

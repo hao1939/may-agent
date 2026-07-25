@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { existsSync, readFileSync } from "node:fs";
 import {
   defineProjectApp,
   eventDetails,
@@ -23,6 +24,10 @@ import {
   standingLoopIntent,
 } from "./task-loops.js";
 import { syncSpecLiveProof } from "./agents/app-ops/workflows/lib/spec-live-proof-sync.js";
+import {
+  readCampaignReceipt,
+  type CampaignReceipt,
+} from "./agents/app-ops/workflows/lib/master-validation-campaign.js";
 
 const projectId = "aks-rp-e2e";
 const domainPolicyMaxConcurrent = 5;
@@ -90,6 +95,238 @@ function safeTaskIdPart(value: string, fallback: string): string {
 }
 
 const projectTarget = { project: projectId };
+const masterValidationCycleIntervalMs = 21_600_000;
+const masterValidationCycleWakeSkewMs = 60_000;
+
+export function masterValidationCycleSlot(nowMs = Date.now()): number {
+  return Math.floor(nowMs / masterValidationCycleIntervalMs);
+}
+
+export function masterValidationCampaignPulse(nowMs = Date.now()): number {
+  return Math.floor(nowMs / 300_000);
+}
+
+type MasterValidationCycleReceipt = {
+  runId?: unknown;
+  sourceCommit?: unknown;
+  queuedAt?: unknown;
+};
+
+function readMasterValidationCycleReceipt(
+  appDir: string,
+): MasterValidationCycleReceipt | null {
+  const path = `${appDir}/.state/master-validation-cycle.json`;
+  if (!existsSync(path)) return null;
+  try {
+    const parsed = JSON.parse(readFileSync(path, "utf8"));
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+type TaskStateResource = {
+  metadata?: { generation?: unknown };
+  spec?: { workflow?: unknown };
+  status?: { phase?: unknown; conditionIds?: unknown };
+};
+
+type TaskStateCondition = {
+  spec?: {
+    type?: unknown;
+    expected?: unknown;
+  };
+};
+
+type TaskStateSnapshot = {
+  resources?: Record<string, TaskStateResource>;
+  conditions?: Record<string, TaskStateCondition>;
+};
+
+type ApprovalWaitContractProblem = {
+  taskId: string;
+  workflow?: string;
+  phase?: string;
+  conditionId: string;
+  issues: string[];
+};
+
+const canonicalApprovalDispatchDecisions = [
+  "approve",
+  "adjust",
+  "hold",
+  "decline",
+  "reroute",
+] as const;
+
+function readTaskStateSnapshot(appDir: string): TaskStateSnapshot | null {
+  const path = `${appDir}/.state/tasks/state.json`;
+  if (!existsSync(path)) return null;
+  try {
+    const parsed = JSON.parse(readFileSync(path, "utf8"));
+    return parsed && typeof parsed === "object"
+      ? (parsed as TaskStateSnapshot)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function stringList(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter(
+        (entry): entry is string =>
+          typeof entry === "string" && Boolean(entry.trim()),
+      )
+    : [];
+}
+
+function approvalWaitConditionProblem(
+  conditionId: string,
+  condition: TaskStateCondition,
+): ApprovalWaitContractProblem | null {
+  const spec = isRecord(condition.spec) ? condition.spec : null;
+  if (spec?.type !== "project.approval.submitted") return null;
+  const expected = isRecord(spec.expected) ? spec.expected : {};
+  if (
+    typeof expected.approvalKind === "string" &&
+    expected.approvalKind !== "approval-packet-dispatch"
+  ) {
+    return null;
+  }
+  const looksLikeApprovalDispatch =
+    expected.approvalKind === "approval-packet-dispatch" ||
+    [
+      "approvalId",
+      "waitId",
+      "pathId",
+      "approvalIds",
+      "waitIds",
+      "decisionIn",
+      "acceptedDecisions",
+      "decisions",
+    ].some((key) => key in expected);
+  if (!looksLikeApprovalDispatch) return null;
+
+  const approvalId = stringDetail(expected, "approvalId");
+  const waitId = stringDetail(expected, "waitId");
+  const pathId = stringDetail(expected, "pathId");
+  const acceptedDecisions = stringList(expected.acceptedDecisions);
+  const issues: string[] = [];
+
+  if (expected.approvalKind !== "approval-packet-dispatch") {
+    issues.push(
+      `approvalKind=${JSON.stringify(expected.approvalKind ?? null)}`,
+    );
+  }
+  if (!approvalId) issues.push("missing approvalId");
+  if (!waitId) issues.push("missing waitId");
+  if (!pathId) issues.push("missing pathId");
+  if (
+    acceptedDecisions.length !== canonicalApprovalDispatchDecisions.length ||
+    canonicalApprovalDispatchDecisions.some(
+      (decision, index) => acceptedDecisions[index] !== decision,
+    )
+  ) {
+    issues.push(
+      `acceptedDecisions=${JSON.stringify(expected.acceptedDecisions ?? null)}`,
+    );
+  }
+
+  if (!issues.length) return null;
+  return {
+    taskId: "",
+    conditionId,
+    issues,
+  };
+}
+
+export function malformedApprovalWaitContract(
+  appDir: string,
+  taskId: string,
+): ApprovalWaitContractProblem | null {
+  const state = readTaskStateSnapshot(appDir);
+  if (!state) return null;
+  const resource = state.resources?.[taskId];
+  if (!resource) return null;
+  const conditionIds = stringList(resource.status?.conditionIds);
+  for (const conditionId of conditionIds) {
+    const problem = approvalWaitConditionProblem(
+      conditionId,
+      state.conditions?.[conditionId] ?? {},
+    );
+    if (problem) {
+      return {
+        ...problem,
+        taskId,
+        workflow: stringDetail(
+          isRecord(resource.spec) ? resource.spec : {},
+          "workflow",
+        ),
+        phase: stringDetail(
+          isRecord(resource.status) ? resource.status : {},
+          "phase",
+        ),
+      };
+    }
+  }
+  return null;
+}
+
+export function masterValidationScheduleGate(
+  appDir: string,
+  nowMs = Date.now(),
+): {
+  due: boolean;
+  reason:
+    | "missing-receipt"
+    | "invalid-receipt"
+    | "campaign-active"
+    | "cooldown-active"
+    | "interval-elapsed";
+  queuedAt?: string;
+  sourceCommit?: string;
+  runId?: string;
+} {
+  if (existsSync(`${appDir}/.state/master-validation-campaign.json`)) {
+    return { due: true, reason: "campaign-active" };
+  }
+  const receipt = readMasterValidationCycleReceipt(appDir);
+  const queuedAt =
+    typeof receipt?.queuedAt === "string" && receipt.queuedAt.trim()
+      ? receipt.queuedAt.trim()
+      : "";
+  const sourceCommit =
+    typeof receipt?.sourceCommit === "string" && receipt.sourceCommit.trim()
+      ? receipt.sourceCommit.trim()
+      : undefined;
+  const runId =
+    typeof receipt?.runId === "string" && receipt.runId.trim()
+      ? receipt.runId.trim()
+      : undefined;
+  if (!receipt) return { due: true, reason: "missing-receipt" };
+  const queuedAtMs = Date.parse(queuedAt);
+  if (!Number.isFinite(queuedAtMs)) {
+    return {
+      due: true,
+      reason: "invalid-receipt",
+      ...(queuedAt ? { queuedAt } : {}),
+      ...(sourceCommit ? { sourceCommit } : {}),
+      ...(runId ? { runId } : {}),
+    };
+  }
+  const due =
+    nowMs - queuedAtMs >=
+    masterValidationCycleIntervalMs - masterValidationCycleWakeSkewMs;
+  return {
+    due,
+    reason: due ? "interval-elapsed" : "cooldown-active",
+    queuedAt,
+    ...(sourceCommit ? { sourceCommit } : {}),
+    ...(runId ? { runId } : {}),
+  };
+}
+
 const ownerReviewEventTypes = new Set([
   "project.owner.requested",
   "project.comment.created",
@@ -153,16 +390,31 @@ export function resolveAksTask(
       "fingerprint",
     );
     if (!specId || !failureFingerprint) return null;
+    const failureCategory = stringDetail(details, "category");
+    const pipelineFailure =
+      failureCategory === "pipeline_failure" || specId.startsWith("pipeline.");
     return {
       id: `domain/master-validation-failure/${safeTaskIdPart(specId, "spec")}/${safeTaskIdPart(failureFingerprint, "failure")}`,
       parentId: "group/domain-work",
-      outcome: `Classify and resolve the progressively observed master-validation failure for ${specId} without waiting for the aggregate pipeline to finish.`,
-      acceptance: [
-        "The failure is classified as test_issue, prod_issue, or inconclusive from the completed slice artifact.",
-        "A test issue remains open until the exact fix has a passing staging proof and the proven change is merged into main, or a later full current-main master-validation run passes it.",
-        "A product issue leaves source unchanged, notifies the human operator through message.created for Telegram delivery, and remains open until a deployed product fix passes the affected spec from current main.",
-        "Classification, notification, PR creation, and PR merge are progress evidence; none alone is final verification.",
-      ],
+      outcome: pipelineFailure
+        ? "Repair the repository-owned master-validation pipeline/bootstrap failure that prevented any parseable spec verdict, then prove the accumulated fix through the frozen campaign and current main."
+        : `Classify and resolve the progressively observed master-validation failure or temporary admission exclusion for ${specId} without waiting for the aggregate pipeline to finish.`,
+      acceptance: pipelineFailure
+        ? [
+            "Inspect the exact failed Azure pipeline step and logs; absence of a spec verdict is actionable pipeline repair, not an inconclusive product result.",
+            "Keep the repair in one focused PR to main and merge its exact unmerged head into the frozen campaign without waiting for PR merge.",
+            "A later campaign must progress beyond the failed bootstrap; any newly exposed failure remains active repair work on the same campaign.",
+            "The issue remains open until the focused fix merges and a full run from current main passes.",
+          ]
+        : [
+            "The failure is classified as test_issue, prod_issue, or inconclusive from the completed slice artifact or machine-readable admission report.",
+            "A temporary admission exclusion keeps unrelated slices running but remains a test issue until the intended carrier is admitted and later passes from current main.",
+            "A branch-targeted or standalone pass may prepare a PR, but the issue remains open after merge until a later current-main observation passes the same spec through the intended master-validation execution path.",
+            "A squash or rebase merge is valid when Azure reports the exact tested PR head and its resulting merged commit is present in main; the PR head itself does not need to remain in main ancestry.",
+            "A product issue leaves source unchanged, notifies the human operator through message.created for Telegram delivery, and remains open until a deployed product fix passes the affected spec from current main.",
+            "Repeated observations revise this stable fingerprinted task and its Condition; they do not create per-run recovery tasks.",
+            "Classification, notification, PR creation, PR merge, and unrelated main advancement are progress evidence; none alone is final verification.",
+          ],
       mode: "achieve",
       owner: "aks-explorer",
       workflow: "master-validation-failure",
@@ -175,7 +427,8 @@ export function resolveAksTask(
         sourceCommit: stringDetail(details, "sourceCommit", "sourceVersion"),
         sliceId: stringDetail(details, "sliceId"),
         status: stringDetail(details, "status"),
-        category: stringDetail(details, "category"),
+        category: failureCategory,
+        failureScope: pipelineFailure ? "pipeline" : "spec",
         reason: stringDetail(details, "reason"),
         artifactName: stringDetail(details, "artifactName"),
         artifactPath: stringDetail(details, "artifactPath"),
@@ -256,7 +509,8 @@ export function resolveAksTask(
             instructions: [
               "Treat runtime phase=waiting as the current blocked representation; do not search only for the retired blocked phase.",
               "Requeue the same task when its exact Condition is already true.",
-              "Route valid repository waits through wait-for-repo-ref-advance using aks.repo-ref.observed, and preserve owner=aks-explorer whenever the bounded post-wake recheck is still AKS domain judgment.",
+              "Route a repository wait through wait-for-repo-ref-advance only when a named external producer or publication can directly change the exact row; otherwise return known same-spec source work to its domain owner/workflow. Preserve owner=aks-explorer whenever the bounded post-wake recheck is still AKS domain judgment.",
+              "For scenario-normalization work, a future main-branch spec pass is not a valid producer: it cannot verify or publish the task-owned source commit. Return legacy pipeline.spec.observed waits for refs/heads/main to the same spec-live-reconciliation task for current-source repair, exact live proof, or explicit escalation.",
               "Return stale Conditions with no current producer to the task owner for fresh judgment.",
               "Preserve a human or external wait only with exact correlation and durable send proof.",
               "Review attention tasks that have no active retry or recovery consumer.",
@@ -285,12 +539,14 @@ export function resolveAksTask(
           id: masterValidationCycleTaskId,
           parentId: "group/domain-work",
           outcome:
-            "Continuously validate the master-validation feature set against staging from the exact current main commit every six hours, with immediate per-slice failure investigation.",
+            "Continuously validate master validation from current main; after a failure, keep testing one frozen-main campaign branch containing focused unmerged fixes until those fixes merge and current main passes.",
           acceptance: [
             "Each due cycle queues pipeline 467665 with feature_set=master-validation, target=staging, slices=12, slice_max_parallel=6, branch main, and the exact resolved origin/main commit.",
             "Only one aggregate master-validation cycle is active at a time.",
-            "Completed slice artifacts are observed while the aggregate run is still active and each nonpassing spec becomes one stable fingerprinted child task.",
-            "A failed run remains explicitly open after classification, notification, or merge; only a later passing full run from current main verifies the standing task green.",
+            "Completed slice artifacts are observed while the aggregate run is still active and each nonpassing spec becomes one stable fingerprinted sibling known-issue task.",
+            "A failed main run forks one campaign branch from that exact commit; focused issue PR heads merge onto the same branch in stable order without rebasing onto newer main.",
+            "A failed campaign reruns immediately when its accumulated fix heads change and every six hours when unchanged, so repository fixes and deployed product recovery are both observed without rebasing onto newer main.",
+            "Only a green campaign may wait for its focused PRs to merge, and only a later passing full run from current main verifies the standing task green.",
           ],
           mode: "maintain",
           owner: "app-ops",
@@ -300,6 +556,8 @@ export function resolveAksTask(
             intervalMs: 21_600_000,
             pipelineId: "467665",
             sourceBranch: "main",
+            campaignBranchConvention:
+              "validation/master-validation-<baseline-run-id>",
             target: "staging",
           },
           priority: "P0",
@@ -378,17 +636,51 @@ export function resolveAksTask(
       };
     }
     case "project.approval.requested": {
-      const approvalKey = stringDetail(
-        details,
-        "approvalId",
-        "approval_id",
-        "pathId",
-        "path_id",
-        "packetPath",
-        "packet_path",
-        "taskId",
-        "task_id",
-      );
+      const params = recordDetail(details, "params") ?? {};
+      const approvalKey =
+        stringDetail(
+          details,
+          "approvalId",
+          "approval_id",
+          "pathId",
+          "path_id",
+          "packetPath",
+          "packet_path",
+          "taskId",
+          "task_id",
+        ) ||
+        stringDetail(
+          params,
+          "approvalId",
+          "approval_id",
+          "pathId",
+          "path_id",
+          "packetPath",
+          "packet_path",
+          "taskId",
+          "task_id",
+        );
+      const packetPath =
+        stringDetail(details, "packetPath", "packet_path") ||
+        stringDetail(params, "packetPath", "packet_path");
+      const pathId =
+        stringDetail(details, "pathId", "path_id") ||
+        stringDetail(params, "pathId", "path_id");
+      const requestedAction =
+        stringDetail(details, "requestedAction", "requested_action") ||
+        stringDetail(params, "requestedAction", "requested_action");
+      const reason =
+        stringDetail(details, "reason") || stringDetail(params, "reason");
+      const summary =
+        stringDetail(details, "summary") || stringDetail(params, "summary");
+      const target =
+        stringDetail(details, "target") || stringDetail(params, "target");
+      const approvalId =
+        stringDetail(details, "approvalId", "approval_id") ||
+        stringDetail(params, "approvalId", "approval_id");
+      const waitId =
+        stringDetail(details, "waitId", "wait_id") ||
+        stringDetail(params, "waitId", "wait_id");
       return {
         id: `runtime/approval-dispatch/${safeTaskIdPart(approvalKey, "pending")}`,
         parentId: "group/app-operations",
@@ -400,7 +692,18 @@ export function resolveAksTask(
         mode: "achieve",
         owner: "app-ops",
         workflow: "approval-dispatch",
-        input: { approvalKey, targetTaskId: taskId || null },
+        input: {
+          approvalKey,
+          approvalId,
+          packetPath,
+          pathId,
+          reason,
+          requestedAction,
+          summary,
+          target,
+          targetTaskId: taskId || null,
+          waitId,
+        },
         priority: "P1",
       };
     }
@@ -413,13 +716,54 @@ export async function routeAksEvent(
   ctx: ProjectAppContext,
   event: Record<string, unknown>,
 ): Promise<unknown> {
+  if (event.type === "pipeline.spec.observed") {
+    const campaign = readCampaignReceipt(ctx.appPath("."));
+    const pullRequestIds = verifiedCampaignFixPullRequestIds(campaign, event);
+    if (pullRequestIds.length) {
+      const details = eventDetails(event);
+      const specId = stringDetail(details, "specId", "spec_id");
+      const sourceBranch = stringDetail(details, "sourceBranch").replace(
+        /^refs\/heads\//,
+        "",
+      );
+      const sourceCommit = stringDetail(
+        details,
+        "sourceCommit",
+        "sourceVersion",
+      );
+      ctx.emit({
+        type: "project.task.tick",
+        source: "aks-rp-e2e-app",
+        target: { project: projectId, taskId: masterValidationCycleTaskId },
+        action: "master-validation-cycle",
+        overrideWait: true,
+        data: {
+          project: projectId,
+          taskId: masterValidationCycleTaskId,
+          task_id: masterValidationCycleTaskId,
+          reason: "master-validation-fix-verified",
+          overrideWait: true,
+          specId,
+          pipelineRunId: stringDetail(details, "pipelineRunId", "runId"),
+          sourceBranch,
+          sourceCommit,
+          pullRequestIds,
+        },
+      });
+    }
+    return {
+      masterValidationFixReadyWake: pullRequestIds.length > 0,
+      pullRequestIds,
+    };
+  }
   if (event.type === "project.task.reconciled") {
     const details = eventDetails(event);
+    const appDir = ctx.appPath(".");
     const reconciledTaskId = targetTaskId(event);
     const specProof = reconciledTaskId
-      ? syncSpecLiveProof(ctx.appPath("."), reconciledTaskId)
+      ? syncSpecLiveProof(appDir, reconciledTaskId)
       : { changed: false };
-    const wake = loopRefillWakeForTaskEvent(ctx.appPath("."), event);
+    const wake = loopRefillWakeForTaskEvent(appDir, event);
     if (wake) ctx.emit(wake);
     const actionsApplied = Array.isArray(details.actionsApplied)
       ? details.actionsApplied.filter(
@@ -431,6 +775,15 @@ export async function routeAksEvent(
       reconciledTaskId === waitingFrontierReviewTaskId &&
       details.disposition === "converged" &&
       actionsApplied.length > 0;
+    const replayRepoRefOwnerHandoff =
+      details.disposition === "owner-handoff" &&
+      stringDetail(details, "handler") ===
+        "workflow:wait-for-repo-ref-advance" &&
+      Boolean(reconciledTaskId);
+    const malformedApprovalWaitReplay =
+      details.disposition === "waiting" &&
+      Boolean(reconciledTaskId) &&
+      malformedApprovalWaitContract(appDir, reconciledTaskId);
     if (continueWaitingFrontierReview) {
       ctx.emit({
         type: "project.task.tick",
@@ -449,17 +802,98 @@ export async function routeAksEvent(
         },
       });
     }
+    if (replayRepoRefOwnerHandoff) {
+      ctx.emit({
+        type: "project.task.tick",
+        source: "aks-rp-e2e-app",
+        target: {
+          project: projectId,
+          taskId: reconciledTaskId,
+        },
+        urgency: "high",
+        action: "repo-ref-owner-handoff-replay",
+        data: {
+          project: projectId,
+          taskId: reconciledTaskId,
+          task_id: reconciledTaskId,
+          reason: "repo-ref-wait-owner-handoff",
+          previousDisposition: details.disposition,
+          previousHandler: stringDetail(details, "handler"),
+        },
+      });
+    }
+    if (malformedApprovalWaitReplay && reconciledTaskId) {
+      ctx.emit({
+        type: "project.task.tick",
+        source: "aks-rp-e2e-app",
+        target: {
+          project: projectId,
+          taskId: reconciledTaskId,
+        },
+        urgency: "high",
+        action: "approval-wait-contract-replay",
+        data: {
+          project: projectId,
+          taskId: reconciledTaskId,
+          task_id: reconciledTaskId,
+          reason: "malformed-approval-wait-contract",
+          conditionId: malformedApprovalWaitReplay.conditionId,
+          issues: malformedApprovalWaitReplay.issues,
+          workflow: malformedApprovalWaitReplay.workflow,
+        },
+      });
+    }
     return {
       refillWake: Boolean(wake),
       waitingFrontierContinuation: continueWaitingFrontierReview,
+      repoRefOwnerHandoffReplay: replayRepoRefOwnerHandoff,
+      malformedApprovalWaitReplay: Boolean(malformedApprovalWaitReplay),
+      malformedApprovalWaitProblem: malformedApprovalWaitReplay,
       specProof,
     };
   }
   if (event.type === "aks.pipeline.check") return observeAksPipelines(ctx);
+  if (event.type === "aks.master-validation.check") {
+    const gate = masterValidationScheduleGate(ctx.appPath("."));
+    if (!gate.due) {
+      return {
+        masterValidationWake: false,
+        reason: gate.reason,
+        queuedAt: gate.queuedAt ?? null,
+        runId: gate.runId ?? null,
+      };
+    }
+    ctx.emit({
+      type: "project.task.tick",
+      source: "aks-rp-e2e-app",
+      target: {
+        project: projectId,
+        taskId: masterValidationCycleTaskId,
+      },
+      action: "master-validation-cycle",
+      data: {
+        project: projectId,
+        taskId: masterValidationCycleTaskId,
+        reason:
+          gate.reason === "campaign-active"
+            ? "master-validation-campaign-reconcile"
+            : "scheduled-six-hour-master-validation",
+        cycleSlot: masterValidationCycleSlot(),
+        pulse: masterValidationCampaignPulse(),
+      },
+    });
+    return {
+      masterValidationWake: true,
+      reason: gate.reason,
+      queuedAt: gate.queuedAt ?? null,
+      runId: gate.runId ?? null,
+    };
+  }
   if (event.type === "pipeline.queue.overdue") {
     const details = eventDetails(event);
     const runId = stringDetail(details, "pipelineRunId", "runId");
     const queueTime = stringDetail(details, "queueTime");
+    const queueScope = stringDetail(details, "queueScope");
     const message = {
       project: projectId,
       from: "app-ops",
@@ -468,7 +902,11 @@ export async function routeAksEvent(
       priority: "P2",
       pipelineRunId: runId,
       queueTime,
-      content: `AKS master-validation run ${runId || "unknown"} has waited at least 90 minutes for hosted-agent capacity. Queue position is preserved; the app did not cancel or duplicate the run.`,
+      queueScope,
+      content:
+        queueScope === "slice-jobs"
+          ? `AKS master-validation run ${runId || "unknown"} completed planning, but every test slice has waited at least 90 minutes for hosted-agent capacity. Queue position is preserved; the app did not cancel or duplicate the run.`
+          : `AKS master-validation run ${runId || "unknown"} has waited at least 90 minutes for hosted-agent capacity. Queue position is preserved; the app did not cancel or duplicate the run.`,
     };
     ctx.emit({
       type: "message.created",
@@ -539,6 +977,32 @@ export async function routeAksEvent(
   return undefined;
 }
 
+export function verifiedCampaignFixPullRequestIds(
+  campaign: CampaignReceipt | null,
+  event: Record<string, unknown>,
+): string[] {
+  if (!campaign) return [];
+  const details = eventDetails(event);
+  const specId = stringDetail(details, "specId", "spec_id");
+  const status = stringDetail(details, "status").toLowerCase();
+  const sourceBranch = stringDetail(details, "sourceBranch").replace(
+    /^refs\/heads\//,
+    "",
+  );
+  const sourceCommit = stringDetail(details, "sourceCommit", "sourceVersion");
+  if (
+    !specId ||
+    status !== "pass" ||
+    sourceBranch !== campaign.branch ||
+    sourceCommit !== campaign.currentCommit
+  ) {
+    return [];
+  }
+  return campaign.integratedFixes
+    .filter((fix) => fix.taskId.includes(`/${specId}/`))
+    .map((fix) => fix.pullRequestId);
+}
+
 export function scenarioTestFrontierWakeEvent(
   event: Record<string, unknown>,
 ): ProjectAppEvent {
@@ -604,22 +1068,13 @@ export default defineProjectApp({
       id: "master-validation-staging-cycle",
       enabled: true,
       // The workflow receipt owns the six-hour due rule. Keep the level
-      // reconciliation pulse short so daemon/app reloads cannot postpone a due
+      // observation pulse short so daemon/app reloads cannot postpone a due
       // cycle by another six hours.
       intervalMs: 300_000,
       emits: [
         {
-          type: "project.task.tick",
-          target: {
-            project: projectId,
-            taskId: masterValidationCycleTaskId,
-          },
-          action: "master-validation-cycle",
-          data: {
-            project: projectId,
-            taskId: masterValidationCycleTaskId,
-            reason: "scheduled-six-hour-master-validation",
-          },
+          type: "aks.master-validation.check",
+          target: { project: projectId },
         },
       ],
     },
@@ -799,6 +1254,7 @@ export default defineProjectApp({
   events: [
     { type: "project.task.reconciled", target: projectTarget },
     { type: "aks.pipeline.check", target: projectTarget },
+    { type: "aks.master-validation.check", target: projectTarget },
     { type: "aks.pull-request.check", target: projectTarget },
     { type: "aks.repo-ref.check", target: projectTarget },
     { type: "aks.repo-ref.observed", target: projectTarget },

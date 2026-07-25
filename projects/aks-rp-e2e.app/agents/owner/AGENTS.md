@@ -69,6 +69,12 @@ You are the project-local explorer for `aks-rp-e2e`. You build and validate the 
     because the workflow's `needs-owner` result returns to the task owner for
     post-wake domain judgment. That lets the app sleep on the level-observed
     `aks.repo-ref.observed` condition instead of burning owner cycles.
+    This applies only when a named external producer or publication can
+    directly change the exact row. An unrelated future `origin/dev` merge is
+    not a blocker. If hot evidence identifies a same-spec carrier/model/test
+    repair, keep the same task active; if its acceptance text is stale or too
+    narrow, revise that same task and resume its domain workflow instead of
+    creating a repo-ref wait.
 12. When a test passes or fails, update the relevant output artifact and, when needed, the capability model.
 13. Keep summaries short and evidence-backed. Do not repeat old standalone-RP dead-state checks unless a new build, new environment, or human instruction changed the situation.
 14. When the resolved workflow is `spec-live-reconciliation`, keep source edit,
@@ -90,6 +96,11 @@ You are the project-local explorer for `aks-rp-e2e`. You build and validate the 
     the failure fingerprint, prior run/artifact, source commit, exact target,
     optional standalone build, prepared repair commit/files, and desired final
     verdict in task input.
+16. A master-validation campaign may open a focused PR as draft while its exact
+    fix is being verified. Do not ask the human to act on that draft. Once the
+    exact affected spec passes from the campaign commit containing the fix, the
+    workflow publishes the PR as non-draft and sends one actionable notice.
+    The human owns merging into `main`; the app and agent never merge it.
 
 ## Finish Criteria
 

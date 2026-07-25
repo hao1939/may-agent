@@ -5,10 +5,15 @@ import { dirname, join } from "node:path";
 import {
   Type,
   type ProjectAppConditionSpec,
+  type ProjectAppTaskAction,
   type WorkflowContext,
   type WorkflowResult,
 } from "@may-agent/sdk";
-import { reconcileSpecLive } from "./spec-live-reconciliation.js";
+import {
+  priorIntegratedProof,
+  reconcileSpecLive,
+  sourceChangeMayAffectSpec,
+} from "./spec-live-reconciliation.js";
 
 export const name = "master-validation-failure";
 export const description =
@@ -26,26 +31,36 @@ const azCli =
     ? "/app/.state/.local/bin/az"
     : "az");
 
-type FailureInput = {
+export type FailureInput = {
   taskId: string;
   generation: number;
   specId: string;
   pipelineRunId: string;
   failureFingerprint: string;
   artifactPath: string;
+  sourceBranch: string;
   sourceCommit: string;
   reason: string;
   category: string;
   status: string;
+  carrierCommit: string;
 };
 
 type PullRequest = {
   pullRequestId?: unknown;
   status?: unknown;
   mergeStatus?: unknown;
+  description?: unknown;
+  sourceRefName?: unknown;
   lastMergeSourceCommit?: { commitId?: unknown };
   lastMergeCommit?: { commitId?: unknown };
   url?: unknown;
+};
+
+type LiveChild = {
+  taskId: string;
+  generation: number;
+  phase: string;
 };
 
 type Decision = {
@@ -78,6 +93,10 @@ function text(value: unknown): string {
     : typeof value === "number" && Number.isFinite(value)
       ? String(value)
       : "";
+}
+
+export function nestedWorkflowOutput(value: unknown): Record<string, unknown> {
+  return record(record(value).output);
 }
 
 function matchingJsonObject(raw: string, start: number): string | null {
@@ -119,10 +138,12 @@ export function parseFailureInput(raw: string): FailureInput | null {
       pipelineRunId: text(input.pipelineRunId),
       failureFingerprint: text(input.failureFingerprint),
       artifactPath: text(input.artifactPath),
+      sourceBranch: text(input.sourceBranch),
       sourceCommit: text(input.sourceCommit),
       reason: text(input.reason),
       category: text(input.category),
       status: text(input.status),
+      carrierCommit: text(input.carrierCommit),
     };
     return parsed.taskId && parsed.specId && parsed.failureFingerprint
       ? parsed
@@ -199,33 +220,304 @@ function pullRequests(repoDir: string, sourceBranch: string): PullRequest[] {
   return Array.isArray(value) ? (value as PullRequest[]) : [];
 }
 
+export function campaignRepairPullRequestDescription(input: {
+  taskId: string;
+  specId: string;
+  failureRunId: string;
+  sourceCommit: string;
+  campaignBaseCommit: string;
+}): string {
+  return [
+    `Task: ${input.taskId}`,
+    "",
+    "Master-Validation-Candidate: include",
+    "",
+    `Spec: ${input.specId}`,
+    `Failed campaign run: ${input.failureRunId}`,
+    `Frozen campaign base: ${input.campaignBaseCommit}`,
+    `Focused fix commit: ${input.sourceCommit}`,
+    "",
+    "This focused repair targets main, but the frozen campaign is its immediate integration proof. Do not merge the campaign branch itself.",
+  ].join("\n");
+}
+
+function createCampaignRepairPullRequest(
+  repoDir: string,
+  input: {
+    taskId: string;
+    specId: string;
+    failureRunId: string;
+    sourceBranch: string;
+    sourceCommit: string;
+    campaignBaseCommit: string;
+  },
+): PullRequest {
+  return record(
+    azJson(repoDir, [
+      "repos",
+      "pr",
+      "create",
+      "--repository",
+      repository,
+      "--source-branch",
+      input.sourceBranch,
+      "--target-branch",
+      targetBranch,
+      "--title",
+      `Fix ${input.specId} master-validation campaign failure`,
+      "--description",
+      campaignRepairPullRequestDescription(input),
+      "--draft",
+      "true",
+    ]),
+  ) as PullRequest;
+}
+
+function activeTaskPullRequests(
+  repoDir: string,
+  taskId: string,
+): PullRequest[] {
+  const value = azJson(repoDir, [
+    "repos",
+    "pr",
+    "list",
+    "--repository",
+    repository,
+    "--target-branch",
+    targetBranch,
+    "--status",
+    "active",
+    "--top",
+    "100",
+  ]);
+  if (!Array.isArray(value)) return [];
+  const marker = `Task: ${taskId}`;
+  return (value as PullRequest[]).filter((pullRequest) =>
+    text(pullRequest.description).split(/\r?\n/).includes(marker),
+  );
+}
+
+function abandonPullRequest(repoDir: string, pullRequestId: string): boolean {
+  const result = command(
+    azCli,
+    [
+      "repos",
+      "pr",
+      "update",
+      "--id",
+      pullRequestId,
+      "--status",
+      "abandoned",
+      "--organization",
+      organization,
+      "--project",
+      adoProject,
+      "-o",
+      "json",
+    ],
+    repoDir,
+    true,
+  );
+  return result.status === 0;
+}
+
+function abandonSupersededTaskPullRequests(
+  repoDir: string,
+  taskId: string,
+): string[] {
+  return activeTaskPullRequests(repoDir, taskId).map((pullRequest) => {
+    const pullRequestId = text(pullRequest.pullRequestId);
+    return pullRequestId && abandonPullRequest(repoDir, pullRequestId)
+      ? `superseded-pull-request-abandoned:${pullRequestId}`
+      : `superseded-pull-request-abandon-failed:${pullRequestId || "unknown"}`;
+  });
+}
+
 export function productRecoveryCondition(
   input: FailureInput,
+  afterRunId = input.pipelineRunId,
 ): ProjectAppConditionSpec {
   return {
-    id: `master-validation-product-recovery-${input.failureFingerprint}`,
+    // Include the blocking observation in the identity. Reusing the same
+    // Condition across separate failure episodes can retain an earlier true
+    // pass and immediately wake a newly observed failure.
+    id: `master-validation-product-recovery-${input.failureFingerprint}-after-${afterRunId || "unknown"}`,
     type: "pipeline.spec.observed",
     subject: "project:aks-rp-e2e",
     expected: {
       specId: input.specId,
       status: "pass",
       sourceBranch: "refs/heads/main",
+      pipelineRunId: { gt: afterRunId },
     },
   };
 }
 
-function triggerEvent(raw: string): Record<string, unknown> | null {
-  const marker = raw.indexOf("## Trigger Event");
-  if (marker < 0) return null;
-  const scoped = raw.slice(marker);
-  const start = scoped.indexOf("{");
-  const object = start >= 0 ? matchingJsonObject(scoped, start) : null;
-  if (!object) return null;
+export function currentRecoveryBaselineRunId(
+  ctx: Pick<WorkflowContext, "appDir">,
+  input: FailureInput,
+): string {
+  if (!ctx.appDir) return input.pipelineRunId;
+  let currentRunId = "";
   try {
-    return record(JSON.parse(object));
+    const cycle = record(
+      JSON.parse(
+        readFileSync(
+          join(
+            ctx.appDir,
+            ".state",
+            "master-validation-cycle.json",
+          ),
+          "utf8",
+        ),
+      ),
+    );
+    currentRunId = text(cycle.runId);
+  } catch {
+    // The blocking run remains the baseline before the standing cycle exists.
+  }
+  return laterRun(currentRunId, input.pipelineRunId)
+    ? currentRunId
+    : input.pipelineRunId;
+}
+
+function pipelineMainRecoveryCondition(
+  input: FailureInput,
+  baselineRunId: string,
+): ProjectAppConditionSpec {
+  return {
+    id: `master-validation-pipeline-recovery-${input.failureFingerprint}-campaign-${baselineRunId}`,
+    type: "project.task.tick",
+    subject: `task:${input.taskId}`,
+    expected: {
+      reason: "master-validation-main-passed",
+      campaignBaselineRunId: baselineRunId,
+    },
+  };
+}
+
+function progressedCampaign(
+  input: FailureInput,
+  appDir: string,
+): {
+  baselineRunId: string;
+  branch: string;
+  currentCommit: string;
+  runId: string;
+} | null {
+  if (input.specId !== "pipeline.master-validation.bootstrap") return null;
+  try {
+    const campaign = record(
+      JSON.parse(
+        readFileSync(
+          join(appDir, ".state", "master-validation-campaign.json"),
+          "utf8",
+        ),
+      ),
+    );
+    const cycle = record(
+      JSON.parse(
+        readFileSync(
+          join(appDir, ".state", "master-validation-cycle.json"),
+          "utf8",
+        ),
+      ),
+    );
+    const currentCommit = text(campaign.currentCommit);
+    const runId = text(cycle.runId);
+    if (
+      text(cycle.purpose) !== "master-validation-campaign" ||
+      !text(campaign.baselineRunId) ||
+      !text(campaign.branch) ||
+      !currentCommit ||
+      !runId ||
+      currentCommit === input.sourceCommit
+    ) {
+      return null;
+    }
+    return {
+      baselineRunId: text(campaign.baselineRunId),
+      branch: text(campaign.branch),
+      currentCommit,
+      runId,
+    };
   } catch {
     return null;
   }
+}
+
+export function frozenCampaignBaseForFailure(
+  input: FailureInput,
+  appDir: string,
+): string {
+  try {
+    const campaign = record(
+      JSON.parse(
+        readFileSync(
+          join(appDir, ".state", "master-validation-campaign.json"),
+          "utf8",
+        ),
+      ),
+    );
+    const campaignBranch = text(campaign.branch);
+    const observedBranch = input.sourceBranch.replace(/^refs\/heads\//, "");
+    return campaignBranch && observedBranch === campaignBranch
+      ? text(campaign.baseCommit)
+      : "";
+  } catch {
+    return "";
+  }
+}
+
+export function alignCleanRepairWorkspace(input: {
+  workspaceDir: string;
+  targetRef: string;
+  repairBaseCommit: string;
+}): string {
+  const current = git(input.workspaceDir, ["rev-parse", "HEAD"]).stdout;
+  if (!input.repairBaseCommit || current === input.repairBaseCommit) {
+    return current;
+  }
+  if (git(input.workspaceDir, ["status", "--porcelain=v1"]).stdout) {
+    return current;
+  }
+  const currentBelongsToMain =
+    git(
+      input.workspaceDir,
+      ["merge-base", "--is-ancestor", current, input.targetRef],
+      true,
+    ).status === 0;
+  const repairBaseBelongsToMain =
+    git(
+      input.workspaceDir,
+      ["merge-base", "--is-ancestor", input.repairBaseCommit, input.targetRef],
+      true,
+    ).status === 0;
+  if (!currentBelongsToMain || !repairBaseBelongsToMain) return current;
+
+  // The workspace is clean and contains no task-only commit: move the task
+  // branch to the campaign snapshot before the agent authors the next fix.
+  // This deliberately drops only newer main history from this isolated task
+  // branch; it never rewrites a branch containing unmerged task work.
+  git(input.workspaceDir, ["reset", "--hard", input.repairBaseCommit]);
+  return git(input.workspaceDir, ["rev-parse", "HEAD"]).stdout;
+}
+
+function triggerEvent(raw: string): Record<string, unknown> | null {
+  for (const marker of ["## Trigger Observation", "## Trigger Event"]) {
+    const startMarker = raw.indexOf(marker);
+    if (startMarker < 0) continue;
+    const scoped = raw.slice(startMarker);
+    const start = scoped.indexOf("{");
+    const object = start >= 0 ? matchingJsonObject(scoped, start) : null;
+    if (!object) continue;
+    try {
+      return record(JSON.parse(object));
+    } catch {
+      // Try the next supported marker.
+    }
+  }
+  return null;
 }
 
 function laterRun(candidate: string, baseline: string): boolean {
@@ -248,6 +540,7 @@ export function passingRecoveryObservation(
   return value("specId") === input.specId &&
     value("status").toLowerCase() === "pass" &&
     value("sourceBranch") === "refs/heads/main" &&
+    Boolean(value("sourceCommit")) &&
     laterRun(value("pipelineRunId"), input.pipelineRunId)
     ? { ...data, ...trigger }
     : null;
@@ -260,15 +553,74 @@ export function shouldReconcileTestFix(input: {
   return input.hasPullRequest || !input.sourceIsInTarget;
 }
 
-export function failureObservationIsStale(
-  failureSourceCommit: string,
-  currentMainCommit: string,
+export function changedFilesMayAffectSpec(
+  specId: string,
+  changedFiles: string[],
 ): boolean {
-  return Boolean(
-    failureSourceCommit &&
-    currentMainCommit &&
-    failureSourceCommit !== currentMainCommit,
+  return sourceChangeMayAffectSpec(specId, changedFiles);
+}
+
+export function observationAppliesToCurrentMain(input: {
+  specId: string;
+  observationCommit: string;
+  currentMainCommit: string;
+  observationIsAncestor: boolean;
+  changedFiles: string[] | null;
+}): boolean {
+  if (!input.observationCommit || !input.currentMainCommit) return false;
+  if (input.observationCommit === input.currentMainCommit) return true;
+  return (
+    input.observationIsAncestor &&
+    input.changedFiles !== null &&
+    !changedFilesMayAffectSpec(input.specId, input.changedFiles)
   );
+}
+
+export function boundedChangedFileEvidence(
+  changedFiles: string[] | null,
+  limit = 20,
+): string[] {
+  if (changedFiles === null) return ["relevant-main-change:unknown"];
+  const bounded = changedFiles
+    .slice(0, Math.max(0, limit))
+    .map((path) => `relevant-main-change:${path}`);
+  return changedFiles.length > bounded.length
+    ? [
+        ...bounded,
+        `relevant-main-change-count:${changedFiles.length}`,
+        `relevant-main-change-omitted:${changedFiles.length - bounded.length}`,
+      ]
+    : bounded;
+}
+
+export function boundedEvidence(evidence: string[], limit = 32): string[] {
+  const sanitized = evidence.map(text).filter(Boolean);
+  if (sanitized.length <= limit) return sanitized;
+  const kept = Math.max(0, limit - 2);
+  return [
+    ...sanitized.slice(0, kept),
+    `evidence-entry-count:${sanitized.length}`,
+    `evidence-entry-omitted:${sanitized.length - kept}`,
+  ];
+}
+
+export function hasPreparedRepair(input: FailureInput): boolean {
+  return Boolean(input.carrierCommit);
+}
+
+function doneWithEvidence(
+  ctx: WorkflowContext,
+  state: "converged" | "needs-owner",
+  summary: string,
+  evidence: string[],
+  extras: Record<string, unknown> = {},
+): WorkflowResult {
+  return ctx.done(summary, {
+    state,
+    summary,
+    evidence: boundedEvidence(evidence),
+    ...extras,
+  });
 }
 
 function waiting(
@@ -276,14 +628,149 @@ function waiting(
   summary: string,
   evidence: string[],
   condition: ProjectAppConditionSpec,
+  actions: ProjectAppTaskAction[] = [],
 ): WorkflowResult {
   return ctx.done(summary, {
     state: "waiting",
     summary,
-    evidence,
-    actions: [],
+    evidence: boundedEvidence(evidence),
+    actions,
     conditions: [condition],
   });
+}
+
+export function inconclusiveWait(
+  ctx: WorkflowContext,
+  input: FailureInput,
+  summary: string,
+  evidence: string[],
+  actions: ProjectAppTaskAction[] = [],
+): WorkflowResult {
+  return waiting(
+    ctx,
+    summary,
+    [
+      `blocking-pipeline-run:${input.pipelineRunId}`,
+      ...(input.sourceCommit ? [`source-commit:${input.sourceCommit}`] : []),
+      "classification:inconclusive",
+      "verification-required:later-current-main-spec-pass",
+      ...evidence,
+    ],
+    productRecoveryCondition(input, currentRecoveryBaselineRunId(ctx, input)),
+    actions,
+  );
+}
+
+function reconciliationPayload(raw: string): Record<string, unknown> | null {
+  const marker = raw.indexOf("## Reconciliation Task");
+  if (marker < 0) return null;
+  const scoped = raw.slice(marker);
+  const start = scoped.indexOf("{");
+  const object = start >= 0 ? matchingJsonObject(scoped, start) : null;
+  if (!object) return null;
+  try {
+    return record(JSON.parse(object));
+  } catch {
+    return null;
+  }
+}
+
+export function priorProductClassification(raw: string): {
+  taskId: string;
+  evidence: string[];
+} | null {
+  const completed = record(reconciliationPayload(raw)?.children).completed;
+  if (!Array.isArray(completed)) return null;
+  const candidates = completed
+    .map((value) => record(value))
+    .map((child) => {
+      const evidence = Array.isArray(child.evidence)
+        ? child.evidence.map(text).filter(Boolean)
+        : [];
+      const outcome = text(child.outcome);
+      const summary = text(child.summary);
+      const corpus = [outcome, summary, ...evidence].join("\n");
+      return {
+        taskId: text(child.taskId),
+        outcome,
+        summary,
+        evidence,
+        explicit: /classification\s*[=:]\s*prod_issue/i.test(corpus),
+        product: /product[- ]recovery|product issue|prod_issue/i.test(corpus),
+      };
+    })
+    .filter((candidate) => candidate.taskId && candidate.product)
+    .sort((left, right) => Number(right.explicit) - Number(left.explicit));
+  const selected = candidates[0];
+  if (!selected) return null;
+  const relevant = selected.evidence.filter((entry) =>
+    /classification\s*[=:]\s*prod_issue|product issue|product recovery|same .*timeout|same .*signature|repeated service-side/i.test(
+      entry,
+    ),
+  );
+  return {
+    taskId: selected.taskId,
+    evidence: [
+      `prior-product-classification:${selected.taskId}`,
+      ...(selected.outcome ? [`prior-outcome:${selected.outcome}`] : []),
+      ...(selected.summary ? [`prior-summary:${selected.summary}`] : []),
+      ...relevant.slice(0, 6),
+    ],
+  };
+}
+
+export function legacyRecoveryChildren(raw: string): LiveChild[] {
+  const payload = reconciliationPayload(raw);
+  const live = record(payload?.children).live;
+  if (!Array.isArray(live)) return [];
+  return live
+    .map((value) => record(value))
+    .map((value) => ({
+      taskId: text(value.taskId),
+      generation: Math.max(1, Number(value.generation ?? 1) || 1),
+      phase: text(value.phase),
+    }))
+    .filter(
+      (child) =>
+        (child.taskId.includes("product-recovery-after-") ||
+          child.taskId.includes("publish-current-main-staging-exclusion-")) &&
+        !["active", "running"].includes(child.phase),
+    );
+}
+
+function hasLegacyPublicationChild(raw: string): boolean {
+  return legacyRecoveryChildren(raw).some((child) =>
+    child.taskId.includes("publish-current-main-staging-exclusion-"),
+  );
+}
+
+function absorbLegacyRecoveryActions(raw: string): ProjectAppTaskAction[] {
+  return legacyRecoveryChildren(raw).map((child) => ({
+    kind: "close-task" as const,
+    taskId: child.taskId,
+    expectedGeneration: child.generation,
+    summary:
+      "Absorbed this per-run recovery holder into the stable master-validation failure task and its typed recovery Condition.",
+  }));
+}
+
+function changedFilesBetween(
+  repoDir: string,
+  fromCommit: string,
+  toCommit: string,
+): string[] | null {
+  if (!fromCommit || !toCommit || fromCommit === toCommit) return [];
+  const result = git(
+    repoDir,
+    ["diff", "--name-only", `${fromCommit}..${toCommit}`, "--"],
+    true,
+  );
+  return result.status === 0
+    ? result.stdout
+        .split(/\r?\n/)
+        .map((value) => value.trim())
+        .filter(Boolean)
+    : null;
 }
 
 function notificationPath(ctx: WorkflowContext, key: string): string {
@@ -330,14 +817,15 @@ function notifyHuman(
   return true;
 }
 
-async function reconcileTestIssue(
+export function preserveVerificationAfterNestedReconciliation(
   ctx: WorkflowContext,
   input: FailureInput,
-): Promise<WorkflowResult> {
-  const result = await reconcileSpecLive(ctx, { targetBranch: targetBranch });
+  result: WorkflowResult,
+): WorkflowResult {
   const resultRecord = record(result);
-  const evidence = Array.isArray(resultRecord.evidence)
-    ? resultRecord.evidence.map(text).filter(Boolean)
+  const output = nestedWorkflowOutput(result);
+  const evidence = Array.isArray(output.evidence)
+    ? output.evidence.map(text).filter(Boolean)
     : [];
   const pullRequestId =
     evidence
@@ -347,6 +835,14 @@ async function reconcileTestIssue(
     evidence
       .find((entry) => entry.startsWith("source-commit:"))
       ?.slice("source-commit:".length) ?? "";
+  if (text(output.state) === "existing-recovery") {
+    const summary =
+      text(output.summary) ||
+      `${input.specId} already recovered in a later applicable current-main observation.`;
+    return doneWithEvidence(ctx, "converged", summary, evidence, {
+      actions: absorbLegacyRecoveryActions(ctx.task),
+    });
+  }
   if (pullRequestId) {
     notifyHuman(
       ctx,
@@ -357,12 +853,104 @@ async function reconcileTestIssue(
         `Failed aggregate run: ${input.pipelineRunId}`,
         `Pull request: ${pullRequestId}`,
         ...(fixCommit ? [`Exact tested commit: ${fixCommit}`] : []),
-        `Status: ${text(resultRecord.summary)}`,
+        `Status: ${text(output.summary) || text(resultRecord.summary)}`,
       ].join("\n"),
       { pullRequestId, ...(fixCommit ? { fixCommit } : {}) },
     );
   }
+  if (text(output.state) === "converged") {
+    const summary = `${input.specId} has a live-proven integrated repair, but the master-validation failure remains open until a later current-main observation passes the same spec.`;
+    return waiting(
+      ctx,
+      summary,
+      [
+        ...evidence,
+        `blocking-pipeline-run:${input.pipelineRunId}`,
+        "verification-required:later-current-main-spec-pass",
+      ],
+      productRecoveryCondition(input, currentRecoveryBaselineRunId(ctx, input)),
+      absorbLegacyRecoveryActions(ctx.task),
+    );
+  }
   return result;
+}
+
+async function reconcileTestIssue(
+  ctx: WorkflowContext,
+  input: FailureInput,
+): Promise<WorkflowResult> {
+  const result = await reconcileSpecLive(ctx, {
+    targetBranch: targetBranch,
+    existingRecoveryAfterRunId: input.pipelineRunId,
+    reusePriorIntegratedProof: true,
+  });
+  return preserveVerificationAfterNestedReconciliation(ctx, input, result);
+}
+
+function prepareCampaignRepair(
+  ctx: WorkflowContext,
+  input: FailureInput,
+  values: {
+    repoDir: string;
+    workspaceDir: string;
+    sourceBranch: string;
+    sourceCommit: string;
+    campaignBaseCommit: string;
+    evidence: string[];
+  },
+): WorkflowResult {
+  git(values.workspaceDir, [
+    "push",
+    "--set-upstream",
+    "origin",
+    values.sourceBranch,
+  ]);
+  let pullRequest = pullRequests(values.repoDir, values.sourceBranch).find(
+    (candidate) => text(candidate.status) === "active",
+  );
+  if (!pullRequest) {
+    pullRequest = createCampaignRepairPullRequest(values.repoDir, {
+      taskId: input.taskId,
+      specId: input.specId,
+      failureRunId: input.pipelineRunId,
+      sourceBranch: values.sourceBranch,
+      sourceCommit: values.sourceCommit,
+      campaignBaseCommit: values.campaignBaseCommit,
+    });
+  }
+  const pullRequestId = text(pullRequest.pullRequestId);
+  if (!pullRequestId) {
+    throw new Error("Azure DevOps did not return a campaign repair PR id");
+  }
+  ctx.dispatchEvent("project.task.tick", {
+    target: {
+      project: "aks-rp-e2e",
+      taskId: "master-validation-staging-cycle",
+    },
+    project: "aks-rp-e2e",
+    taskId: "master-validation-staging-cycle",
+    task_id: "master-validation-staging-cycle",
+    action: "master-validation-cycle",
+    reason: "master-validation-focused-fix-published",
+    pullRequestId,
+    sourceCommit: values.sourceCommit,
+  });
+  const summary = `Prepared draft focused PR ${pullRequestId} for ${input.specId}; the frozen campaign can integrate it immediately, and the human will be notified only after verification publishes it as non-draft.`;
+  return waiting(
+    ctx,
+    summary,
+    [
+      ...values.evidence,
+      `blocking-pipeline-run:${input.pipelineRunId}`,
+      `campaign-base:${values.campaignBaseCommit}`,
+      `source-branch:${values.sourceBranch}`,
+      `source-commit:${values.sourceCommit}`,
+      `pull-request:${pullRequestId}`,
+      "verification-required:frozen-campaign-then-current-main",
+    ],
+    productRecoveryCondition(input, currentRecoveryBaselineRunId(ctx, input)),
+    absorbLegacyRecoveryActions(ctx.task),
+  );
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
@@ -371,31 +959,31 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const workspaceDir = ctx.workspaceDir ?? repoDir;
   if (!input || workspaceDir === repoDir) {
     const summary = `${name} requires a valid failure observation and a main-based task worktree.`;
-    return ctx.done(summary, {
-      state: "needs-owner",
-      summary,
-      evidence: [`workspace:${workspaceDir}`],
-    });
-  }
-
-  const recovery = passingRecoveryObservation(ctx.task, input);
-  if (recovery) {
-    const recoveryRunId = text(recovery.pipelineRunId);
-    const summary = `${input.specId} recovered in later current-main master-validation run ${recoveryRunId}.`;
-    return ctx.done(summary, {
-      state: "converged",
-      summary,
-      evidence: [
-        `blocking-pipeline-run:${input.pipelineRunId}`,
-        `recovery-pipeline-run:${recoveryRunId}`,
-        `source-commit:${text(recovery.sourceCommit)}`,
-        `artifact:${text(recovery.artifactPath)}`,
-      ],
-      actions: [],
-    });
+    return doneWithEvidence(ctx, "needs-owner", summary, [
+      `workspace:${workspaceDir}`,
+    ]);
   }
 
   try {
+    const campaign = progressedCampaign(
+      input,
+      ctx.appDir ?? "/app/projects/aks-rp-e2e.app",
+    );
+    if (campaign) {
+      const summary = `Pipeline/bootstrap failure ${input.pipelineRunId} has a newer frozen-campaign commit ${campaign.currentCommit} in run ${campaign.runId}. Keep this stable issue open for final current-main proof; do not wait for merge before the campaign continues.`;
+      return waiting(
+        ctx,
+        summary,
+        [
+          `blocking-pipeline-run:${input.pipelineRunId}`,
+          `campaign-run:${campaign.runId}`,
+          `campaign-branch:${campaign.branch}`,
+          `campaign-commit:${campaign.currentCommit}`,
+        ],
+        pipelineMainRecoveryCondition(input, campaign.baselineRunId),
+        absorbLegacyRecoveryActions(ctx.task),
+      );
+    }
     git(repoDir, ["fetch", "origin", targetBranch]);
     const sourceBranch = git(workspaceDir, [
       "symbolic-ref",
@@ -403,19 +991,155 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       "--short",
       "HEAD",
     ]).stdout;
-    const headCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
     const baseCommit = git(repoDir, ["rev-parse", targetRef]).stdout;
-    if (failureObservationIsStale(input.sourceCommit, baseCommit)) {
-      const summary = `${input.specId} failed on older main@${input.sourceCommit}; current ${targetRef}@${baseCommit} must provide the next spec verdict before any further source repair.`;
+    const frozenBaseCommit = frozenCampaignBaseForFailure(
+      input,
+      ctx.appDir ?? "/app/projects/aks-rp-e2e.app",
+    );
+    const repairBaseCommit = frozenBaseCommit || baseCommit;
+    const headCommit = alignCleanRepairWorkspace({
+      workspaceDir,
+      targetRef,
+      repairBaseCommit,
+    });
+    const retainedIntegratedProof = priorIntegratedProof({
+      repoDir,
+      taskId: input.taskId,
+      generation: input.generation,
+      specId: input.specId,
+      target: "staging",
+      standaloneBuildId: "",
+    });
+    if (retainedIntegratedProof) {
+      return reconcileTestIssue(ctx, input);
+    }
+    if (hasPreparedRepair(input)) {
+      return reconcileTestIssue(ctx, input);
+    }
+    const recovery = passingRecoveryObservation(ctx.task, input);
+    const recoveryCommit = text(recovery?.sourceCommit);
+    const recoveryChangedFiles = recovery
+      ? changedFilesBetween(repoDir, recoveryCommit, baseCommit)
+      : null;
+    const recoveryApplies = recovery
+      ? observationAppliesToCurrentMain({
+          specId: input.specId,
+          observationCommit: recoveryCommit,
+          currentMainCommit: baseCommit,
+          observationIsAncestor:
+            git(
+              repoDir,
+              ["merge-base", "--is-ancestor", recoveryCommit, targetRef],
+              true,
+            ).status === 0,
+          changedFiles: recoveryChangedFiles,
+        })
+      : false;
+    if (recovery && recoveryApplies) {
+      const recoveryRunId = text(recovery.pipelineRunId);
+      const summary = `${input.specId} recovered in later current-main master-validation run ${recoveryRunId}.`;
+      const supersededPullRequests = abandonSupersededTaskPullRequests(
+        repoDir,
+        input.taskId,
+      );
+      return doneWithEvidence(
+        ctx,
+        "converged",
+        summary,
+        [
+          `blocking-pipeline-run:${input.pipelineRunId}`,
+          `recovery-pipeline-run:${recoveryRunId}`,
+          `source-commit:${recoveryCommit}`,
+          ...(recoveryCommit === baseCommit
+            ? []
+            : [`current-main-commit:${baseCommit}`]),
+          `artifact:${text(recovery.artifactPath)}`,
+          ...supersededPullRequests,
+        ],
+        { actions: absorbLegacyRecoveryActions(ctx.task) },
+      );
+    }
+    // Older owner turns split publication into a child and left the stable
+    // failure parent with only fresh watcher input. Resume the finite source
+    // lifecycle on the parent before stale-main logic can put both resources
+    // back to sleep. The child is absorbed after nested reconciliation has
+    // produced integration evidence.
+    if (hasLegacyPublicationChild(ctx.task)) {
+      if (frozenBaseCommit && headCommit !== repairBaseCommit) {
+        return prepareCampaignRepair(ctx, input, {
+          repoDir,
+          workspaceDir,
+          sourceBranch,
+          sourceCommit: headCommit,
+          campaignBaseCommit: frozenBaseCommit,
+          evidence: [
+            "resumed-existing-campaign-repair",
+            `repair-base:${repairBaseCommit}`,
+          ],
+        });
+      }
+      return reconcileTestIssue(ctx, input);
+    }
+    const priorProduct = priorProductClassification(ctx.task);
+    if (
+      priorProduct &&
+      ["environment_blocker", "product_failure", "prod_issue"].includes(
+        input.category,
+      )
+    ) {
+      notifyHuman(
+        ctx,
+        input,
+        "product",
+        [
+          `AKS master validation again observes the known product/environment issue in ${input.specId}.`,
+          `Pipeline run: ${input.pipelineRunId}`,
+          `Reason: ${input.reason}`,
+        ].join("\n"),
+      );
+      const summary = `Preserved the durable product classification for repeated fingerprint ${input.failureFingerprint} in ${input.specId}; keep the same stable task waiting for a later current-main pass.`;
       return waiting(
         ctx,
         summary,
         [
-          `blocking-pipeline-run:${input.pipelineRunId}`,
-          `failure-source-commit:${input.sourceCommit}`,
-          `current-main-commit:${baseCommit}`,
+          `pipeline-run:${input.pipelineRunId}`,
+          `source-commit:${input.sourceCommit}`,
+          `artifact:${input.artifactPath}`,
+          "classification:prod_issue",
+          ...priorProduct.evidence,
         ],
-        productRecoveryCondition(input),
+        productRecoveryCondition(
+          input,
+          currentRecoveryBaselineRunId(ctx, input),
+        ),
+        absorbLegacyRecoveryActions(ctx.task),
+      );
+    }
+    if (["product_failure", "prod_issue"].includes(input.category)) {
+      notifyHuman(
+        ctx,
+        input,
+        "product",
+        [
+          `AKS master validation still observes a product issue in ${input.specId}.`,
+          `Pipeline run: ${input.pipelineRunId}`,
+          `Reason: ${input.reason}`,
+        ].join("\n"),
+      );
+      const summary = `Classified ${input.specId} as a product issue; keep the same stable task waiting for a later current-main pass.`;
+      return waiting(
+        ctx,
+        summary,
+        [
+          `pipeline-run:${input.pipelineRunId}`,
+          `source-commit:${input.sourceCommit}`,
+          `artifact:${input.artifactPath}`,
+        ],
+        productRecoveryCondition(
+          input,
+          currentRecoveryBaselineRunId(ctx, input),
+        ),
+        absorbLegacyRecoveryActions(ctx.task),
       );
     }
     const existingPr = pullRequests(repoDir, sourceBranch)[0];
@@ -428,17 +1152,28 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         sourceIsInTarget,
       })
     ) {
+      if (frozenBaseCommit && headCommit !== repairBaseCommit) {
+        return prepareCampaignRepair(ctx, input, {
+          repoDir,
+          workspaceDir,
+          sourceBranch,
+          sourceCommit: headCommit,
+          campaignBaseCommit: frozenBaseCommit,
+          evidence: [
+            "resumed-existing-campaign-repair",
+            `repair-base:${repairBaseCommit}`,
+          ],
+        });
+      }
       return reconcileTestIssue(ctx, input);
     }
 
     if (git(workspaceDir, ["status", "--porcelain=v1"]).stdout) {
       const summary =
         "Failure investigation worktree is dirty before deterministic publication.";
-      return ctx.done(summary, {
-        state: "needs-owner",
-        summary,
-        evidence: [`workspace:${workspaceDir}`],
-      });
+      return doneWithEvidence(ctx, "needs-owner", summary, [
+        `workspace:${workspaceDir}`,
+      ]);
     }
 
     const result = await ctx.runAgent(
@@ -450,7 +1185,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         `Failure reason: ${input.reason || "not recorded"}`,
         `Downloaded slice artifact: ${input.artifactPath || "not available"}`,
         `The tested main commit was ${input.sourceCommit || "unknown"}.`,
-        `Work only in ${workspaceDir}, which is based on ${targetRef}@${baseCommit}.`,
+        frozenBaseCommit
+          ? `Work only in ${workspaceDir}, aligned to frozen campaign base ${repairBaseCommit}. Do not merge or rebase newer main into this repair branch while the campaign is red.`
+          : `Work only in ${workspaceDir}, which is based on ${targetRef}@${baseCommit}.`,
         "Classify the root cause as test_issue, prod_issue, or inconclusive.",
         "For test_issue, make the smallest source fix, run scoped local verification, commit it, and leave the worktree clean. Do not push or create a PR; the workflow owns publication.",
         "For prod_issue or inconclusive, do not modify source. Cite exact artifact/log evidence.",
@@ -467,22 +1204,20 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     if (dirty) {
       const summary =
         "Failure investigation left uncommitted changes; publication was refused.";
-      return ctx.done(summary, {
-        state: "needs-owner",
-        summary,
-        evidence: [...decision.evidence, `workspace:${workspaceDir}`],
-      });
+      return doneWithEvidence(ctx, "needs-owner", summary, [
+        ...decision.evidence,
+        `workspace:${workspaceDir}`,
+      ]);
     }
 
     if (decision.classification === "prod_issue") {
       if (nextCommit !== headCommit) {
         const summary =
           "Product issue classification unexpectedly changed source; owner review is required.";
-        return ctx.done(summary, {
-          state: "needs-owner",
-          summary,
-          evidence: [...decision.evidence, `unexpected-commit:${nextCommit}`],
-        });
+        return doneWithEvidence(ctx, "needs-owner", summary, [
+          ...decision.evidence,
+          `unexpected-commit:${nextCommit}`,
+        ]);
       }
       notifyHuman(
         ctx,
@@ -500,38 +1235,46 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         ctx,
         summary,
         decision.evidence,
-        productRecoveryCondition(input),
+        productRecoveryCondition(
+          input,
+          currentRecoveryBaselineRunId(ctx, input),
+        ),
+        absorbLegacyRecoveryActions(ctx.task),
       );
     }
 
     if (decision.classification === "inconclusive") {
       const summary = `The ${input.specId} failure remains inconclusive: ${decision.summary}`;
-      return ctx.done(summary, {
-        state: "needs-owner",
+      return inconclusiveWait(
+        ctx,
+        input,
         summary,
-        evidence: decision.evidence,
-      });
+        decision.evidence,
+        absorbLegacyRecoveryActions(ctx.task),
+      );
     }
 
     if (nextCommit === headCommit) {
       const summary = `The failure was classified as a test issue, but no fix commit was produced for ${input.specId}.`;
-      return ctx.done(summary, {
-        state: "needs-owner",
-        summary,
+      return doneWithEvidence(ctx, "needs-owner", summary, decision.evidence);
+    }
+    if (frozenBaseCommit) {
+      return prepareCampaignRepair(ctx, input, {
+        repoDir,
+        workspaceDir,
+        sourceBranch,
+        sourceCommit: nextCommit,
+        campaignBaseCommit: frozenBaseCommit,
         evidence: decision.evidence,
       });
     }
     return reconcileTestIssue(ctx, input);
   } catch (error) {
     const summary = `Master-validation failure handling failed: ${error instanceof Error ? error.message : String(error)}`;
-    return ctx.done(summary, {
-      state: "needs-owner",
-      summary,
-      evidence: [
-        `spec:${input.specId}`,
-        `pipeline-run:${input.pipelineRunId}`,
-        `artifact:${input.artifactPath || "missing"}`,
-      ],
-    });
+    return doneWithEvidence(ctx, "needs-owner", summary, [
+      `spec:${input.specId}`,
+      `pipeline-run:${input.pipelineRunId}`,
+      `artifact:${input.artifactPath || "missing"}`,
+    ]);
   }
 }

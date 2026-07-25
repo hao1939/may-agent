@@ -4,6 +4,7 @@ import { join } from "node:path";
 
 export type ScenarioNormalizationInput = {
   loopId?: unknown;
+  originDevCommit?: unknown;
   scenarioTestPath?: unknown;
   adapterPath?: unknown;
   specId?: unknown;

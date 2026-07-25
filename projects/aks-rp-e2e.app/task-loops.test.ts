@@ -63,6 +63,19 @@ describe("AKS standing-loop convention", () => {
     expect(acceptance).toContain("structured state");
   });
 
+  test("scenario normalization does not stop at a sibling wrapper", () => {
+    const definition = standingLoopIntent(scenarioNormalizationTaskId);
+    expect(definition.outcome).toContain("repository-only plain scenario");
+    expect(definition.acceptance).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining(
+          "remainingSpecReferencedPlainScenarioUnits and remainingRepoPlainScenarioFiles",
+        ),
+        expect.stringContaining("strict-passed true"),
+      ]),
+    );
+  });
+
   test("compact-loop worker practice preserves real compaction lessons", () => {
     const acceptance = standingLoopIntent(
       featureCompactLoopTaskId,
@@ -119,7 +132,7 @@ describe("AKS standing-loop convention", () => {
       loopRefillWakeForTaskEvent(appDir, {
         type: "project.task.reconciled",
         target: { project: "aks-rp-e2e", taskId: "spec/verify-example" },
-        disposition: "waiting",
+        data: { disposition: "waiting" },
       }),
     ).toMatchObject({
       type: "project.task.tick",
@@ -144,11 +157,13 @@ describe("AKS standing-loop convention", () => {
       loopRefillWakeForTaskEvent(appDir, {
         type: "project.task.reconciled",
         target: { project: "aks-rp-e2e", taskId: "compact/feature-a" },
-        disposition: "converged",
-        input: {
-          loopId: featureCompactLoopTaskId,
-          workKey: "feature-a",
-          workRevision: "rev-2",
+        data: {
+          disposition: "converged",
+          input: {
+            loopId: featureCompactLoopTaskId,
+            workKey: "feature-a",
+            workRevision: "rev-2",
+          },
         },
       }),
     ).toMatchObject({

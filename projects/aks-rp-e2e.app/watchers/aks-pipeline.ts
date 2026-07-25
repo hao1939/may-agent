@@ -51,6 +51,13 @@ type AdoRun = {
   templateParameters?: unknown;
 };
 
+type AdoTimelineRecord = {
+  type?: unknown;
+  name?: unknown;
+  state?: unknown;
+  finishTime?: unknown;
+};
+
 export type ObservedAdoRun = {
   runId: string;
   fingerprint: string;
@@ -91,6 +98,42 @@ export type PipelineSpecObservation = {
   reason: string;
 };
 
+export type MasterValidationProgress = {
+  schemaVersion: "1";
+  runId: string;
+  sourceBranch: string | null;
+  sourceCommit: string | null;
+  state: string;
+  result: string;
+  queueTime: string | null;
+  checkedAt: string;
+  counts: {
+    selected: number;
+    observed: number;
+    pending: number;
+    pass: number;
+    fail: number;
+    error: number;
+    skipped: number;
+    excluded: number;
+    other: number;
+  };
+  slices: Array<{
+    sliceId: string;
+    selected: number;
+    observed: number;
+    status: "pending" | "partial" | "completed";
+  }>;
+  specs: Array<{
+    sliceId: string;
+    specId: string;
+    status: string;
+    category: string;
+    reason: string;
+    artifactPath?: string;
+  }>;
+};
+
 const MAX_RESULTS_PER_SCAN = 200;
 const MAX_EVENTS_PER_SCAN = 20;
 const MAX_ADO_RUNS_PER_SCAN = 100;
@@ -99,7 +142,7 @@ export const MASTER_VALIDATION_QUEUE_OVERDUE_MS = 90 * 60 * 1_000;
 const ADO_ORGANIZATION = "https://dev.azure.com/msazure";
 const ADO_PROJECT = "CloudNativeCompute";
 const ADO_PIPELINE_ID = "467665";
-const WATCHER_SCHEMA_VERSION = "7";
+const WATCHER_SCHEMA_VERSION = "8";
 const AZ_CLI =
   process.env.AZURE_CLI_PATH ||
   (existsSync("/app/.state/.local/bin/az")
@@ -176,10 +219,10 @@ function isProgressiveMasterValidationRun(run: AdoRun): boolean {
   const rawMetadata = text(parameters.metadata);
   if (!rawMetadata) return true;
   try {
-    return (
-      text(record(JSON.parse(rawMetadata)).purpose) ===
-      "scheduled-master-validation"
-    );
+    return [
+      "scheduled-master-validation",
+      "master-validation-campaign",
+    ].includes(text(record(JSON.parse(rawMetadata)).purpose));
   } catch {
     return false;
   }
@@ -251,6 +294,29 @@ function getAdoRun(runId: string): ObservedAdoRun | null {
     "json",
   ]);
   return run && typeof run === "object" ? adoRunFromApi(run as AdoRun) : null;
+}
+
+function getAdoTimeline(runId: string): AdoTimelineRecord[] {
+  const timeline = record(
+    runAzJson([
+      "devops",
+      "invoke",
+      "--organization",
+      ADO_ORGANIZATION,
+      "--area",
+      "build",
+      "--resource",
+      "Timeline",
+      "--route-parameters",
+      `project=${ADO_PROJECT}`,
+      `buildId=${runId}`,
+      "-o",
+      "json",
+    ]),
+  );
+  return Array.isArray(timeline.records)
+    ? (timeline.records as AdoTimelineRecord[])
+    : [];
 }
 
 function listAdoArtifactNames(runId: string): string[] {
@@ -326,6 +392,7 @@ function downloadAdoArtifact(
   runId: string,
   artifactName: string,
   destination: string,
+  ready: (root: string) => boolean = artifactDirectoryReady,
 ): boolean {
   const temporary = `${destination}.partial-${process.pid}-${Date.now()}`;
   rmSync(temporary, { recursive: true, force: true });
@@ -358,13 +425,28 @@ function downloadAdoArtifact(
       },
     },
   );
-  if (result.status !== 0 || !artifactDirectoryReady(temporary)) {
+  if (result.status !== 0 || !ready(temporary)) {
     rmSync(temporary, { recursive: true, force: true });
     return false;
   }
   rmSync(destination, { recursive: true, force: true });
   renameSync(temporary, destination);
   return true;
+}
+
+function jsonFiles(root: string): string[] {
+  if (!existsSync(root)) return [];
+  const found: string[] = [];
+  const visit = (path: string) => {
+    for (const entry of readdirSync(path, { withFileTypes: true })) {
+      const child = join(path, entry.name);
+      if (entry.isDirectory()) visit(child);
+      else if (entry.isFile() && entry.name.endsWith(".json"))
+        found.push(child);
+    }
+  };
+  visit(root);
+  return found.sort();
 }
 
 function resultFiles(root: string): string[] {
@@ -391,6 +473,230 @@ export function artifactDirectoryReady(root: string): boolean {
       return false;
     }
   });
+}
+
+export function planDirectoryReady(root: string): boolean {
+  return jsonFiles(root).some((path) => {
+    if (!/slice-\d+\.json$/.test(path)) return false;
+    try {
+      const value = record(JSON.parse(readFileSync(path, "utf8")));
+      return (
+        Array.isArray(value.specIds) && value.specIds.some((id) => text(id))
+      );
+    } catch {
+      return false;
+    }
+  });
+}
+
+function admissionReportPath(root: string | null): string | null {
+  if (!root) return null;
+  return (
+    jsonFiles(root).find((path) =>
+      path.endsWith("live-admission-report.json"),
+    ) ?? null
+  );
+}
+
+export function failureObservationsFromAdmissionReport(input: {
+  root: string;
+  pipelineRunId: string;
+  sourceBranch: string;
+  sourceCommit: string;
+}): PipelineFailureObservation[] {
+  const artifactPath = admissionReportPath(input.root);
+  if (!artifactPath) return [];
+  try {
+    const report = record(JSON.parse(readFileSync(artifactPath, "utf8")));
+    const excluded = Array.isArray(report.excluded)
+      ? report.excluded.map(record)
+      : [];
+    return excluded.flatMap((item) => {
+      const specId = text(item.specId);
+      if (!specId) return [];
+      const bucket = text(item.bucket) || "unknown";
+      const reason = `${bucket}: ${text(item.reason) || "Live admission excluded this spec."}`;
+      const fingerprint = createHash("sha256")
+        .update(
+          stableJson({
+            specId,
+            status: "excluded",
+            category: "admission_exclusion",
+            reason: stableFailureReason(reason),
+          }),
+        )
+        .digest("hex")
+        .slice(0, 20);
+      return [
+        {
+          pipelineRunId: input.pipelineRunId,
+          sourceBranch: input.sourceBranch,
+          sourceCommit: input.sourceCommit,
+          artifactName: "plan-inputs",
+          artifactPath,
+          sliceId: "admission",
+          specId,
+          status: "excluded",
+          category: "admission_exclusion",
+          reason,
+          fingerprint,
+        },
+      ];
+    });
+  } catch {
+    return [];
+  }
+}
+
+function planSlices(root: string | null): Map<string, string[]> {
+  const slices = new Map<string, string[]>();
+  if (!root || !planDirectoryReady(root)) return slices;
+  for (const path of jsonFiles(root)) {
+    if (!/slice-\d+\.json$/.test(path)) continue;
+    try {
+      const value = record(JSON.parse(readFileSync(path, "utf8")));
+      const sliceId = text(value.slice).padStart(2, "0");
+      const specIds = Array.isArray(value.specIds)
+        ? [...new Set(value.specIds.map(text).filter(Boolean))]
+        : [];
+      if (sliceId && specIds.length) slices.set(sliceId, specIds);
+    } catch {
+      // A malformed plan slice is omitted from the current projection.
+    }
+  }
+  return slices;
+}
+
+function normalizedVerdict(value: string): string {
+  const status = value.toLowerCase();
+  return status === "passed" ? "pass" : status === "failed" ? "fail" : status;
+}
+
+export function buildMasterValidationProgress(input: {
+  run: ObservedAdoRun;
+  planRoot: string | null;
+  artifactRoots: Record<string, string>;
+  checkedAt?: string;
+}): MasterValidationProgress {
+  const planned = planSlices(input.planRoot);
+  const exclusions = input.planRoot
+    ? failureObservationsFromAdmissionReport({
+        root: input.planRoot,
+        pipelineRunId: input.run.runId,
+        sourceBranch: input.run.sourceBranch ?? "",
+        sourceCommit: input.run.sourceVersion ?? "",
+      })
+    : [];
+  const observed = new Map<string, PipelineSpecObservation>();
+  for (const [artifactName, root] of Object.entries(input.artifactRoots)) {
+    for (const observation of specObservationsFromArtifact({
+      root,
+      pipelineRunId: input.run.runId,
+      sourceBranch: input.run.sourceBranch ?? "",
+      sourceCommit: input.run.sourceVersion ?? "",
+      artifactName,
+    })) {
+      observed.set(observation.specId, observation);
+      if (!planned.has(observation.sliceId))
+        planned.set(observation.sliceId, []);
+      const ids = planned.get(observation.sliceId)!;
+      if (!ids.includes(observation.specId)) ids.push(observation.specId);
+    }
+  }
+
+  const specs = [
+    ...[...planned.entries()]
+      .sort(([left], [right]) => left.localeCompare(right))
+      .flatMap(([sliceId, specIds]) =>
+        specIds.sort().map((specId) => {
+          const value = observed.get(specId);
+          return {
+            sliceId,
+            specId,
+            status: value ? normalizedVerdict(value.status) : "pending",
+            category: value?.category ?? "unknown",
+            reason: value?.reason ?? "Awaiting a completed slice verdict.",
+            ...(value ? { artifactPath: value.artifactPath } : {}),
+          };
+        }),
+      ),
+    ...exclusions.map((failure) => ({
+      sliceId: failure.sliceId,
+      specId: failure.specId,
+      status: failure.status,
+      category: failure.category,
+      reason: failure.reason,
+      artifactPath: failure.artifactPath,
+    })),
+  ];
+  const verdictCount = (status: string) =>
+    specs.filter((spec) => spec.status === status).length;
+  const observedCount = specs.filter(
+    (spec) => spec.status !== "pending",
+  ).length;
+  const knownVerdicts = new Set([
+    "pass",
+    "fail",
+    "error",
+    "skipped",
+    "excluded",
+  ]);
+  const slices: MasterValidationProgress["slices"] = [...planned.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([sliceId, specIds]) => {
+      const completed = specIds.filter((specId) => observed.has(specId)).length;
+      return {
+        sliceId,
+        selected: specIds.length,
+        observed: completed,
+        status:
+          completed === 0
+            ? "pending"
+            : completed === specIds.length
+              ? "completed"
+              : "partial",
+      };
+    });
+  if (exclusions.length) {
+    slices.push({
+      sliceId: "admission",
+      selected: exclusions.length,
+      observed: exclusions.length,
+      status: "completed",
+    });
+  }
+  return {
+    schemaVersion: "1",
+    runId: input.run.runId,
+    sourceBranch: input.run.sourceBranch,
+    sourceCommit: input.run.sourceVersion,
+    state: input.run.status,
+    result: input.run.result,
+    queueTime: input.run.queueTime,
+    checkedAt: input.checkedAt ?? new Date().toISOString(),
+    counts: {
+      selected: specs.length,
+      observed: observedCount,
+      pending: specs.length - observedCount,
+      pass: verdictCount("pass"),
+      fail: verdictCount("fail"),
+      error: verdictCount("error"),
+      skipped: verdictCount("skipped"),
+      excluded: verdictCount("excluded"),
+      other: specs.filter(
+        (spec) => spec.status !== "pending" && !knownVerdicts.has(spec.status),
+      ).length,
+    },
+    slices,
+    specs,
+  };
+}
+
+function saveProgress(path: string, progress: MasterValidationProgress): void {
+  mkdirSync(dirname(path), { recursive: true });
+  const temporary = `${path}.partial-${process.pid}-${Date.now()}`;
+  writeFileSync(temporary, `${JSON.stringify(progress, null, 2)}\n`, "utf8");
+  renameSync(temporary, path);
 }
 
 function stableFailureReason(value: string): string {
@@ -568,6 +874,63 @@ export function pipelineFailureEvent(
   };
 }
 
+export function masterValidationNoVerdictFailure(input: {
+  pipelineRunId: string;
+  sourceBranch: string;
+  sourceCommit: string;
+  status: string;
+  result: string;
+  progressive: boolean;
+  artifactsReady: boolean;
+  observedVerdictCount: number;
+  observedFailureCount: number;
+}): PipelineFailureObservation | null {
+  if (
+    !input.progressive ||
+    input.status !== "completed" ||
+    [
+      "succeeded",
+      "success",
+      "passed",
+      "pass",
+      "canceled",
+      "cancelled",
+    ].includes(input.result.toLowerCase()) ||
+    !input.artifactsReady ||
+    input.observedVerdictCount > 0 ||
+    input.observedFailureCount > 0
+  ) {
+    return null;
+  }
+  const specId = "pipeline.master-validation.bootstrap";
+  const reason =
+    "The master-validation aggregate failed before producing any parseable spec verdict. Treat this as a repository-owned pipeline/bootstrap issue, inspect the failed Azure step, and repair it on the frozen campaign instead of waiting for a current-main spec pass.";
+  const fingerprint = createHash("sha256")
+    .update(
+      stableJson({
+        specId,
+        status: "error",
+        category: "pipeline_failure",
+        reason: stableFailureReason(reason),
+      }),
+    )
+    .digest("hex")
+    .slice(0, 20);
+  return {
+    pipelineRunId: input.pipelineRunId,
+    sourceBranch: input.sourceBranch,
+    sourceCommit: input.sourceCommit,
+    artifactName: "pipeline-logs",
+    artifactPath: `ado://build/${input.pipelineRunId}`,
+    sliceId: "aggregate",
+    specId,
+    status: "error",
+    category: "pipeline_failure",
+    reason,
+    fingerprint,
+  };
+}
+
 function pipelineFactBase(observed: {
   runId: string;
   status: string;
@@ -597,15 +960,43 @@ function pipelineFactBase(observed: {
 export function pipelineQueueOverdueEvent(
   observed: ObservedAdoRun,
   nowMs = Date.now(),
+  timeline: AdoTimelineRecord[] = [],
 ): ProjectAppEvent | null {
-  if (
-    !observed.progressive ||
-    observed.status !== "notStarted" ||
-    !observed.queueTime
-  ) {
+  if (!observed.progressive) return null;
+  let queueTime = observed.queueTime;
+  let queueScope = "run";
+  if (observed.status === "inProgress") {
+    const slices = timeline.filter(
+      (entry) =>
+        text(entry.type) === "Job" &&
+        text(entry.name).startsWith("Execute slice "),
+    );
+    const pending = slices.filter((entry) => text(entry.state) === "pending");
+    const running = slices.filter(
+      (entry) => text(entry.state) === "inProgress",
+    );
+    if (pending.length === 0 || running.length > 0) {
+      return null;
+    }
+    const plan = timeline.find(
+      (entry) =>
+        text(entry.type) === "Job" &&
+        text(entry.name) === "Plan AKS RP E2E specs" &&
+        text(entry.state) === "completed",
+    );
+    const latestCompletedAt = slices
+      .filter((entry) => text(entry.state) === "completed")
+      .map((entry) => text(entry.finishTime))
+      .filter(Boolean)
+      .sort()
+      .at(-1);
+    queueTime = latestCompletedAt || text(plan?.finishTime) || null;
+    queueScope = "slice-jobs";
+  } else if (observed.status !== "notStarted") {
     return null;
   }
-  const queuedAtMs = Date.parse(observed.queueTime);
+  if (!queueTime) return null;
+  const queuedAtMs = Date.parse(queueTime);
   if (
     !Number.isFinite(queuedAtMs) ||
     nowMs - queuedAtMs < MASTER_VALIDATION_QUEUE_OVERDUE_MS
@@ -614,13 +1005,16 @@ export function pipelineQueueOverdueEvent(
   }
   const base = pipelineFactBase(observed);
   const queueAgeMs = Math.max(0, nowMs - queuedAtMs);
+  const data = { ...base, queueTime, queueAgeMs, queueScope };
   return {
     type: "pipeline.queue.overdue",
     source: "aks-pipeline-watcher",
     target: { project: "aks-rp-e2e" },
     ...base,
+    queueTime,
     queueAgeMs,
-    data: { ...base, queueAgeMs },
+    queueScope,
+    data,
   };
 }
 
@@ -753,7 +1147,11 @@ export async function observeAksPipelines(
   let overdueQueues = 0;
   for (const observed of adoRuns) {
     if (overdueQueueRunIds.has(observed.runId)) continue;
-    const event = pipelineQueueOverdueEvent(observed);
+    const timeline =
+      observed.progressive && observed.status === "inProgress"
+        ? getAdoTimeline(observed.runId)
+        : [];
+    const event = pipelineQueueOverdueEvent(observed, Date.now(), timeline);
     if (!event) continue;
     ctx.emit(event);
     overdueQueueRunIds.add(observed.runId);
@@ -772,7 +1170,46 @@ export async function observeAksPipelines(
     }),
   );
   for (const observed of progressiveRuns) {
-    const names = listAdoArtifactNames(observed.runId)
+    const availableNames = listAdoArtifactNames(observed.runId);
+    if (availableNames.includes("plan-inputs")) {
+      const planKey = artifactKey(observed.runId, "plan-inputs");
+      const planRoot = ctx.appPath(
+        `.state/watchers/aks-pipeline-artifacts/${observed.runId}/plan-inputs`,
+      );
+      const recordedPlanRoot = observedArtifacts[planKey];
+      if (
+        !(recordedPlanRoot && planDirectoryReady(recordedPlanRoot)) &&
+        !planDirectoryReady(planRoot) &&
+        downloadedArtifacts < MAX_PROGRESS_ARTIFACTS_PER_SCAN &&
+        downloadAdoArtifact(
+          observed.runId,
+          "plan-inputs",
+          planRoot,
+          planDirectoryReady,
+        )
+      ) {
+        downloadedArtifacts += 1;
+      }
+      if (planDirectoryReady(planRoot)) observedArtifacts[planKey] = planRoot;
+      const reportPath = admissionReportPath(planRoot);
+      const admissionKey = artifactKey(
+        observed.runId,
+        "live-admission-exclusions",
+      );
+      if (reportPath && !observedArtifacts[admissionKey]) {
+        for (const failure of failureObservationsFromAdmissionReport({
+          root: planRoot,
+          pipelineRunId: observed.runId,
+          sourceBranch: observed.sourceBranch ?? "",
+          sourceCommit: observed.sourceVersion ?? "",
+        })) {
+          ctx.emit(pipelineFailureEvent(failure));
+          observedFailures += 1;
+        }
+        observedArtifacts[admissionKey] = reportPath;
+      }
+    }
+    const names = availableNames
       .filter((name) => /^slice-\d+-test-results$/.test(name))
       .sort()
       .reverse();
@@ -823,6 +1260,55 @@ export async function observeAksPipelines(
         observedFailures += 1;
       }
     }
+    const readyRoots = names.flatMap((artifactName) => {
+      const root = observedArtifacts[artifactKey(observed.runId, artifactName)];
+      return root && artifactDirectoryReady(root)
+        ? [{ artifactName, root }]
+        : [];
+    });
+    const planRoot =
+      observedArtifacts[artifactKey(observed.runId, "plan-inputs")];
+    const admissionFailures = planRoot
+      ? failureObservationsFromAdmissionReport({
+          root: planRoot,
+          pipelineRunId: observed.runId,
+          sourceBranch: observed.sourceBranch ?? "",
+          sourceCommit: observed.sourceVersion ?? "",
+        })
+      : [];
+    const artifactObservations = readyRoots.flatMap(({ artifactName, root }) =>
+      specObservationsFromArtifact({
+        root,
+        pipelineRunId: observed.runId,
+        sourceBranch: observed.sourceBranch ?? "",
+        sourceCommit: observed.sourceVersion ?? "",
+        artifactName,
+      }),
+    );
+    const artifactFailures = readyRoots.flatMap(({ artifactName, root }) =>
+      failureObservationsFromArtifact({
+        root,
+        pipelineRunId: observed.runId,
+        sourceBranch: observed.sourceBranch ?? "",
+        sourceCommit: observed.sourceVersion ?? "",
+        artifactName,
+      }),
+    );
+    const noVerdictFailure = masterValidationNoVerdictFailure({
+      pipelineRunId: observed.runId,
+      sourceBranch: observed.sourceBranch ?? "",
+      sourceCommit: observed.sourceVersion ?? "",
+      status: observed.status,
+      result: observed.result,
+      progressive: observed.progressive,
+      artifactsReady: readyRoots.length === names.length,
+      observedVerdictCount: artifactObservations.length,
+      observedFailureCount: admissionFailures.length + artifactFailures.length,
+    });
+    if (noVerdictFailure) {
+      ctx.emit(pipelineFailureEvent(noVerdictFailure));
+      observedFailures += 1;
+    }
     if (
       ["completed", "canceled"].includes(observed.status) &&
       names.some((artifactName) => {
@@ -864,6 +1350,34 @@ export async function observeAksPipelines(
     overdueQueueRunIds: [...overdueQueueRunIds].slice(-100),
     checkedAt: new Date().toISOString(),
   });
+
+  const latestProgressiveRun = adoRuns
+    .filter((run) => run.progressive)
+    .sort((left, right) => Number(right.runId) - Number(left.runId))[0];
+  if (latestProgressiveRun) {
+    const planRoot =
+      observedArtifacts[
+        artifactKey(latestProgressiveRun.runId, "plan-inputs")
+      ] ?? null;
+    const artifactRoots = Object.fromEntries(
+      Object.entries(observedArtifacts)
+        .filter(([key, root]) => {
+          return (
+            key.startsWith(`${latestProgressiveRun.runId}:slice-`) &&
+            artifactDirectoryReady(root)
+          );
+        })
+        .map(([key, root]) => [key.slice(key.indexOf(":") + 1), root]),
+    );
+    saveProgress(
+      ctx.appPath(".state/watchers/aks-pipeline-progress.json"),
+      buildMasterValidationProgress({
+        run: latestProgressiveRun,
+        planRoot,
+        artifactRoots,
+      }),
+    );
+  }
 
   if (!hasPriorState && adoRuns.length === 0) {
     return ctx.noop(

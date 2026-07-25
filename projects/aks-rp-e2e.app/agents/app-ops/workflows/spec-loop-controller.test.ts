@@ -560,7 +560,8 @@ describe("spec loop reconciliation workflow", () => {
             input: {
               loopTaskId: "aks-spec-verification-loop",
               specId: "spec.network-acns.retina-enterprise-k8s-upgrade",
-              statePath: "/app/projects/aks-rp-e2e.app/.state/spec-loop/state.json",
+              statePath:
+                "/app/projects/aks-rp-e2e.app/.state/spec-loop/state.json",
             },
           },
       },

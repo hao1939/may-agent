@@ -105,12 +105,8 @@ export function integrateDirectlyIntoDev(input: {
       true,
     );
     if (publishSource.status !== 0) {
-      return {
-        state: "failed",
-        sourceCommit: input.sourceCommit,
-        targetRef,
-        error: publishSource.stderr || publishSource.stdout,
-      };
+      lastError = publishSource.stderr || publishSource.stdout;
+      continue;
     }
 
     const push = git(

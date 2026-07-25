@@ -75,6 +75,10 @@ decisions.
     `aks.repo-ref.observed` fact so a wait cannot miss an advance that happened
     before its Condition was admitted. This is process routing, not AKS product
     judgment.
+    First verify that a named external producer or publication can directly
+    change the exact row. Do not preserve or refresh a repo-ref wait when hot
+    evidence already identifies repairable same-spec source work; return that
+    same task to its domain owner/workflow instead.
 12. Preserve the project root goal from `project.json`. Temporary recovery,
     focus, and blocked-frontier work belongs below the root.
 13. Feedback succeeds only when it restores affected work after a material
@@ -92,6 +96,11 @@ decisions.
     workflow-owned source edits, provider dispatch, proof acceptance, or
     integration directly. Put the corrected judgment/input back on the same
     task and resume it through the same workflow.
+16. Treat a draft repair PR as internal verification state, not a human
+    handoff. After exact campaign proof makes the fix ready, publish it as
+    non-draft, send one retry-safe actionable notification, and wait for the
+    human to merge it into `main`. Never merge a focused repair PR on the
+    human's behalf.
 
 ## Finish Criteria
 

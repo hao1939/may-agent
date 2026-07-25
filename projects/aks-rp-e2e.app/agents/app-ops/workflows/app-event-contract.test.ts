@@ -1,7 +1,16 @@
 import { describe, expect, test } from "bun:test";
-import { existsSync } from "node:fs";
-import { resolve } from "node:path";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import app, {
+  masterValidationScheduleGate,
+  malformedApprovalWaitContract,
   resolveAksTask,
   routeAksEvent,
   scenarioTestFrontierWakeEvent,
@@ -344,6 +353,237 @@ describe("app event contract", () => {
     expect(emitted).toEqual([]);
   });
 
+  test("replays repo-ref owner handoffs through an exact same-task tick", async () => {
+    const emitted: Record<string, unknown>[] = [];
+    const taskId =
+      "wait-compact-ccp-metricsserver-reviewed-exception-origin-dev-advance-c17c6450-20260724";
+    const result = await routeAksEvent(
+      {
+        appPath: () => resolve(import.meta.dir, "../../.."),
+        emit: (value: Record<string, unknown>) => emitted.push(value),
+      } as never,
+      {
+        type: "project.task.reconciled",
+        target: {
+          project: projectId,
+          taskId,
+        },
+        data: {
+          project: projectId,
+          taskId,
+          disposition: "owner-handoff",
+          handler: "workflow:wait-for-repo-ref-advance",
+          summary:
+            "origin/dev advanced beyond the baseline and the same task now needs owner judgment.",
+        },
+      },
+    );
+
+    expect(result).toMatchObject({
+      repoRefOwnerHandoffReplay: true,
+    });
+    expect(emitted).toContainEqual({
+      type: "project.task.tick",
+      source: "aks-rp-e2e-app",
+      target: {
+        project: projectId,
+        taskId,
+      },
+      urgency: "high",
+      action: "repo-ref-owner-handoff-replay",
+      data: {
+        project: projectId,
+        taskId,
+        task_id: taskId,
+        reason: "repo-ref-wait-owner-handoff",
+        previousDisposition: "owner-handoff",
+        previousHandler: "workflow:wait-for-repo-ref-advance",
+      },
+    });
+  });
+
+  test("replays malformed approval-return waits to owner judgment instead of leaving them asleep", async () => {
+    const appDir = mkdtempSync(join(tmpdir(), "approval-wait-contract-"));
+    const taskId =
+      "domain/normalize-plain-scenario-carrier-kms-etcd-encryption-tests-kms-v2plus-enable-cmk-from-v2-vnet-integration.ts";
+    try {
+      mkdirSync(resolve(appDir, ".state/tasks"), { recursive: true });
+      writeFileSync(
+        resolve(appDir, ".state/tasks/state.json"),
+        JSON.stringify(
+          {
+            version: 2,
+            project: projectId,
+            resources: {
+              [taskId]: {
+                metadata: { id: taskId, generation: 1, resourceVersion: 1 },
+                spec: {
+                  owner: "aks-explorer",
+                  workflow: "spec-live-reconciliation",
+                },
+                status: {
+                  phase: "waiting",
+                  conditionIds: [
+                    "project-approval-submitted-kms-v2plus-enable-cmk-from-v2-vnet-integration-secret-migration-20260724",
+                  ],
+                },
+              },
+            },
+            conditions: {
+              "project-approval-submitted-kms-v2plus-enable-cmk-from-v2-vnet-integration-secret-migration-20260724": {
+                spec: {
+                  type: "project.approval.submitted",
+                  subject: "project:aks-rp-e2e",
+                  expected: {
+                    approvalId:
+                      "aks-rp-e2e:approval:path.kms.v2plus-enable-cmk-from-v2-vnet-integration.secret-migration-owner-20260724:evidence-archive-ops-send-kms-v2plus-enable-cmk-from-v2-vnet-integration-secret-migration-owner-ask-20260724.md",
+                    waitId:
+                      "wait:aks-rp-e2e:approval:path.kms.v2plus-enable-cmk-from-v2-vnet-integration.secret-migration-owner-20260724:evidence-archive-ops-send-kms-v2plus-enable-cmk-from-v2-vnet-integration-secret-migration-owner-ask-20260724.md",
+                    pathId:
+                      "path.kms.v2plus-enable-cmk-from-v2-vnet-integration.secret-migration-owner-20260724",
+                    decisionIn: [
+                      "approve",
+                      "adjust",
+                      "hold",
+                      "decline",
+                      "reroute",
+                    ],
+                  },
+                },
+              },
+            },
+          },
+          null,
+          2,
+        ),
+      );
+
+      expect(malformedApprovalWaitContract(appDir, taskId)).toMatchObject({
+        taskId,
+        conditionId:
+          "project-approval-submitted-kms-v2plus-enable-cmk-from-v2-vnet-integration-secret-migration-20260724",
+        issues: expect.arrayContaining([
+          "approvalKind=null",
+          "acceptedDecisions=null",
+        ]),
+      });
+
+      const emitted: Record<string, unknown>[] = [];
+      const result = await routeAksEvent(
+        {
+          appPath: (path = ".") => resolve(appDir, path),
+          emit: (value: Record<string, unknown>) => emitted.push(value),
+        } as never,
+        {
+          type: "project.task.reconciled",
+          target: { project: projectId, taskId },
+          data: {
+            project: projectId,
+            taskId,
+            disposition: "waiting",
+          },
+        },
+      );
+
+      expect(result).toMatchObject({
+        malformedApprovalWaitReplay: true,
+        malformedApprovalWaitProblem: {
+          taskId,
+          conditionId:
+            "project-approval-submitted-kms-v2plus-enable-cmk-from-v2-vnet-integration-secret-migration-20260724",
+        },
+      });
+      expect(emitted).toContainEqual({
+        type: "project.task.tick",
+        source: "aks-rp-e2e-app",
+        target: { project: projectId, taskId },
+        urgency: "high",
+        action: "approval-wait-contract-replay",
+        data: {
+          project: projectId,
+          taskId,
+          task_id: taskId,
+          reason: "malformed-approval-wait-contract",
+          conditionId:
+            "project-approval-submitted-kms-v2plus-enable-cmk-from-v2-vnet-integration-secret-migration-20260724",
+          issues: ["approvalKind=null", "acceptedDecisions=null"],
+          workflow: "spec-live-reconciliation",
+        },
+      });
+    } finally {
+      rmSync(appDir, { recursive: true, force: true });
+    }
+  });
+
+  test("does not replay focus-plan approval waits that use a different approval kind", async () => {
+    const appDir = mkdtempSync(join(tmpdir(), "focus-approval-contract-"));
+    const taskId = "aks-focus-plan-progress-review";
+    try {
+      mkdirSync(resolve(appDir, ".state/tasks"), { recursive: true });
+      writeFileSync(
+        resolve(appDir, ".state/tasks/state.json"),
+        JSON.stringify(
+          {
+            version: 2,
+            project: projectId,
+            resources: {
+              [taskId]: {
+                metadata: { id: taskId, generation: 1, resourceVersion: 1 },
+                spec: { owner: "app-ops", workflow: "focus-plan" },
+                status: {
+                  phase: "waiting",
+                  conditionIds: ["focus-approval"],
+                },
+              },
+            },
+            conditions: {
+              "focus-approval": {
+                spec: {
+                  type: "project.approval.submitted",
+                  subject: "project:aks-rp-e2e",
+                  expected: {
+                    approvalKind: "focus-plan",
+                    planId: "focus-current",
+                    approvalId: "focus-approval-id",
+                    waitId: "focus-wait-id",
+                    pathId: "focus-path-id",
+                  },
+                },
+              },
+            },
+          },
+          null,
+          2,
+        ),
+      );
+
+      expect(malformedApprovalWaitContract(appDir, taskId)).toBeNull();
+      const emitted: Record<string, unknown>[] = [];
+      const result = await routeAksEvent(
+        {
+          appPath: (path = ".") => resolve(appDir, path),
+          emit: (value: Record<string, unknown>) => emitted.push(value),
+        } as never,
+        {
+          type: "project.task.reconciled",
+          target: { project: projectId, taskId },
+          data: {
+            project: projectId,
+            taskId,
+            disposition: "waiting",
+          },
+        },
+      );
+
+      expect(result).toMatchObject({
+        malformedApprovalWaitReplay: false,
+      });
+      expect(emitted).toEqual([]);
+    } finally {
+      rmSync(appDir, { recursive: true, force: true });
+    }
+  });
+
   test("turns one overdue pipeline fact into an operator message without a task", async () => {
     const event = {
       type: "pipeline.queue.overdue",
@@ -470,6 +710,37 @@ describe("app event contract", () => {
         pathId: "network/cilium",
       })?.workflow,
     ).toBe("approval-dispatch");
+    expect(
+      resolveAksTask({
+        type: "project.approval.requested",
+        target: { project: projectId },
+        reason: "manual-approval-packet-dispatch-request",
+        params: {
+          packetPath: "evidence/archive/network-cni-approval-packet.md",
+          pathId: "path.network-cni-azure-overlay-dual-stack-migration",
+          requestedAction: "Approve one bounded live execution",
+          summary: "Preserve the exact approval tuple on the runtime task.",
+          target: "human:operator",
+          approvalId:
+            "aks-rp-e2e:approval:path.network-cni-azure-overlay-dual-stack-migration:evidence-archive-network-cni-approval-packet.md",
+          waitId:
+            "wait:aks-rp-e2e:approval:path.network-cni-azure-overlay-dual-stack-migration:evidence-archive-network-cni-approval-packet.md",
+        },
+      }),
+    ).toMatchObject({
+      workflow: "approval-dispatch",
+      input: {
+        approvalId:
+          "aks-rp-e2e:approval:path.network-cni-azure-overlay-dual-stack-migration:evidence-archive-network-cni-approval-packet.md",
+        packetPath: "evidence/archive/network-cni-approval-packet.md",
+        pathId: "path.network-cni-azure-overlay-dual-stack-migration",
+        reason: "manual-approval-packet-dispatch-request",
+        requestedAction: "Approve one bounded live execution",
+        summary: "Preserve the exact approval tuple on the runtime task.",
+        waitId:
+          "wait:aks-rp-e2e:approval:path.network-cni-azure-overlay-dual-stack-migration:evidence-archive-network-cni-approval-packet.md",
+      },
+    });
   });
 
   test("durable-loop schedule emits direct targeted task wakes", () => {
@@ -489,22 +760,15 @@ describe("app event contract", () => {
     );
   });
 
-  test("master validation reconciles frequently while the workflow owns the six-hour due rule", () => {
+  test("master validation schedules a level check instead of a direct task tick", () => {
     const schedule = appManifest.schedules?.find(
       (entry) => entry.id === "master-validation-staging-cycle",
     );
     expect(schedule?.intervalMs).toBe(300_000);
     expect(scheduleEvents("master-validation-staging-cycle")).toEqual([
       expect.objectContaining({
-        type: "project.task.tick",
-        action: "master-validation-cycle",
-        target: {
-          project: projectId,
-          taskId: "master-validation-staging-cycle",
-        },
-        data: expect.objectContaining({
-          reason: "scheduled-six-hour-master-validation",
-        }),
+        type: "aks.master-validation.check",
+        target: { project: projectId },
       }),
     ]);
     expect(
@@ -522,6 +786,214 @@ describe("app event contract", () => {
         },
       }),
     ).toMatchObject({ input: { intervalMs: 21_600_000 } });
+  });
+
+  test("master validation gate stays asleep until the six-hour receipt window elapses", async () => {
+    const appDir = mkdtempSync(join(tmpdir(), "master-validation-gate-"));
+    const queuedAt = new Date(Date.now() - 5 * 60_000).toISOString();
+    try {
+      mkdirSync(resolve(appDir, ".state"), { recursive: true });
+      writeFileSync(
+        resolve(appDir, ".state/master-validation-cycle.json"),
+        JSON.stringify({
+          runId: "173596985",
+          sourceCommit: "b6ed0123763895f4584db2e3337145998e44b009",
+          queuedAt,
+        }),
+      );
+
+      expect(masterValidationScheduleGate(appDir)).toMatchObject({
+        due: false,
+        reason: "cooldown-active",
+        runId: "173596985",
+      });
+
+      const emitted: Record<string, unknown>[] = [];
+      const result = await routeAksEvent(
+        {
+          appPath: (path = ".") => resolve(appDir, path),
+          emit: (value: Record<string, unknown>) => emitted.push(value),
+        } as never,
+        {
+          type: "aks.master-validation.check",
+          target: { project: projectId },
+        },
+      );
+
+      expect(result).toEqual({
+        masterValidationWake: false,
+        reason: "cooldown-active",
+        queuedAt,
+        runId: "173596985",
+      });
+      expect(emitted).toEqual([]);
+    } finally {
+      rmSync(appDir, { recursive: true, force: true });
+    }
+  });
+
+  test("an active frozen campaign reconciles on the five-minute pulse", async () => {
+    const appDir = mkdtempSync(join(tmpdir(), "master-validation-campaign-gate-"));
+    try {
+      mkdirSync(resolve(appDir, ".state"), { recursive: true });
+      writeFileSync(
+        resolve(appDir, ".state/master-validation-campaign.json"),
+        JSON.stringify({
+          schemaVersion: "1",
+          baselineRunId: "173646937",
+          baseCommit: "main123",
+          branch: "validation/master-validation-173646937",
+          currentCommit: "candidate123",
+          integratedFixes: [],
+          updatedAt: new Date().toISOString(),
+        }),
+      );
+      expect(masterValidationScheduleGate(appDir)).toEqual({
+        due: true,
+        reason: "campaign-active",
+      });
+
+      const emitted: Record<string, unknown>[] = [];
+      await routeAksEvent(
+        {
+          appPath: (path = ".") => resolve(appDir, path),
+          emit: (value: Record<string, unknown>) => emitted.push(value),
+        } as never,
+        {
+          type: "aks.master-validation.check",
+          target: { project: projectId },
+        },
+      );
+      expect(emitted).toHaveLength(1);
+      expect(emitted[0]).toMatchObject({
+        type: "project.task.tick",
+        data: { reason: "master-validation-campaign-reconcile" },
+      });
+    } finally {
+      rmSync(appDir, { recursive: true, force: true });
+    }
+  });
+
+  test("an exact campaign spec pass overrides the aggregate wait to publish its PR immediately", async () => {
+    const appDir = mkdtempSync(join(tmpdir(), "master-validation-fix-ready-"));
+    try {
+      mkdirSync(resolve(appDir, ".state"), { recursive: true });
+      writeFileSync(
+        resolve(appDir, ".state/master-validation-campaign.json"),
+        JSON.stringify({
+          schemaVersion: "1",
+          baselineRunId: "173646937",
+          baseCommit: "main123",
+          branch: "validation/master-validation-173646937",
+          currentCommit: "candidate123",
+          integratedFixes: [
+            {
+              pullRequestId: "16568861",
+              taskId:
+                "domain/master-validation-failure/spec.node-ephemeral-disk.master-validation/fingerprint",
+              sourceBranch: "task/node-ephemeral",
+              sourceCommit: "fix123",
+              title: "Fix node ephemeral master validation",
+            },
+          ],
+          updatedAt: new Date().toISOString(),
+        }),
+      );
+      const emitted: Record<string, unknown>[] = [];
+      const result = await routeAksEvent(
+        {
+          appPath: (path = ".") => resolve(appDir, path),
+          emit: (value: Record<string, unknown>) => emitted.push(value),
+        } as never,
+        {
+          type: "pipeline.spec.observed",
+          target: { project: projectId },
+          data: {
+            specId: "spec.node-ephemeral-disk.master-validation",
+            status: "pass",
+            pipelineRunId: "173761466",
+            sourceBranch:
+              "refs/heads/validation/master-validation-173646937",
+            sourceCommit: "candidate123",
+          },
+        },
+      );
+
+      expect(result).toEqual({
+        masterValidationFixReadyWake: true,
+        pullRequestIds: ["16568861"],
+      });
+      expect(emitted).toEqual([
+        expect.objectContaining({
+          type: "project.task.tick",
+          overrideWait: true,
+          target: {
+            project: projectId,
+            taskId: "master-validation-staging-cycle",
+          },
+          data: expect.objectContaining({
+            reason: "master-validation-fix-verified",
+            overrideWait: true,
+            pullRequestIds: ["16568861"],
+          }),
+        }),
+      ]);
+    } finally {
+      rmSync(appDir, { recursive: true, force: true });
+    }
+  });
+
+  test("master validation gate emits a targeted wake after the receipt interval elapses", async () => {
+    const appDir = mkdtempSync(join(tmpdir(), "master-validation-gate-due-"));
+    const queuedAt = new Date(
+      Date.now() - (6 * 60 * 60_000 + 5 * 60_000),
+    ).toISOString();
+    try {
+      mkdirSync(resolve(appDir, ".state"), { recursive: true });
+      writeFileSync(
+        resolve(appDir, ".state/master-validation-cycle.json"),
+        JSON.stringify({
+          runId: "173596985",
+          sourceCommit: "b6ed0123763895f4584db2e3337145998e44b009",
+          queuedAt,
+        }),
+      );
+
+      const emitted: Record<string, unknown>[] = [];
+      const result = await routeAksEvent(
+        {
+          appPath: (path = ".") => resolve(appDir, path),
+          emit: (value: Record<string, unknown>) => emitted.push(value),
+        } as never,
+        {
+          type: "aks.master-validation.check",
+          target: { project: projectId },
+        },
+      );
+
+      expect(result).toEqual({
+        masterValidationWake: true,
+        reason: "interval-elapsed",
+        queuedAt,
+        runId: "173596985",
+      });
+      expect(emitted).toEqual([
+        expect.objectContaining({
+          type: "project.task.tick",
+          action: "master-validation-cycle",
+          target: {
+            project: projectId,
+            taskId: "master-validation-staging-cycle",
+          },
+          data: expect.objectContaining({
+            reason: "scheduled-six-hour-master-validation",
+            cycleSlot: expect.any(Number),
+          }),
+        }),
+      ]);
+    } finally {
+      rmSync(appDir, { recursive: true, force: true });
+    }
   });
 
   test("manual actions emit explicit target events", () => {
@@ -709,9 +1181,10 @@ describe("app event contract", () => {
       ],
     });
 
-    expect(
-      resolveAksTask(schedule?.emits?.[0] as Record<string, unknown>),
-    ).toMatchObject({
+    const resolved = resolveAksTask(
+      schedule?.emits?.[0] as Record<string, unknown>,
+    );
+    expect(resolved).toMatchObject({
       id: waitingFrontierReviewTaskId,
       parentId: "group/app-operations",
       mode: "maintain",
@@ -719,6 +1192,31 @@ describe("app event contract", () => {
       priority: "P0",
       category: "ops",
     });
+    expect(resolved?.input?.maxConcurrent).toBe(5);
+    expect(
+      Array.isArray(resolved?.input?.instructions) &&
+        resolved.input.instructions.some(
+          (entry) =>
+            typeof entry === "string" &&
+            /preserve owner=aks-explorer/i.test(entry),
+        ),
+    ).toBe(true);
+    expect(
+      Array.isArray(resolved?.input?.instructions) &&
+        resolved.input.instructions.some(
+          (entry) =>
+            typeof entry === "string" &&
+            /future main-branch spec pass is not a valid producer/i.test(entry),
+        ),
+    ).toBe(true);
+    expect(
+      Array.isArray(resolved?.acceptance) &&
+        resolved.acceptance.some(
+          (entry) =>
+            typeof entry === "string" &&
+            /read current task state and hot external facts/i.test(entry),
+        ),
+    ).toBe(true);
   });
 
   test("strict inventory wakes its domain frontier without owner-review indirection", () => {

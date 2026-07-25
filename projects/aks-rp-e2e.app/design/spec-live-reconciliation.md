@@ -26,7 +26,8 @@ task-owned branch
   -> push exact commit
   -> live ADO run
   -> fix and rerun when needed
-  -> merge current origin/dev into the tested branch when needed
+  -> replay only the task-owned commits onto current origin/dev when needed
+  -> live ADO rerun for the replayed commit
   -> push the verified ancestry directly to dev
   -> verify tested source in origin/dev
   -> converged receipt
@@ -63,6 +64,17 @@ integrates verified ancestry into `dev`, creates a PR only for `main`, and
 verifies publication. The agent edits source, resolves semantic conflicts, and
 judges exact terminal artifacts. The app projects an accepted proof into the
 spec-loop read model after the task receipt is persisted.
+
+Before the first exact run for a source commit, the agent reviews that current
+commit against the original task and decides whether it is ready for live
+execution. This review is required even when an earlier workflow step already
+committed a carrier, inventory, merge, or admission repair. A clean changed
+branch proves only that source work happened; it does not prove that a blocked
+spec, reviewed exception, or intentionally paused execution contract is ready
+to spend a live run. Code supplies the current Git and task facts, while the
+agent chooses a bounded repair, `test-current`, an exact wait, or an ownership
+boundary. Code dispatches only after that judgment and the hard admission
+checks both permit it.
 
 Before every ADO dispatch, including a replacement run after a repair or merge
 conflict, workflow code runs the repository's own private-source and live
@@ -118,6 +130,14 @@ wait or escalates the genuine external limitation. The current-main same-spec
 pass Condition remains a master-validation product-recovery pattern, not a
 scenario-normalization escape path.
 
+An arbitrary `origin/dev` advance is not such a fact. A repository wait is
+valid only when it names the exact external producer or publication that can
+change this row. When current evidence already identifies a same-spec carrier,
+model, or test defect, the task remains active repair. If stale task acceptance
+text is too narrow for that repair, the owner revises the same task and resumes
+`spec-live-reconciliation`; it does not create a successor that wakes after an
+unrelated merge.
+
 ## Recovery and idempotency
 
 - Run metadata contains task id, generation, spec id, branch, source commit,
@@ -145,10 +165,13 @@ scenario-normalization escape path.
   accepted-nonlive result. The same task must become live-admissible, wait on an
   exact external fact, or escalate a genuine ownership boundary.
 - If an agent invocation ends before producing a structured judgment, the
-  workflow retries that invocation once with the same task worktree and hot
-  evidence. An empty or interrupted invocation is a runtime failure, not an
-  agent decision and not an ownership-boundary handoff. Only a returned
-  `needs-owner` judgment may enter the accountable-owner path. A terminal-run
+  workflow waits through one short provider cooldown and retries that invocation
+  once with the same task worktree and hot evidence. An empty or interrupted
+  invocation is a runtime failure, not an agent decision and not an
+  ownership-boundary handoff. Only a returned `needs-owner` judgment may enter
+  the accountable-owner path. If both runtime attempts fail or both structured
+  judgments violate hard invariants, the workflow fails for ordinary task
+  recovery; code does not synthesize an owner judgment. A terminal-run
   `test-current` judgment is invalid because that exact source has already run;
   the workflow feeds the full terminal evidence back to the same agent for a
   corrected verdict or fix-forward move.
@@ -165,13 +188,27 @@ scenario-normalization escape path.
 - For `dev`, the workflow fetches current `origin/dev`, preserves the tested
   commit in ancestry, and pushes only a fast-forward remote update. A concurrent
   update causes a bounded refresh/retry, not a wait.
+- A scenario-normalization task records the `origin/dev` commit from which its
+  task branch was created. When current `origin/dev` has advanced outside that
+  branch, the workflow rebases only commits after that recorded base onto the
+  current integration head. It does not merge the whole current repository
+  history into a stale task lineage. A clean replay still changes commit
+  identity and therefore requires a fresh exact ADO run before publication.
+- A replay conflict returns the in-progress rebase to the same domain agent.
+  The agent resolves only conflicts caused by the task-owned commits, completes
+  or aborts that rebase, and leaves one clean commit lineage. The workflow then
+  force-updates only the dedicated task branch with lease protection and queues
+  the fresh exact run. Unrelated generated/model conflicts are evidence that
+  the recorded task base or branch ownership is invalid; they are not work to
+  resolve by accepting all of either side.
 - When the exact tested source commit is already an ancestor of current
   `origin/dev`, preserve that source commit and its run/proof identity and
   converge. Do not fast-forward the task branch to unrelated newer `dev`
   commits before matching its run; doing so discards valid proof and creates an
   endless moving-target rerun loop.
-- A conflict with current `origin/dev` returns to the agent on the same task;
-  the repaired commit must receive a fresh exact live run before integration.
+- A task-owned replay conflict with current `origin/dev` returns to the agent on
+  the same task; the repaired commit must receive a fresh exact live run before
+  integration.
 - For `main`, a PR is discovered by exact source branch and target before
   creation. Reviewer changes invalidate the old proof, and an abandoned PR is
   an owner decision rather than permission to recreate it.
@@ -180,14 +217,15 @@ scenario-normalization escape path.
 
 The task context retains one compact proof containing the task generation,
 spec, live target/build, source branch and commit, accepted run, and
-artifact-backed verdict. A changed task converges only after the exact tested
-source commit is present in the integration branch ancestry. For `dev`, this is
-proved after direct integration; for `main`, it is proved after PR completion.
+artifact-backed verdict. For `dev`, convergence requires that exact tested
+source commit in the integration branch ancestry. For `main`, Azure must report
+that the PR used the exact tested source head and produced a completed target
+commit that is present in the target branch ancestry.
 
-Main-promotion PRs therefore use a no-fast-forward merge commit. If a reviewed
-PR is squash/rebase merged, the existing exact proof is insufficient; a
-separate exact live proof for the merged integration revision is required
-before closeout.
+Squash, rebase, and merge-commit completion are all valid because the provider
+records both sides of the integration. The PR head itself does not have to
+remain in `main` ancestry. A downstream workflow may still require a later live
+run from current `main` before it closes its broader goal.
 
 ## Repair-task rule
 
