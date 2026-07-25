@@ -188,6 +188,11 @@ and PR watchers emit provider facts where those facts are actually needed; the
 generic Condition tracker performs correlation. Disposition repair and
 non-mutating investigations do not use this workflow.
 
+The pipeline observer polls represented ADO runs every minute. A terminal run
+is a wake fact for an occupied live slot, so leaving it unseen for a five-minute
+cadence adds avoidable dead time to every normalization wave. The observer only
+collects provider state; the domain agent still judges the returned evidence.
+
 For bounded source-only patches, `domain-task-execution` lets the agent judge
 and commit the change, then workflow code integrates the clean branch directly
 into `dev`. Scenario normalization is source-only only when every consuming

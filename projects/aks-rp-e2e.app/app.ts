@@ -1064,7 +1064,10 @@ export default defineProjectApp({
     {
       id: "pipeline-observer",
       enabled: true,
-      intervalMs: 300_000,
+      // Live normalization throughput is bounded by terminal-run observation.
+      // Poll represented ADO runs every minute so a completed run does not
+      // leave its task and execution slot idle for another five minutes.
+      intervalMs: 60_000,
       emits: [
         {
           type: "aks.pipeline.check",
