@@ -90,13 +90,15 @@ function ensureTmuxSession() {
     ]);
     if (created.status !== 0) {
       send({ type: "error", message: `Unable to create tmux session: ${tmuxName}` });
+      return false;
     } else {
       markTmuxSession();
     }
   }
+  return true;
 }
 
-ensureTmuxSession();
+if (!ensureTmuxSession()) process.exit(1);
 configureTmux();
 
 const term = pty.spawn("tmux", [
