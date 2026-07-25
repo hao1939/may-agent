@@ -34,7 +34,11 @@ event or periodic resync
 A task with `workflow: "name"` resolves
 `agents/<resolved-owner>/workflows/name.ts` by convention. A
 task without a workflow runs its explicit or inherited owner. If a workflow
-returns `needs-owner`, the same task falls back to that owner.
+returns `needs-owner`, the same task falls back to that owner for exceptional
+judgment. The fallback does not take over mechanics owned by the learned
+workflow; it corrects the same task and resumes that workflow, or records an
+exact external wait/escalation when the required action is outside the owner
+boundary.
 
 Every handler returns one envelope:
 
