@@ -398,6 +398,39 @@ describe("legacy branch verification workflow", () => {
     expect(git(value.workspace, "status", "--porcelain=v1")).toBe("");
   });
 
+  test("returns same-task owner judgment when the recorded source is worktree-attached", async () => {
+    const value = fixture();
+    const sourceWorkspace = join(dirname(value.repo), "source-workspace");
+    git(value.repo, "worktree", "add", sourceWorkspace, "task/source");
+    let verifierCalled = false;
+
+    const result = await executeWithVerifier(
+      value.context,
+      () => {
+        verifierCalled = true;
+        return { passed: true, changedFiles: [], steps: [] };
+      },
+      baseline,
+    );
+
+    expect(result).toMatchObject({
+      type: "done",
+      output: {
+        state: "needs-owner",
+        summary: expect.stringContaining("worktree-attached"),
+        evidence: expect.arrayContaining([
+          `branch:task/source@${value.sourceHead}:attached-source`,
+          "source-attached:true",
+          `source-local:${value.sourceHead}`,
+          `source-remote:${value.sourceHead}`,
+          `base-commit:${value.baseHead}`,
+        ]),
+      },
+    });
+    expect(verifierCalled).toBe(false);
+    expect(git(value.workspace, "status", "--porcelain=v1")).toBe("");
+  });
+
   test("returns same-task owner judgment when the source disappears during closeout", async () => {
     const value = fixture();
 

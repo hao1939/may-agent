@@ -202,13 +202,25 @@ function sourceState(repoDir: string, source: SourceBranch): SourceState {
   };
 }
 
-function staleSourceNeedsOwner(
+function sourceStateNeedsOwner(
   repoDir: string,
   source: SourceBranch,
   evidence: string[] = [],
 ): { summary: string; evidence: string[] } | null {
   const current = sourceState(repoDir, source);
-  if (current.attached) return null;
+  if (current.attached) {
+    const summary = `Recorded source ${source.branch}@${source.head} is worktree-attached. The same task requires owner judgment instead of retrying clean legacy-branch verification against an independently owned workspace.`;
+    return {
+      summary,
+      evidence: [
+        `branch:${source.branch}@${source.head}:attached-source`,
+        "source-attached:true",
+        `source-local:${current.local ?? "missing"}`,
+        `source-remote:${current.remote ?? "missing"}`,
+        ...evidence,
+      ],
+    };
+  }
 
   const observations: string[] = [];
   if (current.local !== source.head) {
@@ -568,7 +580,7 @@ export async function executeWithVerifier(
         actions: [],
       });
     }
-    const staleBeforeVerification = staleSourceNeedsOwner(repoDir, source, [
+    const staleBeforeVerification = sourceStateNeedsOwner(repoDir, source, [
       `base-commit:${baseCommit}`,
     ]);
     if (staleBeforeVerification) {
@@ -767,7 +779,7 @@ export async function executeWithVerifier(
         { branch: source.branch, baseCommit, currentBase },
       );
     }
-    const staleAfterVerification = staleSourceNeedsOwner(repoDir, source, [
+    const staleAfterVerification = sourceStateNeedsOwner(repoDir, source, [
       `base-commit:${currentBase}`,
       `candidate-commit:${candidateHead}`,
       `changed-files:${verification.changedFiles.join(",")}`,
@@ -814,7 +826,7 @@ export async function executeWithVerifier(
   } catch (error) {
     const recovery = recoverWorkspaceToCurrentBase(repoDir, workspaceDir);
     const errorMessage = error instanceof Error ? error.message : String(error);
-    const staleDuringCloseout = staleSourceNeedsOwner(repoDir, source, [
+    const staleDuringCloseout = sourceStateNeedsOwner(repoDir, source, [
       `error:${errorMessage}`,
       `recovery-base-commit:${recovery.baseCommit ?? "missing"}`,
       `recovery-residue:${recovery.residue.join(" | ") || "<clean>"}`,
