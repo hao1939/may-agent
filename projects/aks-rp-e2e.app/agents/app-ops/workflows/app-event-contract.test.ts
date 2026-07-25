@@ -1250,6 +1250,24 @@ describe("app event contract", () => {
         ),
     ).toBe(true);
     expect(
+      Array.isArray(resolved?.input?.instructions) &&
+        resolved.input.instructions.some(
+          (entry) =>
+            typeof entry === "string" &&
+            /true Condition is already level-triggered ready work/i.test(entry) &&
+            /generic task controller owns/i.test(entry),
+        ),
+    ).toBe(true);
+    expect(
+      Array.isArray(resolved?.acceptance) &&
+        resolved.acceptance.some(
+          (entry) =>
+            typeof entry === "string" &&
+            /do not retry or unblock/i.test(entry) &&
+            /Condition is satisfied/i.test(entry),
+        ),
+    ).toBe(true);
+    expect(
       Array.isArray(resolved?.acceptance) &&
         resolved.acceptance.some(
           (entry) =>

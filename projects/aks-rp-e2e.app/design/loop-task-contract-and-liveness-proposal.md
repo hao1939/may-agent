@@ -206,8 +206,11 @@ lane without moving judgment into code: code schedules the review and the
 `app-ops` agent reads hot facts, selects a bounded sample, and decides the
 next action for each sampled task. The reviewer prioritizes old attention with
 no active attempt or controller and producerless waits; it does not compete
-with a fresh Condition wake or the workflow-to-owner fallback already in
-flight. It may select up to the configured bounded sample, then re-reads every
+with the workflow-to-owner fallback already in flight. A true Condition is
+already level-triggered ready work: its event wake and bounded passive resync
+belong to the generic reconciler, so the watchdog never retries or unblocks a
+task merely because that Condition is satisfied. It may select up to the
+configured bounded sample, then re-reads every
 selected task immediately before returning state-changing actions. If any
 target advances concurrently, task mechanics treat the atomic result as stale
 and rerun this same reviewer from current facts instead of creating another
