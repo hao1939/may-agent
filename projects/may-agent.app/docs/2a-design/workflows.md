@@ -170,6 +170,14 @@ to attention. Clean closeout removes the worktree; a useful unmerged branch is
 retained, while an empty or already-integrated branch is removed. The bounded
 Git lineage is copied into an achieve receipt.
 
+For a nonterminal retry, branch identity is stronger than base freshness. If a
+local task branch was removed after a clean wait but the same task branch
+exists on the configured remote, workspace preparation recreates the local
+branch from that remote task branch. It must not recreate the task at a newer
+base-branch head. This preserves the exact source commit associated with a
+pipeline run, review, or external wait while still allowing clean local
+worktrees to be removed between attempts.
+
 This is a workflow convention, not a per-task setting. Do not use it for
 observation, app state, shared ledgers, exact external waits, or workflows that
 need one canonical integration workspace. Do not create another workspace

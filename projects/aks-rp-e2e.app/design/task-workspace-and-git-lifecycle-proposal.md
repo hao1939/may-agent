@@ -304,6 +304,10 @@ remain a second, explicit recovery-review phase.
 
 An exact pipeline or repository-ref wait needs `sourceCommit`, remote branch,
 base commit, and Condition identity. It does not need a checked-out local copy.
+When that wait wakes, task-worktree preparation restores the existing remote
+task branch before considering current `origin/dev`. A newer integration head
+must not silently replace the exact source commit under review; advancing or
+merging the integration branch remains an explicit workflow step.
 
 ## Workspace selection without per-task configuration
 
@@ -394,8 +398,8 @@ Recovery becomes deterministic:
 - retry of the same generation resolves the same task path;
 - replacement agent receives the same `workspaceDir`;
 - active or failed attempt with a matching marker may resume;
-- missing expected worktree with a retained branch can be recreated from the
-  recorded head commit;
+- missing expected worktree with a retained local or remote task branch is
+  recreated from that task branch, never from a newer base-branch head;
 - dirty worktree with no matching live task is an orphan requiring owner
   judgment, never automatic deletion; and
 - multiple worktrees for the same task generation are an integrity finding.
