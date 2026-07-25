@@ -812,8 +812,7 @@ export function matchingTaskRuns(
         nonEmptyString(parameters.specs) === input.specId &&
         nonEmptyString(parameters.target) === target &&
         nonEmptyString(parameters.standalone_build_id) === standaloneBuildId &&
-        nonEmptyString(metadata.taskId) === input.taskId &&
-        Number(metadata.generation) === input.generation
+        nonEmptyString(metadata.taskId) === input.taskId
       );
     })
     .sort((left, right) => Number(right.id ?? 0) - Number(left.id ?? 0));
@@ -1455,6 +1454,31 @@ export async function reconcileSpecLive(
 
     let sourceCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
     const baseCommit = git(repoDir, ["rev-parse", targetRef]).stdout;
+    const recordedTaskBase = nonEmptyString(
+      normalizationInput?.originDevCommit,
+    );
+    const replayedSourceCommit = nonEmptyString(
+      payload?.input?.replayedSourceCommit,
+    );
+    if (
+      normalizationInput?.loopId === "scenario-normalization" &&
+      replayedSourceCommit &&
+      sourceCommit === recordedTaskBase &&
+      sourceCommit !== replayedSourceCommit &&
+      git(
+        workspaceDir,
+        ["cat-file", "-e", `${replayedSourceCommit}^{commit}`],
+        true,
+      ).status === 0 &&
+      git(
+        workspaceDir,
+        ["merge-base", "--is-ancestor", recordedTaskBase, replayedSourceCommit],
+        true,
+      ).status === 0
+    ) {
+      git(workspaceDir, ["reset", "--hard", replayedSourceCommit]);
+      sourceCommit = replayedSourceCommit;
+    }
     const priorProof = options.reusePriorIntegratedProof
       ? priorIntegratedProof({
           repoDir,

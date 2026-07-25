@@ -472,7 +472,7 @@ describe("spec-live-reconciliation workflow", () => {
     });
   });
 
-  test("finds only an exact task-generation, spec, target, and source run", () => {
+  test("keeps exact source proof across a task metadata revision", () => {
     const exact = {
       id: 42,
       sourceVersion: "abc",
@@ -504,7 +504,7 @@ describe("spec-live-reconciliation workflow", () => {
         specId: "spec.example.lifecycle",
         sourceCommit: "abc",
       }),
-    ).toEqual([exact]);
+    ).toEqual([wrongGeneration, exact]);
   });
 
   test("preserves an exact standalone live target across recovery", () => {
