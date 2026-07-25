@@ -311,9 +311,10 @@ from the amount of open work.
 14. A human disposition required by a task wakes that same task identity.
 15. Child tasks use the same app controller, and meaningful child transitions
     wake their executable parent without app-specific routing.
-16. A replacement app controller waits for the previous instance's active
-    attempts to drain before claiming work, so hot reload cannot multiply the
-    app concurrency budget.
+16. Replacement and prior app controllers share one per-app capacity lease
+    pool. Prior active attempts retain their leases, while the replacement may
+    use remaining capacity immediately; hot reload neither multiplies the app
+    budget nor pauses unrelated work behind one long attempt.
 17. Only the long-running autonomous daemon attaches app task controllers;
     direct and read-only processes cannot become competing reconcilers.
 

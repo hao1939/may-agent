@@ -546,10 +546,13 @@ the successor may reclaim a lock only when that owner process is gone; a live
 owner remains protected by the normal wait and stale-lock bounds. This avoids a
 restart loop without weakening single-writer task-state admission.
 
-On app or workflow hot reload, the replacement controller may collect durable
-wake hints immediately but does not claim them until the prior controller's
-active attempts have drained. Successive reloads inherit the same drain gate,
-so they cannot stack independent worker pools for one app.
+On app or workflow hot reload, the prior controller stops claiming new keys but
+its active attempts keep their shared per-app capacity leases until they end.
+The replacement controller may claim unrelated work immediately from the
+remaining app capacity. Canonical task claims prevent the same task generation
+from running twice, while the shared lease spans controller generations so
+successive reloads cannot multiply the app concurrency budget. A long attempt
+therefore does not turn hot reload into an app-wide scheduling pause.
 
 Pausing and resuming are explicit control operations. A paused app has no task
 controller, schedules, event routing, recovery, or resync. Lifecycle changes
