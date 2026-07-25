@@ -301,6 +301,12 @@ become primary only while retaining every unresolved owner event reference and
 its structured input, so one coalesced owner run can judge every request before
 emitting their correlated results.
 
+Passive resync schedules a task carrying an unresolved direct
+`project.comment.created` trigger before autonomous priority backlog. This is a
+delivery guarantee for explicit project direction, not a change to the task's
+declared priority or a code-side project decision. Once the owner emits the
+correlated result, ordinary task priority ordering applies again.
+
 ## Conditions and watchers
 
 A Condition describes one exact external observation:
