@@ -267,7 +267,7 @@ describe("normalize scenario frontier workflow", () => {
     expect(result.output.summary).toContain("1 waiting");
   });
 
-  test("counts exact pipeline waits against normalization live execution capacity", async () => {
+  test("counts a terminal pipeline wait until its waiting task reconciles", async () => {
     const missingAdapterFiles = ["a", "b", "c", "d", "e", "f"].map(
       (name) => `features/feature-a/tests/case-${name}.test.ts`,
     );
@@ -293,7 +293,7 @@ describe("normalize scenario frontier workflow", () => {
       },
       conditions: {
         [waitConditionId]: {
-          status: { state: "unknown" },
+          status: { state: "true" },
         },
       },
       tasks: Object.fromEntries(

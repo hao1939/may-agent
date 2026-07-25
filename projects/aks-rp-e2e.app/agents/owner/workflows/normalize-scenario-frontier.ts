@@ -415,34 +415,6 @@ function branchCandidateEvidence(
     : "unchecked";
 }
 
-function openConditionIds(appDir: string): Set<string> {
-  const state = readJson<Record<string, unknown>>(
-    join(appDir, ".state", "tasks", "state.json"),
-    {},
-  );
-  const conditions =
-    state.conditions && typeof state.conditions === "object"
-      ? (state.conditions as Record<string, Record<string, unknown>>)
-      : {};
-  const open = new Set<string>();
-  for (const [id, resource] of Object.entries(conditions)) {
-    const status =
-      resource.status &&
-      typeof resource.status === "object" &&
-      !Array.isArray(resource.status)
-        ? (resource.status as Record<string, unknown>)
-        : {};
-    const conditionState = String(status.state ?? "")
-      .trim()
-      .toLowerCase();
-    if (["true", "satisfied", "completed", "closed"].includes(conditionState)) {
-      continue;
-    }
-    open.add(id);
-  }
-  return open;
-}
-
 function graphNodes(appDir: string): GraphNode[] {
   const nodes: GraphNode[] = [];
   const state = readJson<Record<string, unknown>>(
@@ -532,18 +504,14 @@ function graphNodes(appDir: string): GraphNode[] {
   return nodes;
 }
 
-function hasOpenPipelineRunWait(
-  node: GraphNode,
-  openConditions: ReadonlySet<string>,
-): boolean {
+function hasPipelineRunWait(node: GraphNode): boolean {
   if (!["waiting", "blocked"].includes(node.state)) {
     return false;
   }
   return node.conditionIds.some(
     (conditionId) =>
       conditionId.startsWith("pipeline-run-") &&
-      conditionId.endsWith("-completed") &&
-      openConditions.has(conditionId),
+      conditionId.endsWith("-completed"),
   );
 }
 
@@ -551,7 +519,6 @@ function liveExecutionCapacity(
   representedTaskIds: string[],
   nodesById: ReadonlyMap<string, GraphNode>,
   actionableTaskIds: string[],
-  openConditions: ReadonlySet<string>,
   frontierLimit: number,
 ): {
   consumingTaskIds: string[];
@@ -561,7 +528,7 @@ function liveExecutionCapacity(
   const pipelineWaitTaskIds = [...new Set(representedTaskIds)].filter(
     (taskId) => {
       const node = nodesById.get(taskId);
-      return node ? hasOpenPipelineRunWait(node, openConditions) : false;
+      return node ? hasPipelineRunWait(node) : false;
     },
   );
   const consumingTaskIds = [
@@ -914,7 +881,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const minRunnableLeaves = desiredRunnableMin(ctx);
   const nodes = graphNodes(appDir);
   const nodesById = new Map(nodes.map((node) => [node.id, node]));
-  const openConditions = openConditionIds(appDir);
 
   return withCleanOriginDev(projectDir, (worktreeDir, source) => {
     const {
@@ -979,7 +945,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           rows.flatMap((row) => row.representedTaskIds),
           nodesById,
           accounting.actionableTaskIds,
-          openConditions,
           maxLeaves,
         );
         const workflowRepairs = rows
@@ -1054,7 +1019,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       rows.flatMap((row) => row.representedTaskIds),
       nodesById,
       accounting.actionableTaskIds,
-      openConditions,
       maxLeaves,
     );
     const actionBudget = capacity.available;
