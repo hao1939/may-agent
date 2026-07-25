@@ -9,12 +9,14 @@ export const specLoopTaskId = "aks-spec-verification-loop";
 export const featureCompactLoopTaskId = "aks-feature-compact-loop";
 export const scenarioNormalizationTaskId = "scenario-normalization";
 export const legacyBranchReconciliationTaskId = "legacy-branch-reconciliation";
+export const repositorySkillMaintenanceTaskId = "repository-skill-maintenance";
 
 export type StandingLoopId =
   | typeof specLoopTaskId
   | typeof featureCompactLoopTaskId
   | typeof scenarioNormalizationTaskId
-  | typeof legacyBranchReconciliationTaskId;
+  | typeof legacyBranchReconciliationTaskId
+  | typeof repositorySkillMaintenanceTaskId;
 
 type StandingLoopDefinition = {
   id: StandingLoopId;
@@ -23,6 +25,7 @@ type StandingLoopDefinition = {
   owner: string;
   workflow: string;
   frontierLimit: number;
+  input?: Record<string, unknown>;
   outcome: string;
   acceptance: string[];
   priority: "P0" | "P1";
@@ -150,6 +153,34 @@ export const standingLoopDefinitions: Record<
     ],
     priority: "P0",
   },
+  [repositorySkillMaintenanceTaskId]: {
+    id: repositorySkillMaintenanceTaskId,
+    action: "repository-skill-maintenance",
+    parentId: "group/domain-work",
+    owner: "aks-explorer",
+    workflow: "domain-task-execution",
+    frontierLimit: 1,
+    input: {
+      skillPath: "skills/aks-rp-e2e",
+      reviewIntervalMs: 86_400_000,
+      safeEvaluationOnly: true,
+    },
+    outcome:
+      "Keep the aks-rp-e2e repository skill accurate, easy to discover, simple to use, and verified against representative real repository tasks.",
+    acceptance: [
+      "Evaluate the checked-in skill from clean current origin/dev and identify the exact skill and repository revisions under review.",
+      "Exercise representative user journeys: find and explain a feature or spec, inspect one spec, run safe local checks and previews, preview Azure DevOps staging and existing-standalone requests, use a checked-in feature set, author or migrate a TypeScript scenario, and diagnose a result.",
+      "Use raw command output and observed user friction. When a case performs poorly, review whether the evaluation case is valid before changing the skill to satisfy it.",
+      "Keep SKILL.md concise and procedural; keep detailed guidance in directly linked references; keep reusable automation in tested TypeScript or JavaScript run with Bun.",
+      "Keep SKILL.md frontmatter, agents/openai.yaml, repository README usage, scripts, examples, current CLI, runner behavior, schemas, and pipeline parameters aligned without duplicating design documentation.",
+      "Run the skill example suite and proportionate repository checks after every material change, and cite the exact commands and outcomes.",
+      "Do not queue live pipelines, use an existing standalone build, or mutate Azure solely for skill evaluation without explicit authorization; inspection, local validation, dry runs, and queue previews are the default.",
+      "Integrate ordinary correctness and usability improvements directly into dev through the task-owned workflow. Escalate only a real product, policy, benchmark, or human-approval boundary.",
+      "Do not commit transient run output. When no material gap exists, converge with evidence for the evaluated revisions and wait for the next scheduled or manual pulse.",
+      "Maintain this one stable task; do not create recurring review-task chains for the same skill-quality responsibility.",
+    ],
+    priority: "P1",
+  },
 };
 
 export function isStandingLoopId(value: unknown): value is StandingLoopId {
@@ -171,7 +202,10 @@ export function standingLoopIntent(
     mode: "maintain",
     owner: definition.owner,
     workflow: definition.workflow,
-    input: { frontierLimit: definition.frontierLimit },
+    input: {
+      frontierLimit: definition.frontierLimit,
+      ...(definition.input ?? {}),
+    },
     priority: definition.priority,
   };
 }

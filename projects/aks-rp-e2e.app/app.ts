@@ -19,6 +19,7 @@ import {
   featureCompactLoopTaskId,
   legacyBranchReconciliationTaskId,
   loopRefillWakeForTaskEvent,
+  repositorySkillMaintenanceTaskId,
   scenarioNormalizationTaskId,
   specLoopTaskId,
   standingLoopIntent,
@@ -569,6 +570,12 @@ export function resolveAksTask(
         taskId === legacyBranchReconciliationTaskId
       ) {
         return standingLoopIntent(legacyBranchReconciliationTaskId);
+      }
+      if (
+        action === "repository-skill-maintenance" ||
+        taskId === repositorySkillMaintenanceTaskId
+      ) {
+        return standingLoopIntent(repositorySkillMaintenanceTaskId);
       }
       return null;
     }
@@ -1145,6 +1152,27 @@ export default defineProjectApp({
       ],
     },
     {
+      id: "repository-skill-maintenance",
+      enabled: true,
+      intervalMs: 86_400_000,
+      emits: [
+        {
+          type: "project.task.tick",
+          action: "repository-skill-maintenance",
+          target: {
+            project: projectId,
+            taskId: repositorySkillMaintenanceTaskId,
+          },
+          data: {
+            project: projectId,
+            taskId: repositorySkillMaintenanceTaskId,
+            task_id: repositorySkillMaintenanceTaskId,
+            reason: "scheduled-repository-skill-maintenance",
+          },
+        },
+      ],
+    },
+    {
       id: "app-ops-heartbeat",
       enabled: true,
       intervalMs: 14_400_000,
@@ -1553,6 +1581,34 @@ export default defineProjectApp({
             taskId: legacyBranchReconciliationTaskId,
             task_id: legacyBranchReconciliationTaskId,
             reason: "manual-legacy-branch-reconciliation-pulse",
+            params: input,
+          },
+        };
+      },
+    },
+    "pulse-repository-skill-maintenance": {
+      type: "async",
+      description:
+        "Evaluate and refine the checked-in aks-rp-e2e repository skill through its stable maintenance task.",
+      inputSchema: actionInputSchema,
+      event(params) {
+        const input =
+          params && typeof params === "object"
+            ? (params as Record<string, unknown>)
+            : {};
+        return {
+          type: "project.task.tick",
+          action: "repository-skill-maintenance",
+          target: {
+            project: projectId,
+            taskId: repositorySkillMaintenanceTaskId,
+          },
+          data: {
+            project: projectId,
+            action: "repository-skill-maintenance",
+            taskId: repositorySkillMaintenanceTaskId,
+            task_id: repositorySkillMaintenanceTaskId,
+            reason: "manual-repository-skill-maintenance-pulse",
             params: input,
           },
         };

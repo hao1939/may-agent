@@ -10,6 +10,7 @@ import {
   learnedSpecVerificationAcceptance,
   loopFrontierAccounting,
   loopRefillWakeForTaskEvent,
+  repositorySkillMaintenanceTaskId,
   scenarioNormalizationTaskId,
   specLoopTaskId,
   standingLoopIntent,
@@ -29,6 +30,29 @@ describe("AKS standing-loop convention", () => {
     expect(standingLoopIntent(legacyBranchReconciliationTaskId).input).toEqual({
       frontierLimit: 1,
     });
+    expect(standingLoopIntent(repositorySkillMaintenanceTaskId).input).toEqual({
+      frontierLimit: 1,
+      reviewIntervalMs: 86_400_000,
+      safeEvaluationOnly: true,
+      skillPath: "skills/aks-rp-e2e",
+    });
+  });
+
+  test("keeps repository skill quality as one safe maintain task", () => {
+    const definition = standingLoopIntent(repositorySkillMaintenanceTaskId);
+    const acceptance = definition.acceptance.join("\n");
+
+    expect(definition).toMatchObject({
+      id: repositorySkillMaintenanceTaskId,
+      parentId: "group/domain-work",
+      mode: "maintain",
+      owner: "aks-explorer",
+      workflow: "domain-task-execution",
+    });
+    expect(acceptance).toContain("representative user journeys");
+    expect(acceptance).toContain("TypeScript or JavaScript");
+    expect(acceptance).toContain("Do not queue live pipelines");
+    expect(acceptance).toContain("one stable task");
   });
 
   test("bakes learned worker practice into standing loop acceptance", () => {

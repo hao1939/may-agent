@@ -16,6 +16,7 @@ import app, {
   scenarioTestFrontierWakeEvent,
   waitingFrontierReviewTaskId,
 } from "../../../app.ts";
+import { repositorySkillMaintenanceTaskId } from "../../../task-loops.ts";
 
 type EventSelector =
   | string
@@ -760,6 +761,36 @@ describe("app event contract", () => {
     );
   });
 
+  test("repository skill maintenance has one daily stable task wake", () => {
+    const schedule = appManifest.schedules?.find(
+      (entry) => entry.id === "repository-skill-maintenance",
+    );
+
+    expect(schedule).toMatchObject({
+      enabled: true,
+      intervalMs: 86_400_000,
+      emits: [
+        {
+          type: "project.task.tick",
+          action: "repository-skill-maintenance",
+          target: {
+            project: projectId,
+            taskId: repositorySkillMaintenanceTaskId,
+          },
+        },
+      ],
+    });
+    expect(
+      resolveAksTask(schedule?.emits?.[0] as Record<string, unknown>),
+    ).toMatchObject({
+      id: repositorySkillMaintenanceTaskId,
+      parentId: "group/domain-work",
+      mode: "maintain",
+      owner: "aks-explorer",
+      workflow: "domain-task-execution",
+    });
+  });
+
   test("master validation schedules a level check instead of a direct task tick", () => {
     const schedule = appManifest.schedules?.find(
       (entry) => entry.id === "master-validation-staging-cycle",
@@ -1060,6 +1091,15 @@ describe("app event contract", () => {
         project: projectId,
         reason: "manual-scenario-frontier-pulse",
         desiredRunnableLeaves: { min: 3, max: 5 },
+      },
+    });
+
+    expect(actionEvent("pulse-repository-skill-maintenance")).toMatchObject({
+      type: "project.task.tick",
+      action: "repository-skill-maintenance",
+      target: {
+        project: projectId,
+        taskId: repositorySkillMaintenanceTaskId,
       },
     });
   });
