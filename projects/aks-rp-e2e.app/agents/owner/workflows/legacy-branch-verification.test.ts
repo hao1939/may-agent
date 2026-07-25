@@ -332,7 +332,9 @@ describe("legacy branch verification workflow", () => {
     const value = fixture({ devChange: "dev\n" });
     try {
       git(value.workspace, "merge", "--no-ff", "--no-edit", "task/source");
-      throw new Error("expected merge conflict to dirty the retained task worktree");
+      throw new Error(
+        "expected merge conflict to dirty the retained task worktree",
+      );
     } catch {
       // expected: leave the worktree in the same conflicted state a failed retained retry would reuse
     }

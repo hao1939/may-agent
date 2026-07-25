@@ -191,12 +191,17 @@ type SourceState = {
 };
 
 function sourceState(repoDir: string, source: SourceBranch): SourceState {
-  const attached = git(repoDir, ["worktree", "list", "--porcelain"])
-    .stdout.split("\n")
-    .filter((line) => line.startsWith("branch refs/heads/"))
-    .map((line) => line.slice("branch refs/heads/".length));
+  const attachedPath = git(
+    repoDir,
+    [
+      "for-each-ref",
+      "--format=%(worktreepath)",
+      `refs/heads/${source.branch}`,
+    ],
+    true,
+  ).stdout;
   return {
-    attached: attached.includes(source.branch),
+    attached: Boolean(attachedPath),
     local: refHead(repoDir, source.branch),
     remote: remoteHead(repoDir, source.branch),
   };
@@ -368,7 +373,9 @@ function recoverWorkspaceToCurrentBase(
   git(workspaceDir, ["merge", "--abort"], true);
   const fetched = git(repoDir, ["fetch", "origin", "dev"], true);
   const baseCommit =
-    fetched.status === 0 ? git(repoDir, ["rev-parse", "origin/dev"], true) : null;
+    fetched.status === 0
+      ? git(repoDir, ["rev-parse", "origin/dev"], true)
+      : null;
   if (baseCommit?.status === 0 && baseCommit.stdout) {
     git(workspaceDir, ["reset", "--hard", baseCommit.stdout], true);
   }
@@ -376,8 +383,8 @@ function recoverWorkspaceToCurrentBase(
     workspaceDir,
     ["status", "--porcelain=v1", "--untracked-files=all"],
     true,
-  ).stdout
-    .split("\n")
+  )
+    .stdout.split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
   return {
