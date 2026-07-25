@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { runDbMaintenancePass } from "../../lib/db/maintenance.js";
-import { closeAllDbs } from "../../lib/db/connection.js";
+import { closeAllDbs, getDb } from "../../lib/db/connection.js";
 import { daemonSocketPath, sendSocketCommand } from "../../../packages/control/src/client.js";
 
 const LIVENESS_INTERVAL_MS = 30_000;
@@ -9,6 +9,7 @@ const LIVENESS_FAILURE_THRESHOLD = 6;
 const LIVENESS_RESTART_COOLDOWN_MS = 10 * 60_000;
 const LIVENESS_PROBE_TIMEOUT_MS = 5_000;
 const LIVENESS_ACTIVE_WORK_GRACE_MS = 30 * 60_000;
+const LIVENESS_HEARTBEAT_FRESH_MS = 150_000;
 
 export type RuntimeLivenessState = {
   consecutiveFailures: number;
@@ -51,6 +52,18 @@ export function observeRuntimeLiveness(
   };
 }
 
+export function observeDurableDaemonHeartbeat(
+  heartbeatAt: number | undefined,
+  activeCount: number,
+  now: number,
+  freshMs = LIVENESS_HEARTBEAT_FRESH_MS,
+): RuntimeLivenessObservation {
+  return {
+    responsive: Number.isFinite(heartbeatAt) && now - Number(heartbeatAt) <= freshMs,
+    activeWork: activeCount > 0,
+  };
+}
+
 async function observeDaemonLiveness(persistDir: string): Promise<RuntimeLivenessObservation> {
   const socketPath = daemonSocketPath(persistDir, {
     instance: process.env.INSTANCE || "default",
@@ -63,7 +76,24 @@ async function observeDaemonLiveness(persistDir: string): Promise<RuntimeLivenes
       activeWork: Array.isArray(response.activeAgents) && response.activeAgents.length > 0,
     };
   } catch {
-    return { responsive: false, activeWork: false };
+    const db = getDb(persistDir);
+    const heartbeat = db
+      .prepare(
+        `SELECT timestamp
+       FROM events
+       WHERE event_type = 'runtime.daemon.heartbeat'
+       ORDER BY timestamp DESC
+       LIMIT 1`,
+      )
+      .get() as { timestamp?: number } | undefined;
+    const active = db
+      .prepare(
+        `SELECT COUNT(*) AS count
+       FROM sessions
+       WHERE status IN ('running', 'idle') AND endedAt IS NULL`,
+      )
+      .get() as { count?: number } | undefined;
+    return observeDurableDaemonHeartbeat(heartbeat?.timestamp, Number(active?.count ?? 0), Date.now());
   }
 }
 
