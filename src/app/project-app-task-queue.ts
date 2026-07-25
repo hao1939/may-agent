@@ -13,6 +13,8 @@ export class ProjectAppTaskQueue {
   private readonly running = new Set<string>();
   private readonly dirty = new Set<string>();
   private readonly dirtyFront = new Set<string>();
+  private readonly priorities = new Map<string, ProjectAppTaskPriority>();
+  private readonly dirtyPriorities = new Map<string, ProjectAppTaskPriority>();
   private consecutiveFrontTakes = 0;
 
   constructor(readonly maxConcurrent: number) {
@@ -21,17 +23,21 @@ export class ProjectAppTaskQueue {
     }
   }
 
-  enqueue(taskId: string, opts: { front?: boolean } = {}): boolean {
+  enqueue(taskId: string, opts: ProjectAppTaskQueueOptions = {}): boolean {
     const key = taskId.trim();
     if (!key) throw new Error("ProjectAppTaskQueue requires a non-empty task ID");
+    const priority = opts.priority ?? this.priorities.get(key) ?? "P2";
     if (this.running.has(key)) {
       const alreadyDirty = this.dirty.has(key);
       this.dirty.add(key);
       if (opts.front) this.dirtyFront.add(key);
+      this.dirtyPriorities.set(key, priority);
       return !alreadyDirty;
     }
     if (this.queued.has(key)) {
-      if (!opts.front || this.frontQueued.has(key)) return false;
+      const priorityChanged = this.priorities.get(key) !== priority;
+      this.priorities.set(key, priority);
+      if (!opts.front || this.frontQueued.has(key)) return priorityChanged;
       const index = this.pending.indexOf(key);
       if (index >= 0) this.pending.splice(index, 1);
       this.pending.splice(this.frontQueued.size, 0, key);
@@ -39,6 +45,7 @@ export class ProjectAppTaskQueue {
       return true;
     }
     this.queued.add(key);
+    this.priorities.set(key, priority);
     if (opts.front) {
       this.pending.splice(this.frontQueued.size, 0, key);
       this.frontQueued.add(key);
@@ -52,9 +59,9 @@ export class ProjectAppTaskQueue {
     if (this.running.size >= this.maxConcurrent) return null;
     const frontCount = this.frontQueued.size;
     const takeOrdinary =
-      frontCount < this.pending.length &&
-      this.consecutiveFrontTakes >= ProjectAppTaskQueue.maxFrontBurst;
-    const [taskId] = this.pending.splice(takeOrdinary ? frontCount : 0, 1);
+      frontCount < this.pending.length && this.consecutiveFrontTakes >= ProjectAppTaskQueue.maxFrontBurst;
+    const takeIndex = takeOrdinary || frontCount === 0 ? this.nextOrdinaryIndex(frontCount) : 0;
+    const [taskId] = this.pending.splice(takeIndex, 1);
     if (!taskId) return null;
     this.queued.delete(taskId);
     if (this.frontQueued.delete(taskId)) this.consecutiveFrontTakes += 1;
@@ -69,7 +76,11 @@ export class ProjectAppTaskQueue {
     }
     if (this.dirty.delete(taskId)) {
       const front = this.dirtyFront.delete(taskId);
-      this.enqueue(taskId, { front });
+      const priority = this.dirtyPriorities.get(taskId) ?? this.priorities.get(taskId);
+      this.dirtyPriorities.delete(taskId);
+      this.enqueue(taskId, { front, priority });
+    } else {
+      this.priorities.delete(taskId);
     }
   }
 
@@ -92,4 +103,28 @@ export class ProjectAppTaskQueue {
       dirty: [...this.dirty],
     };
   }
+
+  private nextOrdinaryIndex(frontCount: number): number {
+    let selected = frontCount;
+    let selectedRank = priorityRank(this.priorities.get(this.pending[selected] ?? "") ?? "P2");
+    for (let index = frontCount + 1; index < this.pending.length; index++) {
+      const rank = priorityRank(this.priorities.get(this.pending[index]) ?? "P2");
+      if (rank < selectedRank) {
+        selected = index;
+        selectedRank = rank;
+      }
+    }
+    return selected;
+  }
+}
+
+export type ProjectAppTaskPriority = "P0" | "P1" | "P2" | "P3";
+
+export type ProjectAppTaskQueueOptions = {
+  front?: boolean;
+  priority?: ProjectAppTaskPriority;
+};
+
+function priorityRank(priority: ProjectAppTaskPriority): number {
+  return { P0: 0, P1: 1, P2: 2, P3: 3 }[priority];
 }
