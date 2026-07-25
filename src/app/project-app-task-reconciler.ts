@@ -1043,13 +1043,21 @@ export function listRunnableProjectAppTaskIds(config: TaskStateConfig): string[]
           )
         : false;
     };
+    const hasPersistedTrigger = (resource: ProjectAppTaskResource): boolean =>
+      Boolean(tree.taskTriggers?.[resource.metadata.id]?.event);
     return Object.values(tree.resources ?? {})
       .filter((resource) => isRunnableOnPassiveResync(tree, resource))
       .sort((left, right) => {
         const commentOrder = Number(hasDirectProjectComment(right)) - Number(hasDirectProjectComment(left));
+        const triggerOrder = Number(hasPersistedTrigger(right)) - Number(hasPersistedTrigger(left));
         const leftPriority = priorityOrder[left.spec.priority ?? "P2"];
         const rightPriority = priorityOrder[right.spec.priority ?? "P2"];
-        return commentOrder || leftPriority - rightPriority || left.metadata.id.localeCompare(right.metadata.id);
+        return (
+          commentOrder ||
+          triggerOrder ||
+          leftPriority - rightPriority ||
+          left.metadata.id.localeCompare(right.metadata.id)
+        );
       })
       .map((resource) => resource.metadata.id);
   });

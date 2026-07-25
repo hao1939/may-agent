@@ -269,7 +269,7 @@ describe("project app task reconciler state", () => {
       appOwner: "app-owner",
       trigger: { type: "manual.wake", data: { reason: "fresh owner evidence" } },
     });
-    expect(listRunnableProjectAppTaskIds(config)).toEqual(["categorized-task", "work/attention", "work/pending"]);
+    expect(listRunnableProjectAppTaskIds(config)).toEqual(["work/attention", "categorized-task", "work/pending"]);
 
     trackProjectAppConditionEvent(config, {
       type: "session.end",
@@ -277,19 +277,19 @@ describe("project app task reconciler state", () => {
       status: "done",
     });
     expect(listRunnableProjectAppTaskIds(config)).toEqual([
-      "categorized-task",
       "work/attention",
-      "work/pending",
       "work/waiting",
+      "categorized-task",
+      "work/pending",
     ]);
 
     expect(releaseHandlerUnavailableProjectAppTask(config, "work/unavailable")).toBe(true);
     expect(listRunnableProjectAppTaskIds(config)).toEqual([
-      "categorized-task",
       "work/attention",
+      "work/waiting",
+      "categorized-task",
       "work/pending",
       "work/unavailable",
-      "work/waiting",
     ]);
   });
 
@@ -431,6 +431,27 @@ describe("project app task reconciler state", () => {
     });
 
     expect(listRunnableProjectAppTaskIds(config).slice(0, 2)).toEqual(["runtime/owner-review", "work/autonomous-p0"]);
+  });
+
+  it("schedules a persisted event continuation before untriggered desired work", () => {
+    const { config } = fixture();
+    observeProjectAppTaskIntent(config, {
+      intent: { ...intent("achieve"), id: "work/new-p0", priority: "P0" },
+      appOwner: "app-owner",
+    });
+    observeProjectAppTaskIntent(config, {
+      intent: { ...intent("achieve"), id: "work/live-result-p2", priority: "P2" },
+      appOwner: "app-owner",
+      trigger: {
+        type: "pipeline-run.state",
+        data: { runId: "42", status: "completed", result: "succeeded" },
+      },
+    });
+
+    expect(listRunnableProjectAppTaskIds(config).slice(0, 2)).toEqual([
+      "work/live-result-p2",
+      "work/new-p0",
+    ]);
   });
 
   it("persists the exact Condition observation as the next attempt trigger", () => {
