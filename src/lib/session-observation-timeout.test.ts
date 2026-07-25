@@ -87,7 +87,7 @@ describe("job/call no-observation deadline", () => {
       active,
       () =>
         new Promise<string>((resolve) => {
-          setTimeout(() => fake.emit("message_update"), 35);
+          setTimeout(() => fake.emit("message_end"), 35);
           setTimeout(() => fake.emit("tool_execution_update"), 75);
           setTimeout(() => resolve("done"), 105);
         }),
@@ -95,6 +95,22 @@ describe("job/call no-observation deadline", () => {
 
     await expect(work).resolves.toBe("done");
     expect(fake.cancelled()).toBe(false);
+  });
+
+  it("does not let partial model deltas hide a stalled turn", async () => {
+    const runtime = manager(30);
+    const fake = fakeAgent();
+    const active = session(fake.agent);
+    const updates = setInterval(() => fake.emit("message_update"), 5);
+
+    try {
+      await expect(
+        (runtime as any).withObservationDeadline(active, () => new Promise<void>(() => undefined)),
+      ).rejects.toThrow("No agent observation");
+    } finally {
+      clearInterval(updates);
+    }
+    expect(fake.cancelled()).toBe(true);
   });
 
   it("does not apply the worker deadline to persistent chat", async () => {

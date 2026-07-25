@@ -1628,7 +1628,11 @@ export class SubagentManager {
         rejectDeadline(new Error(reason));
       }, timeoutMs);
     };
-    const unsubscribe = session.agent.subscribe(() => reset());
+    const unsubscribe = session.agent.subscribe((event) => {
+      // Partial token deltas can stream forever without yielding a usable
+      // agent move. Require a completed message, tool progress, or turn edge.
+      if (event.type !== "message_update" && event.type !== "message_start") reset();
+    });
     reset();
 
     try {
@@ -2157,6 +2161,7 @@ export class SubagentManager {
           }
           break;
         case "tool_execution_end": {
+          persistProgress();
           const blocks = (event as any).result?.content ?? [];
           const text = blocks.find((b: any) => b?.type === "text" && !b.text?.startsWith("<tool_output"))?.text ?? "";
           bus.emit({
@@ -2176,6 +2181,7 @@ export class SubagentManager {
           break;
         }
         case "message_end": {
+          persistProgress();
           const message = (event as any).message;
           if (message?.role !== "assistant" || !Array.isArray(message.content)) break;
           const text = message.content
