@@ -138,6 +138,60 @@
       #comment-bar button:hover {
         opacity: 0.9;
       }
+      #live-test-progress {
+        background: var(--bg2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 14px 16px;
+        margin-bottom: 16px;
+        overflow-x: auto;
+      }
+      .live-progress-head,
+      .live-progress-counts {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .live-progress-head h2 {
+        font-size: 14px;
+        margin-right: auto;
+      }
+      .live-progress-count {
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 2px 8px;
+        font-size: 11px;
+      }
+      .live-progress-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+        font-size: 11px;
+      }
+      .live-progress-table th,
+      .live-progress-table td {
+        border-top: 1px solid var(--border);
+        padding: 6px 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+      .live-progress-table th {
+        color: var(--fg2);
+        font-weight: 600;
+      }
+      .live-progress-fail {
+        color: var(--red);
+      }
+      .live-progress-running {
+        color: var(--accent);
+      }
+      .live-progress-pass {
+        color: var(--green);
+      }
+      .live-progress-stale {
+        color: var(--yellow);
+      }
     </style>
   </head>
   <body>
@@ -195,6 +249,11 @@
           style="font-size: 12px; color: var(--fg2); margin: 8px 0 0"
         ></p>
       </div>
+      <section id="live-test-progress" aria-live="polite">
+        <div style="color: var(--fg2); font-size: 12px">
+          Loading live master-validation progress…
+        </div>
+      </section>
       <div id="comment-bar">
         <input
           id="project-comment"
@@ -320,11 +379,103 @@
           input.placeholder = "Error: " + e.message;
         }
       }
+
+      function liveProgressStatus(spec) {
+        const verdict = String(spec.status || "pending");
+        const execution = String(spec.executionState || "");
+        if (["fail", "error"].includes(verdict) && execution === "running") {
+          return `${verdict}; ${spec.phase || "cleanup"} running`;
+        }
+        if (verdict === "pending" && execution) return execution;
+        return verdict;
+      }
+
+      function liveProgressClass(spec) {
+        if (spec.stale) return "live-progress-stale";
+        if (["fail", "error", "excluded"].includes(spec.status))
+          return "live-progress-fail";
+        if (spec.executionState === "running") return "live-progress-running";
+        if (spec.status === "pass") return "live-progress-pass";
+        return "";
+      }
+
+      async function loadLiveTestProgress() {
+        const container = document.getElementById("live-test-progress");
+        if (!container) return;
+        try {
+          const params = new URLSearchParams({
+            path: "projects/aks-rp-e2e.app",
+            file: ".state/watchers/aks-pipeline-progress.json",
+          });
+          const response = await fetch(`/api/projects/artifact?${params}`);
+          const payload = await response.json();
+          if (!response.ok || payload.error)
+            throw new Error(payload.error || `HTTP ${response.status}`);
+          const progress = JSON.parse(payload.content || "{}");
+          const counts = progress.counts || {};
+          const rows = Array.isArray(progress.specs) ? [...progress.specs] : [];
+          const rank = (spec) => {
+            if (["fail", "error", "excluded"].includes(spec.status)) return 0;
+            if (spec.executionState === "running") return 1;
+            if (spec.executionState === "queued") return 2;
+            if (spec.status === "pending") return 3;
+            return 4;
+          };
+          rows.sort(
+            (left, right) =>
+              rank(left) - rank(right) ||
+              String(left.specId).localeCompare(String(right.specId)),
+          );
+          const runUrl = `https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=${encodeURIComponent(progress.runId || "")}`;
+          const badges = [
+            "queued",
+            "running",
+            "pass",
+            "fail",
+            "error",
+            "skipped",
+            "excluded",
+          ]
+            .map(
+              (key) =>
+                `<span class="live-progress-count">${esc(key)} <strong>${Number(counts[key] || 0)}</strong></span>`,
+            )
+            .join("");
+          container.innerHTML = `
+            <div class="live-progress-head">
+              <h2>Live Test Progress</h2>
+              <a href="${attrEsc(runUrl)}" target="_blank" rel="noreferrer">run ${esc(progress.runId || "unknown")} ↗</a>
+              <span style="color:var(--fg2);font-size:11px">${esc(progress.sourceBranch || "unknown")}@${esc(String(progress.sourceCommit || "unknown").slice(0, 12))}</span>
+            </div>
+            <div class="live-progress-counts" style="margin-top:8px">${badges}</div>
+            <table class="live-progress-table">
+              <thead><tr><th>Slice</th><th>Spec</th><th>State</th><th>Phase</th><th>Current observation</th><th>Elapsed</th></tr></thead>
+              <tbody>${rows
+                .map(
+                  (spec) => `
+                <tr>
+                  <td>${esc(spec.sliceId)}</td>
+                  <td><code>${esc(spec.specId)}</code></td>
+                  <td class="${liveProgressClass(spec)}">${esc(liveProgressStatus(spec))}${spec.stale ? " (stale)" : ""}</td>
+                  <td>${esc([spec.phase, spec.phaseDetail].filter(Boolean).join(" / ") || "—")}</td>
+                  <td>${esc(spec.reason || "—")}</td>
+                  <td>${Number.isFinite(Number(spec.elapsedSeconds)) ? `${Number(spec.elapsedSeconds)}s` : "—"}</td>
+                </tr>`,
+                )
+                .join("")}</tbody>
+            </table>
+            <div style="color:var(--fg2);font-size:10px;margin-top:8px">Observed ${esc(progress.checkedAt || "unknown")}; terminal artifacts remain authoritative.</div>`;
+        } catch (error) {
+          container.innerHTML = `<div class="live-progress-head"><h2>Live Test Progress</h2></div><div style="color:var(--fg2);font-size:12px;margin-top:6px">No current projection is available: ${esc(error.message || error)}</div>`;
+        }
+      }
     </script>
     <script src="quality-panel.js"></script>
     <script>
       // Boot: render the knowledge map into the container.
       (async () => {
+        await loadLiveTestProgress();
+        window.setInterval(loadLiveTestProgress, 60_000);
         const el = document.getElementById("quality-panel");
         if (typeof window.renderAksRpE2eQualityPanel === "function") {
           await window.renderAksRpE2eQualityPanel(el);

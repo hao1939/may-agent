@@ -438,21 +438,21 @@ describe("app event contract", () => {
               },
             },
             conditions: {
-              "origin-dev-advance-node-ephemeral-resource-placement-0565d5f303": {
-                spec: {
-                  type: "aks.repo-ref.observed",
-                  subject: "project:aks-rp-e2e",
-                  expected: {
-                    project: projectId,
-                    repoRef: "origin/dev",
-                    changed: true,
-                    commit: {
-                      notEquals:
-                        "0565d5f3039041384b4ad4afc679883150851fff",
+              "origin-dev-advance-node-ephemeral-resource-placement-0565d5f303":
+                {
+                  spec: {
+                    type: "aks.repo-ref.observed",
+                    subject: "project:aks-rp-e2e",
+                    expected: {
+                      project: projectId,
+                      repoRef: "origin/dev",
+                      changed: true,
+                      commit: {
+                        notEquals: "0565d5f3039041384b4ad4afc679883150851fff",
+                      },
                     },
                   },
                 },
-              },
             },
           },
           null,
@@ -469,7 +469,7 @@ describe("app event contract", () => {
         issues: expect.arrayContaining([
           'subject="project:aks-rp-e2e"',
           "expected.field=null",
-          'expected.notEquals=null',
+          "expected.notEquals=null",
         ]),
       });
 
@@ -524,7 +524,7 @@ describe("app event contract", () => {
           issues: [
             'subject="project:aks-rp-e2e"',
             "expected.field=null",
-            'expected.notEquals=null',
+            "expected.notEquals=null",
           ],
           workflow: "wait-for-repo-ref-advance",
         },
@@ -573,8 +573,7 @@ describe("app event contract", () => {
                   subject: "repoRef:origin/dev",
                   expected: {
                     field: "commit",
-                    notEquals:
-                      "0565d5f3039041384b4ad4afc679883150851fff",
+                    notEquals: "0565d5f3039041384b4ad4afc679883150851fff",
                   },
                 },
               },
@@ -644,27 +643,28 @@ describe("app event contract", () => {
               },
             },
             conditions: {
-              "project-approval-submitted-kms-v2plus-enable-cmk-from-v2-vnet-integration-secret-migration-20260724": {
-                spec: {
-                  type: "project.approval.submitted",
-                  subject: "project:aks-rp-e2e",
-                  expected: {
-                    approvalId:
-                      "aks-rp-e2e:approval:path.kms.v2plus-enable-cmk-from-v2-vnet-integration.secret-migration-owner-20260724:evidence-archive-ops-send-kms-v2plus-enable-cmk-from-v2-vnet-integration-secret-migration-owner-ask-20260724.md",
-                    waitId:
-                      "wait:aks-rp-e2e:approval:path.kms.v2plus-enable-cmk-from-v2-vnet-integration.secret-migration-owner-20260724:evidence-archive-ops-send-kms-v2plus-enable-cmk-from-v2-vnet-integration-secret-migration-owner-ask-20260724.md",
-                    pathId:
-                      "path.kms.v2plus-enable-cmk-from-v2-vnet-integration.secret-migration-owner-20260724",
-                    decisionIn: [
-                      "approve",
-                      "adjust",
-                      "hold",
-                      "decline",
-                      "reroute",
-                    ],
+              "project-approval-submitted-kms-v2plus-enable-cmk-from-v2-vnet-integration-secret-migration-20260724":
+                {
+                  spec: {
+                    type: "project.approval.submitted",
+                    subject: "project:aks-rp-e2e",
+                    expected: {
+                      approvalId:
+                        "aks-rp-e2e:approval:path.kms.v2plus-enable-cmk-from-v2-vnet-integration.secret-migration-owner-20260724:evidence-archive-ops-send-kms-v2plus-enable-cmk-from-v2-vnet-integration-secret-migration-owner-ask-20260724.md",
+                      waitId:
+                        "wait:aks-rp-e2e:approval:path.kms.v2plus-enable-cmk-from-v2-vnet-integration.secret-migration-owner-20260724:evidence-archive-ops-send-kms-v2plus-enable-cmk-from-v2-vnet-integration-secret-migration-owner-ask-20260724.md",
+                      pathId:
+                        "path.kms.v2plus-enable-cmk-from-v2-vnet-integration.secret-migration-owner-20260724",
+                      decisionIn: [
+                        "approve",
+                        "adjust",
+                        "hold",
+                        "decline",
+                        "reroute",
+                      ],
+                    },
                   },
                 },
-              },
             },
           },
           null,
@@ -851,6 +851,22 @@ describe("app event contract", () => {
     expect(ownerA?.workflow).toBeUndefined();
     expect(ownerA?.input).toBeUndefined();
     expect(ownerB?.input).toBeUndefined();
+
+    const earlyFailure = {
+      type: "pipeline.test.nonpassing",
+      target: { project: projectId },
+      data: {
+        pipelineRunId: "173790426",
+        specId: "spec.example",
+        status: "fail",
+      },
+    };
+    expect(resolveAksTask(earlyFailure)).toMatchObject({
+      id: "runtime/owner-review",
+      mode: "maintain",
+      owner: "app-ops",
+    });
+    expect(eventIsHandled(earlyFailure)).toBe(true);
 
     expect(
       resolveAksTask({
@@ -1077,7 +1093,9 @@ describe("app event contract", () => {
   });
 
   test("an active frozen campaign reconciles on the five-minute pulse", async () => {
-    const appDir = mkdtempSync(join(tmpdir(), "master-validation-campaign-gate-"));
+    const appDir = mkdtempSync(
+      join(tmpdir(), "master-validation-campaign-gate-"),
+    );
     try {
       mkdirSync(resolve(appDir, ".state"), { recursive: true });
       writeFileSync(
@@ -1156,8 +1174,7 @@ describe("app event contract", () => {
             specId: "spec.node-ephemeral-disk.master-validation",
             status: "pass",
             pipelineRunId: "173761466",
-            sourceBranch:
-              "refs/heads/validation/master-validation-173646937",
+            sourceBranch: "refs/heads/validation/master-validation-173646937",
             sourceCommit: "candidate123",
           },
         },
@@ -1467,7 +1484,9 @@ describe("app event contract", () => {
         resolved.input.instructions.some(
           (entry) =>
             typeof entry === "string" &&
-            /true Condition is already level-triggered ready work/i.test(entry) &&
+            /true Condition is already level-triggered ready work/i.test(
+              entry,
+            ) &&
             /generic task controller owns/i.test(entry),
         ),
     ).toBe(true);

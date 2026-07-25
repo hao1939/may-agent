@@ -20,6 +20,7 @@ type PipelineWatcherState = {
   trackedRunIds?: string[];
   observedArtifacts?: Record<string, string>;
   overdueQueueRunIds?: string[];
+  liveProgressFingerprints?: Record<string, string>;
   checkedAt?: string;
 };
 
@@ -51,11 +52,29 @@ type AdoRun = {
   templateParameters?: unknown;
 };
 
-type AdoTimelineRecord = {
+export type AdoTimelineRecord = {
   type?: unknown;
   name?: unknown;
   state?: unknown;
+  result?: unknown;
+  currentOperation?: unknown;
   finishTime?: unknown;
+};
+
+export type TimelineSpecProgress = {
+  runId: string;
+  sliceId: string;
+  testRunId: string;
+  specId: string;
+  sequence: number;
+  executionState: "queued" | "running" | "completed";
+  verdict: "unknown" | "pass" | "fail" | "error" | "skipped";
+  phase: string;
+  phaseDetail: string;
+  message: string;
+  updatedAt: string;
+  elapsedSeconds: number;
+  category: string;
 };
 
 export type ObservedAdoRun = {
@@ -111,6 +130,8 @@ export type MasterValidationProgress = {
     selected: number;
     observed: number;
     pending: number;
+    queued: number;
+    running: number;
     pass: number;
     fail: number;
     error: number;
@@ -130,6 +151,12 @@ export type MasterValidationProgress = {
     status: string;
     category: string;
     reason: string;
+    executionState?: string;
+    phase?: string;
+    phaseDetail?: string;
+    updatedAt?: string;
+    elapsedSeconds?: number;
+    stale?: boolean;
     artifactPath?: string;
   }>;
 };
@@ -142,7 +169,8 @@ export const MASTER_VALIDATION_QUEUE_OVERDUE_MS = 90 * 60 * 1_000;
 const ADO_ORGANIZATION = "https://dev.azure.com/msazure";
 const ADO_PROJECT = "CloudNativeCompute";
 const ADO_PIPELINE_ID = "467665";
-const WATCHER_SCHEMA_VERSION = "8";
+const WATCHER_SCHEMA_VERSION = "9";
+export const LIVE_PROGRESS_STALE_MS = 3 * 60 * 1_000;
 const AZ_CLI =
   process.env.AZURE_CLI_PATH ||
   (existsSync("/app/.state/.local/bin/az")
@@ -317,6 +345,114 @@ function getAdoTimeline(runId: string): AdoTimelineRecord[] {
   return Array.isArray(timeline.records)
     ? (timeline.records as AdoTimelineRecord[])
     : [];
+}
+
+export function timelineSpecProgress(
+  timeline: AdoTimelineRecord[],
+): TimelineSpecProgress[] {
+  const latest = new Map<string, TimelineSpecProgress>();
+  for (const entry of timeline) {
+    if (text(entry.type).toLowerCase() !== "aks-spec-progress") continue;
+    let value: Record<string, unknown>;
+    try {
+      value = record(JSON.parse(text(entry.currentOperation)));
+    } catch {
+      continue;
+    }
+    const runId = text(value.runId);
+    const rawSliceId = text(value.sliceId);
+    const sliceId = rawSliceId ? rawSliceId.padStart(2, "0") : "";
+    const testRunId = text(value.testRunId);
+    const specId = text(value.specId);
+    const sequence = Number(value.sequence);
+    const executionState = text(value.executionState);
+    const verdict = normalizedVerdict(text(value.verdict));
+    if (
+      !runId ||
+      !sliceId ||
+      !specId ||
+      !Number.isFinite(sequence) ||
+      !["queued", "running", "completed"].includes(executionState) ||
+      !["unknown", "pass", "fail", "error", "skipped"].includes(verdict)
+    ) {
+      continue;
+    }
+    const progress = {
+      runId,
+      sliceId,
+      testRunId,
+      specId,
+      sequence,
+      executionState: executionState as TimelineSpecProgress["executionState"],
+      verdict: verdict as TimelineSpecProgress["verdict"],
+      phase: text(value.phase),
+      phaseDetail: text(value.phaseDetail),
+      message: text(value.message).slice(0, 280),
+      updatedAt: text(value.updatedAt),
+      elapsedSeconds: Math.max(0, Number(value.elapsedSeconds) || 0),
+      category: text(value.category) || "unknown",
+    } satisfies TimelineSpecProgress;
+    const prior = latest.get(specId);
+    if (!prior || progress.sequence > prior.sequence)
+      latest.set(specId, progress);
+  }
+  return [...latest.values()].sort((left, right) =>
+    left.specId.localeCompare(right.specId),
+  );
+}
+
+export function pipelineTestNonpassingEvent(
+  run: ObservedAdoRun,
+  progress: TimelineSpecProgress,
+): ProjectAppEvent {
+  const fingerprint = createHash("sha256")
+    .update(
+      stableJson({
+        specId: progress.specId,
+        status: progress.verdict,
+        category: progress.category,
+        reason: stableFailureReason(progress.message),
+      }),
+    )
+    .digest("hex")
+    .slice(0, 20);
+  const data = {
+    ...pipelineFactBase(run),
+    specId: progress.specId,
+    sliceId: progress.sliceId,
+    status: progress.verdict,
+    category: progress.category,
+    reason: progress.message,
+    phase: progress.phase,
+    phaseDetail: progress.phaseDetail,
+    testRunId: progress.testRunId,
+    failureFingerprint: fingerprint,
+  };
+  return {
+    type: "pipeline.test.nonpassing",
+    source: "aks-pipeline-watcher",
+    target: { project: "aks-rp-e2e" },
+    ...data,
+    data,
+  };
+}
+
+export function newPipelineTestNonpassingEvents(
+  run: ObservedAdoRun,
+  progressRecords: TimelineSpecProgress[],
+  fingerprints: Record<string, string>,
+): ProjectAppEvent[] {
+  const events: ProjectAppEvent[] = [];
+  for (const progress of progressRecords) {
+    if (!["fail", "error"].includes(progress.verdict)) continue;
+    const key = `${run.runId}:${progress.specId}`;
+    if (fingerprints[key]) continue;
+    const event = pipelineTestNonpassingEvent(run, progress);
+    fingerprints[key] =
+      text((event as Record<string, unknown>).failureFingerprint) || "observed";
+    events.push(event);
+  }
+  return events;
 }
 
 function listAdoArtifactNames(runId: string): string[] {
@@ -576,8 +712,11 @@ export function buildMasterValidationProgress(input: {
   run: ObservedAdoRun;
   planRoot: string | null;
   artifactRoots: Record<string, string>;
+  timelineProgress?: TimelineSpecProgress[];
   checkedAt?: string;
 }): MasterValidationProgress {
+  const checkedAt = input.checkedAt ?? new Date().toISOString();
+  const checkedAtMs = Date.parse(checkedAt);
   const planned = planSlices(input.planRoot);
   const exclusions = input.planRoot
     ? failureObservationsFromAdmissionReport({
@@ -588,6 +727,17 @@ export function buildMasterValidationProgress(input: {
       })
     : [];
   const observed = new Map<string, PipelineSpecObservation>();
+  const live = new Map(
+    (input.timelineProgress ?? []).map((progress) => [
+      progress.specId,
+      progress,
+    ]),
+  );
+  for (const progress of live.values()) {
+    if (!planned.has(progress.sliceId)) planned.set(progress.sliceId, []);
+    const ids = planned.get(progress.sliceId)!;
+    if (!ids.includes(progress.specId)) ids.push(progress.specId);
+  }
   for (const [artifactName, root] of Object.entries(input.artifactRoots)) {
     for (const observation of specObservationsFromArtifact({
       root,
@@ -610,12 +760,38 @@ export function buildMasterValidationProgress(input: {
       .flatMap(([sliceId, specIds]) =>
         specIds.sort().map((specId) => {
           const value = observed.get(specId);
+          const current = live.get(specId);
+          const currentVerdict = current?.verdict ?? "unknown";
+          const hasLiveVerdict = currentVerdict !== "unknown";
+          const currentUpdatedAtMs = Date.parse(current?.updatedAt ?? "");
+          const stale =
+            current?.executionState === "running" &&
+            Number.isFinite(checkedAtMs) &&
+            Number.isFinite(currentUpdatedAtMs) &&
+            checkedAtMs - currentUpdatedAtMs > LIVE_PROGRESS_STALE_MS;
           return {
             sliceId,
             specId,
-            status: value ? normalizedVerdict(value.status) : "pending",
-            category: value?.category ?? "unknown",
-            reason: value?.reason ?? "Awaiting a completed slice verdict.",
+            status: value
+              ? normalizedVerdict(value.status)
+              : hasLiveVerdict
+                ? currentVerdict
+                : "pending",
+            category: value?.category ?? current?.category ?? "unknown",
+            reason:
+              value?.reason ??
+              current?.message ??
+              "Awaiting a completed slice verdict.",
+            ...(current
+              ? {
+                  executionState: current.executionState,
+                  phase: current.phase,
+                  phaseDetail: current.phaseDetail,
+                  updatedAt: current.updatedAt,
+                  elapsedSeconds: current.elapsedSeconds,
+                  ...(stale ? { stale: true } : {}),
+                }
+              : {}),
             ...(value ? { artifactPath: value.artifactPath } : {}),
           };
         }),
@@ -634,6 +810,10 @@ export function buildMasterValidationProgress(input: {
   const observedCount = specs.filter(
     (spec) => spec.status !== "pending",
   ).length;
+  const executionCount = (state: string) =>
+    specs.filter(
+      (spec) => "executionState" in spec && spec.executionState === state,
+    ).length;
   const knownVerdicts = new Set([
     "pass",
     "fail",
@@ -645,12 +825,13 @@ export function buildMasterValidationProgress(input: {
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([sliceId, specIds]) => {
       const completed = specIds.filter((specId) => observed.has(specId)).length;
+      const active = specIds.filter((specId) => live.has(specId)).length;
       return {
         sliceId,
         selected: specIds.length,
         observed: completed,
         status:
-          completed === 0
+          completed === 0 && active === 0
             ? "pending"
             : completed === specIds.length
               ? "completed"
@@ -673,11 +854,13 @@ export function buildMasterValidationProgress(input: {
     state: input.run.status,
     result: input.run.result,
     queueTime: input.run.queueTime,
-    checkedAt: input.checkedAt ?? new Date().toISOString(),
+    checkedAt,
     counts: {
       selected: specs.length,
       observed: observedCount,
       pending: specs.length - observedCount,
+      queued: executionCount("queued"),
+      running: executionCount("running"),
       pass: verdictCount("pass"),
       fail: verdictCount("fail"),
       error: verdictCount("error"),
@@ -1130,6 +1313,15 @@ export async function observeAksPipelines(
   const adoFingerprints = Object.fromEntries(
     adoRuns.map((run) => [run.runId, run.fingerprint]),
   );
+  const checkedAt = new Date().toISOString();
+  // One provider timeline read per active progressive run is shared by queue
+  // diagnosis, live progress projection, and early nonpassing observation.
+  const timelinesByRun = new Map<string, AdoTimelineRecord[]>();
+  for (const run of adoRuns) {
+    if (run.progressive && !["completed", "canceled"].includes(run.status)) {
+      timelinesByRun.set(run.runId, getAdoTimeline(run.runId));
+    }
+  }
   // Repeat live levels so a newly registered Condition can observe them, but
   // emit terminal levels only on transition. Replaying the latest 100 terminal
   // runs on every pulse previously flooded the control path.
@@ -1147,10 +1339,7 @@ export async function observeAksPipelines(
   let overdueQueues = 0;
   for (const observed of adoRuns) {
     if (overdueQueueRunIds.has(observed.runId)) continue;
-    const timeline =
-      observed.progressive && observed.status === "inProgress"
-        ? getAdoTimeline(observed.runId)
-        : [];
+    const timeline = timelinesByRun.get(observed.runId) ?? [];
     const event = pipelineQueueOverdueEvent(observed, Date.now(), timeline);
     if (!event) continue;
     ctx.emit(event);
@@ -1160,6 +1349,10 @@ export async function observeAksPipelines(
 
   let downloadedArtifacts = 0;
   let observedFailures = 0;
+  let observedEarlyNonpassing = 0;
+  const liveProgressFingerprints = {
+    ...(prior.liveProgressFingerprints ?? {}),
+  };
   const previouslyTrackedRunIds = new Set(prior.trackedRunIds ?? []);
   const pendingTerminalArtifactRunIds = new Set<string>();
   const progressiveRuns = adoRuns.filter((run) =>
@@ -1170,6 +1363,16 @@ export async function observeAksPipelines(
     }),
   );
   for (const observed of progressiveRuns) {
+    for (const event of newPipelineTestNonpassingEvents(
+      observed,
+      timelineSpecProgress(timelinesByRun.get(observed.runId) ?? []).filter(
+        (progress) => progress.runId === observed.runId,
+      ),
+      liveProgressFingerprints,
+    )) {
+      ctx.emit(event);
+      observedEarlyNonpassing += 1;
+    }
     const availableNames = listAdoArtifactNames(observed.runId);
     if (availableNames.includes("plan-inputs")) {
       const planKey = artifactKey(observed.runId, "plan-inputs");
@@ -1341,6 +1544,12 @@ export async function observeAksPipelines(
       ...pendingTerminalArtifactRunIds,
     ]),
   ];
+  const retainedProgressRunIds = new Set(trackedRunIds);
+  const retainedLiveProgressFingerprints = Object.fromEntries(
+    Object.entries(liveProgressFingerprints)
+      .filter(([key]) => retainedProgressRunIds.has(key.split(":", 1)[0] ?? ""))
+      .slice(-1_000),
+  );
   saveState(statePath, {
     schemaVersion: WATCHER_SCHEMA_VERSION,
     fingerprints,
@@ -1348,7 +1557,8 @@ export async function observeAksPipelines(
     trackedRunIds,
     observedArtifacts,
     overdueQueueRunIds: [...overdueQueueRunIds].slice(-100),
-    checkedAt: new Date().toISOString(),
+    liveProgressFingerprints: retainedLiveProgressFingerprints,
+    checkedAt,
   });
 
   const latestProgressiveRun = adoRuns
@@ -1375,6 +1585,10 @@ export async function observeAksPipelines(
         run: latestProgressiveRun,
         planRoot,
         artifactRoots,
+        timelineProgress: timelineSpecProgress(
+          timelinesByRun.get(latestProgressiveRun.runId) ?? [],
+        ).filter((progress) => progress.runId === latestProgressiveRun.runId),
+        checkedAt,
       }),
     );
   }
@@ -1430,6 +1644,7 @@ export async function observeAksPipelines(
     changedAdo.length +
     downloadedArtifacts +
     observedFailures +
+    observedEarlyNonpassing +
     overdueQueues;
   return observedCount > 0
     ? {
@@ -1438,6 +1653,7 @@ export async function observeAksPipelines(
         adoRuns: changedAdo.length,
         downloadedArtifacts,
         observedFailures,
+        observedEarlyNonpassing,
         overdueQueues,
       }
     : ctx.noop(

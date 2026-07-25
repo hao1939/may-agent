@@ -460,11 +460,13 @@ const ownerReviewEventTypes = new Set([
   "metric.breach",
   "metric.recovered",
   "learning.feedback",
+  "pipeline.test.nonpassing",
 ]);
 
 const aksTaskSelectors: EventSelector[] = [
   { type: "project.task.tick", target: projectTarget },
   { type: "pipeline.failure.observed", target: projectTarget },
+  { type: "pipeline.test.nonpassing", target: projectTarget },
   { type: "project.owner.requested", target: projectTarget },
   { type: "project.comment.created", target: projectTarget },
   { type: "project.approval.submitted", target: projectTarget },
@@ -1447,6 +1449,7 @@ export default defineProjectApp({
     { type: "pipeline.completed", target: projectTarget },
     { type: "pipeline-artifact.available", target: projectTarget },
     { type: "pipeline.spec.observed", target: projectTarget },
+    { type: "pipeline.test.nonpassing", target: projectTarget },
     { type: "pipeline.queue.overdue", target: projectTarget },
   ],
   onEvent: routeAksEvent,

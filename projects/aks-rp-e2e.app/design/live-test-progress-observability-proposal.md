@@ -1,9 +1,8 @@
 # Live Test Progress Observability
 
-Status: partially implemented; artifact-level projection exists, live
-within-slice phases remain proposed
+Status: implementation complete; runner rollout and live proof pending
 
-Date: 2026-07-22
+Date: 2026-07-26
 
 ## Decision
 
@@ -35,6 +34,38 @@ test runner
 
 Do not add another controller, a progress database, a polling task, or a second
 terminal result format. `result.json` remains the terminal evidence authority.
+
+## Current implementation and rollout
+
+The implementation follows the decision without adding a controller or task
+state:
+
+- the active Vitest path initializes one neutral queued record per selected
+  spec and marks both generated and direct carriers running through one shared
+  setup hook;
+- terminal `recordTestResult` calls preserve the authoritative verdict, while
+  a failed verdict may remain visible during cleanup;
+- the CI adapter forwards ordinary output and translates only owned structured
+  progress lines into deterministic ADO timeline detail records;
+- the existing AKS pipeline watcher reads each active progressive run's
+  timeline once, merges current levels with artifact-backed terminal verdicts,
+  and writes the existing progress projection;
+- only the first fail/error observation for one run and spec emits
+  `pipeline.test.nonpassing`; it routes to the stable owner-review task, while
+  the later artifact-backed event creates or revises durable failure work;
+- the AKS domain page and `master-validation:status` read the same projection;
+  neither reads task state or raw session logs; and
+- ARM polling now exposes an optional bounded progress callback and safe
+  one-line diagnostics. The long CCM carrier reports cluster operations and
+  cleanup without signed URLs or full ARM bodies.
+
+Local checks prove parsing, projection, deduplication, event routing, safe ARM
+diagnostics, direct-carrier lifecycle coverage, and existing artifact behavior.
+The current live run predates the runner change, so it cannot prove ADO timeline
+behavior. Final rollout proof requires merging the focused runner PR, starting
+a later master-validation run from a commit containing it, and observing queued,
+running, phase, early nonpassing, cleanup, and terminal correlation in ADO and
+the app projection.
 
 ## Problem seen in the live master-validation run
 

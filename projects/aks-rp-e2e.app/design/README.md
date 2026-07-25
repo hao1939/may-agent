@@ -25,6 +25,8 @@ spec changes is defined in
 The autonomous six-hour `main` master-validation cycle, progressive failure
 handling, exact test-fix proof, and product-recovery rules are defined in
 [`master-validation-reconciliation.md`](master-validation-reconciliation.md).
+Its runner-to-ADO-to-watcher live progress convention is defined in
+[`live-test-progress-observability-proposal.md`](live-test-progress-observability-proposal.md).
 
 ## Current model
 

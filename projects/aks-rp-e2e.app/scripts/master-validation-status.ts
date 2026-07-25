@@ -25,7 +25,7 @@ console.log(
   `source: ${progress.sourceBranch ?? "unknown"}@${progress.sourceCommit ?? "unknown"}`,
 );
 console.log(
-  `verdicts: ${counts.observed}/${counts.selected} observed; pass=${counts.pass} fail=${counts.fail} error=${counts.error} skipped=${counts.skipped} excluded=${counts.excluded ?? 0} pending=${counts.pending}`,
+  `verdicts: ${counts.observed}/${counts.selected} observed; queued=${counts.queued ?? 0} running=${counts.running ?? 0} pass=${counts.pass} fail=${counts.fail} error=${counts.error} skipped=${counts.skipped} excluded=${counts.excluded ?? 0} pending=${counts.pending}`,
 );
 console.log(
   `slices: ${progress.slices
@@ -42,6 +42,17 @@ if (nonpassing.length) {
   console.log("nonpassing:");
   for (const spec of nonpassing) {
     console.log(`- ${spec.specId}: ${spec.status} — ${spec.reason}`);
+  }
+}
+const active = progress.specs.filter((spec) =>
+  ["queued", "running"].includes(spec.executionState ?? ""),
+);
+if (active.length) {
+  console.log("active:");
+  for (const spec of active) {
+    console.log(
+      `- ${spec.specId}: ${spec.executionState}${spec.phase ? `; ${spec.phase}${spec.phaseDetail ? `/${spec.phaseDetail}` : ""}` : ""}${spec.reason ? ` — ${spec.reason}` : ""}`,
+    );
   }
 }
 console.log(`checked: ${progress.checkedAt}`);

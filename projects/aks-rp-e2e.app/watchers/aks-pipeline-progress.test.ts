@@ -6,10 +6,12 @@ import {
   buildMasterValidationProgress,
   failureObservationsFromAdmissionReport,
   failureObservationsFromArtifact,
+  newPipelineTestNonpassingEvents,
   planDirectoryReady,
   pipelineFailureEvent,
   pipelineSpecEvent,
   specObservationsFromArtifact,
+  timelineSpecProgress,
 } from "./aks-pipeline.js";
 
 const roots: string[] = [];
@@ -19,6 +21,121 @@ afterEach(() => {
 });
 
 describe("progressive master-validation observation", () => {
+  test("parses owned timeline details and projects queued, running, and early failure state", () => {
+    const planRoot = mkdtempSync(join(tmpdir(), "aks-plan-"));
+    roots.push(planRoot);
+    const planDir = join(planRoot, "plan-slices", "plan-1");
+    mkdirSync(planDir, { recursive: true });
+    writeFileSync(
+      join(planDir, "slice-05.json"),
+      JSON.stringify({
+        slice: "05",
+        specIds: ["spec.queued", "spec.running", "spec.failed"],
+      }),
+    );
+    const detail = (value: Record<string, unknown>) => ({
+      type: "aks-spec-progress",
+      currentOperation: JSON.stringify({
+        schemaVersion: "1",
+        runId: "123",
+        sliceId: "05",
+        testRunId: "test-1",
+        sequence: 1,
+        executionState: "queued",
+        verdict: "unknown",
+        phase: "preflight",
+        phaseDetail: "queued",
+        message: "Waiting for a worker.",
+        updatedAt: "2026-07-25T00:00:00Z",
+        elapsedSeconds: 0,
+        ...value,
+      }),
+    });
+    const live = timelineSpecProgress([
+      detail({ specId: "spec.queued" }),
+      detail({
+        specId: "spec.running",
+        sequence: 2,
+        executionState: "running",
+        phase: "setup",
+        phaseDetail: "cluster-create",
+        message: "Cluster create is running.",
+      }),
+      detail({
+        specId: "spec.failed",
+        sequence: 3,
+        executionState: "running",
+        verdict: "fail",
+        phase: "cleanup",
+        phaseDetail: "resource-group-delete",
+        message: "Webhook assertion failed; cleanup is running.",
+        category: "product_failure",
+      }),
+      // Older updates cannot replace the current level.
+      detail({ specId: "spec.failed", sequence: 2 }),
+      { type: "Job", currentOperation: "{}" },
+    ]);
+    expect(live).toHaveLength(3);
+
+    const run = {
+      runId: "123",
+      fingerprint: "fp",
+      status: "inProgress",
+      result: "inProgress",
+      sourceBranch: "refs/heads/main",
+      sourceVersion: "abc",
+      finishTime: null,
+      queueTime: "2026-07-25T00:00:00Z",
+      artifacts: [],
+      progressive: true,
+    };
+    const projection = buildMasterValidationProgress({
+      run,
+      planRoot,
+      artifactRoots: {},
+      timelineProgress: live,
+      checkedAt: "2026-07-25T00:01:00Z",
+    });
+    expect(projection).toMatchObject({
+      counts: {
+        selected: 3,
+        observed: 1,
+        pending: 2,
+        queued: 1,
+        running: 2,
+        fail: 1,
+      },
+      slices: [{ sliceId: "05", selected: 3, observed: 0, status: "partial" }],
+    });
+    expect(projection.specs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          specId: "spec.running",
+          status: "pending",
+          executionState: "running",
+          phaseDetail: "cluster-create",
+        }),
+        expect.objectContaining({
+          specId: "spec.failed",
+          status: "fail",
+          executionState: "running",
+          phase: "cleanup",
+        }),
+      ]),
+    );
+
+    const fingerprints: Record<string, string> = {};
+    const first = newPipelineTestNonpassingEvents(run, live, fingerprints);
+    const replay = newPipelineTestNonpassingEvents(run, live, fingerprints);
+    expect(first).toHaveLength(1);
+    expect(first[0]).toMatchObject({
+      type: "pipeline.test.nonpassing",
+      specId: "spec.failed",
+      status: "fail",
+    });
+    expect(replay).toEqual([]);
+  });
+
   test("turns a soft admission exclusion into durable repair work", () => {
     const root = mkdtempSync(join(tmpdir(), "aks-plan-"));
     roots.push(root);
