@@ -1438,6 +1438,8 @@ async function runCandidateIteration(
               "Mechanism change required: valid verification already showed that the previous candidate did not solve the gap.",
               "Compare the previous candidate with the prepared May base. Do not merely strengthen or lengthen the same AGENTS.md guidance.",
               "Inspect May's skill-discovery and preparation model and use one distinct supported mechanism, such as a narrowly described task-triggered skill, when the evidence supports it.",
+              "When repeated valid trials prove model-selected skill loading is ignored, use the validated agent.json skillActivationRules mechanism for a narrow deterministic trigger instead of adding more prompt wording. Copy the full prepared agent.json into the overlay, change only skillActivationRules, and pair the rule with its named skill package.",
+              "Keep activation rules general, bounded, and tied to the real high-risk task class. Require an opposite control so a rule does not make May over-apply the skill.",
               "If no distinct mechanism is justified, make no artifact change so the workflow stops instead of spending another wording-only iteration.",
             ]
           : []),

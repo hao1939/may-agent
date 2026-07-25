@@ -197,6 +197,21 @@ A successful read of a cataloged `SKILL.md` loads the skill for that turn.
 Relative references resolve against the skill directory and remain subject to
 normal path permissions.
 
+### Deterministic owner rule
+
+For a narrow high-risk task class where approved repeated evidence shows that
+model-selected retrieval is unreliable, an agent may declare
+`skillActivationRules` in `agent.json`. Each rule names one available skill and
+one bounded, case-insensitive regular expression matched against the incoming
+task. The first matching rule injects the complete skill through the same
+explicit invocation path before the model turn.
+
+Rules are a last-mile retrieval mechanism, not a second workflow or a place for
+business logic. Keep the policy in the skill body, keep each trigger general to
+the real task class, and verify an opposite control before promotion. Explicit
+caller activation always wins over a rule. A rule activation emits
+`skill.loaded` with `activation: "rule"`.
+
 ### Explicit human invocation
 
 Human control surfaces may use:
