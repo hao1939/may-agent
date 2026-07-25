@@ -177,6 +177,30 @@ describe("gym task reconciliation", () => {
       });
     }
   });
+
+  test("preserves a requested learning benchmark on the shared task", () => {
+    expect(
+      resolveGymTask({
+        type: "gym.improvement.requested",
+        eventId: 304,
+        params: {
+          benchmark: "may-deputy-learning",
+          scenarios: ["may-learn-select-skill-or-workflow"],
+          trials: 3,
+          reason: "approved-system-deputy-pilot",
+        },
+      }),
+    ).toMatchObject({
+      id: "improve/may",
+      input: {
+        agent: "may",
+        benchmark: "may-deputy-learning",
+        scenarios: ["may-learn-select-skill-or-workflow"],
+        trials: 3,
+        reason: "approved-system-deputy-pilot",
+      },
+    });
+  });
 });
 
 describe("gym app event routing", () => {

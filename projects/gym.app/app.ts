@@ -165,6 +165,7 @@ export function resolveGymTask(
                 ? "project-intent"
                 : String(details.reason ?? "manual"),
           ...selected(details, [
+            "benchmark",
             "revision",
             "artifactFingerprint",
             "approvalId",
