@@ -117,12 +117,12 @@ remain migration data rather than a reason to weaken the current contract.
 
 Agent tool calls must also have a bounded lifecycle. A shell command is not
 still running merely because a descendant retained stdout or stderr after the
-invoked shell exited. Shell commands run in isolated execution workers, so the
-long-running daemon does not directly own their subprocess lifecycle. Each
-worker owns one exact process group, streams output as data, settles when the
-invoked shell exits, and kills remaining descendants. Timeout and abort also
-settle independently of output-stream closure; they must not leave the session,
-workflow, and owning task permanently running behind a zombie process.
+invoked shell exited. Shell commands run synchronously inside isolated execution
+workers, so the long-running daemon does not directly own or reap their
+subprocesses. Each worker owns one exact process group and returns output and
+exit status as data. Timeout and abort settle independently of output-stream
+closure; they must not leave the session, workflow, and owning task permanently
+running behind a zombie process.
 
 ## Data Retention
 
