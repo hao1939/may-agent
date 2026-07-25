@@ -46,6 +46,7 @@ import {
 } from "../event-bus.js";
 import {
   acknowledgeProjectAppTaskRecoveryAttention,
+  associateProjectAppTaskSession,
   claimObservedProjectAppTask,
   completeProjectAppTask,
   deferProjectAppTask,
@@ -129,6 +130,28 @@ export interface ProjectAppWatcher {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+export function parseProjectAppTaskSessionBinding(
+  task: unknown,
+): { appId: string; taskId: string; generation: number } | null {
+  if (typeof task !== "string" || !task.includes("## Reconciliation Task")) return null;
+  const blocks = task.matchAll(/## Reconciliation Task\s*```json\s*([\s\S]*?)```/g);
+  for (const block of blocks) {
+    try {
+      const parsed = JSON.parse(block[1] ?? "") as unknown;
+      if (!isRecord(parsed)) continue;
+      const appId = typeof parsed.appId === "string" ? parsed.appId.trim().replace(/\.app$/, "") : "";
+      const taskId = typeof parsed.taskId === "string" ? parsed.taskId.trim() : "";
+      const generation = parsed.generation;
+      if (appId && taskId && typeof generation === "number" && Number.isInteger(generation) && generation > 0) {
+        return { appId, taskId, generation };
+      }
+    } catch {
+      // A malformed prompt block is not a task binding.
+    }
+  }
+  return null;
 }
 
 function firstNonEmptyString(...values: unknown[]): string | null {
@@ -861,6 +884,19 @@ function interruptSupersededOwnerSession(opts: ProjectAppLoaderOptions, sessionI
       stepLabel: meta.stepLabel,
     },
   } as AgentEvent);
+}
+
+function interruptSupersededObservationSessions(
+  opts: ProjectAppLoaderOptions,
+  observation: { taskId: string; generation: number; supersededSessionIds?: string[] },
+): void {
+  for (const sessionId of observation.supersededSessionIds ?? []) {
+    interruptSupersededOwnerSession(
+      opts,
+      sessionId,
+      `Task ${observation.taskId} advanced to generation ${observation.generation}; the previous reconciliation session is obsolete`,
+    );
+  }
 }
 
 async function runTaskOwner(input: {
@@ -2133,6 +2169,35 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
   appRouterDescriptorsByBus.set(opts.bus, descriptors);
   opts.bus.subscribe((rawEvent): DeliveryResult | void => {
     const event = flattenEvent(rawEvent);
+    const startedSessionId =
+      event.type === "session.start" && typeof event.sessionId === "string" ? event.sessionId.trim() : "";
+    const sessionBinding = startedSessionId ? parseProjectAppTaskSessionBinding(event.task) : null;
+    if (sessionBinding) {
+      const descriptor = (appRouterDescriptorsByBus.get(opts.bus) ?? []).find(
+        (candidate) => candidate.id === sessionBinding.appId,
+      );
+      if (descriptor?.app.tasks) {
+        const association = associateProjectAppTaskSession(
+          taskReconciliationConfig({
+            appDir: descriptor.appDir,
+            projectDir: descriptor.projectDir,
+            owner: descriptor.owner,
+            maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
+          }),
+          sessionBinding,
+          startedSessionId,
+        );
+        if (association.status !== "recorded") {
+          interruptSupersededOwnerSession(
+            opts,
+            startedSessionId,
+            association.status === "missing"
+              ? `Task ${sessionBinding.taskId} no longer exists; the reconciliation session is obsolete`
+              : `Task ${sessionBinding.taskId} generation ${sessionBinding.generation} was superseded before its reconciliation session started`,
+          );
+        }
+      }
+    }
     const successfulOwner =
       event.type === "session.end" &&
       event.status === "done" &&
@@ -2224,11 +2289,12 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
             const resolved = descriptor.app.tasks.resolve(event);
             if (resolved?.id === targetedTaskId) {
               const trigger = taskTriggerWithOwnerIntents(config, targetedTaskId, event);
-              observeProjectAppTaskIntent(config, {
+              const observation = observeProjectAppTaskIntent(config, {
                 intent: resolved,
                 appOwner: descriptor.owner,
                 trigger,
               });
+              interruptSupersededObservationSessions(opts, observation);
             }
           }
           const triggerResult = recordProjectAppTaskTrigger(
@@ -2263,6 +2329,7 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
                 appOwner: descriptor.owner,
                 trigger,
               });
+              interruptSupersededObservationSessions(opts, observation);
               if (observation.kind === "observed") {
                 taskController.enqueue(observation.taskId, { front: true });
               }
@@ -2288,6 +2355,7 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
               appOwner: descriptor.owner,
               trigger: taskTriggerWithOwnerIntents(config, intent.id, event),
             });
+            interruptSupersededObservationSessions(opts, observation);
             if (observation.kind === "observed") {
               taskController.enqueue(observation.taskId, {
                 front: event.type === "project.comment.created",

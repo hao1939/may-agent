@@ -61,8 +61,19 @@ export type ProjectAppTaskClaimResult =
   | { kind: "completed"; taskId: string; generation: number };
 
 export type ProjectAppTaskObservationResult =
-  | { kind: "observed"; taskId: string; generation: number; changed: boolean }
-  | { kind: "completed"; taskId: string; generation: number };
+  | {
+      kind: "observed";
+      taskId: string;
+      generation: number;
+      changed: boolean;
+      supersededSessionIds?: string[];
+    }
+  | { kind: "completed"; taskId: string; generation: number; supersededSessionIds?: string[] };
+
+export type ProjectAppTaskSessionAssociation = {
+  status: "recorded" | "superseded" | "missing";
+  taskId: string;
+};
 
 export class ProjectAppTaskActionStaleError extends Error {
   readonly taskId: string;
@@ -738,6 +749,7 @@ export function observeProjectAppTaskIntent(
   validateIntent(input.intent);
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
+    const supersededSessionIds = new Set<string>();
     validateParentReference(tree, input.intent.id, input.intent.parentId);
     const owner = resolvedOwner(tree, input.intent, input.appOwner);
     const specHash = projectAppTaskSpecHash(input.intent, owner);
@@ -756,6 +768,8 @@ export function observeProjectAppTaskIntent(
         }
         const now = new Date().toISOString();
         if (duplicateResource?.status.currentAttemptId) {
+          const duplicateAttempt = currentResourceAttempt(tree, duplicateResource);
+          if (duplicateAttempt?.sessionId) supersededSessionIds.add(duplicateAttempt.sessionId);
           finishAttempt(
             tree,
             duplicateResource,
@@ -783,6 +797,9 @@ export function observeProjectAppTaskIntent(
         kind: "completed",
         taskId: input.intent.id,
         generation: receipt.metadata.generation,
+        ...(supersededSessionIds.size > 0
+          ? { supersededSessionIds: [...supersededSessionIds] }
+          : {}),
       };
     }
 
@@ -818,6 +835,8 @@ export function observeProjectAppTaskIntent(
         : existingResource;
     } else {
       if (existingResource?.status.currentAttemptId) {
+        const existingAttempt = currentResourceAttempt(tree, existingResource);
+        if (existingAttempt?.sessionId) supersededSessionIds.add(existingAttempt.sessionId);
         finishAttempt(
           tree,
           existingResource,
@@ -869,7 +888,15 @@ export function observeProjectAppTaskIntent(
     pruneTaskAttempts(tree);
     refreshActiveTaskProjection(tree);
     saveTaskState(config, tree);
-    return { kind: "observed", taskId: task.id, generation, changed };
+    return {
+      kind: "observed",
+      taskId: task.id,
+      generation,
+      changed,
+      ...(supersededSessionIds.size > 0
+        ? { supersededSessionIds: [...supersededSessionIds] }
+        : {}),
+    };
   });
 }
 
@@ -1672,6 +1699,47 @@ export function recordProjectAppTaskAttemptSession(
     match.attempt.sessionId = sessionId;
     saveTaskState(config, tree);
     return true;
+  });
+}
+
+/**
+ * Associate a session launched inside a task workflow with the current
+ * reconciliation attempt. The session-start notification can arrive after a
+ * task revision, so stale bindings are rejected instead of reviving obsolete
+ * work.
+ */
+export function associateProjectAppTaskSession(
+  config: TaskStateConfig,
+  binding: { taskId: string; generation: number },
+  sessionId: string,
+): ProjectAppTaskSessionAssociation {
+  return withTaskStateLock(config, () => {
+    const tree = readTaskState(config);
+    const task = tree.tasks[binding.taskId];
+    const resource = tree.resources?.[binding.taskId];
+    if (!task || !resource) return { status: "missing", taskId: binding.taskId };
+    if (
+      resource.metadata.generation !== binding.generation ||
+      resource.status.phase !== "running" ||
+      !resource.status.currentAttemptId
+    ) {
+      return { status: "superseded", taskId: binding.taskId };
+    }
+    const attempt = tree.attempts?.[resource.status.currentAttemptId];
+    if (
+      !attempt ||
+      attempt.state !== "running" ||
+      attempt.taskId !== binding.taskId ||
+      attempt.taskGeneration !== binding.generation
+    ) {
+      return { status: "superseded", taskId: binding.taskId };
+    }
+    if (attempt.sessionId !== sessionId) {
+      attempt.metadata.resourceVersion += 1;
+      attempt.sessionId = sessionId;
+      saveTaskState(config, tree);
+    }
+    return { status: "recorded", taskId: binding.taskId };
   });
 }
 
