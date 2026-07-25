@@ -165,6 +165,12 @@ unrelated merge.
   else. Its terminal artifact is repair context; proof for a different task
   source commit still requires an exact run.
 - An attempt discovers an existing exact run before dispatching another.
+- A red strict scenario-source invariant is repaired before broad provider
+  history is queried. No ADO history can make a still-plain carrier ready for
+  dispatch. Once provider history is relevant, the workflow reads its exact
+  saved run receipt first; otherwise it requests a bounded, branch-scoped run
+  list. It does not serialize the app on an unscoped scan of the latest 100
+  definition runs for every leaf.
 - If `origin/dev` advances after the agent has judged the task patch but before
   dispatch, a conflict-free scenario replay retains that judgment. The
   workflow reruns deterministic admission and requires a fresh exact live run;

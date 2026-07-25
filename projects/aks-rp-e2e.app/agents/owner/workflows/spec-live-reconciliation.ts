@@ -1037,26 +1037,30 @@ function getPipelineRun(repoDir: string, runId: string): PipelineRun | null {
   return value && typeof value === "object" ? (value as PipelineRun) : null;
 }
 
-function taskRuns(repoDir: string, contextDir: string): PipelineRun[] {
+function taskRuns(
+  repoDir: string,
+  contextDir: string,
+  sourceBranch: string,
+): PipelineRun[] {
+  const receipt = readRunReceipt(contextDir);
+  if (receipt) {
+    const exact = getPipelineRun(repoDir, receipt.runId);
+    return exact ? [exact] : [];
+  }
   const value = azJson(repoDir, [
     "pipelines",
     "runs",
     "list",
     "--pipeline-ids",
     pipelineId,
+    "--branch",
+    sourceBranch,
+    "--query-order",
+    "QueueTimeDesc",
     "--top",
-    "100",
+    "20",
   ]);
-  const runs = Array.isArray(value) ? (value as PipelineRun[]) : [];
-  const receipt = readRunReceipt(contextDir);
-  if (
-    receipt &&
-    !runs.some((run) => nonEmptyString(run.id) === receipt.runId)
-  ) {
-    const exact = getPipelineRun(repoDir, receipt.runId);
-    if (exact) runs.push(exact);
-  }
-  return runs;
+  return Array.isArray(value) ? (value as PipelineRun[]) : [];
 }
 
 function queueRun(
@@ -1746,17 +1750,21 @@ export async function reconcileSpecLive(
       };
     };
 
-    const terminalExactRunBeforeReplay = matchingTaskRuns(
-      taskRuns(repoDir, contextDir),
-      {
-        taskId,
-        generation,
-        specId,
-        sourceCommit,
-        target: liveTarget,
-        standaloneBuildId,
-      },
-    ).some((run) => pipelineRunState(run) === "completed");
+    const sourceInvariantBeforeRunLookup = scenarioNormalizationInvariant(
+      workspaceDir,
+      normalizationInput,
+    );
+    const terminalExactRunBeforeReplay =
+      sourceInvariantBeforeRunLookup?.stillListed
+        ? false
+        : matchingTaskRuns(taskRuns(repoDir, contextDir, sourceBranch), {
+            taskId,
+            generation,
+            specId,
+            sourceCommit,
+            target: liveTarget,
+            standaloneBuildId,
+          }).some((run) => pipelineRunState(run) === "completed");
 
     if (
       shouldReplayScenarioBeforeRunReview({
@@ -2037,7 +2045,7 @@ export async function reconcileSpecLive(
 
     const existingPr = pullRequests(repoDir, sourceBranch, targetBranch)[0];
     const matchingRunsBeforeTargetAdvance = matchingTaskRuns(
-      taskRuns(repoDir, contextDir),
+      taskRuns(repoDir, contextDir, sourceBranch),
       {
         taskId,
         generation,
@@ -2093,7 +2101,7 @@ export async function reconcileSpecLive(
       }
     }
 
-    let runs = matchingTaskRuns(taskRuns(repoDir, contextDir), {
+    let runs = matchingTaskRuns(taskRuns(repoDir, contextDir, sourceBranch), {
       taskId,
       generation,
       specId,
