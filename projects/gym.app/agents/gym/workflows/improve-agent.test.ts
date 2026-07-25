@@ -614,6 +614,8 @@ describe("single agent-improvement loop", () => {
         expect.objectContaining({
           type: "agent.revision.changed",
           agent: "may",
+          scenarios: ["agent-case"],
+          trials: 3,
           approvalId: request.approvalId,
         }),
       ]),

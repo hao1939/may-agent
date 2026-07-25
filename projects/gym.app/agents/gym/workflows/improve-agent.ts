@@ -1881,6 +1881,8 @@ async function runCandidate(
               project: "gym",
               agent: plan.agent,
               revision: previous.approval.artifactFingerprint,
+              scenarios: [...plan.focus.scenarios],
+              trials: 3,
               taskId,
               taskGeneration: generation,
               approvalId: previous.approval.approvalId,
