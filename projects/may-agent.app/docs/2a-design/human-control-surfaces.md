@@ -237,12 +237,15 @@ recovery.
 
 The independent maintenance process also probes the daemon control socket.
 It allows a two-minute startup grace. After that, one slow or failed probe is
-ordinary load, so it does nothing. Six consecutive failures may request the
-same supervisor-owned restarter, with a cooldown to prevent restart loops.
-However, a successful probe that reports active workflows protects that work
-for a bounded grace period. Socket timeouts during that period are evidence of
-load, not sufficient evidence that the daemon is dead. If responsiveness does
-not return before the grace expires, recovery proceeds. This covers a live but
+ordinary load, so it does nothing. If the control socket fails, maintenance
+checks the daemon's durable heartbeat and current session rows before counting
+the probe as a daemon failure. A fresh heartbeat proves the daemon event loop
+is alive even when the control surface itself is broken; that socket failure
+remains a separate observable repair concern. Six consecutive failures of both
+signals may request the same supervisor-owned restarter, with a cooldown to
+prevent restart loops. A healthy observation that reports active workflows
+protects that work for a bounded grace period. If responsiveness does not
+return before the grace expires, recovery proceeds. This covers a live but
 unresponsive event loop without repeatedly interrupting in-flight work or
 putting liveness, scheduling, or restart behavior into any project app.
 
