@@ -54,10 +54,11 @@ import {
   listWorkspacePreparationFailedProjectAppTasks,
   markProjectAppTaskAttention,
   listProjectAppTaskIntents,
-  listRunnableProjectAppTaskIds,
+  listRunnableProjectAppTaskQueueEntries,
   isProjectAppTaskActionStaleError,
   observeProjectAppTaskIntent,
   pendingProjectAppTaskRecoveryAttention,
+  projectAppTaskQueueEntries,
   readProjectAppTaskChildContext,
   readProjectAppTaskIntent,
   readProjectAppTaskTrigger,
@@ -1906,15 +1907,14 @@ function installConventionTaskControllers(
         message: `[project-app:${descriptor.id}] Could not refresh task read projection: ${error instanceof Error ? error.message : String(error)}`,
       });
     }
-    let controller: ProjectAppTaskController;
-    controller = new ProjectAppTaskController({
+    const controller = new ProjectAppTaskController({
       maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
       capacity,
       startAfter: startAfterByApp.get(descriptor.id),
       maxRetries: 3,
       resync: {
         intervalMs: tasks.resyncIntervalMs ?? 60_000,
-        taskIds: () => listRunnableProjectAppTaskIds(config),
+        tasks: () => listRunnableProjectAppTaskQueueEntries(config),
       },
       reconcile: async (taskId) => {
         const dependentTaskIds = await reconcileTask({
@@ -1923,13 +1923,17 @@ function installConventionTaskControllers(
           taskId,
           reason: "task-controller",
         });
+        const dependentEntries = new Map(
+          projectAppTaskQueueEntries(config, dependentTaskIds).map((entry) => [entry.taskId, entry]),
+        );
         for (const dependentTaskId of dependentTaskIds) {
           const activeController = appTaskControllersByBus.get(opts.bus)?.get(descriptor.id) ?? controller;
           // A same-task result is an immediate continuation, such as a
-          // workflow-to-owner handoff. Other children/dependents remain
-          // ordinary work so they cannot starve the existing backlog.
+          // workflow-to-owner handoff. Other children/dependents enter the
+          // priority-ordered ordinary lane so continuation bursts stay bounded.
           activeController.enqueue(dependentTaskId, {
             front: dependentTaskId === taskId,
+            priority: dependentEntries.get(dependentTaskId)?.options.priority,
           });
         }
       },

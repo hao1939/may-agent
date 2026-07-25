@@ -14,6 +14,7 @@ import {
   listWorkspacePreparationFailedProjectAppTasks,
   markProjectAppTaskAttention,
   observeProjectAppTaskIntent,
+  listRunnableProjectAppTaskQueueEntries,
   listRunnableProjectAppTaskIds,
   readProjectAppTaskIntent,
   readProjectAppTaskTrigger,
@@ -451,6 +452,16 @@ describe("project app task reconciler state", () => {
     expect(listRunnableProjectAppTaskIds(config).slice(0, 2)).toEqual([
       "work/live-result-p2",
       "work/new-p0",
+    ]);
+    expect(listRunnableProjectAppTaskQueueEntries(config).slice(0, 2)).toEqual([
+      {
+        taskId: "work/live-result-p2",
+        options: { front: true, priority: "P2" },
+      },
+      {
+        taskId: "work/new-p0",
+        options: { front: false, priority: "P0" },
+      },
     ]);
   });
 
