@@ -1,4 +1,4 @@
-import { ProjectAppTaskQueue } from "./project-app-task-queue.js";
+import { ProjectAppTaskQueue, type ProjectAppTaskQueueOptions } from "./project-app-task-queue.js";
 
 export type ProjectAppTaskControllerOptions = {
   maxConcurrent: number;
@@ -12,7 +12,8 @@ export type ProjectAppTaskControllerOptions = {
   startAfter?: PromiseLike<void>;
   resync?: {
     intervalMs: number;
-    taskIds(): Iterable<string>;
+    taskIds?(): Iterable<string>;
+    tasks?(): Iterable<{ taskId: string; options?: ProjectAppTaskQueueOptions }>;
   };
 };
 
@@ -95,13 +96,13 @@ export class ProjectAppTaskController {
       if (!Number.isFinite(options.resync.intervalMs) || options.resync.intervalMs <= 0) {
         throw new Error("ProjectAppTaskController resync interval must be positive");
       }
-      this.resyncTimer = setInterval(() => this.resync(options.resync!.taskIds()), options.resync.intervalMs);
+      this.resyncTimer = setInterval(() => this.resyncConfiguredTasks(), options.resync.intervalMs);
       this.resyncTimer.unref?.();
-      if (this.startReady) this.resync(options.resync.taskIds());
+      if (this.startReady) this.resyncConfiguredTasks();
     }
   }
 
-  enqueue(taskId: string, opts: { front?: boolean } = {}): boolean {
+  enqueue(taskId: string, opts: ProjectAppTaskQueueOptions = {}): boolean {
     if (this.closed) return false;
     const added = this.queue.enqueue(taskId, opts);
     this.schedulePump();
@@ -205,9 +206,19 @@ export class ProjectAppTaskController {
 
   private releaseStartGate(): void {
     this.startReady = true;
-    if (this.options.resync) this.resync(this.options.resync.taskIds());
+    if (this.options.resync) this.resyncConfiguredTasks();
     this.resolveDrainWaiters();
     this.schedulePump();
+  }
+
+  private resyncConfiguredTasks(): void {
+    const configured = this.options.resync;
+    if (!configured) return;
+    if (configured.tasks) {
+      for (const task of configured.tasks()) this.enqueue(task.taskId, task.options);
+      return;
+    }
+    if (configured.taskIds) this.resync(configured.taskIds());
   }
 
   private isDrained(): boolean {

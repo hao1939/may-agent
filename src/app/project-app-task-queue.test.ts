@@ -48,6 +48,33 @@ describe("ProjectAppTaskQueue", () => {
     }
   });
 
+  it("orders ordinary work by priority and preserves FIFO within one priority", () => {
+    const queue = new ProjectAppTaskQueue(1);
+    queue.enqueue("old-p2", { priority: "P2" });
+    queue.enqueue("first-p0", { priority: "P0" });
+    queue.enqueue("second-p0", { priority: "P0" });
+    queue.enqueue("p1", { priority: "P1" });
+
+    for (const taskId of ["first-p0", "second-p0", "p1", "old-p2"]) {
+      expect(queue.take()).toBe(taskId);
+      queue.complete(taskId);
+    }
+  });
+
+  it("runs prioritized ordinary work after the bounded continuation burst", () => {
+    const queue = new ProjectAppTaskQueue(1);
+    queue.enqueue("ordinary-p2", { priority: "P2" });
+    queue.enqueue("ordinary-p0", { priority: "P0" });
+    for (const taskId of ["wake-a", "wake-b", "wake-c", "wake-d"]) {
+      queue.enqueue(taskId, { front: true, priority: "P2" });
+    }
+
+    for (const taskId of ["wake-a", "wake-b", "wake-c", "ordinary-p0", "wake-d"]) {
+      expect(queue.take()).toBe(taskId);
+      queue.complete(taskId);
+    }
+  });
+
   it("preserves front promotion for a wake received while running", () => {
     const queue = new ProjectAppTaskQueue(1);
     queue.enqueue("goal");

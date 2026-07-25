@@ -1027,7 +1027,15 @@ function isRunnableOnPassiveResync(tree: TaskTree, resource: ProjectAppTaskResou
   return false;
 }
 
-export function listRunnableProjectAppTaskIds(config: TaskStateConfig): string[] {
+export type ProjectAppTaskQueueEntry = {
+  taskId: string;
+  options: {
+    front: boolean;
+    priority: "P0" | "P1" | "P2" | "P3";
+  };
+};
+
+export function listRunnableProjectAppTaskQueueEntries(config: TaskStateConfig): ProjectAppTaskQueueEntry[] {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
     const priorityOrder = { P0: 0, P1: 1, P2: 2, P3: 3 } as const;
@@ -1059,7 +1067,41 @@ export function listRunnableProjectAppTaskIds(config: TaskStateConfig): string[]
           left.metadata.id.localeCompare(right.metadata.id)
         );
       })
-      .map((resource) => resource.metadata.id);
+      .map((resource) => ({
+        taskId: resource.metadata.id,
+        options: {
+          front: hasPersistedTrigger(resource),
+          priority: resource.spec.priority ?? "P2",
+        },
+      }));
+  });
+}
+
+export function listRunnableProjectAppTaskIds(config: TaskStateConfig): string[] {
+  return listRunnableProjectAppTaskQueueEntries(config).map((entry) => entry.taskId);
+}
+
+export function projectAppTaskQueueEntries(
+  config: TaskStateConfig,
+  taskIds: Iterable<string>,
+): ProjectAppTaskQueueEntry[] {
+  const requested = new Set(taskIds);
+  if (requested.size === 0) return [];
+  return withTaskStateLock(config, () => {
+    const tree = readTaskState(config);
+    return [...requested].flatMap((taskId) => {
+      const resource = tree.resources?.[taskId];
+      if (!resource) return [];
+      return [
+        {
+          taskId,
+          options: {
+            front: Boolean(tree.taskTriggers?.[taskId]?.event),
+            priority: resource.spec.priority ?? "P2",
+          },
+        },
+      ];
+    });
   });
 }
 
