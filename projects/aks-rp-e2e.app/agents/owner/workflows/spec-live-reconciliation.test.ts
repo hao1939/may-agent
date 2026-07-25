@@ -218,10 +218,10 @@ describe("spec-live-reconciliation workflow", () => {
     expect(result.evidence.join("\n")).toContain("source-check-only carrier");
   });
 
-  test("collects terminal evidence before asking the agent to judge it", () => {
+  test("collects terminal evidence before asking the agent to judge it", async () => {
     const root = mkdtempSync(join(tmpdir(), "terminal-evidence-"));
     try {
-      const result = collectTerminalRunEvidence(
+      const result = await collectTerminalRunEvidence(
         root,
         root,
         "42",

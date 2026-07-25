@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { spawnSync } from "node:child_process";
+import { execFile, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve, sep } from "node:path";
 import {
@@ -661,6 +661,51 @@ function command(
   return output;
 }
 
+function commandAsync(
+  executable: string,
+  args: string[],
+  options: { cwd: string; allowFailure?: boolean; timeoutMs?: number },
+): Promise<{ status: number; stdout: string; stderr: string }> {
+  return new Promise((resolve, reject) => {
+    execFile(
+      executable,
+      args,
+      {
+        cwd: options.cwd,
+        encoding: "utf8",
+        timeout: options.timeoutMs ?? 120_000,
+        maxBuffer: 32 * 1024 * 1024,
+        env: {
+          ...process.env,
+          AZURE_CONFIG_DIR:
+            process.env.AZURE_CONFIG_DIR || "/app/.state/.azure",
+        },
+      },
+      (error, stdout, stderr) => {
+        const output = {
+          status:
+            typeof (error as NodeJS.ErrnoException | null)?.code === "number"
+              ? ((error as NodeJS.ErrnoException).code as number)
+              : error
+                ? 1
+                : 0,
+          stdout: (stdout ?? "").trim(),
+          stderr: (stderr || error?.message || "").trim(),
+        };
+        if (!options.allowFailure && output.status !== 0) {
+          reject(
+            new Error(
+              `${executable} ${args.join(" ")} failed: ${output.stderr || output.stdout}`,
+            ),
+          );
+          return;
+        }
+        resolve(output);
+      },
+    );
+  });
+}
+
 export function checkLiveDispatchAdmission(
   workspaceDir: string,
   specId: string,
@@ -706,8 +751,8 @@ function git(
   return command("git", args, { cwd, allowFailure });
 }
 
-function azJson(cwd: string, args: string[]): unknown {
-  const result = command(
+async function azJson(cwd: string, args: string[]): Promise<unknown> {
+  const result = await commandAsync(
     azCli,
     [
       ...args,
@@ -734,17 +779,19 @@ function artifactPart(value: string): string {
     .slice(0, 80);
 }
 
-export function collectTerminalRunEvidence(
+export async function collectTerminalRunEvidence(
   repoDir: string,
   runContextDir: string,
   runId: string,
   run: PipelineRun,
   dependencies: {
-    listArtifacts?: () => unknown;
+    listArtifacts?: () => unknown | Promise<unknown>;
     downloadArtifact?: (
       name: string,
       downloadDir: string,
-    ) => { status: number; stdout: string; stderr: string };
+    ) =>
+      | { status: number; stdout: string; stderr: string }
+      | Promise<{ status: number; stdout: string; stderr: string }>;
   } = {},
 ): CollectedRunEvidence {
   mkdirSync(runContextDir, { recursive: true });
@@ -757,8 +804,8 @@ export function collectTerminalRunEvidence(
   let artifacts: unknown = [];
   try {
     artifacts = dependencies.listArtifacts
-      ? dependencies.listArtifacts()
-      : azJson(repoDir, [
+      ? await dependencies.listArtifacts()
+      : await azJson(repoDir, [
           "pipelines",
           "runs",
           "artifact",
@@ -792,8 +839,8 @@ export function collectTerminalRunEvidence(
     }
     mkdirSync(downloadDir, { recursive: true });
     const result = dependencies.downloadArtifact
-      ? dependencies.downloadArtifact(name, downloadDir)
-      : command(
+      ? await dependencies.downloadArtifact(name, downloadDir)
+      : await commandAsync(
           azCli,
           [
             "pipelines",
@@ -1032,22 +1079,31 @@ function saveRunReceipt(
   );
 }
 
-function getPipelineRun(repoDir: string, runId: string): PipelineRun | null {
-  const value = azJson(repoDir, ["pipelines", "runs", "show", "--id", runId]);
+async function getPipelineRun(
+  repoDir: string,
+  runId: string,
+): Promise<PipelineRun | null> {
+  const value = await azJson(repoDir, [
+    "pipelines",
+    "runs",
+    "show",
+    "--id",
+    runId,
+  ]);
   return value && typeof value === "object" ? (value as PipelineRun) : null;
 }
 
-function taskRuns(
+async function taskRuns(
   repoDir: string,
   contextDir: string,
   sourceBranch: string,
-): PipelineRun[] {
+): Promise<PipelineRun[]> {
   const receipt = readRunReceipt(contextDir);
   if (receipt) {
-    const exact = getPipelineRun(repoDir, receipt.runId);
+    const exact = await getPipelineRun(repoDir, receipt.runId);
     return exact ? [exact] : [];
   }
-  const value = azJson(repoDir, [
+  const value = await azJson(repoDir, [
     "pipelines",
     "runs",
     "list",
@@ -1063,7 +1119,7 @@ function taskRuns(
   return Array.isArray(value) ? (value as PipelineRun[]) : [];
 }
 
-function queueRun(
+async function queueRun(
   repoDir: string,
   input: {
     taskId: string;
@@ -1075,7 +1131,7 @@ function queueRun(
     standaloneBuildId: string;
     retryOfRunId?: string;
   },
-): PipelineRun {
+): Promise<PipelineRun> {
   const metadata = JSON.stringify({
     taskId: input.taskId,
     generation: input.generation,
@@ -1088,7 +1144,7 @@ function queueRun(
       : {}),
     ...(input.retryOfRunId ? { retryOfRunId: input.retryOfRunId } : {}),
   });
-  const value = azJson(repoDir, [
+  const value = await azJson(repoDir, [
     "pipelines",
     "run",
     "--id",
@@ -1117,12 +1173,12 @@ function queueRun(
   return value as PipelineRun;
 }
 
-function pullRequests(
+async function pullRequests(
   repoDir: string,
   sourceBranch: string,
   targetBranch: string,
-): PullRequest[] {
-  const value = azJson(repoDir, [
+): Promise<PullRequest[]> {
+  const value = await azJson(repoDir, [
     "repos",
     "pr",
     "list",
@@ -1145,7 +1201,7 @@ function pullRequests(
     : [];
 }
 
-function createPullRequest(
+async function createPullRequest(
   repoDir: string,
   input: {
     taskId: string;
@@ -1155,7 +1211,7 @@ function createPullRequest(
     runId: string;
     targetBranch: string;
   },
-): PullRequest {
+): Promise<PullRequest> {
   const description = [
     `Task: ${input.taskId}`,
     `Spec: ${input.specId}`,
@@ -1164,7 +1220,7 @@ function createPullRequest(
     `Target: ${input.targetBranch}`,
     `Integration proof: Azure must report this exact live-tested source commit as the completed PR head and its resulting target commit in ${input.targetBranch} ancestry. Squash, rebase, and merge-commit completion are supported.`,
   ].join("\n\n");
-  const value = azJson(repoDir, [
+  const value = await azJson(repoDir, [
     "repos",
     "pr",
     "create",
@@ -1189,9 +1245,12 @@ function createPullRequest(
   return value as PullRequest;
 }
 
-function abandonPullRequest(repoDir: string, pullRequestId: string): boolean {
+async function abandonPullRequest(
+  repoDir: string,
+  pullRequestId: string,
+): Promise<boolean> {
   try {
-    azJson(repoDir, [
+    await azJson(repoDir, [
       "repos",
       "pr",
       "update",
@@ -1425,7 +1484,7 @@ export async function reconcileSpecLive(
     git(repoDir, ["fetch", "origin", targetBranch]);
     let priorVerificationSummary = "";
     if (priorVerificationRunId) {
-      const priorRun = getPipelineRun(repoDir, priorVerificationRunId);
+      const priorRun = await getPipelineRun(repoDir, priorVerificationRunId);
       if (
         !priorRun ||
         !runMatchesPriorVerification(priorRun, {
@@ -1737,7 +1796,7 @@ export async function reconcileSpecLive(
 
       return {
         state: "queued",
-        run: queueRun(repoDir, {
+        run: await queueRun(repoDir, {
           taskId,
           generation,
           specId,
@@ -1757,7 +1816,7 @@ export async function reconcileSpecLive(
     const terminalExactRunBeforeReplay =
       sourceInvariantBeforeRunLookup?.stillListed
         ? false
-        : matchingTaskRuns(taskRuns(repoDir, contextDir, sourceBranch), {
+        : matchingTaskRuns(await taskRuns(repoDir, contextDir, sourceBranch), {
             taskId,
             generation,
             specId,
@@ -2043,9 +2102,11 @@ export async function reconcileSpecLive(
       }
     }
 
-    const existingPr = pullRequests(repoDir, sourceBranch, targetBranch)[0];
+    const existingPr = (
+      await pullRequests(repoDir, sourceBranch, targetBranch)
+    )[0];
     const matchingRunsBeforeTargetAdvance = matchingTaskRuns(
-      taskRuns(repoDir, contextDir, sourceBranch),
+      await taskRuns(repoDir, contextDir, sourceBranch),
       {
         taskId,
         generation,
@@ -2101,14 +2162,17 @@ export async function reconcileSpecLive(
       }
     }
 
-    let runs = matchingTaskRuns(taskRuns(repoDir, contextDir, sourceBranch), {
-      taskId,
-      generation,
-      specId,
-      sourceCommit,
-      target: liveTarget,
-      standaloneBuildId,
-    });
+    let runs = matchingTaskRuns(
+      await taskRuns(repoDir, contextDir, sourceBranch),
+      {
+        taskId,
+        generation,
+        specId,
+        sourceCommit,
+        target: liveTarget,
+        standaloneBuildId,
+      },
+    );
     let latestRun = runs[0];
 
     const sourceDiffersFromBase = sourceCommit !== baseCommit;
@@ -2186,7 +2250,7 @@ export async function reconcileSpecLive(
       ) {
         const recovery = decision.recovery;
         const providerRun = recovery
-          ? getPipelineRun(repoDir, recovery.pipelineRunId)
+          ? await getPipelineRun(repoDir, recovery.pipelineRunId)
           : null;
         const artifactPath = recovery ? resolve(recovery.artifactPath) : "";
         const watcherRoot = recovery
@@ -2338,7 +2402,7 @@ export async function reconcileSpecLive(
           ),
       ).length;
       const runContextDir = terminalRunContextDir(contextDir, runId);
-      const collectedRunEvidence = collectTerminalRunEvidence(
+      const collectedRunEvidence = await collectTerminalRunEvidence(
         repoDir,
         runContextDir,
         runId,
@@ -2712,7 +2776,7 @@ export async function reconcileSpecLive(
       const existingPrId = nonEmptyString(existingPr?.pullRequestId);
       const abandonedExistingPr =
         existingPrId && nonEmptyString(existingPr?.status) === "active"
-          ? abandonPullRequest(repoDir, existingPrId)
+          ? await abandonPullRequest(repoDir, existingPrId)
           : false;
       proof = {
         ...proof,
@@ -2765,9 +2829,9 @@ export async function reconcileSpecLive(
       });
     }
 
-    let pr = pullRequests(repoDir, sourceBranch, targetBranch)[0];
+    let pr = (await pullRequests(repoDir, sourceBranch, targetBranch))[0];
     if (!pr) {
-      pr = createPullRequest(repoDir, {
+      pr = await createPullRequest(repoDir, {
         taskId,
         specId,
         sourceBranch,

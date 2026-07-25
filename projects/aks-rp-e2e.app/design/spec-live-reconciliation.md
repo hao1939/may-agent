@@ -171,6 +171,9 @@ unrelated merge.
   saved run receipt first; otherwise it requests a bounded, branch-scoped run
   list. It does not serialize the app on an unscoped scan of the latest 100
   definition runs for every leaf.
+- Azure DevOps CLI calls yield the app event loop while provider I/O is in
+  flight. Provider collection must not prevent session deadlines, task
+  reconciliation, or unrelated leaves from running.
 - If `origin/dev` advances after the agent has judged the task patch but before
   dispatch, a conflict-free scenario replay retains that judgment. The
   workflow reruns deterministic admission and requires a fresh exact live run;
