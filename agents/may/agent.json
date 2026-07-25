@@ -28,6 +28,10 @@
     {
       "skill": "proof-rollout",
       "pattern": "^(?![\\s\\S]*\\b(?:already|previously)\\s+(?:proved|proven|validated|approved)\\b)(?![\\s\\S]*\\b(?:do not|don.t|never)\\s+(?:roll|turn|adopt|enable|deploy|ship|apply)\\b)(?=[\\s\\S]*\\b(?:(?:all|every)\\s+(?:agents?|teams?|projects?|project\\s+apps?|apps?|services?)|fleet(?:-wide)?|system-?wide|multi-?agent|across\\s+(?:the\\s+)?(?:agents|team|projects?|apps?|services?))\\b)[\\s\\S]*\\b(?:roll(?:\\s+\\w+){0,4}\\s+out|turn(?:\\s+\\w+){0,4}\\s+on|adopt|enable|deploy|ship|apply)\\b"
+    },
+    {
+      "skill": "bounded-cleanup",
+      "pattern": "^(?![\\s\\S]*\\b(?:format(?:ting)?|whitespace|lint|prettier|style)\\b)(?![\\s\\S]*\\b(?:remove|delete|archive)\\s+(?:the\\s+)?(?:active|in-use|live|current)\\b)(?![\\s\\S]*\\b(?:all|everything|entire|bulk)\\b[\\s\\S]*\\b(?:remove|delete|archive|clean ?up|prune)\\b)(?=[\\s\\S]*\\b(?:clean ?up|remove|delete|prune|archive)\\b)(?=[\\s\\S]*\\b(?:old|obsolete|superseded|legacy|unused|stale|dead)\\b)"
     }
   ]
 }
