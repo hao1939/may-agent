@@ -245,11 +245,15 @@ async function connectTerminal(profileId) {
         terminalReplayWrites = Math.max(0, terminalReplayWrites - 1);
       });
     }
+    else if (frame.type === 'starting') {
+      if (status) status.textContent = `Starting ${frame.profile?.label || profileId}…`;
+    }
     else if (frame.type === 'ready') {
       if (status) {
         const profile = activeTerminalProfile();
         const idle = profile?.idleUntil ? ` · warm until ${new Date(profile.idleUntil).toLocaleTimeString()}` : '';
-        status.textContent = `${frame.profile?.label || profileId} · ${profileId}${profileId === 'may' ? ' · daemon console' : ''} · pid ${frame.pid}${idle}`;
+        const startup = Number.isFinite(frame.startupMs) ? ` · ready ${frame.startupMs}ms` : '';
+        status.textContent = `${frame.profile?.label || profileId} · ${profileId}${profileId === 'may' ? ' · daemon console' : ''} · pid ${frame.pid}${startup}${idle}`;
       }
       terminal.focus();
       sendTerminalFocusFrame();

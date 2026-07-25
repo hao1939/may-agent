@@ -1,3 +1,5 @@
+import { existsSync, rmSync } from "node:fs";
+import { basename, join } from "node:path";
 import { getDb } from "./connection.js";
 
 export interface DbMaintenanceResult {
@@ -11,6 +13,57 @@ const DEFAULT_BATCH_SIZE = 2000;
 
 function changes(result: unknown): number {
   return Number((result as { changes?: number } | null)?.changes ?? 0);
+}
+
+function sessionDirectoryIsActive(persistDir: string, sessionId: string): boolean {
+  if (!sessionId || basename(sessionId) !== sessionId) return true;
+  const dir = join(persistDir, "sessions", sessionId);
+  return existsSync(join(dir, "[ACTIVE]")) || existsSync(join(dir, "[STARTED]"));
+}
+
+function removeRetiredSessions(
+  persistDir: string,
+  now: number,
+  batchSize: number,
+): { rows: number; directories: number } {
+  const db = getDb(persistDir);
+  const cutoff = now - 14 * DAY_MS;
+  const candidates = db
+    .prepare(
+      `SELECT sessionId FROM sessions
+       WHERE startedAt < ? AND status NOT IN ('running', 'idle')
+       ORDER BY startedAt LIMIT ?`,
+    )
+    .all(cutoff, batchSize) as Array<{ sessionId: string }>;
+  const sessionIds = candidates
+    .map((row) => row.sessionId)
+    .filter((sessionId) => !sessionDirectoryIsActive(persistDir, sessionId));
+  if (sessionIds.length === 0) return { rows: 0, directories: 0 };
+
+  const placeholders = sessionIds.map(() => "?").join(", ");
+  const retired = db
+    .prepare(
+      `DELETE FROM sessions
+       WHERE sessionId IN (${placeholders})
+         AND startedAt < ?
+         AND status NOT IN ('running', 'idle')
+       RETURNING sessionId`,
+    )
+    .all(...sessionIds, cutoff) as Array<{ sessionId: string }>;
+
+  let directories = 0;
+  for (const { sessionId } of retired) {
+    const dir = join(persistDir, "sessions", sessionId);
+    if (!existsSync(dir)) continue;
+    try {
+      rmSync(dir, { recursive: true, force: true });
+      directories++;
+    } catch {
+      // The DB row is already retired. Leave an observable count mismatch and
+      // retry orphan-directory cleanup in a future maintenance enhancement.
+    }
+  }
+  return { rows: retired.length, directories };
 }
 
 /**
@@ -145,15 +198,9 @@ export function runDbMaintenancePass(
     [batchSize],
   );
 
-  remove(
-    "sessions",
-    `DELETE FROM sessions WHERE rowid IN (
-       SELECT rowid FROM sessions
-       WHERE startedAt < ? AND status NOT IN ('running', 'idle')
-       ORDER BY startedAt LIMIT ?
-     )`,
-    [now - 14 * DAY_MS, batchSize],
-  );
+  const retiredSessions = removeRetiredSessions(persistDir, now, batchSize);
+  deleted.sessions = retiredSessions.rows;
+  deleted.sessionDirectories = retiredSessions.directories;
   remove(
     "workflow_runs",
     `DELETE FROM workflow_runs WHERE rowid IN (

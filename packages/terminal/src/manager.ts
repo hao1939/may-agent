@@ -14,12 +14,27 @@ export interface TerminalProfile {
 export interface TerminalStatus {
   enabled: boolean;
   reason?: string;
-  profiles: Array<TerminalProfile & { connected: boolean; pid?: number; clients: number; idleUntil?: number }>;
+  profiles: Array<TerminalProfile & {
+    connected: boolean;
+    ready: boolean;
+    pid?: number;
+    clients: number;
+    idleUntil?: number;
+    startupMs?: number;
+  }>;
 }
 
 export interface TerminalSocket {
   send(data: string): void;
   close(): void;
+}
+
+export interface TerminalManagerOptions {
+  projectRoot: string;
+  enabled?: boolean;
+  idleTtlMs?: number;
+  bridgePath?: string;
+  tmuxSocket?: string;
 }
 
 interface TerminalSession {
@@ -30,6 +45,8 @@ interface TerminalSession {
   clientIds: Map<TerminalSocket, string>;
   activeClientId?: string;
   stdoutBuffer: string;
+  startedAt: number;
+  readyFrame?: { type: "ready"; profile: TerminalProfile; pid: number; startupMs: number };
   idleTimer?: ReturnType<typeof setTimeout>;
   idleUntil?: number;
 }
@@ -37,7 +54,7 @@ interface TerminalSession {
 const DEFAULT_COLS = 120;
 const DEFAULT_ROWS = 32;
 const DEFAULT_IDLE_TTL_MS = 10 * 60 * 1000;
-const TMUX_SOCKET = "may-web";
+const DEFAULT_TMUX_SOCKET = "may-web";
 
 function enabledFromEnv(): boolean {
   return /^(1|true|yes|on)$/i.test(process.env.MAY_WEB_TERMINAL || "");
@@ -136,19 +153,25 @@ function resolveTerminalBridge(projectRoot: string): string {
   return bridge;
 }
 
-export function createTerminalManager(opts: { projectRoot: string }) {
+export function createTerminalManager(opts: TerminalManagerOptions) {
   const profiles = makeProfiles(opts.projectRoot);
   const profileById = new Map(profiles.map((profile) => [profile.id, profile]));
   const sessions = new Map<string, TerminalSession>();
-  const enabled = enabledFromEnv();
+  const enabled = opts.enabled ?? enabledFromEnv();
   const disabledReason = enabled ? undefined : "Set MAY_WEB_TERMINAL=1 to enable web terminal access.";
-  const idleTtl = idleTtlMs();
+  const idleTtl = opts.idleTtlMs ?? idleTtlMs();
+  const tmuxSocket = opts.tmuxSocket || process.env.MAY_WEB_TERMINAL_TMUX_SOCKET || DEFAULT_TMUX_SOCKET;
 
-  function closeSession(profileId: string, session: TerminalSession): void {
+  function killTmuxSession(profile: TerminalProfile): void {
+    spawnSync("tmux", ["-L", tmuxSocket, "kill-session", "-t", sanitizeTmuxName(profile.id)], { stdio: "ignore" });
+  }
+
+  function closeSession(profileId: string, session: TerminalSession, terminateProfile = false): void {
     if (session.idleTimer) clearTimeout(session.idleTimer);
     session.idleTimer = undefined;
     session.idleUntil = undefined;
     session.child.kill();
+    if (terminateProfile) killTmuxSession(session.profile);
     if (sessions.get(profileId) === session) sessions.delete(profileId);
   }
 
@@ -161,13 +184,13 @@ export function createTerminalManager(opts: { projectRoot: string }) {
   function scheduleIdleClose(profileId: string, session: TerminalSession): void {
     clearIdleTimer(session);
     if (idleTtl <= 0) {
-      closeSession(profileId, session);
+      closeSession(profileId, session, true);
       return;
     }
     session.idleUntil = Date.now() + idleTtl;
     session.idleTimer = setTimeout(() => {
       if (session.clients.size === 0 && sessions.get(profileId) === session) {
-        closeSession(profileId, session);
+        closeSession(profileId, session, true);
       }
     }, idleTtl);
     session.idleTimer.unref?.();
@@ -182,9 +205,11 @@ export function createTerminalManager(opts: { projectRoot: string }) {
         return {
           ...profile,
           connected: !!session,
+          ready: !!session?.readyFrame,
           pid: session?.ptyPid ?? session?.child.pid,
           clients: session?.clients.size ?? 0,
           idleUntil: session?.idleUntil,
+          startupMs: session?.readyFrame?.startupMs,
         };
       }),
     };
@@ -210,11 +235,11 @@ export function createTerminalManager(opts: { projectRoot: string }) {
 
     const profile = resolveProfile(profileId);
     const tmuxName = sanitizeTmuxName(profile.id);
-    const bridge = resolveTerminalBridge(opts.projectRoot);
+    const bridge = opts.bridgePath ?? resolveTerminalBridge(opts.projectRoot);
     const child = spawn("node", [bridge, JSON.stringify({
       profileId,
       tmuxName,
-      tmuxSocket: TMUX_SOCKET,
+      tmuxSocket,
       command: profile.command,
       cwd: profile.cwd,
       cols: Number.isFinite(cols) ? cols : DEFAULT_COLS,
@@ -234,6 +259,7 @@ export function createTerminalManager(opts: { projectRoot: string }) {
       clients: new Set(),
       clientIds: new Map(),
       stdoutBuffer: "",
+      startedAt: Date.now(),
     };
 
     function broadcastData(data: string): void {
@@ -260,7 +286,16 @@ export function createTerminalManager(opts: { projectRoot: string }) {
         } catch {
           frame = { type: "data", data: line + "\n" };
         }
-        if (frame.type === "ready" && typeof frame.pid === "number") session.ptyPid = frame.pid;
+        if (frame.type === "ready" && typeof frame.pid === "number") {
+          session.ptyPid = frame.pid;
+          frame = {
+            type: "ready",
+            profile: session.profile,
+            pid: frame.pid,
+            startupMs: Math.max(0, Date.now() - session.startedAt),
+          };
+          session.readyFrame = frame;
+        }
         for (const client of session.clients) {
           try {
             client.send(JSON.stringify(frame));
@@ -276,6 +311,17 @@ export function createTerminalManager(opts: { projectRoot: string }) {
     child.stderr.on("data", (chunk: Buffer) => {
       const data = stderrDecoder.write(chunk);
       if (data) broadcastData(data);
+    });
+
+    child.on("error", (error) => {
+      for (const client of session.clients) {
+        try {
+          client.send(JSON.stringify({ type: "error", message: `Unable to start terminal bridge: ${error.message}` }));
+          client.close();
+        } catch {}
+      }
+      session.clients.clear();
+      if (sessions.get(profile.id) === session) sessions.delete(profile.id);
     });
 
     child.on("close", (code, signal) => {
@@ -299,10 +345,6 @@ export function createTerminalManager(opts: { projectRoot: string }) {
   }
 
   async function attach(profileId: string, socket: TerminalSocket, cols?: number, rows?: number, clientId?: string): Promise<void> {
-    const existing = sessions.get(profileId);
-    if (existing && existing.clients.size === 0) {
-      closeSession(profileId, existing);
-    }
     const session = await ensureSession(profileId, cols, rows);
     clearIdleTimer(session);
     const wasEmpty = session.clients.size === 0;
@@ -314,10 +356,9 @@ export function createTerminalManager(opts: { projectRoot: string }) {
     if (wasEmpty || !session.activeClientId) {
       writeResize(session, cols ?? DEFAULT_COLS, rows ?? DEFAULT_ROWS);
     }
-    socket.send(JSON.stringify({
-      type: "ready",
+    socket.send(JSON.stringify(session.readyFrame ?? {
+      type: "starting",
       profile: session.profile,
-      pid: session.ptyPid ?? session.child.pid,
     }));
   }
 
@@ -392,10 +433,9 @@ export function createTerminalManager(opts: { projectRoot: string }) {
         } catch {}
       }
       session.clients.clear();
-      closeSession(profileId, session);
-    }
-    if (existsSync("/usr/bin/tmux") || existsSync("/bin/tmux") || existsSync("/usr/local/bin/tmux")) {
-      spawnSync("tmux", ["-L", TMUX_SOCKET, "kill-session", "-t", sanitizeTmuxName(profile.id)], { stdio: "ignore" });
+      closeSession(profileId, session, true);
+    } else {
+      killTmuxSession(profile);
     }
   }
 

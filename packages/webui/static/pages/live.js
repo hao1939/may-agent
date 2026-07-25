@@ -189,11 +189,13 @@ function shortMetricLabel(metric, project) {
 }
 
 function scheduleLivenessRefresh() {
+  if (typeof currentTab !== 'undefined' && currentTab !== 'live') return;
   if (livenessRefreshTimer) clearTimeout(livenessRefreshTimer);
   livenessRefreshTimer = setTimeout(loadLiveness, 500);
 }
 
 async function loadLiveness() {
+  if (typeof currentTab !== 'undefined' && currentTab !== 'live') return;
   const panel = document.getElementById('liveness-panel');
   if (!panel) return;
   try {
@@ -273,6 +275,9 @@ async function loadLiveness() {
       html += `<span class="chip${on ? '' : ' off'}" onclick="toggleTimelineCategory('${cat}')" title="Click to ${on ? 'hide' : 'show'} ${esc(cat)} sessions"><span class="swatch" style="background:${TIMELINE_CATEGORY_COLORS[cat]}"></span>${esc(label)}</span>`;
     }
     html += `<span class="note">— ring = currently running</span></div>`;
+    if (summary.activityRowsTruncated) {
+      html += `<div class="note" style="margin:4px 0 8px;color:var(--yellow)">Showing the newest ${summary.activityRows || summary.rowLimit || 2000} sessions in this window.</div>`;
+    }
 
     // Snapshot the filter for this render pass so dots and per-row counts
     // agree even if the user toggles mid-render (next click triggers a new
@@ -673,7 +678,9 @@ async function loadTimeline() {
     const span = now - since;
 
     // Render rows
-    let html = '';
+    let html = data.truncated
+      ? `<div class="note" style="margin-bottom:6px;color:var(--yellow)">Showing the newest ${data.rowsReturned || data.rowLimit || 2000} sessions.</div>`
+      : '';
     for (const agent of data.agents) {
       html += `<div class="timeline-row">`;
       html += `<div class="timeline-label" title="${esc(agent.name)}">${esc(agent.name)}</div>`;

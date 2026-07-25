@@ -51,6 +51,36 @@ because it would otherwise cover terminal content while scrolling.
 Tmux remains the persistent server-side process boundary. Its advanced mouse
 copy-mode UI is intentionally not exposed through the web terminal.
 
+## Lifetime and Readiness
+
+The terminal manager owns the bridge and matching tmux session as one resource.
+After the last browser disconnects, both stay warm for the configured idle TTL.
+A browser that returns within that window reuses them. When the TTL expires, or
+when the user chooses Restart, the manager kills both so the CLI and any child
+processes cannot run forever in an abandoned terminal.
+
+Tmux may survive a Web process restart long enough for a new bridge to recover
+it. After recovery it is governed by the same idle TTL.
+
+The browser is ready only when the bridge reports that its PTY has attached to
+tmux. A websocket opening or a bridge process being spawned is merely
+`starting`; it must not be presented as terminal readiness. Readiness includes
+the PTY pid and startup duration for troubleshooting.
+
+## Page Isolation and Bounded Data
+
+Direct navigation to `/terminal` initializes the terminal only. Hidden Live
+dashboard requests and its event websocket must not compete with terminal
+startup. Live data is loaded when Live is entered.
+
+Dashboard timelines return a bounded newest window with truncation metadata.
+Static UI files use ETag validation so unchanged xterm and application assets
+can be reused by the browser.
+
+Completed session directories follow the same default 14-day retention as
+session database rows. Cleanup is bounded and never removes a running/idle
+session or a directory with an active marker.
+
 xterm keeps local scrollback as a convenience. It is per browser client and is
 not durable session history. Tmux keeps the shared server-side history used by
 wheel scrolling, including after a browser refresh. Because this history view
@@ -89,6 +119,8 @@ If the input line overlaps or the terminal width looks wrong:
 2. Hard-refresh the intended active window after deploy.
 3. Confirm inactive clients do not resize the pane.
 4. Confirm the focused/inputting client resizes the pane.
+5. Check the terminal `startupMs` separately from overall daemon CPU, memory,
+   state-directory size, and session/event counts.
 
 The useful live check is:
 
