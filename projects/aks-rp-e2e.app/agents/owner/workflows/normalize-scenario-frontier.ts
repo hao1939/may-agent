@@ -108,8 +108,10 @@ type PlainCarrierRow = {
 
 type GraphNode = {
   id: string;
+  generation: number;
   state: string;
   parentId: string;
+  workflow: string;
   input: Record<string, unknown>;
   conditionIds: string[];
 };
@@ -452,6 +454,12 @@ function graphNodes(appDir: string): GraphNode[] {
       ? (state.resources as Record<string, Record<string, unknown>>)
       : {};
   for (const [id, resource] of Object.entries(resources)) {
+    const metadata =
+      resource.metadata &&
+      typeof resource.metadata === "object" &&
+      !Array.isArray(resource.metadata)
+        ? (resource.metadata as Record<string, unknown>)
+        : {};
     const status =
       resource.status &&
       typeof resource.status === "object" &&
@@ -469,8 +477,10 @@ function graphNodes(appDir: string): GraphNode[] {
       .toLowerCase();
     nodes.push({
       id,
+      generation: Number(metadata.generation ?? 0),
       state,
       parentId: String(spec.parentId ?? ""),
+      workflow: String(spec.workflow ?? ""),
       input:
         spec.input &&
         typeof spec.input === "object" &&
@@ -501,8 +511,10 @@ function graphNodes(appDir: string): GraphNode[] {
     if (["done", "closed", "converged"].includes(state)) continue;
     nodes.push({
       id,
+      generation: Number(task.generation ?? 0),
       state,
       parentId: String(task.parent_id ?? task.parentId ?? ""),
+      workflow: String(task.workflow ?? ""),
       input:
         task.input &&
         typeof task.input === "object" &&
@@ -524,10 +536,7 @@ function hasOpenPipelineRunWait(
   node: GraphNode,
   openConditions: ReadonlySet<string>,
 ): boolean {
-  if (![
-    "waiting",
-    "blocked",
-  ].includes(node.state)) {
+  if (!["waiting", "blocked"].includes(node.state)) {
     return false;
   }
   return node.conditionIds.some(
@@ -549,10 +558,12 @@ function liveExecutionCapacity(
   pipelineWaitTaskIds: string[];
   available: number;
 } {
-  const pipelineWaitTaskIds = [...new Set(representedTaskIds)].filter((taskId) => {
-    const node = nodesById.get(taskId);
-    return node ? hasOpenPipelineRunWait(node, openConditions) : false;
-  });
+  const pipelineWaitTaskIds = [...new Set(representedTaskIds)].filter(
+    (taskId) => {
+      const node = nodesById.get(taskId);
+      return node ? hasOpenPipelineRunWait(node, openConditions) : false;
+    },
+  );
   const consumingTaskIds = [
     ...new Set([...actionableTaskIds, ...pipelineWaitTaskIds]),
   ];
@@ -729,6 +740,31 @@ function actionForPlainCarrierRow(
     ],
     priority: standingLoopDefinitions[scenarioNormalizationTaskId].priority,
     category: "domain_leaf",
+  };
+}
+
+function workflowRepairForPlainCarrierRow(
+  row: PlainCarrierRow,
+  nodesById: ReadonlyMap<string, GraphNode>,
+): ProjectAppTaskAction | null {
+  if (row.specIds.length === 0) return null;
+  const taskId = `domain/normalize-plain-scenario-carrier-${safeTaskIdPart(row.scenarioTestPath)}`;
+  const node = nodesById.get(taskId);
+  if (
+    !node ||
+    node.workflow ||
+    node.state !== "pending" ||
+    !Number.isInteger(node.generation) ||
+    node.generation < 1
+  ) {
+    return null;
+  }
+  return {
+    kind: "update-task",
+    taskId,
+    expectedGeneration: node.generation,
+    owner: "aks-explorer",
+    workflow: "spec-live-reconciliation",
   };
 }
 
@@ -944,10 +980,24 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           openConditions,
           maxLeaves,
         );
-        const actions = rowsNeedingWork
-          .slice(0, capacity.available)
-          .map((row) => inspectPlainCarrierRowBranches(projectDir, row))
-          .map((row) => actionForPlainCarrierRow(row, originDevCommit, report));
+        const workflowRepairs = rows
+          .map((row) => workflowRepairForPlainCarrierRow(row, nodesById))
+          .filter((action): action is ProjectAppTaskAction => Boolean(action))
+          .slice(0, maxLeaves);
+        const actions = workflowRepairs.concat(
+          rowsNeedingWork
+            .slice(
+              0,
+              Math.min(
+                capacity.available,
+                Math.max(0, maxLeaves - workflowRepairs.length),
+              ),
+            )
+            .map((row) => inspectPlainCarrierRowBranches(projectDir, row))
+            .map((row) =>
+              actionForPlainCarrierRow(row, originDevCommit, report),
+            ),
+        );
         const residueCount = rows.filter(
           (row) =>
             row.actionableTaskIds.length === 0 &&

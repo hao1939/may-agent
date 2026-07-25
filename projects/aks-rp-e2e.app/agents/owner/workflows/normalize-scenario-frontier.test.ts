@@ -648,6 +648,55 @@ describe("normalize scenario frontier workflow", () => {
     );
   });
 
+  test("rebinds a pending spec-backed normalization leaf that lost its workflow", async () => {
+    const scenarioTestPath = "features/feature-a/tests/case-a.ts";
+    const taskId =
+      "domain/normalize-plain-scenario-carrier-feature-a-tests-case-a.ts";
+    const ws = await workspace({
+      missingAdapterFiles: [],
+      strictPassed: false,
+      remainingSpecReferencedPlainScenarioUnits: [
+        {
+          scenarioTestPath,
+          adapterPath: "features/feature-a/tests/case-a.test.ts",
+          specIds: ["spec.feature-a.case-a"],
+          featureIds: ["feature-a"],
+          activeSpecCount: 1,
+        },
+      ],
+      remainingRepoPlainScenarioFiles: [scenarioTestPath],
+      resources: {
+        [taskId]: {
+          metadata: { id: taskId, generation: 2, resourceVersion: 4 },
+          spec: {
+            parentId: "group/scenario-normalization",
+            owner: "aks-explorer",
+            input: {
+              loopId: "scenario-normalization",
+              workKey: scenarioTestPath,
+              scenarioTestPath,
+              specId: "spec.feature-a.case-a",
+              specIds: ["spec.feature-a.case-a"],
+            },
+          },
+          status: { phase: "pending" },
+        },
+      },
+    });
+
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+
+    expect(result.output.actions).toEqual([
+      {
+        kind: "update-task",
+        taskId,
+        expectedGeneration: 2,
+        owner: "aks-explorer",
+        workflow: "spec-live-reconciliation",
+      },
+    ]);
+  });
+
   test("continues with repository-only plain carriers after spec references are normalized", async () => {
     const ws = await workspace({
       missingAdapterFiles: [],
