@@ -8,44 +8,62 @@ const LIVENESS_STARTUP_GRACE_MS = 2 * 60_000;
 const LIVENESS_FAILURE_THRESHOLD = 6;
 const LIVENESS_RESTART_COOLDOWN_MS = 10 * 60_000;
 const LIVENESS_PROBE_TIMEOUT_MS = 5_000;
+const LIVENESS_ACTIVE_WORK_GRACE_MS = 30 * 60_000;
 
 export type RuntimeLivenessState = {
   consecutiveFailures: number;
   lastRestartAt: number;
+  activeWorkProtectedUntil: number;
+};
+
+export type RuntimeLivenessObservation = {
+  responsive: boolean;
+  activeWork: boolean;
 };
 
 export function observeRuntimeLiveness(
   state: RuntimeLivenessState,
-  healthy: boolean,
+  observation: RuntimeLivenessObservation,
   now: number,
-  opts: { failureThreshold?: number; restartCooldownMs?: number } = {},
-): { state: RuntimeLivenessState; requestRestart: boolean } {
-  if (healthy) {
+  opts: { failureThreshold?: number; restartCooldownMs?: number; activeWorkGraceMs?: number } = {},
+): { state: RuntimeLivenessState; requestRestart: boolean; protectedActiveWork: boolean } {
+  const activeWorkGraceMs = Math.max(0, opts.activeWorkGraceMs ?? LIVENESS_ACTIVE_WORK_GRACE_MS);
+  if (observation.responsive) {
     return {
-      state: { ...state, consecutiveFailures: 0 },
+      state: {
+        ...state,
+        consecutiveFailures: 0,
+        activeWorkProtectedUntil: observation.activeWork ? now + activeWorkGraceMs : 0,
+      },
       requestRestart: false,
+      protectedActiveWork: false,
     };
   }
   const consecutiveFailures = state.consecutiveFailures + 1;
   const threshold = Math.max(1, opts.failureThreshold ?? LIVENESS_FAILURE_THRESHOLD);
   const cooldownMs = Math.max(0, opts.restartCooldownMs ?? LIVENESS_RESTART_COOLDOWN_MS);
   const cooledDown = state.lastRestartAt === 0 || now - state.lastRestartAt >= cooldownMs;
+  const protectedActiveWork = now < state.activeWorkProtectedUntil;
   return {
     state: { ...state, consecutiveFailures },
-    requestRestart: consecutiveFailures >= threshold && cooledDown,
+    requestRestart: consecutiveFailures >= threshold && cooledDown && !protectedActiveWork,
+    protectedActiveWork,
   };
 }
 
-async function daemonResponsive(persistDir: string): Promise<boolean> {
+async function observeDaemonLiveness(persistDir: string): Promise<RuntimeLivenessObservation> {
   const socketPath = daemonSocketPath(persistDir, {
     instance: process.env.INSTANCE || "default",
     interfaceAgent: process.env.DAEMON_AGENT || "may",
   });
   try {
-    await sendSocketCommand(socketPath, { type: "status" }, { timeoutMs: LIVENESS_PROBE_TIMEOUT_MS });
-    return true;
+    const response = await sendSocketCommand(socketPath, { type: "status" }, { timeoutMs: LIVENESS_PROBE_TIMEOUT_MS });
+    return {
+      responsive: true,
+      activeWork: Array.isArray(response.activeAgents) && response.activeAgents.length > 0,
+    };
   } catch {
-    return false;
+    return { responsive: false, activeWork: false };
   }
 }
 
@@ -73,6 +91,7 @@ export async function runMaintenanceMode(opts: { persistDir: string; argv?: stri
   let livenessState: RuntimeLivenessState = {
     consecutiveFailures: 0,
     lastRestartAt: 0,
+    activeWorkProtectedUntil: 0,
   };
   const stop = () => {
     stopping = true;
@@ -85,9 +104,9 @@ export async function runMaintenanceMode(opts: { persistDir: string; argv?: stri
     : setInterval(() => {
         if (stopping || livenessRunning || Date.now() < livenessNotBefore) return;
         livenessRunning = true;
-        void daemonResponsive(opts.persistDir)
-          .then((healthy) => {
-            const observed = observeRuntimeLiveness(livenessState, healthy, Date.now());
+        void observeDaemonLiveness(opts.persistDir)
+          .then((observation) => {
+            const observed = observeRuntimeLiveness(livenessState, observation, Date.now());
             livenessState = observed.state;
             if (!observed.requestRestart) return;
             const requestedAt = Date.now();
@@ -103,6 +122,7 @@ export async function runMaintenanceMode(opts: { persistDir: string; argv?: stri
               livenessState = {
                 consecutiveFailures: 0,
                 lastRestartAt: requestedAt,
+                activeWorkProtectedUntil: 0,
               };
             }
           })
