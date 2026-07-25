@@ -992,6 +992,8 @@ describe("project app loader", () => {
       expect(ownerCalls[0]).toContain("Do not invent action names");
       expect(ownerCalls[0]).toContain("missing evidence is work to do");
       expect(ownerCalls[0]).toContain('Conditions belong only to the current task when you return state "waiting"');
+      expect(ownerCalls[0]).toContain('type": "pipeline-run.state"');
+      expect(ownerCalls[0]).not.toContain('type": "pipeline.run.completed"');
       expect(ownerCalls[0]).toContain("For a decomposition parent that creates child task actions");
       expect(ownerCalls[0]).toContain('If you return state "converged" with a successor wait task action');
       expect(ownerCalls[0]).toContain(
