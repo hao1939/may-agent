@@ -115,6 +115,13 @@ while SQLite is the canonical bounded read model for lifecycle queries.
 checks may use it directly; historical rows created before the field existed
 remain migration data rather than a reason to weaken the current contract.
 
+Agent tool calls must also have a bounded lifecycle. A shell command is not
+still running merely because a descendant retained stdout or stderr after the
+invoked shell exited. The shell executor waits briefly for pipe drainage, then
+kills remaining descendants and settles the tool result. Timeout and abort
+settle independently of child-process `close`; they must not leave the session,
+workflow, and owning task permanently running behind a zombie process.
+
 ## Data Retention
 
 Runtime maintenance expires old SQL projections in bounded batches. It does not
