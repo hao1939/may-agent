@@ -409,6 +409,24 @@ describe("project app task reconciler state", () => {
     ]);
   });
 
+  it("schedules an unresolved direct project comment before autonomous priority backlog", () => {
+    const { config } = fixture();
+    observeProjectAppTaskIntent(config, {
+      intent: { ...intent("achieve"), id: "work/autonomous-p0", priority: "P0" },
+      appOwner: "app-owner",
+    });
+    observeProjectAppTaskIntent(config, {
+      intent: { ...intent("maintain"), id: "runtime/owner-review", priority: "P1" },
+      appOwner: "app-owner",
+      trigger: {
+        type: "project.comment.created",
+        data: { comment: "Review current project direction" },
+      },
+    });
+
+    expect(listRunnableProjectAppTaskIds(config).slice(0, 2)).toEqual(["runtime/owner-review", "work/autonomous-p0"]);
+  });
+
   it("persists the exact Condition observation as the next attempt trigger", () => {
     const { config } = fixture();
     const waitingIntent = {
