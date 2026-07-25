@@ -82,6 +82,42 @@ describe("shared agent execution preparation", () => {
     expect(prepared.systemPrompt).toContain("Current time: 2026-07-19T00:00:00.000Z");
   });
 
+  test("injects a rule-activated skill before the task", () => {
+    const skill = {
+      name: "proof-first",
+      description: "Prepare proof before broad rollout.",
+      filePath: "/tmp/proof-first/SKILL.md",
+      canonicalPath: "/tmp/proof-first/SKILL.md",
+      content: "Freeze a baseline and candidate before broad rollout.",
+      scope: "agent" as const,
+      contentHash: "proof-first-hash",
+    };
+    const prepared = prepareAgentExecution({
+      definition: {
+        name: "sample",
+        description: "sample",
+        domain: "tests",
+        systemPrompt: "identity",
+        model: { contextWindow: 10_000 } as any,
+        tools: [tool("read")],
+        skillCatalog: {
+          skills: new Map([[skill.name, skill]]),
+          diagnostics: [],
+          omittedFromPrompt: [],
+        },
+        skillActivationRules: [{ skill: "proof-first", pattern: "roll(?:out| out).*(?:all|every) agents?" }],
+      },
+      projectRoot: "/tmp",
+      sessionId: "rule-skill-1",
+      task: "Roll out this prompt to every agent.",
+    });
+
+    expect(prepared.skillActivation).toBe("rule");
+    expect(prepared.activatedSkill?.name).toBe("proof-first");
+    expect(prepared.prompt).toContain("Freeze a baseline and candidate before broad rollout.");
+    expect(prepared.prompt).toContain("Roll out this prompt to every agent.");
+  });
+
   test("adapts the supplied finish capability for structured workflow results", () => {
     const prepared = prepareAgentExecution({
       definition: {
