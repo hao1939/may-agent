@@ -208,6 +208,11 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
   const unsubscribe = subscribeEvents(broadcast);
 
   function attachClient(socket: Duplex): void {
+    for (const [clientSocket] of clients) {
+      if (clientSocket.destroyed || clientSocket.readableEnded || clientSocket.writableEnded) {
+        clients.delete(clientSocket);
+      }
+    }
     if (clients.size >= CONTROL_SOCKET_LIMITS.maxConnections) {
       writeFrame(socket, {
         type: "error",
@@ -218,8 +223,11 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
       return;
     }
     clients.set(socket, { socket, filter: null, chatMode: false, subscribed: false });
-    socket.on("close", () => clients.delete(socket));
-    socket.on("error", () => clients.delete(socket));
+    const removeClient = () => clients.delete(socket);
+    socket.on("close", removeClient);
+    socket.on("error", removeClient);
+    socket.on("end", removeClient);
+    socket.on("finish", removeClient);
 
     writeFrame(socket, {
       type: "connected",
