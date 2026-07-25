@@ -251,6 +251,15 @@ export class ProjectAppTaskController {
       .finally(() => {
         this.queue.complete(taskId);
         capacityRelease?.();
+        if (
+          !this.closed &&
+          this.startReady &&
+          this.options.resync &&
+          this.queue.pendingCount === 0 &&
+          this.queue.runningCount < this.queue.maxConcurrent
+        ) {
+          this.refillReadyResyncWork(taskId);
+        }
         this.resolveDrainWaiters();
         this.schedulePump();
       });
@@ -271,6 +280,24 @@ export class ProjectAppTaskController {
       return;
     }
     if (configured.taskIds) this.resync(configured.taskIds());
+  }
+
+  private refillReadyResyncWork(completedTaskId: string): void {
+    const configured = this.options.resync;
+    if (!configured) return;
+    if (configured.tasks) {
+      for (const task of configured.tasks()) {
+        if (task.taskId === completedTaskId) continue;
+        this.enqueue(task.taskId, task.options);
+      }
+      return;
+    }
+    if (configured.taskIds) {
+      for (const taskId of configured.taskIds()) {
+        if (taskId === completedTaskId) continue;
+        this.enqueue(taskId);
+      }
+    }
   }
 
   private isDrained(): boolean {
