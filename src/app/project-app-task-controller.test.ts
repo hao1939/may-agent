@@ -283,6 +283,35 @@ describe("ProjectAppTaskController", () => {
     controller.close();
   });
 
+  it("refills newly ready resync work as soon as capacity opens", async () => {
+    const ready = ["first"];
+    const started: string[] = [];
+    const releases = new Map<string, () => void>();
+    const controller = new ProjectAppTaskController({
+      maxConcurrent: 1,
+      resync: {
+        intervalMs: 60_000,
+        taskIds: () => [...ready],
+      },
+      reconcile: (taskId) =>
+        new Promise<void>((resolve) => {
+          started.push(taskId);
+          releases.set(taskId, resolve);
+        }),
+    });
+
+    await waitUntil(() => started.length === 1);
+    expect(started).toEqual(["first"]);
+    ready.splice(0, ready.length, "second");
+
+    releases.get("first")?.();
+    await waitUntil(() => started.length === 2);
+    expect(started).toEqual(["first", "second"]);
+    releases.get("second")?.();
+    await waitUntil(() => !controller.snapshot().running.length);
+    controller.close();
+  });
+
   it("resyncs runnable state as soon as a replacement controller becomes active", async () => {
     const started: string[] = [];
     let releaseOld: (() => void) | undefined;

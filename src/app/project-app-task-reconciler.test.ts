@@ -388,7 +388,7 @@ describe("project app task reconciler state", () => {
     expect(claimedTree.tasks["pipeline-monitor"].trace?.reconciliation).toBeUndefined();
   });
 
-  it("orders runnable tasks by declared priority before task id", () => {
+  it("orders runnable tasks by declared priority before lower-priority work", () => {
     const { config } = fixture();
     for (const [id, priority] of [
       ["work/p2", "P2"],
@@ -403,12 +403,35 @@ describe("project app task reconciler state", () => {
     }
 
     expect(listRunnableProjectAppTaskIds(config)).toEqual([
-      "work/p0-a",
       "work/p0-z",
+      "work/p0-a",
       "work/p1",
       "categorized-task",
       "work/p2",
     ]);
+  });
+
+  it("prefers older ready work over newer peers within the same priority", () => {
+    const { config } = fixture();
+    observeProjectAppTaskIntent(config, {
+      intent: { ...intent("achieve"), id: "work/a-newer", priority: "P2" },
+      appOwner: "app-owner",
+    });
+    observeProjectAppTaskIntent(config, {
+      intent: { ...intent("achieve"), id: "work/z-older", priority: "P2" },
+      appOwner: "app-owner",
+    });
+
+    const tree = readTaskState(config);
+    if (!tree.resources?.["work/a-newer"] || !tree.resources?.["work/z-older"]) {
+      throw new Error("expected runnable resources");
+    }
+    tree.resources["work/a-newer"].status.updatedAt = "2026-07-25T10:00:00.000Z";
+    tree.resources["work/z-older"].status.updatedAt = "2026-07-25T09:00:00.000Z";
+    saveTaskState(config, tree);
+
+    const runnable = listRunnableProjectAppTaskIds(config);
+    expect(runnable.indexOf("work/z-older")).toBeLessThan(runnable.indexOf("work/a-newer"));
   });
 
   it("schedules an unresolved direct project comment before autonomous priority backlog", () => {
