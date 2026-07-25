@@ -237,6 +237,25 @@ export function shouldReviewBeforeInitialLiveDispatch(input: {
   return !input.hasExactRun;
 }
 
+export function preparationDecisionProblem(
+  decision: AgentDecision,
+  allowExistingRecovery: boolean,
+): string | null {
+  if (
+    ["committed", "test-current", "waiting", "needs-owner"].includes(
+      decision.decision,
+    )
+  ) {
+    return null;
+  }
+  if (decision.decision === "accepted-pass" && allowExistingRecovery) {
+    return null;
+  }
+  return allowExistingRecovery
+    ? "preparation must return committed, test-current, accepted-pass with exact recovery proof, waiting, or needs-owner"
+    : "preparation cannot accept a prior run as proof for the rewritten source; return test-current to dispatch it, commit a repair, wait on an exact fact, or identify a genuine ownership boundary";
+}
+
 export function scenarioNormalizationReplayRequired(input: {
   sourceIsInTarget: boolean;
   targetIsInSource: boolean;
@@ -1899,7 +1918,15 @@ export async function reconcileSpecLive(
           "Task:",
           ctx.task,
         ].join("\n\n"),
-        { scenarioNormalization: Boolean(normalizationInput) },
+        {
+          scenarioNormalization: Boolean(normalizationInput),
+          continueDomainWorkOnValidation: true,
+          validateDecision: (candidate) =>
+            preparationDecisionProblem(
+              candidate,
+              Boolean(options.existingRecoveryAfterRunId),
+            ),
+        },
       );
       if (decision.decision === "waiting" && decision.condition) {
         return waitingResult(

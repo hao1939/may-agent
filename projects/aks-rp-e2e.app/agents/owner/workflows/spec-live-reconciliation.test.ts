@@ -23,6 +23,7 @@ import {
   parseTaskPayload,
   pipelineWaitCondition,
   pipelineRunState,
+  preparationDecisionProblem,
   priorIntegratedProof,
   pullRequestSourceUpdateCondition,
   pullRequestWaitCondition,
@@ -677,6 +678,28 @@ describe("spec-live-reconciliation workflow", () => {
         branchHasChange: true,
       }),
     ).toBe(false);
+  });
+
+  test("keeps an invalid preparation verdict inside structured correction", () => {
+    const acceptedPass = {
+      decision: "accepted-pass" as const,
+      summary: "old run passed",
+      evidence: ["pipeline-run:1"],
+    };
+    expect(preparationDecisionProblem(acceptedPass, false)).toContain(
+      "return test-current",
+    );
+    expect(preparationDecisionProblem(acceptedPass, true)).toBeNull();
+    expect(
+      preparationDecisionProblem(
+        {
+          decision: "test-current",
+          summary: "ready",
+          evidence: ["source-reviewed"],
+        },
+        false,
+      ),
+    ).toBeNull();
   });
 
   test("replays a stale scenario branch and any branch containing first-parent merges", () => {
