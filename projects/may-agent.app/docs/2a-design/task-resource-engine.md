@@ -476,6 +476,13 @@ attempt. Interrupted previous-runtime attempts are either safely requeued from
 persisted trigger/current evidence or moved to attention; they are never
 silently treated as running forever.
 
+The execution bound covers the complete task handler, not only its agent
+sessions. A task-bound workflow that exceeds the controller's workflow
+deadline is recorded as `HandlerExecutionFailed`; its task slot is released
+and the same resource is reconciled again from current state. This also covers
+pre-agent and between-agent stalls, where no session exists for session-level
+silence recovery to interrupt.
+
 Every bounded agent session started directly by an attempt or from inside its
 workflow is correlated to `(appId, taskId, generation)` when the neutral
 `session.start` notification reaches infrastructure. If desired state advances,

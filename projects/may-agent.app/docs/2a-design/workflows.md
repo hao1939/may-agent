@@ -256,6 +256,15 @@ agent step and continue through a bounded repair-and-verify loop. Do not turn a
 merge conflict, failed test, or rejected implementation into a durable wait or
 immediate owner handoff merely because the first attempt failed.
 
+The task controller supplies a finite deadline for that complete workflow
+iteration, including code before, after, or between agent steps. Step timeouts
+alone are insufficient: a workflow that never starts a session, or that stalls
+between sessions, must not occupy task capacity forever. Reaching the workflow
+deadline is an execution failure, not a domain judgment. Persist the terminal
+workflow failure, release the attempt through ordinary task reconciliation,
+and retry the same task from current evidence. A workflow that needs more time
+must return an exact durable wait instead of remaining in process.
+
 Keep a wait inside one workflow only when it is bounded and expected to resolve
 within the current execution, such as:
 
