@@ -295,6 +295,24 @@ describe("control socket protocol", () => {
     stream.destroy();
   });
 
+  it("releases a client slot when the peer ends before close", async () => {
+    const core = createCore();
+    const stream = new Duplex({
+      read() {},
+      write(_chunk, _encoding, callback) {
+        callback();
+      },
+    });
+
+    core.attachClient(stream);
+    expect(core.clientCount()).toBe(1);
+
+    stream.emit("end");
+
+    expect(core.clientCount()).toBe(0);
+    stream.destroy();
+  });
+
   it("rejects invalid event frames", async () => {
     const core = createCore();
 
