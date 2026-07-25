@@ -1577,6 +1577,10 @@ export const create: HandlerModule["create"] = (
            -- missing evaluator triage turns a recovery handoff into false
            -- failed-triage debt.
            AND COALESCE(s.error, '') != 'Task-bound project session recovery is owned by the app task reconciler'
+           -- Runtime recovery may interrupt orphaned task sessions from a
+           -- previous process after safely handing ownership back to the task
+           -- app. Those rows should not create evaluator failed-triage debt.
+           AND COALESCE(s.error, '') NOT LIKE 'Recovered task % interrupted an orphaned owner session from a previous runtime'
            AND (s.status IN ('error', 'interrupted') OR s.error IS NOT NULL)
            AND NOT (s.status = 'interrupted' AND s.error IS NULL)
          GROUP BY s.sessionId`,

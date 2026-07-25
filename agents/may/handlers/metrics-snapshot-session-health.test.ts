@@ -108,6 +108,18 @@ describe("metrics-snapshot session health metrics", () => {
     db.run(
       "INSERT INTO sessions (sessionId, agent, task, status, startedAt, endedAt, error) VALUES (?, ?, ?, ?, ?, ?, ?)",
       [
+        "s_orphan_runtime_recovery_handoff",
+        "app-ops",
+        "task",
+        "interrupted",
+        ended - 44_000,
+        ended,
+        "Recovered task runtime/owner-review interrupted an orphaned owner session from a previous runtime",
+      ],
+    );
+    db.run(
+      "INSERT INTO sessions (sessionId, agent, task, status, startedAt, endedAt, error) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [
         "s_self",
         "evaluator",
         "task",
