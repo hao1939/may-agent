@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { mkdirSync, writeFileSync, rmSync, existsSync, mkdtempSync } from "node:fs";
+import { mkdirSync, writeFileSync, rmSync, existsSync, mkdtempSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createWorkflowRunner, createWorkflowTool } from "../../src/lib/workflow-tool.js";
@@ -213,6 +213,42 @@ describe("workflow tool: list", () => {
 });
 
 describe("workflow tool: typed execution", () => {
+  it("bounds the complete workflow execution before any agent step", async () => {
+    writeWorkflow(
+      "never-finishes.ts",
+      `
+      export const name = "never-finishes";
+      export const description = "Never resolves";
+      export async function execute() { return new Promise(() => {}); }
+    `,
+    );
+    const persistDir = mkdtempSync(join(tmpdir(), "may-test-"));
+    const manager = new SubagentManager({ persistDir });
+    const runner = createWorkflowRunner({
+      manager,
+      workflowDir,
+      persistDir,
+      executionTimeoutMs: 20,
+    });
+
+    const result = await runner.run("never-finishes", "stall before an agent step");
+
+    expect(result).toMatchObject({
+      type: "error",
+      workflow: "never-finishes",
+    });
+    if (result.type === "error") {
+      expect(result.error).toContain('Workflow "never-finishes" timed out after 20ms');
+    }
+    const [runDir] = readdirSync(join(persistDir, "workflow-runs"));
+    const run = JSON.parse(readFileSync(join(persistDir, "workflow-runs", runDir, "run.json"), "utf8"));
+    expect(run).toMatchObject({
+      workflow: "never-finishes",
+      status: "error",
+    });
+    expect(run.endedAt).toBeNumber();
+  });
+
   it("shares one typed runner with the serialized tool boundary", async () => {
     writeWorkflow(
       "typed.ts",

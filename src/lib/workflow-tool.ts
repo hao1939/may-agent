@@ -612,6 +612,8 @@ export interface RunWorkflowDirectOpts {
   onEvent?: (event: WorkflowEvent) => void;
   trace?: EventTrace;
   executionPaths?: { appDir: string; projectDir: string; workspaceDir: string };
+  /** Maximum wall-clock duration for the complete workflow execution. */
+  executionTimeoutMs?: number;
 }
 
 /**
@@ -640,6 +642,7 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
     trace: opts.trace,
     runtimeCtx: opts.runtimeCtx,
     executionPaths: opts.executionPaths,
+    executionTimeoutMs: opts.executionTimeoutMs,
   });
 
   const workflow = await runner.resolve(opts.workflowName);
@@ -708,6 +711,8 @@ export interface WorkflowToolOptions {
   runtimeCtx?: RuntimeCtx;
   /** Resolved app/domain paths supplied by Agent App infrastructure. */
   executionPaths?: { appDir: string; projectDir: string; workspaceDir: string };
+  /** Maximum wall-clock duration for the complete workflow execution. */
+  executionTimeoutMs?: number;
   /** Trace inherited from the event that started this workflow. */
   trace?: EventTrace;
   /** Resolve the active caller turn trace for long-lived chat sessions. */
@@ -1519,7 +1524,20 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     };
 
     try {
-      const result = await workflow.execute(ctx);
+      const execution = workflow.execute(ctx);
+      let executionTimer: ReturnType<typeof setTimeout> | undefined;
+      const result = opts.executionTimeoutMs
+        ? await Promise.race([
+            execution,
+            new Promise<never>((_, reject) => {
+              executionTimer = setTimeout(() => {
+                reject(new Error(`Workflow "${workflow.name}" timed out after ${opts.executionTimeoutMs}ms`));
+              }, opts.executionTimeoutMs);
+            }),
+          ]).finally(() => {
+            if (executionTimer) clearTimeout(executionTimer);
+          })
+        : await execution;
 
       // ── Guard: workflow_done event ──────────────────────────────────
       if (guards.length > 0) {
