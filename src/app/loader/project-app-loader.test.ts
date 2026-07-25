@@ -15,6 +15,7 @@ import {
   invokeLoadedProjectAppAction,
   listProjectAppDirs,
   normalizeTaskHandlerResult,
+  parseProjectAppTaskSessionBinding,
   projectAppHostFingerprint,
 } from "./project-app-loader";
 
@@ -385,6 +386,89 @@ describe("project app loader handler result normalization", () => {
 });
 
 describe("project app loader", () => {
+  it("reads task bindings from reconciliation prompts only", () => {
+    expect(
+      parseProjectAppTaskSessionBinding(`Nested workflow step
+
+## Reconciliation Task
+\`\`\`json
+{"appId":"sample.app","taskId":"work/current","generation":3}
+\`\`\``),
+    ).toEqual({ appId: "sample", taskId: "work/current", generation: 3 });
+    expect(parseProjectAppTaskSessionBinding("ordinary agent work")).toBeNull();
+    expect(parseProjectAppTaskSessionBinding("## Reconciliation Task\n```json\n{not-json}\n```")).toBeNull();
+  });
+
+  it("interrupts a workflow session that starts for a superseded task generation", async () => {
+    const f = fixture();
+    const canceled: string[] = [];
+    try {
+      writeApp(f.appDir);
+      const bus = new EventBus();
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: {
+          ...manager([]),
+          hasActiveSession: (sessionId: string) => sessionId === "stale-workflow-session",
+          cancel: (sessionId: string) => canceled.push(sessionId),
+        } as any,
+        bus,
+        agentCrons: new Map(),
+      });
+
+      const statePath = projectRuntimePaths(f.appDir).taskStatePath;
+      const state = JSON.parse(readFileSync(statePath, "utf8"));
+      state.groups.operations.children = ["work/current"];
+      state.resources = {
+        ...(state.resources ?? {}),
+        "work/current": {
+          metadata: { id: "work/current", generation: 2, resourceVersion: 2 },
+          spec: {
+            parentId: "operations",
+            outcome: "Current work",
+            acceptance: ["Current generation converges"],
+            mode: "achieve",
+            workflow: "worker",
+          },
+          status: {
+            observedGeneration: 1,
+            phase: "pending",
+            updatedAt: "2026-07-25T00:00:00.000Z",
+          },
+        },
+      };
+      writeFileSync(statePath, JSON.stringify(state));
+
+      bus.emit({
+        type: "session.start",
+        source: "workflow:worker",
+        owner: "agent:sample-owner",
+        data: {
+          sessionId: "stale-workflow-session",
+          agent: "sample-owner",
+          task: `Run stale work
+
+## Reconciliation Task
+\`\`\`json
+{"appId":"sample","taskId":"work/current","generation":1}
+\`\`\``,
+          trigger: "call",
+          firedAt: Date.now(),
+          projectId: "sample",
+        },
+      } as any);
+
+      expect(canceled).toEqual(["stale-workflow-session"]);
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
   it("rechecks a failed task workspace on reload and requeues the same generation when it becomes recoverable", async () => {
     const f = fixture();
     const projectDir = join(f.projectsRoot, "sample");
