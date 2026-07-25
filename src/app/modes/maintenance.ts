@@ -44,9 +44,13 @@ export function observeRuntimeLiveness(
   const threshold = Math.max(1, opts.failureThreshold ?? LIVENESS_FAILURE_THRESHOLD);
   const cooldownMs = Math.max(0, opts.restartCooldownMs ?? LIVENESS_RESTART_COOLDOWN_MS);
   const cooledDown = state.lastRestartAt === 0 || now - state.lastRestartAt >= cooldownMs;
-  const protectedActiveWork = now < state.activeWorkProtectedUntil;
+  const activeWorkProtectedUntil =
+    observation.activeWork && state.activeWorkProtectedUntil === 0
+      ? now + activeWorkGraceMs
+      : state.activeWorkProtectedUntil;
+  const protectedActiveWork = now < activeWorkProtectedUntil;
   return {
-    state: { ...state, consecutiveFailures },
+    state: { ...state, consecutiveFailures, activeWorkProtectedUntil },
     requestRestart: consecutiveFailures >= threshold && cooledDown && !protectedActiveWork,
     protectedActiveWork,
   };

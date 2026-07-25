@@ -62,6 +62,24 @@ describe("runtime liveness maintenance", () => {
     expect(failed.protectedActiveWork).toBe(true);
   });
 
+  test("active work seen during a failed probe gets one bounded grace window", () => {
+    const first = observeRuntimeLiveness(
+      { consecutiveFailures: 5, lastRestartAt: 0, activeWorkProtectedUntil: 0 },
+      { responsive: false, activeWork: true },
+      100,
+      { failureThreshold: 3, activeWorkGraceMs: 1_000 },
+    );
+    expect(first.requestRestart).toBe(false);
+    expect(first.state.activeWorkProtectedUntil).toBe(1_100);
+
+    const expired = observeRuntimeLiveness(first.state, { responsive: false, activeWork: true }, 1_101, {
+      failureThreshold: 3,
+      activeWorkGraceMs: 1_000,
+    });
+    expect(expired.requestRestart).toBe(true);
+    expect(expired.state.activeWorkProtectedUntil).toBe(1_100);
+  });
+
   test("expired active-work protection permits recovery", () => {
     const observed = observeRuntimeLiveness(
       { consecutiveFailures: 5, lastRestartAt: 0, activeWorkProtectedUntil: 1_100 },
