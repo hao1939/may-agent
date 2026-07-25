@@ -235,6 +235,21 @@ the request to supervisor, normal supervisor `autorestart` owns process
 recovery. If supervisord or the container dies, the container runtime owns
 recovery.
 
+The independent maintenance process also probes the daemon control socket.
+It allows a two-minute startup grace. After that, one slow or failed probe is
+ordinary load, so it does nothing. Six consecutive failures may request the
+same supervisor-owned restarter, with a cooldown to prevent restart loops.
+However, a successful probe that reports active workflows protects that work
+for a bounded grace period. Socket timeouts during that period are evidence of
+load, not sufficient evidence that the daemon is dead. If responsiveness does
+not return before the grace expires, recovery proceeds. This covers a live but
+unresponsive event loop without repeatedly interrupting in-flight work or
+putting liveness, scheduling, or restart behavior into any project app.
+
+The restarter leaves the maintenance process running during ordinary liveness
+recovery, preserving its cooldown state. A staged binary deploy also restarts
+maintenance so the watchdog itself moves to the deployed version.
+
 Runtime code deployment follows the same ownership rule. The agent may build
 the binary in the mounted workspace, but install and restart must be a
 supervisor-owned one-shot:
