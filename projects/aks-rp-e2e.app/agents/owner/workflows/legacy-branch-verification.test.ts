@@ -367,6 +367,77 @@ describe("legacy branch verification workflow", () => {
     expect(git(value.repo, "show", "origin/dev:shared.txt")).toBe("resolved");
   });
 
+  test("returns same-task owner judgment when the recorded source is already stale before verification starts", async () => {
+    const value = fixture();
+    git(value.repo, "switch", "task/source");
+    write(value.repo, "candidate.txt", "remote moved\n");
+    const movedRemoteHead = commit(value.repo, "advance remote source");
+    git(value.repo, "push", "origin", "task/source");
+    git(value.repo, "switch", "dev");
+    git(value.repo, "branch", "-D", "task/source");
+
+    const result = await executeWithVerifier(
+      value.context,
+      passingVerifier,
+      baseline,
+    );
+
+    expect(result).toMatchObject({
+      type: "done",
+      output: {
+        state: "needs-owner",
+        summary: expect.stringContaining("requires owner judgment"),
+        evidence: expect.arrayContaining([
+          `branch:task/source@${value.sourceHead}:stale-source`,
+          "source-local:missing",
+          `source-remote:${movedRemoteHead}`,
+          `base-commit:${value.baseHead}`,
+        ]),
+      },
+    });
+    expect(git(value.workspace, "status", "--porcelain=v1")).toBe("");
+  });
+
+  test("returns same-task owner judgment when the source disappears during closeout", async () => {
+    const value = fixture();
+
+    const result = await executeWithVerifier(
+      value.context,
+      () => {
+        git(value.repo, "push", "origin", "--delete", "task/source");
+        git(value.repo, "branch", "-D", "task/source");
+        return {
+          passed: true,
+          changedFiles: ["candidate.txt"],
+          steps: [
+            {
+              label: "fixture",
+              command: "fixture verify",
+              status: 0,
+              output: "pass",
+            },
+          ],
+        };
+      },
+      baseline,
+    );
+
+    expect(result).toMatchObject({
+      type: "done",
+      output: {
+        state: "needs-owner",
+        summary: expect.stringContaining("requires owner judgment"),
+        evidence: expect.arrayContaining([
+          `branch:task/source@${value.sourceHead}:stale-source`,
+          "source-local:missing",
+          "source-remote:missing",
+          "changed-files:candidate.txt",
+        ]),
+      },
+    });
+    expect(git(value.workspace, "status", "--porcelain=v1")).toBe("");
+  });
+
   test("tells the repair agent to reject superseded conflict source without committing it", async () => {
     const value = fixture({ devChange: "dev\n" });
     let prompt = "";

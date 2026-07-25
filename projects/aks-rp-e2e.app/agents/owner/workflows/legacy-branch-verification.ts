@@ -184,24 +184,66 @@ function remoteHead(repoDir: string, branch: string): string | null {
   return result.stdout ? result.stdout.split(/\s+/)[0] : null;
 }
 
-function assertSource(repoDir: string, source: SourceBranch): void {
+type SourceState = {
+  attached: boolean;
+  local: string | null;
+  remote: string | null;
+};
+
+function sourceState(repoDir: string, source: SourceBranch): SourceState {
   const attached = git(repoDir, ["worktree", "list", "--porcelain"])
     .stdout.split("\n")
     .filter((line) => line.startsWith("branch refs/heads/"))
     .map((line) => line.slice("branch refs/heads/".length));
-  if (attached.includes(source.branch)) {
+  return {
+    attached: attached.includes(source.branch),
+    local: refHead(repoDir, source.branch),
+    remote: remoteHead(repoDir, source.branch),
+  };
+}
+
+function staleSourceNeedsOwner(
+  repoDir: string,
+  source: SourceBranch,
+  evidence: string[] = [],
+): { summary: string; evidence: string[] } | null {
+  const current = sourceState(repoDir, source);
+  if (current.attached) return null;
+
+  const observations: string[] = [];
+  if (current.local !== source.head) {
+    observations.push(`local ref is ${current.local ?? "missing"}`);
+  }
+  if (current.remote && current.remote !== source.head) {
+    observations.push(`remote ref is ${current.remote}`);
+  }
+  if (!observations.length) return null;
+
+  const summary = `Recorded source ${source.branch}@${source.head} is stale: ${observations.join(" and ")}. The same task requires owner judgment instead of retrying unchanged legacy-branch verification.`;
+  return {
+    summary,
+    evidence: [
+      `branch:${source.branch}@${source.head}:stale-source`,
+      `source-local:${current.local ?? "missing"}`,
+      `source-remote:${current.remote ?? "missing"}`,
+      ...evidence,
+    ],
+  };
+}
+
+function assertSource(repoDir: string, source: SourceBranch): void {
+  const current = sourceState(repoDir, source);
+  if (current.attached) {
     throw new Error(`Source branch is worktree-attached: ${source.branch}`);
   }
-  const local = refHead(repoDir, source.branch);
-  if (local !== source.head) {
+  if (current.local !== source.head) {
     throw new Error(
-      `Source branch ${source.branch} moved from ${source.head} to ${local ?? "missing"}`,
+      `Source branch ${source.branch} moved from ${source.head} to ${current.local ?? "missing"}`,
     );
   }
-  const remote = remoteHead(repoDir, source.branch);
-  if (remote && remote !== source.head) {
+  if (current.remote && current.remote !== source.head) {
     throw new Error(
-      `Remote source ${source.branch} moved from ${source.head} to ${remote}`,
+      `Remote source ${source.branch} moved from ${source.head} to ${current.remote}`,
     );
   }
 }
@@ -526,6 +568,16 @@ export async function executeWithVerifier(
         actions: [],
       });
     }
+    const staleBeforeVerification = staleSourceNeedsOwner(repoDir, source, [
+      `base-commit:${baseCommit}`,
+    ]);
+    if (staleBeforeVerification) {
+      return ctx.done(staleBeforeVerification.summary, {
+        state: "needs-owner",
+        summary: staleBeforeVerification.summary,
+        evidence: boundedWorkflowEvidence(staleBeforeVerification.evidence),
+      });
+    }
     assertSource(repoDir, source);
     git(workspaceDir, ["reset", "--hard", baseCommit]);
     const baseline = baselineProvider(workspaceDir);
@@ -715,6 +767,20 @@ export async function executeWithVerifier(
         { branch: source.branch, baseCommit, currentBase },
       );
     }
+    const staleAfterVerification = staleSourceNeedsOwner(repoDir, source, [
+      `base-commit:${currentBase}`,
+      `candidate-commit:${candidateHead}`,
+      `changed-files:${verification.changedFiles.join(",")}`,
+      ...repairEvidence,
+      ...stepEvidence(verification),
+    ]);
+    if (staleAfterVerification) {
+      return ctx.done(staleAfterVerification.summary, {
+        state: "needs-owner",
+        summary: staleAfterVerification.summary,
+        evidence: boundedWorkflowEvidence(staleAfterVerification.evidence),
+      });
+    }
     assertSource(repoDir, source);
     if (
       git(
@@ -747,10 +813,23 @@ export async function executeWithVerifier(
     });
   } catch (error) {
     const recovery = recoverWorkspaceToCurrentBase(repoDir, workspaceDir);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const staleDuringCloseout = staleSourceNeedsOwner(repoDir, source, [
+      `error:${errorMessage}`,
+      `recovery-base-commit:${recovery.baseCommit ?? "missing"}`,
+      `recovery-residue:${recovery.residue.join(" | ") || "<clean>"}`,
+    ]);
+    if (staleDuringCloseout) {
+      return ctx.done(staleDuringCloseout.summary, {
+        state: "needs-owner",
+        summary: staleDuringCloseout.summary,
+        evidence: boundedWorkflowEvidence(staleDuringCloseout.evidence),
+      });
+    }
     return ctx.blocked("Legacy branch verification closeout failed safely", {
       branch: source.branch,
       head: source.head,
-      error: error instanceof Error ? error.message : String(error),
+      error: errorMessage,
       recoveryBaseCommit: recovery.baseCommit,
       recoveryResidue: recovery.residue,
     });
