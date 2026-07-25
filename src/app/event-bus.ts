@@ -707,7 +707,7 @@ export type SystemEvent =
         name: string;
         agent: string;
         sessionId: string;
-        activation: "explicit" | "model";
+        activation: "explicit" | "model" | "rule";
         scope: string;
         filePath: string;
         contentHash: string;
@@ -996,10 +996,7 @@ export class EventBus {
     } finally {
       const durationMs = performance.now() - startedAt;
       if (durationMs >= EVENT_SUBSCRIBER_WARN_MS) {
-        log(
-          "warn",
-          `[event-bus] ${priority} subscriber took ${durationMs.toFixed(1)}ms on event '${event.type}'`,
-        );
+        log("warn", `[event-bus] ${priority} subscriber took ${durationMs.toFixed(1)}ms on event '${event.type}'`);
       }
     }
   }

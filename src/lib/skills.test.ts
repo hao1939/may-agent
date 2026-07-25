@@ -6,6 +6,7 @@ import {
   discoverAgentSkills,
   formatBoundedSkillCatalog,
   invokeCatalogSkill,
+  matchSkillActivationRule,
   parseExplicitSkill,
   type SkillCatalog,
 } from "./skills.js";
@@ -119,5 +120,15 @@ describe("May skill catalog", () => {
       task: "review this",
     });
     expect(parseExplicitSkill("ordinary task")).toEqual({ task: "ordinary task" });
+  });
+
+  it("matches deterministic skill activation rules case-insensitively in declared order", () => {
+    const rules = [
+      { skill: "proof-first", pattern: "\\broll(?:out| out)\\b.*\\ball agents\\b" },
+      { skill: "fallback", pattern: "all agents" },
+    ];
+
+    expect(matchSkillActivationRule(rules, "Roll out this prompt to ALL AGENTS")?.skill).toBe("proof-first");
+    expect(matchSkillActivationRule(rules, "Review one local prompt")).toBeUndefined();
   });
 });

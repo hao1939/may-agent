@@ -8,7 +8,13 @@ import { streamSimple } from "@earendil-works/pi-ai/compat";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { createCompactionTransform, type CompactionInfo } from "./compaction.js";
-import { formatBoundedSkillCatalog, invokeCatalogSkill, parseExplicitSkill, type MaySkill } from "./skills.js";
+import {
+  formatBoundedSkillCatalog,
+  invokeCatalogSkill,
+  matchSkillActivationRule,
+  parseExplicitSkill,
+  type MaySkill,
+} from "./skills.js";
 import type { SubagentDefinition } from "./types.js";
 import { composeGuards, toGuardContext, type BeforeToolCallHook } from "./tools/compose-guards.js";
 import { createCommitGuard } from "./tools/commit-guard.js";
@@ -66,6 +72,7 @@ export type PreparedAgentExecution = {
   requireFinish: boolean;
   outputSchema?: TSchema;
   activatedSkill?: MaySkill;
+  skillActivation?: "explicit" | "rule";
   systemPrompt: string;
   tools: AgentTool[];
   runner: AgentRunnerConfig;
@@ -213,9 +220,7 @@ function resolveTools(options: AgentPreparationOptions, requireFinish: boolean):
 }
 
 function applyToolExecutionPolicy(tools: AgentTool[]): AgentTool[] {
-  return tools.map((tool) =>
-    SEQUENTIAL_TOOL_NAMES.has(tool.name) ? { ...tool, executionMode: "sequential" } : tool,
-  );
+  return tools.map((tool) => (SEQUENTIAL_TOOL_NAMES.has(tool.name) ? { ...tool, executionMode: "sequential" } : tool));
 }
 
 function buildGuards(definition: SubagentDefinition, projectRoot: string): BeforeToolCallHook[] {
@@ -285,7 +290,11 @@ export function prepareAgentExecution(options: AgentPreparationOptions): Prepare
   const definition = definitionForExecution(options);
   options = { ...options, definition, projectRoot: options.executionRoot ?? options.projectRoot };
   const parsedSkill = parseExplicitSkill(options.task);
-  const skillName = options.skill ?? parsedSkill.skill;
+  const matchedRule =
+    options.skill || parsedSkill.skill
+      ? undefined
+      : matchSkillActivationRule(options.definition.skillActivationRules, parsedSkill.task);
+  const skillName = options.skill ?? parsedSkill.skill ?? matchedRule?.skill;
   const task = parsedSkill.skill ? parsedSkill.task : options.task;
   if (skillName && !task) throw new Error(`Skill "${skillName}" requires a task`);
   const activation = skillName ? invokeCatalogSkill(options.definition.skillCatalog, skillName, task) : undefined;
@@ -337,6 +346,7 @@ export function prepareAgentExecution(options: AgentPreparationOptions): Prepare
     requireFinish,
     outputSchema,
     activatedSkill: activation?.skill,
+    skillActivation: activation ? (matchedRule ? "rule" : "explicit") : undefined,
     systemPrompt,
     tools,
     runner: {

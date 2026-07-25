@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import type { ModelWithApiKey } from "../../lib/types.js";
 import { VALID_TOOL_PRESETS } from "../../lib/tool-preset-registry.js";
 import type { EventBus } from "../event-bus.js";
+import type { SkillActivationRule } from "../../lib/skills.js";
 
 export interface AgentConfig {
   name: string;
@@ -15,6 +16,8 @@ export interface AgentConfig {
   compaction?: boolean;
   /** Block direct delegation to specific agents via agents tool. */
   delegateDeny?: { agents: string[]; hint: string };
+  /** Narrow deterministic skill activation for task classes that cannot rely on model retrieval. */
+  skillActivationRules?: SkillActivationRule[];
   /** @deprecated Volatile context should be injected at session time, not in system prompt. */
   context_files?: string[];
 }
@@ -52,6 +55,58 @@ export function validateAgentConfig(
       for (const preset of config.tools) {
         if (!VALID_TOOL_PRESETS.has(preset)) {
           errors.push({ agent: name, field: "tools", message: `Unknown tool preset "${preset}"` });
+        }
+      }
+    }
+  }
+
+  if (config.skillActivationRules !== undefined) {
+    if (!Array.isArray(config.skillActivationRules)) {
+      errors.push({
+        agent: name,
+        field: "skillActivationRules",
+        message: '"skillActivationRules" must be an array',
+      });
+    } else if (config.skillActivationRules.length > 16) {
+      errors.push({
+        agent: name,
+        field: "skillActivationRules",
+        message: '"skillActivationRules" supports at most 16 rules',
+      });
+    } else {
+      const skillName = /^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/;
+      for (const [index, rule] of config.skillActivationRules.entries()) {
+        if (!rule || typeof rule !== "object") {
+          errors.push({
+            agent: name,
+            field: `skillActivationRules[${index}]`,
+            message: "rule must be an object",
+          });
+          continue;
+        }
+        if (typeof rule.skill !== "string" || !skillName.test(rule.skill)) {
+          errors.push({
+            agent: name,
+            field: `skillActivationRules[${index}].skill`,
+            message: "skill must be a canonical skill name",
+          });
+        }
+        if (typeof rule.pattern !== "string" || !rule.pattern.trim() || rule.pattern.length > 512) {
+          errors.push({
+            agent: name,
+            field: `skillActivationRules[${index}].pattern`,
+            message: "pattern must contain 1 to 512 characters",
+          });
+          continue;
+        }
+        try {
+          new RegExp(rule.pattern, "i");
+        } catch (error) {
+          errors.push({
+            agent: name,
+            field: `skillActivationRules[${index}].pattern`,
+            message: `invalid regular expression: ${error instanceof Error ? error.message : String(error)}`,
+          });
         }
       }
     }

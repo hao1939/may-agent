@@ -66,7 +66,7 @@ import type { SessionKind, PersistedSession } from "./persistence.js";
 import { log } from "./log.js";
 import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
-import { invokeCatalogSkill, parseExplicitSkill, type MaySkill } from "./skills.js";
+import { invokeCatalogSkill, matchSkillActivationRule, parseExplicitSkill, type MaySkill } from "./skills.js";
 import { createFinishTool } from "./tools/lifecycle.js";
 
 // Re-export utilities that other modules import from manager
@@ -624,7 +624,7 @@ export class SubagentManager {
     this._sessions.set(sessionId, session);
     try {
       this.bridgeEvents(session);
-      if (activation) this.emitSkillLoaded(session, activation, "explicit", opts?.trace);
+      if (activation) this.emitSkillLoaded(session, activation, prepared.skillActivation ?? "explicit", opts?.trace);
     } catch (err) {
       this._sessions.delete(sessionId);
       const reason = `Failed to persist session start: ${err instanceof Error ? err.message : String(err)}`;
@@ -713,11 +713,13 @@ export class SubagentManager {
     const skillName = opts?.skill ?? parsedSkill.skill;
     const turnTask = parsedSkill.skill ? parsedSkill.task : text;
     const def = this.agents.get(session.agentName)?.definition;
-    const activation = skillName ? invokeCatalogSkill(def?.skillCatalog, skillName, turnTask) : undefined;
+    const matchedRule = skillName ? undefined : matchSkillActivationRule(def?.skillActivationRules, turnTask);
+    const activationName = skillName ?? matchedRule?.skill;
+    const activation = activationName ? invokeCatalogSkill(def?.skillCatalog, activationName, turnTask) : undefined;
     this.queueTurnTrace(session, opts?.trace);
     if (activation) {
       session.loadedSkillHashes.add(activation.skill.contentHash);
-      this.emitSkillLoaded(session, activation.skill, "explicit", opts?.trace);
+      this.emitSkillLoaded(session, activation.skill, matchedRule ? "rule" : "explicit", opts?.trace);
     }
     const promptText = activation?.prompt ?? turnTask;
     const msg = { role: "user" as const, content: [{ type: "text" as const, text: promptText }] };
@@ -794,9 +796,10 @@ export class SubagentManager {
     const session = this._sessions.get(sessionId);
     const completed = this.completedResults.get(sessionId);
     const persisted = session ? null : this._registry.getSession(sessionId);
-    const storedResult = !session && !completed && persisted && persisted.status !== "running" && persisted.status !== "idle"
-      ? this.resultFromStoredSession(sessionId)
-      : null;
+    const storedResult =
+      !session && !completed && persisted && persisted.status !== "running" && persisted.status !== "idle"
+        ? this.resultFromStoredSession(sessionId)
+        : null;
     return {
       task: session?.task ?? persisted?.task ?? "",
       summary: completed?.lastAssistantText ?? storedResult?.lastAssistantText ?? "(running)",
@@ -2006,7 +2009,7 @@ export class SubagentManager {
   private emitSkillLoaded(
     session: ActiveSession,
     skill: MaySkill,
-    activation: "explicit" | "model",
+    activation: "explicit" | "model" | "rule",
     trace?: EventTrace,
   ): void {
     this.bus?.emit({

@@ -9,7 +9,11 @@ import {
   validateAgentConfig,
   type AgentConfig,
 } from "../../src/app/agent-loader.js";
-import { findFleetToolPresetIssues, findUnhandledToolPresets, VALID_TOOL_PRESETS } from "../../src/lib/tool-preset-registry.js";
+import {
+  findFleetToolPresetIssues,
+  findUnhandledToolPresets,
+  VALID_TOOL_PRESETS,
+} from "../../src/lib/tool-preset-registry.js";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -72,6 +76,23 @@ describe("validateAgentConfig", () => {
     };
     const errors = validateAgentConfig(config, fakeModels, AGENTS_ROOT);
     expect(errors.some((e) => e.field === "tools" && e.message.includes("fly-to-moon"))).toBe(true);
+  });
+
+  it("validates deterministic skill activation rules", () => {
+    const config: AgentConfig = {
+      name: "test",
+      description: "test",
+      domain: "test",
+      model: "claude-opus-4-6",
+      tools: ["coding"],
+      skillActivationRules: [{ skill: "proof-first", pattern: "roll(?:out| out).*(?:all|every) agents" }],
+    };
+    expect(validateAgentConfig(config, fakeModels, AGENTS_ROOT)).toEqual([]);
+
+    config.skillActivationRules = [{ skill: "Bad Skill", pattern: "[" }];
+    const errors = validateAgentConfig(config, fakeModels, AGENTS_ROOT);
+    expect(errors.map((error) => error.field)).toContain("skillActivationRules[0].skill");
+    expect(errors.map((error) => error.field)).toContain("skillActivationRules[0].pattern");
   });
 
   it("validates all existing agent.json files", () => {
@@ -139,7 +160,11 @@ describe("validateAgentConfig", () => {
         persistDir: join(root, ".state"),
         models: { "claude-opus-4-6": { id: "claude-opus-4-6", provider: "test", apiKey: "test" } } as any,
         manager: manager as any,
-        bus: { emit: (event: { message?: string }) => { if (event.message) messages.push(event.message); } } as any,
+        bus: {
+          emit: (event: { message?: string }) => {
+            if (event.message) messages.push(event.message);
+          },
+        } as any,
         cronEnabled: false,
       });
 
@@ -162,7 +187,9 @@ describe("agent loader boundaries", () => {
       const config = loadAgentConfig(agentDir, { emit: (event: any) => events.push(event) } as any);
 
       expect(config).toBeNull();
-      expect(events.some((event) => event.type === "agent.config_invalid" && event.data?.agent === "broken")).toBe(true);
+      expect(events.some((event) => event.type === "agent.config_invalid" && event.data?.agent === "broken")).toBe(
+        true,
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -201,7 +228,6 @@ describe("agent loader boundaries", () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
-
 
   it("discovers project-local agent names", () => {
     const root = mkdtempSync(join(tmpdir(), "agent-loader-project-discovery-"));
@@ -271,7 +297,7 @@ describe("agent loader boundaries", () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
-  it("warns when cron.json exists but agent.json tools[] omits \"cron\" (F2)", async () => {
+  it('warns when cron.json exists but agent.json tools[] omits "cron" (F2)', async () => {
     const root = mkdtempSync(join(tmpdir(), "agent-loader-cron-ignored-"));
     try {
       const agentsRoot = join(root, "agents");
@@ -289,7 +315,10 @@ describe("agent loader boundaries", () => {
           tools: ["query_db"], // no "cron"
         }),
       );
-      writeFileSync(join(agentDir, "cron.json"), JSON.stringify([{ name: "forgotten", handler: "x", intervalMs: 60000 }]));
+      writeFileSync(
+        join(agentDir, "cron.json"),
+        JSON.stringify([{ name: "forgotten", handler: "x", intervalMs: 60000 }]),
+      );
 
       const events: any[] = [];
       const manager = { hasAgent: () => false, register: () => undefined };
@@ -307,17 +336,21 @@ describe("agent loader boundaries", () => {
       });
 
       const warning = events.find(
-        (e) => e.type === "info" && typeof e.message === "string" && e.message.includes("silenced") && e.message.includes("IGNORED"),
+        (e) =>
+          e.type === "info" &&
+          typeof e.message === "string" &&
+          e.message.includes("silenced") &&
+          e.message.includes("IGNORED"),
       );
       expect(warning).toBeDefined();
       expect(warning.message).toContain("cron.json");
-      expect(warning.message).toContain("Add \"cron\" to tools");
+      expect(warning.message).toContain('Add "cron" to tools');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
   });
 
-  it("does NOT warn when cron.json exists and \"cron\" is in tools[]", async () => {
+  it('does NOT warn when cron.json exists and "cron" is in tools[]', async () => {
     const root = mkdtempSync(join(tmpdir(), "agent-loader-cron-ok-"));
     try {
       const agentsRoot = join(root, "agents");
@@ -389,15 +422,17 @@ describe("agent loader boundaries", () => {
     try {
       const handlers = new Map<string, unknown>();
       const cron = {
-        getEntries: () => [{
-          name: "heartbeat-alpha",
-          enabled: true,
-          handler: {
-            workflow: "alpha-heartbeat",
-            agent: "alpha",
-            task: "[heartbeat] run alpha heartbeat",
+        getEntries: () => [
+          {
+            name: "heartbeat-alpha",
+            enabled: true,
+            handler: {
+              workflow: "alpha-heartbeat",
+              agent: "alpha",
+              task: "[heartbeat] run alpha heartbeat",
+            },
           },
-        }],
+        ],
         registerHandler: (name: string, handler: unknown) => handlers.set(name, handler),
         setHandlerResolver: () => undefined,
         triggerNow: () => false,
@@ -430,7 +465,9 @@ describe("agent loader boundaries", () => {
       const cron = {
         getEntries: () => [],
         registerHandler: (name: string, handler: unknown) => handlers.set(name, handler),
-        setHandlerResolver: (fn: typeof resolver) => { resolver = fn; },
+        setHandlerResolver: (fn: typeof resolver) => {
+          resolver = fn;
+        },
         triggerNow: () => false,
       };
 
