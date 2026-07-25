@@ -121,11 +121,11 @@ function assertSameFile(current: string, frozen: string, label: string): void {
   }
 }
 
-function candidateFingerprint(
+function candidateEvidence(
   candidate: string,
   configuredAgentsRoot?: string,
-): string | null {
-  if (candidate === "baseline") return null;
+): { fingerprint: string | null; path: string | null } {
+  if (candidate === "baseline") return { fingerprint: null, path: null };
   const agentsRoot = resolve(
     configuredAgentsRoot ||
       process.env["GYM_AGENTS_ROOT"] ||
@@ -136,7 +136,7 @@ function candidateFingerprint(
   if (!existsSync(candidatePath)) {
     throw new Error(`Candidate not found: ${candidatePath}`);
   }
-  return fingerprintTree(candidatePath);
+  return { fingerprint: fingerprintTree(candidatePath), path: candidatePath };
 }
 
 function refreshObservedProvenance(manifest: LoopRunManifest): void {
@@ -218,6 +218,7 @@ export async function runLoop(
       `Scenarios are not in ${options.benchmark}: ${unknown.join(", ")}`,
     );
 
+  const candidate = candidateEvidence(options.candidate, options.agentsRoot);
   const created = createRunManifest({
     phase: options.phase,
     benchmark: options.benchmark,
@@ -229,10 +230,8 @@ export async function runLoop(
     agent: options.agent,
     trials: options.trials,
     scenarios,
-    candidateFingerprint: candidateFingerprint(
-      options.candidate,
-      options.agentsRoot,
-    ),
+    candidateFingerprint: candidate.fingerprint,
+    candidatePath: candidate.path,
   });
 
   for (const scenario of scenarios) {

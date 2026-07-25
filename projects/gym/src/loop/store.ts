@@ -126,6 +126,7 @@ export function createRunManifest(input: {
   trials: number;
   scenarios: string[];
   candidateFingerprint: string | null;
+  candidatePath: string | null;
 }): { manifest: LoopRunManifest; runDir: string } {
   const runId = `${safeName(input.benchmark)}-${input.phase}-${timestampId()}-${crypto.randomUUID().slice(0, 8)}`;
   const runDir = join(stateRoot(), "benchmarks", runId);
@@ -169,6 +170,18 @@ export function createRunManifest(input: {
       recursive: true,
     });
   }
+  const candidateSnapshot = input.candidatePath
+    ? join(runDir, "candidate")
+    : null;
+  if (input.candidatePath && candidateSnapshot) {
+    cpSync(input.candidatePath, candidateSnapshot, { recursive: true });
+    const snapshotFingerprint = fingerprintTree(candidateSnapshot);
+    if (snapshotFingerprint !== input.candidateFingerprint) {
+      throw new Error(
+        `Candidate changed while snapshotting: expected ${input.candidateFingerprint}, found ${snapshotFingerprint}`,
+      );
+    }
+  }
   const manifest: LoopRunManifest = {
     schema_version: 2,
     run_id: runId,
@@ -203,6 +216,9 @@ export function createRunManifest(input: {
         ? relative(runDir, evaluatorSnapshot)
         : null,
       scenarios_snapshot: relative(runDir, scenariosSnapshot),
+      candidate_snapshot: candidateSnapshot
+        ? relative(runDir, candidateSnapshot)
+        : null,
     },
     trials: [],
   };

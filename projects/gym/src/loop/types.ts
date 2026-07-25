@@ -119,6 +119,7 @@ export interface LoopRunManifest {
     labels_snapshot: string | null;
     evaluator_snapshot: string | null;
     scenarios_snapshot: string;
+    candidate_snapshot: string | null;
   };
   trials: StoredTrial[];
 }

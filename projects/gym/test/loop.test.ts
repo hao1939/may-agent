@@ -81,6 +81,7 @@ function manifest(
       labels_snapshot: "inputs/labels.json",
       evaluator_snapshot: "inputs/score-decision.cjs",
       scenarios_snapshot: "inputs/scenarios",
+      candidate_snapshot: id === "baseline" ? null : "candidate",
     },
     trials: verdicts.map((verdict, index) =>
       trial("case-a", index + 1, verdict),
@@ -307,6 +308,46 @@ describe("loop evaluation", () => {
             join(created.runDir, created.manifest.source.evaluator_snapshot!),
           ),
         ).toBe(true);
+      } finally {
+        if (previousState === undefined) delete process.env["GYM_STATE_DIR"];
+        else process.env["GYM_STATE_DIR"] = previousState;
+      }
+    }));
+
+  it("preserves the exact candidate bytes beside a verification run", async () =>
+    withTempDirAsync(async (root) => {
+      const previousState = process.env["GYM_STATE_DIR"];
+      process.env["GYM_STATE_DIR"] = join(root, "state");
+      const agentsRoot = join(root, "agents");
+      const candidateDir = join(agentsRoot, ".lab", "candidate-a");
+      mkdirSync(candidateDir, { recursive: true });
+      writeFileSync(join(candidateDir, "AGENTS.md"), "Exact candidate guidance.\n");
+      try {
+        const created = await runLoop(
+          {
+            phase: "verify",
+            benchmark: "may-alignment",
+            scenarios: ["may-align-proof-before-adopt"],
+            agent: "may",
+            candidate: "candidate-a",
+            trials: 1,
+            agentsRoot,
+          },
+          async () => ({
+            stderr: "",
+            result: {
+              scenario: "may-align-proof-before-adopt",
+              agent: "may",
+              passed: false,
+              checks: [{ name: "decision-produced", passed: false }],
+              agent_status: "success",
+            },
+          }),
+        );
+        const snapshot = created.manifest.source.candidate_snapshot;
+        expect(snapshot).toBe("candidate");
+        expect(readFileSync(join(created.runDir, snapshot!, "AGENTS.md"), "utf-8"))
+          .toBe("Exact candidate guidance.\n");
       } finally {
         if (previousState === undefined) delete process.env["GYM_STATE_DIR"];
         else process.env["GYM_STATE_DIR"] = previousState;
