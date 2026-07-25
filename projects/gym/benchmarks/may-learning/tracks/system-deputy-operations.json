@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "id": "system-deputy-operations",
+  "unit": "system-deputy-operations",
+  "development_benchmark": "may-deputy-learning",
+  "release_benchmark": "may-deputy-learning-transfer"
+}

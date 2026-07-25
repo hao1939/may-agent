@@ -6,6 +6,7 @@ import {
   resolveLearningContexts,
 } from "../src/learning/registry";
 import { buildLearningReleaseReview } from "../src/learning/release-review";
+import { buildLearningTrackReview } from "../src/learning/track-review";
 
 const gymRoot = resolve(import.meta.dirname, "..");
 
@@ -127,6 +128,29 @@ describe("May learning registry", () => {
         status: "draft",
         human_answer: expect.stringContaining("missing consumer"),
       }),
+    ]);
+  });
+
+  test("combines the four system-deputy cases into one approval fingerprint", () => {
+    const review = buildLearningTrackReview(
+      gymRoot,
+      "system-deputy-operations",
+    );
+
+    expect(review.approval_fingerprint).toMatch(/^sha256:[a-f0-9]{64}$/);
+    expect(review.partitions.map((item) => item.partition)).toEqual([
+      "development",
+      "release",
+    ]);
+    expect(
+      review.partitions.flatMap((item) =>
+        item.scenarios.map((case_) => case_.id),
+      ),
+    ).toEqual([
+      "may-learn-reject-stale-app-approval",
+      "may-learn-select-skill-or-workflow",
+      "may-learn-route-project-app-request",
+      "may-learn-diagnose-unconsumed-event",
     ]);
   });
 });
