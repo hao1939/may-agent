@@ -16,6 +16,7 @@ import {
   collectTerminalRunEvidence,
   completedPullRequestIntegration,
   decisionCorrectionPrompt,
+  directIntegrationAction,
   existingRecoveryProblem,
   integrationMode,
   matchingTaskRuns,
@@ -707,5 +708,26 @@ describe("spec-live-reconciliation workflow", () => {
         firstParentMergeCount: 0,
       }),
     ).toBe(false);
+  });
+
+  test("reverifies a direct candidate whenever the target advanced after its live run", () => {
+    expect(
+      directIntegrationAction({
+        sourceIsInTarget: true,
+        targetIsInSource: false,
+      }),
+    ).toBe("converged");
+    expect(
+      directIntegrationAction({
+        sourceIsInTarget: false,
+        targetIsInSource: true,
+      }),
+    ).toBe("publish-tested-source");
+    expect(
+      directIntegrationAction({
+        sourceIsInTarget: false,
+        targetIsInSource: false,
+      }),
+    ).toBe("reverify-updated-source");
   });
 });

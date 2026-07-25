@@ -248,6 +248,16 @@ export function scenarioNormalizationReplayRequired(input: {
   );
 }
 
+export function directIntegrationAction(input: {
+  sourceIsInTarget: boolean;
+  targetIsInSource: boolean;
+}): "converged" | "publish-tested-source" | "reverify-updated-source" {
+  if (input.sourceIsInTarget) return "converged";
+  return input.targetIsInSource
+    ? "publish-tested-source"
+    : "reverify-updated-source";
+}
+
 const decisionSchema = Type.Object({
   decision: Type.Union([
     Type.Literal("committed"),
@@ -2241,24 +2251,28 @@ export async function reconcileSpecLive(
 
       for (let attempt = 1; attempt <= 3; attempt += 1) {
         git(repoDir, ["fetch", "origin", targetBranch]);
-        if (
+        const sourceIsInTarget =
           git(
             repoDir,
             ["merge-base", "--is-ancestor", sourceCommit, targetRef],
             true,
-          ).status === 0
-        ) {
-          integratedCommit = git(repoDir, ["rev-parse", targetRef]).stdout;
-          break;
-        }
-
-        if (
+          ).status === 0;
+        const targetIsInSource =
           git(
             workspaceDir,
             ["merge-base", "--is-ancestor", targetRef, "HEAD"],
             true,
-          ).status !== 0
-        ) {
+          ).status === 0;
+        const integrationAction = directIntegrationAction({
+          sourceIsInTarget,
+          targetIsInSource,
+        });
+        if (integrationAction === "converged") {
+          integratedCommit = git(repoDir, ["rev-parse", targetRef]).stdout;
+          break;
+        }
+
+        if (integrationAction === "reverify-updated-source") {
           if (normalizationInput?.loopId === "scenario-normalization") {
             return reconcileSpecLive(ctx, options);
           }
@@ -2268,6 +2282,7 @@ export async function reconcileSpecLive(
             ["merge", "--no-ff", "--no-edit", targetRef],
             true,
           );
+          let mergeEvidence: string[] = [];
           if (merge.status !== 0) {
             const decision = await askAgent(
               ctx,
@@ -2283,53 +2298,48 @@ export async function reconcileSpecLive(
             if (decision.decision !== "committed") {
               return ownerResult(ctx, decision.summary, decision.evidence);
             }
-            let resolvedCommit = git(workspaceDir, [
-              "rev-parse",
-              "HEAD",
-            ]).stdout;
-            if (
-              resolvedCommit === beforeMerge ||
-              cleanWorkspace(workspaceDir)
-            ) {
-              return ownerResult(
-                ctx,
-                `Direct ${targetBranch} conflict repair did not leave one new clean commit.`,
-                decision.evidence,
-              );
-            }
-            const dispatch = await prepareLiveDispatch(
-              resolvedCommit,
-              `replacement after direct ${targetBranch} integration conflict for run ${runId}`,
-            );
-            if (dispatch.state === "result") return dispatch.result;
-            resolvedCommit = dispatch.sourceCommit;
-            git(workspaceDir, ["push", "origin", sourceBranch]);
-            const replacement = queueRun(repoDir, {
-              taskId,
-              generation,
-              specId,
-              sourceBranch,
-              sourceCommit: resolvedCommit,
-              target: liveTarget,
-              standaloneBuildId,
-            });
-            saveRunReceipt(contextDir, replacement, resolvedCommit);
-            const replacementId = nonEmptyString(replacement.id);
-            return waitingResult(
+            mergeEvidence = decision.evidence;
+          }
+
+          let updatedCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+          if (updatedCommit === beforeMerge || cleanWorkspace(workspaceDir)) {
+            return ownerResult(
               ctx,
-              `Resolved direct ${targetBranch} integration conflict and queued replacement live run ${replacementId} at ${resolvedCommit}.`,
-              [
-                ...decision.evidence,
-                ...dispatch.evidence,
-                `replaces-run:${runId}`,
-                `source-commit:${resolvedCommit}`,
-                `pipeline-run:${replacementId}`,
-                `target-ref:${targetRef}`,
-              ],
-              pipelineWaitCondition(replacementId),
+              `Direct ${targetBranch} update did not leave one new clean commit.`,
+              mergeEvidence,
             );
           }
+          const dispatch = await prepareLiveDispatch(
+            updatedCommit,
+            `replacement after current ${targetBranch} changed following run ${runId}`,
+          );
+          if (dispatch.state === "result") return dispatch.result;
+          updatedCommit = dispatch.sourceCommit;
           git(workspaceDir, ["push", "origin", sourceBranch]);
+          const replacement = queueRun(repoDir, {
+            taskId,
+            generation,
+            specId,
+            sourceBranch,
+            sourceCommit: updatedCommit,
+            target: liveTarget,
+            standaloneBuildId,
+          });
+          saveRunReceipt(contextDir, replacement, updatedCommit);
+          const replacementId = nonEmptyString(replacement.id);
+          return waitingResult(
+            ctx,
+            `Updated the direct ${targetBranch} candidate and queued replacement live run ${replacementId} at ${updatedCommit}.`,
+            [
+              ...mergeEvidence,
+              ...dispatch.evidence,
+              `replaces-run:${runId}`,
+              `source-commit:${updatedCommit}`,
+              `pipeline-run:${replacementId}`,
+              `target-ref:${targetRef}`,
+            ],
+            pipelineWaitCondition(replacementId),
+          );
         }
 
         const push = git(
