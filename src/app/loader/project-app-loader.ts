@@ -96,6 +96,7 @@ type ProjectReadModel = {
 };
 
 const PROJECT_APP_TASK_OWNER_TIMEOUT_MS = 15 * 60_000;
+const PROJECT_APP_TASK_WORKFLOW_TIMEOUT_MS = 30 * 60_000;
 
 export interface ProjectAppDescriptor {
   id: string;
@@ -754,6 +755,7 @@ async function runTaskCapability(input: {
       recoveryOwner: PROJECT_APP_TASK_RECOVERY_OWNER,
       trace,
       executionPaths: input.executionPaths,
+      executionTimeoutMs: PROJECT_APP_TASK_WORKFLOW_TIMEOUT_MS,
     });
     const done = result.type === "done";
     const summary = done ? result.summary : result.reason;
