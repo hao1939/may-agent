@@ -306,6 +306,21 @@ export function novelScenarioReplayCommits(cherryOutput: string): string[] {
     .filter(Boolean);
 }
 
+export function remoteLeaseCommit(input: {
+  status: number;
+  stdout: string;
+}): string | null {
+  if (input.status !== 0) return null;
+  return /^([0-9a-f]{40})(?:\s|$)/i.exec(input.stdout.trim())?.[1] ?? null;
+}
+
+export function scenarioReplayForceWithLeaseArg(input: {
+  sourceBranch: string;
+  expectedRemoteCommit: string | null;
+}): string {
+  return `--force-with-lease=refs/heads/${input.sourceBranch}:${input.expectedRemoteCommit ?? ""}`;
+}
+
 export function directIntegrationAction(input: {
   sourceIsInTarget: boolean;
   targetIsInSource: boolean;
@@ -499,7 +514,18 @@ export function existingRecoveryProblem(input: {
 }
 
 const conditionInstruction =
-  "A waiting Condition must use a typed subject such as project:aks-rp-e2e, pipeline-run:<id>, pull-request:<id>, or task:<id>. Its expected value supports exact field equality, or { field, equals|anyOf|notEquals }; do not invent comparison operators or put prose in subject. The observed fact must be able to advance this exact task and source lineage; do not wait for a hypothetical pass on unrelated source.";
+  "A waiting Condition must use a typed subject such as project:aks-rp-e2e, pipeline-run:<id>, pull-request:<id>, or task:<id> and one event type this app actually observes: pipeline-run.state, pipeline.spec.observed, pull-request.state, project.approval.submitted, project.task.tick, task-field, task-phase, or aks.repo-ref.observed. Its expected value supports exact field equality, or { field, equals|anyOf|notEquals }; do not invent event types, comparison operators, or put prose in subject. The observed fact must be able to advance this exact task and source lineage; reuse an existing approval/task wait when it already owns the external decision, and do not wait for a hypothetical pass on unrelated source.";
+
+const observableConditionTypes = new Set([
+  "pipeline-run.state",
+  "pipeline.spec.observed",
+  "pull-request.state",
+  "project.approval.submitted",
+  "project.task.tick",
+  "task-field",
+  "task-phase",
+  "aks.repo-ref.observed",
+]);
 
 export function agentConditionProblem(decision: AgentDecision): string | null {
   if (decision.decision !== "waiting") return null;
@@ -507,6 +533,9 @@ export function agentConditionProblem(decision: AgentDecision): string | null {
   if (!condition) return "decision=waiting requires one exact Condition";
   if (!isTypedProjectAppConditionSubject(condition.subject)) {
     return `Condition subject must be typed, not prose: ${condition.subject}`;
+  }
+  if (!observableConditionTypes.has(condition.type)) {
+    return `Condition type ${condition.type} has no producer in this app; reuse an observable pipeline, approval, task, or repo-ref condition`;
   }
   if (
     condition.expected &&
@@ -2263,19 +2292,18 @@ export async function reconcileSpecLive(
             ],
           );
         }
-        const expectedRemoteCommit = git(
-          workspaceDir,
-          ["rev-parse", `refs/remotes/origin/${sourceBranch}`],
-          true,
-        ).stdout;
-        if (!expectedRemoteCommit) {
-          return ownerResult(
-            ctx,
-            "Scenario normalization replay could not identify the current remote task-branch revision for lease protection.",
-            [`source-branch:${sourceBranch}`, `source-commit:${sourceCommit}`],
-          );
-        }
-
+        const expectedRemoteCommit = remoteLeaseCommit(
+          git(
+            workspaceDir,
+            [
+              "ls-remote",
+              "--exit-code",
+              "origin",
+              `refs/heads/${sourceBranch}`,
+            ],
+            true,
+          ),
+        );
         git(workspaceDir, ["reset", "--hard", targetRef]);
         const replay = taskCommits.length
           ? git(workspaceDir, ["cherry-pick", ...taskCommits], true)
@@ -2324,7 +2352,10 @@ export async function reconcileSpecLive(
         }
         git(workspaceDir, [
           "push",
-          `--force-with-lease=refs/heads/${sourceBranch}:${expectedRemoteCommit}`,
+          scenarioReplayForceWithLeaseArg({
+            sourceBranch,
+            expectedRemoteCommit,
+          }),
           "origin",
           `HEAD:refs/heads/${sourceBranch}`,
         ]);

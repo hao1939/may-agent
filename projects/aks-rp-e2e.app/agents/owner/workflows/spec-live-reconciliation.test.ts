@@ -34,6 +34,8 @@ import {
   preparationHeadProblem,
   priorIntegratedProof,
   reconcileRemoteTaskBranchHistory,
+  remoteLeaseCommit,
+  scenarioReplayForceWithLeaseArg,
   pullRequestSourceUpdateCondition,
   pullRequestWaitCondition,
   resolveIntegrationTarget,
@@ -607,6 +609,36 @@ describe("spec-live-reconciliation workflow", () => {
     ).toBeNull();
   });
 
+  test("rejects a wait whose event type has no app producer", () => {
+    expect(
+      agentConditionProblem({
+        decision: "waiting",
+        summary: "Wait for registration.",
+        evidence: ["registration is not ready"],
+        condition: {
+          id: "wait-registration",
+          type: "external-state",
+          subject: "project:aks-rp-e2e",
+          expected: {
+            field: "staging.subscriptionFeatures.preview",
+            equals: "Registered",
+          },
+        },
+      }),
+    ).toContain("has no producer");
+  });
+
+  test("accepts a pull-request wait observed by the app watcher", () => {
+    expect(
+      agentConditionProblem({
+        decision: "waiting",
+        summary: "Wait for the focused repair PR to change.",
+        evidence: ["pull-request:123"],
+        condition: pullRequestWaitCondition("123"),
+      }),
+    ).toBeNull();
+  });
+
   test("rejects a future main pass as proof for task-owned scenario normalization", () => {
     const futureMainPass = {
       decision: "waiting" as const,
@@ -981,6 +1013,57 @@ describe("spec-live-reconciliation workflow", () => {
       "2222222222222222222222222222222222222222",
       "4444444444444444444444444444444444444444",
     ]);
+  });
+
+  test("ignores failed remote lease lookups for scenario replay pushes", () => {
+    expect(
+      remoteLeaseCommit({
+        status: 0,
+        stdout: "0123456789abcdef0123456789abcdef01234567\n",
+      }),
+    ).toBe("0123456789abcdef0123456789abcdef01234567");
+    expect(
+      remoteLeaseCommit({
+        status: 0,
+        stdout:
+          "0123456789abcdef0123456789abcdef01234567\trefs/heads/task/example\n",
+      }),
+    ).toBe("0123456789abcdef0123456789abcdef01234567");
+    expect(
+      remoteLeaseCommit({
+        status: 0,
+        stdout:
+          "refs/remotes/origin/task/domain-normalize-plain-scenario-carrier-net-integr-3f0ec91d4f\n",
+      }),
+    ).toBeNull();
+    expect(
+      remoteLeaseCommit({
+        status: 128,
+        stdout:
+          "refs/remotes/origin/task/domain-normalize-plain-scenario-carrier-net-integr-3f0ec91d4f\n",
+      }),
+    ).toBeNull();
+  });
+
+  test("builds a creation-safe force-with-lease arg when the remote task branch is absent", () => {
+    expect(
+      scenarioReplayForceWithLeaseArg({
+        sourceBranch:
+          "task/domain-normalize-plain-scenario-carrier-net-integr-3f0ec91d4f",
+        expectedRemoteCommit: "0123456789abcdef0123456789abcdef01234567",
+      }),
+    ).toBe(
+      "--force-with-lease=refs/heads/task/domain-normalize-plain-scenario-carrier-net-integr-3f0ec91d4f:0123456789abcdef0123456789abcdef01234567",
+    );
+    expect(
+      scenarioReplayForceWithLeaseArg({
+        sourceBranch:
+          "task/domain-normalize-plain-scenario-carrier-net-integr-3f0ec91d4f",
+        expectedRemoteCommit: null,
+      }),
+    ).toBe(
+      "--force-with-lease=refs/heads/task/domain-normalize-plain-scenario-carrier-net-integr-3f0ec91d4f:",
+    );
   });
 
   test("reverifies a direct candidate whenever the target advanced after its live run", () => {
