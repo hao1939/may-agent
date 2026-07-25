@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { readTaskState, saveTaskState, type ProjectAppTaskIntent, type TaskStateConfig } from "@may-agent/sdk";
 import { trackProjectAppConditionEvent } from "./project-app-condition-tracker.ts";
 import {
+  associateProjectAppTaskSession,
   claimObservedProjectAppTask,
   completeProjectAppTask,
   deferProjectAppTask,
@@ -1333,6 +1334,51 @@ describe("project app task reconciler state", () => {
       kind: "claimed",
       supersededSessionIds: ["session-old"],
     });
+  });
+
+  it("associates workflow sessions with the current attempt and rejects stale generations", () => {
+    const { config } = fixture();
+    const original = intent();
+    const claim = declareAndClaimTask(config, {
+      intent: original,
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+
+    expect(
+      associateProjectAppTaskSession(
+        config,
+        { taskId: claim.taskId, generation: claim.generation },
+        "nested-workflow-session",
+      ),
+    ).toEqual({ status: "recorded", taskId: claim.taskId });
+    expect(readTaskState(config).attempts?.[claim.attemptId].sessionId).toBe("nested-workflow-session");
+
+    const revised: ProjectAppTaskIntent = {
+      ...original,
+      outcome: "Evaluate the revised session contract",
+    };
+    expect(
+      observeProjectAppTaskIntent(config, {
+        intent: revised,
+        appOwner: "app-owner",
+      }),
+    ).toMatchObject({
+      kind: "observed",
+      generation: claim.generation + 1,
+      supersededSessionIds: ["nested-workflow-session"],
+    });
+    expect(
+      associateProjectAppTaskSession(
+        config,
+        { taskId: claim.taskId, generation: claim.generation },
+        "late-stale-session",
+      ),
+    ).toEqual({ status: "superseded", taskId: claim.taskId });
+    expect(
+      associateProjectAppTaskSession(config, { taskId: "missing-task", generation: 1 }, "missing-session"),
+    ).toEqual({ status: "missing", taskId: "missing-task" });
   });
 
   it("returns orphaned owner-session ids when requeueing a previous-runtime attempt without a trigger", () => {
