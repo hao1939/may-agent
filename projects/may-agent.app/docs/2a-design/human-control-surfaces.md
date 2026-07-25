@@ -243,11 +243,13 @@ the probe as a daemon failure. A fresh heartbeat proves the daemon event loop
 is alive even when the control surface itself is broken; that socket failure
 remains a separate observable repair concern. Six consecutive failures of both
 signals may request the same supervisor-owned restarter, with a cooldown to
-prevent restart loops. A healthy observation that reports active workflows
-protects that work for a bounded grace period. If responsiveness does not
-return before the grace expires, recovery proceeds. This covers a live but
-unresponsive event loop without repeatedly interrupting in-flight work or
-putting liveness, scheduling, or restart behavior into any project app.
+prevent restart loops. Any probe that can still see current active sessions
+starts one bounded grace period for that work, even when the control socket is
+unavailable. Failed probes do not continuously extend that period. If
+responsiveness does not return before the grace expires, recovery proceeds.
+This covers a live but unresponsive event loop without repeatedly interrupting
+in-flight work or putting liveness, scheduling, or restart behavior into any
+project app.
 
 The restarter leaves the maintenance process running during ordinary liveness
 recovery, preserving its cooldown state. A staged binary deploy also restarts
