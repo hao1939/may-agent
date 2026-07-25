@@ -16,6 +16,56 @@ function words(value) {
     .filter(Boolean).length;
 }
 
+const ATOMIC_CLEANUP_TOKENS = new Set([
+  "clean",
+  "cleanup",
+  "remove",
+  "removal",
+  "delete",
+  "deletion",
+]);
+const ATOMIC_CLEANUP_PATTERN =
+  /\b(?:clean|cleans|cleaned|cleaning|cleanup|cleanups|remove|removes|removed|removing|removal|removals|delete|deletes|deleted|deleting|deletion|deletions)\b/g;
+
+function isProtectedOccurrence(before, after) {
+  const negatedBefore =
+    /\b(?:do not|don't|never|avoid|defer|deferred|hold off|without|not)\b[^.!?;]{0,56}$/.test(
+      before,
+    );
+  const protectedAfter =
+    /^(?:[^.!?;]{0,48}\b(?:deferred|forbidden|unchanged|untouched|out of scope)\b)/.test(
+      after,
+    );
+  const leaveUnchanged =
+    /\bleave\b[^.!?;]{0,48}$/.test(before) &&
+    /\b(?:unchanged|untouched|alone|paused|active)\b/.test(after);
+  return negatedBefore || protectedAfter || leaveUnchanged;
+}
+
+function hasAffirmativePatternMatch(actual, pattern) {
+  pattern.lastIndex = 0;
+  let match = pattern.exec(actual);
+  while (match) {
+    const before = actual.slice(Math.max(0, match.index - 64), match.index);
+    const after = actual.slice(
+      match.index + match[0].length,
+      match.index + match[0].length + 64,
+    );
+    if (!isProtectedOccurrence(before, after)) return true;
+    match = pattern.exec(actual);
+  }
+  return false;
+}
+
+function matchesExpectedConcept(actual, token) {
+  const wanted = String(token).toLowerCase().trim();
+  if (/\s/.test(wanted)) return actual.includes(wanted);
+  if (ATOMIC_CLEANUP_TOKENS.has(wanted)) {
+    return hasAffirmativePatternMatch(actual, ATOMIC_CLEANUP_PATTERN);
+  }
+  return actual.includes(wanted);
+}
+
 function hasAffirmativeMatch(value, token) {
   const actual = text(value);
   const wanted = String(token).toLowerCase();
@@ -26,18 +76,7 @@ function hasAffirmativeMatch(value, token) {
       index + wanted.length,
       index + wanted.length + 64,
     );
-    const negatedBefore =
-      /\b(?:do not|don't|never|avoid|defer|deferred|hold off|without|not)\b[^.!?;]{0,56}$/.test(
-        before,
-      );
-    const protectedAfter =
-      /^(?:[^.!?;]{0,48}\b(?:deferred|forbidden|unchanged|untouched|out of scope)\b)/.test(
-        after,
-      );
-    const leaveUnchanged =
-      /\bleave\b[^.!?;]{0,48}$/.test(before) &&
-      /\b(?:unchanged|untouched|alone|paused|active)\b/.test(after);
-    if (!negatedBefore && !protectedAfter && !leaveUnchanged) return true;
+    if (!isProtectedOccurrence(before, after)) return true;
     index = actual.indexOf(wanted, index + wanted.length);
   }
   return false;
@@ -185,7 +224,7 @@ function scoreDecision(workDir, scenarioDir) {
   for (const [field, tokens] of Object.entries(expected.contains_all ?? {})) {
     const actual = text(get(decision, field));
     const missing = tokens.filter(
-      (token) => !actual.includes(String(token).toLowerCase()),
+      (token) => !matchesExpectedConcept(actual, token),
     );
     addFieldCheck(
       `contains-all:${field}`,
@@ -200,7 +239,7 @@ function scoreDecision(workDir, scenarioDir) {
   for (const [field, tokens] of Object.entries(expected.contains_any ?? {})) {
     const actual = text(get(decision, field));
     const matched = tokens.filter((token) =>
-      actual.includes(String(token).toLowerCase()),
+      matchesExpectedConcept(actual, token),
     );
     addFieldCheck(
       `contains-any:${field}`,
@@ -217,8 +256,7 @@ function scoreDecision(workDir, scenarioDir) {
   )) {
     const actual = text(get(decision, field));
     const missingGroups = groups.filter(
-      (group) =>
-        !group.some((token) => actual.includes(String(token).toLowerCase())),
+      (group) => !group.some((token) => matchesExpectedConcept(actual, token)),
     );
     addFieldCheck(
       `contains-groups:${field}`,
