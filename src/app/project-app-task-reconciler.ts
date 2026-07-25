@@ -1031,8 +1031,18 @@ export function listRunnableProjectAppTaskIds(config: TaskStateConfig): string[]
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
     const priorityOrder = { P0: 0, P1: 1, P2: 2, P3: 3 } as const;
-    const hasDirectProjectComment = (resource: ProjectAppTaskResource): boolean =>
-      tree.taskTriggers?.[resource.metadata.id]?.event?.type === "project.comment.created";
+    const hasDirectProjectComment = (resource: ProjectAppTaskResource): boolean => {
+      const event = tree.taskTriggers?.[resource.metadata.id]?.event;
+      if (event?.type === "project.comment.created") return true;
+      return Array.isArray(event?.ownerIntentRefs)
+        ? event.ownerIntentRefs.some(
+            (value) =>
+              value !== null &&
+              typeof value === "object" &&
+              (value as { eventType?: unknown }).eventType === "project.comment.created",
+          )
+        : false;
+    };
     return Object.values(tree.resources ?? {})
       .filter((resource) => isRunnableOnPassiveResync(tree, resource))
       .sort((left, right) => {
