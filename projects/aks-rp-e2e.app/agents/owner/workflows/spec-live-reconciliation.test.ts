@@ -29,6 +29,7 @@ import {
   pipelineWaitCondition,
   pipelineRunState,
   preparationDecisionProblem,
+  preparationHeadProblem,
   priorIntegratedProof,
   pullRequestSourceUpdateCondition,
   pullRequestWaitCondition,
@@ -411,6 +412,42 @@ describe("spec-live-reconciliation workflow", () => {
         decision: "committed",
         summary: "repaired the failed assertion",
         evidence: ["source-commit:def"],
+      }),
+    ).toBeNull();
+  });
+
+  test("rejects committed preparation when repository HEAD did not move", () => {
+    expect(
+      preparationHeadProblem({
+        decision: {
+          decision: "committed",
+          summary: "the existing task commit is ready",
+          evidence: ["source-commit:abc"],
+        },
+        before: "abc",
+        after: "abc",
+      }),
+    ).toContain("task HEAD remained abc");
+    expect(
+      preparationHeadProblem({
+        decision: {
+          decision: "test-current",
+          summary: "test the existing task commit",
+          evidence: ["source-commit:abc"],
+        },
+        before: "abc",
+        after: "abc",
+      }),
+    ).toBeNull();
+    expect(
+      preparationHeadProblem({
+        decision: {
+          decision: "committed",
+          summary: "created a newer task commit",
+          evidence: ["source-commit:def"],
+        },
+        before: "abc",
+        after: "def",
       }),
     ).toBeNull();
   });

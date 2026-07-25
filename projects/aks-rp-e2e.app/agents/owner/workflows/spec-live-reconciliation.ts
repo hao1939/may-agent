@@ -258,6 +258,16 @@ export function preparationDecisionProblem(
     : "preparation cannot accept a prior run as proof for the rewritten source; return test-current to dispatch it, commit a repair, wait on an exact fact, or identify a genuine ownership boundary";
 }
 
+export function preparationHeadProblem(input: {
+  decision: AgentDecision;
+  before: string;
+  after: string;
+}): string | null {
+  return input.decision.decision === "committed" && input.after === input.before
+    ? `decision=committed is invalid because task HEAD remained ${input.after}`
+    : null;
+}
+
 export function scenarioNormalizationReplayRequired(input: {
   sourceIsInTarget: boolean;
   targetIsInSource: boolean;
@@ -2199,41 +2209,38 @@ export async function reconcileSpecLive(
         reviewedScenarioPatch: options.reviewedScenarioPatch,
       })
     ) {
-      const decision = await askAgent(
-        ctx,
-        [
-          `Reconcile ${specId} for one exact live verification/change lifecycle.`,
-          `The required live target is ${liveTarget}${standaloneBuildId ? ` with standalone_build_id=${standaloneBuildId}` : ""}.`,
-          ...(priorVerificationSummary ? [priorVerificationSummary] : []),
-          `Work only in ${workspaceDir}; durable non-source artifacts belong in ${contextDir}.`,
-          `Current integration authority is ${targetRef}@${baseCommit}.`,
-          sourceDiffersFromBase
-            ? `Current task source ${sourceCommit} already differs from integration authority after an earlier repair. Treat that commit as evidence to review, not automatic permission to dispatch.`
-            : `Current task source ${sourceCommit} still matches integration authority.`,
-          "Inspect the original task, current spec status, model, direct carrier, nearby good/bad examples, and prior evidence. Decide whether this exact source is genuinely ready for live execution.",
-          "If a bounded repo change is needed, make it, run scoped local checks, commit it, leave the worktree clean, and return decision=committed.",
-          "If current source is already the exact content that should be live-tested, leave it unchanged and return decision=test-current.",
-          ...(options.existingRecoveryAfterRunId
-            ? [
-                `This is recovery work for blocking run ${options.existingRecoveryAfterRunId}. If a later current-main run already passed this exact spec and still applies to current main, leave source unchanged and return decision=accepted-pass. Populate recovery={pipelineRunId,sourceBranch,sourceCommit,artifactPath} with the aggregate result artifact that contains this spec verdict, and cite ancestry/relevant-change evidence. Do not dispatch redundant proof.`,
-              ]
-            : []),
-          "A blocked spec, reviewed exception, or intentionally paused execution path is not live-ready merely because its file layout is normalized. Implement a truthful observable contract, return an exact wait, or identify the genuine ownership boundary.",
-          "Do not queue ADO, create a PR, create another branch/worktree, or edit app task state; this workflow owns those steps.",
-          "Use waiting only with one exact machine-observable Condition. Use needs-owner only for a concrete decision that source facts cannot resolve.",
-          "Task:",
-          ctx.task,
-        ].join("\n\n"),
-        {
-          scenarioNormalization: Boolean(normalizationInput),
-          continueDomainWorkOnValidation: true,
-          validateDecision: (candidate) =>
-            preparationDecisionProblem(
-              candidate,
-              Boolean(options.existingRecoveryAfterRunId),
-            ),
-        },
-      );
+      const preparationPrompt = [
+        `Reconcile ${specId} for one exact live verification/change lifecycle.`,
+        `The required live target is ${liveTarget}${standaloneBuildId ? ` with standalone_build_id=${standaloneBuildId}` : ""}.`,
+        ...(priorVerificationSummary ? [priorVerificationSummary] : []),
+        `Work only in ${workspaceDir}; durable non-source artifacts belong in ${contextDir}.`,
+        `Current integration authority is ${targetRef}@${baseCommit}.`,
+        sourceDiffersFromBase
+          ? `Current task source ${sourceCommit} already differs from integration authority after an earlier repair. Treat that commit as evidence to review, not automatic permission to dispatch.`
+          : `Current task source ${sourceCommit} still matches integration authority.`,
+        "Inspect the original task, current spec status, model, direct carrier, nearby good/bad examples, and prior evidence. Decide whether this exact source is genuinely ready for live execution.",
+        "If a bounded repo change is needed, make it, run scoped local checks, commit it, leave the worktree clean, and return decision=committed.",
+        "If current source is already the exact content that should be live-tested, leave it unchanged and return decision=test-current.",
+        ...(options.existingRecoveryAfterRunId
+          ? [
+              `This is recovery work for blocking run ${options.existingRecoveryAfterRunId}. If a later current-main run already passed this exact spec and still applies to current main, leave source unchanged and return decision=accepted-pass. Populate recovery={pipelineRunId,sourceBranch,sourceCommit,artifactPath} with the aggregate result artifact that contains this spec verdict, and cite ancestry/relevant-change evidence. Do not dispatch redundant proof.`,
+            ]
+          : []),
+        "A blocked spec, reviewed exception, or intentionally paused execution path is not live-ready merely because its file layout is normalized. Implement a truthful observable contract, return an exact wait, or identify the genuine ownership boundary.",
+        "Do not queue ADO, create a PR, create another branch/worktree, or edit app task state; this workflow owns those steps.",
+        "Use waiting only with one exact machine-observable Condition. Use needs-owner only for a concrete decision that source facts cannot resolve.",
+        "Task:",
+        ctx.task,
+      ].join("\n\n");
+      let decision = await askAgent(ctx, preparationPrompt, {
+        scenarioNormalization: Boolean(normalizationInput),
+        continueDomainWorkOnValidation: true,
+        validateDecision: (candidate) =>
+          preparationDecisionProblem(
+            candidate,
+            Boolean(options.existingRecoveryAfterRunId),
+          ),
+      });
       if (decision.decision === "waiting" && decision.condition) {
         return waitingResult(
           ctx,
@@ -2245,7 +2252,7 @@ export async function reconcileSpecLive(
       if (decision.decision === "needs-owner") {
         return ownerResult(ctx, decision.summary, decision.evidence);
       }
-      const after = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+      let after = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
       if (cleanWorkspace(workspaceDir)) {
         return ownerResult(
           ctx,
@@ -2253,12 +2260,55 @@ export async function reconcileSpecLive(
           [...decision.evidence, `workspace:${workspaceDir}`],
         );
       }
-      if (decision.decision === "committed" && after === sourceCommit) {
-        return ownerResult(
+      const unchangedCommitProblem = preparationHeadProblem({
+        decision,
+        before: sourceCommit,
+        after,
+      });
+      if (unchangedCommitProblem) {
+        const correctionBaseline = after;
+        decision = await askAgent(
           ctx,
-          "Agent reported a committed change but task HEAD did not move.",
-          decision.evidence,
+          [
+            preparationPrompt,
+            "The preceding domain judgment returned decision=committed, but repository inspection proves task HEAD did not move during that judgment.",
+            `Current clean task HEAD is ${correctionBaseline}. Inspect that exact source before deciding again.`,
+            "Return test-current when this existing commit is ready for exact live verification. Return committed only after leaving a genuinely newer clean commit. Return waiting or needs-owner only for an evidenced condition or ownership boundary.",
+          ].join("\n\n"),
+          {
+            scenarioNormalization: Boolean(normalizationInput),
+            continueDomainWorkOnValidation: true,
+            validateDecision: (candidate) =>
+              preparationDecisionProblem(
+                candidate,
+                Boolean(options.existingRecoveryAfterRunId),
+              ) ??
+              preparationHeadProblem({
+                decision: candidate,
+                before: correctionBaseline,
+                after: git(workspaceDir, ["rev-parse", "HEAD"]).stdout,
+              }),
+          },
         );
+        if (decision.decision === "waiting" && decision.condition) {
+          return waitingResult(
+            ctx,
+            decision.summary,
+            decision.evidence,
+            taskScopedAgentCondition(taskId, generation, decision.condition),
+          );
+        }
+        if (decision.decision === "needs-owner") {
+          return ownerResult(ctx, decision.summary, decision.evidence);
+        }
+        after = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+        if (cleanWorkspace(workspaceDir)) {
+          return ownerResult(
+            ctx,
+            "Agent preparation correction left the task worktree dirty; deterministic dispatch was refused.",
+            [...decision.evidence, `workspace:${workspaceDir}`],
+          );
+        }
       }
       if (
         decision.decision === "accepted-pass" &&
@@ -2681,10 +2731,10 @@ export async function reconcileSpecLive(
                         true,
                       ).status === 0
                     ) {
-                      integratedCommit = git(
-                        repoDir,
-                        ["rev-parse", targetRef],
-                      ).stdout;
+                      integratedCommit = git(repoDir, [
+                        "rev-parse",
+                        targetRef,
+                      ]).stdout;
                       break;
                     }
                     continue;
@@ -2694,10 +2744,10 @@ export async function reconcileSpecLive(
               git(workspaceDir, ["merge", "--abort"], true);
             }
 
-            const beforeRefresh = git(
-              workspaceDir,
-              ["rev-parse", "HEAD"],
-            ).stdout;
+            const beforeRefresh = git(workspaceDir, [
+              "rev-parse",
+              "HEAD",
+            ]).stdout;
             const refresh = git(
               workspaceDir,
               ["merge", "--no-ff", "--no-edit", targetRef],
@@ -2722,10 +2772,10 @@ export async function reconcileSpecLive(
               refreshEvidence = decision.evidence;
             }
 
-            let refreshedCommit = git(
-              workspaceDir,
-              ["rev-parse", "HEAD"],
-            ).stdout;
+            let refreshedCommit = git(workspaceDir, [
+              "rev-parse",
+              "HEAD",
+            ]).stdout;
             if (
               refreshedCommit === beforeRefresh ||
               cleanWorkspace(workspaceDir)
