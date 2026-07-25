@@ -153,6 +153,13 @@ type RunReceipt = {
   queuedAt: string;
 };
 
+type ScenarioReplayState = {
+  version: 1;
+  recordedTaskBase: string;
+  replayBase: string;
+  sourceCommit: string;
+};
+
 type CollectedRunEvidence = {
   runPath: string;
   artifactListPath: string;
@@ -862,6 +869,33 @@ function currentRunPath(contextDir: string): string {
   return join(contextDir, "current-run.json");
 }
 
+function scenarioReplayPath(contextDir: string): string {
+  return join(contextDir, "scenario-replay.json");
+}
+
+function readScenarioReplayState(
+  contextDir: string,
+): ScenarioReplayState | null {
+  const path = scenarioReplayPath(contextDir);
+  if (!existsSync(path)) return null;
+  try {
+    const value = JSON.parse(readFileSync(path, "utf8")) as ScenarioReplayState;
+    return value?.version === 1 ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveScenarioReplayState(
+  contextDir: string,
+  state: ScenarioReplayState,
+): void {
+  writeFileSync(
+    scenarioReplayPath(contextDir),
+    `${JSON.stringify(state, null, 2)}\n`,
+  );
+}
+
 export function terminalRunContextDir(
   contextDir: string,
   runId: string,
@@ -1533,21 +1567,35 @@ export async function reconcileSpecLive(
       integrationMode(targetBranch) === "direct" &&
       normalizationInput?.loopId === "scenario-normalization"
     ) {
-      const taskBase = nonEmptyString(normalizationInput.originDevCommit);
+      const recordedTaskBase = nonEmptyString(
+        normalizationInput.originDevCommit,
+      );
+      const priorReplay = readScenarioReplayState(contextDir);
+      const priorReplayBase =
+        priorReplay?.recordedTaskBase === recordedTaskBase &&
+        /^[0-9a-f]{40}$/i.test(priorReplay.replayBase) &&
+        git(
+          workspaceDir,
+          ["merge-base", "--is-ancestor", priorReplay.replayBase, "HEAD"],
+          true,
+        ).status === 0
+          ? priorReplay.replayBase
+          : "";
+      const taskBase = priorReplayBase || recordedTaskBase;
       const sourceIsInTarget =
         git(
           repoDir,
           ["merge-base", "--is-ancestor", sourceCommit, targetRef],
           true,
         ).status === 0;
-      if (!/^[0-9a-f]{40}$/i.test(taskBase)) {
+      if (!/^[0-9a-f]{40}$/i.test(recordedTaskBase)) {
         return ownerResult(
           ctx,
           "Scenario normalization cannot replay a stale task branch without its exact recorded origin/dev base.",
           [
             `task:${taskId}`,
             `source-commit:${sourceCommit}`,
-            `origin-dev-commit:${taskBase || "missing"}`,
+            `origin-dev-commit:${recordedTaskBase || "missing"}`,
           ],
         );
       }
@@ -1627,7 +1675,8 @@ export async function reconcileSpecLive(
           ? git(workspaceDir, ["cherry-pick", ...taskCommits], true)
           : { status: 0, stdout: "", stderr: "" };
         let replayEvidence = [
-          `origin-dev-commit:${taskBase}`,
+          `origin-dev-commit:${recordedTaskBase}`,
+          `task-replay-base:${taskBase}`,
           `replay-target:${targetRef}@${baseCommit}`,
           `task-owned-commits:${taskCommits.join(",") || "none"}`,
           `discarded-first-parent-merges:${firstParentMerges.join(",") || "none"}`,
@@ -1674,6 +1723,12 @@ export async function reconcileSpecLive(
           `HEAD:refs/heads/${sourceBranch}`,
         ]);
         sourceCommit = replayedCommit;
+        saveScenarioReplayState(contextDir, {
+          version: 1,
+          recordedTaskBase,
+          replayBase: baseCommit,
+          sourceCommit,
+        });
       }
     }
 
@@ -2204,15 +2259,77 @@ export async function reconcileSpecLive(
             true,
           ).status !== 0
         ) {
-          return ownerResult(
-            ctx,
-            `Direct ${targetBranch} integration requires the task source to be replayed onto current ${targetRef} before publication.`,
-            [
-              `source-commit:${sourceCommit}`,
-              `target-ref:${targetRef}`,
-              "reconcile-again:task-owned-replay",
-            ],
+          if (normalizationInput?.loopId === "scenario-normalization") {
+            return reconcileSpecLive(ctx, options);
+          }
+          const beforeMerge = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+          const merge = git(
+            workspaceDir,
+            ["merge", "--no-ff", "--no-edit", targetRef],
+            true,
           );
+          if (merge.status !== 0) {
+            const decision = await askAgent(
+              ctx,
+              [
+                `${specId} passed exact live run ${runId} at ${sourceCommit}, but direct integration now conflicts with current ${targetRef}.`,
+                `Resolve only the current merge in ${workspaceDir}, preserve the accepted task intent, run scoped checks, commit the resolved source, leave the worktree clean, and return decision=committed.`,
+                "Do not push, queue ADO, create a PR, create another task, or edit app state. The workflow will push the resolved branch and require a fresh exact live run before integration.",
+                "Task:",
+                ctx.task,
+              ].join("\n\n"),
+              { scenarioNormalization: false },
+            );
+            if (decision.decision !== "committed") {
+              return ownerResult(ctx, decision.summary, decision.evidence);
+            }
+            let resolvedCommit = git(workspaceDir, [
+              "rev-parse",
+              "HEAD",
+            ]).stdout;
+            if (
+              resolvedCommit === beforeMerge ||
+              cleanWorkspace(workspaceDir)
+            ) {
+              return ownerResult(
+                ctx,
+                `Direct ${targetBranch} conflict repair did not leave one new clean commit.`,
+                decision.evidence,
+              );
+            }
+            const dispatch = await prepareLiveDispatch(
+              resolvedCommit,
+              `replacement after direct ${targetBranch} integration conflict for run ${runId}`,
+            );
+            if (dispatch.state === "result") return dispatch.result;
+            resolvedCommit = dispatch.sourceCommit;
+            git(workspaceDir, ["push", "origin", sourceBranch]);
+            const replacement = queueRun(repoDir, {
+              taskId,
+              generation,
+              specId,
+              sourceBranch,
+              sourceCommit: resolvedCommit,
+              target: liveTarget,
+              standaloneBuildId,
+            });
+            saveRunReceipt(contextDir, replacement, resolvedCommit);
+            const replacementId = nonEmptyString(replacement.id);
+            return waitingResult(
+              ctx,
+              `Resolved direct ${targetBranch} integration conflict and queued replacement live run ${replacementId} at ${resolvedCommit}.`,
+              [
+                ...decision.evidence,
+                ...dispatch.evidence,
+                `replaces-run:${runId}`,
+                `source-commit:${resolvedCommit}`,
+                `pipeline-run:${replacementId}`,
+                `target-ref:${targetRef}`,
+              ],
+              pipelineWaitCondition(replacementId),
+            );
+          }
+          git(workspaceDir, ["push", "origin", sourceBranch]);
         }
 
         const push = git(
