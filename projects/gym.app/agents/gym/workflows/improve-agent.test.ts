@@ -13,6 +13,7 @@ import type { LoopRunManifest, RunOptions } from "@may-agent/gym/loop";
 import type { WorkflowContext } from "@may-agent/sdk";
 import {
   applyDirectorySnapshot,
+  benchmarkFixTarget,
   buildBenchmarkFixRetryEvent,
   buildApprovalRequest,
   dispatchApproval,
@@ -246,6 +247,44 @@ describe("single agent-improvement loop", () => {
         targetPath,
       }),
     ).toThrow("Approved artifact changed");
+  });
+
+  test("targets the evaluator owner for scorer fixes", () => {
+    const root = mkdtempSync(join(tmpdir(), "gym-scorer-owner-"));
+    roots.push(root);
+    const gymRoot = join(root, "gym");
+    const consumer = join(gymRoot, "benchmarks", "deputy-learning");
+    const owner = join(gymRoot, "benchmarks", "may-alignment");
+    mkdirSync(consumer, { recursive: true });
+    mkdirSync(owner, { recursive: true });
+    writeFileSync(
+      join(consumer, "suite.json"),
+      JSON.stringify({ evaluator: "../may-alignment/score-decision.cjs" }),
+    );
+    writeFileSync(join(owner, "score-decision.cjs"), "module.exports = {};\n");
+
+    expect(
+      benchmarkFixTarget({
+        gymRoot,
+        benchmark: "deputy-learning",
+        disposition: "review-scorer",
+      }),
+    ).toEqual({
+      benchmark: "may-alignment",
+      path: owner,
+      evaluatorPath: join(owner, "score-decision.cjs"),
+    });
+    expect(
+      benchmarkFixTarget({
+        gymRoot,
+        benchmark: "deputy-learning",
+        disposition: "review-benchmark",
+      }),
+    ).toEqual({
+      benchmark: "deputy-learning",
+      path: consumer,
+      evaluatorPath: null,
+    });
   });
 
   test("retries only invalid cases and still prepares the independent May gap", async () => {

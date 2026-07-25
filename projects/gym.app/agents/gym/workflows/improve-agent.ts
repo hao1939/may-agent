@@ -12,7 +12,7 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import {
   configureGymRoot,
   resolveLearningContexts,
@@ -1223,14 +1223,19 @@ async function buildBenchmarkFix(
   summary: string;
   evidence: string[];
 } | null> {
-  const targetPath = join(
-    ctx.projectsRoot,
-    "gym",
-    "benchmarks",
-    plan.benchmark,
+  const gymRoot = join(ctx.projectsRoot, "gym");
+  const target = benchmarkFixTarget({
+    gymRoot,
+    benchmark: plan.benchmark,
+    disposition: review.disposition,
+  });
+  const targetPath = target.path;
+  const workspacePath = join(scratchRoot, "benchmark-fix", target.benchmark);
+  const durablePath = join(
+    candidateStateDir,
+    "benchmark-fix",
+    target.benchmark,
   );
-  const workspacePath = join(scratchRoot, "benchmark-fix", plan.benchmark);
-  const durablePath = join(candidateStateDir, "benchmark-fix", plan.benchmark);
   rmSync(workspacePath, { recursive: true, force: true });
   mkdirSync(dirname(workspacePath), { recursive: true });
   cpSync(targetPath, workspacePath, { recursive: true });
@@ -1240,6 +1245,11 @@ async function buildBenchmarkFix(
     [
       "Build one narrow isolated benchmark/scorer fix from this reviewed Gym evidence.",
       `Responsible layer: ${review.disposition}`,
+      `Consumer benchmark: ${plan.benchmark}`,
+      `Writable owner benchmark: ${target.benchmark}`,
+      ...(target.evaluatorPath
+        ? [`Resolved evaluator: ${target.evaluatorPath}`]
+        : []),
       `Review: ${review.summary}`,
       `Proposed change: ${review.proposedChange}`,
       `Failed verification: ${verificationDir}`,
@@ -1268,6 +1278,58 @@ async function buildBenchmarkFix(
     fingerprint: `sha256:${fingerprintTree(durablePath)}`,
     summary: String(result.structuredResult.summary),
     evidence: result.structuredResult.evidence.map(String),
+  };
+}
+
+export function benchmarkFixTarget(input: {
+  gymRoot: string;
+  benchmark: string;
+  disposition: FailedReview["disposition"];
+}): { benchmark: string; path: string; evaluatorPath: string | null } {
+  const benchmarksRoot = resolve(input.gymRoot, "benchmarks");
+  const consumerPath = join(benchmarksRoot, input.benchmark);
+  if (input.disposition !== "review-scorer") {
+    return {
+      benchmark: input.benchmark,
+      path: consumerPath,
+      evaluatorPath: null,
+    };
+  }
+
+  const suitePath = join(consumerPath, "suite.json");
+  const suite = JSON.parse(readFileSync(suitePath, "utf8")) as {
+    evaluator?: unknown;
+  };
+  const evaluator =
+    typeof suite.evaluator === "string" ? suite.evaluator.trim() : "";
+  if (!evaluator) {
+    return {
+      benchmark: input.benchmark,
+      path: consumerPath,
+      evaluatorPath: null,
+    };
+  }
+
+  const evaluatorPath = resolve(consumerPath, evaluator);
+  const evaluatorRelative = relative(benchmarksRoot, evaluatorPath);
+  if (
+    !evaluatorRelative ||
+    evaluatorRelative === ".." ||
+    evaluatorRelative.startsWith(`..${sep}`)
+  ) {
+    throw new Error(
+      `Benchmark evaluator escapes the benchmark root: ${evaluatorPath}`,
+    );
+  }
+  const ownerBenchmark = evaluatorRelative.split(sep)[0]!;
+  const ownerPath = join(benchmarksRoot, ownerBenchmark);
+  if (!existsSync(ownerPath)) {
+    throw new Error(`Scorer owner benchmark is missing: ${ownerPath}`);
+  }
+  return {
+    benchmark: ownerBenchmark,
+    path: ownerPath,
+    evaluatorPath,
   };
 }
 
