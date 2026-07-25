@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { observeRuntimeLiveness } from "./maintenance.js";
+import { observeDurableDaemonHeartbeat, observeRuntimeLiveness } from "./maintenance.js";
 
 describe("runtime liveness maintenance", () => {
   test("requires consecutive failures before requesting recovery", () => {
@@ -71,5 +71,19 @@ describe("runtime liveness maintenance", () => {
     );
     expect(observed.requestRestart).toBe(true);
     expect(observed.protectedActiveWork).toBe(false);
+  });
+
+  test("fresh durable heartbeat protects work when the control socket is unavailable", () => {
+    expect(observeDurableDaemonHeartbeat(900, 3, 1_000, 200)).toEqual({
+      responsive: true,
+      activeWork: true,
+    });
+  });
+
+  test("stale durable heartbeat still permits recovery", () => {
+    expect(observeDurableDaemonHeartbeat(700, 0, 1_000, 200)).toEqual({
+      responsive: false,
+      activeWork: false,
+    });
   });
 });
