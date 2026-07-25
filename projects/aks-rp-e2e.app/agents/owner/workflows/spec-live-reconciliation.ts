@@ -175,6 +175,21 @@ export function integrationMode(
   return targetBranch === defaultTargetBranch ? "direct" : "pull-request";
 }
 
+export function shouldFastForwardIntegratedSource(input: {
+  existingPullRequest: boolean;
+  sourceCommit: string;
+  baseCommit: string;
+  sourceIsAncestorOfTarget: boolean;
+  matchingRunCount: number;
+}): boolean {
+  return (
+    !input.existingPullRequest &&
+    input.sourceCommit !== input.baseCommit &&
+    input.sourceIsAncestorOfTarget &&
+    input.matchingRunCount === 0
+  );
+}
+
 const decisionSchema = Type.Object({
   decision: Type.Union([
     Type.Literal("committed"),
@@ -1327,14 +1342,30 @@ export async function reconcileSpecLive(
     }
 
     const existingPr = pullRequests(repoDir, sourceBranch, targetBranch)[0];
+    const matchingRunsBeforeTargetAdvance = matchingTaskRuns(
+      taskRuns(repoDir, contextDir),
+      {
+        taskId,
+        generation,
+        specId,
+        sourceCommit,
+        target: liveTarget,
+        standaloneBuildId,
+      },
+    );
     if (
-      !existingPr &&
-      sourceCommit !== baseCommit &&
-      git(
-        repoDir,
-        ["merge-base", "--is-ancestor", sourceCommit, targetRef],
-        true,
-      ).status === 0
+      shouldFastForwardIntegratedSource({
+        existingPullRequest: Boolean(existingPr),
+        sourceCommit,
+        baseCommit,
+        sourceIsAncestorOfTarget:
+          git(
+            repoDir,
+            ["merge-base", "--is-ancestor", sourceCommit, targetRef],
+            true,
+          ).status === 0,
+        matchingRunCount: matchingRunsBeforeTargetAdvance.length,
+      })
     ) {
       git(workspaceDir, ["merge", "--ff-only", targetRef]);
       sourceCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;

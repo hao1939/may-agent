@@ -24,6 +24,7 @@ import {
   resolveIntegrationTarget,
   resolveLiveExecutionTarget,
   runMatchesPriorVerification,
+  shouldFastForwardIntegratedSource,
   scenarioNormalizationWaitProblem,
   terminalRunContextDir,
 } from "./spec-live-reconciliation.js";
@@ -416,5 +417,26 @@ describe("spec-live-reconciliation workflow", () => {
     expect(integrationMode("dev")).toBe("direct");
     expect(integrationMode("main")).toBe("pull-request");
     expect(() => resolveIntegrationTarget("bad branch")).toThrow();
+  });
+
+  test("preserves an integrated source commit when an exact run already exists", () => {
+    expect(
+      shouldFastForwardIntegratedSource({
+        existingPullRequest: false,
+        sourceCommit: "tested",
+        baseCommit: "base",
+        sourceIsAncestorOfTarget: true,
+        matchingRunCount: 1,
+      }),
+    ).toBe(false);
+    expect(
+      shouldFastForwardIntegratedSource({
+        existingPullRequest: false,
+        sourceCommit: "untested",
+        baseCommit: "base",
+        sourceIsAncestorOfTarget: true,
+        matchingRunCount: 0,
+      }),
+    ).toBe(true);
   });
 });

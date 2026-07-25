@@ -158,6 +158,11 @@ scenario-normalization escape path.
 - For `dev`, the workflow fetches current `origin/dev`, preserves the tested
   commit in ancestry, and pushes only a fast-forward remote update. A concurrent
   update causes a bounded refresh/retry, not a wait.
+- When the exact tested source commit is already an ancestor of current
+  `origin/dev`, preserve that source commit and its run/proof identity and
+  converge. Do not fast-forward the task branch to unrelated newer `dev`
+  commits before matching its run; doing so discards valid proof and creates an
+  endless moving-target rerun loop.
 - A conflict with current `origin/dev` returns to the agent on the same task;
   the repaired commit must receive a fresh exact live run before integration.
 - For `main`, a PR is discovered by exact source branch and target before

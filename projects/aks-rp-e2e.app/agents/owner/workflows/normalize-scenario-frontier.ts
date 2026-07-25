@@ -111,6 +111,7 @@ type GraphNode = {
   state: string;
   parentId: string;
   input: Record<string, unknown>;
+  conditionIds: string[];
 };
 
 const frontierTaskId = scenarioNormalizationTaskId;
@@ -412,6 +413,34 @@ function branchCandidateEvidence(
     : "unchecked";
 }
 
+function openConditionIds(appDir: string): Set<string> {
+  const state = readJson<Record<string, unknown>>(
+    join(appDir, ".state", "tasks", "state.json"),
+    {},
+  );
+  const conditions =
+    state.conditions && typeof state.conditions === "object"
+      ? (state.conditions as Record<string, Record<string, unknown>>)
+      : {};
+  const open = new Set<string>();
+  for (const [id, resource] of Object.entries(conditions)) {
+    const status =
+      resource.status &&
+      typeof resource.status === "object" &&
+      !Array.isArray(resource.status)
+        ? (resource.status as Record<string, unknown>)
+        : {};
+    const conditionState = String(status.state ?? "")
+      .trim()
+      .toLowerCase();
+    if (["true", "satisfied", "completed", "closed"].includes(conditionState)) {
+      continue;
+    }
+    open.add(id);
+  }
+  return open;
+}
+
 function graphNodes(appDir: string): GraphNode[] {
   const nodes: GraphNode[] = [];
   const state = readJson<Record<string, unknown>>(
@@ -448,6 +477,12 @@ function graphNodes(appDir: string): GraphNode[] {
         !Array.isArray(spec.input)
           ? (spec.input as Record<string, unknown>)
           : {},
+      conditionIds: Array.isArray(status.conditionIds)
+        ? status.conditionIds.filter(
+            (value): value is string =>
+              typeof value === "string" && value.trim().length > 0,
+          )
+        : [],
     });
   }
 
@@ -474,9 +509,58 @@ function graphNodes(appDir: string): GraphNode[] {
         !Array.isArray(task.input)
           ? (task.input as Record<string, unknown>)
           : {},
+      conditionIds: Array.isArray(task.condition_ids)
+        ? task.condition_ids.filter(
+            (value): value is string =>
+              typeof value === "string" && value.trim().length > 0,
+          )
+        : [],
     });
   }
   return nodes;
+}
+
+function hasOpenPipelineRunWait(
+  node: GraphNode,
+  openConditions: ReadonlySet<string>,
+): boolean {
+  if (![
+    "waiting",
+    "blocked",
+  ].includes(node.state)) {
+    return false;
+  }
+  return node.conditionIds.some(
+    (conditionId) =>
+      conditionId.startsWith("pipeline-run-") &&
+      conditionId.endsWith("-completed") &&
+      openConditions.has(conditionId),
+  );
+}
+
+function liveExecutionCapacity(
+  representedTaskIds: string[],
+  nodesById: ReadonlyMap<string, GraphNode>,
+  actionableTaskIds: string[],
+  openConditions: ReadonlySet<string>,
+  frontierLimit: number,
+): {
+  consumingTaskIds: string[];
+  pipelineWaitTaskIds: string[];
+  available: number;
+} {
+  const pipelineWaitTaskIds = [...new Set(representedTaskIds)].filter((taskId) => {
+    const node = nodesById.get(taskId);
+    return node ? hasOpenPipelineRunWait(node, openConditions) : false;
+  });
+  const consumingTaskIds = [
+    ...new Set([...actionableTaskIds, ...pipelineWaitTaskIds]),
+  ];
+  return {
+    consumingTaskIds,
+    pipelineWaitTaskIds,
+    available: Math.max(0, frontierLimit - consumingTaskIds.length),
+  };
 }
 
 function canRepresentFrontierRow(node: GraphNode): boolean {
@@ -502,10 +586,11 @@ function rowMatchesNode(row: FrontierRow, node: GraphNode): boolean {
     return node.input.workKey === row.adapterPath;
   }
   if (node.input.loopId) return false;
+  if (node.input.adapterPath === row.adapterPath) return true;
   return (
     isScenarioFrontierParent(node.parentId) &&
-    (node.input.adapterPath === row.adapterPath ||
-      (Boolean(row.specId) && node.input.specId === row.specId))
+    Boolean(row.specId) &&
+    node.input.specId === row.specId
   );
 }
 
@@ -515,10 +600,23 @@ function plainRowMatchesNode(row: PlainCarrierRow, node: GraphNode): boolean {
     return node.input.workKey === row.scenarioTestPath;
   }
   if (node.input.loopId) return false;
+
+  const exactLegacyPathMatch = [
+    node.input.scenarioTestPath,
+    node.input.plainCarrierPath,
+    node.input.legacyCarrierPath,
+  ].includes(row.scenarioTestPath);
+  const exactAdapterPathMatch = [
+    node.input.adapterPath,
+    node.input.normalizedCarrierPath,
+  ].includes(row.adapterPath);
+  if (exactLegacyPathMatch || exactAdapterPathMatch) {
+    return true;
+  }
+
   return (
     isScenarioFrontierParent(node.parentId) &&
-    (node.input.scenarioTestPath === row.scenarioTestPath ||
-      row.specIds.some((specId) => node.input.specId === specId) ||
+    (row.specIds.some((specId) => node.input.specId === specId) ||
       (Array.isArray(node.input.specIds) &&
         row.specIds.some((specId) =>
           (node.input.specIds as unknown[]).includes(specId),
@@ -777,6 +875,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     standingLoopDefinitions[scenarioNormalizationTaskId].frontierLimit;
   const minRunnableLeaves = desiredRunnableMin(ctx);
   const nodes = graphNodes(appDir);
+  const nodesById = new Map(nodes.map((node) => [node.id, node]));
+  const openConditions = openConditionIds(appDir);
 
   return withCleanOriginDev(projectDir, (worktreeDir, source) => {
     const {
@@ -832,13 +932,20 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           rows.flatMap((row) =>
             row.representedTaskIds.map((taskId) => ({
               taskId,
-              phase: nodes.find((node) => node.id === taskId)?.state,
+              phase: nodesById.get(taskId)?.state,
             })),
           ),
           maxLeaves,
         );
+        const capacity = liveExecutionCapacity(
+          rows.flatMap((row) => row.representedTaskIds),
+          nodesById,
+          accounting.actionableTaskIds,
+          openConditions,
+          maxLeaves,
+        );
         const actions = rowsNeedingWork
-          .slice(0, accounting.available)
+          .slice(0, capacity.available)
           .map((row) => inspectPlainCarrierRowBranches(projectDir, row))
           .map((row) => actionForPlainCarrierRow(row, originDevCommit, report));
         const residueCount = rows.filter(
@@ -851,13 +958,16 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           ? "current spec-referenced plain scenario unit"
           : "repository-only plain scenario file";
         const summary = rows.length
-          ? `Scenario frontier remains strict-red on ${source} ${originDevCommit} with zero missing adapter files: declared ${actions.length} bounded plain-carrier normalization task action(s), observed ${accounting.actionableTaskIds.length} actionable and ${accounting.waitingTaskIds.length} waiting plain-carrier task(s), found ${rows.length} ${rowScope}(s), ${remainingRepoPlainScenarioFileCount} remaining repo plain scenario file(s), and ${residueCount} row(s) represented only by attention or stale terminal residue.`
+          ? `Scenario frontier remains strict-red on ${source} ${originDevCommit} with zero missing adapter files: declared ${actions.length} bounded plain-carrier normalization task action(s), observed ${accounting.actionableTaskIds.length} actionable and ${accounting.waitingTaskIds.length} waiting plain-carrier task(s), counted ${capacity.pipelineWaitTaskIds.length} exact pipeline-backed wait(s) against live execution capacity for ${capacity.consumingTaskIds.length}/${maxLeaves} occupied slot(s), found ${rows.length} ${rowScope}(s), ${remainingRepoPlainScenarioFileCount} remaining repo plain scenario file(s), and ${residueCount} row(s) represented only by attention or stale terminal residue.`
           : `Scenario frontier remains strict-red on ${source} ${originDevCommit} with zero missing adapter files and ${remainingRepoPlainScenarioFileCount} remaining repo plain scenario file(s), but the inventory did not provide an exact plain-carrier row to reconcile.`;
         return ctx.done(summary, {
           state: "converged",
           summary,
           evidence: capEvidence(
-            evidence,
+            [
+              ...evidence,
+              `live-execution-capacity:${capacity.consumingTaskIds.length}/${maxLeaves};pipeline-waits=${capacity.pipelineWaitTaskIds.length}`,
+            ],
             rows,
             (row) =>
               `${row.scope === "repository-only" ? "repo-plain-row" : "plain-row"}:${row.scenarioTestPath};specs=${row.specIds.join(",") || "unknown"};actionable=${row.actionableTaskIds.length};waiting=${row.waitingTaskIds.length};residue=${row.residueTaskIds.length};branches=${branchCandidateEvidence(row)}`,
@@ -883,12 +993,19 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       rows.flatMap((row) =>
         row.representedTaskIds.map((taskId) => ({
           taskId,
-          phase: nodes.find((node) => node.id === taskId)?.state,
+          phase: nodesById.get(taskId)?.state,
         })),
       ),
       maxLeaves,
     );
-    const actionBudget = accounting.available;
+    const capacity = liveExecutionCapacity(
+      rows.flatMap((row) => row.representedTaskIds),
+      nodesById,
+      accounting.actionableTaskIds,
+      openConditions,
+      maxLeaves,
+    );
+    const actionBudget = capacity.available;
     const actions = rowsNeedingWork
       .slice(0, actionBudget)
       .map((row) => inspectFrontierRowBranches(projectDir, row))
@@ -899,7 +1016,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         row.waitingTaskIds.length === 0 &&
         row.residueTaskIds.length > 0,
     ).length;
-    const summaryBase = `Scenario frontier has ${missingAdapterFiles.length} current missing adapter(s) on ${source} ${originDevCommit}: declared ${actions.length} bounded owner task action(s), observed ${accounting.actionableTaskIds.length} actionable and ${accounting.waitingTaskIds.length} waiting task(s), and found ${residueCount} row(s) represented only by attention or stale terminal residue.`;
+    const summaryBase = `Scenario frontier has ${missingAdapterFiles.length} current missing adapter(s) on ${source} ${originDevCommit}: declared ${actions.length} bounded owner task action(s), observed ${accounting.actionableTaskIds.length} actionable and ${accounting.waitingTaskIds.length} waiting task(s), counted ${capacity.pipelineWaitTaskIds.length} exact pipeline-backed wait(s) against live execution capacity for ${capacity.consumingTaskIds.length}/${maxLeaves} occupied slot(s), and found ${residueCount} row(s) represented only by attention or stale terminal residue.`;
     const summary = summaryBase;
 
     const resultState =
@@ -909,7 +1026,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         ? "converged"
         : "needs-owner";
     const resultEvidence = capEvidence(
-      evidence,
+      [
+        ...evidence,
+        `live-execution-capacity:${capacity.consumingTaskIds.length}/${maxLeaves};pipeline-waits=${capacity.pipelineWaitTaskIds.length}`,
+      ],
       rows,
       (row) =>
         `row:${row.adapterPath};spec=${row.specId || "unknown"};actionable=${row.actionableTaskIds.length};waiting=${row.waitingTaskIds.length};residue=${row.residueTaskIds.length};branches=${branchCandidateEvidence(row)}`,
