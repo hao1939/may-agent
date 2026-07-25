@@ -1806,6 +1806,7 @@ export function invokeLoadedProjectAppAction(input: {
 }
 const appTaskControllersByBus = new WeakMap<EventBus, Map<string, ProjectAppTaskController>>();
 const appTaskCapacityByBus = new WeakMap<EventBus, ProjectAppTaskCapacity>();
+const appTaskCapacityByAppByBus = new WeakMap<EventBus, Map<string, ProjectAppTaskCapacity>>();
 const DEFAULT_GLOBAL_PROJECT_APP_CONCURRENCY = 10;
 
 function globalProjectAppConcurrency(): number {
@@ -1818,6 +1819,22 @@ function taskCapacityForBus(bus: EventBus): ProjectAppTaskCapacity {
   if (existing) return existing;
   const capacity = new ProjectAppTaskCapacity(globalProjectAppConcurrency());
   appTaskCapacityByBus.set(bus, capacity);
+  return capacity;
+}
+
+function taskCapacityForApp(bus: EventBus, appId: string, maxConcurrent: number): ProjectAppTaskCapacity {
+  let capacities = appTaskCapacityByAppByBus.get(bus);
+  if (!capacities) {
+    capacities = new Map();
+    appTaskCapacityByAppByBus.set(bus, capacities);
+  }
+  const existing = capacities.get(appId);
+  if (existing) {
+    existing.resize(maxConcurrent);
+    return existing;
+  }
+  const capacity = new ProjectAppTaskCapacity(maxConcurrent, taskCapacityForBus(bus));
+  capacities.set(appId, capacity);
   return capacity;
 }
 
@@ -1918,13 +1935,10 @@ function installConventionTaskControllers(
   descriptors: ProjectAppDescriptor[],
 ): Map<string, ProjectAppTaskController> {
   const previousControllers = appTaskControllersByBus.get(opts.bus);
-  const startAfterByApp = new Map<string, Promise<void>>();
-  for (const [appId, controller] of previousControllers ?? []) {
+  for (const controller of previousControllers?.values() ?? []) {
     controller.close();
-    startAfterByApp.set(appId, controller.whenDrained());
   }
   const controllers = new Map<string, ProjectAppTaskController>();
-  const capacity = taskCapacityForBus(opts.bus);
 
   for (const descriptor of descriptors) {
     const tasks = descriptor.app.tasks;
@@ -1945,8 +1959,7 @@ function installConventionTaskControllers(
     }
     const controller = new ProjectAppTaskController({
       maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
-      capacity,
-      startAfter: startAfterByApp.get(descriptor.id),
+      capacity: taskCapacityForApp(opts.bus, descriptor.id, descriptor.app.budget?.maxConcurrent ?? 1),
       maxRetries: 3,
       resync: {
         intervalMs: tasks.resyncIntervalMs ?? 60_000,
