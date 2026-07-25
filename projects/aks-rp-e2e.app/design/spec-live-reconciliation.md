@@ -175,6 +175,12 @@ unrelated merge.
   `test-current` judgment is invalid because that exact source has already run;
   the workflow feeds the full terminal evidence back to the same agent for a
   corrected verdict or fix-forward move.
+- Initial source preparation accepts `committed`, `test-current`, one exact
+  wait, or `needs-owner`. It accepts `accepted-pass` only when the caller
+  explicitly asks the workflow to validate an existing later current-main
+  recovery observation. Any other preparation verdict stays inside the same
+  structured correction loop; it does not become an owner handoff merely
+  because the verdict shape was invalid.
 - Accountable-owner fallback supplies exceptional domain judgment only. It does
   not push the task branch, queue ADO, accept live proof, or integrate source on
   behalf of this workflow. Any resulting in-scope repair returns through this
@@ -209,6 +215,11 @@ unrelated merge.
 - A task-owned replay conflict with current `origin/dev` returns to the agent on
   the same task; the repaired commit must receive a fresh exact live run before
   integration.
+- More generally, if `origin/dev` advances after the accepted live run and is
+  no longer in the tested source ancestry, the workflow first updates the task
+  source and then live-tests that new commit. This applies to a clean merge as
+  well as a conflict repair: direct integration never publishes an untested
+  merge commit.
 - For `main`, a PR is discovered by exact source branch and target before
   creation. Reviewer changes invalidate the old proof, and an abandoned PR is
   an owner decision rather than permission to recreate it.
