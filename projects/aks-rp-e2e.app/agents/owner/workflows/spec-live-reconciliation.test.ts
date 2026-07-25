@@ -26,6 +26,7 @@ import {
   runMatchesPriorVerification,
   shouldFastForwardIntegratedSource,
   scenarioNormalizationWaitProblem,
+  terminalRunDecisionProblem,
   terminalRunContextDir,
 } from "./spec-live-reconciliation.js";
 import {
@@ -176,6 +177,23 @@ describe("spec-live-reconciliation workflow", () => {
     expect(prompt).toContain("Review terminal run 42");
     expect(prompt).toContain("perform any source diagnosis, repair");
     expect(prompt).toContain("workflow still owns dispatch");
+  });
+
+  test("keeps test-current inside terminal fix-forward instead of handing it to the owner", () => {
+    expect(
+      terminalRunDecisionProblem({
+        decision: "test-current",
+        summary: "test the current source",
+        evidence: ["pipeline-run:42"],
+      }),
+    ).toContain("already received a terminal live run");
+    expect(
+      terminalRunDecisionProblem({
+        decision: "committed",
+        summary: "repaired the failed assertion",
+        evidence: ["source-commit:def"],
+      }),
+    ).toBeNull();
   });
 
   test("validates agent waits without replacing agent judgment", () => {

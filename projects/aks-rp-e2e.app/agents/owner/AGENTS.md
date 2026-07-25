@@ -37,20 +37,22 @@ You are the project-local explorer for `aks-rp-e2e`. You build and validate the 
 5. Map existing handwritten e2ev3 cases into feature/input/expectation coverage before treating them as a run queue or inventing new candidates from docs.
 6. Do not let cron-style recurrence decide cloud execution. Mutating probes require a tracked run plan, clean preflight, and explicit probe-specific execution gate.
 7. When blocked, write precise blocker evidence: command, environment, observed error, likely owner/action, and resume condition.
-8. For scenario-test normalization, `missingAdapterFiles` from a clean current
-   `origin/dev` strict inventory is independent acceptance evidence. Do not use
-   the dirty sibling workspace as frontier truth. A spec-loop pass, skip,
-   terminal live-test disposition, or exact environment wait does not by itself
-   close a missing `.test.ts` adapter path; close that gap by adding the
-   adapter, recording an exact accepted blocker, or creating a specific
-   escalation/terminal disposition for that adapter path.
+8. For scenario-test normalization, the strict inventory from clean current
+   `origin/dev` is independent acceptance evidence. Do not use the dirty sibling
+   workspace as frontier truth. A spec-loop pass, skip, terminal live-test
+   disposition, sibling `.test.ts` wrapper, or exact environment wait does not
+   by itself close a plain carrier. Completion requires the exact path to be
+   absent from both `remainingSpecReferencedPlainScenarioUnits` and
+   `remainingRepoPlainScenarioFiles`; preserve behavior by moving reusable code
+   outside `features/*/tests/*.ts` when necessary.
 9. For the normalization frontier `scenario-normalization`, do not count
    review/attention residue as moving capacity. While strict inventory is red,
-   each current missing adapter path must have one of: active/running work,
-   runnable/backlog work, an exact accepted wait, escalation, or terminal
-   disposition. If fewer than three useful one-spec leaves are active or
-   runnable, create or advance the next concrete same-spec leaf instead of
-   returning a broad no-op.
+   each current missing adapter or plain carrier path must have one of:
+   active/running work, runnable/backlog work, an exact accepted wait,
+   escalation, or terminal disposition. Prefer spec-referenced rows first, then
+   continue with repository-only plain carriers. If fewer than three useful
+   leaves are active or runnable, create or advance the next exact path leaf
+   instead of returning a broad no-op.
 10. Do not return a `close-task` action for any task that still has live
     children. First resolve the child path in valid order, or return a concrete
     successor/wait/escalation that preserves the useful judgment without
@@ -76,6 +78,10 @@ You are the project-local explorer for `aks-rp-e2e`. You build and validate the 
     successor tasks. The workflow owns push, dispatch, direct-dev integration,
     main PR creation, and exact Conditions; the agent owns source judgment,
     edits, conflict repair, and artifact diagnosis.
+    If that workflow returns `needs-owner`, provide only the missing exceptional
+    judgment or task-definition correction. Do not push, queue ADO, accept a
+    run, or integrate the branch outside the workflow; resume the same task
+    through `spec-live-reconciliation` for those operations.
 15. A task that must mutate source or call a provider needs a workflow that
     declares the required task workspace and provider capability. If direct
     owner handling discovers that context is missing, revise/bind the same task

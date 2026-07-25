@@ -251,6 +251,15 @@ export function agentConditionProblem(decision: AgentDecision): string | null {
   return null;
 }
 
+export function terminalRunDecisionProblem(
+  decision: AgentDecision,
+): string | null {
+  if (decision.decision === "test-current") {
+    return "decision=test-current is not actionable after the exact source commit already received a terminal live run; judge that run, repair the source, retry a proven transient failure, wait on an exact external fact, or identify a genuine ownership boundary";
+  }
+  return null;
+}
+
 export function scenarioNormalizationWaitProblem(
   decision: AgentDecision,
 ): string | null {
@@ -1576,6 +1585,7 @@ export async function reconcileSpecLive(
         {
           scenarioNormalization: Boolean(normalizationInput),
           continueDomainWorkOnValidation: true,
+          validateDecision: terminalRunDecisionProblem,
         },
       );
       if (!decision) {

@@ -148,7 +148,14 @@ scenario-normalization escape path.
   workflow retries that invocation once with the same task worktree and hot
   evidence. An empty or interrupted invocation is a runtime failure, not an
   agent decision and not an ownership-boundary handoff. Only a returned
-  `needs-owner` judgment may enter the accountable-owner path.
+  `needs-owner` judgment may enter the accountable-owner path. A terminal-run
+  `test-current` judgment is invalid because that exact source has already run;
+  the workflow feeds the full terminal evidence back to the same agent for a
+  corrected verdict or fix-forward move.
+- Accountable-owner fallback supplies exceptional domain judgment only. It does
+  not push the task branch, queue ADO, accept live proof, or integrate source on
+  behalf of this workflow. Any resulting in-scope repair returns through this
+  same workflow so its dispatch and exact-proof invariants still apply.
 - An interrupted dirty task worktree is given back to the owner agent to finish,
   validate, and commit or to remove only proven task-generated residue. Ambiguous
   ownership requires owner review; it is never silently discarded.
