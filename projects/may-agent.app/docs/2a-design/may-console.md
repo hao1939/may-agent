@@ -334,10 +334,11 @@ feature.
 
 When May Console is exposed through the Web terminal, browser refresh is a
 reattach, not a restart. The backend terminal manager keeps the terminal process
-warm for its idle TTL and asks the terminal bridge to replay a bounded tmux
-pane snapshot to the new browser client. That replay must include the latest
-visible prompt/status so a refresh does not make the operator lose context or
-wonder whether the selected agent is still responding.
+warm for its idle TTL and reuses the live bridge/tmux attachment. It does not
+replay a raw terminal-byte tail or pane snapshot: an arbitrary ANSI fragment is
+not a reliable screen state. The live tmux attachment and the console's next
+redraw are authoritative. Durable review belongs in the session transcript or
+explicit output artifacts.
 
 The Web terminal transport and resize rules are defined in `web-terminal.md`.
 May Console should not need special browser rendering behavior beyond that

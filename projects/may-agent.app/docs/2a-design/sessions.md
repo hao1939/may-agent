@@ -120,8 +120,16 @@ remain migration data rather than a reason to weaken the current contract.
 Runtime maintenance expires old SQL projections in bounded batches. It does not
 delete a live record merely because its original task is large: new task text
 is bounded in SQL by construction and the full task stays in `meta.json`.
-Longer-term analysis uses the same `.state/sessions/<id>/` path. Terminal state
-is metadata; it is not a filesystem location.
+Completed session directories expire with their SQL session rows after the
+default 14-day window. Cleanup first verifies the row is terminal and the
+directory has no active marker, retires the DB row, and only then removes the
+directory. Longer retention or export is an explicit archival concern.
+
+The runtime keeps promises only for active work and a small bounded cache of
+recent completed results. Older results are reconstructed from the durable
+session transcript on demand; full message histories must never accumulate in
+an unbounded in-memory map. Terminal state is metadata; it is not a filesystem
+location.
 
 See `events.md` → "Data Retention" for the full retention table.
 

@@ -72,6 +72,21 @@ Legacy hash routes are ingress aliases only. New links and docs use real paths.
 The HTTP adapter serves `index.html` for platform client routes while keeping
 `/api/*`, `/ws`, static assets, and project domain UI routes explicit.
 
+## Route Ownership and Bounded Reads
+
+Each route initializes only the data and realtime connections needed by its
+visible surface. In particular, direct `/terminal` navigation must not load the
+hidden Live dashboard or open its event websocket. Live initializes on entry;
+chat/session routes open realtime transport when they need it and release it
+when the active route no longer does.
+
+Operator read models are bounded summaries. Timeline and liveness APIs return
+the newest fixed-size row set in display order and report when it was
+truncated. Bulk audit remains a dedicated query/export concern rather than an
+accidental dashboard response. Static assets use conditional cache validators
+so unchanged files return `304 Not Modified`; optional presentation libraries
+must not block terminal startup.
+
 ## Live Surface
 
 The front page should answer, in order:

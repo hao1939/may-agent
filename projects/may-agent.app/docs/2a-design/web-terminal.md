@@ -2,7 +2,8 @@
 
 **Design status:** Accepted.
 **Implementation status:** Implemented for shared profiles, streaming UTF-8,
-active-client resize ownership, tmux continuity, and browser xterm rendering.
+active-client resize ownership, bounded warm continuity, and browser xterm
+rendering.
 **Aligned with**: `webui.md`, `may-console.md`, `http-boundary.md`
 
 ## Purpose
@@ -22,8 +23,8 @@ between them.
 browser container
   -> xterm.js fit calculates cols/rows
   -> websocket sends input and resize frames
-  -> terminal manager keeps one session per profile
-  -> terminal bridge attaches to tmux
+  -> terminal manager owns one bridge per active/warm profile
+  -> terminal bridge owns one tmux session for the same lifetime
   -> profile process runs inside tmux
 ```
 
@@ -90,6 +91,20 @@ that window the current size owner.
 Browser refresh is an attach, not a process restart. The terminal manager keeps
 the tmux-backed profile warm for its idle TTL.
 
+The bridge and tmux session have the same owner and expiry:
+
+- while at least one browser is attached, the manager keeps both alive;
+- after the last browser detaches, a reconnect within the idle TTL reuses the
+  same bridge and tmux session;
+- when the idle TTL expires, the manager terminates both the bridge and its
+  named tmux session, including the profile process tree; and
+- explicit Restart applies the same full teardown immediately.
+
+A Web process restart may rediscover and attach to a still-live tmux session.
+That recovery path does not make tmux immortal: once the new manager owns it,
+the normal idle-TTL rule applies. This makes tmux a bounded continuity
+mechanism rather than an unbounded background process supervisor.
+
 The manager does not replay raw terminal bytes when a browser attaches or
 reattaches. Replaying an arbitrary ANSI tail can corrupt an interactive TUI
 because it is not a complete screen state. The live tmux attach and the
@@ -103,6 +118,44 @@ plain terminal output, scrolling cannot reconstruct them. When durable review of
 such content matters, use a transcript or explicit command output artifact
 rather than relying on browser scrollback.
 
+### Readiness
+
+Websocket connection is not terminal readiness. The manager may send a
+`starting` control frame while it launches the bridge, but it sends `ready`
+only after the bridge has created its PTY and attached to tmux. Reattaching to
+an already-ready warm bridge receives the stored bridge readiness frame.
+
+The `ready` frame includes the profile, PTY pid, and measured `startupMs` so the
+browser can distinguish transport latency from terminal startup latency.
+
+### Page and data isolation
+
+Opening `/terminal` initializes only the terminal surface. It must not fetch
+the hidden Live dashboard, timelines, metric histories, or open the dashboard
+event websocket. Navigating to Live initializes those resources on entry;
+navigating away releases its realtime connection when no chat surface needs
+it.
+
+Dashboard history APIs are summaries, not bulk export endpoints. Timeline and
+liveness session rows have a fixed server-side cap, return the newest rows in
+chronological display order, and expose truncation metadata. Static Web UI
+files use validators such as ETag so unchanged scripts and xterm assets return
+`304 Not Modified` instead of being transferred again.
+
+### Retention and resource ownership
+
+The durable session transcript is the audit source, but it is not retained
+forever by default. Database maintenance removes terminal session directories
+only after their corresponding session DB row is old, non-running, and
+deleted. Active markers always prevent filesystem removal. The default
+retention window matches the session-row window (14 days), and every
+maintenance pass is bounded.
+
+Terminal status exposes connection count, PTY pid, and warm expiry. Operators
+should use those fields, terminal startup time, state-directory size, and
+session/event counts to separate terminal startup problems from general daemon
+resource pressure.
+
 ## Implementation checks
 
 - Split UTF-8 inside a JSONL frame must round-trip without replacement
@@ -113,6 +166,13 @@ rather than relying on browser scrollback.
 - CSS must give the terminal mount a stable real container; it should not hide
   fit problems with profile-specific spacing.
 - Passive concurrent clients must not resize or receive synthetic replay.
+- `ready` must originate from the bridge after PTY/tmux attachment; the manager
+  must not synthesize premature readiness.
+- Reattach inside the idle TTL must reuse the bridge; expiry and Restart must
+  terminate the matching tmux session as well as the bridge.
+- Direct terminal navigation must not issue Live dashboard requests.
+- Dashboard history responses must remain bounded and report truncation.
+- Unchanged static assets must support conditional `304` responses.
 - May Console, shell, Claude, Codex, and ops use the same code path.
 
 Focused coverage lives in
