@@ -23,6 +23,11 @@ export interface SkillCatalog {
   readonly omittedFromPrompt: readonly string[];
 }
 
+export interface SkillActivationRule {
+  skill: string;
+  pattern: string;
+}
+
 interface SkillSource {
   scope: MaySkillScope;
   packagePath: string;
@@ -53,15 +58,17 @@ export async function discoverAgentSkills(opts: {
   sharedRoot?: string;
 }): Promise<SkillCatalog> {
   const addressedRoots = [
-    { path: join(opts.agentDir, "skills"), scope: opts.appLocal ? "app-agent" as const : "agent" as const, priority: 1 },
+    {
+      path: join(opts.agentDir, "skills"),
+      scope: opts.appLocal ? ("app-agent" as const) : ("agent" as const),
+      priority: 1,
+    },
     ...(opts.appLocal && opts.globalAgentDir
       ? [{ path: join(opts.globalAgentDir, "skills"), scope: "agent" as const, priority: 2 }]
       : []),
     ...(opts.sharedRoot ? [{ path: join(opts.sharedRoot, "skills"), scope: "shared" as const, priority: 3 }] : []),
   ];
-  const trustedRoots = addressedRoots
-    .filter((root) => existsSync(root.path))
-    .map((root) => realpathSync(root.path));
+  const trustedRoots = addressedRoots.filter((root) => existsSync(root.path)).map((root) => realpathSync(root.path));
   const sources = addressedRoots.flatMap((root) => immediateSkillPackages(root.path, root.scope, root.priority));
   const env = new NodeExecutionEnv({ cwd: opts.agentDir });
   const loaded = await loadSourcedSkills(
@@ -80,7 +87,9 @@ export async function discoverAgentSkills(opts: {
     try {
       canonicalPath = realpathSync(item.skill.filePath);
     } catch (err) {
-      diagnostics.push(`${item.source.scope}:${item.skill.filePath}: canonical path failed: ${err instanceof Error ? err.message : String(err)}`);
+      diagnostics.push(
+        `${item.source.scope}:${item.skill.filePath}: canonical path failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
       continue;
     }
     if (!trustedRoots.some((root) => inside(root, canonicalPath))) {
@@ -88,7 +97,9 @@ export async function discoverAgentSkills(opts: {
       continue;
     }
     if (statSync(canonicalPath).size > MAX_EXPLICIT_SKILL_BYTES) {
-      diagnostics.push(`${item.source.scope}:${item.skill.filePath}: skill body exceeds ${MAX_EXPLICIT_SKILL_BYTES} bytes`);
+      diagnostics.push(
+        `${item.source.scope}:${item.skill.filePath}: skill body exceeds ${MAX_EXPLICIT_SKILL_BYTES} bytes`,
+      );
       continue;
     }
     const skill: MaySkill = {
@@ -104,12 +115,16 @@ export async function discoverAgentSkills(opts: {
 
   const skills = new Map<string, MaySkill>();
   for (const [name, matches] of grouped) {
-    const bestPriority = Math.min(...matches.map((match) => sources.find((source) => source.scope === match.scope)?.priority ?? 99));
+    const bestPriority = Math.min(
+      ...matches.map((match) => sources.find((source) => source.scope === match.scope)?.priority ?? 99),
+    );
     const winners = matches.filter(
       (match) => (sources.find((source) => source.scope === match.scope)?.priority ?? 99) === bestPriority,
     );
     if (winners.length > 1) {
-      diagnostics.push(`Ambiguous ${winners[0].scope} skill name "${name}": ${winners.map((skill) => skill.filePath).join(", ")}`);
+      diagnostics.push(
+        `Ambiguous ${winners[0].scope} skill name "${name}": ${winners.map((skill) => skill.filePath).join(", ")}`,
+      );
       continue;
     }
     skills.set(name, winners[0]);
@@ -141,7 +156,11 @@ export function formatBoundedSkillCatalog(
   return { text: formatSkillsForSystemPrompt(selected), omitted };
 }
 
-export function invokeCatalogSkill(catalog: SkillCatalog | undefined, name: string, task: string): {
+export function invokeCatalogSkill(
+  catalog: SkillCatalog | undefined,
+  name: string,
+  task: string,
+): {
   prompt: string;
   skill: MaySkill;
 } {
@@ -151,6 +170,14 @@ export function invokeCatalogSkill(catalog: SkillCatalog | undefined, name: stri
     throw new Error(`Skill "${name}" exceeds the ${MAX_EXPLICIT_SKILL_BYTES}-byte activation limit`);
   }
   return { prompt: formatSkillInvocation(skill, task), skill };
+}
+
+export function matchSkillActivationRule(
+  rules: readonly SkillActivationRule[] | undefined,
+  task: string,
+): SkillActivationRule | undefined {
+  if (!rules?.length) return undefined;
+  return rules.find((rule) => new RegExp(rule.pattern, "i").test(task));
 }
 
 export function parseExplicitSkill(text: string): { skill?: string; task: string } {
