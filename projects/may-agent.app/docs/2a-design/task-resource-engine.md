@@ -476,6 +476,15 @@ attempt. Interrupted previous-runtime attempts are either safely requeued from
 persisted trigger/current evidence or moved to attention; they are never
 silently treated as running forever.
 
+Every bounded agent session started directly by an attempt or from inside its
+workflow is correlated to `(appId, taskId, generation)` when the neutral
+`session.start` notification reaches infrastructure. If desired state advances,
+the controller ends the old attempt and interrupts its attached session
+immediately. A session that starts late for a missing task, obsolete generation,
+or non-current attempt is rejected and interrupted instead of consuming
+capacity or returning stale work. This correlation belongs to the autonomous
+host; the agent runtime remains unaware of task storage and reconciliation.
+
 Recovery uses the same task resource and the same app controller:
 
 1. retry a known transient delivery or execution failure within its bound;
@@ -569,4 +578,7 @@ Tests and live audits must prove:
 14. pressure and restart never create an additional attempt for the same key;
 15. parent waiting and child creation apply atomically; and
 16. a meaningful child transition durably wakes the same executable parent
-    without an app-specific route.
+    without an app-specific route; and
+17. direct and workflow-nested sessions attach to their current task attempt,
+    and task supersession interrupts or rejects sessions from the old
+    generation.
