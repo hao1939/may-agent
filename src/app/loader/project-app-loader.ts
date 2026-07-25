@@ -2284,7 +2284,11 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
               appOwner: descriptor.owner,
               trigger: taskTriggerWithOwnerIntents(config, intent.id, event),
             });
-            if (observation.kind === "observed") taskController.enqueue(observation.taskId);
+            if (observation.kind === "observed") {
+              taskController.enqueue(observation.taskId, {
+                front: event.type === "project.comment.created",
+              });
+            }
             return projectAppTaskDelivery(descriptor, observation.taskId, "resolved task event accepted");
           }
           continue;
