@@ -1,5 +1,12 @@
 import { randomBytes } from "node:crypto";
-import { createWriteStream, existsSync } from "node:fs";
+import {
+	closeSync,
+	createWriteStream,
+	existsSync,
+	openSync,
+	readSync,
+	unlinkSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -100,21 +107,46 @@ const defaultBashOperations: BashOperations = {
 				return;
 			}
 
+			const capturePath = getTempFilePath();
+			const captureFd = openSync(capturePath, "w+");
 			const child = spawn(shell, [...args, command], {
 				cwd,
 				detached: true,
 				env: env ?? getShellEnv(),
-				stdio: ["ignore", "pipe", "pipe"],
+				stdio: ["ignore", captureFd, captureFd],
 			});
 
 			let timedOut = false;
 			let settled = false;
-			let exitFallbackHandle: NodeJS.Timeout | undefined;
+			let captureOffset = 0;
+			let captureClosed = false;
+			let capturePollHandle: NodeJS.Timeout | undefined;
+
+			const flushCapture = () => {
+				if (captureClosed) return;
+				const buffer = Buffer.allocUnsafe(64 * 1024);
+				while (true) {
+					const bytesRead = readSync(captureFd, buffer, 0, buffer.length, captureOffset);
+					if (bytesRead === 0) return;
+					captureOffset += bytesRead;
+					onData(buffer.subarray(0, bytesRead));
+				}
+			};
 
 			const cleanup = () => {
 				if (timeoutHandle) clearTimeout(timeoutHandle);
-				if (exitFallbackHandle) clearTimeout(exitFallbackHandle);
+				if (capturePollHandle) clearInterval(capturePollHandle);
 				if (signal) signal.removeEventListener("abort", onAbort);
+				if (!captureClosed) {
+					flushCapture();
+					captureClosed = true;
+					closeSync(captureFd);
+					try {
+						unlinkSync(capturePath);
+					} catch {
+						// The capture file may already have been removed during shutdown.
+					}
+				}
 			};
 			const settleResolve = (code: number | null) => {
 				if (settled) return;
@@ -141,13 +173,9 @@ const defaultBashOperations: BashOperations = {
 				}, timeout * 1000);
 			}
 
-			// Stream stdout and stderr
-			if (child.stdout) {
-				child.stdout.on("data", onData);
-			}
-			if (child.stderr) {
-				child.stderr.on("data", onData);
-			}
+			// A regular file cannot be held open as a process-lifecycle pipe by a
+			// background descendant. Poll it to preserve incremental tool updates.
+			capturePollHandle = setInterval(flushCapture, 100);
 
 			// Handle shell spawn errors
 			child.on("error", (err) => {
@@ -170,15 +198,12 @@ const defaultBashOperations: BashOperations = {
 				}
 			}
 
-			// `close` waits for every inherited output pipe. A background
-			// descendant can keep those pipes open after the requested shell exits,
-			// so use a short drain window and then close the whole process group.
+			// Once the requested shell exits, terminate any background descendants
+			// and drain their final captured output.
 			child.on("exit", (code) => {
 				if (settled) return;
-				exitFallbackHandle = setTimeout(() => {
-					if (child.pid) killProcessTree(child.pid);
-					settleResolve(code);
-				}, 1_000);
+				if (child.pid) killProcessTree(child.pid);
+				settleResolve(code);
 			});
 
 			// Handle process and pipe close
