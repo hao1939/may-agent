@@ -70,6 +70,9 @@ export const DEFAULT_MODEL_REQUEST_TIMEOUT_MS = 300_000;
 const boundedStreamSimple: typeof streamSimple = (model, context, options) =>
   streamSimple(model, context, {
     ...options,
+    signal: options?.signal
+      ? AbortSignal.any([options.signal, AbortSignal.timeout(DEFAULT_MODEL_REQUEST_TIMEOUT_MS)])
+      : AbortSignal.timeout(DEFAULT_MODEL_REQUEST_TIMEOUT_MS),
     timeoutMs: options?.timeoutMs ?? DEFAULT_MODEL_REQUEST_TIMEOUT_MS,
     maxRetries: options?.maxRetries ?? 1,
   });
