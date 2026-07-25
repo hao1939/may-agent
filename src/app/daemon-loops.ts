@@ -5,10 +5,12 @@ import type { SubagentManager } from "../lib/index.js";
 export async function runInteractiveLoop(opts: {
   bus: EventBus;
   manager: SubagentManager;
-  chatSession: {
-    isRunning: () => boolean;
-    cancelAll: () => void;
-  } | undefined;
+  chatSession:
+    | {
+        isRunning: () => boolean;
+        cancelAll: () => void;
+      }
+    | undefined;
   handleInput: (input: string, source: string) => void;
   gracefulShutdown: () => void;
   socketUI: { close: () => void };
@@ -100,10 +102,14 @@ export async function runDaemonKeepalive(opts: {
   });
 
   emitHeartbeat();
-  setInterval(emitHeartbeat, 60_000);
+  const heartbeatTimer = setInterval(emitHeartbeat, 60_000);
 
   process.stdin.on("end", () => {});
   process.stdin.resume();
 
-  return await new Promise<never>(() => {});
+  try {
+    return await new Promise<never>(() => {});
+  } finally {
+    clearInterval(heartbeatTimer);
+  }
 }
