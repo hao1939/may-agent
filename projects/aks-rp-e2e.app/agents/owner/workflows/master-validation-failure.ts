@@ -1217,19 +1217,13 @@ function prepareCampaignRepair(
   if (!pullRequestId) {
     throw new Error("Azure DevOps did not return a campaign repair PR id");
   }
-  ctx.dispatchEvent("project.task.tick", {
-    target: {
-      project: "aks-rp-e2e",
-      taskId: "master-validation-staging-cycle",
-    },
-    project: "aks-rp-e2e",
-    taskId: "master-validation-staging-cycle",
-    task_id: "master-validation-staging-cycle",
-    action: "master-validation-cycle",
-    reason: "master-validation-focused-fix-published",
-    pullRequestId,
-    sourceCommit: values.sourceCommit,
-  });
+  ctx.dispatchEvent(
+    "project.task.tick",
+    campaignRepairWakePayload({
+      pullRequestId,
+      sourceCommit: values.sourceCommit,
+    }),
+  );
   const summary = `Prepared draft focused PR ${pullRequestId} for ${input.specId}; the frozen campaign can integrate it immediately, and the human will be notified only after verification publishes it as non-draft.`;
   return waiting(
     ctx,
@@ -1246,6 +1240,36 @@ function prepareCampaignRepair(
     productRecoveryCondition(input, currentRecoveryBaselineRunId(ctx, input)),
     absorbLegacyRecoveryActions(ctx.task),
   );
+}
+
+export function campaignRepairWakePayload(input: {
+  pullRequestId: string;
+  sourceCommit: string;
+}): Record<string, unknown> {
+  return {
+    target: {
+      project: "aks-rp-e2e",
+      taskId: "master-validation-staging-cycle",
+    },
+    project: "aks-rp-e2e",
+    taskId: "master-validation-staging-cycle",
+    task_id: "master-validation-staging-cycle",
+    action: "master-validation-cycle",
+    reason: "master-validation-focused-fix-published",
+    overrideWait: true,
+    pullRequestId: input.pullRequestId,
+    sourceCommit: input.sourceCommit,
+    data: {
+      project: "aks-rp-e2e",
+      taskId: "master-validation-staging-cycle",
+      task_id: "master-validation-staging-cycle",
+      action: "master-validation-cycle",
+      reason: "master-validation-focused-fix-published",
+      overrideWait: true,
+      pullRequestId: input.pullRequestId,
+      sourceCommit: input.sourceCommit,
+    },
+  };
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
