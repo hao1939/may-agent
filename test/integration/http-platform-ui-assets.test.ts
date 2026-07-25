@@ -48,8 +48,8 @@ describe("F8 regression: top-level platform UI assets (chromeless)", () => {
     } catch {}
   });
 
-  function get(path: string): Response {
-    return servePlatformUiRequest(new Request(`http://localhost${path}`), join(tmpRoot, "projects"))
+  function get(path: string, headers?: HeadersInit): Response {
+    return servePlatformUiRequest(new Request(`http://localhost${path}`, { headers }), join(tmpRoot, "projects"))
       ?? new Response("Not found", { status: 404 });
   }
 
@@ -93,6 +93,17 @@ describe("F8 regression: top-level platform UI assets (chromeless)", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("javascript");
     expect(await res.text()).toContain("addProjectComment");
+  });
+
+  test("returns 304 when a static asset ETag still matches", async () => {
+    const first = get("/app.js");
+    const etag = first.headers.get("etag");
+    expect(etag).toBeTruthy();
+    expect(first.headers.get("cache-control")).toContain("no-cache");
+
+    const cached = get("/app.js", { "if-none-match": etag! });
+    expect(cached.status).toBe(304);
+    expect(await cached.text()).toBe("");
   });
 
   test("does NOT serve assets outside the platform/ui dir (containment)", async () => {

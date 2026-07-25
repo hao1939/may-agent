@@ -14,6 +14,8 @@ let currentRouteParams = {};
 let offset = 0;
 const limit = 30;
 let _currentProjectDetail = null;
+let liveInitialized = false;
+let legacyDashboardInitialized = false;
 
 // ── Router ────────────────────────────────────────────────────────────
 // Real routes: / /agents /agents/<name> /projects /projects/:id
@@ -140,7 +142,18 @@ function projectPathOf(id) {
   return 'projects/' + id;
 }
 
+function initializeLegacyDashboard() {
+  if (legacyDashboardInitialized) return;
+  legacyDashboardInitialized = true;
+  loadHealth();
+  loadHealthGraphs();
+  loadAgentGrid();
+  loadTimeline();
+  loadStats();
+}
+
 function render() {
+  const previousTab = currentTab;
   const { tab, params } = parseRoute();
   currentTab = tab;
   currentRouteParams = params;
@@ -167,6 +180,14 @@ function render() {
   // Tab highlight
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
   // Surface initialization
+  const needsRealtime = tab === 'live' || tab === 'sessions' || inAgentChat;
+  if (typeof setRealtimeEnabled === 'function') setRealtimeEnabled(needsRealtime);
+  else if (needsRealtime && typeof connectWs === 'function') connectWs();
+  if (tab === 'live' && (!liveInitialized || previousTab !== 'live')) {
+    liveInitialized = true;
+    loadLiveness();
+    if (document.getElementById('legacy-dashboard')?.open) initializeLegacyDashboard();
+  }
   if (tab === 'sessions') initChat(params.id || null);
   if (tab !== 'agents' || !inAgentChat) currentAgentChat = null;
   if (tab === 'agents') {
@@ -370,21 +391,10 @@ async function verbCancelSession(sessionId, ev) {
   scheduleLivenessRefresh();
 }
 
-// ── Init ──────────────────────────────────────────────────────────────
-
-loadHealth();
-loadHealthGraphs();
-loadLiveness();
-loadAgentGrid();
-loadTimeline();
-loadStats();
-if (typeof connectWs === 'function') {
-  connectWs();
-} else {
-  console.warn('chat websocket unavailable: connectWs is not defined');
-}
-
-// Apply initial route from URL hash (delegates to router)
+// Apply initial route from URL/hash. Each surface initializes its own data.
+document.getElementById('legacy-dashboard')?.addEventListener('toggle', event => {
+  if (event.currentTarget.open) initializeLegacyDashboard();
+});
 render();
 
 function timeAgo(ts) {

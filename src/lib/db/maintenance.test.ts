@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { mkdtempSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { closeDb, getDb } from "./connection.js";
@@ -17,6 +17,8 @@ describe("bounded DB maintenance", () => {
            VALUES (?, 'dev', 'task', 'done', 1)`,
           [`old_${index}`],
         );
+        mkdirSync(join(persistDir, "sessions", `old_${index}`), { recursive: true });
+        writeFileSync(join(persistDir, "sessions", `old_${index}`, "session.jsonl"), "history");
       }
       db.run(
         `INSERT INTO sessions (sessionId, agent, task, status, startedAt)
@@ -25,8 +27,35 @@ describe("bounded DB maintenance", () => {
 
       const result = runDbMaintenancePass(persistDir, { now, batchSize: 2 });
       expect(result.deleted.sessions).toBe(2);
+      expect(result.deleted.sessionDirectories).toBe(2);
       expect((db.prepare("SELECT COUNT(*) AS count FROM sessions WHERE status = 'done'").get() as any).count).toBe(3);
       expect(db.prepare("SELECT sessionId FROM sessions WHERE sessionId = 'active'").get()).toBeTruthy();
+      const remainingDirectories = Array.from({ length: 5 }, (_, index) => `old_${index}`)
+        .filter((sessionId) => existsSync(join(persistDir, "sessions", sessionId)));
+      expect(remainingDirectories).toHaveLength(3);
+    } finally {
+      closeDb(persistDir);
+    }
+  });
+
+  it("preserves old session directories that still have an active marker", () => {
+    const persistDir = mkdtempSync(join(tmpdir(), "may-maintenance-active-dir-"));
+    const now = 40 * 86_400_000;
+    try {
+      const db = getDb(persistDir);
+      db.run(
+        `INSERT INTO sessions (sessionId, agent, task, status, startedAt)
+         VALUES ('stale-marker', 'dev', 'task', 'done', 1)`,
+      );
+      const dir = join(persistDir, "sessions", "stale-marker");
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(join(dir, "[ACTIVE]"), "active");
+
+      const result = runDbMaintenancePass(persistDir, { now, batchSize: 2 });
+      expect(result.deleted.sessions).toBe(0);
+      expect(result.deleted.sessionDirectories).toBe(0);
+      expect(db.prepare("SELECT sessionId FROM sessions WHERE sessionId = 'stale-marker'").get()).toBeTruthy();
+      expect(existsSync(dir)).toBe(true);
     } finally {
       closeDb(persistDir);
     }

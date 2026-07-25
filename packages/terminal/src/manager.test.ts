@@ -1,15 +1,19 @@
-import { afterEach, describe, expect, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createTerminalManager, type TerminalSocket } from "./manager.js";
 
-const oldWebTerminal = process.env.MAY_WEB_TERMINAL;
-const oldIdleTtl = process.env.MAY_WEB_TERMINAL_IDLE_TTL_MS;
-const oldBridge = process.env.MAY_TERMINAL_BRIDGE;
-
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitFor(predicate: () => boolean, timeoutMs = 2_000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (!predicate()) {
+    if (Date.now() >= deadline) throw new Error("Timed out waiting for terminal test condition");
+    await delay(5);
+  }
 }
 
 function makeFakeBridge(root: string): string {
@@ -54,6 +58,16 @@ function makeSplitUtf8Bridge(root: string): string {
   return bridge;
 }
 
+function makeDelayedReadyBridge(root: string): string {
+  const bridge = join(root, "fake-terminal-bridge.cjs");
+  writeFileSync(bridge, [
+    "#!/usr/bin/env node",
+    "setTimeout(() => console.log(JSON.stringify({ type: 'ready', pid: process.pid })), 40);",
+    "process.stdin.resume();",
+  ].join("\n"), "utf-8");
+  return bridge;
+}
+
 function makeSocket(): TerminalSocket & { frames: unknown[]; closed: boolean } {
   return {
     frames: [],
@@ -67,14 +81,15 @@ function makeSocket(): TerminalSocket & { frames: unknown[]; closed: boolean } {
   };
 }
 
-afterEach(() => {
-  if (oldWebTerminal === undefined) delete process.env.MAY_WEB_TERMINAL;
-  else process.env.MAY_WEB_TERMINAL = oldWebTerminal;
-  if (oldIdleTtl === undefined) delete process.env.MAY_WEB_TERMINAL_IDLE_TTL_MS;
-  else process.env.MAY_WEB_TERMINAL_IDLE_TTL_MS = oldIdleTtl;
-  if (oldBridge === undefined) delete process.env.MAY_TERMINAL_BRIDGE;
-  else process.env.MAY_TERMINAL_BRIDGE = oldBridge;
-});
+function createTestManager(root: string, bridgePath: string, idleTtlMs = 500) {
+  return createTerminalManager({
+    projectRoot: root,
+    enabled: true,
+    idleTtlMs,
+    bridgePath,
+    tmuxSocket: `may-web-test-${process.pid}`,
+  });
+}
 
 describe("terminal manager", () => {
   test("launches Codex inline so terminal history remains available", () => {
@@ -85,17 +100,13 @@ describe("terminal manager", () => {
     expect(codex?.command).toContain("exec codex --no-alt-screen");
   });
 
-  test("reattaches a detached terminal through a fresh bridge", async () => {
+  test("reattaches a detached terminal through the warm bridge", async () => {
     const root = mkdtempSync(join(tmpdir(), "terminal-manager-"));
     try {
-      process.env.MAY_WEB_TERMINAL = "1";
-      process.env.MAY_WEB_TERMINAL_IDLE_TTL_MS = "120";
-      process.env.MAY_TERMINAL_BRIDGE = makeFakeBridge(root);
-
-      const manager = createTerminalManager({ projectRoot: root });
+      const manager = createTestManager(root, makeFakeBridge(root), 120);
       const firstSocket = makeSocket();
       await manager.attach("may", firstSocket);
-      await delay(20);
+      await waitFor(() => firstSocket.frames.some((frame: any) => frame.type === "ready"));
 
       const firstStatus = manager.getStatus().profiles.find((profile) => profile.id === "may");
       expect(firstStatus?.connected).toBe(true);
@@ -110,9 +121,9 @@ describe("terminal manager", () => {
 
       const secondSocket = makeSocket();
       await manager.attach("may", secondSocket);
-      await delay(20);
+      await waitFor(() => secondSocket.frames.some((frame: any) => frame.type === "ready"));
       const secondStatus = manager.getStatus().profiles.find((profile) => profile.id === "may");
-      expect(secondStatus?.pid).not.toBe(firstPid);
+      expect(secondStatus?.pid).toBe(firstPid);
       expect(secondStatus?.clients).toBe(1);
       expect(secondStatus?.idleUntil).toBeUndefined();
 
@@ -125,20 +136,37 @@ describe("terminal manager", () => {
     }
   });
 
+  test("reports starting until the bridge confirms PTY readiness", async () => {
+    const root = mkdtempSync(join(tmpdir(), "terminal-manager-"));
+    try {
+      const manager = createTestManager(root, makeDelayedReadyBridge(root));
+      const socket = makeSocket();
+      await manager.attach("may", socket);
+
+      expect((socket.frames[0] as any)?.type).toBe("starting");
+      expect(socket.frames.some((frame: any) => frame.type === "ready")).toBe(false);
+      await waitFor(() => socket.frames.some((frame: any) => frame.type === "ready"));
+
+      const ready = socket.frames.find((frame: any) => frame.type === "ready") as any;
+      expect(ready?.profile?.id).toBe("may");
+      expect(ready?.pid).toBeNumber();
+      expect(ready?.startupMs).toBeGreaterThanOrEqual(30);
+      expect(manager.getStatus().profiles.find((profile) => profile.id === "may")?.ready).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   test("does not replay raw terminal output when a browser reattaches", async () => {
     const root = mkdtempSync(join(tmpdir(), "terminal-manager-"));
     try {
-      process.env.MAY_WEB_TERMINAL = "1";
-      process.env.MAY_WEB_TERMINAL_IDLE_TTL_MS = "500";
-      process.env.MAY_TERMINAL_BRIDGE = makeFakeBridge(root);
-
-      const manager = createTerminalManager({ projectRoot: root });
+      const manager = createTestManager(root, makeFakeBridge(root));
       const firstSocket = makeSocket();
       await manager.attach("may", firstSocket);
-      await delay(20);
+      await waitFor(() => firstSocket.frames.some((frame: any) => frame.type === "ready"));
 
       manager.input("may", "before refresh\n");
-      await delay(20);
+      await waitFor(() => firstSocket.frames.some((frame: any) => frame.type === "data" && frame.data === "before refresh\n"));
       manager.detach("may", firstSocket);
 
       manager.input("may", "while detached\n");
@@ -161,17 +189,13 @@ describe("terminal manager", () => {
   test("does not send replay frames to concurrent browser clients", async () => {
     const root = mkdtempSync(join(tmpdir(), "terminal-manager-"));
     try {
-      process.env.MAY_WEB_TERMINAL = "1";
-      process.env.MAY_WEB_TERMINAL_IDLE_TTL_MS = "500";
-      process.env.MAY_TERMINAL_BRIDGE = makeFakeBridge(root);
-
-      const manager = createTerminalManager({ projectRoot: root });
+      const manager = createTestManager(root, makeFakeBridge(root));
       const firstSocket = makeSocket();
       await manager.attach("may", firstSocket);
-      await delay(20);
+      await waitFor(() => firstSocket.frames.some((frame: any) => frame.type === "ready"));
 
       manager.input("may", "visible once\n");
-      await delay(20);
+      await waitFor(() => firstSocket.frames.some((frame: any) => frame.type === "data" && frame.data === "visible once\n"));
       const firstFrameCount = firstSocket.frames.length;
 
       const secondSocket = makeSocket();
@@ -198,14 +222,10 @@ describe("terminal manager", () => {
   test("keeps existing bridge size when a passive browser attaches", async () => {
     const root = mkdtempSync(join(tmpdir(), "terminal-manager-"));
     try {
-      process.env.MAY_WEB_TERMINAL = "1";
-      process.env.MAY_WEB_TERMINAL_IDLE_TTL_MS = "500";
-      process.env.MAY_TERMINAL_BRIDGE = makeFakeBridge(root);
-
-      const manager = createTerminalManager({ projectRoot: root });
+      const manager = createTestManager(root, makeFakeBridge(root));
       const firstSocket = makeSocket();
       await manager.attach("may", firstSocket, 90, 18, "first");
-      await delay(50);
+      await waitFor(() => firstSocket.frames.some((frame: any) => frame.type === "data" && frame.data === "resize 90x18\n"));
 
       const secondSocket = makeSocket();
       await manager.attach("may", secondSocket, 166, 35, "second");
@@ -226,20 +246,13 @@ describe("terminal manager", () => {
   test("ignores resize from inactive concurrent browser clients", async () => {
     const root = mkdtempSync(join(tmpdir(), "terminal-manager-"));
     try {
-      process.env.MAY_WEB_TERMINAL = "1";
-      process.env.MAY_WEB_TERMINAL_IDLE_TTL_MS = "500";
-      process.env.MAY_TERMINAL_BRIDGE = makeFakeBridge(root);
-
-      const manager = createTerminalManager({ projectRoot: root });
+      const manager = createTestManager(root, makeFakeBridge(root));
       const firstSocket = makeSocket();
       await manager.attach("may", firstSocket, 90, 18, "first");
-      await delay(20);
+      await waitFor(() => firstSocket.frames.some((frame: any) => frame.type === "ready"));
 
       const secondSocket = makeSocket();
       await manager.attach("may", secondSocket, 166, 35, "second");
-      await delay(20);
-
-      manager.activate("may", "second", 166, 35);
       await delay(20);
 
       const dataFrames = () => [...firstSocket.frames, ...secondSocket.frames]
@@ -247,13 +260,16 @@ describe("terminal manager", () => {
         .map((frame: any) => frame.data)
         .join("");
 
+      manager.activate("may", "second", 166, 35);
+      await waitFor(() => dataFrames().includes("resize 166x35\n"));
+
       const beforeInactiveResize = dataFrames();
       manager.resize("may", 90, 18, "first");
       await delay(20);
       expect(dataFrames()).toBe(beforeInactiveResize);
 
       manager.activate("may", "first", 90, 18);
-      await delay(20);
+      await waitFor(() => dataFrames().includes("resize 90x18\n"));
 
       const resized = dataFrames();
       expect(resized).toContain("resize 166x35\n");
@@ -266,18 +282,14 @@ describe("terminal manager", () => {
   test("forwards bounded history scrolling and an explicit return to live view", async () => {
     const root = mkdtempSync(join(tmpdir(), "terminal-manager-"));
     try {
-      process.env.MAY_WEB_TERMINAL = "1";
-      process.env.MAY_WEB_TERMINAL_IDLE_TTL_MS = "500";
-      process.env.MAY_TERMINAL_BRIDGE = makeFakeBridge(root);
-
-      const manager = createTerminalManager({ projectRoot: root });
+      const manager = createTestManager(root, makeFakeBridge(root));
       const socket = makeSocket();
       await manager.attach("codex", socket, 100, 24, "browser");
       await delay(20);
 
       manager.scroll("codex", "up", 500, "browser");
       manager.historyExit("codex", "browser");
-      await delay(20);
+      await waitFor(() => socket.frames.some((frame: any) => frame.type === "data" && frame.data === "history-exit\n"));
 
       const output = socket.frames
         .filter((frame: any) => frame.type === "data")
@@ -293,14 +305,10 @@ describe("terminal manager", () => {
   test("preserves split UTF-8 inside bridge JSONL frames", async () => {
     const root = mkdtempSync(join(tmpdir(), "terminal-manager-"));
     try {
-      process.env.MAY_WEB_TERMINAL = "1";
-      process.env.MAY_WEB_TERMINAL_IDLE_TTL_MS = "500";
-      process.env.MAY_TERMINAL_BRIDGE = makeSplitUtf8Bridge(root);
-
-      const manager = createTerminalManager({ projectRoot: root });
+      const manager = createTestManager(root, makeSplitUtf8Bridge(root));
       const socket = makeSocket();
       await manager.attach("may", socket);
-      await delay(50);
+      await waitFor(() => socket.frames.some((frame: any) => frame.type === "data"));
 
       const output = socket.frames
         .filter((frame: any) => frame.type === "data")

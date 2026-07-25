@@ -56,6 +56,7 @@ describe("terminal session persistence", () => {
 
     // Not in activeSessions (getSessionCount reflects only running sessions)
     expect(manager.getSessionCount()).toBe(0);
+    expect((manager as any).results.size).toBe(0);
   });
 
   it("result() works for terminal sessions via persistence", async () => {
@@ -85,5 +86,22 @@ describe("terminal session persistence", () => {
     const result2 = await manager.waitFor(sessionId);
     expect(result2.sessionId).toBe(result1.sessionId);
     expect(result2.status).toBe(result1.status);
+  });
+
+  it("bounds completed message histories retained in memory", () => {
+    for (let index = 0; index < 20; index++) {
+      (manager as any).rememberCompletedResult({
+        sessionId: `completed-${index}`,
+        status: "done",
+        lastAssistantText: "done",
+        messages: [],
+        duration: "1s",
+        outputDir: persistDir,
+      });
+    }
+
+    expect((manager as any).completedResults.size).toBe(16);
+    expect((manager as any).completedResults.has("completed-0")).toBe(false);
+    expect((manager as any).completedResults.has("completed-19")).toBe(true);
   });
 });

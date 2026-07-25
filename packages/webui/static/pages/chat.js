@@ -31,6 +31,9 @@ function askAboutRequest(r) {
 // ── Chat ──────────────────────────────────────────────────────────────
 
 let ws = null;
+let realtimeEnabled = false;
+let wsPollTimer = null;
+let wsReconnectTimer = null;
 let chatInitialized = false;
 let activeSessions = [];
 let currentSessionId = null;
@@ -367,31 +370,57 @@ async function switchSession(sessionId) {
   }
 }
 
+function setRealtimeEnabled(enabled) {
+  realtimeEnabled = !!enabled;
+  clearTimeout(wsReconnectTimer);
+  wsReconnectTimer = null;
+  if (realtimeEnabled) {
+    connectWs();
+    return;
+  }
+  clearInterval(wsPollTimer);
+  wsPollTimer = null;
+  const socket = ws;
+  ws = null;
+  if (socket && socket.readyState < WebSocket.CLOSING) socket.close();
+}
+
 function connectWs() {
+  if (!realtimeEnabled) return;
+  if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  ws = new WebSocket(`${proto}//${location.host}/ws`);
+  const socket = new WebSocket(`${proto}//${location.host}/ws`);
+  ws = socket;
   const status = document.getElementById('chat-status');
   const messages = document.getElementById('chat-messages');
 
-  ws.onopen = () => {
+  socket.onopen = () => {
+    if (ws !== socket) return socket.close();
     status.textContent = 'Connected';
     // Poll for active sessions periodically
     const pollSessions = () => {
-      if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: 'status' }));
+      if (ws === socket && socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ type: 'status' }));
     };
     pollSessions();
-    setInterval(pollSessions, 15000);
+    clearInterval(wsPollTimer);
+    wsPollTimer = setInterval(pollSessions, 15000);
   };
-  ws.onclose = () => {
+  socket.onclose = () => {
+    if (ws !== socket) return;
+    ws = null;
+    clearInterval(wsPollTimer);
+    wsPollTimer = null;
+    if (!realtimeEnabled) return;
     status.textContent = 'Disconnected — reconnecting...';
-    setTimeout(connectWs, 3000);
+    clearTimeout(wsReconnectTimer);
+    wsReconnectTimer = setTimeout(connectWs, 3000);
   };
-  ws.onerror = () => { status.textContent = 'Connection error'; };
+  socket.onerror = () => { if (ws === socket) status.textContent = 'Connection error'; };
 
   let currentAssistant = null;
   let currentAssistantRaw = ''; // accumulate raw text for markdown rendering
 
-  ws.onmessage = (e) => {
+  socket.onmessage = (e) => {
     try {
       const event = JSON.parse(e.data);
       const eventType = typeof event.type === 'string' ? event.type.replace(/\./g, '_') : event.type;

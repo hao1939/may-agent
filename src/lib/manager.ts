@@ -244,6 +244,8 @@ export interface SubagentManagerOptions {
   maxCallDepth?: number;
 }
 
+const MAX_COMPLETED_RESULTS_IN_MEMORY = 16;
+
 function isProcessAlive(pid: number | undefined): boolean {
   if (!pid) return false;
   try {
@@ -283,6 +285,16 @@ export class SubagentManager {
     this.bus = opts.bus;
     this._registry = new RegistryStore(opts.persistDir);
     this._maxCallDepth = opts.maxCallDepth ?? 8;
+  }
+
+  private rememberCompletedResult(result: TaskResult): void {
+    this.completedResults.delete(result.sessionId);
+    this.completedResults.set(result.sessionId, result);
+    while (this.completedResults.size > MAX_COMPLETED_RESULTS_IN_MEMORY) {
+      const oldest = this.completedResults.keys().next().value as string | undefined;
+      if (!oldest) break;
+      this.completedResults.delete(oldest);
+    }
   }
 
   private emitSessionResumeFailed(
@@ -644,15 +656,22 @@ export class SubagentManager {
         task,
       );
     } else {
-      const promise = this.executeSession(session).then((result) => {
-        if (result.status === "done" || result.status === "error" || result.status === "interrupted") {
-          this._sessions.delete(sessionId);
-        } else {
-          session.status = "paused";
-        }
-        this.completedResults.set(sessionId, result);
-        return result;
-      });
+      const promise = this.executeSession(session).then(
+        (result) => {
+          if (result.status === "done" || result.status === "error" || result.status === "interrupted") {
+            this._sessions.delete(sessionId);
+          } else {
+            session.status = "paused";
+          }
+          this.rememberCompletedResult(result);
+          this.results.delete(sessionId);
+          return result;
+        },
+        (error) => {
+          this.results.delete(sessionId);
+          throw error;
+        },
+      );
       this.results.set(sessionId, promise);
     }
 
@@ -774,10 +793,14 @@ export class SubagentManager {
   getSessionSummary(sessionId: string): { task: string; summary: string; status: string } {
     const session = this._sessions.get(sessionId);
     const completed = this.completedResults.get(sessionId);
+    const persisted = session ? null : this._registry.getSession(sessionId);
+    const storedResult = !session && !completed && persisted && persisted.status !== "running" && persisted.status !== "idle"
+      ? this.resultFromStoredSession(sessionId)
+      : null;
     return {
-      task: session?.task ?? completed?.sessionId ?? "",
-      summary: completed?.lastAssistantText ?? "(running)",
-      status: completed?.status ?? session?.status ?? "unknown",
+      task: session?.task ?? persisted?.task ?? "",
+      summary: completed?.lastAssistantText ?? storedResult?.lastAssistantText ?? "(running)",
+      status: completed?.status ?? session?.status ?? persisted?.status ?? "unknown",
     };
   }
 
@@ -801,7 +824,7 @@ export class SubagentManager {
     const promise = this.results.get(sessionId);
     const completed = this.completedResults.get(sessionId);
     if (completed) return completed;
-    if (!promise) throw new Error(`Session "${sessionId}" not found`);
+    if (!promise) return this.resultFromStoredSession(sessionId);
     return promise;
   }
 
@@ -1864,7 +1887,7 @@ export class SubagentManager {
         finishResult: finishParams as any,
         structuredResult: finishParams?.result,
       };
-      this.completedResults.set(sessionId, result);
+      this.rememberCompletedResult(result);
 
       const trace = this.terminalTrace(session);
       this.bus?.emit({

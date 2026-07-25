@@ -58,6 +58,7 @@ const LIVE_VITAL_METRIC_IDS = [
   "runtime.stale-running-session-count",
   "eval.llm-coverage-lag-h",
 ];
+const DASHBOARD_SESSION_ROW_LIMIT = 2_000;
 
 export interface WebUIOptions {
   stateDir: string;
@@ -98,12 +99,19 @@ function platformUiContentTypeFor(path: string): string {
   }
 }
 
-function servePlatformUiFile(path: string): Response {
+function servePlatformUiFile(req: Request, path: string): Response {
+  const stat = statSync(path);
+  const etag = `W/"${stat.size.toString(16)}-${Math.trunc(stat.mtimeMs).toString(16)}"`;
+  const headers = {
+    "Content-Type": platformUiContentTypeFor(path),
+    "Cache-Control": "public, no-cache",
+    ETag: etag,
+  };
+  if (req.headers.get("if-none-match")?.split(",").map((value) => value.trim()).includes(etag)) {
+    return new Response(null, { status: 304, headers });
+  }
   return new Response(readFileSync(path), {
-    headers: {
-      "Content-Type": platformUiContentTypeFor(path),
-      "Cache-Control": "no-cache",
-    },
+    headers,
   });
 }
 
@@ -130,7 +138,7 @@ export function servePlatformUiRequest(req: Request, projectsRoot: string): Resp
   const platformUiDir = resolve(projectsRoot, "platform", "ui");
   if (isPlatformUiAppRoute(url.pathname)) {
     const indexPath = resolve(platformUiDir, "index.html");
-    return existsSync(indexPath) && statSync(indexPath).isFile() ? servePlatformUiFile(indexPath) : null;
+    return existsSync(indexPath) && statSync(indexPath).isFile() ? servePlatformUiFile(req, indexPath) : null;
   }
 
   // Top-level platform UI assets: index.html uses relative paths like
@@ -144,7 +152,7 @@ export function servePlatformUiRequest(req: Request, projectsRoot: string): Resp
   const assetPath = resolve(platformUiDir, url.pathname.replace(/^\//, ""));
   const rel = relative(platformUiDir, assetPath);
   const inside = rel === "" || (!rel.startsWith("..") && !rel.startsWith("/"));
-  if (inside && existsSync(assetPath) && statSync(assetPath).isFile()) return servePlatformUiFile(assetPath);
+  if (inside && existsSync(assetPath) && statSync(assetPath).isFile()) return servePlatformUiFile(req, assetPath);
   return null;
 }
 
@@ -602,8 +610,14 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const oneHour = now - 60 * 60 * 1000;
     const agents = listConfiguredAgents();
     const scheduledHeartbeatAgents = new Set(listScheduledHeartbeatAgents(agents));
+    const heartbeatPredicate = `(
+      source LIKE 'workflow:%heartbeat%'
+      OR source = 'heartbeat'
+      OR task LIKE '[heartbeat]%'
+      OR task LIKE 'You are %waking up for your heartbeat.%'
+    )`;
 
-    const heartbeatRows = db
+    const heartbeatCandidates = db
       .prepare(
         // Heartbeat detection covers all dispatch styles in production:
         //   1. Cron-driven sessions whose task starts with "[heartbeat]".
@@ -619,30 +633,52 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         `SELECT sessionId, agent, status, kind, source, startedAt, endedAt
        FROM sessions
        WHERE startedAt > ?
-         AND (
-           source LIKE 'workflow:%heartbeat%'
-           OR source = 'heartbeat'
-           OR task LIKE '[heartbeat]%'
-           OR task LIKE 'You are %waking up for your heartbeat.%'
-         )
-       ORDER BY startedAt ASC`,
+         AND ${heartbeatPredicate}
+       ORDER BY startedAt DESC
+       LIMIT ?`,
       )
-      .all(since) as any[];
+      .all(since, DASHBOARD_SESSION_ROW_LIMIT + 1) as any[];
+    const heartbeatRows = heartbeatCandidates.slice(0, DASHBOARD_SESSION_ROW_LIMIT).reverse();
+    const heartbeatsTruncated = heartbeatCandidates.length > DASHBOARD_SESSION_ROW_LIMIT;
+    const latestHeartbeatRows = db
+      .prepare(
+        `SELECT agent, status, startedAt AS lastHeartbeat, heartbeatCount
+         FROM (
+           SELECT agent, status, startedAt,
+                  COUNT(*) OVER (PARTITION BY agent) AS heartbeatCount,
+                  ROW_NUMBER() OVER (PARTITION BY agent ORDER BY startedAt DESC) AS recency
+           FROM sessions
+           WHERE startedAt > ? AND agent IS NOT NULL AND agent != ''
+             AND ${heartbeatPredicate}
+         )
+         WHERE recency = 1`,
+      )
+      .all(since) as Array<{
+        agent: string;
+        status: string;
+        lastHeartbeat: number;
+        heartbeatCount: number;
+      }>;
+    const heartbeatSummaryByAgent = new Map(latestHeartbeatRows.map((row) => [row.agent, row]));
+    const heartbeatTotal = latestHeartbeatRows.reduce((total, row) => total + Number(row.heartbeatCount || 0), 0);
 
     // All sessions in the selected window (not just heartbeats). The
     // timeline shows everything an agent did so the operator sees real
     // activity distribution, not only the cron tick. Each session is
     // classified into a 'category' bucket which maps to a color in the
     // frontend.
-    const allRows = db
+    const allCandidates = db
       .prepare(
         `SELECT sessionId, agent, status, kind, source, projectId, parentSessionId,
               startedAt, endedAt
        FROM sessions
        WHERE startedAt > ? AND agent IS NOT NULL AND agent != ''
-       ORDER BY startedAt ASC`,
+       ORDER BY startedAt DESC
+       LIMIT ?`,
       )
-      .all(since) as any[];
+      .all(since, DASHBOARD_SESSION_ROW_LIMIT + 1) as any[];
+    const allRows = allCandidates.slice(0, DASHBOARD_SESSION_ROW_LIMIT).reverse();
+    const activityTruncated = allCandidates.length > DASHBOARD_SESSION_ROW_LIMIT;
 
     // Heartbeat detection mirrors heartbeatRows above (same predicates).
     // Pre-build a Set of heartbeat sessionIds for O(1) classification.
@@ -677,17 +713,16 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
     const agentRows = [...byAgent.entries()]
       .map(([name, sessions]) => {
-        const heartbeatsForAgent = sessions.filter((s) => s.category === "heartbeat");
-        const lastHb = heartbeatsForAgent[heartbeatsForAgent.length - 1] ?? null;
+        const heartbeatSummary = heartbeatSummaryByAgent.get(name);
         const categoryCounts: Record<string, number> = { heartbeat: 0, project: 0, chat: 0, workflow: 0, other: 0 };
         for (const s of sessions) categoryCounts[s.category] = (categoryCounts[s.category] || 0) + 1;
         return {
           name,
-          heartbeatCount: heartbeatsForAgent.length,
+          heartbeatCount: heartbeatSummary?.heartbeatCount ?? 0,
           sessionCount: sessions.length,
           categoryCounts,
-          lastHeartbeat: lastHb?.startedAt ?? null,
-          lastStatus: lastHb?.status ?? null,
+          lastHeartbeat: heartbeatSummary?.lastHeartbeat ?? null,
+          lastStatus: heartbeatSummary?.status ?? null,
           sessions,
         };
       })
@@ -802,9 +837,13 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         // "heartbeat coverage in window" signal, and the window default
         // is still 4h. Use `windowHours` for accurate labeling.
         heartbeatAgents4h: scheduledHeartbeatRows.length,
-        heartbeats4h: heartbeatRows.length,
+        heartbeats4h: heartbeatTotal,
         windowHours: hours,
         windowSince: since,
+        activityRows: allRows.length,
+        activityRowsTruncated: activityTruncated,
+        heartbeatRowsTruncated: heartbeatsTruncated,
+        rowLimit: DASHBOARD_SESSION_ROW_LIMIT,
         activeSessions,
         openAlerts: openAlerts.length,
         staleAgents: staleAgents.length,
@@ -1620,23 +1659,29 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   }
 
   function handleAgentTimeline(url: URL): Response {
-    const hours = Math.min(parseInt(url.searchParams.get("hours") || "24", 10), 168);
+    const requestedHours = parseInt(url.searchParams.get("hours") || "24", 10);
+    const hours = Number.isFinite(requestedHours) ? Math.max(1, Math.min(requestedHours, 168)) : 24;
     const since = Date.now() - hours * 60 * 60 * 1000;
 
-    const rows = _db()
+    const candidates = _db()
       .prepare(
         `SELECT sessionId, agent, startedAt, endedAt, status
          FROM sessions
          WHERE startedAt > ?
-         ORDER BY agent, startedAt ASC`,
+         ORDER BY startedAt DESC
+         LIMIT ?`,
       )
-      .all(since) as Array<{
+      .all(since, DASHBOARD_SESSION_ROW_LIMIT + 1) as Array<{
       sessionId: string;
       agent: string;
       startedAt: number;
       endedAt: number | null;
       status: string;
     }>;
+    const truncated = candidates.length > DASHBOARD_SESSION_ROW_LIMIT;
+    const rows = candidates
+      .slice(0, DASHBOARD_SESSION_ROW_LIMIT)
+      .sort((a, b) => a.agent.localeCompare(b.agent) || a.startedAt - b.startedAt);
 
     const agentMap: Record<string, Array<{ id: string; start: number; end: number | null; status: string }>> = {};
     for (const r of rows) {
@@ -1650,7 +1695,14 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     }
 
     const agents = Object.entries(agentMap).map(([name, sessions]) => ({ name, sessions }));
-    return json({ agents, since, now: Date.now() });
+    return json({
+      agents,
+      since,
+      now: Date.now(),
+      rowsReturned: rows.length,
+      rowLimit: DASHBOARD_SESSION_ROW_LIMIT,
+      truncated,
+    });
   }
 
   function handleSystemHealth(): Response {
