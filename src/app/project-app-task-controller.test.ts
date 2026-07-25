@@ -101,6 +101,86 @@ describe("ProjectAppTaskController", () => {
     controllerB.close();
   });
 
+  it("shares one app limit across replacement controllers without waiting for a full drain", async () => {
+    const daemonCapacity = new ProjectAppTaskCapacity(10);
+    const appCapacity = new ProjectAppTaskCapacity(2, daemonCapacity);
+    const started: string[] = [];
+    let releaseOld: (() => void) | undefined;
+    let releaseCurrent: (() => void) | undefined;
+    const old = new ProjectAppTaskController({
+      maxConcurrent: 2,
+      capacity: appCapacity,
+      reconcile: () =>
+        new Promise<void>((resolve) => {
+          started.push("old");
+          releaseOld = resolve;
+        }),
+    });
+    old.enqueue("old");
+    await waitUntil(() => started.length === 1);
+    old.close();
+
+    const current = new ProjectAppTaskController({
+      maxConcurrent: 2,
+      capacity: appCapacity,
+      reconcile: (taskId) =>
+        new Promise<void>((resolve) => {
+          started.push(taskId);
+          releaseCurrent = resolve;
+        }),
+    });
+    current.enqueue("current");
+
+    await waitUntil(() => started.includes("current"));
+    expect(started).toEqual(["old", "current"]);
+    expect(appCapacity.snapshot()).toEqual({ running: 2, waiting: 0 });
+    expect(daemonCapacity.snapshot()).toEqual({ running: 2, waiting: 0 });
+
+    releaseOld?.();
+    releaseCurrent?.();
+    await waitUntil(() => appCapacity.snapshot().running === 0);
+    current.close();
+  });
+
+  it("keeps replacement controllers within their shared app limit", async () => {
+    const appCapacity = new ProjectAppTaskCapacity(1);
+    const started: string[] = [];
+    let releaseOld: (() => void) | undefined;
+    let releaseCurrent: (() => void) | undefined;
+    const old = new ProjectAppTaskController({
+      maxConcurrent: 1,
+      capacity: appCapacity,
+      reconcile: () =>
+        new Promise<void>((resolve) => {
+          started.push("old");
+          releaseOld = resolve;
+        }),
+    });
+    old.enqueue("old");
+    await waitUntil(() => started.length === 1);
+    old.close();
+
+    const current = new ProjectAppTaskController({
+      maxConcurrent: 1,
+      capacity: appCapacity,
+      reconcile: () =>
+        new Promise<void>((resolve) => {
+          started.push("current");
+          releaseCurrent = resolve;
+        }),
+    });
+    current.enqueue("current");
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    expect(started).toEqual(["old"]);
+
+    releaseOld?.();
+    await waitUntil(() => started.includes("current"));
+    expect(appCapacity.snapshot().running).toBe(1);
+    releaseCurrent?.();
+    await waitUntil(() => appCapacity.snapshot().running === 0);
+    current.close();
+  });
+
   it("chooses the current front task only after shared capacity is available", async () => {
     const capacity = new ProjectAppTaskCapacity(1);
     const started: string[] = [];
