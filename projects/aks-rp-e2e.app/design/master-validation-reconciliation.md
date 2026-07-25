@@ -256,10 +256,7 @@ issue ledger or workflow phase database is introduced.
   concurrently within normal app capacity while the aggregate run continues.
 - As soon as a focused fix head is available, the standing workflow may merge
   it into the frozen campaign and continue aggregate discovery without waiting
-  for that PR to merge into `main`. This publication wake overrides the
-  standing task's current aggregate-run Condition; otherwise a fix published
-  while another run is active can be accepted but left asleep until that stale
-  run finishes.
+  for that PR to merge into `main`.
 - A campaign failure does not require a separate targeted live run before its
   focused PR can join the campaign. The repair workflow runs scoped local
   checks, publishes a draft focused PR, and wakes the campaign immediately.

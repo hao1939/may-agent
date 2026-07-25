@@ -7,7 +7,6 @@ import {
   alignCleanRepairWorkspace,
   boundedChangedFileEvidence,
   boundedEvidence,
-  campaignRepairWakePayload,
   changedFilesMayAffectSpec,
   campaignRepairPullRequestDescription,
   currentRecoveryBaselineRunId,
@@ -194,31 +193,6 @@ ${JSON.stringify({
         campaignBaseCommit: "base123",
       }),
     ).toContain("Do not merge the campaign branch itself");
-  });
-
-  test("focused repair publication overrides an aggregate-run wait", () => {
-    expect(
-      campaignRepairWakePayload({
-        pullRequestId: "16570837",
-        sourceCommit: "fix123",
-      }),
-    ).toMatchObject({
-      target: {
-        project: "aks-rp-e2e",
-        taskId: "master-validation-staging-cycle",
-      },
-      taskId: "master-validation-staging-cycle",
-      reason: "master-validation-focused-fix-published",
-      overrideWait: true,
-      pullRequestId: "16570837",
-      sourceCommit: "fix123",
-      data: {
-        taskId: "master-validation-staging-cycle",
-        overrideWait: true,
-        pullRequestId: "16570837",
-        sourceCommit: "fix123",
-      },
-    });
   });
 
   test("retries a test-issue classification once and blocks instead of falsely converging without a fix", async () => {
