@@ -25,74 +25,30 @@ function getShellEnv(): NodeJS.ProcessEnv {
 const BASH_WORKER_SOURCE = String.raw`
 const { parentPort, workerData } = require("node:worker_threads");
 
-let child;
-let terminationReason;
-
-function killGroup() {
-  if (!child?.pid) return;
-  try {
-    process.kill(-child.pid, "SIGKILL");
-  } catch {
-    try { process.kill(child.pid, "SIGKILL"); } catch {}
+try {
+  const result = Bun.spawnSync(["/usr/bin/setsid", "/bin/bash", "-c", workerData.command], {
+    cwd: workerData.cwd,
+    env: workerData.env,
+    stdin: null,
+    stdout: "pipe",
+    stderr: "pipe",
+    timeout: workerData.timeout > 0 ? workerData.timeout * 1000 : undefined,
+    killSignal: "SIGKILL",
+  });
+  if (result.stdout.byteLength > 0) parentPort.postMessage({ type: "data", data: result.stdout });
+  if (result.stderr.byteLength > 0) parentPort.postMessage({ type: "data", data: result.stderr });
+  if (result.signalCode && workerData.timeout > 0) {
+    parentPort.postMessage({ type: "error", error: "timeout:" + workerData.timeout });
+  } else if (result.error) {
+    parentPort.postMessage({ type: "error", error: result.error.message });
+  } else {
+    parentPort.postMessage({ type: "exit", exitCode: result.exitCode });
   }
+} catch (error) {
+  parentPort.postMessage({ type: "error", error: error instanceof Error ? error.message : String(error) });
+} finally {
+  parentPort.close();
 }
-
-function stop(reason) {
-  if (terminationReason) return;
-  terminationReason = reason;
-  killGroup();
-}
-
-async function pump(stream) {
-  const reader = stream.getReader();
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) return;
-      if (value.byteLength > 0) parentPort.postMessage({ type: "data", data: value });
-    }
-  } finally {
-    reader.releaseLock();
-  }
-}
-
-parentPort.on("message", (message) => {
-  if (message?.type === "abort") stop("aborted");
-});
-
-void (async () => {
-  let timeoutHandle;
-  try {
-    child = Bun.spawn(["/usr/bin/setsid", "/bin/bash", "-c", workerData.command], {
-      cwd: workerData.cwd,
-      env: workerData.env,
-      stdin: "ignore",
-      stdout: "pipe",
-      stderr: "pipe",
-    });
-    parentPort.postMessage({ type: "started", pid: child.pid });
-    if (workerData.timeout > 0) {
-      timeoutHandle = setTimeout(() => stop("timeout:" + workerData.timeout), workerData.timeout * 1000);
-    }
-
-    const outputDone = Promise.all([pump(child.stdout), pump(child.stderr)]);
-    const exitCode = await child.exited;
-    killGroup();
-    await Promise.race([outputDone, Bun.sleep(1000)]);
-
-    if (terminationReason) {
-      parentPort.postMessage({ type: "error", error: terminationReason });
-    } else {
-      parentPort.postMessage({ type: "exit", exitCode });
-    }
-  } catch (error) {
-    parentPort.postMessage({ type: "error", error: error instanceof Error ? error.message : String(error) });
-  } finally {
-    if (timeoutHandle) clearTimeout(timeoutHandle);
-    parentPort.close();
-    setTimeout(() => process.exit(0), 0);
-  }
-})();
 `;
 
 /**
@@ -192,7 +148,7 @@ const defaultBashOperations: BashOperations = {
 				reject(error);
 			};
 			const onAbort = () => {
-				worker.postMessage({ type: "abort" });
+				settleReject(new Error("aborted"));
 			};
 
 			worker.on("message", (message: { type?: string; data?: Uint8Array; exitCode?: number; error?: string }) => {
