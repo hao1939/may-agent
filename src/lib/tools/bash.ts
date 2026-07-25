@@ -1,15 +1,8 @@
 import { randomBytes } from "node:crypto";
-import {
-	closeSync,
-	createWriteStream,
-	existsSync,
-	openSync,
-	readSync,
-	unlinkSync,
-} from "node:fs";
+import { createWriteStream, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { spawn } from "node:child_process";
+import { Worker } from "node:worker_threads";
 import {
 	DEFAULT_MAX_BYTES,
 	DEFAULT_MAX_LINES,
@@ -20,11 +13,6 @@ import {
 } from "@earendil-works/pi-agent-core";
 import { Type } from "@earendil-works/pi-ai";
 import type { TSchema } from "@earendil-works/pi-ai";
-// Inlined shell utilities (may-agent runs on Linux/Docker only)
-function getShellConfig(): { shell: string; args: string[] } {
-	return { shell: "/bin/bash", args: ["-c"] };
-}
-
 function getShellEnv(): NodeJS.ProcessEnv {
 	// The container image installs bun at /usr/local/bin/bun, which is already
 	// on PATH for every process the daemon spawns. Earlier versions of this
@@ -34,13 +22,78 @@ function getShellEnv(): NodeJS.ProcessEnv {
 	return { ...process.env };
 }
 
-function killProcessTree(pid: number): void {
-	try {
-		process.kill(-pid, "SIGKILL");
-	} catch {
-		try { process.kill(pid, "SIGKILL"); } catch { /* already dead */ }
-	}
+const BASH_WORKER_SOURCE = String.raw`
+const { parentPort, workerData } = require("node:worker_threads");
+
+let child;
+let terminationReason;
+
+function killGroup() {
+  if (!child?.pid) return;
+  try {
+    process.kill(-child.pid, "SIGKILL");
+  } catch {
+    try { process.kill(child.pid, "SIGKILL"); } catch {}
+  }
 }
+
+function stop(reason) {
+  if (terminationReason) return;
+  terminationReason = reason;
+  killGroup();
+}
+
+async function pump(stream) {
+  const reader = stream.getReader();
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) return;
+      if (value.byteLength > 0) parentPort.postMessage({ type: "data", data: value });
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+parentPort.on("message", (message) => {
+  if (message?.type === "abort") stop("aborted");
+});
+
+void (async () => {
+  let timeoutHandle;
+  try {
+    child = Bun.spawn(["/usr/bin/setsid", "/bin/bash", "-c", workerData.command], {
+      cwd: workerData.cwd,
+      env: workerData.env,
+      stdin: "ignore",
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    parentPort.postMessage({ type: "started", pid: child.pid });
+    if (workerData.timeout > 0) {
+      timeoutHandle = setTimeout(() => stop("timeout:" + workerData.timeout), workerData.timeout * 1000);
+    }
+
+    const outputDone = Promise.all([pump(child.stdout), pump(child.stderr)]);
+    const exitCode = await child.exited;
+    killGroup();
+    await Promise.race([outputDone, Bun.sleep(1000)]);
+
+    if (terminationReason) {
+      parentPort.postMessage({ type: "error", error: terminationReason });
+    } else {
+      parentPort.postMessage({ type: "exit", exitCode });
+    }
+  } catch (error) {
+    parentPort.postMessage({ type: "error", error: error instanceof Error ? error.message : String(error) });
+  } finally {
+    if (timeoutHandle) clearTimeout(timeoutHandle);
+    parentPort.close();
+    setTimeout(() => process.exit(0), 0);
+  }
+})();
+`;
 
 /**
  * Default timeout for bash commands (seconds).
@@ -100,46 +153,31 @@ export interface BashOperations {
 const defaultBashOperations: BashOperations = {
 	exec: (command, cwd, { onData, signal, timeout, env }) => {
 		return new Promise((resolve, reject) => {
-			const { shell, args } = getShellConfig();
 			if (!existsSync(cwd)) {
 				reject(new Error(`Working directory does not exist: ${cwd}\nCannot execute bash commands.`));
 				return;
 			}
+			if (signal?.aborted) {
+				reject(new Error("aborted"));
+				return;
+			}
 
-			const capturePath = getTempFilePath();
-			const captureFd = openSync(capturePath, "w+");
-			const child = spawn(shell, [...args, command], {
-				cwd,
-				detached: true,
-				env: env ?? getShellEnv(),
-				stdio: ["ignore", captureFd, captureFd],
+			const worker = new Worker(BASH_WORKER_SOURCE, {
+				eval: true,
+				workerData: {
+					command,
+					cwd,
+					env: env ?? getShellEnv(),
+					timeout: timeout ?? 0,
+				},
 			});
 			let settled = false;
-			let captureOffset = 0;
-			let captureClosed = false;
-			let capturePollHandle: NodeJS.Timeout | undefined;
-			let timeoutHandle: NodeJS.Timeout | undefined;
+			let fallbackHandle: NodeJS.Timeout | undefined;
 
-			const flushCapture = () => {
-				if (captureClosed) return;
-				const buffer = Buffer.allocUnsafe(64 * 1024);
-				while (true) {
-					const bytesRead = readSync(captureFd, buffer, 0, buffer.length, captureOffset);
-					if (bytesRead === 0) return;
-					captureOffset += bytesRead;
-					onData(buffer.subarray(0, bytesRead));
-				}
-			};
 			const cleanup = () => {
-				if (timeoutHandle) clearTimeout(timeoutHandle);
-				if (capturePollHandle) clearInterval(capturePollHandle);
+				if (fallbackHandle) clearTimeout(fallbackHandle);
 				if (signal) signal.removeEventListener("abort", onAbort);
-				if (!captureClosed) {
-					flushCapture();
-					captureClosed = true;
-					closeSync(captureFd);
-					try { unlinkSync(capturePath); } catch { /* already removed during shutdown */ }
-				}
+				void worker.terminate();
 			};
 			const settleResolve = (exitCode: number | null) => {
 				if (settled) return;
@@ -154,27 +192,27 @@ const defaultBashOperations: BashOperations = {
 				reject(error);
 			};
 			const onAbort = () => {
-				if (child.pid) killProcessTree(child.pid);
-				settleReject(new Error("aborted"));
+				worker.postMessage({ type: "abort" });
 			};
 
-			capturePollHandle = setInterval(flushCapture, 100);
-			child.once("error", settleReject);
-			child.once("exit", (exitCode) => {
-				if (child.pid) killProcessTree(child.pid);
-				settleResolve(exitCode);
+			worker.on("message", (message: { type?: string; data?: Uint8Array; exitCode?: number; error?: string }) => {
+				if (message.type === "data" && message.data) {
+					onData(Buffer.from(message.data));
+				} else if (message.type === "exit") {
+					settleResolve(message.exitCode ?? null);
+				} else if (message.type === "error") {
+					settleReject(new Error(message.error ?? "shell worker failed"));
+				}
 			});
-
-			if (signal?.aborted) {
-				onAbort();
-			} else if (signal) {
-				signal.addEventListener("abort", onAbort, { once: true });
-			}
-			if (!settled && timeout !== undefined && timeout > 0) {
-				timeoutHandle = setTimeout(() => {
-					if (child.pid) killProcessTree(child.pid);
+			worker.once("error", settleReject);
+			worker.once("exit", (exitCode) => {
+				if (!settled) settleReject(new Error(`shell worker exited before returning a result (${exitCode})`));
+			});
+			if (signal) signal.addEventListener("abort", onAbort, { once: true });
+			if (timeout !== undefined && timeout > 0) {
+				fallbackHandle = setTimeout(() => {
 					settleReject(new Error(`timeout:${timeout}`));
-				}, timeout * 1000);
+				}, (timeout + 5) * 1000);
 			}
 		});
 	},
