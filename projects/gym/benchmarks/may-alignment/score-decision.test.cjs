@@ -129,6 +129,38 @@ assert.equal(
 );
 fs.writeFileSync(
   path.join(scenarioDir, "expected.json"),
+  JSON.stringify({
+    ...baseExpected,
+    delegations: {
+      min: 1,
+      max: 1,
+      allowed_agents: ["gym"],
+      async_required: true,
+    },
+  }),
+);
+fs.writeFileSync(
+  path.join(workDir, "alignment-decision.json"),
+  JSON.stringify({
+    ...advisoryMetadata,
+    delegations: [{ agent: "Gym", async: true }],
+  }),
+);
+const allowedOwnerScore = scoreDecision(workDir, scenarioDir);
+assert.equal(
+  allowedOwnerScore.passed,
+  true,
+  "allowed delegation owner matching should ignore case",
+);
+assert.equal(
+  allowedOwnerScore.checks.find(
+    (check) => check.name === "delegation-owners",
+  )?.passed,
+  true,
+  "allowed owner matching uses normalized identifiers",
+);
+fs.writeFileSync(
+  path.join(scenarioDir, "expected.json"),
   JSON.stringify(baseExpected),
 );
 fs.writeFileSync(

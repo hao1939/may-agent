@@ -13,6 +13,7 @@ import type { LoopRunManifest, RunOptions } from "@may-agent/gym/loop";
 import type { WorkflowContext } from "@may-agent/sdk";
 import {
   applyDirectorySnapshot,
+  buildBenchmarkFixRetryEvent,
   buildApprovalRequest,
   dispatchApproval,
   fingerprintTree,
@@ -195,6 +196,25 @@ describe("single agent-improvement loop", () => {
         }),
       }),
     ]);
+  });
+
+  test("preserves the approved scenario scope when retrying a benchmark fix", () => {
+    expect(
+      buildBenchmarkFixRetryEvent({
+        agent: "may",
+        benchmark: "may-alignment",
+        scenarios: ["may-align-proof-before-adopt"],
+        artifactFingerprint: "sha256:benchmark123",
+        taskId: "improve/may",
+        taskGeneration: 9,
+        approvalId: "approval-9",
+      }),
+    ).toMatchObject({
+      type: "gym.improvement.requested",
+      scenarios: ["may-align-proof-before-adopt"],
+      trials: 3,
+      reason: "approved-benchmark-fix-applied",
+    });
   });
 
   test("applies only the approved benchmark snapshot", () => {

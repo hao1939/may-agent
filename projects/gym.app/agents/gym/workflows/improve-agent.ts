@@ -943,6 +943,30 @@ export function buildApprovalRequest(input: {
   };
 }
 
+export function buildBenchmarkFixRetryEvent(input: {
+  agent: string;
+  benchmark: string;
+  scenarios: string[];
+  artifactFingerprint: string;
+  taskId: string;
+  taskGeneration: number;
+  approvalId: string;
+}) {
+  return {
+    type: "gym.improvement.requested",
+    project: "gym",
+    agent: input.agent,
+    benchmark: input.benchmark,
+    scenarios: [...input.scenarios],
+    trials: 3,
+    reason: "approved-benchmark-fix-applied",
+    artifactFingerprint: input.artifactFingerprint,
+    taskId: input.taskId,
+    taskGeneration: input.taskGeneration,
+    approvalId: input.approvalId,
+  };
+}
+
 export function dispatchApproval(
   ctx: WorkflowContext,
   request: ApprovalRequest,
@@ -1861,17 +1885,15 @@ async function runCandidate(
               taskGeneration: generation,
               approvalId: previous.approval.approvalId,
             }
-          : {
-              type: "gym.improvement.requested",
-              project: "gym",
+          : buildBenchmarkFixRetryEvent({
               agent: plan.agent,
               benchmark: plan.benchmark,
-              reason: "approved-benchmark-fix-applied",
+              scenarios: plan.focus.scenarios,
               artifactFingerprint: previous.approval.artifactFingerprint,
               taskId,
               taskGeneration: generation,
               approvalId: previous.approval.approvalId,
-            },
+            }),
       );
       const summary =
         previous.approval.kind === "agent-improvement"
