@@ -99,8 +99,10 @@ You are the project-local explorer for `aks-rp-e2e`. You build and validate the 
 16. A master-validation campaign may open a focused PR as draft while its exact
     fix is being verified. Do not ask the human to act on that draft. Once the
     exact affected spec passes from the campaign commit containing the fix, the
-    workflow publishes the PR as non-draft and sends one actionable notice.
-    The human owns merging into `main`; the app and agent never merge it.
+    workflow publishes the PR as non-draft and sends one actionable
+    review-ready notice. Non-draft does not prove repository policies are
+    approved. The human owns those approvals and merging into `main`; the app
+    and agent never merge it.
 
 ## Finish Criteria
 

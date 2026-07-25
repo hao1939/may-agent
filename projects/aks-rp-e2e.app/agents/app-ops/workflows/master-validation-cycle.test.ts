@@ -11,6 +11,7 @@ import {
   fixVerificationTrigger,
   nextCampaignPulseCondition,
   transientMasterValidationAccessFailure,
+  verifiedFixNotificationContent,
 } from "./master-validation-cycle.js";
 
 const parameters = {
@@ -183,6 +184,17 @@ ${JSON.stringify({
       sourceCommit: "candidate",
       pullRequestIds: ["7"],
     });
+  });
+
+  test("calls a proven non-draft fix review-ready without claiming repository approval", () => {
+    const content = verifiedFixNotificationContent({
+      specId: "spec.example",
+      pipelineRunId: "101",
+      pullRequestIds: ["7"],
+    });
+    expect(content).toContain("Published review-ready PR(s): 7.");
+    expect(content).toContain("approvals or policies may still remain");
+    expect(content).not.toContain("merge-ready");
   });
 
   test("retries an unchanged red campaign every six hours", () => {

@@ -98,8 +98,9 @@ decisions.
     task and resume it through the same workflow.
 16. Treat a draft repair PR as internal verification state, not a human
     handoff. After exact campaign proof makes the fix ready, publish it as
-    non-draft, send one retry-safe actionable notification, and wait for the
-    human to merge it into `main`. Never merge a focused repair PR on the
+    non-draft, call it review-ready rather than merge-ready, send one retry-safe
+    actionable notification, and wait for the human to satisfy repository
+    policies and merge it into `main`. Never merge a focused repair PR on the
     human's behalf.
 
 ## Finish Criteria

@@ -608,6 +608,11 @@ function publishVerifiedFixes(
     .filter((publication) => publication.actionable)
     .map((publication) => publication.pullRequestId);
   if (!actionablePullRequestIds.length) return evidence;
+  const notificationContent = verifiedFixNotificationContent({
+    specId: trigger.specId,
+    pipelineRunId: trigger.pipelineRunId,
+    pullRequestIds: actionablePullRequestIds,
+  });
   ctx.dispatchEvent("message.created", {
     target: { project: "aks-rp-e2e", human: true },
     from: "app-ops",
@@ -618,11 +623,7 @@ function publishVerifiedFixes(
     pipelineRunId: trigger.pipelineRunId,
     specId: trigger.specId,
     pullRequestIds: actionablePullRequestIds,
-    content: [
-      `AKS master-validation fix for ${trigger.specId} passed campaign run ${trigger.pipelineRunId}.`,
-      `Published merge-ready PR(s): ${actionablePullRequestIds.join(", ")}.`,
-      "Please merge them individually into main; the app will keep the frozen campaign moving and later verify current main.",
-    ].join("\n"),
+    content: notificationContent,
   });
   mkdirSync(dirname(notificationReceipt), { recursive: true });
   writeFileSync(
@@ -642,6 +643,19 @@ function publishVerifiedFixes(
     )}\n`,
   );
   return [...evidence, "fix-ready-notification:sent"];
+}
+
+export function verifiedFixNotificationContent(input: {
+  specId: string;
+  pipelineRunId: string;
+  pullRequestIds: string[];
+}): string {
+  return [
+    `AKS master-validation fix for ${input.specId} passed campaign run ${input.pipelineRunId}.`,
+    `Published review-ready PR(s): ${input.pullRequestIds.join(", ")}.`,
+    "The app proved the fix and removed draft status; repository approvals or policies may still remain.",
+    "Please satisfy those checks and merge each PR into main; the app will keep the frozen campaign moving and later verify current main.",
+  ].join("\n");
 }
 
 function clearCampaign(
@@ -948,8 +962,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         }
         const open = states.filter(({ state }) => state === "active");
         if (open.length) {
-          const publicationEvidence = open.map(({ fix }) =>
-            publishPullRequest(repoDir, fix.pullRequestId).evidence,
+          const publicationEvidence = open.map(
+            ({ fix }) =>
+              publishPullRequest(repoDir, fix.pullRequestId).evidence,
           );
           notifyCampaignReady(
             ctx,

@@ -257,10 +257,12 @@ issue ledger or workflow phase database is introduced.
   included drafts before asking for merges. The app never merges a focused PR
   into `main`; the human remains the merge authority. Draft preparation is an
   internal campaign event, not an actionable human notification. The human is
-  notified once, retry-safely, only after the PR is non-draft and ready to
-  merge. This exact verified-pass event explicitly wakes the standing cycle
-  through its open aggregate-run wait; it does not wait for unrelated slices
-  to finish.
+  notified once, retry-safely, only after the PR is non-draft and ready for
+  review. This does not claim repository approval policies are satisfied:
+  exact campaign proof and draft publication belong to the app, while policy
+  approval and merge belong to the human/provider boundary. This exact
+  verified-pass event explicitly wakes the standing cycle through its open
+  aggregate-run wait; it does not wait for unrelated slices to finish.
 - A resolved issue leaves the live graph through its ordinary completion
   receipt; reusable lessons belong in workflow/tests/domain evidence.
 
