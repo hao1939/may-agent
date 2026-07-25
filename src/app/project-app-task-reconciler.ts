@@ -1087,10 +1087,13 @@ export function listRunnableProjectAppTaskQueueEntries(config: TaskStateConfig):
         const triggerOrder = Number(hasPersistedTrigger(right)) - Number(hasPersistedTrigger(left));
         const leftPriority = priorityOrder[left.spec.priority ?? "P2"];
         const rightPriority = priorityOrder[right.spec.priority ?? "P2"];
+        const leftUpdatedAt = String(left.status.updatedAt ?? "");
+        const rightUpdatedAt = String(right.status.updatedAt ?? "");
         return (
           commentOrder ||
           triggerOrder ||
           leftPriority - rightPriority ||
+          leftUpdatedAt.localeCompare(rightUpdatedAt) ||
           left.metadata.id.localeCompare(right.metadata.id)
         );
       })
