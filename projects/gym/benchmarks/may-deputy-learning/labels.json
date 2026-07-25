@@ -3,18 +3,18 @@
   "benchmark": "may-deputy-learning",
   "labels": {
     "may-learn-reject-stale-app-approval": {
-      "status": "draft",
+      "status": "approved",
       "source": "synthetic-system-contract",
       "rationale": "An approval applies only to the exact task generation and artifact fingerprint that Hao reviewed.",
-      "approved_by": null,
-      "approved_at": null
+      "approved_by": "hao",
+      "approved_at": "2026-07-25T15:45:43Z"
     },
     "may-learn-select-skill-or-workflow": {
-      "status": "draft",
+      "status": "approved",
       "source": "synthetic-system-contract",
       "rationale": "Use a skill and accepted source for one situational judgment; reserve a workflow for repeated ordered orchestration.",
-      "approved_by": null,
-      "approved_at": null
+      "approved_by": "hao",
+      "approved_at": "2026-07-25T15:45:43Z"
     }
   }
 }

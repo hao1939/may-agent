@@ -28,20 +28,14 @@ describe("May learning registry", () => {
       expect.objectContaining({
         id: "system-deputy-operations",
         version: 1,
-        status: "draft",
-        ready_for_development: false,
-        ready_for_release: false,
+        status: "pilot",
+        ready_for_development: true,
+        ready_for_release: true,
         evidence: { positive: 0, negative: 0, contrast: 0 },
       }),
     ]);
     expect(review.warnings).toEqual(
       expect.arrayContaining([
-        expect.stringContaining(
-          "system-deputy-operations development truth is not approved",
-        ),
-        expect.stringContaining(
-          "system-deputy-operations release truth is not approved",
-        ),
         "system-deputy-operations has no positive evidence",
         "system-deputy-operations has no negative evidence",
         "system-deputy-operations has no contrast evidence",
@@ -49,12 +43,20 @@ describe("May learning registry", () => {
     );
   });
 
-  test("keeps draft learning out of candidate-visible contexts", () => {
-    expect(
-      resolveLearningContexts(gymRoot, "may-deputy-learning", [
-        "may-learn-select-skill-or-workflow",
-      ]),
-    ).toEqual([]);
+  test("selects approved system-deputy learning without exposing release truth", () => {
+    const contexts = resolveLearningContexts(gymRoot, "may-deputy-learning", [
+      "may-learn-select-skill-or-workflow",
+    ]);
+
+    expect(contexts).toHaveLength(1);
+    expect(contexts[0]).toMatchObject({
+      id: "system-deputy-operations",
+      releaseBenchmark: "may-deputy-learning-transfer",
+      releaseScenarios: [
+        "may-learn-route-project-app-request",
+        "may-learn-diagnose-unconsumed-event",
+      ],
+    });
   });
 
   test("selects candidate-visible learning without exposing release truth", () => {
@@ -118,14 +120,14 @@ describe("May learning registry", () => {
     expect(review.scenarios).toEqual([
       expect.objectContaining({
         id: "may-learn-route-project-app-request",
-        status: "draft",
+        status: "approved",
         human_answer: expect.stringContaining(
           "existing reconcile/invoices task",
         ),
       }),
       expect.objectContaining({
         id: "may-learn-diagnose-unconsumed-event",
-        status: "draft",
+        status: "approved",
         human_answer: expect.stringContaining("missing consumer"),
       }),
     ]);

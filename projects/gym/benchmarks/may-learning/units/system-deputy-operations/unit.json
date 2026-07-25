@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "system-deputy-operations",
   "version": 1,
-  "status": "draft",
+  "status": "pilot",
   "title": "Operate May-agent and project apps as Hao's deputy",
   "lesson": "lesson.md",
   "practice": "practice.md",

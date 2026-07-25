@@ -380,7 +380,10 @@ export function buildLearningReview(
         addFile(hash, gymRoot, path);
         if (
           !readFileSync(path, "utf8").trim() &&
-          !(path === loadedUnit.evidencePath && unit.status === "draft")
+          !(
+            path === loadedUnit.evidencePath &&
+            (unit.status === "draft" || unit.status === "pilot")
+          )
         ) {
           errors.push(`${unit.id} resource is empty: ${path}`);
         }
