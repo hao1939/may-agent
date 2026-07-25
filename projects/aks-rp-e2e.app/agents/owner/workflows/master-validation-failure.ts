@@ -535,11 +535,17 @@ export function standaloneRecoveryChild(
 
 export function standaloneRecoveryCompletionProblem(
   child: Record<string, unknown>,
+  currentMainCommit = "",
 ): string | null {
   const evidence = Array.isArray(child.evidence)
     ? child.evidence.map(text).filter(Boolean)
     : [];
-  return evidence.includes("target-ref:origin/main")
+  const corpus = [text(child.summary), ...evidence].join("\n");
+  const exactMainRun =
+    Boolean(currentMainCommit) &&
+    corpus.includes("sourceBranch=refs/heads/main") &&
+    corpus.includes(`sourceVersion=${currentMainCommit}`);
+  return evidence.includes("target-ref:origin/main") || exactMainRun
     ? null
     : "standalone recovery child lacks exact target-ref:origin/main integration proof";
 }
@@ -1182,7 +1188,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         const childEvidence = Array.isArray(completedChild.evidence)
           ? completedChild.evidence.map(text).filter(Boolean)
           : [];
-        if (standaloneRecoveryCompletionProblem(completedChild)) {
+        if (standaloneRecoveryCompletionProblem(completedChild, baseCommit)) {
           const summary = `${input.specId} route verification completed without exact origin/main integration proof; the master-validation failure cannot close.`;
           return doneWithEvidence(ctx, "needs-owner", summary, [
             `blocking-pipeline-run:${input.pipelineRunId}`,

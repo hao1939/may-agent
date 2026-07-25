@@ -347,7 +347,7 @@ exit 0
               conditions: [
                 {
                   id: "pipeline-run:1-completed",
-                  type: "pipeline.run.completed",
+                  type: "pipeline-run.state",
                   subject: "pipeline-run:1",
                   expected: { field: "state", equals: "completed" },
                 },

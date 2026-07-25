@@ -11,6 +11,7 @@ import { join, resolve } from "node:path";
 import app, {
   masterValidationScheduleGate,
   malformedApprovalWaitContract,
+  malformedRepoRefWaitContract,
   resolveAksTask,
   routeAksEvent,
   scenarioTestFrontierWakeEvent,
@@ -401,6 +402,218 @@ describe("app event contract", () => {
         previousHandler: "workflow:wait-for-repo-ref-advance",
       },
     });
+  });
+
+  test("replays malformed repo-ref waits after a later repo observation would otherwise leave them asleep", async () => {
+    const appDir = mkdtempSync(join(tmpdir(), "repo-ref-wait-contract-"));
+    const taskId =
+      "hold-compact-node-ephemeral-os-disk-explicit-resourcedisk-public-create-omission-20260720";
+    try {
+      mkdirSync(resolve(appDir, ".state/tasks"), { recursive: true });
+      writeFileSync(
+        resolve(appDir, ".state/tasks/state.json"),
+        JSON.stringify(
+          {
+            version: 2,
+            project: projectId,
+            resources: {
+              [taskId]: {
+                metadata: { id: taskId, generation: 5, resourceVersion: 355 },
+                spec: {
+                  owner: "aks-explorer",
+                  workflow: "wait-for-repo-ref-advance",
+                  input: {
+                    baseRef: "origin/dev",
+                    resumeBaselineCommit:
+                      "0565d5f3039041384b4ad4afc679883150851fff",
+                    specId: "spec.node-ephemeral-disk.resource-placement",
+                  },
+                },
+                status: {
+                  phase: "waiting",
+                  conditionIds: [
+                    "origin-dev-advance-node-ephemeral-resource-placement-0565d5f303",
+                  ],
+                },
+              },
+            },
+            conditions: {
+              "origin-dev-advance-node-ephemeral-resource-placement-0565d5f303": {
+                spec: {
+                  type: "aks.repo-ref.observed",
+                  subject: "project:aks-rp-e2e",
+                  expected: {
+                    project: projectId,
+                    repoRef: "origin/dev",
+                    changed: true,
+                    commit: {
+                      notEquals:
+                        "0565d5f3039041384b4ad4afc679883150851fff",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          null,
+          2,
+        ),
+      );
+
+      expect(malformedRepoRefWaitContract(appDir, taskId)).toMatchObject({
+        taskId,
+        conditionId:
+          "origin-dev-advance-node-ephemeral-resource-placement-0565d5f303",
+        repoRef: "origin/dev",
+        baselineCommit: "0565d5f3039041384b4ad4afc679883150851fff",
+        issues: expect.arrayContaining([
+          'subject="project:aks-rp-e2e"',
+          "expected.field=null",
+          'expected.notEquals=null',
+        ]),
+      });
+
+      const emitted: Record<string, unknown>[] = [];
+      const result = await routeAksEvent(
+        {
+          appPath: (path = ".") => resolve(appDir, path),
+          emit: (value: Record<string, unknown>) => emitted.push(value),
+        } as never,
+        {
+          type: "aks.repo-ref.observed",
+          target: { project: projectId },
+          data: {
+            project: projectId,
+            repoRef: "origin/dev",
+            commit: "07a4f2f4ef890879943ee3d9c6d9ec2ee417114d",
+            previousCommit: "0565d5f3039041384b4ad4afc679883150851fff",
+            changed: true,
+          },
+        },
+      );
+
+      expect(result).toMatchObject({
+        observed: true,
+        repoRef: "origin/dev",
+        commit: "07a4f2f4ef890879943ee3d9c6d9ec2ee417114d",
+        malformedRepoRefWaitReplay: true,
+        malformedRepoRefWaitProblems: [
+          {
+            taskId,
+            conditionId:
+              "origin-dev-advance-node-ephemeral-resource-placement-0565d5f303",
+          },
+        ],
+      });
+      expect(emitted).toContainEqual({
+        type: "project.task.tick",
+        source: "aks-rp-e2e-app",
+        target: { project: projectId, taskId },
+        urgency: "high",
+        action: "repo-ref-wait-contract-replay",
+        data: {
+          project: projectId,
+          taskId,
+          task_id: taskId,
+          reason: "malformed-repo-ref-wait-contract",
+          repoRef: "origin/dev",
+          commit: "07a4f2f4ef890879943ee3d9c6d9ec2ee417114d",
+          baselineCommit: "0565d5f3039041384b4ad4afc679883150851fff",
+          conditionId:
+            "origin-dev-advance-node-ephemeral-resource-placement-0565d5f303",
+          issues: [
+            'subject="project:aks-rp-e2e"',
+            "expected.field=null",
+            'expected.notEquals=null',
+          ],
+          workflow: "wait-for-repo-ref-advance",
+        },
+      });
+    } finally {
+      rmSync(appDir, { recursive: true, force: true });
+    }
+  });
+
+  test("does not replay canonical repo-ref waits because the generic condition tracker already owns them", async () => {
+    const appDir = mkdtempSync(join(tmpdir(), "repo-ref-wait-canonical-"));
+    const taskId =
+      "wait-spec-network-swift-v1-vnetscale-dual-stack-basic-datapath-origin-dev-timeout-carrier-advance-0565d5f3-20260725";
+    try {
+      mkdirSync(resolve(appDir, ".state/tasks"), { recursive: true });
+      writeFileSync(
+        resolve(appDir, ".state/tasks/state.json"),
+        JSON.stringify(
+          {
+            version: 2,
+            project: projectId,
+            resources: {
+              [taskId]: {
+                metadata: { id: taskId, generation: 1, resourceVersion: 1 },
+                spec: {
+                  owner: "aks-explorer",
+                  workflow: "wait-for-repo-ref-advance",
+                  input: {
+                    baseRef: "origin/dev",
+                    resumeBaselineCommit:
+                      "0565d5f3039041384b4ad4afc679883150851fff",
+                    specId:
+                      "spec.network-swift-v1.vnetscale-dual-stack-basic-datapath",
+                  },
+                },
+                status: {
+                  phase: "waiting",
+                  conditionIds: ["repo-ref-advance-abc123"],
+                },
+              },
+            },
+            conditions: {
+              "repo-ref-advance-abc123": {
+                spec: {
+                  type: "aks.repo-ref.observed",
+                  subject: "repoRef:origin/dev",
+                  expected: {
+                    field: "commit",
+                    notEquals:
+                      "0565d5f3039041384b4ad4afc679883150851fff",
+                  },
+                },
+              },
+            },
+          },
+          null,
+          2,
+        ),
+      );
+
+      expect(malformedRepoRefWaitContract(appDir, taskId)).toBeNull();
+      const emitted: Record<string, unknown>[] = [];
+      const result = await routeAksEvent(
+        {
+          appPath: (path = ".") => resolve(appDir, path),
+          emit: (value: Record<string, unknown>) => emitted.push(value),
+        } as never,
+        {
+          type: "aks.repo-ref.observed",
+          target: { project: projectId },
+          data: {
+            project: projectId,
+            repoRef: "origin/dev",
+            commit: "07a4f2f4ef890879943ee3d9c6d9ec2ee417114d",
+            previousCommit: "0565d5f3039041384b4ad4afc679883150851fff",
+            changed: true,
+          },
+        },
+      );
+
+      expect(result).toMatchObject({
+        observed: true,
+        malformedRepoRefWaitReplay: false,
+        malformedRepoRefWaitProblems: [],
+      });
+      expect(emitted).toEqual([]);
+    } finally {
+      rmSync(appDir, { recursive: true, force: true });
+    }
   });
 
   test("replays malformed approval-return waits to owner judgment instead of leaving them asleep", async () => {

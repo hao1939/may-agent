@@ -91,12 +91,13 @@ that should be redacted. Terminal evidence remains authoritative, but its
 summary must be concise and safe. The missing pieces are a small live projection
 and bounded terminal diagnostics.
 
-The live review also exposed an event-volume problem in the existing run-level
+The live review also exposed an event-volume problem in the earlier run-level
 watcher. During one ten-minute window it emitted `1,020`
-`pipeline-run.state` events and `1,000` `pipeline.run.completed` events. Most
-were unchanged one-minute replays for the same 100 completed runs. The events
-were accepted, but both socket and HTTP ingress timed out while the daemon was
-busy, delaying a legitimate merged-PR reconciliation. Replaying terminal
+`pipeline-run.state` events plus `1,000` redundant terminal aliases. Most were
+unchanged one-minute replays for the same 100 completed runs. The events were
+accepted, but both socket and HTTP ingress timed out while the daemon was busy,
+delaying a legitimate merged-PR reconciliation. The current convention uses
+`pipeline-run.state` for both live and terminal levels. Replaying terminal
 history is therefore not a harmless implementation detail; it directly reduces
 control-path reliability.
 

@@ -129,13 +129,14 @@ function readMasterValidationCycleReceipt(
 
 type TaskStateResource = {
   metadata?: { generation?: unknown };
-  spec?: { workflow?: unknown };
+  spec?: { workflow?: unknown; input?: unknown };
   status?: { phase?: unknown; conditionIds?: unknown };
 };
 
 type TaskStateCondition = {
   spec?: {
     type?: unknown;
+    subject?: unknown;
     expected?: unknown;
   };
 };
@@ -150,6 +151,16 @@ type ApprovalWaitContractProblem = {
   workflow?: string;
   phase?: string;
   conditionId: string;
+  issues: string[];
+};
+
+type RepoRefWaitContractProblem = {
+  taskId: string;
+  workflow?: string;
+  phase?: string;
+  conditionId: string;
+  repoRef: string;
+  baselineCommit: string;
   issues: string[];
 };
 
@@ -273,6 +284,111 @@ export function malformedApprovalWaitContract(
     }
   }
   return null;
+}
+
+function repoRefWaitConditionProblem(
+  taskId: string,
+  resource: TaskStateResource,
+  conditionId: string,
+  condition: TaskStateCondition | null,
+): RepoRefWaitContractProblem | null {
+  const spec = isRecord(resource.spec) ? resource.spec : {};
+  if (stringDetail(spec, "workflow") !== "wait-for-repo-ref-advance") {
+    return null;
+  }
+  const phase = stringDetail(
+    isRecord(resource.status) ? resource.status : {},
+    "phase",
+  );
+  if (phase !== "waiting") return null;
+
+  const input = isRecord(spec.input) ? spec.input : {};
+  const repoRef = stringDetail(input, "baseRef");
+  const baselineCommit = stringDetail(input, "resumeBaselineCommit");
+  const conditionSpec = isRecord(condition?.spec) ? condition?.spec : {};
+  const expected = isRecord(conditionSpec.expected)
+    ? conditionSpec.expected
+    : {};
+  const issues: string[] = [];
+
+  if (!repoRef) issues.push("missing input.baseRef");
+  if (!baselineCommit) issues.push("missing input.resumeBaselineCommit");
+  if (!conditionId) issues.push("missing conditionId");
+  if (stringDetail(conditionSpec, "type") !== "aks.repo-ref.observed") {
+    issues.push(`type=${JSON.stringify(conditionSpec.type ?? null)}`);
+  }
+  if (stringDetail(conditionSpec, "subject") !== `repoRef:${repoRef}`) {
+    issues.push(`subject=${JSON.stringify(conditionSpec.subject ?? null)}`);
+  }
+  if (stringDetail(expected, "field") !== "commit") {
+    issues.push(`expected.field=${JSON.stringify(expected.field ?? null)}`);
+  }
+  if (stringDetail(expected, "notEquals") !== baselineCommit) {
+    issues.push(
+      `expected.notEquals=${JSON.stringify(expected.notEquals ?? null)}`,
+    );
+  }
+
+  if (!issues.length) return null;
+  return {
+    taskId,
+    workflow: stringDetail(spec, "workflow"),
+    phase,
+    conditionId,
+    repoRef,
+    baselineCommit,
+    issues,
+  };
+}
+
+export function malformedRepoRefWaitContract(
+  appDir: string,
+  taskId: string,
+): RepoRefWaitContractProblem | null {
+  const state = readTaskStateSnapshot(appDir);
+  if (!state) return null;
+  const resource = state.resources?.[taskId];
+  if (!resource) return null;
+  const conditionIds = stringList(resource.status?.conditionIds);
+  if (!conditionIds.length) {
+    return repoRefWaitConditionProblem(taskId, resource, "", null);
+  }
+  for (const conditionId of conditionIds) {
+    const problem = repoRefWaitConditionProblem(
+      taskId,
+      resource,
+      conditionId,
+      state.conditions?.[conditionId] ?? null,
+    );
+    if (problem) return problem;
+  }
+  return null;
+}
+
+function repoRefWaitBackfillCandidates(
+  appDir: string,
+  repoRef: string,
+  commit: string,
+): RepoRefWaitContractProblem[] {
+  const state = readTaskStateSnapshot(appDir);
+  if (!state?.resources) return [];
+  const candidates: RepoRefWaitContractProblem[] = [];
+  for (const [taskId, resource] of Object.entries(state.resources)) {
+    const conditionIds = stringList(resource.status?.conditionIds);
+    const problem = conditionIds.length
+      ? repoRefWaitConditionProblem(
+          taskId,
+          resource,
+          conditionIds[0],
+          state.conditions?.[conditionIds[0]] ?? null,
+        )
+      : repoRefWaitConditionProblem(taskId, resource, "", null);
+    if (!problem) continue;
+    if (problem.repoRef !== repoRef) continue;
+    if (!problem.baselineCommit || problem.baselineCommit === commit) continue;
+    candidates.push(problem);
+  }
+  return candidates;
 }
 
 export function masterValidationScheduleGate(
@@ -932,10 +1048,40 @@ export async function routeAksEvent(
   if (event.type === "aks.repo-ref.check") return observeRepoRefChanges(ctx);
   if (event.type === "aks.repo-ref.observed") {
     const details = eventDetails(event);
+    const repoRef = stringDetail(details, "repoRef", "repo_ref");
+    const commit = stringDetail(details, "commit");
+    const malformedRepoRefWaitReplays = repoRefWaitBackfillCandidates(
+      ctx.appPath("."),
+      repoRef,
+      commit,
+    );
+    for (const problem of malformedRepoRefWaitReplays) {
+      ctx.emit({
+        type: "project.task.tick",
+        source: "aks-rp-e2e-app",
+        target: { project: projectId, taskId: problem.taskId },
+        urgency: "high",
+        action: "repo-ref-wait-contract-replay",
+        data: {
+          project: projectId,
+          taskId: problem.taskId,
+          task_id: problem.taskId,
+          reason: "malformed-repo-ref-wait-contract",
+          repoRef,
+          commit,
+          baselineCommit: problem.baselineCommit,
+          conditionId: problem.conditionId,
+          issues: problem.issues,
+          workflow: problem.workflow,
+        },
+      });
+    }
     return {
       observed: true,
-      repoRef: stringDetail(details, "repoRef", "repo_ref"),
-      commit: stringDetail(details, "commit"),
+      repoRef,
+      commit,
+      malformedRepoRefWaitReplay: malformedRepoRefWaitReplays.length > 0,
+      malformedRepoRefWaitProblems: malformedRepoRefWaitReplays,
     };
   }
   if (event.type === "aks.repo-ref.changed") {
@@ -1299,7 +1445,6 @@ export default defineProjectApp({
     { type: "aks.scenario-test-inventory.observed", target: projectTarget },
     { type: "pipeline-run.state", target: projectTarget },
     { type: "pipeline.completed", target: projectTarget },
-    { type: "pipeline.run.completed", target: projectTarget },
     { type: "pipeline-artifact.available", target: projectTarget },
     { type: "pipeline.spec.observed", target: projectTarget },
     { type: "pipeline.queue.overdue", target: projectTarget },

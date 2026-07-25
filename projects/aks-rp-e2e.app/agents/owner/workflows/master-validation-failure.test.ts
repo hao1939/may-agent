@@ -260,16 +260,33 @@ ${JSON.stringify({
         standaloneRecoveryChild(raw, failure, "main123", "110", "live"),
       ).toMatchObject({ taskId: (action as { id: string }).id });
       expect(
-        standaloneRecoveryCompletionProblem({
-          taskId: (action as { id: string }).id,
-          evidence: ["pipeline-run:140", "target-ref:origin/dev"],
-        }),
+        standaloneRecoveryCompletionProblem(
+          {
+            taskId: (action as { id: string }).id,
+            evidence: ["pipeline-run:140", "target-ref:origin/dev"],
+          },
+          "main123",
+        ),
       ).toContain("origin/main");
       expect(
-        standaloneRecoveryCompletionProblem({
-          taskId: (action as { id: string }).id,
-          evidence: ["pipeline-run:140", "target-ref:origin/main"],
-        }),
+        standaloneRecoveryCompletionProblem(
+          {
+            taskId: (action as { id: string }).id,
+            evidence: [
+              "run status=completed sourceBranch=refs/heads/main sourceVersion=main123",
+            ],
+          },
+          "main123",
+        ),
+      ).toBeNull();
+      expect(
+        standaloneRecoveryCompletionProblem(
+          {
+            taskId: (action as { id: string }).id,
+            evidence: ["pipeline-run:140", "target-ref:origin/main"],
+          },
+          "main123",
+        ),
       ).toBeNull();
     } finally {
       rmSync(root, { recursive: true, force: true });
