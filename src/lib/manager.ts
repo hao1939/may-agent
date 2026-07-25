@@ -242,9 +242,12 @@ export interface SubagentManagerOptions {
   projectRoot?: string;
   bus?: EventBus;
   maxCallDepth?: number;
+  /** Maximum silence for job/call sessions. Set to 0 to disable. */
+  noObservationTimeoutMs?: number;
 }
 
 const MAX_COMPLETED_RESULTS_IN_MEMORY = 16;
+const DEFAULT_NO_OBSERVATION_TIMEOUT_MS = 5 * 60 * 1000;
 
 function isProcessAlive(pid: number | undefined): boolean {
   if (!pid) return false;
@@ -271,6 +274,7 @@ export class SubagentManager {
   private bus?: EventBus;
   private _registry: RegistryStore;
   private _maxCallDepth: number;
+  private _noObservationTimeoutMs: number;
   private _createdAt = Date.now();
   private _promptTimestamp = new Date().toISOString();
 
@@ -285,6 +289,7 @@ export class SubagentManager {
     this.bus = opts.bus;
     this._registry = new RegistryStore(opts.persistDir);
     this._maxCallDepth = opts.maxCallDepth ?? 8;
+    this._noObservationTimeoutMs = opts.noObservationTimeoutMs ?? DEFAULT_NO_OBSERVATION_TIMEOUT_MS;
   }
 
   private rememberCompletedResult(result: TaskResult): void {
@@ -656,23 +661,7 @@ export class SubagentManager {
         task,
       );
     } else {
-      const promise = this.executeSession(session).then(
-        (result) => {
-          if (result.status === "done" || result.status === "error" || result.status === "interrupted") {
-            this._sessions.delete(sessionId);
-          } else {
-            session.status = "paused";
-          }
-          this.rememberCompletedResult(result);
-          this.results.delete(sessionId);
-          return result;
-        },
-        (error) => {
-          this.results.delete(sessionId);
-          throw error;
-        },
-      );
-      this.results.set(sessionId, promise);
+      this.startManagedExecution(session);
     }
 
     return sessionId;
@@ -1595,29 +1584,87 @@ export class SubagentManager {
 
   // ── Private ──
 
+  private startManagedExecution(session: ActiveSession): void {
+    const promise = this.executeSession(session).then(
+      (result) => {
+        if (result.status === "done" || result.status === "error" || result.status === "interrupted") {
+          this._sessions.delete(session.sessionId);
+        } else {
+          session.status = "paused";
+        }
+        this.rememberCompletedResult(result);
+        this.results.delete(session.sessionId);
+        return result;
+      },
+      (error) => {
+        this.results.delete(session.sessionId);
+        throw error;
+      },
+    );
+    this.results.set(session.sessionId, promise);
+  }
+
+  private async withObservationDeadline<T>(session: ActiveSession, work: () => Promise<T>): Promise<T> {
+    const timeoutMs = this._noObservationTimeoutMs;
+    if (timeoutMs <= 0 || this.isPersistentChat(session)) return work();
+
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let settled = false;
+    let rejectDeadline: (error: Error) => void = () => undefined;
+    const deadline = new Promise<never>((_resolve, reject) => {
+      rejectDeadline = reject;
+    });
+    const reset = (): void => {
+      if (settled) return;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        const reason = `No agent observation for ${timeoutMs}ms`;
+        session.status = "interrupted";
+        session.lastError = reason;
+        log("warn", `[runtime] ${session.sessionId} interrupted: ${reason}`);
+        session.agent.cancel();
+        rejectDeadline(new Error(reason));
+      }, timeoutMs);
+    };
+    const unsubscribe = session.agent.subscribe(() => reset());
+    reset();
+
+    try {
+      return await Promise.race([work(), deadline]);
+    } finally {
+      settled = true;
+      if (timer) clearTimeout(timer);
+      unsubscribe();
+    }
+  }
+
   private async executeSession(session: ActiveSession): Promise<TaskResult> {
     const { agent, sessionId, agentName, task, startedAt } = session;
     let errorText: string | undefined;
 
     try {
-      if (session.resumeMessages) {
-        agent.state.messages = session.resumeMessages as any;
-      }
-      await agent.prompt(session.promptTask ?? task);
-      await agent.waitForIdle();
-      if (session.requireFinish) {
-        const initialMessages = agent.state.messages as AgentMessage[];
-        const missingFinish = !extractFinishParams(initialMessages as any[]);
-        const terminalError =
-          extractLastAssistantError(initialMessages) ?? classifyTerminalAssistantFailure(initialMessages);
-        if (missingFinish && !terminalError) {
-          await agent.prompt(
-            "This workflow step has not returned its structured result. Call finish() now with all required fields" +
-              (session.outputSchema ? ", including the schema-validated result payload." : "."),
-          );
-          await agent.waitForIdle();
+      await this.withObservationDeadline(session, async () => {
+        if (session.resumeMessages) {
+          agent.state.messages = session.resumeMessages as any;
         }
-      }
+        await agent.prompt(session.promptTask ?? task);
+        await agent.waitForIdle();
+        if (session.requireFinish) {
+          const initialMessages = agent.state.messages as AgentMessage[];
+          const missingFinish = !extractFinishParams(initialMessages as any[]);
+          const terminalError =
+            extractLastAssistantError(initialMessages) ?? classifyTerminalAssistantFailure(initialMessages);
+          if (missingFinish && !terminalError) {
+            await agent.prompt(
+              "This workflow step has not returned its structured result. Call finish() now with all required fields" +
+                (session.outputSchema ? ", including the schema-validated result payload." : "."),
+            );
+            await agent.waitForIdle();
+          }
+        }
+      });
     } catch (err) {
       errorText = err instanceof Error ? err.message : String(err);
       log("error", `[runtime] ${sessionId} failed: ${err}`);
