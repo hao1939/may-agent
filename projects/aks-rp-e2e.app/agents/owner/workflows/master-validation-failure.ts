@@ -78,6 +78,17 @@ type Decision = {
   changedFiles: string[];
 };
 
+type InvestigationOutcome =
+  | {
+      kind: "decision";
+      decision: Decision;
+      nextCommit: string;
+    }
+  | {
+      kind: "blocked";
+      result: WorkflowResult;
+    };
+
 const decisionSchema = Type.Object({
   classification: Type.Union([
     Type.Literal("test_issue"),
@@ -823,6 +834,106 @@ function waitingOnChild(
   });
 }
 
+function investigationBlocked(
+  ctx: WorkflowContext,
+  input: FailureInput,
+  summary: string,
+  evidence: string[],
+): WorkflowResult {
+  return ctx.blocked(summary, {
+    specId: input.specId,
+    pipelineRunId: input.pipelineRunId,
+    artifactPath: input.artifactPath || "missing",
+    evidence: boundedEvidence(evidence),
+  });
+}
+
+export async function runFailureInvestigation(
+  ctx: WorkflowContext,
+  input: FailureInput,
+  values: {
+    workspaceDir: string;
+    prompt: string;
+    headCommit: string;
+  },
+): Promise<InvestigationOutcome> {
+  let feedback = "";
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    const result = await ctx.runAgent(
+      ctx.agent,
+      feedback ? `${values.prompt}\n\n${feedback}` : values.prompt,
+      { timeoutMs: 1_800_000, schema: decisionSchema },
+    );
+    if (result.status === "error" || result.status === "interrupted") {
+      const summary = `Failure investigation agent session did not complete for ${input.specId}.`;
+      return {
+        kind: "blocked",
+        result: investigationBlocked(ctx, input, summary, [
+          `investigation-attempt:${attempt}`,
+          `session-status:${result.status}`,
+          `workspace:${values.workspaceDir}`,
+        ]),
+      };
+    }
+
+    const decision = result.structuredResult as Decision;
+    const nextCommit = git(values.workspaceDir, ["rev-parse", "HEAD"]).stdout;
+    const dirty = git(values.workspaceDir, [
+      "status",
+      "--porcelain=v1",
+      "--untracked-files=all",
+    ]).stdout;
+    if (dirty) {
+      const summary =
+        "Failure investigation left uncommitted changes; publication was refused.";
+      return {
+        kind: "blocked",
+        result: investigationBlocked(ctx, input, summary, [
+          ...decision.evidence,
+          `investigation-attempt:${attempt}`,
+          `workspace:${values.workspaceDir}`,
+          ...dirty
+            .split("\n")
+            .filter(Boolean)
+            .slice(0, 20)
+            .map((entry) => `dirty:${entry}`),
+        ]),
+      };
+    }
+
+    if (
+      decision.classification !== "test_issue" ||
+      nextCommit !== values.headCommit
+    ) {
+      return { kind: "decision", decision, nextCommit };
+    }
+
+    if (attempt === 1) {
+      feedback = [
+        "Your classification says this is a test_issue, but the worktree HEAD did not change.",
+        "Classification alone does not resolve a test issue.",
+        "Re-open the cited failure evidence, implement the smallest root-cause fix, run scoped verification, commit the fix, and leave the worktree clean.",
+        "If the evidence does not support a safe source fix, change the classification to inconclusive and explain the exact missing fact instead of claiming the test issue is resolved.",
+      ].join(" ");
+      continue;
+    }
+
+    const summary = `The failure was classified as a test issue twice, but no fix commit was produced for ${input.specId}.`;
+    return {
+      kind: "blocked",
+      result: investigationBlocked(ctx, input, summary, [
+        ...decision.evidence,
+        "classification:test_issue",
+        "investigation-attempts:2",
+        `unchanged-head:${values.headCommit}`,
+        `workspace:${values.workspaceDir}`,
+      ]),
+    };
+  }
+
+  throw new Error("unreachable failure investigation state");
+}
+
 export function inconclusiveWait(
   ctx: WorkflowContext,
   input: FailureInput,
@@ -1427,50 +1538,39 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     if (git(workspaceDir, ["status", "--porcelain=v1"]).stdout) {
       const summary =
         "Failure investigation worktree is dirty before deterministic publication.";
-      return doneWithEvidence(ctx, "needs-owner", summary, [
+      return investigationBlocked(ctx, input, summary, [
         `workspace:${workspaceDir}`,
       ]);
     }
 
-    const result = await ctx.runAgent(
-      ctx.agent,
-      [
-        `Investigate the early master-validation failure for ${input.specId}.`,
-        `Aggregate pipeline run: ${input.pipelineRunId}`,
-        `Failure status/category: ${input.status}/${input.category || "unknown"}`,
-        `Failure reason: ${input.reason || "not recorded"}`,
-        `Downloaded slice artifact: ${input.artifactPath || "not available"}`,
-        `The tested main commit was ${input.sourceCommit || "unknown"}.`,
-        frozenBaseCommit
-          ? `Work only in ${workspaceDir}, aligned to frozen campaign base ${repairBaseCommit}. Do not merge or rebase newer main into this repair branch while the campaign is red.`
-          : `Work only in ${workspaceDir}, which is based on ${targetRef}@${baseCommit}.`,
-        "Classify the root cause as test_issue, prod_issue, or inconclusive.",
-        "For test_issue, make the smallest source fix, run scoped local verification, commit it, and leave the worktree clean. Do not push or create a PR; the workflow owns publication.",
-        "For prod_issue or inconclusive, do not modify source. Cite exact artifact/log evidence.",
-        "Do not stop or wait for the aggregate pipeline; investigate this completed slice now.",
-      ].join("\n\n"),
-      { timeoutMs: 1_800_000, schema: decisionSchema },
-    );
-    if (result.status === "error" || result.status === "interrupted") {
-      throw new Error("Failure investigation agent session did not complete");
-    }
-    const decision = result.structuredResult as Decision;
-    const nextCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
-    const dirty = git(workspaceDir, ["status", "--porcelain=v1"]).stdout;
-    if (dirty) {
-      const summary =
-        "Failure investigation left uncommitted changes; publication was refused.";
-      return doneWithEvidence(ctx, "needs-owner", summary, [
-        ...decision.evidence,
-        `workspace:${workspaceDir}`,
-      ]);
-    }
+    const prompt = [
+      `Investigate the early master-validation failure for ${input.specId}.`,
+      `Aggregate pipeline run: ${input.pipelineRunId}`,
+      `Failure status/category: ${input.status}/${input.category || "unknown"}`,
+      `Failure reason: ${input.reason || "not recorded"}`,
+      `Downloaded slice artifact: ${input.artifactPath || "not available"}`,
+      `The tested main commit was ${input.sourceCommit || "unknown"}.`,
+      frozenBaseCommit
+        ? `Work only in ${workspaceDir}, aligned to frozen campaign base ${repairBaseCommit}. Do not merge or rebase newer main into this repair branch while the campaign is red.`
+        : `Work only in ${workspaceDir}, which is based on ${targetRef}@${baseCommit}.`,
+      "Classify the root cause as test_issue, prod_issue, or inconclusive.",
+      "For test_issue, make the smallest source fix, run scoped local verification, commit it, and leave the worktree clean. Do not push or create a PR; the workflow owns publication.",
+      "For prod_issue or inconclusive, do not modify source. Cite exact artifact/log evidence.",
+      "Do not stop or wait for the aggregate pipeline; investigate this completed slice now.",
+    ].join("\n\n");
+    const investigation = await runFailureInvestigation(ctx, input, {
+      workspaceDir,
+      prompt,
+      headCommit,
+    });
+    if (investigation.kind === "blocked") return investigation.result;
+    const { decision, nextCommit } = investigation;
 
     if (decision.classification === "prod_issue") {
       if (nextCommit !== headCommit) {
         const summary =
           "Product issue classification unexpectedly changed source; owner review is required.";
-        return doneWithEvidence(ctx, "needs-owner", summary, [
+        return investigationBlocked(ctx, input, summary, [
           ...decision.evidence,
           `unexpected-commit:${nextCommit}`,
         ]);
@@ -1510,10 +1610,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       );
     }
 
-    if (nextCommit === headCommit) {
-      const summary = `The failure was classified as a test issue, but no fix commit was produced for ${input.specId}.`;
-      return doneWithEvidence(ctx, "needs-owner", summary, decision.evidence);
-    }
     if (frozenBaseCommit) {
       return prepareCampaignRepair(ctx, input, {
         repoDir,
@@ -1527,7 +1623,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return reconcileTestIssue(ctx, input);
   } catch (error) {
     const summary = `Master-validation failure handling failed: ${error instanceof Error ? error.message : String(error)}`;
-    return doneWithEvidence(ctx, "needs-owner", summary, [
+    return investigationBlocked(ctx, input, summary, [
       `spec:${input.specId}`,
       `pipeline-run:${input.pipelineRunId}`,
       `artifact:${input.artifactPath || "missing"}`,

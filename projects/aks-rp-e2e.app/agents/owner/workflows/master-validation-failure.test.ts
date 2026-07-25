@@ -24,6 +24,7 @@ import {
   priorStandaloneVerification,
   productRecoveryCondition,
   requiresStandaloneVerification,
+  runFailureInvestigation,
   shouldReconcileTestFix,
   standaloneRecoveryChild,
   standaloneRecoveryChildAction,
@@ -192,6 +193,184 @@ ${JSON.stringify({
         campaignBaseCommit: "base123",
       }),
     ).toContain("Do not merge the campaign branch itself");
+  });
+
+  test("retries a test-issue classification once and blocks instead of falsely converging without a fix", async () => {
+    const root = mkdtempSync(join(tmpdir(), "master-validation-no-fix-"));
+    try {
+      git(root, "init");
+      git(root, "config", "user.name", "Repair Test");
+      git(root, "config", "user.email", "repair@example.test");
+      git(root, "commit", "--allow-empty", "-m", "base");
+      const headCommit = git(root, "rev-parse", "HEAD");
+      const input = parseFailureInput(`
+## Reconciliation Task
+${JSON.stringify({
+  taskId: "domain/master-validation-failure/spec.example/fp",
+  input: {
+    specId: "spec.example",
+    pipelineRunId: "101",
+    failureFingerprint: "fp",
+    artifactPath: "/tmp/result.json",
+  },
+})}
+`)!;
+      const prompts: string[] = [];
+      const ctx = {
+        agent: "aks-explorer",
+        runAgent: async (_agent: unknown, prompt: string) => {
+          prompts.push(prompt);
+          return {
+            status: "success",
+            structuredResult: {
+              classification: "test_issue",
+              summary: "cleanup confirmation is too eager",
+              evidence: ["cleanup:HTTP 202"],
+              changedFiles: [],
+            },
+          };
+        },
+        blocked: (summary: string, details: Record<string, unknown>) => ({
+          type: "blocked",
+          summary,
+          details,
+        }),
+      } as never;
+
+      const outcome = await runFailureInvestigation(ctx, input, {
+        workspaceDir: root,
+        prompt: "Investigate the failure.",
+        headCommit,
+      });
+      expect(prompts).toHaveLength(2);
+      expect(prompts[1]).toContain(
+        "Classification alone does not resolve a test issue",
+      );
+      expect(outcome).toMatchObject({
+        kind: "blocked",
+        result: {
+          type: "blocked",
+          details: {
+            evidence: expect.arrayContaining([
+              "classification:test_issue",
+              "investigation-attempts:2",
+              `unchanged-head:${headCommit}`,
+            ]),
+          },
+        },
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("accepts a committed test fix produced by the feedback retry", async () => {
+    const root = mkdtempSync(join(tmpdir(), "master-validation-retry-fix-"));
+    try {
+      git(root, "init");
+      git(root, "config", "user.name", "Repair Test");
+      git(root, "config", "user.email", "repair@example.test");
+      git(root, "commit", "--allow-empty", "-m", "base");
+      const headCommit = git(root, "rev-parse", "HEAD");
+      const input = parseFailureInput(`
+## Reconciliation Task
+${JSON.stringify({
+  taskId: "domain/master-validation-failure/spec.example/fp",
+  input: {
+    specId: "spec.example",
+    pipelineRunId: "101",
+    failureFingerprint: "fp",
+  },
+})}
+`)!;
+      let attempts = 0;
+      const ctx = {
+        agent: "aks-explorer",
+        runAgent: async () => {
+          attempts += 1;
+          if (attempts === 2) {
+            writeFileSync(join(root, "fix.txt"), "fixed\n");
+            git(root, "add", "fix.txt");
+            git(root, "commit", "-m", "fix cleanup confirmation");
+          }
+          return {
+            status: "success",
+            structuredResult: {
+              classification: "test_issue",
+              summary: "fixed cleanup confirmation",
+              evidence: ["test:passed"],
+              changedFiles: attempts === 2 ? ["fix.txt"] : [],
+            },
+          };
+        },
+        blocked: () => {
+          throw new Error("retry with a committed fix must not block");
+        },
+      } as never;
+
+      const outcome = await runFailureInvestigation(ctx, input, {
+        workspaceDir: root,
+        prompt: "Investigate the failure.",
+        headCommit,
+      });
+      expect(attempts).toBe(2);
+      expect(outcome).toMatchObject({
+        kind: "decision",
+        decision: { classification: "test_issue" },
+      });
+      expect(
+        outcome.kind === "decision" ? outcome.nextCommit : headCommit,
+      ).not.toBe(headCommit);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("routes investigation session failures through runtime recovery", async () => {
+    const root = mkdtempSync(join(tmpdir(), "master-validation-agent-error-"));
+    try {
+      git(root, "init");
+      git(root, "config", "user.name", "Repair Test");
+      git(root, "config", "user.email", "repair@example.test");
+      git(root, "commit", "--allow-empty", "-m", "base");
+      const input = parseFailureInput(`
+## Reconciliation Task
+${JSON.stringify({
+  taskId: "domain/master-validation-failure/spec.example/fp",
+  input: {
+    specId: "spec.example",
+    pipelineRunId: "101",
+    failureFingerprint: "fp",
+  },
+})}
+`)!;
+      const ctx = {
+        agent: "aks-explorer",
+        runAgent: async () => ({ status: "interrupted" }),
+        blocked: (summary: string, details: Record<string, unknown>) => ({
+          type: "blocked",
+          summary,
+          details,
+        }),
+      } as never;
+      expect(
+        await runFailureInvestigation(ctx, input, {
+          workspaceDir: root,
+          prompt: "Investigate the failure.",
+          headCommit: git(root, "rev-parse", "HEAD"),
+        }),
+      ).toMatchObject({
+        kind: "blocked",
+        result: {
+          type: "blocked",
+          details: {
+            evidence: expect.arrayContaining(["session-status:interrupted"]),
+          },
+        },
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   test("routes a wrong-target aggregate failure through one exact standalone child", () => {

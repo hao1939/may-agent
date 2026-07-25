@@ -287,6 +287,12 @@ serialize unrelated issue tasks.
 Classification alone does not close a failure. For a test issue, the same
 task-owned branch and worktree follow the finite live-reconciliation contract:
 
+If the investigation says `test_issue` but leaves no clean fix commit, the
+workflow gives it one explicit feedback retry. If the retry still produces no
+fix, or the session/worktree fails, the same task stays blocked with exact
+evidence for runtime recovery. Owner fallback must not turn classification-only
+evidence into convergence.
+
 ```text
 bounded fix commit and focused PR to main
   -> merge the exact unmerged head into the frozen campaign
@@ -374,6 +380,9 @@ This replaces manual polling while keeping scheduling out of the task tree.
 - Artifact download failure: retry from a fresh temporary directory.
 - Agent interruption: keep the task/worktree; retry through normal runtime
   recovery.
+- A test-issue classification without a clean fix commit receives one bounded
+  feedback retry, then remains blocked for runtime recovery; it never falls
+  through to owner convergence.
 - Failed pipeline execution before any parseable spec verdict: create a stable
   repository-owned pipeline/bootstrap failure task. It is actionable repair,
   never a reason to wait for a hypothetical current-main spec pass.
