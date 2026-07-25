@@ -1274,6 +1274,7 @@ async function reviewFailedCandidate(
       [
         "Review this failed May candidate before deciding what changes next.",
         "Read the baseline, comparison, failed decisions, approved expected answers, scorer checks, prompt/model provenance, and runtime evidence.",
+        "Read the exact candidate snapshot preserved by the verification manifest. If it contains agent.json skillActivationRules, execute each relevant rule against the frozen task text and distinguish a trigger miss from a loaded-skill policy failure.",
         "Use revise-candidate only when the evidence still establishes a May behavior gap.",
         "When the failed candidate text was present in the actual prompt but behavior did not improve, propose a different learning mechanism instead of stronger wording in the same file.",
         "Use review-benchmark, review-scorer, review-runtime, or needs-human for the responsible alternative.",
@@ -1444,6 +1445,7 @@ async function runCandidateIteration(
         "Read prior generation results for this task when present; they are evidence about mechanisms that already failed even when this generation has no in-run revision yet.",
         "When repeated valid trials prove model-selected skill loading is ignored, use the validated agent.json skillActivationRules mechanism for a narrow deterministic trigger instead of adding more prompt wording. Copy the full prepared agent.json into the overlay, change only skillActivationRules, and pair the rule with its named skill package.",
         "Keep activation rules general, bounded, and tied to the real high-risk task class. Require an opposite control so a rule does not make May over-apply the skill.",
+        "Before finishing, validate candidate agent.json with the May-agent config validator: each activation pattern must be valid and 1-512 characters, and every named skill must exist in the candidate catalog.",
         `Candidate overlay directory: ${candidateDir}`,
         "Read the baseline evidence, current agent preparation, and relevant design before editing.",
         "Write only under the candidate overlay. Do not edit production, Gym truth, labels, evidence, task state, or Git state.",
