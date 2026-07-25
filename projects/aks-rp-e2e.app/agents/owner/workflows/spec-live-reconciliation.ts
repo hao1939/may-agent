@@ -1093,30 +1093,46 @@ async function getPipelineRun(
   return value && typeof value === "object" ? (value as PipelineRun) : null;
 }
 
+export async function discoverTaskRuns(
+  contextDir: string,
+  sourceBranch: string,
+  dependencies: {
+    getExactRun: (runId: string) => Promise<PipelineRun | null>;
+    listBranchRuns: (sourceBranch: string) => Promise<PipelineRun[]>;
+  },
+): Promise<PipelineRun[]> {
+  const receipt = readRunReceipt(contextDir);
+  if (receipt) {
+    const exact = await dependencies.getExactRun(receipt.runId);
+    return exact ? [exact] : [];
+  }
+  return dependencies.listBranchRuns(sourceBranch);
+}
+
 async function taskRuns(
   repoDir: string,
   contextDir: string,
   sourceBranch: string,
 ): Promise<PipelineRun[]> {
-  const receipt = readRunReceipt(contextDir);
-  if (receipt) {
-    const exact = await getPipelineRun(repoDir, receipt.runId);
-    return exact ? [exact] : [];
-  }
-  const value = await azJson(repoDir, [
-    "pipelines",
-    "runs",
-    "list",
-    "--pipeline-ids",
-    pipelineId,
-    "--branch",
-    sourceBranch,
-    "--query-order",
-    "QueueTimeDesc",
-    "--top",
-    "20",
-  ]);
-  return Array.isArray(value) ? (value as PipelineRun[]) : [];
+  return discoverTaskRuns(contextDir, sourceBranch, {
+    getExactRun: (runId) => getPipelineRun(repoDir, runId),
+    listBranchRuns: async (branch) => {
+      const value = await azJson(repoDir, [
+        "pipelines",
+        "runs",
+        "list",
+        "--pipeline-ids",
+        pipelineId,
+        "--branch",
+        branch,
+        "--query-order",
+        "QueueTimeDesc",
+        "--top",
+        "20",
+      ]);
+      return Array.isArray(value) ? (value as PipelineRun[]) : [];
+    },
+  });
 }
 
 async function queueRun(
@@ -2614,70 +2630,137 @@ export async function reconcileSpecLive(
               sourcePaths,
               targetPaths,
             });
-
-            if (!proofPreserving) return reconcileSpecLive(ctx, options);
-
-            const merge = git(
-              workspaceDir,
-              ["merge", "--no-ff", "--no-commit", targetRef],
-              true,
-            );
-            if (merge.status !== 0) {
-              git(workspaceDir, ["merge", "--abort"], true);
-              return reconcileSpecLive(ctx, options);
-            }
-
-            const protectedSourcePaths =
-              proofProtectedScenarioPaths(sourcePaths);
-            const changedTestedPath = protectedSourcePaths.length
-              ? git(
-                  workspaceDir,
-                  [
-                    "diff",
-                    "--quiet",
-                    sourceCommit,
-                    "--",
-                    ...protectedSourcePaths,
-                  ],
-                  true,
-                ).status
-              : 0;
-            if (changedTestedPath !== 0) {
-              git(workspaceDir, ["merge", "--abort"], true);
-              return reconcileSpecLive(ctx, options);
-            }
-
-            const mergeCommit = git(
-              workspaceDir,
-              ["commit", "--no-edit"],
-              true,
-            );
-            if (mergeCommit.status !== 0) {
-              git(workspaceDir, ["merge", "--abort"], true);
-              return reconcileSpecLive(ctx, options);
-            }
-
-            const push = git(
-              workspaceDir,
-              ["push", "origin", `HEAD:${targetBranch}`],
-              true,
-            );
-            if (push.status !== 0) {
-              lastPushError = push.stderr || push.stdout;
-              continue;
-            }
-            git(repoDir, ["fetch", "origin", targetBranch]);
-            if (
-              git(
-                repoDir,
-                ["merge-base", "--is-ancestor", sourceCommit, targetRef],
+            if (proofPreserving) {
+              const merge = git(
+                workspaceDir,
+                ["merge", "--no-ff", "--no-commit", targetRef],
                 true,
-              ).status === 0
-            ) {
-              integratedCommit = git(repoDir, ["rev-parse", targetRef]).stdout;
-              break;
+              );
+              if (merge.status === 0) {
+                const protectedSourcePaths =
+                  proofProtectedScenarioPaths(sourcePaths);
+                const changedTestedPath = protectedSourcePaths.length
+                  ? git(
+                      workspaceDir,
+                      [
+                        "diff",
+                        "--quiet",
+                        sourceCommit,
+                        "--",
+                        ...protectedSourcePaths,
+                      ],
+                      true,
+                    ).status
+                  : 0;
+                if (changedTestedPath === 0) {
+                  const mergeCommit = git(
+                    workspaceDir,
+                    ["commit", "--no-edit"],
+                    true,
+                  );
+                  if (mergeCommit.status === 0) {
+                    const push = git(
+                      workspaceDir,
+                      ["push", "origin", `HEAD:${targetBranch}`],
+                      true,
+                    );
+                    if (push.status !== 0) {
+                      lastPushError = push.stderr || push.stdout;
+                      continue;
+                    }
+                    git(repoDir, ["fetch", "origin", targetBranch]);
+                    if (
+                      git(
+                        repoDir,
+                        [
+                          "merge-base",
+                          "--is-ancestor",
+                          sourceCommit,
+                          targetRef,
+                        ],
+                        true,
+                      ).status === 0
+                    ) {
+                      integratedCommit = git(
+                        repoDir,
+                        ["rev-parse", targetRef],
+                      ).stdout;
+                      break;
+                    }
+                    continue;
+                  }
+                }
+              }
+              git(workspaceDir, ["merge", "--abort"], true);
             }
-            continue;
+
+            const beforeRefresh = git(
+              workspaceDir,
+              ["rev-parse", "HEAD"],
+            ).stdout;
+            const refresh = git(
+              workspaceDir,
+              ["merge", "--no-ff", "--no-edit", targetRef],
+              true,
+            );
+            let refreshEvidence: string[] = [];
+            if (refresh.status !== 0) {
+              const decision = await askAgent(
+                ctx,
+                [
+                  `${specId} passed exact live run ${runId} at ${sourceCommit}, but current ${targetRef} contains changes that invalidate that proof or conflict with the task branch.`,
+                  `Resolve only the current merge in ${workspaceDir}, preserve the scenario-normalization intent, run scoped checks plus the strict scenario inventory, commit the resolved source, leave the worktree clean, and return decision=committed.`,
+                  "Do not push, queue ADO, create a PR, create another task, or edit app state. The workflow will push the refreshed task branch and require a new exact live run before integration.",
+                  "Task:",
+                  ctx.task,
+                ].join("\n\n"),
+                { scenarioNormalization: true },
+              );
+              if (decision.decision !== "committed") {
+                return ownerResult(ctx, decision.summary, decision.evidence);
+              }
+              refreshEvidence = decision.evidence;
+            }
+
+            let refreshedCommit = git(
+              workspaceDir,
+              ["rev-parse", "HEAD"],
+            ).stdout;
+            if (
+              refreshedCommit === beforeRefresh ||
+              cleanWorkspace(workspaceDir)
+            ) {
+              return ownerResult(
+                ctx,
+                `Refreshing the scenario-normalization candidate from current ${targetBranch} did not leave one new clean commit.`,
+                refreshEvidence,
+              );
+            }
+            const dispatch = await prepareLiveDispatch(
+              refreshedCommit,
+              `replacement after current ${targetBranch} invalidated run ${runId}`,
+            );
+            if (dispatch.state === "result") return dispatch.result;
+            refreshedCommit = dispatch.sourceCommit;
+            git(workspaceDir, ["push", "origin", sourceBranch]);
+            const queued = await queueFreshRun(refreshedCommit);
+            if (queued.state === "result") return queued.result;
+            const replacement = queued.run;
+            saveRunReceipt(contextDir, replacement, refreshedCommit);
+            const replacementId = nonEmptyString(replacement.id);
+            return waitingResult(
+              ctx,
+              `Current ${targetBranch} invalidated the prior live proof; refreshed the scenario candidate and queued replacement run ${replacementId} at ${refreshedCommit}.`,
+              [
+                ...refreshEvidence,
+                ...dispatch.evidence,
+                `replaces-run:${runId}`,
+                `source-commit:${refreshedCommit}`,
+                `pipeline-run:${replacementId}`,
+                `target-ref:${targetRef}`,
+              ],
+              pipelineWaitCondition(replacementId),
+            );
           }
           const beforeMerge = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
           const merge = git(

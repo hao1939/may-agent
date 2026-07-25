@@ -17,6 +17,7 @@ import {
   completedPullRequestIntegration,
   decisionCorrectionPrompt,
   directIntegrationAction,
+  discoverTaskRuns,
   proofPreservingScenarioIntegration,
   proofProtectedScenarioPaths,
   shouldReplayScenarioBeforeRunReview,
@@ -52,6 +53,57 @@ import {
 } from "./lib/scenario-normalization-invariant.js";
 
 describe("spec-live-reconciliation workflow", () => {
+  test("reads the exact saved run receipt without listing branch history", async () => {
+    const contextDir = mkdtempSync(join(tmpdir(), "run-receipt-"));
+    try {
+      writeFileSync(
+        join(contextDir, "current-run.json"),
+        JSON.stringify({ runId: "42", sourceCommit: "abc", queuedAt: "now" }),
+      );
+      const calls: string[] = [];
+
+      const runs = await discoverTaskRuns(contextDir, "task/example", {
+        getExactRun: async (runId) => {
+          calls.push(`exact:${runId}`);
+          return { id: runId, status: "inProgress" };
+        },
+        listBranchRuns: async (branch) => {
+          calls.push(`list:${branch}`);
+          return [];
+        },
+      });
+
+      expect(runs).toEqual([{ id: "42", status: "inProgress" }]);
+      expect(calls).toEqual(["exact:42"]);
+    } finally {
+      rmSync(contextDir, { recursive: true, force: true });
+    }
+  });
+
+  test("lists only the task branch when no run receipt exists", async () => {
+    const contextDir = mkdtempSync(join(tmpdir(), "run-history-"));
+    try {
+      const calls: string[] = [];
+      const runs = await discoverTaskRuns(contextDir, "task/example", {
+        getExactRun: async (runId) => {
+          calls.push(`exact:${runId}`);
+          return null;
+        },
+        listBranchRuns: async (branch) => {
+          calls.push(`list:${branch}`);
+          return [{ id: "43", sourceBranch: `refs/heads/${branch}` }];
+        },
+      });
+
+      expect(runs).toEqual([
+        { id: "43", sourceBranch: "refs/heads/task/example" },
+      ]);
+      expect(calls).toEqual(["list:task/example"]);
+    } finally {
+      rmSync(contextDir, { recursive: true, force: true });
+    }
+  });
+
   test("accepts a squash merge by tracking the merged target revision", () => {
     expect(
       completedPullRequestIntegration({
@@ -806,6 +858,14 @@ describe("spec-live-reconciliation workflow", () => {
         targetIsInSource: false,
       }),
     ).toBe("reverify-updated-source");
+  });
+
+  test("does not recursively re-enter reconciliation on unchanged evidence", () => {
+    const source = readFileSync(
+      join(import.meta.dir, "spec-live-reconciliation.ts"),
+      "utf8",
+    );
+    expect(source).not.toContain("return reconcileSpecLive(ctx, options)");
   });
 
   test("preserves scenario proof only for disjoint domain-path target advances", () => {

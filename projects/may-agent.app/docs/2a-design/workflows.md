@@ -265,6 +265,14 @@ workflow failure, release the attempt through ordinary task reconciliation,
 and retry the same task from current evidence. A workflow that needs more time
 must return an exact durable wait instead of remaining in process.
 
+A workflow must not recursively re-enter itself with the same task evidence.
+Before another iteration it must produce a real state transition: change and
+verify source, persist an exact wait, return a result, or let the controller
+record an execution failure. For example, when an integration target advances
+and invalidates live proof, update the task branch and request fresh proof;
+calling the same reconciliation function again without changing either side is
+an infinite retry disguised as progress.
+
 Keep a wait inside one workflow only when it is bounded and expected to resolve
 within the current execution, such as:
 
