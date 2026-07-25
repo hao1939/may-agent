@@ -45,6 +45,19 @@ describe("P113 Bash Resource Caps", () => {
     expect(Date.now() - startedAt).toBeLessThan(5_000);
   });
 
+  it("settles concurrent shell calls from the same long-running process", async () => {
+    const tool = createBashTool("/tmp", { defaultTimeout: 10 });
+    const results = await Promise.all(
+      Array.from({ length: 8 }, (_, index) => tool.execute(`call-${index}`, {
+        command: `printf 'call-%s\\n' ${index}`,
+      })),
+    );
+
+    for (const [index, result] of results.entries()) {
+      expect(result.content[0].text).toContain(`call-${index}`);
+    }
+  });
+
   it("tool description mentions the default timeout", () => {
     const tool = createBashTool("/tmp");
     expect(tool.description).toContain("120s");
