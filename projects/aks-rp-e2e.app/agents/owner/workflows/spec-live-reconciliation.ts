@@ -283,6 +283,13 @@ export function scenarioNormalizationReplayBase(input: {
   return input.recordedTaskBase;
 }
 
+export function novelScenarioReplayCommits(cherryOutput: string): string[] {
+  return cherryOutput
+    .split(/\r?\n/)
+    .map((line) => /^\+\s+([0-9a-f]{40})(?:\s|$)/i.exec(line.trim())?.[1] ?? "")
+    .filter(Boolean);
+}
+
 export function directIntegrationAction(input: {
   sourceIsInTarget: boolean;
   targetIsInSource: boolean;
@@ -1744,15 +1751,39 @@ export async function reconcileSpecLive(
             [`source-branch:${sourceBranch}`, `task:${taskId}`],
           );
         }
-        const taskCommits = git(workspaceDir, [
-          "rev-list",
-          "--first-parent",
-          "--reverse",
-          "--no-merges",
-          `${taskBase}..HEAD`,
-        ])
-          .stdout.split(/\r?\n/)
-          .filter(Boolean);
+        const cherry = git(
+          workspaceDir,
+          ["cherry", targetRef, "HEAD"],
+          true,
+        );
+        if (cherry.status !== 0) {
+          return ownerResult(
+            ctx,
+            "Scenario normalization replay could not distinguish task patches from changes already integrated into the current target.",
+            [
+              `task:${taskId}`,
+              `source-commit:${sourceCommit}`,
+              `target-ref:${targetRef}@${baseCommit}`,
+              `git-cherry:${cherry.stderr || cherry.stdout || "failed"}`,
+            ],
+          );
+        }
+        const taskCommits = novelScenarioReplayCommits(cherry.stdout);
+        if (
+          taskCommits.length === 0 &&
+          git(workspaceDir, ["diff", "--quiet", targetRef, "HEAD"], true)
+            .status !== 0
+        ) {
+          return ownerResult(
+            ctx,
+            "Scenario normalization branch differs from the current target but has no novel non-merge patch lineage safe to replay.",
+            [
+              `task:${taskId}`,
+              `source-commit:${sourceCommit}`,
+              `target-ref:${targetRef}@${baseCommit}`,
+            ],
+          );
+        }
         const expectedRemoteCommit = git(
           workspaceDir,
           ["rev-parse", `refs/remotes/origin/${sourceBranch}`],

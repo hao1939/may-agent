@@ -195,11 +195,14 @@ unrelated merge.
   commit in ancestry, and pushes only a fast-forward remote update. A concurrent
   update causes a bounded refresh/retry, not a wait.
 - A scenario-normalization task records the `origin/dev` commit from which its
-  task branch was created. When current `origin/dev` has advanced outside that
-  branch, the workflow rebases only commits after that recorded base onto the
-  current integration head. It does not merge the whole current repository
-  history into a stale task lineage. A clean replay still changes commit
-  identity and therefore requires a fresh exact ADO run before publication.
+  task branch was created as a safety fence. When current `origin/dev` has
+  advanced outside that branch, the workflow uses Git patch equivalence
+  against current `origin/dev` and replays only novel task patches. Commits
+  already reachable from or patch-equivalent to current `origin/dev` are not
+  replayed merely because they appeared after the old recorded base. It does
+  not merge the whole current repository history into a stale task lineage. A
+  clean replay still changes commit identity and therefore requires a fresh
+  exact ADO run before publication.
 - A replay conflict returns the in-progress rebase to the same domain agent.
   The agent resolves only conflicts caused by the task-owned commits, completes
   or aborts that rebase, and leaves one clean commit lineage. The workflow then

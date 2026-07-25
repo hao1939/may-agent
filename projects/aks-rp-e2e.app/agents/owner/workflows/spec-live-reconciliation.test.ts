@@ -31,6 +31,7 @@ import {
   resolveLiveExecutionTarget,
   runMatchesPriorVerification,
   scenarioNormalizationReplayBase,
+  novelScenarioReplayCommits,
   scenarioNormalizationReplayRequired,
   shouldFastForwardIntegratedSource,
   shouldReviewBeforeInitialLiveDispatch,
@@ -757,6 +758,22 @@ describe("spec-live-reconciliation workflow", () => {
         recordedFirstParentMergeCount: 0,
       }),
     ).toBe("checkpointed-base");
+  });
+
+  test("replays only patches not already integrated into the current target", () => {
+    expect(
+      novelScenarioReplayCommits(
+        [
+          "- 1111111111111111111111111111111111111111 already integrated",
+          "+ 2222222222222222222222222222222222222222 task patch one",
+          "- 3333333333333333333333333333333333333333 patch equivalent",
+          "+ 4444444444444444444444444444444444444444 task patch two",
+        ].join("\n"),
+      ),
+    ).toEqual([
+      "2222222222222222222222222222222222222222",
+      "4444444444444444444444444444444444444444",
+    ]);
   });
 
   test("reverifies a direct candidate whenever the target advanced after its live run", () => {
