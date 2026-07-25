@@ -577,6 +577,66 @@ describe("project app loader", () => {
     }
   });
 
+  it("lets a replacement controller use remaining app capacity while an old attempt drains", async () => {
+    const f = fixture();
+    const releasePath = join(f.root, "release-blocker");
+    try {
+      writeApp(f.appDir);
+      writeFileSync(
+        join(f.appDir, "agents", "owner", "workflows", "blocker.ts"),
+        `import { existsSync } from "node:fs";
+         export const name = "blocker";
+         export const description = "hold one app slot across reload";
+         export async function execute(ctx) {
+           while (!existsSync(${JSON.stringify(releasePath)})) {
+             await new Promise((resolve) => setTimeout(resolve, 5));
+           }
+           return ctx.done("blocker done", { state: "converged", summary: "blocker done", evidence: ["proof"], actions: [] });
+         }`,
+      );
+      const bus = new EventBus();
+      const events: any[] = [];
+      bus.subscribe((event) => events.push(event));
+      const installOptions = {
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: manager([]),
+        bus,
+        agentCrons: new Map(),
+      };
+      await installProjectApps(installOptions);
+
+      bus.emit({ type: "sample.work", project: "sample", itemId: "blocker", workflow: "blocker" } as any);
+      await waitUntil(() =>
+        events.some(
+          (event) => event.type === "project.task.reconcile.started" && event.data?.taskId === "work/blocker",
+        ),
+      );
+
+      await installProjectApps(installOptions);
+      bus.emit({ type: "sample.work", project: "sample", itemId: "current" } as any);
+      await waitUntil(() =>
+        events.some(
+          (event) => event.type === "project.task.reconcile.started" && event.data?.taskId === "work/current",
+        ),
+      );
+      expect(
+        events.some((event) => event.type === "project.task.reconciled" && event.data?.taskId === "work/blocker"),
+      ).toBe(false);
+
+      writeFileSync(releasePath, "release\n");
+      await waitUntil(() =>
+        events.some((event) => event.type === "project.task.reconciled" && event.data?.taskId === "work/blocker"),
+      );
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
   it("keeps an opted-in mutation task open until its committed branch is integrated", async () => {
     const f = fixture();
     const projectDir = join(f.projectsRoot, "sample");
@@ -934,7 +994,9 @@ describe("project app loader", () => {
       expect(ownerCalls[0]).toContain('Conditions belong only to the current task when you return state "waiting"');
       expect(ownerCalls[0]).toContain("For a decomposition parent that creates child task actions");
       expect(ownerCalls[0]).toContain('If you return state "converged" with a successor wait task action');
-      expect(ownerCalls[0]).toContain("An executable parent relationship expresses decomposition and aggregate ownership");
+      expect(ownerCalls[0]).toContain(
+        "An executable parent relationship expresses decomposition and aggregate ownership",
+      );
       expect(ownerCalls[0]).toContain("Use dependsOn for execution ordering");
       expect(ownerCalls[0]).toContain("Do not close an achieve task while it still contains live child tasks");
       expect(ownerCalls[0]).toContain("A completed task receipt is immutable");
@@ -2117,8 +2179,7 @@ describe("project app loader", () => {
       bus.emit({ type: "sample.work", project: "sample", itemId: "blocker", workflow: "blocker" } as any);
       await waitUntil(() =>
         events.some(
-          (event) =>
-            event.type === "project.task.reconcile.started" && event.data?.taskId === "work/blocker",
+          (event) => event.type === "project.task.reconcile.started" && event.data?.taskId === "work/blocker",
         ),
       );
       bus.emit({ type: "sample.work", project: "sample", itemId: "older" } as any);
@@ -2374,7 +2435,13 @@ describe("project app loader", () => {
           "sample",
         ],
       );
-      bus.emit({ type: "sample.work", project: "sample", itemId: "stale-wait", ownerOnly: true, mode: "maintain" } as any);
+      bus.emit({
+        type: "sample.work",
+        project: "sample",
+        itemId: "stale-wait",
+        ownerOnly: true,
+        mode: "maintain",
+      } as any);
 
       await waitUntil(() =>
         events.some(
@@ -2439,7 +2506,13 @@ describe("project app loader", () => {
         agentCrons: new Map(),
       });
 
-      bus.emit({ type: "sample.work", project: "sample", itemId: "startup-wait", ownerOnly: true, mode: "maintain" } as any);
+      bus.emit({
+        type: "sample.work",
+        project: "sample",
+        itemId: "startup-wait",
+        ownerOnly: true,
+        mode: "maintain",
+      } as any);
       await waitUntil(() =>
         firstEvents.some(
           (event) =>
@@ -2455,7 +2528,12 @@ describe("project app loader", () => {
          VALUES (?, ?, ?, ?, '', '')`,
         [
           "sample.note",
-          JSON.stringify({ type: "sample.note", target: { project: "sample" }, project: "sample", itemId: "startup-ready" }),
+          JSON.stringify({
+            type: "sample.note",
+            target: { project: "sample" },
+            project: "sample",
+            itemId: "startup-ready",
+          }),
           Date.now(),
           "sample",
         ],
@@ -3152,8 +3230,7 @@ describe("project app loader", () => {
         () =>
           ownerCalls.length >= 2 &&
           events.some(
-            (event) =>
-              event.type === "project.owner.reviewed" && event.data?.openEventId === secondOwnerEventId,
+            (event) => event.type === "project.owner.reviewed" && event.data?.openEventId === secondOwnerEventId,
           ),
       );
 

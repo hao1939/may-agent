@@ -19,13 +19,31 @@ export type ProjectAppTaskControllerOptions = {
 
 /** Mechanical backpressure shared by every app task controller in one daemon. */
 export class ProjectAppTaskCapacity {
+  private limit: number;
   private running = 0;
   private readonly waiters: Array<(release: () => void) => void> = [];
 
-  constructor(readonly maxConcurrent: number) {
+  constructor(
+    maxConcurrent: number,
+    private readonly parent?: ProjectAppTaskCapacity,
+  ) {
     if (!Number.isInteger(maxConcurrent) || maxConcurrent < 1) {
       throw new Error("ProjectAppTaskCapacity maxConcurrent must be a positive integer");
     }
+    if (parent === this) throw new Error("ProjectAppTaskCapacity cannot be its own parent");
+    this.limit = maxConcurrent;
+  }
+
+  get maxConcurrent(): number {
+    return this.limit;
+  }
+
+  resize(maxConcurrent: number): void {
+    if (!Number.isInteger(maxConcurrent) || maxConcurrent < 1) {
+      throw new Error("ProjectAppTaskCapacity maxConcurrent must be a positive integer");
+    }
+    this.limit = maxConcurrent;
+    this.drainWaiters();
   }
 
   async run<T>(work: () => Promise<T>): Promise<T> {
@@ -38,15 +56,22 @@ export class ProjectAppTaskCapacity {
   }
 
   tryAcquire(): (() => void) | null {
-    if (this.running >= this.maxConcurrent) return null;
-    this.running += 1;
-    return this.releaseHandle();
+    const localRelease = this.tryAcquireLocal();
+    if (!localRelease) return null;
+    if (!this.parent) return localRelease;
+    const parentRelease = this.parent.tryAcquire();
+    if (!parentRelease) {
+      localRelease();
+      return null;
+    }
+    return this.combinedRelease(localRelease, parentRelease);
   }
 
-  acquire(): Promise<() => void> {
-    const release = this.tryAcquire();
-    if (release) return Promise.resolve(release);
-    return new Promise((resolve) => this.waiters.push(resolve));
+  async acquire(): Promise<() => void> {
+    const localRelease = await this.acquireLocal();
+    if (!this.parent) return localRelease;
+    const parentRelease = await this.parent.acquire();
+    return this.combinedRelease(localRelease, parentRelease);
   }
 
   snapshot(): { running: number; waiting: number } {
@@ -63,12 +88,39 @@ export class ProjectAppTaskCapacity {
   }
 
   private release(): void {
-    const next = this.waiters.shift();
-    if (next) {
-      next(this.releaseHandle());
-      return;
-    }
     this.running -= 1;
+    this.drainWaiters();
+  }
+
+  private tryAcquireLocal(): (() => void) | null {
+    if (this.running >= this.limit) return null;
+    this.running += 1;
+    return this.releaseHandle();
+  }
+
+  private acquireLocal(): Promise<() => void> {
+    const release = this.tryAcquireLocal();
+    if (release) return Promise.resolve(release);
+    return new Promise((resolve) => this.waiters.push(resolve));
+  }
+
+  private drainWaiters(): void {
+    while (this.running < this.limit) {
+      const next = this.waiters.shift();
+      if (!next) return;
+      this.running += 1;
+      next(this.releaseHandle());
+    }
+  }
+
+  private combinedRelease(localRelease: () => void, parentRelease: () => void): () => void {
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      parentRelease();
+      localRelease();
+    };
   }
 }
 
