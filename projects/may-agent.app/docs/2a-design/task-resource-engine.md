@@ -307,6 +307,13 @@ delivery guarantee for explicit project direction, not a change to the task's
 declared priority or a code-side project decision. Once the owner emits the
 correlated result, ordinary task priority ordering applies again.
 
+More generally, passive resync schedules runnable tasks with a persisted event
+trigger before untriggered desired work. The trigger is durable evidence that
+an existing reconciliation has new facts to consume, such as a terminal
+pipeline observation; restart must not demote that continuation behind newly
+declared backlog. Direct project comments remain first within this continuation
+lane, and declared task priority still orders peers within each lane.
+
 ## Conditions and watchers
 
 A Condition describes one exact external observation:
