@@ -50,6 +50,9 @@ state:
 - the existing AKS pipeline watcher reads each active progressive run's
   timeline once, merges current levels with artifact-backed terminal verdicts,
   and writes the existing progress projection;
+- standard ADO slice-job records provide a truthful queued/running/draining
+  fallback for the slice row when a runner predates per-spec detail records;
+  this fallback never guesses which individual spec has started;
 - only the first fail/error observation for one run and spec emits
   `pipeline.test.nonpassing`; it routes to the stable owner-review task, while
   the later artifact-backed event creates or revises durable failure work;

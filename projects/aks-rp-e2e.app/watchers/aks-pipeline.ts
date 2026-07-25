@@ -77,6 +77,11 @@ export type TimelineSpecProgress = {
   category: string;
 };
 
+export type TimelineSliceProgress = {
+  sliceId: string;
+  executionState: "queued" | "running" | "completed";
+};
+
 export type ObservedAdoRun = {
   runId: string;
   fingerprint: string;
@@ -143,7 +148,8 @@ export type MasterValidationProgress = {
     sliceId: string;
     selected: number;
     observed: number;
-    status: "pending" | "partial" | "completed";
+    status:
+      "pending" | "queued" | "running" | "draining" | "partial" | "completed";
   }>;
   specs: Array<{
     sliceId: string;
@@ -398,6 +404,32 @@ export function timelineSpecProgress(
   }
   return [...latest.values()].sort((left, right) =>
     left.specId.localeCompare(right.specId),
+  );
+}
+
+export function timelineSliceProgress(
+  timeline: AdoTimelineRecord[],
+): TimelineSliceProgress[] {
+  const slices = new Map<string, TimelineSliceProgress>();
+  for (const entry of timeline) {
+    if (text(entry.type).toLowerCase() !== "job") continue;
+    const match = /^Execute slice slice_(\d+)$/i.exec(text(entry.name));
+    if (!match) continue;
+    const state = text(entry.state).toLowerCase();
+    const executionState =
+      state === "pending" || state === "notstarted"
+        ? "queued"
+        : state === "inprogress"
+          ? "running"
+          : state === "completed"
+            ? "completed"
+            : null;
+    if (!executionState) continue;
+    const sliceId = match[1]!.padStart(2, "0");
+    slices.set(sliceId, { sliceId, executionState });
+  }
+  return [...slices.values()].sort((left, right) =>
+    left.sliceId.localeCompare(right.sliceId),
   );
 }
 
@@ -713,6 +745,7 @@ export function buildMasterValidationProgress(input: {
   planRoot: string | null;
   artifactRoots: Record<string, string>;
   timelineProgress?: TimelineSpecProgress[];
+  timelineSlices?: TimelineSliceProgress[];
   checkedAt?: string;
 }): MasterValidationProgress {
   const checkedAt = input.checkedAt ?? new Date().toISOString();
@@ -732,6 +765,9 @@ export function buildMasterValidationProgress(input: {
       progress.specId,
       progress,
     ]),
+  );
+  const liveSlices = new Map(
+    (input.timelineSlices ?? []).map((slice) => [slice.sliceId, slice]),
   );
   for (const progress of live.values()) {
     if (!planned.has(progress.sliceId)) planned.set(progress.sliceId, []);
@@ -826,16 +862,23 @@ export function buildMasterValidationProgress(input: {
     .map(([sliceId, specIds]) => {
       const completed = specIds.filter((specId) => observed.has(specId)).length;
       const active = specIds.filter((specId) => live.has(specId)).length;
+      const sliceExecutionState = liveSlices.get(sliceId)?.executionState;
       return {
         sliceId,
         selected: specIds.length,
         observed: completed,
         status:
-          completed === 0 && active === 0
-            ? "pending"
-            : completed === specIds.length
-              ? "completed"
-              : "partial",
+          completed === specIds.length
+            ? "completed"
+            : sliceExecutionState === "completed"
+              ? "draining"
+              : sliceExecutionState === "running"
+                ? "running"
+                : sliceExecutionState === "queued"
+                  ? "queued"
+                  : completed === 0 && active === 0
+                    ? "pending"
+                    : "partial",
       };
     });
   if (exclusions.length) {
@@ -1585,6 +1628,9 @@ export async function observeAksPipelines(
         run: latestProgressiveRun,
         planRoot,
         artifactRoots,
+        timelineSlices: timelineSliceProgress(
+          timelinesByRun.get(latestProgressiveRun.runId) ?? [],
+        ),
         timelineProgress: timelineSpecProgress(
           timelinesByRun.get(latestProgressiveRun.runId) ?? [],
         ).filter((progress) => progress.runId === latestProgressiveRun.runId),

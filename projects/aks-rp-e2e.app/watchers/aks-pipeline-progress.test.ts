@@ -11,6 +11,7 @@ import {
   pipelineFailureEvent,
   pipelineSpecEvent,
   specObservationsFromArtifact,
+  timelineSliceProgress,
   timelineSpecProgress,
 } from "./aks-pipeline.js";
 
@@ -21,6 +22,65 @@ afterEach(() => {
 });
 
 describe("progressive master-validation observation", () => {
+  test("uses provider job state for truthful slice progress without guessing per-spec state", () => {
+    const planRoot = mkdtempSync(join(tmpdir(), "aks-plan-"));
+    roots.push(planRoot);
+    const planDir = join(planRoot, "plan-slices", "plan-1");
+    mkdirSync(planDir, { recursive: true });
+    writeFileSync(
+      join(planDir, "slice-01.json"),
+      JSON.stringify({ slice: "01", specIds: ["spec.a", "spec.b"] }),
+    );
+    writeFileSync(
+      join(planDir, "slice-02.json"),
+      JSON.stringify({ slice: "02", specIds: ["spec.c"] }),
+    );
+
+    const slices = timelineSliceProgress([
+      {
+        type: "Job",
+        name: "Execute slice slice_01",
+        state: "inProgress",
+      },
+      {
+        type: "Job",
+        name: "Execute slice slice_02",
+        state: "pending",
+      },
+      { type: "Job", name: "Plan AKS RP E2E specs", state: "completed" },
+    ]);
+    expect(slices).toEqual([
+      { sliceId: "01", executionState: "running" },
+      { sliceId: "02", executionState: "queued" },
+    ]);
+
+    const projection = buildMasterValidationProgress({
+      run: {
+        runId: "123",
+        fingerprint: "fp",
+        status: "inProgress",
+        result: "inProgress",
+        sourceBranch: "refs/heads/main",
+        sourceVersion: "abc",
+        finishTime: null,
+        queueTime: "2026-07-25T00:00:00Z",
+        artifacts: [],
+        progressive: true,
+      },
+      planRoot,
+      artifactRoots: {},
+      timelineSlices: slices,
+    });
+    expect(projection.slices).toEqual([
+      { sliceId: "01", selected: 2, observed: 0, status: "running" },
+      { sliceId: "02", selected: 1, observed: 0, status: "queued" },
+    ]);
+    expect(projection.counts).toMatchObject({ queued: 0, running: 0 });
+    expect(
+      projection.specs.every((spec) => spec.executionState === undefined),
+    ).toBe(true);
+  });
+
   test("parses owned timeline details and projects queued, running, and early failure state", () => {
     const planRoot = mkdtempSync(join(tmpdir(), "aks-plan-"));
     roots.push(planRoot);
