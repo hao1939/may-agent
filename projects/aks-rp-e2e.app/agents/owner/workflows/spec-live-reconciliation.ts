@@ -534,9 +534,20 @@ export function agentConditionProblem(decision: AgentDecision): string | null {
 
 export function terminalRunDecisionProblem(
   decision: AgentDecision,
+  options: {
+    requireSucceededProvider?: boolean;
+    providerResult?: string;
+  } = {},
 ): string | null {
   if (decision.decision === "test-current") {
     return "decision=test-current is not actionable after the exact source commit already received a terminal live run; judge that run, repair the source, retry a proven transient failure, wait on an exact external fact, or identify a genuine ownership boundary";
+  }
+  if (
+    decision.decision === "accepted-pass" &&
+    options.requireSucceededProvider &&
+    options.providerResult !== "succeeded"
+  ) {
+    return `decision=accepted-pass is invalid because this runnable normalization requires an exact succeeded ADO run, but provider result is ${options.providerResult || "unknown"}; preserve the domain diagnosis, repair the test contract so expected behavior reports pass, or return an exact wait/ownership boundary`;
   }
   return null;
 }
@@ -2458,7 +2469,8 @@ export async function reconcileSpecLive(
       proof.sourceCommit !== sourceCommit ||
       proof.specId !== specId ||
       proof.target !== liveTarget ||
-      (proof.standaloneBuildId || "") !== standaloneBuildId
+      (proof.standaloneBuildId || "") !== standaloneBuildId ||
+      (Boolean(normalizationInput) && proof.runResult !== "succeeded")
     ) {
       const failedRunsForCommit = runs.filter(
         (run) =>
@@ -2496,7 +2508,11 @@ export async function reconcileSpecLive(
         {
           scenarioNormalization: Boolean(normalizationInput),
           continueDomainWorkOnValidation: true,
-          validateDecision: terminalRunDecisionProblem,
+          validateDecision: (candidate) =>
+            terminalRunDecisionProblem(candidate, {
+              requireSucceededProvider: Boolean(normalizationInput),
+              providerResult: runResult,
+            }),
         },
       );
       if (decision.decision === "waiting" && decision.condition) {

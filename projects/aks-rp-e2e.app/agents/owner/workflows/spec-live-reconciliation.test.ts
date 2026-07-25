@@ -416,6 +416,33 @@ describe("spec-live-reconciliation workflow", () => {
     ).toBeNull();
   });
 
+  test("requires a green provider run before accepting runnable normalization proof", () => {
+    const acceptedPass = {
+      decision: "accepted-pass" as const,
+      summary: "the expected negative contract was observed",
+      evidence: ["pipeline-run:42"],
+    };
+
+    expect(
+      terminalRunDecisionProblem(acceptedPass, {
+        requireSucceededProvider: true,
+        providerResult: "failed",
+      }),
+    ).toContain("requires an exact succeeded ADO run");
+    expect(
+      terminalRunDecisionProblem(acceptedPass, {
+        requireSucceededProvider: true,
+        providerResult: "succeeded",
+      }),
+    ).toBeNull();
+    expect(
+      terminalRunDecisionProblem(acceptedPass, {
+        requireSucceededProvider: false,
+        providerResult: "failed",
+      }),
+    ).toBeNull();
+  });
+
   test("rejects committed preparation when repository HEAD did not move", () => {
     expect(
       preparationHeadProblem({
