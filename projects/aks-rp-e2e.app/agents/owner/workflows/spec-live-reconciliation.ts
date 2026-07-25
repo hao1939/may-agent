@@ -772,6 +772,102 @@ function git(
   return command("git", args, { cwd, allowFailure });
 }
 
+type GitCommand = (
+  cwd: string,
+  args: string[],
+  allowFailure?: boolean,
+) => { status: number; stdout: string; stderr: string };
+
+export function isNonFastForwardPushFailure(result: {
+  stdout: string;
+  stderr: string;
+}): boolean {
+  return /non-fast-forward|fetch first|tip of your current branch is behind/i.test(
+    `${result.stdout}\n${result.stderr}`,
+  );
+}
+
+export function reconcileRemoteTaskBranchHistory(
+  workspaceDir: string,
+  sourceBranch: string,
+  runGit: GitCommand = git,
+):
+  | { state: "current" | "merged"; remoteRef: string; sourceCommit: string }
+  | { state: "conflicted"; remoteRef: string; conflictedPaths: string[] }
+  | { state: "failed"; remoteRef: string; error: string } {
+  const remoteRef = `refs/remotes/origin/${sourceBranch}`;
+  const fetch = runGit(
+    workspaceDir,
+    [
+      "fetch",
+      "origin",
+      `+refs/heads/${sourceBranch}:${remoteRef}`,
+    ],
+    true,
+  );
+  if (fetch.status !== 0) {
+    return {
+      state: "failed",
+      remoteRef,
+      error: fetch.stderr || fetch.stdout || "remote task branch fetch failed",
+    };
+  }
+
+  const remoteIsInHead =
+    runGit(
+      workspaceDir,
+      ["merge-base", "--is-ancestor", remoteRef, "HEAD"],
+      true,
+    ).status === 0;
+  if (remoteIsInHead) {
+    return {
+      state: "current",
+      remoteRef,
+      sourceCommit: runGit(workspaceDir, ["rev-parse", "HEAD"]).stdout,
+    };
+  }
+
+  const merge = runGit(
+    workspaceDir,
+    ["merge", "--no-ff", "--no-edit", remoteRef],
+    true,
+  );
+  if (merge.status === 0) {
+    const sourceCommit = runGit(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+    const preserved =
+      runGit(
+        workspaceDir,
+        ["merge-base", "--is-ancestor", remoteRef, sourceCommit],
+        true,
+      ).status === 0;
+    if (preserved) return { state: "merged", remoteRef, sourceCommit };
+    return {
+      state: "failed",
+      remoteRef,
+      error: `merged task branch does not preserve ${remoteRef}`,
+    };
+  }
+
+  const conflictedPaths = runGit(
+    workspaceDir,
+    ["diff", "--name-only", "--diff-filter=U"],
+    true,
+  ).stdout
+    .split(/\r?\n/)
+    .map((value) => value.trim())
+    .filter(Boolean);
+  if (conflictedPaths.length > 0) {
+    return { state: "conflicted", remoteRef, conflictedPaths };
+  }
+
+  runGit(workspaceDir, ["merge", "--abort"], true);
+  return {
+    state: "failed",
+    remoteRef,
+    error: merge.stderr || merge.stdout || "remote task branch merge failed",
+  };
+}
+
 async function azJson(cwd: string, args: string[]): Promise<unknown> {
   const result = await commandAsync(
     azCli,
@@ -1788,6 +1884,166 @@ export async function reconcileSpecLive(
       };
     };
 
+    const publishTaskBranch = async (
+      candidateCommit: string,
+      reason: string,
+    ): Promise<
+      | { state: "ready"; sourceCommit: string; evidence: string[] }
+      | { state: "result"; result: WorkflowResult }
+    > => {
+      let currentCommit = candidateCommit;
+      const evidence: string[] = [];
+
+      for (let attempt = 1; attempt <= 3; attempt += 1) {
+        const push = git(
+          workspaceDir,
+          ["push", "origin", `${currentCommit}:refs/heads/${sourceBranch}`],
+          true,
+        );
+        if (push.status === 0) {
+          return { state: "ready", sourceCommit: currentCommit, evidence };
+        }
+        if (!isNonFastForwardPushFailure(push)) {
+          return {
+            state: "result",
+            result: ownerResult(
+              ctx,
+              `Could not publish the current task branch for ${specId}.`,
+              [
+                ...evidence,
+                `source-branch:${sourceBranch}`,
+                `source-commit:${currentCommit}`,
+                `push-error:${push.stderr || push.stdout}`,
+              ],
+            ),
+          };
+        }
+
+        evidence.push(
+          `task-branch-non-fast-forward:${sourceBranch}@${currentCommit}`,
+        );
+        const history = reconcileRemoteTaskBranchHistory(
+          workspaceDir,
+          sourceBranch,
+        );
+        if (history.state === "failed") {
+          return {
+            state: "result",
+            result: ownerResult(
+              ctx,
+              `Could not reconcile divergent task-branch history for ${specId}.`,
+              [...evidence, `branch-history-error:${history.error}`],
+            ),
+          };
+        }
+
+        if (history.state === "conflicted") {
+          const beforeResolution = currentCommit;
+          const decision = await askAgent(
+            ctx,
+            [
+              `Publishing ${specId} hit a non-fast-forward update on the same task branch ${sourceBranch}.`,
+              `The workflow fetched ${history.remoteRef} and started a merge in ${workspaceDir}. Conflicted paths: ${history.conflictedPaths.join(", ")}.`,
+              "Resolve only this task-branch history merge, preserve the current bounded source intent and both branch histories, run scoped checks, commit the merge, leave the worktree clean, and return decision=committed.",
+              "Do not abort and replace the merge with a cherry-pick, force-push, queue ADO, create another task, or edit app state. The workflow will re-run admission, publish, and require exact live proof for the resulting commit.",
+              "Task:",
+              ctx.task,
+            ].join("\n\n"),
+            {
+              scenarioNormalization: Boolean(normalizationInput),
+              continueDomainWorkOnValidation: true,
+              validateDecision: (candidate) => {
+                if (candidate.decision !== "committed") {
+                  return "task-branch history conflict must be resolved in this same domain workflow before publication";
+                }
+                if (cleanWorkspace(workspaceDir)) {
+                  return "task-branch history resolution must leave the worktree clean";
+                }
+                const head = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+                if (head === beforeResolution) {
+                  return "task-branch history resolution did not create a new commit";
+                }
+                if (
+                  git(
+                    workspaceDir,
+                    [
+                      "merge-base",
+                      "--is-ancestor",
+                      history.remoteRef,
+                      head,
+                    ],
+                    true,
+                  ).status !== 0
+                ) {
+                  return `resolved task branch must preserve ${history.remoteRef} in its ancestry`;
+                }
+                return null;
+              },
+            },
+          );
+          evidence.push(...decision.evidence);
+        }
+
+        currentCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+        if (cleanWorkspace(workspaceDir)) {
+          return {
+            state: "result",
+            result: ownerResult(
+              ctx,
+              "Task-branch history reconciliation left the worktree dirty.",
+              [...evidence, `workspace:${workspaceDir}`],
+            ),
+          };
+        }
+        if (
+          git(
+            workspaceDir,
+            [
+              "merge-base",
+              "--is-ancestor",
+              history.remoteRef,
+              currentCommit,
+            ],
+            true,
+          ).status !== 0
+        ) {
+          return {
+            state: "result",
+            result: ownerResult(
+              ctx,
+              "Task-branch history reconciliation did not preserve the remote task branch.",
+              [
+                ...evidence,
+                `source-branch:${sourceBranch}`,
+                `source-commit:${currentCommit}`,
+              ],
+            ),
+          };
+        }
+
+        const dispatch = await prepareLiveDispatch(
+          currentCommit,
+          `${reason}; task branch history advanced during publication`,
+        );
+        if (dispatch.state === "result") return dispatch;
+        currentCommit = dispatch.sourceCommit;
+        evidence.push(...dispatch.evidence);
+      }
+
+      return {
+        state: "result",
+        result: ownerResult(
+          ctx,
+          `Could not publish ${specId} after three task-branch history reconciliations.`,
+          [
+            ...evidence,
+            `source-branch:${sourceBranch}`,
+            `source-commit:${currentCommit}`,
+          ],
+        ),
+      };
+    };
+
     const queueFreshRun = async (
       candidateCommit: string,
       retryOfRunId?: string,
@@ -2415,7 +2671,12 @@ export async function reconcileSpecLive(
       );
       if (dispatch.state === "result") return dispatch.result;
       sourceCommit = dispatch.sourceCommit;
-      git(workspaceDir, ["push", "--set-upstream", "origin", sourceBranch]);
+      const publication = await publishTaskBranch(
+        sourceCommit,
+        "initial exact live verification",
+      );
+      if (publication.state === "result") return publication.result;
+      sourceCommit = publication.sourceCommit;
       const queued = await queueFreshRun(sourceCommit);
       if (queued.state === "result") return queued.result;
       latestRun = queued.run;
@@ -2434,6 +2695,7 @@ export async function reconcileSpecLive(
             ? [`standalone-build-id:${standaloneBuildId}`]
             : []),
           ...dispatch.evidence,
+          ...publication.evidence,
           `pipeline-run:${runId}`,
         ],
         pipelineWaitCondition(runId),
@@ -2542,8 +2804,15 @@ export async function reconcileSpecLive(
         if (dispatch.state === "result") return dispatch.result;
         sourceCommit = dispatch.sourceCommit;
         const unchangedRetry = sourceCommit === retrySourceCommit;
+        let publicationEvidence: string[] = [];
         if (!unchangedRetry) {
-          git(workspaceDir, ["push", "origin", sourceBranch]);
+          const publication = await publishTaskBranch(
+            sourceCommit,
+            `replacement after transient run ${runId}`,
+          );
+          if (publication.state === "result") return publication.result;
+          sourceCommit = publication.sourceCommit;
+          publicationEvidence = publication.evidence;
         }
         const queued = await queueFreshRun(
           sourceCommit,
@@ -2561,6 +2830,7 @@ export async function reconcileSpecLive(
           [
             ...decision.evidence,
             ...dispatch.evidence,
+            ...publicationEvidence,
             ...(unchangedRetry ? [`retry-of-run:${runId}`] : []),
             `pipeline-run:${retryId}`,
             `source-commit:${sourceCommit}`,
@@ -2583,7 +2853,12 @@ export async function reconcileSpecLive(
         );
         if (dispatch.state === "result") return dispatch.result;
         nextCommit = dispatch.sourceCommit;
-        git(workspaceDir, ["push", "origin", sourceBranch]);
+        const publication = await publishTaskBranch(
+          nextCommit,
+          `replacement after terminal run ${runId}`,
+        );
+        if (publication.state === "result") return publication.result;
+        nextCommit = publication.sourceCommit;
         const queued = await queueFreshRun(nextCommit);
         if (queued.state === "result") return queued.result;
         const nextRun = queued.run;
@@ -2595,6 +2870,7 @@ export async function reconcileSpecLive(
           [
             ...decision.evidence,
             ...dispatch.evidence,
+            ...publication.evidence,
             `replaces-run:${runId}`,
             `source-commit:${nextCommit}`,
             `pipeline-run:${nextRunId}`,
@@ -2808,7 +3084,12 @@ export async function reconcileSpecLive(
             );
             if (dispatch.state === "result") return dispatch.result;
             refreshedCommit = dispatch.sourceCommit;
-            git(workspaceDir, ["push", "origin", sourceBranch]);
+            const publication = await publishTaskBranch(
+              refreshedCommit,
+              `replacement after current ${targetBranch} invalidated run ${runId}`,
+            );
+            if (publication.state === "result") return publication.result;
+            refreshedCommit = publication.sourceCommit;
             const queued = await queueFreshRun(refreshedCommit);
             if (queued.state === "result") return queued.result;
             const replacement = queued.run;
@@ -2820,6 +3101,7 @@ export async function reconcileSpecLive(
               [
                 ...refreshEvidence,
                 ...dispatch.evidence,
+                ...publication.evidence,
                 `replaces-run:${runId}`,
                 `source-commit:${refreshedCommit}`,
                 `pipeline-run:${replacementId}`,
@@ -2867,7 +3149,12 @@ export async function reconcileSpecLive(
           );
           if (dispatch.state === "result") return dispatch.result;
           updatedCommit = dispatch.sourceCommit;
-          git(workspaceDir, ["push", "origin", sourceBranch]);
+          const publication = await publishTaskBranch(
+            updatedCommit,
+            `replacement after current ${targetBranch} changed following run ${runId}`,
+          );
+          if (publication.state === "result") return publication.result;
+          updatedCommit = publication.sourceCommit;
           const queued = await queueFreshRun(updatedCommit);
           if (queued.state === "result") return queued.result;
           const replacement = queued.run;
@@ -2879,6 +3166,7 @@ export async function reconcileSpecLive(
             [
               ...mergeEvidence,
               ...dispatch.evidence,
+              ...publication.evidence,
               `replaces-run:${runId}`,
               `source-commit:${updatedCommit}`,
               `pipeline-run:${replacementId}`,
@@ -3120,7 +3408,12 @@ export async function reconcileSpecLive(
       );
       if (dispatch.state === "result") return dispatch.result;
       resolvedCommit = dispatch.sourceCommit;
-      git(workspaceDir, ["push", "origin", sourceBranch]);
+      const publication = await publishTaskBranch(
+        resolvedCommit,
+        `replacement after PR ${prId} integration conflict`,
+      );
+      if (publication.state === "result") return publication.result;
+      resolvedCommit = publication.sourceCommit;
       const queued = await queueFreshRun(resolvedCommit);
       if (queued.state === "result") return queued.result;
       const replacement = queued.run;
@@ -3132,6 +3425,7 @@ export async function reconcileSpecLive(
         [
           ...decision.evidence,
           ...dispatch.evidence,
+          ...publication.evidence,
           `pull-request:${prId}`,
           `source-commit:${resolvedCommit}`,
           `pipeline-run:${replacementId}`,

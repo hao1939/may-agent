@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { execFileSync, spawnSync } from "node:child_process";
 import {
   existsSync,
   mkdirSync,
@@ -23,6 +24,7 @@ import {
   shouldReplayScenarioBeforeRunReview,
   existingRecoveryProblem,
   integrationMode,
+  isNonFastForwardPushFailure,
   liveDispatchTargetRefreshRequired,
   matchingTaskRuns,
   parseTaskPayload,
@@ -31,6 +33,7 @@ import {
   preparationDecisionProblem,
   preparationHeadProblem,
   priorIntegratedProof,
+  reconcileRemoteTaskBranchHistory,
   pullRequestSourceUpdateCondition,
   pullRequestWaitCondition,
   resolveIntegrationTarget,
@@ -54,6 +57,83 @@ import {
 } from "./lib/scenario-normalization-invariant.js";
 
 describe("spec-live-reconciliation workflow", () => {
+  test("recognizes non-fast-forward task branch push failures", () => {
+    expect(
+      isNonFastForwardPushFailure({
+        stdout: "",
+        stderr: "! [rejected] task/example -> task/example (non-fast-forward)",
+      }),
+    ).toBe(true);
+    expect(
+      isNonFastForwardPushFailure({
+        stdout: "",
+        stderr: "fatal: Authentication failed",
+      }),
+    ).toBe(false);
+  });
+
+  test("preserves divergent remote task branch history before republishing", () => {
+    const root = mkdtempSync(join(tmpdir(), "task-branch-history-"));
+    const remote = join(root, "remote.git");
+    const seed = join(root, "seed");
+    const workspace = join(root, "workspace");
+    const run = (cwd: string, args: string[]) =>
+      execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
+
+    try {
+      mkdirSync(seed);
+      run(root, ["init", "--bare", remote]);
+      run(seed, ["init"]);
+      run(seed, ["config", "user.email", "test@example.com"]);
+      run(seed, ["config", "user.name", "Test"]);
+      writeFileSync(join(seed, "base.txt"), "base\n");
+      run(seed, ["add", "base.txt"]);
+      run(seed, ["commit", "-m", "base"]);
+      run(seed, ["branch", "-M", "dev"]);
+      run(seed, ["remote", "add", "origin", remote]);
+      run(seed, ["push", "origin", "dev"]);
+      run(seed, ["checkout", "-b", "task/example"]);
+      run(seed, ["push", "origin", "task/example"]);
+
+      run(root, ["clone", remote, workspace]);
+      run(workspace, ["checkout", "task/example"]);
+      run(workspace, ["config", "user.email", "test@example.com"]);
+      run(workspace, ["config", "user.name", "Test"]);
+
+      writeFileSync(join(seed, "remote.txt"), "remote\n");
+      run(seed, ["add", "remote.txt"]);
+      run(seed, ["commit", "-m", "remote task update"]);
+      run(seed, ["push", "origin", "task/example"]);
+
+      writeFileSync(join(workspace, "local.txt"), "local\n");
+      run(workspace, ["add", "local.txt"]);
+      run(workspace, ["commit", "-m", "local task update"]);
+
+      const result = reconcileRemoteTaskBranchHistory(
+        workspace,
+        "task/example",
+      );
+      expect(result.state).toBe("merged");
+      expect(existsSync(join(workspace, "remote.txt"))).toBe(true);
+      expect(existsSync(join(workspace, "local.txt"))).toBe(true);
+      expect(
+        spawnSync(
+          "git",
+          [
+            "merge-base",
+            "--is-ancestor",
+            "refs/remotes/origin/task/example",
+            "HEAD",
+          ],
+          { cwd: workspace },
+        ).status,
+      ).toBe(0);
+      run(workspace, ["push", "origin", "HEAD:refs/heads/task/example"]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   test("reads the exact saved run receipt without listing branch history", async () => {
     const contextDir = mkdtempSync(join(tmpdir(), "run-receipt-"));
     try {
