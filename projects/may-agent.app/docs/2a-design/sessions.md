@@ -124,6 +124,12 @@ exit status as data. Timeout and abort settle independently of output-stream
 closure; they must not leave the session, workflow, and owning task permanently
 running behind a zombie process.
 
+Provider requests are bounded independently from the longer session budget. A
+request that produces no usable response within five minutes fails that turn
+visibly; the owning workflow or task reconciler then decides whether fresh
+evidence justifies another iteration. One dead provider connection must not
+occupy a project worker for the rest of a long-running session timeout.
+
 ## Data Retention
 
 Runtime maintenance expires old SQL projections in bounded batches. It does not
