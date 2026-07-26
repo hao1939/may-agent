@@ -13,6 +13,9 @@ import { join } from "node:path";
 import {
   askAgent,
   agentConditionProblem,
+  artifactProvesCleanup,
+  artifactProvesSpecPass,
+  artifactProvesTarget,
   checkLiveDispatchAdmission,
   collectTerminalRunEvidence,
   completedPullRequestIntegration,
@@ -53,6 +56,7 @@ import {
   taskScopedAgentCondition,
   terminalRunDecisionProblem,
   terminalRunContextDir,
+  verifySpecLiveProofFacts,
 } from "./spec-live-reconciliation.js";
 import {
   isRunnableScenarioNormalization,
@@ -67,6 +71,118 @@ describe("spec-live-reconciliation workflow", () => {
     expect(exactLiveTargetInstruction("staging", "172955338")).toContain(
       "standalone_build_id=172955338",
     );
+  });
+
+  test("requires exact ADO, staging artifact, cleanup, and integration proof", () => {
+    const root = mkdtempSync(join(tmpdir(), "spec-live-verifier-"));
+    try {
+      const aggregatePath = join(root, "result.json");
+      const specPath = join(root, "spec.json");
+      writeFileSync(
+        aggregatePath,
+        JSON.stringify({
+          target: {
+            name: "staging",
+            environment: "staging",
+            subscriptionId: "26fe00f8-9173-4872-9134-bb1d2e00343a",
+            location: "westus2",
+          },
+          specResults: [{ specId: "spec.sample.live", status: "pass" }],
+        }),
+      );
+      writeFileSync(
+        specPath,
+        JSON.stringify({
+          specId: "spec.sample.live",
+          status: "pass",
+          raw: {
+            assertions: [
+              {
+                name: "cleanup.resource-group-delete-requested",
+                verdictImpact: "cleanup",
+                ok: true,
+              },
+            ],
+          },
+        }),
+      );
+      expect(artifactProvesSpecPass(aggregatePath, "spec.sample.live")).toBe(
+        true,
+      );
+      expect(artifactProvesTarget(aggregatePath, "staging")).toBe(true);
+      expect(artifactProvesCleanup(specPath, "spec.sample.live")).toBe(true);
+
+      const proof = {
+        version: 1 as const,
+        taskId: "domain/sample",
+        generation: 2,
+        specId: "spec.sample.live",
+        target: "staging",
+        sourceBranch: "task/domain-sample",
+        sourceCommit: "abc123",
+        runId: "173800001",
+        runResult: "succeeded",
+        verdict: "pass" as const,
+        summary: "exact live pass",
+        evidence: ["artifact proof"],
+        reviewedAt: "2026-07-26T00:00:00Z",
+        targetRef: "origin/dev",
+        mergedCommit: "def456",
+      };
+      const run = {
+        id: "173800001",
+        status: "completed",
+        result: "succeeded",
+        sourceBranch: "refs/heads/task/domain-sample",
+        sourceVersion: "abc123",
+        definition: { id: 467665 },
+        templateParameters: {
+          specs: "spec.sample.live",
+          target: "staging",
+          standalone_build_id: "",
+          metadata: JSON.stringify({
+            taskId: "domain/sample",
+            generation: 2,
+            specId: "spec.sample.live",
+            sourceBranch: "task/domain-sample",
+            sourceCommit: "abc123",
+            target: "staging",
+          }),
+        },
+      };
+      expect(
+        verifySpecLiveProofFacts({
+          taskId: "domain/sample",
+          generation: 2,
+          specIds: ["spec.sample.live"],
+          target: "staging",
+          standaloneBuildId: "",
+          proof,
+          run,
+          artifactPaths: [aggregatePath, specPath],
+          sourceReachable: true,
+          integratedCommitReachable: true,
+          normalizationInvariantSatisfied: true,
+        }),
+      ).toMatchObject({ accepted: true });
+      expect(
+        verifySpecLiveProofFacts({
+          taskId: "domain/sample",
+          generation: 3,
+          specIds: ["spec.sample.live"],
+          target: "staging",
+          standaloneBuildId: "",
+          proof,
+          run,
+          artifactPaths: [aggregatePath, specPath],
+          sourceReachable: false,
+          integratedCommitReachable: true,
+          normalizationInvariantSatisfied: true,
+        }),
+      ).toMatchObject({ accepted: false });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   test("recognizes non-fast-forward task branch push failures", () => {

@@ -312,6 +312,15 @@ source commit in the integration branch ancestry. For `main`, Azure must report
 that the PR used the exact tested source head and produced a completed target
 commit that is present in the target branch ancestry.
 
+The workflow verifier enforces this proof after every converged result,
+including convergence returned through accountable-owner fallback. It checks
+the exact task/generation/spec/target metadata, pipeline `467665` completion on
+the tested commit, downloaded aggregate verdict, staging subscription and
+`westus2` target, per-spec cleanup evidence, current `origin/dev` ancestry, and
+the strict scenario-normalization row when applicable. Owner judgment may
+resolve an exceptional domain question, but it cannot bypass these mechanical
+completion invariants.
+
 Squash, rebase, and merge-commit completion are all valid because the provider
 records both sides of the integration. The PR head itself does not have to
 remain in `main` ancestry. A downstream workflow may still require a later live

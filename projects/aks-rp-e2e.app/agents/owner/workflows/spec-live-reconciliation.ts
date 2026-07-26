@@ -1,11 +1,20 @@
 import { createHash } from "node:crypto";
 import { execFile, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { join, resolve, sep } from "node:path";
 import {
   Type,
   isTypedProjectAppConditionSubject,
   workflowResultVersion,
+  type ProjectAppTaskHandlerResult,
+  type ProjectAppTaskVerificationContext,
+  type ProjectAppTaskVerificationResult,
   type ProjectAppConditionSpec,
   type WorkflowContext,
   type WorkflowIoContract,
@@ -28,6 +37,8 @@ const repository = "aks-e2e-spec-runner";
 const pipelineId = "467665";
 const defaultTargetBranch = "dev";
 const defaultLiveTarget = "staging";
+const stagingSubscriptionId = "26fe00f8-9173-4872-9134-bb1d2e00343a";
+const stagingLocation = "westus2";
 const azCli =
   process.env.AZURE_CLI_PATH ||
   (existsSync("/app/.state/.local/bin/az")
@@ -71,6 +82,7 @@ type PipelineRun = {
   sourceBranch?: unknown;
   sourceVersion?: unknown;
   templateParameters?: unknown;
+  definition?: { id?: unknown };
 };
 
 type PullRequest = {
@@ -128,7 +140,7 @@ type AgentDecision = {
   };
 };
 
-type ReviewedRunProof = {
+export type ReviewedRunProof = {
   version: 1;
   taskId: string;
   generation: number;
@@ -464,7 +476,7 @@ function laterRun(candidate: string, baseline: string): boolean {
     : Boolean(candidate && baseline && candidate !== baseline);
 }
 
-function artifactProvesSpecPass(path: string, specId: string): boolean {
+export function artifactProvesSpecPass(path: string, specId: string): boolean {
   try {
     const value = JSON.parse(readFileSync(path, "utf8")) as {
       specResults?: Array<Record<string, unknown>>;
@@ -481,6 +493,225 @@ function artifactProvesSpecPass(path: string, specId: string): boolean {
   } catch {
     return false;
   }
+}
+
+function jsonRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function readJsonRecord(path: string): Record<string, unknown> | null {
+  try {
+    const parsed = JSON.parse(readFileSync(path, "utf8")) as unknown;
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+export function artifactProvesTarget(
+  path: string,
+  targetName: string,
+): boolean {
+  const artifact = readJsonRecord(path);
+  if (!artifact) return false;
+  const target = jsonRecord(artifact.target);
+  if (
+    ![nonEmptyString(target.name), nonEmptyString(target.environment)].includes(
+      targetName,
+    )
+  ) {
+    return false;
+  }
+  if (targetName !== defaultLiveTarget) return true;
+  return (
+    nonEmptyString(target.subscriptionId) === stagingSubscriptionId &&
+    nonEmptyString(target.location).toLowerCase() === stagingLocation
+  );
+}
+
+export function artifactProvesCleanup(path: string, specId: string): boolean {
+  const artifact = readJsonRecord(path);
+  if (
+    !artifact ||
+    nonEmptyString(artifact.specId) !== specId ||
+    !["pass", "passed"].includes(nonEmptyString(artifact.status).toLowerCase())
+  ) {
+    return false;
+  }
+  const raw = jsonRecord(artifact.raw);
+  const cleanup = jsonRecord(raw.cleanup);
+  if (
+    cleanup.attempted === true &&
+    ["pass", "passed"].includes(nonEmptyString(cleanup.status).toLowerCase())
+  ) {
+    return true;
+  }
+  const assertions = Array.isArray(raw.assertions) ? raw.assertions : [];
+  return assertions.some((entry) => {
+    const assertion = jsonRecord(entry);
+    return assertion.verdictImpact === "cleanup" && assertion.ok === true;
+  });
+}
+
+function artifactJsonFiles(roots: string[]): string[] {
+  const files: string[] = [];
+  const visit = (path: string): void => {
+    if (!existsSync(path)) return;
+    for (const entry of readdirSync(path, { withFileTypes: true })) {
+      const candidate = join(path, entry.name);
+      if (entry.isDirectory()) visit(candidate);
+      else if (entry.isFile() && entry.name.endsWith(".json"))
+        files.push(candidate);
+    }
+  };
+  for (const root of roots) visit(root);
+  return files;
+}
+
+function exactSpecIds(value: unknown): string[] {
+  return nonEmptyString(value)
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .sort();
+}
+
+export function verifySpecLiveProofFacts(input: {
+  taskId: string;
+  generation: number;
+  specIds: string[];
+  target: string;
+  standaloneBuildId: string;
+  proof: ReviewedRunProof | null;
+  run: PipelineRun | null;
+  artifactPaths: string[];
+  sourceReachable: boolean;
+  integratedCommitReachable: boolean;
+  normalizationInvariantSatisfied: boolean;
+}): ProjectAppTaskVerificationResult {
+  const problems: string[] = [];
+  const proof = input.proof;
+  const expectedSpecId = [...input.specIds].sort().join(",");
+  if (!proof) {
+    problems.push("structured proof.json is missing or invalid");
+  } else {
+    if (proof.taskId !== input.taskId)
+      problems.push("proof task id does not match");
+    if (proof.generation !== input.generation)
+      problems.push("proof generation does not match");
+    if (proof.specId !== expectedSpecId)
+      problems.push("proof spec ids do not match");
+    if (proof.target !== input.target)
+      problems.push("proof target does not match");
+    if ((proof.standaloneBuildId || "") !== input.standaloneBuildId) {
+      problems.push("proof standalone build does not match");
+    }
+    if (proof.runResult !== "succeeded")
+      problems.push("proof run result is not succeeded");
+    if (proof.targetRef !== "origin/dev")
+      problems.push("proof target ref is not origin/dev");
+    if (!proof.mergedCommit) problems.push("proof has no integrated commit");
+  }
+
+  const run = input.run;
+  if (!run) {
+    problems.push("Azure DevOps run is missing");
+  } else if (proof) {
+    const parameters = jsonRecord(run.templateParameters);
+    const metadata = metadataOf(run);
+    const expectedBranch = proof.sourceBranch.startsWith("refs/heads/")
+      ? proof.sourceBranch
+      : `refs/heads/${proof.sourceBranch}`;
+    if (nonEmptyString(run.id) !== proof.runId)
+      problems.push("provider run id does not match proof");
+    if (pipelineRunState(run) !== "completed")
+      problems.push("provider run is not completed");
+    if (nonEmptyString(run.result) !== "succeeded")
+      problems.push("provider run did not succeed");
+    if (nonEmptyString(run.sourceVersion) !== proof.sourceCommit) {
+      problems.push("provider run source commit does not match proof");
+    }
+    if (nonEmptyString(run.sourceBranch) !== expectedBranch) {
+      problems.push("provider run source branch does not match proof");
+    }
+    if (nonEmptyString(run.definition?.id) !== pipelineId) {
+      problems.push("provider run is not from pipeline 467665");
+    }
+    if (exactSpecIds(parameters.specs).join(",") !== expectedSpecId) {
+      problems.push("provider run spec ids do not match task");
+    }
+    if (nonEmptyString(parameters.target) !== input.target) {
+      problems.push("provider run target does not match task");
+    }
+    if (
+      nonEmptyString(parameters.standalone_build_id) !== input.standaloneBuildId
+    ) {
+      problems.push("provider run standalone build does not match task");
+    }
+    if (nonEmptyString(metadata.taskId) !== input.taskId) {
+      problems.push("provider metadata task id does not match");
+    }
+    if (Number(metadata.generation) !== input.generation) {
+      problems.push("provider metadata generation does not match");
+    }
+    if (nonEmptyString(metadata.specId) !== expectedSpecId) {
+      problems.push("provider metadata spec ids do not match");
+    }
+    if (nonEmptyString(metadata.sourceCommit) !== proof.sourceCommit) {
+      problems.push("provider metadata source commit does not match proof");
+    }
+    if (nonEmptyString(metadata.target) !== input.target) {
+      problems.push("provider metadata target does not match task");
+    }
+  }
+
+  const aggregatePath = input.artifactPaths.find(
+    (path) =>
+      input.specIds.every((specId) => artifactProvesSpecPass(path, specId)) &&
+      artifactProvesTarget(path, input.target),
+  );
+  if (!aggregatePath) {
+    problems.push(
+      "downloaded aggregate artifact does not prove exact spec pass and target",
+    );
+  }
+  for (const specId of input.specIds) {
+    if (
+      !input.artifactPaths.some((path) => artifactProvesCleanup(path, specId))
+    ) {
+      problems.push(`downloaded artifacts do not prove cleanup for ${specId}`);
+    }
+  }
+  if (!input.sourceReachable)
+    problems.push("tested source is not reachable from current origin/dev");
+  if (!input.integratedCommitReachable) {
+    problems.push(
+      "proof integrated commit is not reachable from current origin/dev",
+    );
+  }
+  if (!input.normalizationInvariantSatisfied) {
+    problems.push("scenario normalization invariant is not satisfied");
+  }
+
+  return {
+    accepted: problems.length === 0,
+    summary:
+      problems.length === 0
+        ? "Verified exact ADO live proof, cleanup, and origin/dev integration."
+        : `Rejected spec live convergence: ${problems.join("; ")}.`,
+    evidence:
+      problems.length === 0 && proof && aggregatePath
+        ? [
+            `pipeline-run:${proof.runId}`,
+            `source-commit:${proof.sourceCommit}`,
+            `aggregate-artifact:${aggregatePath}`,
+          ]
+        : problems.map((problem) => `verification-finding:${problem}`),
+  };
 }
 
 export function existingRecoveryProblem(input: {
@@ -3554,4 +3785,138 @@ export async function reconcileSpecLive(
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   return reconcileSpecLive(ctx);
+}
+
+function collectedArtifactPaths(runContextDir: string): string[] {
+  const collection = readJsonRecord(join(runContextDir, "collection.json"));
+  const root = resolve(runContextDir);
+  const artifactRoots = Array.isArray(collection?.artifactPaths)
+    ? collection.artifactPaths
+        .map(nonEmptyString)
+        .filter(Boolean)
+        .map((path) => resolve(path))
+        .filter((path) => path.startsWith(`${root}${sep}`) && existsSync(path))
+    : [];
+  return artifactJsonFiles(artifactRoots);
+}
+
+export async function verify(
+  context: ProjectAppTaskVerificationContext,
+  result: ProjectAppTaskHandlerResult,
+): Promise<ProjectAppTaskVerificationResult> {
+  if (result.state !== "converged") {
+    return {
+      accepted: false,
+      summary:
+        "Spec live reconciliation may converge only from a converged handler result.",
+      evidence: [`handler-state:${result.state}`],
+    };
+  }
+
+  const input = context.intent.input as ScenarioNormalizationInput | undefined;
+  const specIds = scenarioNormalizationSpecIds(input);
+  if (specIds.length === 0) {
+    return {
+      accepted: false,
+      summary: "Spec live reconciliation has no exact spec ids to verify.",
+      evidence: ["verification-finding:missing-spec-ids"],
+    };
+  }
+
+  let liveExecution: LiveExecutionTarget;
+  try {
+    liveExecution = resolveLiveExecutionTarget(context.intent.input);
+  } catch (error) {
+    return {
+      accepted: false,
+      summary: error instanceof Error ? error.message : String(error),
+      evidence: ["verification-finding:invalid-live-target"],
+    };
+  }
+
+  const contextDir = taskContextDir(
+    context.projectDir,
+    context.taskId,
+    context.generation,
+  );
+  const proof = readProof(contextDir);
+  let run: PipelineRun | null = null;
+  if (proof?.runId) {
+    try {
+      run = await getPipelineRun(context.projectDir, proof.runId);
+    } catch (error) {
+      return {
+        accepted: false,
+        summary: `Unable to verify Azure DevOps run ${proof.runId}.`,
+        evidence: [
+          `verification-finding:${error instanceof Error ? error.message : String(error)}`,
+        ],
+      };
+    }
+  }
+
+  const runContextDir = proof
+    ? terminalRunContextDir(contextDir, proof.runId)
+    : contextDir;
+  const artifactPaths = proof ? collectedArtifactPaths(runContextDir) : [];
+  git(context.projectDir, ["fetch", "origin", defaultTargetBranch], true);
+  const sourceReachable = Boolean(
+    proof?.sourceCommit &&
+    git(
+      context.projectDir,
+      ["merge-base", "--is-ancestor", proof.sourceCommit, "origin/dev"],
+      true,
+    ).status === 0,
+  );
+  const integratedCommitReachable = Boolean(
+    proof?.mergedCommit &&
+    git(
+      context.projectDir,
+      ["merge-base", "--is-ancestor", proof.mergedCommit, "origin/dev"],
+      true,
+    ).status === 0,
+  );
+
+  let normalizationInvariantSatisfied = true;
+  if (input?.loopId === "scenario-normalization") {
+    try {
+      const invariant = scenarioNormalizationInvariant(
+        context.workspaceDir,
+        input,
+      );
+      normalizationInvariantSatisfied = Boolean(
+        invariant && !invariant.stillListed,
+      );
+    } catch {
+      normalizationInvariantSatisfied = false;
+    }
+  }
+
+  const verification = verifySpecLiveProofFacts({
+    taskId: context.taskId,
+    generation: context.generation,
+    specIds,
+    target: liveExecution.target,
+    standaloneBuildId: liveExecution.standaloneBuildId,
+    proof,
+    run,
+    artifactPaths,
+    sourceReachable,
+    integratedCommitReachable,
+    normalizationInvariantSatisfied,
+  });
+  if (!verification.accepted || !proof) return verification;
+  return {
+    ...verification,
+    evidence: [
+      `proof:${proofPath(contextDir)}`,
+      `pipeline-run:${proof.runId}`,
+      `source-commit:${proof.sourceCommit}`,
+      `integrated-commit:${proof.mergedCommit}`,
+      ...verification.evidence.filter(
+        (item) =>
+          !item.startsWith("proof:") && !item.startsWith("source-commit:"),
+      ),
+    ],
+  };
 }
