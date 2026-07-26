@@ -32,6 +32,14 @@
     {
       "skill": "bounded-cleanup",
       "pattern": "^(?![\\s\\S]*\\b(?:format(?:ting)?|whitespace|lint|prettier|style)\\b)(?![\\s\\S]*\\b(?:remove|delete|archive)\\s+(?:the\\s+)?(?:active|in-use|live|current)\\b)(?![\\s\\S]*\\b(?:all|everything|entire|bulk)\\b[\\s\\S]*\\b(?:remove|delete|archive|clean ?up|prune)\\b)(?=[\\s\\S]*\\b(?:clean ?up|remove|delete|prune|archive)\\b)(?=[\\s\\S]*\\b(?:old|obsolete|superseded|legacy|unused|stale|dead)\\b)"
+    },
+    {
+      "skill": "system-deputy-decisions",
+      "pattern": "(?=[\\s\\S]*\\b(?:app|project\\s+app)\\b)(?=[\\s\\S]*\\b(?:inspect|check|stuck|moving|owner|task|workflow|condition|state|decid(?:e|ing|ed)?|judg(?:e|ment)|triage|unfamiliar|unsure)\\b)"
+    },
+    {
+      "skill": "system-deputy-decisions",
+      "pattern": "(?=[\\s\\S]*\\b(?:accepted|delivered|stored|queued)\\b)(?=[\\s\\S]*\\b(?:no|missing|never|without)\\b[\\s\\S]{0,100}\\b(?:result|output|report|response|artifact|completion)\\b)(?=[\\s\\S]*\\b(?:cause|diagnos(?:e|is|tic)|investigat(?:e|ion)|fix)\\b)"
     }
   ]
 }

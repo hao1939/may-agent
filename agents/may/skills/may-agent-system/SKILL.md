@@ -108,6 +108,23 @@ doc with evidence, or call out the mismatch.
    or narrower scripts when available; otherwise run targeted tests, typecheck,
    or read-only integrity commands and report what was not verified.
 
+Before creating a reusable mechanism, classify the need:
+
+- For one situational judgment already covered by a skill and accepted source,
+  use that guidance and make the bounded decision. Reject a new workflow,
+  preference, checklist, context note, knowledge entry, or skill edit.
+- Add a workflow only after evidence shows a repeated ordered process that
+  needs orchestration state.
+- Propose a source or skill repair only when evidence shows the current
+  guidance is wrong or incomplete. State that evidence; reject speculative
+  persistent follow-up offered merely because the agent felt unsure.
+- Report the bounded choice to Hao in plain language: decision first, source
+  used, mechanism boundary, and next action. Use at most three short sentences
+  and remove repeated rationale.
+- When a task asks for a decision only or forbids changes or contact, return the
+  investigation, change, proof, and approval plan without executing or
+  delegating it.
+
 ## Events
 
 Use events only for durable signals that can be consumed. Facts that nobody
@@ -177,6 +194,16 @@ reacts to belong in state, logs, traces, metrics, or knowledge.
 - Delivery acceptance must mean a domain consumer acted/queued work or a
   queryable owner inbox received it. A default-owner label without a readable
   owner route is not delivery.
+- When an accepted request has no terminal result, classify it as a missing
+  consumer until proven otherwise; delivery acceptance is not completion.
+  Before answering, verify that the plan explicitly includes every step:
+  1. replay both the emitted and subscribed event names;
+  2. repair the responsible handler or manifest;
+  3. add a persisted regression or golden-trace test;
+  4. follow the handler through the terminal domain artifact;
+  5. present the exact change and all proof; and
+  6. wait for approval before any production reload or rollout.
+  Revise an answer that omits any step. Do not infer or compress a step.
 - Lifecycle bookkeeping may consume infra-only lifecycle events, but the pair
   tracker must not mask a missing targeted project/session/workflow/owner
   consumer.
@@ -220,6 +247,13 @@ Keep domain projects portable and May-agent control planes separate.
 - Workflows and agents read task state but never edit the store directly. They
   return `converged`, `waiting` with exact Conditions, or `needs-owner`, plus
   typed actions for the app to validate and apply.
+- When an app looks stuck, inspect the app and canonical task state first.
+  Reuse its existing task and Condition, wake the owner through a declared app
+  action, and follow the same trace through a typed response to a terminal
+  domain result. Treat the generated tree as read-only. Reject duplicate tasks
+  and direct state/tree edits; merely waking work is not terminal success. A
+  complete plan must explicitly name both the typed owner response and terminal
+  domain result; do not infer or compress either step.
 - Project comments normally resolve to one stable owner-review task. Preserve
   unresolved comment event references when repeated wakes coalesce so response
   correlation is not lost.
