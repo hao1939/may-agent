@@ -657,6 +657,53 @@ describe("project app task reconciler state", () => {
     });
   });
 
+  it("wakes a waiting task for explicit owner input", () => {
+    const { config } = fixture();
+    const monitor = intent("maintain");
+
+    observeProjectAppTaskIntent(config, { intent: monitor, appOwner: "app-owner" });
+    const firstClaim = claimObservedProjectAppTask(config, {
+      taskId: monitor.id,
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (firstClaim.kind !== "claimed") throw new Error("expected first claim");
+
+    deferProjectAppTask(config, firstClaim, {
+      disposition: "waiting",
+      summary: "waiting for an older external condition",
+      conditions: [
+        {
+          id: "older-external-run-finished",
+          type: "ado.pipeline.completed",
+          subject: "ado:run:123",
+          expected: "completed",
+        },
+      ],
+    });
+
+    const comment = {
+      type: "project.comment.created",
+      eventId: 42,
+      data: { project: "sample", comment: "Verify the missing live proof" },
+    };
+    observeProjectAppTaskIntent(config, {
+      intent: monitor,
+      appOwner: "app-owner",
+      trigger: comment,
+    });
+
+    const ownerClaim = claimObservedProjectAppTask(config, {
+      taskId: monitor.id,
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    expect(ownerClaim).toMatchObject({ kind: "claimed", taskId: monitor.id, trigger: comment });
+    expect(readTaskState(config).resources[monitor.id].status.conditionIds).toEqual([
+      "older-external-run-finished",
+    ]);
+  });
+
   it("invalidates an old attempt when desired state changes generation", () => {
     const { config } = fixture();
     const first = declareAndClaimTask(config, {

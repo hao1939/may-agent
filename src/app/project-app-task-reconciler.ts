@@ -130,6 +130,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function triggerOverridesWait(trigger: Record<string, unknown> | undefined): boolean {
   if (!trigger) return false;
+  if (trigger.type === "project.comment.created" || trigger.type === "project.owner.requested") return true;
   const data = isRecord(trigger.data) ? trigger.data : {};
   return trigger.overrideWait === true || data.overrideWait === true;
 }
