@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import {
+  projectRuntimePaths,
   resolveTaskTreePath,
   type ProjectAppEvent,
   type ProjectAppTaskIntent,
@@ -275,6 +276,54 @@ type TaskProjection = {
   >;
 };
 
+type TaskStateParentProjection = {
+  resources?: Record<
+    string,
+    {
+      spec?: {
+        parentId?: string;
+      };
+    }
+  >;
+  receipts?: Record<
+    string,
+    {
+      parentId?: string;
+    }
+  >;
+};
+
+const dedicatedLoopIdByParent = new Map<string, StandingLoopId>([
+  [standingLoopDefinitions[specLoopTaskId].parentId, specLoopTaskId],
+  [
+    standingLoopDefinitions[featureCompactLoopTaskId].parentId,
+    featureCompactLoopTaskId,
+  ],
+  [
+    standingLoopDefinitions[scenarioNormalizationTaskId].parentId,
+    scenarioNormalizationTaskId,
+  ],
+]);
+
+function persistedTaskLoopId(
+  appDir: string,
+  taskId: string,
+): StandingLoopId | undefined {
+  try {
+    const state = JSON.parse(
+      readFileSync(projectRuntimePaths(appDir).taskStatePath, "utf8"),
+    ) as TaskStateParentProjection;
+    const parentId =
+      state.resources?.[taskId]?.spec?.parentId ??
+      state.receipts?.[taskId]?.parentId;
+    return typeof parentId === "string"
+      ? dedicatedLoopIdByParent.get(parentId)
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function eventTaskId(event: Record<string, unknown>): string {
   const target =
     event.target &&
@@ -313,7 +362,9 @@ export function loopRefillWakeForTaskEvent(
       return null;
     }
   }
-  const loopId = input?.loopId;
+  const loopId = isStandingLoopId(input?.loopId)
+    ? input.loopId
+    : persistedTaskLoopId(appDir, taskId);
   if (!isStandingLoopId(loopId)) return null;
   const definition = standingLoopDefinitions[loopId];
   const disposition =

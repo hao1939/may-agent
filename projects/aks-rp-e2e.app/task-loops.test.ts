@@ -200,6 +200,47 @@ describe("AKS standing-loop convention", () => {
     });
   });
 
+  test("uses a completed leaf receipt when loop metadata was omitted", async () => {
+    const appDir = await mkdtemp(join(tmpdir(), "aks-loop-receipt-wake-"));
+    await mkdir(join(appDir, ".state", "tasks"), { recursive: true });
+    await writeFile(
+      join(appDir, ".state", "tasks", "tree.json"),
+      JSON.stringify({ tasks: {} }),
+    );
+    await writeFile(
+      join(appDir, ".state", "tasks", "state.json"),
+      JSON.stringify({
+        receipts: {
+          "domain/normalized-row": {
+            parentId: "group/scenario-normalization",
+          },
+        },
+      }),
+    );
+
+    expect(
+      loopRefillWakeForTaskEvent(appDir, {
+        type: "project.task.reconciled",
+        target: {
+          project: "aks-rp-e2e",
+          taskId: "domain/normalized-row",
+        },
+        data: { disposition: "converged", input: {} },
+      }),
+    ).toMatchObject({
+      type: "project.task.tick",
+      action: "scenario-normalization",
+      target: {
+        project: "aks-rp-e2e",
+        taskId: scenarioNormalizationTaskId,
+      },
+      data: {
+        sourceTaskId: "domain/normalized-row",
+        disposition: "converged",
+      },
+    });
+  });
+
   test("does not wake a controller for itself or unrelated work", async () => {
     const appDir = await mkdtemp(join(tmpdir(), "aks-loop-no-wake-"));
     await mkdir(join(appDir, ".state", "tasks"), { recursive: true });
