@@ -1259,16 +1259,16 @@ async function establishTaskAcceptance(input: {
 > {
   const { descriptor, intent, claim, capability } = input;
   const workflow = claim.handler.startsWith("workflow:");
-  if (!workflow) {
-    return {
-      ok: true,
-      acceptanceBasis: {
-        method: "owner-judgment",
-        evidence: [...capability.handlerResult.evidence],
-      },
-    };
-  }
   if (!capability.verifier) {
+    if (!workflow) {
+      return {
+        ok: true,
+        acceptanceBasis: {
+          method: "owner-judgment",
+          evidence: [...capability.handlerResult.evidence],
+        },
+      };
+    }
     return {
       ok: true,
       acceptanceBasis: {
@@ -1498,6 +1498,16 @@ async function reconcileTask(input: {
           }
         : {}),
     });
+    if (primary.handoff && intent.workflow) {
+      const workflowPaths = appWorkflowRuntimePaths(opts, descriptor, primary.owner);
+      const definition = await inspectWorkflowDefinition(workflowPaths.workflowDir, intent.workflow);
+      if (definition.verifier) {
+        primaryResult.verifier = {
+          ...definition.verifier,
+          verify: definition.verifier.verify as ProjectAppTaskVerifier,
+        };
+      }
+    }
   }
 
   if (!primaryResult) throw new Error(`Task ${primary.taskId} produced no handler result`);
