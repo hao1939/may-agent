@@ -301,6 +301,12 @@ become primary only while retaining every unresolved owner event reference and
 its structured input, so one coalesced owner run can judge every request before
 emitting their correlated results.
 
+An explicit owner input also wakes a task that is waiting on an older
+Condition. The owner must be able to answer or redirect new human intent while
+preserving, replacing, or closing that wait. Routine events still require the
+Condition to become true or an explicit `overrideWait`; accepting an owner
+input and then suppressing its task trigger is invalid delivery.
+
 Passive resync schedules a task carrying an unresolved direct
 `project.comment.created` trigger before autonomous priority backlog. This is a
 delivery guarantee for explicit project direction, not a change to the task's
