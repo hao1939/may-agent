@@ -4324,6 +4324,78 @@ function collectedArtifactPaths(runContextDir: string): string[] {
   return artifactJsonFiles(artifactRoots);
 }
 
+function verifySameTaskRevision(
+  context: ProjectAppTaskVerificationContext,
+  result: ProjectAppTaskHandlerResult,
+): ProjectAppTaskVerificationResult | null {
+  const actions = Array.isArray(result.actions) ? result.actions : [];
+  if (
+    actions.length !== 1 ||
+    actions[0]?.kind !== "update-task" ||
+    actions[0].taskId !== context.taskId
+  ) {
+    return null;
+  }
+
+  const action = actions[0];
+  const currentInput = jsonRecord(context.intent.input);
+  const nextInput = jsonRecord(action.input);
+  const currentSpecIds = scenarioNormalizationSpecIds(
+    currentInput as ScenarioNormalizationInput,
+  );
+  const nextSpecIds = scenarioNormalizationSpecIds(
+    nextInput as ScenarioNormalizationInput,
+  );
+  let currentTarget: LiveExecutionTarget;
+  let nextTarget: LiveExecutionTarget;
+  try {
+    currentTarget = resolveLiveExecutionTarget(currentInput);
+    nextTarget = resolveLiveExecutionTarget(nextInput);
+  } catch (error) {
+    return {
+      accepted: false,
+      summary: error instanceof Error ? error.message : String(error),
+      evidence: ["verification-finding:invalid-self-revision-target"],
+    };
+  }
+
+  const problems: string[] = [];
+  if (action.expectedGeneration !== context.generation) {
+    problems.push("self-revision generation does not match the current task");
+  }
+  if (action.workflow !== name) {
+    problems.push("self-revision must resume spec-live-reconciliation");
+  }
+  if (
+    currentSpecIds.length === 0 ||
+    currentSpecIds.join(",") !== nextSpecIds.join(",")
+  ) {
+    problems.push("self-revision must preserve the exact spec ids");
+  }
+  if (
+    currentTarget.target !== nextTarget.target ||
+    currentTarget.standaloneBuildId !== nextTarget.standaloneBuildId
+  ) {
+    problems.push("self-revision must preserve the exact live target");
+  }
+
+  return {
+    accepted: problems.length === 0,
+    summary:
+      problems.length === 0
+        ? "Accepted a generation-changing correction for the same task; final live-proof verification remains required on the revised generation."
+        : `Rejected same-task revision: ${problems.join("; ")}.`,
+    evidence:
+      problems.length === 0
+        ? [
+            `task-revision:${context.taskId}@${context.generation + 1}`,
+            `spec-ids:${currentSpecIds.join(",")}`,
+            `target:${currentTarget.target}`,
+          ]
+        : problems.map((problem) => `verification-finding:${problem}`),
+  };
+}
+
 export async function verify(
   context: ProjectAppTaskVerificationContext,
   result: ProjectAppTaskHandlerResult,
@@ -4336,6 +4408,9 @@ export async function verify(
       evidence: [`handler-state:${result.state}`],
     };
   }
+
+  const sameTaskRevision = verifySameTaskRevision(context, result);
+  if (sameTaskRevision) return sameTaskRevision;
 
   const input = context.intent.input as ScenarioNormalizationInput | undefined;
   const specIds = scenarioNormalizationSpecIds(input);

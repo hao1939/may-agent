@@ -58,6 +58,7 @@ import {
   terminalDispositionDecisionProblem,
   terminalRunDecisionProblem,
   terminalRunContextDir,
+  verify,
   verifySpecLiveProofFacts,
 } from "./spec-live-reconciliation.js";
 import {
@@ -949,6 +950,56 @@ describe("spec-live-reconciliation workflow", () => {
         },
       }),
     ).toContain("has no producer");
+  });
+
+  test("accepts a same-task correction without treating it as final live proof", async () => {
+    const context = {
+      projectDir: "/tmp/not-used-for-self-revision",
+      workspaceDir: "/tmp/not-used-for-self-revision",
+      taskId: "domain/normalize-one-spec",
+      generation: 2,
+      intent: {
+        input: {
+          loopId: "scenario-normalization",
+          specId: "spec.sample.one",
+          target: "staging",
+        },
+      },
+    } as any;
+    const revision = {
+      state: "converged",
+      summary: "Bound current cleanup evidence",
+      evidence: ["cleanup-proof:absent"],
+      actions: [
+        {
+          kind: "update-task",
+          taskId: context.taskId,
+          expectedGeneration: 2,
+          workflow: "spec-live-reconciliation",
+          input: {
+            loopId: "scenario-normalization",
+            specId: "spec.sample.one",
+            target: "staging",
+            ownerCorrection: { cleanupProofPath: "proof.json" },
+          },
+        },
+      ],
+    } as any;
+
+    const accepted = await verify(context, revision);
+    expect(accepted.accepted).toBe(true);
+    expect(accepted.summary).toContain(
+      "final live-proof verification remains required",
+    );
+    expect(accepted.evidence).toContain(
+      "task-revision:domain/normalize-one-spec@3",
+    );
+
+    const changedTarget = structuredClone(revision);
+    changedTarget.actions[0].input.target = "standalone";
+    const rejected = await verify(context, changedTarget);
+    expect(rejected.accepted).toBe(false);
+    expect(rejected.summary).toContain("preserve the exact live target");
   });
 
   test("accepts a pull-request wait observed by the app watcher", () => {

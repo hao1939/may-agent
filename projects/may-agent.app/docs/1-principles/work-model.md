@@ -61,6 +61,13 @@ workflow needs-owner    -> owner judges the exception once
 workflow unavailable    -> attention until the binding is repaired
 ```
 
+When that owner judgment changes the desired work, the owner may return one
+`update-task` action for the task currently being reconciled. The update must
+change the task generation. That result completes only the current attempt:
+the task remains live and the controller immediately reconciles its new
+generation through the resolved workflow. It is not task completion and does
+not bypass the workflow's final acceptance verifier.
+
 The task, not one workflow run, owns the durable reconciliation loop:
 
 ```text

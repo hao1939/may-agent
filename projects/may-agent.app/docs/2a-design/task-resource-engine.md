@@ -513,6 +513,14 @@ Recovery uses the same task resource and the same app controller:
 5. wake the accountable owner once with accumulated, deduplicated evidence;
 6. escalate only when the next action crosses an ownership boundary.
 
+An owner handoff may discover that the task's desired state is incomplete or
+stale. The owner can revise that same resource with one generation-changing
+`update-task` action. The reconciler records the current attempt as completed,
+keeps the achieve task live, and queues the new generation. It must not create
+a repair task merely to carry the correction, and it must not treat the
+revision as accepted domain completion. Self-close, self-unblock, a no-op
+self-update, and a self-update mixed with other actions remain invalid.
+
 Execution recovery is evidence gated. `HandlerExecutionFailed` means the
 selected handler produced no applicable decision because its execution did not
 complete. A later successful session for the same owner is sufficient evidence
