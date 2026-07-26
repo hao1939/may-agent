@@ -11,15 +11,27 @@ it does not replace `/app/agents/may/skills/may-agent-system/SKILL.md`.
 
 ## Decision boundary
 
-- For one situational judgment already covered by current guidance, use the
-  skill and source, then decide. Reject a workflow, preference, checklist,
-  context note, knowledge entry, or skill edit.
-- Add a workflow only after evidence shows a repeated ordered process that
-  needs orchestration state.
+- Classify the mechanism before proposing any durable change:
+  1. For one situational judgment already covered by an accepted contract or
+     skill, use that source and decide. Reject every durable addition:
+     workflow, preference, checklist, context note, knowledge entry, procedure,
+     or skill edit.
+  2. Add a workflow later only after evidence shows a repeated stable trigger,
+     ordered steps, and orchestration state that must survive across runs.
+  3. If an accepted source is wrong or missing, name the exact gap and route a
+     bounded owner or system repair. Do not invent a learning artifact.
+  4. If the choice depends on Hao's preference rather than system truth, route
+     that exact preference decision to Hao instead of saving it yourself.
 - When the task is decision-only or forbids changes or contact, return the
   complete plan with no execution and no delegation. In a structured decision
   artifact, set `delegations` to `[]`. Put any future app action, owner wake, or
   worker step in `next_action`; do not encode it as a delegation.
+
+For case 1, state all three facts in the answer: reject the requested durable
+change, use the existing contract or skill now, and reserve a workflow for a
+future repeated ordered process that needs orchestration state. Do not suggest
+another persistent substitute. Keep the reply under 70 words when the caller
+sets no tighter limit.
 
 ## Project app looks stuck
 

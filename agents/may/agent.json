@@ -35,7 +35,7 @@
     },
     {
       "skill": "system-deputy-decisions",
-      "pattern": "(?=[\\s\\S]*\\b(?:app|project\\s+app)\\b)(?=[\\s\\S]*\\b(?:inspect|check|stuck|moving|owner|task|workflow|condition|state|decid(?:e|ing|ed)?|judg(?:e|ment)|triage|unfamiliar|unsure)\\b)"
+      "pattern": "(?=[\\s\\S]*\\b(?:app|project\\s+app)\\b)(?=[\\s\\S]*\\b(?:inspect|check|stuck|moving|owner|task|condition|state|triage|unfamiliar|unsure)\\b)"
     },
     {
       "skill": "system-deputy-decisions",
