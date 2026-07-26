@@ -75,6 +75,16 @@ verifies publication. The agent edits source, resolves semantic conflicts, and
 judges exact terminal artifacts. The app projects an accepted proof into the
 spec-loop read model after the task receipt is persisted.
 
+After the agent judges a terminal run and before any direct `dev` integration,
+workflow code validates the hard proof facts from that exact run: pipeline and
+source identity, selected spec, resolved staging target, per-spec pass, and
+cleanup evidence. A green provider result or an agent `accepted-pass` judgment
+cannot bypass this gate. Missing proof returns the finding to the same domain
+workflow for repair and a fresh exact run; it is never integrated first and
+rejected only by the later task verifier. The post-integration verifier repeats
+these checks and additionally proves current `origin/dev` ancestry and the
+scenario-source invariant.
+
 Before the first exact run for a source commit, the agent reviews that current
 commit against the original task and decides whether it is ready for live
 execution. This review is required even when an earlier workflow step already
@@ -226,6 +236,11 @@ unrelated merge.
   must name one exact observable Condition and the workflow keeps the same task
   waiting on that fact. If no such fact is observable by the app, the agent
   returns `needs-owner` instead of hiding the boundary in prose.
+- Instructions that forbid the agent from pushing or queueing provider work do
+  not imply `liveReady: false`. They preserve the workflow boundary: the agent
+  prepares and judges the source, while workflow code publishes and dispatches
+  it. Once the exact source is runnable, the agent returns `liveReady: true` so
+  the workflow can perform that mechanical next step.
 - A task commit not yet present on `origin/dev` is not an external readiness
   blocker. The workflow owns task-branch publication, current-`dev` replay, live
   dispatch, and final direct integration. Agents must not use a generic repo-ref
@@ -299,6 +314,16 @@ unrelated merge.
   integrate without repeatedly invalidating one another. Any other overlapping
   path, runner runtime/CI/config change, merge conflict, or changed tested path
   requires replay onto current `dev` and a fresh exact live run.
+- Generated knowledge-map aggregation must not turn independent live passes
+  into an endless moving-target loop. When current `dev` changes
+  `model/knowledge-map/model.json`, code compares the structured model records
+  used by the exact tested spec (`paths` and `featurePaths` selected by spec id
+  or that spec's feature-path ids). The advance is proof-preserving only when
+  that projection is unchanged. Generated knowledge-map views are
+  proof-preserving for an exact spec dispatch because they are not selected by
+  that path. A changed exact-spec projection remains proof-invalidating and
+  requires a fresh run. This is a structured equivalence check, not a prose or
+  filename guess.
 - For `main`, a PR is discovered by exact source branch and target before
   creation. Reviewer changes invalidate the old proof, and an abandoned PR is
   an owner decision rather than permission to recreate it.

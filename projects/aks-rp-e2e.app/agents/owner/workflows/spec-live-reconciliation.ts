@@ -353,7 +353,77 @@ export function directIntegrationAction(input: {
     : "reverify-updated-source";
 }
 
-function proofPreservingTargetPath(path: string): boolean {
+type JsonObject = Record<string, unknown>;
+
+function jsonObjects(value: unknown): JsonObject[] {
+  return Array.isArray(value)
+    ? value.filter(
+        (entry): entry is JsonObject =>
+          Boolean(entry) && typeof entry === "object" && !Array.isArray(entry),
+      )
+    : [];
+}
+
+function canonicalJsonValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonicalJsonValue);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(
+    Object.entries(value as JsonObject)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, entry]) => [key, canonicalJsonValue(entry)]),
+  );
+}
+
+export function relevantKnowledgeModelProjection(
+  model: JsonObject,
+  specId: string,
+  featurePathIds: string[] = [],
+): JsonObject {
+  const selectedPathIds = new Set(featurePathIds.filter(Boolean));
+  const select = (value: unknown) =>
+    jsonObjects(value)
+      .filter((entry) => {
+        const entrySpecId = nonEmptyString(entry.specId);
+        const entryId = nonEmptyString(entry.id);
+        return entrySpecId === specId || selectedPathIds.has(entryId);
+      })
+      .sort((left, right) =>
+        nonEmptyString(left.id).localeCompare(nonEmptyString(right.id)),
+      )
+      .map(canonicalJsonValue);
+  return {
+    paths: select(model.paths),
+    featurePaths: select(model.featurePaths),
+  };
+}
+
+export function relevantKnowledgeModelUnchanged(input: {
+  sourceModel: JsonObject;
+  targetModel: JsonObject;
+  specId: string;
+  featurePathIds?: string[];
+}): boolean {
+  const source = relevantKnowledgeModelProjection(
+    input.sourceModel,
+    input.specId,
+    input.featurePathIds,
+  );
+  const target = relevantKnowledgeModelProjection(
+    input.targetModel,
+    input.specId,
+    input.featurePathIds,
+  );
+  return JSON.stringify(source) === JSON.stringify(target);
+}
+
+function proofPreservingTargetPath(
+  path: string,
+  knowledgeModelStable: boolean,
+): boolean {
+  if (path === "model/knowledge-map/model.json") {
+    return knowledgeModelStable;
+  }
+  if (path.startsWith("model/knowledge-map/views/")) return true;
   return (
     path.startsWith("features/") ||
     path.startsWith("model/specs/") ||
@@ -377,6 +447,7 @@ export function proofProtectedScenarioPaths(paths: string[]): string[] {
 export function proofPreservingScenarioIntegration(input: {
   sourcePaths: string[];
   targetPaths: string[];
+  knowledgeModelStable?: boolean;
 }): boolean {
   const sourcePaths = new Set(proofProtectedScenarioPaths(input.sourcePaths));
   if (
@@ -387,7 +458,7 @@ export function proofPreservingScenarioIntegration(input: {
   }
   return input.targetPaths.every(
     (path) =>
-      proofPreservingTargetPath(path) &&
+      proofPreservingTargetPath(path, input.knowledgeModelStable === true) &&
       (!sourcePaths.has(path) || mergeSafeScenarioAggregatePath(path)),
   );
 }
@@ -592,9 +663,11 @@ export function verifySpecLiveProofFacts(input: {
   sourceReachable: boolean;
   integratedCommitReachable: boolean;
   normalizationInvariantSatisfied: boolean;
+  requireIntegration?: boolean;
 }): ProjectAppTaskVerificationResult {
   const problems: string[] = [];
   const proof = input.proof;
+  const requireIntegration = input.requireIntegration !== false;
   const expectedSpecId = [...input.specIds].sort().join(",");
   if (!proof) {
     problems.push("structured proof.json is missing or invalid");
@@ -612,9 +685,11 @@ export function verifySpecLiveProofFacts(input: {
     }
     if (proof.runResult !== "succeeded")
       problems.push("proof run result is not succeeded");
-    if (proof.targetRef !== "origin/dev")
-      problems.push("proof target ref is not origin/dev");
-    if (!proof.mergedCommit) problems.push("proof has no integrated commit");
+    if (requireIntegration) {
+      if (proof.targetRef !== "origin/dev")
+        problems.push("proof target ref is not origin/dev");
+      if (!proof.mergedCommit) problems.push("proof has no integrated commit");
+    }
   }
 
   const run = input.run;
@@ -686,12 +761,14 @@ export function verifySpecLiveProofFacts(input: {
       problems.push(`downloaded artifacts do not prove cleanup for ${specId}`);
     }
   }
-  if (!input.sourceReachable)
-    problems.push("tested source is not reachable from current origin/dev");
-  if (!input.integratedCommitReachable) {
-    problems.push(
-      "proof integrated commit is not reachable from current origin/dev",
-    );
+  if (requireIntegration) {
+    if (!input.sourceReachable)
+      problems.push("tested source is not reachable from current origin/dev");
+    if (!input.integratedCommitReachable) {
+      problems.push(
+        "proof integrated commit is not reachable from current origin/dev",
+      );
+    }
   }
   if (!input.normalizationInvariantSatisfied) {
     problems.push("scenario normalization invariant is not satisfied");
@@ -701,7 +778,9 @@ export function verifySpecLiveProofFacts(input: {
     accepted: problems.length === 0,
     summary:
       problems.length === 0
-        ? "Verified exact ADO live proof, cleanup, and origin/dev integration."
+        ? requireIntegration
+          ? "Verified exact ADO live proof, cleanup, and origin/dev integration."
+          : "Verified exact ADO live proof and cleanup before integration."
         : `Rejected spec live convergence: ${problems.join("; ")}.`,
     evidence:
       problems.length === 0 && proof && aggregatePath
@@ -1065,6 +1144,87 @@ function git(
   return command("git", args, { cwd, allowFailure });
 }
 
+function jsonObjectAtCommit(
+  repoDir: string,
+  commit: string,
+  path: string,
+): JsonObject | null {
+  const result = git(repoDir, ["show", `${commit}:${path}`], true);
+  if (result.status !== 0 || !result.stdout) return null;
+  try {
+    const parsed = JSON.parse(result.stdout) as unknown;
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as JsonObject)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function featurePathIdsForSpecAtCommit(
+  repoDir: string,
+  commit: string,
+  specId: string,
+): string[] | null {
+  const candidates = git(
+    repoDir,
+    [
+      "grep",
+      "-l",
+      "-F",
+      specId,
+      commit,
+      "--",
+      ":(glob)features/*/specs/*.json",
+    ],
+    true,
+  );
+  if (candidates.status !== 0 && !candidates.stdout) return null;
+  for (const candidate of candidates.stdout.split(/\r?\n/).filter(Boolean)) {
+    const marker = `${commit}:`;
+    const path = candidate.startsWith(marker)
+      ? candidate.slice(marker.length)
+      : candidate;
+    const spec = jsonObjectAtCommit(repoDir, commit, path);
+    if (!spec || nonEmptyString(spec.id) !== specId) continue;
+    return Array.isArray(spec.featurePathIds)
+      ? spec.featurePathIds.map(nonEmptyString).filter(Boolean)
+      : [];
+  }
+  return null;
+}
+
+function knowledgeModelStableForSpec(input: {
+  repoDir: string;
+  sourceCommit: string;
+  targetCommit: string;
+  specId: string;
+}): boolean {
+  const modelPath = "model/knowledge-map/model.json";
+  const sourceModel = jsonObjectAtCommit(
+    input.repoDir,
+    input.sourceCommit,
+    modelPath,
+  );
+  const targetModel = jsonObjectAtCommit(
+    input.repoDir,
+    input.targetCommit,
+    modelPath,
+  );
+  const featurePathIds = featurePathIdsForSpecAtCommit(
+    input.repoDir,
+    input.sourceCommit,
+    input.specId,
+  );
+  if (!sourceModel || !targetModel || featurePathIds === null) return false;
+  return relevantKnowledgeModelUnchanged({
+    sourceModel,
+    targetModel,
+    specId: input.specId,
+    featurePathIds,
+  });
+}
+
 type GitCommand = (
   cwd: string,
   args: string[],
@@ -1091,11 +1251,7 @@ export function reconcileRemoteTaskBranchHistory(
   const remoteRef = `refs/remotes/origin/${sourceBranch}`;
   const fetch = runGit(
     workspaceDir,
-    [
-      "fetch",
-      "origin",
-      `+refs/heads/${sourceBranch}:${remoteRef}`,
-    ],
+    ["fetch", "origin", `+refs/heads/${sourceBranch}:${remoteRef}`],
     true,
   );
   if (fetch.status !== 0) {
@@ -1145,8 +1301,8 @@ export function reconcileRemoteTaskBranchHistory(
     workspaceDir,
     ["diff", "--name-only", "--diff-filter=U"],
     true,
-  ).stdout
-    .split(/\r?\n/)
+  )
+    .stdout.split(/\r?\n/)
     .map((value) => value.trim())
     .filter(Boolean);
   if (conflictedPaths.length > 0) {
@@ -2262,12 +2418,7 @@ export async function reconcileSpecLive(
                 if (
                   git(
                     workspaceDir,
-                    [
-                      "merge-base",
-                      "--is-ancestor",
-                      history.remoteRef,
-                      head,
-                    ],
+                    ["merge-base", "--is-ancestor", history.remoteRef, head],
                     true,
                   ).status !== 0
                 ) {
@@ -2294,12 +2445,7 @@ export async function reconcileSpecLive(
         if (
           git(
             workspaceDir,
-            [
-              "merge-base",
-              "--is-ancestor",
-              history.remoteRef,
-              currentCommit,
-            ],
+            ["merge-base", "--is-ancestor", history.remoteRef, currentCommit],
             true,
           ).status !== 0
         ) {
@@ -2648,7 +2794,8 @@ export async function reconcileSpecLive(
           "Continue the same bounded scenario-normalization task; the source invariant is still red and no live run may be queued yet.",
           `Strict inventory still lists ${normalizationInvariant.kind} ${normalizationInvariant.path}.`,
           "Preserve behavior and every active spec. Complete the direct .test.ts implementation, remove or relocate the plain carrier as required, run scoped checks plus bun scripts/check-scenario-tests.ts --strict --json, commit the bounded correction, and leave the worktree clean.",
-          "Return decision=committed only after the strict inventory no longer lists this exact row. Do not push, queue ADO, create a PR, create another task, or edit app state.",
+          "Return decision=committed only after the strict inventory no longer lists this exact row. Separately return liveReady=true when that exact committed source is runnable now; return liveReady=false only with one exact external Condition the app can observe.",
+          "Do not push, queue ADO, create a PR, create another task, or edit app state. Those are workflow mechanics and do not make a runnable source liveReady=false.",
           "Task:",
           ctx.task,
         ].join("\n\n"),
@@ -3060,6 +3207,47 @@ export async function reconcileSpecLive(
         runId,
         latestRun,
       );
+      let candidateInvariantSatisfied = true;
+      if (normalizationInput?.loopId === "scenario-normalization") {
+        try {
+          candidateInvariantSatisfied = !scenarioNormalizationInvariant(
+            workspaceDir,
+            normalizationInput,
+          ).stillListed;
+        } catch {
+          candidateInvariantSatisfied = false;
+        }
+      }
+      const candidateProof: ReviewedRunProof = {
+        version: 1,
+        taskId,
+        generation,
+        specId,
+        target: liveTarget,
+        ...(standaloneBuildId ? { standaloneBuildId } : {}),
+        sourceBranch,
+        sourceCommit,
+        runId,
+        runResult,
+        verdict: "pass",
+        summary: "candidate terminal run proof",
+        evidence: [],
+        reviewedAt: new Date().toISOString(),
+      };
+      const preIntegrationVerification = verifySpecLiveProofFacts({
+        taskId,
+        generation,
+        specIds: selectedSpecIds,
+        target: liveTarget,
+        standaloneBuildId,
+        proof: candidateProof,
+        run: latestRun,
+        artifactPaths: artifactJsonFiles(collectedRunEvidence.artifactPaths),
+        sourceReachable: false,
+        integratedCommitReachable: false,
+        normalizationInvariantSatisfied: candidateInvariantSatisfied,
+        requireIntegration: false,
+      });
       const decision = await askAgent(
         ctx,
         [
@@ -3088,7 +3276,11 @@ export async function reconcileSpecLive(
             terminalRunDecisionProblem(candidate, {
               requireSucceededProvider: Boolean(normalizationInput),
               providerResult: runResult,
-            }),
+            }) ??
+            (candidate.decision === "accepted-pass" &&
+            !preIntegrationVerification.accepted
+              ? preIntegrationVerification.summary
+              : null),
         },
       );
       if (decision.decision === "waiting" && decision.condition) {
@@ -3226,6 +3418,41 @@ export async function reconcileSpecLive(
       saveProof(contextDir, proof);
     }
 
+    let preIntegrationInvariantSatisfied = true;
+    if (normalizationInput?.loopId === "scenario-normalization") {
+      try {
+        preIntegrationInvariantSatisfied = !scenarioNormalizationInvariant(
+          workspaceDir,
+          normalizationInput,
+        ).stillListed;
+      } catch {
+        preIntegrationInvariantSatisfied = false;
+      }
+    }
+    const preIntegrationVerification = verifySpecLiveProofFacts({
+      taskId,
+      generation,
+      specIds: selectedSpecIds,
+      target: liveTarget,
+      standaloneBuildId,
+      proof,
+      run: latestRun,
+      artifactPaths: collectedArtifactPaths(
+        terminalRunContextDir(contextDir, runId),
+      ),
+      sourceReachable: false,
+      integratedCommitReachable: false,
+      normalizationInvariantSatisfied: preIntegrationInvariantSatisfied,
+      requireIntegration: false,
+    });
+    if (!preIntegrationVerification.accepted) {
+      return ownerResult(
+        ctx,
+        `Refused integration before hard live-proof validation: ${preIntegrationVerification.summary}`,
+        preIntegrationVerification.evidence,
+      );
+    }
+
     if (integrationMode(targetBranch) === "direct") {
       let integratedCommit = "";
       let lastPushError = "";
@@ -3290,9 +3517,21 @@ export async function reconcileSpecLive(
               targetPathResult?.status === 0
                 ? targetPathResult.stdout.split(/\r?\n/).filter(Boolean)
                 : [];
+            const targetChangesKnowledgeModel = targetPaths.includes(
+              "model/knowledge-map/model.json",
+            );
+            const knowledgeModelStable =
+              !targetChangesKnowledgeModel ||
+              knowledgeModelStableForSpec({
+                repoDir,
+                sourceCommit,
+                targetCommit: targetRef,
+                specId,
+              });
             const proofPreserving = proofPreservingScenarioIntegration({
               sourcePaths,
               targetPaths,
+              knowledgeModelStable,
             });
             if (proofPreserving) {
               const merge = git(

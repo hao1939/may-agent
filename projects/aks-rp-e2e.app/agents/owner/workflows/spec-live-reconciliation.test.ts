@@ -25,6 +25,7 @@ import {
   discoverTaskRuns,
   proofPreservingScenarioIntegration,
   proofProtectedScenarioPaths,
+  relevantKnowledgeModelUnchanged,
   shouldReplayScenarioBeforeRunReview,
   existingRecoveryProblem,
   integrationMode,
@@ -165,6 +166,46 @@ describe("spec-live-reconciliation workflow", () => {
           normalizationInvariantSatisfied: true,
         }),
       ).toMatchObject({ accepted: true });
+      expect(
+        verifySpecLiveProofFacts({
+          taskId: "domain/sample",
+          generation: 2,
+          specIds: ["spec.sample.live"],
+          target: "staging",
+          standaloneBuildId: "",
+          proof: {
+            ...proof,
+            targetRef: undefined,
+            mergedCommit: undefined,
+          },
+          run,
+          artifactPaths: [aggregatePath, specPath],
+          sourceReachable: false,
+          integratedCommitReachable: false,
+          normalizationInvariantSatisfied: true,
+          requireIntegration: false,
+        }),
+      ).toMatchObject({ accepted: true });
+      expect(
+        verifySpecLiveProofFacts({
+          taskId: "domain/sample",
+          generation: 2,
+          specIds: ["spec.sample.live"],
+          target: "staging",
+          standaloneBuildId: "",
+          proof: {
+            ...proof,
+            targetRef: undefined,
+            mergedCommit: undefined,
+          },
+          run,
+          artifactPaths: [aggregatePath],
+          sourceReachable: false,
+          integratedCommitReachable: false,
+          normalizationInvariantSatisfied: true,
+          requireIntegration: false,
+        }),
+      ).toMatchObject({ accepted: false });
       expect(
         verifySpecLiveProofFacts({
           taskId: "domain/sample",
@@ -1355,6 +1396,23 @@ describe("spec-live-reconciliation workflow", () => {
     ).toBe(false);
     expect(
       proofPreservingScenarioIntegration({
+        sourcePaths: ["features/network-cni/tests/cilium.test.ts"],
+        targetPaths: [
+          "model/knowledge-map/model.json",
+          "model/knowledge-map/views/path-summary.json",
+        ],
+        knowledgeModelStable: true,
+      }),
+    ).toBe(true);
+    expect(
+      proofPreservingScenarioIntegration({
+        sourcePaths: ["features/network-cni/tests/cilium.test.ts"],
+        targetPaths: ["model/knowledge-map/model.json"],
+        knowledgeModelStable: false,
+      }),
+    ).toBe(false);
+    expect(
+      proofPreservingScenarioIntegration({
         sourcePaths: [
           "features/net-integration/tests/outbound-migration-natgw-to-none.test.ts",
           "runner/live-admission-classifier.ts",
@@ -1376,6 +1434,43 @@ describe("spec-live-reconciliation workflow", () => {
       proofPreservingScenarioIntegration({
         sourcePaths: [],
         targetPaths: ["design/scenario-normalization.md"],
+      }),
+    ).toBe(false);
+  });
+
+  test("compares only the exact spec knowledge-model projection", () => {
+    const sourceModel = {
+      paths: [
+        {
+          id: "path.network-cni.cilium",
+          specId: "spec.network-cni.cilium",
+          behavior: [{ variable: "network.cilium", expected: "ready" }],
+        },
+        {
+          id: "path.node-fips.create",
+          specId: "spec.node-fips.create",
+          behavior: [{ variable: "node.fips", expected: "enabled" }],
+        },
+      ],
+      featurePaths: [],
+    };
+    const unrelatedTargetModel = structuredClone(sourceModel);
+    unrelatedTargetModel.paths[1].behavior[0].expected = "verified";
+    expect(
+      relevantKnowledgeModelUnchanged({
+        sourceModel,
+        targetModel: unrelatedTargetModel,
+        specId: "spec.network-cni.cilium",
+      }),
+    ).toBe(true);
+
+    const changedTargetModel = structuredClone(sourceModel);
+    changedTargetModel.paths[0].behavior[0].expected = "degraded";
+    expect(
+      relevantKnowledgeModelUnchanged({
+        sourceModel,
+        targetModel: changedTargetModel,
+        specId: "spec.network-cni.cilium",
       }),
     ).toBe(false);
   });
