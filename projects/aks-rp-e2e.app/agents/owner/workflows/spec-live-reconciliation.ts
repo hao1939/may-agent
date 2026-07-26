@@ -184,6 +184,13 @@ export type LiveExecutionTarget = {
   standaloneBuildId: string;
 };
 
+export function exactLiveTargetInstruction(
+  target: string,
+  standaloneBuildId: string,
+): string {
+  return `The resolved live target (${target}${standaloneBuildId ? `, standalone_build_id=${standaloneBuildId}` : ""}) is task intent, not an agent repair choice. Preserve it across repair, retry, wait, escalation, and successor work; never guess or fall back to another subscription, region, target, or build.`;
+}
+
 export function resolveLiveExecutionTarget(
   input: Record<string, unknown> = {},
 ): LiveExecutionTarget {
@@ -2513,6 +2520,7 @@ export async function reconcileSpecLive(
       const preparationPrompt = [
         `Reconcile ${specId} for one exact live verification/change lifecycle.`,
         `The required live target is ${liveTarget}${standaloneBuildId ? ` with standalone_build_id=${standaloneBuildId}` : ""}.`,
+        exactLiveTargetInstruction(liveTarget, standaloneBuildId),
         ...(priorVerificationSummary ? [priorVerificationSummary] : []),
         `Work only in ${workspaceDir}; durable non-source artifacts belong in ${contextDir}.`,
         `Current integration authority is ${targetRef}@${baseCommit}.`,
@@ -2788,6 +2796,7 @@ export async function reconcileSpecLive(
           `Review terminal Azure DevOps run ${runId} for ${specId}.`,
           `The exact source is ${sourceBranch}@${sourceCommit}; provider result is ${runResult}.`,
           `The exact live target is ${liveTarget}${standaloneBuildId ? ` with standalone_build_id=${standaloneBuildId}` : ""}.`,
+          exactLiveTargetInstruction(liveTarget, standaloneBuildId),
           `Workflow code collected authenticated run evidence in ${runContextDir}. Run metadata: ${collectedRunEvidence.runPath}. Artifact list: ${collectedRunEvidence.artifactListPath}. Downloaded artifact directories: ${collectedRunEvidence.artifactPaths.join(", ") || "none"}. Collection errors: ${collectedRunEvidence.errors.join(" | ") || "none"}.`,
           `Use ${runContextDir} exclusively for diagnosis for this run. Do not reuse task-root or earlier-run evidence, do not scrape Azure DevOps web pages, and do not write runtime artifacts into tracked source paths.`,
           "Inspect run metadata, plan inputs, per-spec result, live resource identity, assertions, and cleanup proof. The aggregate provider result alone is not a spec verdict.",

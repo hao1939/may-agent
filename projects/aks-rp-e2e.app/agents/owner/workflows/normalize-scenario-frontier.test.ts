@@ -806,6 +806,7 @@ describe("normalize scenario frontier workflow", () => {
           owner: "aks-explorer",
           workflow: "domain-task-execution",
           input: {
+            target: "staging",
             normalizationScope: "repository-only",
             scenarioTestPath: "features/feature-a/tests/case-a.ts",
             adapterPath: "features/feature-a/tests/case-a.test.ts",
@@ -827,6 +828,7 @@ describe("normalize scenario frontier workflow", () => {
           "remainingSpecReferencedPlainScenarioUnits and remainingRepoPlainScenarioFiles",
         ),
         expect.stringContaining("move the required behavior"),
+        expect.stringContaining("Preserve input.target"),
       ]),
     );
   });

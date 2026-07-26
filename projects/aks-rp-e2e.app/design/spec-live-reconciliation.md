@@ -59,6 +59,16 @@ derives the next step from the task branch, exact-run metadata, PR state, and
   run
 - Source artifacts: only committed files on the task branch
 
+The resolved live target is part of the task's intent, not a repair choice.
+Once a reconciliation starts, repair, retry, wait, escalation, and successor
+work preserve that exact target and standalone build selection. An agent must
+not guess or fall back to another subscription, region, target, or build when
+the selected environment is unavailable. A different environment starts as
+new explicitly targeted work. Scenario-normalization leaves write
+`target: staging` into their task input instead of relying only on the default.
+The staging target resolves through the repository's checked-in target
+contract; ambient Azure CLI state is never a substitute.
+
 The workflow, not the agent, pushes the branch, discovers or dispatches runs,
 integrates verified ancestry into `dev`, creates a PR only for `main`, and
 verifies publication. The agent edits source, resolves semantic conflicts, and

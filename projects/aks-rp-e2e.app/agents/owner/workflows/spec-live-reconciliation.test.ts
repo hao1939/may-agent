@@ -18,6 +18,7 @@ import {
   completedPullRequestIntegration,
   decisionCorrectionPrompt,
   directIntegrationAction,
+  exactLiveTargetInstruction,
   discoverTaskRuns,
   proofPreservingScenarioIntegration,
   proofProtectedScenarioPaths,
@@ -59,6 +60,15 @@ import {
 } from "./lib/scenario-normalization-invariant.js";
 
 describe("spec-live-reconciliation workflow", () => {
+  test("keeps the resolved live target outside agent repair judgment", () => {
+    expect(exactLiveTargetInstruction("staging", "")).toContain(
+      "never guess or fall back",
+    );
+    expect(exactLiveTargetInstruction("staging", "172955338")).toContain(
+      "standalone_build_id=172955338",
+    );
+  });
+
   test("recognizes non-fast-forward task branch push failures", () => {
     expect(
       isNonFastForwardPushFailure({
