@@ -11,6 +11,7 @@ import type { ModelWithApiKey } from "../lib/types.js";
 import type { AgentLoaderOptions } from "./agent-loader.js";
 import { generateAutoHeartbeats, getAgentCrons, loadAgents, getAgentSessionId } from "./agent-loader.js";
 import { installProjectApps, startProjectAppWatcher } from "./loader/project-app-loader.js";
+import { registerEventPairOrphanGc } from "./handlers/register-orphan-gc.js";
 
 export async function prepareDaemonAgents(opts: {
   agentsRoot: string;
@@ -63,6 +64,18 @@ export async function prepareDaemonAgents(opts: {
       opts.bus.emit({
         type: "info",
         message: `[auto-heartbeat] Generated ${autoHeartbeats.length} heartbeat(s): ${autoHeartbeats.map((e) => e.agent).join(", ")}`,
+      });
+    }
+  }
+
+  // Register the event-pair orphan GC handler on the "may" cron.
+  {
+    const mayCron = getAgentCrons().get("may");
+    if (mayCron) {
+      registerEventPairOrphanGc(mayCron, opts.persistDir, opts.bus);
+      opts.bus.emit({
+        type: "info",
+        message: `[orphan-gc] Registered event-pair orphan GC handler (15m interval)`,
       });
     }
   }
