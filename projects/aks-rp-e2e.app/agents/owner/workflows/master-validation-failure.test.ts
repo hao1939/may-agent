@@ -147,6 +147,7 @@ describe("master-validation failure workflow", () => {
       writeFileSync(
         join(appDir, ".state/master-validation-campaign.json"),
         JSON.stringify({
+          baselineRunId: "100",
           branch: "validation/master-validation-100",
           baseCommit: "frozen123",
         }),
@@ -170,6 +171,18 @@ ${JSON.stringify({
           appDir,
         ),
       ).toBe("");
+      expect(
+        frozenCampaignBaseForFailure(
+          {
+            ...input,
+            specId: "pipeline.master-validation.bootstrap",
+            pipelineRunId: "100",
+            sourceBranch: "refs/heads/main",
+            sourceCommit: "frozen123",
+          },
+          appDir,
+        ),
+      ).toBe("frozen123");
     } finally {
       rmSync(appDir, { recursive: true, force: true });
     }

@@ -641,8 +641,14 @@ export function frozenCampaignBaseForFailure(
     );
     const campaignBranch = text(campaign.branch);
     const observedBranch = input.sourceBranch.replace(/^refs\/heads\//, "");
-    return campaignBranch && observedBranch === campaignBranch
-      ? text(campaign.baseCommit)
+    const baseCommit = text(campaign.baseCommit);
+    const exactBootstrapBaseline =
+      input.specId === "pipeline.master-validation.bootstrap" &&
+      text(campaign.baselineRunId) === input.pipelineRunId &&
+      baseCommit === input.sourceCommit;
+    return campaignBranch &&
+      (observedBranch === campaignBranch || exactBootstrapBaseline)
+      ? baseCommit
       : "";
   } catch {
     return "";
