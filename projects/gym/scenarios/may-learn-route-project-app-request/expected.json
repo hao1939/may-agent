@@ -6,41 +6,15 @@
     "correct_behavior": "Inspect the app and canonical task state, then use the app's declared action to wake the owner on the existing reconcile/invoices task. Preserve the task and its Condition. Follow the trace until a typed response and terminal invoice result exist. Reject a duplicate task or direct edit to the generated tree."
   },
   "human_answer": "Inspect the app and canonical task state, then use the app's declared action to wake the owner on the existing reconcile/invoices task. Preserve the task and its Condition. Follow the trace until a typed response and terminal invoice result exist. Reject a duplicate task or direct edit to the generated tree.",
-  "exact": { "needs_clarification": false },
-  "contains_groups": {
-    "understood_intent": [["invoice"], ["stuck", "resume", "moving"]],
-    "mode": [["operate", "inspect", "reconcile"]],
-    "priority": [
-      ["existing task", "reconcile/invoices"],
-      ["canonical", "state.json"]
-    ],
-    "next_action": [
-      ["canonical task", "state.json"],
-      ["declared action", "project comment", "app action"],
-      ["owner"],
-      ["existing task", "reconcile/invoices"]
-    ],
-    "constraints": [
-      ["preserve", "reuse", "keep"],
-      ["condition"],
-      ["duplicate task", "new task"],
-      ["generated tree", "tree.json"],
-      ["terminal", "domain result", "invoice result"]
-    ],
-    "response_to_hao": [
-      ["existing task", "reconcile/invoices"],
-      ["owner", "app action"],
-      ["terminal", "result", "completion"]
-    ]
+  "exact": {
+    "needs_clarification": false
   },
-  "excludes_all": {
-    "next_action": [
-      "create a new task",
-      "edit tree.json",
-      "mark it complete now"
-    ]
+  "delegations": {
+    "min": 0,
+    "max": 0
   },
-  "delegations": { "min": 0, "max": 0 },
-  "empty": ["preference_updates"],
+  "empty": [
+    "preference_updates"
+  ],
   "response_max_words": 90
 }

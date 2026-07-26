@@ -6,35 +6,15 @@
     "correct_behavior": "Reject a new workflow for this case. Load the may-agent-system skill, read the accepted app contract and canonical state, then make the bounded decision. Add a workflow later only if evidence shows a repeated ordered process that needs orchestration."
   },
   "human_answer": "Reject a new workflow for this case. Load the may-agent-system skill, read the accepted app contract and canonical state, then make the bounded decision. Add a workflow later only if evidence shows a repeated ordered process that needs orchestration.",
-  "exact": { "needs_clarification": false },
-  "contains_groups": {
-    "understood_intent": [
-      ["mechanism", "workflow"],
-      ["inspect", "understand"]
-    ],
-    "mode": [["discover", "guidance", "investigate"]],
-    "priority": [["skill", "source", "contract"]],
-    "next_action": [
-      ["may-agent-system"],
-      ["app contract", "accepted contract", "source"],
-      ["canonical state", "task state"]
-    ],
-    "constraints": [["workflow"], ["repeated", "ordered", "orchestration"]],
-    "response_to_hao": [
-      ["reject"],
-      ["skill"],
-      ["workflow"],
-      ["repeated", "ordered"]
-    ]
+  "exact": {
+    "needs_clarification": false
   },
-  "excludes_all": {
-    "next_action": [
-      "create a workflow",
-      "add the workflow",
-      "implement a workflow"
-    ]
+  "delegations": {
+    "min": 0,
+    "max": 0
   },
-  "delegations": { "min": 0, "max": 0 },
-  "empty": ["preference_updates"],
+  "empty": [
+    "preference_updates"
+  ],
   "response_max_words": 85
 }

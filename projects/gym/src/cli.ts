@@ -798,7 +798,8 @@ async function judgeScenarioMeaning(
         "Do not inspect paths outside this isolated directory.",
         "Write verdict.json with exactly this shape:",
         '{"cases":[{"id":"case id","overall":"pass or fail","rules":[{"rule":"rubric rule name","verdict":"pass or fail","evidence":["exact quote"],"contradictions":["exact contradictory quote, or empty"],"confidence":0.0}],"reason":"one plain-language sentence"}]}',
-        "Return every case and every rubric rule. Overall pass requires every rule to pass.",
+        "Return every case and every rubric rule. Derive overall mechanically after judging the rules: pass if and only if every required rule is pass; otherwise fail. Verify that equality before writing the file.",
+        "Every rule needs at least one non-empty exact quote in evidence or contradictions. For a pass based on an absent action, quote the complete relevant JSON field. Never leave both quote lists empty.",
         "Fail unclear meaning. Do not guess missing facts.",
         'Then call finish() with status "success".',
       ].join("\n\n");
