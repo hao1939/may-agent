@@ -447,6 +447,61 @@ describe("spec-live-reconciliation workflow", () => {
     ).rejects.toThrow("failed before structured judgment after two attempts");
   });
 
+  test("allows one additional bounded correction for fix-forward judgment", async () => {
+    const prompts: string[] = [];
+    const decisions = [
+      {
+        status: "done",
+        structuredResult: {
+          decision: "committed",
+          summary: "source normalized but not ready",
+          evidence: ["source-commit:abc"],
+          liveReady: false,
+        },
+      },
+      {
+        status: "done",
+        structuredResult: {
+          decision: "committed",
+          summary: "wait for publication",
+          evidence: ["source-commit:abc"],
+          liveReady: false,
+          condition: {
+            id: "published",
+            type: "aks.repo-ref.observed",
+            subject: "project:aks-rp-e2e",
+            expected: { ref: "origin/dev" },
+          },
+        },
+      },
+      {
+        status: "done",
+        structuredResult: {
+          decision: "needs-owner",
+          summary: "review the non-runnable disposition",
+          evidence: ["source-commit:abc"],
+        },
+      },
+    ];
+    const ctx = {
+      agent: "aks-explorer",
+      runAgent: async (_agent: string, prompt: string) => {
+        prompts.push(prompt);
+        return decisions.shift();
+      },
+    };
+
+    const result = await askAgent(ctx as never, "Normalize one scenario.", {
+      scenarioNormalization: true,
+      continueDomainWorkOnValidation: true,
+      retryDelayMs: 0,
+    });
+
+    expect(result.decision).toBe("needs-owner");
+    expect(prompts).toHaveLength(3);
+    expect(prompts[2]).toContain("workflow owns task-branch publication");
+  });
+
   test("isolates terminal evidence by exact pipeline run", () => {
     const contextDir = "/tmp/task-generation";
     expect(terminalRunContextDir(contextDir, "173647479")).toBe(

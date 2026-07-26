@@ -211,9 +211,11 @@ unrelated merge.
   once with the same task worktree and hot evidence. An empty or interrupted
   invocation is a runtime failure, not an agent decision and not an
   ownership-boundary handoff. Only a returned `needs-owner` judgment may enter
-  the accountable-owner path. If both runtime attempts fail or both structured
-  judgments violate hard invariants, the workflow fails for ordinary task
-  recovery; code does not synthesize an owner judgment. A terminal-run
+  the accountable-owner path. Two runtime failures still end the workflow. For
+  an otherwise active fix-forward judgment, the workflow permits up to three
+  structured judgments so the agent can correct both a missing readiness field
+  and a second invalid wait shape without falling into slower recovery. Code
+  never supplies the domain verdict. A terminal-run
   `test-current` judgment is invalid because that exact source has already run;
   the workflow feeds the full terminal evidence back to the same agent for a
   corrected verdict or fix-forward move.
@@ -224,6 +226,12 @@ unrelated merge.
   must name one exact observable Condition and the workflow keeps the same task
   waiting on that fact. If no such fact is observable by the app, the agent
   returns `needs-owner` instead of hiding the boundary in prose.
+- A task commit not yet present on `origin/dev` is not an external readiness
+  blocker. The workflow owns task-branch publication, current-`dev` replay, live
+  dispatch, and final direct integration. Agents must not use a generic repo-ref
+  wait for those mechanics: they return `liveReady: true` when the exact source
+  is runnable, or `needs-owner` when a reviewed non-runnable disposition needs
+  exceptional judgment.
 - Initial source preparation accepts `committed`, `test-current`, one exact
   wait, or `needs-owner`. It accepts `accepted-pass` only when the caller
   explicitly asks the workflow to validate an existing later current-main

@@ -622,7 +622,8 @@ export function scenarioNormalizationWaitProblem(
     return [
       "scenario normalization cannot wait for an arbitrary repository advance",
       "a repo-ref change does not by itself repair or verify this task-owned source",
-      "continue the same-spec repair, name the exact external producer that can change the row, or request a genuine ownership-boundary decision",
+      "this workflow owns task-branch publication, current-dev replay, live dispatch, and final direct integration, so an unpublished task commit is never a blocker",
+      "return liveReady=true when the exact source is runnable, name the exact external producer that can change a real blocker, or return needs-owner for a reviewed non-runnable terminal disposition",
     ].join("; ");
   }
   if (condition?.type !== "pipeline.spec.observed") return null;
@@ -1554,14 +1555,17 @@ export async function askAgent(
 ): Promise<AgentDecision> {
   let nextPrompt = `${prompt}\n\n${conditionInstruction}`;
   let lastProblem = "";
-  for (let attempt = 1; attempt <= 2; attempt += 1) {
+  const maxAttempts = options.continueDomainWorkOnValidation ? 3 : 2;
+  let runtimeFailures = 0;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     const result = await ctx.runAgent(ctx.agent, nextPrompt, {
       timeoutMs: 1_800_000,
       schema: decisionSchema,
     });
     if (result.status === "error" || result.status === "interrupted") {
+      runtimeFailures += 1;
       lastProblem = `agent invocation ${result.status} before structured judgment`;
-      if (attempt < 2) {
+      if (runtimeFailures < 2 && attempt < maxAttempts) {
         const retryDelayMs = options.retryDelayMs ?? 5_000;
         if (retryDelayMs > 0) await Bun.sleep(retryDelayMs);
         nextPrompt = [
@@ -1573,7 +1577,7 @@ export async function askAgent(
         continue;
       }
       throw new Error(
-        `Agent invocation failed before structured judgment after two attempts: ${lastProblem}`,
+        `Agent invocation failed before structured judgment after ${runtimeFailures === 2 ? "two" : runtimeFailures} attempt${runtimeFailures === 1 ? "" : "s"}: ${lastProblem}`,
       );
     }
     const decision = result.structuredResult as AgentDecision;
