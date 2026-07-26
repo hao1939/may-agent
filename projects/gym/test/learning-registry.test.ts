@@ -31,13 +31,12 @@ describe("May learning registry", () => {
         status: "pilot",
         ready_for_development: true,
         ready_for_release: true,
-        evidence: { positive: 0, negative: 0, contrast: 0 },
+        evidence: { positive: 0, negative: 2, contrast: 0 },
       }),
     ]);
     expect(review.warnings).toEqual(
       expect.arrayContaining([
         "system-deputy-operations has no positive evidence",
-        "system-deputy-operations has no negative evidence",
         "system-deputy-operations has no contrast evidence",
       ]),
     );
