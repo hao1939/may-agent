@@ -15,6 +15,7 @@ import {
   hasPreparedRepair,
   inconclusiveWait,
   legacyRecoveryChildren,
+  latestPassingRecoveryObservation,
   nestedWorkflowOutput,
   observationAppliesToCurrentMain,
   parseFailureInput,
@@ -620,6 +621,85 @@ ${observation}
       passingRecoveryObservation(triggerObservationRaw, input),
     ).toMatchObject({
       pipelineRunId: "124",
+      specId: "spec.example",
+      status: "pass",
+    });
+  });
+
+  test("finds a later same-spec main pass from durable event history after the original wake", () => {
+    const input = parseFailureInput(`
+## Reconciliation Task
+${JSON.stringify({
+  taskId: "domain/master-validation-failure/spec.example/fp",
+  input: {
+    specId: "spec.example",
+    pipelineRunId: "123",
+    failureFingerprint: "fp",
+  },
+})}
+`)!;
+    const rows = [
+      {
+        event_type: "pipeline.spec.observed",
+        data: JSON.stringify({
+          pipelineRunId: "126",
+          sourceBranch: "refs/heads/validation/master-validation-123",
+          sourceCommit: "campaign",
+          specId: "spec.example",
+          status: "pass",
+        }),
+      },
+      {
+        event_type: "pipeline.spec.observed",
+        data: JSON.stringify({
+          pipelineRunId: "125",
+          sourceBranch: "refs/heads/main",
+          sourceCommit: "recovered-main",
+          specId: "spec.example",
+          status: "pass",
+          artifactPath: "/tmp/recovered.json",
+        }),
+      },
+      {
+        event_type: "pipeline.spec.observed",
+        data: JSON.stringify({
+          pipelineRunId: "124",
+          sourceBranch: "refs/heads/main",
+          sourceCommit: "other-main",
+          specId: "spec.other",
+          status: "pass",
+        }),
+      },
+      {
+        event_type: "pipeline.spec.observed",
+        data: JSON.stringify({
+          pipelineRunId: "122",
+          sourceBranch: "refs/heads/main",
+          sourceCommit: "old-main",
+          specId: "spec.example",
+          status: "pass",
+        }),
+      },
+    ];
+    const ctx = {
+      task: `## Trigger Event\n${JSON.stringify({
+        type: "project.task.tick",
+        reason: "workflow-replay",
+      })}`,
+      query: {
+        events: () => ({
+          rows,
+          rowCount: rows.length,
+          limit: 500,
+          truncated: false,
+        }),
+      },
+    } as never;
+
+    expect(latestPassingRecoveryObservation(ctx, input)).toMatchObject({
+      pipelineRunId: "125",
+      sourceBranch: "refs/heads/main",
+      sourceCommit: "recovered-main",
       specId: "spec.example",
       status: "pass",
     });

@@ -714,16 +714,75 @@ export function passingRecoveryObservation(
   input: FailureInput,
 ): Record<string, unknown> | null {
   const trigger = triggerEvent(raw);
-  if (!trigger || text(trigger.type) !== "pipeline.spec.observed") return null;
-  const data = record(trigger.data);
-  const value = (key: string) => text(trigger[key] ?? data[key]);
+  return trigger ? matchingPassingRecoveryObservation(trigger, input) : null;
+}
+
+function eventData(value: unknown): Record<string, unknown> {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return record(value);
+  }
+  if (typeof value !== "string" || !value.trim()) return {};
+  try {
+    return record(JSON.parse(value));
+  } catch {
+    return {};
+  }
+}
+
+function matchingPassingRecoveryObservation(
+  observation: Record<string, unknown>,
+  input: FailureInput,
+): Record<string, unknown> | null {
+  const data = eventData(observation.data);
+  const type = text(observation.type ?? observation.event_type ?? data.type);
+  if (type !== "pipeline.spec.observed") return null;
+  const value = (key: string) => text(observation[key] ?? data[key]);
   return value("specId") === input.specId &&
     value("status").toLowerCase() === "pass" &&
     value("sourceBranch") === "refs/heads/main" &&
     Boolean(value("sourceCommit")) &&
     laterRun(value("pipelineRunId"), input.pipelineRunId)
-    ? { ...data, ...trigger }
+    ? { ...observation, ...data, type }
     : null;
+}
+
+/**
+ * Conditions wake the task when a pass arrives, but they are not the durable
+ * source of truth. A replay or unrelated wake can happen after that pass was
+ * already consumed. Re-read the event history before opening or refreshing a
+ * repair so an older failure cannot manufacture a replacement PR.
+ */
+export function latestPassingRecoveryObservation(
+  ctx: Pick<WorkflowContext, "task" | "query">,
+  input: FailureInput,
+): Record<string, unknown> | null {
+  const candidates: Record<string, unknown>[] = [];
+  const trigger = passingRecoveryObservation(ctx.task, input);
+  if (trigger) candidates.push(trigger);
+  try {
+    const rows = ctx.query.events({
+      type: "pipeline.spec.observed",
+      projectId: "aks-rp-e2e",
+      limit: 500,
+    }).rows;
+    for (const row of rows) {
+      const candidate = matchingPassingRecoveryObservation(row, input);
+      if (candidate) candidates.push(candidate);
+    }
+  } catch {
+    // The trigger remains a valid fast path when durable query infrastructure
+    // is temporarily unavailable. A later reconciliation retries the query.
+  }
+  return (
+    candidates.sort((left, right) => {
+      const leftRun = Number(text(left.pipelineRunId));
+      const rightRun = Number(text(right.pipelineRunId));
+      if (Number.isFinite(leftRun) && Number.isFinite(rightRun)) {
+        return rightRun - leftRun;
+      }
+      return text(right.pipelineRunId).localeCompare(text(left.pipelineRunId));
+    })[0] ?? null
+  );
 }
 
 export function shouldReconcileTestFix(input: {
@@ -1369,21 +1428,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       targetRef,
       repairBaseCommit,
     });
-    const retainedIntegratedProof = priorIntegratedProof({
-      repoDir,
-      taskId: input.taskId,
-      generation: input.generation,
-      specId: input.specId,
-      target: "staging",
-      standaloneBuildId: "",
-    });
-    if (retainedIntegratedProof) {
-      return reconcileTestIssue(ctx, input);
-    }
-    if (hasPreparedRepair(input)) {
-      return reconcileTestIssue(ctx, input);
-    }
-    const recovery = passingRecoveryObservation(ctx.task, input);
+    const recovery = latestPassingRecoveryObservation(ctx, input);
     const recoveryCommit = text(recovery?.sourceCommit);
     const recoveryChangedFiles = recovery
       ? changedFilesBetween(repoDir, recoveryCommit, baseCommit)
@@ -1425,6 +1470,20 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         ],
         { actions: absorbLegacyRecoveryActions(ctx.task) },
       );
+    }
+    const retainedIntegratedProof = priorIntegratedProof({
+      repoDir,
+      taskId: input.taskId,
+      generation: input.generation,
+      specId: input.specId,
+      target: "staging",
+      standaloneBuildId: "",
+    });
+    if (retainedIntegratedProof) {
+      return reconcileTestIssue(ctx, input);
+    }
+    if (hasPreparedRepair(input)) {
+      return reconcileTestIssue(ctx, input);
     }
     // Older owner turns split publication into a child and left the stable
     // failure parent with only fresh watcher input. Resume the finite source
