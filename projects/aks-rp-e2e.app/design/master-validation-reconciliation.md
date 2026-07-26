@@ -331,6 +331,20 @@ A product issue must not change source. The workflow sends one deduplicated
 human notification with the spec, pipeline run, summary, and exact evidence,
 then waits on:
 
+- `prod_issue` means the live evidence identifies a provider/product operation
+  that failed or remained stuck. This can happen during shared setup before the
+  feature-specific assertions run. In that case, name the actual operation and
+  state (for example, managed-cluster create stuck in
+  `ProvisioningControlPlane/Creating`) and do not imply that the spec's named
+  feature regressed.
+- `test_issue` means the repository-owned carrier, assertion, cleanup, or
+  orchestration is wrong and has a bounded source repair.
+- `inconclusive` is reserved for evidence that cannot distinguish those two
+  ownership paths. A transient provider failure is not inconclusive merely
+  because adjacent runs passed; those passes are evidence against a
+  deterministic test defect, while the failing provider operation remains the
+  observed product/environment issue.
+
 ```text
 type: pipeline.spec.observed
 subject: project:aks-rp-e2e

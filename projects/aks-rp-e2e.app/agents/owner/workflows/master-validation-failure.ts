@@ -1554,6 +1554,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         ? `Work only in ${workspaceDir}, aligned to frozen campaign base ${repairBaseCommit}. Do not merge or rebase newer main into this repair branch while the campaign is red.`
         : `Work only in ${workspaceDir}, which is based on ${targetRef}@${baseCommit}.`,
       "Classify the root cause as test_issue, prod_issue, or inconclusive.",
+      "Use prod_issue when live evidence identifies a provider/product operation that failed or remained stuck, including shared cluster setup before feature assertions; name that actual operation and do not imply a feature-specific regression. Use inconclusive only when the evidence cannot distinguish provider behavior from a repository-owned carrier, assertion, cleanup, or orchestration defect.",
       "For test_issue, make the smallest source fix, run scoped local verification, commit it, and leave the worktree clean. Do not push or create a PR; the workflow owns publication.",
       "For prod_issue or inconclusive, do not modify source. Cite exact artifact/log evidence.",
       "Do not stop or wait for the aggregate pipeline; investigate this completed slice now.",
