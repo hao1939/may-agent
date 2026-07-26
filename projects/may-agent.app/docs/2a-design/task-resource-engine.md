@@ -273,6 +273,12 @@ type AcceptanceBasis = {
 A verifier runs after handler admission and before the result transaction. A
 rejected or invalid verifier fails the attempt and creates no receipt.
 
+The verifier belongs to the workflow-bound task, not only to the workflow's
+first attempt. If the workflow returns `needs-owner`, the same verifier checks
+any later converged owner-handoff result. The owner may make an exceptional
+judgment, but cannot bypass hard workflow invariants such as exact live proof,
+source integration, or artifact presence.
+
 ## Generation and resource version
 
 Each mutated resource advances its own `resourceVersion`. A task's
