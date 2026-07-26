@@ -1563,7 +1563,12 @@ async function reconcileTask(input: {
           generation: primary.generation,
           attemptId: primary.attemptId,
           handler: primary.handler,
-          disposition: apply.status === "applied" ? "converged" : "stale",
+          disposition:
+            apply.status === "applied"
+              ? apply.taskContinues
+                ? "revised"
+                : "converged"
+              : "stale",
           outcome: intent.outcome,
           mode: intent.mode,
           owner: intent.owner ?? descriptor.owner,
@@ -1583,7 +1588,11 @@ async function reconcileTask(input: {
           event,
           intent.id,
           primaryHandlerResult.summary,
-          apply.status === "applied" ? "converged" : "stale",
+          apply.status === "applied"
+            ? apply.taskContinues
+              ? "revised"
+              : "converged"
+            : "stale",
         );
         return stale?.reconcileTaskIds ?? apply.dependentTaskIds;
       } catch (error) {

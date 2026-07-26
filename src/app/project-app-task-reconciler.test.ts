@@ -140,6 +140,103 @@ afterEach(() => {
 });
 
 describe("project app task reconciler state", () => {
+  it("keeps an achieve task live when its handler revises the same task generation", () => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: intent("achieve"),
+      appOwner: "app-owner",
+      handler: "owner:branch-owner",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+
+    const result = completeProjectAppTask(config, claim, {
+      summary: "Bound the newly observed cleanup proof",
+      evidence: ["cleanup-proof:resource-group-absent"],
+      actions: [
+        {
+          kind: "update-task",
+          taskId: claim.taskId,
+          expectedGeneration: claim.generation,
+          workflow: "known-workflow",
+          input: {
+            sessionId: "session-1",
+            cleanupProof: "resource-group-absent",
+          },
+        },
+      ],
+    });
+
+    expect(result).toMatchObject({
+      status: "applied",
+      actionsApplied: [`updated ${claim.taskId}`],
+      dependentTaskIds: [claim.taskId],
+      taskContinues: true,
+    });
+    const tree = readTaskState(config);
+    expect(tree.resources?.[claim.taskId]).toMatchObject({
+      metadata: { generation: claim.generation + 1 },
+      spec: {
+        workflow: "known-workflow",
+        input: {
+          sessionId: "session-1",
+          cleanupProof: "resource-group-absent",
+        },
+      },
+      status: { phase: "pending" },
+    });
+    expect(tree.attempts?.[claim.attemptId]?.state).toBe("completed");
+    expect(tree.receipts?.[claim.taskId]).toBeUndefined();
+  });
+
+  it("rejects a no-op or mixed self-update", () => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: intent("achieve"),
+      appOwner: "app-owner",
+      handler: "owner:branch-owner",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+
+    expect(() =>
+      completeProjectAppTask(config, claim, {
+        summary: "No effective correction",
+        evidence: ["reviewed-current-input"],
+        actions: [
+          {
+            kind: "update-task",
+            taskId: claim.taskId,
+            expectedGeneration: claim.generation,
+            input: { sessionId: "session-1" },
+          },
+        ],
+      }),
+    ).toThrow("must change task execution intent");
+
+    expect(() =>
+      completeProjectAppTask(config, claim, {
+        summary: "Mixed correction",
+        evidence: ["reviewed-current-input"],
+        actions: [
+          {
+            kind: "update-task",
+            taskId: claim.taskId,
+            expectedGeneration: claim.generation,
+            input: { sessionId: "session-2" },
+          },
+          {
+            kind: "create-task",
+            id: "unrelated-followup",
+            parentId: "operations",
+            outcome: "Do unrelated work",
+            mode: "achieve",
+            outputs: [],
+            acceptance: ["The unrelated work completes"],
+          },
+        ],
+      }),
+    ).toThrow("must be the only reconciliation action");
+  });
+
   it("carries observed workspace lineage from the attempt into its completion receipt", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
