@@ -217,12 +217,23 @@ unrelated merge.
   `test-current` judgment is invalid because that exact source has already run;
   the workflow feeds the full terminal evidence back to the same agent for a
   corrected verdict or fix-forward move.
+- Source state and permission to start live execution are separate agent
+  judgments. Every initial `committed` or `test-current` result must also carry
+  `liveReady: true|false`. Code may queue ADO only when it is explicitly true;
+  a commit by itself is never permission to run. When it is false, the agent
+  must name one exact observable Condition and the workflow keeps the same task
+  waiting on that fact. If no such fact is observable by the app, the agent
+  returns `needs-owner` instead of hiding the boundary in prose.
 - Initial source preparation accepts `committed`, `test-current`, one exact
   wait, or `needs-owner`. It accepts `accepted-pass` only when the caller
   explicitly asks the workflow to validate an existing later current-main
   recovery observation. Any other preparation verdict stays inside the same
   structured correction loop; it does not become an owner handoff merely
   because the verdict shape was invalid.
+- The same readiness rule applies after a terminal live failure: a repaired
+  commit is queued as a replacement only with `liveReady: true`. A repair that
+  still depends on an exact external fact remains attached to the current task
+  and does not spend another provider run.
 - Accountable-owner fallback supplies exceptional domain judgment only. It does
   not push the task branch, queue ADO, accept live proof, or integrate source on
   behalf of this workflow. Any resulting in-scope repair returns through this

@@ -504,6 +504,7 @@ describe("spec-live-reconciliation workflow", () => {
         decision: "committed",
         summary: "repaired the failed assertion",
         evidence: ["source-commit:def"],
+        liveReady: true,
       }),
     ).toBeNull();
   });
@@ -614,6 +615,38 @@ describe("spec-live-reconciliation workflow", () => {
             status: "pass",
             sourceBranch: "refs/heads/main",
           },
+        },
+      }),
+    ).toBeNull();
+  });
+
+  test("requires an explicit live-readiness judgment before dispatch", () => {
+    const committed = {
+      decision: "committed" as const,
+      summary: "source repaired",
+      evidence: ["source-commit:def"],
+    };
+    expect(preparationDecisionProblem(committed, false)).toContain(
+      "must explicitly set liveReady",
+    );
+    expect(terminalRunDecisionProblem(committed)).toContain(
+      "does not authorize a replacement ADO run",
+    );
+    expect(
+      preparationDecisionProblem({ ...committed, liveReady: true }, false),
+    ).toBeNull();
+    expect(agentConditionProblem({ ...committed, liveReady: false })).toContain(
+      "requires one exact observable Condition",
+    );
+    expect(
+      agentConditionProblem({
+        ...committed,
+        liveReady: false,
+        condition: {
+          id: "quota-approval",
+          type: "project.approval.submitted",
+          subject: "project:aks-rp-e2e",
+          expected: { field: "approvalId", equals: "quota-approval" },
         },
       }),
     ).toBeNull();
@@ -947,6 +980,7 @@ describe("spec-live-reconciliation workflow", () => {
           decision: "test-current",
           summary: "ready",
           evidence: ["source-reviewed"],
+          liveReady: true,
         },
         false,
       ),

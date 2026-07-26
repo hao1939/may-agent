@@ -118,6 +118,7 @@ type AgentDecision = {
     | "needs-owner";
   summary: string;
   evidence: string[];
+  liveReady?: boolean;
   condition?: ProjectAppConditionSpec;
   recovery?: {
     pipelineRunId: string;
@@ -250,11 +251,13 @@ export function preparationDecisionProblem(
   decision: AgentDecision,
   allowExistingRecovery: boolean,
 ): string | null {
-  if (
-    ["committed", "test-current", "waiting", "needs-owner"].includes(
-      decision.decision,
-    )
-  ) {
+  if (["committed", "test-current"].includes(decision.decision)) {
+    if (typeof decision.liveReady !== "boolean") {
+      return `decision=${decision.decision} must explicitly set liveReady=true or liveReady=false; source state alone does not authorize ADO dispatch`;
+    }
+    return null;
+  }
+  if (["waiting", "needs-owner"].includes(decision.decision)) {
     return null;
   }
   if (decision.decision === "accepted-pass" && allowExistingRecovery) {
@@ -395,6 +398,7 @@ const decisionSchema = Type.Object({
   ]),
   summary: Type.String({ minLength: 1 }),
   evidence: Type.Array(Type.String({ minLength: 1 })),
+  liveReady: Type.Optional(Type.Boolean()),
   condition: Type.Optional(
     Type.Object({
       id: Type.String({ minLength: 1 }),
@@ -538,9 +542,17 @@ const observableConditionTypes = new Set([
 ]);
 
 export function agentConditionProblem(decision: AgentDecision): string | null {
-  if (decision.decision !== "waiting") return null;
+  const requiresCondition =
+    decision.decision === "waiting" ||
+    (["committed", "test-current"].includes(decision.decision) &&
+      decision.liveReady === false);
+  if (!requiresCondition) return null;
   const condition = decision.condition;
-  if (!condition) return "decision=waiting requires one exact Condition";
+  if (!condition) {
+    return decision.decision === "waiting"
+      ? "decision=waiting requires one exact Condition"
+      : `decision=${decision.decision} with liveReady=false requires one exact observable Condition; use needs-owner when the app cannot observe the external boundary`;
+  }
   if (!isTypedProjectAppConditionSubject(condition.subject)) {
     return `Condition subject must be typed, not prose: ${condition.subject}`;
   }
@@ -588,13 +600,23 @@ export function terminalRunDecisionProblem(
   ) {
     return `decision=accepted-pass is invalid because this runnable normalization requires an exact succeeded ADO run, but provider result is ${options.providerResult || "unknown"}; preserve the domain diagnosis, repair the test contract so expected behavior reports pass, or return an exact wait/ownership boundary`;
   }
+  if (
+    decision.decision === "committed" &&
+    typeof decision.liveReady !== "boolean"
+  ) {
+    return "decision=committed must explicitly set liveReady=true or liveReady=false; a repaired commit alone does not authorize a replacement ADO run";
+  }
   return null;
 }
 
 export function scenarioNormalizationWaitProblem(
   decision: AgentDecision,
 ): string | null {
-  if (decision.decision !== "waiting") return null;
+  const hasWait =
+    decision.decision === "waiting" ||
+    (["committed", "test-current"].includes(decision.decision) &&
+      decision.liveReady === false);
+  if (!hasWait) return null;
   const condition = decision.condition;
   if (condition?.type === "aks.repo-ref.observed") {
     return [
@@ -2530,6 +2552,7 @@ export async function reconcileSpecLive(
         "Inspect the original task, current spec status, model, direct carrier, nearby good/bad examples, and prior evidence. Decide whether this exact source is genuinely ready for live execution.",
         "If a bounded repo change is needed, make it, run scoped local checks, commit it, leave the worktree clean, and return decision=committed.",
         "If current source is already the exact content that should be live-tested, leave it unchanged and return decision=test-current.",
+        "For committed or test-current, separately set liveReady=true only when this exact source may be sent to ADO now. If source is prepared but an external fact still prevents execution, set liveReady=false and include one exact observable Condition. If this app cannot observe the required fact, return needs-owner instead. Never treat a commit as permission to run.",
         ...(options.existingRecoveryAfterRunId
           ? [
               `This is recovery work for blocking run ${options.existingRecoveryAfterRunId}. If a later current-main run already passed this exact spec and still applies to current main, leave source unchanged and return decision=accepted-pass. Populate recovery={pipelineRunId,sourceBranch,sourceCommit,artifactPath} with the aggregate result artifact that contains this spec verdict, and cite ancestry/relevant-change evidence. Do not dispatch redundant proof.`,
@@ -2582,7 +2605,7 @@ export async function reconcileSpecLive(
             preparationPrompt,
             "The preceding domain judgment returned decision=committed, but repository inspection proves task HEAD did not move during that judgment.",
             `Current clean task HEAD is ${correctionBaseline}. Inspect that exact source before deciding again.`,
-            "Return test-current when this existing commit is ready for exact live verification. Return committed only after leaving a genuinely newer clean commit. Return waiting or needs-owner only for an evidenced condition or ownership boundary.",
+            "Return test-current when this existing commit is the intended source. Return committed only after leaving a genuinely newer clean commit. For either source decision, set liveReady explicitly; false requires one exact observable Condition. Return needs-owner when no app-observable condition can represent the boundary.",
           ].join("\n\n"),
           {
             scenarioNormalization: Boolean(normalizationInput),
@@ -2696,6 +2719,18 @@ export async function reconcileSpecLive(
           actions: [],
         });
       }
+      if (
+        ["committed", "test-current"].includes(decision.decision) &&
+        decision.liveReady === false &&
+        decision.condition
+      ) {
+        return waitingResult(
+          ctx,
+          decision.summary,
+          [...decision.evidence, `source-commit:${after}`],
+          taskScopedAgentCondition(taskId, generation, decision.condition),
+        );
+      }
       if (!["committed", "test-current"].includes(decision.decision)) {
         return ownerResult(
           ctx,
@@ -2803,6 +2838,7 @@ export async function reconcileSpecLive(
           "Return accepted-pass only for exact same-spec live proof on this source commit.",
           "A source-only check or admission refusal is diagnostic evidence, not completion. Implement an observable live negative test when the API contract permits it; otherwise return an exact external wait or a genuine ownership-boundary decision.",
           "For a carrier/spec defect, make the smallest fix in the task worktree, run scoped local checks, commit, leave the worktree clean, and return committed.",
+          "When returning committed, separately set liveReady=true only if the repaired exact source may be sent to ADO now. If an external fact still prevents execution, set liveReady=false with one exact observable Condition; use needs-owner when the app cannot observe that boundary. A commit alone is not permission to rerun.",
           failedRunsForCommit >= 2
             ? "The same source commit already has at least two terminal nonpassing runs. Do not request another unchanged retry; commit a fix, return an exact wait, or request owner judgment."
             : "Use retry-transient only when artifacts prove a transient provider/environment failure and an unchanged retry is truthful.",
@@ -2888,6 +2924,14 @@ export async function reconcileSpecLive(
             ctx,
             "Agent reported a fix but did not leave one new clean task commit.",
             decision.evidence,
+          );
+        }
+        if (decision.liveReady === false && decision.condition) {
+          return waitingResult(
+            ctx,
+            decision.summary,
+            [...decision.evidence, `source-commit:${nextCommit}`],
+            taskScopedAgentCondition(taskId, generation, decision.condition),
           );
         }
         const dispatch = await prepareLiveDispatch(
