@@ -167,6 +167,18 @@ describe("loop evaluation", () => {
         join(workDir, "transcript.jsonl"),
         '{"role":"assistant"}\n',
       );
+      mkdirSync(
+        join(scenarioSandbox, "semantic-judges", "judge-a"),
+        { recursive: true },
+      );
+      writeFileSync(
+        join(scenarioSandbox, "semantic-judges", "judge-a", "verdict.json"),
+        '{"cases":[]}\n',
+      );
+      writeFileSync(
+        join(scenarioSandbox, "semantic-evaluation.json"),
+        '{"status":"pass"}\n',
+      );
       try {
         const created = await runLoop(
           {
@@ -231,6 +243,30 @@ describe("loop evaluation", () => {
         ).toBe(true);
         expect(
           existsSync(join(created.runDir, stored.trials[0]!.transcript_path!)),
+        ).toBe(true);
+        expect(
+          existsSync(
+            join(
+              created.runDir,
+              "cases",
+              stored.scenarios[0]!,
+              "trial-1",
+              "semantic-judges",
+              "judge-a",
+              "verdict.json",
+            ),
+          ),
+        ).toBe(true);
+        expect(
+          existsSync(
+            join(
+              created.runDir,
+              "cases",
+              stored.scenarios[0]!,
+              "trial-1",
+              "semantic-evaluation.json",
+            ),
+          ),
         ).toBe(true);
         expect(existsSync(scenarioSandbox)).toBe(false);
 

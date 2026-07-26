@@ -61,6 +61,7 @@ export interface ScenarioRunResult {
   lab_fork?: string | null;
   passed: boolean;
   checks: ScenarioCheck[];
+  semantic_evaluation?: unknown;
   summary?: string;
   agent_status?: string;
   duration_ms?: number;

@@ -1,0 +1,10 @@
+{
+  "name": "semantic-judge-claude",
+  "description": "Independently judges meaning and contradictions in critical Gym decisions.",
+  "domain": "semantic safety evaluation of critical agent decisions",
+  "model": "claude-opus-4-6",
+  "heartbeat": false,
+  "tools": ["coding", "finish"],
+  "context_files": [],
+  "memoryLimit": 0
+}

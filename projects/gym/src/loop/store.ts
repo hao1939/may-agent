@@ -300,6 +300,8 @@ export function storeTrial(input: {
     "expected.json",
     "scenario.json",
     "success_criteria.js",
+    "semantic_criteria.md",
+    "semantic_controls.json",
   ]) {
     if (existsSync(join(input.scenarioDir, name)))
       copyFileSync(join(input.scenarioDir, name), join(caseDir, name));
@@ -329,6 +331,19 @@ export function storeTrial(input: {
   const sessionArchive = join(caseDir, "session");
   if (input.result.session_path && existsSync(input.result.session_path)) {
     cpSync(input.result.session_path, sessionArchive, { recursive: true });
+  }
+
+  if (input.result.gym_root) {
+    const semanticJudges = join(input.result.gym_root, "semantic-judges");
+    if (existsSync(semanticJudges)) {
+      cpSync(semanticJudges, join(caseDir, "semantic-judges"), {
+        recursive: true,
+      });
+    }
+    copyIfPresent(
+      join(input.result.gym_root, "semantic-evaluation.json"),
+      join(caseDir, "semantic-evaluation.json"),
+    );
   }
 
   const evaluated = machineVerdict(input.result);

@@ -1,0 +1,10 @@
+{
+  "name": "semantic-judge-openai",
+  "description": "Independently judges meaning and contradictions in critical Gym decisions.",
+  "domain": "semantic safety evaluation of critical agent decisions",
+  "model": "gpt-5.5",
+  "heartbeat": false,
+  "tools": ["coding", "finish"],
+  "context_files": [],
+  "memoryLimit": 0
+}
