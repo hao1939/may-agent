@@ -247,12 +247,30 @@ unrelated merge.
   wait for those mechanics: they return `liveReady: true` when the exact source
   is runnable, or `needs-owner` when a reviewed non-runnable disposition needs
   exceptional judgment.
+- Scenario normalization also supports one explicit
+  `terminal-disposition` judgment for a source that is intentionally not
+  runnable. This is an agent judgment, not a status inferred by code. The
+  result names the exact `status` and `specState` already encoded by the
+  normalized spec and explains why no truthful current staging run exists.
+- A terminal-disposition result is not a live pass. Code may apply it only to
+  the scenario-normalization loop, and only after it proves that the task
+  worktree is clean, the exact plain-carrier row has disappeared from strict
+  inventory, the named spec fields exactly match the structured judgment, and
+  the bounded source commit can be integrated directly into current `dev`.
+  The completion evidence must say explicitly that no new ADO pass was
+  claimed.
+- A concurrent `dev` update or replay conflict remains same-task domain work.
+  The workflow gives the conflict back to the same agent, rechecks the terminal
+  fields and strict row after resolution, and only then integrates. It must not
+  create a publication child or repeat an owner handoff for the same reviewed
+  disposition.
 - Initial source preparation accepts `committed`, `test-current`, one exact
-  wait, or `needs-owner`. It accepts `accepted-pass` only when the caller
-  explicitly asks the workflow to validate an existing later current-main
-  recovery observation. Any other preparation verdict stays inside the same
-  structured correction loop; it does not become an owner handoff merely
-  because the verdict shape was invalid.
+  wait, `needs-owner`, or the scenario-normalization-only
+  `terminal-disposition` judgment above. It accepts `accepted-pass` only when
+  the caller explicitly asks the workflow to validate an existing later
+  current-main recovery observation. Any other preparation verdict stays
+  inside the same structured correction loop; it does not become an owner
+  handoff merely because the verdict shape was invalid.
 - The same readiness rule applies after a terminal live failure: a repaired
   commit is queued as a replacement only with `liveReady: true`. A repair that
   still depends on an exact external fact remains attached to the current task

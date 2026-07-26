@@ -23,8 +23,11 @@ import {
 import {
   scenarioNormalizationInvariant,
   scenarioNormalizationSpecIds,
+  scenarioNormalizationTerminalDispositionCheck,
+  type ScenarioNormalizationTerminalDisposition,
   type ScenarioNormalizationInput,
 } from "./lib/scenario-normalization-invariant.js";
+import { integrateDirectlyIntoDev } from "./lib/direct-dev-integration.js";
 
 export const name = "spec-live-reconciliation";
 export const description =
@@ -126,11 +129,13 @@ type AgentDecision = {
     | "test-current"
     | "accepted-pass"
     | "retry-transient"
+    | "terminal-disposition"
     | "waiting"
     | "needs-owner";
   summary: string;
   evidence: string[];
   liveReady?: boolean;
+  terminalDisposition?: ScenarioNormalizationTerminalDisposition;
   condition?: ProjectAppConditionSpec;
   recovery?: {
     pipelineRunId: string;
@@ -262,6 +267,7 @@ export function shouldReviewBeforeInitialLiveDispatch(input: {
 export function preparationDecisionProblem(
   decision: AgentDecision,
   allowExistingRecovery: boolean,
+  scenarioNormalization = false,
 ): string | null {
   if (["committed", "test-current"].includes(decision.decision)) {
     if (typeof decision.liveReady !== "boolean") {
@@ -272,12 +278,34 @@ export function preparationDecisionProblem(
   if (["waiting", "needs-owner"].includes(decision.decision)) {
     return null;
   }
+  if (decision.decision === "terminal-disposition") {
+    return scenarioNormalization
+      ? null
+      : "terminal-disposition is available only to scenario-normalization work";
+  }
   if (decision.decision === "accepted-pass" && allowExistingRecovery) {
     return null;
   }
   return allowExistingRecovery
     ? "preparation must return committed, test-current, accepted-pass with exact recovery proof, waiting, or needs-owner"
     : "preparation cannot accept a prior run as proof for the rewritten source; return test-current to dispatch it, commit a repair, wait on an exact fact, or identify a genuine ownership boundary";
+}
+
+export function terminalDispositionDecisionProblem(
+  decision: AgentDecision,
+  scenarioNormalization: boolean,
+): string | null {
+  if (decision.decision !== "terminal-disposition") return null;
+  if (!scenarioNormalization) {
+    return "terminal-disposition is available only to scenario-normalization work";
+  }
+  if (!decision.terminalDisposition) {
+    return "terminal-disposition requires structured specId, status, and specState";
+  }
+  if (decision.liveReady !== undefined || decision.condition !== undefined) {
+    return "terminal-disposition is neither live readiness nor a wait; omit liveReady and condition";
+  }
+  return null;
 }
 
 export function preparationHeadProblem(input: {
@@ -476,12 +504,20 @@ const decisionSchema = Type.Object({
     Type.Literal("test-current"),
     Type.Literal("accepted-pass"),
     Type.Literal("retry-transient"),
+    Type.Literal("terminal-disposition"),
     Type.Literal("waiting"),
     Type.Literal("needs-owner"),
   ]),
   summary: Type.String({ minLength: 1 }),
   evidence: Type.Array(Type.String({ minLength: 1 })),
   liveReady: Type.Optional(Type.Boolean()),
+  terminalDisposition: Type.Optional(
+    Type.Object({
+      specId: Type.String({ minLength: 1 }),
+      status: Type.String({ minLength: 1 }),
+      specState: Type.String({ minLength: 1 }),
+    }),
+  ),
   condition: Type.Optional(
     Type.Object({
       id: Type.String({ minLength: 1 }),
@@ -2544,6 +2580,221 @@ export async function reconcileSpecLive(
       };
     };
 
+    const applyTerminalDisposition = async (
+      decision: AgentDecision,
+      reviewedRunId = "",
+    ): Promise<WorkflowResult> => {
+      const validateCurrentSource = (): {
+        problem: string | null;
+        evidence: string[];
+      } => {
+        const decisionProblem = terminalDispositionDecisionProblem(
+          decision,
+          normalizationInput?.loopId === "scenario-normalization",
+        );
+        if (decisionProblem) return { problem: decisionProblem, evidence: [] };
+        if (cleanWorkspace(workspaceDir)) {
+          return {
+            problem:
+              "terminal-disposition source must be committed with a clean task worktree",
+            evidence: [`workspace:${workspaceDir}`],
+          };
+        }
+        let invariant;
+        try {
+          invariant = scenarioNormalizationInvariant(
+            workspaceDir,
+            normalizationInput,
+          );
+        } catch (error) {
+          return {
+            problem: error instanceof Error ? error.message : String(error),
+            evidence: [],
+          };
+        }
+        if (!invariant || invariant.stillListed) {
+          return {
+            problem: invariant
+              ? `terminal-disposition source still lists ${invariant.kind} ${invariant.path}`
+              : "terminal-disposition source has no exact scenario-normalization invariant",
+            evidence: invariant ? [`normalization-path:${invariant.path}`] : [],
+          };
+        }
+        const disposition = scenarioNormalizationTerminalDispositionCheck(
+          workspaceDir,
+          normalizationInput,
+          decision.terminalDisposition,
+        );
+        return {
+          problem: disposition.problem ?? null,
+          evidence: disposition.evidence,
+        };
+      };
+
+      const beforeIntegration = validateCurrentSource();
+      if (beforeIntegration.problem) {
+        return ownerResult(
+          ctx,
+          `Terminal disposition was not applicable: ${beforeIntegration.problem}.`,
+          [...decision.evidence, ...beforeIntegration.evidence],
+        );
+      }
+      if (integrationMode(targetBranch) !== "direct") {
+        return ownerResult(
+          ctx,
+          "Terminal scenario normalization requires direct dev integration.",
+          [...decision.evidence, `target-ref:${targetRef}`],
+        );
+      }
+
+      let candidateCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+      let integration = integrateDirectlyIntoDev({
+        repoDir,
+        workspaceDir,
+        sourceBranch,
+        sourceCommit: candidateCommit,
+        taskBaseCommit: baseCommit,
+      });
+
+      if (integration.state === "conflict") {
+        const conflictBaseline = integration.replayBaseCommit;
+        const beforeConflictRepair = git(workspaceDir, [
+          "rev-parse",
+          "HEAD",
+        ]).stdout;
+        const conflictDecision = await askAgent(
+          ctx,
+          [
+            `Resolve the current direct-dev replay conflict for the already reviewed terminal scenario normalization ${specId}.`,
+            `The bounded task commits are being replayed onto ${integration.targetRef}@${conflictBaseline} in ${workspaceDir}.`,
+            `Conflict evidence: ${integration.error}`,
+            "Resolve only this task's conflicts, preserve the exact structured terminal status and specState, rerun scoped local checks plus the strict scenario inventory, complete the cherry-pick, leave one clean commit lineage, and return decision=committed.",
+            "Do not push, queue ADO, create another task, or change the terminal judgment. The workflow will revalidate and integrate the resolved source.",
+            "Task:",
+            ctx.task,
+          ].join("\n\n"),
+          {
+            scenarioNormalization: true,
+            continueDomainWorkOnValidation: true,
+            validateDecision: (candidate) => {
+              if (candidate.decision !== "committed") {
+                return "terminal-disposition integration conflict must be resolved inside this same domain workflow";
+              }
+              if (cleanWorkspace(workspaceDir)) {
+                return "terminal-disposition conflict repair must leave the worktree clean";
+              }
+              const head = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+              return head === beforeConflictRepair
+                ? "terminal-disposition conflict repair did not create a resolved commit"
+                : null;
+            },
+          },
+        );
+        candidateCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+        const afterConflict = validateCurrentSource();
+        if (afterConflict.problem) {
+          return ownerResult(
+            ctx,
+            `Resolved terminal-disposition source failed revalidation: ${afterConflict.problem}.`,
+            [
+              ...decision.evidence,
+              ...conflictDecision.evidence,
+              ...afterConflict.evidence,
+            ],
+          );
+        }
+        integration = integrateDirectlyIntoDev({
+          repoDir,
+          workspaceDir,
+          sourceBranch,
+          sourceCommit: candidateCommit,
+          taskBaseCommit: conflictBaseline,
+        });
+      }
+
+      if (integration.state !== "integrated") {
+        const detail =
+          integration.state === "unchanged"
+            ? "the bounded task produced no source change on current dev"
+            : integration.error;
+        return ownerResult(
+          ctx,
+          "Could not directly integrate the reviewed terminal scenario normalization into dev.",
+          [
+            ...decision.evidence,
+            `source-branch:${sourceBranch}`,
+            `source-commit:${candidateCommit}`,
+            `target-ref:${targetRef}`,
+            `integration-error:${detail}`,
+          ],
+        );
+      }
+
+      sourceCommit = integration.sourceCommit;
+      git(repoDir, ["fetch", "origin", targetBranch]);
+      const integratedCommit = git(repoDir, ["rev-parse", targetRef]).stdout;
+      if (
+        git(
+          repoDir,
+          ["merge-base", "--is-ancestor", sourceCommit, targetRef],
+          true,
+        ).status !== 0
+      ) {
+        return ownerResult(
+          ctx,
+          "Reviewed terminal source is not reachable from current dev after integration.",
+          [
+            ...decision.evidence,
+            `source-commit:${sourceCommit}`,
+            `target-ref:${targetRef}@${integratedCommit}`,
+          ],
+        );
+      }
+      const refresh = git(
+        workspaceDir,
+        ["merge", "--ff-only", targetRef],
+        true,
+      );
+      if (refresh.status !== 0) {
+        return ownerResult(
+          ctx,
+          "Could not refresh the terminal-disposition task worktree to current dev for final validation.",
+          [
+            ...decision.evidence,
+            `source-commit:${sourceCommit}`,
+            `target-ref:${targetRef}@${integratedCommit}`,
+            `refresh-error:${refresh.stderr || refresh.stdout}`,
+          ],
+        );
+      }
+      const finalValidation = validateCurrentSource();
+      if (finalValidation.problem) {
+        return ownerResult(
+          ctx,
+          `Current dev failed terminal-disposition validation after integration: ${finalValidation.problem}.`,
+          [...decision.evidence, ...finalValidation.evidence],
+        );
+      }
+
+      const disposition = decision.terminalDisposition!;
+      const summary = `${specId} retained reviewed terminal disposition ${disposition.status}/${disposition.specState}; normalized source ${sourceCommit} was directly integrated into ${targetBranch}@${integratedCommit} without claiming a new ADO pass.`;
+      return ctx.done(summary, {
+        state: "converged",
+        summary,
+        evidence: [
+          ...decision.evidence,
+          ...finalValidation.evidence,
+          `source-branch:${sourceBranch}`,
+          `source-commit:${sourceCommit}`,
+          `integrated-commit:${integratedCommit}`,
+          `target-ref:${targetRef}`,
+          ...(reviewedRunId ? [`reviewed-pipeline-run:${reviewedRunId}`] : []),
+          "terminal-disposition:no-new-ado-pass-claimed",
+        ],
+        actions: [],
+      });
+    };
+
     const sourceInvariantBeforeRunLookup = scenarioNormalizationInvariant(
       workspaceDir,
       normalizationInput,
@@ -2914,6 +3165,7 @@ export async function reconcileSpecLive(
     let latestRun = runs[0];
 
     const sourceDiffersFromBase = sourceCommit !== baseCommit;
+    let terminalDispositionDecision: AgentDecision | null = null;
     if (
       shouldReviewBeforeInitialLiveDispatch({
         hasExactRun: Boolean(latestRun),
@@ -2935,12 +3187,17 @@ export async function reconcileSpecLive(
         "If a bounded repo change is needed, make it, run scoped local checks, commit it, leave the worktree clean, and return decision=committed.",
         "If current source is already the exact content that should be live-tested, leave it unchanged and return decision=test-current.",
         "For committed or test-current, separately set liveReady=true only when this exact source may be sent to ADO now. If source is prepared but an external fact still prevents execution, set liveReady=false and include one exact observable Condition. If this app cannot observe the required fact, return needs-owner instead. Never treat a commit as permission to run.",
+        ...(normalizationInput
+          ? [
+              "When this exact normalized source intentionally cannot have a truthful current staging run and the source spec itself already records the reviewed final status, return decision=terminal-disposition with terminalDisposition={specId,status,specState}. This is an agent judgment that authorizes source integration without claiming a new live pass; use it only after local checks pass and the exact strict-inventory row is gone.",
+            ]
+          : []),
         ...(options.existingRecoveryAfterRunId
           ? [
               `This is recovery work for blocking run ${options.existingRecoveryAfterRunId}. If a later current-main run already passed this exact spec and still applies to current main, leave source unchanged and return decision=accepted-pass. Populate recovery={pipelineRunId,sourceBranch,sourceCommit,artifactPath} with the aggregate result artifact that contains this spec verdict, and cite ancestry/relevant-change evidence. Do not dispatch redundant proof.`,
             ]
           : []),
-        "A blocked spec, reviewed exception, or intentionally paused execution path is not live-ready merely because its file layout is normalized. Implement a truthful observable contract, return an exact wait, or identify the genuine ownership boundary.",
+        "A blocked spec, reviewed exception, or intentionally paused execution path is not live-ready merely because its file layout is normalized. Implement a truthful observable contract, return an exact wait, make the structured terminal-disposition judgment when the scenario-normalization exception above applies, or identify the genuine ownership boundary.",
         "Do not queue ADO, create a PR, create another branch/worktree, or edit app task state; this workflow owns those steps.",
         "Use waiting only with one exact machine-observable Condition. Use needs-owner only for a concrete decision that source facts cannot resolve.",
         "Task:",
@@ -2953,6 +3210,11 @@ export async function reconcileSpecLive(
           preparationDecisionProblem(
             candidate,
             Boolean(options.existingRecoveryAfterRunId),
+            Boolean(normalizationInput),
+          ) ??
+          terminalDispositionDecisionProblem(
+            candidate,
+            Boolean(normalizationInput),
           ),
       });
       if (decision.decision === "waiting" && decision.condition) {
@@ -2996,6 +3258,11 @@ export async function reconcileSpecLive(
               preparationDecisionProblem(
                 candidate,
                 Boolean(options.existingRecoveryAfterRunId),
+                Boolean(normalizationInput),
+              ) ??
+              terminalDispositionDecisionProblem(
+                candidate,
+                Boolean(normalizationInput),
               ) ??
               preparationHeadProblem({
                 decision: candidate,
@@ -3113,7 +3380,9 @@ export async function reconcileSpecLive(
           taskScopedAgentCondition(taskId, generation, decision.condition),
         );
       }
-      if (!["committed", "test-current"].includes(decision.decision)) {
+      if (decision.decision === "terminal-disposition") {
+        terminalDispositionDecision = decision;
+      } else if (!["committed", "test-current"].includes(decision.decision)) {
         return ownerResult(
           ctx,
           `Unsupported preparation decision ${decision.decision}.`,
@@ -3121,6 +3390,10 @@ export async function reconcileSpecLive(
         );
       }
       sourceCommit = after;
+    }
+
+    if (terminalDispositionDecision) {
+      return applyTerminalDisposition(terminalDispositionDecision);
     }
 
     if (!latestRun) {
@@ -3260,6 +3533,11 @@ export async function reconcileSpecLive(
           "Inspect run metadata, plan inputs, per-spec result, live resource identity, assertions, and cleanup proof. The aggregate provider result alone is not a spec verdict.",
           "Return accepted-pass only for exact same-spec live proof on this source commit.",
           "A source-only check or admission refusal is diagnostic evidence, not completion. Implement an observable live negative test when the API contract permits it; otherwise return an exact external wait or a genuine ownership-boundary decision.",
+          ...(normalizationInput
+            ? [
+                "If the exact normalized source intentionally cannot produce a truthful current staging run and its spec already records the reviewed final status, return decision=terminal-disposition with terminalDisposition={specId,status,specState}. This preserves the terminal judgment and permits source integration without claiming this failed run as a pass.",
+              ]
+            : []),
           "For a carrier/spec defect, make the smallest fix in the task worktree, run scoped local checks, commit, leave the worktree clean, and return committed.",
           "When returning committed, separately set liveReady=true only if the repaired exact source may be sent to ADO now. If an external fact still prevents execution, set liveReady=false with one exact observable Condition; use needs-owner when the app cannot observe that boundary. A commit alone is not permission to rerun.",
           failedRunsForCommit >= 2
@@ -3277,6 +3555,10 @@ export async function reconcileSpecLive(
               requireSucceededProvider: Boolean(normalizationInput),
               providerResult: runResult,
             }) ??
+            terminalDispositionDecisionProblem(
+              candidate,
+              Boolean(normalizationInput),
+            ) ??
             (candidate.decision === "accepted-pass" &&
             !preIntegrationVerification.accepted
               ? preIntegrationVerification.summary
@@ -3293,6 +3575,9 @@ export async function reconcileSpecLive(
       }
       if (decision.decision === "needs-owner") {
         return ownerResult(ctx, decision.summary, decision.evidence);
+      }
+      if (decision.decision === "terminal-disposition") {
+        return applyTerminalDisposition(decision, runId);
       }
       if (decision.decision === "retry-transient") {
         if (failedRunsForCommit >= 2) {

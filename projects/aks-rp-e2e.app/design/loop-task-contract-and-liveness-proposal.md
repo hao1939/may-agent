@@ -408,6 +408,13 @@ acceptance:
   - A repository-only carrier with no active consuming spec may use source-only
     proof because there is no runnable live selection. The evidence must state
     that the strict inventory found zero active specs for that carrier.
+  - A spec-referenced carrier whose spec already records a reviewed terminal
+    disposition may be normalized without inventing a provider pass only when
+    the agent explicitly returns that structured disposition, the normalized
+    source preserves the same `status` and `specState`, local proof passes, and
+    the exact strict-inventory row is gone. The workflow integrates that source
+    directly into `dev` and records that no new ADO pass was claimed. Code never
+    infers this exception from prose or a failed run.
   - Loop completion requires `strict-passed: true`, zero spec-referenced plain
     scenario units, zero repository plain scenario files on clean current
     origin/dev, and fresh accepted ADO proof for every runnable normalization

@@ -25,6 +25,18 @@ export type SourceOnlyNormalizationPosture = {
   rejectedSpecIds: string[];
 };
 
+export type ScenarioNormalizationTerminalDisposition = {
+  specId: string;
+  status: string;
+  specState: string;
+};
+
+export type ScenarioNormalizationTerminalDispositionCheck = {
+  accepted: boolean;
+  evidence: string[];
+  problem?: string;
+};
+
 function text(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -128,6 +140,81 @@ export function sourceOnlyScenarioNormalizationPosture(
     evidence: [...new Set(evidence)],
     missingSpecIds,
     rejectedSpecIds,
+  };
+}
+
+/** Validate an agent's terminal judgment against structured source facts. */
+export function scenarioNormalizationTerminalDispositionCheck(
+  workspaceDir: string,
+  input: ScenarioNormalizationInput | undefined,
+  disposition: ScenarioNormalizationTerminalDisposition | undefined,
+): ScenarioNormalizationTerminalDispositionCheck {
+  if (input?.loopId !== "scenario-normalization") {
+    return {
+      accepted: false,
+      evidence: [],
+      problem:
+        "terminal-disposition is available only to scenario-normalization work",
+    };
+  }
+  if (!disposition) {
+    return {
+      accepted: false,
+      evidence: [],
+      problem:
+        "terminal-disposition requires structured specId, status, and specState",
+    };
+  }
+
+  const selectedSpecIds = scenarioNormalizationSpecIds(input);
+  if (
+    selectedSpecIds.length !== 1 ||
+    selectedSpecIds[0] !== disposition.specId
+  ) {
+    return {
+      accepted: false,
+      evidence: [],
+      problem: `terminal-disposition specId ${disposition.specId || "(missing)"} does not match the exact selected spec ${selectedSpecIds.join(",") || "(missing)"}`,
+    };
+  }
+
+  const entry = loadFeatureSpecs(workspaceDir).get(disposition.specId);
+  if (!entry) {
+    return {
+      accepted: false,
+      evidence: [],
+      problem: `terminal-disposition spec ${disposition.specId} is missing from the normalized source`,
+    };
+  }
+  const sourceStatus = text(entry.body.status);
+  const sourceSpecState = text(entry.body.specState);
+  if (
+    sourceStatus !== disposition.status ||
+    sourceSpecState !== disposition.specState
+  ) {
+    return {
+      accepted: false,
+      evidence: [],
+      problem: `terminal-disposition does not match structured source fields: expected status=${disposition.status}, specState=${disposition.specState}; source has status=${sourceStatus || "(missing)"}, specState=${sourceSpecState || "(missing)"}`,
+    };
+  }
+  if (!sourceStatus || !sourceSpecState) {
+    return {
+      accepted: false,
+      evidence: [],
+      problem:
+        "terminal-disposition requires non-empty status and specState in the normalized spec",
+    };
+  }
+
+  return {
+    accepted: true,
+    evidence: [
+      `terminal-disposition-spec:${disposition.specId}`,
+      `terminal-disposition-spec-path:${entry.path}`,
+      `terminal-disposition-status:${sourceStatus}`,
+      `terminal-disposition-spec-state:${sourceSpecState}`,
+    ],
   };
 }
 

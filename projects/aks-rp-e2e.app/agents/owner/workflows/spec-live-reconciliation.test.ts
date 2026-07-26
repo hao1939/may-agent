@@ -55,6 +55,7 @@ import {
   sourceChangeMayAffectSpec,
   taskContextDir,
   taskScopedAgentCondition,
+  terminalDispositionDecisionProblem,
   terminalRunDecisionProblem,
   terminalRunContextDir,
   verifySpecLiveProofFacts,
@@ -62,6 +63,7 @@ import {
 import {
   isRunnableScenarioNormalization,
   scenarioNormalizationSpecIds,
+  scenarioNormalizationTerminalDispositionCheck,
 } from "./lib/scenario-normalization-invariant.js";
 
 describe("spec-live-reconciliation workflow", () => {
@@ -862,6 +864,72 @@ describe("spec-live-reconciliation workflow", () => {
         },
       }),
     ).toBeNull();
+  });
+
+  test("keeps terminal scenario normalization as an explicit agent judgment", () => {
+    const decision = {
+      decision: "terminal-disposition" as const,
+      summary: "The provider aliases the legacy precondition.",
+      evidence: ["source-fact:legacy-alias"],
+      terminalDisposition: {
+        specId: "spec.sample.terminal",
+        status: "product_constraint",
+        specState: "reviewed-exception",
+      },
+    };
+    expect(preparationDecisionProblem(decision, false, true)).toBeNull();
+    expect(terminalDispositionDecisionProblem(decision, true)).toBeNull();
+    expect(terminalDispositionDecisionProblem(decision, false)).toContain(
+      "only to scenario-normalization",
+    );
+    expect(
+      terminalDispositionDecisionProblem(
+        { ...decision, liveReady: false },
+        true,
+      ),
+    ).toContain("neither live readiness nor a wait");
+  });
+
+  test("validates terminal judgment against structured spec fields", () => {
+    const root = mkdtempSync(join(tmpdir(), "scenario-terminal-source-"));
+    try {
+      const specsDir = join(root, "features", "sample", "specs");
+      mkdirSync(specsDir, { recursive: true });
+      writeFileSync(
+        join(specsDir, "terminal.json"),
+        JSON.stringify({
+          id: "spec.sample.terminal",
+          status: "product_constraint",
+          specState: "reviewed-exception",
+        }),
+      );
+      const input = {
+        loopId: "scenario-normalization",
+        specId: "spec.sample.terminal",
+      };
+      const accepted = scenarioNormalizationTerminalDispositionCheck(
+        root,
+        input,
+        {
+          specId: "spec.sample.terminal",
+          status: "product_constraint",
+          specState: "reviewed-exception",
+        },
+      );
+      expect(accepted.accepted).toBe(true);
+      expect(accepted.evidence).toContain(
+        "terminal-disposition-status:product_constraint",
+      );
+      expect(
+        scenarioNormalizationTerminalDispositionCheck(root, input, {
+          specId: "spec.sample.terminal",
+          status: "pass",
+          specState: "reviewed-exception",
+        }).problem,
+      ).toContain("does not match structured source fields");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   test("rejects a wait whose event type has no app producer", () => {
