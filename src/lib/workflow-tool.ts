@@ -328,12 +328,21 @@ export async function inspectWorkflowDefinition(
   available: boolean;
   error: string | null;
   workspace: "shared" | "task" | { kind: "task"; baseBranch: string };
+  verifier?: { name: string; sourcePath: string; verify: NonNullable<WorkflowModule["verify"]> };
 }> {
   const resolved = findWorkflow(await buildWorkflowCatalog(workflowDir), name);
+  const verifier = resolved.workflow?.verify
+    ? {
+        name: resolved.workflow.name,
+        sourcePath: resolved.workflow.sourcePath,
+        verify: resolved.workflow.verify,
+      }
+    : undefined;
   return {
     available: resolved.workflow !== null,
     error: resolved.error,
     workspace: resolved.workflow?.workspace ?? "shared",
+    ...(verifier ? { verifier } : {}),
   };
 }
 

@@ -1999,6 +1999,13 @@ describe("project app loader", () => {
              summary: "workflow needs owner judgment",
              evidence: ["workflow classified the exception"],
            });
+         }
+         export async function verify(context, result) {
+           return {
+             accepted: context.taskId === "work/owner-needed" && result.evidence.includes("owner proof"),
+             summary: "Verified the owner handoff result against the workflow postcondition.",
+             evidence: ["deterministic:owner-handoff-postcondition"]
+           };
          }`,
       );
       const bus = new EventBus();
@@ -2046,6 +2053,11 @@ describe("project app loader", () => {
         handler: "owner:sample-owner",
         workflow: "owner-needed",
         failureFingerprints: ["needs-owner"],
+        acceptanceBasis: {
+          method: "deterministic",
+          verifier: "owner-needed",
+          evidence: ["deterministic:owner-handoff-postcondition"],
+        },
       });
     } finally {
       closeDb(f.persistDir);
