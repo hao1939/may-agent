@@ -254,16 +254,22 @@ unrelated merge.
   no longer in the tested source ancestry, the workflow compares the tested
   task paths with the target advance before deciding whether proof remains
   valid. A target advance is proof-preserving only when every target-side path
-  is an independent scenario/model/evidence/design path and none overlaps a
-  path changed by the tested source. The workflow may then create a clean merge
-  that preserves the exact tested source commit as an ancestor and verifies
-  that the merge did not change any tested task path. The feature-local
+  is independent of the tested source and cannot change live execution.
+  Independent scenario/model/evidence/design paths are proof-preserving, as
+  are documentation, agent guidance under `skills/`, and repository-only
+  `*.test.*` / `*.spec.*` files that the selected live run does not load. A
+  pipeline definition, dependency manifest or lock, non-test runner file,
+  shared runtime library, or overlapping tested path is proof-invalidating and
+  requires a replay plus a fresh exact run. The workflow may create a clean
+  merge only when the target advance is proof-preserving; that merge preserves
+  the exact tested source commit as an ancestor and verifies that it did not
+  change any tested task path. The feature-local
   `compact/staging.plan.json` is the sole merge-safe aggregate exception: clean
   Git combination may preserve independent path entries in that file, while a
   conflict still invalidates proof. This lets independent normalization passes
   integrate without repeatedly invalidating one another. Any other overlapping
-  path, runner/CI/config change, merge conflict, or changed tested path requires
-  replay onto current `dev` and a fresh exact live run.
+  path, runner runtime/CI/config change, merge conflict, or changed tested path
+  requires replay onto current `dev` and a fresh exact live run.
 - For `main`, a PR is discovered by exact source branch and target before
   creation. Reviewer changes invalidate the old proof, and an abandoned PR is
   an owner decision rather than permission to recreate it.

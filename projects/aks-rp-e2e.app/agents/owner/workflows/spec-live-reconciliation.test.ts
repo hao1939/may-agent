@@ -1140,6 +1140,25 @@ describe("spec-live-reconciliation workflow", () => {
     ).toBe(false);
     expect(
       proofPreservingScenarioIntegration({
+        sourcePaths: [
+          "features/net-integration/tests/outbound-migration-natgw-to-none.test.ts",
+          "runner/live-admission-classifier.ts",
+        ],
+        targetPaths: [
+          "README.md",
+          "skills/aks-rp-e2e/agents/openai.yaml",
+          "runner/scenario-lib/arm-rest.test.ts",
+        ],
+      }),
+    ).toBe(true);
+    expect(
+      proofPreservingScenarioIntegration({
+        sourcePaths: ["features/net-integration/tests/external-acr.test.ts"],
+        targetPaths: ["spec-runner.yaml"],
+      }),
+    ).toBe(false);
+    expect(
+      proofPreservingScenarioIntegration({
         sourcePaths: [],
         targetPaths: ["design/scenario-normalization.md"],
       }),

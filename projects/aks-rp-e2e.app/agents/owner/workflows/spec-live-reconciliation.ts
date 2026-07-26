@@ -337,7 +337,10 @@ function proofPreservingTargetPath(path: string): boolean {
     path.startsWith("model/specs/") ||
     path.startsWith("model/features/") ||
     path.startsWith("evidence/") ||
-    path.startsWith("design/")
+    path.startsWith("design/") ||
+    path.endsWith(".md") ||
+    path.startsWith("skills/") ||
+    /(?:^|\/)[^/]+\.(?:test|spec)\.[cm]?[jt]sx?$/.test(path)
   );
 }
 
