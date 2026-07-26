@@ -9,7 +9,10 @@ export interface DbMaintenanceResult {
 
 const DAY_MS = 86_400_000;
 const ORPHAN_ACTIONABLE_MS = 4 * 60 * 60 * 1000;
-const DEFAULT_BATCH_SIZE = 2000;
+const DEFAULT_BATCH_SIZE = 5000;
+// Deletion of already-resolved (closed/orphan) pair runs can safely use a
+// larger batch than the general cap because it only removes historical rows.
+const PAIR_DELETION_BATCH_SIZE = 25_000;
 
 function changes(result: unknown): number {
   return Number((result as { changes?: number } | null)?.changes ?? 0);
@@ -101,7 +104,8 @@ export function runDbMaintenancePass(
   deleted.retiredOrphans = changes(
     db.run(
       `UPDATE event_pair_runs
-       SET closed_at = ?,
+       SET status = 'closed',
+           closed_at = ?,
            note = COALESCE(note || '; ', '') || 'retired stale orphan'
        WHERE rowid IN (
          SELECT rowid FROM event_pair_runs
@@ -123,7 +127,7 @@ export function runDbMaintenancePass(
        WHERE status IN ('closed', 'orphan') AND opened_at < ?
        ORDER BY opened_at LIMIT ?
      )`,
-    [now - 3 * DAY_MS, batchSize],
+    [now - 3 * DAY_MS, PAIR_DELETION_BATCH_SIZE],
   );
 
   // Old closure/reference links may be released only when both endpoints are
