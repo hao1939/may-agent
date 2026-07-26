@@ -203,7 +203,15 @@ collects provider state; the domain agent still judges the returned evidence.
 
 For bounded source-only patches, `domain-task-execution` lets the agent judge
 and commit the change, then workflow code integrates the clean branch directly
-into `dev`. Scenario normalization is source-only only when every consuming
+into `dev`.
+
+Any newly declared task whose acceptance requires a generic bounded repository
+patch must bind `workflow: "domain-task-execution"` when it is created. An
+unbound owner task is shared/read-only; it may inspect and route work, but it
+must not edit or publish from the canonical checkout and must not rely on a
+later recovery pass to add the missing workflow.
+
+Scenario normalization is source-only only when every consuming
 spec has explicit structured nonlive policy and the domain agent confirms that
 posture from current evidence; code validates the policy and records no live
 pass. A changed runnable scenario carrier instead uses the same exact lifecycle

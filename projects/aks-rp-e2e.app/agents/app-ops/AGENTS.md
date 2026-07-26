@@ -102,6 +102,12 @@ decisions.
     review evidence belongs in the structured task result, not an evidence-only
     domain commit. If the review discovers a concrete source repair, return the
     same task to its source-owning workflow.
+    When creating a new generic domain task whose acceptance requires editing,
+    committing, or integrating repository source, bind
+    `workflow: "domain-task-execution"` in the create action. An unbound owner
+    task uses the shared canonical checkout for read-only judgment; do not
+    create the source task unbound and depend on a later owner/recovery turn to
+    repair its routing.
 16. Treat a draft repair PR as internal verification state, not a human
     handoff. After exact campaign proof makes the fix ready, publish it as
     non-draft, call it review-ready rather than merge-ready, send one retry-safe
