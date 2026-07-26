@@ -2047,7 +2047,11 @@ function applyTaskActions(
   const applied: string[] = [];
 
   for (const action of actions) {
-    if (action.kind !== "create-task" && action.taskId === claim.taskId) {
+    if (
+      action.kind !== "create-task" &&
+      action.taskId === claim.taskId &&
+      action.kind !== "update-task"
+    ) {
       throw new Error(`Handler action cannot mutate its own running task ${claim.taskId}`);
     }
     if (action.kind === "close-task" && actionTargetAlreadyReceipted(tree, action)) {
@@ -2127,7 +2131,15 @@ function applyTaskActions(
         const generation = executionChanged ? resource.metadata.generation + 1 : resource.metadata.generation;
         if (executionChanged) {
           if (resource.status.currentAttemptId) {
-            finishAttempt(tree, resource, "interrupted", "Task execution intent changed by reconciliation action", now);
+            finishAttempt(
+              tree,
+              resource,
+              action.taskId === claim.taskId ? "completed" : "interrupted",
+              action.taskId === claim.taskId
+                ? "Current handler revised the task execution intent"
+                : "Task execution intent changed by reconciliation action",
+              now,
+            );
           }
           unlinkTaskConditions(tree, task);
         }
@@ -2277,16 +2289,53 @@ export function completeProjectAppTask(
     actions?: ProjectAppTaskAction[];
     acceptanceBasis?: ProjectAppTaskAcceptanceBasis;
   },
-): { status: "applied" | "stale"; actionsApplied: string[]; dependentTaskIds: string[] } {
+): {
+  status: "applied" | "stale";
+  actionsApplied: string[];
+  dependentTaskIds: string[];
+  taskContinues?: true;
+} {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
     const match = matchingTask(tree, claim);
-    if (!match) return { status: "stale", actionsApplied: [], dependentTaskIds: [] };
+    if (!match) {
+      return {
+        status: "stale",
+        actionsApplied: [],
+        dependentTaskIds: [],
+      };
+    }
     const { task, resource } = match;
     validateActionEvidence(claim.taskId, input.evidence, input.actions?.length ?? 0);
     const actions = input.actions ?? [];
+    const selfUpdates = actions.filter(
+      (action): action is Extract<ProjectAppTaskAction, { kind: "update-task" }> =>
+        action.kind === "update-task" && action.taskId === claim.taskId,
+    );
+    if (selfUpdates.length > 0 && actions.length !== 1) {
+      throw new Error(
+        `Handler self-update for ${claim.taskId} must be the only reconciliation action`,
+      );
+    }
     const acceptanceBasis = input.acceptanceBasis ?? defaultTaskAcceptance(claim, input.evidence ?? []);
     const actionsApplied = applyTaskActions(tree, claim, actions, input.evidence ?? [], config, acceptanceBasis);
+    if (selfUpdates.length === 1) {
+      const revised = tree.resources?.[claim.taskId];
+      if (!revised || revised.metadata.generation <= claim.generation) {
+        throw new Error(
+          `Handler self-update for ${claim.taskId} must change task execution intent`,
+        );
+      }
+      pruneTaskAttempts(tree);
+      refreshActiveTaskProjection(tree);
+      saveTaskState(config, tree);
+      return {
+        status: "applied",
+        actionsApplied,
+        dependentTaskIds: [claim.taskId],
+        taskContinues: true,
+      };
+    }
     const liveChildren = liveChildTaskIds(tree, task);
     if (claim.mode === "achieve" && liveChildren.length > 0) {
       throw new Error(
@@ -2370,7 +2419,11 @@ export function completeProjectAppTask(
     pruneTaskAttempts(tree);
     refreshActiveTaskProjection(tree);
     saveTaskState(config, tree);
-    return { status: "applied", actionsApplied, dependentTaskIds };
+    return {
+      status: "applied",
+      actionsApplied,
+      dependentTaskIds,
+    };
   });
 }
 
