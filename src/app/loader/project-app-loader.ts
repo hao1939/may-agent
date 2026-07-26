@@ -2637,9 +2637,9 @@ function hashFile(path: string): string {
   }
 }
 
-function hashWorkflowFiles(workflowDir: string): string[] {
+function hashRuntimeTsFiles(runtimeDir: string): string[] {
   const files: string[] = [];
-  const pending = [workflowDir];
+  const pending = [runtimeDir];
   while (pending.length > 0) {
     const dir = pending.pop()!;
     let entries;
@@ -2679,11 +2679,12 @@ export function projectAppHostFingerprint(projectsRoot: string): string {
     const manifestPath = existsSync(tsPath) ? tsPath : jsPath;
     parts.push(`${appDir}\t${manifestPath}\t${hashFile(manifestPath)}`);
     parts.push(`${appDir}\tproject_lifecycle\t${projectAppLifecycle(appDir)}`);
+    parts.push(...hashRuntimeTsFiles(join(appDir, "watchers")));
     for (const agent of localAgents(appDir)) {
       const agentDir = join(appDir, "agents", agent.dirName);
       const configPath = join(agentDir, "agent.json");
       parts.push(`${appDir}\t${configPath}\t${hashFile(configPath)}`);
-      parts.push(...hashWorkflowFiles(join(agentDir, "workflows")));
+      parts.push(...hashRuntimeTsFiles(join(agentDir, "workflows")));
     }
   }
   return createHash("sha256").update(parts.join("\n")).digest("hex");
