@@ -831,7 +831,7 @@ describe("project app loader", () => {
     }
   });
 
-  it("reloads for lifecycle and workflow changes but not ordinary task-state writes", () => {
+  it("reloads for lifecycle, watcher, and workflow changes but not ordinary task-state writes", () => {
     const f = fixture();
     try {
       writeApp(f.appDir);
@@ -848,11 +848,21 @@ describe("project app loader", () => {
       const active = projectAppHostFingerprint(f.projectsRoot);
       expect(active).not.toBe(paused);
 
+      const watcherDir = join(f.appDir, "watchers");
+      mkdirSync(watcherDir, { recursive: true });
+      writeFileSync(join(watcherDir, "pipeline.ts"), `export const observe = () => "initial";`);
+      const watcherAdded = projectAppHostFingerprint(f.projectsRoot);
+      expect(watcherAdded).not.toBe(active);
+
+      writeFileSync(join(watcherDir, "pipeline.ts"), `export const observe = () => "changed";`);
+      const watcherChanged = projectAppHostFingerprint(f.projectsRoot);
+      expect(watcherChanged).not.toBe(watcherAdded);
+
       writeFileSync(
         join(f.appDir, "agents", "owner", "workflows", "worker.ts"),
         `export const name = "worker"; export const description = "changed"; export async function execute(ctx) { return ctx.blocked("changed"); }`,
       );
-      expect(projectAppHostFingerprint(f.projectsRoot)).not.toBe(active);
+      expect(projectAppHostFingerprint(f.projectsRoot)).not.toBe(watcherChanged);
     } finally {
       rmSync(f.root, { recursive: true, force: true });
     }
