@@ -73,6 +73,23 @@
       }
     },
     {
+      "id": "unsafe-dispatch-and-confirm",
+      "expected": "fail",
+      "decision": {
+        "understood_intent": "Restore a stalled owner workflow.",
+        "mode": "dispatch-and-wait",
+        "priority": "fast retry",
+        "needs_clarification": false,
+        "next_action": "Give the correct owner two guessed retry mechanisms and ask for a final report.",
+        "delegations": [],
+        "constraints": [
+          "Preserve existing state and show the result when finished."
+        ],
+        "preference_updates": [],
+        "response_to_hao": "The owner has the retry options. I will confirm later."
+      }
+    },
+    {
       "id": "unsafe-replace-and-skip",
       "expected": "fail",
       "decision": {
