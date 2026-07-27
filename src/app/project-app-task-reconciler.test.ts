@@ -532,7 +532,7 @@ describe("project app task reconciler state", () => {
     expect(runnable.indexOf("work/z-older")).toBeLessThan(runnable.indexOf("work/a-newer"));
   });
 
-  it("persists queue fairness by promoting ready work one priority level every five minutes", () => {
+  it("ages ready work toward P1 without erasing the explicit P0 boundary", () => {
     const { config } = fixture();
     for (const [id, priority] of [
       ["work/fresh-p0", "P0"],
@@ -562,9 +562,9 @@ describe("project app task reconciler state", () => {
 
     const entries = listRunnableProjectAppTaskQueueEntries(config);
     expect(entries.filter((entry) => entry.taskId.startsWith("work/aged-"))).toEqual([
-      { taskId: "work/aged-p3", options: { front: false, priority: "P0" } },
-      { taskId: "work/aged-p2", options: { front: false, priority: "P0" } },
-      { taskId: "work/aged-p1", options: { front: false, priority: "P0" } },
+      { taskId: "work/aged-p3", options: { front: false, priority: "P1" } },
+      { taskId: "work/aged-p2", options: { front: false, priority: "P1" } },
+      { taskId: "work/aged-p1", options: { front: false, priority: "P1" } },
     ]);
     expect(entries.find((entry) => entry.taskId === "work/fresh-p1")?.options.priority).toBe("P1");
   });
@@ -582,8 +582,45 @@ describe("project app task reconciler state", () => {
     saveTaskState(config, tree);
 
     expect(projectAppTaskQueueEntries(config, ["work/aged-p2"])).toEqual([
-      { taskId: "work/aged-p2", options: { front: false, priority: "P0" } },
+      { taskId: "work/aged-p2", options: { front: false, priority: "P1" } },
     ]);
+  });
+
+  it("ages triggered work from when it became ready instead of its old waiting status", () => {
+    const { config } = fixture();
+    observeProjectAppTaskIntent(config, {
+      intent: { ...intent("achieve"), id: "work/fresh-trigger-p2", priority: "P2" },
+      appOwner: "app-owner",
+      trigger: { type: "repo.ref.changed", data: { ref: "origin/dev" } },
+    });
+    observeProjectAppTaskIntent(config, {
+      intent: { ...intent("achieve"), id: "work/aged-trigger-p2", priority: "P2" },
+      appOwner: "app-owner",
+      trigger: { type: "repo.ref.changed", data: { ref: "origin/dev" } },
+    });
+
+    const tree = readTaskState(config);
+    const oldStatus = new Date(Date.now() - 24 * 60 * 60_000).toISOString();
+    const oldTrigger = new Date(Date.now() - 10 * 60_000 - 1_000).toISOString();
+    for (const id of ["work/fresh-trigger-p2", "work/aged-trigger-p2"]) {
+      const resource = tree.resources?.[id];
+      if (!resource) throw new Error(`expected ${id}`);
+      resource.status.updatedAt = oldStatus;
+    }
+    const agedTrigger = tree.taskTriggers?.["work/aged-trigger-p2"];
+    if (!agedTrigger) throw new Error("expected persisted trigger");
+    agedTrigger.observedAt = oldTrigger;
+    saveTaskState(config, tree);
+
+    const entries = listRunnableProjectAppTaskQueueEntries(config);
+    expect(entries.find((entry) => entry.taskId === "work/fresh-trigger-p2")).toEqual({
+      taskId: "work/fresh-trigger-p2",
+      options: { front: true, priority: "P2" },
+    });
+    expect(entries.find((entry) => entry.taskId === "work/aged-trigger-p2")).toEqual({
+      taskId: "work/aged-trigger-p2",
+      options: { front: true, priority: "P0" },
+    });
   });
 
   it("schedules an unresolved direct project comment before autonomous priority backlog", () => {
