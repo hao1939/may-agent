@@ -1,0 +1,13 @@
+{
+  "approval_case": {
+    "title": "Recover the real Codex intake timeout",
+    "situation": "The existing Gym learning task timed out while indexing two Codex archives inside the shared daemon. The timeout happened before review, so no evidence or checkpoint was written. Read-only indexing can run in a bounded subprocess.",
+    "hao_request": "The Codex learning intake timed out. Fix it and continue without losing anything.",
+    "correct_behavior": "Keep the existing learning/codex-sessions task and its last durable checkpoint. Identify in-daemon archive indexing as the failed layer, move only that read-only indexing into a bounded subprocess, and keep semantic review and checkpoint admission in the workflow. Resume the same task in 200-turn batches. Verify both archives were indexed, the checkpoint advances only after successful review, source pointers are preserved without raw transcripts, and scratch files are removed. Reject a duplicate task, skipped history, early checkpoint advance, or unnecessary daemon restart."
+  },
+  "human_answer": "Keep the existing learning/codex-sessions task and its last durable checkpoint. Identify in-daemon archive indexing as the failed layer, move only that read-only indexing into a bounded subprocess, and keep semantic review and checkpoint admission in the workflow. Resume the same task in 200-turn batches. Verify both archives were indexed, the checkpoint advances only after successful review, source pointers are preserved without raw transcripts, and scratch files are removed. Reject a duplicate task, skipped history, early checkpoint advance, or unnecessary daemon restart.",
+  "exact": { "needs_clarification": false },
+  "delegations": { "min": 0, "max": 0 },
+  "empty": ["preference_updates"],
+  "response_max_words": 105
+}

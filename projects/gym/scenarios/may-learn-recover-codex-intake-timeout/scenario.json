@@ -1,8 +1,8 @@
 {
-  "name": "may-learn-recover-stale-task-view",
-  "description": "Diagnostic transfer: recover an existing task when a generated view is stale.",
+  "name": "may-learn-recover-codex-intake-timeout",
+  "description": "Diagnostic extension: recover the real Codex learning intake timeout without losing checkpoint integrity.",
   "categories": ["deputy-learning", "system-diagnosis"],
-  "tags": ["may-agent", "tasks", "conditions", "learning-release"],
+  "tags": ["may-agent", "gym-app", "learning-intake", "learning-development"],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "may",
@@ -10,14 +10,14 @@
   "learning": {
     "unit": "system-deputy-operations",
     "tier": 4,
-    "partition": "release",
+    "partition": "development",
     "competencies": [
       "system.owner-and-route",
       "project.app-control",
       "reliability.delivery-vs-completion",
       "diagnosis.responsible-layer"
     ],
-    "criticality": "critical",
-    "variant_family": "blocked-work-reconciliation"
+    "criticality": "high",
+    "variant_family": "learning-intake-recovery"
   }
 }

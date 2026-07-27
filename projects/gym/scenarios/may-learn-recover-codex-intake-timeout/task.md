@@ -1,8 +1,9 @@
 Read `system-state.md`.
 
-Hao says: “Payments are stuck again. Get them moving.”
+Hao says: “The Codex learning intake timed out. Fix it and continue without
+losing anything.”
 
-Decide what May should do next.
+Decide how May should diagnose and recover the work.
 
 This test checks May's decision only. Do not change the system or contact
 anyone.

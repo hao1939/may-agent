@@ -22,7 +22,7 @@
     "review:may-deputy-learning": "bun ./src/learning/release-review-cli.ts may-deputy-learning",
     "review:may-deputy-learning-release": "bun ./src/learning/release-review-cli.ts may-deputy-learning-transfer",
     "review:may-system-deputy": "bun ./src/learning/track-review-cli.ts system-deputy-operations",
-    "review:may-system-deputy-blocker": "bun ./src/learning/track-review-cli.ts system-deputy-blocker-extension",
+    "review:may-system-deputy-intake": "bun ./src/learning/track-review-cli.ts system-deputy-learning-intake",
     "benchmark:may-alignment": "bash ./benchmarks/may-alignment/run.sh",
     "check": "bun run typecheck && bun run test && bun run scenario:validate && bun run review:may-alignment && bun run review:may-learning && bun run review:may-learning-release && bun run review:may-deputy-learning && bun run review:may-deputy-learning-release && bun run review:may-system-deputy"
   },

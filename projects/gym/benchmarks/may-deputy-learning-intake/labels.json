@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "benchmark": "may-deputy-learning-intake",
+  "labels": {
+    "may-learn-recover-codex-intake-timeout": {
+      "status": "draft",
+      "source": "reviewed-codex-intake-incident-and-accepted-system-design",
+      "rationale": "May should isolate expensive source indexing, preserve the existing task and checkpoint, and prove bounded recovery without losing history.",
+      "approved_by": null,
+      "approved_at": null
+    }
+  }
+}

@@ -154,10 +154,10 @@ describe("May learning registry", () => {
     ]);
   });
 
-  test("stages the blocker extension as a plain-language draft pair", () => {
+  test("stages real learning-intake cases as a plain-language draft pair", () => {
     const review = buildLearningTrackReview(
       gymRoot,
-      "system-deputy-blocker-extension",
+      "system-deputy-learning-intake",
     );
 
     expect(review.approval_fingerprint).toMatch(/^sha256:[a-f0-9]{64}$/);
@@ -166,9 +166,9 @@ describe("May learning registry", () => {
         partition: "development",
         scenarios: [
           expect.objectContaining({
-            id: "may-learn-recover-owned-condition",
+            id: "may-learn-recover-codex-intake-timeout",
             status: "draft",
-            human_answer: expect.stringContaining("credentials.app"),
+            human_answer: expect.stringContaining("learning/codex-sessions"),
           }),
         ],
       }),
@@ -176,9 +176,9 @@ describe("May learning registry", () => {
         partition: "release",
         scenarios: [
           expect.objectContaining({
-            id: "may-learn-recover-stale-task-view",
+            id: "may-learn-resolve-session-design-conflict",
             status: "draft",
-            human_answer: expect.stringContaining("canonical task"),
+            human_answer: expect.stringContaining("current design"),
           }),
         ],
       }),

@@ -1,7 +1,0 @@
-{
-  "schema_version": 1,
-  "id": "system-deputy-blocker-extension",
-  "unit": "system-deputy-operations",
-  "development_benchmark": "may-deputy-blocker-learning",
-  "release_benchmark": "may-deputy-blocker-learning-transfer"
-}

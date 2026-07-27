@@ -1,0 +1,13 @@
+{
+  "approval_case": {
+    "title": "Handle an old session that conflicts with current design",
+    "situation": "An old session says completed tasks and sessions should be durable memory. Current accepted design keeps minimum task receipts, expires completed sessions, and promotes reusable knowledge into skills, workflows, tests, design, or domain evidence. Sessions are evidence, not architecture truth.",
+    "hao_request": "Train May from this old session.",
+    "correct_behavior": "Classify the old durable-task-and-session-memory statement as a conflict with current design. Keep its source pointer and rationale as evidence, but reject promoting that statement into May or benchmark truth. Preserve the useful intent by promoting important conclusions into the appropriate skill, workflow, test, design document, or domain evidence. Use the conflict as a contrastive benchmark seed if it helps test whether May chooses accepted sources over old session advice. Ask Hao only if changing the accepted design is the real proposal."
+  },
+  "human_answer": "Classify the old durable-task-and-session-memory statement as a conflict with current design. Keep its source pointer and rationale as evidence, but reject promoting that statement into May or benchmark truth. Preserve the useful intent by promoting important conclusions into the appropriate skill, workflow, test, design document, or domain evidence. Use the conflict as a contrastive benchmark seed if it helps test whether May chooses accepted sources over old session advice. Ask Hao only if changing the accepted design is the real proposal.",
+  "exact": { "needs_clarification": false },
+  "delegations": { "min": 0, "max": 0 },
+  "empty": ["preference_updates"],
+  "response_max_words": 100
+}

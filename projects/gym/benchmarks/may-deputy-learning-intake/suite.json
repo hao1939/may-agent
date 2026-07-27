@@ -1,8 +1,8 @@
 {
-  "name": "may-system-deputy-blocker-release-v1",
+  "name": "may-system-deputy-learning-intake-development-v1",
   "version": 1,
   "artifact": "alignment-decision.json",
   "labels_file": "labels.json",
   "evaluator": "../may-alignment/score-decision.cjs",
-  "scenarios": ["may-learn-recover-stale-task-view"]
+  "scenarios": ["may-learn-recover-codex-intake-timeout"]
 }

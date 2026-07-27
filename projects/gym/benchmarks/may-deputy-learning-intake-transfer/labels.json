@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "benchmark": "may-deputy-learning-intake-transfer",
+  "labels": {
+    "may-learn-resolve-session-design-conflict": {
+      "status": "draft",
+      "source": "reviewed-session-conflict-and-accepted-learning-design",
+      "rationale": "Old sessions are evidence, while accepted design remains system truth; conflicting material must be retained as evidence and blocked from lesson promotion.",
+      "approved_by": null,
+      "approved_at": null
+    }
+  }
+}
