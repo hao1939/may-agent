@@ -72,6 +72,7 @@ function messageText(payload: Record<string, unknown>): string {
 async function jsonLines(
   path: string,
   visit: (value: Record<string, unknown>, line: number) => void,
+  rawFilter?: (raw: string) => boolean,
 ): Promise<number> {
   let malformed = 0;
   let line = 0;
@@ -80,6 +81,7 @@ async function jsonLines(
   for await (const raw of reader) {
     line += 1;
     if (!raw.trim()) continue;
+    if (rawFilter && !rawFilter(raw)) continue;
     try {
       const parsed = JSON.parse(raw) as unknown;
       if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
@@ -181,27 +183,34 @@ export async function scanCodexLearningSource(input: {
       queues.set(row.text, queue);
     }
     let previousAssistant: string | null = null;
-    malformedLines += await jsonLines(rolloutPath, (value) => {
-      if (value.type !== "response_item") return;
-      const payload =
-        value.payload &&
-        typeof value.payload === "object" &&
-        !Array.isArray(value.payload)
-          ? (value.payload as Record<string, unknown>)
-          : {};
-      if (payload.type !== "message") return;
-      const text = messageText(payload);
-      if (!text) return;
-      if (payload.role === "assistant") {
-        previousAssistant = text;
-        return;
-      }
-      if (payload.role !== "user") return;
-      const queue = queues.get(text);
-      const row = queue?.shift();
-      if (!row) return;
-      contextBySource.set(row.sourceId, { previousAssistant, rolloutPath });
-    });
+    malformedLines += await jsonLines(
+      rolloutPath,
+      (value) => {
+        if (value.type !== "response_item") return;
+        const payload =
+          value.payload &&
+          typeof value.payload === "object" &&
+          !Array.isArray(value.payload)
+            ? (value.payload as Record<string, unknown>)
+            : {};
+        if (payload.type !== "message") return;
+        const text = messageText(payload);
+        if (!text) return;
+        if (payload.role === "assistant") {
+          previousAssistant = text;
+          return;
+        }
+        if (payload.role !== "user") return;
+        const queue = queues.get(text);
+        const row = queue?.shift();
+        if (!row) return;
+        contextBySource.set(row.sourceId, { previousAssistant, rolloutPath });
+      },
+      (raw) =>
+        raw.includes('"response_item"') &&
+        raw.includes('"type":"message"') &&
+        (raw.includes('"role":"user"') || raw.includes('"role":"assistant"')),
+    );
   }
 
   return {

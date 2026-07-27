@@ -15,6 +15,7 @@ import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 import {
   scanCodexLearningSource,
   type CodexLearningTurn,
+  type CodexSourceScan,
   type CodexSourceReference,
 } from "./lib/codex-learning-source";
 import { reconciliationPacket, safeKey, triggerDetails } from "./lib/trigger";
@@ -362,7 +363,7 @@ function workflowInput(ctx: WorkflowContext): Record<string, unknown> {
 
 export async function runCodexLearningIntake(
   ctx: WorkflowContext,
-  options: { codexHome?: string } = {},
+  options: { codexHome?: string; scan?: () => Promise<CodexSourceScan> } = {},
 ): Promise<WorkflowResult> {
   const input = workflowInput(ctx);
   const batchSize = integer(
@@ -393,46 +394,55 @@ export async function runCodexLearningIntake(
   const journalPath = join(stateDir, "evidence.jsonl");
   const checkpoint = readJson<Checkpoint>(checkpointPath);
   const processed = new Set(checkpoint?.processed_source_ids ?? []);
-  const scan = await scanCodexLearningSource({
-    codexHome,
-    processedSourceIds: processed,
-  });
-  const selected = scan.turns.slice(0, batchSize * maxBatches);
   const runId = `codex-learning-${new Date().toISOString().replace(/[-:.]/g, "").replace("Z", "Z")}`;
   const runPath = join(runsDir, `${safeKey(runId, "codex-learning")}.json`);
-  if (!selected.length) {
-    const now = new Date().toISOString();
-    writeJson(checkpointPath, {
-      schema_version: 1,
-      source: "codex-history",
-      updated_at: now,
-      processed_source_ids: [...processed].sort(),
-    } satisfies Checkpoint);
-    const summary = "Codex learning intake found no new Hao-authored turns.";
-    writeJson(runPath, {
-      schema_version: 1,
-      run_id: runId,
-      summary,
-      scanned_history_rows: scan.totalHistoryRows,
-      new_turns: 0,
-      selected_signals: 0,
-      backlog: 0,
-      malformed_lines: scan.malformedLines,
-      completed_at: now,
-    });
-    return ctx.done(summary, {
-      state: "converged",
-      summary,
-      evidence: [runPath, checkpointPath],
-      actions: [],
-    });
-  }
-
   const scratchDir = join(stateDir, "scratch", safeKey(runId, "run"));
   rmSync(scratchDir, { recursive: true, force: true });
   mkdirSync(scratchDir, { recursive: true });
-  const extracted: ExtractedSignal[] = [];
   try {
+    const scan = options.scan
+      ? await options.scan()
+      : options.codexHome
+        ? await scanCodexLearningSource({
+            codexHome,
+            processedSourceIds: processed,
+          })
+        : await scanSourceSubprocess(
+            ctx,
+            codexHome,
+            checkpointPath,
+            join(scratchDir, "source-scan.json"),
+          );
+    const selected = scan.turns.slice(0, batchSize * maxBatches);
+    if (!selected.length) {
+      const now = new Date().toISOString();
+      writeJson(checkpointPath, {
+        schema_version: 1,
+        source: "codex-history",
+        updated_at: now,
+        processed_source_ids: [...processed].sort(),
+      } satisfies Checkpoint);
+      const summary = "Codex learning intake found no new Hao-authored turns.";
+      writeJson(runPath, {
+        schema_version: 1,
+        run_id: runId,
+        summary,
+        scanned_history_rows: scan.totalHistoryRows,
+        new_turns: 0,
+        selected_signals: 0,
+        backlog: 0,
+        malformed_lines: scan.malformedLines,
+        completed_at: now,
+      });
+      return ctx.done(summary, {
+        state: "converged",
+        summary,
+        evidence: [runPath, checkpointPath],
+        actions: [],
+      });
+    }
+
+    const extracted: ExtractedSignal[] = [];
     let index = 0;
     for (const turns of batch(selected, batchSize)) {
       index += 1;
@@ -572,6 +582,39 @@ export async function runCodexLearningIntake(
   } finally {
     rmSync(scratchDir, { recursive: true, force: true });
   }
+}
+
+async function scanSourceSubprocess(
+  ctx: WorkflowContext,
+  codexHome: string,
+  checkpointPath: string,
+  outputPath: string,
+): Promise<CodexSourceScan> {
+  const cliPath = join(
+    ctx.projectsRoot,
+    "gym.app",
+    "agents",
+    "gym",
+    "workflows",
+    "lib",
+    "codex-learning-source-cli.ts",
+  );
+  const process = Bun.spawn(
+    ["bun", cliPath, codexHome, checkpointPath, outputPath],
+    {
+      cwd: join(ctx.projectsRoot, "gym.app"),
+      stdout: "pipe",
+      stderr: "pipe",
+    },
+  );
+  const exitCode = await process.exited;
+  if (exitCode !== 0 || !existsSync(outputPath)) {
+    const error = await new Response(process.stderr).text();
+    throw new Error(
+      `Codex source indexing failed (${exitCode}): ${error.trim() || "no output"}`,
+    );
+  }
+  return JSON.parse(readFileSync(outputPath, "utf8")) as CodexSourceScan;
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {

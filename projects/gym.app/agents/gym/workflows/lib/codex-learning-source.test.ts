@@ -41,7 +41,7 @@ test("uses canonical user history and joins preceding assistant context", async 
       message("user", "Prefer reject over not approve."),
       message("assistant", "I propose the exact preference rule."),
       message("user", "approve"),
-      "{broken",
+      '{"type":"response_item","payload":{"type":"message","role":"user"',
     ]
       .map((value) =>
         typeof value === "string" ? value : JSON.stringify(value),
