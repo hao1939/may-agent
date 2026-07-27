@@ -82,4 +82,30 @@ describe("project-app event helpers", () => {
     expect(matchesEventSelector({ type: "metric.breach", target: { sessionId: "session-2" } }, event)).toBe(false);
     expect(matchesEventSelector({ type: "metric.breach", target: { owner: "evaluator" } }, event)).toBe(false);
   });
+
+  it("filters evaluation events before unrelated agents wake an app", () => {
+    const selector = {
+      type: "evaluation.reviewed",
+      agents: ["may"],
+      lanes: ["needs_triage"],
+    };
+    expect(
+      matchesEventSelector(selector, {
+        type: "evaluation.reviewed",
+        data: { agent: "may", lane: "needs_triage" },
+      }),
+    ).toBe(true);
+    expect(
+      matchesEventSelector(selector, {
+        type: "evaluation.reviewed",
+        data: { agent: "aks-explorer", lane: "needs_triage" },
+      }),
+    ).toBe(false);
+    expect(
+      matchesEventSelector(selector, {
+        type: "evaluation.reviewed",
+        data: { agent: "may", lane: "success_candidate" },
+      }),
+    ).toBe(false);
+  });
 });
