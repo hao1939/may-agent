@@ -95,7 +95,7 @@ function codexLearningRequested(input: unknown = {}): ProjectAppEvent {
     type: "gym.codex.learning.requested",
     project: projectId,
     params: {
-      batchSize: 600,
+      batchSize: 200,
       maxBatches: 1,
       ...params(input),
     },
@@ -402,7 +402,7 @@ export default defineProjectApp({
       emits: [
         codexLearningRequested({
           reason: "daily",
-          batchSize: 600,
+          batchSize: 200,
           maxBatches: 1,
         }),
       ],
@@ -468,7 +468,7 @@ export default defineProjectApp({
       event(input) {
         return codexLearningRequested({
           reason: "manual-backfill",
-          batchSize: 600,
+          batchSize: 200,
           maxBatches: 5,
           ...params(input),
         });

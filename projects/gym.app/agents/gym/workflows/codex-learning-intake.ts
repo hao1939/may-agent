@@ -26,7 +26,7 @@ export const description =
 export const workspace = "shared";
 
 const MIN_CONFIDENCE = 0.92;
-const DEFAULT_BATCH_SIZE = 600;
+const DEFAULT_BATCH_SIZE = 200;
 const DEFAULT_MAX_BATCHES = 1;
 const MAX_BATCHES = 5;
 const MAX_CATALOG_ITEMS = 80;

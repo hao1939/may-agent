@@ -66,13 +66,13 @@ describe("gym app manifest", () => {
     const intent = resolveGymTask({
       type: "gym.codex.learning.requested",
       eventId: 93,
-      params: { reason: "daily", batchSize: 600, maxBatches: 1 },
+      params: { reason: "daily", batchSize: 200, maxBatches: 1 },
     });
     expect(intent).toMatchObject({
       id: "learning/codex-sessions",
       mode: "maintain",
       workflow: "codex-learning-intake",
-      input: { reason: "daily", batchSize: 600, maxBatches: 1 },
+      input: { reason: "daily", batchSize: 200, maxBatches: 1 },
     });
   });
 });
