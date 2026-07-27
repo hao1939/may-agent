@@ -1,0 +1,23 @@
+{
+  "name": "may-learn-recover-stale-task-view",
+  "description": "Diagnostic transfer: recover an existing task when a generated view is stale.",
+  "categories": ["deputy-learning", "system-diagnosis"],
+  "tags": ["may-agent", "tasks", "conditions", "learning-release"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": {
+    "unit": "system-deputy-operations",
+    "tier": 4,
+    "partition": "release",
+    "competencies": [
+      "system.owner-and-route",
+      "project.app-control",
+      "reliability.delivery-vs-completion",
+      "diagnosis.responsible-layer"
+    ],
+    "criticality": "critical",
+    "variant_family": "blocked-work-reconciliation"
+  }
+}

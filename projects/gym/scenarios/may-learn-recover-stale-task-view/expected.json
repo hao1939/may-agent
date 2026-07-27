@@ -1,0 +1,13 @@
+{
+  "approval_case": {
+    "title": "Recover an export from a stale task view",
+    "situation": "Canonical task state says the storage Condition is satisfied, but the generated task tree still says waiting. The app has not run its normal resync, and no export workflow or terminal artifact exists.",
+    "hao_request": "Storage is back, but the nightly export still looks blocked. Find the cause and fix it.",
+    "correct_behavior": "Treat canonical task and Condition state as authoritative and identify the generated tree as stale. Run the app's normal resync to enqueue the existing export/nightly task and regenerate the disposable view. Follow the workflow and trace until a terminal export artifact exists. Reject editing the generated tree, creating a replacement task, or escalating storage-owner again."
+  },
+  "human_answer": "Treat canonical task and Condition state as authoritative and identify the generated tree as stale. Run the app's normal resync to enqueue the existing export/nightly task and regenerate the disposable view. Follow the workflow and trace until a terminal export artifact exists. Reject editing the generated tree, creating a replacement task, or escalating storage-owner again.",
+  "exact": { "needs_clarification": false },
+  "delegations": { "min": 0, "max": 0 },
+  "empty": ["preference_updates"],
+  "response_max_words": 90
+}

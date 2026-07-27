@@ -153,4 +153,35 @@ describe("May learning registry", () => {
       "may-learn-diagnose-unconsumed-event",
     ]);
   });
+
+  test("stages the blocker extension as a plain-language draft pair", () => {
+    const review = buildLearningTrackReview(
+      gymRoot,
+      "system-deputy-blocker-extension",
+    );
+
+    expect(review.approval_fingerprint).toMatch(/^sha256:[a-f0-9]{64}$/);
+    expect(review.partitions).toEqual([
+      expect.objectContaining({
+        partition: "development",
+        scenarios: [
+          expect.objectContaining({
+            id: "may-learn-recover-owned-condition",
+            status: "draft",
+            human_answer: expect.stringContaining("credentials.app"),
+          }),
+        ],
+      }),
+      expect.objectContaining({
+        partition: "release",
+        scenarios: [
+          expect.objectContaining({
+            id: "may-learn-recover-stale-task-view",
+            status: "draft",
+            human_answer: expect.stringContaining("canonical task"),
+          }),
+        ],
+      }),
+    ]);
+  });
 });

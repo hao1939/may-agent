@@ -1,0 +1,8 @@
+{
+  "name": "may-system-deputy-blocker-development-v1",
+  "version": 1,
+  "artifact": "alignment-decision.json",
+  "labels_file": "labels.json",
+  "evaluator": "../may-alignment/score-decision.cjs",
+  "scenarios": ["may-learn-recover-owned-condition"]
+}

@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "benchmark": "may-deputy-blocker-learning",
+  "labels": {
+    "may-learn-recover-owned-condition": {
+      "status": "draft",
+      "source": "accepted-system-contract-plus-reviewed-session-evidence",
+      "rationale": "Blocked work should preserve its task and exact Condition, cross the real ownership boundary, and resume only from observed evidence.",
+      "approved_by": null,
+      "approved_at": null
+    }
+  }
+}
