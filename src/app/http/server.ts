@@ -205,6 +205,12 @@ export function normalizeProjectPathForCompare(path: string): string {
   return normalized;
 }
 
+export function projectEventTargetForPath(path: string, fallbackProjectId: string): string {
+  const normalized = normalizeProjectPathForCompare(path);
+  const projectName = normalized.split("/").filter(Boolean)[1] ?? "";
+  return projectName.endsWith(".app") ? projectName.slice(0, -".app".length) : fallbackProjectId;
+}
+
 export function projectPathsMatch(left: string | null | undefined, right: string | null | undefined): boolean {
   if (!left || !right) return false;
   return normalizeProjectPathForCompare(left) === normalizeProjectPathForCompare(right);
@@ -3016,7 +3022,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       const projectFile = resolveProjectFile(path);
       if (!existsSync(projectFile)) return json({ error: "Project not found" }, 404);
       const projectContent = readFileSync(projectFile, "utf-8");
-      const { projectId, owner } = parseProjectIdentity(path, projectContent);
+      const identity = parseProjectIdentity(path, projectContent);
+      const projectId = projectEventTargetForPath(path, identity.projectId);
+      const { owner } = identity;
       const idempotencyKey = body.idempotencyKey?.trim();
       const trigger = await sendDaemonFrame({
         type: "project.comment.created",

@@ -3,6 +3,7 @@ import {
   buildProjectTasksReadModel,
   extractMarkdownSection,
   normalizeProjectPathForCompare,
+  projectEventTargetForPath,
   projectPathsMatch,
 } from "./server.js";
 
@@ -54,6 +55,12 @@ describe("project path matching", () => {
     expect(normalizeProjectPathForCompare("/app/projects/alpha-project/project.md")).toBe("projects/alpha-project");
     expect(projectPathsMatch("/app/projects/alpha-project", "projects/alpha-project/project.md")).toBe(true);
     expect(projectPathsMatch("/app/agents/shared/projects/alpha-project", "projects/alpha-project")).toBe(true);
+  });
+
+  it("targets a loaded app id instead of its human-facing project identity", () => {
+    expect(projectEventTargetForPath("projects/alpha-project.app", "app-ops/alpha-project.app")).toBe("alpha-project");
+    expect(projectEventTargetForPath("projects/evaluation.app", "evaluator/evaluation")).toBe("evaluation");
+    expect(projectEventTargetForPath("projects/plain-project", "shared/plain-project")).toBe("shared/plain-project");
   });
 });
 
