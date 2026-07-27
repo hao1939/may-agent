@@ -40,7 +40,10 @@ semantic extractor keeps explicit, repeated, or independently validated
 preferences, corrections, requirements, and meaningful decisions. It discards
 ordinary task requests and weak inference. Raw turns remain in Codex storage;
 Gym stores hashes, source pointers, and plain-language candidates under ignored
-state. Intake never changes May or benchmark truth directly.
+state. Every changed catalog is checked against the May deputy curriculum and
+accepted May-agent design. The review records whether each candidate is
+supported, needs revision, conflicts, or belongs outside deputy learning.
+Intake never changes May or benchmark truth directly.
 
 Events wake reconciliation. Each incident, regression request, and review
 request resolves to stable task intent. The task tree records ownership,

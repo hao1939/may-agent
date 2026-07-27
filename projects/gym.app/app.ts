@@ -274,6 +274,7 @@ export function resolveGymTask(
           "Only Hao-authored turns absent from the durable checkpoint are reviewed.",
           "Ordinary requests and weak inference are discarded; retained signals are explicit, repeated, or independently validated.",
           "Raw conversation text stays in Codex storage while Gym preserves hashes, source pointers, and plain-language candidates.",
+          "Every changed candidate catalog is reviewed against the May deputy curriculum and accepted May-agent design before the checkpoint advances.",
           "Collected evidence remains a candidate until a later learning or benchmark proposal passes its own approval boundary.",
         ],
         mode: "maintain",

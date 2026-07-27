@@ -4,6 +4,7 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  readdirSync,
   renameSync,
   rmSync,
   writeFileSync,
@@ -108,6 +109,40 @@ const catalogSchema = Type.Object(
   { additionalProperties: false },
 );
 
+const designReviewSchema = Type.Object(
+  {
+    summary: Type.String({ minLength: 1, maxLength: 1_200 }),
+    reviews: Type.Array(
+      Type.Object(
+        {
+          candidateId: Type.String({ minLength: 1 }),
+          alignment: Type.Union([
+            Type.Literal("supported"),
+            Type.Literal("revise"),
+            Type.Literal("conflict"),
+            Type.Literal("out-of-scope"),
+            Type.Literal("needs-human"),
+          ]),
+          rationale: Type.String({ minLength: 1, maxLength: 1_200 }),
+          sourceRefs: Type.Array(Type.String({ minLength: 1 }), {
+            maxItems: 8,
+          }),
+          recommendedUse: Type.Union([
+            Type.Literal("lesson-evidence"),
+            Type.Literal("practice-example"),
+            Type.Literal("benchmark-seed"),
+            Type.Literal("owner-preference"),
+            Type.Literal("discard"),
+          ]),
+        },
+        { additionalProperties: false },
+      ),
+      { maxItems: MAX_CATALOG_ITEMS },
+    ),
+  },
+  { additionalProperties: false },
+);
+
 type SignalKind =
   | "preference"
   | "requirement"
@@ -163,6 +198,41 @@ interface Catalog {
   owner: "hao";
   updated_at: string;
   preferences: CatalogPreference[];
+}
+
+type DesignAlignment =
+  "supported" | "revise" | "conflict" | "out-of-scope" | "needs-human";
+
+type RecommendedUse =
+  | "lesson-evidence"
+  | "practice-example"
+  | "benchmark-seed"
+  | "owner-preference"
+  | "discard";
+
+interface CandidateDesignReview {
+  candidateId: string;
+  alignment: DesignAlignment;
+  rationale: string;
+  sourceRefs: string[];
+  recommendedUse: RecommendedUse;
+}
+
+interface DesignReview {
+  schema_version: 1;
+  status: "candidate-review";
+  reviewed_at: string;
+  design_fingerprint: string;
+  catalog_fingerprint: string;
+  summary: string;
+  reviews: CandidateDesignReview[];
+}
+
+interface DesignReviewAttempt {
+  review: DesignReview | null;
+  changed: boolean;
+  error?: string;
+  evidence?: string[];
 }
 
 interface Checkpoint {
@@ -247,6 +317,21 @@ function consolidationPrompt(path: string): string {
     "Keep a single explicit preference when it is clear and reusable. Keep inferred or example-based signals only when repeated or independently validated.",
     "Discard one-off project choices, vague approval, and rules that merely restate an assistant proposal without clear Hao endorsement.",
     "Use only evidenceIds present in the input. Return plain language suitable for a human review packet. These remain candidates; do not claim they are already May policy.",
+  ].join("\n");
+}
+
+function designReviewPrompt(path: string): string {
+  return [
+    "Review every Hao learning candidate against the May deputy learning design and accepted May-agent system design.",
+    `Input: ${path}`,
+    "Read the complete curriculum and training-program documents listed in designSources.",
+    "Use the may-agent-system skill as the source router, then inspect the relevant accepted May-agent design documents before judging a system claim.",
+    "Accepted May-agent documents remain architecture truth. Old sessions are evidence; they do not override or duplicate accepted system truth.",
+    "Review every candidate exactly once. Judge meaning, scope, current validity, and whether the candidate is transferable.",
+    "Use supported when the meaning and scope agree with accepted design. Use revise when the core signal is useful but its wording, scope, or mechanism is wrong. Use conflict for a real contradiction. Use out-of-scope for a valid owner or project preference that is not May deputy learning. Use needs-human only when the sources cannot settle the decision.",
+    "Recommend lesson-evidence for a durable method, practice-example for a worked example, benchmark-seed for behavior worth testing, owner-preference for personal/project guidance outside the deputy curriculum, or discard for unsafe, obsolete, or weak material.",
+    "For system claims, cite only exact source paths listed in designSources, optionally followed by a Markdown section anchor. Out-of-scope owner preferences may have no source reference.",
+    "Write the summary and rationale in short, plain language. Do not approve, promote, or change May or benchmark truth.",
   ].join("\n");
 }
 
@@ -356,6 +441,171 @@ function catalogPreferences(
   });
 }
 
+function defaultDesignSources(ctx: WorkflowContext): string[] {
+  const designRoot = join(
+    ctx.projectsRoot,
+    "may-agent.app",
+    "docs",
+    "2a-design",
+  );
+  const acceptedDesign = existsSync(designRoot)
+    ? readdirSync(designRoot)
+        .filter((name) => name.endsWith(".md"))
+        .sort()
+        .map((name) => join(designRoot, name))
+    : [];
+  return [
+    join(
+      ctx.projectsRoot,
+      "gym.app",
+      "design",
+      "may-deputy-learning-curriculum.md",
+    ),
+    join(ctx.projectsRoot, "gym.app", "design", "may-training-program.md"),
+    join(
+      dirname(ctx.projectsRoot),
+      "agents",
+      "may",
+      "skills",
+      "may-agent-system",
+      "SKILL.md",
+    ),
+    ...acceptedDesign,
+  ];
+}
+
+function sourcePath(reference: string): string {
+  return reference.split("#", 1)[0]!;
+}
+
+function designFingerprint(paths: string[]): string {
+  return sha256(
+    paths
+      .map((path) => `${path}\0${sha256(readFileSync(path, "utf8"))}`)
+      .join("\0"),
+  );
+}
+
+function catalogFingerprint(preferences: CatalogPreference[]): string {
+  return sha256(JSON.stringify(preferences));
+}
+
+function candidateDesignReviews(
+  value: unknown,
+  preferences: CatalogPreference[],
+  sources: string[],
+): CandidateDesignReview[] | null {
+  const expected = new Set(preferences.map((item) => item.id));
+  const allowedSources = new Set(sources);
+  const reviews = Array.isArray(record(value).reviews)
+    ? (record(value).reviews as unknown[])
+    : [];
+  const parsed = reviews.flatMap((candidate) => {
+    const review = record(candidate);
+    const candidateId = String(review.candidateId ?? "");
+    const sourceRefs = Array.isArray(review.sourceRefs)
+      ? [...new Set(review.sourceRefs.map(String))]
+      : [];
+    if (
+      !expected.has(candidateId) ||
+      sourceRefs.some((reference) => !allowedSources.has(sourcePath(reference)))
+    ) {
+      return [];
+    }
+    return [
+      {
+        candidateId,
+        alignment: String(review.alignment) as DesignAlignment,
+        rationale: String(review.rationale).trim(),
+        sourceRefs,
+        recommendedUse: String(review.recommendedUse) as RecommendedUse,
+      },
+    ];
+  });
+  const returned = new Set(parsed.map((item) => item.candidateId));
+  if (
+    parsed.length !== preferences.length ||
+    returned.size !== preferences.length ||
+    [...expected].some((id) => !returned.has(id))
+  ) {
+    return null;
+  }
+  return parsed;
+}
+
+async function reviewLearningMaterials(
+  ctx: WorkflowContext,
+  preferences: CatalogPreference[],
+  designSources: string[],
+  reviewPath: string,
+  scratchDir: string,
+  now: string,
+): Promise<DesignReviewAttempt> {
+  if (!preferences.length) return { review: null, changed: false };
+  const missingSources = designSources.filter((path) => !existsSync(path));
+  if (missingSources.length) {
+    return {
+      review: null,
+      changed: false,
+      error:
+        "Codex learning design review failed; required design sources are missing and no checkpoint advanced.",
+      evidence: missingSources,
+    };
+  }
+  const nextDesignFingerprint = designFingerprint(designSources);
+  const nextCatalogFingerprint = catalogFingerprint(preferences);
+  const existing = readJson<DesignReview>(reviewPath);
+  if (
+    existing?.design_fingerprint === nextDesignFingerprint &&
+    existing.catalog_fingerprint === nextCatalogFingerprint &&
+    candidateDesignReviews(existing, preferences, designSources)
+  ) {
+    return { review: existing, changed: false };
+  }
+
+  const reviewInputPath = join(scratchDir, "design-review.json");
+  writeJson(reviewInputPath, { designSources, preferences });
+  const result = await ctx.runAgent(
+    "gym",
+    designReviewPrompt(reviewInputPath),
+    {
+      schema: designReviewSchema,
+      timeoutMs: 900_000,
+    },
+  );
+  const reviews = result.structuredResult
+    ? candidateDesignReviews(
+        result.structuredResult,
+        preferences,
+        designSources,
+      )
+    : null;
+  if (
+    result.status === "error" ||
+    result.status === "interrupted" ||
+    !reviews
+  ) {
+    return {
+      review: null,
+      changed: false,
+      error: "Codex learning design review failed; no checkpoint advanced.",
+      evidence: [result.sessionId, reviewInputPath],
+    };
+  }
+  return {
+    changed: true,
+    review: {
+      schema_version: 1,
+      status: "candidate-review",
+      reviewed_at: now,
+      design_fingerprint: nextDesignFingerprint,
+      catalog_fingerprint: nextCatalogFingerprint,
+      summary: String(record(result.structuredResult).summary).trim(),
+      reviews,
+    },
+  };
+}
+
 function workflowInput(ctx: WorkflowContext): Record<string, unknown> {
   const packet = reconciliationPacket(ctx.task);
   return record(packet?.input ?? triggerDetails(ctx.task));
@@ -363,7 +613,11 @@ function workflowInput(ctx: WorkflowContext): Record<string, unknown> {
 
 export async function runCodexLearningIntake(
   ctx: WorkflowContext,
-  options: { codexHome?: string; scan?: () => Promise<CodexSourceScan> } = {},
+  options: {
+    codexHome?: string;
+    scan?: () => Promise<CodexSourceScan>;
+    designSources?: string[];
+  } = {},
 ): Promise<WorkflowResult> {
   const input = workflowInput(ctx);
   const batchSize = integer(
@@ -391,6 +645,7 @@ export async function runCodexLearningIntake(
   const runsDir = join(stateDir, "runs");
   const checkpointPath = join(stateDir, "checkpoint.json");
   const catalogPath = join(stateDir, "catalog.json");
+  const designReviewPath = join(stateDir, "design-review.json");
   const journalPath = join(stateDir, "evidence.jsonl");
   const checkpoint = readJson<Checkpoint>(checkpointPath);
   const processed = new Set(checkpoint?.processed_source_ids ?? []);
@@ -400,6 +655,13 @@ export async function runCodexLearningIntake(
   rmSync(scratchDir, { recursive: true, force: true });
   mkdirSync(scratchDir, { recursive: true });
   try {
+    const existingCatalog = readJson<Catalog>(catalogPath) ?? {
+      schema_version: 1,
+      owner: "hao",
+      updated_at: new Date(0).toISOString(),
+      preferences: [],
+    };
+    const designSources = options.designSources ?? defaultDesignSources(ctx);
     const scan = options.scan
       ? await options.scan()
       : options.codexHome
@@ -416,6 +678,23 @@ export async function runCodexLearningIntake(
     const selected = scan.turns.slice(0, batchSize * maxBatches);
     if (!selected.length) {
       const now = new Date().toISOString();
+      const designReview = await reviewLearningMaterials(
+        ctx,
+        existingCatalog.preferences,
+        designSources,
+        designReviewPath,
+        scratchDir,
+        now,
+      );
+      if (designReview.error) {
+        return ctx.done(designReview.error, {
+          state: "needs-owner",
+          summary: designReview.error,
+          evidence: designReview.evidence ?? [],
+        });
+      }
+      if (designReview.changed && designReview.review)
+        writeJson(designReviewPath, designReview.review);
       writeJson(checkpointPath, {
         schema_version: 1,
         source: "codex-history",
@@ -432,12 +711,17 @@ export async function runCodexLearningIntake(
         selected_signals: 0,
         backlog: 0,
         malformed_lines: scan.malformedLines,
+        design_review_refreshed: designReview.changed,
         completed_at: now,
       });
       return ctx.done(summary, {
         state: "converged",
         summary,
-        evidence: [runPath, checkpointPath],
+        evidence: [
+          runPath,
+          checkpointPath,
+          ...(designReview.review ? [designReviewPath] : []),
+        ],
         actions: [],
       });
     }
@@ -489,12 +773,6 @@ export async function runCodexLearningIntake(
       selected.map((turn) => [turn.source.sourceId, turn]),
     );
     const rows = extracted.map((signal) => evidenceRow(signal, turnById, now));
-    const existingCatalog = readJson<Catalog>(catalogPath) ?? {
-      schema_version: 1,
-      owner: "hao",
-      updated_at: new Date(0).toISOString(),
-      preferences: [],
-    };
     let preferences = existingCatalog.preferences;
     if (rows.length) {
       const consolidationPath = join(scratchDir, "consolidation.json");
@@ -535,6 +813,22 @@ export async function runCodexLearningIntake(
       preferences = catalogPreferences(result.structuredResult, knownEvidence);
     }
 
+    const designReview = await reviewLearningMaterials(
+      ctx,
+      preferences,
+      designSources,
+      designReviewPath,
+      scratchDir,
+      now,
+    );
+    if (designReview.error) {
+      return ctx.done(designReview.error, {
+        state: "needs-owner",
+        summary: designReview.error,
+        evidence: designReview.evidence ?? [],
+      });
+    }
+
     mkdirSync(evidenceDir, { recursive: true });
     for (const row of rows) {
       const path = join(evidenceDir, `${row.evidence_id}.json`);
@@ -548,6 +842,8 @@ export async function runCodexLearningIntake(
       updated_at: now,
       preferences,
     } satisfies Catalog);
+    if (designReview.changed && designReview.review)
+      writeJson(designReviewPath, designReview.review);
     for (const turn of selected) processed.add(turn.source.sourceId);
     writeJson(checkpointPath, {
       schema_version: 1,
@@ -570,13 +866,19 @@ export async function runCodexLearningIntake(
       backlog,
       rollout_files_read: scan.rolloutFilesRead,
       malformed_lines: scan.malformedLines,
+      design_review_refreshed: designReview.changed,
       evidence_ids: rows.map((row) => row.evidence_id),
       completed_at: now,
     });
     return ctx.done(summary, {
       state: "converged",
       summary,
-      evidence: [runPath, checkpointPath, catalogPath],
+      evidence: [
+        runPath,
+        checkpointPath,
+        catalogPath,
+        ...(designReview.review ? [designReviewPath] : []),
+      ],
       actions: [],
     });
   } finally {

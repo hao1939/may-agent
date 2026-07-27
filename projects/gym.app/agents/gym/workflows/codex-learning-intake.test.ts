@@ -73,6 +73,11 @@ test("keeps only validated strong signals and persists source references without
   const root = mkdtempSync(join(tmpdir(), "codex-learning-intake-"));
   roots.push(root);
   const codexHome = source(root);
+  const designSource = join(root, "accepted-design.md");
+  writeFileSync(
+    designSource,
+    "# Accepted design\n\nUse clear direct decision verbs.\n",
+  );
   let calls = 0;
   const ctx = {
     projectsRoot: join(root, "projects"),
@@ -136,22 +141,43 @@ test("keeps only validated strong signals and persists source references without
         "scratch",
       );
       const runDir = readdirSync(evidenceDir)[0]!;
-      const input = JSON.parse(
-        readFileSync(join(evidenceDir, runDir, "consolidation.json"), "utf8"),
+      if (calls === 2) {
+        const input = JSON.parse(
+          readFileSync(join(evidenceDir, runDir, "consolidation.json"), "utf8"),
+        );
+        return {
+          status: "success",
+          sessionId: "consolidate",
+          structuredResult: {
+            preferences: [
+              {
+                statement: "Use clear direct decision verbs.",
+                scope: "global",
+                rationale: "Hao stated this preference explicitly.",
+                evidenceIds: [input.newEvidence[0].evidence_id],
+                conflictEvidenceIds: [],
+                confidence: 0.99,
+                competencies: ["authority.act-vs-approve"],
+              },
+            ],
+          },
+        };
+      }
+      const reviewInput = JSON.parse(
+        readFileSync(join(evidenceDir, runDir, "design-review.json"), "utf8"),
       );
       return {
         status: "success",
-        sessionId: "consolidate",
+        sessionId: "design-review",
         structuredResult: {
-          preferences: [
+          summary: "The candidate matches the accepted design.",
+          reviews: [
             {
-              statement: "Use clear direct decision verbs.",
-              scope: "global",
-              rationale: "Hao stated this preference explicitly.",
-              evidenceIds: [input.newEvidence[0].evidence_id],
-              conflictEvidenceIds: [],
-              confidence: 0.99,
-              competencies: ["authority.act-vs-approve"],
+              candidateId: reviewInput.preferences[0].id,
+              alignment: "supported",
+              rationale: "The accepted design states the same preference.",
+              sourceRefs: [designSource],
+              recommendedUse: "lesson-evidence",
             },
           ],
         },
@@ -162,9 +188,12 @@ test("keeps only validated strong signals and persists source references without
     },
   } as unknown as WorkflowContext;
 
-  const result = await runCodexLearningIntake(ctx, { codexHome });
+  const result = await runCodexLearningIntake(ctx, {
+    codexHome,
+    designSources: [designSource],
+  });
   expect(result.type).toBe("done");
-  expect(calls).toBe(2);
+  expect(calls).toBe(3);
   const stateDir = join(
     ctx.projectsRoot,
     "gym.app",
@@ -183,8 +212,30 @@ test("keeps only validated strong signals and persists source references without
   expect(readFileSync(join(stateDir, "catalog.json"), "utf8")).not.toContain(
     "private raw preference wording",
   );
+  const designReview = readFileSync(
+    join(stateDir, "design-review.json"),
+    "utf8",
+  );
+  expect(designReview).toContain('"alignment": "supported"');
+  expect(designReview).not.toContain("private raw preference wording");
   expect(existsSync(join(stateDir, "scratch"))).toBe(true);
   expect(readdirSync(join(stateDir, "scratch"))).toEqual([]);
+
+  await runCodexLearningIntake(ctx, {
+    codexHome,
+    designSources: [designSource],
+  });
+  expect(calls).toBe(3);
+
+  writeFileSync(
+    designSource,
+    "# Accepted design\n\nPrefer direct decision verbs.\n",
+  );
+  await runCodexLearningIntake(ctx, {
+    codexHome,
+    designSources: [designSource],
+  });
+  expect(calls).toBe(4);
 });
 
 test("advances the checkpoint when review finds no strong signal", async () => {
