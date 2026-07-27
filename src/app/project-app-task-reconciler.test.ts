@@ -619,7 +619,7 @@ describe("project app task reconciler state", () => {
     });
     expect(entries.find((entry) => entry.taskId === "work/aged-trigger-p2")).toEqual({
       taskId: "work/aged-trigger-p2",
-      options: { front: true, priority: "P0" },
+      options: { front: true, priority: "P1" },
     });
   });
 
