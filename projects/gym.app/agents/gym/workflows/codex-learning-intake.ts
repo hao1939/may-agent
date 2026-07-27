@@ -378,8 +378,8 @@ export async function runCodexLearningIntake(
     1,
     MAX_BATCHES,
   );
-  const codexHome =
-    options.codexHome ?? process.env.CODEX_HOME ?? join(homedir(), ".codex");
+  const codexHome = options.codexHome;
+  const codexHomes = codexHome ? [codexHome] : defaultCodexHomes();
   const stateDir = join(
     ctx.projectsRoot,
     "gym.app",
@@ -404,12 +404,12 @@ export async function runCodexLearningIntake(
       ? await options.scan()
       : options.codexHome
         ? await scanCodexLearningSource({
-            codexHome,
+            codexHome: options.codexHome,
             processedSourceIds: processed,
           })
         : await scanSourceSubprocess(
             ctx,
-            codexHome,
+            codexHomes,
             checkpointPath,
             join(scratchDir, "source-scan.json"),
           );
@@ -586,7 +586,7 @@ export async function runCodexLearningIntake(
 
 async function scanSourceSubprocess(
   ctx: WorkflowContext,
-  codexHome: string,
+  codexHomes: string[],
   checkpointPath: string,
   outputPath: string,
 ): Promise<CodexSourceScan> {
@@ -600,7 +600,7 @@ async function scanSourceSubprocess(
     "codex-learning-source-cli.ts",
   );
   const process = Bun.spawn(
-    ["bun", cliPath, codexHome, checkpointPath, outputPath],
+    ["bun", cliPath, checkpointPath, outputPath, ...codexHomes],
     {
       cwd: join(ctx.projectsRoot, "gym.app"),
       stdout: "pipe",
@@ -615,6 +615,16 @@ async function scanSourceSubprocess(
     );
   }
   return JSON.parse(readFileSync(outputPath, "utf8")) as CodexSourceScan;
+}
+
+function defaultCodexHomes(): string[] {
+  return [
+    process.env.CODEX_HOME,
+    join(homedir(), ".codex"),
+    "/home/hao/.codex",
+  ].flatMap((path, index, values) =>
+    path && existsSync(path) && values.indexOf(path) === index ? [path] : [],
+  );
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
