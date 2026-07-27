@@ -1645,6 +1645,52 @@ describe("event delivery metadata", () => {
     }
   });
 
+  it("does not close new project work with an older owner result", () => {
+    const root = tempRoot();
+    try {
+      const bus = new EventBus();
+      attachPersistence(bus, root);
+      bus.emit({
+        type: "project.owner.reviewed",
+        source: "project-app:sample:task-reconciler",
+        owner: "agent:sample-owner",
+        data: { project: "sample", summary: "reviewed earlier work" },
+      } as any);
+
+      const comment = bus.emit({
+        type: "project.comment.created",
+        source: "test",
+        owner: "agent:sample-owner",
+        data: { project: "sample", comment: "new instruction" },
+      } as any);
+      const ownerRequest = bus.emit({
+        type: "project.owner.requested",
+        source: "test",
+        owner: "agent:sample-owner",
+        data: { project: "sample", reason: "new review" },
+      } as any);
+
+      const db = getDb(root);
+      for (const [pairName, openEventId] of [
+        ["project.intent", Number(comment[EVENT_ROW_ID])],
+        ["project.owner", Number(ownerRequest[EVENT_ROW_ID])],
+      ] as const) {
+        expect(
+          db
+            .prepare(
+              `SELECT status, close_event_id
+               FROM event_pair_runs
+               WHERE pair_name = ? AND open_event_id = ?`,
+            )
+            .get(pairName, openEventId),
+        ).toMatchObject({ status: "open", close_event_id: null });
+      }
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("marks new unaccepted events unhandled after their ttl", async () => {
     const root = tempRoot();
     try {
