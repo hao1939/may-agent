@@ -190,6 +190,12 @@ The observed fact is the continuation of that waiting task, not unrelated new
 work; delaying it behind the full backlog would turn a correct wait into a
 dead-looking task.
 
+A wake changes readiness and queue position; it does not erase the task's
+declared priority. Event, Condition, recovery, resync, and same-task handoff
+entries all carry the current effective task priority into the controller, so
+a `P0` continuation is not silently reduced to the queue's default priority
+while lower-priority wakes drain first.
+
 `needs-owner` is an exception to a learned process, not its normal failure
 branch. A domain workflow is expected to invoke its owning agent for in-scope
 repair and verification before handing the same task back to the owner. Merge
