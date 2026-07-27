@@ -1386,6 +1386,19 @@ export function releaseHandlerExecutionFailedProjectAppTask(
       summary,
       conditionIds: [],
     });
+    if (attempt.trigger) {
+      const previous = tree.taskTriggers?.[taskId];
+      tree.taskTriggers = {
+        ...(tree.taskTriggers ?? {}),
+        [taskId]: {
+          taskId,
+          taskGeneration: resource.metadata.generation,
+          resourceVersion: (previous?.resourceVersion ?? 0) + 1,
+          event: structuredClone(attempt.trigger),
+          observedAt: evidence.observedAt,
+        },
+      };
+    }
     syncTaskProjection(task, resource, attempt.owner);
     refreshActiveTaskProjection(tree);
     saveTaskState(config, tree);
