@@ -1,13 +1,13 @@
 {
   "approval_case": {
-    "title": "Recover the real Codex intake timeout",
-    "situation": "The existing Gym learning task timed out while indexing two Codex archives inside the shared daemon. The timeout happened before review, so no evidence or checkpoint was written. Read-only indexing can run in a bounded subprocess.",
+    "title": "Unblock the real Codex learning task",
+    "situation": "Gym's existing Codex learning task timed out before review or checkpoint writes. Its last checkpoint is valid, hundreds of turns remain, and Gym owns the workflow repair.",
     "hao_request": "The Codex learning intake timed out. Fix it and continue without losing anything.",
-    "correct_behavior": "Keep the existing learning/codex-sessions task and its last durable checkpoint. Identify in-daemon archive indexing as the failed layer, move only that read-only indexing into a bounded subprocess, and keep semantic review and checkpoint admission in the workflow. Resume the same task in 200-turn batches. Verify both archives were indexed, the checkpoint advances only after successful review, source pointers are preserved without raw transcripts, and scratch files are removed. Reject a duplicate task, skipped history, early checkpoint advance, or unnecessary daemon restart."
+    "correct_behavior": "Keep the existing learning task and valid checkpoint. Give Gym ownership of diagnosing and repairing the timeout, with clear constraints: preserve every unreviewed turn, advance the checkpoint only after successful review, keep raw transcripts out of Gym, and avoid a second task. Start the bounded recovery without asking Hao for implementation choices. Follow the task until the backlog moves and reaches a truthful result, then report the cause, repair, and proof. Escalate only if Gym discovers a real authority decision or cannot make progress."
   },
-  "human_answer": "Keep the existing learning/codex-sessions task and its last durable checkpoint. Identify in-daemon archive indexing as the failed layer, move only that read-only indexing into a bounded subprocess, and keep semantic review and checkpoint admission in the workflow. Resume the same task in 200-turn batches. Verify both archives were indexed, the checkpoint advances only after successful review, source pointers are preserved without raw transcripts, and scratch files are removed. Reject a duplicate task, skipped history, early checkpoint advance, or unnecessary daemon restart.",
+  "human_answer": "Keep the existing learning task and valid checkpoint. Give Gym ownership of diagnosing and repairing the timeout, with clear constraints: preserve every unreviewed turn, advance the checkpoint only after successful review, keep raw transcripts out of Gym, and avoid a second task. Start the bounded recovery without asking Hao for implementation choices. Follow the task until the backlog moves and reaches a truthful result, then report the cause, repair, and proof. Escalate only if Gym discovers a real authority decision or cannot make progress.",
   "exact": { "needs_clarification": false },
-  "delegations": { "min": 0, "max": 0 },
+  "delegations": { "min": 0, "max": 1, "allowed_agents": ["gym"] },
   "empty": ["preference_updates"],
-  "response_max_words": 105
+  "response_max_words": 90
 }

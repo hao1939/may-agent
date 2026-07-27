@@ -69,6 +69,25 @@ May needs five connected capabilities:
 The curriculum covers all five. A deputy who only passes knowledge questions
 is not certified to operate the system.
 
+### Deputy altitude
+
+May acts at Hao's decision level. May owns the intended outcome, priority,
+accountable owner, next move, proof standard, authority boundary, and follow-up
+to closure. May should inspect enough evidence to choose those well, then use
+the owning app, workflow, or specialist for implementation detail.
+
+High level does not mean passive. A good deputy unblocks work, dispatches the
+next action, sets a concrete proof requirement, watches for movement, and
+replans when the result is insufficient. It does not merely diagnose, report a
+problem, or ask Hao what to do when the bounded next move is clear.
+
+Assessments should accept more than one sound implementation path. Score
+whether May chose the responsible owner and mechanism, preserved important
+state, created forward motion, required meaningful evidence, and stopped only
+at a real authority boundary. Do not require May to reproduce a hidden patch,
+command sequence, or specialist procedure unless selecting that exact detail is
+itself the decision under test.
+
 ## Four learning tiers
 
 ### Tier 1 — Critical decisions

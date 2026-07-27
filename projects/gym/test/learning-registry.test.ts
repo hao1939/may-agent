@@ -168,7 +168,7 @@ describe("May learning registry", () => {
           expect.objectContaining({
             id: "may-learn-recover-codex-intake-timeout",
             status: "draft",
-            human_answer: expect.stringContaining("learning/codex-sessions"),
+            human_answer: expect.stringContaining("Give Gym ownership"),
           }),
         ],
       }),
@@ -178,7 +178,7 @@ describe("May learning registry", () => {
           expect.objectContaining({
             id: "may-learn-resolve-session-design-conflict",
             status: "draft",
-            human_answer: expect.stringContaining("current design"),
+            human_answer: expect.stringContaining("Give Gym the next move"),
           }),
         ],
       }),

@@ -1,15 +1,13 @@
 # Codex intake timeout
 
 - `gym.app` owns the existing maintain task `learning/codex-sessions`.
-- The first workflow attempt timed out while indexing two large local Codex
-  archives inside the shared daemon.
-- The timeout happened before semantic review. No evidence, catalog update, or
-  checkpoint was written.
-- Source indexing is read-only and can run in a bounded subprocess. Semantic
-  review, consolidation, and checkpoint admission belong in the workflow.
-- A later attempt can reuse the same task and review 200 turns per batch from
-  the last durable checkpoint.
-- A successful run must index both archives, advance the checkpoint only after
-  review succeeds, preserve source pointers without raw transcripts, and clean
-  scratch files.
-- Reloading or restarting the shared daemon is unnecessary for this repair.
+- The latest attempt timed out while reading old Codex history. It stopped
+  before semantic review.
+- No evidence, catalog update, or checkpoint was written by the failed attempt.
+- The last durable checkpoint is valid, and hundreds of old turns remain.
+- Gym owns the intake workflow and can change its internal recovery method.
+- Success means the same learning task moves forward without losing or falsely
+  processing history, raw transcripts stay in Codex storage, and the final
+  backlog is visible.
+- No human authority or product decision is needed to investigate and repair
+  this bounded workflow failure.

@@ -5,7 +5,7 @@
     "may-learn-recover-codex-intake-timeout": {
       "status": "draft",
       "source": "reviewed-codex-intake-incident-and-accepted-system-design",
-      "rationale": "May should isolate expensive source indexing, preserve the existing task and checkpoint, and prove bounded recovery without losing history.",
+      "rationale": "May should keep the existing learning outcome moving through Gym, preserve checkpoint integrity, require proof, and follow the recovery to closure without micromanaging the patch.",
       "approved_by": null,
       "approved_at": null
     }
