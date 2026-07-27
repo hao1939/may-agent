@@ -474,8 +474,28 @@ function defaultDesignSources(ctx: WorkflowContext): string[] {
   ];
 }
 
-function sourcePath(reference: string): string {
-  return reference.split("#", 1)[0]!;
+function markdownAnchor(title: string): string {
+  return title
+    .trim()
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s-]/gu, "")
+    .replace(/\s+/g, "-");
+}
+
+function validSourceReference(
+  reference: string,
+  allowedSources: Set<string>,
+): boolean {
+  const [path, anchor] = reference.split("#", 2);
+  if (!path || !allowedSources.has(path)) return false;
+  if (!anchor) return true;
+  const anchors = readFileSync(path, "utf8")
+    .split(/\r?\n/)
+    .flatMap((line) => {
+      const heading = line.match(/^#{1,6}\s+(.+?)\s*#*$/)?.[1];
+      return heading ? [markdownAnchor(heading)] : [];
+    });
+  return anchors.includes(anchor);
 }
 
 function designFingerprint(paths: string[]): string {
@@ -508,7 +528,9 @@ function candidateDesignReviews(
       : [];
     if (
       !expected.has(candidateId) ||
-      sourceRefs.some((reference) => !allowedSources.has(sourcePath(reference)))
+      sourceRefs.some(
+        (reference) => !validSourceReference(reference, allowedSources),
+      )
     ) {
       return [];
     }

@@ -176,7 +176,7 @@ test("keeps only validated strong signals and persists source references without
               candidateId: reviewInput.preferences[0].id,
               alignment: "supported",
               rationale: "The accepted design states the same preference.",
-              sourceRefs: [designSource],
+              sourceRefs: [`${designSource}#accepted-design`],
               recommendedUse: "lesson-evidence",
             },
           ],
