@@ -650,14 +650,19 @@ export function artifactProvesCleanup(path: string, specId: string): boolean {
     return false;
   }
   const raw = jsonRecord(artifact.raw);
-  const cleanup = jsonRecord(raw.cleanup);
-  if (
-    cleanup.attempted === true &&
-    ["pass", "passed"].includes(nonEmptyString(cleanup.status).toLowerCase())
-  ) {
-    return true;
+  const cleanupRecords = [raw.cleanup, artifact.cleanup].map(jsonRecord);
+  for (const cleanup of cleanupRecords) {
+    if (
+      cleanup.attempted === true &&
+      ["pass", "passed"].includes(nonEmptyString(cleanup.status).toLowerCase())
+    ) {
+      return true;
+    }
   }
-  const assertions = Array.isArray(raw.assertions) ? raw.assertions : [];
+  const assertions = [
+    ...(Array.isArray(raw.assertions) ? raw.assertions : []),
+    ...(Array.isArray(artifact.assertions) ? artifact.assertions : []),
+  ];
   return assertions.some((entry) => {
     const assertion = jsonRecord(entry);
     return assertion.verdictImpact === "cleanup" && assertion.ok === true;
