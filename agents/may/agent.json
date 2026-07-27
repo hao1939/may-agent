@@ -40,6 +40,10 @@
     {
       "skill": "system-deputy-decisions",
       "pattern": "(?=[\\s\\S]*\\b(?:accepted|delivered|stored|queued)\\b)(?=[\\s\\S]*\\b(?:no|missing|never|without)\\b[\\s\\S]{0,100}\\b(?:result|output|report|response|artifact|completion)\\b)(?=[\\s\\S]*\\b(?:cause|diagnos(?:e|is|tic)|investigat(?:e|ion)|fix)\\b)"
+    },
+    {
+      "skill": "provider-proof-approval",
+      "pattern": "^(?![\\s\\S]*\\b(?:approval granted|already approved|approved to (?:rotate|change|switch|deploy|roll)|go ahead and (?:rotate|change|switch|deploy)|rotate now|change credentials now)\\b)(?=[\\s\\S]*\\b(?:provider|model|api|credential|credentials|token|auth|401|403|unauthori[sz]ed|quota|routing)\\b)(?=[\\s\\S]*\\b(?:control|comparison|baseline|other provider|healthy path|kept working|succeeded|still works)\\b)(?=[\\s\\S]*\\b(?:remediation|diagnos|root cause|fix|proposal|canary|prove|proof)\\b)"
     }
   ]
 }
