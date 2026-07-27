@@ -1041,9 +1041,9 @@ function isRunnableOnPassiveResync(tree: TaskTree, resource: ProjectAppTaskResou
   const task = tree.tasks[resource.metadata.id];
   if (!task) return false;
   const intent = resourceIntent(resource);
+  if (!dependenciesSatisfied(tree, intent)) return false;
   const pendingTrigger = tree.taskTriggers?.[task.id]?.event;
   if (pendingTrigger) return true;
-  if (!dependenciesSatisfied(tree, intent)) return false;
   if (resource.metadata.generation > resource.status.observedGeneration) return true;
   if (resource.status.phase === "pending") return true;
   if (resource.status.phase === "waiting") {
@@ -1400,6 +1400,10 @@ export function claimObservedProjectAppTask(
       if (resource.status.currentAttemptId) {
         finishAttempt(tree, resource, "interrupted", summary, new Date().toISOString());
       }
+      // This wake was evaluated and produced a durable attention result. Keeping
+      // it pending would make passive resync immediately retry the same invalid
+      // task forever; a later external wake can record a fresh trigger.
+      if (tree.taskTriggers) delete tree.taskTriggers[task.id];
       touchResource(resource, {
         phase: "attention",
         observedGeneration: resource.metadata.generation,
