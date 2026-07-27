@@ -60,7 +60,8 @@ export class ProjectAppTaskQueue {
     const frontCount = this.frontQueued.size;
     const takeOrdinary =
       frontCount < this.pending.length && this.consecutiveFrontTakes >= ProjectAppTaskQueue.maxFrontBurst;
-    const takeIndex = takeOrdinary || frontCount === 0 ? this.nextOrdinaryIndex(frontCount) : 0;
+    const takeIndex =
+      takeOrdinary || frontCount === 0 ? this.nextOrdinaryIndex(frontCount) : this.nextFrontIndex(frontCount);
     const [taskId] = this.pending.splice(takeIndex, 1);
     if (!taskId) return null;
     this.queued.delete(taskId);
@@ -109,6 +110,19 @@ export class ProjectAppTaskQueue {
     let selectedRank = priorityRank(this.priorities.get(this.pending[selected] ?? "") ?? "P2");
     for (let index = frontCount + 1; index < this.pending.length; index++) {
       const rank = priorityRank(this.priorities.get(this.pending[index]) ?? "P2");
+      if (rank < selectedRank) {
+        selected = index;
+        selectedRank = rank;
+      }
+    }
+    return selected;
+  }
+
+  private nextFrontIndex(frontCount: number): number {
+    let selected = 0;
+    let selectedRank = priorityRank(this.priorities.get(this.pending[selected] ?? "") ?? "P2");
+    for (let index = 1; index < frontCount; index++) {
+      const rank = priorityRank(this.priorities.get(this.pending[index] ?? "") ?? "P2");
       if (rank < selectedRank) {
         selected = index;
         selectedRank = rank;

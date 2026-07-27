@@ -34,6 +34,18 @@ describe("ProjectAppTaskQueue", () => {
     expect(queue.take()).toBe("urgent-b");
   });
 
+  it("orders front-lane wakes by priority and preserves FIFO within one priority", () => {
+    const queue = new ProjectAppTaskQueue(1);
+    queue.enqueue("old-p2-a", { front: true, priority: "P2" });
+    queue.enqueue("p0-terminal-wake", { front: true, priority: "P0" });
+    queue.enqueue("old-p2-b", { front: true, priority: "P2" });
+
+    for (const taskId of ["p0-terminal-wake", "old-p2-a", "old-p2-b"]) {
+      expect(queue.take()).toBe(taskId);
+      queue.complete(taskId);
+    }
+  });
+
   it("runs oldest ordinary work after a bounded urgent burst", () => {
     const queue = new ProjectAppTaskQueue(1);
     queue.enqueue("old-a");
