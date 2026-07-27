@@ -343,6 +343,7 @@ type PairContract = {
   closes: readonly string[];
   timeoutMs: number;
   key: (payload: Record<string, unknown>) => string | undefined;
+  allowEarlierClose?: boolean;
 };
 
 const sessionKey = (payload: Record<string, unknown>) => keyPart(payload.sessionId);
@@ -405,6 +406,7 @@ const PAIR_CONTRACTS: readonly PairContract[] = [
     closes: ["project.owner.reviewed"],
     timeoutMs: 60 * 60 * 1000,
     key: projectOwnerKey,
+    allowEarlierClose: false,
   },
   {
     name: "project.owner",
@@ -412,6 +414,7 @@ const PAIR_CONTRACTS: readonly PairContract[] = [
     closes: ["project.owner.reviewed"],
     timeoutMs: 60 * 60 * 1000,
     key: projectOwnerKey,
+    allowEarlierClose: false,
   },
 ];
 
@@ -795,6 +798,7 @@ export class DbWriter {
     openEventId: number,
     openedAt: number,
   ): void {
+    if (pair.allowEarlierClose === false) return;
     const closeTypes = [...pair.closes];
     if (closeTypes.length === 0) return;
     const placeholders = closeTypes.map(() => "?").join(", ");
