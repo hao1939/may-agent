@@ -246,10 +246,17 @@ defaults in model output, authored workflows, tests, and production admission:
 or one live direct child after the result actions are admitted. Conditions are
 invalid on other results.
 
-When a completed carrier creates a successor wait task, the carrier still
-returns `converged` without top-level Conditions. The external wake belongs to
-the successor task's desired work and will become that task's Condition when the
-successor reconciles.
+Creating follow-up work does not complete an unfinished `achieve` task. When
+the new work is required to satisfy the current task, create it as a direct
+child, return `waiting`, and keep the parent open until that child resolves and
+the parent can judge aggregate acceptance. A sibling successor is not evidence
+that the current outcome converged.
+
+A carrier may return `converged` while creating an independent successor only
+when its own outcome and acceptance are already satisfied, or when its contract
+explicitly accepts the evidenced terminal disposition. In that case the
+successor owns separate desired work and any external wake belongs to the
+successor's Condition rather than the completed carrier.
 
 A thrown exception, timeout, unavailable runtime, invalid envelope, rejected
 action batch, or verifier rejection fails the attempt. `failed` is an attempt
