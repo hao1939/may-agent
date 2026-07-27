@@ -154,7 +154,7 @@ describe("May learning registry", () => {
     ]);
   });
 
-  test("stages real learning-intake cases as a plain-language approved pair", () => {
+  test("stages real learning-intake cases as plain-language approved cases", () => {
     const review = buildLearningTrackReview(
       gymRoot,
       "system-deputy-learning-intake",
@@ -179,6 +179,13 @@ describe("May learning registry", () => {
             id: "may-learn-resolve-session-design-conflict",
             status: "approved",
             human_answer: expect.stringContaining("Give Gym the next move"),
+          }),
+          expect.objectContaining({
+            id: "may-learn-treat-repetition-as-automation-evidence",
+            status: "approved",
+            human_answer: expect.stringContaining(
+              "reject the rule that a request repeated twice",
+            ),
           }),
         ],
       }),

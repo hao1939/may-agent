@@ -8,6 +8,13 @@
       "rationale": "May should protect accepted truth, give Gym the next learning move, and follow useful evidence through evaluation instead of copying, discarding, or merely classifying it.",
       "approved_by": "hao",
       "approved_at": "2026-07-27T09:25:41Z"
+    },
+    "may-learn-treat-repetition-as-automation-evidence": {
+      "status": "approved",
+      "source": "hao-reviewed-repeated-work-automation-transfer-case",
+      "rationale": "May should preserve the goal of reducing repeated work, reject repetition as automatic permission, baseline current behavior, and carry only a proven learning gap through evaluation.",
+      "approved_by": "hao",
+      "approved_at": "2026-07-27T19:29:02Z"
     }
   }
 }
