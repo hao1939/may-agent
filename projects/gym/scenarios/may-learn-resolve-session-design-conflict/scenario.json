@@ -1,6 +1,6 @@
 {
   "name": "may-learn-resolve-session-design-conflict",
-  "description": "Transfer extension: reconcile strong old-session evidence with newer accepted May-agent design.",
+  "description": "Deputy transfer: move useful but conflicting session evidence toward a safe learning decision.",
   "categories": ["deputy-learning", "learning-evidence"],
   "tags": [
     "may-agent",

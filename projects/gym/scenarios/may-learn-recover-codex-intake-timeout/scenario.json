@@ -1,6 +1,6 @@
 {
   "name": "may-learn-recover-codex-intake-timeout",
-  "description": "Diagnostic extension: recover the real Codex learning intake timeout without losing checkpoint integrity.",
+  "description": "Deputy extension: unblock the real Codex learning intake and drive it to a proven result.",
   "categories": ["deputy-learning", "system-diagnosis"],
   "tags": ["may-agent", "gym-app", "learning-intake", "learning-development"],
   "tier": "standard",
