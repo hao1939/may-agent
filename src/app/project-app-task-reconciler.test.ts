@@ -21,6 +21,7 @@ import {
   readProjectAppTaskTrigger,
   recordProjectAppTaskTrigger,
   pendingProjectAppTaskRecoveryAttention,
+  projectAppTaskQueueEntries,
   ProjectAppTaskActionStaleError,
   repairPreviousRuntimeRecoveryAttention,
   repairRunningProjectAppTasksWithoutAttempt,
@@ -79,7 +80,7 @@ function fixture() {
             status: {
               observedGeneration: 0,
               phase: "pending",
-              updatedAt: "2026-07-19T00:00:00.000Z",
+              updatedAt: new Date().toISOString(),
             },
           },
         },
@@ -529,6 +530,60 @@ describe("project app task reconciler state", () => {
 
     const runnable = listRunnableProjectAppTaskIds(config);
     expect(runnable.indexOf("work/z-older")).toBeLessThan(runnable.indexOf("work/a-newer"));
+  });
+
+  it("persists queue fairness by promoting ready work one priority level every five minutes", () => {
+    const { config } = fixture();
+    for (const [id, priority] of [
+      ["work/fresh-p0", "P0"],
+      ["work/aged-p1", "P1"],
+      ["work/aged-p2", "P2"],
+      ["work/aged-p3", "P3"],
+      ["work/fresh-p1", "P1"],
+    ] as const) {
+      observeProjectAppTaskIntent(config, {
+        intent: { ...intent("achieve"), id, priority },
+        appOwner: "app-owner",
+      });
+    }
+
+    const tree = readTaskState(config);
+    const nowMs = Date.now();
+    for (const [id, ageMinutes] of [
+      ["work/aged-p1", 5],
+      ["work/aged-p2", 10],
+      ["work/aged-p3", 15],
+    ] as const) {
+      const resource = tree.resources?.[id];
+      if (!resource) throw new Error(`expected ${id}`);
+      resource.status.updatedAt = new Date(nowMs - ageMinutes * 60_000 - 1_000).toISOString();
+    }
+    saveTaskState(config, tree);
+
+    const entries = listRunnableProjectAppTaskQueueEntries(config);
+    expect(entries.filter((entry) => entry.taskId.startsWith("work/aged-"))).toEqual([
+      { taskId: "work/aged-p3", options: { front: false, priority: "P0" } },
+      { taskId: "work/aged-p2", options: { front: false, priority: "P0" } },
+      { taskId: "work/aged-p1", options: { front: false, priority: "P0" } },
+    ]);
+    expect(entries.find((entry) => entry.taskId === "work/fresh-p1")?.options.priority).toBe("P1");
+  });
+
+  it("uses persisted age when enqueuing selected task IDs", () => {
+    const { config } = fixture();
+    observeProjectAppTaskIntent(config, {
+      intent: { ...intent("achieve"), id: "work/aged-p2", priority: "P2" },
+      appOwner: "app-owner",
+    });
+    const tree = readTaskState(config);
+    const resource = tree.resources?.["work/aged-p2"];
+    if (!resource) throw new Error("expected aged resource");
+    resource.status.updatedAt = new Date(Date.now() - 10 * 60_000 - 1_000).toISOString();
+    saveTaskState(config, tree);
+
+    expect(projectAppTaskQueueEntries(config, ["work/aged-p2"])).toEqual([
+      { taskId: "work/aged-p2", options: { front: false, priority: "P0" } },
+    ]);
   });
 
   it("schedules an unresolved direct project comment before autonomous priority backlog", () => {

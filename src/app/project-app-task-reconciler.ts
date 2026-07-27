@@ -1063,9 +1063,29 @@ export type ProjectAppTaskQueueEntry = {
   };
 };
 
+const projectAppTaskPriorityOrder = ["P0", "P1", "P2", "P3"] as const;
+const projectAppTaskPriorityAgingIntervalMs = 5 * 60 * 1_000;
+
+function effectiveProjectAppTaskPriority(
+  resource: ProjectAppTaskResource,
+  nowMs: number,
+): (typeof projectAppTaskPriorityOrder)[number] {
+  const declaredPriority = resource.spec.priority ?? "P2";
+  const declaredRank = projectAppTaskPriorityOrder.indexOf(declaredPriority);
+  const updatedAtMs = Date.parse(resource.status.updatedAt ?? "");
+  if (!Number.isFinite(updatedAtMs)) return declaredPriority;
+  const ageMs = Math.max(0, nowMs - updatedAtMs);
+  const promotedRank = Math.max(
+    0,
+    declaredRank - Math.floor(ageMs / projectAppTaskPriorityAgingIntervalMs),
+  );
+  return projectAppTaskPriorityOrder[promotedRank] ?? declaredPriority;
+}
+
 export function listRunnableProjectAppTaskQueueEntries(config: TaskStateConfig): ProjectAppTaskQueueEntry[] {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
+    const nowMs = Date.now();
     const priorityOrder = { P0: 0, P1: 1, P2: 2, P3: 3 } as const;
     const hasDirectProjectComment = (resource: ProjectAppTaskResource): boolean => {
       const event = tree.taskTriggers?.[resource.metadata.id]?.event;
@@ -1086,8 +1106,8 @@ export function listRunnableProjectAppTaskQueueEntries(config: TaskStateConfig):
       .sort((left, right) => {
         const commentOrder = Number(hasDirectProjectComment(right)) - Number(hasDirectProjectComment(left));
         const triggerOrder = Number(hasPersistedTrigger(right)) - Number(hasPersistedTrigger(left));
-        const leftPriority = priorityOrder[left.spec.priority ?? "P2"];
-        const rightPriority = priorityOrder[right.spec.priority ?? "P2"];
+        const leftPriority = priorityOrder[effectiveProjectAppTaskPriority(left, nowMs)];
+        const rightPriority = priorityOrder[effectiveProjectAppTaskPriority(right, nowMs)];
         const leftUpdatedAt = String(left.status.updatedAt ?? "");
         const rightUpdatedAt = String(right.status.updatedAt ?? "");
         return (
@@ -1102,7 +1122,7 @@ export function listRunnableProjectAppTaskQueueEntries(config: TaskStateConfig):
         taskId: resource.metadata.id,
         options: {
           front: hasPersistedTrigger(resource),
-          priority: resource.spec.priority ?? "P2",
+          priority: effectiveProjectAppTaskPriority(resource, nowMs),
         },
       }));
   });
@@ -1120,6 +1140,7 @@ export function projectAppTaskQueueEntries(
   if (requested.size === 0) return [];
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
+    const nowMs = Date.now();
     return [...requested].flatMap((taskId) => {
       const resource = tree.resources?.[taskId];
       if (!resource) return [];
@@ -1128,7 +1149,7 @@ export function projectAppTaskQueueEntries(
           taskId,
           options: {
             front: Boolean(tree.taskTriggers?.[taskId]?.event),
-            priority: resource.spec.priority ?? "P2",
+            priority: effectiveProjectAppTaskPriority(resource, nowMs),
           },
         },
       ];
