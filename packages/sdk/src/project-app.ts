@@ -33,6 +33,9 @@ export type EventSelector =
       urgency?: ProjectAppEventUrgency;
       actions?: string[];
       metricIds?: string[];
+      agents?: string[];
+      lanes?: string[];
+      verdicts?: string[];
     };
 
 function selectorRecord(value: unknown): Record<string, unknown> {
@@ -88,6 +91,18 @@ export function matchesEventSelector(selector: EventSelector, event: Record<stri
   if (selector.metricIds?.length) {
     const metricId = selectorValue(event, "metricId", "metric_id");
     if (typeof metricId !== "string" || !selector.metricIds.includes(metricId)) return false;
+  }
+  if (selector.agents?.length) {
+    const agent = selectorValue(event, "agent");
+    if (typeof agent !== "string" || !selector.agents.includes(agent)) return false;
+  }
+  if (selector.lanes?.length) {
+    const lane = selectorValue(event, "lane");
+    if (typeof lane !== "string" || !selector.lanes.includes(lane)) return false;
+  }
+  if (selector.verdicts?.length) {
+    const verdict = selectorValue(event, "reviewedVerdict", "verdict");
+    if (typeof verdict !== "string" || !selector.verdicts.includes(verdict)) return false;
   }
   return true;
 }
