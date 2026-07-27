@@ -35,6 +35,7 @@ import {
 } from "@may-agent/sdk";
 import { Cron } from "../cron.js";
 import { ProjectAppTaskCapacity, ProjectAppTaskController } from "../project-app-task-controller.js";
+import type { ProjectAppTaskQueueOptions } from "../project-app-task-queue.js";
 import { trackProjectAppConditionEvent, trackProjectAppConditionEvents } from "../project-app-condition-tracker.js";
 import {
   childEventTrace,
@@ -2028,6 +2029,19 @@ function installConventionTaskControllers(
   return controllers;
 }
 
+function enqueueProjectAppTask(
+  controller: ProjectAppTaskController,
+  config: ReturnType<typeof taskReconciliationConfig>,
+  taskId: string,
+  overrides: ProjectAppTaskQueueOptions = {},
+): boolean {
+  const current = projectAppTaskQueueEntries(config, [taskId])[0]?.options;
+  return controller.enqueue(taskId, {
+    ...current,
+    ...overrides,
+  });
+}
+
 function recoverInterruptedProjectAppTasks(
   opts: ProjectAppLoaderOptions,
   descriptors: ProjectAppDescriptor[],
@@ -2056,12 +2070,14 @@ function recoverInterruptedProjectAppTasks(
         );
       }
       if (released.released && controller && !descriptor.reconciliationPaused) {
-        controller.enqueue(recovery.taskId);
+        enqueueProjectAppTask(controller, config, recovery.taskId);
       }
     }
     const missingAttemptRepairs = repairRunningProjectAppTasksWithoutAttempt(config);
     for (const repair of missingAttemptRepairs) {
-      if (controller && !descriptor.reconciliationPaused) controller.enqueue(repair.taskId);
+      if (controller && !descriptor.reconciliationPaused) {
+        enqueueProjectAppTask(controller, config, repair.taskId);
+      }
     }
     const repairs = repairPreviousRuntimeRecoveryAttention(config);
     if (repairs.length > 0) {
@@ -2080,12 +2096,14 @@ function recoverInterruptedProjectAppTasks(
       } as unknown as AgentEvent);
       for (const repair of repairs) {
         if (repair.disposition === "requeued" && controller && !descriptor.reconciliationPaused) {
-          controller.enqueue(repair.taskId);
+          enqueueProjectAppTask(controller, config, repair.taskId);
         }
       }
     }
     for (const taskId of replayPersistedConditionEvents(opts, descriptor, config)) {
-      if (controller && !descriptor.reconciliationPaused) controller.enqueue(taskId);
+      if (controller && !descriptor.reconciliationPaused) {
+        enqueueProjectAppTask(controller, config, taskId, { front: true });
+      }
     }
     const attentions = pendingProjectAppTaskRecoveryAttention(config);
     if (attentions.length === 0) continue;
@@ -2152,7 +2170,7 @@ async function requeueRepairedProjectAppTaskHandlers(
         continue;
       }
       if (!releaseWorkspacePreparationFailedProjectAppTask(config, candidate.taskId, candidate.generation)) continue;
-      controller.enqueue(candidate.taskId);
+      enqueueProjectAppTask(controller, config, candidate.taskId);
       opts.bus.emit({
         type: "project.task.handler.recovered",
         source: `project-app:${descriptor.id}:task-recovery`,
@@ -2176,7 +2194,7 @@ async function requeueRepairedProjectAppTaskHandlers(
       }
       if (!available) continue;
       if (!releaseHandlerUnavailableProjectAppTask(config, candidate.taskId)) continue;
-      controller.enqueue(candidate.taskId);
+      enqueueProjectAppTask(controller, config, candidate.taskId);
       opts.bus.emit({
         type: "project.task.handler.recovered",
         source: `project-app:${descriptor.id}:task-recovery`,
@@ -2269,7 +2287,7 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
           ) {
             continue;
           }
-          taskController.enqueue(candidate.taskId);
+          enqueueProjectAppTask(taskController, config, candidate.taskId);
           opts.bus.emit({
             type: "project.task.handler.recovered",
             source: `project-app:${descriptor.id}:task-recovery`,
@@ -2297,7 +2315,11 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
         });
         const conditionWakes = trackProjectAppConditionEvent(config, event);
         for (const wake of conditionWakes) {
-          taskController?.enqueue(wake.taskId, { front: true });
+          if (taskController) {
+            enqueueProjectAppTask(taskController, config, wake.taskId, {
+              front: true,
+            });
+          }
         }
       }
       if (taskController && descriptor.app.tasks) {
@@ -2337,7 +2359,9 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
             taskTriggerWithOwnerIntents(config, targetedTaskId, event),
           );
           if (triggerResult.kind === "recorded") {
-            taskController.enqueue(targetedTaskId, { front: true });
+            enqueueProjectAppTask(taskController, config, targetedTaskId, {
+              front: true,
+            });
             return projectAppTaskDelivery(descriptor, targetedTaskId, "existing targeted task wake accepted");
           }
           if (triggerResult.kind === "waiting") {
@@ -2365,7 +2389,9 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
               });
               interruptSupersededObservationSessions(opts, observation);
               if (observation.kind === "observed") {
-                taskController.enqueue(observation.taskId, { front: true });
+                enqueueProjectAppTask(taskController, config, observation.taskId, {
+                  front: true,
+                });
               }
               return projectAppTaskDelivery(descriptor, targetedTaskId, "new targeted task wake accepted");
             }
@@ -2391,7 +2417,7 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
             });
             interruptSupersededObservationSessions(opts, observation);
             if (observation.kind === "observed") {
-              taskController.enqueue(observation.taskId, {
+              enqueueProjectAppTask(taskController, config, observation.taskId, {
                 front: event.type === "project.comment.created",
               });
             }

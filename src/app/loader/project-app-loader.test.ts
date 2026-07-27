@@ -69,6 +69,7 @@ function writeApp(appDir: string, extra = "") {
             mode: event.mode || "achieve",
             ...(event.ownerOnly ? {} : { workflow: event.workflow || "worker" }),
             ...(event.taskOwner ? { owner: event.taskOwner } : {}),
+            ...(event.priority ? { priority: event.priority } : {}),
             input: { itemId, ...(event.revision ? { revision: event.revision } : {}) },
             outputs: event.outputs || []
           };
@@ -2223,6 +2224,63 @@ describe("project app loader", () => {
         .filter((event) => event.type === "project.task.reconcile.started")
         .map((event) => event.data?.taskId);
       expect(starts).toEqual(["work/blocker", "work/waiter", "work/older"]);
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("preserves declared priority when event wakes enter the controller queue", async () => {
+    const f = fixture();
+    try {
+      writeApp(f.appDir);
+      const appPath = join(f.appDir, "app.ts");
+      writeFileSync(appPath, readFileSync(appPath, "utf8").replace("maxConcurrent: 2", "maxConcurrent: 1"));
+      writeFileSync(
+        join(f.appDir, "agents", "owner", "workflows", "blocker.ts"),
+        `export const name = "blocker";
+         export const description = "hold the only worker slot";
+         export async function execute(ctx) {
+           await new Promise((resolve) => setTimeout(resolve, 300));
+           return ctx.done("blocker done", { state: "converged", summary: "blocker done", evidence: ["proof"], actions: [] });
+         }`,
+      );
+      const bus = new EventBus();
+      const events: any[] = [];
+      bus.subscribe((event) => events.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: manager([]),
+        bus,
+        agentCrons: new Map(),
+      });
+
+      bus.emit({ type: "sample.work", project: "sample", itemId: "blocker", workflow: "blocker" } as any);
+      await waitUntil(() =>
+        events.some(
+          (event) => event.type === "project.task.reconcile.started" && event.data?.taskId === "work/blocker",
+        ),
+      );
+      bus.emit({ type: "sample.work", project: "sample", itemId: "low", priority: "P2" } as any);
+      bus.emit({ type: "sample.work", project: "sample", itemId: "high", priority: "P0" } as any);
+
+      await waitUntil(
+        () =>
+          events.filter(
+            (event) =>
+              event.type === "project.task.reconciled" &&
+              ["work/low", "work/high"].includes(event.data?.taskId) &&
+              event.data?.disposition === "converged",
+          ).length === 2,
+      );
+      const starts = events
+        .filter((event) => event.type === "project.task.reconcile.started")
+        .map((event) => event.data?.taskId);
+      expect(starts).toEqual(["work/blocker", "work/high", "work/low"]);
     } finally {
       closeDb(f.persistDir);
       rmSync(f.root, { recursive: true, force: true });
