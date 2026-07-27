@@ -2136,11 +2136,19 @@ export function decisionCorrectionPrompt(input: {
 }
 
 export function taskWorktreeRecoveryDecisionProblem(
-  decision: AgentDecision["decision"],
+  decision: AgentDecision,
 ): string | null {
-  return ["committed", "test-current", "needs-owner"].includes(decision)
-    ? null
-    : "task worktree recovery must return committed for preserved task work, test-current for removed task residue, or needs-owner for concrete ownership ambiguity; domain disposition is evaluated after recovery";
+  if (
+    !["committed", "test-current", "needs-owner"].includes(
+      decision.decision,
+    )
+  ) {
+    return "task worktree recovery must return committed for preserved task work, test-current for removed task residue, or needs-owner for concrete ownership ambiguity; domain disposition is evaluated after recovery";
+  }
+  if (decision.liveReady !== undefined || decision.condition !== undefined) {
+    return "task worktree recovery only restores a clean source state; omit liveReady and condition because domain readiness and dispatch are evaluated after recovery";
+  }
+  return null;
 }
 
 export async function askAgent(
@@ -2182,11 +2190,11 @@ export async function askAgent(
     }
     const decision = result.structuredResult as AgentDecision;
     const problem =
+      options.validateDecision?.(decision) ??
       agentConditionProblem(decision) ??
       (options.scenarioNormalization
         ? scenarioNormalizationWaitProblem(decision)
         : null) ??
-      options.validateDecision?.(decision) ??
       null;
     if (!problem) return decision;
     lastProblem = problem;
@@ -2365,6 +2373,7 @@ export async function reconcileSpecLive(
           `Work only in ${workspaceDir}; inspect its staged, unstaged, and untracked changes against the task and current source.`,
           "If the changes are a valid bounded continuation, finish scoped checks, commit them, leave the worktree clean, and return decision=committed.",
           "If they are invalid or obsolete task-generated residue, remove only that residue, leave the worktree clean at its prior commit, and return decision=test-current.",
+          "This recovery phase only restores a clean source state. Omit liveReady and condition; after recovery, this workflow separately evaluates whether the exact source is runnable and owns any ADO dispatch.",
           "Do not push, queue ADO, create a PR, edit app task state, or discard work whose ownership cannot be established. Use needs-owner for that concrete ambiguity.",
           "Task:",
           ctx.task,
@@ -2372,7 +2381,7 @@ export async function reconcileSpecLive(
         {
           scenarioNormalization: Boolean(normalizationInput),
           validateDecision: (candidate) =>
-            taskWorktreeRecoveryDecisionProblem(candidate.decision),
+            taskWorktreeRecoveryDecisionProblem(candidate),
         },
       );
       if (recovery.decision === "needs-owner") {

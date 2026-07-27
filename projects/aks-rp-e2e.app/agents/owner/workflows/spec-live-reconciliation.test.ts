@@ -882,14 +882,50 @@ describe("spec-live-reconciliation workflow", () => {
   });
 
   test("keeps worktree recovery phase results separate from domain disposition", () => {
-    expect(taskWorktreeRecoveryDecisionProblem("committed")).toBeNull();
-    expect(taskWorktreeRecoveryDecisionProblem("test-current")).toBeNull();
-    expect(taskWorktreeRecoveryDecisionProblem("needs-owner")).toBeNull();
     expect(
-      taskWorktreeRecoveryDecisionProblem("terminal-disposition"),
+      taskWorktreeRecoveryDecisionProblem({
+        decision: "committed",
+        summary: "recovered source",
+        evidence: ["commit:abc"],
+      }),
+    ).toBeNull();
+    expect(
+      taskWorktreeRecoveryDecisionProblem({
+        decision: "test-current",
+        summary: "removed obsolete residue",
+        evidence: ["workspace:clean"],
+      }),
+    ).toBeNull();
+    expect(
+      taskWorktreeRecoveryDecisionProblem({
+        decision: "needs-owner",
+        summary: "ownership is ambiguous",
+        evidence: ["workspace:dirty"],
+      }),
+    ).toBeNull();
+    expect(
+      taskWorktreeRecoveryDecisionProblem({
+        decision: "terminal-disposition",
+        summary: "not a recovery result",
+        evidence: ["spec:example"],
+      }),
     ).toContain("domain disposition is evaluated after recovery");
-    expect(taskWorktreeRecoveryDecisionProblem("accepted-pass")).toContain(
-      "task worktree recovery must return",
+    expect(
+      taskWorktreeRecoveryDecisionProblem({
+        decision: "accepted-pass",
+        summary: "not a recovery result",
+        evidence: ["run:42"],
+      }),
+    ).toContain("task worktree recovery must return");
+    expect(
+      taskWorktreeRecoveryDecisionProblem({
+        decision: "committed",
+        summary: "recovered source",
+        evidence: ["commit:abc"],
+        liveReady: false,
+      }),
+    ).toContain(
+      "omit liveReady and condition because domain readiness and dispatch are evaluated after recovery",
     );
   });
 
