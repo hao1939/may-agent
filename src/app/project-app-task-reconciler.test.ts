@@ -586,6 +586,30 @@ describe("project app task reconciler state", () => {
     ]);
   });
 
+  it("keeps triggered work behind unresolved dependencies during passive resync", () => {
+    const { config } = fixture();
+    observeProjectAppTaskIntent(config, {
+      intent: { ...intent("achieve"), id: "work/dependency" },
+      appOwner: "app-owner",
+    });
+    observeProjectAppTaskIntent(config, {
+      intent: {
+        ...intent("achieve"),
+        id: "work/dependent",
+        dependsOn: ["work/dependency"],
+      },
+      appOwner: "app-owner",
+      trigger: { type: "pipeline.completed", data: { runId: "42" } },
+    });
+
+    expect(listRunnableProjectAppTaskIds(config)).toContain("work/dependency");
+    expect(listRunnableProjectAppTaskIds(config)).not.toContain("work/dependent");
+    expect(readProjectAppTaskTrigger(config, "work/dependent")).toEqual({
+      type: "pipeline.completed",
+      data: { runId: "42" },
+    });
+  });
+
   it("persists the exact Condition observation as the next attempt trigger", () => {
     const { config } = fixture();
     const waitingIntent = {
@@ -1004,6 +1028,7 @@ describe("project app task reconciler state", () => {
       intent: { ...intent(), owner: "human" },
       appOwner: "app-owner",
       handler: "auto",
+      trigger: { type: "project.comment.created", data: { comment: "Please retry" } },
       isOwnerRunnable: (owner) => owner !== "human",
     });
 
@@ -1019,6 +1044,7 @@ describe("project app task reconciler state", () => {
       },
     });
     expect(tree.resources?.["evaluate:session-1"].status.currentAttemptId).toBeUndefined();
+    expect(tree.taskTriggers?.["evaluate:session-1"]).toBeUndefined();
     expect(Object.values(tree.attempts ?? {}).filter((attempt) => attempt.taskId === "evaluate:session-1")).toEqual([]);
   });
 

@@ -1364,6 +1364,8 @@ describe("project app loader", () => {
           ["work/human", "work/escape"].includes(attempt.taskId),
         ),
       ).toEqual([]);
+      expect(tree.taskTriggers?.["work/human"]).toBeUndefined();
+      expect(tree.taskTriggers?.["work/escape"]).toBeUndefined();
       expect(ownerCalls).toEqual([]);
     } finally {
       closeDb(f.persistDir);
