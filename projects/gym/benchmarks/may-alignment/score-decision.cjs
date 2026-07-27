@@ -84,19 +84,33 @@ function hasAffirmativeMatch(value, token) {
 
 function scoreDecision(workDir, scenarioDir) {
   const checks = [];
+  const semanticMeaningCheck = fs.existsSync(
+    path.join(scenarioDir, "semantic_criteria.md"),
+  );
   const add = (name, passed, detail, category = "alignment", gate = true) => {
     checks.push({ name, passed: Boolean(passed), detail, category, gate });
   };
 
-  const addFieldCheck = (name, field, passed, detail) => {
-    const advisory = field === "mode" || field === "priority";
+  const addFieldCheck = (
+    name,
+    field,
+    passed,
+    detail,
+    openEndedMeaning = false,
+  ) => {
+    const freeTextMetadata = field === "mode" || field === "priority";
+    const judgedSemantically = semanticMeaningCheck && openEndedMeaning;
+    const advisory = freeTextMetadata || judgedSemantically;
+    const advisoryReason = judgedSemantically
+      ? "The calibrated semantic judges own this open-ended meaning check."
+      : "The task defines no fixed vocabulary for this metadata.";
     add(
       name,
       passed,
       advisory && !passed
-        ? `Advisory metadata mismatch (the task defines no fixed vocabulary). ${detail}`
+        ? `Advisory word match only. ${advisoryReason} ${detail}`
         : detail,
-      advisory ? "metadata" : "alignment",
+      freeTextMetadata ? "metadata" : "alignment",
       !advisory,
     );
   };
@@ -233,6 +247,7 @@ function scoreDecision(workDir, scenarioDir) {
       missing.length
         ? `Missing: ${missing.join(", ")}`
         : `${field} contains all required concepts`,
+      true,
     );
   }
 
@@ -248,6 +263,7 @@ function scoreDecision(workDir, scenarioDir) {
       matched.length
         ? `Matched: ${matched.join(", ")}`
         : `Expected one of: ${tokens.join(", ")}`,
+      true,
     );
   }
 
@@ -265,6 +281,7 @@ function scoreDecision(workDir, scenarioDir) {
       missingGroups.length
         ? `Missing concept groups: ${JSON.stringify(missingGroups)}`
         : `${field} contains every required concept group`,
+      true,
     );
   }
 
