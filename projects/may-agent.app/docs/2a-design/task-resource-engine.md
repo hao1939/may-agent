@@ -196,6 +196,13 @@ entries all carry the current effective task priority into the controller, so
 a `P0` continuation is not silently reduced to the queue's default priority
 while lower-priority wakes drain first.
 
+`P0` is reserved for work explicitly declared critical. Persistent queue
+fairness may age older `P2`/`P3` work toward `P1`, and bounded front-lane and
+ordinary-lane fairness still admit lower-priority work, but elapsed time alone
+must not promote a task into `P0`. Otherwise a large stale wait backlog can
+erase the critical-work boundary and indefinitely delay fresh live-result or
+recovery work that the project explicitly marked `P0`.
+
 `needs-owner` is an exception to a learned process, not its normal failure
 branch. A domain workflow is expected to invoke its owning agent for in-scope
 repair and verification before handing the same task back to the owner. Merge
