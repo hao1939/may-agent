@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   observePullRequest,
   pullRequestObservationEvent,
+  summarizePullRequestReview,
 } from "./aks-pull-request.js";
 
 describe("AKS pull request watcher", () => {
@@ -58,5 +59,62 @@ describe("AKS pull request watcher", () => {
         mergeStatus: "succeeded",
       }),
     ).toMatchObject({ state: "abandoned" });
+  });
+
+  test("includes unresolved review facts in the repeated PR observation", () => {
+    const review = summarizePullRequestReview({
+      value: [
+        {
+          id: 12,
+          status: "active",
+          threadContext: { filePath: "/feature.test.ts" },
+          comments: [
+            {
+              id: 1,
+              commentType: "text",
+              author: { displayName: "Reviewer" },
+              content: "Please preserve terminal cleanup evidence.",
+            },
+          ],
+        },
+        {
+          id: 13,
+          status: "fixed",
+          comments: [{ id: 1, commentType: "text", content: "Done" }],
+        },
+      ],
+    });
+    const observed = observePullRequest(
+      { pullRequestId: 77, status: "active", mergeStatus: "succeeded" },
+      review,
+    );
+
+    expect(review).toMatchObject({
+      available: true,
+      unresolvedCount: 1,
+      threads: [
+        {
+          threadId: "12",
+          path: "/feature.test.ts",
+          author: "Reviewer",
+          content: "Please preserve terminal cleanup evidence.",
+        },
+      ],
+    });
+    expect(review.fingerprint).toHaveLength(16);
+    expect(pullRequestObservationEvent(observed!)).toMatchObject({
+      unresolvedReviewCount: 1,
+      reviewFingerprint: review.fingerprint,
+      unresolvedReviewThreads: review.threads,
+    });
+  });
+
+  test("does not report review success when thread discovery is unavailable", () => {
+    expect(summarizePullRequestReview(null)).toEqual({
+      available: false,
+      unresolvedCount: 0,
+      fingerprint: "",
+      threads: [],
+    });
   });
 });

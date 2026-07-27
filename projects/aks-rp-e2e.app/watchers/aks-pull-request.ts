@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import type { ProjectAppContext, ProjectAppEvent } from "@may-agent/sdk";
@@ -20,6 +21,31 @@ type PullRequest = {
   url?: unknown;
 };
 
+type PullRequestThread = {
+  id?: unknown;
+  status?: unknown;
+  threadContext?: { filePath?: unknown };
+  comments?: Array<{
+    id?: unknown;
+    content?: unknown;
+    commentType?: unknown;
+    isDeleted?: unknown;
+    author?: { displayName?: unknown };
+  }>;
+};
+
+export type PullRequestReview = {
+  available: boolean;
+  unresolvedCount: number;
+  fingerprint: string;
+  threads: Array<{
+    threadId: string;
+    path: string | null;
+    author: string;
+    content: string;
+  }>;
+};
+
 export type ObservedPullRequest = {
   pullRequestId: string;
   status: string;
@@ -31,6 +57,7 @@ export type ObservedPullRequest = {
   targetCommit: string | null;
   mergeCommit: string | null;
   url: string | null;
+  review: PullRequestReview;
 };
 
 const organization = "https://dev.azure.com/msazure";
@@ -63,15 +90,18 @@ function saveState(path: string, state: PullRequestWatcherState): void {
   writeFileSync(path, `${JSON.stringify(state, null, 2)}\n`);
 }
 
-function runAzJson(args: string[]): unknown {
+function runAzJson(
+  args: string[],
+  options: { includeProject?: boolean } = {},
+): unknown {
+  const includeProject = options.includeProject !== false;
   const result = spawnSync(
     azCli,
     [
       ...args,
       "--organization",
       organization,
-      "--project",
-      adoProject,
+      ...(includeProject ? ["--project", adoProject] : []),
       "-o",
       "json",
     ],
@@ -91,6 +121,73 @@ function runAzJson(args: string[]): unknown {
   } catch {
     return null;
   }
+}
+
+function listPullRequestThreads(pullRequestId: string): unknown {
+  return runAzJson(
+    [
+      "devops",
+      "invoke",
+      "--area",
+      "git",
+      "--resource",
+      "pullRequestThreads",
+      "--route-parameters",
+      `project=${adoProject}`,
+      `repositoryId=${repository}`,
+      `pullRequestId=${pullRequestId}`,
+      "--api-version",
+      "7.1",
+    ],
+    { includeProject: false },
+  );
+}
+
+export function summarizePullRequestReview(value: unknown): PullRequestReview {
+  if (!value || typeof value !== "object") {
+    return {
+      available: false,
+      unresolvedCount: 0,
+      fingerprint: "",
+      threads: [],
+    };
+  }
+  const rawThreads = Array.isArray((value as { value?: unknown }).value)
+    ? ((value as { value: PullRequestThread[] }).value ?? [])
+    : [];
+  const threads = rawThreads
+    .filter((thread) => text(thread.status) === "active")
+    .flatMap((thread) => {
+      const comments = Array.isArray(thread.comments)
+        ? thread.comments.filter(
+            (comment) =>
+              comment?.isDeleted !== true &&
+              text(comment?.commentType) === "text" &&
+              Boolean(text(comment?.content)),
+          )
+        : [];
+      const comment = comments[0];
+      const threadId = text(thread.id);
+      if (!threadId || !comment) return [];
+      return [
+        {
+          threadId,
+          path: text(thread.threadContext?.filePath) || null,
+          author: text(comment.author?.displayName) || "unknown",
+          content: text(comment.content).slice(0, 2_000),
+        },
+      ];
+    })
+    .sort((left, right) => left.threadId.localeCompare(right.threadId));
+  return {
+    available: true,
+    unresolvedCount: threads.length,
+    fingerprint: createHash("sha256")
+      .update(JSON.stringify(threads))
+      .digest("hex")
+      .slice(0, 16),
+    threads,
+  };
 }
 
 function listPullRequests(knownIds: string[] = []): PullRequest[] {
@@ -124,6 +221,12 @@ function branchName(value: unknown): string {
 
 export function observePullRequest(
   pullRequest: PullRequest,
+  review: PullRequestReview = {
+    available: false,
+    unresolvedCount: 0,
+    fingerprint: "",
+    threads: [],
+  },
 ): ObservedPullRequest | null {
   const pullRequestId = text(pullRequest.pullRequestId);
   if (!pullRequestId) return null;
@@ -148,6 +251,7 @@ export function observePullRequest(
     targetCommit: text(pullRequest.lastMergeTargetCommit?.commitId) || null,
     mergeCommit: text(pullRequest.lastMergeCommit?.commitId) || null,
     url: text(pullRequest.url) || null,
+    review,
   };
 }
 
@@ -162,6 +266,10 @@ export function pullRequestObservationEvent(
     mergeStatus: observed.mergeStatus,
     sourceBranch: observed.sourceBranch,
     targetBranch: observed.targetBranch,
+    reviewAvailable: observed.review.available,
+    unresolvedReviewCount: observed.review.unresolvedCount,
+    reviewFingerprint: observed.review.fingerprint,
+    unresolvedReviewThreads: observed.review.threads,
     ...(observed.sourceCommit ? { sourceCommit: observed.sourceCommit } : {}),
     ...(observed.targetCommit ? { targetCommit: observed.targetCommit } : {}),
     ...(observed.mergeCommit ? { mergeCommit: observed.mergeCommit } : {}),
@@ -186,7 +294,12 @@ export async function observeAksPullRequests(
     (pullRequest) => branchName(pullRequest.sourceRefName).startsWith("task/"),
   );
   const observed = pullRequests.flatMap((pullRequest) => {
-    const value = observePullRequest(pullRequest);
+    const pullRequestId = text(pullRequest.pullRequestId);
+    const isActive = text(pullRequest.status) === "active";
+    const review = isActive
+      ? summarizePullRequestReview(listPullRequestThreads(pullRequestId))
+      : { available: true, unresolvedCount: 0, fingerprint: "", threads: [] };
+    const value = observePullRequest(pullRequest, review);
     return value ? [value] : [];
   });
   saveState(statePath, {
