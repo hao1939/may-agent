@@ -3,11 +3,11 @@
   "benchmark": "may-deputy-learning-intake",
   "labels": {
     "may-learn-recover-codex-intake-timeout": {
-      "status": "draft",
+      "status": "approved",
       "source": "reviewed-codex-intake-incident-and-accepted-system-design",
       "rationale": "May should keep the existing learning outcome moving through Gym, preserve checkpoint integrity, require proof, and follow the recovery to closure without micromanaging the patch.",
-      "approved_by": null,
-      "approved_at": null
+      "approved_by": "hao",
+      "approved_at": "2026-07-27T09:25:41Z"
     }
   }
 }

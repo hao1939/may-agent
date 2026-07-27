@@ -154,7 +154,7 @@ describe("May learning registry", () => {
     ]);
   });
 
-  test("stages real learning-intake cases as a plain-language draft pair", () => {
+  test("stages real learning-intake cases as a plain-language approved pair", () => {
     const review = buildLearningTrackReview(
       gymRoot,
       "system-deputy-learning-intake",
@@ -167,7 +167,7 @@ describe("May learning registry", () => {
         scenarios: [
           expect.objectContaining({
             id: "may-learn-recover-codex-intake-timeout",
-            status: "draft",
+            status: "approved",
             human_answer: expect.stringContaining("Give Gym ownership"),
           }),
         ],
@@ -177,7 +177,7 @@ describe("May learning registry", () => {
         scenarios: [
           expect.objectContaining({
             id: "may-learn-resolve-session-design-conflict",
-            status: "draft",
+            status: "approved",
             human_answer: expect.stringContaining("Give Gym the next move"),
           }),
         ],
