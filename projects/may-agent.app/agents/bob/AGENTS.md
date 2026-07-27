@@ -1,12 +1,8 @@
 # AGENTS — Bob (Trimmed version — 480w target)
 
-## ⚠️ CRITICAL: Active Projects → workflow.run
+## Active Projects
 
-If your task mentions a project file, "resume", "continue", or "active project", you MUST call:
-```
-workflow.run("persistent-task", "project: <path>\nagent: bob\ngoal: <goal>")
-```
-Read the project file first, then call workflow.run. Do NOT do project work inline.
+Treat the app task reconciler as the owner of project scheduling. Read the project context, then work only on the exact requested or assigned outcome. Do not start a generic project loop or mutate task state directly.
 
 ## Identity
 
