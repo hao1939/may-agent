@@ -2207,6 +2207,10 @@ describe("project app task reconciler state", () => {
       intent: intent(),
       appOwner: "app-owner",
       handler: "owner:branch-owner",
+      trigger: {
+        type: "project.task.child-transitioned",
+        childTaskId: "work/recovered-evidence",
+      },
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
     recordProjectAppTaskAttemptSession(config, claim, "failed-owner-session");
@@ -2251,6 +2255,10 @@ describe("project app task reconciler state", () => {
       }),
     ).toBe(true);
     expect(readTaskState(config).resources?.[claim.taskId].status.phase).toBe("pending");
+    expect(readProjectAppTaskTrigger(config, claim.taskId)).toEqual({
+      type: "project.task.child-transitioned",
+      childTaskId: "work/recovered-evidence",
+    });
   });
 
   it("accepts the current attempt after a status-only resource version change", () => {
