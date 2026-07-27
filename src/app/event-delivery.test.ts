@@ -1691,6 +1691,60 @@ describe("event delivery metadata", () => {
     }
   });
 
+  it("closes only the project intent named by a correlated owner result", () => {
+    const root = tempRoot();
+    try {
+      const bus = new EventBus();
+      attachPersistence(bus, root);
+      const first = bus.emit({
+        type: "project.comment.created",
+        source: "test",
+        owner: "agent:sample-owner",
+        data: { project: "sample", comment: "first instruction" },
+      } as any);
+      const second = bus.emit({
+        type: "project.comment.created",
+        source: "test",
+        owner: "agent:sample-owner",
+        data: { project: "sample", comment: "second instruction" },
+      } as any);
+      const firstId = Number(first[EVENT_ROW_ID]);
+      const secondId = Number(second[EVENT_ROW_ID]);
+
+      bus.emit({
+        type: "project.owner.reviewed",
+        source: "project-app:sample:task-reconciler",
+        owner: "agent:sample-owner",
+        data: {
+          project: "sample",
+          openEventId: firstId,
+          summary: "reviewed only the first instruction",
+        },
+      } as any);
+
+      const db = getDb(root);
+      expect(
+        db
+          .prepare(
+            `SELECT status FROM event_pair_runs
+             WHERE pair_name = 'project.intent' AND open_event_id = ?`,
+          )
+          .get(firstId),
+      ).toMatchObject({ status: "closed" });
+      expect(
+        db
+          .prepare(
+            `SELECT status, close_event_id FROM event_pair_runs
+             WHERE pair_name = 'project.intent' AND open_event_id = ?`,
+          )
+          .get(secondId),
+      ).toMatchObject({ status: "open", close_event_id: null });
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("marks new unaccepted events unhandled after their ttl", async () => {
     const root = tempRoot();
     try {
