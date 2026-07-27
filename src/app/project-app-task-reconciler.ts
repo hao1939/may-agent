@@ -1069,14 +1069,16 @@ const projectAppTaskPriorityAgingIntervalMs = 5 * 60 * 1_000;
 function effectiveProjectAppTaskPriority(
   resource: ProjectAppTaskResource,
   nowMs: number,
+  readyAt = resource.status.updatedAt,
 ): (typeof projectAppTaskPriorityOrder)[number] {
   const declaredPriority = resource.spec.priority ?? "P2";
   const declaredRank = projectAppTaskPriorityOrder.indexOf(declaredPriority);
-  const updatedAtMs = Date.parse(resource.status.updatedAt ?? "");
-  if (!Number.isFinite(updatedAtMs)) return declaredPriority;
-  const ageMs = Math.max(0, nowMs - updatedAtMs);
+  const readyAtMs = Date.parse(readyAt ?? "");
+  if (!Number.isFinite(readyAtMs)) return declaredPriority;
+  const ageMs = Math.max(0, nowMs - readyAtMs);
+  const highestAgedRank = declaredRank === 0 ? 0 : 1;
   const promotedRank = Math.max(
-    0,
+    highestAgedRank,
     declaredRank - Math.floor(ageMs / projectAppTaskPriorityAgingIntervalMs),
   );
   return projectAppTaskPriorityOrder[promotedRank] ?? declaredPriority;
@@ -1101,13 +1103,19 @@ export function listRunnableProjectAppTaskQueueEntries(config: TaskStateConfig):
     };
     const hasPersistedTrigger = (resource: ProjectAppTaskResource): boolean =>
       Boolean(tree.taskTriggers?.[resource.metadata.id]?.event);
+    const effectivePriority = (resource: ProjectAppTaskResource) =>
+      effectiveProjectAppTaskPriority(
+        resource,
+        nowMs,
+        tree.taskTriggers?.[resource.metadata.id]?.observedAt,
+      );
     return Object.values(tree.resources ?? {})
       .filter((resource) => isRunnableOnPassiveResync(tree, resource))
       .sort((left, right) => {
         const commentOrder = Number(hasDirectProjectComment(right)) - Number(hasDirectProjectComment(left));
         const triggerOrder = Number(hasPersistedTrigger(right)) - Number(hasPersistedTrigger(left));
-        const leftPriority = priorityOrder[effectiveProjectAppTaskPriority(left, nowMs)];
-        const rightPriority = priorityOrder[effectiveProjectAppTaskPriority(right, nowMs)];
+        const leftPriority = priorityOrder[effectivePriority(left)];
+        const rightPriority = priorityOrder[effectivePriority(right)];
         const leftUpdatedAt = String(left.status.updatedAt ?? "");
         const rightUpdatedAt = String(right.status.updatedAt ?? "");
         return (
@@ -1122,7 +1130,7 @@ export function listRunnableProjectAppTaskQueueEntries(config: TaskStateConfig):
         taskId: resource.metadata.id,
         options: {
           front: hasPersistedTrigger(resource),
-          priority: effectiveProjectAppTaskPriority(resource, nowMs),
+          priority: effectivePriority(resource),
         },
       }));
   });
@@ -1149,7 +1157,11 @@ export function projectAppTaskQueueEntries(
           taskId,
           options: {
             front: Boolean(tree.taskTriggers?.[taskId]?.event),
-            priority: effectiveProjectAppTaskPriority(resource, nowMs),
+            priority: effectiveProjectAppTaskPriority(
+              resource,
+              nowMs,
+              tree.taskTriggers?.[taskId]?.observedAt,
+            ),
           },
         },
       ];
