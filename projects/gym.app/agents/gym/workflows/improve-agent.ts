@@ -573,6 +573,37 @@ function recordVerificationMetrics(
   });
 }
 
+export function qualifiesHeldBackRelease(
+  checkpoint: VerificationCheckpoint,
+): boolean {
+  const { manifest, comparison } = checkpoint;
+  const complete =
+    manifest.scenarios.length > 0 &&
+    manifest.trials_per_scenario > 0 &&
+    manifest.scenarios.every((scenario) => {
+      const trials = manifest.trials.filter(
+        (trial) => trial.scenario === scenario,
+      );
+      return (
+        trials.length === manifest.trials_per_scenario &&
+        new Set(trials.map((trial) => trial.trial)).size ===
+          manifest.trials_per_scenario
+      );
+    }) &&
+    manifest.trials.length ===
+      manifest.scenarios.length * manifest.trials_per_scenario;
+  const candidatePassedEveryTrial = manifest.trials.every(
+    (trial) => trial.machine_verdict === "pass",
+  );
+  return (
+    complete &&
+    candidatePassedEveryTrial &&
+    comparison.labels_approved &&
+    comparison.no_invalid_runs &&
+    comparison.no_regressions
+  );
+}
+
 function readJson<T>(path: string): T | null {
   if (!existsSync(path)) return null;
   return JSON.parse(readFileSync(path, "utf8")) as T;
@@ -1632,9 +1663,10 @@ async function runCandidateIteration(
 
   const gymRoot = join(ctx.projectsRoot, "gym");
   let comparison = development.comparison;
+  let verificationPassed = comparison.gate === "pass";
   let verificationDir = development.runDir;
   let releaseBaselineDir: string | null = null;
-  if (comparison.gate === "pass") {
+  if (verificationPassed) {
     const releaseBaselineCheckpointPath = join(
       iterationDir,
       "release-baseline.json",
@@ -1687,19 +1719,20 @@ async function runCandidateIteration(
     }
     recordVerificationMetrics(ctx, release);
     comparison = release.comparison;
+    verificationPassed = qualifiesHeldBackRelease(release);
     verificationDir = release.runDir;
   }
 
   const reviewCheckpointPath = join(iterationDir, "failed-review.json");
   let review =
-    comparison.gate === "pass"
+    verificationPassed
       ? null
       : readJson<FailedReview>(reviewCheckpointPath);
-  if (comparison.gate !== "pass" && !review) {
+  if (!verificationPassed && !review) {
     review = await reviewFailedCandidate(ctx, plan, verificationDir);
     if (review) writeJson(reviewCheckpointPath, review);
   }
-  if (comparison.gate !== "pass" && !review) {
+  if (!verificationPassed && !review) {
     return ctx.done("Gym could not review the failed candidate", {
       state: "needs-owner",
       summary: "Gym could not review the failed candidate",
@@ -1746,9 +1779,9 @@ async function runCandidateIteration(
   }
 
   const recommendation =
-    comparison.gate === "pass" ? "promote" : review!.disposition;
+    verificationPassed ? "promote" : review!.disposition;
   const approval =
-    comparison.gate === "pass"
+    verificationPassed
       ? buildApprovalRequest({
           kind: "agent-improvement",
           taskId,
@@ -1758,7 +1791,7 @@ async function runCandidateIteration(
           requestedAction:
             "Approve this exact release-verified May candidate for production promotion?",
           reason:
-            "The candidate passed targeted verification and the full five-trial release comparison without an approved regression.",
+            "The candidate improved the targeted behavior, then passed every approved held-back release trial without an invalid run or regression.",
         })
       : benchmarkFix
         ? buildApprovalRequest({
@@ -1774,7 +1807,7 @@ async function runCandidateIteration(
         : null;
   const workflowState = approval ? "waiting" : "needs-owner";
   const summary =
-    comparison.gate === "pass"
+    verificationPassed
       ? `May candidate passed targeted and release verification and is waiting for approval of the exact artifact. ${candidateCheckpoint.implementationSummary}`
       : benchmarkFix
         ? `Gym prepared an exact benchmark/scorer fix and is waiting for approval. ${benchmarkFix.summary}`
@@ -1818,7 +1851,7 @@ async function runCandidateIteration(
     development_verification_run_dir: development.runDir,
     release_baseline_run_dir: releaseBaselineDir,
     verification_run_dir: verificationDir,
-    gate: comparison.gate,
+    gate: verificationPassed ? "pass" : comparison.gate,
     recommendation,
     review,
     summary,

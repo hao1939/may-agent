@@ -20,6 +20,7 @@ import {
   fingerprintTree,
   learningPromptLines,
   prepareAssessment,
+  qualifiesHeldBackRelease,
   runImprovement,
   scenarioVerdicts,
   validateFindings,
@@ -129,6 +130,48 @@ describe("single agent-improvement loop", () => {
       fail: ["gap"],
       invalid: ["runtime"],
     });
+  });
+
+  test("qualifies an all-pass held-back run at a perfect baseline ceiling", () => {
+    const verified = manifest("release-verify", {
+      "transfer-a": ["pass", "pass", "pass", "pass", "pass"],
+      "transfer-b": ["pass", "pass", "pass", "pass", "pass"],
+    });
+    verified.phase = "verify";
+    expect(
+      qualifiesHeldBackRelease({
+        runDir: "/release-verify",
+        manifest: verified,
+        comparison: {
+          baseline_run_id: "perfect-baseline",
+          candidate_run_id: "release-verify",
+          labels_approved: true,
+          no_invalid_runs: true,
+          no_regressions: true,
+          improved: false,
+          gate: "fail",
+          scenarios: [],
+        },
+      }),
+    ).toBe(true);
+
+    verified.trials[0]!.machine_verdict = "fail";
+    expect(
+      qualifiesHeldBackRelease({
+        runDir: "/release-verify",
+        manifest: verified,
+        comparison: {
+          baseline_run_id: "perfect-baseline",
+          candidate_run_id: "release-verify",
+          labels_approved: true,
+          no_invalid_runs: true,
+          no_regressions: true,
+          improved: false,
+          gate: "fail",
+          scenarios: [],
+        },
+      }),
+    ).toBe(false);
   });
 
   test("requires exact per-scenario classification coverage", () => {
@@ -454,7 +497,7 @@ describe("single agent-improvement loop", () => {
         const runDir = join(runsDir, "release-baseline");
         mkdirSync(runDir, { recursive: true });
         const release = manifest("release-baseline", {
-          "agent-case": ["fail", "fail", "fail", "fail", "fail"],
+          "agent-case": ["pass", "pass", "pass", "pass", "pass"],
           "control-case": ["pass", "pass", "pass", "pass", "pass"],
         });
         release.trials_per_scenario = 5;
@@ -466,28 +509,39 @@ describe("single agent-improvement loop", () => {
         verifyCount++;
         const runDir = join(runsDir, `verify-${verifyCount}`);
         mkdirSync(runDir, { recursive: true });
-        writeFileSync(join(runDir, "comparison.json"), '{"gate":"pass"}\n');
         const candidatePath = join(input.agentsRoot!, ".lab", input.candidate);
-        const verified = manifest(`verify-${verifyCount}`, {
-          "agent-case": ["pass", "pass", "pass"],
-        });
+        const releaseVerification = verifyCount === 2;
+        const verified = manifest(
+          `verify-${verifyCount}`,
+          releaseVerification
+            ? {
+                "agent-case": ["pass", "pass", "pass", "pass", "pass"],
+                "control-case": ["pass", "pass", "pass", "pass", "pass"],
+              }
+            : { "agent-case": ["pass", "pass", "pass"] },
+        );
         verified.phase = "verify";
         verified.candidate = input.candidate;
         verified.proof.candidate_fingerprint = fingerprintTree(candidatePath);
+        const comparison = {
+          baseline_run_id: String(input.baseline),
+          candidate_run_id: verified.run_id,
+          labels_approved: true,
+          no_invalid_runs: true,
+          no_regressions: true,
+          improved: !releaseVerification,
+          gate: releaseVerification ? ("fail" as const) : ("pass" as const),
+          scenarios: [],
+        };
+        writeFileSync(
+          join(runDir, "comparison.json"),
+          `${JSON.stringify(comparison)}\n`,
+        );
         runDirs.push(runDir);
         return {
           runDir,
           manifest: verified,
-          comparison: {
-            baseline_run_id: String(input.baseline),
-            candidate_run_id: verified.run_id,
-            labels_approved: true,
-            no_invalid_runs: true,
-            no_regressions: true,
-            improved: true,
-            gate: "pass" as const,
-            scenarios: [],
-          },
+          comparison,
         };
       },
     };
