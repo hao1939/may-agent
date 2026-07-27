@@ -75,15 +75,35 @@ verifies publication. The agent edits source, resolves semantic conflicts, and
 judges exact terminal artifacts. The app projects an accepted proof into the
 spec-loop read model after the task receipt is persisted.
 
+A successful terminal review must not change the tested source merely to record
+that success. Before the receipt is persisted, `ready`, an older accepted run,
+or missing `latestLiveResult` fields can still be the correct checked-in source
+posture; the app-owned proof projection records the newly accepted run after
+integration. When the provider run succeeded and hard proof validation found no
+structural gap, the agent returns `accepted-pass` without editing the spec,
+model, test, generated views, or an evidence memo. A `committed` decision after
+a succeeded run is reserved for an actual behavior or contract defect exposed
+by the evidence, and that changed source requires a fresh exact run. This keeps
+proof recording from recursively invalidating the commit it is meant to prove.
+
 After the agent judges a terminal run and before any direct `dev` integration,
 workflow code validates the hard proof facts from that exact run: pipeline and
-source identity, selected spec, resolved staging target, per-spec pass, and
-cleanup evidence. A green provider result or an agent `accepted-pass` judgment
-cannot bypass this gate. Missing proof returns the finding to the same domain
-workflow for repair and a fresh exact run; it is never integrated first and
-rejected only by the later task verifier. The post-integration verifier repeats
-these checks and additionally proves current `origin/dev` ancestry and the
-scenario-source invariant.
+source identity, selected spec, resolved staging target, per-spec pass, every
+`claim` assertion declared by the tested spec source, and cleanup evidence.
+Claim proof is structural: the exact per-spec artifact must contain each
+declared assertion id with `verdictImpact: claim` and `ok: true`. A success
+summary, an empty claim set, a green provider result, or an agent
+`accepted-pass` judgment cannot bypass this gate. Missing proof returns the
+declared IDs and the exact observed claim IDs to the same domain workflow for
+agent judgment, repair, and a fresh exact run; code does not decide which side
+of the contract should change. It is never integrated first and rejected only
+by the later task verifier. Cleanup collection is structural too: the verifier
+reads cleanup assertions from both the standard top-level per-spec
+`assertions` array and the legacy `raw.assertions` array, and accepts an
+explicit passing cleanup object from either level. It does not infer cleanup
+from summaries or prose. The
+post-integration verifier repeats these checks and additionally proves current
+`origin/dev` ancestry and the scenario-source invariant.
 
 Before the first exact run for a source commit, the agent reviews that current
 commit against the original task and decides whether it is ready for live
@@ -229,6 +249,20 @@ unrelated merge.
   `test-current` judgment is invalid because that exact source has already run;
   the workflow feeds the full terminal evidence back to the same agent for a
   corrected verdict or fix-forward move.
+- Exhausting those bounded structured-result corrections is also a workflow
+  execution failure, not an implicit `needs-owner` judgment. The workflow lets
+  the runtime retain the task worktree and mark the iteration for attention.
+  When live-execution capacity is available, `normalize-scenario-frontier`
+  unblocks that same task generation and the same learned workflow starts a new
+  iteration from the retained source and current provider evidence. It does not
+  create a successor task or invoke the owner fallback. Only an agent that
+  explicitly returns `needs-owner` may cross that ownership boundary.
+- If that accountable-owner result is rejected by the declared workflow's
+  mechanical verifier, the original task remains unfinished. The normalization
+  controller returns the same task generation and retained worktree to
+  `spec-live-reconciliation`; it does not leave attention residue or accept a
+  replacement task. Code routes the rejected result back to the capable
+  workflow, while the domain agent makes the next judgment from current facts.
 - Source state and permission to start live execution are separate agent
   judgments. Every initial `committed` or `test-current` result must also carry
   `liveReady: true|false`. Code may queue ADO only when it is explicitly true;
@@ -250,8 +284,14 @@ unrelated merge.
 - Scenario normalization also supports one explicit
   `terminal-disposition` judgment for a source that is intentionally not
   runnable. This is an agent judgment, not a status inferred by code. The
-  result names the exact `status` and `specState` already encoded by the
-  normalized spec and explains why no truthful current staging run exists.
+  same domain agent may use exact terminal live evidence to replace a stale
+  positive source posture with the reviewed `status`, `specState`,
+  `statusReason`, and latest-live-result fields, commit that bounded source
+  change, and return the structured `terminal-disposition` judgment. It does
+  not hand this work to the generic owner merely because the spec still said
+  ready or pass before the terminal run. `needs-owner` remains available only
+  when the evidence cannot support the domain judgment or a real external
+  authority must decide it.
 - A terminal-disposition result is not a live pass. Code may apply it only to
   the scenario-normalization loop, and only after it proves that the task
   worktree is clean, the exact plain-carrier row has disappeared from strict
@@ -259,10 +299,15 @@ unrelated merge.
   the bounded source commit can be integrated directly into current `dev`.
   The completion evidence must say explicitly that no new ADO pass was
   claimed.
-- A concurrent `dev` update or replay conflict remains same-task domain work.
-  The workflow gives the conflict back to the same agent, rechecks the terminal
-  fields and strict row after resolution, and only then integrates. It must not
-  create a publication child or repeat an owner handoff for the same reviewed
+- A concurrent `dev` update, replay conflict, or retained task branch that no
+  longer descends from the current attempt baseline remains same-task domain
+  work. Code reports the exact Git lineage facts with a structured replay
+  reason; it does not infer a repair from error prose. The workflow gives that
+  state back to the same agent, which replays the task-owned terminal source
+  onto current `origin/dev` and resolves any semantic conflict. Code then
+  rechecks the clean linear lineage, terminal fields, and strict row before
+  integration. A repairable lineage mismatch must not become `needs-owner`, a
+  publication child, or another owner handoff for the same reviewed
   disposition.
 - Initial source preparation accepts `committed`, `test-current`, one exact
   wait, `needs-owner`, or the scenario-normalization-only
@@ -275,13 +320,29 @@ unrelated merge.
   commit is queued as a replacement only with `liveReady: true`. A repair that
   still depends on an exact external fact remains attached to the current task
   and does not spend another provider run.
+- A terminal live failure that proves a product gap is still same-task domain
+  work. The domain agent records the reviewed terminal source posture and
+  returns `terminal-disposition`; workflow code then validates the structured
+  fields and performs direct `dev` integration. The generic owner fallback
+  must not repeat those mechanics and then return a result that loses the
+  workflow's terminal-disposition proof contract.
 - Accountable-owner fallback supplies exceptional domain judgment only. It does
   not push the task branch, queue ADO, accept live proof, or integrate source on
   behalf of this workflow. Any resulting in-scope repair returns through this
   same workflow so its dispatch and exact-proof invariants still apply.
 - An interrupted dirty task worktree is given back to the owner agent to finish,
   validate, and commit or to remove only proven task-generated residue. Ambiguous
-  ownership requires owner review; it is never silently discarded.
+  ownership requires owner review; it is never silently discarded. This recovery
+  step reports only `committed`, `test-current`, or `needs-owner`. A premature
+  domain verdict such as `terminal-disposition` is corrected in the same agent
+  invocation loop, then evaluated by the normal domain path so integration and
+  terminal-disposition evidence cannot be bypassed.
+- A stale task commit may have been rebased or patch-equivalently integrated
+  into `dev`, so commit ancestry alone is not authoritative. When `git cherry`
+  reports no novel task patches, the workflow resets the dedicated task branch
+  to current `origin/dev` and continues the normal structured verification path.
+  It does not replay an empty patch or hand the task to the owner merely because
+  unrelated target changes make the trees differ.
 - One unchanged retry is allowed only after an artifact-backed transient
   diagnosis. Repeated nonpassing runs on the same commit require a fix, exact
   external wait, or owner judgment.
@@ -322,16 +383,20 @@ unrelated merge.
   `*.test.*` / `*.spec.*` files that the selected live run does not load. A
   pipeline definition, dependency manifest or lock, non-test runner file,
   shared runtime library, or overlapping tested path is proof-invalidating and
-  requires a replay plus a fresh exact run. The workflow may create a clean
+  requires a replay plus a fresh exact run. Evidence, design, skill, and
+  Markdown paths are not tested paths: a clean overlap on those paths may be
+  merged without discarding the live proof, provided every execution-relevant
+  task path remains byte-for-byte unchanged. The workflow may create a clean
   merge only when the target advance is proof-preserving; that merge preserves
   the exact tested source commit as an ancestor and verifies that it did not
   change any tested task path. The feature-local
-  `compact/staging.plan.json` is the sole merge-safe aggregate exception: clean
+  `compact/staging.plan.json` is the merge-safe generated aggregate exception: clean
   Git combination may preserve independent path entries in that file, while a
   conflict still invalidates proof. This lets independent normalization passes
   integrate without repeatedly invalidating one another. Any other overlapping
-  path, runner runtime/CI/config change, merge conflict, or changed tested path
-  requires replay onto current `dev` and a fresh exact live run.
+  execution-relevant path, runner runtime/CI/config change, merge conflict, or
+  changed tested path requires replay onto current `dev` and a fresh exact live
+  run.
 - Generated knowledge-map aggregation must not turn independent live passes
   into an endless moving-target loop. When current `dev` changes
   `model/knowledge-map/model.json`, code compares the structured model records
@@ -342,6 +407,12 @@ unrelated merge.
   that path. A changed exact-spec projection remains proof-invalidating and
   requires a fresh run. This is a structured equivalence check, not a prose or
   filename guess.
+- A task may declare `expectedVitestTestCount` when exact generated-suite
+  selection is itself part of the acceptance contract. The workflow reads the
+  downloaded `vitest.json` and mechanically requires exactly one observed
+  `numTotalTests` value equal to the declaration before accepting live proof.
+  This is an optional task-scoped hard invariant, not a general assumption that
+  every spec file contains only one test.
 - For `main`, a PR is discovered by exact source branch and target before
   creation. Reviewer changes invalidate the old proof, and an abandoned PR is
   an owner decision rather than permission to recreate it.
@@ -359,10 +430,11 @@ The workflow verifier enforces this proof after every converged result,
 including convergence returned through accountable-owner fallback. It checks
 the exact task/generation/spec/target metadata, pipeline `467665` completion on
 the tested commit, downloaded aggregate verdict, staging subscription and
-`westus2` target, per-spec cleanup evidence, current `origin/dev` ancestry, and
-the strict scenario-normalization row when applicable. Owner judgment may
-resolve an exceptional domain question, but it cannot bypass these mechanical
-completion invariants.
+`westus2` target, every claim assertion declared by the exact tested spec,
+per-spec cleanup evidence, current `origin/dev` ancestry, and the strict
+scenario-normalization row when applicable. Owner judgment may resolve an
+exceptional domain question, but it cannot bypass these mechanical completion
+invariants.
 
 Squash, rebase, and merge-commit completion are all valid because the provider
 records both sides of the integration. The PR head itself does not have to

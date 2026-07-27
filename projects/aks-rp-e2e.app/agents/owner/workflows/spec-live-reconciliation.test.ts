@@ -11,11 +11,15 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  acceptedLiveProofSourceInstruction,
   askAgent,
   agentConditionProblem,
+  artifactObservedClaimIds,
   artifactProvesCleanup,
+  artifactProvesDeclaredClaims,
   artifactProvesSpecPass,
   artifactProvesTarget,
+  artifactVitestTestCount,
   checkLiveDispatchAdmission,
   collectTerminalRunEvidence,
   completedPullRequestIntegration,
@@ -27,6 +31,7 @@ import {
   proofProtectedScenarioPaths,
   relevantKnowledgeModelUnchanged,
   shouldReplayScenarioBeforeRunReview,
+  taskWorktreeRecoveryDecisionProblem,
   existingRecoveryProblem,
   integrationMode,
   isNonFastForwardPushFailure,
@@ -56,6 +61,7 @@ import {
   taskContextDir,
   taskScopedAgentCondition,
   terminalDispositionDecisionProblem,
+  terminalDispositionSourceRepairInstruction,
   terminalRunDecisionProblem,
   terminalRunContextDir,
   verify,
@@ -68,6 +74,18 @@ import {
 } from "./lib/scenario-normalization-invariant.js";
 
 describe("spec-live-reconciliation workflow", () => {
+  test("keeps a newer passing run from recursively changing its tested source", () => {
+    expect(acceptedLiveProofSourceInstruction).toContain(
+      "return accepted-pass without editing or committing tracked source",
+    );
+    expect(acceptedLiveProofSourceInstruction).toContain(
+      "the app projects the newly accepted proof after the task receipt is persisted",
+    );
+    expect(acceptedLiveProofSourceInstruction).toContain(
+      "actual behavior or contract defect",
+    );
+  });
+
   test("keeps the resolved live target outside agent repair judgment", () => {
     expect(exactLiveTargetInstruction("staging", "")).toContain(
       "never guess or fall back",
@@ -77,11 +95,37 @@ describe("spec-live-reconciliation workflow", () => {
     );
   });
 
+  test("keeps terminal product-gap source repair inside the domain workflow", () => {
+    expect(terminalDispositionSourceRepairInstruction).toContain(
+      "update its structured status, specState, statusReason",
+    );
+    expect(terminalDispositionSourceRepairInstruction).toContain(
+      "return decision=terminal-disposition",
+    );
+    expect(terminalDispositionSourceRepairInstruction).toContain(
+      "Do not return needs-owner merely because",
+    );
+    expect(terminalDispositionSourceRepairInstruction).toContain(
+      "real external authority must decide it",
+    );
+    expect(terminalDispositionSourceRepairInstruction).toContain(
+      "Compact package status, compact-plan eligibility",
+    );
+    expect(terminalDispositionSourceRepairInstruction).toContain(
+      "arbitrary origin/dev advance is context, not an external prerequisite",
+    );
+    expect(terminalDispositionSourceRepairInstruction).toContain(
+      "actual unavailable capability or authority",
+    );
+  });
+
   test("requires exact ADO, staging artifact, cleanup, and integration proof", () => {
     const root = mkdtempSync(join(tmpdir(), "spec-live-verifier-"));
     try {
       const aggregatePath = join(root, "result.json");
       const specPath = join(root, "spec.json");
+      const topLevelSpecPath = join(root, "spec-top-level.json");
+      const vitestPath = join(root, "vitest.json");
       writeFileSync(
         aggregatePath,
         JSON.stringify({
@@ -102,6 +146,11 @@ describe("spec-live-reconciliation workflow", () => {
           raw: {
             assertions: [
               {
+                name: "assert.sample.behavior",
+                verdictImpact: "claim",
+                ok: true,
+              },
+              {
                 name: "cleanup.resource-group-delete-requested",
                 verdictImpact: "cleanup",
                 ok: true,
@@ -110,11 +159,47 @@ describe("spec-live-reconciliation workflow", () => {
           },
         }),
       );
+      writeFileSync(
+        topLevelSpecPath,
+        JSON.stringify({
+          specId: "spec.sample.live",
+          status: "pass",
+          raw: {
+            probeEvidence: { mode: "live" },
+          },
+          assertions: [
+            {
+              name: "cleanup.resource-group-deleted",
+              verdictImpact: "cleanup",
+              ok: true,
+            },
+          ],
+        }),
+      );
+      writeFileSync(vitestPath, JSON.stringify({ numTotalTests: 1 }));
+      expect(artifactVitestTestCount(vitestPath)).toBe(1);
       expect(artifactProvesSpecPass(aggregatePath, "spec.sample.live")).toBe(
         true,
       );
       expect(artifactProvesTarget(aggregatePath, "staging")).toBe(true);
+      expect(
+        artifactProvesDeclaredClaims(specPath, "spec.sample.live", [
+          "assert.sample.behavior",
+        ]),
+      ).toBe(true);
+      expect(
+        artifactProvesDeclaredClaims(specPath, "spec.sample.live", [
+          "assert.sample.behavior",
+          "assert.sample.missing",
+        ]),
+      ).toBe(false);
+      expect(artifactObservedClaimIds(specPath, "spec.sample.live")).toEqual([
+        "assert.sample.behavior",
+      ]);
       expect(artifactProvesCleanup(specPath, "spec.sample.live")).toBe(true);
+      expect(
+        artifactProvesCleanup(topLevelSpecPath, "spec.sample.live"),
+      ).toBe(true);
 
       const proof = {
         version: 1 as const,
@@ -164,11 +249,64 @@ describe("spec-live-reconciliation workflow", () => {
           proof,
           run,
           artifactPaths: [aggregatePath, specPath],
+          expectedClaimIdsBySpec: {
+            "spec.sample.live": ["assert.sample.behavior"],
+          },
           sourceReachable: true,
           integratedCommitReachable: true,
           normalizationInvariantSatisfied: true,
+          expectedVitestTestCount: 1,
+        }),
+      ).toMatchObject({
+        accepted: false,
+        summary: expect.stringContaining(
+          "Vitest total test count does not match: expected=1; observed=none",
+        ),
+      });
+      expect(
+        verifySpecLiveProofFacts({
+          taskId: "domain/sample",
+          generation: 2,
+          specIds: ["spec.sample.live"],
+          target: "staging",
+          standaloneBuildId: "",
+          proof,
+          run,
+          artifactPaths: [aggregatePath, specPath, vitestPath],
+          expectedClaimIdsBySpec: {
+            "spec.sample.live": ["assert.sample.behavior"],
+          },
+          sourceReachable: true,
+          integratedCommitReachable: true,
+          normalizationInvariantSatisfied: true,
+          expectedVitestTestCount: 1,
         }),
       ).toMatchObject({ accepted: true });
+      writeFileSync(vitestPath, JSON.stringify({ numTotalTests: 6 }));
+      expect(
+        verifySpecLiveProofFacts({
+          taskId: "domain/sample",
+          generation: 2,
+          specIds: ["spec.sample.live"],
+          target: "staging",
+          standaloneBuildId: "",
+          proof,
+          run,
+          artifactPaths: [aggregatePath, specPath, vitestPath],
+          expectedClaimIdsBySpec: {
+            "spec.sample.live": ["assert.sample.behavior"],
+          },
+          sourceReachable: true,
+          integratedCommitReachable: true,
+          normalizationInvariantSatisfied: true,
+          expectedVitestTestCount: 1,
+        }),
+      ).toMatchObject({
+        accepted: false,
+        summary: expect.stringContaining(
+          "Vitest total test count does not match: expected=1; observed=6",
+        ),
+      });
       expect(
         verifySpecLiveProofFacts({
           taskId: "domain/sample",
@@ -183,6 +321,37 @@ describe("spec-live-reconciliation workflow", () => {
           },
           run,
           artifactPaths: [aggregatePath, specPath],
+          expectedClaimIdsBySpec: {
+            "spec.sample.live": ["assert.1"],
+          },
+          sourceReachable: false,
+          integratedCommitReachable: false,
+          normalizationInvariantSatisfied: true,
+          requireIntegration: false,
+        }),
+      ).toMatchObject({
+        accepted: false,
+        summary: expect.stringContaining(
+          "expected=assert.1; observed=assert.sample.behavior",
+        ),
+      });
+      expect(
+        verifySpecLiveProofFacts({
+          taskId: "domain/sample",
+          generation: 2,
+          specIds: ["spec.sample.live"],
+          target: "staging",
+          standaloneBuildId: "",
+          proof: {
+            ...proof,
+            targetRef: undefined,
+            mergedCommit: undefined,
+          },
+          run,
+          artifactPaths: [aggregatePath, specPath],
+          expectedClaimIdsBySpec: {
+            "spec.sample.live": ["assert.sample.behavior"],
+          },
           sourceReachable: false,
           integratedCommitReachable: false,
           normalizationInvariantSatisfied: true,
@@ -203,6 +372,9 @@ describe("spec-live-reconciliation workflow", () => {
           },
           run,
           artifactPaths: [aggregatePath],
+          expectedClaimIdsBySpec: {
+            "spec.sample.live": ["assert.sample.behavior"],
+          },
           sourceReachable: false,
           integratedCommitReachable: false,
           normalizationInvariantSatisfied: true,
@@ -219,6 +391,9 @@ describe("spec-live-reconciliation workflow", () => {
           proof,
           run,
           artifactPaths: [aggregatePath, specPath],
+          expectedClaimIdsBySpec: {
+            "spec.sample.live": ["assert.sample.behavior"],
+          },
           sourceReachable: false,
           integratedCommitReachable: true,
           normalizationInvariantSatisfied: true,
@@ -706,6 +881,18 @@ describe("spec-live-reconciliation workflow", () => {
     expect(prompt).toContain("workflow still owns dispatch");
   });
 
+  test("keeps worktree recovery phase results separate from domain disposition", () => {
+    expect(taskWorktreeRecoveryDecisionProblem("committed")).toBeNull();
+    expect(taskWorktreeRecoveryDecisionProblem("test-current")).toBeNull();
+    expect(taskWorktreeRecoveryDecisionProblem("needs-owner")).toBeNull();
+    expect(
+      taskWorktreeRecoveryDecisionProblem("terminal-disposition"),
+    ).toContain("domain disposition is evaluated after recovery");
+    expect(taskWorktreeRecoveryDecisionProblem("accepted-pass")).toContain(
+      "task worktree recovery must return",
+    );
+  });
+
   test("keeps test-current inside terminal fix-forward instead of handing it to the owner", () => {
     expect(
       terminalRunDecisionProblem({
@@ -933,23 +1120,99 @@ describe("spec-live-reconciliation workflow", () => {
     }
   });
 
-  test("rejects a wait whose event type has no app producer", () => {
-    expect(
-      agentConditionProblem({
-        decision: "waiting",
-        summary: "Wait for registration.",
-        evidence: ["registration is not ready"],
-        condition: {
-          id: "wait-registration",
-          type: "external-state",
-          subject: "project:aks-rp-e2e",
-          expected: {
-            field: "staging.subscriptionFeatures.preview",
-            equals: "Registered",
+  test("verifies terminal scenario normalization without requiring ADO proof", async () => {
+    const root = mkdtempSync(join(tmpdir(), "scenario-terminal-verify-"));
+    try {
+      mkdirSync(join(root, "features", "sample", "specs"), {
+        recursive: true,
+      });
+      mkdirSync(join(root, "scripts"), { recursive: true });
+      writeFileSync(
+        join(root, "features", "sample", "specs", "terminal.json"),
+        JSON.stringify({
+          id: "spec.sample.terminal",
+          status: "product_constraint",
+          specState: "reviewed-exception",
+        }),
+      );
+      writeFileSync(
+        join(root, "scripts", "check-scenario-tests.ts"),
+        [
+          "console.log(JSON.stringify({",
+          "  report: { missingAdapterFiles: [] },",
+          "  guard: {",
+          "    remainingSpecReferencedPlainScenarioUnits: [],",
+          "    remainingRepoPlainScenarioFiles: []",
+          "  }",
+          "}));",
+        ].join("\n"),
+      );
+      execFileSync("git", ["init"], { cwd: root, encoding: "utf8" });
+      execFileSync("git", ["config", "user.email", "test@example.com"], {
+        cwd: root,
+        encoding: "utf8",
+      });
+      execFileSync("git", ["config", "user.name", "Test User"], {
+        cwd: root,
+        encoding: "utf8",
+      });
+      execFileSync("git", ["add", "."], { cwd: root, encoding: "utf8" });
+      execFileSync("git", ["commit", "-m", "terminal source"], {
+        cwd: root,
+        encoding: "utf8",
+      });
+      const commit = execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: root,
+        encoding: "utf8",
+      }).trim();
+      execFileSync("git", ["update-ref", "refs/remotes/origin/dev", commit], {
+        cwd: root,
+        encoding: "utf8",
+      });
+
+      const verification = await verify(
+        {
+          projectDir: root,
+          workspaceDir: root,
+          taskId: "domain/sample",
+          generation: 1,
+          intent: {
+            input: {
+              loopId: "scenario-normalization",
+              scenarioTestPath: "features/sample/tests/terminal.ts",
+              specId: "spec.sample.terminal",
+              target: "staging",
+            },
           },
-        },
-      }),
-    ).toContain("has no producer");
+        } as any,
+        {
+          state: "converged",
+          summary: "terminal disposition integrated",
+          evidence: [
+            "terminal-disposition-spec:spec.sample.terminal",
+            "terminal-disposition-status:product_constraint",
+            "terminal-disposition-spec-state:reviewed-exception",
+            `source-commit:${"0".repeat(40)}`,
+            `integrated-commit:${"0".repeat(40)}`,
+            `source-commit:${commit}`,
+            `integrated-commit:${commit}`,
+            "target-ref:origin/dev",
+            "terminal-disposition:no-new-ado-pass-claimed",
+          ],
+        } as any,
+      );
+
+      expect(verification.accepted).toBe(true);
+      expect(verification.summary).toContain("without claiming a new ADO pass");
+      expect(verification.evidence).toContain(
+        "terminal-disposition:no-new-ado-pass-claimed",
+      );
+      expect(verification.evidence).toContain(
+        "terminal-disposition-status:product_constraint",
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   test("accepts a same-task correction without treating it as final live proof", async () => {
@@ -1000,6 +1263,25 @@ describe("spec-live-reconciliation workflow", () => {
     const rejected = await verify(context, changedTarget);
     expect(rejected.accepted).toBe(false);
     expect(rejected.summary).toContain("preserve the exact live target");
+  });
+
+  test("rejects a wait whose event type has no app producer", () => {
+    expect(
+      agentConditionProblem({
+        decision: "waiting",
+        summary: "Wait for registration.",
+        evidence: ["registration is not ready"],
+        condition: {
+          id: "wait-registration",
+          type: "external-state",
+          subject: "project:aks-rp-e2e",
+          expected: {
+            field: "staging.subscriptionFeatures.preview",
+            equals: "Registered",
+          },
+        },
+      }),
+    ).toContain("has no producer");
   });
 
   test("accepts a pull-request wait observed by the app watcher", () => {
@@ -1388,6 +1670,14 @@ describe("spec-live-reconciliation workflow", () => {
       "2222222222222222222222222222222222222222",
       "4444444444444444444444444444444444444444",
     ]);
+    expect(
+      novelScenarioReplayCommits(
+        [
+          "- 1111111111111111111111111111111111111111 rebased equivalent",
+          "- 3333333333333333333333333333333333333333 already integrated",
+        ].join("\n"),
+      ),
+    ).toEqual([]);
   });
 
   test("ignores failed remote lease lookups for scenario replay pushes", () => {
@@ -1480,6 +1770,18 @@ describe("spec-live-reconciliation workflow", () => {
         targetPaths: [
           "features/managementplane-addon/tests/version-upgrade.test.ts",
           "model/specs/managementplane-addon/version-upgrade.json",
+        ],
+      }),
+    ).toBe(true);
+    expect(
+      proofPreservingScenarioIntegration({
+        sourcePaths: [
+          "evidence/archive/shared-normalization-review.md",
+          "features/secops/tests/fips.test.ts",
+        ],
+        targetPaths: [
+          "evidence/archive/shared-normalization-review.md",
+          "features/runtime-container/tests/runtimeclass.test.ts",
         ],
       }),
     ).toBe(true);
