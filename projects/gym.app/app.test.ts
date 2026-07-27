@@ -27,10 +27,14 @@ describe("gym app manifest", () => {
           id: "may-improvement-weekly",
           enabled: false,
         }),
+        expect.objectContaining({
+          id: "codex-learning-daily",
+          enabled: true,
+        }),
       ]),
     );
     expect(gymApp.tasks?.resolve).toBe(resolveGymTask);
-    expect(gymApp.tasks?.accepts).toHaveLength(8);
+    expect(gymApp.tasks?.accepts).toHaveLength(9);
     expect(gymApp.taskRoutes).toBeUndefined();
     expect(gymApp.taskWorkflows).toBeUndefined();
     expect(gymApp.ownerEntry).toBeUndefined();
@@ -39,6 +43,7 @@ describe("gym app manifest", () => {
       "improve-may-now",
       "run-regression",
       "report-incident",
+      "collect-codex-learning",
     ]);
     const improveAction = gymApp.actions["improve-may-now"]!;
     if (improveAction.type !== "async") throw new Error("unexpected action");
@@ -55,6 +60,20 @@ describe("gym app manifest", () => {
       readFileSync(new URL("./agents/gym/agent.json", import.meta.url), "utf8"),
     );
     expect(ownerConfig.tools).toEqual(["read-only", "finish"]);
+  });
+
+  test("keeps Codex learning incremental and separate from automatic improvement", () => {
+    const intent = resolveGymTask({
+      type: "gym.codex.learning.requested",
+      eventId: 93,
+      params: { reason: "daily", batchSize: 600, maxBatches: 1 },
+    });
+    expect(intent).toMatchObject({
+      id: "learning/codex-sessions",
+      mode: "maintain",
+      workflow: "codex-learning-intake",
+      input: { reason: "daily", batchSize: 600, maxBatches: 1 },
+    });
   });
 });
 

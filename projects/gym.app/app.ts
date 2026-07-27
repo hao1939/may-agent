@@ -90,6 +90,18 @@ function learningEvidenceObserved(
   };
 }
 
+function codexLearningRequested(input: unknown = {}): ProjectAppEvent {
+  return {
+    type: "gym.codex.learning.requested",
+    project: projectId,
+    params: {
+      batchSize: 600,
+      maxBatches: 1,
+      ...params(input),
+    },
+  };
+}
+
 function durableEventId(event: Record<string, unknown>): number | null {
   const value = event.eventId;
   return typeof value === "number" && Number.isInteger(value) && value > 0
@@ -252,6 +264,27 @@ export function resolveGymTask(
         priority: "P2",
       };
     }
+    case "gym.codex.learning.requested":
+      return {
+        id: "learning/codex-sessions",
+        parentId: "incident-learning",
+        outcome:
+          "Continuously collect only strong, reusable Hao intent signals from Codex sessions as reviewable May learning candidates.",
+        acceptance: [
+          "Only Hao-authored turns absent from the durable checkpoint are reviewed.",
+          "Ordinary requests and weak inference are discarded; retained signals are explicit, repeated, or independently validated.",
+          "Raw conversation text stays in Codex storage while Gym preserves hashes, source pointers, and plain-language candidates.",
+          "Collected evidence remains a candidate until a later learning or benchmark proposal passes its own approval boundary.",
+        ],
+        mode: "maintain",
+        workflow: "codex-learning-intake",
+        input: {
+          reason: String(details.reason ?? "daily"),
+          ...selected(details, ["batchSize", "maxBatches"]),
+        },
+        outputs: [".state/learning/codex"],
+        priority: "P2",
+      };
     case "gym.regression.requested":
       return {
         id: taskIdentity("regression-run", `event-${eventId}`),
@@ -362,12 +395,25 @@ export default defineProjectApp({
         }),
       ],
     },
+    {
+      id: "codex-learning-daily",
+      enabled: true,
+      intervalMs: 86_400_000,
+      emits: [
+        codexLearningRequested({
+          reason: "daily",
+          batchSize: 600,
+          maxBatches: 1,
+        }),
+      ],
+    },
   ],
 
   tasks: {
     accepts: [
       "gym.incident.detected",
       "gym.learning.evidence.observed",
+      "gym.codex.learning.requested",
       "gym.regression.requested",
       "gym.review.requested",
       "gym.improvement.requested",
@@ -412,6 +458,20 @@ export default defineProjectApp({
       inputSchema: actionInputSchema,
       event(input) {
         return incidentDetected({ reason: "manual", ...params(input) });
+      },
+    },
+    "collect-codex-learning": {
+      type: "async",
+      description:
+        "Collect a bounded batch of strong Hao preference and decision signals from Codex sessions.",
+      inputSchema: actionInputSchema,
+      event(input) {
+        return codexLearningRequested({
+          reason: "manual-backfill",
+          batchSize: 600,
+          maxBatches: 5,
+          ...params(input),
+        });
       },
     },
   },

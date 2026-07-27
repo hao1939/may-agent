@@ -10,6 +10,7 @@ exact-artifact approval, and operating metrics.
 ```text
 reviewed success ─────> positive learning evidence ───────────────┐
 reviewed failure ─────> negative evidence + incident ─> review ───┤
+new Codex sessions ───> strong Hao intent candidates ─────────────┤
                                                                learning unit
                                                                     │
 manual canary wake ──> lesson-informed candidate ─> blind verification
@@ -33,6 +34,14 @@ issue means adding evidence and a learning unit or extending one, then rerunning
 development, release, and regression benchmarks; expensive retraining is never
 triggered merely by evidence intake.
 
+Codex learning intake runs independently from May improvement. A one-time
+backfill and daily incremental pass review only new Hao-authored turns. The
+semantic extractor keeps explicit, repeated, or independently validated
+preferences, corrections, requirements, and meaningful decisions. It discards
+ordinary task requests and weak inference. Raw turns remain in Codex storage;
+Gym stores hashes, source pointers, and plain-language candidates under ignored
+state. Intake never changes May or benchmark truth directly.
+
 Events wake reconciliation. Each incident, regression request, and review
 request resolves to stable task intent. The task tree records ownership,
 attempts, and outcomes; it does not schedule work. Known tasks bind to the
@@ -46,6 +55,8 @@ the Gym owner review workflow.
 - `run-regression` — run `may-alignment`, optionally with `scenario` and
   `trials` parameters.
 - `report-incident` — submit a May failure or human correction for intake.
+- `collect-codex-learning` — backfill or incrementally collect strong Hao
+  intent signals without starting May improvement.
 
 Generated incident packets, run pointers, candidate checkpoints, reviews, and
 operating metrics live under the ignored `projects/gym.app/.state/` directory.
