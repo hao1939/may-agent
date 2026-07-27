@@ -344,6 +344,7 @@ type PairContract = {
   timeoutMs: number;
   key: (payload: Record<string, unknown>) => string | undefined;
   allowEarlierClose?: boolean;
+  preferExplicitOpenEventId?: boolean;
 };
 
 const sessionKey = (payload: Record<string, unknown>) => keyPart(payload.sessionId);
@@ -407,6 +408,7 @@ const PAIR_CONTRACTS: readonly PairContract[] = [
     timeoutMs: 60 * 60 * 1000,
     key: projectOwnerKey,
     allowEarlierClose: false,
+    preferExplicitOpenEventId: true,
   },
   {
     name: "project.owner",
@@ -415,6 +417,7 @@ const PAIR_CONTRACTS: readonly PairContract[] = [
     timeoutMs: 60 * 60 * 1000,
     key: projectOwnerKey,
     allowEarlierClose: false,
+    preferExplicitOpenEventId: true,
   },
 ];
 
@@ -856,6 +859,18 @@ export class DbWriter {
   ): void {
     const pairs = closingPairs(eventType);
     for (const pair of pairs) {
+      const rawOpenEventId = payload.openEventId ?? payload.open_event_id;
+      const openEventId =
+        typeof rawOpenEventId === "number"
+          ? rawOpenEventId
+          : Number(rawOpenEventId);
+      if (
+        pair.preferExplicitOpenEventId &&
+        Number.isFinite(openEventId) &&
+        openEventId > 0
+      ) {
+        continue;
+      }
       const key = pair.key(payload);
       if (!key) continue;
       const rows = this.db
