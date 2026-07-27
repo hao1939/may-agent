@@ -387,6 +387,13 @@ adapter over event emission. For example:
 | `GET /api/projects/:id/actions` | Discover optional typed action schemas |
 | `POST /api/projects/:id/actions/:actionId` | Validate and emit the action's semantic event |
 
+For a project app, the filesystem/UI path and event target are different
+identifiers. A path such as `projects/aks-rp-e2e.app` locates the app, while
+the emitted event targets the loaded app id (`aks-rp-e2e`). The HTTP adapter
+must not derive the event target from the human-facing `owner/id` project
+identity in `project.json`; doing so sends the comment to an owner inbox that
+the app task reconciler does not consume.
+
 ## Compatibility Path
 
 The current daemon socket accepts older shortcut frames such as `input`,
