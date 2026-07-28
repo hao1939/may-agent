@@ -25,7 +25,7 @@ describe("gym app manifest", () => {
       expect.arrayContaining([
         expect.objectContaining({
           id: "may-improvement-weekly",
-          enabled: false,
+          enabled: true,
         }),
         expect.objectContaining({
           id: "codex-learning-daily",
@@ -33,6 +33,23 @@ describe("gym app manifest", () => {
         }),
       ]),
     );
+    expect(
+      gymApp.schedules.find(({ id }) => id === "may-improvement-weekly"),
+    ).toMatchObject({
+      intervalMs: 604_800_000,
+      emits: [
+        expect.objectContaining({
+          type: "gym.improvement.requested",
+          params: expect.objectContaining({
+            agent: "may",
+            benchmark: "may-alignment",
+            reason: "weekly",
+            scenarios: mayCanary.scenarios,
+            trials: 3,
+          }),
+        }),
+      ],
+    });
     expect(gymApp.tasks?.resolve).toBe(resolveGymTask);
     expect(gymApp.tasks?.accepts).toHaveLength(9);
     expect(gymApp.taskRoutes).toBeUndefined();

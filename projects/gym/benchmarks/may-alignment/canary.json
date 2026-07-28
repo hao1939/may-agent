@@ -3,7 +3,7 @@
   "benchmark": "may-alignment",
   "development_trials": 3,
   "release_trials": 5,
-  "automatic_schedule_enabled": false,
+  "automatic_schedule_enabled": true,
   "scenarios": [
     "may-align-proof-before-adopt",
     "may-align-local-guidance-wins",
