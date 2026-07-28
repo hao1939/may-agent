@@ -70,7 +70,7 @@ import {
 import {
   isRunnableScenarioNormalization,
   scenarioNormalizationSpecIds,
-  scenarioNormalizationTerminalDispositionCheck,
+  specTerminalDispositionCheck,
 } from "./lib/scenario-normalization-invariant.js";
 
 describe("spec-live-reconciliation workflow", () => {
@@ -1113,7 +1113,7 @@ describe("spec-live-reconciliation workflow", () => {
     ).toBeNull();
   });
 
-  test("keeps terminal scenario normalization as an explicit agent judgment", () => {
+  test("keeps terminal spec disposition as an explicit agent judgment", () => {
     const decision = {
       decision: "terminal-disposition" as const,
       summary: "The provider aliases the legacy precondition.",
@@ -1124,16 +1124,10 @@ describe("spec-live-reconciliation workflow", () => {
         specState: "reviewed-exception",
       },
     };
-    expect(preparationDecisionProblem(decision, false, true)).toBeNull();
-    expect(terminalDispositionDecisionProblem(decision, true)).toBeNull();
-    expect(terminalDispositionDecisionProblem(decision, false)).toContain(
-      "only to scenario-normalization",
-    );
+    expect(preparationDecisionProblem(decision, false)).toBeNull();
+    expect(terminalDispositionDecisionProblem(decision)).toBeNull();
     expect(
-      terminalDispositionDecisionProblem(
-        { ...decision, liveReady: false },
-        true,
-      ),
+      terminalDispositionDecisionProblem({ ...decision, liveReady: false }),
     ).toContain("neither live readiness nor a wait");
   });
 
@@ -1150,25 +1144,18 @@ describe("spec-live-reconciliation workflow", () => {
           specState: "reviewed-exception",
         }),
       );
-      const input = {
-        loopId: "scenario-normalization",
+      const input = { specId: "spec.sample.terminal" };
+      const accepted = specTerminalDispositionCheck(root, input, {
         specId: "spec.sample.terminal",
-      };
-      const accepted = scenarioNormalizationTerminalDispositionCheck(
-        root,
-        input,
-        {
-          specId: "spec.sample.terminal",
-          status: "product_constraint",
-          specState: "reviewed-exception",
-        },
-      );
+        status: "product_constraint",
+        specState: "reviewed-exception",
+      });
       expect(accepted.accepted).toBe(true);
       expect(accepted.evidence).toContain(
         "terminal-disposition-status:product_constraint",
       );
       expect(
-        scenarioNormalizationTerminalDispositionCheck(root, input, {
+        specTerminalDispositionCheck(root, input, {
           specId: "spec.sample.terminal",
           status: "pass",
           specState: "reviewed-exception",
@@ -1268,6 +1255,81 @@ describe("spec-live-reconciliation workflow", () => {
       );
       expect(verification.evidence).toContain(
         "terminal-disposition-status:product_constraint",
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("verifies a terminal disposition for ordinary spec-live work", async () => {
+    const root = mkdtempSync(join(tmpdir(), "spec-terminal-verify-"));
+    try {
+      mkdirSync(join(root, "features", "sample", "specs"), {
+        recursive: true,
+      });
+      writeFileSync(
+        join(root, "features", "sample", "specs", "terminal.json"),
+        JSON.stringify({
+          id: "spec.sample.terminal",
+          status: "environment",
+          specState: "reviewed-exception",
+        }),
+      );
+      execFileSync("git", ["init"], { cwd: root, encoding: "utf8" });
+      execFileSync("git", ["config", "user.email", "test@example.com"], {
+        cwd: root,
+        encoding: "utf8",
+      });
+      execFileSync("git", ["config", "user.name", "Test User"], {
+        cwd: root,
+        encoding: "utf8",
+      });
+      execFileSync("git", ["add", "."], { cwd: root, encoding: "utf8" });
+      execFileSync("git", ["commit", "-m", "terminal source"], {
+        cwd: root,
+        encoding: "utf8",
+      });
+      const commit = execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: root,
+        encoding: "utf8",
+      }).trim();
+      execFileSync("git", ["update-ref", "refs/remotes/origin/dev", commit], {
+        cwd: root,
+        encoding: "utf8",
+      });
+
+      const verification = await verify(
+        {
+          projectDir: root,
+          workspaceDir: root,
+          taskId: "domain/sample",
+          generation: 1,
+          intent: {
+            input: {
+              specId: "spec.sample.terminal",
+              target: "staging",
+            },
+          },
+        } as any,
+        {
+          state: "converged",
+          summary: "terminal disposition integrated",
+          evidence: [
+            "terminal-disposition-spec:spec.sample.terminal",
+            "terminal-disposition-status:environment",
+            "terminal-disposition-spec-state:reviewed-exception",
+            `source-commit:${commit}`,
+            `integrated-commit:${commit}`,
+            "target-ref:origin/dev",
+            "terminal-disposition:no-new-ado-pass-claimed",
+          ],
+        } as any,
+      );
+
+      expect(verification.accepted).toBe(true);
+      expect(verification.summary).toContain("terminal spec disposition");
+      expect(verification.evidence).toContain(
+        "terminal-disposition-status:environment",
       );
     } finally {
       rmSync(root, { recursive: true, force: true });

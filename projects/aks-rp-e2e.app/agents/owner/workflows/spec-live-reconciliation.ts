@@ -23,9 +23,9 @@ import {
 import {
   scenarioNormalizationInvariant,
   scenarioNormalizationSpecIds,
-  scenarioNormalizationTerminalDispositionCheck,
-  type ScenarioNormalizationTerminalDisposition,
+  specTerminalDispositionCheck,
   type ScenarioNormalizationInput,
+  type SpecTerminalDisposition,
 } from "./lib/scenario-normalization-invariant.js";
 import { integrateDirectlyIntoDev } from "./lib/direct-dev-integration.js";
 
@@ -142,7 +142,7 @@ type AgentDecision = {
   summary: string;
   evidence: string[];
   liveReady?: boolean;
-  terminalDisposition?: ScenarioNormalizationTerminalDisposition;
+  terminalDisposition?: SpecTerminalDisposition;
   condition?: ProjectAppConditionSpec;
   recovery?: {
     pipelineRunId: string;
@@ -275,7 +275,6 @@ export function shouldReviewBeforeInitialLiveDispatch(input: {
 export function preparationDecisionProblem(
   decision: AgentDecision,
   allowExistingRecovery: boolean,
-  scenarioNormalization = false,
 ): string | null {
   if (["committed", "test-current"].includes(decision.decision)) {
     if (typeof decision.liveReady !== "boolean") {
@@ -287,9 +286,7 @@ export function preparationDecisionProblem(
     return null;
   }
   if (decision.decision === "terminal-disposition") {
-    return scenarioNormalization
-      ? null
-      : "terminal-disposition is available only to scenario-normalization work";
+    return null;
   }
   if (decision.decision === "accepted-pass" && allowExistingRecovery) {
     return null;
@@ -301,12 +298,8 @@ export function preparationDecisionProblem(
 
 export function terminalDispositionDecisionProblem(
   decision: AgentDecision,
-  scenarioNormalization: boolean,
 ): string | null {
   if (decision.decision !== "terminal-disposition") return null;
-  if (!scenarioNormalization) {
-    return "terminal-disposition is available only to scenario-normalization work";
-  }
   if (!decision.terminalDisposition) {
     return "terminal-disposition requires structured specId, status, and specState";
   }
@@ -2835,14 +2828,13 @@ export async function reconcileSpecLive(
       decision: AgentDecision,
       reviewedRunId = "",
     ): Promise<WorkflowResult> => {
+      const isScenarioNormalization =
+        normalizationInput?.loopId === "scenario-normalization";
       const validateCurrentSource = (): {
         problem: string | null;
         evidence: string[];
       } => {
-        const decisionProblem = terminalDispositionDecisionProblem(
-          decision,
-          normalizationInput?.loopId === "scenario-normalization",
-        );
+        const decisionProblem = terminalDispositionDecisionProblem(decision);
         if (decisionProblem) return { problem: decisionProblem, evidence: [] };
         if (cleanWorkspace(workspaceDir)) {
           return {
@@ -2851,27 +2843,31 @@ export async function reconcileSpecLive(
             evidence: [`workspace:${workspaceDir}`],
           };
         }
-        let invariant;
-        try {
-          invariant = scenarioNormalizationInvariant(
-            workspaceDir,
-            normalizationInput,
-          );
-        } catch (error) {
-          return {
-            problem: error instanceof Error ? error.message : String(error),
-            evidence: [],
-          };
+        if (isScenarioNormalization) {
+          let invariant;
+          try {
+            invariant = scenarioNormalizationInvariant(
+              workspaceDir,
+              normalizationInput,
+            );
+          } catch (error) {
+            return {
+              problem: error instanceof Error ? error.message : String(error),
+              evidence: [],
+            };
+          }
+          if (!invariant || invariant.stillListed) {
+            return {
+              problem: invariant
+                ? `terminal-disposition source still lists ${invariant.kind} ${invariant.path}`
+                : "terminal-disposition source has no exact scenario-normalization invariant",
+              evidence: invariant
+                ? [`normalization-path:${invariant.path}`]
+                : [],
+            };
+          }
         }
-        if (!invariant || invariant.stillListed) {
-          return {
-            problem: invariant
-              ? `terminal-disposition source still lists ${invariant.kind} ${invariant.path}`
-              : "terminal-disposition source has no exact scenario-normalization invariant",
-            evidence: invariant ? [`normalization-path:${invariant.path}`] : [],
-          };
-        }
-        const disposition = scenarioNormalizationTerminalDispositionCheck(
+        const disposition = specTerminalDispositionCheck(
           workspaceDir,
           normalizationInput,
           decision.terminalDisposition,
@@ -2893,7 +2889,7 @@ export async function reconcileSpecLive(
       if (integrationMode(targetBranch) !== "direct") {
         return ownerResult(
           ctx,
-          "Terminal scenario normalization requires direct dev integration.",
+          "Terminal spec disposition requires direct dev integration.",
           [...decision.evidence, `target-ref:${targetRef}`],
         );
       }
@@ -2942,9 +2938,9 @@ export async function reconcileSpecLive(
         const conflictDecision = await askAgent(
           ctx,
           [
-            `Reconcile the current direct-dev lineage for the already reviewed terminal scenario normalization ${specId}.`,
+            `Reconcile the current direct-dev lineage for the already reviewed terminal disposition of ${specId}.`,
             ...replayFacts,
-            "Preserve the exact structured terminal status and specState, rerun scoped local checks plus the strict scenario inventory, leave one clean linear commit lineage descending from the named origin/dev commit, and return decision=committed.",
+            `Preserve the exact structured terminal status and specState, rerun scoped local checks${isScenarioNormalization ? " plus the strict scenario inventory" : ""}, leave one clean linear commit lineage descending from the named origin/dev commit, and return decision=committed.`,
             "Do not push, queue ADO, create another task, or change the terminal judgment. The workflow will revalidate and integrate the resolved source.",
             "Task:",
             ctx.task,
@@ -3014,7 +3010,7 @@ export async function reconcileSpecLive(
               : integration.error;
         return ownerResult(
           ctx,
-          "Could not directly integrate the reviewed terminal scenario normalization into dev.",
+          "Could not directly integrate the reviewed terminal spec disposition into dev.",
           [
             ...decision.evidence,
             `source-branch:${sourceBranch}`,
@@ -3072,7 +3068,7 @@ export async function reconcileSpecLive(
       }
 
       const disposition = decision.terminalDisposition!;
-      const summary = `${specId} retained reviewed terminal disposition ${disposition.status}/${disposition.specState}; normalized source ${sourceCommit} was directly integrated into ${targetBranch}@${integratedCommit} without claiming a new ADO pass.`;
+      const summary = `${specId} retained reviewed terminal disposition ${disposition.status}/${disposition.specState}; source ${sourceCommit} was directly integrated into ${targetBranch}@${integratedCommit} without claiming a new ADO pass.`;
       return ctx.done(summary, {
         state: "converged",
         summary,
@@ -3540,12 +3536,7 @@ export async function reconcileSpecLive(
           preparationDecisionProblem(
             candidate,
             Boolean(options.existingRecoveryAfterRunId),
-            Boolean(normalizationInput),
-          ) ??
-          terminalDispositionDecisionProblem(
-            candidate,
-            Boolean(normalizationInput),
-          ),
+          ) ?? terminalDispositionDecisionProblem(candidate),
       });
       if (decision.decision === "waiting" && decision.condition) {
         return waitingResult(
@@ -3588,12 +3579,8 @@ export async function reconcileSpecLive(
               preparationDecisionProblem(
                 candidate,
                 Boolean(options.existingRecoveryAfterRunId),
-                Boolean(normalizationInput),
               ) ??
-              terminalDispositionDecisionProblem(
-                candidate,
-                Boolean(normalizationInput),
-              ) ??
+              terminalDispositionDecisionProblem(candidate) ??
               preparationHeadProblem({
                 decision: candidate,
                 before: correctionBaseline,
@@ -3914,10 +3901,7 @@ export async function reconcileSpecLive(
               requireSucceededProvider: Boolean(normalizationInput),
               providerResult: runResult,
             }) ??
-            terminalDispositionDecisionProblem(
-              candidate,
-              Boolean(normalizationInput),
-            ) ??
+            terminalDispositionDecisionProblem(candidate) ??
             (candidate.decision === "accepted-pass" &&
             !preIntegrationVerification.accepted
               ? preIntegrationVerification.summary
@@ -4796,29 +4780,31 @@ function verifyTerminalDispositionResult(
     return {
       accepted: false,
       summary:
-        "Terminal scenario normalization must leave the task worktree clean before convergence.",
+        "Terminal spec disposition must leave the task worktree clean before convergence.",
       evidence: [`workspace:${context.workspaceDir}`],
     };
   }
 
-  let invariant;
-  try {
-    invariant = scenarioNormalizationInvariant(context.workspaceDir, input);
-  } catch (error) {
-    return {
-      accepted: false,
-      summary: error instanceof Error ? error.message : String(error),
-      evidence: ["verification-finding:terminal-disposition-invariant-error"],
-    };
-  }
-  if (!invariant || invariant.stillListed) {
-    return {
-      accepted: false,
-      summary: invariant
-        ? `Terminal scenario normalization still lists ${invariant.kind} ${invariant.path}.`
-        : "Terminal scenario normalization has no exact invariant to verify.",
-      evidence: invariant ? [`normalization-path:${invariant.path}`] : [],
-    };
+  if (input?.loopId === "scenario-normalization") {
+    let invariant;
+    try {
+      invariant = scenarioNormalizationInvariant(context.workspaceDir, input);
+    } catch (error) {
+      return {
+        accepted: false,
+        summary: error instanceof Error ? error.message : String(error),
+        evidence: ["verification-finding:terminal-disposition-invariant-error"],
+      };
+    }
+    if (!invariant || invariant.stillListed) {
+      return {
+        accepted: false,
+        summary: invariant
+          ? `Terminal scenario normalization still lists ${invariant.kind} ${invariant.path}.`
+          : "Terminal scenario normalization has no exact invariant to verify.",
+        evidence: invariant ? [`normalization-path:${invariant.path}`] : [],
+      };
+    }
   }
 
   const disposition = {
@@ -4826,7 +4812,7 @@ function verifyTerminalDispositionResult(
     status: evidenceValue(evidence, "terminal-disposition-status:"),
     specState: evidenceValue(evidence, "terminal-disposition-spec-state:"),
   };
-  const dispositionCheck = scenarioNormalizationTerminalDispositionCheck(
+  const dispositionCheck = specTerminalDispositionCheck(
     context.workspaceDir,
     input,
     disposition,
@@ -4844,7 +4830,7 @@ function verifyTerminalDispositionResult(
     return {
       accepted: false,
       summary:
-        "Terminal scenario normalization must integrate directly into origin/dev.",
+        "Terminal spec disposition must integrate directly into origin/dev.",
       evidence: targetRef ? [`target-ref:${targetRef}`] : [],
     };
   }
@@ -4862,7 +4848,7 @@ function verifyTerminalDispositionResult(
     return {
       accepted: false,
       summary:
-        "Terminal scenario normalization source commit is not reachable from current origin/dev.",
+        "Terminal spec disposition source commit is not reachable from current origin/dev.",
       evidence: sourceCommit
         ? [`source-commit:${sourceCommit}`, `target-ref:${targetRef}`]
         : ["verification-finding:missing-terminal-source-commit"],
@@ -4881,7 +4867,7 @@ function verifyTerminalDispositionResult(
     return {
       accepted: false,
       summary:
-        "Terminal scenario normalization integrated commit is not reachable from current origin/dev.",
+        "Terminal spec disposition integrated commit is not reachable from current origin/dev.",
       evidence: integratedCommit
         ? [`integrated-commit:${integratedCommit}`, `target-ref:${targetRef}`]
         : ["verification-finding:missing-terminal-integrated-commit"],
@@ -4891,7 +4877,7 @@ function verifyTerminalDispositionResult(
   return {
     accepted: true,
     summary:
-      "Verified terminal scenario normalization integrated into origin/dev without claiming a new ADO pass.",
+      "Verified terminal spec disposition integrated into origin/dev without claiming a new ADO pass.",
     evidence: [
       ...dispositionCheck.evidence,
       `source-commit:${sourceCommit}`,

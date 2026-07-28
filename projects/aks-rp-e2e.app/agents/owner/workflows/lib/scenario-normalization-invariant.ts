@@ -25,13 +25,13 @@ export type SourceOnlyNormalizationPosture = {
   rejectedSpecIds: string[];
 };
 
-export type ScenarioNormalizationTerminalDisposition = {
+export type SpecTerminalDisposition = {
   specId: string;
   status: string;
   specState: string;
 };
 
-export type ScenarioNormalizationTerminalDispositionCheck = {
+export type SpecTerminalDispositionCheck = {
   accepted: boolean;
   evidence: string[];
   problem?: string;
@@ -143,20 +143,12 @@ export function sourceOnlyScenarioNormalizationPosture(
   };
 }
 
-/** Validate an agent's terminal judgment against structured source facts. */
-export function scenarioNormalizationTerminalDispositionCheck(
+/** Validate an agent's terminal judgment against the exact structured spec. */
+export function specTerminalDispositionCheck(
   workspaceDir: string,
   input: ScenarioNormalizationInput | undefined,
-  disposition: ScenarioNormalizationTerminalDisposition | undefined,
-): ScenarioNormalizationTerminalDispositionCheck {
-  if (input?.loopId !== "scenario-normalization") {
-    return {
-      accepted: false,
-      evidence: [],
-      problem:
-        "terminal-disposition is available only to scenario-normalization work",
-    };
-  }
+  disposition: SpecTerminalDisposition | undefined,
+): SpecTerminalDispositionCheck {
   if (!disposition) {
     return {
       accepted: false,
