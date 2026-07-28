@@ -47,7 +47,6 @@ const OWNER_FEEDBACK_RETRY_MS = 60 * 60_000;
 const ACTIONABLE_HUMAN_REQUESTS = new Set([
   "approve",
   "decide",
-  "assign-owner",
   "provide-input",
 ]);
 const VERDICTS = new Set([
@@ -1773,35 +1772,11 @@ export function normalizeJudgment(
 
 export function reconcileJudgmentWithFacts(
   target: Pick<TargetConfig, "targetProject">,
-  packet: Record<string, unknown>,
+  _packet: Record<string, unknown>,
   judgment: Judgment,
 ): Judgment {
   const requestedAction = judgment.requestedHumanAction.toLowerCase();
   if (requestedAction !== "assign-owner") return judgment;
-
-  const escalations = objectRecord(packet.escalations);
-  const counts = objectRecord(escalations.counts);
-  const usage = objectRecord(escalations.usage);
-  const openEscalations = numberFromRecord(counts, "open");
-  const closedEscalations = numberFromRecord(counts, "closed");
-  const blockedExactWaits = numberFromRecord(usage, "blockedExactWaitLeaves");
-  const blockedWithoutOwnerPath = numberFromRecord(
-    usage,
-    "blockedWithoutOwnerOrExternalPath",
-  );
-
-  if (
-    blockedExactWaits === 0 ||
-    blockedWithoutOwnerPath > 0 ||
-    openEscalations > blockedExactWaits
-  ) {
-    return judgment;
-  }
-
-  const hasMissingFormalClose = openEscalations > 0 && closedEscalations === 0;
-  const mainConcern = hasMissingFormalClose
-    ? "The target already records an exact owner/wait path, but the escalation lifecycle is missing a formal resolved or dismissed event."
-    : "The target already records an exact owner/wait path, so the owner-assignment ask is no longer the right human action.";
 
   return {
     ...judgment,
@@ -1809,11 +1784,12 @@ export function reconcileJudgmentWithFacts(
       severity(judgment.verdict) > severity("watch")
         ? judgment.verdict
         : "watch",
-    mainConcern,
+    mainConcern:
+      "The target app already declares its accountable owner. Route this finding through that owner instead of asking Hao to assign ownership again.",
     requestedHumanAction: "watch",
     notify: false,
-    dedupeKey: `${target.targetProject}:formal-escalation-closure-missing`,
-    message: `${target.targetProject} already has ${blockedExactWaits} blocked exact wait(s) with owner, requested action, resume condition, fallback, and escalation linkage. Do not ask the human to assign an owner again; send owner feedback to emit or repair the formal escalation closure/follow-up event if needed.`,
+    dedupeKey: `${target.targetProject}:declared-owner-follow-up`,
+    message: `${target.targetProject} has a declared app owner. Send the finding to that owner with the required result and proof; escalate only a remaining authority decision, never routine owner assignment.`,
   };
 }
 
@@ -2006,7 +1982,7 @@ function isActionableHumanRequest(request: string | undefined): boolean {
   return ACTIONABLE_HUMAN_REQUESTS.has(String(request ?? "").toLowerCase());
 }
 
-function shouldNotify(
+export function shouldNotify(
   judgment: Judgment,
   previous: ProjectHealthState,
 ): boolean {

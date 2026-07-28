@@ -11,6 +11,7 @@ import {
   reconcileJudgmentWithFacts,
   scheduledProjectReviewDecision,
   shouldFeedbackTargetOwner,
+  shouldNotify,
   taskEscalationPacket,
   taskTreePacket,
   projectHealthConvergedResult,
@@ -441,12 +442,12 @@ describe("project health evaluator escalation audit", () => {
       verdict: "watch",
       requestedHumanAction: "watch",
       notify: false,
-      dedupeKey: "scout-knowledge-lib.app:formal-escalation-closure-missing",
+      dedupeKey: "scout-knowledge-lib.app:declared-owner-follow-up",
     });
-    expect(judgment.message).toContain("Do not ask the human");
+    expect(judgment.message).toContain("declared app owner");
   });
 
-  test("missing owner path keeps owner-assignment notification actionable", async () => {
+  test("missing task linkage still routes through the declared app owner", async () => {
     const judgment = reconcileJudgmentWithFacts(
       { targetProject: "scout-knowledge-lib.app" },
       {
@@ -471,13 +472,13 @@ describe("project health evaluator escalation audit", () => {
     );
 
     expect(judgment).toMatchObject({
-      requestedHumanAction: "assign-owner",
-      notify: true,
-      dedupeKey: "scout-knowledge-lib.app:missing-owner-path",
+      requestedHumanAction: "watch",
+      notify: false,
+      dedupeKey: "scout-knowledge-lib.app:declared-owner-follow-up",
     });
   });
 
-  test("one exact wait does not hide another open escalation", async () => {
+  test("another open escalation still routes through the declared app owner", async () => {
     const judgment = reconcileJudgmentWithFacts(
       { targetProject: "scout-knowledge-lib.app" },
       {
@@ -502,9 +503,9 @@ describe("project health evaluator escalation audit", () => {
     );
 
     expect(judgment).toMatchObject({
-      requestedHumanAction: "assign-owner",
-      notify: true,
-      dedupeKey: "scout-knowledge-lib.app:second-open-escalation",
+      requestedHumanAction: "watch",
+      notify: false,
+      dedupeKey: "scout-knowledge-lib.app:declared-owner-follow-up",
     });
   });
 
@@ -714,6 +715,141 @@ describe("project health evaluator review gating", () => {
         },
       }),
     );
+  });
+});
+
+describe("project health human notification gating", () => {
+  test("suppresses watch-only project-health messages even for observed duplicate regression samples", () => {
+    const duplicateWatchSamples = [
+      {
+        previous: {
+          lastDedupeKey:
+            "aks-rp-e2e.app:state-metric-lifecycle-disagreement:paused-tree-zero-active-unowned-assignment-mismatch",
+          lastVerdict: "concern",
+        },
+        current: {
+          verdict: "concern",
+          mainConcern:
+            "The newest direct state shows a paused task tree with zero active leaf owners.",
+          requestedHumanAction: "watch",
+          notify: true,
+          dedupeKey:
+            "aks-rp-e2e.app:lifecycle-assignment-readout-disagreement:paused-zero-active-unowned-assignment-mismatch",
+          message:
+            "Regression events 3579540, 3580469, and 3582485 were duplicate watch-only lifecycle/frontier human messages.",
+        },
+      },
+      {
+        previous: {
+          lastDedupeKey:
+            "aks-rp-e2e.app:lifecycle-assignment-readout-disagreement:paused-zero-active-unowned-assignment-mismatch",
+          lastVerdict: "concern",
+        },
+        current: {
+          verdict: "concern",
+          mainConcern:
+            "Paused zero-active frontier still has no executable owner route.",
+          requestedHumanAction: "watch",
+          notify: true,
+          dedupeKey:
+            "aks-rp-e2e.app:lifecycle-frontier-controller-disagreement:paused-zero-active-review-backlog-no-route",
+          message:
+            "Regression events 3579540, 3580469, and 3582485 are the same semantic family despite key drift.",
+        },
+      },
+      {
+        previous: {
+          lastDedupeKey:
+            "scout-knowledge-lib.app:task-reconciliation:rejected-conditions-and-state-disagreement-20260719",
+          lastVerdict: "concern",
+        },
+        current: {
+          verdict: "concern",
+          mainConcern:
+            "Task reconciliation is still not converting completed or rejected Condition results.",
+          requestedHumanAction: "watch",
+          notify: true,
+          dedupeKey:
+            "scout-knowledge-lib.app:task-reconciliation:invalid-conditions-review-running-state-20260719",
+          message:
+            "Regression events 3579127, 3579572, 3580533, 3582544, and 3584133 were duplicate watch-only task-reconciliation messages.",
+        },
+      },
+      {
+        previous: {
+          lastDedupeKey:
+            "scout-knowledge-lib.app:task-reconciliation:invalid-condition-results-persists-xhs-gate-recovered-20260719",
+          lastVerdict: "concern",
+        },
+        current: {
+          verdict: "concern",
+          mainConcern:
+            "Current owner result rows remain rejected.",
+          requestedHumanAction: "watch",
+          notify: true,
+          dedupeKey:
+            "scout-knowledge-lib.app:task-reconciliation:owner-results-rejected-current-20260719",
+          message:
+            "Regression event 3584133 is the same watch/report-only task-reconciliation family.",
+        },
+      },
+      {
+        previous: {
+          lastDedupeKey:
+            "evaluation.app:result-contract-runtime-leaves:condition-action-contract-rejections-backlog-persists",
+          lastVerdict: "concern",
+        },
+        current: {
+          verdict: "concern",
+          mainConcern:
+            "Runtime/task leaves still show result/action/Condition contract backlog.",
+          requestedHumanAction: "watch",
+          notify: true,
+          dedupeKey:
+            "evaluation.app:result-action-condition-contract:runtime-leaves-backlog-persists",
+          message:
+            "Regression events 3584166 and 3584635 were duplicate watch-only evaluation.app contract messages.",
+        },
+      },
+    ];
+
+    for (const sample of duplicateWatchSamples) {
+      expect(shouldNotify(sample.current, sample.previous)).toBe(false);
+    }
+  });
+
+  test("only actionable human requests can create human decision messages", () => {
+    const previous = {
+      lastDedupeKey: "target:old-family",
+      lastVerdict: "watch",
+    };
+
+    expect(
+      shouldNotify(
+        {
+          verdict: "concern",
+          mainConcern: "Watch-only report.",
+          requestedHumanAction: "watch",
+          notify: true,
+          dedupeKey: "target:new-watch-family",
+          message: "Owner feedback/report path only.",
+        },
+        previous,
+      ),
+    ).toBe(false);
+    expect(
+      shouldNotify(
+        {
+          verdict: "concern",
+          mainConcern: "A concrete decision is needed.",
+          requestedHumanAction: "decide",
+          notify: true,
+          dedupeKey: "target:new-decision-family",
+          message: "Decide proceed or hold.",
+        },
+        previous,
+      ),
+    ).toBe(true);
   });
 });
 
