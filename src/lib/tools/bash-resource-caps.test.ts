@@ -1,4 +1,5 @@
 import { describe, it, expect } from "bun:test";
+import { readdirSync } from "node:fs";
 import { createBashTool, DEFAULT_BASH_TIMEOUT } from "./bash.js";
 
 describe("P113 Bash Resource Caps", () => {
@@ -56,6 +57,18 @@ describe("P113 Bash Resource Caps", () => {
     for (const [index, result] of results.entries()) {
       expect(result.content[0].text).toContain(`call-${index}`);
     }
+  });
+
+  it("releases process resources after repeated shell calls", async () => {
+    const tool = createBashTool("/tmp", { defaultTimeout: 10 });
+    const before = readdirSync("/proc/self/fd").length;
+
+    for (let index = 0; index < 25; index += 1) {
+      await tool.execute(`resource-${index}`, { command: "/bin/true" });
+    }
+
+    const after = readdirSync("/proc/self/fd").length;
+    expect(after - before).toBeLessThanOrEqual(3);
   });
 
   it("tool description mentions the default timeout", () => {
