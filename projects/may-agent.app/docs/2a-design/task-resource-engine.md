@@ -96,10 +96,15 @@ stable content is intentionally small:
 - active task IDs; and
 - satisfaction facts only for dependencies referenced by live tasks.
 
-Full resources, historical attempts, triggers, and receipt payloads remain in
-canonical state and are omitted from the projection. Consumers that need
-recovery or audit history must read the appropriate canonical or trace surface,
-not infer it from `tree.json`.
+Full live resources and the bounded recent history needed for recovery remain
+in canonical state and are omitted from the projection. Completed identities
+remain durable, but old receipt detail and terminal trigger payloads may be
+compacted after they leave every live recovery/context window. Compaction keeps
+the task identity, generation, spec hash, parent, completion time, summary, and
+a hash of omitted detail. The append-only task journal and referenced evidence
+remain the audit surfaces; `state.json` must not grow as the permanent archive.
+Consumers that need recovery or audit history must read the appropriate
+canonical, journal, evidence, or trace surface, not infer it from `tree.json`.
 
 ## Task resource
 
@@ -496,10 +501,13 @@ collapses their wakes and the parent rereads all current children and receipts.
   reconciliation context.
 - An achieve task cannot be absorbed while it has live children.
 
-Receipts preserve the minimum lineage, deduplication, acceptance, and evidence
-needed after finite work leaves the live graph. The engine does not keep an
-archive tree. Reusable experience belongs in workflows, skills, tests, design,
-and domain evidence.
+Receipts preserve the minimum lineage and identity needed after finite work
+leaves the live graph. The latest bounded child receipts per parent retain the
+full acceptance and evidence used by parent reconciliation. Older receipts keep
+their immutable completion identity and a digest of compacted detail; old
+terminal attempts keep full payload only while a live task may need it for
+recovery. The engine does not keep an archive tree. Reusable experience belongs
+in workflows, skills, tests, design, and domain evidence.
 
 ## Recovery and lifecycle
 
@@ -631,4 +639,8 @@ Tests and live audits must prove:
     without an app-specific route; and
 17. direct and workflow-nested sessions attach to their current task attempt,
     and task supersession interrupts or rejects sessions from the old
-    generation.
+    generation; and
+18. history compaction preserves completed identity, dependency satisfaction,
+    current recovery inputs, and the latest bounded parent child context while
+    preventing old evidence and trigger payloads from growing `state.json`
+    without bound.
