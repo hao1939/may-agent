@@ -330,6 +330,135 @@ describe("saveTaskState shrinkage guard", () => {
     expect(projection.tasks.root.children).toEqual(["live-child"]);
   });
 
+  it("keeps full recent child receipts and compacts older detail without losing identity", () => {
+    const config = makeConfig();
+    const tree = makeTree(5);
+    tree.receipts = Object.fromEntries(
+      Array.from({ length: 34 }, (_, index) => {
+        const id = `completed-${index}`;
+        return [
+          id,
+          {
+            metadata: { id, generation: 1, resourceVersion: 1 },
+            specHash: `hash-${index}`,
+            parentId: "task-0",
+            outcome: `Completed outcome ${index}`,
+            acceptance: [`acceptance-${index}`],
+            owner: "app-owner",
+            handler: "owner:app-owner",
+            summary: `Completed summary ${index}`,
+            evidence: [`evidence-${index}`],
+            acceptanceBasis: {
+              method: "owner-judgment" as const,
+              evidence: [`evidence-${index}`],
+            },
+            failureFingerprints: [],
+            completedAt: new Date(index).toISOString(),
+            workspace: {
+              kind: "task-worktree" as const,
+              path: `/tmp/completed-${index}`,
+              baseRef: "origin/v2",
+              baseCommit: "base",
+              branch: `task/completed-${index}`,
+              headCommit: `head-${index}`,
+              disposition: "branch-retained" as const,
+            },
+          },
+        ];
+      }),
+    );
+
+    saveTaskState(config, tree);
+    const saved = JSON.parse(readFileSync(config.statePath, "utf-8")) as TaskTree;
+    const oldest = saved.receipts?.["completed-0"];
+    const newest = saved.receipts?.["completed-33"];
+
+    expect(Object.keys(saved.receipts ?? {})).toHaveLength(34);
+    expect(oldest).toMatchObject({
+      metadata: { id: "completed-0", generation: 1 },
+      specHash: "hash-0",
+      parentId: "task-0",
+      acceptance: [],
+      evidence: [],
+      acceptanceBasis: { method: "owner-judgment", evidence: [] },
+    });
+    expect(oldest?.compactedDetailSha256).toHaveLength(64);
+    expect(oldest?.workspace).toBeUndefined();
+    expect(newest?.acceptance).toEqual(["acceptance-33"]);
+    expect(newest?.evidence).toEqual(["evidence-33"]);
+    expect(newest?.workspace?.headCommit).toBe("head-33");
+
+    const digest = oldest?.compactedDetailSha256;
+    saveTaskState(config, saved);
+    expect(readTaskState(config).receipts?.["completed-0"]?.compactedDetailSha256).toBe(digest);
+  });
+
+  it("compacts old terminal triggers while preserving running and latest recovery inputs", () => {
+    const config = makeConfig();
+    const tree = makeTree(5);
+    tree.resources = {
+      live: {
+        metadata: { id: "live", generation: 1, resourceVersion: 1 },
+        spec: {
+          parentId: "task-0",
+          outcome: "Finish live work",
+          acceptance: ["done"],
+          mode: "achieve",
+          outputs: [],
+          dependsOn: [],
+          priority: "P1",
+        },
+        status: {
+          observedGeneration: 1,
+          phase: "attention",
+          updatedAt: "2026-07-28T00:00:00.000Z",
+        },
+      },
+    };
+    const attempt = (id: string, startedAt: string, state: "running" | "failed", payload: string) => ({
+      metadata: { id, resourceVersion: 1 },
+      taskId: "live",
+      taskGeneration: 1,
+      specHash: "live-hash",
+      owner: "app-owner",
+      handler: "workflow:work",
+      runtimeId: "runtime",
+      state,
+      reason: "task-controller",
+      trigger: {
+        type: "project.task.tick",
+        source: "test",
+        eventId: Number(id.slice(-1)),
+        taskId: "live",
+        payload,
+      },
+      startedAt,
+      ...(state === "failed" ? { finishedAt: startedAt, failureReason: "HandlerExecutionFailed" } : {}),
+    });
+    tree.attempts = {
+      old: attempt("old-1", "2026-07-28T00:00:00.000Z", "failed", "old detail"),
+      latest: attempt("latest-2", "2026-07-28T01:00:00.000Z", "failed", "latest recovery detail"),
+      running: {
+        ...attempt("running-3", "2026-07-28T02:00:00.000Z", "running", "running detail"),
+        taskId: "orphan-running",
+      },
+    };
+
+    saveTaskState(config, tree);
+    const saved = readTaskState(config);
+
+    expect(saved.attempts?.old?.trigger).toMatchObject({
+      type: "project.task.tick",
+      source: "test",
+      eventId: 1,
+      taskId: "live",
+    });
+    expect(saved.attempts?.old?.trigger?.compactedPayloadSha256).toBeString();
+    expect(saved.attempts?.old?.trigger).not.toHaveProperty("payload");
+    expect(saved.attempts?.latest?.trigger?.payload).toBe("latest recovery detail");
+    expect(saved.attempts?.running?.trigger?.payload).toBe("running detail");
+  });
+
   it("rejects 19% of original (just below boundary)", () => {
     const config = makeConfig();
     const existingTree = makeTree(100);
