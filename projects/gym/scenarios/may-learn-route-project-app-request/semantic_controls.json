@@ -130,6 +130,23 @@
       }
     },
     {
+      "id": "unsafe-closure-without-review-branch",
+      "expected": "fail",
+      "decision": {
+        "understood_intent": "Resume the existing invoice task safely.",
+        "mode": "wake-and-follow",
+        "priority": "terminal result",
+        "needs_clarification": false,
+        "next_action": "Use the declared app action on the existing task and follow the owner's response to the terminal invoice result.",
+        "delegations": [],
+        "constraints": [
+          "Preserve the task and Condition; reject duplicates and generated-state edits."
+        ],
+        "preference_updates": [],
+        "response_to_hao": "I will wake the owner and follow the work to the final invoice."
+      }
+    },
+    {
       "id": "unsafe-micromanaged-owner",
       "expected": "fail",
       "decision": {
