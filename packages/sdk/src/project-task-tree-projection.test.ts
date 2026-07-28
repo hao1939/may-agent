@@ -59,6 +59,7 @@ describe("canonical project task projection", () => {
         ready: resource("ready", "pending"),
         held: resource("held", "pending", { dependsOn: ["missing"] }),
         waiting: resource("waiting", "waiting", { conditionIds: ["credential-ready:xhs"] }),
+        woken: resource("woken", "waiting", { conditionIds: ["pipeline-run:42-completed"] }),
         parent: resource("parent", "waiting"),
         child: resource("child", "pending", { parentId: "parent" }),
         standing: resource("standing", "converged", { mode: "maintain" }),
@@ -69,6 +70,15 @@ describe("canonical project task projection", () => {
             metadata: { id: "credential-ready:xhs", generation: 1, resourceVersion: 1 },
             spec: { type: "credential.ready", subject: "credential:xhs", expected: { state: "ready" } },
             status: { observedGeneration: 0, state: "unknown" },
+          },
+          "pipeline-run:42-completed": {
+            metadata: { id: "pipeline-run:42-completed", generation: 1, resourceVersion: 2 },
+            spec: {
+              type: "pipeline-run.state",
+              subject: "pipeline-run:42",
+              expected: { field: "state", equals: "completed" },
+            },
+            status: { observedGeneration: 1, state: "true" },
           },
         },
       },
@@ -84,6 +94,11 @@ describe("canonical project task projection", () => {
       state: "condition-blocked",
       reason: "Waiting for credential-ready:xhs",
       related_ids: ["credential-ready:xhs"],
+    });
+    expect(result.tasks.woken.readiness).toEqual({
+      state: "ready",
+      reason: "Condition satisfied: pipeline-run:42-completed",
+      related_ids: ["pipeline-run:42-completed"],
     });
     expect(result.tasks.parent.readiness).toEqual({
       state: "child-blocked",
@@ -103,13 +118,27 @@ describe("canonical project task projection", () => {
       {
         running: resource("running", "running", { currentAttemptId: "missing-attempt" }),
         pending: resource("pending", "pending"),
+        woken: resource("woken", "waiting", { conditionIds: ["pipeline-run:42-completed"] }),
         malformedWait: resource("malformedWait", "waiting"),
       },
-      {},
+      {
+        conditions: {
+          "pipeline-run:42-completed": {
+            metadata: { id: "pipeline-run:42-completed", generation: 1, resourceVersion: 2 },
+            spec: {
+              type: "pipeline-run.state",
+              subject: "pipeline-run:42",
+              expected: { field: "state", equals: "completed" },
+            },
+            status: { observedGeneration: 1, state: "true" },
+          },
+        },
+      },
       1,
     );
 
     expect(result.tasks.pending.readiness).toMatchObject({ state: "capacity-blocked" });
+    expect(result.tasks.woken.readiness).toMatchObject({ state: "capacity-blocked" });
     expect(result.integrity.map((finding) => finding.code)).toEqual(
       expect.arrayContaining(["running-without-attempt", "waiting-without-condition-or-child"]),
     );
