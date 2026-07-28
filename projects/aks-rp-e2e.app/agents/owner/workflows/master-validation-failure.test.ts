@@ -589,7 +589,7 @@ ${JSON.stringify({
     });
   });
 
-  test("accepts only a later passing observation from main as recovery", () => {
+  test("accepts a later passing observation from the same frozen campaign source", () => {
     const input = parseFailureInput(`
 ## Reconciliation Task
 ${JSON.stringify({
@@ -598,14 +598,15 @@ ${JSON.stringify({
     specId: "spec.example",
     pipelineRunId: "123",
     failureFingerprint: "fp",
+    sourceCommit: "abc",
   },
 })}
 `)!;
     const observation = JSON.stringify({
       type: "pipeline.spec.observed",
       pipelineRunId: "124",
-      sourceBranch: "refs/heads/main",
-      sourceCommit: "def",
+      sourceBranch: "refs/heads/validation/master-validation-123",
+      sourceCommit: "abc",
       specId: "spec.example",
       status: "pass",
       artifactPath: "/tmp/result.json",
@@ -622,6 +623,12 @@ ${observation}
     expect(
       passingRecoveryObservation(
         raw.replace('"pipelineRunId":"124"', '"pipelineRunId":"122"'),
+        input,
+      ),
+    ).toBeNull();
+    expect(
+      passingRecoveryObservation(
+        raw.replace('"sourceCommit":"abc"', '"sourceCommit":"other"'),
         input,
       ),
     ).toBeNull();
@@ -648,6 +655,7 @@ ${JSON.stringify({
     specId: "spec.example",
     pipelineRunId: "123",
     failureFingerprint: "fp",
+    sourceCommit: "abc",
   },
 })}
 `)!;
@@ -759,6 +767,7 @@ ${JSON.stringify({
     specId: "spec.example",
     pipelineRunId: "123",
     failureFingerprint: "fp",
+    sourceCommit: "abc",
   },
 })}
 `)!;
@@ -769,7 +778,7 @@ ${JSON.stringify({
       expected: {
         specId: "spec.example",
         status: "pass",
-        sourceBranch: "refs/heads/main",
+        sourceCommit: "abc",
         pipelineRunId: { gt: "123" },
       },
     });
@@ -1065,7 +1074,7 @@ ${JSON.stringify({
             expected: {
               specId: "spec.network-cni.azure-overlay",
               status: "pass",
-              sourceBranch: "refs/heads/main",
+              sourceCommit: "b6ed0123763895f4584db2e3337145998e44b009",
             },
           },
         ],

@@ -355,6 +355,7 @@ function abandonSupersededTaskPullRequests(
 export function productRecoveryCondition(
   input: FailureInput,
   afterRunId = input.pipelineRunId,
+  options: { requireCurrentMain?: boolean } = {},
 ): ProjectAppConditionSpec {
   return {
     // Include the blocking observation in the identity. Reusing the same
@@ -366,7 +367,9 @@ export function productRecoveryCondition(
     expected: {
       specId: input.specId,
       status: "pass",
-      sourceBranch: "refs/heads/main",
+      ...(!options.requireCurrentMain && input.sourceCommit
+        ? { sourceCommit: input.sourceCommit }
+        : { sourceBranch: "refs/heads/main" }),
       pipelineRunId: { gt: afterRunId },
     },
   };
@@ -743,9 +746,13 @@ function matchingPassingRecoveryObservation(
   const type = text(observation.type ?? observation.event_type ?? data.type);
   if (type !== "pipeline.spec.observed") return null;
   const value = (key: string) => text(observation[key] ?? data[key]);
+  const sourceMatches = input.sourceCommit
+    ? value("sourceCommit") === input.sourceCommit ||
+      value("sourceBranch") === "refs/heads/main"
+    : value("sourceBranch") === "refs/heads/main";
   return value("specId") === input.specId &&
     value("status").toLowerCase() === "pass" &&
-    value("sourceBranch") === "refs/heads/main" &&
+    sourceMatches &&
     Boolean(value("sourceCommit")) &&
     laterRun(value("pipelineRunId"), input.pipelineRunId)
     ? { ...observation, ...data, type }
@@ -1142,7 +1149,7 @@ function notificationPath(ctx: WorkflowContext, key: string): string {
   );
 }
 
-function notifyHuman(
+function routeFinding(
   ctx: WorkflowContext,
   input: FailureInput,
   kind: "product" | "test-pr",
@@ -1152,6 +1159,29 @@ function notifyHuman(
   const key = `${kind}:${input.specId}:${input.failureFingerprint}`;
   const path = notificationPath(ctx, key);
   if (existsSync(path)) return false;
+  if (kind === "product") {
+    ctx.dispatchEvent("project.owner.requested", {
+      target: { project: "aks-rp-e2e" },
+      project: "aks-rp-e2e",
+      reason: "master-validation-product-issue",
+      params: {
+        taskId: input.taskId,
+        specId: input.specId,
+        pipelineRunId: input.pipelineRunId,
+        failureFingerprint: input.failureFingerprint,
+        finding: content,
+        ...extra,
+        instruction:
+          "Own this product/provider failure inside the AKS app. Preserve the exact recovery wait, use later same-source campaign evidence to distinguish a transient failure from a persistent product defect, and escalate to a human only if a real authority decision remains after owner investigation.",
+      },
+    });
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(
+      path,
+      `${JSON.stringify({ key, routedTo: "project-owner", sentAt: new Date().toISOString(), ...extra }, null, 2)}\n`,
+    );
+    return true;
+  }
   ctx.dispatchEvent("message.created", {
     target: { project: "aks-rp-e2e", human: true },
     from: "aks-explorer",
@@ -1204,7 +1234,7 @@ export function preserveVerificationAfterNestedReconciliation(
     });
   }
   if (pullRequestId) {
-    notifyHuman(
+    routeFinding(
       ctx,
       input,
       "test-pr",
@@ -1228,7 +1258,11 @@ export function preserveVerificationAfterNestedReconciliation(
         `blocking-pipeline-run:${input.pipelineRunId}`,
         "verification-required:later-current-main-spec-pass",
       ],
-      productRecoveryCondition(input, currentRecoveryBaselineRunId(ctx, input)),
+      productRecoveryCondition(
+        input,
+        currentRecoveryBaselineRunId(ctx, input),
+        { requireCurrentMain: true },
+      ),
       absorbLegacyRecoveryActions(ctx.task),
     );
   }
@@ -1519,7 +1553,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         input.category,
       )
     ) {
-      notifyHuman(
+      routeFinding(
         ctx,
         input,
         "product",
@@ -1548,7 +1582,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       );
     }
     if (["product_failure", "prod_issue"].includes(input.category)) {
-      notifyHuman(
+      routeFinding(
         ctx,
         input,
         "product",
@@ -1641,7 +1675,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           `unexpected-commit:${nextCommit}`,
         ]);
       }
-      notifyHuman(
+      routeFinding(
         ctx,
         input,
         "product",
@@ -1652,7 +1686,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           `Evidence: ${decision.evidence.join("; ")}`,
         ].join("\n"),
       );
-      const summary = `Classified ${input.specId} as a product issue and notified the human operator; the failure remains open until a deployed product fix passes this spec from current main.`;
+      const summary = `Classified ${input.specId} as a product issue and routed it to the AKS project owner; the failure remains open until a later same-source campaign pass proves recovery.`;
       return waiting(
         ctx,
         summary,
