@@ -70,6 +70,11 @@ autonomous-training manifest and learning unit. Loading the curriculum fails if
 an approved case is missing, so a new lesson cannot be reviewed successfully
 and then silently skipped by the live training loop.
 
+An evaluator or runtime issue in one track does not block evaluation of later,
+independent tracks. Gym finishes the remaining tracks, then reports the issue
+and withholds the exhausted checkpoint. A verified candidate, required human
+decision, or real authority boundary still stops the sequence immediately.
+
 ## One bounded synchronous workflow
 
 `improve-agent` performs one ordered improvement burst:

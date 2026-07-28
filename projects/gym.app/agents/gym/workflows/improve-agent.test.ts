@@ -196,6 +196,36 @@ describe("single agent-improvement loop", () => {
       "initiative-and-approval",
       "system-deputy-operations",
     ]);
+
+    visited.length = 0;
+    const deferredIssue = await runCurriculumSequence(
+      targets,
+      async (target) => {
+        visited.push(target.id);
+        return target.id === "system-deputy-operations"
+          ? {
+              type: "done",
+              summary: "Gym found an evaluator issue but no May behavior gap.",
+              output: {
+                state: "converged",
+                summary:
+                  "Gym found an evaluator issue but no May behavior gap.",
+              },
+            }
+          : {
+              type: "done",
+              summary:
+                "May has no actionable failures in the current approved evaluation.",
+              output: {
+                state: "converged",
+                summary:
+                  "May has no actionable failures in the current approved evaluation.",
+              },
+            };
+      },
+    );
+    expect(deferredIssue.state).toBe("stopped");
+    expect(visited).toEqual(targets.map(({ id }) => id));
   });
 
   test("gives candidate builders lessons and evidence without release truth", () => {

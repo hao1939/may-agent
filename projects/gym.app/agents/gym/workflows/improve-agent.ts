@@ -381,20 +381,25 @@ export async function runCurriculumSequence<T extends Record<string, unknown>>(
   | { state: "stopped"; result: T; results: T[] }
 > {
   const results: T[] = [];
+  let deferredIssue: T | null = null;
   for (const target of targets) {
     const result = await runTarget(target);
     results.push(result);
     const output = record(result.output);
     const state = String(output.state ?? result.state ?? "");
     const summary = String(output.summary ?? result.summary ?? "");
-    if (
-      state !== "converged" ||
-      summary !==
-        "May has no actionable failures in the current approved evaluation."
-    ) {
+    if (state !== "converged") {
       return { state: "stopped", result, results };
     }
+    if (
+      summary !==
+      "May has no actionable failures in the current approved evaluation."
+    ) {
+      deferredIssue ??= result;
+    }
   }
+  if (deferredIssue)
+    return { state: "stopped", result: deferredIssue, results };
   return { state: "exhausted", results };
 }
 
