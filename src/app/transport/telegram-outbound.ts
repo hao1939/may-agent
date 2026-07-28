@@ -126,7 +126,6 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
 
     if (event.type === "session.start" && sessionId && isRootChatSession(event)) {
       rootChatSessionId = sessionId;
-      watchedSessions.clear();
       watchedSessions.add(sessionId);
       outboundBySession.set(sessionId, { pendingText: "", sentAnyText: false, sentText: "" });
       if (pendingTelegramReplyToMessageId) {
@@ -144,10 +143,6 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
       watchedSessions.add(sessionId);
       const parentReplyToMessageId = replyToMessageIdBySession.get(String(session.parentSessionId));
       if (parentReplyToMessageId) replyToMessageIdBySession.set(sessionId, parentReplyToMessageId);
-    }
-
-    if (sessionId && sessionId === getSessionId() && !watchedSessions.has(sessionId)) {
-      bindCurrentChatSession();
     }
 
     if (sessionId && !watchedSessions.has(sessionId)) {
@@ -200,7 +195,9 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
           });
         }
       }
+      watchedSessions.delete(sessionId);
       replyToMessageIdBySession.delete(sessionId);
+      outboundBySession.delete(sessionId);
     }
 
     if (
@@ -242,9 +239,9 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
           });
         }
       }
-      if (event.type === "session.end") {
+      if (event.type === "session.end" || event.type === "session.idle") {
         rootChatSessionId = null;
-        watchedSessions.clear();
+        watchedSessions.delete(sessionId);
         replyToMessageIdBySession.delete(sessionId);
         outboundBySession.delete(sessionId);
       }
@@ -372,7 +369,11 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
     if (session.parentSessionId) return false;
     if (session.agent !== opts.interfaceAgent) return false;
     if (session.kind && session.kind !== "chat") return false;
-    return event.source === "telegram" || session.sessionId === getSessionId();
+    // A daemon chat session can be reused by Telegram, CLI, Web, and tests.
+    // Route a turn to Telegram only when Telegram started that turn. Treating
+    // the daemon's current chat session as Telegram-owned leaks CLI/Gym smoke
+    // results into the human inbox and keeps leaking on every later idle turn.
+    return event.source === "telegram";
   }
 
   return {
