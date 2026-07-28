@@ -170,6 +170,9 @@ export function resolveGymTask(
         input: {
           agent: "may",
           benchmark: "may-alignment",
+          ...(event.type === "agent.revision.changed"
+            ? { curriculumDrain: true }
+            : {}),
           reason:
             event.type === "agent.revision.changed"
               ? "may-revision-confirmation"
@@ -178,6 +181,7 @@ export function resolveGymTask(
                 : String(details.reason ?? "manual"),
           ...selected(details, [
             "benchmark",
+            "curriculumDrain",
             "revision",
             "artifactFingerprint",
             "approvalId",
@@ -386,13 +390,13 @@ export default defineProjectApp({
 
   schedules: [
     {
-      id: "may-improvement-weekly",
+      id: "may-training-refill",
       enabled: mayCanary.automatic_schedule_enabled,
-      intervalMs: 604_800_000,
+      intervalMs: 86_400_000,
       emits: [
         improvementRequested({
-          reason: "weekly",
-          trials: 3,
+          reason: "curriculum-refill",
+          curriculumDrain: true,
         }),
       ],
     },

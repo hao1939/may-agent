@@ -24,7 +24,7 @@ describe("gym app manifest", () => {
     expect(gymApp.schedules).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          id: "may-improvement-weekly",
+          id: "may-training-refill",
           enabled: true,
         }),
         expect.objectContaining({
@@ -34,18 +34,17 @@ describe("gym app manifest", () => {
       ]),
     );
     expect(
-      gymApp.schedules.find(({ id }) => id === "may-improvement-weekly"),
+      gymApp.schedules.find(({ id }) => id === "may-training-refill"),
     ).toMatchObject({
-      intervalMs: 604_800_000,
+      intervalMs: 86_400_000,
       emits: [
         expect.objectContaining({
           type: "gym.improvement.requested",
           params: expect.objectContaining({
             agent: "may",
             benchmark: "may-alignment",
-            reason: "weekly",
-            scenarios: mayCanary.scenarios,
-            trials: 3,
+            reason: "curriculum-refill",
+            curriculumDrain: true,
           }),
         }),
       ],
@@ -234,6 +233,24 @@ describe("gym task reconciliation", () => {
         scenarios: ["may-learn-select-skill-or-workflow"],
         trials: 3,
         reason: "approved-system-deputy-pilot",
+      },
+    });
+  });
+
+  test("a May revision restarts the approved curriculum drain", () => {
+    expect(
+      resolveGymTask({
+        type: "agent.revision.changed",
+        eventId: 305,
+        agent: "may",
+        revision: "sha256:new-may",
+      }),
+    ).toMatchObject({
+      id: "improve/may",
+      input: {
+        curriculumDrain: true,
+        reason: "may-revision-confirmation",
+        revision: "sha256:new-may",
       },
     });
   });

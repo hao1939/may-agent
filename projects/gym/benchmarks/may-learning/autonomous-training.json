@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "agent": "may",
+  "tracks": [
+    {
+      "id": "initiative-and-approval",
+      "benchmark": "may-alignment",
+      "scenarios": [
+        "may-align-proof-before-adopt",
+        "may-align-local-guidance-wins",
+        "may-align-infer-safe-cleanup",
+        "may-align-remove-specified-cleanup"
+      ],
+      "trials": 3
+    },
+    {
+      "id": "system-deputy-operations",
+      "benchmark": "may-deputy-learning",
+      "scenarios": [
+        "may-learn-reject-stale-app-approval",
+        "may-learn-select-skill-or-workflow"
+      ],
+      "trials": 3
+    },
+    {
+      "id": "system-deputy-learning-intake",
+      "benchmark": "may-deputy-learning-intake",
+      "scenarios": ["may-learn-recover-codex-intake-timeout"],
+      "trials": 3
+    }
+  ]
+}

@@ -13,7 +13,7 @@ supported by trustworthy evidence and no approved regression.
 ## Mental model
 
 ```text
-human intent, weekly wake, or May revision
+human intent, daily refill check, or May revision
   -> improve/may                         one maintain task
   -> evaluate approved behavior
   -> classify every non-pass independently
@@ -57,6 +57,13 @@ of these is true:
 
 A later schedule, user request, approved benchmark change, or May revision
 wakes the same task. It does not create another lifecycle.
+
+An autonomous wake drains every approved learning track in sequence. It does
+not stop after the first passing track. It stops only when all current material
+passes, a verified proposal needs Hao's decision, or progress reaches a real
+safety or authority boundary. After exhaustion, a fingerprinted checkpoint
+makes the daily refill check a cheap no-op until the curriculum or May's durable
+learning surface changes.
 
 ## One bounded synchronous workflow
 
@@ -190,7 +197,9 @@ the CLI and parsing its output.
 ## Triggers
 
 - `improve-may-now` or free-form project intent starts an immediate cycle.
-- One enabled weekly schedule supplies autonomous regression coverage.
+- One enabled daily refill check resumes the sequential curriculum drain after
+  recovery or newly approved material. The drain itself runs aggressively until
+  material is exhausted or approval is required.
 - `agent.revision.changed` for May confirms the actual promoted behavior.
 
 Do not connect broad session-evaluation events until Gym can consume their

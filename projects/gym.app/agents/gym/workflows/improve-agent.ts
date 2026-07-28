@@ -136,6 +136,23 @@ interface OperatingMetricSample {
   evidence: string[];
 }
 
+export interface CurriculumTarget {
+  id: string;
+  benchmark: string;
+  scenarios: string[];
+  trials: number;
+}
+
+interface TrainingDrainCheckpoint {
+  schema_version: 1;
+  agent: string;
+  curriculum_fingerprint: string;
+  agent_fingerprint: string;
+  exhausted_at: string;
+  targets: string[];
+  evidence: string[];
+}
+
 type ApprovalKind = "agent-improvement" | "benchmark-fix";
 
 interface ApprovalRequest {
@@ -262,6 +279,90 @@ function requestedScenarios(input: Record<string, unknown>): string[] {
     if (!scenario) throw new Error("scenario contains unsupported characters");
     return scenario;
   });
+}
+
+export function loadCurriculumTargets(gymRoot: string): {
+  targets: CurriculumTarget[];
+  fingerprint: string;
+} {
+  const configPath = join(
+    gymRoot,
+    "benchmarks",
+    "may-learning",
+    "autonomous-training.json",
+  );
+  const config = record(JSON.parse(readFileSync(configPath, "utf8")));
+  if (config.schema_version !== 1 || config.agent !== "may") {
+    throw new Error("Autonomous May training config is invalid");
+  }
+  const rows = Array.isArray(config.tracks) ? config.tracks : [];
+  const targets = rows.map((value) => {
+    const row = record(value);
+    const id = safeName(row.id, "");
+    const benchmark = safeName(row.benchmark, "");
+    const scenarios = Array.isArray(row.scenarios)
+      ? row.scenarios.map((scenario) => safeName(scenario, ""))
+      : [];
+    const trials = Number(row.trials);
+    if (
+      !id ||
+      !benchmark ||
+      !scenarios.length ||
+      scenarios.some((scenario) => !scenario) ||
+      !Number.isInteger(trials) ||
+      trials < 1 ||
+      trials > 5
+    ) {
+      throw new Error("Autonomous May training track is invalid");
+    }
+    return {
+      id,
+      benchmark,
+      scenarios: scenarios as string[],
+      trials,
+    };
+  });
+  if (
+    !targets.length ||
+    new Set(targets.map(({ id }) => id)).size !== targets.length
+  ) {
+    throw new Error(
+      "Autonomous May training tracks must be non-empty and unique",
+    );
+  }
+
+  const hash = createHash("sha256");
+  hash.update(readFileSync(configPath));
+  for (const target of targets) {
+    hash.update(target.id);
+    hash.update(fingerprintTree(join(gymRoot, "benchmarks", target.benchmark)));
+    for (const scenario of target.scenarios) {
+      hash.update(fingerprintTree(join(gymRoot, "scenarios", scenario)));
+    }
+  }
+  return { targets, fingerprint: `sha256:${hash.digest("hex")}` };
+}
+
+export async function runCurriculumSequence<T extends Record<string, unknown>>(
+  targets: CurriculumTarget[],
+  runTarget: (target: CurriculumTarget) => Promise<T>,
+): Promise<
+  | { state: "exhausted"; results: T[] }
+  | { state: "stopped"; result: T; results: T[] }
+> {
+  const results: T[] = [];
+  for (const target of targets) {
+    const result = await runTarget(target);
+    results.push(result);
+    if (
+      result.state !== "converged" ||
+      result.summary !==
+        "May has no actionable failures in the current approved evaluation."
+    ) {
+      return { state: "stopped", result, results };
+    }
+  }
+  return { state: "exhausted", results };
 }
 
 export function learningPromptLines(units: LearningUnitContext[]): string[] {
@@ -933,6 +1034,36 @@ export function fingerprintTree(path: string): string {
     } else hash.update(readFileSync(current));
   };
   visit(path, ".");
+  return hash.digest("hex");
+}
+
+function fingerprintAgentLearningSurface(path: string): string {
+  const hash = createHash("sha256");
+  const visit = (current: string, relativePath: string): void => {
+    if (/^handlers\/\.may-runtime-module-/.test(relativePath)) return;
+    const stat = lstatSync(current);
+    hash.update(
+      `${relativePath}\0${stat.isSymbolicLink() ? "link" : stat.isDirectory() ? "dir" : "file"}\0`,
+    );
+    if (stat.isSymbolicLink()) hash.update(readlinkSync(current));
+    else if (stat.isDirectory()) {
+      for (const entry of readdirSync(current).sort()) {
+        visit(join(current, entry), join(relativePath, entry));
+      }
+    } else hash.update(readFileSync(current));
+  };
+  for (const entry of [
+    "AGENTS.md",
+    "agent.json",
+    "cron.json",
+    "handlers",
+    "skills",
+    "tools",
+    "workflows",
+  ]) {
+    const current = join(path, entry);
+    if (existsSync(current)) visit(current, entry);
+  }
   return hash.digest("hex");
 }
 
@@ -1724,10 +1855,9 @@ async function runCandidateIteration(
   }
 
   const reviewCheckpointPath = join(iterationDir, "failed-review.json");
-  let review =
-    verificationPassed
-      ? null
-      : readJson<FailedReview>(reviewCheckpointPath);
+  let review = verificationPassed
+    ? null
+    : readJson<FailedReview>(reviewCheckpointPath);
   if (!verificationPassed && !review) {
     review = await reviewFailedCandidate(ctx, plan, verificationDir);
     if (review) writeJson(reviewCheckpointPath, review);
@@ -1778,40 +1908,37 @@ async function runCandidateIteration(
     });
   }
 
-  const recommendation =
-    verificationPassed ? "promote" : review!.disposition;
-  const approval =
-    verificationPassed
+  const recommendation = verificationPassed ? "promote" : review!.disposition;
+  const approval = verificationPassed
+    ? buildApprovalRequest({
+        kind: "agent-improvement",
+        taskId,
+        generation,
+        artifactFingerprint: `sha256:${candidateFingerprint}`,
+        packetPath: resultPath,
+        requestedAction:
+          "Approve this exact release-verified May candidate for production promotion?",
+        reason:
+          "The candidate improved the targeted behavior, then passed every approved held-back release trial without an invalid run or regression.",
+      })
+    : benchmarkFix
       ? buildApprovalRequest({
-          kind: "agent-improvement",
+          kind: "benchmark-fix",
           taskId,
           generation,
-          artifactFingerprint: `sha256:${candidateFingerprint}`,
+          artifactFingerprint: benchmarkFix.fingerprint,
           packetPath: resultPath,
           requestedAction:
-            "Approve this exact release-verified May candidate for production promotion?",
-          reason:
-            "The candidate improved the targeted behavior, then passed every approved held-back release trial without an invalid run or regression.",
+            "Approve this exact benchmark/scorer fix and a fresh baseline?",
+          reason: `${review!.summary} ${benchmarkFix.summary}`,
         })
-      : benchmarkFix
-        ? buildApprovalRequest({
-            kind: "benchmark-fix",
-            taskId,
-            generation,
-            artifactFingerprint: benchmarkFix.fingerprint,
-            packetPath: resultPath,
-            requestedAction:
-              "Approve this exact benchmark/scorer fix and a fresh baseline?",
-            reason: `${review!.summary} ${benchmarkFix.summary}`,
-          })
-        : null;
+      : null;
   const workflowState = approval ? "waiting" : "needs-owner";
-  const summary =
-    verificationPassed
-      ? `May candidate passed targeted and release verification and is waiting for approval of the exact artifact. ${candidateCheckpoint.implementationSummary}`
-      : benchmarkFix
-        ? `Gym prepared an exact benchmark/scorer fix and is waiting for approval. ${benchmarkFix.summary}`
-        : `Gym found a ${review!.disposition} issue: ${review!.summary}`;
+  const summary = verificationPassed
+    ? `May candidate passed targeted and release verification and is waiting for approval of the exact artifact. ${candidateCheckpoint.implementationSummary}`
+    : benchmarkFix
+      ? `Gym prepared an exact benchmark/scorer fix and is waiting for approval. ${benchmarkFix.summary}`
+      : `Gym found a ${review!.disposition} issue: ${review!.summary}`;
   const evidence = [
     resultPath,
     plan.assessmentPath,
@@ -2260,20 +2387,16 @@ async function handleAssessmentBenchmarkFix(
   });
 }
 
-export async function runImprovement(
+async function runImprovementOnce(
   ctx: WorkflowContext,
-  loop: GymLoopApi = defaultLoopApi,
+  loop: GymLoopApi,
+  input: Record<string, unknown>,
+  taskId: string,
+  generation: number,
+  scope?: string,
 ): Promise<WorkflowResult> {
-  configureGymRoot(join(ctx.projectsRoot, "gym"));
-  const packet = reconciliationPacket(ctx.task);
-  const trigger = triggerDetails(ctx.task);
-  const input = record(packet?.input ?? trigger);
-  const taskId = String(packet?.taskId ?? "improve/may");
-  const generation = Number(packet?.generation ?? 1);
-  if (!Number.isInteger(generation) || generation < 1) {
-    return ctx.blocked("Improvement task has no valid generation");
-  }
   const taskKey = safeKey(taskId, "improve-may");
+  const scopeKey = scope ? safeKey(scope, "curriculum-track") : null;
   const stateDir = join(
     ctx.projectsRoot,
     "gym.app",
@@ -2281,15 +2404,26 @@ export async function runImprovement(
     "candidates",
     taskKey,
     String(generation),
+    ...(scopeKey ? ["tracks", scopeKey] : []),
   );
-  const assessmentPath = join(
-    ctx.projectsRoot,
-    "gym.app",
-    ".state",
-    "assessments",
-    taskKey,
-    `${generation}.json`,
-  );
+  const assessmentPath = scopeKey
+    ? join(
+        ctx.projectsRoot,
+        "gym.app",
+        ".state",
+        "assessments",
+        taskKey,
+        String(generation),
+        `${scopeKey}.json`,
+      )
+    : join(
+        ctx.projectsRoot,
+        "gym.app",
+        ".state",
+        "assessments",
+        taskKey,
+        `${generation}.json`,
+      );
 
   let plan = planFromInput(ctx, input);
   if (!plan) {
@@ -2369,6 +2503,103 @@ export async function runImprovement(
     }
   }
   return runCandidate(ctx, loop, plan, taskId, generation, stateDir);
+}
+
+export async function runImprovement(
+  ctx: WorkflowContext,
+  loop: GymLoopApi = defaultLoopApi,
+): Promise<WorkflowResult> {
+  const gymRoot = join(ctx.projectsRoot, "gym");
+  configureGymRoot(gymRoot);
+  const packet = reconciliationPacket(ctx.task);
+  const trigger = triggerDetails(ctx.task);
+  const input = record(packet?.input ?? trigger);
+  const taskId = String(packet?.taskId ?? "improve/may");
+  const generation = Number(packet?.generation ?? 1);
+  if (!Number.isInteger(generation) || generation < 1) {
+    return ctx.blocked("Improvement task has no valid generation");
+  }
+  if (input.curriculumDrain !== true) {
+    return runImprovementOnce(ctx, loop, input, taskId, generation);
+  }
+
+  try {
+    const { targets, fingerprint } = loadCurriculumTargets(gymRoot);
+    const agent = safeName(input.agent, "may");
+    if (!agent) throw new Error("Invalid curriculum agent");
+    const agentPath = join(dirname(ctx.projectsRoot), "agents", agent);
+    const agentFingerprint = `sha256:${fingerprintAgentLearningSurface(agentPath)}`;
+    const checkpointPath = join(
+      ctx.projectsRoot,
+      "gym.app",
+      ".state",
+      "learning",
+      "training-drain.json",
+    );
+    const checkpoint = readJson<TrainingDrainCheckpoint>(checkpointPath);
+    if (
+      checkpoint?.curriculum_fingerprint === fingerprint &&
+      checkpoint.agent_fingerprint === agentFingerprint
+    ) {
+      const summary = "May already passes every approved learning track.";
+      return ctx.done(summary, {
+        state: "converged",
+        summary,
+        evidence: [checkpointPath, ...checkpoint.evidence],
+        actions: [],
+      });
+    }
+
+    const sequence = await runCurriculumSequence(
+      targets,
+      (target) =>
+        runImprovementOnce(
+          ctx,
+          loop,
+          {
+            agent,
+            benchmark: target.benchmark,
+            scenarios: target.scenarios,
+            trials: target.trials,
+            reason: `curriculum-drain:${target.id}`,
+          },
+          taskId,
+          generation,
+          target.id,
+        ) as Promise<Record<string, unknown>>,
+    );
+    if (sequence.state === "stopped") {
+      return sequence.result as unknown as WorkflowResult;
+    }
+    const evidence = boundedEvidence(
+      sequence.results.flatMap((result) =>
+        Array.isArray(result.evidence) ? result.evidence.map(String) : [],
+      ),
+    );
+    writeJson(checkpointPath, {
+      schema_version: 1,
+      agent,
+      curriculum_fingerprint: fingerprint,
+      agent_fingerprint: agentFingerprint,
+      exhausted_at: new Date().toISOString(),
+      targets: targets.map(({ id }) => id),
+      evidence,
+    } satisfies TrainingDrainCheckpoint);
+    const summary = `May passes all ${targets.length} approved learning tracks; training material is exhausted.`;
+    return ctx.done(summary, {
+      state: "converged",
+      summary,
+      evidence: [checkpointPath, ...evidence],
+      actions: [],
+    });
+  } catch (error) {
+    const summary = error instanceof Error ? error.message : String(error);
+    return ctx.done(summary, {
+      state: "needs-owner",
+      summary,
+      evidence: [],
+    });
+  }
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {

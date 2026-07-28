@@ -19,9 +19,11 @@ import {
   dispatchApproval,
   fingerprintTree,
   learningPromptLines,
+  loadCurriculumTargets,
   prepareAssessment,
   qualifiesHeldBackRelease,
   runImprovement,
+  runCurriculumSequence,
   scenarioVerdicts,
   validateFindings,
   type Finding,
@@ -92,6 +94,46 @@ function manifest(
 }
 
 describe("single agent-improvement loop", () => {
+  test("drains every approved learning track and stops at the first decision boundary", async () => {
+    const gymRoot = join(import.meta.dir, "../../../../gym");
+    const { targets, fingerprint } = loadCurriculumTargets(gymRoot);
+    expect(fingerprint).toMatch(/^sha256:[a-f0-9]{64}$/);
+    expect(targets.map(({ id }) => id)).toEqual([
+      "initiative-and-approval",
+      "system-deputy-operations",
+      "system-deputy-learning-intake",
+    ]);
+
+    const visited: string[] = [];
+    const exhausted = await runCurriculumSequence(targets, async (target) => {
+      visited.push(target.id);
+      return {
+        state: "converged",
+        summary:
+          "May has no actionable failures in the current approved evaluation.",
+      };
+    });
+    expect(exhausted.state).toBe("exhausted");
+    expect(visited).toEqual(targets.map(({ id }) => id));
+
+    visited.length = 0;
+    const stopped = await runCurriculumSequence(targets, async (target) => {
+      visited.push(target.id);
+      return target.id === "system-deputy-operations"
+        ? { state: "waiting", summary: "Waiting for exact approval." }
+        : {
+            state: "converged",
+            summary:
+              "May has no actionable failures in the current approved evaluation.",
+          };
+    });
+    expect(stopped.state).toBe("stopped");
+    expect(visited).toEqual([
+      "initiative-and-approval",
+      "system-deputy-operations",
+    ]);
+  });
+
   test("gives candidate builders lessons and evidence without release truth", () => {
     const lines = learningPromptLines([
       {
