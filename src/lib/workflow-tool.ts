@@ -1001,6 +1001,21 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     const maxInjected = opts.maxInjectedSteps ?? DEFAULT_MAX_INJECTED_STEPS;
     const injectedStepCount = { value: 0 };
     const guardWarnings: string[] = [];
+    let executionExpired = false;
+    const executionTimeoutMessage = `Workflow "${workflow.name}" timed out after ${opts.executionTimeoutMs}ms`;
+    const assertExecutionActive = (): void => {
+      if (executionExpired) throw new Error(executionTimeoutMessage);
+    };
+    const cancelActiveStepSessions = (): void => {
+      for (const session of manager.status()) {
+        if (session.workflowRunId !== runId) continue;
+        try {
+          manager.cancel(session.sessionId);
+        } catch {
+          // The session may have completed between status() and cancel().
+        }
+      }
+    };
     const emitGuardSignal: GuardSignalEmitter = (demand, action, extra = {}) => {
       const sourceEventType = typeof extra.sourceEventType === "string" ? extra.sourceEventType : "unknown";
       emitRuntimeEvent({
@@ -1038,6 +1053,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       reuseSessionId?: string,
       stepOpts?: WorkflowAgentOptions,
     ): Promise<TaskResult> => {
+      assertExecutionActive();
       // Defensive guard: catch undefined/null agent names before they reach manager.callAgent()
       // where they'd produce the confusing "Agent \"undefined\" not registered" error.
       // This can happen when workflows use ctx.agent on a binary compiled before the agent field was added.
@@ -1187,6 +1203,8 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         sid = taskResult.sessionId;
       }
 
+      assertExecutionActive();
+
       taskResult = enforceStructuredWorkflowResult(taskResult, !!stepOpts?.schema);
       sid = taskResult.sessionId || sid;
 
@@ -1274,10 +1292,12 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       ...(opts.executionPaths ?? {}),
       // Overlay emit to also call onEvent for workflow lifecycle logging
       emit: (event: { type: string; [key: string]: unknown }) => {
+        assertExecutionActive();
         emitRuntimeEvent(event);
         onEvent?.(event as WorkflowEvent);
       },
       dispatchEvent: (eventType: string, data?: Record<string, unknown>) => {
+        assertExecutionActive();
         emitRuntimeEvent({ type: eventType, data: data ?? {} });
       },
 
@@ -1292,6 +1312,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         runAgentStep(agentName, agentTask, sessionId, stepOpts)) as WorkflowContext["runAgentSession"],
 
       runFunction: async (label: string, fn: () => Promise<string>): Promise<TaskResult> => {
+        assertExecutionActive();
         const start = Date.now();
         onEvent?.({ type: "workflow.step_started", step: `fn:${label}` });
 
@@ -1321,6 +1342,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         } finally {
           if (timer) clearTimeout(timer);
         }
+        assertExecutionActive();
         const duration = `${((Date.now() - start) / 1000).toFixed(1)}s`;
         const taskResult: TaskResult = {
           sessionId: `fn_${label}_${Date.now()}`,
@@ -1388,6 +1410,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       },
 
       runWorkflow: async (wfName: string, wfTask: string): Promise<WorkflowResult> => {
+        assertExecutionActive();
         const steering = steeringQueue.shift();
         if (steering) {
           throw new WorkflowInterrupted(steering, completedSteps, runId);
@@ -1414,6 +1437,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           completedSteps,
           steeringQueue,
         );
+        assertExecutionActive();
 
         if (sub.result.type === "done") {
           onEvent?.({ type: "workflow.completed", summary: sub.result.summary });
@@ -1435,6 +1459,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
 
         return {
           async prompt(message: string) {
+            assertExecutionActive();
             // Build accumulated prompt with history
             let fullPrompt = sessionOpts.systemPrompt + "\n\n";
             for (const h of history) {
@@ -1457,6 +1482,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
               requireFinish: true,
               toolPolicy: sessionOpts.tools,
             });
+            assertExecutionActive();
 
             lastResponse = taskResult.lastAssistantText || "";
             history.push({ role: "assistant", text: lastResponse.slice(0, 2000) });
@@ -1540,7 +1566,9 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
             execution,
             new Promise<never>((_, reject) => {
               executionTimer = setTimeout(() => {
-                reject(new Error(`Workflow "${workflow.name}" timed out after ${opts.executionTimeoutMs}ms`));
+                executionExpired = true;
+                cancelActiveStepSessions();
+                reject(new Error(executionTimeoutMessage));
               }, opts.executionTimeoutMs);
             }),
           ]).finally(() => {
