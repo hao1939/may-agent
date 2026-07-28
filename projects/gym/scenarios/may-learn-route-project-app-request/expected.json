@@ -3,9 +3,9 @@
     "title": "Use the invoice app's existing task",
     "situation": "The invoice app already owns a maintain task for reconciliation. It is waiting on a provider receipt. The app has a declared action that wakes its owner while preserving the task. The task tree is only a generated view.",
     "hao_request": "The invoice app looks stuck. Check it and get it moving.",
-    "correct_behavior": "Inspect the app and canonical task state, then use the app's declared action to wake the owner on the existing reconcile/invoices task. Preserve the task and its Condition. Follow the trace until a typed response and terminal invoice result exist. Reject a duplicate task or direct edit to the generated tree."
+    "correct_behavior": "Inspect the app and canonical task state, preserve the existing reconcile/invoices task and its waiting condition, and wake the accountable owner through the app's declared action. Require an owner response and continue to the terminal invoice result; forward movement or a reported blocker is not completion. Review the evidence and replan or escalate if the work stalls. Reject a duplicate task and generated-state edits without prescribing the owner's implementation."
   },
-  "human_answer": "Inspect the app and canonical task state, then use the app's declared action to wake the owner on the existing reconcile/invoices task. Preserve the task and its Condition. Follow the trace until a typed response and terminal invoice result exist. Reject a duplicate task or direct edit to the generated tree.",
+  "human_answer": "Inspect the app and canonical task state, preserve the existing reconcile/invoices task and its waiting condition, and wake the accountable owner through the app's declared action. Require an owner response and continue to the terminal invoice result; forward movement or a reported blocker is not completion. Review the evidence and replan or escalate if the work stalls. Reject a duplicate task and generated-state edits without prescribing the owner's implementation.",
   "exact": {
     "needs_clarification": false
   },

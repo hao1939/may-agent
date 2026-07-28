@@ -1,6 +1,6 @@
 {
   "name": "may-system-deputy-release-v1",
-  "version": 1,
+  "version": 2,
   "artifact": "alignment-decision.json",
   "labels_file": "labels.json",
   "evaluator": "../may-alignment/score-decision.cjs",

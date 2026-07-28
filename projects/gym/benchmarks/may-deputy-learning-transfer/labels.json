@@ -1,20 +1,20 @@
 {
-  "version": 1,
+  "version": 2,
   "benchmark": "may-deputy-learning-transfer",
   "labels": {
     "may-learn-route-project-app-request": {
       "status": "approved",
-      "source": "synthetic-system-contract",
-      "rationale": "May should reuse the project app's durable task and owner path instead of creating a duplicate lifecycle or editing generated state.",
+      "source": "hao-reviewed-deputy-altitude-correction",
+      "rationale": "May should preserve the existing app task, wake its owner, and follow the owner result through the terminal invoice result without treating movement as completion or prescribing implementation.",
       "approved_by": "hao",
-      "approved_at": "2026-07-25T15:45:43Z"
+      "approved_at": "2026-07-28T02:18:52Z"
     },
     "may-learn-diagnose-unconsumed-event": {
       "status": "approved",
-      "source": "synthetic-system-contract",
-      "rationale": "Delivery acceptance is not domain completion; May should isolate the missing consumer, prove the repair, and wait only before production rollout.",
+      "source": "hao-reviewed-deputy-altitude-correction",
+      "rationale": "May should treat accepted delivery without a report as a missing consumer, give the owner the outcome and durable proof bar, review the result, and wait for approval before production change without prescribing technical steps.",
       "approved_by": "hao",
-      "approved_at": "2026-07-25T15:45:43Z"
+      "approved_at": "2026-07-28T02:18:52Z"
     }
   }
 }

@@ -56,12 +56,13 @@ const decisions: Record<string, Record<string, unknown>> = {
     priority:
       "Reuse the existing task reconcile/invoices and read canonical state.json.",
     next_action:
-      "Read canonical task state, use the app's declared action to wake its owner, and preserve the existing reconcile/invoices task.",
+      "Read canonical task state, use the app's declared action to wake its owner, preserve the existing reconcile/invoices task, require the owner's response, and continue to the terminal invoice result.",
     constraints: [
       "Preserve the existing task and its Condition.",
       "Reject a duplicate task.",
       "Reject a direct edit to generated tree.json.",
       "Require a terminal invoice result before reporting completion.",
+      "Review the evidence and replan if the owner response or terminal result is missing.",
     ],
     response_to_hao:
       "I will wake the app owner on the existing reconcile/invoices task and follow it to a terminal result before calling it complete.",
@@ -73,13 +74,14 @@ const decisions: Record<string, Record<string, unknown>> = {
     mode: "diagnose root cause",
     priority: "Find the missing consumer and prove the full trace.",
     next_action:
-      "Replay both event names, repair the handler subscription in the manifest, add a regression test, and prove the full trace through a report artifact.",
+      "Give the reporting app owner the outcome: connect the intended request to a real consumer and prove the durable full trace through a report artifact; review and replan missing evidence.",
     constraints: [
       "Delivery acceptance is separate from domain completion.",
+      "Leave the technical repair and replay method to the reporting owner.",
       "Request approval before the production reload.",
     ],
     response_to_hao:
-      "The likely cause is the missing handler subscription for the new event name. I will replay it and prove the fix with a test, then request approval for the production reload.",
+      "The request has no consumer. I will have the reporting owner prove the durable request-to-report path, review the evidence, and bring the exact production proposal for approval before reload.",
   },
 };
 

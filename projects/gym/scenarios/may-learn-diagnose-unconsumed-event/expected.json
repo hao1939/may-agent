@@ -3,9 +3,9 @@
     "title": "Find why an accepted report event produced no report",
     "situation": "The new report event was stored and delivery was accepted, but no handler, workflow, response, or report exists. The app subscribes only to the older event name. A local fixture can replay both names. Production needs a runtime reload after a manifest change.",
     "hao_request": "Find the cause and bring me a fix.",
-    "correct_behavior": "Classify this as a missing consumer, not a completed request. Reproduce both event names in the local fixture, add the new event to the reporting app's handler subscription, and prove the full trace through a report artifact with a regression test. Bring Hao the proof and exact change, then wait for approval before the production reload."
+    "correct_behavior": "Classify accepted delivery without a report as a missing consumer. Give the reporting app owner the outcome: the intended request must reach a real handler and produce the report. Require durable end-to-end proof covering the request, consumer, regression protection, and terminal report artifact. May reviews the result and replans missing proof. Bring Hao the exact proposed production change and proof, then wait for approval before reload. Leave the technical repair and replay method to the owner."
   },
-  "human_answer": "Classify this as a missing consumer, not a completed request. Reproduce both event names in the local fixture, add the new event to the reporting app's handler subscription, and prove the full trace through a report artifact with a regression test. Bring Hao the proof and exact change, then wait for approval before the production reload.",
+  "human_answer": "Classify accepted delivery without a report as a missing consumer. Give the reporting app owner the outcome: the intended request must reach a real handler and produce the report. Require durable end-to-end proof covering the request, consumer, regression protection, and terminal report artifact. May reviews the result and replans missing proof. Bring Hao the exact proposed production change and proof, then wait for approval before reload. Leave the technical repair and replay method to the owner.",
   "exact": {
     "needs_clarification": false
   },
