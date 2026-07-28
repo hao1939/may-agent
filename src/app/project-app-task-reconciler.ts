@@ -2295,6 +2295,18 @@ function liveChildTaskIds(tree: TaskTree, task: TaskNode): string[] {
   return (task.children ?? []).filter((childId) => Boolean(tree.tasks[childId]));
 }
 
+function triggerCarriesOwnerIntent(event: Record<string, unknown> | undefined): boolean {
+  if (!event) return false;
+  if (event.type === "project.comment.created" || event.type === "project.owner.requested") return true;
+  return Array.isArray(event.ownerIntentRefs)
+    ? event.ownerIntentRefs.some(
+        (value) =>
+          isRecord(value) &&
+          (value.eventType === "project.comment.created" || value.eventType === "project.owner.requested"),
+      )
+    : false;
+}
+
 function recordExecutableParentTrigger(
   tree: TaskTree,
   child: TaskNode,
@@ -2308,6 +2320,9 @@ function recordExecutableParentTrigger(
   const parent = tree.resources?.[parentTaskId];
   if (!parent) return undefined;
   const previous = tree.taskTriggers?.[parentTaskId];
+  // A queued owner intent is a durable commitment. The parent is already
+  // runnable, so a child transition must not replace that unresolved input.
+  if (triggerCarriesOwnerIntent(previous?.event)) return parentTaskId;
   tree.taskTriggers = {
     ...(tree.taskTriggers ?? {}),
     [parentTaskId]: {
@@ -2409,9 +2424,11 @@ export function completeProjectAppTask(
       ...actions.filter((action) => action.kind === "close-task").map((action) => action.taskId),
     ];
     const parentTaskId = recordExecutableParentTrigger(tree, task, "converged", input.summary, input.evidence, now);
+    const pendingSelfTrigger = Boolean(tree.taskTriggers?.[task.id]?.event);
     const dependentTaskIds = [
       ...new Set([
         ...reconcileActionTaskIds,
+        ...(claim.mode === "maintain" && pendingSelfTrigger ? [task.id] : []),
         ...(parentTaskId ? [parentTaskId] : []),
         ...Object.values(tree.resources ?? {})
           .filter((candidate) => candidate.spec.dependsOn?.some((id) => satisfiedTaskIds.includes(id)))

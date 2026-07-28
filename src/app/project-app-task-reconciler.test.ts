@@ -1997,6 +1997,122 @@ describe("project app task reconciler state", () => {
     expect(next).toMatchObject({ kind: "claimed", generation: claim.generation });
   });
 
+  it("replays a queued maintain trigger after the older attempt completes", () => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: { ...intent("maintain"), id: "runtime/owner-review" },
+      appOwner: "app-owner",
+      handler: "owner:app-owner",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+
+    observeProjectAppTaskIntent(config, {
+      intent: { ...intent("maintain"), id: "runtime/owner-review" },
+      appOwner: "app-owner",
+      trigger: {
+        type: "project.comment.created",
+        data: { comment: "Please review the new approval packet" },
+      },
+    });
+
+    const completed = completeProjectAppTask(config, claim, {
+      summary: "current review complete",
+    });
+    expect(completed).toMatchObject({
+      status: "applied",
+      dependentTaskIds: ["runtime/owner-review"],
+    });
+    expect(readProjectAppTaskTrigger(config, "runtime/owner-review")).toEqual({
+      type: "project.comment.created",
+      data: { comment: "Please review the new approval packet" },
+    });
+
+    const replay = claimObservedProjectAppTask(config, {
+      taskId: "runtime/owner-review",
+      appOwner: "app-owner",
+      handler: "owner:app-owner",
+    });
+    expect(replay).toMatchObject({
+      kind: "claimed",
+      taskId: "runtime/owner-review",
+      generation: claim.generation,
+      trigger: {
+        type: "project.comment.created",
+        data: { comment: "Please review the new approval packet" },
+      },
+    });
+  });
+
+  it("preserves a queued project comment through child completion and interrupted-attempt recovery", () => {
+    const { config } = fixture();
+    const parentIntent = {
+      ...intent("maintain"),
+      id: "runtime/owner-review",
+    } as const;
+    const childIntent = {
+      id: "runtime/owner-review/domain-fix",
+      parentId: parentIntent.id,
+      outcome: "Finish the bounded domain fix",
+      acceptance: ["The domain fix has exact evidence"],
+      mode: "achieve",
+      workflow: "known-workflow",
+    } as const;
+    const parentClaim = declareAndClaimTask(config, {
+      intent: parentIntent,
+      appOwner: "app-owner",
+      handler: "owner:app-owner",
+    });
+    if (parentClaim.kind !== "claimed") throw new Error("expected parent claim");
+
+    const commentTrigger = {
+      type: "project.comment.created",
+      eventId: 4425120,
+      data: { comment: "Re-evaluate the existing normalization leaf" },
+    };
+    observeProjectAppTaskIntent(config, {
+      intent: parentIntent,
+      appOwner: "app-owner",
+      trigger: commentTrigger,
+    });
+
+    const childClaim = declareAndClaimTask(config, {
+      intent: childIntent,
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (childClaim.kind !== "claimed") throw new Error("expected child claim");
+    expect(
+      completeProjectAppTask(config, childClaim, {
+        summary: "bounded domain fix completed",
+        evidence: ["proof:domain-fix"],
+      }),
+    ).toMatchObject({ status: "applied", dependentTaskIds: [parentIntent.id] });
+    expect(readProjectAppTaskTrigger(config, parentIntent.id)).toEqual(commentTrigger);
+
+    const interruptedTree = readTaskState(config);
+    const currentAttemptId = interruptedTree.resources?.[parentIntent.id]?.status.currentAttemptId;
+    if (!currentAttemptId) throw new Error("expected current parent attempt");
+    interruptedTree.attempts![currentAttemptId]!.runtimeId = "previous-runtime";
+    saveTaskState(config, interruptedTree);
+
+    expect(
+      releaseInterruptedProjectAppTaskAttempt(config, parentIntent.id, "Process restarted"),
+    ).toMatchObject({ released: true });
+    expect(readProjectAppTaskTrigger(config, parentIntent.id)).toEqual(commentTrigger);
+
+    const recoveredClaim = claimObservedProjectAppTask(config, {
+      taskId: parentIntent.id,
+      appOwner: "app-owner",
+      handler: "owner:app-owner",
+      reason: `attempt-recovery:${parentIntent.id}`,
+    });
+    expect(recoveredClaim).toMatchObject({
+      kind: "claimed",
+      taskId: parentIntent.id,
+      trigger: commentTrigger,
+    });
+  });
+
   it("rejects absorbing an achieve parent that still has live children", () => {
     const { config } = fixture();
     const parentIntent = {
