@@ -301,7 +301,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           if (route.sessionId || (route.projectPath && isApprovalReplyCandidate(route.context))) {
             inputTarget = {
               sessionId: route.sessionId ?? undefined,
-              projectPath: isApprovalReplyCandidate(route.context) ? route.projectPath ?? undefined : undefined,
+              projectPath: isApprovalReplyCandidate(route.context) ? (route.projectPath ?? undefined) : undefined,
             };
           }
           bus.emit({ type: "info", message: route.infoMessage });
@@ -327,11 +327,19 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             },
           } as any);
 
-          await sendMessage(chatIdStr, "Received. I attached your reply context and May is handling it.", undefined, {
+          await sendMessage(chatIdStr, "Received. I attached your reply to the original request.", undefined, {
             eventType: "telegram.reply",
             agent: opts.interfaceAgent,
+            sessionId: route.sessionId ?? undefined,
             projectId: route.projectPath ?? undefined,
-            data: JSON.stringify({ replyToMsgId }),
+            data: JSON.stringify({
+              replyToMsgId,
+              conversationId: route.context.conversationId,
+              originalIssue: route.context.originalIssue,
+              expectedClosure: route.context.expectedClosure,
+              actionHints: route.context.actionHints,
+              notification: route.context.notification,
+            }),
             replyToMessageId: msg.message_id,
           });
         } else if (route.kind === "quote") {

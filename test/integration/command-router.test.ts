@@ -292,13 +292,20 @@ describe("command router", () => {
 
   it("projects approval replies into project.approval.submitted before session steering or project comments", () => {
     const resumed: Array<{ sessionId: string; message: string; source?: string }> = [];
-    const h = createHarness({
-      status: () => [],
-      resumeSession: (sessionId: string, message: string, opts?: { source?: string }) => {
-        resumed.push({ sessionId, message, source: opts?.source });
-        return sessionId;
-      },
-    } as Partial<SubagentManager>);
+    const projectRoot = mkdtempSync(join(tmpdir(), "router-approval-owner-"));
+    const appDir = join(projectRoot, "projects/aks-rp-e2e.app");
+    mkdirp(appDir);
+    writeFileSync(join(appDir, "project.json"), JSON.stringify({ id: "aks-rp-e2e.app", owner: "app-ops" }), "utf-8");
+    const h = createHarness(
+      {
+        status: () => [],
+        resumeSession: (sessionId: string, message: string, opts?: { source?: string }) => {
+          resumed.push({ sessionId, message, source: opts?.source });
+          return sessionId;
+        },
+      } as Partial<SubagentManager>,
+      projectRoot,
+    );
 
     h.bus.emit({
       type: "human.input.received",
@@ -306,7 +313,7 @@ describe("command router", () => {
       owner: "agent:may",
       data: {
         actor: "human",
-        text: "approve one bounded replay",
+        text: "approve",
         conversation: { id: "approval:approval-123", channel: "telegram", channelMessageId: 1201 },
         target: {
           sessionId: "s_original_request",
@@ -325,6 +332,10 @@ describe("command router", () => {
               packetPath: "evidence/archive/example-approval.md",
               requestedAction: "Approve one bounded replay",
               reason: "Need exact owner decision",
+              expectedResponse: {
+                type: "project.approval.submitted",
+                target: { project: "aks-rp-e2e" },
+              },
             },
             expectedClosure: ["project.approval.submitted"],
           },
@@ -340,7 +351,8 @@ describe("command router", () => {
       expect.objectContaining({
         type: "project.approval.submitted",
         source: "telegram",
-        owner: "agent:may",
+        owner: "agent:app-ops",
+        target: { project: "aks-rp-e2e" },
         data: expect.objectContaining({
           approvalKind: "approval-packet-dispatch",
           approvalId: "approval-123",
@@ -350,11 +362,85 @@ describe("command router", () => {
           projectPath: "projects/aks-rp-e2e.app",
           projectId: "projects/aks-rp-e2e.app",
           decision: "approve",
-          message: "approve one bounded replay",
+          message: "approve",
           conversationId: "approval:approval-123",
         }),
       }),
     );
+    h.router.close();
+  });
+
+  it("routes an approval question to May without submitting a decision", () => {
+    const resumed: Array<{ sessionId: string; message: string; source?: string }> = [];
+    const runs: Array<{ agent: string; task: string; source?: string; requestId?: string }> = [];
+    const h = createHarness({
+      status: () => [],
+      resumeSession: (sessionId: string, message: string, opts?: { source?: string }) => {
+        resumed.push({ sessionId, message, source: opts?.source });
+        return sessionId;
+      },
+      run: (agent: string, task: string, opts?: { source?: string; requestId?: string }) => {
+        runs.push({ agent, task, source: opts?.source, requestId: opts?.requestId });
+        return "s_may_reply";
+      },
+    } as Partial<SubagentManager>);
+
+    h.bus.emit({
+      type: "human.input.received",
+      source: "telegram",
+      owner: "agent:may",
+      data: {
+        inputId: "telegram:1202",
+        actor: "human",
+        text: "What's it about? What's your suggestion?",
+        conversation: { id: "approval:approval-123", channel: "telegram", channelMessageId: 1202 },
+        target: {
+          sessionId: "s_original_request",
+          projectPath: "projects/aks-rp-e2e.app",
+        },
+        context: {
+          telegramReply: {
+            conversationId: "approval:approval-123",
+            projectId: "projects/aks-rp-e2e.app",
+            originalIssue: {
+              eventType: "project.approval.requested",
+              approvalKind: "approval-packet-dispatch",
+              approvalId: "approval-123",
+              waitId: "wait-123",
+              pathId: "path.network.example",
+              packetPath: "evidence/archive/example-approval.md",
+              requestedAction: "Approve one bounded cleanup",
+              reason: "Five stale generated files remain after the real change was committed.",
+            },
+            expectedClosure: ["project.approval.submitted"],
+          },
+        },
+      },
+    } as any);
+
+    expect(resumed).toEqual([]);
+    expect(h.emitted.some((event) => event.type === "project.approval.submitted")).toBe(false);
+    expect(h.emitted.some((event) => event.type === "session.steer.requested")).toBe(false);
+    expect(h.emitted).toContainEqual(
+      expect.objectContaining({
+        type: "chat.start.requested",
+        source: "telegram",
+        owner: "agent:may",
+        data: expect.objectContaining({
+          agent: "may",
+          requestId: "telegram:1202",
+          message: expect.stringContaining("First understand the human's intention"),
+        }),
+      }),
+    );
+    expect(runs).toEqual([
+      expect.objectContaining({
+        agent: "may",
+        source: "telegram",
+        requestId: "telegram:1202",
+        task: expect.stringContaining("What's it about? What's your suggestion?"),
+      }),
+    ]);
     h.router.close();
   });
 

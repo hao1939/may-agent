@@ -124,14 +124,17 @@ describe("telegram reply e2e", () => {
 
     activeSessionId = "s_test_reply";
     bus.emit(
-      sessionStart({
-        sessionId: activeSessionId,
-        agent: "may",
-        task: humanInputs[0],
-        trigger: "chat",
-        firedAt: Date.now(),
-        kind: "chat",
-      }) as any,
+      sessionStart(
+        {
+          sessionId: activeSessionId,
+          agent: "may",
+          task: humanInputs[0],
+          trigger: "chat",
+          firedAt: Date.now(),
+          kind: "chat",
+        },
+        "telegram",
+      ) as any,
     );
     activeSessionId = "";
     bus.emit(
@@ -287,7 +290,10 @@ describe("telegram reply e2e", () => {
       if (method === "sendMessage") {
         sentMessages.push(body);
         const messageId = 500 + sentMessages.length;
-        if (approvalPacketTelegramMsgId === null && String(body.text || "").includes("AKS RP E2E approval packet dispatch")) {
+        if (
+          approvalPacketTelegramMsgId === null &&
+          String(body.text || "").includes("AKS RP E2E approval packet dispatch")
+        ) {
           approvalPacketTelegramMsgId = messageId;
         }
         return jsonResponse({ message_id: messageId });
@@ -361,7 +367,9 @@ describe("telegram reply e2e", () => {
       ).toBe(true);
       expect(
         sentMessages.some(
-          (m) => m.text.includes("May is handling it") && (m.reply_parameters as any)?.message_id === 511,
+          (m) =>
+            m.text.includes("attached your reply to the original request") &&
+            (m.reply_parameters as any)?.message_id === 511,
         ),
       ).toBe(true);
     });
@@ -415,7 +423,7 @@ describe("telegram reply e2e", () => {
               message: {
                 message_id: 651,
                 chat: { id: 12345 },
-                text: "approve one bounded replay",
+                text: "approve",
                 reply_to_message: {
                   message_id: 650,
                   text: "AKS RP E2E approval packet dispatch",
@@ -475,7 +483,7 @@ describe("telegram reply e2e", () => {
 
     await waitFor(() => {
       expect(humanInputs).toHaveLength(1);
-      expect(String(humanInputs[0].data?.text)).toBe("approve one bounded replay");
+      expect(String(humanInputs[0].data?.text)).toBe("approve");
       expect(humanInputs[0].data?.conversation?.id).toBe("approval:approval-650");
       expect(humanInputs[0].data?.target).toMatchObject({
         sessionId: "s_approval_source",
@@ -498,14 +506,16 @@ describe("telegram reply e2e", () => {
           projectPath: "projects/aks-rp-e2e.app",
           projectId: "projects/aks-rp-e2e.app",
           decision: "approve",
-          message: "approve one bounded replay",
+          message: "approve",
           conversationId: "approval:approval-650",
         },
       });
       expect(replies.some((event) => event.data?.enriched === true)).toBe(true);
       expect(
         sentMessages.some(
-          (m) => m.text.includes("May is handling it") && (m.reply_parameters as any)?.message_id === 651,
+          (m) =>
+            m.text.includes("attached your reply to the original request") &&
+            (m.reply_parameters as any)?.message_id === 651,
         ),
       ).toBe(true);
     });
@@ -642,12 +652,27 @@ describe("telegram reply e2e", () => {
       expect(replies.some((event) => event.data?.enriched === true)).toBe(true);
       expect(
         sentMessages.some(
-          (m) => m.text.includes("May is handling it") && (m.reply_parameters as any)?.message_id === 701,
+          (m) =>
+            m.text.includes("attached your reply to the original request") &&
+            (m.reply_parameters as any)?.message_id === 701,
         ),
       ).toBe(true);
     });
 
     activeChatSessionId = "s_canonical_may";
+    bus.emit(
+      sessionStart(
+        {
+          sessionId: activeChatSessionId,
+          agent: "may",
+          task: handledInputs[0].message,
+          trigger: "chat",
+          firedAt: Date.now(),
+          kind: "chat",
+        },
+        "telegram",
+      ) as any,
+    );
     bus.emit({
       type: "text",
       sessionId: activeChatSessionId,
@@ -788,7 +813,9 @@ describe("telegram reply e2e", () => {
       expect(replies.some((event) => event.data?.enriched === true && event.data?.hasSessionCtx === true)).toBe(true);
       expect(
         sentMessages.some(
-          (m) => m.text.includes("May is handling it") && (m.reply_parameters as any)?.message_id === 901,
+          (m) =>
+            m.text.includes("attached your reply to the original request") &&
+            (m.reply_parameters as any)?.message_id === 901,
         ),
       ).toBe(true);
     });
@@ -926,7 +953,9 @@ describe("telegram reply e2e", () => {
       ).toBe(true);
       expect(
         sentMessages.some(
-          (m) => m.text.includes("May is handling it") && (m.reply_parameters as any)?.message_id === 1201,
+          (m) =>
+            m.text.includes("attached your reply to the original request") &&
+            (m.reply_parameters as any)?.message_id === 1201,
         ),
       ).toBe(true);
     });
