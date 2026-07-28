@@ -647,7 +647,7 @@ describe("project app task reconciler state", () => {
     expect(listRunnableProjectAppTaskIds(config).slice(0, 2)).toEqual(["runtime/owner-review", "work/autonomous-p0"]);
   });
 
-  it("schedules a persisted event continuation before untriggered desired work", () => {
+  it("schedules untriggered P0 before triggered P2 (priority over trigger presence)", () => {
     const { config } = fixture();
     observeProjectAppTaskIntent(config, {
       intent: { ...intent("achieve"), id: "work/new-p0", priority: "P0" },
@@ -663,19 +663,77 @@ describe("project app task reconciler state", () => {
     });
 
     expect(listRunnableProjectAppTaskIds(config).slice(0, 2)).toEqual([
-      "work/live-result-p2",
       "work/new-p0",
+      "work/live-result-p2",
     ]);
     expect(listRunnableProjectAppTaskQueueEntries(config).slice(0, 2)).toEqual([
-      {
-        taskId: "work/live-result-p2",
-        options: { front: true, priority: "P2" },
-      },
       {
         taskId: "work/new-p0",
         options: { front: false, priority: "P0" },
       },
+      {
+        taskId: "work/live-result-p2",
+        options: { front: true, priority: "P2" },
+      },
     ]);
+  });
+
+  it("uses trigger as tiebreak within same priority", () => {
+    const { config } = fixture();
+    observeProjectAppTaskIntent(config, {
+      intent: { ...intent("achieve"), id: "work/untriggered-p1", priority: "P1" },
+      appOwner: "app-owner",
+    });
+    observeProjectAppTaskIntent(config, {
+      intent: { ...intent("achieve"), id: "work/triggered-p1", priority: "P1" },
+      appOwner: "app-owner",
+      trigger: {
+        type: "repo.ref.changed",
+        data: { ref: "origin/dev" },
+      },
+    });
+
+    const ids = listRunnableProjectAppTaskIds(config);
+    const triggeredIdx = ids.indexOf("work/triggered-p1");
+    const untriggeredIdx = ids.indexOf("work/untriggered-p1");
+    expect(triggeredIdx).toBeLessThan(untriggeredIdx);
+  });
+
+  it("P0 untriggered beats stream of triggered P1s (priority inversion regression)", () => {
+    const { config } = fixture();
+    observeProjectAppTaskIntent(config, {
+      intent: { ...intent("achieve"), id: "ops/critical-p0", priority: "P0" },
+      appOwner: "app-owner",
+    });
+    for (let i = 0; i < 5; i++) {
+      observeProjectAppTaskIntent(config, {
+        intent: { ...intent("achieve"), id: `work/triggered-p1-${i}`, priority: "P1" },
+        appOwner: "app-owner",
+        trigger: {
+          type: "repo.ref.changed",
+          data: { ref: `origin/cleanup-${i}` },
+        },
+      });
+    }
+    // Also add a direct comment task to confirm it still wins over everything
+    observeProjectAppTaskIntent(config, {
+      intent: { ...intent("maintain"), id: "runtime/comment-task", priority: "P1" },
+      appOwner: "app-owner",
+      trigger: {
+        type: "project.comment.created",
+        data: { comment: "Please review" },
+      },
+    });
+
+    const ids = listRunnableProjectAppTaskIds(config);
+    // Direct comment wins first
+    expect(ids[0]).toBe("runtime/comment-task");
+    // P0 is next, before all triggered P1s
+    expect(ids[1]).toBe("ops/critical-p0");
+    // All triggered P1s come after
+    for (let i = 0; i < 5; i++) {
+      expect(ids.indexOf(`work/triggered-p1-${i}`)).toBeGreaterThan(1);
+    }
   });
 
   it("keeps triggered work behind unresolved dependencies during passive resync", () => {
