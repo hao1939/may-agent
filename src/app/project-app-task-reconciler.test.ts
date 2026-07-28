@@ -3896,6 +3896,55 @@ describe("project app task reconciler state", () => {
     ]);
   });
 
+  it("does not wake a new repo-ref wait from an older journal observation", () => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    deferProjectAppTask(config, claim, {
+      disposition: "waiting",
+      summary: "waiting for origin/dev to advance",
+      conditions: [
+        {
+          id: "origin-dev-after-abc",
+          type: "aks.repo-ref.observed",
+          subject: "repoRef:origin/dev",
+          expected: { field: "commit", notEquals: "abc" },
+        },
+      ],
+    });
+
+    const establishedAt = Date.parse(
+      readTaskState(config).conditions?.["origin-dev-after-abc"]?.status.observedAt ?? "",
+    );
+    expect(Number.isFinite(establishedAt)).toBe(true);
+
+    expect(
+      trackProjectAppConditionEvent(config, {
+        type: "aks.repo-ref.observed",
+        repoRef: "origin/dev",
+        commit: "older-different-commit",
+        timestamp: establishedAt - 1,
+      }),
+    ).toEqual([]);
+    expect(
+      trackProjectAppConditionEvent(config, {
+        type: "aks.repo-ref.observed",
+        repoRef: "origin/dev",
+        commit: "newer-different-commit",
+        timestamp: establishedAt + 1,
+      }),
+    ).toMatchObject([
+      {
+        taskId: "pipeline-monitor",
+        conditionId: "origin-dev-after-abc",
+      },
+    ]);
+  });
+
   it("supports future-only comparisons for level-based pipeline artifact facts", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {

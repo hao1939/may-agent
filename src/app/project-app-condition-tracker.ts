@@ -131,8 +131,29 @@ function fieldAliases(field: string): string[] {
   );
 }
 
+function timestampMillis(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value !== "string" || !value.trim()) return null;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function isFreshLevelObservation(condition: ProjectAppCondition, event: Record<string, unknown>): boolean {
+  if (condition.spec.type !== "aks.repo-ref.observed") return true;
+  const conditionEstablishedAt = timestampMillis(condition.status.observedAt);
+  const eventObservedAt = timestampMillis(event.timestamp);
+  if (conditionEstablishedAt === null || eventObservedAt === null) return true;
+  return eventObservedAt >= conditionEstablishedAt;
+}
+
 function matches(condition: ProjectAppCondition, event: Record<string, unknown>): boolean {
   if (condition.spec.type !== event.type) return false;
+  // A repo-ref event is a level observation, not an immutable historical fact.
+  // A newly declared `notEquals` wait must not be satisfied by an older commit
+  // observation replayed from the event journal. The workflow inspected the ref
+  // immediately before establishing this Condition; only an observation made at
+  // or after that point can prove that the ref subsequently changed.
+  if (!isFreshLevelObservation(condition, event)) return false;
   const subject = typedSubject(condition.spec.subject);
   if (!subject) return false;
   if (String(eventField(event, ...fieldAliases(subject.field)) ?? "") !== subject.value) return false;
