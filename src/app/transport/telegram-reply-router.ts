@@ -188,16 +188,9 @@ export function buildNotificationReplyText(opts: {
   parts.push(opts.text);
 
   const data = parseNotificationData(ctx.data);
-  const situation =
-    stringOrNull(data?.reason) ??
-    stringOrNull(data?.summary) ??
-    stringOrNull(data?.verdict);
-  const requestedAction =
-    stringOrNull(data?.requestedAction) ??
-    stringOrNull(data?.requestedHumanAction);
-  const visibleNotification =
-    stringOrNull(data?.text) ??
-    stringOrNull(data?.message);
+  const situation = stringOrNull(data?.reason) ?? stringOrNull(data?.summary) ?? stringOrNull(data?.verdict);
+  const requestedAction = stringOrNull(data?.requestedAction) ?? stringOrNull(data?.requestedHumanAction);
+  const visibleNotification = stringOrNull(data?.text) ?? stringOrNull(data?.message);
 
   if (situation || requestedAction || visibleNotification || ctx.project_id) {
     parts.push("");
@@ -217,7 +210,9 @@ export function buildNotificationReplyText(opts: {
     );
   }
   parts.push("");
-  parts.push("Use the human reply as the decision or missing input, then continue the tracked work.");
+  parts.push("First understand the human's intention. A question or request for advice is not a decision.");
+  parts.push("If the intended next action is uncertain, state the likely interpretation and ask one focused question.");
+  parts.push("Keep consequential state pending until the intention is clear, then continue the tracked work.");
 
   return parts.join("\n");
 }

@@ -69,7 +69,7 @@ describe("telegram outbound routing", () => {
     outbound.close();
   });
 
-  it("uses session.idle as root chat turn completion without closing the conversation", () => {
+  it("uses session.idle as root chat turn completion and releases Telegram ownership", () => {
     const bus = new EventBus();
     const sent: Array<{ text: string; eventType?: string }> = [];
     const outbound = attachTelegramOutbound({
@@ -87,7 +87,7 @@ describe("telegram outbound routing", () => {
     );
 
     expect(sent).toEqual([{ text: "ready for the next turn", eventType: "session.idle" }]);
-    expect(outbound.getRootChatSessionId()).toBe("s_root");
+    expect(outbound.getRootChatSessionId()).toBeNull();
     outbound.close();
   });
 

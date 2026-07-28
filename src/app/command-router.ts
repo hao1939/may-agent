@@ -60,9 +60,7 @@ function integerField(value: unknown, key: string): number | null {
 }
 
 function stringList(value: unknown): string[] {
-  return Array.isArray(value)
-    ? value.map((item) => (typeof item === "string" ? item.trim() : "")).filter(Boolean)
-    : [];
+  return Array.isArray(value) ? value.map((item) => (typeof item === "string" ? item.trim() : "")).filter(Boolean) : [];
 }
 
 function telegramReplyContext(context: Record<string, unknown>): Record<string, unknown> | null {
@@ -89,27 +87,35 @@ function approvalReplyContext(context: Record<string, unknown>): Record<string, 
 
 type ApprovalDecision = "approve" | "adjust" | "hold" | "decline" | "reroute";
 
-function parseApprovalDecision(message: string): ApprovalDecision {
+function parseExplicitApprovalDecision(message: string): ApprovalDecision | null {
   const normalized = message.trim().toLowerCase().replace(/\s+/g, " ");
+  if (!normalized || /[?？]/.test(normalized)) return null;
 
-  if (
-    /\b(reroute|re-route|route to|redirect|hand off|handoff|assign to|ask\s+[^\n]+\s+instead)\b/.test(normalized)
-  ) {
-    return "reroute";
-  }
-  if (/\b(hold|pause|wait|not yet|defer|later|pending|park)\b/.test(normalized)) {
-    return "hold";
-  }
-  if (/\b(decline|reject|den(y|ied)|do not|don't|stop|cancel|no)\b/.test(normalized)) {
-    return "decline";
-  }
-  if (/\b(adjust|change|modify|revise|instead|except|with|smaller|narrower|only)\b/.test(normalized)) {
-    return "adjust";
-  }
-  if (/\b(approve|approved|approval|yes|ok|okay|go ahead|proceed|continue)\b/.test(normalized)) {
-    return "approve";
-  }
-  return "adjust";
+  const direct: Record<string, ApprovalDecision> = {
+    approve: "approve",
+    approved: "approve",
+    yes: "approve",
+    ok: "approve",
+    okay: "approve",
+    "go ahead": "approve",
+    proceed: "approve",
+    reject: "decline",
+    rejected: "decline",
+    decline: "decline",
+    declined: "decline",
+    deny: "decline",
+    denied: "decline",
+    no: "decline",
+    hold: "hold",
+    pause: "hold",
+    wait: "hold",
+  };
+  const exact = direct[normalized.replace(/[.!]+$/, "")];
+  if (exact) return exact;
+
+  if (/^adjust(?:\s*:\s*|\s+)\S.+$/.test(normalized)) return "adjust";
+  if (/^(?:reroute|re-route)(?:\s*:\s*|\s+(?:to\s+)?)\S.+$/.test(normalized)) return "reroute";
+  return null;
 }
 
 function buildDeliveredHumanMessage(message: string, context: Record<string, unknown>): string {
@@ -118,27 +124,16 @@ function buildDeliveredHumanMessage(message: string, context: Record<string, unk
 
   const issue = objectField(reply, "originalIssue");
   const notification = objectField(reply, "notification");
-  const lines = [
-    "May reply-handling work item",
-    "",
-    "Human reply",
-    message,
-    "",
-    "Attached context",
-  ];
+  const lines = ["May reply-handling work item", "", "Human reply", message, "", "Attached context"];
 
   const conversationId = stringField(reply, "conversationId");
   const eventType = stringField(issue, "eventType") ?? stringField(reply, "eventType");
   const escalationId = stringField(issue, "escalationId") ?? stringField(reply, "escalationId");
   const project =
-    stringField(issue, "projectPath") ??
-    stringField(reply, "projectId") ??
-    stringField(issue, "targetProject");
+    stringField(issue, "projectPath") ?? stringField(reply, "projectId") ?? stringField(issue, "targetProject");
   const sourceSessionId = stringField(issue, "sourceSessionId") ?? stringField(reply, "sessionId");
   const reason =
-    stringField(issue, "reason") ??
-    stringField(notification, "reason") ??
-    stringField(notification, "summary");
+    stringField(issue, "reason") ?? stringField(notification, "reason") ?? stringField(notification, "summary");
   const requestedAction =
     stringField(issue, "requestedAction") ??
     stringField(notification, "requestedAction") ??
@@ -158,10 +153,13 @@ function buildDeliveredHumanMessage(message: string, context: Record<string, unk
 
   lines.push("");
   lines.push(
-    "Handle this reply as May. Use the human reply as the decision or missing input, keep it attached to the original issue, and emit one structured result event when possible.",
+    "First understand the human's intention. A question, request for explanation or advice, correction, or uncertain response is not an approval decision.",
   );
   lines.push(
-    "If the reply is insufficient, create one exact follow-up ask or wait with a recheck/fallback instead of leaving this as a loose chat.",
+    "Answer what the attached context already supports. If the intended next action is still uncertain, state your likely interpretation and ask one focused question. Keep consequential state pending until the intention is clear.",
+  );
+  lines.push(
+    "When the intention is clear, continue the tracked work and emit one structured result event when possible. Keep it attached to the original issue instead of leaving this as loose chat.",
   );
   return lines.join("\n");
 }
@@ -197,6 +195,14 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
   }
 
   function projectOwner(projectPath: string): string {
+    const projectJson = join(options.projectRoot, projectPath, "project.json");
+    try {
+      const parsed = JSON.parse(readFileSync(projectJson, "utf-8")) as { owner?: unknown };
+      if (typeof parsed.owner === "string" && parsed.owner.trim()) return parsed.owner.trim();
+    } catch {
+      /* best-effort owner lookup */
+    }
+
     const projectFile = join(options.projectRoot, projectPath, "project.md");
     try {
       const content = readFileSync(projectFile, "utf-8");
@@ -309,10 +315,11 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     const deliveredMessage = buildDeliveredHumanMessage(message, context);
     const escalationReply = isEscalationReplyContext(context);
     const approvalReply = approvalReplyContext(context);
+    const explicitApprovalDecision = approvalReply ? parseExplicitApprovalDecision(message) : null;
     const eventOwner =
       typeof event === "object" && event && "owner" in event ? String((event as any).owner) : "agent:may";
 
-    if (approvalReply) {
+    if (approvalReply && explicitApprovalDecision) {
       const issue = objectField(approvalReply, "originalIssue");
       const expectedResponse = objectField(issue, "expectedResponse");
       const normalizedProjectPath =
@@ -320,12 +327,20 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         normalizeProjectPath(stringField(issue, "projectPath")) ??
         normalizeProjectPath(stringField(approvalReply, "projectId")) ??
         normalizeProjectPath(stringField(issue, "targetProject"));
+      const responseTarget = objectField(expectedResponse, "target");
+      const approvalOwner = normalizedProjectPath
+        ? projectOwner(normalizedProjectPath)
+        : stringField(approvalReply, "agent") ?? ownerAgent(eventOwner) ?? "may";
       bus.emit({
         type: "project.approval.submitted",
         source,
-        owner: eventOwner,
+        owner: normalizeEventOwner(approvalOwner),
+        ...(responseTarget ? { target: responseTarget } : {}),
         data: {
-          approvalKind: stringField(issue, "approvalKind") ?? stringField(approvalReply, "approvalKind") ?? "approval-packet-dispatch",
+          approvalKind:
+            stringField(issue, "approvalKind") ??
+            stringField(approvalReply, "approvalKind") ??
+            "approval-packet-dispatch",
           approvalId: stringField(issue, "approvalId") ?? stringField(expectedResponse, "approvalId") ?? undefined,
           waitId: stringField(issue, "waitId") ?? stringField(expectedResponse, "waitId") ?? undefined,
           pathId: stringField(issue, "pathId") ?? stringField(expectedResponse, "pathId") ?? undefined,
@@ -340,7 +355,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
           projectPath: normalizedProjectPath ?? undefined,
           projectId: normalizedProjectPath ?? undefined,
           targetProject: stringField(issue, "targetProject") ?? undefined,
-          decision: parseApprovalDecision(message),
+          decision: explicitApprovalDecision,
           message,
           conversationId: stringField(approvalReply, "conversationId") ?? undefined,
         },
@@ -348,6 +363,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       return;
     }
 
+    const mayBrokerReply = escalationReply || Boolean(approvalReply);
     const targetSessionId = nonEmptyString(target.sessionId);
     const lower = message.trim().toLowerCase();
     if (lower === "cancel") {
@@ -396,7 +412,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       return;
     }
 
-    if (targetSessionId && !escalationReply) {
+    if (targetSessionId && !mayBrokerReply) {
       bus.emit({
         type: "session.steer.requested",
         source,
@@ -410,7 +426,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       return;
     }
 
-    if (escalationReply) {
+    if (mayBrokerReply) {
       bus.emit({
         type: "chat.start.requested",
         source,
@@ -420,7 +436,8 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
           message: deliveredMessage,
           channel: nonEmptyString(conversation.channel) ?? source,
           channelThreadId: nonEmptyString(conversation.channelThreadId) ?? undefined,
-          channelMessageId: typeof conversation.channelMessageId === "number" ? conversation.channelMessageId : undefined,
+          channelMessageId:
+            typeof conversation.channelMessageId === "number" ? conversation.channelMessageId : undefined,
           requestId: nonEmptyString(data.inputId) ?? undefined,
           ...(Object.keys(context).length ? { context } : {}),
         },
