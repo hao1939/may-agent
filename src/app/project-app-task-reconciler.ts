@@ -224,6 +224,32 @@ function resourceIntent(resource: ProjectAppTaskResource): ProjectAppTaskIntent 
   };
 }
 
+type CreateTaskAction = Extract<ProjectAppTaskAction, { kind: "create-task" }>;
+
+function createActionIntent(action: CreateTaskAction): ProjectAppTaskIntent {
+  return {
+    id: action.id,
+    parentId: action.parentId,
+    outcome: action.outcome.trim(),
+    acceptance: [...action.acceptance],
+    mode: action.mode,
+    ...(action.owner ? { owner: action.owner } : {}),
+    ...(action.workflow ? { workflow: action.workflow } : {}),
+    ...(action.input ? { input: structuredClone(action.input) } : {}),
+    outputs: [...action.outputs],
+    ...(action.dependsOn ? { dependsOn: [...action.dependsOn] } : {}),
+    priority: action.priority,
+    ...(action.category ? { category: action.category } : {}),
+  };
+}
+
+function createActionMatchesLiveTask(tree: TaskTree, action: CreateTaskAction): boolean {
+  const task = tree.tasks[action.id];
+  const resource = tree.resources?.[action.id];
+  if (!task || !resource) return false;
+  return JSON.stringify(stableValue(resource.spec)) === JSON.stringify(stableValue(resourceSpec(createActionIntent(action))));
+}
+
 function currentResourceAttempt(tree: TaskTree, resource: ProjectAppTaskResource): ProjectAppTaskAttempt | null {
   const attemptId = resource.status.currentAttemptId;
   if (!attemptId) return null;
@@ -1906,8 +1932,12 @@ function validateTaskActions(
       if (action.id.startsWith("runtime/")) {
         throw new Error("Handler actions cannot create reconciler-owned runtime tasks");
       }
-      if (tree.tasks[action.id] || tree.resources?.[action.id] || tree.receipts?.[action.id]) {
+      if (tree.receipts?.[action.id]) {
         throw new Error(`Handler action task already exists or completed: ${action.id}`);
+      }
+      if (tree.tasks[action.id] || tree.resources?.[action.id]) {
+        if (createActionMatchesLiveTask(tree, action)) continue;
+        throw new Error(`Handler action task already exists with a different specification: ${action.id}`);
       }
       validateParentReference(validationTree, action.id, action.parentId);
       const parent = validationTree.tasks[action.parentId];
@@ -2111,21 +2141,12 @@ function applyTaskActions(
 
     switch (action.kind) {
       case "create-task": {
+        if (createActionMatchesLiveTask(tree, action)) {
+          applied.push(`already exists ${action.id}`);
+          break;
+        }
         const parent = tree.tasks[action.parentId];
-        const intent: ProjectAppTaskIntent = {
-          id: action.id,
-          parentId: action.parentId,
-          outcome: action.outcome.trim(),
-          acceptance: [...action.acceptance],
-          mode: action.mode,
-          ...(action.owner ? { owner: action.owner } : {}),
-          ...(action.workflow ? { workflow: action.workflow } : {}),
-          ...(action.input ? { input: structuredClone(action.input) } : {}),
-          outputs: [...action.outputs],
-          ...(action.dependsOn ? { dependsOn: [...action.dependsOn] } : {}),
-          priority: action.priority,
-          ...(action.category ? { category: action.category } : {}),
-        };
+        const intent = createActionIntent(action);
         const resource: ProjectAppTaskResource = {
           metadata: { id: action.id, generation: 1, resourceVersion: 1 },
           spec: resourceSpec(intent),
