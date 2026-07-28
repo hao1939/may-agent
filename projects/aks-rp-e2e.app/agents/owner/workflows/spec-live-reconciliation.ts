@@ -63,6 +63,9 @@ export const workflowContract: WorkflowIoContract = {
       "input.target",
       "input.standaloneBuildId",
       "input.priorVerificationRunId",
+      "input.retryPipelineRunId",
+      "input.retrySourceBranch",
+      "input.retrySourceCommit",
     ],
     description:
       "Use only for a finite spec verification/change lifecycle that may require source mutation, exact live verification, and branch integration. target defaults to staging; standaloneBuildId selects an exact standalone RP build.",
@@ -153,6 +156,7 @@ export type ReviewedRunProof = {
   version: 1;
   taskId: string;
   generation: number;
+  providerGeneration?: number;
   specId: string;
   target: string;
   standaloneBuildId?: string;
@@ -847,7 +851,10 @@ export function verifySpecLiveProofFacts(input: {
     if (nonEmptyString(metadata.taskId) !== input.taskId) {
       problems.push("provider metadata task id does not match");
     }
-    if (Number(metadata.generation) !== input.generation) {
+    if (
+      Number(metadata.generation) !==
+      (proof.providerGeneration ?? input.generation)
+    ) {
       problems.push("provider metadata generation does not match");
     }
     if (nonEmptyString(metadata.specId) !== expectedSpecId) {
@@ -1711,9 +1718,11 @@ export function matchingTaskRuns(
 export function runMatchesPriorVerification(
   run: PipelineRun,
   input: {
+    taskId?: string;
     specId: string;
     target: string;
     standaloneBuildId: string;
+    sourceBranch?: string;
     sourceCommit?: string;
   },
 ): boolean {
@@ -1723,11 +1732,19 @@ export function runMatchesPriorVerification(
     !Array.isArray(run.templateParameters)
       ? (run.templateParameters as Record<string, unknown>)
       : {};
+  const metadata = metadataOf(run);
+  const expectedBranch = input.sourceBranch
+    ? input.sourceBranch.startsWith("refs/heads/")
+      ? input.sourceBranch
+      : `refs/heads/${input.sourceBranch}`
+    : "";
   return (
     nonEmptyString(parameters.specs) === input.specId &&
     nonEmptyString(parameters.target) === input.target &&
     nonEmptyString(parameters.standalone_build_id) ===
       input.standaloneBuildId &&
+    (!input.taskId || nonEmptyString(metadata.taskId) === input.taskId) &&
+    (!expectedBranch || nonEmptyString(run.sourceBranch) === expectedBranch) &&
     (!input.sourceCommit ||
       nonEmptyString(run.sourceVersion) === input.sourceCommit)
   );
@@ -2278,10 +2295,18 @@ export async function reconcileSpecLive(
     );
   }
   const { target: liveTarget, standaloneBuildId } = liveExecution;
-  const priorVerificationRunId = nonEmptyString(
+  const declaredPriorVerificationRunId = nonEmptyString(
     payload?.input?.priorVerificationRunId,
   );
-  const preparedSourceCommit = nonEmptyString(payload?.input?.carrierCommit);
+  const retryPipelineRunId = nonEmptyString(payload?.input?.retryPipelineRunId);
+  const priorVerificationRunId =
+    declaredPriorVerificationRunId || retryPipelineRunId;
+  const preparedSourceCommit =
+    nonEmptyString(payload?.input?.carrierCommit) ||
+    nonEmptyString(payload?.input?.retrySourceCommit);
+  const preparedSourceBranch = nonEmptyString(
+    payload?.input?.retrySourceBranch,
+  );
   const repoDir = ctx.projectDir ?? "/app/projects/aks-rp-e2e";
   const workspaceDir = ctx.workspaceDir ?? repoDir;
 
@@ -2298,6 +2323,20 @@ export async function reconcileSpecLive(
       [`task:${taskId || "missing"}`, `spec:${specId || "missing"}`],
     );
   }
+  if (
+    declaredPriorVerificationRunId &&
+    retryPipelineRunId &&
+    declaredPriorVerificationRunId !== retryPipelineRunId
+  ) {
+    return ownerResult(
+      ctx,
+      "The task declares conflicting priorVerificationRunId and retryPipelineRunId values.",
+      [
+        `prior-verification-run:${declaredPriorVerificationRunId}`,
+        `retry-pipeline-run:${retryPipelineRunId}`,
+      ],
+    );
+  }
 
   const contextDir = taskContextDir(repoDir, taskId, generation);
   mkdirSync(contextDir, { recursive: true });
@@ -2305,14 +2344,19 @@ export async function reconcileSpecLive(
   try {
     git(repoDir, ["fetch", "origin", targetBranch]);
     let priorVerificationSummary = "";
+    let authoritativeRetryRun: PipelineRun | null = null;
     if (priorVerificationRunId) {
       const priorRun = await getPipelineRun(repoDir, priorVerificationRunId);
       if (
         !priorRun ||
         !runMatchesPriorVerification(priorRun, {
+          ...(retryPipelineRunId ? { taskId } : {}),
           specId,
           target: liveTarget,
           standaloneBuildId,
+          ...(preparedSourceBranch
+            ? { sourceBranch: preparedSourceBranch }
+            : {}),
           ...(preparedSourceCommit
             ? { sourceCommit: preparedSourceCommit }
             : {}),
@@ -2327,6 +2371,9 @@ export async function reconcileSpecLive(
             `live-target:${liveTarget}`,
             ...(preparedSourceCommit
               ? [`prepared-source-commit:${preparedSourceCommit}`]
+              : []),
+            ...(preparedSourceBranch
+              ? [`prepared-source-branch:${preparedSourceBranch}`]
               : []),
           ],
         );
@@ -2349,7 +2396,12 @@ export async function reconcileSpecLive(
           pipelineWaitCondition(priorVerificationRunId),
         );
       }
-      priorVerificationSummary = `Prior exact verification run ${priorVerificationRunId} is terminal with provider result ${priorResult}. Treat its artifacts as repair context; current-task proof still requires the exact task source commit.`;
+      if (retryPipelineRunId) {
+        authoritativeRetryRun = priorRun;
+        priorVerificationSummary = `Task-designated retry ${priorVerificationRunId} is terminal with provider result ${priorResult}. Review this exact run as the current task proof; do not replace it merely because the task generation advanced while it was running.`;
+      } else {
+        priorVerificationSummary = `Prior exact verification run ${priorVerificationRunId} is terminal with provider result ${priorResult}. Treat its artifacts as repair context; current-task proof still requires the exact task source commit.`;
+      }
     }
     const sourceBranch = git(workspaceDir, [
       "symbolic-ref",
@@ -3391,6 +3443,57 @@ export async function reconcileSpecLive(
       },
     );
     let latestRun = runs[0];
+    let proofSourceBranch = sourceBranch;
+    let providerGeneration = generation;
+    if (authoritativeRetryRun) {
+      const authoritativeSourceCommit = nonEmptyString(
+        authoritativeRetryRun.sourceVersion,
+      );
+      const authoritativeSourceRef = nonEmptyString(
+        authoritativeRetryRun.sourceBranch,
+      );
+      const authoritativeSourceBranch = authoritativeSourceRef.replace(
+        /^refs\/heads\//,
+        "",
+      );
+      const authoritativeMetadata = metadataOf(authoritativeRetryRun);
+      const authoritativeGeneration = Number(authoritativeMetadata.generation);
+      if (
+        !authoritativeSourceCommit ||
+        !authoritativeSourceBranch ||
+        !Number.isInteger(authoritativeGeneration) ||
+        authoritativeGeneration < 1
+      ) {
+        return ownerResult(
+          ctx,
+          `Task-designated retry ${priorVerificationRunId} lacks exact source or generation metadata.`,
+          [`pipeline-run:${priorVerificationRunId}`],
+        );
+      }
+      git(repoDir, ["fetch", "origin", authoritativeSourceBranch]);
+      if (
+        git(
+          repoDir,
+          ["cat-file", "-e", `${authoritativeSourceCommit}^{commit}`],
+          true,
+        ).status !== 0
+      ) {
+        return ownerResult(
+          ctx,
+          `Task-designated retry ${priorVerificationRunId} source commit is not available locally after fetching its branch.`,
+          [
+            `pipeline-run:${priorVerificationRunId}`,
+            `source-branch:${authoritativeSourceBranch}`,
+            `source-commit:${authoritativeSourceCommit}`,
+          ],
+        );
+      }
+      sourceCommit = authoritativeSourceCommit;
+      proofSourceBranch = authoritativeSourceBranch;
+      providerGeneration = authoritativeGeneration;
+      runs = [authoritativeRetryRun];
+      latestRun = authoritativeRetryRun;
+    }
 
     const sourceDiffersFromBase = sourceCommit !== baseCommit;
     let terminalDispositionDecision: AgentDecision | null = null;
@@ -3705,13 +3808,14 @@ export async function reconcileSpecLive(
       (proof.standaloneBuildId || "") !== standaloneBuildId ||
       (Boolean(normalizationInput) && proof.runResult !== "succeeded")
     ) {
-      const failedRunsForCommit = runs.filter(
-        (run) =>
-          pipelineRunState(run) === "completed" &&
-          !["succeeded", "partiallySucceeded"].includes(
-            nonEmptyString(run.result),
-          ),
-      ).length;
+      const failedRunsForCommit =
+        runs.filter(
+          (run) =>
+            pipelineRunState(run) === "completed" &&
+            !["succeeded", "partiallySucceeded"].includes(
+              nonEmptyString(run.result),
+            ),
+        ).length + (authoritativeRetryRun ? 1 : 0);
       const runContextDir = terminalRunContextDir(contextDir, runId);
       const collectedRunEvidence = await collectTerminalRunEvidence(
         repoDir,
@@ -3734,10 +3838,11 @@ export async function reconcileSpecLive(
         version: 1,
         taskId,
         generation,
+        providerGeneration,
         specId,
         target: liveTarget,
         ...(standaloneBuildId ? { standaloneBuildId } : {}),
-        sourceBranch,
+        sourceBranch: proofSourceBranch,
         sourceCommit,
         runId,
         runResult,
@@ -3772,7 +3877,7 @@ export async function reconcileSpecLive(
         ctx,
         [
           `Review terminal Azure DevOps run ${runId} for ${specId}.`,
-          `The exact source is ${sourceBranch}@${sourceCommit}; provider result is ${runResult}.`,
+          `The exact source is ${proofSourceBranch}@${sourceCommit}; provider result is ${runResult}.`,
           `The exact live target is ${liveTarget}${standaloneBuildId ? ` with standalone_build_id=${standaloneBuildId}` : ""}.`,
           exactLiveTargetInstruction(liveTarget, standaloneBuildId),
           `Workflow code collected authenticated run evidence in ${runContextDir}. Run metadata: ${collectedRunEvidence.runPath}. Artifact list: ${collectedRunEvidence.artifactListPath}. Downloaded artifact directories: ${collectedRunEvidence.artifactPaths.join(", ") || "none"}. Collection errors: ${collectedRunEvidence.errors.join(" | ") || "none"}.`,
@@ -3942,10 +4047,11 @@ export async function reconcileSpecLive(
         version: 1,
         taskId,
         generation,
+        providerGeneration,
         specId,
         target: liveTarget,
         ...(standaloneBuildId ? { standaloneBuildId } : {}),
-        sourceBranch,
+        sourceBranch: proofSourceBranch,
         sourceCommit,
         runId,
         runResult,

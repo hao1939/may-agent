@@ -282,6 +282,29 @@ describe("spec-live-reconciliation workflow", () => {
           expectedVitestTestCount: 1,
         }),
       ).toMatchObject({ accepted: true });
+      expect(
+        verifySpecLiveProofFacts({
+          taskId: "domain/sample",
+          generation: 3,
+          specIds: ["spec.sample.live"],
+          target: "staging",
+          standaloneBuildId: "",
+          proof: {
+            ...proof,
+            generation: 3,
+            providerGeneration: 2,
+          },
+          run,
+          artifactPaths: [aggregatePath, specPath, vitestPath],
+          expectedClaimIdsBySpec: {
+            "spec.sample.live": ["assert.sample.behavior"],
+          },
+          sourceReachable: true,
+          integratedCommitReachable: true,
+          normalizationInvariantSatisfied: true,
+          expectedVitestTestCount: 1,
+        }),
+      ).toMatchObject({ accepted: true });
       writeFileSync(vitestPath, JSON.stringify({ numTotalTests: 6 }));
       expect(
         verifySpecLiveProofFacts({
@@ -1436,6 +1459,7 @@ describe("spec-live-reconciliation workflow", () => {
   test("preserves an exact standalone live target across recovery", () => {
     const exact = {
       id: 52,
+      sourceBranch: "refs/heads/task/example",
       sourceVersion: "repair-commit",
       templateParameters: {
         specs: "spec.rp-cluster-lifecycle.nginx-large-header",
@@ -1485,12 +1509,34 @@ describe("spec-live-reconciliation workflow", () => {
 
     expect(
       runMatchesPriorVerification(exact, {
+        taskId: "domain/nginx-repair",
         specId: "spec.rp-cluster-lifecycle.nginx-large-header",
         target: "standalone-rp-ingress",
         standaloneBuildId: "173469496",
+        sourceBranch: "task/example",
         sourceCommit: "repair-commit",
       }),
     ).toBe(true);
+    expect(
+      runMatchesPriorVerification(exact, {
+        taskId: "domain/another-task",
+        specId: "spec.rp-cluster-lifecycle.nginx-large-header",
+        target: "standalone-rp-ingress",
+        standaloneBuildId: "173469496",
+        sourceBranch: "task/example",
+        sourceCommit: "repair-commit",
+      }),
+    ).toBe(false);
+    expect(
+      runMatchesPriorVerification(exact, {
+        taskId: "domain/nginx-repair",
+        specId: "spec.rp-cluster-lifecycle.nginx-large-header",
+        target: "standalone-rp-ingress",
+        standaloneBuildId: "173469496",
+        sourceBranch: "task/other",
+        sourceCommit: "repair-commit",
+      }),
+    ).toBe(false);
     expect(
       runMatchesPriorVerification(wrongBuild, {
         specId: "spec.rp-cluster-lifecycle.nginx-large-header",
