@@ -53,6 +53,7 @@ export function createTelegramClient(opts: TelegramClientOptions): TelegramClien
   ): Promise<number | undefined> {
     const chunks = splitTelegramMessage(text, TELEGRAM_MAX_LENGTH);
     let lastMsgId: number | undefined;
+    const sentMsgIds: number[] = [];
     for (const chunk of chunks) {
       const replyParams = context?.replyToMessageId
         ? { reply_parameters: { message_id: context.replyToMessageId, allow_sending_without_reply: true } }
@@ -65,11 +66,13 @@ export function createTelegramClient(opts: TelegramClientOptions): TelegramClien
           ...replyParams,
         });
         lastMsgId = result?.message_id;
+        if (lastMsgId) sentMsgIds.push(lastMsgId);
       } catch (err) {
         if (parseMode) {
           try {
             const result = await apiCall("sendMessage", { chat_id: chatId, text: chunk, ...replyParams });
             lastMsgId = result?.message_id;
+            if (lastMsgId) sentMsgIds.push(lastMsgId);
           } catch (retryErr) {
             opts.emitInfo(`[telegram] Send failed: ${errorMessage(retryErr)}`);
           }
@@ -79,18 +82,20 @@ export function createTelegramClient(opts: TelegramClientOptions): TelegramClien
       }
     }
 
-    if (lastMsgId && context) {
-      try {
-        storeNotificationMessage(opts.persistDir, {
-          telegram_msg_id: lastMsgId,
-          event_type: context.eventType || null,
-          agent: context.agent || null,
-          session_id: context.sessionId || null,
-          project_id: context.projectId || null,
-          data: context.data || null,
-        });
-      } catch {
-        /* best-effort */
+    if (context) {
+      for (const telegramMsgId of sentMsgIds) {
+        try {
+          storeNotificationMessage(opts.persistDir, {
+            telegram_msg_id: telegramMsgId,
+            event_type: context.eventType || null,
+            agent: context.agent || null,
+            session_id: context.sessionId || null,
+            project_id: context.projectId || null,
+            data: context.data || null,
+          });
+        } catch {
+          /* best-effort */
+        }
       }
     }
     return lastMsgId;

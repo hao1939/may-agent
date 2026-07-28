@@ -52,7 +52,7 @@ describe("telegram reply router helpers", () => {
     expect(text).toContain("Situation: Needs review");
     expect(text).toContain("Visible notification: Original alert");
     expect(text).toContain("Session context (3 messages):");
-    expect(text).toContain("Use the human reply as the decision or missing input");
+    expect(text).toContain("First understand the human's intention");
   });
 
   it("keeps conversation metadata out of the notification reply text", () => {
@@ -178,12 +178,8 @@ describe("telegram reply router helpers", () => {
     expect(text).toContain("Human reply");
     expect(text).toContain("assign May and continue");
     expect(text).toContain("Project: projects/alpha-project.app");
-    expect(text).toContain(
-      "Situation: Approval return path is not visibly closing.",
-    );
-    expect(text).toContain(
-      "Original ask: Assign one owner to drain the approval return path.",
-    );
+    expect(text).toContain("Situation: Approval return path is not visibly closing.");
+    expect(text).toContain("Original ask: Assign one owner to drain the approval return path.");
     expect(text).toContain("System note");
     expect(text).not.toContain("Subject:");
     expect(text).not.toContain("Kind:");

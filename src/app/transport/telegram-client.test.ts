@@ -116,4 +116,38 @@ describe("telegram client", () => {
       rmSync(persistDir, { recursive: true, force: true });
     }
   });
+
+  it("stores reply context for every chunk of a long message", async () => {
+    const persistDir = mkdtempSync(join(tmpdir(), "telegram-client-chunks-"));
+    let nextMessageId = 700;
+    try {
+      const client = createTelegramClient({
+        token: "token",
+        persistDir,
+        emitInfo: () => {},
+        fetchImpl: (async () => {
+          return new Response(JSON.stringify({ ok: true, result: { message_id: nextMessageId++ } }), {
+            headers: { "content-type": "application/json" },
+          });
+        }) as typeof fetch,
+      });
+
+      await client.sendMessage("chat-1", `${"a".repeat(4090)}\n${"b".repeat(40)}`, undefined, {
+        eventType: "message.created",
+        agent: "may",
+        data: JSON.stringify({ conversationId: "approval:chunked" }),
+      });
+
+      const { getNotificationMessage } = await import("../../lib/db/notifications.js");
+      expect(JSON.parse(String(getNotificationMessage(persistDir, 700)?.data))).toMatchObject({
+        conversationId: "approval:chunked",
+      });
+      expect(JSON.parse(String(getNotificationMessage(persistDir, 701)?.data))).toMatchObject({
+        conversationId: "approval:chunked",
+      });
+    } finally {
+      closeDb(persistDir);
+      rmSync(persistDir, { recursive: true, force: true });
+    }
+  });
 });
