@@ -166,6 +166,8 @@ export type TaskCompletionReceipt = {
   failureFingerprints: string[];
   completedAt: string;
   workspace?: ProjectAppTaskWorkspace;
+  /** Digest of acceptance/evidence/workspace detail removed from old bounded history. */
+  compactedDetailSha256?: string;
 };
 
 export type TaskTree = {
@@ -614,8 +616,104 @@ function buildTaskTreeProjection(
   return tasks;
 }
 
+const FULL_RECEIPTS_PER_PARENT = 32;
+
+function sha256(value: unknown): string {
+  return createHash("sha256").update(JSON.stringify(value)).digest("hex");
+}
+
+function compactHistoricalReceipts(tree: TaskTree): void {
+  const receipts = Object.values(tree.receipts ?? {});
+  const byParent = new Map<string, TaskCompletionReceipt[]>();
+  for (const receipt of receipts) {
+    const group = byParent.get(receipt.parentId) ?? [];
+    group.push(receipt);
+    byParent.set(receipt.parentId, group);
+  }
+
+  const keepFull = new Set<string>();
+  for (const group of byParent.values()) {
+    group
+      .sort(
+        (left, right) =>
+          right.completedAt.localeCompare(left.completedAt) ||
+          right.metadata.id.localeCompare(left.metadata.id),
+      )
+      .slice(0, FULL_RECEIPTS_PER_PARENT)
+      .forEach((receipt) => keepFull.add(receipt.metadata.id));
+  }
+
+  for (const receipt of receipts) {
+    if (keepFull.has(receipt.metadata.id) || receipt.compactedDetailSha256) continue;
+    receipt.compactedDetailSha256 = sha256({
+      acceptance: receipt.acceptance,
+      evidence: receipt.evidence,
+      acceptanceBasis: receipt.acceptanceBasis,
+      workspace: receipt.workspace,
+    });
+    receipt.acceptance = [];
+    receipt.evidence = [];
+    receipt.acceptanceBasis = {
+      ...receipt.acceptanceBasis,
+      evidence: [],
+    };
+    delete receipt.workspace;
+  }
+}
+
+function compactAttemptTrigger(trigger: Record<string, unknown>): Record<string, unknown> {
+  if (typeof trigger.compactedPayloadSha256 === "string") return trigger;
+  const compact: Record<string, unknown> = {
+    compactedPayloadSha256: sha256(trigger),
+  };
+  for (const key of [
+    "type",
+    "source",
+    "timestamp",
+    "eventId",
+    "project",
+    "taskId",
+    "task_id",
+    "runId",
+    "pipelineRunId",
+    "idempotencyKey",
+    "target",
+  ]) {
+    if (trigger[key] !== undefined) compact[key] = trigger[key];
+  }
+  return compact;
+}
+
+function compactHistoricalAttemptTriggers(tree: TaskTree): void {
+  const attempts = Object.values(tree.attempts ?? {});
+  const keepFull = new Set<string>();
+  for (const attempt of attempts) {
+    if (attempt.state === "running") keepFull.add(attempt.metadata.id);
+  }
+  for (const resource of Object.values(tree.resources ?? {})) {
+    const latest = attempts
+      .filter(
+        (attempt) =>
+          attempt.taskId === resource.metadata.id &&
+          attempt.taskGeneration === resource.metadata.generation,
+      )
+      .sort(
+        (left, right) =>
+          right.startedAt.localeCompare(left.startedAt) || right.metadata.id.localeCompare(left.metadata.id),
+      )[0];
+    if (latest) keepFull.add(latest.metadata.id);
+  }
+  for (const attempt of attempts) {
+    if (!attempt.trigger || keepFull.has(attempt.metadata.id)) continue;
+    attempt.trigger = compactAttemptTrigger(attempt.trigger);
+  }
+}
+
 function canonicalTaskStateForWrite(tree: TaskTree): Record<string, unknown> {
   const state = JSON.parse(JSON.stringify(tree)) as Record<string, unknown>;
+  const canonical = state as unknown as TaskTree;
+  compactHistoricalReceipts(canonical);
+  compactHistoricalAttemptTriggers(canonical);
   delete state.tasks;
   delete state.active_task_id;
   delete state.active_task_ids;
