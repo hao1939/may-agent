@@ -31,6 +31,7 @@ import {
   proofProtectedScenarioPaths,
   relevantKnowledgeModelUnchanged,
   shouldReplayScenarioBeforeRunReview,
+  shouldReplayReviewedTerminalWriteback,
   taskWorktreeRecoveryDecisionProblem,
   existingRecoveryProblem,
   integrationMode,
@@ -61,6 +62,7 @@ import {
   taskContextDir,
   taskScopedAgentCondition,
   terminalDispositionDecisionProblem,
+  terminalLineageReplayDecisionProblem,
   terminalDispositionSourceRepairInstruction,
   terminalRunDecisionProblem,
   terminalRunContextDir,
@@ -1129,6 +1131,52 @@ describe("spec-live-reconciliation workflow", () => {
     expect(
       terminalDispositionDecisionProblem({ ...decision, liveReady: false }),
     ).toContain("neither live readiness nor a wait");
+  });
+
+  test("keeps terminal lineage replay source-only", () => {
+    const replay = {
+      decision: "committed" as const,
+      summary: "replayed the reviewed terminal source onto current dev",
+      evidence: ["source-commit:def"],
+    };
+    expect(terminalLineageReplayDecisionProblem(replay)).toBeNull();
+    expect(
+      terminalLineageReplayDecisionProblem({ ...replay, liveReady: false }),
+    ).toContain("omit liveReady and condition");
+    expect(
+      terminalLineageReplayDecisionProblem({
+        decision: "waiting",
+        summary: "wait for another source change",
+        evidence: ["source-commit:def"],
+      }),
+    ).toContain("must be resolved inside this same domain workflow");
+  });
+
+  test("replays a reviewed terminal writeback into a new task generation", () => {
+    expect(
+      shouldReplayReviewedTerminalWriteback({
+        sourceProblem:
+          "terminal-disposition does not match structured source fields: expected status=environment, specState=reviewed-exception; source has status=ready, specState=ready",
+        reviewedWritebackCommit: "dad693f523201ba2ef7c9da9a45a296fae35d02a",
+        scenarioNormalization: false,
+      }),
+    ).toBe(true);
+    expect(
+      shouldReplayReviewedTerminalWriteback({
+        sourceProblem:
+          "terminal-disposition source still lists plain-carrier sample.ts",
+        reviewedWritebackCommit: "dad693f523201ba2ef7c9da9a45a296fae35d02a",
+        scenarioNormalization: true,
+      }),
+    ).toBe(false);
+    expect(
+      shouldReplayReviewedTerminalWriteback({
+        sourceProblem:
+          "staging terminal-disposition validation requires a location",
+        reviewedWritebackCommit: "dad693f523201ba2ef7c9da9a45a296fae35d02a",
+        scenarioNormalization: false,
+      }),
+    ).toBe(false);
   });
 
   test("validates terminal judgment against structured spec fields", () => {

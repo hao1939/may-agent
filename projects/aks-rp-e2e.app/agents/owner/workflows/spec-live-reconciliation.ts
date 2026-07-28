@@ -309,6 +309,36 @@ export function terminalDispositionDecisionProblem(
   return null;
 }
 
+export function terminalLineageReplayDecisionProblem(
+  decision: AgentDecision,
+): string | null {
+  if (decision.decision !== "committed") {
+    return "terminal-disposition integration conflict must be resolved inside this same domain workflow";
+  }
+  if (decision.liveReady !== undefined || decision.condition !== undefined) {
+    return "terminal-disposition lineage repair only replays already reviewed source; omit liveReady and condition because the original terminal judgment controls the final disposition";
+  }
+  return null;
+}
+
+export function shouldReplayReviewedTerminalWriteback(input: {
+  sourceProblem: string | null;
+  reviewedWritebackCommit: string;
+  scenarioNormalization: boolean;
+}): boolean {
+  if (
+    input.scenarioNormalization ||
+    !input.reviewedWritebackCommit ||
+    !input.sourceProblem
+  ) {
+    return false;
+  }
+  return (
+    input.sourceProblem.includes("does not match structured source fields") ||
+    input.sourceProblem.includes("is missing from the normalized source")
+  );
+}
+
 export function preparationHeadProblem(input: {
   decision: AgentDecision;
   before: string;
@@ -2878,7 +2908,65 @@ export async function reconcileSpecLive(
         };
       };
 
-      const beforeIntegration = validateCurrentSource();
+      let beforeIntegration = validateCurrentSource();
+      const reviewedWritebackCommit = nonEmptyString(
+        normalizationInput?.reviewedWritebackCommit,
+      );
+      if (
+        shouldReplayReviewedTerminalWriteback({
+          sourceProblem: beforeIntegration.problem,
+          reviewedWritebackCommit,
+          scenarioNormalization: isScenarioNormalization,
+        }) &&
+        git(
+          workspaceDir,
+          ["cat-file", "-e", `${reviewedWritebackCommit}^{commit}`],
+          true,
+        ).status === 0
+      ) {
+        const replayBaseline = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+        const replayDecision = await askAgent(
+          ctx,
+          [
+            `Replay the already reviewed terminal writeback ${reviewedWritebackCommit} for ${specId} into the current task worktree ${workspaceDir}.`,
+            `Current source validation failed because ${beforeIntegration.problem}.`,
+            "The referenced commit belongs to an earlier generation of this same task. Apply only its task-owned terminal spec and compact-authority changes onto the current task branch; resolve any conflicts from current origin/dev without changing the reviewed status/specState judgment.",
+            "Run the scoped checks required by those files, commit the result, leave the current task worktree clean, and return decision=committed.",
+            "This is source-only replay of an already reviewed exact run. Omit liveReady and condition; do not queue ADO, create a PR, create another task, or edit task state.",
+            "Task:",
+            ctx.task,
+          ].join("\n\n"),
+          {
+            scenarioNormalization: false,
+            continueDomainWorkOnValidation: true,
+            validateDecision: (candidate) => {
+              const decisionProblem =
+                terminalLineageReplayDecisionProblem(candidate);
+              if (decisionProblem) return decisionProblem;
+              if (cleanWorkspace(workspaceDir)) {
+                return "reviewed terminal writeback replay must leave the current task worktree clean";
+              }
+              return git(workspaceDir, ["rev-parse", "HEAD"]).stdout ===
+                replayBaseline
+                ? "reviewed terminal writeback replay did not create a current-generation commit"
+                : null;
+            },
+          },
+        );
+        beforeIntegration = validateCurrentSource();
+        if (beforeIntegration.problem) {
+          return ownerResult(
+            ctx,
+            `Replayed terminal writeback failed current-source validation: ${beforeIntegration.problem}.`,
+            [
+              ...decision.evidence,
+              ...replayDecision.evidence,
+              ...beforeIntegration.evidence,
+              `reviewed-writeback-commit:${reviewedWritebackCommit}`,
+            ],
+          );
+        }
+      }
       if (beforeIntegration.problem) {
         return ownerResult(
           ctx,

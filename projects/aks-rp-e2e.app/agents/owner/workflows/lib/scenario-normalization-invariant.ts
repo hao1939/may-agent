@@ -9,6 +9,7 @@ export type ScenarioNormalizationInput = {
   adapterPath?: unknown;
   specId?: unknown;
   specIds?: unknown;
+  reviewedWritebackCommit?: unknown;
 };
 
 export type ScenarioNormalizationInvariant = {
