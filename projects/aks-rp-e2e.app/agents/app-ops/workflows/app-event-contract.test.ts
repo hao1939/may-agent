@@ -157,6 +157,7 @@ describe("app event contract", () => {
     const failures: string[] = [];
 
     for (const schedule of appManifest.schedules ?? []) {
+      if (schedule.enabled === false) continue;
       for (const event of schedule.emits ?? []) {
         if (!eventIsHandled(event)) {
           failures.push(
@@ -191,7 +192,6 @@ describe("app event contract", () => {
         "project.problem.escalated",
         "project.problem.inconclusive",
         "project.stall.review.requested",
-        "project.focus.review.requested",
         "project.approval.requested",
         "coverage.gap.detected",
         "metric.breach",
@@ -931,8 +931,8 @@ describe("app event contract", () => {
       resolveAksTask({
         type: "project.focus.review.requested",
         target: { project: projectId },
-      })?.workflow,
-    ).toBe("focus-plan");
+      }),
+    ).toBeNull();
     expect(
       resolveAksTask({
         type: "project.approval.requested",
@@ -1258,25 +1258,18 @@ describe("app event contract", () => {
   });
 
   test("manual actions emit explicit target events", () => {
-    expect(actionEvent("request-focus-plan")).toMatchObject({
-      type: "project.focus.review.requested",
-      target: { project: projectId },
-      data: {
-        project: projectId,
-        reason: "manual-focus-plan-request",
-        mode: "plan",
-      },
-    });
-
-    expect(actionEvent("review-focus-progress")).toMatchObject({
-      type: "project.focus.review.requested",
-      target: { project: projectId },
-      data: {
-        project: projectId,
-        reason: "manual-focus-progress-review",
-        mode: "progress",
-      },
-    });
+    expect(appManifest.actions).not.toHaveProperty("request-focus-plan");
+    expect(appManifest.actions).not.toHaveProperty("review-focus-progress");
+    expect(
+      appManifest.schedules?.filter((schedule) =>
+        ["focus-plan-proposal", "focus-progress-review"].includes(
+          schedule.id ?? "",
+        ),
+      ),
+    ).toEqual([
+      expect.objectContaining({ id: "focus-plan-proposal", enabled: false }),
+      expect.objectContaining({ id: "focus-progress-review", enabled: false }),
+    ]);
 
     expect(
       actionEvent("investigate-problem", { problemKey: "staging-auth" }),
@@ -1334,34 +1327,7 @@ describe("app event contract", () => {
     });
   });
 
-  test("supports multiple focus plans and multiple loop task instances", () => {
-    const focusA = resolveAksTask({
-      type: "project.focus.review.requested",
-      target: { project: projectId },
-      focusId: "network",
-      eventId: 101,
-    });
-    const focusB = resolveAksTask({
-      type: "project.focus.review.requested",
-      target: { project: projectId },
-      focusId: "compute",
-      eventId: 102,
-    });
-    const focusAAgain = resolveAksTask({
-      type: "project.focus.review.requested",
-      target: { project: projectId },
-      focusId: "network",
-      eventId: 103,
-    });
-    expect(focusA?.workflow).toBe("focus-plan");
-    expect(focusA?.owner).toBe("app-ops");
-    expect(focusB?.workflow).toBe("focus-plan");
-    expect(focusB?.owner).toBe("app-ops");
-    expect(focusA?.id).not.toBe(focusB?.id);
-    expect(focusAAgain?.id).toBe(focusA?.id);
-    expect(focusAAgain?.input).toEqual(focusA?.input);
-    expect(focusA?.id.startsWith("route/")).toBe(false);
-
+  test("supports multiple loop task instances", () => {
     expect(
       actionEvent("pulse-spec-loop", { taskId: "spec-loop-a" }),
     ).toMatchObject({
@@ -1376,12 +1342,6 @@ describe("app event contract", () => {
 
   test("routes app-ops workflows to the app-ops workflow directory", () => {
     const cases = [
-      {
-        type: "project.focus.review.requested",
-        target: { project: projectId },
-        focusId: "current",
-        expectedWorkflow: "focus-plan",
-      },
       {
         type: "project.problem.investigation.requested",
         target: { project: projectId },

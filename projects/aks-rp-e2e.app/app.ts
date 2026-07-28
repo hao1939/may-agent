@@ -487,7 +487,6 @@ const aksTaskSelectors: EventSelector[] = [
     target: projectTarget,
   },
   { type: "project.stall.review.requested", target: projectTarget },
-  { type: "project.focus.review.requested", target: projectTarget },
   { type: "project.approval.requested", target: projectTarget },
 ];
 
@@ -737,32 +736,6 @@ export function resolveAksTask(
         workflow: "project-stall-review",
         priority: "P0",
       };
-    case "project.focus.review.requested": {
-      const focusKey = stringDetail(
-        details,
-        "focusId",
-        "focus_id",
-        "planId",
-        "plan_id",
-        "taskId",
-        "task_id",
-        "mode",
-      );
-      return {
-        id: `runtime/focus-review/${safeTaskIdPart(focusKey, "current")}`,
-        parentId: "group/app-operations",
-        outcome:
-          "Keep one named AKS focus plan or progress review aligned with the current live frontier.",
-        acceptance: [
-          "The review proposes or assesses a focus plan from current task and execution evidence without using the task graph as a scheduler.",
-        ],
-        mode: "maintain",
-        owner: "app-ops",
-        workflow: "focus-plan",
-        input: { focusKey: focusKey || "current" },
-        priority: "P1",
-      };
-    }
     case "project.approval.requested": {
       const params = recordDetail(details, "params") ?? {};
       const approvalKey =
@@ -1396,7 +1369,7 @@ export default defineProjectApp({
     },
     {
       id: "focus-plan-proposal",
-      enabled: true,
+      enabled: false,
       intervalMs: 86_400_000,
       emits: [
         {
@@ -1412,7 +1385,7 @@ export default defineProjectApp({
     },
     {
       id: "focus-progress-review",
-      enabled: true,
+      enabled: false,
       intervalMs: 21_600_000,
       emits: [
         {
@@ -1565,27 +1538,6 @@ export default defineProjectApp({
         };
       },
     },
-    "request-focus-plan": {
-      type: "async",
-      description:
-        "Ask app-ops to propose or refresh the next mid-term focus plan.",
-      inputSchema: actionInputSchema,
-      event(params) {
-        return {
-          type: "project.focus.review.requested",
-          target: { project: projectId },
-          data: {
-            project: projectId,
-            reason: "manual-focus-plan-request",
-            mode: "plan",
-            params:
-              params && typeof params === "object" && !Array.isArray(params)
-                ? params
-                : {},
-          },
-        };
-      },
-    },
     "dispatch-approval-packet": {
       type: "async",
       description:
@@ -1598,27 +1550,6 @@ export default defineProjectApp({
           data: {
             project: projectId,
             reason: "manual-approval-packet-dispatch-request",
-            params:
-              params && typeof params === "object" && !Array.isArray(params)
-                ? params
-                : {},
-          },
-        };
-      },
-    },
-    "review-focus-progress": {
-      type: "async",
-      description:
-        "Ask app-ops to review whether the current focus plan is on track.",
-      inputSchema: actionInputSchema,
-      event(params) {
-        return {
-          type: "project.focus.review.requested",
-          target: { project: projectId },
-          data: {
-            project: projectId,
-            reason: "manual-focus-progress-review",
-            mode: "progress",
             params:
               params && typeof params === "object" && !Array.isArray(params)
                 ? params
