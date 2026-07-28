@@ -16,7 +16,7 @@ import {
 
 export const name = "approval-dispatch";
 export const description =
-  "Emit a packet-linked human-facing approval message for an exact approval ask.";
+  "Route a packet-linked decision to the declared project owner, escalating to a human only for an explicit human authority boundary.";
 
 function finishApprovalDispatch(
   ctx: WorkflowContext,
@@ -152,7 +152,9 @@ function isTrustedDispatchLedgerRow(parsed: {
 }): boolean {
   if (
     parsed.workflow !== "approval-dispatch" ||
-    parsed.result !== "message.created"
+    !["message.created", "project.owner.requested"].includes(
+      String(parsed.result),
+    )
   ) {
     return false;
   }
@@ -251,7 +253,19 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     triggerString(trigger, "target") ||
     stringValue(triggerValue(trigger, "target")) ||
     stringValue(taskInput?.target) ||
-    "human";
+    "owner";
+  const authority =
+    triggerString(trigger, "authority") ||
+    stringValue(triggerValue(trigger, "authority")) ||
+    stringValue(taskInput?.authority);
+  const requiresHumanDecision =
+    triggerValue(trigger, "requiresHumanDecision") === true ||
+    triggerValue(trigger, "requires_human_decision") === true ||
+    taskInput?.requiresHumanDecision === true ||
+    taskInput?.requires_human_decision === true ||
+    authority.toLowerCase() === "human";
+  const deliveryTarget =
+    requiresHumanDecision && target === "owner" ? "human" : target;
   const explicitApprovalId =
     triggerString(trigger, "approvalId") ||
     triggerString(trigger, "approval_id") ||
@@ -416,6 +430,64 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     },
   };
 
+  if (!requiresHumanDecision) {
+    try {
+      ctx.dispatchEvent("project.owner.requested", {
+        target: { project: "aks-rp-e2e" },
+        project: "aks-rp-e2e",
+        reason: "approval-owner-routing",
+        params: {
+          packetPath: repoPacketPath,
+          packetAbsolutePath: absolutePacketPath,
+          pathId,
+          requestedAction,
+          summary,
+          approval,
+          approvalId,
+          waitId,
+          correlationKey,
+          expectedResponse,
+          resumeCondition,
+          instruction:
+            "Handle this decision under the ownership convention. Investigate and return the bounded project.approval.submitted result yourself. Escalate to Hao only if the remaining choice requires human authority or preference, and include that exact decision and proof.",
+        },
+      });
+    } catch {
+      appendDispatchRun(appDir, {
+        result: "dispatch-failed",
+        route: "project-owner",
+        packetPath: repoPacketPath,
+        pathId,
+        requestedAction,
+      });
+      return finishApprovalDispatch(ctx, {
+        state: "needs-owner",
+        summary: `Approval dispatch failed while routing ${pathId} to the declared project owner.`,
+        evidence: [`approval-dispatch:${correlationKey}:owner-dispatch-failed`],
+      });
+    }
+
+    appendDispatchRun(appDir, {
+      result: "project.owner.requested",
+      route: "project-owner",
+      packetPath: repoPacketPath,
+      packetAbsolutePath: absolutePacketPath,
+      pathId,
+      requestedAction,
+      approvalId,
+      waitId,
+      correlationKey,
+      expectedResponse,
+      resumeCondition,
+    });
+
+    return finishApprovalDispatch(ctx, {
+      state: "converged",
+      summary: `Approval dispatch routed ${pathId} to the declared AKS project owner; no human message was emitted.`,
+      evidence: [`approval-dispatch:${correlationKey}:project-owner`],
+    });
+  }
+
   const content = [
     "AKS RP E2E approval packet dispatch",
     "",
@@ -438,7 +510,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     ctx.dispatchEvent("message.created", {
       target: { project: "aks-rp-e2e", human: true },
       from: sender,
-      to: target,
+      to: deliveryTarget,
       content,
       priority: "P2",
       intent: "approval-packet-dispatch",
@@ -492,7 +564,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     correlationKey,
     expectedResponse,
     resumeCondition,
-    target,
+    target: deliveryTarget,
   });
 
   return finishApprovalDispatch(ctx, {

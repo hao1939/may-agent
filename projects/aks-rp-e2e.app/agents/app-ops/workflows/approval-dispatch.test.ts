@@ -137,32 +137,35 @@ describe("approval-dispatch workflow", () => {
       output: {
         state: "converged",
         summary: expect.stringContaining(
-          "Approval dispatch emitted message.created",
+          "routed ops/request-approval-localdns-auto-default-mirrored-slice-cleanup-20260723 to the declared AKS project owner",
         ),
         evidence: [
-          "approval-dispatch:aks-rp-e2e:approval:ops-request-approval-localdns-auto-default-mirrored-slice-cleanup-20260723:evidence-archive-localdns-auto-default-mirrored-slice-cleanup-approval.md",
+          "approval-dispatch:aks-rp-e2e:approval:ops-request-approval-localdns-auto-default-mirrored-slice-cleanup-20260723:evidence-archive-localdns-auto-default-mirrored-slice-cleanup-approval.md:project-owner",
         ],
         actions: [],
       },
     });
     expect(dispatched).toHaveLength(1);
     expect(dispatched[0]).toMatchObject({
-      type: "message.created",
+      type: "project.owner.requested",
       payload: {
-        packetPath,
-        pathId:
-          "ops/request-approval-localdns-auto-default-mirrored-slice-cleanup-20260723",
-        requestedAction:
-          "Route this exact LocalDNS mirrored-slice cleanup packet through the human:operator lane.",
-        approvalId:
-          "aks-rp-e2e:approval:ops/request-approval-localdns-auto-default-mirrored-slice-cleanup-20260723:evidence-archive-localdns-auto-default-mirrored-slice-cleanup-approval.md",
-        waitId:
-          "wait:aks-rp-e2e:approval:ops/request-approval-localdns-auto-default-mirrored-slice-cleanup-20260723:evidence-archive-localdns-auto-default-mirrored-slice-cleanup-approval.md",
+        reason: "approval-owner-routing",
+        params: {
+          packetPath,
+          pathId:
+            "ops/request-approval-localdns-auto-default-mirrored-slice-cleanup-20260723",
+          requestedAction:
+            "Route this exact LocalDNS mirrored-slice cleanup packet through the human:operator lane.",
+          approvalId:
+            "aks-rp-e2e:approval:ops/request-approval-localdns-auto-default-mirrored-slice-cleanup-20260723:evidence-archive-localdns-auto-default-mirrored-slice-cleanup-approval.md",
+          waitId:
+            "wait:aks-rp-e2e:approval:ops/request-approval-localdns-auto-default-mirrored-slice-cleanup-20260723:evidence-archive-localdns-auto-default-mirrored-slice-cleanup-approval.md",
+        },
       },
     });
   });
 
-  test("emits packet-linked message.created record for an approval packet", async () => {
+  test("emits a human message only for an explicit human authority boundary", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     const packetPath = "evidence/archive/network-cni-approval-packet.md";
     await writeFile(
@@ -187,6 +190,7 @@ describe("approval-dispatch workflow", () => {
           packetPath,
           pathId: "path.network-cni-azure-overlay-dual-stack-migration",
           requestedAction: "Approve one bounded live execution",
+          authority: "human",
           reason: "Need durable local send proof for the exact packet.",
           summary:
             "This is the exact execute-approval packet for the migration replay.",
@@ -328,6 +332,7 @@ describe("approval-dispatch workflow", () => {
           packetPath: appPacketPath,
           pathId: "path.rp-nodepool-lifecycle.rollback",
           requestedAction: "Route this exact rollback-history environment ask",
+          authority: "human",
           reason: "App-owned evidence packet should still dispatch.",
         }),
       ].join("\n"),
@@ -394,6 +399,7 @@ describe("approval-dispatch workflow", () => {
           pathId: "path.rp-nodepool-lifecycle.rollback",
           requestedAction:
             "Route this exact rollback-history environment ask through the human:operator lane for spec.rp-nodepool-lifecycle.rollback.",
+          authority: "human",
           approvalId:
             "aks-rp-e2e:approval:path.rp-nodepool-lifecycle.rollback:evidence-archive-ops-escalate-spec-rp-nodepool-lifecycle-rollback-no-rollback-history-20260716.md",
           waitId:
@@ -422,6 +428,7 @@ describe("approval-dispatch workflow", () => {
           pathId: "path.rp-nodepool-lifecycle.rollback",
           requestedAction:
             "Route this exact rollback-history environment ask through the human:operator lane for spec.rp-nodepool-lifecycle.rollback.",
+          authority: "human",
           reason:
             "Re-emit only when prior duplicate proof was local-only ledger contamination.",
         }),
@@ -488,6 +495,7 @@ describe("approval-dispatch workflow", () => {
         packetPath,
         pathId: "path.network-cni-azure-overlay-dual-stack-migration",
         requestedAction: "Approve one bounded live execution",
+        authority: "human",
         reason: "Need durable local send proof for the exact packet.",
         summary:
           "This is the exact execute-approval packet for the migration replay.",
