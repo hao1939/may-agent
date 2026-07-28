@@ -21,7 +21,7 @@ import {
   statSync,
 } from "node:fs";
 import { join } from "node:path";
-import { exec } from "node:child_process";
+import { exec, execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type {
   EventEnvelope,
@@ -35,6 +35,17 @@ import {
 } from "../../../shared/lib/metric-ownership.ts";
 
 const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
+
+export function batchableProjectMetricCommand(
+  command: string,
+): { scriptPath: string; metricId: string } | null {
+  const match = command
+    .trim()
+    .match(/^bun\s+(\S+\/project-metrics\.ts)\s+(\S+)\s+--json$/);
+  if (!match) return null;
+  return { scriptPath: match[1]!, metricId: match[2]! };
+}
 
 // v2 metric types:
 //   gauge   — point-in-time value, can go up/down (rates, ratios, sizes)
@@ -2327,6 +2338,54 @@ export const create: HandlerModule["create"] = (
       )
       .all() as any[];
 
+    // Project metric programs often load the same large task/spec snapshot for
+    // every metric. Running one process per row made the AKS sampler reread the
+    // same state about 35 times and pushed this handler past ten minutes. Batch
+    // compatible commands by script so each project snapshot is loaded once.
+    const batchGroups = new Map<
+      string,
+      Array<{ metricId: string; rowId: string }>
+    >();
+    for (const m of measurable) {
+      if (typeof m.source_command !== "string") continue;
+      const parsed = batchableProjectMetricCommand(m.source_command);
+      if (!parsed) continue;
+      const group = batchGroups.get(parsed.scriptPath) ?? [];
+      group.push({ metricId: parsed.metricId, rowId: String(m.id) });
+      batchGroups.set(parsed.scriptPath, group);
+    }
+
+    const batchHandledIds = new Set<string>();
+    const batchSamples = new Map<string, Record<string, unknown>>();
+    for (const [scriptPath, group] of batchGroups) {
+      if (group.length < 2) continue;
+      for (const item of group) batchHandledIds.add(item.rowId);
+      try {
+        const { stdout } = await execFileAsync(
+          "bun",
+          [scriptPath, "--batch-json", ...group.map((item) => item.metricId)],
+          {
+            cwd: ctx.sdk.paths.root,
+            timeout: 120_000,
+            maxBuffer: 4 * 1024 * 1024,
+          },
+        );
+        const parsed = JSON.parse(stdout.trim()) as Record<
+          string,
+          Record<string, unknown>
+        >;
+        for (const item of group) {
+          const sample = parsed[item.metricId];
+          if (sample) batchSamples.set(item.rowId, sample);
+        }
+      } catch (error) {
+        ctx.sdk.log(
+          "info",
+          `[metrics-snapshot] Batched project metrics failed for ${scriptPath}: ${String(error)}`,
+        );
+      }
+    }
+
     let measured = 0;
     for (const m of measurable) {
       try {
@@ -2334,7 +2393,36 @@ export const create: HandlerModule["create"] = (
         let sampleSize: number | undefined;
         let measuredAt: number | undefined;
         let note: string | undefined;
-        if (m.source_query) {
+        const batchSample = batchSamples.get(String(m.id));
+        if (batchSample) {
+          if (
+            typeof batchSample.value === "number" &&
+            Number.isFinite(batchSample.value)
+          ) {
+            value = batchSample.value;
+          }
+          if (
+            typeof batchSample.sampleSize === "number" &&
+            Number.isFinite(batchSample.sampleSize)
+          ) {
+            sampleSize = batchSample.sampleSize;
+          }
+          if (
+            typeof batchSample.measuredAt === "number" &&
+            Number.isFinite(batchSample.measuredAt)
+          ) {
+            measuredAt = batchSample.measuredAt;
+          }
+          if (typeof batchSample.note === "string") {
+            note = batchSample.note;
+          } else if (batchSample.note != null) {
+            note = JSON.stringify(batchSample.note);
+          }
+        } else if (batchHandledIds.has(String(m.id))) {
+          // Preserve the previous sample when a batch fails or omits a metric;
+          // falling back here would recreate the serial cold-start storm.
+          continue;
+        } else if (m.source_query) {
           const row = db.prepare(m.source_query).get() as any;
           if (row) {
             const vals = Object.values(row).filter(
