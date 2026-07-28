@@ -1055,6 +1055,15 @@ function isRunnableOnPassiveResync(tree: TaskTree, resource: ProjectAppTaskResou
   return false;
 }
 
+function triggerHasDirectProjectComment(event: Record<string, unknown> | undefined): boolean {
+  if (event?.type === "project.comment.created") return true;
+  return Array.isArray(event?.ownerIntentRefs)
+    ? event.ownerIntentRefs.some(
+        (value) => isRecord(value) && value.eventType === "project.comment.created",
+      )
+    : false;
+}
+
 export type ProjectAppTaskQueueEntry = {
   taskId: string;
   options: {
@@ -1089,26 +1098,18 @@ export function listRunnableProjectAppTaskQueueEntries(config: TaskStateConfig):
     const tree = readTaskState(config);
     const nowMs = Date.now();
     const priorityOrder = { P0: 0, P1: 1, P2: 2, P3: 3 } as const;
-    const hasDirectProjectComment = (resource: ProjectAppTaskResource): boolean => {
-      const event = tree.taskTriggers?.[resource.metadata.id]?.event;
-      if (event?.type === "project.comment.created") return true;
-      return Array.isArray(event?.ownerIntentRefs)
-        ? event.ownerIntentRefs.some(
-            (value) =>
-              value !== null &&
-              typeof value === "object" &&
-              (value as { eventType?: unknown }).eventType === "project.comment.created",
-          )
-        : false;
-    };
+    const hasDirectProjectComment = (resource: ProjectAppTaskResource): boolean =>
+      triggerHasDirectProjectComment(tree.taskTriggers?.[resource.metadata.id]?.event);
     const hasPersistedTrigger = (resource: ProjectAppTaskResource): boolean =>
       Boolean(tree.taskTriggers?.[resource.metadata.id]?.event);
     const effectivePriority = (resource: ProjectAppTaskResource) =>
-      effectiveProjectAppTaskPriority(
-        resource,
-        nowMs,
-        tree.taskTriggers?.[resource.metadata.id]?.observedAt,
-      );
+      hasDirectProjectComment(resource)
+        ? "P0"
+        : effectiveProjectAppTaskPriority(
+            resource,
+            nowMs,
+            tree.taskTriggers?.[resource.metadata.id]?.observedAt,
+          );
     return Object.values(tree.resources ?? {})
       .filter((resource) => isRunnableOnPassiveResync(tree, resource))
       .sort((left, right) => {
@@ -1152,16 +1153,15 @@ export function projectAppTaskQueueEntries(
     return [...requested].flatMap((taskId) => {
       const resource = tree.resources?.[taskId];
       if (!resource) return [];
+      const trigger = tree.taskTriggers?.[taskId];
       return [
         {
           taskId,
           options: {
-            front: Boolean(tree.taskTriggers?.[taskId]?.event),
-            priority: effectiveProjectAppTaskPriority(
-              resource,
-              nowMs,
-              tree.taskTriggers?.[taskId]?.observedAt,
-            ),
+            front: Boolean(trigger?.event),
+            priority: triggerHasDirectProjectComment(trigger?.event)
+              ? "P0"
+              : effectiveProjectAppTaskPriority(resource, nowMs, trigger?.observedAt),
           },
         },
       ];

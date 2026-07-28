@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { readTaskState, saveTaskState, type ProjectAppTaskIntent, type TaskStateConfig } from "@may-agent/sdk";
 import { trackProjectAppConditionEvent } from "./project-app-condition-tracker.ts";
+import { ProjectAppTaskQueue } from "./project-app-task-queue.ts";
 import {
   associateProjectAppTaskSession,
   claimObservedProjectAppTask,
@@ -628,6 +629,10 @@ describe("project app task reconciler state", () => {
     observeProjectAppTaskIntent(config, {
       intent: { ...intent("achieve"), id: "work/autonomous-p0", priority: "P0" },
       appOwner: "app-owner",
+      trigger: {
+        type: "pipeline-run.state",
+        data: { runId: "99", status: "completed", result: "succeeded" },
+      },
     });
     observeProjectAppTaskIntent(config, {
       intent: { ...intent("maintain"), id: "runtime/owner-review", priority: "P1" },
@@ -645,6 +650,14 @@ describe("project app task reconciler state", () => {
     });
 
     expect(listRunnableProjectAppTaskIds(config).slice(0, 2)).toEqual(["runtime/owner-review", "work/autonomous-p0"]);
+    const entries = listRunnableProjectAppTaskQueueEntries(config).slice(0, 2);
+    expect(entries).toEqual([
+      { taskId: "runtime/owner-review", options: { front: true, priority: "P0" } },
+      { taskId: "work/autonomous-p0", options: { front: true, priority: "P0" } },
+    ]);
+    const queue = new ProjectAppTaskQueue(1);
+    for (const entry of entries) queue.enqueue(entry.taskId, entry.options);
+    expect(queue.take()).toBe("runtime/owner-review");
   });
 
   it("schedules untriggered P0 before triggered P2 (priority over trigger presence)", () => {
