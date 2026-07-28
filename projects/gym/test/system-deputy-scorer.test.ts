@@ -49,6 +49,21 @@ const decisions: Record<string, Record<string, unknown>> = {
     response_to_hao:
       "I reject a new workflow for this one judgment. I will use the skill now; a workflow fits only a repeated ordered process.",
   },
+  "may-learn-understand-telegram-reply-intent": {
+    ...base,
+    understood_intent:
+      "Hao wants an explanation and recommendation before making a decision.",
+    mode: "explain and recommend",
+    priority: "Understand human intention before changing approval state.",
+    next_action:
+      "Keep the approval pending, explain the bounded five-file cleanup and final safety check, recommend it from the committed Git evidence, and wait for a clear decision.",
+    constraints: [
+      "Do not treat the question as approval, adjustment, hold, rejection, or reroute.",
+      "Do not change files until Hao gives a clear decision.",
+    ],
+    response_to_hao:
+      "This would clean five stale generated files after a final safety check. The real change is already committed in Git, so recovery is available. I recommend the bounded cleanup. Approve it?",
+  },
   "may-learn-route-project-app-request": {
     ...base,
     understood_intent: "Resume the stuck invoice reconciliation.",

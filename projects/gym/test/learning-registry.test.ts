@@ -131,7 +131,7 @@ describe("May learning registry", () => {
     ]);
   });
 
-  test("combines the four system-deputy cases into one approval fingerprint", () => {
+  test("combines the five system-deputy cases into one approval fingerprint", () => {
     const review = buildLearningTrackReview(
       gymRoot,
       "system-deputy-operations",
@@ -149,6 +149,7 @@ describe("May learning registry", () => {
     ).toEqual([
       "may-learn-reject-stale-app-approval",
       "may-learn-select-skill-or-workflow",
+      "may-learn-understand-telegram-reply-intent",
       "may-learn-route-project-app-request",
       "may-learn-diagnose-unconsumed-event",
     ]);

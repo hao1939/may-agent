@@ -1,0 +1,18 @@
+{
+  "name": "may-learn-understand-telegram-reply-intent",
+  "description": "Critical decision: understand a human Telegram reply before changing approval state.",
+  "categories": ["deputy-learning", "system-operations", "human-intent"],
+  "tags": ["may-agent", "telegram", "approval", "learning-development"],
+  "tier": "smoke",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": {
+    "unit": "system-deputy-operations",
+    "tier": 1,
+    "partition": "development",
+    "competencies": ["system.human-intent", "project.app-control"],
+    "criticality": "critical",
+    "variant_family": "telegram-approval-reply-intent"
+  }
+}

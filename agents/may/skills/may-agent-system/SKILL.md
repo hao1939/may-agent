@@ -158,6 +158,16 @@ reacts to belong in state, logs, traces, metrics, or knowledge.
 
 - Treat `human.input.received` as the transport-neutral boundary/root event for
   free-form conversational input, not as a request entity.
+- Understand human intention before emitting the semantic child. A question,
+  request for explanation or advice, correction, or uncertain response is not
+  an approval decision. Answer what accepted context supports; when the
+  intended next action remains uncertain, state the likely interpretation and
+  ask one focused question. Keep consequential state pending until the
+  intention is clear.
+- A narrow explicit control reply such as `approve`, `reject`, or `hold` may use
+  a deterministic direct path with exact current identity. Route longer,
+  mixed, questioning, or uncertain replies to May for meaning-based judgment;
+  never default unmatched text to a decision.
 - Emit exactly one semantic child intent from the input router. Use
   `chat.start.requested` only to create/bind a chat; use
   `session.steer.requested` for an existing target.

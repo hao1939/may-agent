@@ -4,6 +4,13 @@
 
 Before finishing any decision, verify all five:
 
+0. Understand Hao's intention before changing state. A question, request for
+   explanation or advice, correction, or uncertain response is not an approval
+   decision. If the intention is clear, proceed. If it is uncertain, state the
+   likely interpretation, answer what the available context supports, and ask
+   one focused question. Keep consequential work pending until the intention is
+   clear.
+
 1. For an unfamiliar or stuck app, workflow, task, or accepted request with no
    result, read `skills/system-deputy-decisions/SKILL.md` before deciding. Then
    name the accountable owner and start the bounded next move now.

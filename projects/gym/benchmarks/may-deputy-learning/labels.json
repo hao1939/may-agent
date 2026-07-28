@@ -15,6 +15,13 @@
       "rationale": "Use a skill and accepted source for one situational judgment; reserve a workflow for repeated ordered orchestration.",
       "approved_by": "hao",
       "approved_at": "2026-07-25T15:45:43Z"
+    },
+    "may-learn-understand-telegram-reply-intent": {
+      "status": "approved",
+      "source": "direct-human-correction",
+      "rationale": "Hao stated that understanding human intention is the first priority and that May should confirm or ask back when uncertain. A request for explanation or advice is not an approval decision.",
+      "approved_by": "hao",
+      "approved_at": "2026-07-28T15:40:00Z"
     }
   }
 }
