@@ -648,7 +648,11 @@ function projectTaskReadiness(
   activeCount: number,
 ): ProjectTaskReadiness {
   const conditionIds = [...(resource.status.conditionIds ?? [])];
-  if (resource.status.phase === "waiting") {
+  const satisfiedConditionIds = conditionIds.filter(
+    (id) => tree.conditions?.[id]?.status.state === "true",
+  );
+  const conditionWokeTask = resource.status.phase === "waiting" && satisfiedConditionIds.length > 0;
+  if (resource.status.phase === "waiting" && !conditionWokeTask) {
     const childIds = (tree.tasks[resource.metadata.id]?.children ?? []).filter((id) => Boolean(tree.resources?.[id]));
     if (!conditionIds.length && childIds.length) {
       return {
@@ -663,7 +667,7 @@ function projectTaskReadiness(
       related_ids: conditionIds,
     };
   }
-  if (resource.status.phase !== "pending") {
+  if (resource.status.phase !== "pending" && !conditionWokeTask) {
     return {
       state: "not-applicable",
       reason: `Task phase is ${resource.status.phase}`,
@@ -688,7 +692,13 @@ function projectTaskReadiness(
       related_ids: [],
     };
   }
-  return { state: "ready", reason: "Dependencies and capacity allow claim", related_ids: [] };
+  return conditionWokeTask
+    ? {
+        state: "ready",
+        reason: `Condition satisfied: ${satisfiedConditionIds.join(", ")}`,
+        related_ids: satisfiedConditionIds,
+      }
+    : { state: "ready", reason: "Dependencies and capacity allow claim", related_ids: [] };
 }
 
 export function buildProjectTaskTreeProjection(
