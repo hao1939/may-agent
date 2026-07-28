@@ -41,7 +41,8 @@
   "practice_scenarios": [],
   "development_scenarios": [
     "may-learn-reject-stale-app-approval",
-    "may-learn-select-skill-or-workflow"
+    "may-learn-select-skill-or-workflow",
+    "may-learn-understand-telegram-reply-intent"
   ],
   "release_scenarios": [
     "may-learn-route-project-app-request",

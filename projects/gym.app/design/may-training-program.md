@@ -65,6 +65,11 @@ safety or authority boundary. After exhaustion, a fingerprinted checkpoint
 makes the daily refill check a cheap no-op until the curriculum or May's durable
 learning surface changes.
 
+Every approved development case in a benchmark must be listed in that track's
+autonomous-training manifest and learning unit. Loading the curriculum fails if
+an approved case is missing, so a new lesson cannot be reviewed successfully
+and then silently skipped by the live training loop.
+
 ## One bounded synchronous workflow
 
 `improve-agent` performs one ordered improvement burst:

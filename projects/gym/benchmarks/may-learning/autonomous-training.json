@@ -18,7 +18,8 @@
       "benchmark": "may-deputy-learning",
       "scenarios": [
         "may-learn-reject-stale-app-approval",
-        "may-learn-select-skill-or-workflow"
+        "may-learn-select-skill-or-workflow",
+        "may-learn-understand-telegram-reply-intent"
       ],
       "trials": 3
     },

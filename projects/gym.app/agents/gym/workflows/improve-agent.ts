@@ -315,6 +315,36 @@ export function loadCurriculumTargets(gymRoot: string): {
     ) {
       throw new Error("Autonomous May training track is invalid");
     }
+    const benchmarkDir = join(gymRoot, "benchmarks", benchmark);
+    const suite = record(
+      JSON.parse(readFileSync(join(benchmarkDir, "suite.json"), "utf8")),
+    );
+    const labels = record(
+      record(
+        JSON.parse(
+          readFileSync(
+            join(benchmarkDir, String(suite.labels_file ?? "labels.json")),
+            "utf8",
+          ),
+        ),
+      ).labels,
+    );
+    const approvedScenarios = (
+      Array.isArray(suite.scenarios) ? suite.scenarios : []
+    )
+      .filter(
+        (scenario) => record(labels[String(scenario)]).status === "approved",
+      )
+      .map(String);
+    const configured = new Set(scenarios as string[]);
+    const missing = approvedScenarios.filter(
+      (scenario) => !configured.has(scenario),
+    );
+    if (missing.length) {
+      throw new Error(
+        `Autonomous May training track ${id} omits approved scenarios: ${missing.join(", ")}`,
+      );
+    }
     return {
       id,
       benchmark,

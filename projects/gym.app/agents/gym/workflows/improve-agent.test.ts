@@ -94,6 +94,50 @@ function manifest(
 }
 
 describe("single agent-improvement loop", () => {
+  test("rejects an autonomous track that omits approved material", () => {
+    const root = mkdtempSync(join(tmpdir(), "gym-curriculum-"));
+    roots.push(root);
+    const learningDir = join(root, "benchmarks", "may-learning");
+    const benchmarkDir = join(root, "benchmarks", "approved-learning");
+    mkdirSync(learningDir, { recursive: true });
+    mkdirSync(benchmarkDir, { recursive: true });
+    writeFileSync(
+      join(learningDir, "autonomous-training.json"),
+      JSON.stringify({
+        schema_version: 1,
+        agent: "may",
+        tracks: [
+          {
+            id: "approved-learning",
+            benchmark: "approved-learning",
+            scenarios: ["included-case"],
+            trials: 3,
+          },
+        ],
+      }),
+    );
+    writeFileSync(
+      join(benchmarkDir, "suite.json"),
+      JSON.stringify({
+        labels_file: "labels.json",
+        scenarios: ["included-case", "omitted-case"],
+      }),
+    );
+    writeFileSync(
+      join(benchmarkDir, "labels.json"),
+      JSON.stringify({
+        labels: {
+          "included-case": { status: "approved" },
+          "omitted-case": { status: "approved" },
+        },
+      }),
+    );
+
+    expect(() => loadCurriculumTargets(root)).toThrow(
+      "Autonomous May training track approved-learning omits approved scenarios: omitted-case",
+    );
+  });
+
   test("drains every approved learning track and stops at the first decision boundary", async () => {
     const gymRoot = join(import.meta.dir, "../../../../gym");
     const { targets, fingerprint } = loadCurriculumTargets(gymRoot);
@@ -103,6 +147,9 @@ describe("single agent-improvement loop", () => {
       "system-deputy-operations",
       "system-deputy-learning-intake",
     ]);
+    expect(
+      targets.find(({ id }) => id === "system-deputy-operations")?.scenarios,
+    ).toContain("may-learn-understand-telegram-reply-intent");
 
     const visited: string[] = [];
     const exhausted = await runCurriculumSequence(targets, async (target) => {
