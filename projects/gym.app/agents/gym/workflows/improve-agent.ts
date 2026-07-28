@@ -354,9 +354,12 @@ export async function runCurriculumSequence<T extends Record<string, unknown>>(
   for (const target of targets) {
     const result = await runTarget(target);
     results.push(result);
+    const output = record(result.output);
+    const state = String(output.state ?? result.state ?? "");
+    const summary = String(output.summary ?? result.summary ?? "");
     if (
-      result.state !== "converged" ||
-      result.summary !==
+      state !== "converged" ||
+      summary !==
         "May has no actionable failures in the current approved evaluation."
     ) {
       return { state: "stopped", result, results };
@@ -2572,9 +2575,15 @@ export async function runImprovement(
       return sequence.result as unknown as WorkflowResult;
     }
     const evidence = boundedEvidence(
-      sequence.results.flatMap((result) =>
-        Array.isArray(result.evidence) ? result.evidence.map(String) : [],
-      ),
+      sequence.results.flatMap((result) => {
+        const output = record(result.output);
+        const values = Array.isArray(output.evidence)
+          ? output.evidence
+          : Array.isArray(result.evidence)
+            ? result.evidence
+            : [];
+        return values.map(String);
+      }),
     );
     writeJson(checkpointPath, {
       schema_version: 1,

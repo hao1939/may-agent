@@ -108,9 +108,14 @@ describe("single agent-improvement loop", () => {
     const exhausted = await runCurriculumSequence(targets, async (target) => {
       visited.push(target.id);
       return {
-        state: "converged",
+        type: "done",
         summary:
           "May has no actionable failures in the current approved evaluation.",
+        output: {
+          state: "converged",
+          summary:
+            "May has no actionable failures in the current approved evaluation.",
+        },
       };
     });
     expect(exhausted.state).toBe("exhausted");
@@ -120,11 +125,23 @@ describe("single agent-improvement loop", () => {
     const stopped = await runCurriculumSequence(targets, async (target) => {
       visited.push(target.id);
       return target.id === "system-deputy-operations"
-        ? { state: "waiting", summary: "Waiting for exact approval." }
+        ? {
+            type: "done",
+            summary: "Waiting for exact approval.",
+            output: {
+              state: "waiting",
+              summary: "Waiting for exact approval.",
+            },
+          }
         : {
-            state: "converged",
+            type: "done",
             summary:
               "May has no actionable failures in the current approved evaluation.",
+            output: {
+              state: "converged",
+              summary:
+                "May has no actionable failures in the current approved evaluation.",
+            },
           };
     });
     expect(stopped.state).toBe("stopped");
