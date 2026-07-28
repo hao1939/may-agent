@@ -3030,6 +3030,81 @@ describe("project app task reconciler state", () => {
     expect(tree.receipts?.["categorized-task"]).toBeDefined();
   });
 
+  it("treats an identical create action for an existing live task as idempotent", () => {
+    const { config } = fixture();
+    const childIntent: ProjectAppTaskIntent = {
+      id: "already-created-child",
+      parentId: "operations",
+      outcome: "Complete deterministic child work",
+      acceptance: ["The child converges once"],
+      mode: "achieve",
+      owner: "branch-owner",
+      workflow: "known-workflow",
+      input: { workKey: "same-work" },
+      outputs: ["proof.md"],
+      priority: "P1",
+    };
+    observeProjectAppTaskIntent(config, { intent: childIntent, appOwner: "app-owner" });
+    const review = declareAndClaimTask(config, {
+      intent: {
+        id: "live-create-review",
+        parentId: "operations",
+        outcome: "Reconcile deterministic child creation",
+        acceptance: ["Concurrent creation is harmless"],
+        mode: "maintain",
+      },
+      appOwner: "app-owner",
+      handler: "owner:branch-owner",
+    });
+    if (review.kind !== "claimed") throw new Error("expected review claim");
+
+    expect(
+      completeProjectAppTask(config, review, {
+        summary: "the desired child already exists",
+        evidence: ["current task resource"],
+        actions: [{ kind: "create-task", ...childIntent }],
+      }),
+    ).toMatchObject({ status: "applied", actionsApplied: ["already exists already-created-child"] });
+    const tree = readTaskState(config);
+    expect(tree.resources?.["already-created-child"]?.metadata.generation).toBe(1);
+    expect(tree.resources?.["live-create-review"]?.status.phase).toBe("converged");
+  });
+
+  it("rejects an existing live task with a different specification", () => {
+    const { config } = fixture();
+    const review = declareAndClaimTask(config, {
+      intent: {
+        id: "live-create-conflict-review",
+        parentId: "operations",
+        outcome: "Reject conflicting deterministic child creation",
+        acceptance: ["Intent is not overwritten"],
+        mode: "maintain",
+      },
+      appOwner: "app-owner",
+      handler: "owner:branch-owner",
+    });
+    if (review.kind !== "claimed") throw new Error("expected review claim");
+
+    expect(() =>
+      completeProjectAppTask(config, review, {
+        summary: "attempted conflicting reuse",
+        evidence: ["current task resource"],
+        actions: [
+          {
+            kind: "create-task",
+            id: "categorized-task",
+            parentId: "operations",
+            outcome: "Replace existing intent",
+            acceptance: ["This action must be rejected"],
+            mode: "achieve",
+            outputs: [],
+          },
+        ],
+      }),
+    ).toThrow("Handler action task already exists with a different specification: categorized-task");
+    expect(readTaskState(config).resources?.["categorized-task"]?.spec.outcome).toBe("Categorized bounded work");
+  });
+
   it("rejects malformed action payloads and blank evidence before mutation", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
