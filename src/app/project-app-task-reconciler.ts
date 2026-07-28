@@ -1120,8 +1120,8 @@ export function listRunnableProjectAppTaskQueueEntries(config: TaskStateConfig):
         const rightUpdatedAt = String(right.status.updatedAt ?? "");
         return (
           commentOrder ||
-          triggerOrder ||
           leftPriority - rightPriority ||
+          triggerOrder ||
           leftUpdatedAt.localeCompare(rightUpdatedAt) ||
           left.metadata.id.localeCompare(right.metadata.id)
         );
