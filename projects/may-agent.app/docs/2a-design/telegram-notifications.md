@@ -35,6 +35,8 @@ The current code path is:
 ```text
 outbound event
   -> telegram-outbound formats message
+  -> proactive human candidates receive an asynchronous May shadow review
+  -> human.attention.reviewed records May's disposition and reasoning
   -> telegram-client sends message and stores notification_messages row
   -> human replies to that Telegram message
   -> telegram-reply-router reconstructs context
@@ -49,6 +51,11 @@ What works now:
 - Allowed-chat enforcement.
 - Long-polling inbound messages.
 - `message.created` to `human` is forwarded to Telegram.
+- Proactive `message.created` and alert text also receive a read-only May
+  review in shadow mode. Current delivery continues while the runtime records
+  one `human.attention.reviewed` audit event.
+- Gym's existing daily Telegram field review reads both human conversations
+  and proactive shadow reviews, including cases where Hao never replied.
 - Root chat responses stream back to Telegram.
 - Child-session completions are summarized.
 - Telegram message IDs are stored in `notification_messages`.
@@ -66,6 +73,10 @@ What works now:
 
 Observed weaknesses:
 
+- Shadow review does not yet gate delivery or perform May's chosen follow-up.
+  Producers can therefore still turn an internal failure, owner-owned
+  operation, duplicate, stale request, or unsafe secret request into a human
+  interruption until replay evidence supports enforcement.
 - Many notifications are too noisy or repetitive, especially recurring metric
   and handler-failure alerts.
 - Some notification rows still miss `conversationId`, so May-agent may need to
@@ -85,6 +96,240 @@ Observed weaknesses:
   routes explicit delegation through May's persistent conversation.
 - Stale notifications remain actionable. A reply to an old message may wake the
   wrong session or reopen already-resolved work.
+
+## Outbound Human Inbox Deputy
+
+May owns the human inbox. A producer may propose human attention, but it does
+not decide that Hao must be interrupted. Before proactive text reaches
+Telegram, May must understand the intended outcome and choose one disposition:
+
+| Disposition | Meaning | Human delivery |
+| --- | --- | --- |
+| `handle` | May can safely complete, dismiss, retry, record, or merge the work into an existing semantic record under delegated authority. | No |
+| `route` | A project, runtime, or specialist owner must act first. | No |
+| `clarify-producer` | The proposal lacks the exact decision, proof, owner attempt, or consequence needed for judgment. | No |
+| `reject` | The request is stale, unsafe, secret-bearing, or outside the human channel contract. | No |
+| `deliver` | A real human authority, preference, or private-input boundary remains after owner work. | Yes |
+
+This is stronger than a notification filter. May must push the underlying work
+forward. Suppressing a message while leaving its task or escalation orphaned is
+a failure. A handled or routed proposal records what May did, who owns the next
+move, what proof will close it, and when it should be reviewed again.
+For recovered work, that means recording the recovery evidence and closing the
+transient record; a statement that no action is needed is not closure by
+itself.
+
+### Flow
+
+```text
+owner, workflow, evaluator, handler, or digest proposes human attention
+  -> persist the original event and trace
+  -> route the candidate to May's human-attention inbox
+  -> May reads the current issue, owner state, prior attempts, and duplicates
+  -> May chooses handle, route, clarify-producer, reject, or deliver
+  -> record the review disposition against the original event
+  -> only a deliver disposition creates an admitted outbound notification
+  -> Telegram stores and sends the admitted message
+  -> any human reply returns through the existing intention-first reply path
+```
+
+`message.created`, `escalation.created`, project approvals, and their existing
+closure events remain the domain lifecycles. The deputy review is an admission
+and audit fact, not another approval, task, or escalation lifecycle.
+
+Direct responses to a Telegram turn are already solicited conversation and do
+not enter the proactive-attention queue. Proactive digests may use a reviewed
+deterministic policy, but the policy is still owned by May and must preserve the
+same secret, deduplication, and expiry rules.
+
+### May's decision order
+
+May reviews a candidate in this order:
+
+1. Recover the original issue, requested outcome, accountable owner, current
+   state, expected closure, and semantic identity.
+2. Check whether the issue is already resolved, superseded, duplicated, or
+   waiting on a current exact condition.
+   A duplicate of valid open work is `handle`: merge its new evidence into the
+   existing record and preserve the original owner. It is not a new human
+   request. Attach the new run evidence to that record. Deliver an update only
+   if the commit, checks, required action, or decision meaning materially
+   changes.
+3. Ask whether May can safely handle it under established delegation.
+4. If another owner can act, route it there and require closure proof.
+   A failed validation closes with a passing rerun or a precise blocker;
+   diagnosis or a claimed fix alone is progress, not terminal proof. May
+   reviews the returned result.
+5. If the producer has not supplied enough evidence, ask the producer for the
+   missing facts instead of making Hao reconstruct them. A destructive or
+   cleanup proposal is judgeable only when it names the exact affected objects,
+   accountable owner, current state and proof, and final safety check. May
+   reviews the completed packet again before acting or delivering it.
+6. Reject requests that ask for secrets through Telegram. Route authorization
+   and credential retrieval through the accountable runtime owner and secure
+   credential surface. Follow the work until access and the diagnostic finish,
+   or until a real authorization decision remains. Record both checkpoints;
+   merely saying the diagnostic proceeds is not closure proof.
+7. Deliver only when an exact human decision remains. Recommend a choice when
+   current evidence supports one.
+
+May may handle routine operational recovery, low-risk Git-backed cleanup,
+duplicate suppression, stale-state repair, owner routing, and status
+explanation. May must preserve human authority for undelegated policy,
+preference-sensitive benchmark truth, spending, sensitive-access
+authorization, broad irreversible change, and an explicit approval contract.
+May may prepare and recommend those decisions; May cannot silently submit them
+on Hao's behalf.
+
+### Convention over configuration
+
+Any existing `message.created` addressed to `human` or `human:operator` is a
+candidate automatically. Producers do not register with the deputy, select a
+policy, create a deputy task, or enter another lifecycle. They should include
+the owner, requested outcome, evidence, and a stable domain identity when those
+facts already exist. Missing facts cause May to inspect the trace or return the
+proposal; they do not create more configuration.
+
+May records one correlated `human.attention.reviewed` audit event. It contains
+the source event id, disposition, understood intent, reason, next owner or
+action, and the proposed delivered text when delivery is justified. This event
+is a review fact, not a task, approval, or message lifecycle.
+
+The understood intent describes what the producer proposes; it does not adopt
+that proposal as May's instruction. The disposition, reason, next action, and
+delivered text must not contradict one another.
+Constraints also preserve time: “take no action during this review” remains
+compatible with a bounded future action after explicit approval. Record that
+condition instead of turning the review restriction into a permanent ban.
+
+Use existing identities for deduplication in this order: approval id, blocker
+id, conversation id, repository + pull request + required action, or a stable
+producer key. Run ids, timestamps, session ids, and wording changes never make
+the same issue new. Add a new identity mechanism only after real failures show
+that these conventions are insufficient.
+
+The Telegram transport has one admission check. In shadow mode it sends the
+current message and records what May would have done. In enforcement mode it
+delivers only a successful `deliver` review. Review failure preserves the
+candidate and fails closed. Direct conversation responses bypass this check.
+
+### Decision packet
+
+When May chooses `deliver`, the human message contains only what Hao needs to
+decide:
+
+```text
+Decision needed
+Approve the exact Gym scorer change?
+
+May recommends
+Approve.
+
+Why you are needed
+This changes the approved meaning of May's evaluation.
+
+Proof
+May chose the correct cleanup in all three trials. Only the wording-based
+scorer failed. The scorer self-test and regression controls pass.
+
+Reply
+approve — apply this fingerprint and run a fresh baseline
+reject — keep the current scorer and revise the proposal
+
+After your reply
+May will apply the decision, verify the new baseline, and report the result.
+```
+
+The required parts are:
+
+1. one decision in plain language;
+2. May's recommendation, or a clear statement that evidence is balanced;
+3. the exact reason human authority is required;
+4. the minimum proof needed to judge the recommendation;
+5. bounded options with consequences;
+6. what May will do and verify after the reply.
+
+These parts apply when a human decision remains. An accepted digest is an
+information delivery, not a decision packet. It states the useful facts and
+never invents approve/reject choices, a recommendation, or a pause threat.
+
+Keep a decision packet at 120 words or fewer and a requested digest at 90 words
+or fewer. Internal suppression notes should normally fit within 80 words. The
+after-reply step
+preserves the exact approved scope and named proof. A generic canary or health
+check does not replace a promised fresh baseline or other explicit result.
+Compactness removes repetition and internal detail, never a proof fact needed
+to explain the current failure or judge the recommendation.
+
+Reject vague menus such as “accept, assign an owner, provide input, or hold.”
+May should know the owner and the missing input before interrupting Hao. Ask
+one focused question.
+
+### Examples
+
+| Candidate | May disposition | Result |
+| --- | --- | --- |
+| One handler timeout followed by a successful retry | `handle` | Record recovery; include it in the ops digest. |
+| Provider failure with an accountable project owner and recovery condition | `route` | Wake the owner and track the later recovery proof. |
+| “Approve cleanup of some stale files” without exact paths or current proof | `clarify-producer` | Ask the producer for bounded scope and proof. |
+| A current, proven Gym scorer change whose truth is preference-sensitive | `deliver` | Recommend a choice and send the exact decision packet. |
+| Request to paste a base64 kubeconfig into Telegram | `reject` | Route the runtime owner to the secure credential surface. |
+| The same pull request reported again under a new campaign run | `handle` | Update the existing semantic record; send nothing unless the required action changed. |
+| Requested daily Ops or Scout digest | `deliver` | Send the compact digest under its accepted policy. |
+
+### Failure behavior
+
+If May's review fails, preserve the candidate and retry through the May/runtime
+owner. Keep raw text internal. A review failure never turns into automatic
+human delivery. For urgent candidates, use a short bounded retry and a safe
+structured fallback assembled only from validated fields.
+
+Every admitted notification expires or closes. A later review should dismiss
+resolved and superseded candidates instead of reopening them.
+
+### Regular behavior review
+
+Gym's existing daily Telegram field review also reads proactive candidates and
+May's `human.attention.reviewed` facts. It compares the proposed message, May's
+disposition, any delivered text, owner handoff, closure evidence, and a later
+human correction when one exists.
+
+Review every critical failure and a small sample of successful decisions.
+Prefer strong reusable evidence over volume. Classify the responsible layer:
+May judgment or knowledge, Telegram routing, the producer or owner workflow,
+the evaluator, or runtime. Strong evidence may draft a lesson, benchmark, or
+incident, but it never changes approved truth automatically.
+
+`may-agent.app` owns the shared transport, review execution, recovery, and
+health of this convention. May states the intended platform outcome and proof;
+the existing `tech-lead` owner diagnoses and implements platform changes.
+Underlying project work remains in its accountable app. Do not copy routed
+work into the `may-agent.app` task tree.
+
+### Proof before rollout
+
+Replay recent Telegram candidates before enforcing the gate. The proof set
+must include recovered handler errors, project-owned product failures, weak
+approval packets, a valid Gym approval, a secret request, duplicate pull
+request notices, and accepted digests.
+
+Measure:
+
+- correct `handle` / `route` / `clarify-producer` / `reject` / `deliver`
+  judgment;
+- zero critical authority violations;
+- zero secret-bearing human messages;
+- human-required precision;
+- semantic duplicate suppression;
+- time from proposal to owner action or human decision;
+- closure proof after May handles or routes a proposal; and
+- completeness of delivered decision packets.
+
+Start in shadow mode: record May's disposition while current delivery remains
+unchanged. The existing daily review measures disagreements and closure. Enable
+admission enforcement only after the approved Gym cases and recent replay show
+zero critical authority violations. Production changes stay Git-committed so
+rollback is a normal revert.
 
 ## Desired Interaction Model
 
@@ -794,32 +1039,39 @@ High-value refinements:
 
 ## Current Implementation And Remaining Refinements
 
-1. Tighten notification formatting.
+1. Graduate the human-attention review from shadow mode.
+   - Train and replay the approved human-inbox cases plus recent real traffic.
+   - Require zero critical authority or secret-channel violations before
+     enforcement.
+   - In enforcement mode, admit only `deliver`; make `handle`, `route`,
+     `clarify-producer`, and `reject` produce an accountable internal next move.
+
+2. Tighten notification formatting.
    - Add a small formatter for `message.created` to human.
    - Preserve `subject`, `kind`, `severity`, `conversationId`,
      `conversation.originalIssue`, and `actionHints` in
      `notification_messages.data`.
 
-2. Improve reply acknowledgement.
+3. Improve reply acknowledgement.
    - Confirm delivery to May immediately.
    - Confirm final result or closure when May finishes handling the reply.
    - Keep internal event names in logs, not the chat message.
 
-3. Add direct read-model commands.
+4. Add direct read-model commands.
    - Implement `/status`, `/projects`, `/project`, `/tasks`, `/sessions`.
    - Keep them fast and deterministic.
 
-4. Make commands fail narrow.
+5. Make commands fail narrow.
    - `/cancel` without a target must not become cancel-all.
    - Unknown slash commands show help or an error.
    - Help describes `@agent` as May-managed delegation.
 
-5. Add notification lifecycle controls.
+6. Add notification lifecycle controls.
    - Dedupe by `dedupKey`.
    - Support quiet mode.
    - Detect stale replies using `staleAfterMs`.
 
-6. Add metrics.
+7. Add metrics.
    - `telegram.notification-context-rate`
    - `telegram.reply-actionable-rate`
    - `telegram.notification-dedupe-suppressed`

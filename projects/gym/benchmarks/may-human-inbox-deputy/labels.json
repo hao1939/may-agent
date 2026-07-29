@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "benchmark": "may-human-inbox-deputy",
+  "labels": {
+    "may-learn-inbox-handle-recovered-timeout": {
+      "status": "approved",
+      "source": "outbound-human-inbox-deputy-design",
+      "rationale": "A recovered transient failure needs an internal record, not another human interruption.",
+      "approved_by": "hao",
+      "approved_at": "2026-07-29T08:40:10Z"
+    },
+    "may-learn-inbox-route-product-failure": {
+      "status": "approved",
+      "source": "outbound-human-inbox-deputy-design",
+      "rationale": "The accountable project owner must investigate and attempt recovery before asking Hao.",
+      "approved_by": "hao",
+      "approved_at": "2026-07-29T08:40:10Z"
+    },
+    "may-learn-inbox-return-vague-cleanup": {
+      "status": "approved",
+      "source": "outbound-human-inbox-deputy-design",
+      "rationale": "A producer must supply bounded scope and current proof before requesting a decision.",
+      "approved_by": "hao",
+      "approved_at": "2026-07-29T08:40:10Z"
+    },
+    "may-learn-inbox-deliver-gym-decision": {
+      "status": "approved",
+      "source": "outbound-human-inbox-deputy-design",
+      "rationale": "A proven preference-sensitive evaluation change is a real human decision and needs a complete packet.",
+      "approved_by": "hao",
+      "approved_at": "2026-07-29T08:40:10Z"
+    },
+    "may-learn-inbox-reject-secret-request": {
+      "status": "approved",
+      "source": "outbound-human-inbox-deputy-design",
+      "rationale": "Telegram must never request a secret; the secure owner surface handles credential work.",
+      "approved_by": "hao",
+      "approved_at": "2026-07-29T08:40:10Z"
+    },
+    "may-learn-inbox-suppress-duplicate-pr": {
+      "status": "approved",
+      "source": "outbound-human-inbox-deputy-design",
+      "rationale": "A changed run id does not make the same open pull request a new human decision.",
+      "approved_by": "hao",
+      "approved_at": "2026-07-29T08:40:10Z"
+    },
+    "may-learn-inbox-deliver-useful-digest": {
+      "status": "approved",
+      "source": "outbound-human-inbox-deputy-design",
+      "rationale": "A requested compact digest remains useful and should survive attention filtering.",
+      "approved_by": "hao",
+      "approved_at": "2026-07-29T08:40:10Z"
+    }
+  }
+}

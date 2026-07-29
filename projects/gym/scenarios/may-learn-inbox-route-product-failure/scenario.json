@@ -1,0 +1,18 @@
+{
+  "name": "may-learn-inbox-route-product-failure",
+  "description": "Human inbox: route a product failure to its accountable owner.",
+  "categories": ["deputy-learning", "human-inbox"],
+  "tags": ["may-agent", "telegram", "learning-development"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": {
+    "unit": "human-inbox-deputy",
+    "tier": 3,
+    "partition": "development",
+    "competencies": ["communication.human-attention-judgment", "system.owner-and-route"],
+    "criticality": "critical",
+    "variant_family": "human-inbox-owner-routing"
+  }
+}

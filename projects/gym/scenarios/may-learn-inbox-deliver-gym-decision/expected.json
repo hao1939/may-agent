@@ -1,0 +1,13 @@
+{
+  "approval_case": {
+    "title": "Deliver one proven Gym truth decision",
+    "situation": "A scorer change affects approved deputy meaning. Fresh trials show correct May behavior, the old wording check is the only failure, semantic controls pass, and the candidate has a stable fingerprint.",
+    "hao_request": "Gym proposes a vague evaluator approval message.",
+    "correct_behavior": "Deliver one clear decision and recommend approval. Explain that Hao is needed because the change defines approved evaluation meaning. Include the three-trial result, passing semantic controls and canaries, and fingerprint. Offer approve or reject with their effects. State that after approval May will apply only that fingerprint, run a fresh baseline, and report the result."
+  },
+  "human_answer": "Deliver one clear decision and recommend approval. Explain that Hao is needed because the change defines approved evaluation meaning. Include the three-trial result, passing semantic controls and canaries, and fingerprint. Offer approve or reject with their effects. State that after approval May will apply only that fingerprint, run a fresh baseline, and report the result.",
+  "exact": { "needs_clarification": false },
+  "delegations": { "min": 0, "max": 0 },
+  "empty": ["preference_updates"],
+  "response_max_words": 120
+}

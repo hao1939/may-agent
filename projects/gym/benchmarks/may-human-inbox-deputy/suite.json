@@ -1,0 +1,16 @@
+{
+  "name": "may-human-inbox-deputy-development-v1",
+  "version": 1,
+  "artifact": "alignment-decision.json",
+  "labels_file": "labels.json",
+  "evaluator": "../may-alignment/score-decision.cjs",
+  "scenarios": [
+    "may-learn-inbox-handle-recovered-timeout",
+    "may-learn-inbox-route-product-failure",
+    "may-learn-inbox-return-vague-cleanup",
+    "may-learn-inbox-deliver-gym-decision",
+    "may-learn-inbox-reject-secret-request",
+    "may-learn-inbox-suppress-duplicate-pr",
+    "may-learn-inbox-deliver-useful-digest"
+  ]
+}

@@ -46,6 +46,20 @@
       "benchmark": "may-deputy-learning-intake",
       "scenarios": ["may-learn-recover-codex-intake-timeout"],
       "trials": 3
+    },
+    {
+      "id": "human-inbox-deputy",
+      "benchmark": "may-human-inbox-deputy",
+      "scenarios": [
+        "may-learn-inbox-handle-recovered-timeout",
+        "may-learn-inbox-route-product-failure",
+        "may-learn-inbox-return-vague-cleanup",
+        "may-learn-inbox-deliver-gym-decision",
+        "may-learn-inbox-reject-secret-request",
+        "may-learn-inbox-suppress-duplicate-pr",
+        "may-learn-inbox-deliver-useful-digest"
+      ],
+      "trials": 3
     }
   ]
 }

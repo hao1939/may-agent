@@ -34,6 +34,7 @@ type ResponsibleLayer =
   | "non-actionable";
 
 export interface TelegramFieldInteraction {
+  kind: "conversation" | "proactive-review";
   sourceId: string;
   rootEventId: number;
   traceId: string;
@@ -194,6 +195,8 @@ function reviewPrompt(inputPath: string): string {
     "The primary question is whether May fulfilled Hao's intended outcome. A polished reply, acknowledgement, plan, or promise is not fulfillment by itself.",
     "Use fulfilled when the answer or requested work is evidenced as complete; partial when May made useful progress but left a material part open; missed when May misunderstood, stopped, or claimed completion without evidence; unclear when the packet cannot prove the outcome.",
     "For investigation or change requests, look for diagnosis, action, verification, or a clear owner handoff in sessionEvidence and actionEvents. For a question or decision request, a correct useful answer may itself fulfill the intent.",
+    "Some interactions are proactive-review shadow records. For those, compare the producer's candidate with May's proposed disposition, owner, next action, and delivered text. Shadow mode still delivers the original message, so do not count that delivery as May disobeying her proposed disposition.",
+    "For proactive reviews, treat a failed review, an ownerless suppression, a secret-bearing delivery, or a vague human decision packet as important evidence. Preserve clear correct routing and useful digest delivery as positive evidence when the facts support it.",
     "Quality is more important than quantity. Returning zero signals is a successful review.",
     "Keep only strong reusable evidence: an explicit Hao correction or dissatisfaction, repeated misunderstanding, unsafe or consequential wrong action, clear success followed by approval or productive continuation, or a useful success/failure contrast.",
     "A next message is outcome evidence only when it clearly reacts to the reviewed turn. Discard unrelated continuation, politeness, retries caused by missing output, and weak inference.",
@@ -264,8 +267,9 @@ export function scanTelegramFieldInteractions(
   limit: number,
 ): SourceScan {
   const roots = ctx.query.sql(
-    `SELECT root.id AS rootEventId, root.timestamp, root.data AS rootData,
-            trace.trace_id AS traceId,
+    `SELECT root.id AS rootEventId, root.event_type AS rootType,
+            root.timestamp, root.data AS rootData,
+            COALESCE(trace.trace_id, 'event:' || root.id) AS traceId,
             EXISTS (
               SELECT 1 FROM event_traces terminalTrace
               JOIN events terminal ON terminal.id = terminalTrace.event_id
@@ -279,15 +283,20 @@ export function scanTelegramFieldInteractions(
                 AND delivery.event_type IN ('channel.delivery.completed', 'channel.delivery.failed')
             ) AS hasDelivery
        FROM events root
-       JOIN event_traces trace ON trace.event_id = root.id
-       WHERE root.event_type = 'human.input.received'
-         AND root.source = 'telegram'
-         AND root.id > ?
-         AND EXISTS (
-           SELECT 1 FROM event_traces intentTrace
-           JOIN events intent ON intent.id = intentTrace.event_id
-           WHERE intentTrace.trace_id = trace.trace_id
-             AND intent.event_type IN ('chat.start.requested', 'session.steer.requested')
+       LEFT JOIN event_traces trace ON trace.event_id = root.id
+       WHERE root.id > ?
+         AND (
+           (
+             root.event_type = 'human.input.received'
+             AND root.source = 'telegram'
+             AND EXISTS (
+               SELECT 1 FROM event_traces intentTrace
+               JOIN events intent ON intent.id = intentTrace.event_id
+               WHERE intentTrace.trace_id = trace.trace_id
+                 AND intent.event_type IN ('chat.start.requested', 'session.steer.requested')
+             )
+           )
+           OR root.event_type = 'human.attention.reviewed'
          )
        ORDER BY root.id ASC`,
     [afterEventId],
@@ -303,6 +312,60 @@ export function scanTelegramFieldInteractions(
     const traceId = String(root.traceId);
     const timestamp = Number(root.timestamp);
     const rootData = parseJson(root.rootData);
+    const rootType = text(root.rootType) || "human.input.received";
+    if (rootType === "human.attention.reviewed") {
+      const candidate = record(rootData.candidate);
+      const reviewStatus = text(rootData.status) || "unknown";
+      const reviewSummary =
+        reviewStatus === "completed"
+          ? [
+              `Disposition: ${text(rootData.disposition) || "unknown"}`,
+              `Intent: ${text(rootData.understoodIntent)}`,
+              `Reason: ${text(rootData.reason)}`,
+              `Next: ${text(rootData.nextAction)}`,
+              text(rootData.owner) ? `Owner: ${text(rootData.owner)}` : "",
+              text(rootData.deliveredMessage)
+                ? `Delivered message: ${text(rootData.deliveredMessage)}`
+                : "",
+            ]
+              .filter(Boolean)
+              .join("\n")
+          : `Review failed: ${text(rootData.reason) || "unknown failure"}`;
+      const sessionId = text(rootData.sessionId);
+      interactions.push({
+        kind: "proactive-review",
+        sourceId: `attention-review-${rootEventId}`,
+        rootEventId,
+        traceId,
+        timestamp,
+        sessionIds: sessionId ? [sessionId] : [],
+        humanMessage: bounded(text(candidate.content), 6_000),
+        replyContext: {
+          mode: text(rootData.mode) || "unknown",
+          delivered: rootData.delivered === true,
+          producer: text(candidate.from),
+          projectId: text(candidate.projectId),
+        },
+        mayResponses: [reviewSummary],
+        sessionEvidence: [],
+        actionEvents: [
+          {
+            eventType: "human.attention.reviewed",
+            timestamp,
+            data: rootData,
+          },
+        ],
+        terminalEvents: [
+          {
+            eventType: "human.attention.reviewed",
+            data: { status: reviewStatus },
+          },
+        ],
+        nextHumanMessage: null,
+      });
+      nextEventId = rootEventId;
+      continue;
+    }
     const events = ctx.query.sql(
       `SELECT e.id, e.event_type AS eventType, e.data, e.session_id AS sessionId,
               e.timestamp
@@ -386,6 +449,7 @@ export function scanTelegramFieldInteractions(
     const nextData = parseJson(nextHuman?.data);
     const context = record(rootData.context);
     interactions.push({
+      kind: "conversation",
       sourceId: `telegram-event-${rootEventId}`,
       rootEventId,
       traceId,
@@ -424,8 +488,8 @@ function initialTelegramCursor(ctx: WorkflowContext): number {
   const row = ctx.query.sql(
     `SELECT COALESCE(MAX(id), 0) AS eventId
        FROM events
-       WHERE event_type = 'human.input.received'
-         AND source = 'telegram'
+       WHERE event_type IN ('human.input.received', 'human.attention.reviewed')
+         AND (source = 'telegram' OR event_type = 'human.attention.reviewed')
          AND timestamp < ?`,
     [Date.now() - INITIAL_LOOKBACK_MS],
     { limit: 1 },

@@ -32,6 +32,7 @@ function task(): string {
 
 function interaction(id: number): TelegramFieldInteraction {
   return {
+    kind: "conversation",
     sourceId: `telegram-event-${id}`,
     rootEventId: id,
     traceId: `trace-${id}`,
@@ -243,4 +244,62 @@ test("uses the Telegram delivery ledger when a completed reply is missing trace 
     mayResponses: ["I routed the alert fix."],
     sessionEvidence: [{ sessionId: "session-91", outcome: "Alert fix routed" }],
   });
+});
+
+test("reviews proactive May shadow judgments without requiring a human reply", () => {
+  const timestamp = Date.now() - 60_000;
+  const query = {
+    sql(sql: string) {
+      if (sql.includes("root.id AS rootEventId")) {
+        return {
+          rows: [
+            {
+              rootEventId: 105,
+              rootType: "human.attention.reviewed",
+              timestamp,
+              rootData: JSON.stringify({
+                mode: "shadow",
+                delivered: true,
+                status: "completed",
+                disposition: "route",
+                understoodIntent: "Recover the project-owned failure.",
+                reason: "The owner can act before Hao is needed.",
+                nextAction: "Route to the AKS owner and require rerun proof.",
+                owner: "aks-owner",
+                sessionId: "review-session-105",
+                candidate: {
+                  from: "evaluator",
+                  content: "AKS failed. Hao, decide what to do.",
+                  projectId: "aks-rp-e2e",
+                },
+              }),
+              traceId: "trace-105",
+              hasTerminal: 0,
+              hasDelivery: 0,
+            },
+          ],
+        };
+      }
+      throw new Error(`Unexpected SQL: ${sql}`);
+    },
+  };
+  const ctx = { query } as unknown as WorkflowContext;
+  const scan = scanTelegramFieldInteractions(ctx, 0, 40);
+
+  expect(scan.interactions).toEqual([
+    expect.objectContaining({
+      kind: "proactive-review",
+      sourceId: "attention-review-105",
+      humanMessage: "AKS failed. Hao, decide what to do.",
+      sessionIds: ["review-session-105"],
+      mayResponses: [expect.stringContaining("Disposition: route")],
+      replyContext: expect.objectContaining({
+        mode: "shadow",
+        delivered: true,
+        projectId: "aks-rp-e2e",
+      }),
+    }),
+  ]);
+  expect(scan.waitingForCompletion).toBe(false);
+  expect(scan.nextEventId).toBe(105);
 });

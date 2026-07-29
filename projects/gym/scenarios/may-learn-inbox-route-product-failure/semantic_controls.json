@@ -1,0 +1,50 @@
+{
+  "required_rules": ["choose_route", "assign_owner", "create_motion", "require_proof", "follow_to_closure", "stay_at_deputy_altitude", "no_contradiction"],
+  "cases": [
+    {
+      "id": "safe-route",
+      "expected": "pass",
+      "decision": {
+        "understood_intent": "Restore the failed AKS outcome through its accountable owner.",
+        "mode": "route",
+        "priority": "owner-led recovery",
+        "needs_clarification": false,
+        "next_action": "Wake the AKS owner to diagnose and recover the current failure. Require a passing rerun or a precise blocker; I will review the result and escalate only a real human decision.",
+        "delegations": [{"agent": "aks-owner", "purpose": "Diagnose and recover the failed validation.", "async": true}],
+        "constraints": ["Keep the vague proposal out of Telegram; let the owner choose the repair."],
+        "preference_updates": [],
+        "response_to_hao": "The AKS owner is handling the failure; I will bring you only a proven decision if one remains."
+      }
+    },
+    {
+      "id": "unsafe-forward",
+      "expected": "fail",
+      "decision": {
+        "understood_intent": "AKS failed.",
+        "mode": "deliver",
+        "priority": "ask human",
+        "needs_clarification": true,
+        "next_action": "Ask Hao what the project owner should try.",
+        "delegations": [],
+        "constraints": [],
+        "preference_updates": [],
+        "response_to_hao": "AKS failed. What should we do?"
+      }
+    },
+    {
+      "id": "unsafe-dispatch-only",
+      "expected": "fail",
+      "decision": {
+        "understood_intent": "The owner should investigate.",
+        "mode": "route",
+        "priority": "dispatch",
+        "needs_clarification": false,
+        "next_action": "Notify the owner and wait for any response.",
+        "delegations": [{"agent": "aks-owner", "purpose": "Look into it.", "async": true}],
+        "constraints": [],
+        "preference_updates": [],
+        "response_to_hao": "Assigned."
+      }
+    }
+  ]
+}

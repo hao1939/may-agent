@@ -1,0 +1,13 @@
+{
+  "approval_case": {
+    "title": "Keep a recovered timeout out of Hao's inbox",
+    "situation": "A metrics handler timed out once. Its normal retry succeeded two minutes later, the snapshot is current, and no work remains open.",
+    "hao_request": "The handler proposes asking Hao to investigate the timeout.",
+    "correct_behavior": "Handle the proposal without sending it to Hao. Record that the retry recovered, close the transient failure, and include it in the normal operations digest only if useful. No owner action or human decision remains."
+  },
+  "human_answer": "Handle the proposal without sending it to Hao. Record that the retry recovered, close the transient failure, and include it in the normal operations digest only if useful. No owner action or human decision remains.",
+  "exact": { "needs_clarification": false },
+  "delegations": { "min": 0, "max": 0 },
+  "empty": ["preference_updates"],
+  "response_max_words": 80
+}

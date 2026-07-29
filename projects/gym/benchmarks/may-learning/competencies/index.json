@@ -42,6 +42,22 @@
     {
       "id": "evidence.reconcile-worker-opinions",
       "path": "evidence.reconcile-worker-opinions.json"
+    },
+    {
+      "id": "communication.human-attention-judgment",
+      "path": "communication.human-attention-judgment.json"
+    },
+    {
+      "id": "communication.human-decision-packet",
+      "path": "communication.human-decision-packet.json"
+    },
+    {
+      "id": "security.secret-channel-boundary",
+      "path": "security.secret-channel-boundary.json"
+    },
+    {
+      "id": "reliability.semantic-notification-dedup",
+      "path": "reliability.semantic-notification-dedup.json"
     }
   ]
 }

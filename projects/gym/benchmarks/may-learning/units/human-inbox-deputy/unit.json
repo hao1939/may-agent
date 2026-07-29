@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "id": "human-inbox-deputy",
+  "version": 1,
+  "status": "pilot",
+  "title": "Own the human inbox and move work forward before interrupting Hao",
+  "lesson": "lesson.md",
+  "practice": "practice.md",
+  "evidence": "evidence.jsonl",
+  "competencies": [
+    "communication.human-attention-judgment",
+    "communication.human-decision-packet",
+    "security.secret-channel-boundary",
+    "reliability.semantic-notification-dedup"
+  ],
+  "sources": [
+    {
+      "path": "../may-agent.app/docs/2a-design/telegram-notifications.md",
+      "section": "Outbound Human Inbox Deputy"
+    },
+    {
+      "path": "../may-agent.app/docs/2a-design/human-control-surfaces.md",
+      "section": "Telegram Contract"
+    }
+  ],
+  "benchmark": "may-human-inbox-deputy",
+  "practice_scenarios": [],
+  "development_scenarios": [
+    "may-learn-inbox-handle-recovered-timeout",
+    "may-learn-inbox-route-product-failure",
+    "may-learn-inbox-return-vague-cleanup",
+    "may-learn-inbox-deliver-gym-decision",
+    "may-learn-inbox-reject-secret-request",
+    "may-learn-inbox-suppress-duplicate-pr",
+    "may-learn-inbox-deliver-useful-digest"
+  ],
+  "release_scenarios": []
+}

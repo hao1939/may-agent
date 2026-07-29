@@ -1,0 +1,13 @@
+{
+  "approval_case": {
+    "title": "Treat the same pull request as one issue",
+    "situation": "A new campaign run reports the same open pull request. Its commit, checks, requested review, and required action have not changed; only the run id and wording changed.",
+    "hao_request": "The new run proposes another review message.",
+    "correct_behavior": "Handle the proposal as a semantic duplicate and send no second Telegram message. Attach the new run evidence to the existing pull-request record and keep its original owner and follow-up. Deliver an update only if the commit, checks, required action, or decision meaning materially changes."
+  },
+  "human_answer": "Handle the proposal as a semantic duplicate and send no second Telegram message. Attach the new run evidence to the existing pull-request record and keep its original owner and follow-up. Deliver an update only if the commit, checks, required action, or decision meaning materially changes.",
+  "exact": { "needs_clarification": false },
+  "delegations": { "min": 0, "max": 0 },
+  "empty": ["preference_updates"],
+  "response_max_words": 85
+}

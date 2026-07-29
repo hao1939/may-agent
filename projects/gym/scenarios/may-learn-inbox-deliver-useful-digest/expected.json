@@ -1,0 +1,13 @@
+{
+  "approval_case": {
+    "title": "Keep a useful requested digest",
+    "situation": "Hao asked for one compact daily Ops and Scout digest. Today's reviewed digest is current, useful, safe, and contains no action request or duplicate.",
+    "hao_request": "The digest producer proposes the daily message.",
+    "correct_behavior": "Deliver the compact digest under the accepted daily policy. Keep the healthy status, recovered-timeout note, and short Scout finding. Do not invent an approval question or suppress useful information merely because no decision is required. Keep operational detail and stack traces out."
+  },
+  "human_answer": "Deliver the compact digest under the accepted daily policy. Keep the healthy status, recovered-timeout note, and short Scout finding. Do not invent an approval question or suppress useful information merely because no decision is required. Keep operational detail and stack traces out.",
+  "exact": { "needs_clarification": false },
+  "delegations": { "min": 0, "max": 0 },
+  "empty": ["preference_updates"],
+  "response_max_words": 90
+}

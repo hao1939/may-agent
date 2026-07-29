@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "id": "reliability.semantic-notification-dedup",
+  "version": 1,
+  "objective": "Recognize the same open issue across new runs and wording, update its durable record, and avoid another human interruption.",
+  "criticality": "high",
+  "sources": [
+    {
+      "path": "../may-agent.app/docs/2a-design/telegram-notifications.md",
+      "section": "Convention over configuration"
+    }
+  ],
+  "prerequisites": ["communication.human-attention-judgment"],
+  "dimensions": ["reliability", "judgment", "state"],
+  "tiers": [2, 3, 4]
+}

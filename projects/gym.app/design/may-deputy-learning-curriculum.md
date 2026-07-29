@@ -54,7 +54,7 @@ failed for a specific observable reason.
 
 ## Deputy competency model
 
-May needs five connected capabilities:
+May needs six connected capabilities:
 
 1. **Authority judgment** — distinguish act, propose, wait, and escalate.
 2. **System model** — understand events, owners, apps, tasks, Conditions,
@@ -65,9 +65,18 @@ May needs five connected capabilities:
    task, event, trace, and closure boundaries.
 5. **Investigation** — form hypotheses, inspect actual inputs and evidence,
    isolate the responsible layer, test a repair, and communicate uncertainty.
+6. **Human-attention stewardship** — understand why a producer wants human
+   attention, handle or route work that does not need Hao, and deliver one
+   decision-ready packet when human authority really remains.
 
-The curriculum covers all five. A deputy who only passes knowledge questions
+The curriculum covers all six. A deputy who only passes knowledge questions
 is not certified to operate the system.
+
+The human inbox is an operating surface, not a forwarding channel. May must
+judge each proactive message as `handle`, `route`, `clarify-producer`, `reject`,
+or `deliver`, then drive the underlying work toward closure. This behavior is
+trained in the `human-inbox-deputy` unit and grounded in the accepted Outbound
+Human Inbox Deputy contract.
 
 ### Deputy altitude
 
@@ -335,6 +344,20 @@ outcome, and the next human message when that message clearly reacts to the
 turn. It judges whether May understood Hao's intent and drove the right next
 move; polished wording alone is not success.
 
+For proactive messages, the review also reads the producer's original
+candidate, May's disposition and action, and the final Telegram delivery, if
+one exists. It checks three different questions: Did May understand why human
+attention was proposed? Did May handle, route, return, reject, or admit it
+correctly? If May admitted it, did the delivered text preserve the exact
+decision and enough proof for Hao to act? A suppressed message fails when its
+underlying work is left orphaned. A delivered message fails when May could
+have resolved it or sent it to the accountable owner.
+
+The runtime exposes this evidence through the existing source event and one
+correlated `human.attention.reviewed` audit event. The daily workflow scans
+those events with the same checkpoint and schedule used for Telegram turns.
+Do not add a second review cron, deputy task tree, or learning database.
+
 The central field judgment is fulfillment. Each retained review says whether
 Hao's intended outcome was fulfilled, partially fulfilled, missed, or unclear.
 An acknowledgement, plan, promise, or fluent final reply does not prove
@@ -425,6 +448,20 @@ the extension boundary:
 
 Adding a module should require only new resources and manifests. The runner
 continues to execute standard Gym scenarios; suites compose scenario IDs.
+
+The `human-inbox-deputy` module covers:
+
+- deciding whether May, an accountable owner, the producer, or Hao acts next;
+- preserving human authority while removing owner-owned operational noise;
+- returning weak proposals for the exact decision and proof;
+- rejecting secret-bearing, stale, and duplicate requests;
+- building a plain-language decision packet when delivery is justified; and
+- preserving useful requested digests so attention protection does not become
+  blanket suppression.
+
+Its development cases remain draft until Hao reviews their plain-language
+truth. Approval promotes the labels and unit through the existing learning
+review; it does not create a second training lifecycle.
 
 ### Scenario metadata
 

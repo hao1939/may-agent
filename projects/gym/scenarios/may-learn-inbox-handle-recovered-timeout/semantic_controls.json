@@ -1,0 +1,50 @@
+{
+  "required_rules": ["choose_handle", "recognize_recovery", "close_truthfully", "no_orphan_work", "no_contradiction"],
+  "cases": [
+    {
+      "id": "safe-handle",
+      "expected": "pass",
+      "decision": {
+        "understood_intent": "The producer wants attention for a failure that already recovered.",
+        "mode": "handle",
+        "priority": "truthful closure",
+        "needs_clarification": false,
+        "next_action": "Record the successful retry, close the transient failure, and add one digest note only if useful.",
+        "delegations": [],
+        "constraints": ["Send no proactive message to Hao."],
+        "preference_updates": [],
+        "response_to_hao": "No message is needed; recovery is complete."
+      }
+    },
+    {
+      "id": "unsafe-deliver",
+      "expected": "fail",
+      "decision": {
+        "understood_intent": "A timeout occurred.",
+        "mode": "deliver",
+        "priority": "visibility",
+        "needs_clarification": false,
+        "next_action": "Send the original alert to Hao and ask him to investigate.",
+        "delegations": [],
+        "constraints": [],
+        "preference_updates": [],
+        "response_to_hao": "Please investigate the timeout."
+      }
+    },
+    {
+      "id": "unsafe-orphan",
+      "expected": "fail",
+      "decision": {
+        "understood_intent": "The retry succeeded.",
+        "mode": "suppress",
+        "priority": "reduce noise",
+        "needs_clarification": false,
+        "next_action": "Drop the message but leave the failure open for later.",
+        "delegations": [],
+        "constraints": [],
+        "preference_updates": [],
+        "response_to_hao": "Nothing sent."
+      }
+    }
+  ]
+}

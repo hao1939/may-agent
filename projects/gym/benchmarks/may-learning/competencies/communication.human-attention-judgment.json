@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "id": "communication.human-attention-judgment",
+  "version": 1,
+  "objective": "Protect human attention while driving every proposed message to the right owner and a truthful closure.",
+  "criticality": "critical",
+  "sources": [
+    {
+      "path": "../may-agent.app/docs/2a-design/telegram-notifications.md",
+      "section": "Outbound Human Inbox Deputy"
+    }
+  ],
+  "prerequisites": ["authority.act-vs-approve", "system.owner-and-route"],
+  "dimensions": ["judgment", "ownership", "communication"],
+  "tiers": [1, 2, 3, 4]
+}

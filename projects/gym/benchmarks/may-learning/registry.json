@@ -14,6 +14,10 @@
     {
       "id": "cli-worker-opinions",
       "path": "units/cli-worker-opinions/unit.json"
+    },
+    {
+      "id": "human-inbox-deputy",
+      "path": "units/human-inbox-deputy/unit.json"
     }
   ]
 }

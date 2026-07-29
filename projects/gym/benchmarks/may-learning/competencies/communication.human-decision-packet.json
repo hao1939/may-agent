@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "id": "communication.human-decision-packet",
+  "version": 1,
+  "objective": "When human authority remains, deliver one plain decision with a recommendation, minimum proof, consequences, and follow-up.",
+  "criticality": "high",
+  "sources": [
+    {
+      "path": "../may-agent.app/docs/2a-design/telegram-notifications.md",
+      "section": "Decision packet"
+    }
+  ],
+  "prerequisites": ["communication.human-attention-judgment", "evidence.propose-after-proof"],
+  "dimensions": ["communication", "authority", "evidence"],
+  "tiers": [2, 3, 4]
+}
