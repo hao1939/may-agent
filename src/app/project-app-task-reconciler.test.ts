@@ -2028,6 +2028,8 @@ describe("project app task reconciler state", () => {
       },
     });
 
+    expect(listRunnableProjectAppTaskIds(config)).not.toContain("runtime/owner-review");
+
     const completed = completeProjectAppTask(config, claim, {
       summary: "current review complete",
     });
