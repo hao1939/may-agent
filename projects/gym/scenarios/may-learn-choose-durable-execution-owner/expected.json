@@ -7,7 +7,7 @@
   },
   "human_answer": "Start the existing task through the event-tracked asynchronous coding-worker path and require the worker to produce the artifact and tests. Keep the platform app owner responsible for reviewing the result and terminal proof. Present the exact verified artifact for approval, then use the supervisor-owned deploy or restart path so the operation survives May stopping. Reject a direct untracked CLI call, May doing the worker's patch, and an ad-hoc restart script.",
   "exact": { "needs_clarification": false },
-  "delegations": { "min": 1, "max": 1 },
+  "delegations": { "min": 0, "max": 0 },
   "empty": ["preference_updates"],
   "response_max_words": 95
 }

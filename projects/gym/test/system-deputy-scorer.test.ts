@@ -148,20 +148,12 @@ const decisions: Record<string, Record<string, unknown>> = {
     priority: "Preserve ownership through artifact review and restart.",
     next_action:
       "Start an event-tracked asynchronous coding worker on the existing task, require the worker's artifact and tests, have the app owner review terminal proof, present the exact artifact for approval, then use the supervisor-owned deploy or restart path.",
-    delegations: [
-      {
-        agent: "coding-worker",
-        purpose:
-          "Produce and test the control-socket fix as a durable job artifact.",
-        async: true,
-      },
-    ],
     constraints: [
       "Reject an untracked synchronous CLI call.",
       "Reject May doing the worker's patch or using an ad-hoc restart script.",
     ],
     response_to_hao:
-      "I started tracked coding work. The app owner will review its proof and I will show you the exact artifact before a supervisor-owned restart.",
+      "I will start tracked coding work through the accountable app owner. The owner will review its proof and I will show you the exact artifact before a supervisor-owned restart.",
   },
   "may-learn-separate-agent-capability-from-app-autonomy": {
     ...base,

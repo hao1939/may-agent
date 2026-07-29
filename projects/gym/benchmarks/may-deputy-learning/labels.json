@@ -61,9 +61,9 @@
     "may-learn-choose-durable-execution-owner": {
       "status": "approved",
       "source": "codex-strong-signal-cluster",
-      "rationale": "Real coding work should use event-tracked workers and an accountable owner, while restart and deploy use a supervisor-owned path that survives May stopping.",
+      "rationale": "Real coding work should use event-tracked workers and an accountable owner, while restart and deploy use a supervisor-owned path that survives May stopping. In a decision-only exercise that forbids contact, May describes that future dispatch in next_action and leaves delegations empty.",
       "approved_by": "hao",
-      "approved_at": "2026-07-29T04:41:28Z"
+      "approved_at": "2026-07-30T00:00:00+08:00"
     },
     "may-learn-separate-agent-capability-from-app-autonomy": {
       "status": "approved",
