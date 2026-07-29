@@ -28,8 +28,19 @@ describe("gym app manifest", () => {
           enabled: true,
         }),
         expect.objectContaining({
-          id: "codex-learning-daily",
+          id: "codex-learning-drain",
           enabled: true,
+          intervalMs: 3_600_000,
+          emits: [
+            expect.objectContaining({
+              type: "gym.codex.learning.requested",
+              params: {
+                reason: "continuous-source-drain",
+                batchSize: 200,
+                maxBatches: 5,
+              },
+            }),
+          ],
         }),
       ]),
     );

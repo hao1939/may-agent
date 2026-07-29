@@ -401,14 +401,14 @@ export default defineProjectApp({
       ],
     },
     {
-      id: "codex-learning-daily",
+      id: "codex-learning-drain",
       enabled: true,
-      intervalMs: 86_400_000,
+      intervalMs: 3_600_000,
       emits: [
         codexLearningRequested({
-          reason: "daily",
+          reason: "continuous-source-drain",
           batchSize: 200,
-          maxBatches: 1,
+          maxBatches: 5,
         }),
       ],
     },

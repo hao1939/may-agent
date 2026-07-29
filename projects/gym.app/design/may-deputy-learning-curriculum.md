@@ -305,6 +305,21 @@ pass. Supported candidates remain a learning backlog until they are rejected,
 absorbed by an existing case, or promoted into a reviewed lesson. Prefer a few
 transferable cases over one case per conversation or preference.
 
+### Historical source drain
+
+Gym drains Codex history in bounded, restartable batches until both configured
+stores report zero unreviewed Hao turns. Each wake reviews at most five batches
+of 200 turns. If turns remain, the hourly source wake continues from the durable
+checkpoint. A batch with no strong signal still advances the checkpoint because
+discarding weak material is a completed review, not a reason to scan it again.
+
+Extraction, consolidation, and design review must all succeed before a wake
+advances its checkpoint. A failure preserves every unreviewed turn for retry.
+Once the backlog is empty, the same wake performs only a cheap source scan; it
+uses a model again only when new turns arrive or accepted design changes require
+review. This cadence controls progress, not evidence quality: the explicit,
+repeated, or independently validated signal gate remains unchanged.
+
 ### Competency resources
 
 A competency is the stable unit of coverage. Store it independently of any
