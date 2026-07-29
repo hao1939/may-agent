@@ -62,3 +62,11 @@ lifecycle, or request approval for the exact proven artifact.
 3. Code should publish deterministic facts and route them. The accountable
    owner uses task context and terminal evidence to judge completion. Reject a
    metric rule that silently closes contextual work.
+4. A project app steers, tracks, audits, and recovers work. Portable domain
+   behavior, runners, and truth stay with the domain project and its owner.
+5. A merge conflict, failed test, or similar in-scope difficulty stays in the
+   same owner task until repaired and verified. Create a new wait or escalation
+   only for an exact external fact or real authority boundary.
+6. Real coding work uses an event-tracked worker that produces an artifact for
+   owner review. An approved restart or deploy uses the supervisor-owned path
+   so the operation survives May stopping.

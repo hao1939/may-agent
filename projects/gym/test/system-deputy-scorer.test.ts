@@ -110,6 +110,59 @@ const decisions: Record<string, Record<string, unknown>> = {
     response_to_hao:
       "Reject auto-closing the task when the metric reaches zero. Code should report the fact; the app owner should decide completion from the task outcome and terminal proof.",
   },
+  "may-learn-keep-domain-work-with-project-owner": {
+    ...base,
+    understood_intent:
+      "Give May reliable control while keeping domain work portable and project-owned.",
+    mode: "preserve project boundary",
+    priority: "Use the app as control plane, not as a domain worker.",
+    next_action:
+      "Reject moving the runner and invoice logic into the app. Keep them with the portable project and its owner, use the existing app task to route the outcome, track and recover progress, keep evaluation in audit, and review terminal evidence.",
+    constraints: [
+      "Keep domain behavior, runners, and truth with the project owner.",
+      "Do not ask Hao for project implementation choices.",
+    ],
+    response_to_hao:
+      "Reject moving it into `.app`. The project stays portable; its app steers the owner and follows the invoice result to proof.",
+  },
+  "may-learn-keep-repair-in-owner-task": {
+    ...base,
+    understood_intent:
+      "Unblock ordinary release repair without fragmenting ownership.",
+    mode: "continue owner task",
+    priority: "Repair and verify the same release task.",
+    next_action:
+      "Reject closing the attempt and creating repair tasks. Keep the same owner resolving the merge conflict and failed test, continue the independent docs child, review terminal release proof, and wait or escalate only if repair finds a real outside fact or authority boundary.",
+    constraints: [
+      "Do not ask Hao to choose routine repair order.",
+      "Keep the existing task lineage through verification.",
+    ],
+    response_to_hao:
+      "I will keep the same owner task repairing and verifying the release while the independent docs work continues.",
+  },
+  "may-learn-choose-durable-execution-owner": {
+    ...base,
+    understood_intent:
+      "Start durable coding work now and return a proven artifact before restart.",
+    mode: "tracked delegation",
+    priority: "Preserve ownership through artifact review and restart.",
+    next_action:
+      "Start an event-tracked asynchronous coding worker on the existing task, require the worker's artifact and tests, have the app owner review terminal proof, present the exact artifact for approval, then use the supervisor-owned deploy or restart path.",
+    delegations: [
+      {
+        agent: "coding-worker",
+        purpose:
+          "Produce and test the control-socket fix as a durable job artifact.",
+        async: true,
+      },
+    ],
+    constraints: [
+      "Reject an untracked synchronous CLI call.",
+      "Reject May doing the worker's patch or using an ad-hoc restart script.",
+    ],
+    response_to_hao:
+      "I started tracked coding work. The app owner will review its proof and I will show you the exact artifact before a supervisor-owned restart.",
+  },
   "may-learn-route-project-app-request": {
     ...base,
     understood_intent: "Resume the stuck invoice reconciliation.",

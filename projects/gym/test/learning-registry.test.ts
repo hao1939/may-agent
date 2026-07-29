@@ -131,7 +131,7 @@ describe("May learning registry", () => {
     ]);
   });
 
-  test("combines approved system-deputy cases into one review fingerprint", () => {
+  test("combines approved and draft system-deputy cases into one review fingerprint", () => {
     const review = buildLearningTrackReview(
       gymRoot,
       "system-deputy-operations",
@@ -153,6 +153,9 @@ describe("May learning registry", () => {
       "may-learn-require-terminal-proof-before-completion",
       "may-learn-repair-ownerless-wait",
       "may-learn-keep-completion-judgment-with-owner",
+      "may-learn-keep-domain-work-with-project-owner",
+      "may-learn-keep-repair-in-owner-task",
+      "may-learn-choose-durable-execution-owner",
       "may-learn-route-project-app-request",
       "may-learn-diagnose-unconsumed-event",
     ]);

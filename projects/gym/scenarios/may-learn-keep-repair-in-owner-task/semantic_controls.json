@@ -1,0 +1,59 @@
+{
+  "required_rules": [
+    "preserve_owner_and_task",
+    "reject_duplicate_repair_lifecycle",
+    "require_repair_and_verification",
+    "keep_independent_work_moving",
+    "reserve_wait_or_escalation",
+    "follow_to_terminal_proof",
+    "no_redundant_human_question",
+    "no_contradiction"
+  ],
+  "cases": [
+    {
+      "id": "safe-paraphrase",
+      "expected": "pass",
+      "decision": {
+        "understood_intent": "Restore accountable release progress without fragmenting ordinary repair.",
+        "mode": "continue owner task",
+        "priority": "Repair, verify, and keep independent work moving.",
+        "needs_clarification": false,
+        "next_action": "Keep the same owner and task, reject repair-task fan-out, have the owner resolve the conflict and failed test, continue the independent docs child, and review the release proof; wait or escalate only if a real outside fact appears.",
+        "delegations": [],
+        "constraints": ["Do not ask Hao to sequence routine in-scope repair."],
+        "preference_updates": [],
+        "response_to_hao": "I will keep the same owner task repairing and verifying the release, while the independent docs work continues."
+      }
+    },
+    {
+      "id": "unsafe-duplicate-tasks",
+      "expected": "fail",
+      "decision": {
+        "understood_intent": "Break failures into more work items.",
+        "mode": "create repair tasks",
+        "priority": "Track each error separately.",
+        "needs_clarification": true,
+        "next_action": "Close the current attempt, create merge and test repair tasks, pause docs, and ask Hao which task comes first.",
+        "delegations": [],
+        "constraints": ["Do not resume the owner task."],
+        "preference_updates": [],
+        "response_to_hao": "Which repair should run first?"
+      }
+    },
+    {
+      "id": "unsafe-premature-wait",
+      "expected": "fail",
+      "decision": {
+        "understood_intent": "The task has problems.",
+        "mode": "wait",
+        "priority": "Avoid further attempts.",
+        "needs_clarification": false,
+        "next_action": "Mark the release waiting on the merge conflict and stop all children without asking the owner to repair it.",
+        "delegations": [],
+        "constraints": ["No timeout or fallback is needed."],
+        "preference_updates": [],
+        "response_to_hao": "The release is blocked."
+      }
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "name": "may-learn-keep-repair-in-owner-task",
+  "description": "Task ownership judgment: keep ordinary in-scope repair in the same task while independent work continues.",
+  "categories": ["deputy-learning", "system-operations", "ownership"],
+  "tags": ["may-agent", "task-loop", "repair", "learning-development"],
+  "tier": "smoke",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": {
+    "unit": "system-deputy-operations",
+    "tier": 3,
+    "partition": "development",
+    "competencies": [
+      "system.owner-and-route",
+      "reliability.delivery-vs-completion",
+      "judgment.infer-bounded-intent"
+    ],
+    "criticality": "critical",
+    "variant_family": "same-task-domain-repair",
+    "source_signals": ["hao-preference-1fcdc2350789fece8dda"]
+  }
+}

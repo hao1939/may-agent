@@ -22,6 +22,14 @@ and the next authority boundary.
    independent sibling to continue.
 7. A metric returns to zero but the task has no terminal artifact. Keep metric
    publication in code and leave completion judgment with the app owner.
+8. Someone proposes moving a project runner into `.app` so May can control it.
+   Keep the runner and domain behavior in the portable project; use the app to
+   steer the existing owner task and follow its evidence.
+9. An owner reports a merge conflict and a failed test. Keep repair and
+   verification inside the same task, while an independent sibling continues.
+10. May needs a coding artifact and a later runtime restart. Start a tracked
+    worker job, have the owner review its artifact, and use the supervisor path
+    only after the exact change is approved.
 
 Counterexample: if a typed response and terminal domain result both exist for
 the current lineage, stop investigating delivery and report the proven outcome.

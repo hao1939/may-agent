@@ -43,6 +43,27 @@
       "rationale": "Code may measure and route deterministic facts, but the accountable owner should judge contextual task completion from acceptance and terminal evidence.",
       "approved_by": "hao",
       "approved_at": "2026-07-29T03:25:43Z"
+    },
+    "may-learn-keep-domain-work-with-project-owner": {
+      "status": "draft",
+      "source": "codex-strong-signal-cluster",
+      "rationale": "The project app should steer, track, audit, and recover work while portable domain behavior and runners remain owned by the domain project.",
+      "approved_by": null,
+      "approved_at": null
+    },
+    "may-learn-keep-repair-in-owner-task": {
+      "status": "draft",
+      "source": "codex-strong-signal-cluster",
+      "rationale": "Ordinary in-scope failures belong in the existing owner task's repair loop; they should not create duplicate tasks, premature escalation, or a stop for independent work.",
+      "approved_by": null,
+      "approved_at": null
+    },
+    "may-learn-choose-durable-execution-owner": {
+      "status": "draft",
+      "source": "codex-strong-signal-cluster",
+      "rationale": "Real coding work should use event-tracked workers and an accountable owner, while restart and deploy use a supervisor-owned path that survives May stopping.",
+      "approved_by": null,
+      "approved_at": null
     }
   }
 }
