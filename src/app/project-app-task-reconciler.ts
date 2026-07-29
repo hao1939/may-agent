@@ -1068,6 +1068,7 @@ function isRunnableOnPassiveResync(tree: TaskTree, resource: ProjectAppTaskResou
   if (!task) return false;
   const intent = resourceIntent(resource);
   if (!dependenciesSatisfied(tree, intent)) return false;
+  if (currentResourceAttempt(tree, resource)) return false;
   const pendingTrigger = tree.taskTriggers?.[task.id]?.event;
   if (pendingTrigger) return true;
   if (resource.metadata.generation > resource.status.observedGeneration) return true;
@@ -1077,7 +1078,7 @@ function isRunnableOnPassiveResync(tree: TaskTree, resource: ProjectAppTaskResou
     return liveChildTaskIds(tree, task).length === 0 && !(resource.status.conditionIds?.length ?? 0);
   }
   if (resource.status.phase === "attention") return needsOwnerHandoff(tree, resource);
-  if (resource.status.phase === "running") return !currentResourceAttempt(tree, resource);
+  if (resource.status.phase === "running") return true;
   return false;
 }
 
