@@ -66,11 +66,11 @@
       "approved_at": "2026-07-29T04:41:28Z"
     },
     "may-learn-separate-agent-capability-from-app-autonomy": {
-      "status": "draft",
+      "status": "approved",
       "source": "codex-strong-signal-cluster",
       "rationale": "An agent should remain independently usable capability and judgment; an app and its infrastructure organize durable autonomous work without coupling events, tasks, databases, or scheduling into the agent core.",
-      "approved_by": null,
-      "approved_at": null
+      "approved_by": "hao",
+      "approved_at": "2026-07-29T05:00:32Z"
     }
   }
 }
