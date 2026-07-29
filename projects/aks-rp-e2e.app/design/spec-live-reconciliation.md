@@ -241,6 +241,15 @@ unrelated merge.
   the replayed task source, and queues one fresh exact run. Only a replay
   conflict or a red admission result creates new facts that require another
   agent judgment.
+- When `origin/dev` advances after an exact run passes, code collects the
+  merge base, source paths, target paths, exact protected-path overlap, and the
+  exact-spec knowledge-model comparison. The domain agent judges whether those
+  intervening changes invalidate the live proof. Code may integrate an
+  agent-accepted proof only when the merge leaves every tested protected path
+  byte-for-byte unchanged; a conflict or changed protected path requires a
+  refreshed source and a fresh exact run. File-name allowlists must not make
+  this domain judgment. This allows independent normalization leaves to finish
+  in parallel without accepting a proof whose tested behavior changed.
 - An exact terminal run for the current task source is collected and judged
   before scenario-normalization replay considers a newer `origin/dev`. A failed
   run is domain evidence, not stale source to discard. If that judgment commits

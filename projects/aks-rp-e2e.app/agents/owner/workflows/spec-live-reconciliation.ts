@@ -632,26 +632,6 @@ export function relevantKnowledgeModelUnchanged(input: {
   return JSON.stringify(source) === JSON.stringify(target);
 }
 
-function proofPreservingTargetPath(
-  path: string,
-  knowledgeModelStable: boolean,
-): boolean {
-  if (path === "model/knowledge-map/model.json") {
-    return knowledgeModelStable;
-  }
-  if (path.startsWith("model/knowledge-map/views/")) return true;
-  return (
-    path.startsWith("features/") ||
-    path.startsWith("model/specs/") ||
-    path.startsWith("model/features/") ||
-    path.startsWith("evidence/") ||
-    path.startsWith("design/") ||
-    path.endsWith(".md") ||
-    path.startsWith("skills/") ||
-    /(?:^|\/)[^/]+\.(?:test|spec)\.[cm]?[jt]sx?$/.test(path)
-  );
-}
-
 function mergeSafeScenarioAggregatePath(path: string): boolean {
   return /^features\/[^/]+\/compact\/staging\.plan\.json$/.test(path);
 }
@@ -674,23 +654,21 @@ export function proofProtectedScenarioPaths(paths: string[]): string[] {
   );
 }
 
-export function proofPreservingScenarioIntegration(input: {
-  sourcePaths: string[];
-  targetPaths: string[];
-  knowledgeModelStable?: boolean;
-}): boolean {
-  const sourcePaths = new Set(proofProtectedScenarioPaths(input.sourcePaths));
-  if (
-    input.sourcePaths.filter(Boolean).length === 0 ||
-    input.targetPaths.length === 0
-  ) {
-    return false;
+export function targetAdvanceProofDecisionProblem(
+  decision: AgentDecision,
+): string | null {
+  if (!["accepted-pass", "test-current"].includes(decision.decision)) {
+    return "target-advance proof review must return accepted-pass when the exact live proof still applies or test-current when current source requires a fresh exact run";
   }
-  return input.targetPaths.every(
-    (path) =>
-      proofPreservingTargetPath(path, input.knowledgeModelStable === true) &&
-      (!sourcePaths.has(path) || mergeSafeScenarioAggregatePath(path)),
-  );
+  if (
+    decision.liveReady !== undefined ||
+    decision.condition !== undefined ||
+    decision.terminalDisposition !== undefined ||
+    decision.recovery !== undefined
+  ) {
+    return "target-advance proof review is a bounded judgment only; omit liveReady, condition, terminalDisposition, and recovery";
+  }
+  return null;
 }
 
 export function shouldReplayScenarioBeforeRunReview(input: {
@@ -4546,6 +4524,7 @@ export async function reconcileSpecLive(
     if (integrationMode(targetBranch) === "direct") {
       let integratedCommit = "";
       let lastPushError = "";
+      let targetAdvanceEvidence: string[] = [];
 
       for (let attempt = 1; attempt <= 3; attempt += 1) {
         git(repoDir, ["fetch", "origin", targetBranch]);
@@ -4614,11 +4593,57 @@ export async function reconcileSpecLive(
                 targetCommit: targetRef,
                 specId,
               }));
-          const proofPreserving = proofPreservingScenarioIntegration({
-            sourcePaths,
-            targetPaths,
-            knowledgeModelStable,
-          });
+          const protectedSourcePaths = proofProtectedScenarioPaths(sourcePaths);
+          const protectedSourcePathSet = new Set(protectedSourcePaths);
+          const overlappingProtectedPaths = targetPaths.filter((path) =>
+            protectedSourcePathSet.has(path),
+          );
+          let proofPreserving = false;
+          if (directScenarioNormalization) {
+            const judgmentHead = git(workspaceDir, [
+              "rev-parse",
+              "HEAD",
+            ]).stdout;
+            const targetAdvanceJudgment = await askAgent(
+              ctx,
+              [
+                `${specId} passed exact live run ${runId} at ${sourceCommit}, and current ${targetRef} advanced to ${git(repoDir, ["rev-parse", targetRef]).stdout}.`,
+                "Judge whether the exact live proof still applies after the intervening target changes. Inspect the current Git diff and task evidence yourself; the path lists below are collected facts, not a verdict.",
+                `Merge base: ${mergeBase.status === 0 ? mergeBase.stdout : "unavailable"}`,
+                `Task source paths: ${sourcePaths.join(", ") || "none"}`,
+                `Intervening target paths: ${targetPaths.join(", ") || "none"}`,
+                `Protected-path overlap: ${overlappingProtectedPaths.join(", ") || "none"}`,
+                `Exact-spec knowledge-model projection stable: ${String(knowledgeModelStable)}`,
+                "Return accepted-pass only when the tested behavior and declared expectations remain valid. Leave source unchanged; code will merge and independently reject any change to a tested protected path.",
+                "Return test-current when any intervening change can affect this proof; the workflow will refresh the candidate and queue a fresh exact run.",
+                "Do not edit, commit, merge, push, queue ADO, create a task, or edit app state.",
+                "Task:",
+                ctx.task,
+              ].join("\n\n"),
+              {
+                scenarioNormalization: true,
+                continueDomainWorkOnValidation: true,
+                validateDecision: targetAdvanceProofDecisionProblem,
+              },
+            );
+            if (
+              git(workspaceDir, ["rev-parse", "HEAD"]).stdout !==
+                judgmentHead ||
+              cleanWorkspace(workspaceDir)
+            ) {
+              return ownerResult(
+                ctx,
+                "Target-advance proof review changed the task worktree; integration was refused.",
+                [
+                  ...targetAdvanceJudgment.evidence,
+                  `workspace:${workspaceDir}`,
+                ],
+              );
+            }
+            targetAdvanceEvidence = targetAdvanceJudgment.evidence;
+            proofPreserving =
+              targetAdvanceJudgment.decision === "accepted-pass";
+          }
           if (proofPreserving) {
             const merge = git(
               workspaceDir,
@@ -4626,8 +4651,6 @@ export async function reconcileSpecLive(
               true,
             );
             if (merge.status === 0) {
-              const protectedSourcePaths =
-                proofProtectedScenarioPaths(sourcePaths);
               const changedTestedPath = protectedSourcePaths.length
                 ? git(
                     workspaceDir,
@@ -4688,7 +4711,7 @@ export async function reconcileSpecLive(
               ["merge", "--no-ff", "--no-edit", targetRef],
               true,
             );
-            let refreshEvidence: string[] = [];
+            let refreshEvidence: string[] = [...targetAdvanceEvidence];
             if (refresh.status !== 0) {
               const decision = await askAgent(
                 ctx,
@@ -4874,6 +4897,7 @@ export async function reconcileSpecLive(
         summary,
         evidence: [
           ...proof.evidence,
+          ...targetAdvanceEvidence,
           `proof:${proofPath(contextDir)}`,
           `pipeline-run:${runId}`,
           `source-commit:${sourceCommit}`,

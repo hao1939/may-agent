@@ -30,8 +30,8 @@ import {
   exactStrictInventoryInstruction,
   exactLiveTargetInstruction,
   discoverTaskRuns,
-  proofPreservingScenarioIntegration,
   proofProtectedScenarioPaths,
+  targetAdvanceProofDecisionProblem,
   relevantKnowledgeModelUnchanged,
   shouldReplayScenarioBeforeRunReview,
   shouldReplayReviewedTerminalWriteback,
@@ -2092,49 +2092,7 @@ describe("spec-live-reconciliation workflow", () => {
     expect(source).not.toContain("await reconcileSpecLive(ctx");
   });
 
-  test("preserves scenario proof only for disjoint domain-path target advances", () => {
-    expect(
-      proofPreservingScenarioIntegration({
-        sourcePaths: [
-          "features/net-integration/tests/external-acr.test.ts",
-          "model/specs/net-integration/external-acr.json",
-        ],
-        targetPaths: [
-          "features/managementplane-addon/tests/version-upgrade.test.ts",
-          "model/specs/managementplane-addon/version-upgrade.json",
-        ],
-      }),
-    ).toBe(true);
-    expect(
-      proofPreservingScenarioIntegration({
-        sourcePaths: [
-          "evidence/archive/shared-normalization-review.md",
-          "features/secops/tests/fips.test.ts",
-        ],
-        targetPaths: [
-          "evidence/archive/shared-normalization-review.md",
-          "features/runtime-container/tests/runtimeclass.test.ts",
-        ],
-      }),
-    ).toBe(true);
-    expect(
-      proofPreservingScenarioIntegration({
-        sourcePaths: ["features/net-integration/tests/external-acr.test.ts"],
-        targetPaths: ["features/net-integration/tests/external-acr.test.ts"],
-      }),
-    ).toBe(false);
-    expect(
-      proofPreservingScenarioIntegration({
-        sourcePaths: [
-          "features/net-integration/compact/staging.plan.json",
-          "features/net-integration/tests/external-acr.test.ts",
-        ],
-        targetPaths: [
-          "features/net-integration/compact/staging.plan.json",
-          "features/net-integration/tests/external-keyvault.test.ts",
-        ],
-      }),
-    ).toBe(true);
+  test("keeps target-advance proof validity as an agent judgment", () => {
     expect(
       proofProtectedScenarioPaths([
         "features/net-integration/compact/staging.plan.json",
@@ -2142,53 +2100,34 @@ describe("spec-live-reconciliation workflow", () => {
       ]),
     ).toEqual(["features/net-integration/tests/external-acr.test.ts"]);
     expect(
-      proofPreservingScenarioIntegration({
-        sourcePaths: ["features/net-integration/tests/external-acr.test.ts"],
-        targetPaths: ["runner/queue-ado.ts"],
+      targetAdvanceProofDecisionProblem({
+        decision: "accepted-pass",
+        summary: "intervening changes do not affect the exact proof",
+        evidence: ["reviewed current diff"],
       }),
-    ).toBe(false);
+    ).toBeNull();
     expect(
-      proofPreservingScenarioIntegration({
-        sourcePaths: ["features/network-cni/tests/cilium.test.ts"],
-        targetPaths: [
-          "model/knowledge-map/model.json",
-          "model/knowledge-map/views/path-summary.json",
-        ],
-        knowledgeModelStable: true,
+      targetAdvanceProofDecisionProblem({
+        decision: "test-current",
+        summary: "runner change affects execution semantics",
+        evidence: ["reviewed current diff"],
       }),
-    ).toBe(true);
+    ).toBeNull();
     expect(
-      proofPreservingScenarioIntegration({
-        sourcePaths: ["features/network-cni/tests/cilium.test.ts"],
-        targetPaths: ["model/knowledge-map/model.json"],
-        knowledgeModelStable: false,
+      targetAdvanceProofDecisionProblem({
+        decision: "committed",
+        summary: "changed source",
+        evidence: ["commit"],
       }),
-    ).toBe(false);
+    ).toContain("must return accepted-pass");
     expect(
-      proofPreservingScenarioIntegration({
-        sourcePaths: [
-          "features/net-integration/tests/outbound-migration-natgw-to-none.test.ts",
-          "runner/live-admission-classifier.ts",
-        ],
-        targetPaths: [
-          "README.md",
-          "skills/aks-rp-e2e/agents/openai.yaml",
-          "runner/scenario-lib/arm-rest.test.ts",
-        ],
+      targetAdvanceProofDecisionProblem({
+        decision: "accepted-pass",
+        summary: "proof still applies",
+        evidence: ["reviewed current diff"],
+        liveReady: true,
       }),
-    ).toBe(true);
-    expect(
-      proofPreservingScenarioIntegration({
-        sourcePaths: ["features/net-integration/tests/external-acr.test.ts"],
-        targetPaths: ["spec-runner.yaml"],
-      }),
-    ).toBe(false);
-    expect(
-      proofPreservingScenarioIntegration({
-        sourcePaths: [],
-        targetPaths: ["design/scenario-normalization.md"],
-      }),
-    ).toBe(false);
+    ).toContain("bounded judgment only");
   });
 
   test("compares only the exact spec knowledge-model projection", () => {
