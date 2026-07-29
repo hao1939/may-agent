@@ -22,7 +22,10 @@
         "may-learn-understand-telegram-reply-intent",
         "may-learn-require-terminal-proof-before-completion",
         "may-learn-repair-ownerless-wait",
-        "may-learn-keep-completion-judgment-with-owner"
+        "may-learn-keep-completion-judgment-with-owner",
+        "may-learn-keep-domain-work-with-project-owner",
+        "may-learn-keep-repair-in-owner-task",
+        "may-learn-choose-durable-execution-owner"
       ],
       "trials": 3
     },
