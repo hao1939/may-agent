@@ -13,7 +13,7 @@ supported by trustworthy evidence and no approved regression.
 ## Mental model
 
 ```text
-human intent, daily refill check, or May revision
+human intent, daily refill check, Telegram field evidence, or May revision
   -> improve/may                         one maintain task
   -> evaluate approved behavior
   -> classify every non-pass independently
@@ -36,6 +36,15 @@ app-specific status machine. Findings and candidate generations are evidence
 inside the one task. A workflow attempt is synchronous and ordered; the task
 waits only for an exact human decision. While autonomous work keeps making
 progress, the same workflow attempt keeps running.
+
+Gym also runs one daily Telegram field review. It keeps clear successful
+behavior as positive evidence and routes only strong actionable failures into
+the existing incident and proposal path. The review classifies May behavior,
+Telegram context/routing, owner workflow, evaluator, runtime, and noise before
+suggesting a learning change. It stays quiet when the day contains no reusable
+signal. Gym allows this source review to use a second app task slot while the
+ordered `improve/may` workflow is running; candidate iterations inside that
+workflow remain sequential.
 
 ## One task
 

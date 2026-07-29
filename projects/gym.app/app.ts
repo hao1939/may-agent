@@ -102,6 +102,17 @@ function codexLearningRequested(input: unknown = {}): ProjectAppEvent {
   };
 }
 
+function telegramFieldReviewRequested(input: unknown = {}): ProjectAppEvent {
+  return {
+    type: "gym.telegram.field-review.requested",
+    project: projectId,
+    params: {
+      batchSize: 40,
+      ...params(input),
+    },
+  };
+}
+
 function durableEventId(event: Record<string, unknown>): number | null {
   const value = event.eventId;
   return typeof value === "number" && Number.isInteger(value) && value > 0
@@ -218,6 +229,11 @@ export function resolveGymTask(
         input: {
           kind: "incident",
           ...selected(details, ["incidentId", "sessionId", "reason"]),
+          ...selected(details, [
+            "fieldReviewPath",
+            "classification",
+            "candidateId",
+          ]),
           ...selected(evaluation, [
             "agent",
             "artifactFound",
@@ -288,6 +304,26 @@ export function resolveGymTask(
           ...selected(details, ["batchSize", "maxBatches"]),
         },
         outputs: [".state/learning/codex"],
+        priority: "P2",
+      };
+    case "gym.telegram.field-review.requested":
+      return {
+        id: "learning/telegram-field-review",
+        parentId: "incident-learning",
+        outcome:
+          "Review completed May Telegram conversations and preserve only strong evidence that improves deputy behavior or the surrounding system.",
+        acceptance: [
+          "The review judges Hao's intent, May's handling, the delivered outcome, and any clear human reaction.",
+          "Weak or one-off signals are discarded and completed source events advance a durable checkpoint.",
+          "Every retained signal names the responsible layer; only strong actionable failures request a proposal.",
+        ],
+        mode: "maintain",
+        workflow: "telegram-field-review",
+        input: {
+          reason: String(details.reason ?? "daily-field-review"),
+          ...selected(details, ["batchSize"]),
+        },
+        outputs: [".state/learning/telegram"],
         priority: "P2",
       };
     case "gym.regression.requested":
@@ -385,7 +421,7 @@ export default defineProjectApp({
   budget: {
     sessionsPerDay: 6,
     tokensPerDay: 250_000,
-    maxConcurrent: 1,
+    maxConcurrent: 2,
   },
 
   schedules: [
@@ -412,6 +448,12 @@ export default defineProjectApp({
         }),
       ],
     },
+    {
+      id: "telegram-field-review-daily",
+      enabled: true,
+      intervalMs: 86_400_000,
+      emits: [telegramFieldReviewRequested({ reason: "daily-field-review" })],
+    },
   ],
 
   tasks: {
@@ -419,6 +461,7 @@ export default defineProjectApp({
       "gym.incident.detected",
       "gym.learning.evidence.observed",
       "gym.codex.learning.requested",
+      "gym.telegram.field-review.requested",
       "gym.regression.requested",
       "gym.review.requested",
       "gym.improvement.requested",
@@ -475,6 +518,18 @@ export default defineProjectApp({
           reason: "manual-backfill",
           batchSize: 200,
           maxBatches: 5,
+          ...params(input),
+        });
+      },
+    },
+    "review-telegram-field": {
+      type: "async",
+      description:
+        "Review a bounded batch of completed May Telegram conversations for strong field evidence.",
+      inputSchema: actionInputSchema,
+      event(input) {
+        return telegramFieldReviewRequested({
+          reason: "manual-field-review",
           ...params(input),
         });
       },

@@ -327,6 +327,49 @@ uses a model again only when new turns arrive or accepted design changes require
 review. This cadence controls progress, not evidence quality: the explicit,
 repeated, or independently validated signal gate remains unchanged.
 
+### Daily Telegram field review
+
+Gym reviews completed May Telegram conversations once a day. It reads the
+human request, reply context, May's delivered response or action, terminal
+outcome, and the next human message when that message clearly reacts to the
+turn. It judges whether May understood Hao's intent and drove the right next
+move; polished wording alone is not success.
+
+The central field judgment is fulfillment. Each retained review says whether
+Hao's intended outcome was fulfilled, partially fulfilled, missed, or unclear.
+An acknowledgement, plan, promise, or fluent final reply does not prove
+fulfillment. The packet includes session outcomes and relevant project,
+workflow, CLI, message, approval, escalation, and delivery events so the review
+can compare May's claim with action evidence. For a question, the answer may be
+the outcome; for investigation or change work, diagnosis, action, verification,
+or a clear owner handoff must support the result.
+
+A matching terminal event plus channel delivery is the preferred completion
+proof. When an older trace is missing that structural link, a May response in
+Telegram's outbound notification ledger before Hao's next message is accepted
+as delivery proof. This fallback exposes trace defects without discarding the
+real conversation; a turn with neither proof remains unfinished.
+
+The review keeps only strong reusable signals: an explicit correction,
+repeated misunderstanding, a consequential wrong action, a clearly successful
+outcome, or a useful success/failure contrast. It assigns each signal to May's
+judgment or knowledge, Telegram routing, the owner workflow, evaluator,
+runtime, or non-actionable noise. Weak and unrelated daily conversation is
+discarded.
+
+Raw conversation text remains in May-agent's runtime store. Gym keeps source
+event, trace, and session pointers plus a plain-language account of intent,
+handling, outcome evidence, and the reusable rule. Positive evidence is stored
+quietly. A strong actionable failure enters the existing incident review path;
+it does not silently change benchmark truth or production May.
+
+The first run starts with the latest seven days instead of replaying the whole
+operational event store. The checkpoint advances only after the model review
+succeeds. A recent unfinished turn stops the scan before that event, so the
+next daily run can review it after completion without losing it. An unfinished
+trace older than 30 minutes is recorded as stale and skipped so one broken old
+trace cannot stop all future learning.
+
 ### Competency resources
 
 A competency is the stable unit of coverage. Store it independently of any

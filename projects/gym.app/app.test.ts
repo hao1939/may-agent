@@ -42,6 +42,20 @@ describe("gym app manifest", () => {
             }),
           ],
         }),
+        expect.objectContaining({
+          id: "telegram-field-review-daily",
+          enabled: true,
+          intervalMs: 86_400_000,
+          emits: [
+            expect.objectContaining({
+              type: "gym.telegram.field-review.requested",
+              params: {
+                reason: "daily-field-review",
+                batchSize: 40,
+              },
+            }),
+          ],
+        }),
       ]),
     );
     expect(
@@ -61,7 +75,7 @@ describe("gym app manifest", () => {
       ],
     });
     expect(gymApp.tasks?.resolve).toBe(resolveGymTask);
-    expect(gymApp.tasks?.accepts).toHaveLength(9);
+    expect(gymApp.tasks?.accepts).toHaveLength(10);
     expect(gymApp.taskRoutes).toBeUndefined();
     expect(gymApp.taskWorkflows).toBeUndefined();
     expect(gymApp.ownerEntry).toBeUndefined();
@@ -71,6 +85,7 @@ describe("gym app manifest", () => {
       "run-regression",
       "report-incident",
       "collect-codex-learning",
+      "review-telegram-field",
     ]);
     const improveAction = gymApp.actions["improve-may-now"]!;
     if (improveAction.type !== "async") throw new Error("unexpected action");
@@ -87,6 +102,21 @@ describe("gym app manifest", () => {
       readFileSync(new URL("./agents/gym/agent.json", import.meta.url), "utf8"),
     );
     expect(ownerConfig.tools).toEqual(["read-only", "finish"]);
+  });
+
+  test("routes the daily Telegram field review into one maintain task", () => {
+    const intent = resolveGymTask({
+      type: "gym.telegram.field-review.requested",
+      eventId: 94,
+      params: { reason: "daily-field-review", batchSize: 40 },
+    });
+    expect(intent).toMatchObject({
+      id: "learning/telegram-field-review",
+      mode: "maintain",
+      workflow: "telegram-field-review",
+      input: { reason: "daily-field-review", batchSize: 40 },
+      outputs: [".state/learning/telegram"],
+    });
   });
 
   test("keeps Codex learning incremental and separate from automatic improvement", () => {
