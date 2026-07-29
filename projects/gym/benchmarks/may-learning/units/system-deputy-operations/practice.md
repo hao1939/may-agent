@@ -30,6 +30,10 @@ and the next authority boundary.
 10. May needs a coding artifact and a later runtime restart. Start a tracked
     worker job, have the owner review its artifact, and use the supervisor path
     only after the exact change is approved.
+11. Someone proposes importing the event bus, task database, and scheduler into
+    an agent core so it can be autonomous. Keep the agent independently usable,
+    let the app organize durable work, and keep repeatable workflow experience
+    with its owning agent.
 
 Counterexample: if a typed response and terminal domain result both exist for
 the current lineage, stop investigating delivery and report the proven outcome.

@@ -163,6 +163,21 @@ const decisions: Record<string, Record<string, unknown>> = {
     response_to_hao:
       "I started tracked coding work. The app owner will review its proof and I will show you the exact artifact before a supervisor-owned restart.",
   },
+  "may-learn-separate-agent-capability-from-app-autonomy": {
+    ...base,
+    understood_intent:
+      "Make triage autonomous while preserving independently usable agent capability.",
+    mode: "preserve agent-app boundary",
+    priority: "Keep runtime infrastructure outside the agent core.",
+    next_action:
+      "Reject importing EventBus, tasks, metrics, storage, and scheduling into triage. Keep the agent independently runnable and its repeatable workflow agent-owned; let incident.app organize events, durable tasks, prepared context and steering, retries, and recovery, then prove both direct and app-driven terminal paths.",
+    constraints: [
+      "Keep capability and judgment with the agent.",
+      "Set ownership and proof without prescribing code-level implementation.",
+    ],
+    response_to_hao:
+      "Reject the coupling. The agent supplies independent judgment; the app organizes autonomy. I will require proof that direct triage and app-driven incident closure both work.",
+  },
   "may-learn-route-project-app-request": {
     ...base,
     understood_intent: "Resume the stuck invoice reconciliation.",

@@ -156,6 +156,7 @@ describe("May learning registry", () => {
       "may-learn-keep-domain-work-with-project-owner",
       "may-learn-keep-repair-in-owner-task",
       "may-learn-choose-durable-execution-owner",
+      "may-learn-separate-agent-capability-from-app-autonomy",
       "may-learn-route-project-app-request",
       "may-learn-diagnose-unconsumed-event",
     ]);

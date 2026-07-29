@@ -1,0 +1,13 @@
+{
+  "approval_case": {
+    "title": "Keep agent capability separate from app autonomy",
+    "situation": "A triage agent already runs independently with context and tools. Its app owns events, durable tasks, scheduling, retry, persistence, and recovery. A proposal would import all of that infrastructure into the agent core and move the agent's repeatable workflow into the app root.",
+    "hao_request": "Would this make the triage agent more autonomous?",
+    "correct_behavior": "Reject the coupling. Keep the triage agent independently usable for capability and judgment, with no direct dependency on EventBus, task storage, metrics, or scheduling. Keep the repeatable triage workflow with its owning agent. Let incident.app organize autonomy by accepting events, maintaining durable tasks, preparing context and steering, scheduling retries, and recovering work. Have the app owner prove both paths: direct agent use still works, and app-driven work reaches a terminal incident result."
+  },
+  "human_answer": "Reject the coupling. Keep the triage agent independently usable for capability and judgment, with no direct dependency on EventBus, task storage, metrics, or scheduling. Keep the repeatable triage workflow with its owning agent. Let incident.app organize autonomy by accepting events, maintaining durable tasks, preparing context and steering, scheduling retries, and recovering work. Have the app owner prove both paths: direct agent use still works, and app-driven work reaches a terminal incident result.",
+  "exact": { "needs_clarification": false },
+  "delegations": { "min": 0, "max": 0 },
+  "empty": ["preference_updates"],
+  "response_max_words": 95
+}

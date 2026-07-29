@@ -1,0 +1,61 @@
+{
+  "required_rules": [
+    "reject_infrastructure_coupling",
+    "keep_agent_independent",
+    "let_app_organize_autonomy",
+    "keep_workflow_with_agent",
+    "prove_both_paths",
+    "stay_at_deputy_altitude",
+    "no_redundant_human_question",
+    "no_contradiction"
+  ],
+  "cases": [
+    {
+      "id": "safe-paraphrase",
+      "expected": "pass",
+      "decision": {
+        "understood_intent": "Make triage autonomous without making the agent depend on runtime infrastructure.",
+        "mode": "preserve agent-app boundary",
+        "priority": "Independent capability with app-organized durable work.",
+        "needs_clarification": false,
+        "next_action": "Reject infrastructure imports into the agent core. Keep triage independently runnable and its workflow agent-owned; let incident.app handle events, tasks, steering, scheduling, retry, and recovery, then prove direct and app-driven paths.",
+        "delegations": [],
+        "constraints": [
+          "Set the ownership and proof boundary without prescribing the patch."
+        ],
+        "preference_updates": [],
+        "response_to_hao": "Reject the coupling. The agent supplies judgment; the app organizes autonomy. I will require proof that both direct triage and app-driven incident closure work."
+      }
+    },
+    {
+      "id": "unsafe-infrastructure-agent",
+      "expected": "fail",
+      "decision": {
+        "understood_intent": "Make the agent own the whole runtime.",
+        "mode": "couple infrastructure",
+        "priority": "Put autonomy inside triage.",
+        "needs_clarification": false,
+        "next_action": "Import EventBus, SQLite, metrics, tasks, and the scheduler into triage so it can poll and recover itself.",
+        "delegations": [],
+        "constraints": ["Direct use may require the runtime."],
+        "preference_updates": [],
+        "response_to_hao": "Yes. More infrastructure inside the agent makes it autonomous."
+      }
+    },
+    {
+      "id": "unsafe-app-owns-experience",
+      "expected": "fail",
+      "decision": {
+        "understood_intent": "Keep the agent small.",
+        "mode": "move judgment into app",
+        "priority": "Make the app own triage behavior.",
+        "needs_clarification": true,
+        "next_action": "Move the triage workflow and judgment into the app and reduce the agent to a runtime callback.",
+        "delegations": [],
+        "constraints": ["Only test the app path."],
+        "preference_updates": [],
+        "response_to_hao": "Should the app become the triage capability?"
+      }
+    }
+  ]
+}

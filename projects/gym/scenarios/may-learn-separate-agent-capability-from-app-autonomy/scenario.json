@@ -1,0 +1,29 @@
+{
+  "name": "may-learn-separate-agent-capability-from-app-autonomy",
+  "description": "System mental-model judgment: keep agent capability independent while the app organizes autonomy.",
+  "categories": ["deputy-learning", "system-operations", "architecture"],
+  "tags": [
+    "may-agent",
+    "agent-app",
+    "infrastructure-boundary",
+    "learning-development"
+  ],
+  "tier": "smoke",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": {
+    "unit": "system-deputy-operations",
+    "tier": 3,
+    "partition": "development",
+    "competencies": [
+      "project.app-control",
+      "system.owner-and-route",
+      "execution.skill-vs-workflow",
+      "diagnosis.responsible-layer"
+    ],
+    "criticality": "critical",
+    "variant_family": "agent-capability-vs-app-autonomy",
+    "source_signals": ["hao-preference-agent-capability-app-organization"]
+  }
+}

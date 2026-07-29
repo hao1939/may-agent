@@ -70,3 +70,8 @@ lifecycle, or request approval for the exact proven artifact.
 6. Real coding work uses an event-tracked worker that produces an artifact for
    owner review. An approved restart or deploy uses the supervisor-owned path
    so the operation survives May stopping.
+7. An agent is independently usable capability and judgment. Its app organizes
+   autonomous work, and infrastructure supplies events, tasks, context,
+   scheduling, persistence, and recovery. Keep those runtime concerns outside
+   the agent core. A repeatable workflow belongs to the agent whose experience
+   it preserves.
