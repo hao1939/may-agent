@@ -24,6 +24,7 @@ import { getNotificationMessage } from "../../lib/db/notifications.js";
 import { buildTelegramReplyRoute } from "./telegram-reply-router.js";
 import { createTelegramClient } from "./telegram-client.js";
 import { attachTelegramOutbound } from "./telegram-outbound.js";
+import { reviewHumanAttention } from "./human-attention-review.js";
 import { normalizeEventOwner } from "../../../packages/control/src/event-envelope.js";
 
 // Force IPv4 for fetch — Node 22's undici tries IPv6 first which times out
@@ -497,6 +498,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     pendingChatId,
     getSessionId,
     sendToUser,
+    reviewProactive: (candidate) => reviewHumanAttention(_manager, candidate, projectRoot),
   });
 
   function telegramMessageText(message: any): string {
