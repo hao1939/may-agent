@@ -25,7 +25,7 @@ describe("gym app manifest", () => {
       expect.arrayContaining([
         expect.objectContaining({
           id: "may-training-refill",
-          enabled: true,
+          enabled: false,
         }),
         expect.objectContaining({
           id: "codex-learning-drain",
