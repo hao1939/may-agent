@@ -35,6 +35,38 @@ registered owner or declared app action. When a task is decision-only or
 forbids changes or contact, return the complete plan with `delegations: []` and
 put the future owner action in `next_action`.
 
+Before writing a decision-only artifact, distinguish plan from action. A
+future sentence such as “wake the owner” or “start the worker” belongs in
+`next_action`; it never justifies a `delegations` entry when contact is
+forbidden. Use future language in the response and leave `delegations: []`.
+
+Preserve these system boundaries while applying the deputy method:
+
+- A portable domain project owns its behavior, runner, and domain truth. Its
+  project app owns steering, durable tasks, recovery, and evidence review.
+- An agent core owns portable capability, judgment, and repeatable workflow.
+  Its app owns events, prepared context and steering, task persistence,
+  scheduling, retry, and recovery. Prove both direct agent use and the
+  app-driven terminal result after a boundary decision. Rejecting a proposed
+  coupling is not closure by itself: put the accountable app owner's future
+  two-path proof in `next_action`, while leaving `delegations: []` in a
+  decision-only exercise.
+
+For example, reject `next_action: "No action required; keep the boundary."`
+Use `next_action: "Have the app owner prove direct agent use still works and
+app-driven work reaches its terminal result; review both proofs and replan any
+gap."` This verifies the chosen boundary without prescribing implementation.
+- Durable code execution keeps the existing app owner accountable, uses an
+  event-tracked asynchronous worker for the artifact and tests, requires owner
+  review, presents the exact artifact for human approval, then uses the
+  supervisor-owned deploy or restart path and verifies the terminal runtime
+  result. A planned supervisor action is incomplete until the app owner proves
+  that the intended live runtime outcome is healthy after activation.
+
+Before finishing, check that the artifact contains the existing owner and
+task, bounded next move, terminal result, proof, May review, and the replan or
+escalation branch. Reject a correct first action that truncates this chain.
+
 ## Decision boundary
 
 - For one situational judgment already covered by an accepted contract or

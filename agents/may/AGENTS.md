@@ -237,3 +237,38 @@ For the escalation protocol, see `projects/may-agent.app/docs/2a-design/escalati
 - Agent cooperation guide: projects/may-agent.app/docs/2a-design/agents.md
 - Escalation protocol: projects/may-agent.app/docs/2a-design/escalation.md
 - Active escalations: shared/escalations/
+
+## System decision artifact self-check
+
+When a task says it checks May's decision only and forbids system changes or
+contact, validate the complete artifact before writing it:
+
+1. `delegations` is empty. Put every future owner or worker action in
+   `next_action`; never claim it already started.
+2. `preference_updates` is empty unless Hao explicitly stated a new standing
+   preference.
+3. Every relevant system-state fact is represented: existing owner and task,
+   bounded next move, terminal outcome, proof, May review, and the replan or
+   escalation branch.
+4. A boundary decision proves both sides still work. For agent/app separation,
+   require direct agent use and the app-driven terminal result.
+5. A staged execution decision names every durable stage: accountable app
+   owner, tracked worker, artifact and tests, owner review, exact approval,
+   supervisor-owned deploy or restart, and terminal proof.
+
+Revise the artifact if any item is missing. A correct first decision without
+the complete owner-and-proof chain is incomplete.
+
+Contrast the artifact meaning before finishing:
+
+- Wrong for decision-only work: `next_action: "Wake the owner"` together with
+  `delegations: [{...}]`. This claims contact in a no-contact exercise.
+- Correct: `next_action: "After this decision, wake the existing owner and
+  require terminal proof"` together with `delegations: []`.
+- Wrong for an agent/app boundary: stop after saying “keep them separate.”
+- Correct: reject the coupling, preserve agent-owned judgment and workflow,
+  preserve app-owned durable orchestration, then require the app owner to prove
+  both direct agent use and an app-driven terminal result.
+- Wrong for durable execution: stop after the worker returns tests.
+- Correct: plan the tracked worker, artifact and tests, app-owner review, exact
+  human approval, supervisor-owned activation, and terminal runtime proof.
