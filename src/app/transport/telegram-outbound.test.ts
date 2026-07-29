@@ -1,8 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { EventBus } from "../event-bus.js";
 import { attachTelegramOutbound } from "./telegram-outbound.js";
+import type { HumanAttentionCandidate, HumanAttentionReview } from "./human-attention-review.js";
 
-function harness(currentSessionId = "shared-chat") {
+function harness(
+  currentSessionId = "shared-chat",
+  reviewProactive?: (candidate: HumanAttentionCandidate) => Promise<HumanAttentionReview>,
+) {
   const bus = new EventBus();
   const sent: Array<{ text: string; context?: Record<string, unknown> }> = [];
   const outbound = attachTelegramOutbound({
@@ -12,6 +16,7 @@ function harness(currentSessionId = "shared-chat") {
     pendingChatId: "human-chat",
     getSessionId: () => currentSessionId,
     sendToUser: (text, context) => sent.push({ text, context }),
+    reviewProactive,
   });
   return { bus, sent, outbound };
 }
@@ -49,6 +54,55 @@ function idle(bus: EventBus, source: string, summary: string, sessionId = "share
 }
 
 describe("Telegram outbound turn ownership", () => {
+  test("records May's shadow judgment while preserving current proactive delivery", async () => {
+    const reviewed: Array<Record<string, unknown>> = [];
+    const { bus, sent, outbound } = harness("shared-chat", async () => ({
+      status: "completed",
+      sessionId: "review-1",
+      disposition: "route",
+      understoodIntent: "Recover the project-owned failure.",
+      reason: "The project owner can act before Hao is needed.",
+      nextAction: "Route to the project owner and require rerun proof.",
+      owner: "aks-owner",
+      evidence: ["The owner has not attempted recovery."],
+    }));
+    const unsubscribe = bus.subscribe((event: any) => {
+      if (event.type === "human.attention.reviewed") reviewed.push(event.data);
+    });
+
+    bus.emit({
+      type: "message.created",
+      source: "evaluator",
+      owner: "agent:may",
+      data: {
+        from: "evaluator",
+        to: "human",
+        content: "AKS failed. Hao, decide what to do.",
+        projectId: "alpha-project",
+      },
+    } as any);
+
+    for (let attempt = 0; attempt < 20 && reviewed.length === 0; attempt++) {
+      await Bun.sleep(1);
+    }
+    expect(sent.map((entry) => entry.text)).toEqual(["📋 AKS failed. Hao, decide what to do."]);
+    expect(reviewed).toEqual([
+      expect.objectContaining({
+        mode: "shadow",
+        delivered: true,
+        status: "completed",
+        disposition: "route",
+        owner: "aks-owner",
+        candidate: expect.objectContaining({
+          content: "AKS failed. Hao, decide what to do.",
+          projectId: "alpha-project",
+        }),
+      }),
+    ]);
+    unsubscribe();
+    outbound.close();
+  });
+
   test("never forwards a CLI turn merely because it reuses the daemon chat session", () => {
     const { bus, sent, outbound } = harness();
 
