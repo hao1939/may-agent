@@ -6,6 +6,7 @@ import {
   decideRepoRefAdvanceGate,
   execute,
   parseReconciliationTaskPayload,
+  repoRefWaitExternalProducer,
 } from "./wait-for-repo-ref-advance.js";
 
 function git(cwd: string, command: string): string {
@@ -58,6 +59,65 @@ describe("wait-for-repo-ref-advance workflow", () => {
           expected: { field: "commit", notEquals: "abc" },
         },
       ],
+    });
+  });
+
+  test("rejects repo-ref waits that cite only generic origin/dev churn", () => {
+    expect(
+      repoRefWaitExternalProducer({
+        taskId:
+          "wait-compact-workload-autoscaler-package-partial-origin-dev-advance-780f3d01-20260727",
+        repoRef: "origin/dev",
+        baselineCommit: "780f3d01",
+        specId: "spec.workload-autoscaler.keda-upgrade-survival",
+        sourceCommit: "780f3d01",
+        publicationBranch: "dev",
+      }),
+    ).toMatchObject({
+      supported: false,
+      reason: expect.stringContaining("generic origin/dev churn"),
+    });
+  });
+
+  test("rejects normalization repo-ref waits that only point back to current dev", () => {
+    expect(
+      repoRefWaitExternalProducer({
+        taskId:
+          "wait-spec-network-acns-performance-cilium-upgrade-user-iptables-runtime-frontier-origin-dev-advance-5c252d46-20260727",
+        repoRef: "origin/dev",
+        baselineCommit: "5c252d46",
+        specId: "spec.network-acns.performance-cilium-upgrade",
+        sourceCommit: "5c252d46",
+        publicationBranch: "dev",
+      }),
+    ).toMatchObject({
+      supported: false,
+      reason: expect.stringContaining("generic origin/dev churn"),
+      evidence: expect.arrayContaining([
+        "task:wait-spec-network-acns-performance-cilium-upgrade-user-iptables-runtime-frontier-origin-dev-advance-5c252d46-20260727",
+        "spec-id:spec.network-acns.performance-cilium-upgrade",
+      ]),
+    });
+  });
+
+  test("accepts repo-ref waits that cite a concrete pending publication branch", () => {
+    expect(
+      repoRefWaitExternalProducer({
+        taskId:
+          "wait-compact-machines-agentpool-package-partial-origin-dev-advance-780f3d01-20260727",
+        repoRef: "origin/dev",
+        baselineCommit: "780f3d01",
+        specId: "spec.nap.default-machines-pool-cleanup-full",
+        sourceCommit: "e9694c11",
+        publicationBranch:
+          "aks-explorer/reconcile-machines-agentpool-nap-full-cleanup-direct-carrier-current-origin-dev-20260723",
+      }),
+    ).toMatchObject({
+      supported: true,
+      evidence: expect.arrayContaining([
+        "source-commit:e9694c11",
+        "pending-branch:aks-explorer/reconcile-machines-agentpool-nap-full-cleanup-direct-carrier-current-origin-dev-20260723",
+      ]),
     });
   });
 
@@ -116,6 +176,91 @@ describe("wait-for-repo-ref-advance workflow", () => {
     expect(result.summary).toContain("advanced from baseline abc to def");
   });
 
+  test("returns needs-owner for unsupported repo-ref waits before admitting a new Condition", async () => {
+    const result = await execute({
+      projectDir: "/tmp/project",
+      task: `## Reconciliation Task\n${JSON.stringify(
+        {
+          taskId:
+            "wait-compact-workload-autoscaler-package-partial-origin-dev-advance-780f3d01-20260727",
+          input: {
+            baseRef: "origin/dev",
+            resumeBaselineCommit: "780f3d01",
+            specId: "spec.workload-autoscaler.keda-upgrade-survival",
+            sourceCommit: "780f3d01",
+            publicationBranch: "dev",
+          },
+          paths: { projectDir: "/tmp/project" },
+        },
+        null,
+        2,
+      )}`,
+      done: (_summary: string, output: Record<string, unknown>) => ({
+        type: "done",
+        output,
+      }),
+    } as never);
+
+    expect(result).toMatchObject({
+      type: "done",
+      output: {
+        state: "needs-owner",
+        evidence: expect.arrayContaining([
+          "workflow:wait-for-repo-ref-advance",
+          "task:wait-compact-workload-autoscaler-package-partial-origin-dev-advance-780f3d01-20260727",
+          "publication-branch:dev",
+          "source-commit:780f3d01",
+        ]),
+      },
+    });
+    expect((result as { output: { summary: string } }).output.summary).toContain(
+      "generic origin/dev advance",
+    );
+  });
+
+  test("returns needs-owner for unsupported normalization repo-ref waits before admitting a new Condition", async () => {
+    const result = await execute({
+      projectDir: "/tmp/project",
+      task: `## Reconciliation Task\n${JSON.stringify(
+        {
+          taskId:
+            "wait-spec-network-acns-performance-cilium-upgrade-user-iptables-runtime-frontier-origin-dev-advance-5c252d46-20260727",
+          input: {
+            baseRef: "origin/dev",
+            resumeBaselineCommit: "5c252d46",
+            specId: "spec.network-acns.performance-cilium-upgrade",
+            sourceCommit: "5c252d46",
+            publicationBranch: "dev",
+          },
+          paths: { projectDir: "/tmp/project" },
+        },
+        null,
+        2,
+      )}`,
+      done: (_summary: string, output: Record<string, unknown>) => ({
+        type: "done",
+        output,
+      }),
+    } as never);
+
+    expect(result).toMatchObject({
+      type: "done",
+      output: {
+        state: "needs-owner",
+        evidence: expect.arrayContaining([
+          "workflow:wait-for-repo-ref-advance",
+          "task:wait-spec-network-acns-performance-cilium-upgrade-user-iptables-runtime-frontier-origin-dev-advance-5c252d46-20260727",
+          "spec-id:spec.network-acns.performance-cilium-upgrade",
+          "publication-branch:dev",
+          "source-commit:5c252d46",
+        ]),
+      },
+    });
+    expect((result as { output: { summary: string } }).output.summary).toContain(
+      "generic origin/dev advance",
+    );
+  });
+
   test("returns needs-owner when the trigger shows a stale satisfied repo-ref wake", async () => {
     const root = mkdtempSync(join(tmpdir(), "wait-for-repo-ref-stale-wake-"));
     const remote = join(root, "remote.git");
@@ -143,6 +288,9 @@ describe("wait-for-repo-ref-advance workflow", () => {
               baseRef: "origin/dev",
               resumeBaselineCommit: baselineCommit,
               specId: "spec.localdns.vm-prerelease.enable-disable",
+              sourceCommit: `${baselineCommit}-pending-fix`,
+              publicationBranch:
+                "aks-explorer/reconcile-localdns-enable-disable-origin-dev",
             },
             paths: { projectDir: repo },
           },
@@ -218,6 +366,9 @@ describe("wait-for-repo-ref-advance workflow", () => {
               baseRef: "origin/dev",
               resumeBaselineCommit: baselineCommit,
               specId: "spec.localdns.vm-prerelease.enable-disable",
+              sourceCommit: `${baselineCommit}-pending-fix`,
+              publicationBranch:
+                "aks-explorer/reconcile-localdns-enable-disable-origin-dev",
             },
             paths: { projectDir: canonical },
           },

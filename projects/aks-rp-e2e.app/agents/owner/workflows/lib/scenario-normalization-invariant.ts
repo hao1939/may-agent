@@ -9,6 +9,7 @@ export type ScenarioNormalizationInput = {
   adapterPath?: unknown;
   specId?: unknown;
   specIds?: unknown;
+  expectedVitestTestCount?: unknown;
   reviewedWritebackCommit?: unknown;
 };
 
@@ -36,6 +37,11 @@ export type SpecTerminalDispositionCheck = {
   accepted: boolean;
   evidence: string[];
   problem?: string;
+};
+
+export type SpecTerminalTarget = {
+  name: string;
+  location?: string;
 };
 
 function text(value: unknown): string {
@@ -207,6 +213,86 @@ export function specTerminalDispositionCheck(
       `terminal-disposition-spec-path:${entry.path}`,
       `terminal-disposition-status:${sourceStatus}`,
       `terminal-disposition-spec-state:${sourceSpecState}`,
+    ],
+  };
+}
+
+/** Reject active approval/wait identifiers that point at another live target. */
+export function specTerminalTargetCheck(
+  workspaceDir: string,
+  input: ScenarioNormalizationInput | undefined,
+  target: SpecTerminalTarget,
+): SpecTerminalDispositionCheck {
+  if (target.name !== "staging") {
+    return {
+      accepted: true,
+      evidence: [`terminal-disposition-target:${target.name}`],
+    };
+  }
+
+  const expectedLocation = text(target.location).toLowerCase();
+  if (!expectedLocation) {
+    return {
+      accepted: false,
+      evidence: [],
+      problem: "staging terminal-disposition validation requires a location",
+    };
+  }
+
+  const selectedSpecIds = scenarioNormalizationSpecIds(input);
+  if (selectedSpecIds.length !== 1) {
+    return {
+      accepted: false,
+      evidence: [],
+      problem:
+        "staging terminal-disposition validation requires one exact spec",
+    };
+  }
+  const entry = loadFeatureSpecs(workspaceDir).get(selectedSpecIds[0]);
+  if (!entry) {
+    return {
+      accepted: false,
+      evidence: [],
+      problem: `terminal-disposition spec ${selectedSpecIds[0]} is missing from the normalized source`,
+    };
+  }
+
+  const activeDirection = [
+    text(entry.body.statusReason),
+    text(entry.body.nextAction),
+    text(entry.body.resumeCondition),
+  ].join("\n");
+  const identifiers = [
+    ...activeDirection.matchAll(
+      /\b(?:approvalId|waitId|pathId)\s*(?:=|:)?\s*([A-Za-z0-9:._/-]+)/g,
+    ),
+  ].map((match) => match[1]);
+  const mismatches = [
+    ...new Set(
+      identifiers.filter((identifier) => {
+        const normalized = identifier.toLowerCase();
+        return (
+          normalized.includes("staging-") &&
+          !normalized.includes(`staging-${expectedLocation}`)
+        );
+      }),
+    ),
+  ];
+  if (mismatches.length > 0) {
+    return {
+      accepted: false,
+      evidence: mismatches.map(
+        (identifier) => `terminal-disposition-target-identifier:${identifier}`,
+      ),
+      problem: `terminal-disposition active direction references a different staging target; expected staging-${expectedLocation}`,
+    };
+  }
+
+  return {
+    accepted: true,
+    evidence: [
+      "terminal-disposition-target:staging",
+      `terminal-disposition-location:${expectedLocation}`,
     ],
   };
 }

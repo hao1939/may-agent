@@ -44,6 +44,12 @@ type RepoAdvanceGateInput = {
   publicationBranch?: string;
 };
 
+type RepoRefExternalProducer = {
+  supported: boolean;
+  evidence: string[];
+  reason?: string;
+};
+
 function nonEmptyString(value: unknown): string {
   return typeof value === "string" && value.trim() ? value.trim() : "";
 }
@@ -136,6 +142,78 @@ function repoRefAdvanceCondition(
   };
 }
 
+function nonBasePublicationBranch(
+  publicationBranch: string,
+  repoRef: string,
+): string {
+  const normalized = publicationBranch.trim();
+  if (!normalized) return "";
+  const comparable = normalized.replace(/^refs\/heads\//, "");
+  const baseComparable = repoRef.replace(/^origin\//, "");
+  if (
+    comparable === "dev" ||
+    comparable === baseComparable ||
+    comparable === repoRef
+  ) {
+    return "";
+  }
+  return normalized;
+}
+
+export function repoRefWaitExternalProducer(input: {
+  taskId: string;
+  repoRef: string;
+  baselineCommit: string;
+  specId?: string;
+  sourceCommit?: string;
+  publicationBranch?: string;
+  pullRequestId?: string;
+  sourceBranch?: string;
+  authorizedRef?: string;
+}): RepoRefExternalProducer {
+  const sourceCommit = nonEmptyString(input.sourceCommit);
+  const publicationBranch = nonEmptyString(input.publicationBranch);
+  const pullRequestId = nonEmptyString(input.pullRequestId);
+  const sourceBranch = nonEmptyString(input.sourceBranch);
+  const authorizedRef = nonEmptyString(input.authorizedRef);
+  const evidence: string[] = [];
+
+  if (sourceCommit && sourceCommit !== input.baselineCommit) {
+    evidence.push(`source-commit:${sourceCommit}`);
+  }
+  const pendingBranch =
+    nonBasePublicationBranch(publicationBranch, input.repoRef) ||
+    nonBasePublicationBranch(sourceBranch, input.repoRef) ||
+    nonBasePublicationBranch(authorizedRef, input.repoRef);
+  if (pendingBranch) {
+    evidence.push(`pending-branch:${pendingBranch}`);
+  }
+  if (pullRequestId) {
+    evidence.push(`pull-request:${pullRequestId}`);
+  }
+
+  if (evidence.length > 0) {
+    return { supported: true, evidence };
+  }
+
+  return {
+    supported: false,
+    evidence: [
+      `task:${input.taskId}`,
+      `repo-ref:${input.repoRef}`,
+      `resume-baseline:${input.baselineCommit}`,
+      ...(input.specId ? [`spec-id:${input.specId}`] : []),
+      ...(sourceCommit ? [`source-commit:${sourceCommit}`] : []),
+      ...(publicationBranch ? [`publication-branch:${publicationBranch}`] : []),
+      ...(sourceBranch ? [`source-branch:${sourceBranch}`] : []),
+      ...(authorizedRef ? [`authorized-ref:${authorizedRef}`] : []),
+      ...(pullRequestId ? [`pull-request:${pullRequestId}`] : []),
+    ],
+    reason:
+      "repo-ref waits must name a concrete pending source branch/commit, PR, publication branch, or other exact external producer that can change the scoped authority; generic origin/dev churn is not such a producer",
+  };
+}
+
 function runGit(
   projectDir: string,
   args: string[],
@@ -217,6 +295,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const workflowInput = payload?.input ?? {};
   const repoRef = nonEmptyString(workflowInput.baseRef) || "origin/dev";
   const baselineCommit = nonEmptyString(workflowInput.resumeBaselineCommit);
+  const specId = nonEmptyString(workflowInput.specId);
+  const sourceCommit = nonEmptyString(workflowInput.sourceCommit);
+  const publicationBranch = nonEmptyString(workflowInput.publicationBranch);
   const projectDir =
     nonEmptyString(payload?.paths?.projectDir) ||
     ctx.projectDir ||
@@ -228,6 +309,26 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       state: "needs-owner",
       summary,
       evidence: [`workflow:${name}`, `task:${taskId}`],
+    });
+  }
+
+  const producer = repoRefWaitExternalProducer({
+    taskId,
+    repoRef,
+    baselineCommit,
+    specId,
+    sourceCommit,
+    publicationBranch,
+    pullRequestId: nonEmptyString((workflowInput as Record<string, unknown>).pullRequestId),
+    sourceBranch: nonEmptyString((workflowInput as Record<string, unknown>).sourceBranch),
+    authorizedRef: nonEmptyString((workflowInput as Record<string, unknown>).authorizedRef),
+  });
+  if (!producer.supported) {
+    const summary = `${taskId} cannot use ${name}: ${producer.reason}. Preserve the truthful same-task compact frontier or an exact non-repo wait instead of binding a generic origin/dev advance.`;
+    return ctx.done(summary, {
+      state: "needs-owner",
+      summary,
+      evidence: [`workflow:${name}`, ...producer.evidence],
     });
   }
 
@@ -295,9 +396,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     repoRef,
     baselineCommit,
     currentCommit,
-    specId: nonEmptyString(workflowInput.specId),
-    sourceCommit: nonEmptyString(workflowInput.sourceCommit),
-    publicationBranch: nonEmptyString(workflowInput.publicationBranch),
+    specId,
+    sourceCommit,
+    publicationBranch,
   });
   return ctx.done(decision.summary, decision);
 }

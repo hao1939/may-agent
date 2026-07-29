@@ -391,6 +391,60 @@ describe("feature compact reconciliation workflow", () => {
     expect(acceptance).toContain("repair the representation first");
   });
 
+  test("does not reuse a completed representation repair id that only exists in receipts", async () => {
+    const ws = await workspace({
+      ...item("blocked", "completed-compact-networking"),
+      frontierTaskIds: ["completed-compact-networking"],
+      waitingFor: {
+        type: "git.ref.containsCommit",
+        taskId: "completed-compact-networking",
+        conditionId:
+          "task-completed-compact-networking-origin-dev-contains-deadbeef",
+        commit: "deadbeef",
+      },
+      waitingCondition:
+        "Wake when origin/dev contains deadbeef or accepted same-path evidence materially changes.",
+      resumeCondition: "origin/dev contains deadbeef",
+    });
+
+    const initial = (await execute(context(ws.appDir, ws.projectDir))) as any;
+    const occupiedId = initial.output.actions[0].id;
+    await writeFile(
+      join(ws.appDir, ".state", "tasks", "state.json"),
+      JSON.stringify({
+        receipts: {
+          [occupiedId]: {
+            metadata: { id: occupiedId },
+            status: { phase: "converged" },
+          },
+        },
+        resources: {},
+      }),
+    );
+
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+
+    expect(result).toMatchObject({
+      output: {
+        state: "converged",
+        actions: [
+          {
+            kind: "create-task",
+            owner: "aks-explorer",
+            input: {
+              featureKey: "networking",
+              repair: "representation",
+            },
+          },
+        ],
+      },
+    });
+    expect(result.output.actions[0].id).not.toBe(occupiedId);
+    expect(result.output.actions[0].id).toMatch(
+      new RegExp(`^${occupiedId}-[a-f0-9]{10}$`),
+    );
+  });
+
   test("keeps an explicitly cited live wait holder across ledger-only revision changes", async () => {
     const ws = await workspace({
       ...item("blocked", "wait-networking"),

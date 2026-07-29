@@ -110,10 +110,13 @@ type GraphNode = {
   id: string;
   generation: number;
   state: string;
+  readinessState?: string;
   parentId: string;
   workflow: string;
   input: Record<string, unknown>;
   conditionIds: string[];
+  latestAttemptHandler: string;
+  latestFailureReason: string;
 };
 
 const frontierTaskId = scenarioNormalizationTaskId;
@@ -425,6 +428,24 @@ function graphNodes(appDir: string): GraphNode[] {
     state.resources && typeof state.resources === "object"
       ? (state.resources as Record<string, Record<string, unknown>>)
       : {};
+  const attempts =
+    state.attempts && typeof state.attempts === "object"
+      ? (state.attempts as Record<string, Record<string, unknown>>)
+      : {};
+  const latestAttemptByTask = new Map<string, Record<string, unknown>>();
+  for (const attempt of Object.values(attempts)) {
+    const taskId = String(attempt.taskId ?? "").trim();
+    if (!taskId) continue;
+    const current = latestAttemptByTask.get(taskId);
+    if (
+      !current ||
+      String(attempt.startedAt ?? "").localeCompare(
+        String(current.startedAt ?? ""),
+      ) > 0
+    ) {
+      latestAttemptByTask.set(taskId, attempt);
+    }
+  }
   for (const [id, resource] of Object.entries(resources)) {
     const metadata =
       resource.metadata &&
@@ -447,10 +468,12 @@ function graphNodes(appDir: string): GraphNode[] {
     const state = String(status.phase ?? "")
       .trim()
       .toLowerCase();
+    const latestAttempt = latestAttemptByTask.get(id);
     nodes.push({
       id,
       generation: Number(metadata.generation ?? 0),
       state,
+      readinessState: "",
       parentId: String(spec.parentId ?? ""),
       workflow: String(spec.workflow ?? ""),
       input:
@@ -465,6 +488,8 @@ function graphNodes(appDir: string): GraphNode[] {
               typeof value === "string" && value.trim().length > 0,
           )
         : [],
+      latestAttemptHandler: String(latestAttempt?.handler ?? ""),
+      latestFailureReason: String(latestAttempt?.failureReason ?? ""),
     });
   }
 
@@ -481,10 +506,20 @@ function graphNodes(appDir: string): GraphNode[] {
       .trim()
       .toLowerCase();
     if (["done", "closed", "converged"].includes(state)) continue;
+    const latestAttempt = latestAttemptByTask.get(id);
+    const readiness =
+      task.readiness &&
+      typeof task.readiness === "object" &&
+      !Array.isArray(task.readiness)
+        ? (task.readiness as Record<string, unknown>)
+        : {};
     nodes.push({
       id,
       generation: Number(task.generation ?? 0),
       state,
+      readinessState: String(readiness.state ?? "")
+        .trim()
+        .toLowerCase(),
       parentId: String(task.parent_id ?? task.parentId ?? ""),
       workflow: String(task.workflow ?? ""),
       input:
@@ -499,9 +534,66 @@ function graphNodes(appDir: string): GraphNode[] {
               typeof value === "string" && value.trim().length > 0,
           )
         : [],
+      latestAttemptHandler: String(latestAttempt?.handler ?? ""),
+      latestFailureReason: String(latestAttempt?.failureReason ?? ""),
     });
   }
-  return nodes;
+  return [...new Map(nodes.map((node) => [node.id, node])).values()];
+}
+
+function frontierPhase(node: GraphNode | undefined): string {
+  if (!node) return "";
+  if (
+    ["dependency-blocked", "child-blocked", "condition-blocked"].includes(
+      node.readinessState ?? "",
+    )
+  ) {
+    return "waiting";
+  }
+  return node.state;
+}
+
+export function retryWorkflowAttentionAction(
+  node: GraphNode,
+): ProjectAppTaskAction | null {
+  const workflowExecutionFailed =
+    node.latestAttemptHandler === "workflow:spec-live-reconciliation" &&
+    node.latestFailureReason === "HandlerExecutionFailed";
+  const ownerResultRejected =
+    node.latestAttemptHandler.startsWith("owner:") &&
+    node.latestFailureReason === "handler-blocked";
+  if (
+    node.state !== "attention" ||
+    node.workflow !== "spec-live-reconciliation" ||
+    (!workflowExecutionFailed && !ownerResultRejected) ||
+    !Number.isInteger(node.generation) ||
+    node.generation < 1
+  ) {
+    return null;
+  }
+  return {
+    kind: "unblock-task",
+    taskId: node.id,
+    expectedGeneration: node.generation,
+    reason: ownerResultRejected
+      ? "Return the same task to spec-live-reconciliation after its accountable-owner result failed mechanical verification, preserving the retained worktree and current evidence."
+      : "Retry the same spec-live-reconciliation task after a workflow execution failure, preserving its retained worktree and current evidence.",
+  };
+}
+
+function workflowAttentionRetries(
+  rows: PlainCarrierRow[],
+  nodesById: ReadonlyMap<string, GraphNode>,
+): ProjectAppTaskAction[] {
+  const actions = new Map<string, ProjectAppTaskAction>();
+  for (const row of rows) {
+    for (const taskId of row.residueTaskIds) {
+      const node = nodesById.get(taskId);
+      const action = node ? retryWorkflowAttentionAction(node) : null;
+      if (action) actions.set(taskId, action);
+    }
+  }
+  return [...actions.values()];
 }
 
 function hasPipelineRunWait(node: GraphNode): boolean {
@@ -515,6 +607,15 @@ function hasPipelineRunWait(node: GraphNode): boolean {
   );
 }
 
+function hasPendingOwnerAdjudication(node: GraphNode): boolean {
+  return (
+    node.state === "attention" &&
+    node.workflow === "spec-live-reconciliation" &&
+    node.latestAttemptHandler === "workflow:spec-live-reconciliation" &&
+    node.latestFailureReason === "needs-owner"
+  );
+}
+
 function liveExecutionCapacity(
   representedTaskIds: string[],
   nodesById: ReadonlyMap<string, GraphNode>,
@@ -523,6 +624,7 @@ function liveExecutionCapacity(
 ): {
   consumingTaskIds: string[];
   pipelineWaitTaskIds: string[];
+  ownerHandoffTaskIds: string[];
   available: number;
 } {
   const pipelineWaitTaskIds = [...new Set(representedTaskIds)].filter(
@@ -531,12 +633,23 @@ function liveExecutionCapacity(
       return node ? hasPipelineRunWait(node) : false;
     },
   );
+  const ownerHandoffTaskIds = [...new Set(representedTaskIds)].filter(
+    (taskId) => {
+      const node = nodesById.get(taskId);
+      return node ? hasPendingOwnerAdjudication(node) : false;
+    },
+  );
   const consumingTaskIds = [
-    ...new Set([...actionableTaskIds, ...pipelineWaitTaskIds]),
+    ...new Set([
+      ...actionableTaskIds,
+      ...pipelineWaitTaskIds,
+      ...ownerHandoffTaskIds,
+    ]),
   ];
   return {
     consumingTaskIds,
     pipelineWaitTaskIds,
+    ownerHandoffTaskIds,
     available: Math.max(0, frontierLimit - consumingTaskIds.length),
   };
 }
@@ -594,6 +707,54 @@ function isScenarioFrontierParent(parentId: string): boolean {
   return (
     parentId === "group/scenario-normalization" ||
     parentId === scenarioNormalizationTaskId
+  );
+}
+
+function scenarioNormalizationLineageTaskIds(nodes: GraphNode[]): string[] {
+  const lineage = new Set<string>();
+
+  for (const node of nodes) {
+    if (
+      node.id === scenarioNormalizationTaskId ||
+      isScenarioFrontierParent(node.parentId) ||
+      node.input.loopId === scenarioNormalizationTaskId
+    ) {
+      lineage.add(node.id);
+    }
+  }
+
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const node of nodes) {
+      if (!lineage.has(node.id) && lineage.has(node.parentId)) {
+        lineage.add(node.id);
+        changed = true;
+      }
+    }
+  }
+
+  return [...lineage].filter((taskId) => taskId !== frontierTaskId);
+}
+
+function scenarioLiveExecutionCapacity(
+  nodes: GraphNode[],
+  nodesById: ReadonlyMap<string, GraphNode>,
+  frontierLimit: number,
+): ReturnType<typeof liveExecutionCapacity> {
+  const taskIds = scenarioNormalizationLineageTaskIds(nodes);
+  const accounting = loopFrontierAccounting(
+    taskIds.map((taskId) => ({
+      taskId,
+      phase: frontierPhase(nodesById.get(taskId)),
+    })),
+    frontierLimit,
+  );
+  return liveExecutionCapacity(
+    taskIds,
+    nodesById,
+    accounting.actionableTaskIds,
+    frontierLimit,
   );
 }
 
@@ -808,7 +969,7 @@ function buildRows(
     const matches = nodes.filter((node) => rowMatchesNode(row, node));
     row.representedTaskIds = [...new Set(matches.map((node) => node.id))];
     const accounting = loopFrontierAccounting(
-      matches.map((node) => ({ taskId: node.id, phase: node.state })),
+      matches.map((node) => ({ taskId: node.id, phase: frontierPhase(node) })),
       0,
     );
     row.actionableTaskIds = accounting.actionableTaskIds;
@@ -838,7 +999,7 @@ function buildPlainCarrierRows(
     const matches = nodes.filter((node) => plainRowMatchesNode(row, node));
     row.representedTaskIds = [...new Set(matches.map((node) => node.id))];
     const accounting = loopFrontierAccounting(
-      matches.map((node) => ({ taskId: node.id, phase: node.state })),
+      matches.map((node) => ({ taskId: node.id, phase: frontierPhase(node) })),
       0,
     );
     row.actionableTaskIds = accounting.actionableTaskIds;
@@ -978,24 +1139,30 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           rows.flatMap((row) =>
             row.representedTaskIds.map((taskId) => ({
               taskId,
-              phase: nodesById.get(taskId)?.state,
+              phase: frontierPhase(nodesById.get(taskId)),
             })),
           ),
           maxLeaves,
         );
-        const capacity = liveExecutionCapacity(
-          rows.flatMap((row) => row.representedTaskIds),
+        const capacity = scenarioLiveExecutionCapacity(
+          nodes,
           nodesById,
-          accounting.actionableTaskIds,
           maxLeaves,
         );
         const workflowRepairs = rows
           .map((row) => workflowRepairForPlainCarrierRow(row, nodesById))
           .filter((action): action is ProjectAppTaskAction => Boolean(action))
           .slice(0, maxLeaves);
+        const attentionRetries = workflowAttentionRetries(
+          rows,
+          nodesById,
+        ).slice(0, capacity.available);
         const actionBudget = Math.min(
-          capacity.available,
-          Math.max(0, maxLeaves - workflowRepairs.length),
+          Math.max(0, capacity.available - attentionRetries.length),
+          Math.max(
+            0,
+            maxLeaves - workflowRepairs.length - attentionRetries.length,
+          ),
         );
         const occupiedFeatureScopes = new Set(
           rows
@@ -1003,16 +1170,16 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
             .map(plainCarrierFeatureScope)
             .filter(Boolean),
         );
+        const selectedRows = selectPlainCarrierRows(
+          rowsNeedingWork,
+          actionBudget,
+          occupiedFeatureScopes,
+        ).map((row) => inspectPlainCarrierRowBranches(projectDir, row));
         const actions = workflowRepairs.concat(
-          selectPlainCarrierRows(
-            rowsNeedingWork,
-            actionBudget,
-            occupiedFeatureScopes,
-          )
-            .map((row) => inspectPlainCarrierRowBranches(projectDir, row))
-            .map((row) =>
-              actionForPlainCarrierRow(row, originDevCommit, report),
-            ),
+          attentionRetries,
+          selectedRows.map((row) =>
+            actionForPlainCarrierRow(row, originDevCommit, report),
+          ),
         );
         const residueCount = rows.filter(
           (row) =>
@@ -1024,20 +1191,29 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           ? "current spec-referenced plain scenario unit"
           : "repository-only plain scenario file";
         const summary = rows.length
-          ? `Scenario frontier remains strict-red on ${source} ${originDevCommit} with zero missing adapter files: declared ${actions.length} bounded plain-carrier normalization task action(s), observed ${accounting.actionableTaskIds.length} actionable and ${accounting.waitingTaskIds.length} waiting plain-carrier task(s), counted ${capacity.pipelineWaitTaskIds.length} exact pipeline-backed wait(s) against live execution capacity for ${capacity.consumingTaskIds.length}/${maxLeaves} occupied slot(s), found ${rows.length} ${rowScope}(s), ${remainingRepoPlainScenarioFileCount} remaining repo plain scenario file(s), and ${residueCount} row(s) represented only by attention or stale terminal residue.`
+          ? `Scenario frontier remains strict-red on ${source} ${originDevCommit} with zero missing adapter files: declared ${actions.length} bounded plain-carrier normalization task action(s), observed ${accounting.actionableTaskIds.length} actionable and ${accounting.waitingTaskIds.length} waiting plain-carrier task(s), counted ${capacity.pipelineWaitTaskIds.length} exact pipeline-backed wait(s) and ${capacity.ownerHandoffTaskIds.length} pending owner-adjudication handoff(s) against live execution capacity for ${capacity.consumingTaskIds.length}/${maxLeaves} occupied slot(s), found ${rows.length} ${rowScope}(s), ${remainingRepoPlainScenarioFileCount} remaining repo plain scenario file(s), and ${residueCount} row(s) represented only by attention or stale terminal residue.`
           : `Scenario frontier remains strict-red on ${source} ${originDevCommit} with zero missing adapter files and ${remainingRepoPlainScenarioFileCount} remaining repo plain scenario file(s), but the inventory did not provide an exact plain-carrier row to reconcile.`;
+        const plainCarrierEvidence = capEvidence(
+          [
+            ...evidence,
+            `live-execution-capacity:${capacity.consumingTaskIds.length}/${maxLeaves};pipeline-waits=${capacity.pipelineWaitTaskIds.length};owner-handoffs=${capacity.ownerHandoffTaskIds.length}`,
+            `unrepresented-plain-rows:${rowsNeedingWork.length}`,
+          ],
+          rows,
+          (row) =>
+            `${row.scope === "repository-only" ? "repo-plain-row" : "plain-row"}:${row.scenarioTestPath};specs=${row.specIds.join(",") || "unknown"};actionable=${row.actionableTaskIds.length};waiting=${row.waitingTaskIds.length};residue=${row.residueTaskIds.length};branches=${branchCandidateEvidence(row)}`,
+        );
+        if (rows.length === 0) {
+          return ctx.done(summary, {
+            state: "needs-owner",
+            summary,
+            evidence: plainCarrierEvidence,
+          });
+        }
         return ctx.done(summary, {
           state: "converged",
           summary,
-          evidence: capEvidence(
-            [
-              ...evidence,
-              `live-execution-capacity:${capacity.consumingTaskIds.length}/${maxLeaves};pipeline-waits=${capacity.pipelineWaitTaskIds.length}`,
-            ],
-            rows,
-            (row) =>
-              `${row.scope === "repository-only" ? "repo-plain-row" : "plain-row"}:${row.scenarioTestPath};specs=${row.specIds.join(",") || "unknown"};actionable=${row.actionableTaskIds.length};waiting=${row.waitingTaskIds.length};residue=${row.residueTaskIds.length};branches=${branchCandidateEvidence(row)}`,
-          ),
+          evidence: plainCarrierEvidence,
           actions,
         });
       }
@@ -1059,15 +1235,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       rows.flatMap((row) =>
         row.representedTaskIds.map((taskId) => ({
           taskId,
-          phase: nodesById.get(taskId)?.state,
+          phase: frontierPhase(nodesById.get(taskId)),
         })),
       ),
       maxLeaves,
     );
-    const capacity = liveExecutionCapacity(
-      rows.flatMap((row) => row.representedTaskIds),
+    const capacity = scenarioLiveExecutionCapacity(
+      nodes,
       nodesById,
-      accounting.actionableTaskIds,
       maxLeaves,
     );
     const actionBudget = capacity.available;
@@ -1081,7 +1256,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         row.waitingTaskIds.length === 0 &&
         row.residueTaskIds.length > 0,
     ).length;
-    const summaryBase = `Scenario frontier has ${missingAdapterFiles.length} current missing adapter(s) on ${source} ${originDevCommit}: declared ${actions.length} bounded owner task action(s), observed ${accounting.actionableTaskIds.length} actionable and ${accounting.waitingTaskIds.length} waiting task(s), counted ${capacity.pipelineWaitTaskIds.length} exact pipeline-backed wait(s) against live execution capacity for ${capacity.consumingTaskIds.length}/${maxLeaves} occupied slot(s), and found ${residueCount} row(s) represented only by attention or stale terminal residue.`;
+    const summaryBase = `Scenario frontier has ${missingAdapterFiles.length} current missing adapter(s) on ${source} ${originDevCommit}: declared ${actions.length} bounded owner task action(s), observed ${accounting.actionableTaskIds.length} actionable and ${accounting.waitingTaskIds.length} waiting task(s), counted ${capacity.pipelineWaitTaskIds.length} exact pipeline-backed wait(s) and ${capacity.ownerHandoffTaskIds.length} pending owner-adjudication handoff(s) against live execution capacity for ${capacity.consumingTaskIds.length}/${maxLeaves} occupied slot(s), and found ${residueCount} row(s) represented only by attention or stale terminal residue.`;
     const summary = summaryBase;
 
     const resultState =
@@ -1093,7 +1268,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     const resultEvidence = capEvidence(
       [
         ...evidence,
-        `live-execution-capacity:${capacity.consumingTaskIds.length}/${maxLeaves};pipeline-waits=${capacity.pipelineWaitTaskIds.length}`,
+        `live-execution-capacity:${capacity.consumingTaskIds.length}/${maxLeaves};pipeline-waits=${capacity.pipelineWaitTaskIds.length};owner-handoffs=${capacity.ownerHandoffTaskIds.length}`,
       ],
       rows,
       (row) =>

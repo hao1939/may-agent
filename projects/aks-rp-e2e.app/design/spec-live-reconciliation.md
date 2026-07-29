@@ -122,6 +122,20 @@ admission checks in the exact task worktree. These are hard dispatch
 invariants, not a spec verdict. If either check fails, no run is queued: the
 same domain agent receives the exact command output and continues repairing the
 same task. A commit produced by that repair is checked again before dispatch.
+Direct scenario carriers are loaded by the ADO executor through Vitest. For a
+new or repaired direct `.test.ts` carrier, scoped validation therefore uses the
+Vitest collection/runtime surface and not only `bun test`; the carrier imports
+test APIs from `vitest`, never `bun:test`. This is execution compatibility, not
+a product judgment, and a source that has not passed that surface is not ready
+for live dispatch.
+Uncertainty about a secret or variable on the current ADO execution surface is
+not itself proof of an external blocker. Evidence from an older backend,
+different source commit, or different target is repair context only. When the
+hard admission checks pass and no exact current-surface observation proves the
+required input unavailable, the agent marks the source live-ready and lets the
+workflow dispatch the bounded run. If that run proves an input is unavailable,
+the resulting exact evidence may justify a wait or ownership handoff naming the
+real producer and resume condition.
 An unsupported product behavior is not automatically nonlive; when the public
 API exposes an observable rejection or no-op contract, the agent should model
 and verify that behavior as a live negative test. If no truthful staging-
@@ -219,6 +233,14 @@ unrelated merge.
   workflow reruns deterministic admission and requires a fresh exact live run;
   it asks the agent again only when replay conflicts or the replayed source
   fails admission.
+- One exact terminal run/source pair is judged at most once during a workflow
+  attempt. A dispatch-time target advance must not recursively restart
+  reconciliation and present that same terminal evidence to the agent again.
+  The workflow preserves the completed judgment, replays only the task-owned
+  patches onto current `origin/dev`, reruns deterministic admission, publishes
+  the replayed task source, and queues one fresh exact run. Only a replay
+  conflict or a red admission result creates new facts that require another
+  agent judgment.
 - An exact terminal run for the current task source is collected and judged
   before scenario-normalization replay considers a newer `origin/dev`. A failed
   run is domain evidence, not stale source to discard. If that judgment commits

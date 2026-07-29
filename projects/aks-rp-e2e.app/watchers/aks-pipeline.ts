@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { spawnSync } from "node:child_process";
+import { execFile, spawnSync } from "node:child_process";
 import {
   existsSync,
   mkdirSync,
@@ -93,6 +93,10 @@ export type ObservedAdoRun = {
   queueTime: string | null;
   artifacts: string[];
   progressive?: boolean;
+  artifactObservable?: boolean;
+  specRun?: boolean;
+  metadataTaskId?: string | null;
+  metadataGeneration?: string | null;
 };
 
 export type PipelineFailureObservation = {
@@ -167,10 +171,19 @@ export type MasterValidationProgress = {
   }>;
 };
 
+type PreservedSpecVerdict = {
+  status: "pass" | "fail" | "error" | "skipped";
+  category: string;
+  reason: string;
+  artifactPath?: string;
+};
+
 const MAX_RESULTS_PER_SCAN = 200;
 const MAX_EVENTS_PER_SCAN = 20;
 const MAX_ADO_RUNS_PER_SCAN = 100;
 const MAX_PROGRESS_ARTIFACTS_PER_SCAN = 3;
+export const MAX_TASK_ARTIFACT_RUNS_PER_SCAN = 12;
+export const MAX_TRACKED_RUN_IDS = 25;
 export const MASTER_VALIDATION_QUEUE_OVERDUE_MS = 90 * 60 * 1_000;
 const ADO_ORGANIZATION = "https://dev.azure.com/msazure";
 const ADO_PROJECT = "CloudNativeCompute";
@@ -247,6 +260,12 @@ function text(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function stringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? [...new Set(value.map(text).filter(Boolean))]
+    : [];
+}
+
 function isProgressiveMasterValidationRun(run: AdoRun): boolean {
   const parameters = record(run.templateParameters);
   if (text(parameters.feature_set) !== "master-validation") return false;
@@ -257,6 +276,19 @@ function isProgressiveMasterValidationRun(run: AdoRun): boolean {
       "scheduled-master-validation",
       "master-validation-campaign",
     ].includes(text(record(JSON.parse(rawMetadata)).purpose));
+  } catch {
+    return false;
+  }
+}
+
+export function isTaskOwnedSpecRun(run: AdoRun): boolean {
+  const parameters = record(run.templateParameters);
+  if (!text(parameters.specs)) return false;
+  const rawMetadata = text(parameters.metadata);
+  if (!rawMetadata) return false;
+  try {
+    const metadata = record(JSON.parse(rawMetadata));
+    return Boolean(text(metadata.taskId) || text(metadata.task));
   } catch {
     return false;
   }
@@ -285,6 +317,22 @@ function adoRunFromApi(run: AdoRun): ObservedAdoRun | null {
   if (!runId) return null;
   const status = String(run.status ?? "unknown");
   const result = String(run.result ?? status);
+  const progressive = isProgressiveMasterValidationRun(run);
+  const parameters = record(run.templateParameters);
+  const rawMetadata = text(parameters.metadata);
+  let metadataTaskId: string | null = null;
+  let metadataGeneration: string | null = null;
+  if (rawMetadata) {
+    try {
+      const metadata = record(JSON.parse(rawMetadata));
+      metadataTaskId =
+        text(metadata.taskId ?? metadata.task ?? metadata.task_id) || null;
+      metadataGeneration = text(metadata.generation) || null;
+    } catch {
+      metadataTaskId = null;
+      metadataGeneration = null;
+    }
+  }
   const observed = {
     runId,
     status,
@@ -303,7 +351,11 @@ function adoRunFromApi(run: AdoRun): ObservedAdoRun | null {
     // Artifact enumeration is intentionally deferred until a terminal
     // transition is emitted. Level scans must remain one provider query.
     artifacts: [],
-    progressive: isProgressiveMasterValidationRun(run),
+    progressive,
+    artifactObservable: progressive || Boolean(metadataTaskId),
+    specRun: Boolean(text(parameters.specs)),
+    metadataTaskId,
+    metadataGeneration,
   };
   return {
     ...observed,
@@ -552,48 +604,128 @@ export function scanAdoPipelineRuns(
   return [...byId.values()];
 }
 
+export function boundedTrackedRunIds(
+  runIds: string[],
+  limit = MAX_TRACKED_RUN_IDS,
+): string[] {
+  return [...new Set(runIds)]
+    .filter((runId) => /^\d+$/.test(runId))
+    .sort((left, right) => Number(right) - Number(left))
+    .slice(0, limit);
+}
+
+export function hasObservedArtifactsForRun(
+  observedArtifacts: Record<string, string>,
+  runId: string,
+): boolean {
+  return Object.keys(observedArtifacts).some((key) =>
+    key.startsWith(`${runId}:`),
+  );
+}
+
+export function artifactRunCandidates(input: {
+  runs: ObservedAdoRun[];
+  previouslyTrackedRunIds: Set<string>;
+  priorFingerprints: Record<string, string>;
+  observedArtifacts: Record<string, string>;
+  taskRunLimit?: number;
+}): ObservedAdoRun[] {
+  const taskRuns = input.runs.filter(
+    (run) => run.artifactObservable && !run.progressive,
+  );
+  const activeTaskRuns = taskRuns.filter(
+    (run) => !["completed", "canceled"].includes(run.status),
+  );
+  const activeIds = new Set(activeTaskRuns.map((run) => run.runId));
+  const completedTaskRuns = taskRuns
+    .filter((run) => !activeIds.has(run.runId))
+    .sort((left, right) => Number(right.runId) - Number(left.runId));
+  const taskLimit = Math.max(
+    activeTaskRuns.length,
+    input.taskRunLimit ?? MAX_TASK_ARTIFACT_RUNS_PER_SCAN,
+  );
+  const selectedTaskIds = new Set([
+    ...activeIds,
+    ...completedTaskRuns
+      .slice(0, Math.max(0, taskLimit - activeIds.size))
+      .map((run) => run.runId),
+  ]);
+  const historicalSpecRunIds = new Set(
+    input.runs
+      .filter(
+        (run) =>
+          run.specRun &&
+          !run.progressive &&
+          ["completed", "canceled"].includes(run.status) &&
+          !hasObservedArtifactsForRun(input.observedArtifacts, run.runId),
+      )
+      .sort((left, right) => Number(right.runId) - Number(left.runId))
+      .slice(0, taskLimit)
+      .map((run) => run.runId),
+  );
+
+  return input.runs.filter((run) => {
+    const forceRescan = historicalSpecRunIds.has(run.runId);
+    return (
+      (run.progressive ||
+        selectedTaskIds.has(run.runId) ||
+        historicalSpecRunIds.has(run.runId)) &&
+      shouldScanProgressiveArtifacts({
+        run,
+        wasTracked: input.previouslyTrackedRunIds.has(run.runId),
+        priorFingerprint: input.priorFingerprints[run.runId],
+        forceRescan,
+      })
+    );
+  });
+}
+
 function artifactKey(runId: string, artifactName: string): string {
   return `${runId}:${artifactName}`;
 }
 
-function downloadAdoArtifact(
+async function downloadAdoArtifact(
   runId: string,
   artifactName: string,
   destination: string,
   ready: (root: string) => boolean = artifactDirectoryReady,
-): boolean {
+): Promise<boolean> {
   const temporary = `${destination}.partial-${process.pid}-${Date.now()}`;
   rmSync(temporary, { recursive: true, force: true });
   mkdirSync(temporary, { recursive: true });
-  const result = spawnSync(
-    AZ_CLI,
-    [
-      "pipelines",
-      "runs",
-      "artifact",
-      "download",
-      "--run-id",
-      runId,
-      "--artifact-name",
-      artifactName,
-      "--path",
-      temporary,
-      "--organization",
-      ADO_ORGANIZATION,
-      "--project",
-      ADO_PROJECT,
-    ],
-    {
-      encoding: "utf8",
-      timeout: 120_000,
-      maxBuffer: 8 * 1024 * 1024,
-      env: {
-        ...process.env,
-        AZURE_CONFIG_DIR: process.env.AZURE_CONFIG_DIR || "/app/.state/.azure",
+  const downloaded = await new Promise<boolean>((resolve) => {
+    execFile(
+      AZ_CLI,
+      [
+        "pipelines",
+        "runs",
+        "artifact",
+        "download",
+        "--run-id",
+        runId,
+        "--artifact-name",
+        artifactName,
+        "--path",
+        temporary,
+        "--organization",
+        ADO_ORGANIZATION,
+        "--project",
+        ADO_PROJECT,
+      ],
+      {
+        encoding: "utf8",
+        timeout: 120_000,
+        maxBuffer: 8 * 1024 * 1024,
+        env: {
+          ...process.env,
+          AZURE_CONFIG_DIR:
+            process.env.AZURE_CONFIG_DIR || "/app/.state/.azure",
+        },
       },
-    },
-  );
-  if (result.status !== 0 || !ready(temporary)) {
+      (error) => resolve(!error),
+    );
+  });
+  if (!downloaded || !ready(temporary)) {
     rmSync(temporary, { recursive: true, force: true });
     return false;
   }
@@ -666,6 +798,101 @@ function admissionReportPath(root: string | null): string | null {
   );
 }
 
+function admissionReport(root: string | null): Record<string, unknown> {
+  const path = admissionReportPath(root);
+  if (!path) return {};
+  try {
+    return record(JSON.parse(readFileSync(path, "utf8")));
+  } catch {
+    return {};
+  }
+}
+
+function admittedSpecIds(root: string | null): Set<string> | null {
+  const admitted = stringArray(admissionReport(root).admittedSpecIds);
+  return admitted.length ? new Set(admitted) : null;
+}
+
+function missingSliceArtifactReason(input: {
+  runId: string;
+  sliceId: string;
+  sourceBranch: string;
+}): string {
+  return [
+    `Azure DevOps run ${input.runId} completed without publishing slice-${input.sliceId}-test-results even though plan-inputs admitted this slice.`,
+    `Current run branch: ${input.sourceBranch || "unknown"}.`,
+    "Treat this as a terminal missing-artifact representation, not a silently pending slice.",
+  ].join(" ");
+}
+
+function preservedSpecVerdictReason(input: {
+  runId: string;
+  sliceId: string;
+  sourceBranch: string;
+  reason: string;
+}): string {
+  return [
+    input.reason,
+    `Preserved this stronger current verdict because Azure DevOps run ${input.runId} completed without publishing slice-${input.sliceId}-test-results for admitted work on ${input.sourceBranch || "unknown"}.`,
+  ].join(" ");
+}
+
+function preservedSpecVerdict(value: unknown): PreservedSpecVerdict | null {
+  const spec = record(value);
+  const review = record(spec.review);
+  if (
+    text(spec.taskId) ||
+    text(spec.activeAttemptId) ||
+    text(spec.activeTaskSessionId) ||
+    text(spec.activeWorkflowRunId) ||
+    text(review.pendingReviewTaskId)
+  ) {
+    return null;
+  }
+  const candidate = normalizedVerdict(
+    text(spec.status) || text(review.acceptedStatus),
+  );
+  if (!["pass", "fail", "error", "skipped"].includes(candidate)) {
+    return null;
+  }
+  const artifactPath =
+    text(review.acceptedResultPath) ||
+    text(spec.lastResultPath) ||
+    text(spec.successorResultPath) ||
+    undefined;
+  if (!artifactPath) return null;
+  const reason =
+    text(review.lastAction) ||
+    text(spec.successorStateReason) ||
+    text(spec.diagnosis) ||
+    `Current spec-loop verdict remains ${candidate}.`;
+  return {
+    status: candidate as PreservedSpecVerdict["status"],
+    category: "preserved_current_exact_verdict",
+    reason,
+    artifactPath,
+  };
+}
+
+function preservedSpecVerdicts(
+  path: string,
+): Record<string, PreservedSpecVerdict> {
+  if (!existsSync(path)) return {};
+  try {
+    const state = record(JSON.parse(readFileSync(path, "utf8")));
+    const specs = record(state.specs);
+    return Object.fromEntries(
+      Object.entries(specs)
+        .map(([specId, spec]) => [specId, preservedSpecVerdict(spec)] as const)
+        .filter((entry): entry is [string, PreservedSpecVerdict] =>
+          Boolean(entry[1]),
+        ),
+    );
+  } catch {
+    return {};
+  }
+}
+
 export function failureObservationsFromAdmissionReport(input: {
   root: string;
   pipelineRunId: string;
@@ -675,7 +902,7 @@ export function failureObservationsFromAdmissionReport(input: {
   const artifactPath = admissionReportPath(input.root);
   if (!artifactPath) return [];
   try {
-    const report = record(JSON.parse(readFileSync(artifactPath, "utf8")));
+    const report = admissionReport(input.root);
     const excluded = Array.isArray(report.excluded)
       ? report.excluded.map(record)
       : [];
@@ -735,6 +962,60 @@ function planSlices(root: string | null): Map<string, string[]> {
   return slices;
 }
 
+function missingSliceArtifactObservations(input: {
+  run: ObservedAdoRun;
+  planRoot: string | null;
+  artifactRoots: Record<string, string>;
+  preservedVerdicts?: Record<string, PreservedSpecVerdict>;
+}): PipelineSpecObservation[] {
+  if (
+    !input.planRoot ||
+    !["completed", "canceled"].includes(input.run.status)
+  ) {
+    return [];
+  }
+  const admitted = admittedSpecIds(input.planRoot);
+  const planned = planSlices(input.planRoot);
+  const preserved = input.preservedVerdicts ?? {};
+  const observations: PipelineSpecObservation[] = [];
+  for (const [sliceId, specIds] of [...planned.entries()].sort(
+    ([left], [right]) => left.localeCompare(right),
+  )) {
+    const artifactName = `slice-${sliceId}-test-results`;
+    if (input.artifactRoots[artifactName]) continue;
+    for (const specId of specIds) {
+      if (admitted && !admitted.has(specId)) continue;
+      const verdict = preserved[specId];
+      observations.push({
+        pipelineRunId: input.run.runId,
+        sourceBranch: input.run.sourceBranch ?? "",
+        sourceCommit: input.run.sourceVersion ?? "",
+        artifactName,
+        artifactPath:
+          verdict?.artifactPath ??
+          `ado://build/${input.run.runId}/${artifactName}`,
+        sliceId,
+        specId,
+        status: verdict?.status ?? "error",
+        category: verdict?.category ?? "missing_slice_artifact",
+        reason: verdict
+          ? preservedSpecVerdictReason({
+              runId: input.run.runId,
+              sliceId,
+              sourceBranch: input.run.sourceBranch ?? "",
+              reason: verdict.reason,
+            })
+          : missingSliceArtifactReason({
+              runId: input.run.runId,
+              sliceId,
+              sourceBranch: input.run.sourceBranch ?? "",
+            }),
+      });
+    }
+  }
+  return observations;
+}
+
 function normalizedVerdict(value: string): string {
   const status = value.toLowerCase();
   return status === "passed" ? "pass" : status === "failed" ? "fail" : status;
@@ -744,6 +1025,7 @@ export function buildMasterValidationProgress(input: {
   run: ObservedAdoRun;
   planRoot: string | null;
   artifactRoots: Record<string, string>;
+  preservedVerdicts?: Record<string, PreservedSpecVerdict>;
   timelineProgress?: TimelineSpecProgress[];
   timelineSlices?: TimelineSliceProgress[];
   checkedAt?: string;
@@ -788,6 +1070,17 @@ export function buildMasterValidationProgress(input: {
       const ids = planned.get(observation.sliceId)!;
       if (!ids.includes(observation.specId)) ids.push(observation.specId);
     }
+  }
+  for (const observation of missingSliceArtifactObservations({
+    run: input.run,
+    planRoot: input.planRoot,
+    artifactRoots: input.artifactRoots,
+    preservedVerdicts: input.preservedVerdicts,
+  })) {
+    observed.set(observation.specId, observation);
+    if (!planned.has(observation.sliceId)) planned.set(observation.sliceId, []);
+    const ids = planned.get(observation.sliceId)!;
+    if (!ids.includes(observation.specId)) ids.push(observation.specId);
   }
 
   const specs = [
@@ -1248,8 +1541,10 @@ export function shouldScanProgressiveArtifacts(input: {
   run: ObservedAdoRun;
   wasTracked: boolean;
   priorFingerprint?: string;
+  forceRescan?: boolean;
 }): boolean {
-  if (!input.run.progressive) return false;
+  if (input.forceRescan) return true;
+  if (!(input.run.artifactObservable ?? input.run.progressive)) return false;
   if (!["completed", "canceled"].includes(input.run.status)) return true;
   return input.wasTracked || input.priorFingerprint !== input.run.fingerprint;
 }
@@ -1262,6 +1557,33 @@ export function shouldEmitPipelineLevel(input: {
     !["completed", "canceled"].includes(input.run.status) ||
     input.priorFingerprint !== input.run.fingerprint
   );
+}
+
+export function shouldEmitMasterValidationFailure(
+  run: ObservedAdoRun,
+): boolean {
+  return run.progressive === true;
+}
+
+function materializedArtifactEvent(
+  observed: ObservedAdoRun,
+  artifactName: string,
+  artifactPath: string,
+): ProjectAppEvent {
+  const base = pipelineFactBase(observed);
+  return {
+    type: "pipeline-artifact.available",
+    source: "aks-pipeline-watcher",
+    target: { project: "aks-rp-e2e" },
+    ...base,
+    artifactName,
+    artifactPath,
+    data: {
+      ...base,
+      artifactName,
+      artifactPath,
+    },
+  };
 }
 
 export function pipelineObservationEvents(
@@ -1306,16 +1628,6 @@ export function pipelineObservationEvents(
     );
   }
 
-  for (const artifact of observed.artifacts) {
-    events.push({
-      type: "pipeline-artifact.available",
-      source: "aks-pipeline-watcher",
-      target: { project: "aks-rp-e2e" },
-      ...base,
-      artifactName: artifact,
-      data: { ...base, artifactName: artifact },
-    });
-  }
   return events;
 }
 
@@ -1352,7 +1664,9 @@ export async function observeAksPipelines(
   const fingerprints = Object.fromEntries(
     results.map((result) => [result.runId, result.fingerprint]),
   );
-  const adoRuns = scanAdoPipelineRuns(prior.trackedRunIds ?? []);
+  const adoRuns = scanAdoPipelineRuns(
+    boundedTrackedRunIds(prior.trackedRunIds ?? []),
+  );
   const adoFingerprints = Object.fromEntries(
     adoRuns.map((run) => [run.runId, run.fingerprint]),
   );
@@ -1398,14 +1712,13 @@ export async function observeAksPipelines(
   };
   const previouslyTrackedRunIds = new Set(prior.trackedRunIds ?? []);
   const pendingTerminalArtifactRunIds = new Set<string>();
-  const progressiveRuns = adoRuns.filter((run) =>
-    shouldScanProgressiveArtifacts({
-      run,
-      wasTracked: previouslyTrackedRunIds.has(run.runId),
-      priorFingerprint: priorAdoFingerprints[run.runId],
-    }),
-  );
-  for (const observed of progressiveRuns) {
+  const artifactRuns = artifactRunCandidates({
+    runs: adoRuns,
+    previouslyTrackedRunIds,
+    priorFingerprints: priorAdoFingerprints,
+    observedArtifacts,
+  });
+  for (const observed of artifactRuns) {
     for (const event of newPipelineTestNonpassingEvents(
       observed,
       timelineSpecProgress(timelinesByRun.get(observed.runId) ?? []).filter(
@@ -1423,34 +1736,47 @@ export async function observeAksPipelines(
         `.state/watchers/aks-pipeline-artifacts/${observed.runId}/plan-inputs`,
       );
       const recordedPlanRoot = observedArtifacts[planKey];
+      const planWasReady = Boolean(
+        (recordedPlanRoot && planDirectoryReady(recordedPlanRoot)) ||
+        planDirectoryReady(planRoot),
+      );
       if (
         !(recordedPlanRoot && planDirectoryReady(recordedPlanRoot)) &&
         !planDirectoryReady(planRoot) &&
         downloadedArtifacts < MAX_PROGRESS_ARTIFACTS_PER_SCAN &&
-        downloadAdoArtifact(
+        (await downloadAdoArtifact(
           observed.runId,
           "plan-inputs",
           planRoot,
           planDirectoryReady,
-        )
+        ))
       ) {
         downloadedArtifacts += 1;
       }
-      if (planDirectoryReady(planRoot)) observedArtifacts[planKey] = planRoot;
+      if (planDirectoryReady(planRoot)) {
+        observedArtifacts[planKey] = planRoot;
+        if (!planWasReady) {
+          ctx.emit(
+            materializedArtifactEvent(observed, "plan-inputs", planRoot),
+          );
+        }
+      }
       const reportPath = admissionReportPath(planRoot);
       const admissionKey = artifactKey(
         observed.runId,
         "live-admission-exclusions",
       );
       if (reportPath && !observedArtifacts[admissionKey]) {
-        for (const failure of failureObservationsFromAdmissionReport({
-          root: planRoot,
-          pipelineRunId: observed.runId,
-          sourceBranch: observed.sourceBranch ?? "",
-          sourceCommit: observed.sourceVersion ?? "",
-        })) {
-          ctx.emit(pipelineFailureEvent(failure));
-          observedFailures += 1;
+        if (shouldEmitMasterValidationFailure(observed)) {
+          for (const failure of failureObservationsFromAdmissionReport({
+            root: planRoot,
+            pipelineRunId: observed.runId,
+            sourceBranch: observed.sourceBranch ?? "",
+            sourceCommit: observed.sourceVersion ?? "",
+          })) {
+            ctx.emit(pipelineFailureEvent(failure));
+            observedFailures += 1;
+          }
         }
         observedArtifacts[admissionKey] = reportPath;
       }
@@ -1468,24 +1794,12 @@ export async function observeAksPipelines(
       if (recordedRoot && artifactDirectoryReady(recordedRoot)) continue;
       if (!artifactDirectoryReady(root)) {
         if (downloadedArtifacts >= MAX_PROGRESS_ARTIFACTS_PER_SCAN) continue;
-        if (!downloadAdoArtifact(observed.runId, artifactName, root)) continue;
+        if (!(await downloadAdoArtifact(observed.runId, artifactName, root)))
+          continue;
         downloadedArtifacts += 1;
       }
       observedArtifacts[key] = root;
-      const artifactEvent = {
-        type: "pipeline-artifact.available",
-        source: "aks-pipeline-watcher",
-        target: { project: "aks-rp-e2e" },
-        ...pipelineFactBase(observed),
-        artifactName,
-        artifactPath: root,
-        data: {
-          ...pipelineFactBase(observed),
-          artifactName,
-          artifactPath: root,
-        },
-      } satisfies ProjectAppEvent;
-      ctx.emit(artifactEvent);
+      ctx.emit(materializedArtifactEvent(observed, artifactName, root));
       for (const observation of specObservationsFromArtifact({
         root,
         pipelineRunId: observed.runId,
@@ -1495,15 +1809,17 @@ export async function observeAksPipelines(
       })) {
         ctx.emit(pipelineSpecEvent(observation));
       }
-      for (const failure of failureObservationsFromArtifact({
-        root,
-        pipelineRunId: observed.runId,
-        sourceBranch: observed.sourceBranch ?? "",
-        sourceCommit: observed.sourceVersion ?? "",
-        artifactName,
-      })) {
-        ctx.emit(pipelineFailureEvent(failure));
-        observedFailures += 1;
+      if (shouldEmitMasterValidationFailure(observed)) {
+        for (const failure of failureObservationsFromArtifact({
+          root,
+          pipelineRunId: observed.runId,
+          sourceBranch: observed.sourceBranch ?? "",
+          sourceCommit: observed.sourceVersion ?? "",
+          artifactName,
+        })) {
+          ctx.emit(pipelineFailureEvent(failure));
+          observedFailures += 1;
+        }
       }
     }
     const readyRoots = names.flatMap((artifactName) => {
@@ -1568,7 +1884,7 @@ export async function observeAksPipelines(
   }
 
   const currentById = new Map(adoRuns.map((run) => [run.runId, run]));
-  const trackedRunIds = [
+  const trackedRunIds = boundedTrackedRunIds([
     ...new Set([
       ...(prior.trackedRunIds ?? []).filter((runId) => {
         const current = currentById.get(runId);
@@ -1581,12 +1897,13 @@ export async function observeAksPipelines(
       ...adoRuns
         .filter(
           (run) =>
-            run.progressive && !["completed", "canceled"].includes(run.status),
+            run.artifactObservable &&
+            !["completed", "canceled"].includes(run.status),
         )
         .map((run) => run.runId),
       ...pendingTerminalArtifactRunIds,
     ]),
-  ];
+  ]);
   const retainedProgressRunIds = new Set(trackedRunIds);
   const retainedLiveProgressFingerprints = Object.fromEntries(
     Object.entries(liveProgressFingerprints)
@@ -1628,6 +1945,9 @@ export async function observeAksPipelines(
         run: latestProgressiveRun,
         planRoot,
         artifactRoots,
+        preservedVerdicts: preservedSpecVerdicts(
+          ctx.appPath(".state/spec-loop/state.json"),
+        ),
         timelineSlices: timelineSliceProgress(
           timelinesByRun.get(latestProgressiveRun.runId) ?? [],
         ),

@@ -9,6 +9,7 @@ import {
   campaignRecoveryDue,
   completedCycleState,
   fixVerificationTrigger,
+  latestCampaignFixes,
   nextCampaignPulseCondition,
   transientMasterValidationAccessFailure,
   verifiedFixNotificationContent,
@@ -125,6 +126,45 @@ describe("master-validation cycle", () => {
         timestamp: { gte: 12_600_042 },
       },
     });
+  });
+
+  test("keeps only the newest active focused PR per stable task", () => {
+    expect(
+      latestCampaignFixes([
+        {
+          pullRequestId: "16572555",
+          taskId:
+            "domain/master-validation-failure/spec.example/85f37b9efc359c5ea74b",
+          sourceBranch: "task/spec-example-old",
+          sourceCommit: "older",
+          title: "Older focused fix",
+        },
+        {
+          pullRequestId: "16572663",
+          taskId:
+            "domain/master-validation-failure/spec.example/85f37b9efc359c5ea74b",
+          sourceBranch: "task/spec-example-new",
+          sourceCommit: "newer",
+          title: "Replacement focused fix",
+        },
+        {
+          pullRequestId: "16570000",
+          taskId: "pull-request/16570000",
+          sourceBranch: "fix/master-validation-bootstrap",
+          sourceCommit: "bootstrap",
+          title: "Independent bootstrap fix",
+        },
+      ]),
+    ).toEqual([
+      expect.objectContaining({
+        pullRequestId: "16570000",
+        sourceCommit: "bootstrap",
+      }),
+      expect.objectContaining({
+        pullRequestId: "16572663",
+        sourceCommit: "newer",
+      }),
+    ]);
   });
 
   test("publishes only fixes proven by an exact campaign spec pass", () => {

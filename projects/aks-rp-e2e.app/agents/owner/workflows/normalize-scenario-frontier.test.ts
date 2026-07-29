@@ -2,7 +2,10 @@ import { describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { execute } from "./normalize-scenario-frontier";
+import {
+  execute,
+  retryWorkflowAttentionAction,
+} from "./normalize-scenario-frontier";
 
 async function workspace(input: {
   missingAdapterFiles: string[];
@@ -12,6 +15,7 @@ async function workspace(input: {
   tasks?: Record<string, Record<string, unknown>>;
   resources?: Record<string, unknown>;
   conditions?: Record<string, unknown>;
+  attempts?: Record<string, unknown>;
 }) {
   const root = await mkdtemp(join(tmpdir(), "scenario-frontier-"));
   const appDir = join(root, "aks-rp-e2e.app");
@@ -26,6 +30,7 @@ async function workspace(input: {
     JSON.stringify({
       resources: input.resources ?? {},
       conditions: input.conditions ?? {},
+      attempts: input.attempts ?? {},
     }),
   );
   await writeFile(
@@ -106,6 +111,58 @@ function context(appDir: string, projectDir: string) {
 }
 
 describe("normalize scenario frontier workflow", () => {
+  test("requeues the same learned workflow after execution or owner-verification failure", () => {
+    expect(
+      retryWorkflowAttentionAction({
+        id: "domain/normalize-case-a",
+        generation: 3,
+        state: "attention",
+        parentId: "group/scenario-normalization",
+        workflow: "spec-live-reconciliation",
+        input: {},
+        conditionIds: [],
+        latestAttemptHandler: "workflow:spec-live-reconciliation",
+        latestFailureReason: "HandlerExecutionFailed",
+      }),
+    ).toEqual({
+      kind: "unblock-task",
+      taskId: "domain/normalize-case-a",
+      expectedGeneration: 3,
+      reason: expect.stringContaining("same spec-live-reconciliation task"),
+    });
+    expect(
+      retryWorkflowAttentionAction({
+        id: "domain/normalize-case-a",
+        generation: 3,
+        state: "attention",
+        parentId: "group/scenario-normalization",
+        workflow: "spec-live-reconciliation",
+        input: {},
+        conditionIds: [],
+        latestAttemptHandler: "owner:aks-explorer",
+        latestFailureReason: "handler-blocked",
+      }),
+    ).toEqual({
+      kind: "unblock-task",
+      taskId: "domain/normalize-case-a",
+      expectedGeneration: 3,
+      reason: expect.stringContaining("accountable-owner result"),
+    });
+    expect(
+      retryWorkflowAttentionAction({
+        id: "domain/normalize-case-a",
+        generation: 3,
+        state: "attention",
+        parentId: "group/scenario-normalization",
+        workflow: "spec-live-reconciliation",
+        input: {},
+        conditionIds: [],
+        latestAttemptHandler: "workflow:spec-live-reconciliation",
+        latestFailureReason: "needs-owner",
+      }),
+    ).toBeNull();
+  });
+
   test("declares bounded owner work for missing adapters without mutating state", async () => {
     const ws = await workspace({
       missingAdapterFiles: [
@@ -267,6 +324,64 @@ describe("normalize scenario frontier workflow", () => {
     expect(result.output.summary).toContain("1 waiting");
   });
 
+  test("does not let a dependency-blocked pending leaf consume actionable capacity", async () => {
+    const scenarioPaths = ["a", "b", "c", "d", "e", "f"].map(
+      (name) => `features/feature-a/tests/case-${name}.ts`,
+    );
+    const blockedTaskId = "domain/blocked-case-a";
+    const ws = await workspace({
+      missingAdapterFiles: [],
+      strictPassed: false,
+      remainingSpecReferencedPlainScenarioUnits: scenarioPaths.map(
+        (scenarioTestPath, index) => ({
+          scenarioTestPath,
+          adapterPath: scenarioTestPath.replace(/\.ts$/, ".test.ts"),
+          specIds: [`spec.feature-a.case-${index}`],
+          featureIds: ["feature-a"],
+          activeSpecCount: 1,
+        }),
+      ),
+      tasks: {
+        [blockedTaskId]: {
+          id: blockedTaskId,
+          phase: "pending",
+          readiness: {
+            state: "dependency-blocked",
+            reason: "Waiting for domain/prerequisite-a",
+          },
+          input: {
+            loopId: "scenario-normalization",
+            workKey: scenarioPaths[0],
+          },
+        },
+        ...Object.fromEntries(
+          scenarioPaths.slice(1, 5).map((scenarioTestPath, index) => [
+            `domain/running-plain-${index + 1}`,
+            {
+              id: `domain/running-plain-${index + 1}`,
+              phase: "running",
+              input: {
+                loopId: "scenario-normalization",
+                workKey: scenarioTestPath,
+              },
+            },
+          ]),
+        ),
+      },
+    });
+
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+
+    expect(result.output.state).toBe("converged");
+    expect(result.output.actions).toHaveLength(1);
+    expect(result.output.actions[0].input.scenarioTestPath).toBe(
+      scenarioPaths[5],
+    );
+    expect(result.output.summary).toContain(
+      "observed 4 actionable and 1 waiting",
+    );
+  });
+
   test("counts a terminal pipeline wait until its waiting task reconciles", async () => {
     const missingAdapterFiles = ["a", "b", "c", "d", "e", "f"].map(
       (name) => `features/feature-a/tests/case-${name}.test.ts`,
@@ -318,10 +433,10 @@ describe("normalize scenario frontier workflow", () => {
       actions: [],
     });
     expect(result.output.summary).toContain(
-      "counted 1 exact pipeline-backed wait(s) against live execution capacity for 5/5 occupied slot(s)",
+      "counted 1 exact pipeline-backed wait(s) and 0 pending owner-adjudication handoff(s) against live execution capacity for 5/5 occupied slot(s)",
     );
     expect(result.output.evidence).toContain(
-      "live-execution-capacity:5/5;pipeline-waits=1",
+      "live-execution-capacity:5/5;pipeline-waits=1;owner-handoffs=0",
     );
   });
 
@@ -385,10 +500,193 @@ describe("normalize scenario frontier workflow", () => {
       actions: [],
     });
     expect(result.output.summary).toContain(
-      "counted 1 exact pipeline-backed wait(s) against live execution capacity for 5/5 occupied slot(s)",
+      "counted 1 exact pipeline-backed wait(s) and 0 pending owner-adjudication handoff(s) against live execution capacity for 5/5 occupied slot(s)",
     );
     expect(result.output.evidence).toContain(
-      "live-execution-capacity:5/5;pipeline-waits=1",
+      "live-execution-capacity:5/5;pipeline-waits=1;owner-handoffs=0",
+    );
+  });
+
+  test("keeps a pipeline wait in capacity after its row leaves strict inventory", async () => {
+    const currentPaths = ["b", "c", "d", "e", "f", "g"].map(
+      (name) => `features/feature-a/tests/case-${name}.ts`,
+    );
+    const waitConditionId = "pipeline-run-88-completed";
+    const ws = await workspace({
+      missingAdapterFiles: [],
+      strictPassed: false,
+      remainingSpecReferencedPlainScenarioUnits: currentPaths.map(
+        (scenarioTestPath, index) => ({
+          scenarioTestPath,
+          adapterPath: scenarioTestPath.replace(/\.ts$/, ".test.ts"),
+          specIds: [`spec.feature-a.case-${index + 1}`],
+          featureIds: ["feature-a"],
+          activeSpecCount: 1,
+        }),
+      ),
+      resources: {
+        "domain/wait-old-case-a": {
+          spec: {
+            parentId: "group/scenario-normalization",
+            input: {
+              loopId: "scenario-normalization",
+              workKey: "features/feature-a/tests/case-a.ts",
+            },
+          },
+          status: {
+            phase: "waiting",
+            conditionIds: [waitConditionId],
+          },
+        },
+      },
+      tasks: Object.fromEntries(
+        currentPaths.slice(0, 4).map((scenarioTestPath, index) => [
+          `domain/running-current-${index + 1}`,
+          {
+            id: `domain/running-current-${index + 1}`,
+            phase: "running",
+            input: {
+              loopId: "scenario-normalization",
+              workKey: scenarioTestPath,
+            },
+          },
+        ]),
+      ),
+    });
+
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+
+    expect(result.output.actions).toHaveLength(0);
+    expect(result.output.summary).toContain(
+      "counted 1 exact pipeline-backed wait(s) and 0 pending owner-adjudication handoff(s) against live execution capacity for 5/5 occupied slot(s)",
+    );
+  });
+
+  test("counts an active repair child in scenario live capacity", async () => {
+    const currentPaths = ["b", "c", "d", "e", "f"].map(
+      (name) => `features/feature-a/tests/case-${name}.ts`,
+    );
+    const parentId = "domain/normalize-old-case-a";
+    const ws = await workspace({
+      missingAdapterFiles: [],
+      strictPassed: false,
+      remainingSpecReferencedPlainScenarioUnits: currentPaths.map(
+        (scenarioTestPath, index) => ({
+          scenarioTestPath,
+          adapterPath: scenarioTestPath.replace(/\.ts$/, ".test.ts"),
+          specIds: [`spec.feature-a.case-${index + 1}`],
+          featureIds: ["feature-a"],
+          activeSpecCount: 1,
+        }),
+      ),
+      resources: {
+        [parentId]: {
+          spec: {
+            parentId: "group/scenario-normalization",
+            input: {
+              loopId: "scenario-normalization",
+              workKey: "features/feature-a/tests/case-a.ts",
+            },
+          },
+          status: { phase: "waiting" },
+        },
+      },
+      tasks: {
+        ...Object.fromEntries(
+          currentPaths.slice(0, 3).map((scenarioTestPath, index) => [
+            `domain/running-current-${index + 1}`,
+            {
+              id: `domain/running-current-${index + 1}`,
+              phase: "running",
+              input: {
+                loopId: "scenario-normalization",
+                workKey: scenarioTestPath,
+              },
+            },
+          ]),
+        ),
+        "domain/repair-old-case-a": {
+          id: "domain/repair-old-case-a",
+          parent_id: parentId,
+          phase: "running",
+          input: {},
+        },
+      },
+    });
+
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+
+    expect(result.output.actions).toHaveLength(1);
+    expect(result.output.actions[0].input.scenarioTestPath).toBe(
+      currentPaths[3],
+    );
+    expect(result.output.summary).toContain(
+      "live execution capacity for 4/5 occupied slot(s)",
+    );
+  });
+
+  test("keeps a needs-owner handoff in capacity after its row leaves inventory", async () => {
+    const currentPaths = ["b", "c", "d", "e", "f", "g"].map(
+      (name) => `features/feature-a/tests/case-${name}.ts`,
+    );
+    const ownerHandoffTaskId = "domain/owner-handoff-old-case-a";
+    const ws = await workspace({
+      missingAdapterFiles: [],
+      strictPassed: false,
+      remainingSpecReferencedPlainScenarioUnits: currentPaths.map(
+        (scenarioTestPath, index) => ({
+          scenarioTestPath,
+          adapterPath: scenarioTestPath.replace(/\.ts$/, ".test.ts"),
+          specIds: [`spec.feature-a.case-${index + 1}`],
+          featureIds: ["feature-a"],
+          activeSpecCount: 1,
+        }),
+      ),
+      resources: {
+        [ownerHandoffTaskId]: {
+          metadata: { generation: 1 },
+          spec: {
+            parentId: "group/scenario-normalization",
+            workflow: "spec-live-reconciliation",
+            input: {
+              loopId: "scenario-normalization",
+              workKey: "features/feature-a/tests/case-a.ts",
+            },
+          },
+          status: { phase: "attention" },
+        },
+      },
+      attempts: {
+        "owner-handoff": {
+          taskId: ownerHandoffTaskId,
+          startedAt: "2026-07-28T00:00:00Z",
+          handler: "workflow:spec-live-reconciliation",
+          failureReason: "needs-owner",
+        },
+      },
+      tasks: Object.fromEntries(
+        currentPaths.slice(0, 4).map((scenarioTestPath, index) => [
+          `domain/running-current-${index + 1}`,
+          {
+            id: `domain/running-current-${index + 1}`,
+            phase: "running",
+            input: {
+              loopId: "scenario-normalization",
+              workKey: scenarioTestPath,
+            },
+          },
+        ]),
+      ),
+    });
+
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+
+    expect(result.output.actions).toHaveLength(0);
+    expect(result.output.summary).toContain(
+      "1 pending owner-adjudication handoff(s)",
+    );
+    expect(result.output.summary).toContain(
+      "live execution capacity for 5/5 occupied slot(s)",
     );
   });
 
@@ -649,6 +947,59 @@ describe("normalize scenario frontier workflow", () => {
     expect(result.output.evidence).toContain(
       "plain-row:features/feature-a/tests/case-a.ts;specs=spec.feature-a.case-a;actionable=0;waiting=0;residue=0;branches=0",
     );
+  });
+
+  test("retries an attention leaf on the same task after workflow execution failed", async () => {
+    const scenarioTestPath = "features/feature-a/tests/case-a.ts";
+    const taskId = "domain/normalize-case-a";
+    const ws = await workspace({
+      missingAdapterFiles: [],
+      strictPassed: false,
+      remainingSpecReferencedPlainScenarioUnits: [
+        {
+          scenarioTestPath,
+          adapterPath: "features/feature-a/tests/case-a.test.ts",
+          specIds: ["spec.feature-a.case-a"],
+          featureIds: ["feature-a"],
+          activeSpecCount: 1,
+        },
+      ],
+      resources: {
+        [taskId]: {
+          metadata: { generation: 2 },
+          spec: {
+            parentId: "group/scenario-normalization",
+            workflow: "spec-live-reconciliation",
+            input: {
+              loopId: "scenario-normalization",
+              workKey: scenarioTestPath,
+              scenarioTestPath,
+              specId: "spec.feature-a.case-a",
+            },
+          },
+          status: { phase: "attention" },
+        },
+      },
+      attempts: {
+        attempt: {
+          taskId,
+          startedAt: "2026-07-26T05:00:00Z",
+          handler: "workflow:spec-live-reconciliation",
+          failureReason: "HandlerExecutionFailed",
+        },
+      },
+    });
+
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+
+    expect(result.output.actions).toEqual([
+      {
+        kind: "unblock-task",
+        taskId,
+        expectedGeneration: 2,
+        reason: expect.stringContaining("same spec-live-reconciliation task"),
+      },
+    ]);
   });
 
   test("fills plain-carrier capacity from disjoint feature scopes first", async () => {

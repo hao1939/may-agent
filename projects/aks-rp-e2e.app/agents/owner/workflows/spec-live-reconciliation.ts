@@ -24,6 +24,7 @@ import {
   scenarioNormalizationInvariant,
   scenarioNormalizationSpecIds,
   specTerminalDispositionCheck,
+  specTerminalTargetCheck,
   type ScenarioNormalizationInput,
   type SpecTerminalDisposition,
 } from "./lib/scenario-normalization-invariant.js";
@@ -43,9 +44,15 @@ const defaultLiveTarget = "staging";
 const stagingSubscriptionId = "26fe00f8-9173-4872-9134-bb1d2e00343a";
 const stagingLocation = "westus2";
 export const terminalDispositionSourceRepairInstruction =
-  "If exact evidence supports a reviewed terminal posture, keep that judgment in this domain workflow. When the spec still carries a stale ready/pass posture, update its structured status, specState, statusReason, and latest-live-result evidence from the exact facts, add any needed durable source memo, run scoped checks, commit the bounded change, and return decision=terminal-disposition with terminalDisposition={specId,status,specState}. Do not return needs-owner merely because recording the terminal product gap requires this source update. Compact package status, compact-plan eligibility, a sibling compact task, or an arbitrary origin/dev advance is context, not an external prerequisite for this same-spec normalization; do not wait on any of them. An exact external wait must name the actual unavailable capability or authority, its real producer, and the observable fact that lets this same source continue. Use needs-owner only when the evidence cannot support the domain judgment or a real external authority must decide it. The workflow will validate and integrate the committed terminal source without claiming a failed run as a pass.";
+  "If exact evidence supports a reviewed terminal posture, keep that judgment in this domain workflow. When the spec still carries a stale ready/pass posture, update its structured status, specState, statusReason, and latest-live-result evidence from the exact facts, add any needed durable source memo, run scoped checks, commit the bounded change, and return decision=terminal-disposition with terminalDisposition={specId,status,specState}. For scenario normalization, changing the spec to blocked/environment-blocked because no unchanged live run is currently truthful is a terminal disposition for this source iteration, even when a separate approval or environment change may reopen product testing later. Do not return committed with liveReady=false merely to keep that truthful normalized source off dev; terminal here means the current source posture is complete and reviewable, not that the feature is abandoned forever. A terminal disposition is neither live readiness nor a wait: omit liveReady and condition entirely. Preserve the resolved live target in statusReason, nextAction, resumeCondition, and every active approval/wait/path identifier; never bind a staging disposition to a stale identifier for another subscription or region. Do not return needs-owner merely because recording the terminal product gap requires this source update. Compact package status, compact-plan eligibility, a sibling compact task, or an arbitrary origin/dev advance is context, not an external prerequisite for this same-spec normalization; do not wait on any of them. An exact external wait must name the actual unavailable capability or authority, its real producer, and the observable fact that lets this same source continue. Use needs-owner only when the evidence cannot support the domain judgment or a real external authority must decide it. The workflow will validate and integrate the committed terminal source without claiming a failed run as a pass.";
 export const acceptedLiveProofSourceInstruction =
-  "When this exact run proves the current source passes and hard live-proof validation found no structural gap, return accepted-pass without editing or committing tracked source. A checked-in ready posture, an older accepted run, or missing latestLiveResult fields is not a model defect at this point: the app projects the newly accepted proof after the task receipt is persisted. Do not rewrite the spec, model, generated views, test assertions, sourceVersion, observedAt, statusReason, nextAction, resumeCondition, evidence memo, or equivalent bookkeeping merely to record this successful run. Return committed only when the run exposes an actual behavior or contract defect that requires changed source and a fresh exact run, and cite that defect.";
+  "When this exact run proves the current source passes and hard live-proof validation found no structural gap, return accepted-pass without editing or committing tracked source. A checked-in ready posture, an older accepted run, or missing latestLiveResult fields is not a model defect at this point: the app projects the newly accepted proof after the task receipt is persisted. Do not rewrite the spec, model, generated views, test assertions, sourceVersion, observedAt, statusReason, nextAction, resumeCondition, evidence memo, or equivalent bookkeeping merely to record this successful run. Return committed only when the run exposes an actual behavior or contract defect that requires changed source and a fresh exact run, and cite that defect. When the run reports test_not_implemented or partial live coverage, changing only diagnostics, messages, metadata, or static checks is not a runnable repair: implement the missing live behavior before setting liveReady=true, or return the truthful terminal disposition, exact external wait, or ownership escalation.";
+export const directVitestCompatibilityInstruction =
+  "ADO loads a direct scenario .test.ts carrier through Vitest without guaranteeing the Bun runtime global. Validate a new or repaired direct carrier on the Vitest collection/runtime surface, not only with `bun test`; import test APIs from `vitest`, never `bun:test`; and replace runtime uses such as `Bun.spawn`, `Bun.spawnSync`, and `Bun.file` with portable Node APIs. A Bun-only passing test is not live-ready evidence.";
+export const exactStrictInventoryInstruction =
+  "The repository-wide strict inventory is expected to exit nonzero while other rows remain. Capture and parse its JSON anyway; this leaf is clear only when its exact legacy path is absent from both guard.remainingSpecReferencedPlainScenarioUnits and guard.remainingRepoPlainScenarioFiles.";
+export const currentAdoSurfaceInstruction =
+  "Do not treat uncertainty about a secret or variable on the current ADO execution surface as proof of a blocker. Missing-input evidence from an older backend, different source commit, or different target is context only. When hard admission checks pass and no exact current-surface observation proves the input unavailable, set liveReady=true so this workflow can dispatch the bounded run and collect the current fact. Use a wait or needs-owner only after exact current evidence identifies the unavailable input, its producer, and the observable resume condition.";
 const azCli =
   process.env.AZURE_CLI_PATH ||
   (existsSync("/app/.state/.local/bin/az")
@@ -309,18 +316,6 @@ export function terminalDispositionDecisionProblem(
   return null;
 }
 
-export function terminalLineageReplayDecisionProblem(
-  decision: AgentDecision,
-): string | null {
-  if (decision.decision !== "committed") {
-    return "terminal-disposition integration conflict must be resolved inside this same domain workflow";
-  }
-  if (decision.liveReady !== undefined || decision.condition !== undefined) {
-    return "terminal-disposition lineage repair only replays already reviewed source; omit liveReady and condition because the original terminal judgment controls the final disposition";
-  }
-  return null;
-}
-
 export function shouldReplayReviewedTerminalWriteback(input: {
   sourceProblem: string | null;
   reviewedWritebackCommit: string;
@@ -400,6 +395,168 @@ export function scenarioReplayForceWithLeaseArg(input: {
   expectedRemoteCommit: string | null;
 }): string {
   return `--force-with-lease=refs/heads/${input.sourceBranch}:${input.expectedRemoteCommit ?? ""}`;
+}
+
+export type ScenarioDispatchReplayResult =
+  | {
+      state: "ready";
+      sourceCommit: string;
+      targetCommit: string;
+      expectedRemoteCommit: string | null;
+      taskCommits: string[];
+      evidence: string[];
+      replayed: boolean;
+    }
+  | {
+      state: "conflict";
+      targetCommit: string;
+      expectedRemoteCommit: string | null;
+      taskCommits: string[];
+      evidence: string[];
+      error: string;
+    }
+  | { state: "error"; evidence: string[]; error: string };
+
+export function replayScenarioCandidateForDispatch(input: {
+  workspaceDir: string;
+  sourceBranch: string;
+  candidateCommit: string;
+  targetRef: string;
+}): ScenarioDispatchReplayResult {
+  const { workspaceDir, sourceBranch, candidateCommit, targetRef } = input;
+  if (!sourceBranch.startsWith("task/")) {
+    return {
+      state: "error",
+      error: "dispatch replay may update only a dedicated task branch",
+      evidence: [`source-branch:${sourceBranch}`],
+    };
+  }
+
+  const currentHead = git(workspaceDir, ["rev-parse", "HEAD"], true);
+  if (currentHead.status !== 0 || currentHead.stdout !== candidateCommit) {
+    return {
+      state: "error",
+      error: "dispatch replay candidate is not the task worktree HEAD",
+      evidence: [
+        `source-commit:${candidateCommit}`,
+        `workspace-head:${currentHead.stdout || "unresolved"}`,
+      ],
+    };
+  }
+  if (cleanWorkspace(workspaceDir)) {
+    return {
+      state: "error",
+      error: "dispatch replay requires a clean task worktree",
+      evidence: [`workspace:${workspaceDir}`],
+    };
+  }
+
+  const target = git(workspaceDir, ["rev-parse", targetRef], true);
+  if (target.status !== 0 || !target.stdout) {
+    return {
+      state: "error",
+      error: `dispatch replay could not resolve ${targetRef}`,
+      evidence: [`target-ref:${targetRef}`],
+    };
+  }
+  const targetCommit = target.stdout;
+  const expectedRemoteCommit = remoteLeaseCommit(
+    git(
+      workspaceDir,
+      ["ls-remote", "--exit-code", "origin", `refs/heads/${sourceBranch}`],
+      true,
+    ),
+  );
+  if (
+    git(
+      workspaceDir,
+      ["merge-base", "--is-ancestor", targetCommit, candidateCommit],
+      true,
+    ).status === 0
+  ) {
+    return {
+      state: "ready",
+      sourceCommit: candidateCommit,
+      targetCommit,
+      expectedRemoteCommit,
+      taskCommits: [],
+      evidence: [`dispatch-target-current:${targetRef}@${targetCommit}`],
+      replayed: false,
+    };
+  }
+
+  const cherry = git(
+    workspaceDir,
+    ["cherry", targetRef, candidateCommit],
+    true,
+  );
+  if (cherry.status !== 0) {
+    return {
+      state: "error",
+      error:
+        "dispatch replay could not distinguish task patches from current target history",
+      evidence: [
+        `source-commit:${candidateCommit}`,
+        `target-ref:${targetRef}@${targetCommit}`,
+        `git-cherry:${cherry.stderr || cherry.stdout || "failed"}`,
+      ],
+    };
+  }
+  const taskCommits = novelScenarioReplayCommits(cherry.stdout);
+  const evidence = [
+    `dispatch-replay-from:${candidateCommit}`,
+    `dispatch-replay-target:${targetRef}@${targetCommit}`,
+    `dispatch-task-owned-commits:${taskCommits.join(",") || "none"}`,
+  ];
+  const reset = git(workspaceDir, ["reset", "--hard", targetCommit], true);
+  if (reset.status !== 0) {
+    return {
+      state: "error",
+      error: "dispatch replay could not reset to current target",
+      evidence: [...evidence, `reset-error:${reset.stderr || reset.stdout}`],
+    };
+  }
+  const replay = taskCommits.length
+    ? git(workspaceDir, ["cherry-pick", ...taskCommits], true)
+    : { status: 0, stdout: "", stderr: "" };
+  if (replay.status !== 0) {
+    return {
+      state: "conflict",
+      targetCommit,
+      expectedRemoteCommit,
+      taskCommits,
+      evidence,
+      error: replay.stderr || replay.stdout || "cherry-pick failed",
+    };
+  }
+
+  const sourceCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+  if (
+    cleanWorkspace(workspaceDir) ||
+    git(workspaceDir, ["rev-parse", "--verify", "CHERRY_PICK_HEAD"], true)
+      .status === 0 ||
+    git(
+      workspaceDir,
+      ["merge-base", "--is-ancestor", targetCommit, sourceCommit],
+      true,
+    ).status !== 0
+  ) {
+    return {
+      state: "error",
+      error: "dispatch replay did not produce one clean target-based lineage",
+      evidence: [...evidence, `source-commit:${sourceCommit}`],
+    };
+  }
+
+  return {
+    state: "ready",
+    sourceCommit,
+    targetCommit,
+    expectedRemoteCommit,
+    taskCommits,
+    evidence: [...evidence, `dispatch-replayed-source:${sourceCommit}`],
+    replayed: true,
+  };
 }
 
 export function directIntegrationAction(input: {
@@ -670,17 +827,32 @@ function readJsonRecord(path: string): Record<string, unknown> | null {
   }
 }
 
+function artifactRecordChain(
+  artifact: Record<string, unknown>,
+): Record<string, unknown>[] {
+  const records = [artifact];
+  let current = artifact;
+  while (
+    current.raw &&
+    typeof current.raw === "object" &&
+    !Array.isArray(current.raw)
+  ) {
+    current = current.raw as Record<string, unknown>;
+    records.push(current);
+  }
+  return records;
+}
+
 export function artifactObservedClaimIds(
   path: string,
   specId: string,
 ): string[] {
   const artifact = readJsonRecord(path);
   if (!artifact || nonEmptyString(artifact.specId) !== specId) return [];
-  const raw = jsonRecord(artifact.raw);
-  return [
-    ...(Array.isArray(raw.assertions) ? raw.assertions : []),
-    ...(Array.isArray(artifact.assertions) ? artifact.assertions : []),
-  ]
+  return artifactRecordChain(artifact)
+    .flatMap((record) =>
+      Array.isArray(record.assertions) ? record.assertions : [],
+    )
     .map(jsonRecord)
     .filter((assertion) => assertion.verdictImpact === "claim")
     .map((assertion) => nonEmptyString(assertion.id ?? assertion.name))
@@ -704,11 +876,11 @@ export function artifactProvesDeclaredClaims(
     return false;
   }
 
-  const raw = jsonRecord(artifact.raw);
-  const assertions = [
-    ...(Array.isArray(raw.assertions) ? raw.assertions : []),
-    ...(Array.isArray(artifact.assertions) ? artifact.assertions : []),
-  ].map(jsonRecord);
+  const assertions = artifactRecordChain(artifact)
+    .flatMap((record) =>
+      Array.isArray(record.assertions) ? record.assertions : [],
+    )
+    .map(jsonRecord);
 
   return expectedClaimIds.every((claimId) =>
     assertions.some(
@@ -750,8 +922,8 @@ export function artifactProvesCleanup(path: string, specId: string): boolean {
   ) {
     return false;
   }
-  const raw = jsonRecord(artifact.raw);
-  const cleanupRecords = [raw.cleanup, artifact.cleanup].map(jsonRecord);
+  const records = artifactRecordChain(artifact);
+  const cleanupRecords = records.map((record) => jsonRecord(record.cleanup));
   for (const cleanup of cleanupRecords) {
     if (
       cleanup.attempted === true &&
@@ -760,10 +932,9 @@ export function artifactProvesCleanup(path: string, specId: string): boolean {
       return true;
     }
   }
-  const assertions = [
-    ...(Array.isArray(raw.assertions) ? raw.assertions : []),
-    ...(Array.isArray(artifact.assertions) ? artifact.assertions : []),
-  ];
+  const assertions = records.flatMap((record) =>
+    Array.isArray(record.assertions) ? record.assertions : [],
+  );
   return assertions.some((entry) => {
     const assertion = jsonRecord(entry);
     return assertion.verdictImpact === "cleanup" && assertion.ok === true;
@@ -2179,14 +2350,24 @@ export function taskWorktreeRecoveryDecisionProblem(
   decision: AgentDecision,
 ): string | null {
   if (
-    !["committed", "test-current", "needs-owner"].includes(
-      decision.decision,
-    )
+    !["committed", "test-current", "needs-owner"].includes(decision.decision)
   ) {
     return "task worktree recovery must return committed for preserved task work, test-current for removed task residue, or needs-owner for concrete ownership ambiguity; domain disposition is evaluated after recovery";
   }
   if (decision.liveReady !== undefined || decision.condition !== undefined) {
     return "task worktree recovery only restores a clean source state; omit liveReady and condition because domain readiness and dispatch are evaluated after recovery";
+  }
+  return null;
+}
+
+export function terminalLineageReplayDecisionProblem(
+  decision: AgentDecision,
+): string | null {
+  if (decision.decision !== "committed") {
+    return "terminal-disposition integration conflict must be resolved inside this same domain workflow";
+  }
+  if (decision.liveReady !== undefined || decision.condition !== undefined) {
+    return "terminal-disposition lineage repair only replays already reviewed source; omit liveReady and condition because the original terminal judgment controls the final disposition";
   }
   return null;
 }
@@ -2580,6 +2761,7 @@ export async function reconcileSpecLive(
             "The workflow ran the same private-source and live-admission checks used by the pipeline in the exact task worktree. Inspect the current source and the raw findings below; do not trust this summary alone.",
             ...admission.evidence,
             "Continue this same task. For a carrier/spec defect, make the smallest repair, run the same checks plus scoped tests, commit it, leave the worktree clean, and return decision=committed.",
+            directVitestCompatibilityInstruction,
             "Unsupported product behavior is not automatically nonlive. If the public API exposes an observable rejection or no-op contract, implement a truthful live negative test for that behavior.",
             "A source-only check is diagnostic evidence, not completion. If no truthful staging-observable contract exists, return one exact external wait or needs-owner with the concrete ownership boundary; do not mark the task complete.",
             "Use waiting only for one exact externally observable condition and needs-owner only for a genuine ownership-boundary decision. Do not push, queue ADO, create another task, or edit app state.",
@@ -2800,13 +2982,22 @@ export async function reconcileSpecLive(
       candidateCommit: string,
       retryOfRunId?: string,
     ): Promise<
-      | { state: "queued"; run: PipelineRun }
+      | {
+          state: "queued";
+          run: PipelineRun;
+          sourceCommit: string;
+          evidence: string[];
+        }
       | { state: "result"; result: WorkflowResult }
     > => {
       const directScenarioNormalization =
         integrationMode(targetBranch) === "direct" &&
         normalizationInput?.loopId === "scenario-normalization";
-      if (directScenarioNormalization) {
+      let dispatchCommit = candidateCommit;
+      const dispatchEvidence: string[] = [];
+
+      for (let targetAttempt = 1; targetAttempt <= 3; targetAttempt += 1) {
+        if (!directScenarioNormalization) break;
         git(repoDir, ["fetch", "origin", targetBranch]);
         const latestTargetCommit = git(repoDir, [
           "rev-parse",
@@ -2815,12 +3006,7 @@ export async function reconcileSpecLive(
         const targetIsInSource =
           git(
             workspaceDir,
-            [
-              "merge-base",
-              "--is-ancestor",
-              latestTargetCommit,
-              candidateCommit,
-            ],
+            ["merge-base", "--is-ancestor", latestTargetCommit, dispatchCommit],
             true,
           ).status === 0;
         if (
@@ -2829,28 +3015,178 @@ export async function reconcileSpecLive(
             targetIsInSource,
           })
         ) {
-          return {
-            state: "result",
-            result: await reconcileSpecLive(ctx, {
-              ...options,
-              reviewedScenarioPatch: true,
-            }),
-          };
-        }
-      }
+          const replay = replayScenarioCandidateForDispatch({
+            workspaceDir,
+            sourceBranch,
+            candidateCommit: dispatchCommit,
+            targetRef,
+          });
+          dispatchEvidence.push(...replay.evidence);
+          if (replay.state === "error") {
+            return {
+              state: "result",
+              result: ownerResult(
+                ctx,
+                `Could not replay ${specId} onto current ${targetRef} before live dispatch: ${replay.error}.`,
+                dispatchEvidence,
+              ),
+            };
+          }
 
-      return {
-        state: "queued",
-        run: await queueRun(repoDir, {
+          const expectedRemoteCommit = replay.expectedRemoteCommit;
+          if (replay.state === "conflict") {
+            const conflictDecision = await askAgent(
+              ctx,
+              [
+                `Current ${targetRef}@${replay.targetCommit} advanced after the exact terminal run for ${specId} was already judged.`,
+                `The workflow preserved that judgment and started replaying only these task-owned commits in ${workspaceDir}: ${replay.taskCommits.join(", ") || "none"}.`,
+                `Replay stopped with: ${replay.error}`,
+                "Resolve only this replay conflict, complete the cherry-pick, run scoped checks, commit the resolved source, leave the task worktree clean, and return decision=committed.",
+                "Do not reconsider the already completed terminal-run judgment, merge stale branch history, push, queue ADO, create another task, or edit app state. The workflow will rerun hard admission and publish the replayed source.",
+                "Task:",
+                ctx.task,
+              ].join("\n\n"),
+              {
+                scenarioNormalization: true,
+                continueDomainWorkOnValidation: true,
+                validateDecision: (candidate) => {
+                  if (candidate.decision !== "committed") {
+                    return "dispatch-time replay conflict must be resolved inside this same domain workflow";
+                  }
+                  if (cleanWorkspace(workspaceDir)) {
+                    return "dispatch-time replay repair must leave the task worktree clean";
+                  }
+                  const head = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+                  if (
+                    git(
+                      workspaceDir,
+                      [
+                        "merge-base",
+                        "--is-ancestor",
+                        replay.targetCommit,
+                        head,
+                      ],
+                      true,
+                    ).status !== 0
+                  ) {
+                    return "dispatch-time replay repair must descend from current origin/dev";
+                  }
+                  return git(
+                    workspaceDir,
+                    ["rev-parse", "--verify", "CHERRY_PICK_HEAD"],
+                    true,
+                  ).status === 0
+                    ? "dispatch-time replay repair must finish the cherry-pick"
+                    : null;
+                },
+              },
+            );
+            dispatchEvidence.push(...conflictDecision.evidence);
+            dispatchCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+          } else {
+            dispatchCommit = replay.sourceCommit;
+          }
+
+          const admission = await prepareLiveDispatch(
+            dispatchCommit,
+            `target advanced to ${targetRef}@${latestTargetCommit} after terminal judgment`,
+          );
+          if (admission.state === "result") return admission;
+          dispatchCommit = admission.sourceCommit;
+          dispatchEvidence.push(...admission.evidence);
+
+          const push = git(
+            workspaceDir,
+            [
+              "push",
+              scenarioReplayForceWithLeaseArg({
+                sourceBranch,
+                expectedRemoteCommit,
+              }),
+              "origin",
+              `HEAD:refs/heads/${sourceBranch}`,
+            ],
+            true,
+          );
+          if (push.status !== 0) {
+            return {
+              state: "result",
+              result: ownerResult(
+                ctx,
+                `Could not publish the replayed source for ${specId} without replacing concurrent task-branch work.`,
+                [
+                  ...dispatchEvidence,
+                  `source-branch:${sourceBranch}`,
+                  `source-commit:${dispatchCommit}`,
+                  `push-error:${push.stderr || push.stdout}`,
+                ],
+              ),
+            };
+          }
+          saveScenarioReplayState(contextDir, {
+            version: 1,
+            recordedTaskBase: nonEmptyString(
+              normalizationInput.originDevCommit,
+            ),
+            replayBase: latestTargetCommit,
+            sourceCommit: dispatchCommit,
+          });
+          dispatchEvidence.push(
+            `dispatch-replay-published:${sourceBranch}@${dispatchCommit}`,
+          );
+          continue;
+        }
+
+        const run = await queueRun(repoDir, {
           taskId,
           generation,
           specId,
           sourceBranch,
-          sourceCommit: candidateCommit,
+          sourceCommit: dispatchCommit,
           target: liveTarget,
           standaloneBuildId,
-          ...(retryOfRunId ? { retryOfRunId } : {}),
-        }),
+          ...(retryOfRunId && dispatchCommit === candidateCommit
+            ? { retryOfRunId }
+            : {}),
+        });
+        return {
+          state: "queued",
+          run,
+          sourceCommit: dispatchCommit,
+          evidence: dispatchEvidence,
+        };
+      }
+
+      if (!directScenarioNormalization) {
+        return {
+          state: "queued",
+          run: await queueRun(repoDir, {
+            taskId,
+            generation,
+            specId,
+            sourceBranch,
+            sourceCommit: dispatchCommit,
+            target: liveTarget,
+            standaloneBuildId,
+            ...(retryOfRunId ? { retryOfRunId } : {}),
+          }),
+          sourceCommit: dispatchCommit,
+          evidence: dispatchEvidence,
+        };
+      }
+
+      return {
+        state: "result",
+        result: ownerResult(
+          ctx,
+          `Current ${targetRef} kept advancing while ${specId} was replayed; no stale live run was queued.`,
+          [
+            ...dispatchEvidence,
+            `source-branch:${sourceBranch}`,
+            `source-commit:${dispatchCommit}`,
+            `target-ref:${targetRef}`,
+          ],
+        ),
       };
     };
 
@@ -2902,9 +3238,25 @@ export async function reconcileSpecLive(
           normalizationInput,
           decision.terminalDisposition,
         );
+        if (!disposition.accepted) {
+          return {
+            problem: disposition.problem ?? "terminal disposition is invalid",
+            evidence: disposition.evidence,
+          };
+        }
+        const target = specTerminalTargetCheck(
+          workspaceDir,
+          normalizationInput,
+          {
+            name: liveTarget,
+            ...(liveTarget === defaultLiveTarget
+              ? { location: stagingLocation }
+              : {}),
+          },
+        );
         return {
-          problem: disposition.problem ?? null,
-          evidence: disposition.evidence,
+          problem: target.problem ?? null,
+          evidence: [...disposition.evidence, ...target.evidence],
         };
       };
 
@@ -3029,6 +3381,7 @@ export async function reconcileSpecLive(
             `Reconcile the current direct-dev lineage for the already reviewed terminal disposition of ${specId}.`,
             ...replayFacts,
             `Preserve the exact structured terminal status and specState, rerun scoped local checks${isScenarioNormalization ? " plus the strict scenario inventory" : ""}, leave one clean linear commit lineage descending from the named origin/dev commit, and return decision=committed.`,
+            "This is source-only lineage repair for an already reviewed terminal judgment. Omit liveReady and condition; do not create a new readiness decision or wait.",
             "Do not push, queue ADO, create another task, or change the terminal judgment. The workflow will revalidate and integrate the resolved source.",
             "Task:",
             ctx.task,
@@ -3037,9 +3390,9 @@ export async function reconcileSpecLive(
             scenarioNormalization: true,
             continueDomainWorkOnValidation: true,
             validateDecision: (candidate) => {
-              if (candidate.decision !== "committed") {
-                return "terminal-disposition integration conflict must be resolved inside this same domain workflow";
-              }
+              const decisionProblem =
+                terminalLineageReplayDecisionProblem(candidate);
+              if (decisionProblem) return decisionProblem;
               if (cleanWorkspace(workspaceDir)) {
                 return "terminal-disposition conflict repair must leave the worktree clean";
               }
@@ -3409,6 +3762,8 @@ export async function reconcileSpecLive(
           "Continue the same bounded scenario-normalization task; the source invariant is still red and no live run may be queued yet.",
           `Strict inventory still lists ${normalizationInvariant.kind} ${normalizationInvariant.path}.`,
           "Preserve behavior and every active spec. Complete the direct .test.ts implementation, remove or relocate the plain carrier as required, run scoped checks plus bun scripts/check-scenario-tests.ts --strict --json, commit the bounded correction, and leave the worktree clean.",
+          exactStrictInventoryInstruction,
+          directVitestCompatibilityInstruction,
           "Return decision=committed only after the strict inventory no longer lists this exact row. Separately return liveReady=true when that exact committed source is runnable now; return liveReady=false only with one exact external Condition the app can observe.",
           "Do not push, queue ADO, create a PR, create another task, or edit app state. Those are workflow mechanics and do not make a runnable source liveReady=false.",
           "Task:",
@@ -3601,6 +3956,8 @@ export async function reconcileSpecLive(
         "Treat the appended Trigger Event as hot evidence, not merely as a wake. If it reports an exact passing pipeline.spec.observed for this task branch at a different source commit, inspect that tested commit against current HEAD and current integration authority. Restore the exact tested commit only when doing so preserves every required same-task change; otherwise keep the newer source and require a fresh exact run. Equivalent file content alone is not exact source proof.",
         "Inspect the original task, current spec status, model, direct carrier, nearby good/bad examples, and prior evidence. Decide whether this exact source is genuinely ready for live execution.",
         "If a bounded repo change is needed, make it, run scoped local checks, commit it, leave the worktree clean, and return decision=committed.",
+        directVitestCompatibilityInstruction,
+        currentAdoSurfaceInstruction,
         "If current source is already the exact content that should be live-tested, leave it unchanged and return decision=test-current.",
         "For committed or test-current, separately set liveReady=true only when this exact source may be sent to ADO now. If source is prepared but an external fact still prevents execution, set liveReady=false and include one exact observable Condition. If this app cannot observe the required fact, return needs-owner instead. Never treat a commit as permission to run.",
         ...(normalizationInput
@@ -3828,6 +4185,7 @@ export async function reconcileSpecLive(
       sourceCommit = publication.sourceCommit;
       const queued = await queueFreshRun(sourceCommit);
       if (queued.state === "result") return queued.result;
+      sourceCommit = queued.sourceCommit;
       latestRun = queued.run;
       saveRunReceipt(contextDir, latestRun, sourceCommit);
       const runId = nonEmptyString(latestRun.id);
@@ -3845,6 +4203,7 @@ export async function reconcileSpecLive(
             : []),
           ...dispatch.evidence,
           ...publication.evidence,
+          ...queued.evidence,
           `pipeline-run:${runId}`,
         ],
         pipelineWaitCondition(runId),
@@ -3973,6 +4332,7 @@ export async function reconcileSpecLive(
             ? [terminalDispositionSourceRepairInstruction]
             : []),
           "For a carrier/spec defect, make the smallest fix in the task worktree, run scoped local checks, commit, leave the worktree clean, and return committed.",
+          directVitestCompatibilityInstruction,
           "When returning committed, separately set liveReady=true only if the repaired exact source may be sent to ADO now. If an external fact still prevents execution, set liveReady=false with one exact observable Condition; use needs-owner when the app cannot observe that boundary. A commit alone is not permission to rerun.",
           failedRunsForCommit >= 2
             ? "The same source commit already has at least two terminal nonpassing runs. Do not request another unchanged retry; commit a fix, return an exact wait, or request owner judgment."
@@ -4025,9 +4385,9 @@ export async function reconcileSpecLive(
         );
         if (dispatch.state === "result") return dispatch.result;
         sourceCommit = dispatch.sourceCommit;
-        const unchangedRetry = sourceCommit === retrySourceCommit;
+        const requestedUnchangedRetry = sourceCommit === retrySourceCommit;
         let publicationEvidence: string[] = [];
-        if (!unchangedRetry) {
+        if (!requestedUnchangedRetry) {
           const publication = await publishTaskBranch(
             sourceCommit,
             `replacement after transient run ${runId}`,
@@ -4038,9 +4398,11 @@ export async function reconcileSpecLive(
         }
         const queued = await queueFreshRun(
           sourceCommit,
-          unchangedRetry ? runId : undefined,
+          requestedUnchangedRetry ? runId : undefined,
         );
         if (queued.state === "result") return queued.result;
+        sourceCommit = queued.sourceCommit;
+        const unchangedRetry = sourceCommit === retrySourceCommit;
         const retry = queued.run;
         saveRunReceipt(contextDir, retry, sourceCommit);
         const retryId = nonEmptyString(retry.id);
@@ -4053,6 +4415,7 @@ export async function reconcileSpecLive(
             ...decision.evidence,
             ...dispatch.evidence,
             ...publicationEvidence,
+            ...queued.evidence,
             ...(unchangedRetry ? [`retry-of-run:${runId}`] : []),
             `pipeline-run:${retryId}`,
             `source-commit:${sourceCommit}`,
@@ -4091,6 +4454,7 @@ export async function reconcileSpecLive(
         nextCommit = publication.sourceCommit;
         const queued = await queueFreshRun(nextCommit);
         if (queued.state === "result") return queued.result;
+        nextCommit = queued.sourceCommit;
         const nextRun = queued.run;
         saveRunReceipt(contextDir, nextRun, nextCommit);
         const nextRunId = nonEmptyString(nextRun.id);
@@ -4101,6 +4465,7 @@ export async function reconcileSpecLive(
             ...decision.evidence,
             ...dispatch.evidence,
             ...publication.evidence,
+            ...queued.evidence,
             `replaces-run:${runId}`,
             `source-commit:${nextCommit}`,
             `pipeline-run:${nextRunId}`,
@@ -4217,13 +4582,7 @@ export async function reconcileSpecLive(
             mergeBase.status === 0
               ? git(
                   repoDir,
-                  [
-                    "diff",
-                    "--name-only",
-                    mergeBase.stdout,
-                    sourceCommit,
-                    "--",
-                  ],
+                  ["diff", "--name-only", mergeBase.stdout, sourceCommit, "--"],
                   true,
                 )
               : null;
@@ -4302,12 +4661,7 @@ export async function reconcileSpecLive(
                   if (
                     git(
                       repoDir,
-                      [
-                        "merge-base",
-                        "--is-ancestor",
-                        sourceCommit,
-                        targetRef,
-                      ],
+                      ["merge-base", "--is-ancestor", sourceCommit, targetRef],
                       true,
                     ).status === 0
                   ) {
@@ -4325,7 +4679,6 @@ export async function reconcileSpecLive(
           }
 
           if (directScenarioNormalization) {
-
             const beforeRefresh = git(workspaceDir, [
               "rev-parse",
               "HEAD",
@@ -4382,6 +4735,7 @@ export async function reconcileSpecLive(
             refreshedCommit = publication.sourceCommit;
             const queued = await queueFreshRun(refreshedCommit);
             if (queued.state === "result") return queued.result;
+            refreshedCommit = queued.sourceCommit;
             const replacement = queued.run;
             saveRunReceipt(contextDir, replacement, refreshedCommit);
             const replacementId = nonEmptyString(replacement.id);
@@ -4392,6 +4746,7 @@ export async function reconcileSpecLive(
                 ...refreshEvidence,
                 ...dispatch.evidence,
                 ...publication.evidence,
+                ...queued.evidence,
                 `replaces-run:${runId}`,
                 `source-commit:${refreshedCommit}`,
                 `pipeline-run:${replacementId}`,
@@ -4447,6 +4802,7 @@ export async function reconcileSpecLive(
           updatedCommit = publication.sourceCommit;
           const queued = await queueFreshRun(updatedCommit);
           if (queued.state === "result") return queued.result;
+          updatedCommit = queued.sourceCommit;
           const replacement = queued.run;
           saveRunReceipt(contextDir, replacement, updatedCommit);
           const replacementId = nonEmptyString(replacement.id);
@@ -4457,6 +4813,7 @@ export async function reconcileSpecLive(
               ...mergeEvidence,
               ...dispatch.evidence,
               ...publication.evidence,
+              ...queued.evidence,
               `replaces-run:${runId}`,
               `source-commit:${updatedCommit}`,
               `pipeline-run:${replacementId}`,
@@ -4706,6 +5063,7 @@ export async function reconcileSpecLive(
       resolvedCommit = publication.sourceCommit;
       const queued = await queueFreshRun(resolvedCommit);
       if (queued.state === "result") return queued.result;
+      resolvedCommit = queued.sourceCommit;
       const replacement = queued.run;
       saveRunReceipt(contextDir, replacement, resolvedCommit);
       const replacementId = nonEmptyString(replacement.id);
@@ -4716,6 +5074,7 @@ export async function reconcileSpecLive(
           ...decision.evidence,
           ...dispatch.evidence,
           ...publication.evidence,
+          ...queued.evidence,
           `pull-request:${prId}`,
           `source-commit:${resolvedCommit}`,
           `pipeline-run:${replacementId}`,
@@ -4913,6 +5272,31 @@ function verifyTerminalDispositionResult(
     };
   }
 
+  let liveTarget: LiveExecutionTarget;
+  try {
+    liveTarget = resolveLiveExecutionTarget(jsonRecord(input));
+  } catch (error) {
+    return {
+      accepted: false,
+      summary: error instanceof Error ? error.message : String(error),
+      evidence: ["verification-finding:invalid-terminal-live-target"],
+    };
+  }
+  const targetCheck = specTerminalTargetCheck(context.workspaceDir, input, {
+    name: liveTarget.target,
+    ...(liveTarget.target === defaultLiveTarget
+      ? { location: stagingLocation }
+      : {}),
+  });
+  if (!targetCheck.accepted) {
+    return {
+      accepted: false,
+      summary:
+        targetCheck.problem ?? "Terminal disposition live target is invalid.",
+      evidence: targetCheck.evidence,
+    };
+  }
+
   const targetRef = evidenceValue(evidence, "target-ref:");
   if (targetRef !== "origin/dev") {
     return {
@@ -4968,6 +5352,7 @@ function verifyTerminalDispositionResult(
       "Verified terminal spec disposition integrated into origin/dev without claiming a new ADO pass.",
     evidence: [
       ...dispositionCheck.evidence,
+      ...targetCheck.evidence,
       `source-commit:${sourceCommit}`,
       `integrated-commit:${integratedCommit}`,
       `target-ref:${targetRef}`,

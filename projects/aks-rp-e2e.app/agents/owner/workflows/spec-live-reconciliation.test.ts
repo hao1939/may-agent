@@ -23,8 +23,11 @@ import {
   checkLiveDispatchAdmission,
   collectTerminalRunEvidence,
   completedPullRequestIntegration,
+  currentAdoSurfaceInstruction,
   decisionCorrectionPrompt,
+  directVitestCompatibilityInstruction,
   directIntegrationAction,
+  exactStrictInventoryInstruction,
   exactLiveTargetInstruction,
   discoverTaskRuns,
   proofPreservingScenarioIntegration,
@@ -33,6 +36,7 @@ import {
   shouldReplayScenarioBeforeRunReview,
   shouldReplayReviewedTerminalWriteback,
   taskWorktreeRecoveryDecisionProblem,
+  terminalLineageReplayDecisionProblem,
   existingRecoveryProblem,
   integrationMode,
   isNonFastForwardPushFailure,
@@ -46,6 +50,7 @@ import {
   priorIntegratedProof,
   reconcileRemoteTaskBranchHistory,
   remoteLeaseCommit,
+  replayScenarioCandidateForDispatch,
   scenarioReplayForceWithLeaseArg,
   pullRequestSourceUpdateCondition,
   pullRequestWaitCondition,
@@ -62,7 +67,6 @@ import {
   taskContextDir,
   taskScopedAgentCondition,
   terminalDispositionDecisionProblem,
-  terminalLineageReplayDecisionProblem,
   terminalDispositionSourceRepairInstruction,
   terminalRunDecisionProblem,
   terminalRunContextDir,
@@ -73,9 +77,46 @@ import {
   isRunnableScenarioNormalization,
   scenarioNormalizationSpecIds,
   specTerminalDispositionCheck,
+  specTerminalTargetCheck,
 } from "./lib/scenario-normalization-invariant.js";
 
 describe("spec-live-reconciliation workflow", () => {
+  test("requires direct carriers to validate on the ADO Vitest surface", () => {
+    expect(directVitestCompatibilityInstruction).toContain("through Vitest");
+    expect(directVitestCompatibilityInstruction).toContain(
+      "not only with `bun test`",
+    );
+    expect(directVitestCompatibilityInstruction).toContain("never `bun:test`");
+    expect(directVitestCompatibilityInstruction).toContain(
+      "without guaranteeing the Bun runtime global",
+    );
+    expect(directVitestCompatibilityInstruction).toContain("`Bun.spawn`");
+    expect(directVitestCompatibilityInstruction).toContain(
+      "portable Node APIs",
+    );
+  });
+
+  test("judges normalization against the exact strict-inventory row", () => {
+    expect(exactStrictInventoryInstruction).toContain(
+      "expected to exit nonzero",
+    );
+    expect(exactStrictInventoryInstruction).toContain(
+      "guard.remainingSpecReferencedPlainScenarioUnits",
+    );
+    expect(exactStrictInventoryInstruction).toContain(
+      "guard.remainingRepoPlainScenarioFiles",
+    );
+  });
+
+  test("uses the current ADO run to resolve execution-surface uncertainty", () => {
+    expect(currentAdoSurfaceInstruction).toContain("not treat uncertainty");
+    expect(currentAdoSurfaceInstruction).toContain(
+      "older backend, different source commit, or different target",
+    );
+    expect(currentAdoSurfaceInstruction).toContain("set liveReady=true");
+    expect(currentAdoSurfaceInstruction).toContain("exact current evidence");
+  });
+
   test("keeps a newer passing run from recursively changing its tested source", () => {
     expect(acceptedLiveProofSourceInstruction).toContain(
       "return accepted-pass without editing or committing tracked source",
@@ -85,6 +126,12 @@ describe("spec-live-reconciliation workflow", () => {
     );
     expect(acceptedLiveProofSourceInstruction).toContain(
       "actual behavior or contract defect",
+    );
+    expect(acceptedLiveProofSourceInstruction).toContain(
+      "changing only diagnostics, messages, metadata, or static checks is not a runnable repair",
+    );
+    expect(acceptedLiveProofSourceInstruction).toContain(
+      "implement the missing live behavior before setting liveReady=true",
     );
   });
 
@@ -103,6 +150,18 @@ describe("spec-live-reconciliation workflow", () => {
     );
     expect(terminalDispositionSourceRepairInstruction).toContain(
       "return decision=terminal-disposition",
+    );
+    expect(terminalDispositionSourceRepairInstruction).toContain(
+      "omit liveReady and condition entirely",
+    );
+    expect(terminalDispositionSourceRepairInstruction).toContain(
+      "blocked/environment-blocked",
+    );
+    expect(terminalDispositionSourceRepairInstruction).toContain(
+      "Do not return committed with liveReady=false",
+    );
+    expect(terminalDispositionSourceRepairInstruction).toContain(
+      "not that the feature is abandoned forever",
     );
     expect(terminalDispositionSourceRepairInstruction).toContain(
       "Do not return needs-owner merely because",
@@ -127,6 +186,7 @@ describe("spec-live-reconciliation workflow", () => {
       const aggregatePath = join(root, "result.json");
       const specPath = join(root, "spec.json");
       const topLevelSpecPath = join(root, "spec-top-level.json");
+      const nestedRawSpecPath = join(root, "spec-nested-raw.json");
       const vitestPath = join(root, "vitest.json");
       writeFileSync(
         aggregatePath,
@@ -178,6 +238,21 @@ describe("spec-live-reconciliation workflow", () => {
           ],
         }),
       );
+      writeFileSync(
+        nestedRawSpecPath,
+        JSON.stringify({
+          specId: "spec.sample.live",
+          status: "pass",
+          raw: {
+            raw: {
+              cleanup: {
+                attempted: true,
+                status: "pass",
+              },
+            },
+          },
+        }),
+      );
       writeFileSync(vitestPath, JSON.stringify({ numTotalTests: 1 }));
       expect(artifactVitestTestCount(vitestPath)).toBe(1);
       expect(artifactProvesSpecPass(aggregatePath, "spec.sample.live")).toBe(
@@ -199,9 +274,12 @@ describe("spec-live-reconciliation workflow", () => {
         "assert.sample.behavior",
       ]);
       expect(artifactProvesCleanup(specPath, "spec.sample.live")).toBe(true);
-      expect(
-        artifactProvesCleanup(topLevelSpecPath, "spec.sample.live"),
-      ).toBe(true);
+      expect(artifactProvesCleanup(topLevelSpecPath, "spec.sample.live")).toBe(
+        true,
+      );
+      expect(artifactProvesCleanup(nestedRawSpecPath, "spec.sample.live")).toBe(
+        true,
+      );
 
       const proof = {
         version: 1 as const,
@@ -1214,6 +1292,60 @@ describe("spec-live-reconciliation workflow", () => {
     }
   });
 
+  test("rejects a terminal disposition bound to another staging region", () => {
+    const root = mkdtempSync(join(tmpdir(), "scenario-terminal-target-"));
+    try {
+      const specsDir = join(root, "features", "sample", "specs");
+      mkdirSync(specsDir, { recursive: true });
+      writeFileSync(
+        join(specsDir, "terminal.json"),
+        JSON.stringify({
+          id: "spec.sample.terminal",
+          status: "blocked",
+          specState: "environment-blocked",
+          statusReason:
+            "Wait for pathId ops-staging-eastus2-sample-owner-followup.",
+          resumeCondition:
+            "Resume after approvalId app:approval:ops-staging-eastus2-sample-owner-followup returns.",
+        }),
+      );
+      const input = { specId: "spec.sample.terminal" };
+
+      const rejected = specTerminalTargetCheck(root, input, {
+        name: "staging",
+        location: "westus2",
+      });
+      expect(rejected.accepted).toBe(false);
+      expect(rejected.problem).toContain("expected staging-westus2");
+      expect(
+        rejected.evidence.some((item) =>
+          item.startsWith(
+            "terminal-disposition-target-identifier:ops-staging-eastus2-sample-owner-followup",
+          ),
+        ),
+      ).toBe(true);
+
+      writeFileSync(
+        join(specsDir, "terminal.json"),
+        JSON.stringify({
+          id: "spec.sample.terminal",
+          status: "blocked",
+          specState: "environment-blocked",
+          statusReason:
+            "Wait for pathId ops-staging-westus2-sample-owner-followup.",
+        }),
+      );
+      expect(
+        specTerminalTargetCheck(root, input, {
+          name: "staging",
+          location: "westus2",
+        }).accepted,
+      ).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   test("verifies terminal scenario normalization without requiring ADO proof", async () => {
     const root = mkdtempSync(join(tmpdir(), "scenario-terminal-verify-"));
     try {
@@ -1321,6 +1453,7 @@ describe("spec-live-reconciliation workflow", () => {
           id: "spec.sample.terminal",
           status: "environment",
           specState: "reviewed-exception",
+          statusReason: "Exact staging-westus2 live run repeated the blocker.",
         }),
       );
       execFileSync("git", ["init"], { cwd: root, encoding: "utf8" });
@@ -1949,7 +2082,8 @@ describe("spec-live-reconciliation workflow", () => {
       join(import.meta.dir, "spec-live-reconciliation.ts"),
       "utf8",
     );
-    expect(source).not.toContain("return reconcileSpecLive(ctx, options)");
+    expect(source.match(/reconcileSpecLive\(ctx/g) ?? []).toHaveLength(1);
+    expect(source).not.toContain("await reconcileSpecLive(ctx");
   });
 
   test("preserves scenario proof only for disjoint domain-path target advances", () => {
@@ -2122,5 +2256,79 @@ describe("spec-live-reconciliation workflow", () => {
         targetIsInSource: false,
       }),
     ).toBe(false);
+  });
+
+  test("replays a judged scenario candidate onto advanced dev without another domain judgment", () => {
+    const root = mkdtempSync(join(tmpdir(), "dispatch-target-replay-"));
+    const remote = join(root, "remote.git");
+    const seed = join(root, "seed");
+    const workspace = join(root, "workspace");
+    const run = (cwd: string, args: string[]) =>
+      execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
+
+    try {
+      mkdirSync(seed);
+      run(root, ["init", "--bare", remote]);
+      run(seed, ["init"]);
+      run(seed, ["config", "user.email", "test@example.com"]);
+      run(seed, ["config", "user.name", "Test"]);
+      writeFileSync(join(seed, "base.txt"), "base\n");
+      run(seed, ["add", "base.txt"]);
+      run(seed, ["commit", "-m", "base"]);
+      run(seed, ["branch", "-M", "dev"]);
+      run(seed, ["remote", "add", "origin", remote]);
+      run(seed, ["push", "origin", "dev"]);
+
+      run(seed, ["checkout", "-b", "task/scenario"]);
+      writeFileSync(
+        join(seed, "scenario.test.ts"),
+        "export const live = true;\n",
+      );
+      run(seed, ["add", "scenario.test.ts"]);
+      run(seed, ["commit", "-m", "normalize scenario"]);
+      const judgedSource = run(seed, ["rev-parse", "HEAD"]);
+      run(seed, ["push", "origin", "task/scenario"]);
+
+      run(seed, ["checkout", "dev"]);
+      writeFileSync(join(seed, "dev.txt"), "advanced\n");
+      run(seed, ["add", "dev.txt"]);
+      run(seed, ["commit", "-m", "advance dev"]);
+      run(seed, ["push", "origin", "dev"]);
+
+      run(root, ["clone", remote, workspace]);
+      run(workspace, ["checkout", "task/scenario"]);
+      run(workspace, ["config", "user.email", "test@example.com"]);
+      run(workspace, ["config", "user.name", "Test"]);
+      run(workspace, ["fetch", "origin", "dev"]);
+
+      const replay = replayScenarioCandidateForDispatch({
+        workspaceDir: workspace,
+        sourceBranch: "task/scenario",
+        candidateCommit: judgedSource,
+        targetRef: "origin/dev",
+      });
+
+      expect(replay.state).toBe("ready");
+      if (replay.state !== "ready") throw new Error(replay.error);
+      expect(replay.replayed).toBe(true);
+      expect(replay.taskCommits).toEqual([judgedSource]);
+      expect(replay.sourceCommit).not.toBe(judgedSource);
+      expect(existsSync(join(workspace, "scenario.test.ts"))).toBe(true);
+      expect(existsSync(join(workspace, "dev.txt"))).toBe(true);
+      expect(
+        spawnSync(
+          "git",
+          [
+            "merge-base",
+            "--is-ancestor",
+            replay.targetCommit,
+            replay.sourceCommit,
+          ],
+          { cwd: workspace },
+        ).status,
+      ).toBe(0);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });

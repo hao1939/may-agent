@@ -482,6 +482,38 @@ function resolveCurrentMain(repoDir: string): string {
   return resolved.stdout;
 }
 
+function campaignFixKey(fix: CampaignFix): string {
+  return fix.taskId.startsWith("pull-request/")
+    ? `pull-request:${fix.pullRequestId}`
+    : `task:${fix.taskId}`;
+}
+
+function comparePullRequestIds(left: string, right: string): number {
+  const leftNumber = Number(left);
+  const rightNumber = Number(right);
+  if (Number.isFinite(leftNumber) && Number.isFinite(rightNumber)) {
+    return leftNumber - rightNumber;
+  }
+  return left.localeCompare(right);
+}
+
+export function latestCampaignFixes(fixes: CampaignFix[]): CampaignFix[] {
+  const latestByKey = new Map<string, CampaignFix>();
+  for (const fix of fixes) {
+    const key = campaignFixKey(fix);
+    const prior = latestByKey.get(key);
+    if (
+      !prior ||
+      comparePullRequestIds(prior.pullRequestId, fix.pullRequestId) < 0
+    ) {
+      latestByKey.set(key, fix);
+    }
+  }
+  return [...latestByKey.values()].sort((left, right) =>
+    comparePullRequestIds(left.pullRequestId, right.pullRequestId),
+  );
+}
+
 function activeCampaignFixes(repoDir: string): CampaignFix[] {
   const value = azJson(
     [
@@ -500,10 +532,12 @@ function activeCampaignFixes(repoDir: string): CampaignFix[] {
     repoDir,
   );
   return Array.isArray(value)
-    ? value.flatMap((pullRequest) => {
-        const fix = campaignFixFromPullRequest(pullRequest as PullRequest);
-        return fix ? [fix] : [];
-      })
+    ? latestCampaignFixes(
+        value.flatMap((pullRequest) => {
+          const fix = campaignFixFromPullRequest(pullRequest as PullRequest);
+          return fix ? [fix] : [];
+        }),
+      )
     : [];
 }
 

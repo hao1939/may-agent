@@ -102,6 +102,12 @@ describe("domain task execution", () => {
           workspaceDir: fixture.workspaceDir,
           runAgent: (async (_agent: string, task: string) => {
             prompt = task;
+            writeFileSync(
+              join(fixture.workspaceDir, "turn-change.txt"),
+              "turn\n",
+            );
+            git(fixture.workspaceDir, "add", "turn-change.txt");
+            git(fixture.workspaceDir, "commit", "-m", "bounded turn change");
             return {
               status: "done",
               sessionId: "session-1",
@@ -168,6 +174,29 @@ exit 0
         context({
           projectDir: fixture.repoDir,
           workspaceDir: fixture.workspaceDir,
+          runAgent: (async () => {
+            writeFileSync(
+              join(fixture.workspaceDir, "turn-change.txt"),
+              "turn\n",
+            );
+            git(fixture.workspaceDir, "add", "turn-change.txt");
+            git(fixture.workspaceDir, "commit", "-m", "bounded turn change");
+            return {
+              status: "done",
+              sessionId: "session-1",
+              lastAssistantText: "done",
+              messages: [],
+              duration: "1s",
+              outputDir: "/tmp",
+              finishResult: { status: "success", summary: "done" },
+              structuredResult: {
+                state: "converged",
+                summary: "done",
+                evidence: ["commit:turn-change"],
+                actions: [],
+              },
+            };
+          }) as WorkflowContext["runAgent"],
         }),
       );
 
@@ -221,6 +250,7 @@ exit 0
       );
       git(fixture.workspaceDir, "add", "scripts", "features");
       git(fixture.workspaceDir, "commit", "-m", "add normalization fixture");
+      git(fixture.workspaceDir, "push", "origin", "HEAD:dev");
 
       const result = await execute(
         context({
@@ -465,6 +495,50 @@ exit 0
     });
   });
 
+  it("accepts a waiting result when the reconciliation payload already has a live direct child", async () => {
+    const result = await execute(
+      context({
+        task: `## Reconciliation Task\n\`\`\`json\n${JSON.stringify({
+          taskId: "compact/compact-feature-serverless",
+          children: {
+            live: [
+              "wait-compact-serverless-package-partial-origin-dev-advance-a954836b-20260724",
+            ],
+            completed: [],
+          },
+          input: {},
+        })}\n\`\`\``,
+        runAgent: (async () => ({
+          status: "done",
+          sessionId: "session-1",
+          lastAssistantText: "waiting",
+          messages: [],
+          duration: "1s",
+          outputDir: "/tmp",
+          finishResult: { status: "success", summary: "waiting" },
+          structuredResult: {
+            state: "waiting",
+            summary: "the existing repo-ref wait child still truthfully carries the frontier",
+            evidence: ["existing holder already captures the same frontier"],
+            actions: [],
+            conditions: [],
+          },
+        })) as WorkflowContext["runAgent"],
+      }),
+    );
+
+    expect(result).toMatchObject({
+      type: "done",
+      output: {
+        state: "waiting",
+        summary:
+          "the existing repo-ref wait child still truthfully carries the frontier",
+        actions: [],
+        conditions: [],
+      },
+    });
+  });
+
   it("lets the agent converge after correcting a stale follow-through wait shape", async () => {
     const fixture = repositoryFixture();
     const prompts: string[] = [];
@@ -525,7 +599,7 @@ exit 0
         type: "done",
         output: {
           state: "converged",
-          summary: expect.stringContaining("directly into dev"),
+          summary: expect.stringContaining("dev remained at"),
         },
       });
     } finally {

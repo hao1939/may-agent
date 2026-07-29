@@ -23,6 +23,8 @@ import {
   type ObservedTaskTree,
   type TaskPlanningObservation,
 } from "./lib/task-observation.ts";
+import { publishFocusMetrics } from "./lib/focus-metric-publication.ts";
+import { publishProjectMetrics } from "./lib/project-metric-publication.ts";
 import {
   field,
   parseTriggerEvent,
@@ -848,6 +850,32 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     appDir,
     Number(field(ctx.task, "maxConcurrent") ?? 50),
   );
+
+  try {
+    const metrics = (ctx as WorkflowContext & {
+      metrics?: WorkflowContext["metrics"];
+    }).metrics;
+    const publishedFocus = publishFocusMetrics({
+      metrics,
+      appDir,
+      projectDir,
+      measuredBy: "workflow:focus-plan",
+    });
+    const publishedProject = publishProjectMetrics({
+      metrics,
+      appDir,
+      measuredBy: "workflow:focus-plan",
+    });
+    if (publishedFocus.length || publishedProject.length) {
+      ctx.log(
+        `Published ${publishedFocus.length} focus metrics and ${publishedProject.length} project metrics before focus-plan ${kind} review.`,
+      );
+    }
+  } catch (error) {
+    ctx.log(
+      `Metric publication failed before focus-plan ${kind} review: ${String(error)}`,
+    );
+  }
 
   const focusAgentResult = await runFocusAgent({
     ctx,

@@ -50,7 +50,26 @@ describe("AKS standing-loop convention", () => {
       workflow: "domain-task-execution",
     });
     expect(acceptance).toContain("representative user journeys");
+    expect(acceptance).toContain("realistic human requests");
+    expect(acceptance).toContain("explain a real feature or spec");
+    expect(acceptance).toContain("cross-check the inspector's feature path");
+    expect(acceptance).toContain("existing-standalone guidance");
+    expect(acceptance).toContain("real recent result or artifact");
+    expect(acceptance).toContain("realistic TypeScript scenario migration");
+    expect(acceptance).toContain("spec-referenced plain TypeScript carrier");
+    expect(acceptance).toContain("exact mutation-gate comparison");
+    expect(acceptance).toContain(
+      "admission helpers would catch a broken safety gate",
+    );
+    expect(acceptance).toContain("write its expected outcome");
+    expect(acceptance).toContain("command success alone is not acceptance");
+    expect(acceptance).toContain("rather than toy fixtures");
+    expect(acceptance).toContain("skill, repository UX or tooling");
+    expect(acceptance).toContain("smallest durable surface");
     expect(acceptance).toContain("TypeScript or JavaScript");
+    expect(acceptance).toContain("rerun the same failed user case");
+    expect(acceptance).toContain("Continue until no material gap remains");
+    expect(acceptance).toContain("compact case table");
     expect(acceptance).toContain("Do not queue live pipelines");
     expect(acceptance).toContain("one stable task");
   });
@@ -105,8 +124,11 @@ describe("AKS standing-loop convention", () => {
       featureCompactLoopTaskId,
     ).acceptance.join("\n");
     expect(acceptance).toContain("reuse known-good carriers");
-    expect(acceptance).toContain("prefer one or two real clusters");
-    expect(acceptance).toContain("not really compacted");
+    expect(acceptance).toContain(
+      "Treat the selected feature as one natural ordered journey candidate",
+    );
+    expect(acceptance).toContain("Minimize transitions in this order");
+    expect(acceptance).toContain("treat that as unfinished compact work");
     expect(acceptance).toContain("branch/commit ADO will run");
     expect(acceptance).toContain("No no-op, dry-run, or metadata-only pass");
     expect(acceptance).toContain("terminal with no artifacts");
@@ -236,6 +258,52 @@ describe("AKS standing-loop convention", () => {
       },
       data: {
         sourceTaskId: "domain/normalized-row",
+        disposition: "converged",
+      },
+    });
+  });
+
+  test("refills the owning loop after a nested task descendant completes", async () => {
+    const appDir = await mkdtemp(join(tmpdir(), "aks-loop-nested-wake-"));
+    await mkdir(join(appDir, ".state", "tasks"), { recursive: true });
+    await writeFile(
+      join(appDir, ".state", "tasks", "tree.json"),
+      JSON.stringify({ tasks: {} }),
+    );
+    await writeFile(
+      join(appDir, ".state", "tasks", "state.json"),
+      JSON.stringify({
+        resources: {
+          "compact/feature-a": {
+            spec: { parentId: "group/feature-compact" },
+          },
+        },
+        receipts: {
+          "ops/recover-feature-a-artifacts": {
+            parentId: "compact/feature-a",
+          },
+        },
+      }),
+    );
+
+    expect(
+      loopRefillWakeForTaskEvent(appDir, {
+        type: "project.task.reconciled",
+        target: {
+          project: "aks-rp-e2e",
+          taskId: "ops/recover-feature-a-artifacts",
+        },
+        data: { disposition: "converged", input: {} },
+      }),
+    ).toMatchObject({
+      type: "project.task.tick",
+      action: "feature-compact-loop",
+      target: {
+        project: "aks-rp-e2e",
+        taskId: featureCompactLoopTaskId,
+      },
+      data: {
+        sourceTaskId: "ops/recover-feature-a-artifacts",
         disposition: "converged",
       },
     });

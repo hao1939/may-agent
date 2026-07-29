@@ -11,11 +11,14 @@ import { dirname, join, resolve } from "node:path";
 import type { ProjectAppContext } from "@may-agent/sdk";
 import {
   observeAksPipelines,
+  artifactRunCandidates,
   artifactDirectoryReady,
+  boundedTrackedRunIds,
   masterValidationNoVerdictFailure,
   pipelineLevelEvent,
   pipelineObservationEvents,
   pipelineQueueOverdueEvent,
+  shouldEmitMasterValidationFailure,
   shouldEmitPipelineLevel,
   shouldScanProgressiveArtifacts,
   scanPipelineResults,
@@ -91,6 +94,96 @@ describe("progressive artifact scan selection", () => {
       shouldEmitPipelineLevel({
         run: completed,
         priorFingerprint: completed.fingerprint,
+      }),
+    ).toBe(false);
+  });
+
+  test("bounds historical task artifacts while retaining active and progressive runs", () => {
+    const taskRuns = Array.from({ length: 15 }, (_, index) => ({
+      ...completed,
+      runId: String(100 + index),
+      fingerprint: `task-${index}`,
+      progressive: false,
+      artifactObservable: true,
+    }));
+    taskRuns[0] = { ...taskRuns[0], status: "inProgress" };
+    const progressive = {
+      ...completed,
+      runId: "50",
+      fingerprint: "progressive",
+    };
+
+    const selected = artifactRunCandidates({
+      runs: [progressive, ...taskRuns],
+      previouslyTrackedRunIds: new Set(),
+      priorFingerprints: {},
+      observedArtifacts: {},
+      taskRunLimit: 3,
+    }).map((run) => run.runId);
+
+    expect(selected).toEqual(["50", "100", "113", "114"]);
+    expect(boundedTrackedRunIds(["2", "1", "3", "2"], 2)).toEqual(["3", "2"]);
+  });
+
+  test("recovers recent completed spec runs that still lack local artifact roots", () => {
+    const selected = artifactRunCandidates({
+      runs: [
+        {
+          ...completed,
+          runId: "174041352",
+          fingerprint: "completed-missing-roots",
+          progressive: false,
+          artifactObservable: false,
+          specRun: true,
+          metadataTaskId: null,
+        },
+        {
+          ...completed,
+          runId: "174070172",
+          fingerprint: "completed-with-roots",
+          progressive: false,
+          artifactObservable: true,
+          specRun: true,
+          metadataTaskId:
+            "compact/reconcile-secure-tls-bootstrap-current-ready-subset-frontier-30b4c3dd-20260728",
+        },
+      ],
+      previouslyTrackedRunIds: new Set(),
+      priorFingerprints: {
+        "174041352": "completed-missing-roots",
+        "174070172": "completed-with-roots",
+      },
+      observedArtifacts: {
+        "174070172:plan-inputs": "/tmp/174070172/plan-inputs",
+      },
+      taskRunLimit: 3,
+    }).map((run) => run.runId);
+
+    expect(selected).toContain("174041352");
+    expect(selected).not.toContain("174070172");
+    expect(
+      shouldScanProgressiveArtifacts({
+        run: {
+          ...completed,
+          progressive: false,
+          artifactObservable: false,
+          specRun: true,
+        },
+        wasTracked: false,
+        priorFingerprint: completed.fingerprint,
+        forceRescan: true,
+      }),
+    ).toBe(true);
+  });
+
+  test("routes failure work only from progressive master-validation runs", () => {
+    expect(shouldEmitMasterValidationFailure(completed)).toBe(true);
+    expect(
+      shouldEmitMasterValidationFailure({
+        ...completed,
+        progressive: false,
+        artifactObservable: true,
+        sourceBranch: "refs/heads/task/domain-example",
       }),
     ).toBe(false);
   });
@@ -220,7 +313,7 @@ describe("AKS pipeline watcher", () => {
     expect(emitted).toEqual([]);
   });
 
-  test("emits ADO facts with top-level fields for Condition matching", () => {
+  test("emits terminal ADO facts separately from artifact materialization", () => {
     const events = pipelineObservationEvents({
       runId: "172897811",
       fingerprint: "fp",
@@ -248,13 +341,9 @@ describe("AKS pipeline watcher", () => {
         terminal: true,
       }),
     );
-    expect(events).toContainEqual(
-      expect.objectContaining({
-        type: "pipeline-artifact.available",
-        pipelineRunId: "172897811",
-        artifactName: "slice-01-test-results",
-      }),
-    );
+    expect(
+      events.find((event) => event.type === "pipeline-artifact.available"),
+    ).toBeUndefined();
   });
 
   test("emits a repeatable level event without task-tree knowledge", () => {

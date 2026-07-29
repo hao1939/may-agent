@@ -53,10 +53,14 @@ export const learnedCompactVerificationAcceptance = [
   "Start from the feature packet, declared spec list, current single-spec evidence, and prior compact artifacts before deciding the next move.",
   "Use single-spec learning as input: compact should reuse known-good carriers and represent broken or blocked specs exactly instead of hiding them inside a larger package.",
   "Every feature-owned spec must be covered by the compact package, excluded with a source-grounded reason, or represented by an exact wait or reviewed terminal disposition.",
-  "Compact by compatible route shape, not by feature name alone: share clusters only when target environment, cluster shape, network, SKU, upgrade/destructive state, and prerequisites do not conflict.",
-  "Be brave about cluster sharing: when shapes are compatible, prefer one or two real clusters for the feature; if required clusters stay high, split the package or explain each incompatible route group.",
-  "If a compact plan selects many specs but still needs almost one cluster per spec, treat that as not really compacted: split by compatible route group or repair eligibility before live dispatch.",
-  "The generated compact plan must show selected specs, route groups, required clusters, saved clusters, and why any large low-savings package was split or not compactable.",
+  "An unbound compact owner task is shared/read-only. When current evidence cites an existing source branch, commit, dispatch metadata, or task worktree, inspect and verify that exact branch/worktree in place; do not copy its delta into the shared canonical dev checkout just to review it.",
+  "If review shows repository source must change, do not edit or publish from the shared canonical checkout. Rebind the same task to a task-worktree workflow such as domain-task-execution and carry forward the exact source branch/worktree evidence needed for the mutating follow-up.",
+  "Treat the selected feature as one natural ordered journey candidate. Split physical cluster reuse only for a named required immutable-property conflict or an unrecoverable logical-history conflict; scenario names, shape-key names, create calls, and delete calls are not split reasons by themselves.",
+  "Model cluster requirements as partial constraints: unspecified properties do not conflict, test-local inputs such as kubeconfig scope do not belong to cluster shape, mutable differences are reconciled, and useful post-state is retained for the next test.",
+  "Minimize transitions in this order: reuse current state, create test-local resources, apply a mutable update, apply a disruptive update, then recreate the cluster only when unavoidable. Put destructive work last when dependencies permit.",
+  "A normalized test may receive the current cluster context or call the standard create/update/delete helpers. Repeated create against satisfied state is a no-op; every test cleans its local resources; suite cleanup owns anything left at the end.",
+  "If a compact plan selects many specs but still needs almost one cluster per spec, treat that as unfinished compact work: repair partial requirements, state transitions, normalized lifecycle participation, or cleanup before accepting the plan.",
+  "The generated compact plan must show selected specs, ordered journey groups, planned cluster creates/recreates/updates when available, saved clusters, and one concrete reason for every unavoidable split.",
   "The compact plan must run through the same live runner and target-environment wiring as single specs. No no-op, dry-run, or metadata-only pass counts as live proof for AKS behavior.",
   "Before dispatching compact ADO, verify the branch/commit ADO will run and push intended domain changes first.",
   "A live ADO result must be ingested per spec branch; preserve passing branches from a nonpassing aggregate and create focused work only for failing or inconclusive branches.",
@@ -107,7 +111,7 @@ export const standingLoopDefinitions: Record<
     workflow: "feature-compact-loop-controller",
     frontierLimit: 3,
     outcome:
-      "Keep every current feature spec set covered by one compact plan and schema-valid passing live proof, or by one exact wait, reviewed terminal decision, or actionable compact repair leaf.",
+      "Keep every current feature spec set covered by one minimum-transition feature journey and schema-valid passing live proof, or by one exact wait, reviewed terminal decision, or actionable compact repair leaf.",
     acceptance: [
       "The ledger contains every current feature and its owned-spec fingerprint.",
       ...learnedCompactVerificationAcceptance,
@@ -170,14 +174,18 @@ export const standingLoopDefinitions: Record<
       "Keep the aks-rp-e2e repository skill accurate, easy to discover, simple to use, and verified against representative real repository tasks.",
     acceptance: [
       "Evaluate the checked-in skill from clean current origin/dev and identify the exact skill and repository revisions under review.",
-      "Exercise representative user journeys: find and explain a feature or spec, inspect one spec, run safe local checks and previews, preview Azure DevOps staging and existing-standalone requests, use a checked-in feature set, author or migrate a TypeScript scenario, and diagnose a result.",
-      "Use raw command output and observed user friction. When a case performs poorly, review whether the evaluation case is valid before changing the skill to satisfy it.",
+      "Start representative user journeys from realistic human requests and use the skill as the primary entry point. In every review, exercise current repository examples from distinct capabilities: explain a real feature or spec and cross-check the inspector's feature path, mutation gate, resource ownership, target, and expected result against source; give executable staging and existing-standalone guidance; diagnose a real recent result or artifact; and plan or review one realistic TypeScript scenario migration. Also cover safe local checks, one checked-in feature set, and Azure DevOps queue previews where they materially support those cases.",
+      "For the migration case, inspect one current spec-referenced plain TypeScript carrier and its sibling .test.ts adapter rather than accepting the inventory count alone. Trace mode selection, exact mutation-gate comparison, target inputs, owned versus shared resources, assertions, structured status, and cleanup through the code; verify that check mode and the admission helpers would catch a broken safety gate.",
+      "Before running each case, write its expected outcome. Judge the observed answer for correctness, safety, completeness, executable commands, evidence traceability, and unnecessary complexity; command success alone is not acceptance.",
+      "Use current repository files, schemas, scripts, and real existing artifacts rather than toy fixtures. Preserve the user-shaped prompt, raw command output, cited source facts, and observed friction so another reviewer can audit the conclusion.",
+      "When a case performs poorly, decide whether the defect is in the skill, repository UX or tooling, product behavior, or the evaluation case itself. Do not distort the skill to satisfy an invalid case.",
+      "For each real gap, improve the smallest durable surface: SKILL.md, a directly linked reference, a TypeScript or JavaScript helper, agents/openai.yaml, README usage, or the underlying repository UX. Do not add prose or automation without a demonstrated case that needs it.",
       "Keep SKILL.md concise and procedural; keep detailed guidance in directly linked references; keep reusable automation in tested TypeScript or JavaScript run with Bun.",
       "Keep SKILL.md frontmatter, agents/openai.yaml, repository README usage, scripts, examples, current CLI, runner behavior, schemas, and pipeline parameters aligned without duplicating design documentation.",
-      "Run the skill example suite and proportionate repository checks after every material change, and cite the exact commands and outcomes.",
+      "After every material change, rerun the same failed user case, the other review cases, the checked-in skill example suite, and proportionate repository checks. Continue until no material gap remains; if that is not possible in the current iteration, leave one exact child task with the failed case, evidence, owner, and acceptance.",
       "Do not queue live pipelines, use an existing standalone build, or mutate Azure solely for skill evaluation without explicit authorization; inspection, local validation, dry runs, and queue previews are the default.",
       "Integrate ordinary correctness and usability improvements directly into dev through the task-owned workflow. Escalate only a real product, policy, benchmark, or human-approval boundary.",
-      "Do not commit transient run output. When no material gap exists, converge with evidence for the evaluated revisions and wait for the next scheduled or manual pulse.",
+      "Report a compact case table with the prompt, expected outcome, observed result, gap, change, and verification. Do not commit transient run output. When no material gap exists, converge with evidence for the evaluated revisions and wait for the next scheduled or manual pulse.",
       "Maintain this one stable task; do not create recurring review-task chains for the same skill-quality responsibility.",
     ],
     priority: "P1",
@@ -313,12 +321,20 @@ function persistedTaskLoopId(
     const state = JSON.parse(
       readFileSync(projectRuntimePaths(appDir).taskStatePath, "utf8"),
     ) as TaskStateParentProjection;
-    const parentId =
-      state.resources?.[taskId]?.spec?.parentId ??
-      state.receipts?.[taskId]?.parentId;
-    return typeof parentId === "string"
-      ? dedicatedLoopIdByParent.get(parentId)
-      : undefined;
+    const visited = new Set<string>();
+    let currentTaskId: string | undefined = taskId;
+    while (currentTaskId && !visited.has(currentTaskId)) {
+      visited.add(currentTaskId);
+      const parentId =
+        state.resources?.[currentTaskId]?.spec?.parentId ??
+        state.receipts?.[currentTaskId]?.parentId;
+      if (typeof parentId !== "string" || !parentId) return undefined;
+      const loopId = dedicatedLoopIdByParent.get(parentId);
+      if (loopId) return loopId;
+      if (isStandingLoopId(parentId)) return parentId;
+      currentTaskId = parentId;
+    }
+    return undefined;
   } catch {
     return undefined;
   }

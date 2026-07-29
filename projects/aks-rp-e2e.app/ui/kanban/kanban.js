@@ -35,6 +35,15 @@ function taskColor(stateName) {
   return "var(--muted)";
 }
 
+const RETIRED_OWNER_VISIBLE_METRIC_IDS = new Set([
+  "aks-rp-e2e.task.blocked-actionable-count",
+  "aks-rp-e2e.task.capacity-underfilled-with-gaps",
+  "aks-rp-e2e.task.no-work-with-gaps",
+  "aks-rp-e2e.task.completed-24h",
+  "aks-rp-e2e.task.stale-active-with-gaps",
+  "aks-rp-e2e.planner.slow-count-24h",
+]);
+
 const METRIC_GROUPS = [
   {
     title: "Process Bottlenecks",
@@ -47,9 +56,7 @@ const METRIC_GROUPS = [
       ["aks-rp-e2e.process.unpublished-change-count", "Project repo stale"],
       ["aks-rp-e2e.process.unowned-work-count", "Unowned work"],
       ["aks-rp-e2e.task.stale-active-count", "Stale active"],
-      ["aks-rp-e2e.task.capacity-underfilled-with-gaps", "Underfilled"],
-      ["aks-rp-e2e.task.no-work-with-gaps", "No work"],
-      ["aks-rp-e2e.planner.slow-count-24h", "Planner slow"],
+      ["aks-rp-e2e.planner.timeout-24h", "Planner timeouts"],
     ],
   },
   {
@@ -59,8 +66,6 @@ const METRIC_GROUPS = [
       ["aks-rp-e2e.task.active-count", "Active"],
       ["aks-rp-e2e.task.ready-count", "Backlog"],
       ["aks-rp-e2e.task.blocked-count", "Blocked"],
-      ["aks-rp-e2e.task.completed-24h", "Done 24h"],
-      ["aks-rp-e2e.task.capacity-underfilled-with-gaps", "Underfilled"],
     ],
   },
   {
@@ -626,12 +631,21 @@ async function fetchJson(path) {
 async function loadMetrics() {
   try {
     const data = await fetchJson("/api/metrics");
-    state.metrics = (data.metrics || []).filter((metric) =>
-      String(metric.id || "").startsWith("aks-rp-e2e."),
+    state.metrics = (data.metrics || []).filter((metric) => {
+      const id = metricRecordId(metric);
+      return (
+        id.startsWith("aks-rp-e2e.") &&
+        !RETIRED_OWNER_VISIBLE_METRIC_IDS.has(id) &&
+        !isClosedMetric(metric)
+      );
+    });
+    const visibleMetricIds = new Set(
+      state.metrics.map((metric) => metricRecordId(metric)).filter(Boolean),
     );
-    state.metricAlerts = (data.alerts || []).filter((alert) =>
-      String(alert.metricId || alert.metric_id || "").startsWith("aks-rp-e2e."),
-    );
+    state.metricAlerts = (data.alerts || []).filter((alert) => {
+      const id = metricRecordId(alert);
+      return id.startsWith("aks-rp-e2e.") && visibleMetricIds.has(id);
+    });
     const histories = await Promise.all(
       state.metrics.map((metric) =>
         fetchJson(
@@ -1091,6 +1105,22 @@ function renderMetric(label, value, color = "") {
   </div>`;
 }
 
+function metricRecordId(record) {
+  return String(record?.metricId || record?.metric_id || record?.id || "");
+}
+
+function isClosedMetric(metric) {
+  return String(metric?.status || "").toLowerCase() === "closed";
+}
+
+function shouldRenderMetricId(id) {
+  return (
+    !!id &&
+    !RETIRED_OWNER_VISIBLE_METRIC_IDS.has(id) &&
+    (projectMetricsById().has(id) || !!METRIC_FALLBACKS[id])
+  );
+}
+
 function projectMetricsById() {
   return new Map((state.metrics || []).map((metric) => [metric.id, metric]));
 }
@@ -1196,13 +1226,9 @@ function buildBottleneckRows(tree, overview) {
     "aks-rp-e2e.task.stale-active-count",
     stats,
   );
-  const underfilled = metricNumberValue(
-    "aks-rp-e2e.task.capacity-underfilled-with-gaps",
-    stats,
-  );
-  const noWork = metricNumberValue("aks-rp-e2e.task.no-work-with-gaps", stats);
-  const slowPlanner = metricNumberValue(
-    "aks-rp-e2e.planner.slow-count-24h",
+  const readyCount = metricNumberValue("aks-rp-e2e.task.ready-count", stats);
+  const plannerTimeouts = metricNumberValue(
+    "aks-rp-e2e.planner.timeout-24h",
     stats,
   );
   const activeFanout = activeTasks.length;
@@ -1276,17 +1302,17 @@ function buildBottleneckRows(tree, overview) {
     },
     {
       key: "planner-speed",
-      signalKey: "aks-rp-e2e.planner.slow-count-24h",
-      name: "Planner slow?",
-      value: slowPlanner,
-      tone: bottleneckTone(slowPlanner, 1, 10),
+      signalKey: "aks-rp-e2e.planner.timeout-24h",
+      name: "Planner timed out?",
+      value: plannerTimeouts,
+      tone: bottleneckTone(plannerTimeouts),
       rank: 70,
-      question: "Is planner/review taking too long to apply results?",
+      question: "Did planner/review time out during the last 24 hours?",
       meaning:
-        "Slow planner runs usually mean review fanout, large state diffs, or unclear next actions.",
+        "This uses the active planner timeout sampler, so any nonzero value reflects current timeout debt instead of the retired slow-count surface.",
       action:
-        slowPlanner && slowPlanner > 0
-          ? "inspect recent planner runs and reduce broad review fanout"
+        plannerTimeouts && plannerTimeouts > 0
+          ? "inspect recent planner timeout runs and reduce broad review fanout"
           : "no action",
       candidates: compactCandidateIds(overview.reviewLeaves),
     },
@@ -1307,21 +1333,25 @@ function buildBottleneckRows(tree, overview) {
       candidates: compactCandidateIds(activeTasks),
     },
     {
-      key: "work-assigned",
-      signalKey: "aks-rp-e2e.task.capacity-underfilled-with-gaps",
-      name: "Enough work assigned?",
-      value:
-        underfilled == null && noWork == null
-          ? null
-          : (underfilled || 0) + (noWork || 0),
-      tone: bottleneckTone((underfilled || 0) + (noWork || 0)),
+      key: "runnable-backlog",
+      signalKey: "aks-rp-e2e.task.ready-count",
+      name: "Runnable backlog?",
+      value: readyCount,
+      tone:
+        readyCount == null
+          ? "watch"
+          : readyCount > 0
+            ? "ok"
+            : activeFanout > 0
+              ? "watch"
+              : "bad",
       rank: 60,
-      question: "Are there gaps but no runnable or active work?",
+      question: "Is there at least one runnable backlog leaf ready to pick up?",
       meaning:
-        "This points to planner/dispatcher starvation instead of worker slowness.",
+        "This uses the active ready-count sampler instead of the retired gap counters, so it reflects only current executable backlog.",
       action:
-        (underfilled || 0) + (noWork || 0) > 0
-          ? "ask planner to refill concrete runnable work"
+        readyCount === 0
+          ? "ask planner to seed concrete runnable work"
           : "no action",
       candidates: compactCandidateIds(leavesByState(tree, "backlog")),
     },
@@ -1466,7 +1496,7 @@ function renderMetricTile(id, label, stats) {
         .filter(Boolean)
         .join(" | ")
     : "task-tree snapshot";
-  return `<div class="metric-tile metric-${health.tone}" title="${attrEsc(metric?.description || detail)}">
+  return `<div class="metric-tile metric-${health.tone}" data-metric-id="${attrEsc(id)}" title="${attrEsc(metric?.description || detail)}">
     <div class="metric-topline">
       <span class="metric-name">${esc(label)}</span>
       <span class="metric-state">${esc(health.label)}</span>
@@ -1478,13 +1508,15 @@ function renderMetricTile(id, label, stats) {
 }
 
 function renderMetricGroup(group, stats) {
+  const metrics = group.metrics.filter(([id]) => shouldRenderMetricId(id));
+  if (!metrics.length) return "";
   return `<div class="metric-group">
     <div>
       <div class="metric-group-title">${esc(group.title)}</div>
       <div class="metric-group-copy">${esc(group.description)}</div>
     </div>
     <div class="metric-tiles">
-      ${group.metrics.map(([id, label]) => renderMetricTile(id, label, stats)).join("")}
+      ${metrics.map(([id, label]) => renderMetricTile(id, label, stats)).join("")}
     </div>
   </div>`;
 }

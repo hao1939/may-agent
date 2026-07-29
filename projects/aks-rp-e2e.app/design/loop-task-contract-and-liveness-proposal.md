@@ -216,6 +216,20 @@ target advances concurrently, task mechanics treat the atomic result as stale
 and rerun this same reviewer from current facts instead of creating another
 attention item.
 
+The periodic schedule is only the fallback. When the generic reconciler has
+persisted a task with `disposition: attention`, the app immediately ticks this
+same waiting-frontier review task. Code does not interpret the failure or
+choose a recovery action; it only routes the structured phase transition to
+the agent that owns recovery judgment. Waiting until the next periodic review
+would leave known process-recovery work unattended.
+
+Recovery actions must satisfy the selected workflow's declared input contract.
+For example, an `approval-dispatch` successor is executable only after the
+reviewer writes the referenced packet and supplies `packetPath`, `pathId`, and
+`requestedAction`. Declaring a workflow-bound task with missing required input
+only converts one unattended item into another and is not a completed recovery
+action.
+
 A review pass that successfully applies one or more structured task actions
 immediately schedules one more tick for the same maintenance task. This is a
 continuation signal, not a code-side judgment that another task is broken: the
@@ -395,6 +409,14 @@ acceptance:
   - Publication work owns or requests the intended landing before waiting.
   - While eligible work exists, at most five actionable one-adapter leaves are
     kept represented; waits and attention do not consume that frontier.
+  - Separately, live-execution capacity counts every actionable task and exact
+    pipeline-run wait in the active scenario-normalization lineage, including
+    repair children and tasks whose source row just disappeared from the latest
+    inventory. A row landing in `dev` does not release its live slot while its
+    exact verification run or same-task repair is still active.
+  - A task in the automatic `spec-live-reconciliation -> needs-owner -> owner`
+    handoff also keeps its live slot. The brief `attention` phase between those
+    attempts is an in-flight judgment boundary, not free normalization capacity.
   - When several eligible rows can fill free slots, prefer feature scopes not
     already represented in the live frontier, then prefer one row per feature
     before taking a second row from the same feature. Fill any remaining slots

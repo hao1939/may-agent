@@ -4,11 +4,13 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  alignCampaignRepairReplayWorkspace,
   alignCleanRepairWorkspace,
   boundedChangedFileEvidence,
   boundedEvidence,
-  changedFilesMayAffectSpec,
   campaignRepairPullRequestDescription,
+  campaignRepairReady,
+  changedFilesMayAffectSpec,
   currentRecoveryBaselineRunId,
   execute,
   frozenCampaignBaseForFailure,
@@ -24,7 +26,11 @@ import {
   preserveVerificationAfterNestedReconciliation,
   priorStandaloneVerification,
   productRecoveryCondition,
+  publishCampaignRepairBranch,
+  repairBranchImportsNewerMain,
+  replayCampaignRepairBaseCommit,
   requiresStandaloneVerification,
+  resetInvalidCampaignRepairWorkspace,
   runFailureInvestigation,
   shouldReconcileTestFix,
   standaloneRecoveryChild,
@@ -133,6 +139,262 @@ describe("master-validation failure workflow", () => {
         }),
       ).toBe(frozenBase);
       expect(git(root, "rev-parse", "HEAD")).toBe(frozenBase);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("detects and resets a reused campaign repair branch that imported newer main", () => {
+    const root = mkdtempSync(join(tmpdir(), "master-validation-repair-reset-"));
+    try {
+      git(root, "init");
+      git(root, "config", "user.name", "Repair Test");
+      git(root, "config", "user.email", "repair@example.test");
+      writeFileSync(join(root, "task.txt"), "base\n");
+      git(root, "add", "task.txt");
+      git(root, "commit", "-m", "frozen base");
+      const frozenBase = git(root, "rev-parse", "HEAD");
+      git(root, "branch", "-M", "main");
+      git(root, "checkout", "-b", "task/repair");
+      writeFileSync(join(root, "task.txt"), "focused fix\n");
+      git(root, "commit", "-am", "focused fix");
+      git(root, "checkout", "main");
+      writeFileSync(join(root, "main.txt"), "newer main\n");
+      git(root, "add", "main.txt");
+      git(root, "commit", "-m", "newer main");
+      const mergedMain = git(root, "rev-parse", "HEAD");
+      git(root, "update-ref", "refs/remotes/origin/main", mergedMain);
+      git(root, "checkout", "task/repair");
+      git(root, "merge", "--no-ff", "--no-edit", "main");
+      const importedHead = git(root, "rev-parse", "HEAD");
+
+      expect(
+        repairBranchImportsNewerMain({
+          workspaceDir: root,
+          targetRef: "origin/main",
+          repairBaseCommit: frozenBase,
+          headCommit: importedHead,
+        }),
+      ).toEqual({
+        forkCommit: mergedMain,
+        importsNewerMain: true,
+      });
+      expect(
+        resetInvalidCampaignRepairWorkspace({
+          workspaceDir: root,
+          targetRef: "origin/main",
+          repairBaseCommit: frozenBase,
+          headCommit: importedHead,
+        }),
+      ).toEqual({
+        headCommit: frozenBase,
+        reset: true,
+        forkCommit: mergedMain,
+      });
+      expect(git(root, "rev-parse", "HEAD")).toBe(frozenBase);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("parses campaign repair replay metadata for append-only campaign recovery", () => {
+    const input = parseFailureInput(`
+## Reconciliation Task
+${JSON.stringify({
+  taskId: "domain/master-validation-failure/spec.example/fp",
+  generation: 4,
+  input: {
+    specId: "spec.example",
+    pipelineRunId: "101",
+    failureFingerprint: "fp",
+    sourceBranch: "refs/heads/validation/master-validation-100",
+    campaignRepairReplay: {
+      activePullRequestId: "16572555",
+      activeSourceCommit: "active123",
+      campaignBranch: "validation/master-validation-100",
+      campaignHeadCommit: "campaign123",
+      conflictingPaths: ["features/example/test.ts"],
+      frozenCampaignBaseCommit: "frozen123",
+      priorMergedPullRequestId: "16570818",
+      priorMergedSourceBranch:
+        "task/domain-master-validation-failure-spec.example-prior",
+      priorMergedSourceCommit: "prior123",
+      reason: "Repair this stable task from prior approved campaign lineage.",
+      replayMode: "append-only-repair-on-existing-campaign-lineage",
+    },
+  },
+})}
+`)!;
+    expect(input).toMatchObject({
+      campaignRepairReplay: {
+        activePullRequestId: "16572555",
+        conflictingPaths: ["features/example/test.ts"],
+        priorMergedSourceCommit: "prior123",
+        replayMode: "append-only-repair-on-existing-campaign-lineage",
+      },
+    });
+    expect(replayCampaignRepairBaseCommit(input)).toBe("prior123");
+  });
+
+  test("realigns a clean replay workspace to the prior integrated campaign lineage", () => {
+    const root = mkdtempSync(join(tmpdir(), "master-validation-replay-base-"));
+    try {
+      git(root, "init");
+      git(root, "config", "user.name", "Repair Test");
+      git(root, "config", "user.email", "repair@example.test");
+      writeFileSync(join(root, "task.txt"), "base\n");
+      git(root, "add", "task.txt");
+      git(root, "commit", "-m", "frozen base");
+      const frozenBase = git(root, "rev-parse", "HEAD");
+      writeFileSync(join(root, "task.txt"), "prior integrated fix\n");
+      git(root, "commit", "-am", "prior integrated fix");
+      const priorMerged = git(root, "rev-parse", "HEAD");
+      git(root, "branch", "-M", "main");
+      git(root, "update-ref", "refs/remotes/origin/main", priorMerged);
+      git(root, "checkout", "-b", "task/repair");
+      git(root, "reset", "--hard", frozenBase);
+
+      expect(
+        alignCampaignRepairReplayWorkspace({
+          workspaceDir: root,
+          replayBaseCommit: priorMerged,
+        }),
+      ).toEqual({
+        headCommit: priorMerged,
+        reset: true,
+      });
+      expect(git(root, "rev-parse", "HEAD")).toBe(priorMerged);
+      expect(
+        campaignRepairReady({
+          headCommit: priorMerged,
+          repairBaseCommit: frozenBase,
+          replayBaseCommit: priorMerged,
+        }),
+      ).toBe(false);
+      writeFileSync(join(root, "cleanup.txt"), "cleanup delta\n");
+      git(root, "add", "cleanup.txt");
+      git(root, "commit", "-m", "cleanup delta");
+      expect(
+        campaignRepairReady({
+          headCommit: git(root, "rev-parse", "HEAD"),
+          repairBaseCommit: frozenBase,
+          replayBaseCommit: priorMerged,
+        }),
+      ).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("reconciles same-task branch history before publishing a focused campaign repair", () => {
+    const root = mkdtempSync(
+      join(tmpdir(), "master-validation-publish-merge-"),
+    );
+    const remote = join(root, "remote.git");
+    const seed = join(root, "seed");
+    const workspace = join(root, "workspace");
+    try {
+      mkdirSync(remote, { recursive: true });
+      git(remote, "init", "--bare");
+
+      mkdirSync(seed, { recursive: true });
+      git(seed, "init");
+      git(seed, "config", "user.name", "Repair Test");
+      git(seed, "config", "user.email", "repair@example.test");
+      writeFileSync(join(seed, "task.txt"), "base\n");
+      git(seed, "add", "task.txt");
+      git(seed, "commit", "-m", "base");
+      git(seed, "remote", "add", "origin", remote);
+      git(seed, "push", "origin", "HEAD:refs/heads/master");
+      git(seed, "push", "origin", "HEAD:refs/heads/task/repair");
+
+      git(seed, "checkout", "-b", "task/repair");
+      writeFileSync(join(seed, "remote.txt"), "remote\n");
+      git(seed, "add", "remote.txt");
+      git(seed, "commit", "-m", "remote update");
+      git(seed, "push", "origin", "HEAD:refs/heads/task/repair");
+
+      git(root, "clone", remote, workspace);
+      git(workspace, "config", "user.name", "Repair Test");
+      git(workspace, "config", "user.email", "repair@example.test");
+      git(workspace, "checkout", "-b", "task/repair", "origin/task/repair~1");
+      writeFileSync(join(workspace, "local.txt"), "local\n");
+      git(workspace, "add", "local.txt");
+      git(workspace, "commit", "-m", "local update");
+
+      const result = publishCampaignRepairBranch(workspace, "task/repair");
+      expect(result.state).toBe("published");
+      expect(
+        result.evidence.some((entry) =>
+          entry.startsWith("task-branch-non-fast-forward:task/repair@"),
+        ),
+      ).toBe(true);
+      expect(
+        git(
+          workspace,
+          "merge-base",
+          "--is-ancestor",
+          "origin/task/repair",
+          "HEAD",
+        ),
+      ).toBe("");
+      expect(
+        git(workspace, "ls-remote", "origin", "refs/heads/task/repair").split(
+          /\s+/,
+        )[0],
+      ).toBe(git(workspace, "rev-parse", "HEAD"));
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("surfaces same-task branch conflicts during focused campaign publication", () => {
+    const root = mkdtempSync(
+      join(tmpdir(), "master-validation-publish-conflict-"),
+    );
+    const remote = join(root, "remote.git");
+    const seed = join(root, "seed");
+    const workspace = join(root, "workspace");
+    try {
+      mkdirSync(remote, { recursive: true });
+      git(remote, "init", "--bare");
+
+      mkdirSync(seed, { recursive: true });
+      git(seed, "init");
+      git(seed, "config", "user.name", "Repair Test");
+      git(seed, "config", "user.email", "repair@example.test");
+      writeFileSync(join(seed, "task.txt"), "base\n");
+      git(seed, "add", "task.txt");
+      git(seed, "commit", "-m", "base");
+      git(seed, "remote", "add", "origin", remote);
+      git(seed, "push", "origin", "HEAD:refs/heads/master");
+      git(seed, "push", "origin", "HEAD:refs/heads/task/conflict");
+
+      git(seed, "checkout", "-b", "task/conflict");
+      writeFileSync(join(seed, "task.txt"), "remote\n");
+      git(seed, "commit", "-am", "remote update");
+      git(seed, "push", "origin", "HEAD:refs/heads/task/conflict");
+
+      git(root, "clone", remote, workspace);
+      git(workspace, "config", "user.name", "Repair Test");
+      git(workspace, "config", "user.email", "repair@example.test");
+      git(
+        workspace,
+        "checkout",
+        "-b",
+        "task/conflict",
+        "origin/task/conflict~1",
+      );
+      writeFileSync(join(workspace, "task.txt"), "local\n");
+      git(workspace, "commit", "-am", "local update");
+
+      const result = publishCampaignRepairBranch(workspace, "task/conflict");
+      expect(result.state).toBe("conflicted");
+      expect(result.remoteRef).toBe("refs/remotes/origin/task/conflict");
+      expect(result.conflictedPaths).toContain("task.txt");
+      expect(git(workspace, "status", "--porcelain=v1")).toContain(
+        "UU task.txt",
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -550,8 +812,8 @@ ${JSON.stringify({
     specId: "spec.example",
     pipelineRunId: "123",
     failureFingerprint: "fp",
-    artifactPath: "/tmp/result.json",
     sourceCommit: "abc",
+    artifactPath: "/tmp/result.json",
     reason: "failed",
     category: "implementation",
     status: "fail",

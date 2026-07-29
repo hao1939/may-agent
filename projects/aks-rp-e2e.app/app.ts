@@ -1,5 +1,7 @@
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
+import { basename, resolve } from "node:path";
 import {
   defineProjectApp,
   eventDetails,
@@ -25,10 +27,12 @@ import {
   standingLoopIntent,
 } from "./task-loops.js";
 import { syncSpecLiveProof } from "./agents/app-ops/workflows/lib/spec-live-proof-sync.js";
+import { syncOwnerVisibleReadout } from "./agents/app-ops/workflows/lib/owner-visible-readout-sync.js";
 import {
   readCampaignReceipt,
   type CampaignReceipt,
 } from "./agents/app-ops/workflows/lib/master-validation-campaign.js";
+import { repoRefWaitExternalProducer } from "./agents/owner/workflows/wait-for-repo-ref-advance.js";
 
 const projectId = "aks-rp-e2e";
 const domainPolicyMaxConcurrent = 5;
@@ -108,6 +112,97 @@ export function masterValidationCampaignPulse(nowMs = Date.now()): number {
   return Math.floor(nowMs / 300_000);
 }
 
+const ownerVisibleRefreshEventTypes = new Set([
+  "project.task.reconcile.started",
+  "project.task.reconcile.skipped",
+  "project.task.reconciled",
+  "aks.repo-ref.observed",
+  "aks.repo-ref.changed",
+  "pipeline-run.state",
+  "pipeline.completed",
+  "pipeline-artifact.available",
+]);
+
+type OwnerVisibleRefreshSnapshot = {
+  treeUpdatedAt: string;
+};
+
+function readJsonRecord(path: string): Record<string, unknown> | null {
+  if (!existsSync(path)) return null;
+  try {
+    const parsed = JSON.parse(readFileSync(path, "utf8"));
+    return isRecord(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function ownerVisibleRefreshSnapshot(
+  appDir: string,
+): OwnerVisibleRefreshSnapshot | null {
+  const tree = readJsonRecord(`${appDir}/.state/tasks/tree.json`);
+  if (!tree) return null;
+  const treeUpdatedAt =
+    typeof tree.updated_at === "string" ? tree.updated_at.trim() : "";
+  if (!treeUpdatedAt) return null;
+  return { treeUpdatedAt };
+}
+
+function ownerVisiblePublishedTreeUpdatedAt(appDir: string): string {
+  const projectState = readJsonRecord(`${appDir}/.state/project-state.json`);
+  if (projectState) {
+    const currentFocus = recordDetail(projectState, "currentFocus");
+    const currentState = recordDetail(projectState, "currentState");
+    const focusSnapshot = recordDetail(currentFocus ?? {}, "snapshot");
+    const focusMission = recordDetail(currentFocus ?? {}, "focusMission");
+    const currentStateSnapshot = recordDetail(currentState ?? {}, "snapshot");
+    for (const candidate of [
+      focusSnapshot?.treeUpdatedAt,
+      focusMission?.treeUpdatedAt,
+      currentStateSnapshot?.treeUpdatedAt,
+    ]) {
+      if (typeof candidate === "string" && candidate.trim()) {
+        return candidate.trim();
+      }
+    }
+  }
+
+  const projectJson = readJsonRecord(`${appDir}/project.json`);
+  const currentFocus = recordDetail(projectJson ?? {}, "currentFocus");
+  const focusSnapshot = recordDetail(currentFocus ?? {}, "snapshot");
+  const focusMission = recordDetail(currentFocus ?? {}, "focusMission");
+  for (const candidate of [
+    focusSnapshot?.treeUpdatedAt,
+    focusMission?.treeUpdatedAt,
+  ]) {
+    if (typeof candidate === "string" && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+  return "";
+}
+
+function maybeRefreshOwnerVisibleReadout(
+  ctx: ProjectAppContext,
+  event: Record<string, unknown>,
+): boolean {
+  if (!ownerVisibleRefreshEventTypes.has(String(event.type ?? "")))
+    return false;
+  if (typeof ctx.appPath !== "function") return false;
+
+  const appDir = ctx.appPath(".");
+  const liveSnapshot = ownerVisibleRefreshSnapshot(appDir);
+  if (!liveSnapshot) return false;
+  const publishedTreeUpdatedAt = ownerVisiblePublishedTreeUpdatedAt(appDir);
+  if (publishedTreeUpdatedAt === liveSnapshot.treeUpdatedAt) return false;
+
+  return syncOwnerVisibleReadout({
+    appDir,
+    projectDir: ctx.appPath("../aks-rp-e2e"),
+    worker: "app-ops",
+  }).changed;
+}
+
 type MasterValidationCycleReceipt = {
   runId?: unknown;
   sourceCommit?: unknown;
@@ -129,9 +224,11 @@ function readMasterValidationCycleReceipt(
 
 type TaskStateResource = {
   metadata?: { generation?: unknown };
-  spec?: { workflow?: unknown; input?: unknown };
+  spec?: Record<string, unknown>;
   status?: { phase?: unknown; conditionIds?: unknown };
 };
+
+type TaskIntentSnapshot = ProjectAppTaskIntent;
 
 type TaskStateCondition = {
   spec?: {
@@ -139,11 +236,19 @@ type TaskStateCondition = {
     subject?: unknown;
     expected?: unknown;
   };
+  status?: {
+    state?: unknown;
+  };
+};
+
+type TaskStateAttempt = {
+  taskId?: unknown;
 };
 
 type TaskStateSnapshot = {
   resources?: Record<string, TaskStateResource>;
   conditions?: Record<string, TaskStateCondition>;
+  attempts?: Record<string, TaskStateAttempt>;
 };
 
 type ApprovalWaitContractProblem = {
@@ -162,6 +267,33 @@ type RepoRefWaitContractProblem = {
   repoRef: string;
   baselineCommit: string;
   issues: string[];
+  replayReason?:
+    "malformed-repo-ref-wait-contract" | "triggerless-pending-repo-ref-wait";
+};
+
+type SelfTaskStateWaitContractProblem = {
+  taskId: string;
+  workflow?: string;
+  phase?: string;
+  conditionId: string;
+  issues: string[];
+  repoRef?: string;
+  baselineCommit?: string;
+  replayReason?:
+    "self-task-state-wait-contract" | "self-task-state-wait-after-repo-advance";
+};
+
+type TaskStateWaitReplay = {
+  taskId: string;
+  conditionId: string;
+  type: "task-field" | "task-phase";
+};
+
+type RepoRefWaitReplay = {
+  taskId: string;
+  conditionId: string;
+  repoRef: string;
+  baselineCommit: string;
 };
 
 const canonicalApprovalDispatchDecisions = [
@@ -192,6 +324,490 @@ function stringList(value: unknown): string[] {
           typeof entry === "string" && Boolean(entry.trim()),
       )
     : [];
+}
+
+function modeDetail(value: unknown): "achieve" | "maintain" | undefined {
+  return value === "achieve" || value === "maintain" ? value : undefined;
+}
+
+function taskIntentSnapshotFromResource(
+  taskId: string,
+  resource: TaskStateResource | null,
+  options?: { clearWorkflow?: boolean },
+): TaskIntentSnapshot | null {
+  const spec = isRecord(resource?.spec) ? resource?.spec : null;
+  if (!spec) return null;
+
+  const owner = stringDetail(spec, "owner");
+  const outcome = stringDetail(spec, "outcome");
+  const parentId = stringDetail(spec, "parentId");
+  const mode = modeDetail(spec.mode);
+  if (!owner || !outcome || !parentId || !mode) return null;
+
+  const snapshot: TaskIntentSnapshot = {
+    id: taskId,
+    parentId,
+    outcome,
+    acceptance: stringList(spec.acceptance),
+    mode,
+    owner,
+  };
+
+  if (!options?.clearWorkflow) {
+    const workflow = stringDetail(spec, "workflow");
+    if (workflow) snapshot.workflow = workflow;
+  }
+
+  const input = isRecord(spec.input) ? spec.input : null;
+  if (input) snapshot.input = input;
+
+  const outputs = stringList(spec.outputs);
+  if (outputs.length) snapshot.outputs = outputs;
+
+  const priority = stringDetail(spec, "priority");
+  if (["P0", "P1", "P2", "P3"].includes(priority)) {
+    snapshot.priority = priority as "P0" | "P1" | "P2" | "P3";
+  }
+
+  const category = stringDetail(spec, "category");
+  if (category) snapshot.category = category;
+
+  const dependsOn = stringList(spec.dependsOn);
+  if (dependsOn.length) snapshot.dependsOn = dependsOn;
+
+  return snapshot;
+}
+
+function repoRefWaitNeedsDirectOwnerReplay(
+  details: Record<string, unknown>,
+): boolean {
+  if (stringDetail(details, "action") !== "repo-ref-wait-contract-replay") {
+    return false;
+  }
+  const issues = stringList(details.issues);
+  return issues.some((issue) =>
+    issue.includes("generic origin/dev churn is not such a producer"),
+  );
+}
+
+function repoRefOwnerHandoffReplayIntent(
+  details: Record<string, unknown>,
+): TaskIntentSnapshot | null {
+  const taskIntent = recordDetail(details, "taskIntent", "task_intent");
+  if (!taskIntent) return null;
+  const taskId = stringDetail(taskIntent, "id");
+  if (!taskId) return null;
+
+  const snapshot = taskIntentSnapshotFromResource(
+    taskId,
+    { spec: taskIntent },
+    { clearWorkflow: true },
+  );
+  if (!snapshot) return null;
+
+  const input = isRecord(snapshot.input) ? { ...snapshot.input } : {};
+  const repoRef = stringDetail(input, "baseRef") || "origin/dev";
+  const previousBaselineCommit = stringDetail(input, "resumeBaselineCommit");
+  input.repoRefOwnerHandoff = {
+    reason: "repo-ref-wait-owner-handoff",
+    preserveSameTaskId: true,
+    priorWorkflow: "wait-for-repo-ref-advance",
+    ...(previousBaselineCommit ? { previousBaselineCommit } : {}),
+  };
+  snapshot.input = input;
+  snapshot.acceptance = [
+    ...snapshot.acceptance,
+    `Treat the previous ${repoRef} baseline wait${previousBaselineCommit ? ` for ${previousBaselineCommit}` : ""} as already satisfied by the wake; re-read only the same bounded scope from current repo truth.`,
+    `If the same scope still needs a supported ${repoRef} wait, keep this same task id waiting from the current baseline instead of creating a child or successor wait-named descendant.`,
+    "If the inherited wait wording is stale after the wake, revise that wording on this same task path rather than spawning another repo-ref carrier.",
+  ];
+  return snapshot;
+}
+
+function taskIntentSnapshotFromEvent(
+  details: Record<string, unknown>,
+): TaskIntentSnapshot | null {
+  if (stringDetail(details, "action") === "repo-ref-owner-handoff-replay") {
+    return repoRefOwnerHandoffReplayIntent(details);
+  }
+
+  const taskIntent = recordDetail(details, "taskIntent", "task_intent");
+  if (!taskIntent) return null;
+  const taskId = stringDetail(taskIntent, "id");
+  return taskId
+    ? taskIntentSnapshotFromResource(
+        taskId,
+        { spec: taskIntent },
+        {
+          clearWorkflow: repoRefWaitNeedsDirectOwnerReplay(details),
+        },
+      )
+    : null;
+}
+
+type LiveTaskReadiness = {
+  state?: unknown;
+};
+
+type LiveTaskTreeTask = {
+  id?: unknown;
+  phase?: unknown;
+  input?: unknown;
+  evidence?: unknown;
+  readiness?: LiveTaskReadiness;
+};
+
+type LiveTaskTreeSnapshot = {
+  tasks?: Record<string, LiveTaskTreeTask>;
+};
+
+type WorkspaceIntegrityCoverage = {
+  suppressed: boolean;
+  coveredByTask: Record<string, string[]>;
+  uncovered: Array<{ path: string; kind: string; reason: string }>;
+  repoDirtyPaths: string[];
+};
+
+function readLiveTaskTree(appDir: string): LiveTaskTreeSnapshot | null {
+  const path = `${appDir}/.state/tasks/tree.json`;
+  if (!existsSync(path)) return null;
+  try {
+    const parsed = JSON.parse(readFileSync(path, "utf8"));
+    return parsed && typeof parsed === "object"
+      ? (parsed as LiveTaskTreeSnapshot)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function createdReadyTaskWakes(
+  appDir: string,
+  actionsApplied: string[],
+  sourceTaskId: string,
+): ProjectAppEvent[] {
+  if (!actionsApplied.length) return [];
+  const tree = readLiveTaskTree(appDir);
+  if (!tree?.tasks) return [];
+
+  const createdTaskIds = new Set<string>();
+  for (const entry of actionsApplied) {
+    const match = entry.match(/^created\s+(.+)$/i);
+    const taskId = match?.[1]?.trim();
+    if (taskId) createdTaskIds.add(taskId);
+  }
+
+  const wakes: ProjectAppEvent[] = [];
+  for (const taskId of createdTaskIds) {
+    const task = tree.tasks[taskId];
+    if (!task || typeof task !== "object") continue;
+    const phase =
+      typeof task.phase === "string" ? task.phase.trim().toLowerCase() : "";
+    const readiness = isRecord(task.readiness) ? task.readiness : {};
+    const readinessState =
+      typeof readiness.state === "string"
+        ? readiness.state.trim().toLowerCase()
+        : "";
+    if (phase !== "pending" && phase !== "backlog") continue;
+    if (readinessState !== "ready") continue;
+    wakes.push({
+      type: "project.task.tick",
+      source: "aks-rp-e2e-app",
+      target: { project: projectId, taskId },
+      urgency: "high",
+      data: {
+        project: projectId,
+        taskId,
+        task_id: taskId,
+        reason: "created-task-ready",
+        sourceTaskId,
+      },
+    });
+  }
+  return wakes;
+}
+
+function normalizePath(path: string): string {
+  return resolve(path).replace(/\/+$/, "");
+}
+
+function taskClaimCoversPath(claim: string, target: string): boolean {
+  const normalizedClaim = normalizePath(claim);
+  const normalizedTarget = normalizePath(target);
+  return (
+    normalizedTarget === normalizedClaim ||
+    normalizedTarget.startsWith(`${normalizedClaim}/`)
+  );
+}
+
+function gitStdout(
+  cwd: string,
+  args: string[],
+): { status: number; stdout: string } {
+  const result = spawnSync("git", ["-C", cwd, ...args], {
+    encoding: "utf8",
+    maxBuffer: 8 * 1024 * 1024,
+    timeout: 60_000,
+  });
+  return {
+    status: result.status ?? 1,
+    stdout: result.stdout?.trimEnd() ?? "",
+  };
+}
+
+function currentRepoDirtyPaths(repoDir: string): string[] | null {
+  const result = gitStdout(repoDir, [
+    "status",
+    "--porcelain=v1",
+    "--untracked-files=all",
+  ]);
+  if (result.status !== 0) return null;
+  return result.stdout
+    .split("\n")
+    .map((line) => line.trimEnd())
+    .filter(Boolean)
+    .map((line) => {
+      const raw = line.slice(3).trim();
+      const path = raw.includes(" -> ")
+        ? (raw.split(" -> ").pop() ?? raw)
+        : raw;
+      return normalizePath(resolve(repoDir, path));
+    });
+}
+
+function addPathClaim(
+  claims: Set<string>,
+  value: unknown,
+  fallbackBase: string,
+): void {
+  if (typeof value !== "string" || !value.trim()) return;
+  const path = value.startsWith("/")
+    ? value.trim()
+    : resolve(fallbackBase, value.trim());
+  claims.add(normalizePath(path));
+}
+
+const repoRelativeTaskPathPattern =
+  /^(README\.md|spec-runner\.ya?ml|features\/|evidence\/|runner\/|model\/)/;
+
+function collectTaskPathClaims(
+  claims: Set<string>,
+  value: unknown,
+  fallbackBase: string,
+  seen = new Set<object>(),
+): void {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    if (trimmed.startsWith("/")) {
+      if (normalizePath(trimmed) === normalizePath(fallbackBase)) return;
+      addPathClaim(claims, trimmed, fallbackBase);
+      return;
+    }
+    if (repoRelativeTaskPathPattern.test(trimmed)) {
+      addPathClaim(claims, trimmed, fallbackBase);
+    }
+    return;
+  }
+  if (Array.isArray(value)) {
+    for (const entry of value) {
+      collectTaskPathClaims(claims, entry, fallbackBase, seen);
+    }
+    return;
+  }
+  if (!isRecord(value)) return;
+  if (seen.has(value)) return;
+  seen.add(value);
+  for (const entry of Object.values(value)) {
+    collectTaskPathClaims(claims, entry, fallbackBase, seen);
+  }
+}
+
+function taskWorktreeClaimFromEvidence(
+  evidenceEntry: string,
+  repoDir: string,
+): string | null {
+  if (!evidenceEntry.startsWith("source-branch:task/")) return null;
+  const branchName = evidenceEntry.slice("source-branch:".length).trim();
+  const worktreeName = branchName.slice("task/".length).trim();
+  if (!worktreeName) return null;
+  return resolve(repoDir, "../../worktrees", basename(repoDir), worktreeName);
+}
+
+function taskPathClaims(
+  taskId: string,
+  task: LiveTaskTreeTask,
+  repoDir: string,
+): string[] {
+  const record = isRecord(task.input) ? task.input : {};
+  const claims = new Set<string>();
+  const canonicalBase = stringDetail(record, "canonicalRoot", "canonicalPath");
+  const repoBase = canonicalBase || repoDir;
+
+  addPathClaim(claims, record.cleanupPath, repoBase);
+  addPathClaim(claims, record.workspacePath, repoBase);
+  addPathClaim(claims, record.sharedDirtyFile, repoDir);
+
+  for (const value of [
+    record.cleanupCandidates,
+    record.cleanupPaths,
+    record.filePaths,
+    record.scopedPaths,
+    record.sourcePaths,
+  ]) {
+    for (const entry of stringList(value))
+      addPathClaim(claims, entry, repoBase);
+  }
+
+  const recoveryWorktrees = Array.isArray(record.recoveryWorktrees)
+    ? record.recoveryWorktrees
+    : [];
+  for (const worktree of recoveryWorktrees) {
+    if (isRecord(worktree)) addPathClaim(claims, worktree.path, repoBase);
+  }
+
+  for (const entry of stringList(task.evidence)) {
+    const worktreeClaim = taskWorktreeClaimFromEvidence(entry, repoDir);
+    if (worktreeClaim) addPathClaim(claims, worktreeClaim, repoDir);
+  }
+
+  collectTaskPathClaims(claims, record, repoBase);
+
+  const featureKey = stringDetail(record, "featureKey");
+  if (
+    featureKey &&
+    (taskId.startsWith("compact/") ||
+      taskId.startsWith("wait-compact-") ||
+      taskId.startsWith("hold-compact-"))
+  ) {
+    for (const relativePath of [
+      `features/${featureKey}/compact`,
+      `features/${featureKey}/specs`,
+      `features/${featureKey}/tests`,
+      `features/${featureKey}/lib`,
+    ]) {
+      addPathClaim(claims, relativePath, repoDir);
+    }
+  }
+
+  return [...claims];
+}
+
+function findCoveringTasks(
+  taskClaims: Map<string, string[]>,
+  targetPath: string,
+): string[] {
+  const matches: string[] = [];
+  for (const [taskId, claims] of taskClaims.entries()) {
+    if (claims.some((claim) => taskClaimCoversPath(claim, targetPath))) {
+      matches.push(taskId);
+    }
+  }
+  return matches.sort();
+}
+
+function workspaceIntegrityCoverage(
+  appDir: string,
+  repoDir: string,
+  observation: Record<string, unknown>,
+): WorkspaceIntegrityCoverage {
+  const tree = readLiveTaskTree(appDir);
+  if (!tree?.tasks) {
+    return {
+      suppressed: false,
+      coveredByTask: {},
+      uncovered: [
+        {
+          path: normalizePath(repoDir),
+          kind: "workspace-integrity-routing",
+          reason: "live-task-tree-unavailable",
+        },
+      ],
+      repoDirtyPaths: [],
+    };
+  }
+
+  const taskClaims = new Map<string, string[]>();
+  for (const [taskId, task] of Object.entries(tree.tasks)) {
+    const claims = taskPathClaims(taskId, task, repoDir);
+    if (claims.length) taskClaims.set(taskId, claims);
+  }
+
+  const coveredByTask: Record<string, string[]> = {};
+  const uncovered: Array<{ path: string; kind: string; reason: string }> = [];
+  const anomalies = Array.isArray(observation.anomalies)
+    ? observation.anomalies.filter(isRecord)
+    : [];
+  const repoRoot = normalizePath(repoDir);
+  const repoDirtyPaths: string[] = [];
+  let needsCanonicalCoverage = false;
+
+  for (const anomaly of anomalies) {
+    const kind = stringDetail(anomaly, "kind");
+    const path = stringDetail(anomaly, "path");
+    if (!kind || !path) continue;
+    const normalizedPath = normalizePath(path);
+    if (kind === "canonical-unhealthy") {
+      needsCanonicalCoverage = true;
+      continue;
+    }
+    if (kind === "unowned-dirty" && normalizedPath === repoRoot) continue;
+    const coveringTasks = findCoveringTasks(taskClaims, normalizedPath);
+    if (coveringTasks.length) {
+      coveredByTask[`${kind}:${normalizedPath}`] = coveringTasks;
+      continue;
+    }
+    uncovered.push({
+      path: normalizedPath,
+      kind,
+      reason: "no-live-task-claim",
+    });
+  }
+
+  if (needsCanonicalCoverage) {
+    const canonical = isRecord(observation.canonical)
+      ? observation.canonical
+      : {};
+    const clean = canonical.clean === true;
+    const branch = stringDetail(canonical, "branch");
+    if (clean || branch !== "dev") {
+      uncovered.push({
+        path: repoRoot,
+        kind: "canonical-unhealthy",
+        reason: clean ? "clean-but-not-canonical" : `branch=${branch || ""}`,
+      });
+    } else {
+      const dirtyPaths = currentRepoDirtyPaths(repoDir);
+      if (!dirtyPaths?.length) {
+        uncovered.push({
+          path: repoRoot,
+          kind: "canonical-unhealthy",
+          reason: dirtyPaths ? "dirty-paths-unavailable" : "git-status-failed",
+        });
+      } else {
+        repoDirtyPaths.push(...dirtyPaths);
+        for (const dirtyPath of dirtyPaths) {
+          const coveringTasks = findCoveringTasks(taskClaims, dirtyPath);
+          if (coveringTasks.length) {
+            coveredByTask[`canonical:${dirtyPath}`] = coveringTasks;
+            continue;
+          }
+          uncovered.push({
+            path: dirtyPath,
+            kind: "canonical-dirty-path",
+            reason: "no-live-task-claim",
+          });
+        }
+      }
+    }
+  }
+
+  return {
+    suppressed: uncovered.length === 0,
+    coveredByTask,
+    uncovered,
+    repoDirtyPaths,
+  };
 }
 
 function approvalWaitConditionProblem(
@@ -286,6 +902,148 @@ export function malformedApprovalWaitContract(
   return null;
 }
 
+function selfTaskStateWaitConditionProblem(
+  taskId: string,
+  conditionId: string,
+  condition: TaskStateCondition | null,
+): SelfTaskStateWaitContractProblem | null {
+  const spec = isRecord(condition?.spec) ? condition.spec : {};
+  const type = stringDetail(spec, "type");
+  if (type !== "task-field" && type !== "task-phase") return null;
+  const subject = stringDetail(spec, "subject");
+  if (subject !== `task:${taskId}`) return null;
+
+  return {
+    taskId,
+    conditionId,
+    issues: [
+      "task state wait cannot observe the waiting task itself",
+      `type=${JSON.stringify(type)}`,
+      `subject=${JSON.stringify(subject)}`,
+    ],
+    replayReason: "self-task-state-wait-contract",
+  };
+}
+
+export function malformedSelfTaskStateWaitContract(
+  appDir: string,
+  taskId: string,
+): SelfTaskStateWaitContractProblem | null {
+  const state = readTaskStateSnapshot(appDir);
+  if (!state) return null;
+  const resource = state.resources?.[taskId];
+  if (!resource) return null;
+  const phase = stringDetail(
+    isRecord(resource.status) ? resource.status : {},
+    "phase",
+  );
+  if (phase !== "waiting") return null;
+  const spec = isRecord(resource.spec) ? resource.spec : {};
+  const input = isRecord(spec.input) ? spec.input : {};
+  for (const conditionId of stringList(resource.status?.conditionIds)) {
+    const problem = selfTaskStateWaitConditionProblem(
+      taskId,
+      conditionId,
+      state.conditions?.[conditionId] ?? null,
+    );
+    if (!problem) continue;
+    return {
+      ...problem,
+      workflow: stringDetail(spec, "workflow"),
+      phase,
+      repoRef: stringDetail(input, "baseRef") || "origin/dev",
+      baselineCommit:
+        stringDetail(input, "baselineOriginDev") ||
+        stringDetail(input, "resumeBaselineCommit"),
+    };
+  }
+  return null;
+}
+
+function selfTaskStateWaitAfterRepoAdvanceCandidates(
+  appDir: string,
+  repoRef: string,
+  commit: string,
+): SelfTaskStateWaitContractProblem[] {
+  const state = readTaskStateSnapshot(appDir);
+  if (!state?.resources || !state.conditions) return [];
+  const problems: SelfTaskStateWaitContractProblem[] = [];
+  for (const [taskId, resource] of Object.entries(state.resources)) {
+    const phase = stringDetail(
+      isRecord(resource.status) ? resource.status : {},
+      "phase",
+    );
+    if (phase !== "waiting") continue;
+    const spec = isRecord(resource.spec) ? resource.spec : {};
+    const input = isRecord(spec.input) ? spec.input : {};
+    const baselineCommit =
+      stringDetail(input, "baselineOriginDev") ||
+      stringDetail(input, "resumeBaselineCommit");
+    const taskRepoRef = stringDetail(input, "baseRef") || "origin/dev";
+    if (
+      !baselineCommit ||
+      baselineCommit === commit ||
+      taskRepoRef !== repoRef
+    ) {
+      continue;
+    }
+
+    const conditionIds = stringList(resource.status?.conditionIds);
+    const hasRepoRefCondition = conditionIds.some((conditionId) => {
+      const condition = state.conditions?.[conditionId] ?? null;
+      const conditionSpec = isRecord(condition?.spec) ? condition.spec : {};
+      return stringDetail(conditionSpec, "type") === "aks.repo-ref.observed";
+    });
+    if (hasRepoRefCondition) continue;
+
+    for (const conditionId of conditionIds) {
+      const problem = selfTaskStateWaitConditionProblem(
+        taskId,
+        conditionId,
+        state.conditions?.[conditionId] ?? null,
+      );
+      if (!problem) continue;
+      problems.push({
+        ...problem,
+        workflow: stringDetail(spec, "workflow"),
+        phase,
+        repoRef,
+        baselineCommit,
+        issues: [
+          ...problem.issues,
+          "missing repo-ref wake after baseline advance",
+          `baselineCommit=${JSON.stringify(baselineCommit)}`,
+          `observed.commit=${JSON.stringify(commit)}`,
+        ],
+        replayReason: "self-task-state-wait-after-repo-advance",
+      });
+      break;
+    }
+  }
+  return problems;
+}
+
+function unsupportedRepoRefWaitIssue(
+  taskId: string,
+  spec: Record<string, unknown>,
+): string | null {
+  const input = isRecord(spec.input) ? spec.input : {};
+  const producer = repoRefWaitExternalProducer({
+    taskId,
+    repoRef: stringDetail(input, "baseRef") || "origin/dev",
+    baselineCommit: stringDetail(input, "resumeBaselineCommit"),
+    specId: stringDetail(input, "specId"),
+    sourceCommit: stringDetail(input, "sourceCommit"),
+    publicationBranch: stringDetail(input, "publicationBranch"),
+    sourceBranch: stringDetail(input, "sourceBranch"),
+    authorizedRef: stringDetail(input, "authorizedRef"),
+    pullRequestId: stringDetail(input, "pullRequestId", "pullRequestNumber"),
+  });
+  return producer.supported
+    ? null
+    : (producer.reason ?? "unsupported repo-ref wait");
+}
+
 function repoRefWaitConditionProblem(
   taskId: string,
   resource: TaskStateResource,
@@ -314,6 +1072,8 @@ function repoRefWaitConditionProblem(
   if (!repoRef) issues.push("missing input.baseRef");
   if (!baselineCommit) issues.push("missing input.resumeBaselineCommit");
   if (!conditionId) issues.push("missing conditionId");
+  const unsupportedRepoRefWait = unsupportedRepoRefWaitIssue(taskId, spec);
+  if (unsupportedRepoRefWait) issues.push(unsupportedRepoRefWait);
   if (stringDetail(conditionSpec, "type") !== "aks.repo-ref.observed") {
     issues.push(`type=${JSON.stringify(conditionSpec.type ?? null)}`);
   }
@@ -338,6 +1098,60 @@ function repoRefWaitConditionProblem(
     repoRef,
     baselineCommit,
     issues,
+    replayReason: "malformed-repo-ref-wait-contract",
+  };
+}
+
+function hasPersistedAttempt(
+  state: TaskStateSnapshot,
+  taskId: string,
+): boolean {
+  return Object.values(state.attempts ?? {}).some(
+    (attempt) => stringDetail(attempt, "taskId") === taskId,
+  );
+}
+
+function pendingRepoRefWaitReplayProblem(
+  state: TaskStateSnapshot,
+  taskId: string,
+  resource: TaskStateResource,
+  repoRef: string,
+  commit: string,
+): RepoRefWaitContractProblem | null {
+  const spec = isRecord(resource.spec) ? resource.spec : {};
+  if (stringDetail(spec, "workflow") !== "wait-for-repo-ref-advance") {
+    return null;
+  }
+  const phase = stringDetail(
+    isRecord(resource.status) ? resource.status : {},
+    "phase",
+  );
+  if (phase !== "pending") return null;
+
+  const input = isRecord(spec.input) ? spec.input : {};
+  const taskRepoRef = stringDetail(input, "baseRef");
+  const baselineCommit = stringDetail(input, "resumeBaselineCommit");
+  const conditionIds = stringList(resource.status?.conditionIds);
+  const unsupportedRepoRefWait = unsupportedRepoRefWaitIssue(taskId, spec);
+  if (taskRepoRef !== repoRef) return null;
+  if (!baselineCommit || baselineCommit === commit) return null;
+  if (conditionIds.length > 0) return null;
+  if (hasPersistedAttempt(state, taskId)) return null;
+
+  return {
+    taskId,
+    workflow: stringDetail(spec, "workflow"),
+    phase,
+    conditionId: "",
+    repoRef: taskRepoRef,
+    baselineCommit,
+    issues: [
+      ...(unsupportedRepoRefWait ? [unsupportedRepoRefWait] : []),
+      "pending-phase-without-attempt",
+      "missing conditionId",
+      `observed.commit=${JSON.stringify(commit)}`,
+    ],
+    replayReason: "triggerless-pending-repo-ref-wait",
   };
 }
 
@@ -365,6 +1179,194 @@ export function malformedRepoRefWaitContract(
   return null;
 }
 
+function taskStateFieldValue(
+  resource: TaskStateResource | null,
+  field: string,
+  fallback?: { phase?: string },
+): unknown {
+  if (resource) {
+    const status = isRecord(resource.status) ? resource.status : {};
+    if (field in status) return status[field];
+    const spec = isRecord(resource.spec) ? resource.spec : {};
+    if (field in spec) return spec[field];
+    const metadata = isRecord(resource.metadata) ? resource.metadata : {};
+    if (field in metadata) return metadata[field];
+  }
+  if (field === "phase" && typeof fallback?.phase === "string") {
+    return fallback.phase;
+  }
+  return undefined;
+}
+
+function taskStateConditionSatisfied(
+  resource: TaskStateResource | null,
+  condition: TaskStateCondition | null,
+  fallback?: { phase?: string },
+): boolean {
+  const conditionSpec = isRecord(condition?.spec) ? condition.spec : {};
+  const type = stringDetail(conditionSpec, "type");
+  const expected = isRecord(conditionSpec.expected)
+    ? conditionSpec.expected
+    : {};
+  if (type === "task-phase") {
+    const phase = String(
+      taskStateFieldValue(resource, "phase", fallback) ?? "",
+    ).trim();
+    const equals = stringDetail(expected, "equals");
+    if (equals) return phase === equals;
+    const notEquals = expected.notEquals;
+    if (typeof notEquals === "string") return phase !== notEquals;
+    const anyOf = Array.isArray(expected.anyOf)
+      ? expected.anyOf.filter(
+          (entry): entry is string =>
+            typeof entry === "string" && Boolean(entry.trim()),
+        )
+      : [];
+    if (anyOf.length) return anyOf.includes(phase);
+    return false;
+  }
+  if (type !== "task-field") return false;
+  const field = stringDetail(expected, "field");
+  if (!field) return false;
+  const value = taskStateFieldValue(resource, field, fallback);
+  if (Object.prototype.hasOwnProperty.call(expected, "equals")) {
+    return value === expected.equals;
+  }
+  if (Object.prototype.hasOwnProperty.call(expected, "notEquals")) {
+    return value !== expected.notEquals;
+  }
+  if (Array.isArray(expected.anyOf)) {
+    return expected.anyOf.includes(value);
+  }
+  return false;
+}
+
+function satisfiedTaskStateWaitReplays(
+  appDir: string,
+  subjectTaskId: string,
+  options?: { phase?: string },
+): TaskStateWaitReplay[] {
+  const state = readTaskStateSnapshot(appDir);
+  if (!state?.resources || !state.conditions) return [];
+  const subject = state.resources[subjectTaskId] ?? null;
+  if (!subject && !options?.phase) return [];
+  const replays: TaskStateWaitReplay[] = [];
+  for (const [taskId, resource] of Object.entries(state.resources)) {
+    const phase = stringDetail(
+      isRecord(resource.status) ? resource.status : {},
+      "phase",
+    );
+    if (phase !== "waiting") continue;
+    for (const conditionId of stringList(resource.status?.conditionIds)) {
+      const condition = state.conditions[conditionId] ?? null;
+      const conditionSpec = isRecord(condition?.spec) ? condition.spec : {};
+      const type = stringDetail(conditionSpec, "type");
+      if (type !== "task-field" && type !== "task-phase") continue;
+      if (stringDetail(conditionSpec, "subject") !== `task:${subjectTaskId}`) {
+        continue;
+      }
+      if (!taskStateConditionSatisfied(subject, condition, options)) continue;
+      replays.push({ taskId, conditionId, type });
+      break;
+    }
+  }
+  return replays;
+}
+
+function satisfiedRepoRefWaitReplays(
+  appDir: string,
+  repoRef: string,
+  commit: string,
+): RepoRefWaitReplay[] {
+  const state = readTaskStateSnapshot(appDir);
+  if (!state?.resources || !state.conditions) return [];
+  const replays: RepoRefWaitReplay[] = [];
+  for (const [taskId, resource] of Object.entries(state.resources)) {
+    if (hasPersistedAttempt(state, taskId)) continue;
+    const spec = isRecord(resource.spec) ? resource.spec : {};
+    const phase = stringDetail(
+      isRecord(resource.status) ? resource.status : {},
+      "phase",
+    );
+    if (stringDetail(spec, "workflow") !== "wait-for-repo-ref-advance") {
+      continue;
+    }
+    if (phase !== "waiting") continue;
+    const conditionIds = stringList(resource.status?.conditionIds);
+    if (!conditionIds.length) continue;
+    for (const conditionId of conditionIds) {
+      const condition = state.conditions[conditionId] ?? null;
+      if (
+        repoRefWaitConditionProblem(taskId, resource, conditionId, condition)
+      ) {
+        continue;
+      }
+      const conditionSpec = isRecord(condition?.spec) ? condition.spec : {};
+      const expected = isRecord(conditionSpec.expected)
+        ? conditionSpec.expected
+        : {};
+      const baselineCommit = stringDetail(expected, "notEquals");
+      if (
+        stringDetail(conditionSpec, "type") !== "aks.repo-ref.observed" ||
+        stringDetail(conditionSpec, "subject") !== `repoRef:${repoRef}` ||
+        stringDetail(expected, "field") !== "commit" ||
+        !baselineCommit ||
+        baselineCommit === commit
+      ) {
+        continue;
+      }
+      replays.push({ taskId, conditionId, repoRef, baselineCommit });
+      break;
+    }
+  }
+  return replays;
+}
+
+function satisfiedRepoRefWaitReplayForTask(
+  appDir: string,
+  taskId: string,
+): RepoRefWaitReplay | null {
+  const state = readTaskStateSnapshot(appDir);
+  if (!state?.resources || !state.conditions) return null;
+  if (hasPersistedAttempt(state, taskId)) return null;
+  const resource = state.resources[taskId] ?? null;
+  if (!resource) return null;
+  const spec = isRecord(resource.spec) ? resource.spec : {};
+  const phase = stringDetail(
+    isRecord(resource.status) ? resource.status : {},
+    "phase",
+  );
+  if (stringDetail(spec, "workflow") !== "wait-for-repo-ref-advance") {
+    return null;
+  }
+  if (phase !== "waiting") return null;
+  for (const conditionId of stringList(resource.status?.conditionIds)) {
+    const condition = state.conditions[conditionId] ?? null;
+    if (repoRefWaitConditionProblem(taskId, resource, conditionId, condition)) {
+      continue;
+    }
+    const conditionSpec = isRecord(condition?.spec) ? condition.spec : {};
+    const expected = isRecord(conditionSpec.expected)
+      ? conditionSpec.expected
+      : {};
+    const repoRef = stringDetail(conditionSpec, "subject").replace(
+      /^repoRef:/,
+      "",
+    );
+    const baselineCommit = stringDetail(expected, "notEquals");
+    if (
+      stringDetail(conditionSpec, "type") !== "aks.repo-ref.observed" ||
+      !repoRef ||
+      !baselineCommit ||
+      stringDetail(condition?.status, "state") !== "true"
+    ) {
+      continue;
+    }
+    return { taskId, conditionId, repoRef, baselineCommit };
+  }
+  return null;
+}
+
 function repoRefWaitBackfillCandidates(
   appDir: string,
   repoRef: string,
@@ -375,7 +1377,7 @@ function repoRefWaitBackfillCandidates(
   const candidates: RepoRefWaitContractProblem[] = [];
   for (const [taskId, resource] of Object.entries(state.resources)) {
     const conditionIds = stringList(resource.status?.conditionIds);
-    const problem = conditionIds.length
+    const malformedProblem = conditionIds.length
       ? repoRefWaitConditionProblem(
           taskId,
           resource,
@@ -383,6 +1385,14 @@ function repoRefWaitBackfillCandidates(
           state.conditions?.[conditionIds[0]] ?? null,
         )
       : repoRefWaitConditionProblem(taskId, resource, "", null);
+    const pendingProblem = pendingRepoRefWaitReplayProblem(
+      state,
+      taskId,
+      resource,
+      repoRef,
+      commit,
+    );
+    const problem = malformedProblem ?? pendingProblem;
     if (!problem) continue;
     if (problem.repoRef !== repoRef) continue;
     if (!problem.baselineCommit || problem.baselineCommit === commit) continue;
@@ -609,6 +1619,14 @@ export function resolveAksTask(
     case "project.task.tick": {
       const action = stringDetail(details, "action");
       if (
+        action === "repo-ref-owner-handoff-replay" ||
+        action === "repo-ref-wait-contract-replay" ||
+        action === "repo-ref-condition-satisfied"
+      ) {
+        const replayIntent = taskIntentSnapshotFromEvent(details);
+        if (replayIntent) return replayIntent;
+      }
+      if (
         action === "waiting-frontier-review" ||
         taskId === waitingFrontierReviewTaskId
       ) {
@@ -635,6 +1653,7 @@ export function resolveAksTask(
               "Return stale Conditions with no current producer to the task owner for fresh judgment.",
               "Preserve a human or external wait only with exact correlation and durable send proof.",
               "Review attention tasks that have no active retry or recovery consumer.",
+              "When recovery crosses a real human ownership boundary through approval-dispatch, first write the referenced packet and create the workflow task with non-empty input.packetPath, input.pathId, and input.requestedAction. Do not declare an approval-dispatch task that its workflow cannot execute.",
               "Do not compete with workflow-to-owner fallback already in flight; inspect current attempts and controller coverage first.",
               "Choose up to maxConcurrent uncovered tasks, re-read every selected generation and phase immediately before finishing, and return only still-applicable state-changing actions.",
             ],
@@ -817,6 +1836,20 @@ export async function routeAksEvent(
   ctx: ProjectAppContext,
   event: Record<string, unknown>,
 ): Promise<unknown> {
+  const ownerVisibleReadoutRefreshed = maybeRefreshOwnerVisibleReadout(
+    ctx,
+    event,
+  );
+
+  if (
+    event.type === "project.task.reconcile.started" ||
+    event.type === "project.task.reconcile.skipped"
+  ) {
+    return {
+      ownerVisibleReadoutRefreshed,
+      eventType: event.type,
+    };
+  }
   if (event.type === "pipeline.spec.observed") {
     const campaign = readCampaignReceipt(ctx.appPath("."));
     const pullRequestIds = verifiedCampaignFixPullRequestIds(campaign, event);
@@ -861,6 +1894,10 @@ export async function routeAksEvent(
     const details = eventDetails(event);
     const appDir = ctx.appPath(".");
     const reconciledTaskId = targetTaskId(event);
+    const taskState = readTaskStateSnapshot(appDir);
+    const reconciledResource = reconciledTaskId
+      ? (taskState?.resources?.[reconciledTaskId] ?? null)
+      : null;
     const specProof = reconciledTaskId
       ? syncSpecLiveProof(appDir, reconciledTaskId)
       : { changed: false };
@@ -872,19 +1909,53 @@ export async function routeAksEvent(
             typeof entry === "string" && Boolean(entry.trim()),
         )
       : [];
+    const createdReadyTaskTicks = reconciledTaskId
+      ? createdReadyTaskWakes(appDir, actionsApplied, reconciledTaskId)
+      : [];
     const continueWaitingFrontierReview =
       reconciledTaskId === waitingFrontierReviewTaskId &&
       details.disposition === "converged" &&
       actionsApplied.length > 0;
+    const reviewNewAttention =
+      details.disposition === "attention" &&
+      Boolean(reconciledTaskId) &&
+      reconciledTaskId !== waitingFrontierReviewTaskId;
     const replayRepoRefOwnerHandoff =
       details.disposition === "owner-handoff" &&
       stringDetail(details, "handler") ===
         "workflow:wait-for-repo-ref-advance" &&
       Boolean(reconciledTaskId);
+    const repoRefOwnerHandoffIntent = reconciledTaskId
+      ? taskIntentSnapshotFromResource(reconciledTaskId, reconciledResource, {
+          clearWorkflow: true,
+        })
+      : null;
     const malformedApprovalWaitReplay =
       details.disposition === "waiting" &&
       Boolean(reconciledTaskId) &&
       malformedApprovalWaitContract(appDir, reconciledTaskId);
+    const malformedSelfTaskStateWaitReplay =
+      details.disposition === "waiting" &&
+      Boolean(reconciledTaskId) &&
+      malformedSelfTaskStateWaitContract(appDir, reconciledTaskId);
+    const malformedSelfTaskStateWaitIntent = reconciledTaskId
+      ? taskIntentSnapshotFromResource(reconciledTaskId, reconciledResource)
+      : null;
+    const repoRefWaitReplay =
+      details.disposition === "waiting" && reconciledTaskId
+        ? satisfiedRepoRefWaitReplayForTask(appDir, reconciledTaskId)
+        : null;
+    const taskStateWaitReplays = reconciledTaskId
+      ? satisfiedTaskStateWaitReplays(appDir, reconciledTaskId, {
+          phase:
+            typeof details.disposition === "string"
+              ? details.disposition
+              : undefined,
+        })
+      : [];
+    for (const tick of createdReadyTaskTicks) {
+      ctx.emit(tick);
+    }
     if (continueWaitingFrontierReview) {
       ctx.emit({
         type: "project.task.tick",
@@ -900,6 +1971,26 @@ export async function routeAksEvent(
           taskId: waitingFrontierReviewTaskId,
           task_id: waitingFrontierReviewTaskId,
           reason: "continue-after-applied-recovery-actions",
+        },
+      });
+    }
+    if (reviewNewAttention) {
+      ctx.emit({
+        type: "project.task.tick",
+        source: "aks-rp-e2e-app",
+        target: {
+          project: projectId,
+          taskId: waitingFrontierReviewTaskId,
+        },
+        urgency: "high",
+        action: "waiting-frontier-review",
+        data: {
+          project: projectId,
+          taskId: waitingFrontierReviewTaskId,
+          task_id: waitingFrontierReviewTaskId,
+          reason: "task-entered-attention",
+          attentionTaskId: reconciledTaskId,
+          attentionGeneration: details.generation ?? null,
         },
       });
     }
@@ -920,6 +2011,9 @@ export async function routeAksEvent(
           reason: "repo-ref-wait-owner-handoff",
           previousDisposition: details.disposition,
           previousHandler: stringDetail(details, "handler"),
+          ...(repoRefOwnerHandoffIntent
+            ? { taskIntent: repoRefOwnerHandoffIntent }
+            : {}),
         },
       });
     }
@@ -933,23 +2027,87 @@ export async function routeAksEvent(
         },
         urgency: "high",
         action: "approval-wait-contract-replay",
+        overrideWait: true,
         data: {
           project: projectId,
           taskId: reconciledTaskId,
           task_id: reconciledTaskId,
           reason: "malformed-approval-wait-contract",
+          overrideWait: true,
           conditionId: malformedApprovalWaitReplay.conditionId,
           issues: malformedApprovalWaitReplay.issues,
           workflow: malformedApprovalWaitReplay.workflow,
         },
       });
     }
+    if (malformedSelfTaskStateWaitReplay && reconciledTaskId) {
+      ctx.emit({
+        type: "project.task.tick",
+        source: "aks-rp-e2e-app",
+        target: {
+          project: projectId,
+          taskId: reconciledTaskId,
+        },
+        urgency: "high",
+        action: "task-state-wait-contract-replay",
+        overrideWait: true,
+        data: {
+          project: projectId,
+          taskId: reconciledTaskId,
+          task_id: reconciledTaskId,
+          reason:
+            malformedSelfTaskStateWaitReplay.replayReason ??
+            "self-task-state-wait-contract",
+          overrideWait: true,
+          conditionId: malformedSelfTaskStateWaitReplay.conditionId,
+          issues: malformedSelfTaskStateWaitReplay.issues,
+          workflow: malformedSelfTaskStateWaitReplay.workflow,
+          repoRef: malformedSelfTaskStateWaitReplay.repoRef,
+          baselineCommit: malformedSelfTaskStateWaitReplay.baselineCommit,
+          ...(malformedSelfTaskStateWaitIntent
+            ? { taskIntent: malformedSelfTaskStateWaitIntent }
+            : {}),
+        },
+      });
+    }
+    for (const replay of taskStateWaitReplays) {
+      ctx.emit({
+        type: "project.task.tick",
+        source: "aks-rp-e2e-app",
+        target: {
+          project: projectId,
+          taskId: replay.taskId,
+        },
+        urgency: "high",
+        action: "task-state-wait-replay",
+        data: {
+          project: projectId,
+          taskId: replay.taskId,
+          task_id: replay.taskId,
+          reason: "task-state-condition-satisfied",
+          conditionId: replay.conditionId,
+          conditionType: replay.type,
+          subjectTaskId: reconciledTaskId,
+        },
+      });
+    }
     return {
       refillWake: Boolean(wake),
+      createdReadyTaskWake: createdReadyTaskTicks.length > 0,
+      createdReadyTaskIds: createdReadyTaskTicks.map(
+        (tick) => tick.target?.taskId,
+      ),
       waitingFrontierContinuation: continueWaitingFrontierReview,
+      waitingFrontierAttentionWake: reviewNewAttention,
       repoRefOwnerHandoffReplay: replayRepoRefOwnerHandoff,
       malformedApprovalWaitReplay: Boolean(malformedApprovalWaitReplay),
       malformedApprovalWaitProblem: malformedApprovalWaitReplay,
+      malformedSelfTaskStateWaitReplay: Boolean(
+        malformedSelfTaskStateWaitReplay,
+      ),
+      malformedSelfTaskStateWaitProblem: malformedSelfTaskStateWaitReplay,
+      taskStateWaitReplay: taskStateWaitReplays.length > 0,
+      taskStateWaitReplayTargets: taskStateWaitReplays,
       specProof,
     };
   }
@@ -1025,12 +2183,52 @@ export async function routeAksEvent(
     const details = eventDetails(event);
     const repoRef = stringDetail(details, "repoRef", "repo_ref");
     const commit = stringDetail(details, "commit");
+    const taskState = readTaskStateSnapshot(ctx.appPath("."));
+    const satisfiedRepoRefWaits = satisfiedRepoRefWaitReplays(
+      ctx.appPath("."),
+      repoRef,
+      commit,
+    );
     const malformedRepoRefWaitReplays = repoRefWaitBackfillCandidates(
       ctx.appPath("."),
       repoRef,
       commit,
     );
+    const malformedSelfTaskStateWaitReplays =
+      selfTaskStateWaitAfterRepoAdvanceCandidates(
+        ctx.appPath("."),
+        repoRef,
+        commit,
+      );
+    for (const replay of satisfiedRepoRefWaits) {
+      const taskIntent = taskIntentSnapshotFromResource(
+        replay.taskId,
+        taskState?.resources?.[replay.taskId] ?? null,
+      );
+      ctx.emit({
+        type: "project.task.tick",
+        source: "aks-rp-e2e-app",
+        target: { project: projectId, taskId: replay.taskId },
+        urgency: "high",
+        action: "repo-ref-condition-satisfied",
+        data: {
+          project: projectId,
+          taskId: replay.taskId,
+          task_id: replay.taskId,
+          reason: "repo-ref-condition-satisfied",
+          repoRef,
+          commit,
+          baselineCommit: replay.baselineCommit,
+          conditionId: replay.conditionId,
+          ...(taskIntent ? { taskIntent } : {}),
+        },
+      });
+    }
     for (const problem of malformedRepoRefWaitReplays) {
+      const taskIntent = taskIntentSnapshotFromResource(
+        problem.taskId,
+        taskState?.resources?.[problem.taskId] ?? null,
+      );
       ctx.emit({
         type: "project.task.tick",
         source: "aks-rp-e2e-app",
@@ -1041,13 +2239,43 @@ export async function routeAksEvent(
           project: projectId,
           taskId: problem.taskId,
           task_id: problem.taskId,
-          reason: "malformed-repo-ref-wait-contract",
+          reason: problem.replayReason ?? "malformed-repo-ref-wait-contract",
           repoRef,
           commit,
           baselineCommit: problem.baselineCommit,
           conditionId: problem.conditionId,
           issues: problem.issues,
           workflow: problem.workflow,
+          ...(taskIntent ? { taskIntent } : {}),
+        },
+      });
+    }
+    for (const problem of malformedSelfTaskStateWaitReplays) {
+      const taskIntent = taskIntentSnapshotFromResource(
+        problem.taskId,
+        taskState?.resources?.[problem.taskId] ?? null,
+      );
+      ctx.emit({
+        type: "project.task.tick",
+        source: "aks-rp-e2e-app",
+        target: { project: projectId, taskId: problem.taskId },
+        urgency: "high",
+        action: "task-state-wait-contract-replay",
+        overrideWait: true,
+        data: {
+          project: projectId,
+          taskId: problem.taskId,
+          task_id: problem.taskId,
+          reason:
+            problem.replayReason ?? "self-task-state-wait-after-repo-advance",
+          overrideWait: true,
+          repoRef,
+          commit,
+          baselineCommit: problem.baselineCommit,
+          conditionId: problem.conditionId,
+          issues: problem.issues,
+          workflow: problem.workflow,
+          ...(taskIntent ? { taskIntent } : {}),
         },
       });
     }
@@ -1055,8 +2283,19 @@ export async function routeAksEvent(
       observed: true,
       repoRef,
       commit,
+      repoRefWaitReplay: satisfiedRepoRefWaits.length > 0,
+      repoRefWaitReplayTaskIds: satisfiedRepoRefWaits.map(
+        (replay) => replay.taskId,
+      ),
+      repoRefWaitContractReplay: malformedRepoRefWaitReplays.length > 0,
+      replayTaskIds: malformedRepoRefWaitReplays.map(
+        (problem) => problem.taskId,
+      ),
       malformedRepoRefWaitReplay: malformedRepoRefWaitReplays.length > 0,
       malformedRepoRefWaitProblems: malformedRepoRefWaitReplays,
+      malformedSelfTaskStateWaitReplay:
+        malformedSelfTaskStateWaitReplays.length > 0,
+      malformedSelfTaskStateWaitProblems: malformedSelfTaskStateWaitReplays,
     };
   }
   if (event.type === "aks.repo-ref.changed") {
@@ -1087,13 +2326,45 @@ export async function routeAksEvent(
   if (event.type === "aks.workspace.integrity.check")
     return observeWorkspaceIntegrityChanges(ctx);
   if (event.type === "aks.workspace.integrity.changed") {
+    const observation = eventDetails(event);
+    if (typeof ctx.appPath === "function") {
+      const coverage = workspaceIntegrityCoverage(
+        ctx.appPath("."),
+        ctx.appPath("../aks-rp-e2e"),
+        observation,
+      );
+      if (coverage.suppressed) {
+        return {
+          ownerReviewRequested: false,
+          workspaceIntegrityOwnerReviewSuppressed: true,
+          workspaceIntegrityCoveredByTask: coverage.coveredByTask,
+          workspaceIntegrityRepoDirtyPaths: coverage.repoDirtyPaths,
+        };
+      }
+      ctx.emit({
+        type: "project.owner.requested",
+        target: { project: projectId },
+        data: {
+          project: projectId,
+          reason: "workspace-integrity-changed",
+          observation,
+          uncovered: coverage.uncovered,
+        },
+      });
+      return {
+        ownerReviewRequested: true,
+        workspaceIntegrityOwnerReviewSuppressed: false,
+        workspaceIntegrityUncovered: coverage.uncovered,
+        workspaceIntegrityRepoDirtyPaths: coverage.repoDirtyPaths,
+      };
+    }
     ctx.emit({
       type: "project.owner.requested",
       target: { project: projectId },
       data: {
         project: projectId,
         reason: "workspace-integrity-changed",
-        observation: eventDetails(event),
+        observation,
       },
     });
     return { ownerReviewRequested: true };
@@ -1407,6 +2678,8 @@ export default defineProjectApp({
   },
 
   events: [
+    { type: "project.task.reconcile.started", target: projectTarget },
+    { type: "project.task.reconcile.skipped", target: projectTarget },
     { type: "project.task.reconciled", target: projectTarget },
     { type: "aks.pipeline.check", target: projectTarget },
     { type: "aks.master-validation.check", target: projectTarget },

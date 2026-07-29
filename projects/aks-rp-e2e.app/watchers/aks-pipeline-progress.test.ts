@@ -6,6 +6,7 @@ import {
   buildMasterValidationProgress,
   failureObservationsFromAdmissionReport,
   failureObservationsFromArtifact,
+  isTaskOwnedSpecRun,
   newPipelineTestNonpassingEvents,
   planDirectoryReady,
   pipelineFailureEvent,
@@ -19,6 +20,30 @@ const roots: string[] = [];
 
 afterEach(() => {
   while (roots.length) rmSync(roots.pop()!, { recursive: true, force: true });
+});
+
+test("observes artifacts for task-owned explicit spec runs", () => {
+  expect(
+    isTaskOwnedSpecRun({
+      templateParameters: {
+        specs: "spec.example",
+        metadata: JSON.stringify({ taskId: "domain/example" }),
+      },
+    }),
+  ).toBe(true);
+  expect(
+    isTaskOwnedSpecRun({
+      templateParameters: {
+        specs: "spec.example",
+        metadata: JSON.stringify({ task: "feature-compact-example" }),
+      },
+    }),
+  ).toBe(true);
+  expect(
+    isTaskOwnedSpecRun({
+      templateParameters: { specs: "spec.example", metadata: "{}" },
+    }),
+  ).toBe(false);
 });
 
 describe("progressive master-validation observation", () => {
@@ -300,6 +325,104 @@ describe("progressive master-validation observation", () => {
         { sliceId: "02", specId: "spec.pending", status: "pending" },
       ],
     });
+  });
+
+  test("represents missing planned slice artifacts and preserves stronger current verdicts", () => {
+    const planRoot = mkdtempSync(join(tmpdir(), "aks-plan-"));
+    roots.push(planRoot);
+    const planDir = join(planRoot, "plan-slices", "plan-174203766");
+    mkdirSync(planDir, { recursive: true });
+    writeFileSync(
+      join(planDir, "slice-08.json"),
+      JSON.stringify({
+        slice: "08",
+        specIds: [
+          "spec.network-isolated.managed-acr-outbound-none-vm-prerelease",
+          "spec.node-custom-ca-trust.create",
+          "spec.traffic-azure-service-mesh.master-validation-functionality-azurelinux",
+          "spec.virtualmachines.mixed-sku-upgrade",
+        ],
+      }),
+    );
+    writeFileSync(
+      join(planRoot, "live-admission-report.json"),
+      JSON.stringify({
+        schemaVersion: 1,
+        admittedSpecIds: [
+          "spec.network-isolated.managed-acr-outbound-none-vm-prerelease",
+          "spec.node-custom-ca-trust.create",
+          "spec.traffic-azure-service-mesh.master-validation-functionality-azurelinux",
+          "spec.virtualmachines.mixed-sku-upgrade",
+        ],
+      }),
+    );
+
+    const projection = buildMasterValidationProgress({
+      run: {
+        runId: "174203766",
+        fingerprint: "fp",
+        status: "completed",
+        result: "failed",
+        sourceBranch: "refs/heads/validation/master-validation-173853081",
+        sourceVersion: "2f74d4f1d6623bf7867893e5df5f802b1b329dde",
+        finishTime: "2026-07-29T02:10:00Z",
+        queueTime: "2026-07-28T22:02:07.894561+00:00",
+        artifacts: ["plan-inputs"],
+        progressive: true,
+      },
+      planRoot,
+      artifactRoots: {},
+      preservedVerdicts: {
+        "spec.node-custom-ca-trust.create": {
+          status: "pass",
+          category: "preserved_current_exact_verdict",
+          reason:
+            "Treat spec.node-custom-ca-trust.create as pass from compact run 28541021680 as the current strongest verdict surface.",
+          artifactPath:
+            "/app/projects/aks-rp-e2e.app/.state/spec-loop/state.json",
+        },
+      },
+      checkedAt: "2026-07-29T02:15:45.969Z",
+    });
+
+    expect(projection.counts).toMatchObject({
+      selected: 4,
+      observed: 4,
+      pending: 0,
+      pass: 1,
+      error: 3,
+    });
+    expect(projection.slices).toEqual([
+      { sliceId: "08", selected: 4, observed: 4, status: "completed" },
+    ]);
+    expect(projection.specs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sliceId: "08",
+          specId: "spec.node-custom-ca-trust.create",
+          status: "pass",
+          category: "preserved_current_exact_verdict",
+          artifactPath:
+            "/app/projects/aks-rp-e2e.app/.state/spec-loop/state.json",
+        }),
+        expect.objectContaining({
+          sliceId: "08",
+          specId:
+            "spec.traffic-azure-service-mesh.master-validation-functionality-azurelinux",
+          status: "error",
+          category: "missing_slice_artifact",
+          reason: expect.stringContaining(
+            "completed without publishing slice-08-test-results",
+          ),
+        }),
+      ]),
+    );
+    const preserved = projection.specs.find(
+      (spec) => spec.specId === "spec.node-custom-ca-trust.create",
+    );
+    expect(preserved?.reason).toContain(
+      "Preserved this stronger current verdict",
+    );
   });
 
   test("emits a failure as soon as one slice result is available", () => {

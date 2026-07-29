@@ -10,7 +10,9 @@ import {
   type WorkflowResult,
 } from "@may-agent/sdk";
 import {
+  isNonFastForwardPushFailure,
   priorIntegratedProof,
+  reconcileRemoteTaskBranchHistory,
   reconcileSpecLive,
   sourceChangeMayAffectSpec,
 } from "./spec-live-reconciliation.js";
@@ -31,6 +33,20 @@ const azCli =
     ? "/app/.state/.local/bin/az"
     : "az");
 
+export type CampaignRepairReplay = {
+  activePullRequestId: string;
+  activeSourceCommit: string;
+  campaignBranch: string;
+  campaignHeadCommit: string;
+  conflictingPaths: string[];
+  frozenCampaignBaseCommit: string;
+  priorMergedPullRequestId: string;
+  priorMergedSourceBranch: string;
+  priorMergedSourceCommit: string;
+  reason: string;
+  replayMode: string;
+};
+
 export type FailureInput = {
   taskId: string;
   generation: number;
@@ -44,6 +60,7 @@ export type FailureInput = {
   category: string;
   status: string;
   carrierCommit: string;
+  campaignRepairReplay: CampaignRepairReplay | null;
 };
 
 type PullRequest = {
@@ -114,6 +131,30 @@ function text(value: unknown): string {
       : "";
 }
 
+function stringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.map(text).filter(Boolean) : [];
+}
+
+function parseCampaignRepairReplay(
+  value: unknown,
+): CampaignRepairReplay | null {
+  const replay = record(value);
+  const parsed: CampaignRepairReplay = {
+    activePullRequestId: text(replay.activePullRequestId),
+    activeSourceCommit: text(replay.activeSourceCommit),
+    campaignBranch: text(replay.campaignBranch),
+    campaignHeadCommit: text(replay.campaignHeadCommit),
+    conflictingPaths: stringArray(replay.conflictingPaths),
+    frozenCampaignBaseCommit: text(replay.frozenCampaignBaseCommit),
+    priorMergedPullRequestId: text(replay.priorMergedPullRequestId),
+    priorMergedSourceBranch: text(replay.priorMergedSourceBranch),
+    priorMergedSourceCommit: text(replay.priorMergedSourceCommit),
+    reason: text(replay.reason),
+    replayMode: text(replay.replayMode),
+  };
+  return parsed.replayMode || parsed.priorMergedSourceCommit ? parsed : null;
+}
+
 export function nestedWorkflowOutput(value: unknown): Record<string, unknown> {
   return record(record(value).output);
 }
@@ -163,6 +204,9 @@ export function parseFailureInput(raw: string): FailureInput | null {
       category: text(input.category),
       status: text(input.status),
       carrierCommit: text(input.carrierCommit),
+      campaignRepairReplay: parseCampaignRepairReplay(
+        input.campaignRepairReplay,
+      ),
     };
     return parsed.taskId && parsed.specId && parsed.failureFingerprint
       ? parsed
@@ -690,6 +734,116 @@ export function alignCleanRepairWorkspace(input: {
   // branch; it never rewrites a branch containing unmerged task work.
   git(input.workspaceDir, ["reset", "--hard", input.repairBaseCommit]);
   return git(input.workspaceDir, ["rev-parse", "HEAD"]).stdout;
+}
+
+export function replayCampaignRepairBaseCommit(input: FailureInput): string {
+  const replay = input.campaignRepairReplay;
+  return replay?.replayMode ===
+    "append-only-repair-on-existing-campaign-lineage"
+    ? replay.priorMergedSourceCommit
+    : "";
+}
+
+export function alignCampaignRepairReplayWorkspace(input: {
+  workspaceDir: string;
+  replayBaseCommit: string;
+}): { headCommit: string; reset: boolean } {
+  const headCommit = git(input.workspaceDir, ["rev-parse", "HEAD"]).stdout;
+  if (!input.replayBaseCommit || headCommit === input.replayBaseCommit) {
+    return { headCommit, reset: false };
+  }
+  if (git(input.workspaceDir, ["status", "--porcelain=v1"]).stdout) {
+    return { headCommit, reset: false };
+  }
+  if (
+    git(
+      input.workspaceDir,
+      ["cat-file", "-e", `${input.replayBaseCommit}^{commit}`],
+      true,
+    ).status !== 0
+  ) {
+    return { headCommit, reset: false };
+  }
+  git(input.workspaceDir, ["reset", "--hard", input.replayBaseCommit]);
+  return {
+    headCommit: git(input.workspaceDir, ["rev-parse", "HEAD"]).stdout,
+    reset: true,
+  };
+}
+
+export function campaignRepairReady(input: {
+  headCommit: string;
+  repairBaseCommit: string;
+  replayBaseCommit?: string;
+}): boolean {
+  const baseCommit =
+    text(input.replayBaseCommit) || text(input.repairBaseCommit);
+  return Boolean(
+    baseCommit && input.headCommit && input.headCommit !== baseCommit,
+  );
+}
+
+export function repairBranchImportsNewerMain(input: {
+  workspaceDir: string;
+  targetRef: string;
+  repairBaseCommit: string;
+  headCommit?: string;
+}): { forkCommit: string; importsNewerMain: boolean } {
+  const headCommit =
+    text(input.headCommit) ||
+    git(input.workspaceDir, ["rev-parse", "HEAD"]).stdout;
+  if (!headCommit || !input.repairBaseCommit) {
+    return { forkCommit: "", importsNewerMain: false };
+  }
+  const forkCommit = git(
+    input.workspaceDir,
+    ["merge-base", headCommit, input.targetRef],
+    true,
+  ).stdout;
+  if (!forkCommit) {
+    return { forkCommit: "", importsNewerMain: false };
+  }
+  return {
+    forkCommit,
+    importsNewerMain:
+      git(
+        input.workspaceDir,
+        ["merge-base", "--is-ancestor", forkCommit, input.repairBaseCommit],
+        true,
+      ).status !== 0,
+  };
+}
+
+export function resetInvalidCampaignRepairWorkspace(input: {
+  workspaceDir: string;
+  targetRef: string;
+  repairBaseCommit: string;
+  headCommit?: string;
+}): { headCommit: string; reset: boolean; forkCommit: string } {
+  const headCommit =
+    text(input.headCommit) ||
+    git(input.workspaceDir, ["rev-parse", "HEAD"]).stdout;
+  if (!input.repairBaseCommit || headCommit === input.repairBaseCommit) {
+    return { headCommit, reset: false, forkCommit: "" };
+  }
+  if (git(input.workspaceDir, ["status", "--porcelain=v1"]).stdout) {
+    return { headCommit, reset: false, forkCommit: "" };
+  }
+  const branchState = repairBranchImportsNewerMain({
+    workspaceDir: input.workspaceDir,
+    targetRef: input.targetRef,
+    repairBaseCommit: input.repairBaseCommit,
+    headCommit,
+  });
+  if (!branchState.importsNewerMain) {
+    return { headCommit, reset: false, forkCommit: branchState.forkCommit };
+  }
+  git(input.workspaceDir, ["reset", "--hard", input.repairBaseCommit]);
+  return {
+    headCommit: git(input.workspaceDir, ["rev-parse", "HEAD"]).stdout,
+    reset: true,
+    forkCommit: branchState.forkCommit,
+  };
 }
 
 function triggerEvent(raw: string): Record<string, unknown> | null {
@@ -1281,6 +1435,81 @@ async function reconcileTestIssue(
   return preserveVerificationAfterNestedReconciliation(ctx, input, result);
 }
 
+export function publishCampaignRepairBranch(
+  workspaceDir: string,
+  sourceBranch: string,
+  runGit: typeof git = git,
+):
+  | { state: "published"; sourceCommit: string; evidence: string[] }
+  | {
+      state: "conflicted";
+      sourceCommit: string;
+      remoteRef: string;
+      conflictedPaths: string[];
+      evidence: string[];
+    }
+  | {
+      state: "failed";
+      sourceCommit: string;
+      error: string;
+      evidence: string[];
+    } {
+  let sourceCommit = runGit(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+  const evidence: string[] = [];
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    const push = runGit(
+      workspaceDir,
+      ["push", "origin", `${sourceCommit}:refs/heads/${sourceBranch}`],
+      true,
+    );
+    if (push.status === 0) {
+      return { state: "published", sourceCommit, evidence };
+    }
+    if (!isNonFastForwardPushFailure(push)) {
+      return {
+        state: "failed",
+        sourceCommit,
+        error: push.stderr || push.stdout || "campaign repair push failed",
+        evidence,
+      };
+    }
+
+    evidence.push(
+      `task-branch-non-fast-forward:${sourceBranch}@${sourceCommit}`,
+    );
+    const history = reconcileRemoteTaskBranchHistory(
+      workspaceDir,
+      sourceBranch,
+      runGit,
+    );
+    if (history.state === "failed") {
+      return {
+        state: "failed",
+        sourceCommit,
+        error: history.error,
+        evidence,
+      };
+    }
+    if (history.state === "conflicted") {
+      return {
+        state: "conflicted",
+        sourceCommit,
+        remoteRef: history.remoteRef,
+        conflictedPaths: history.conflictedPaths,
+        evidence,
+      };
+    }
+    sourceCommit = runGit(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+  }
+
+  return {
+    state: "failed",
+    sourceCommit,
+    error: `campaign repair branch ${sourceBranch} still diverged after remote-history reconciliation`,
+    evidence,
+  };
+}
+
 function prepareCampaignRepair(
   ctx: WorkflowContext,
   input: FailureInput,
@@ -1293,12 +1522,26 @@ function prepareCampaignRepair(
     evidence: string[];
   },
 ): WorkflowResult {
-  git(values.workspaceDir, [
-    "push",
-    "--set-upstream",
-    "origin",
+  const published = publishCampaignRepairBranch(
+    values.workspaceDir,
     values.sourceBranch,
-  ]);
+  );
+  if (published.state === "conflicted") {
+    const summary = `Publishing the focused master-validation repair branch for ${input.specId} hit a same-task branch-history conflict that needs bounded owner resolution before retry.`;
+    return doneWithEvidence(ctx, "needs-owner", summary, [
+      ...values.evidence,
+      ...published.evidence,
+      `source-branch:${values.sourceBranch}`,
+      `source-commit:${published.sourceCommit}`,
+      `remote-ref:${published.remoteRef}`,
+      ...published.conflictedPaths.map((path) => `conflicted-path:${path}`),
+    ]);
+  }
+  if (published.state === "failed") {
+    throw new Error(published.error);
+  }
+
+  values.sourceCommit = published.sourceCommit;
   let pullRequest = pullRequests(values.repoDir, values.sourceBranch).find(
     (candidate) => text(candidate.status) === "active",
   );
@@ -1335,6 +1578,7 @@ function prepareCampaignRepair(
     summary,
     [
       ...values.evidence,
+      ...published.evidence,
       `blocking-pipeline-run:${input.pipelineRunId}`,
       `campaign-base:${values.campaignBaseCommit}`,
       `source-branch:${values.sourceBranch}`,
@@ -1463,11 +1707,36 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       ctx.appDir ?? "/app/projects/aks-rp-e2e.app",
     );
     const repairBaseCommit = frozenBaseCommit || baseCommit;
-    const headCommit = alignCleanRepairWorkspace({
+    const replayBaseCommit = replayCampaignRepairBaseCommit(input);
+    let headCommit = alignCleanRepairWorkspace({
       workspaceDir,
       targetRef,
       repairBaseCommit,
     });
+    let resetImportedMainFork = "";
+    if (frozenBaseCommit) {
+      const repairedWorkspace = resetInvalidCampaignRepairWorkspace({
+        workspaceDir,
+        targetRef,
+        repairBaseCommit,
+        headCommit,
+      });
+      headCommit = repairedWorkspace.headCommit;
+      resetImportedMainFork = repairedWorkspace.reset
+        ? repairedWorkspace.forkCommit
+        : "";
+    }
+    const replayWorkspace =
+      frozenBaseCommit && replayBaseCommit
+        ? alignCampaignRepairReplayWorkspace({
+            workspaceDir,
+            replayBaseCommit,
+          })
+        : { headCommit, reset: false };
+    headCommit = replayWorkspace.headCommit;
+    const replayRepairPending = Boolean(
+      frozenBaseCommit && replayBaseCommit && headCommit === replayBaseCommit,
+    );
     const recovery = latestPassingRecoveryObservation(ctx, input);
     const recoveryCommit = text(recovery?.sourceCommit);
     const recoveryChangedFiles = recovery
@@ -1531,7 +1800,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     // back to sleep. The child is absorbed after nested reconciliation has
     // produced integration evidence.
     if (hasLegacyPublicationChild(ctx.task)) {
-      if (frozenBaseCommit && headCommit !== repairBaseCommit) {
+      if (
+        frozenBaseCommit &&
+        campaignRepairReady({
+          headCommit,
+          repairBaseCommit,
+          replayBaseCommit,
+        })
+      ) {
         return prepareCampaignRepair(ctx, input, {
           repoDir,
           workspaceDir,
@@ -1541,10 +1817,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           evidence: [
             "resumed-existing-campaign-repair",
             `repair-base:${repairBaseCommit}`,
+            ...(replayWorkspace.reset
+              ? [`replay-base:${replayBaseCommit}`]
+              : []),
           ],
         });
       }
-      return reconcileTestIssue(ctx, input);
+      if (!replayRepairPending) {
+        return reconcileTestIssue(ctx, input);
+      }
     }
     const priorProduct = priorProductClassification(ctx.task);
     if (
@@ -1618,7 +1899,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         sourceIsInTarget,
       })
     ) {
-      if (frozenBaseCommit && headCommit !== repairBaseCommit) {
+      if (
+        frozenBaseCommit &&
+        campaignRepairReady({
+          headCommit,
+          repairBaseCommit,
+          replayBaseCommit,
+        })
+      ) {
         return prepareCampaignRepair(ctx, input, {
           repoDir,
           workspaceDir,
@@ -1628,10 +1916,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           evidence: [
             "resumed-existing-campaign-repair",
             `repair-base:${repairBaseCommit}`,
+            ...(replayWorkspace.reset
+              ? [`replay-base:${replayBaseCommit}`]
+              : []),
           ],
         });
       }
-      return reconcileTestIssue(ctx, input);
+      if (!replayRepairPending) {
+        return reconcileTestIssue(ctx, input);
+      }
     }
 
     if (git(workspaceDir, ["status", "--porcelain=v1"]).stdout) {
@@ -1649,6 +1942,16 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `Failure reason: ${input.reason || "not recorded"}`,
       `Downloaded slice artifact: ${input.artifactPath || "not available"}`,
       `The tested main commit was ${input.sourceCommit || "unknown"}.`,
+      resetImportedMainFork
+        ? `The retained repair branch had imported newer main through ${resetImportedMainFork}; this run reset the workspace back to frozen campaign base ${repairBaseCommit} before authoring any new fix.`
+        : "",
+      replayWorkspace.reset && replayBaseCommit
+        ? `Campaign composition already conflicted on this stable task. The workspace was reset to prior integrated campaign lineage commit ${replayBaseCommit}; preserve only the exact follow-up delta needed for this fingerprint instead of replaying a fresh branch from the frozen base.`
+        : "",
+      input.campaignRepairReplay?.reason || "",
+      input.campaignRepairReplay?.conflictingPaths.length
+        ? `Previous conflicting paths: ${input.campaignRepairReplay.conflictingPaths.join(", ")}.`
+        : "",
       frozenBaseCommit
         ? `Work only in ${workspaceDir}, aligned to frozen campaign base ${repairBaseCommit}. Do not merge or rebase newer main into this repair branch while the campaign is red.`
         : `Work only in ${workspaceDir}, which is based on ${targetRef}@${baseCommit}.`,

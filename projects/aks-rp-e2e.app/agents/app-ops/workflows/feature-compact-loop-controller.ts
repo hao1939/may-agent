@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
+import { join } from "node:path";
 import {
   resolveTaskTreePath,
   workflowResultVersion,
@@ -60,6 +61,11 @@ type Graph = {
   >;
 };
 
+type TaskState = {
+  receipts?: Record<string, unknown>;
+  resources?: Record<string, unknown>;
+};
+
 function readGraph(appDir: string): Graph {
   try {
     return JSON.parse(
@@ -74,6 +80,23 @@ function representedTaskState(graph: Graph, taskId: string): string {
   return String(
     graph.tasks?.[taskId]?.phase ?? graph.tasks?.[taskId]?.state ?? "unknown",
   );
+}
+
+function readTaskState(appDir: string): TaskState {
+  try {
+    return JSON.parse(
+      readFileSync(join(appDir, ".state", "tasks", "state.json"), "utf8"),
+    ) as TaskState;
+  } catch {
+    return {};
+  }
+}
+
+function historicalTaskIds(taskState: TaskState): string[] {
+  return [
+    ...Object.keys(taskState.receipts ?? {}),
+    ...Object.keys(taskState.resources ?? {}),
+  ];
 }
 
 function digest(value: string): string {
@@ -230,6 +253,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     pruneAbsentFeatureKeys: true,
   });
   const graph = readGraph(appDir);
+  const taskState = readTaskState(appDir);
+  const historicalIds = new Set(historicalTaskIds(taskState));
   const remaining = Object.entries(state.features)
     .filter(
       ([, item]) =>
@@ -302,10 +327,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       const repairsRepresentation =
         item.status !== "done" && hasStructuredRepresentation(item);
       const baseTaskId = desiredTaskId(featureKey, item, revision);
-      const taskId = ensureFreshTaskId(
-        baseTaskId,
-        representedByFeature.get(featureKey)?.terminal ?? [],
-      );
+      const taskId = ensureFreshTaskId(baseTaskId, [
+        ...(representedByFeature.get(featureKey)?.terminal ?? []),
+        ...historicalIds,
+      ]);
       return {
         kind: "create-task",
         id: taskId,

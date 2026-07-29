@@ -118,6 +118,11 @@ actionable slot. A reconciled structured leaf wakes its loop through one app
 event fan-in; periodic pulses remain recovery. External waits belong to finite
 leaves and use exact typed Conditions.
 
+A standing-loop leaf represents only the `workRevision` in its task input.
+Materially changed feature/spec facts create a new revision even when an older
+subset wait remains true; that wait is preserved, but it cannot hide newly
+runnable work in the same feature.
+
 A repo-ref wait is scoped to both the ref and the commit being waited past.
 Its Condition identity includes that baseline commit, and its expected fact is
 `observed commit != baseline commit`. When multiple unrelated holders can wait
@@ -203,7 +208,9 @@ collects provider state; the domain agent still judges the returned evidence.
 
 For bounded source-only patches, `domain-task-execution` lets the agent judge
 and commit the change, then workflow code integrates the clean branch directly
-into `dev`.
+into `dev`. Direct integration replays only commits created by the current
+bounded agent turn onto current `origin/dev`; a stale task branch is never
+published wholesale, and a no-change review cannot advance `dev`.
 
 Any newly declared task whose acceptance requires a generic bounded repository
 patch must bind `workflow: "domain-task-execution"` when it is created. An

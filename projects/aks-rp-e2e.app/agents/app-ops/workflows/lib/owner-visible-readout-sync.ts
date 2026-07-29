@@ -118,6 +118,20 @@ function isLeaf(task: any): boolean {
   return !Array.isArray(task?.children) || task.children.length === 0;
 }
 
+function taskWorkflow(task: any): string {
+  if (typeof task?.workflow === "string" && task.workflow.trim()) {
+    return task.workflow.trim();
+  }
+  if (typeof task?.spec?.workflow === "string" && task.spec.workflow.trim()) {
+    return task.spec.workflow.trim();
+  }
+  return "";
+}
+
+function isRepoRefAdvanceWaitHolder(task: any): boolean {
+  return taskWorkflow(task) === "wait-for-repo-ref-advance";
+}
+
 function dependenciesOpen(tree: TaskTree, task: any): boolean {
   const dependsOn = Array.isArray(task?.depends_on)
     ? task.depends_on.filter(
@@ -205,6 +219,7 @@ function successCriteria(frontier: VisibleFrontier): string[] {
   return [
     `Owner-visible currentState/currentFocus reflect live tree snapshot ${frontier.observedTreeUpdatedAt} with active=${frontier.counts.active}, review=${frontier.counts.review}, waiting=${frontier.counts.waiting}, runnable=${frontier.counts.runnable}, blocked=${frontier.counts.blocked}.`,
     "Every task id cited in active/review/waiting/runnable/blocked arrays resolves in the current live tree.",
+    "Active ids are executable leaves only, and exact repo-ref wait holders are preserved outside runnable capacity.",
     "Only the current live frontier packet is published; absorbed or replaced task ids are absent from the refreshed owner-visible packet.",
   ];
 }
@@ -232,7 +247,7 @@ function focusReviewNarrative(
   frontier: VisibleFrontier,
   metrics: FocusMetricsSnapshot,
 ): FocusReadoutNarrative {
-  const genericSummary = `Owner-visible frontier refreshed from the live tree updated ${frontier.observedTreeUpdatedAt}: ${frontier.counts.active} active frontier tasks, ${frontier.counts.review} review frontier tasks, ${frontier.counts.runnable} runnable follow-through leaves, ${frontier.counts.waiting} waiting holders, and ${frontier.counts.blocked} dependency-blocked holders. Fresh focus metrics read as live-started-24h=${metrics.liveRunsStarted24h}, live-succeeded-24h=${metrics.liveRunsSucceeded24h}, spec.unverified-count=${metrics.specUnverifiedCount}, spec.failed-count=${metrics.specFailedCount}, and model.unknown-path-count=${metrics.unknownPathMetric}. This packet is derived from the current live tree and cites only task ids that still resolve in the graph.`;
+  const genericSummary = `Owner-visible frontier refreshed from the live tree updated ${frontier.observedTreeUpdatedAt}: ${frontier.counts.active} active executable leaves, ${frontier.counts.review} review frontier tasks, ${frontier.counts.runnable} runnable follow-through leaves, ${frontier.counts.waiting} waiting holders (including exact repo-advance waits), and ${frontier.counts.blocked} dependency-blocked holders. Fresh focus metrics read as live-started-24h=${metrics.liveRunsStarted24h}, live-succeeded-24h=${metrics.liveRunsSucceeded24h}, spec.unverified-count=${metrics.specUnverifiedCount}, spec.failed-count=${metrics.specFailedCount}, and model.unknown-path-count=${metrics.unknownPathMetric}. This packet is derived from the current live tree and cites only task ids that still resolve in the graph.`;
   const genericNext = `Drain the current live packet first: active=${preview(frontier.active)}, review=${preview(frontier.review)}, runnable=${preview(frontier.runnable)}, waiting=${preview(frontier.waiting)}, blocked=${preview(frontier.blocked)}.`;
   const progressTask = tree.tasks?.["runtime/focus-review/progress"] as any;
   const parsed = parseFocusReviewSummary(String(progressTask?.summary ?? ""));
@@ -311,7 +326,7 @@ function currentStateSummary(
   frontier: VisibleFrontier,
   metrics: FocusMetricsSnapshot,
 ): string {
-  return `Task-tree summary at ${frontier.observedTreeUpdatedAt} shows ${frontier.counts.runnable} runnable leaves, ${frontier.counts.waiting} waiting holders, ${frontier.counts.active} active frontier tasks, ${frontier.counts.review} review frontier tasks, and ${frontier.counts.blocked} dependency-blocked holders. Fresh focus metrics read as live-started-24h=${metrics.liveRunsStarted24h}, live-succeeded-24h=${metrics.liveRunsSucceeded24h}, spec.unverified-count=${metrics.specUnverifiedCount}, spec.failed-count=${metrics.specFailedCount}, and model.unknown-path-count=${metrics.unknownPathMetric}. Current owner-visible packet is derived from the live tree packet: ${preview(frontier.allVisible, 12)}.`;
+  return `Task-tree summary at ${frontier.observedTreeUpdatedAt} shows ${frontier.counts.runnable} runnable leaves, ${frontier.counts.waiting} waiting holders (including exact repo-advance waits), ${frontier.counts.active} active executable leaves, ${frontier.counts.review} review frontier tasks, and ${frontier.counts.blocked} dependency-blocked holders. Fresh focus metrics read as live-started-24h=${metrics.liveRunsStarted24h}, live-succeeded-24h=${metrics.liveRunsSucceeded24h}, spec.unverified-count=${metrics.specUnverifiedCount}, spec.failed-count=${metrics.specFailedCount}, and model.unknown-path-count=${metrics.unknownPathMetric}. Current owner-visible packet is derived from the live tree packet: ${preview(frontier.allVisible, 12)}.`;
 }
 
 function focusPlanSummary(narrative: FocusReadoutNarrative): string {
@@ -348,15 +363,30 @@ export function computeVisibleFrontier(
       .filter(({ state }) => states.includes(state))
       .map(({ id }) => id)
       .sort();
+  const exactRepoAdvanceWaitIds = visibleLeaves
+    .filter(({ task }) => isRepoRefAdvanceWaitHolder(task))
+    .map(({ id }) => id)
+    .sort();
 
-  const active = byState(visibleTasks, ["active", "running"]);
+  const active = visibleLeaves
+    .filter(
+      ({ state, task }) =>
+        ["active", "running"].includes(state) &&
+        !isRepoRefAdvanceWaitHolder(task),
+    )
+    .map(({ id }) => id)
+    .sort();
   const review = byState(visibleTasks, ["review", "attention"]);
-  const waiting = byState(visibleTasks, ["waiting", "blocked"]);
+  const waiting = unique([
+    ...byState(visibleTasks, ["waiting", "blocked"]),
+    ...exactRepoAdvanceWaitIds,
+  ]).sort();
   const runnable = visibleLeaves
     .filter(
       ({ state, task }) =>
         ["backlog", "pending", "ready"].includes(state) &&
-        !isDependencyBlockedTask(tree, task, state),
+        !isDependencyBlockedTask(tree, task, state) &&
+        !isRepoRefAdvanceWaitHolder(task),
     )
     .map(({ id }) => id)
     .sort();
@@ -645,12 +675,10 @@ export function syncOwnerVisibleReadout(
     ]);
     const missingBefore = beforeIds.filter((id) => !liveIds.has(id)).sort();
 
-    const nextProjectJson = patchProjectJson(
-      projectJson,
-      frontier,
-      narrative,
-      checkedAt,
-    );
+    // project.json is static, reviewable project configuration. Live focus and
+    // task-tree projections belong in ignored runtime state so reconciliation
+    // does not continuously dirty the repository checkout.
+    const nextProjectJson = projectJson;
     const nextProjectState = patchProjectState(
       projectState,
       frontier,
@@ -661,15 +689,13 @@ export function syncOwnerVisibleReadout(
       ? patchProjectJson(runtimeMirror, frontier, narrative, checkedAt)
       : runtimeMirror;
 
-    const projectJsonChanged =
-      JSON.stringify(projectJson) !== JSON.stringify(nextProjectJson);
+    const projectJsonChanged = false;
     const projectStateChanged =
       JSON.stringify(projectState) !== JSON.stringify(nextProjectState);
     const runtimeMirrorChanged = existsSync(runtimeMirrorPath)
       ? JSON.stringify(runtimeMirror) !== JSON.stringify(nextRuntimeMirror)
       : false;
 
-    if (projectJsonChanged) writeJson(projectJsonPath, nextProjectJson);
     if (projectStateChanged) saveProjectRuntimeState(appDir, nextProjectState);
     if (runtimeMirrorChanged) writeJson(runtimeMirrorPath, nextRuntimeMirror);
 

@@ -511,7 +511,7 @@ describe("spec loop reconciliation workflow", () => {
         actions: [
           {
             kind: "create-task",
-            id: "spec/repair-verify-spec-reviewed-disposition-representation",
+            id: "spec/repair-verify-spec-reviewed-disposition-representation-73475cb40a",
             parentId: "group/spec-verification",
             owner: "aks-explorer",
             workflow: "domain-task-execution",

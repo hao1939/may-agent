@@ -24,13 +24,74 @@ function readTaskTree(config: TaskTreeConfigLike): TaskTree {
   return readTaskState(config as any) as TaskTree;
 }
 
-function listRunnableBacklogTaskIds(config: TaskTreeConfigLike, limit = 200): string[] {
-  const tree = readTaskTree(config);
-  return Object.entries(tree.tasks ?? {})
-    .filter(([taskId, task]) => taskId !== tree.root_task_id && !String(taskId).startsWith("runtime/") && Array.isArray(task?.children) && task.children.length === 0 && String(task?.readiness?.state ?? "") === "ready" && String(task?.readiness?.reason ?? "") !== "dependency-blocked")
+function readTaskTreeProjection(config: TaskTreeConfigLike): TaskTree {
+  return JSON.parse(readFileSync(config.treePath, "utf-8")) as TaskTree;
+}
+
+function projectionLeafEntries(tree: TaskTree): Array<[string, TaskNode]> {
+  return Object.entries(tree.tasks ?? {}).filter(
+    ([taskId, task]) =>
+      taskId !== tree.root_task_id &&
+      !String(taskId).startsWith("runtime/") &&
+      Array.isArray(task?.children) &&
+      task.children.length === 0,
+  ) as Array<[string, TaskNode]>;
+}
+
+function projectionPhase(task: TaskNode): string {
+  return String(task?.phase ?? task?.state ?? task?.status ?? "");
+}
+
+export function liveTaskMetricFrontier(tree: TaskTree): {
+  active: string[];
+  review: string[];
+  waiting: string[];
+  runnable: string[];
+  readySatisfiedWaitHolders: string[];
+} {
+  const leaves = projectionLeafEntries(tree);
+  const leafIds = new Set(leaves.map(([taskId]) => taskId));
+  const active = [
+    ...new Set([
+      ...((tree.active_task_ids ?? []) as string[]).filter((taskId) => {
+        if (!leafIds.has(taskId) || String(taskId).startsWith("runtime/")) {
+          return false;
+        }
+        const task = tree.tasks?.[taskId];
+        return ["running", "active"].includes(projectionPhase(task));
+      }),
+      ...leaves
+        .filter(([, task]) => ["running", "active"].includes(projectionPhase(task)))
+        .map(([taskId]) => taskId),
+    ]),
+  ].sort();
+  const review = leaves
+    .filter(([, task]) => ["attention", "review"].includes(projectionPhase(task)))
     .map(([taskId]) => taskId)
-    .sort()
-    .slice(0, limit);
+    .sort();
+  const waiting = leaves
+    .filter(([, task]) => projectionPhase(task) === "waiting")
+    .map(([taskId]) => taskId)
+    .sort();
+  const readyLeaves = leaves.filter(
+    ([, task]) =>
+      String(task?.readiness?.state ?? "") === "ready" &&
+      String(task?.readiness?.reason ?? "") !== "dependency-blocked",
+  );
+  const runnable = readyLeaves
+    .filter(([, task]) => projectionPhase(task) === "pending")
+    .map(([taskId]) => taskId)
+    .sort();
+  const readySatisfiedWaitHolders = readyLeaves
+    .filter(([, task]) => projectionPhase(task) === "waiting")
+    .map(([taskId]) => taskId)
+    .sort();
+  return { active, review, waiting, runnable, readySatisfiedWaitHolders };
+}
+
+function listRunnableBacklogTaskIds(config: TaskTreeConfigLike, limit = 200): string[] {
+  const tree = readTaskTreeProjection(config);
+  return liveTaskMetricFrontier(tree).runnable.slice(0, limit);
 }
 
 function peekTaskAssignments(_config: TaskTreeConfigLike): Array<{ taskId: string; attemptId: string; assignedAt: string; sessionId?: string; }> {
@@ -943,6 +1004,8 @@ function isOpsTask(tree: TaskTree, taskId: string): boolean {
 
 function taskCounts() {
   const tree = loadTaskTree();
+  const projectionTree = readTaskTreeProjection(runtimeTaskTreeConfig());
+  const liveFrontier = liveTaskMetricFrontier(projectionTree);
   const taskMap = tree.tasks ?? {};
   const tasks = Object.values(tree.tasks ?? {});
   const runtimeTasks = runtimeTreeTasks(tree);
@@ -971,7 +1034,7 @@ function taskCounts() {
   const completed24h = completed24hTaskIds.size;
   const activeStale = staleActiveTaskCount();
   const activeRunning = runningActiveTaskCount();
-  const activeTaskIds = frontier.active;
+  const activeTaskIds = liveFrontier.active;
   const activeOpsTaskIds = activeTaskIds.filter((taskId) =>
     isOpsTask(tree, taskId),
   );
@@ -1100,15 +1163,16 @@ function taskCounts() {
   ).length;
   return {
     total: tasks.length,
-    runnable: frontier.counts.runnable,
-    active: frontier.counts.active,
+    runnable: liveFrontier.runnable.length,
+    active: liveFrontier.active.length,
     activeTaskIds,
     activeOpsTaskIds,
     activeDomainTaskIds,
+    readySatisfiedWaitHolderIds: liveFrontier.readySatisfiedWaitHolders,
     activeRunning,
     activeStale,
     assignmentStateMismatch,
-    review: frontier.counts.review,
+    review: liveFrontier.review.length,
     backlog: byStatus.get("backlog") ?? 0,
     blocked: blockedLeaves,
     blockedMissingWaitingFor,
@@ -3401,8 +3465,21 @@ export function metricSampleOutputsFor(
     : undefined;
 
   const values: Record<string, () => MetricSampleOutput> = {
-    "aks-rp-e2e.task.ready-count": () => ({ value: tasks.runnable }),
-    "aks-rp-e2e.task.active-count": () => ({ value: tasks.active }),
+    "aks-rp-e2e.task.ready-count": () => ({
+      value: tasks.runnable,
+      sampleSize: tasks.runnable,
+      note: JSON.stringify({
+        taskIds: listRunnableBacklogTaskIds(runtimeTaskTreeConfig(), 200),
+        readySatisfiedWaitHolderIds: tasks.readySatisfiedWaitHolderIds,
+      }),
+    }),
+    "aks-rp-e2e.task.active-count": () => ({
+      value: tasks.active,
+      sampleSize: tasks.activeTaskIds.length,
+      note: JSON.stringify({
+        taskIds: tasks.activeTaskIds,
+      }),
+    }),
     "aks-rp-e2e.task.stale-active-count": () => ({ value: tasks.activeStale }),
     "aks-rp-e2e.task.blocked-count": () => ({ value: tasks.blocked }),
     "aks-rp-e2e.task.blocked-actionable-count": () => ({

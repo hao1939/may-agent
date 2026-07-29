@@ -648,6 +648,12 @@ The pilot is implemented while the app remains paused for final verification:
   real execution root;
 - AKS scenario-adapter leaves bind to the owner workflow
   `domain-task-execution`; shared ledger and observation workflows do not;
+- `domain-task-execution` records the task branch head before the agent turn and
+  integrates only commits created after that exact head. It replays those
+  task-owned commits onto current `origin/dev`; it never merges inherited
+  history from a stale long-lived task branch into `dev`. A converged turn with
+  no new task-owned commit leaves `dev` unchanged unless the recorded source is
+  already integrated;
 - repo-ref wakes, disposition rechecks, and other non-mutating reviews return
   evidence in their structured task result and do not bind to
   `domain-task-execution` merely to publish a memo; only a real bounded source

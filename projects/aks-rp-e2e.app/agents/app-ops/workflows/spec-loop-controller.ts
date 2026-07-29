@@ -120,9 +120,13 @@ function representedTaskIdsForSpec(
     representedTaskIds.add(deterministicTaskId);
   const legacyTaskId = `spec/${safeTaskIdForSpec(specId)}`;
   if (represented(graph, legacyTaskId)) representedTaskIds.add(legacyTaskId);
-  const deterministicDispositionRepairTaskId = dispositionRepairId(specId);
+  const deterministicDispositionRepairTaskId = dispositionRepairId(specId, spec);
   if (represented(graph, deterministicDispositionRepairTaskId)) {
     representedTaskIds.add(deterministicDispositionRepairTaskId);
+  }
+  const legacyDispositionRepairTaskId = legacyDispositionRepairId(specId);
+  if (represented(graph, legacyDispositionRepairTaskId)) {
+    representedTaskIds.add(legacyDispositionRepairTaskId);
   }
   for (const taskId of collectReferencedTaskIds(spec)) {
     if (represented(graph, taskId)) representedTaskIds.add(taskId);
@@ -153,8 +157,12 @@ function workId(specId: string, spec: SpecLoopSpecState): string {
   return `spec/${safeTaskIdForSpec(specId)}-${workRevision(spec)}`;
 }
 
-function dispositionRepairId(specId: string): string {
+function legacyDispositionRepairId(specId: string): string {
   return `spec/repair-${safeTaskIdForSpec(specId)}-disposition-representation`;
+}
+
+function dispositionRepairId(specId: string, spec: SpecLoopSpecState): string {
+  return `${legacyDispositionRepairId(specId)}-${workRevision(spec)}`;
 }
 
 function isSatisfied(spec: SpecLoopSpecState): boolean {
@@ -245,7 +253,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       if (hasStructuredDisposition(spec)) {
         return {
           kind: "create-task",
-          id: dispositionRepairId(specId),
+          id: dispositionRepairId(specId, spec),
           parentId: "group/spec-verification",
           outcome: `Repair the spec-loop representation for ${specId}: the ledger already has a structured reviewed disposition, but no live task holder and no terminalDisposition=true flag, so the controller cannot tell whether to wait, finish, or rerun.`,
           mode: "achieve",

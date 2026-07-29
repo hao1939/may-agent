@@ -32,6 +32,14 @@ function gitValue(cwd: string, ...args: string[]): string {
   return (result.stdout ?? "").trim();
 }
 
+function optionalGitValue(cwd: string, ...args: string[]): string | null {
+  try {
+    return gitValue(cwd, ...args);
+  } catch {
+    return null;
+  }
+}
+
 function workspaceChanges(cwd: string): string {
   return gitValue(cwd, "status", "--porcelain=v1", "--untracked-files=all");
 }
@@ -64,6 +72,9 @@ function matchingJsonObject(text: string, start: number): string | null {
 type ReconciliationTaskPayload = {
   taskId?: unknown;
   input?: ScenarioNormalizationInput;
+  children?: {
+    live?: unknown;
+  };
 };
 
 function reconciliationTaskPayload(
@@ -85,6 +96,11 @@ function reconciliationTaskPayload(
 export function reconciliationTaskId(raw: string): string | null {
   const taskId = reconciliationTaskPayload(raw)?.taskId;
   return typeof taskId === "string" && taskId.trim() ? taskId.trim() : null;
+}
+
+function reconciliationTaskHasLiveChildren(raw: string): boolean {
+  const liveChildren = reconciliationTaskPayload(raw)?.children?.live;
+  return Array.isArray(liveChildren) && liveChildren.length > 0;
 }
 
 function selfTargetingActionIndexes(
@@ -170,16 +186,19 @@ function waitsOnDirectChild(
 function waitingCoverageProblem(
   result: ProjectAppTaskHandlerResult,
   taskId: string | null,
+  hasExistingLiveChild: boolean,
 ): string | null {
   if (result.state !== "waiting") return null;
   if ((result.conditions?.length ?? 0) > 0) return null;
   if (waitsOnDirectChild(result, taskId)) return null;
+  if (hasExistingLiveChild) return null;
   return `Waiting result for ${taskId ?? "the current task"} requires one exact Condition or a direct child task created with parentId ${taskId ?? "<current-task-id>"}`;
 }
 
 async function correctWaitingCoverage(input: {
   ctx: WorkflowContext;
   currentTaskId: string | null;
+  hasExistingLiveChild: boolean;
   phase: string;
   sessionId: string;
   result: ProjectAppTaskHandlerResult;
@@ -188,7 +207,11 @@ async function correctWaitingCoverage(input: {
   let sessionId = input.sessionId;
 
   for (let attempt = 1; attempt <= 2; attempt += 1) {
-    const problem = waitingCoverageProblem(ownerResult, input.currentTaskId);
+    const problem = waitingCoverageProblem(
+      ownerResult,
+      input.currentTaskId,
+      input.hasExistingLiveChild,
+    );
     if (!problem) return ownerResult;
 
     const prompt = [
@@ -231,7 +254,11 @@ async function correctWaitingCoverage(input: {
     });
   }
 
-  const problem = waitingCoverageProblem(ownerResult, input.currentTaskId);
+  const problem = waitingCoverageProblem(
+    ownerResult,
+    input.currentTaskId,
+    input.hasExistingLiveChild,
+  );
   if (!problem) return ownerResult;
   return {
     state: "needs-owner",
@@ -340,10 +367,16 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   const currentTaskId = reconciliationTaskId(ctx.task);
   const taskPayload = reconciliationTaskPayload(ctx.task);
+  const hasExistingLiveChild = reconciliationTaskHasLiveChildren(ctx.task);
   const normalizationInput = taskPayload?.input;
   if (isRunnableScenarioNormalization(normalizationInput)) {
     return reconcileSpecLive(ctx);
   }
+  const attemptBaseCommit = optionalGitValue(
+    ctx.workspaceDir,
+    "rev-parse",
+    "HEAD",
+  );
   const prompt = [
     "Execute the bounded AKS reconciliation task below.",
     "",
@@ -384,6 +417,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   ownerResult = await correctWaitingCoverage({
     ctx,
     currentTaskId,
+    hasExistingLiveChild,
     phase: "domain execution",
     sessionId: result.sessionId,
     result: ownerResult,
@@ -398,12 +432,24 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   ownerResult = await correctWaitingCoverage({
     ctx,
     currentTaskId,
+    hasExistingLiveChild,
     phase: "domain execution",
     sessionId: result.sessionId,
     result: ownerResult,
   });
   if (ownerResult.state !== "converged") {
     return ctx.done(ownerResult.summary, ownerResult);
+  }
+
+  if (!attemptBaseCommit) {
+    return ctx.done("Domain task workspace has no readable attempt baseline", {
+      state: "needs-owner",
+      summary: "Domain task workspace has no readable attempt baseline",
+      evidence: [
+        ...(ownerResult.evidence ?? []),
+        `workspace:${ctx.workspaceDir}`,
+      ],
+    });
   }
 
   const workspaceDir = ctx.workspaceDir;
@@ -429,15 +475,44 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     workspaceDir,
     sourceBranch,
     sourceCommit,
+    taskBaseCommit: attemptBaseCommit,
   });
 
-  if (integration.state === "conflict") {
+  if (
+    integration.state === "conflict" ||
+    integration.state === "requires-replay"
+  ) {
+    if (integration.state === "requires-replay") {
+      gitValue(repoDir, "fetch", "origin", "dev");
+    }
+    const replayBaseCommit =
+      integration.state === "conflict"
+        ? integration.replayBaseCommit
+        : gitValue(repoDir, "rev-parse", "origin/dev");
+    const replayFacts =
+      integration.state === "conflict"
+        ? [
+            `Replaying this turn's task-owned commits onto ${integration.targetRef}@${replayBaseCommit} is already in progress.`,
+            `Conflict evidence: ${integration.error}`,
+            "Resolve only this task's conflicting files and continue the cherry-pick.",
+          ]
+        : [
+            `The retained source ${integration.sourceCommit} cannot be isolated from attempt baseline ${integration.taskBaseCommit}.`,
+            `Structured replay reason: ${integration.reason}.`,
+            ...(integration.mergeCommits.length
+              ? [
+                  `Merge commits in the attempted task range: ${integration.mergeCommits.join(",")}.`,
+                ]
+              : []),
+            `Replay only this task's owned change onto ${integration.targetRef}@${replayBaseCommit}; do not merge stale branch history wholesale.`,
+          ];
     const conflictResult = await ctx.runAgent(
       ctx.agent,
       [
-        "Resolve the direct dev integration conflict for the same bounded AKS task.",
-        `Work only in ${workspaceDir}; the merge with ${integration.targetRef} is already in progress.`,
-        "Resolve only this task's conflicting files, preserve the accepted task intent, rerun scoped verification, commit the merge, and leave the worktree clean.",
+        "Reconcile the direct dev lineage for the same bounded AKS task.",
+        `Work only in ${workspaceDir}.`,
+        ...replayFacts,
+        "Preserve the accepted task intent, rerun scoped verification, and leave one clean linear commit lineage descending from the named origin/dev commit.",
         "Do not push, create a PR, create another task, or edit app state. Return the same structured task result when the bounded work is truthful.",
         "Task:",
         ctx.task,
@@ -468,6 +543,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     conflictOwnerResult = await correctWaitingCoverage({
       ctx,
       currentTaskId,
+      hasExistingLiveChild,
       phase: "integration conflict repair",
       sessionId: conflictResult.sessionId,
       result: conflictOwnerResult,
@@ -498,11 +574,52 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       ],
     };
     sourceCommit = gitValue(workspaceDir, "rev-parse", "HEAD");
+    const baselineInSource = spawnSync(
+      "git",
+      ["merge-base", "--is-ancestor", replayBaseCommit, sourceCommit],
+      { cwd: workspaceDir, encoding: "utf8" },
+    );
+    const mergeCommits = gitValue(
+      workspaceDir,
+      "rev-list",
+      "--merges",
+      `${replayBaseCommit}..${sourceCommit}`,
+    );
+    if (baselineInSource.status !== 0 || mergeCommits) {
+      return ctx.done("Domain integration repair left an invalid lineage", {
+        state: "needs-owner",
+        summary: "Domain integration repair left an invalid lineage",
+        evidence: [
+          ...(ownerResult.evidence ?? []),
+          `replay-base:${replayBaseCommit}`,
+          `source-commit:${sourceCommit}`,
+          ...(mergeCommits ? [`merge-commits:${mergeCommits}`] : []),
+        ],
+      });
+    }
     integration = integrateDirectlyIntoDev({
       repoDir,
       workspaceDir,
       sourceBranch,
       sourceCommit,
+      taskBaseCommit: replayBaseCommit,
+    });
+  }
+
+  if (integration.state === "unchanged") {
+    const summary = `${ownerResult.summary} No task-owned commit was created in this bounded turn; dev remained at ${integration.targetCommit}.`;
+    return ctx.done(summary, {
+      ...ownerResult,
+      state: "converged",
+      summary,
+      evidence: [
+        ...(ownerResult.evidence ?? []),
+        `source-branch:${sourceBranch}`,
+        `source-commit:${sourceCommit}`,
+        `target-ref:${integration.targetRef}`,
+        `target-commit:${integration.targetCommit}`,
+        "integration:no-task-owned-commit",
+      ],
     });
   }
 
@@ -517,11 +634,17 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           `source-branch:${sourceBranch}`,
           `source-commit:${sourceCommit}`,
           `target-ref:${integration.targetRef}`,
-          `integration-error:${integration.error}`,
+          `integration-error:${
+            integration.state === "requires-replay"
+              ? `replay remained unresolved (${integration.reason})`
+              : integration.error
+          }`,
         ],
       },
     );
   }
+
+  sourceCommit = integration.sourceCommit;
 
   const summary = `${ownerResult.summary} Integrated ${sourceCommit} directly into dev@${integration.targetCommit}.`;
   return ctx.done(summary, {
