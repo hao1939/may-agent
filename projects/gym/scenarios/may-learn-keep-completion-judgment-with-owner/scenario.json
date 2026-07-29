@@ -1,0 +1,26 @@
+{
+  "name": "may-learn-keep-completion-judgment-with-owner",
+  "description": "System boundary judgment: keep deterministic measurement in code and contextual completion with the owner.",
+  "categories": ["deputy-learning", "system-operations", "ownership"],
+  "tags": ["may-agent", "metrics", "judgment", "learning-development"],
+  "tier": "smoke",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": {
+    "unit": "system-deputy-operations",
+    "tier": 2,
+    "partition": "development",
+    "competencies": [
+      "system.owner-and-route",
+      "reliability.delivery-vs-completion",
+      "diagnosis.responsible-layer"
+    ],
+    "criticality": "critical",
+    "variant_family": "deterministic-fact-vs-owner-judgment",
+    "source_signals": [
+      "hao-preference-7a331b8cda5f8e2b67a6",
+      "hao-preference-266db3c7e11254c2c3c0"
+    ]
+  }
+}

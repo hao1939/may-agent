@@ -7,6 +7,9 @@
   "scenarios": [
     "may-learn-reject-stale-app-approval",
     "may-learn-select-skill-or-workflow",
-    "may-learn-understand-telegram-reply-intent"
+    "may-learn-understand-telegram-reply-intent",
+    "may-learn-require-terminal-proof-before-completion",
+    "may-learn-repair-ownerless-wait",
+    "may-learn-keep-completion-judgment-with-owner"
   ]
 }

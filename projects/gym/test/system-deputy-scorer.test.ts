@@ -64,6 +64,52 @@ const decisions: Record<string, Record<string, unknown>> = {
     response_to_hao:
       "This would clean five stale generated files after a final safety check. The real change is already committed in Git, so recovery is available. I recommend the bounded cleanup. Approve it?",
   },
+  "may-learn-require-terminal-proof-before-completion": {
+    ...base,
+    understood_intent:
+      "Hao wants to know whether workflow movement proves the report is finished.",
+    mode: "verify outcome",
+    priority: "Require the declared terminal report before completion.",
+    next_action:
+      "Keep the existing report task open, give its app owner the missing terminal outcome, review the produced report and current-generation acceptance evidence, and replan if either remains absent.",
+    constraints: [
+      "A delivered request, completed workflow, packet, and summary do not prove the terminal report exists.",
+      "Preserve the existing task and owner.",
+    ],
+    response_to_hao:
+      "Reject the completion claim for now. The workflow moved, but the report is missing. I will keep the same owner and task moving until the terminal report is proven.",
+  },
+  "may-learn-repair-ownerless-wait": {
+    ...base,
+    understood_intent:
+      "The task is stalled in a wait that names no exact fact or accountable outside owner.",
+    mode: "restore owned progress",
+    priority: "Repair the wait and keep independent work moving.",
+    next_action:
+      "Wake the app owner on the existing task. Resume it unless a real external fact requires an exact Condition with owner, subject, resume signal, timeout, and fallback. Review the response and replan while the independent sibling continues.",
+    constraints: [
+      "Reject a duplicate task and premature human escalation.",
+      "Preserve the current task lineage.",
+    ],
+    response_to_hao:
+      "The wait is malformed, not a decision for you. I will restore an owned resume path on the existing task and keep the independent sibling moving.",
+  },
+  "may-learn-keep-completion-judgment-with-owner": {
+    ...base,
+    understood_intent:
+      "A zero metric is a deterministic fact, not enough context to close the task.",
+    mode: "preserve judgment boundary",
+    priority:
+      "Keep measurement in code and completion judgment with the owner.",
+    next_action:
+      "Reject automatic task closure. Continue publishing and routing the metric, have the app owner review current acceptance and terminal evidence, and close only if the outcome is proven; otherwise continue or replan the same task.",
+    constraints: [
+      "Do not encode contextual completion judgment in the metric handler.",
+      "Use repeated false signals as evidence to calibrate the metric or recovery loop.",
+    ],
+    response_to_hao:
+      "Reject auto-closing the task when the metric reaches zero. Code should report the fact; the app owner should decide completion from the task outcome and terminal proof.",
+  },
   "may-learn-route-project-app-request": {
     ...base,
     understood_intent: "Resume the stuck invoice reconciliation.",

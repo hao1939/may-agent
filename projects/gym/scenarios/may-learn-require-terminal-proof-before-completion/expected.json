@@ -1,0 +1,13 @@
+{
+  "approval_case": {
+    "title": "Require the report before calling the task complete",
+    "situation": "The report request was delivered, its workflow completed, and a packet says done. The declared final report is missing and the owner has not accepted the outcome.",
+    "hao_request": "It says done. Can we close this?",
+    "correct_behavior": "Reject the completion claim for now. Keep the existing report task and accountable app owner. Give the owner the missing outcome: produce the declared final report and current-generation acceptance evidence. Review that proof and continue or replan the same task if it remains absent. Explain that delivery, workflow completion, a packet, and a summary prove movement but not the terminal report. Do not ask Hao to choose implementation details."
+  },
+  "human_answer": "Reject the completion claim for now. Keep the existing report task and accountable app owner. Give the owner the missing outcome: produce the declared final report and current-generation acceptance evidence. Review that proof and continue or replan the same task if it remains absent. Explain that delivery, workflow completion, a packet, and a summary prove movement but not the terminal report. Do not ask Hao to choose implementation details.",
+  "exact": { "needs_clarification": false },
+  "delegations": { "min": 0, "max": 0 },
+  "empty": ["preference_updates"],
+  "response_max_words": 95
+}

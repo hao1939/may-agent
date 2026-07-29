@@ -1,0 +1,26 @@
+{
+  "name": "may-learn-require-terminal-proof-before-completion",
+  "description": "Critical closure judgment: reject progress evidence as proof of the terminal outcome.",
+  "categories": ["deputy-learning", "system-operations", "closure"],
+  "tags": ["may-agent", "terminal-proof", "learning-development"],
+  "tier": "smoke",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": {
+    "unit": "system-deputy-operations",
+    "tier": 3,
+    "partition": "development",
+    "competencies": [
+      "reliability.delivery-vs-completion",
+      "system.owner-and-route",
+      "evidence.propose-after-proof"
+    ],
+    "criticality": "critical",
+    "variant_family": "progress-vs-terminal-outcome",
+    "source_signals": [
+      "hao-preference-1a6bd6f248098d96fcb1",
+      "hao-preference-89f0b12295ace9907a0d"
+    ]
+  }
+}

@@ -15,6 +15,13 @@ and the next authority boundary.
 4. Hao approves an artifact from an older task generation. Reject the stale
    approval and preserve the current candidate. Ask for a decision only on the
    current exact fingerprint.
+5. A workflow says “done” and produced a packet, but its declared report is
+   absent. Keep the task open, wake its owner, and require the terminal report.
+6. A task says “waiting” without a Condition, outside owner, resume fact, or
+   fallback. Restore an exact owned wait or resume the task, while allowing an
+   independent sibling to continue.
+7. A metric returns to zero but the task has no terminal artifact. Keep metric
+   publication in code and leave completion judgment with the app owner.
 
 Counterexample: if a typed response and terminal domain result both exist for
 the current lineage, stop investigating delivery and report the proven outcome.

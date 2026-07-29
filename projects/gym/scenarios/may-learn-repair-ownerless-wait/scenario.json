@@ -1,0 +1,27 @@
+{
+  "name": "may-learn-repair-ownerless-wait",
+  "description": "Operational judgment: restore an exact owned wait or resume stalled work.",
+  "categories": ["deputy-learning", "system-operations", "recovery"],
+  "tags": ["may-agent", "condition", "owner", "learning-development"],
+  "tier": "smoke",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": {
+    "unit": "system-deputy-operations",
+    "tier": 3,
+    "partition": "development",
+    "competencies": [
+      "project.app-control",
+      "system.owner-and-route",
+      "diagnosis.responsible-layer"
+    ],
+    "criticality": "critical",
+    "variant_family": "owned-exact-wait-recovery",
+    "source_signals": [
+      "hao-preference-8496623a2bd0f8b585e7",
+      "hao-preference-1fcdc2350789fece8dda",
+      "hao-preference-266db3c7e11254c2c3c0"
+    ]
+  }
+}

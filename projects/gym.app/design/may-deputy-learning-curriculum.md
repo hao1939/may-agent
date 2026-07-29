@@ -1,6 +1,6 @@
 # May Deputy Learning Curriculum
 
-**Status:** Proposal (2026-07-24)
+**Status:** Active pilot (2026-07-29)
 
 ## Outcome
 
@@ -12,14 +12,14 @@ at genuine authority boundaries.
 This is not model fine-tuning. May does not permanently learn from one session.
 Learning becomes durable only through the mechanism that matches the cause:
 
-| Learning need | Durable mechanism |
-| --- | --- |
-| Stable deputy identity and authority boundary | concise `AGENTS.md` |
+| Learning need                                   | Durable mechanism                                 |
+| ----------------------------------------------- | ------------------------------------------------- |
+| Stable deputy identity and authority boundary   | concise `AGENTS.md`                               |
 | Situational system method or detailed knowledge | `may-agent-system` skill and accepted design docs |
-| Changing environment fact | owned context or knowledge |
-| Repeated ordered process | agent-owned TypeScript workflow |
-| Deterministic capability | tool or SDK command |
-| Mechanical high-confidence risk | calibrated guard |
+| Changing environment fact                       | owned context or knowledge                        |
+| Repeated ordered process                        | agent-owned TypeScript workflow                   |
+| Deterministic capability                        | tool or SDK command                               |
+| Mechanical high-confidence risk                 | calibrated guard                                  |
 
 Gym measures whether those mechanisms improve behavior. It does not teach by
 putting expected benchmark answers into May's permanent prompt.
@@ -218,12 +218,12 @@ memorization.
 Use four resource layers with different owners and visibility. Do not put them
 all inside one skill or scenario directory.
 
-| Layer | Purpose | Authority | Visible during blind assessment |
-| --- | --- | --- | --- |
-| System sources | Accepted design and operating truth | May-agent design owners | Readable when May discovers it |
-| Operational skill | Compact method and source routing | May | Skill catalog/body only when loaded |
-| Curriculum | Lessons, examples, and guided practice | Gym curriculum owner | No |
-| Assessment | Blind requests, fixtures, labels, and scoring | Gym + human truth approval | Request/fixture only; never expected truth |
+| Layer             | Purpose                                       | Authority                  | Visible during blind assessment            |
+| ----------------- | --------------------------------------------- | -------------------------- | ------------------------------------------ |
+| System sources    | Accepted design and operating truth           | May-agent design owners    | Readable when May discovers it             |
+| Operational skill | Compact method and source routing             | May                        | Skill catalog/body only when loaded        |
+| Curriculum        | Lessons, examples, and guided practice        | Gym curriculum owner       | No                                         |
+| Assessment        | Blind requests, fixtures, labels, and scoring | Gym + human truth approval | Request/fixture only; never expected truth |
 
 Recommended layout:
 
@@ -285,6 +285,25 @@ Evidence rows reference immutable session/evaluation artifacts rather than
 copying full transcripts. Record the source session, competency, observed
 behavior, outcome evidence, evaluator confidence, and human disposition.
 Positive and negative are evidence labels, not automatic teaching authority.
+
+### Candidate-to-curriculum flywheel
+
+Historical sessions, successful runs, failures, and direct human corrections
+first produce candidate evidence. Gym then:
+
+1. keeps only strong, reusable signals;
+2. compares them with accepted design and existing coverage;
+3. clusters related signals into the smallest distinct lessons;
+4. drafts plain-language cases with positive, negative, and contradiction
+   controls;
+5. asks Hao to approve the meaning of each case;
+6. registers approved development cases for autonomous training; and
+7. drains the curriculum until it passes or a verified change needs approval.
+
+Processed evidence is not exhausted merely because the current trainable cases
+pass. Supported candidates remain a learning backlog until they are rejected,
+absorbed by an existing case, or promoted into a reviewed lesson. Prefer a few
+transferable cases over one case per conversation or preference.
 
 ### Competency resources
 
@@ -493,15 +512,15 @@ adding another prompt rule.
 
 Each operational or diagnostic case scores independent dimensions:
 
-| Dimension | Evidence |
-| --- | --- |
-| Intent and authority | act/propose/wait/escalate decision |
-| System model | correct primitive, owner, and state authority |
-| Discovery | relevant skill/docs/state loaded before judgment |
-| Execution | valid bounded actions and artifacts |
-| Evidence | claims supported by reads, controls, tests, or traces |
-| Closure integrity | correct terminal evidence and follow-up event |
-| Communication | decision, evidence, uncertainty, and approval gate |
+| Dimension            | Evidence                                              |
+| -------------------- | ----------------------------------------------------- |
+| Intent and authority | act/propose/wait/escalate decision                    |
+| System model         | correct primitive, owner, and state authority         |
+| Discovery            | relevant skill/docs/state loaded before judgment      |
+| Execution            | valid bounded actions and artifacts                   |
+| Evidence             | claims supported by reads, controls, tests, or traces |
+| Closure integrity    | correct terminal evidence and follow-up event         |
+| Communication        | decision, evidence, uncertainty, and approval gate    |
 
 Use deterministic structural checks where possible and a rubric-based review
 for open-ended causal judgment. The reviewer never overrides a deterministic
