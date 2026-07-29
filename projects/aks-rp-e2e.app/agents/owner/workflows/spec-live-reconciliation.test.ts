@@ -94,6 +94,12 @@ describe("spec-live-reconciliation workflow", () => {
     expect(directVitestCompatibilityInstruction).toContain(
       "portable Node APIs",
     );
+    expect(directVitestCompatibilityInstruction).toContain(
+      "`bun run spec <spec-id> --check`",
+    );
+    expect(directVitestCompatibilityInstruction).toContain(
+      "Never fabricate subscription, region, API version, Kubernetes version, or VM-size placeholders",
+    );
   });
 
   test("judges normalization against the exact strict-inventory row", () => {

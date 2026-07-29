@@ -396,6 +396,12 @@ function abandonSupersededTaskPullRequests(
   });
 }
 
+export function productRecoveryWaitRequiresCurrentMain(
+  input: Pick<FailureInput, "category">,
+): boolean {
+  return ["product_failure", "prod_issue"].includes(input.category);
+}
+
 export function productRecoveryCondition(
   input: FailureInput,
   afterRunId = input.pipelineRunId,
@@ -875,9 +881,10 @@ function laterRun(candidate: string, baseline: string): boolean {
 export function passingRecoveryObservation(
   raw: string,
   input: FailureInput,
+  options: { requireCurrentMain?: boolean } = {},
 ): Record<string, unknown> | null {
   const trigger = triggerEvent(raw);
-  return trigger ? matchingPassingRecoveryObservation(trigger, input) : null;
+  return trigger ? matchingPassingRecoveryObservation(trigger, input, options) : null;
 }
 
 function eventData(value: unknown): Record<string, unknown> {
@@ -895,15 +902,18 @@ function eventData(value: unknown): Record<string, unknown> {
 function matchingPassingRecoveryObservation(
   observation: Record<string, unknown>,
   input: FailureInput,
+  options: { requireCurrentMain?: boolean } = {},
 ): Record<string, unknown> | null {
   const data = eventData(observation.data);
   const type = text(observation.type ?? observation.event_type ?? data.type);
   if (type !== "pipeline.spec.observed") return null;
   const value = (key: string) => text(observation[key] ?? data[key]);
-  const sourceMatches = input.sourceCommit
-    ? value("sourceCommit") === input.sourceCommit ||
-      value("sourceBranch") === "refs/heads/main"
-    : value("sourceBranch") === "refs/heads/main";
+  const sourceMatches = options.requireCurrentMain
+    ? value("sourceBranch") === "refs/heads/main"
+    : input.sourceCommit
+      ? value("sourceCommit") === input.sourceCommit ||
+        value("sourceBranch") === "refs/heads/main"
+      : value("sourceBranch") === "refs/heads/main";
   return value("specId") === input.specId &&
     value("status").toLowerCase() === "pass" &&
     sourceMatches &&
@@ -922,9 +932,10 @@ function matchingPassingRecoveryObservation(
 export function latestPassingRecoveryObservation(
   ctx: Pick<WorkflowContext, "task" | "query">,
   input: FailureInput,
+  options: { requireCurrentMain?: boolean } = {},
 ): Record<string, unknown> | null {
   const candidates: Record<string, unknown>[] = [];
-  const trigger = passingRecoveryObservation(ctx.task, input);
+  const trigger = passingRecoveryObservation(ctx.task, input, options);
   if (trigger) candidates.push(trigger);
   try {
     const rows = ctx.query.events({
@@ -933,7 +944,7 @@ export function latestPassingRecoveryObservation(
       limit: 500,
     }).rows;
     for (const row of rows) {
-      const candidate = matchingPassingRecoveryObservation(row, input);
+      const candidate = matchingPassingRecoveryObservation(row, input, options);
       if (candidate) candidates.push(candidate);
     }
   } catch {
@@ -1326,7 +1337,7 @@ function routeFinding(
         finding: content,
         ...extra,
         instruction:
-          "Own this product/provider failure inside the AKS app. Preserve the exact recovery wait, use later same-source campaign evidence to distinguish a transient failure from a persistent product defect, and escalate to a human only if a real authority decision remains after owner investigation.",
+          "Own this product/provider failure inside the AKS app. Preserve the exact recovery wait, treat frozen-campaign same-spec passes only as supporting evidence, close the stable task only after a later current-main same-spec pass, and escalate to a human only if a real authority decision remains after owner investigation.",
       },
     });
     mkdirSync(dirname(path), { recursive: true });
@@ -1737,7 +1748,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     const replayRepairPending = Boolean(
       frozenBaseCommit && replayBaseCommit && headCommit === replayBaseCommit,
     );
-    const recovery = latestPassingRecoveryObservation(ctx, input);
+    const recovery = latestPassingRecoveryObservation(ctx, input, {
+      requireCurrentMain: productRecoveryWaitRequiresCurrentMain(input),
+    });
     const recoveryCommit = text(recovery?.sourceCommit);
     const recoveryChangedFiles = recovery
       ? changedFilesBetween(repoDir, recoveryCommit, baseCommit)
@@ -1858,6 +1871,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         productRecoveryCondition(
           input,
           currentRecoveryBaselineRunId(ctx, input),
+          { requireCurrentMain: true },
         ),
         absorbLegacyRecoveryActions(ctx.task),
       );
@@ -1885,6 +1899,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         productRecoveryCondition(
           input,
           currentRecoveryBaselineRunId(ctx, input),
+          { requireCurrentMain: true },
         ),
         absorbLegacyRecoveryActions(ctx.task),
       );
@@ -1989,7 +2004,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           `Evidence: ${decision.evidence.join("; ")}`,
         ].join("\n"),
       );
-      const summary = `Classified ${input.specId} as a product issue and routed it to the AKS project owner; the failure remains open until a later same-source campaign pass proves recovery.`;
+      const summary = `Classified ${input.specId} as a product issue and routed it to the AKS project owner; the failure remains open until a later current-main same-spec pass proves recovery.`;
       return waiting(
         ctx,
         summary,
@@ -1997,6 +2012,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         productRecoveryCondition(
           input,
           currentRecoveryBaselineRunId(ctx, input),
+          { requireCurrentMain: true },
         ),
         absorbLegacyRecoveryActions(ctx.task),
       );

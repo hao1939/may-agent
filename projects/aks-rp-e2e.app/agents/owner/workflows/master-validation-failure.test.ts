@@ -908,6 +908,62 @@ ${observation}
     });
   });
 
+  test("does not let a frozen campaign pass satisfy a current-main product recovery wait", () => {
+    const input = parseFailureInput(`
+## Reconciliation Task
+${JSON.stringify({
+  taskId: "domain/master-validation-failure/spec.example/fp",
+  input: {
+    specId: "spec.example",
+    pipelineRunId: "123",
+    failureFingerprint: "fp",
+    sourceBranch: "refs/heads/validation/master-validation-123",
+    sourceCommit: "abc",
+    category: "product_failure",
+  },
+})}
+`)!;
+    const frozenCampaign = `
+## Trigger Observation
+${JSON.stringify({
+  type: "pipeline.spec.observed",
+  pipelineRunId: "124",
+  sourceBranch: "refs/heads/validation/master-validation-123",
+  sourceCommit: "abc",
+  specId: "spec.example",
+  status: "pass",
+})}
+`;
+    const currentMain = `
+## Trigger Observation
+${JSON.stringify({
+  type: "pipeline.spec.observed",
+  pipelineRunId: "125",
+  sourceBranch: "refs/heads/main",
+  sourceCommit: "main-recovery",
+  specId: "spec.example",
+  status: "pass",
+})}
+`;
+
+    expect(
+      passingRecoveryObservation(frozenCampaign, input, {
+        requireCurrentMain: true,
+      }),
+    ).toBeNull();
+    expect(
+      passingRecoveryObservation(currentMain, input, {
+        requireCurrentMain: true,
+      }),
+    ).toMatchObject({
+      pipelineRunId: "125",
+      sourceBranch: "refs/heads/main",
+      sourceCommit: "main-recovery",
+      specId: "spec.example",
+      status: "pass",
+    });
+  });
+
   test("finds a later same-spec main pass from durable event history after the original wake", () => {
     const input = parseFailureInput(`
 ## Reconciliation Task
@@ -988,6 +1044,71 @@ ${JSON.stringify({
     });
   });
 
+  test("current-main product recovery replay ignores later frozen campaign passes", () => {
+    const input = parseFailureInput(`
+## Reconciliation Task
+${JSON.stringify({
+  taskId: "domain/master-validation-failure/spec.example/fp",
+  input: {
+    specId: "spec.example",
+    pipelineRunId: "123",
+    failureFingerprint: "fp",
+    sourceBranch: "refs/heads/validation/master-validation-123",
+    sourceCommit: "abc",
+    category: "product_failure",
+  },
+})}
+`)!;
+    const rows = [
+      {
+        event_type: "pipeline.spec.observed",
+        data: JSON.stringify({
+          pipelineRunId: "126",
+          sourceBranch: "refs/heads/validation/master-validation-123",
+          sourceCommit: "abc",
+          specId: "spec.example",
+          status: "pass",
+        }),
+      },
+      {
+        event_type: "pipeline.spec.observed",
+        data: JSON.stringify({
+          pipelineRunId: "125",
+          sourceBranch: "refs/heads/main",
+          sourceCommit: "recovered-main",
+          specId: "spec.example",
+          status: "pass",
+        }),
+      },
+    ];
+    const ctx = {
+      task: `## Trigger Event\n${JSON.stringify({
+        type: "project.task.tick",
+        reason: "workflow-replay",
+      })}`,
+      query: {
+        events: () => ({
+          rows,
+          rowCount: rows.length,
+          limit: 500,
+          truncated: false,
+        }),
+      },
+    } as never;
+
+    expect(
+      latestPassingRecoveryObservation(ctx, input, {
+        requireCurrentMain: true,
+      }),
+    ).toMatchObject({
+      pipelineRunId: "125",
+      sourceBranch: "refs/heads/main",
+      sourceCommit: "recovered-main",
+      specId: "spec.example",
+      status: "pass",
+    });
+  });
+
   test("accepts a main observation until a later relevant change invalidates it", () => {
     expect(
       observationAppliesToCurrentMain({
@@ -1042,6 +1163,36 @@ ${JSON.stringify({
         status: "pass",
         sourceCommit: "abc",
         pipelineRunId: { gt: "123" },
+      },
+    });
+  });
+
+  test("pins product recovery waits to current main and the recovery baseline", () => {
+    const input = parseFailureInput(`
+## Reconciliation Task
+${JSON.stringify({
+  taskId: "domain/master-validation-failure/spec.example/fp",
+  input: {
+    specId: "spec.example",
+    pipelineRunId: "123",
+    failureFingerprint: "fp",
+    sourceBranch: "refs/heads/validation/master-validation-123",
+    sourceCommit: "abc",
+    category: "product_failure",
+  },
+})}
+`)!;
+    expect(
+      productRecoveryCondition(input, "456", { requireCurrentMain: true }),
+    ).toEqual({
+      id: "master-validation-product-recovery-fp-after-456",
+      type: "pipeline.spec.observed",
+      subject: "project:aks-rp-e2e",
+      expected: {
+        specId: "spec.example",
+        status: "pass",
+        sourceBranch: "refs/heads/main",
+        pipelineRunId: { gt: "456" },
       },
     });
   });
