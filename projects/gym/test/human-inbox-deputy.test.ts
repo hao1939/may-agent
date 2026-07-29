@@ -14,6 +14,14 @@ const scenarios = [
   "may-learn-inbox-suppress-duplicate-pr",
   "may-learn-inbox-deliver-useful-digest",
 ];
+const releaseScenarios = [
+  "may-learn-inbox-transfer-handle-recovered-urgent",
+  "may-learn-inbox-transfer-deliver-human-authority",
+  "may-learn-inbox-transfer-deliver-material-change",
+  "may-learn-inbox-transfer-sanitize-digest",
+  "may-learn-inbox-transfer-handle-bounded-cleanup",
+  "may-learn-inbox-transfer-deliver-balanced-decision",
+];
 
 function json(path: string): any {
   return JSON.parse(readFileSync(path, "utf8"));
@@ -53,6 +61,41 @@ describe("human inbox deputy learning", () => {
     ).toBe(true);
   });
 
+  test("keeps transfer truth separate and draft until Hao approves it", () => {
+    const unit = json(
+      resolve(
+        gymRoot,
+        "benchmarks/may-learning/units/human-inbox-deputy/unit.json",
+      ),
+    );
+    const suite = json(
+      resolve(
+        gymRoot,
+        "benchmarks/may-human-inbox-deputy-transfer/suite.json",
+      ),
+    );
+    const labels = json(
+      resolve(
+        gymRoot,
+        "benchmarks/may-human-inbox-deputy-transfer/labels.json",
+      ),
+    ).labels;
+
+    expect(unit.release_benchmark).toBe(
+      "may-human-inbox-deputy-transfer",
+    );
+    expect(unit.release_scenarios).toEqual(releaseScenarios);
+    expect(suite.scenarios).toEqual(releaseScenarios);
+    expect(
+      releaseScenarios.every(
+        (scenario) =>
+          labels[scenario]?.status === "draft" &&
+          labels[scenario]?.approved_by === null &&
+          labels[scenario]?.approved_at === null,
+      ),
+    ).toBe(true);
+  });
+
   for (const scenario of scenarios) {
     test(`${scenario} has calibrated semantic controls and a plain review case`, () => {
       const scenarioDir = resolve(gymRoot, "scenarios", scenario);
@@ -70,6 +113,26 @@ describe("human inbox deputy learning", () => {
       expect(expected.approval_case.situation).toBeString();
       expect(expected.approval_case.hao_request).toBeString();
       expect(expected.approval_case.correct_behavior).toBeString();
+    });
+  }
+
+  for (const scenario of releaseScenarios) {
+    test(`${scenario} has held-back semantic controls and a plain review case`, () => {
+      const scenarioDir = resolve(gymRoot, "scenarios", scenario);
+      const controls = validateSemanticControlSet(
+        json(resolve(scenarioDir, "semantic_controls.json")),
+      );
+      const expected = json(resolve(scenarioDir, "expected.json"));
+
+      expect(controls.cases.some((item) => item.expected === "pass")).toBe(
+        true,
+      );
+      expect(controls.cases.some((item) => item.expected === "fail")).toBe(
+        true,
+      );
+      expect(expected.approval_case.correct_behavior).toBe(
+        expected.human_answer,
+      );
     });
   }
 });

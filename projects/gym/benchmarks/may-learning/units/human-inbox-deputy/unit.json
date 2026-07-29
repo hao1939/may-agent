@@ -24,6 +24,7 @@
     }
   ],
   "benchmark": "may-human-inbox-deputy",
+  "release_benchmark": "may-human-inbox-deputy-transfer",
   "practice_scenarios": [],
   "development_scenarios": [
     "may-learn-inbox-handle-recovered-timeout",
@@ -34,5 +35,12 @@
     "may-learn-inbox-suppress-duplicate-pr",
     "may-learn-inbox-deliver-useful-digest"
   ],
-  "release_scenarios": []
+  "release_scenarios": [
+    "may-learn-inbox-transfer-handle-recovered-urgent",
+    "may-learn-inbox-transfer-deliver-human-authority",
+    "may-learn-inbox-transfer-deliver-material-change",
+    "may-learn-inbox-transfer-sanitize-digest",
+    "may-learn-inbox-transfer-handle-bounded-cleanup",
+    "may-learn-inbox-transfer-deliver-balanced-decision"
+  ]
 }

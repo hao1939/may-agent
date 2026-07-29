@@ -11,7 +11,7 @@ import { buildLearningTrackReview } from "../src/learning/track-review";
 const gymRoot = resolve(import.meta.dirname, "..");
 
 describe("May learning registry", () => {
-  test("loads the active pilot and staged system-deputy unit", () => {
+  test("loads the approved pilot learning units", () => {
     const review = buildLearningReview(gymRoot);
 
     expect(review.errors).toEqual([]);
@@ -41,10 +41,37 @@ describe("May learning registry", () => {
         ready_for_release: true,
         evidence: { positive: 1, negative: 0, contrast: 0 },
       }),
+      expect.objectContaining({
+        id: "human-inbox-deputy",
+        version: 1,
+        status: "pilot",
+        ready_for_development: true,
+        ready_for_release: false,
+        evidence: { positive: 1, negative: 1, contrast: 1 },
+        release_benchmark: "may-human-inbox-deputy-transfer",
+        development_scenarios: [
+          "may-learn-inbox-handle-recovered-timeout",
+          "may-learn-inbox-route-product-failure",
+          "may-learn-inbox-return-vague-cleanup",
+          "may-learn-inbox-deliver-gym-decision",
+          "may-learn-inbox-reject-secret-request",
+          "may-learn-inbox-suppress-duplicate-pr",
+          "may-learn-inbox-deliver-useful-digest",
+        ],
+        release_scenarios: [
+          "may-learn-inbox-transfer-handle-recovered-urgent",
+          "may-learn-inbox-transfer-deliver-human-authority",
+          "may-learn-inbox-transfer-deliver-material-change",
+          "may-learn-inbox-transfer-sanitize-digest",
+          "may-learn-inbox-transfer-handle-bounded-cleanup",
+          "may-learn-inbox-transfer-deliver-balanced-decision",
+        ],
+      }),
     ]);
     expect(review.warnings).toEqual(
       expect.arrayContaining([
         "system-deputy-operations has no contrast evidence",
+        "human-inbox-deputy release truth is not approved: may-learn-inbox-transfer-handle-recovered-urgent",
       ]),
     );
   });
@@ -67,6 +94,30 @@ describe("May learning registry", () => {
         "may-learn-own-decision-after-cli-opinions",
       ],
     });
+  });
+
+  test("keeps human-inbox transfer truth held back from learning context", () => {
+    const contexts = resolveLearningContexts(
+      gymRoot,
+      "may-human-inbox-deputy",
+      ["may-learn-inbox-route-product-failure"],
+    );
+
+    expect(contexts).toHaveLength(1);
+    expect(contexts[0]).toMatchObject({
+      id: "human-inbox-deputy",
+      releaseBenchmark: "may-human-inbox-deputy-transfer",
+      releaseScenarios: [
+        "may-learn-inbox-transfer-handle-recovered-urgent",
+        "may-learn-inbox-transfer-deliver-human-authority",
+        "may-learn-inbox-transfer-deliver-material-change",
+        "may-learn-inbox-transfer-sanitize-digest",
+        "may-learn-inbox-transfer-handle-bounded-cleanup",
+        "may-learn-inbox-transfer-deliver-balanced-decision",
+      ],
+    });
+    expect(contexts[0]).not.toHaveProperty("human_answer");
+    expect(contexts[0]).not.toHaveProperty("approval_case");
   });
 
   test("selects approved system-deputy learning without exposing release truth", () => {
@@ -157,6 +208,31 @@ describe("May learning registry", () => {
         human_answer: expect.stringContaining("missing consumer"),
       }),
     ]);
+  });
+
+  test("builds a draft plain-language packet for human-inbox release truth", () => {
+    const review = buildLearningReleaseReview(
+      gymRoot,
+      "may-human-inbox-deputy-transfer",
+    );
+
+    expect(review.approval_fingerprint).toMatch(/^sha256:[a-f0-9]{64}$/);
+    expect(review.scenarios).toHaveLength(6);
+    expect(review.scenarios.every((item) => item.status === "draft")).toBe(
+      true,
+    );
+    expect(review.scenarios).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "may-learn-inbox-transfer-deliver-human-authority",
+          human_answer: expect.stringContaining("one-time $180 vendor run"),
+        }),
+        expect.objectContaining({
+          id: "may-learn-inbox-transfer-deliver-balanced-decision",
+          human_answer: expect.stringContaining("May has no recommendation"),
+        }),
+      ]),
+    );
   });
 
   test("combines approved system-deputy cases into one review fingerprint", () => {

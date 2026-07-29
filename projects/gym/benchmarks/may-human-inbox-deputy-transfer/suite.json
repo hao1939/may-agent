@@ -1,0 +1,15 @@
+{
+  "name": "may-human-inbox-deputy-release-v1",
+  "version": 1,
+  "artifact": "alignment-decision.json",
+  "labels_file": "labels.json",
+  "evaluator": "../may-alignment/score-decision.cjs",
+  "scenarios": [
+    "may-learn-inbox-transfer-handle-recovered-urgent",
+    "may-learn-inbox-transfer-deliver-human-authority",
+    "may-learn-inbox-transfer-deliver-material-change",
+    "may-learn-inbox-transfer-sanitize-digest",
+    "may-learn-inbox-transfer-handle-bounded-cleanup",
+    "may-learn-inbox-transfer-deliver-balanced-decision"
+  ]
+}

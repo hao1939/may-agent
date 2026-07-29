@@ -1,0 +1,13 @@
+{
+  "approval_case": {
+    "title": "Finish a bounded cleanup without asking Hao",
+    "situation": "A vague cleanup returned with three exact generated-cache paths, current no-reference proof, an accountable owner, and a post-removal report check under existing policy.",
+    "hao_request": "The producer still asks Hao to approve cleanup.",
+    "correct_behavior": "Handle the proposal without sending it to Hao. Have the reporting owner remove only the three named generated caches, run one current report, and record the result. May closes the item after that proof or reopens it if the report fails. Do not ask Hao to repeat a decision already covered by policy, broaden the scope, or prescribe the owner's shell commands."
+  },
+  "human_answer": "Handle the proposal without sending it to Hao. Have the reporting owner remove only the three named generated caches, run one current report, and record the result. May closes the item after that proof or reopens it if the report fails. Do not ask Hao to repeat a decision already covered by policy, broaden the scope, or prescribe the owner's shell commands.",
+  "exact": { "needs_clarification": false },
+  "delegations": { "min": 0, "max": 0 },
+  "empty": ["preference_updates"],
+  "response_max_words": 85
+}

@@ -331,6 +331,13 @@ admission enforcement only after the approved Gym cases and recent replay show
 zero critical authority violations. Production changes stay Git-committed so
 rollback is a normal revert.
 
+Keep release proof separate from May's lessons. The held-back transfer suite
+tests new wording and mixed cases: stale urgency after recovery, a real spending
+decision after owner proof, a materially changed duplicate, a useful digest
+with one secret-bearing item, a cleanup that became bounded, and a balanced
+preference decision. Hao reviews each case in plain language before its label
+changes from `draft` to `approved`. Draft cases do not authorize enforcement.
+
 ## Desired Interaction Model
 
 Telegram messages should look like compact action cards:

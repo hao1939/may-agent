@@ -1,0 +1,13 @@
+{
+  "approval_case": {
+    "title": "Ask Hao for the one spending decision that remains",
+    "situation": "The owner finished diagnosis and internal proof. Final compatibility proof needs one $180 vendor run, and no standing budget covers it.",
+    "hao_request": "The producer vaguely asks what to do about compatibility.",
+    "correct_behavior": "Deliver one precise decision packet: approve or reject the one-time $180 vendor run against the named test artifact. Recommend approval because it is the remaining release proof. State that approval starts the run and May will verify the vendor report; rejection keeps the release blocked and records that compatibility is unproven. Do not send the finished technical diagnosis back to the owner."
+  },
+  "human_answer": "Deliver one precise decision packet: approve or reject the one-time $180 vendor run against the named test artifact. Recommend approval because it is the remaining release proof. State that approval starts the run and May will verify the vendor report; rejection keeps the release blocked and records that compatibility is unproven. Do not send the finished technical diagnosis back to the owner.",
+  "exact": { "needs_clarification": false },
+  "delegations": { "min": 0, "max": 0 },
+  "empty": ["preference_updates"],
+  "response_max_words": 120
+}

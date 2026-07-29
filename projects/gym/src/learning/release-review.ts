@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 
 type ReleaseSuite = {
@@ -54,6 +54,11 @@ const scenarioFiles = [
   "environment/system-state.md",
 ] as const;
 
+const optionalScenarioFiles = [
+  "semantic_criteria.md",
+  "semantic_controls.json",
+] as const;
+
 function json<T>(path: string): T {
   return JSON.parse(readFileSync(path, "utf8")) as T;
 }
@@ -103,6 +108,12 @@ export function buildLearningReleaseReview(
         `scenarios/${id}/${scenarioFile}`,
         readFileSync(join(scenarioDir, scenarioFile)),
       );
+    }
+    for (const scenarioFile of optionalScenarioFiles) {
+      const path = join(scenarioDir, scenarioFile);
+      if (existsSync(path)) {
+        add(`scenarios/${id}/${scenarioFile}`, readFileSync(path));
+      }
     }
     const expected = json<{
       human_answer?: unknown;
