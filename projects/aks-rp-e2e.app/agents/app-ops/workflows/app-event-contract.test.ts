@@ -996,12 +996,74 @@ describe("app event contract", () => {
           "Repaired virtualmachines-agentpool app-visible compact routing to cite the current same-feature producer.",
         updatedAt: "2026-07-28T16:27:12.475Z",
       };
+      const unrelatedNewerRow = {
+        featureKey: "ccp-coredns",
+        capabilityId: "ccp-coredns",
+        packetPath: "features/ccp-coredns.yaml",
+        specsDir: "features/ccp-coredns/specs",
+        specCount: 7,
+        status: "done",
+        errorClass: null,
+        retryable: true,
+        retryReason: null,
+        taskId: "hold-compact-ccp-coredns-split-frontier-20260728",
+        frontierTaskIds: ["hold-compact-ccp-coredns-split-frontier-20260728"],
+        attempts: 1,
+        lastPlanPath: "features/ccp-coredns/compact/staging.plan.json",
+        lastSummaryPath: "features/ccp-coredns/compact/staging.summary.md",
+        lastDiagnosticsPath:
+          "features/ccp-coredns/compact/staging.diagnostics.json",
+        lastResultPath: "runs/test-results/feature-compact-ccp-coredns-check",
+        lastWorkflowRunId: "174104717",
+        lastWorkflowRunUrl:
+          "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=174104717",
+        lastWorkflowLoopKey: null,
+        lastDispatchMetadataPath: null,
+        lastLiveProofVersion: "live-aks-proof-v2",
+        activeAttemptId: null,
+        activeTaskSessionId: null,
+        activeWorkflowRunId: null,
+        heartbeatAt: null,
+        lastSummary:
+          "Current compact authority already matches the published split frontier.",
+        rootCauseClassification: "repo-local-spec-metadata-split-frontier",
+        inputFingerprint: "ccp-coredns@done",
+        errorFingerprint: null,
+        lastSupportWorkFingerprint: null,
+        ownerReason: "Published split frontier remains authoritative.",
+        attemptedFixes: ["Published split-frontier source truth to origin/dev."],
+        nextStepClassification: "No same-surface action required.",
+        resumeCondition: null,
+        blockedAt: null,
+        blockedReason: null,
+        waitingFor: null,
+        waitingCondition: null,
+        observedBy: null,
+        observationMethod: null,
+        nextCheckAt: null,
+        blockerOwner: null,
+        fallbackAt: null,
+        fallbackAction: null,
+        resumeAction: null,
+        blockedScope: null,
+        blockedFingerprint: null,
+        lastCheckedAt: "2026-07-29T03:59:59.000Z",
+        evidencePaths: [
+          "evidence/archive/reconcile-canonical-root-ccp-coredns-split-frontier-residue-20260728.md",
+        ],
+        reviewEvidencePath:
+          "evidence/archive/reconcile-canonical-root-ccp-coredns-split-frontier-residue-20260728.md",
+        verificationBlocker: null,
+        summary: "CCP CoreDNS row is already newer than the projected holder update.",
+        updatedAt: "2026-07-29T03:59:59.000Z",
+      };
       const featureState = {
         loopTaskId: "aks-feature-compact-loop",
         windowSize: 3,
         cursor: 0,
         features: {
           "virtualmachines-agentpool": staleFeatureRow,
+          "ccp-coredns": unrelatedNewerRow,
         },
       };
       writeJson(resolve(appDir, ".state/feature-compact-loop/state.json"), featureState);
@@ -1137,6 +1199,7 @@ describe("app event contract", () => {
             "evidence/archive/reconcile-virtualmachines-agentpool-mixed-sku-upgrade-frontier-20260729.md",
           ]),
         );
+        expect(state.features["ccp-coredns"]).toEqual(unrelatedNewerRow);
       }
     } finally {
       rmSync(rootDir, { recursive: true, force: true });

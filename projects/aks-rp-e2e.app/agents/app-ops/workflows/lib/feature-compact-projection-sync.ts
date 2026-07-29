@@ -1,6 +1,9 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { basename, dirname, isAbsolute, join } from "node:path";
-import type { FeatureCompactLoopState } from "./feature-compact-loop-store.js";
+import {
+  saveFeatureCompactLoopState,
+  type FeatureCompactLoopState,
+} from "./feature-compact-loop-store.js";
 
 type SyncResult = {
   changed: boolean;
@@ -39,10 +42,6 @@ function readJson<T>(path: string): T | null {
   } catch {
     return null;
   }
-}
-
-function writeJson(path: string, value: unknown): void {
-  writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
 
 function appStatePath(appDir: string): string {
@@ -261,11 +260,14 @@ function updateStateFile(
   if (!state?.features?.[featureKey]) return false;
   const current = state.features[featureKey] as Record<string, unknown>;
   if (JSON.stringify(current) === JSON.stringify(nextItem)) return false;
-  state.features[featureKey] = nextItem as FeatureCompactLoopState["features"][string];
-  const now = new Date().toISOString();
-  state.updatedAt = now;
-  state.updated_at = now;
-  writeJson(path, state);
+  saveFeatureCompactLoopState(path, {
+    loopTaskId: state.loopTaskId,
+    windowSize: state.windowSize,
+    cursor: state.cursor,
+    features: {
+      [featureKey]: nextItem as FeatureCompactLoopState["features"][string],
+    },
+  });
   return true;
 }
 
