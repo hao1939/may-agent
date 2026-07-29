@@ -178,6 +178,8 @@ export type ReviewedRunProof = {
   pullRequestId?: string;
   targetRef?: string;
   mergedCommit?: string;
+  integrationMode?: "ancestry" | "bounded-content-equivalent";
+  integratedPaths?: string[];
 };
 
 type RunReceipt = {
@@ -567,6 +569,67 @@ export function directIntegrationAction(input: {
   return input.targetIsInSource
     ? "publish-tested-source"
     : "reverify-updated-source";
+}
+
+function repoRelativePaths(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return [
+    ...new Set(
+      value
+        .map(nonEmptyString)
+        .filter(
+          (path) =>
+            path &&
+            !path.startsWith("/") &&
+            !path.startsWith("-") &&
+            !path.split("/").includes(".."),
+        ),
+    ),
+  ].sort();
+}
+
+export function frozenCandidateContentEquivalent(input: {
+  repoDir: string;
+  sourceCommit: string;
+  targetCommit: string;
+  boundedSourceFiles: unknown;
+}): { equivalent: boolean; paths: string[] } {
+  const paths = repoRelativePaths(input.boundedSourceFiles);
+  if (!paths.length || !input.sourceCommit || !input.targetCommit) {
+    return { equivalent: false, paths };
+  }
+  for (const path of paths) {
+    if (
+      git(
+        input.repoDir,
+        ["cat-file", "-e", `${input.sourceCommit}:${path}`],
+        true,
+      ).status !== 0 ||
+      git(
+        input.repoDir,
+        ["cat-file", "-e", `${input.targetCommit}:${path}`],
+        true,
+      ).status !== 0
+    ) {
+      return { equivalent: false, paths };
+    }
+  }
+  return {
+    equivalent:
+      git(
+        input.repoDir,
+        [
+          "diff",
+          "--quiet",
+          input.sourceCommit,
+          input.targetCommit,
+          "--",
+          ...paths,
+        ],
+        true,
+      ).status === 0,
+    paths,
+  };
 }
 
 type JsonObject = Record<string, unknown>;
@@ -4576,6 +4639,9 @@ export async function reconcileSpecLive(
 
     if (integrationMode(targetBranch) === "direct") {
       let integratedCommit = "";
+      let proofIntegrationMode: ReviewedRunProof["integrationMode"] =
+        "ancestry";
+      let proofIntegratedPaths: string[] = [];
       let lastPushError = "";
       let targetAdvanceEvidence: string[] = [];
 
@@ -4587,6 +4653,25 @@ export async function reconcileSpecLive(
             ["merge-base", "--is-ancestor", sourceCommit, targetRef],
             true,
           ).status === 0;
+        const frozenCandidateEquivalent =
+          payload?.input?.frozenCandidateRule === true
+            ? frozenCandidateContentEquivalent({
+                repoDir,
+                sourceCommit,
+                targetCommit: targetRef,
+                boundedSourceFiles: payload.input.boundedSourceFiles,
+              })
+            : { equivalent: false, paths: [] };
+        if (!sourceIsInTarget && frozenCandidateEquivalent.equivalent) {
+          integratedCommit = git(repoDir, ["rev-parse", targetRef]).stdout;
+          proofIntegrationMode = "bounded-content-equivalent";
+          proofIntegratedPaths = frozenCandidateEquivalent.paths;
+          targetAdvanceEvidence = [
+            "integration-mode:bounded-content-equivalent",
+            ...proofIntegratedPaths.map((path) => `integrated-path:${path}`),
+          ];
+          break;
+        }
         const targetIsInSource =
           git(
             workspaceDir,
@@ -4911,6 +4996,8 @@ export async function reconcileSpecLive(
         ...proof,
         targetRef,
         mergedCommit: integratedCommit,
+        integrationMode: proofIntegrationMode,
+        integratedPaths: proofIntegratedPaths,
       };
       saveProof(contextDir, proof);
       const summary = `${specId} passed run ${runId} at ${sourceCommit} and directly integrated that tested commit into ${targetBranch}@${integratedCommit}.`;
@@ -5479,7 +5566,7 @@ export async function verify(
     : contextDir;
   const artifactPaths = proof ? collectedArtifactPaths(runContextDir) : [];
   git(context.projectDir, ["fetch", "origin", defaultTargetBranch], true);
-  const sourceReachable = Boolean(
+  const sourceAncestryReachable = Boolean(
     proof?.sourceCommit &&
     git(
       context.projectDir,
@@ -5487,6 +5574,26 @@ export async function verify(
       true,
     ).status === 0,
   );
+  const expectedBoundedPaths = repoRelativePaths(
+    (input as Record<string, unknown> | undefined)?.boundedSourceFiles,
+  );
+  const proofIntegratedPaths = repoRelativePaths(proof?.integratedPaths);
+  const boundedContentEquivalent = Boolean(
+    (input as Record<string, unknown> | undefined)?.frozenCandidateRule ===
+      true &&
+      proof?.integrationMode === "bounded-content-equivalent" &&
+      expectedBoundedPaths.length > 0 &&
+      JSON.stringify(proofIntegratedPaths) ===
+        JSON.stringify(expectedBoundedPaths) &&
+      frozenCandidateContentEquivalent({
+        repoDir: context.projectDir,
+        sourceCommit: proof.sourceCommit,
+        targetCommit: "origin/dev",
+        boundedSourceFiles: expectedBoundedPaths,
+      }).equivalent,
+  );
+  const sourceReachable =
+    sourceAncestryReachable || boundedContentEquivalent;
   const integratedCommitReachable = Boolean(
     proof?.mergedCommit &&
     git(
@@ -5542,6 +5649,12 @@ export async function verify(
       `pipeline-run:${proof.runId}`,
       `source-commit:${proof.sourceCommit}`,
       `integrated-commit:${proof.mergedCommit}`,
+      ...(boundedContentEquivalent
+        ? [
+            "integration-mode:bounded-content-equivalent",
+            ...proofIntegratedPaths.map((path) => `integrated-path:${path}`),
+          ]
+        : []),
       ...verification.evidence.filter(
         (item) =>
           !item.startsWith("proof:") && !item.startsWith("source-commit:"),

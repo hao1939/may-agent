@@ -29,6 +29,7 @@ import {
   directIntegrationAction,
   exactStrictInventoryInstruction,
   exactLiveTargetInstruction,
+  frozenCandidateContentEquivalent,
   discoverTaskRuns,
   proofProtectedScenarioPaths,
   targetAdvanceProofDecisionProblem,
@@ -2171,6 +2172,79 @@ describe("spec-live-reconciliation workflow", () => {
         targetIsInSource: false,
       }),
     ).toBe("reverify-updated-source");
+  });
+
+  test("recognizes an exact bounded frozen candidate after content-equivalent replay", () => {
+    const root = mkdtempSync(join(tmpdir(), "frozen-candidate-equivalent-"));
+    const run = (args: string[]) =>
+      execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
+    const paths = [
+      "features/workload-health/specs/readiness.json",
+      "features/workload-health/tests/readiness.test.ts",
+    ];
+
+    try {
+      run(["init"]);
+      run(["config", "user.email", "test@example.com"]);
+      run(["config", "user.name", "Test"]);
+      writeFileSync(join(root, "base.txt"), "base\n");
+      run(["add", "base.txt"]);
+      run(["commit", "-m", "base"]);
+      const base = run(["rev-parse", "HEAD"]);
+
+      for (const path of paths) {
+        mkdirSync(join(root, path.split("/").slice(0, -1).join("/")), {
+          recursive: true,
+        });
+        writeFileSync(join(root, path), `tested ${path}\n`);
+      }
+      run(["add", ...paths]);
+      run(["commit", "-m", "tested candidate"]);
+      const tested = run(["rev-parse", "HEAD"]);
+
+      run(["checkout", "--detach", base]);
+      for (const path of paths) {
+        mkdirSync(join(root, path.split("/").slice(0, -1).join("/")), {
+          recursive: true,
+        });
+        writeFileSync(join(root, path), `tested ${path}\n`);
+      }
+      run(["add", ...paths]);
+      run(["commit", "-m", "content-equivalent replay"]);
+      const replay = run(["rev-parse", "HEAD"]);
+
+      expect(tested).not.toBe(replay);
+      expect(
+        frozenCandidateContentEquivalent({
+          repoDir: root,
+          sourceCommit: tested,
+          targetCommit: replay,
+          boundedSourceFiles: [...paths].reverse(),
+        }),
+      ).toEqual({ equivalent: true, paths: [...paths].sort() });
+
+      writeFileSync(join(root, paths[1]), "changed after replay\n");
+      run(["add", paths[1]]);
+      run(["commit", "-m", "change tested carrier"]);
+      expect(
+        frozenCandidateContentEquivalent({
+          repoDir: root,
+          sourceCommit: tested,
+          targetCommit: "HEAD",
+          boundedSourceFiles: paths,
+        }).equivalent,
+      ).toBe(false);
+      expect(
+        frozenCandidateContentEquivalent({
+          repoDir: root,
+          sourceCommit: tested,
+          targetCommit: replay,
+          boundedSourceFiles: ["../outside"],
+        }).equivalent,
+      ).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   test("merges a workload-health-style direct candidate after an unrelated target advance", () => {
