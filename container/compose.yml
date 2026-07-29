@@ -20,7 +20,6 @@ services:
       - "${WEB_PORT:-8080}:8080"
     volumes:
       - /app:/app
-      - /home/example-user/.codex:/home/example-user/.codex:ro
       - /home/example-user/alpha-source:/app/sources/alpha-source:ro
     environment:
       - INSTANCE=${INSTANCE:-background}
