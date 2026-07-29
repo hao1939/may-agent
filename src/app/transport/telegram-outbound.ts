@@ -1,4 +1,5 @@
-import type { EventBus } from "../event-bus.js";
+import { EVENT_ROW_ID, type EventBus } from "../event-bus.js";
+import type { HumanAttentionCandidate, HumanAttentionReview } from "./human-attention-review.js";
 import { extractProjectPath, normalizeProjectPath } from "./telegram-reply-router.js";
 
 export interface TelegramOutboundContext {
@@ -18,6 +19,7 @@ export interface TelegramOutboundOptions {
   pendingChatId: string | null;
   getSessionId: () => string;
   sendToUser: (text: string, context?: TelegramOutboundContext) => void;
+  reviewProactive?: (candidate: HumanAttentionCandidate) => Promise<HumanAttentionReview>;
 }
 
 export interface TelegramOutbound {
@@ -47,10 +49,30 @@ function approvalConversationContext(message: Record<string, unknown>): Record<s
     message.approval && typeof message.approval === "object" && !Array.isArray(message.approval)
       ? (message.approval as Record<string, unknown>)
       : null;
-  const approvalId = typeof message.approvalId === "string" ? message.approvalId : typeof approval?.approvalId === "string" ? approval.approvalId : undefined;
-  const waitId = typeof message.waitId === "string" ? message.waitId : typeof approval?.waitId === "string" ? approval.waitId : undefined;
-  const pathId = typeof message.pathId === "string" ? message.pathId : typeof approval?.pathId === "string" ? approval.pathId : undefined;
-  const packetPath = typeof message.packetPath === "string" ? message.packetPath : typeof approval?.packetPath === "string" ? approval.packetPath : undefined;
+  const approvalId =
+    typeof message.approvalId === "string"
+      ? message.approvalId
+      : typeof approval?.approvalId === "string"
+        ? approval.approvalId
+        : undefined;
+  const waitId =
+    typeof message.waitId === "string"
+      ? message.waitId
+      : typeof approval?.waitId === "string"
+        ? approval.waitId
+        : undefined;
+  const pathId =
+    typeof message.pathId === "string"
+      ? message.pathId
+      : typeof approval?.pathId === "string"
+        ? approval.pathId
+        : undefined;
+  const packetPath =
+    typeof message.packetPath === "string"
+      ? message.packetPath
+      : typeof approval?.packetPath === "string"
+        ? approval.packetPath
+        : undefined;
   const taskId =
     typeof message.taskId === "string"
       ? message.taskId
@@ -99,8 +121,7 @@ function approvalConversationContext(message: Record<string, unknown>): Record<s
       reason,
       expectedResponse,
     },
-    expectedClosure:
-      typeof expectedResponse?.type === "string" ? [expectedResponse.type] : undefined,
+    expectedClosure: typeof expectedResponse?.type === "string" ? [expectedResponse.type] : undefined,
   };
 }
 
@@ -112,6 +133,51 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
   const watchedSessions = new Set<string>();
   const replyToMessageIdBySession = new Map<string, number>();
   const outboundBySession = new Map<string, { pendingText: string; sentAnyText: boolean; sentText: string }>();
+
+  function reviewInShadow(candidate: HumanAttentionCandidate): void {
+    if (!opts.reviewProactive) return;
+    void opts
+      .reviewProactive(candidate)
+      .then((review) => {
+        bus.emit({
+          type: "human.attention.reviewed",
+          source: "telegram-outbound",
+          owner: "agent:may",
+          data: {
+            sourceEventId: candidate.sourceEventId,
+            mode: "shadow",
+            delivered: true,
+            candidate: {
+              eventType: candidate.eventType,
+              from: candidate.from,
+              content: candidate.content,
+              projectId: candidate.projectId,
+            },
+            ...review,
+          },
+        } as any);
+      })
+      .catch((error) => {
+        bus.emit({
+          type: "human.attention.reviewed",
+          source: "telegram-outbound",
+          owner: "agent:may",
+          data: {
+            sourceEventId: candidate.sourceEventId,
+            mode: "shadow",
+            delivered: true,
+            status: "failed",
+            reason: error instanceof Error ? error.message : String(error),
+            candidate: {
+              eventType: candidate.eventType,
+              from: candidate.from,
+              content: candidate.content,
+              projectId: candidate.projectId,
+            },
+          },
+        } as any);
+      });
+  }
 
   const unsubBus = bus.subscribe((event: any) => {
     const session = sessionData(event);
@@ -304,6 +370,14 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
         if (approvalContext.expectedClosure !== undefined && data.expectedClosure === undefined) {
           data.expectedClosure = approvalContext.expectedClosure;
         }
+        reviewInShadow({
+          sourceEventId: typeof event[EVENT_ROW_ID] === "number" ? event[EVENT_ROW_ID] : undefined,
+          eventType: "message.created",
+          from: String(message.from ?? ""),
+          content,
+          projectId: projectId ?? (typeof message.projectId === "string" ? message.projectId : undefined),
+          data,
+        });
         sendToUser(`📋 ${content}`, {
           eventType: "message.created",
           agent: String(message.from ?? ""),
@@ -380,6 +454,11 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
     close: unsubBus,
     getRootChatSessionId: () => rootChatSessionId,
     sendAlert: (text: string) => {
+      reviewInShadow({
+        eventType: "alert",
+        from: opts.interfaceAgent,
+        content: text.slice(0, 4000),
+      });
       sendToUser(text, { eventType: "alert" });
     },
   };
