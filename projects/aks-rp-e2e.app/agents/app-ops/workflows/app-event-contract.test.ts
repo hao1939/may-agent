@@ -6,6 +6,7 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -392,6 +393,8 @@ describe("app event contract", () => {
         },
         ownerNext: `Drain the current live packet first: active=[none], review=[none], runnable=[${runnableTaskId}], waiting=[none], blocked=[none].`,
       });
+      rmSync(runtimeMirrorPath);
+      symlinkSync(resolve(appDir, "project.json"), runtimeMirrorPath);
 
       const emitted: Record<string, unknown>[] = [];
       const result = await routeAksEvent(
@@ -421,7 +424,7 @@ describe("app event contract", () => {
         resolve(appDir, ".state/project-state.json"),
       );
       const runtimeMirror = readJson(runtimeMirrorPath);
-      for (const packet of [projectState, runtimeMirror]) {
+      for (const packet of [projectState]) {
         expect(packet.currentFocus.snapshot.treeUpdatedAt).toBe(
           liveTreeUpdatedAt,
         );
@@ -458,6 +461,7 @@ describe("app event contract", () => {
         staleTreeUpdatedAt,
       );
       expect(projectJson.currentFocus.activeTaskIds).toEqual([]);
+      expect(runtimeMirror).toEqual(projectJson);
     } finally {
       rmSync(rootDir, { recursive: true, force: true });
     }
@@ -647,7 +651,7 @@ describe("app event contract", () => {
         resolve(appDir, ".state/project-state.json"),
       );
       const runtimeMirror = readJson(runtimeMirrorPath);
-      for (const packet of [projectState, runtimeMirror]) {
+      for (const packet of [projectState]) {
         expect(packet.currentFocus.snapshot.treeUpdatedAt).toBe(
           liveTreeUpdatedAt,
         );
@@ -701,6 +705,7 @@ describe("app event contract", () => {
         `waiting=[${pendingWaitHolderId}, ${activeWaitHolderId}]`,
       );
       expect(projectJson).toEqual(stalePacket);
+      expect(runtimeMirror).toEqual(stalePacket);
     } finally {
       rmSync(rootDir, { recursive: true, force: true });
     }
@@ -996,7 +1001,11 @@ describe("app event contract", () => {
             project: projectId,
             resources: {
               [waitingTaskId]: {
-                metadata: { id: waitingTaskId, generation: 6, resourceVersion: 1 },
+                metadata: {
+                  id: waitingTaskId,
+                  generation: 6,
+                  resourceVersion: 1,
+                },
                 spec: { owner: "app-ops", workflow: "master-validation-cycle" },
                 status: {
                   phase: "waiting",
@@ -1004,8 +1013,15 @@ describe("app event contract", () => {
                 },
               },
               [subjectTaskId]: {
-                metadata: { id: subjectTaskId, generation: 2, resourceVersion: 1 },
-                spec: { owner: "aks-explorer", workflow: "master-validation-failure" },
+                metadata: {
+                  id: subjectTaskId,
+                  generation: 2,
+                  resourceVersion: 1,
+                },
+                spec: {
+                  owner: "aks-explorer",
+                  workflow: "master-validation-failure",
+                },
                 status: {
                   phase: "waiting",
                 },
@@ -1099,7 +1115,11 @@ describe("app event contract", () => {
             project: projectId,
             resources: {
               [waitingTaskId]: {
-                metadata: { id: waitingTaskId, generation: 1, resourceVersion: 1 },
+                metadata: {
+                  id: waitingTaskId,
+                  generation: 1,
+                  resourceVersion: 1,
+                },
                 spec: { owner: "aks-explorer" },
                 status: {
                   phase: "waiting",
@@ -1449,17 +1469,18 @@ describe("app event contract", () => {
               "After origin/dev advances, recheck the exact same compact frontier.",
             input: {
               baseRef: "origin/dev",
-              resumeBaselineCommit:
-                "63c7519aa1420391aaa5b19967f1a7c8bcbcf786",
+              resumeBaselineCommit: "63c7519aa1420391aaa5b19967f1a7c8bcbcf786",
             },
           },
         },
       });
       expect(
-        ((replayEvent?.data as Record<string, unknown>)?.taskIntent as Record<
-          string,
-          unknown
-        >)?.workflow,
+        (
+          (replayEvent?.data as Record<string, unknown>)?.taskIntent as Record<
+            string,
+            unknown
+          >
+        )?.workflow,
       ).toBeUndefined();
       expect(resolveAksTask(replayEvent ?? {})).toMatchObject({
         id: taskId,
@@ -1469,14 +1490,12 @@ describe("app event contract", () => {
           "After origin/dev advances, recheck the exact same compact frontier.",
         input: {
           baseRef: "origin/dev",
-          resumeBaselineCommit:
-            "63c7519aa1420391aaa5b19967f1a7c8bcbcf786",
+          resumeBaselineCommit: "63c7519aa1420391aaa5b19967f1a7c8bcbcf786",
           repoRefOwnerHandoff: {
             reason: "repo-ref-wait-owner-handoff",
             preserveSameTaskId: true,
             priorWorkflow: "wait-for-repo-ref-advance",
-            previousBaselineCommit:
-              "63c7519aa1420391aaa5b19967f1a7c8bcbcf786",
+            previousBaselineCommit: "63c7519aa1420391aaa5b19967f1a7c8bcbcf786",
           },
         },
       });
@@ -1642,9 +1661,7 @@ describe("app event contract", () => {
                   parentId: "project",
                   outcome:
                     "After origin/dev advances, recheck the exact same serverless compact frontier.",
-                  acceptance: [
-                    "Preserve same-task bounded owner judgment.",
-                  ],
+                  acceptance: ["Preserve same-task bounded owner judgment."],
                   mode: "achieve",
                   owner: "aks-explorer",
                   workflow: "wait-for-repo-ref-advance",
@@ -1652,7 +1669,8 @@ describe("app event contract", () => {
                     baseRef: "origin/dev",
                     resumeBaselineCommit:
                       "894696be2ec2520ecbf866a5145c6357e5a67f13",
-                    specId: "spec.serverless-virtual-nodes.addonv2-aci-connector",
+                    specId:
+                      "spec.serverless-virtual-nodes.addonv2-aci-connector",
                   },
                 },
                 status: {
@@ -1743,8 +1761,7 @@ describe("app event contract", () => {
             workflow: "wait-for-repo-ref-advance",
             input: {
               baseRef: "origin/dev",
-              resumeBaselineCommit:
-                "894696be2ec2520ecbf866a5145c6357e5a67f13",
+              resumeBaselineCommit: "894696be2ec2520ecbf866a5145c6357e5a67f13",
               specId: "spec.serverless-virtual-nodes.addonv2-aci-connector",
             },
           },
@@ -1764,8 +1781,7 @@ describe("app event contract", () => {
         acceptance: ["Preserve same-task bounded owner judgment."],
         input: {
           baseRef: "origin/dev",
-          resumeBaselineCommit:
-            "894696be2ec2520ecbf866a5145c6357e5a67f13",
+          resumeBaselineCommit: "894696be2ec2520ecbf866a5145c6357e5a67f13",
           specId: "spec.serverless-virtual-nodes.addonv2-aci-connector",
         },
       });
@@ -1794,9 +1810,7 @@ describe("app event contract", () => {
                   parentId: "compact/compact-feature-machines-agentpool",
                   outcome:
                     "After `origin/dev` advances beyond `780f3d01308600e853ea2dc2a0491e15e1816bba`, re-read the exact Machines AgentPool NAP full-cleanup two-spec/four-file family to decide whether commit `e9694c118cf63d4881988df8c4af3976b7c072c0` or an exact reviewed equivalent has been absorbed, then record absorption/equivalence or refresh one exact same-family wait.",
-                  acceptance: [
-                    "Preserve same-task bounded owner judgment.",
-                  ],
+                  acceptance: ["Preserve same-task bounded owner judgment."],
                   mode: "achieve",
                   owner: "aks-explorer",
                   workflow: "wait-for-repo-ref-advance",
@@ -1805,8 +1819,7 @@ describe("app event contract", () => {
                     resumeBaselineCommit:
                       "780f3d01308600e853ea2dc2a0491e15e1816bba",
                     specId: "spec.nap.default-machines-pool-cleanup-full",
-                    sourceCommit:
-                      "e9694c118cf63d4881988df8c4af3976b7c072c0",
+                    sourceCommit: "e9694c118cf63d4881988df8c4af3976b7c072c0",
                     publicationBranch:
                       "aks-explorer/reconcile-machines-agentpool-nap-full-cleanup-direct-carrier-current-origin-dev-20260723",
                   },
@@ -1887,9 +1900,7 @@ describe("app event contract", () => {
               parentId: "compact/compact-feature-machines-agentpool",
               outcome:
                 "After `origin/dev` advances beyond `780f3d01308600e853ea2dc2a0491e15e1816bba`, re-read the exact Machines AgentPool NAP full-cleanup two-spec/four-file family to decide whether commit `e9694c118cf63d4881988df8c4af3976b7c072c0` or an exact reviewed equivalent has been absorbed, then record absorption/equivalence or refresh one exact same-family wait.",
-              acceptance: [
-                "Preserve same-task bounded owner judgment.",
-              ],
+              acceptance: ["Preserve same-task bounded owner judgment."],
               mode: "achieve",
               owner: "aks-explorer",
               workflow: "wait-for-repo-ref-advance",
@@ -1898,8 +1909,7 @@ describe("app event contract", () => {
                 resumeBaselineCommit:
                   "780f3d01308600e853ea2dc2a0491e15e1816bba",
                 specId: "spec.nap.default-machines-pool-cleanup-full",
-                sourceCommit:
-                  "e9694c118cf63d4881988df8c4af3976b7c072c0",
+                sourceCommit: "e9694c118cf63d4881988df8c4af3976b7c072c0",
                 publicationBranch:
                   "aks-explorer/reconcile-machines-agentpool-nap-full-cleanup-direct-carrier-current-origin-dev-20260723",
               },
@@ -1933,7 +1943,9 @@ describe("app event contract", () => {
   });
 
   test("treats unsupported repo-ref waits as malformed instead of replaying generic origin/dev churn", async () => {
-    const appDir = mkdtempSync(join(tmpdir(), "repo-ref-wait-unsupported-compact-"));
+    const appDir = mkdtempSync(
+      join(tmpdir(), "repo-ref-wait-unsupported-compact-"),
+    );
     const taskId =
       "wait-compact-workload-autoscaler-package-partial-origin-dev-advance-780f3d01-20260727";
     try {
@@ -1960,8 +1972,7 @@ describe("app event contract", () => {
                     resumeBaselineCommit:
                       "780f3d01308600e853ea2dc2a0491e15e1816bba",
                     specId: "spec.workload-autoscaler.keda-upgrade-survival",
-                    sourceCommit:
-                      "780f3d01308600e853ea2dc2a0491e15e1816bba",
+                    sourceCommit: "780f3d01308600e853ea2dc2a0491e15e1816bba",
                     publicationBranch: "dev",
                   },
                 },
@@ -1978,8 +1989,7 @@ describe("app event contract", () => {
                   subject: "repoRef:origin/dev",
                   expected: {
                     field: "commit",
-                    notEquals:
-                      "780f3d01308600e853ea2dc2a0491e15e1816bba",
+                    notEquals: "780f3d01308600e853ea2dc2a0491e15e1816bba",
                   },
                 },
               },
@@ -2061,11 +2071,9 @@ describe("app event contract", () => {
             workflow: "wait-for-repo-ref-advance",
             input: {
               baseRef: "origin/dev",
-              resumeBaselineCommit:
-                "780f3d01308600e853ea2dc2a0491e15e1816bba",
+              resumeBaselineCommit: "780f3d01308600e853ea2dc2a0491e15e1816bba",
               specId: "spec.workload-autoscaler.keda-upgrade-survival",
-              sourceCommit:
-                "780f3d01308600e853ea2dc2a0491e15e1816bba",
+              sourceCommit: "780f3d01308600e853ea2dc2a0491e15e1816bba",
               publicationBranch: "dev",
             },
           },
@@ -2092,7 +2100,9 @@ describe("app event contract", () => {
   });
 
   test("treats unsupported normalization repo-ref waits as malformed instead of replaying unrelated dev advances", async () => {
-    const appDir = mkdtempSync(join(tmpdir(), "repo-ref-wait-unsupported-normalization-"));
+    const appDir = mkdtempSync(
+      join(tmpdir(), "repo-ref-wait-unsupported-normalization-"),
+    );
     const taskId =
       "wait-spec-network-acns-performance-cilium-upgrade-user-iptables-runtime-frontier-origin-dev-advance-5c252d46-20260727";
     try {
@@ -2119,8 +2129,7 @@ describe("app event contract", () => {
                     resumeBaselineCommit:
                       "5c252d465ae78739e7d89e4e220a92523f25053d",
                     specId: "spec.network-acns.performance-cilium-upgrade",
-                    sourceCommit:
-                      "5c252d465ae78739e7d89e4e220a92523f25053d",
+                    sourceCommit: "5c252d465ae78739e7d89e4e220a92523f25053d",
                     publicationBranch: "dev",
                   },
                 },
@@ -2137,8 +2146,7 @@ describe("app event contract", () => {
                   subject: "repoRef:origin/dev",
                   expected: {
                     field: "commit",
-                    notEquals:
-                      "5c252d465ae78739e7d89e4e220a92523f25053d",
+                    notEquals: "5c252d465ae78739e7d89e4e220a92523f25053d",
                   },
                 },
               },
@@ -2220,11 +2228,9 @@ describe("app event contract", () => {
             workflow: "wait-for-repo-ref-advance",
             input: {
               baseRef: "origin/dev",
-              resumeBaselineCommit:
-                "5c252d465ae78739e7d89e4e220a92523f25053d",
+              resumeBaselineCommit: "5c252d465ae78739e7d89e4e220a92523f25053d",
               specId: "spec.network-acns.performance-cilium-upgrade",
-              sourceCommit:
-                "5c252d465ae78739e7d89e4e220a92523f25053d",
+              sourceCommit: "5c252d465ae78739e7d89e4e220a92523f25053d",
               publicationBranch: "dev",
             },
           },
@@ -2251,7 +2257,9 @@ describe("app event contract", () => {
   });
 
   test("replays self-referential task-state waits to owner judgment when a task reconciles into waiting", async () => {
-    const appDir = mkdtempSync(join(tmpdir(), "self-task-state-wait-reconcile-"));
+    const appDir = mkdtempSync(
+      join(tmpdir(), "self-task-state-wait-reconcile-"),
+    );
     const taskId =
       "hold-compact-virtualmachines-agentpool-split-residual-frontier-d4865dba-20260728";
     try {
@@ -2270,7 +2278,9 @@ describe("app event contract", () => {
                     "compact/reconcile-virtualmachines-agentpool-current-ready-subset-frontier-f4233cb2ce",
                   outcome:
                     "Preserve the exact virtualmachines-agentpool compact split residual frontier on current origin/dev after consuming the completed capacity-based-surge-maxunavailable follow-through merge.",
-                  acceptance: ["Resume only when represented frontier authority changes."],
+                  acceptance: [
+                    "Resume only when represented frontier authority changes.",
+                  ],
                   mode: "maintain",
                   owner: "aks-explorer",
                   input: {
@@ -2302,21 +2312,23 @@ describe("app event contract", () => {
               },
             },
             conditions: {
-              "task:spec/repair-verify-spec-virtualmachines-auto-zone-mixed-sku-disposition-representation-phase-change": {
-                spec: {
-                  type: "task-field",
-                  subject:
-                    "task:spec/repair-verify-spec-virtualmachines-auto-zone-mixed-sku-disposition-representation",
-                  expected: { field: "phase", notEquals: "waiting" },
+              "task:spec/repair-verify-spec-virtualmachines-auto-zone-mixed-sku-disposition-representation-phase-change":
+                {
+                  spec: {
+                    type: "task-field",
+                    subject:
+                      "task:spec/repair-verify-spec-virtualmachines-auto-zone-mixed-sku-disposition-representation",
+                    expected: { field: "phase", notEquals: "waiting" },
+                  },
                 },
-              },
-              "task:hold-compact-virtualmachines-agentpool-split-residual-frontier-d4865dba-20260728-phase-change": {
-                spec: {
-                  type: "task-field",
-                  subject: `task:${taskId}`,
-                  expected: { field: "phase", notEquals: "waiting" },
+              "task:hold-compact-virtualmachines-agentpool-split-residual-frontier-d4865dba-20260728-phase-change":
+                {
+                  spec: {
+                    type: "task-field",
+                    subject: `task:${taskId}`,
+                    expected: { field: "phase", notEquals: "waiting" },
+                  },
                 },
-              },
             },
             attempts: {},
           },
@@ -2397,8 +2409,7 @@ describe("app event contract", () => {
             mode: "maintain",
             owner: "aks-explorer",
             input: {
-              baselineOriginDev:
-                "d4865dbaf1bedfdca8b711d60c2e4c9a2fd0e40c",
+              baselineOriginDev: "d4865dbaf1bedfdca8b711d60c2e4c9a2fd0e40c",
               preservedWaitTaskIds: [
                 "spec/repair-verify-spec-virtualmachines-auto-zone-mixed-sku-disposition-representation",
               ],
@@ -2442,7 +2453,9 @@ describe("app event contract", () => {
                     "compact/reconcile-virtualmachines-agentpool-current-ready-subset-frontier-f4233cb2ce",
                   outcome:
                     "Preserve the exact virtualmachines-agentpool compact split residual frontier on current origin/dev after consuming the completed capacity-based-surge-maxunavailable follow-through merge.",
-                  acceptance: ["Resume only when represented frontier authority changes."],
+                  acceptance: [
+                    "Resume only when represented frontier authority changes.",
+                  ],
                   mode: "maintain",
                   owner: "aks-explorer",
                   input: {
@@ -2474,21 +2487,23 @@ describe("app event contract", () => {
               },
             },
             conditions: {
-              "task:spec/repair-verify-spec-virtualmachines-auto-zone-mixed-sku-disposition-representation-phase-change": {
-                spec: {
-                  type: "task-field",
-                  subject:
-                    "task:spec/repair-verify-spec-virtualmachines-auto-zone-mixed-sku-disposition-representation",
-                  expected: { field: "phase", notEquals: "waiting" },
+              "task:spec/repair-verify-spec-virtualmachines-auto-zone-mixed-sku-disposition-representation-phase-change":
+                {
+                  spec: {
+                    type: "task-field",
+                    subject:
+                      "task:spec/repair-verify-spec-virtualmachines-auto-zone-mixed-sku-disposition-representation",
+                    expected: { field: "phase", notEquals: "waiting" },
+                  },
                 },
-              },
-              "task:hold-compact-virtualmachines-agentpool-split-residual-frontier-d4865dba-20260728-phase-change": {
-                spec: {
-                  type: "task-field",
-                  subject: `task:${taskId}`,
-                  expected: { field: "phase", notEquals: "waiting" },
+              "task:hold-compact-virtualmachines-agentpool-split-residual-frontier-d4865dba-20260728-phase-change":
+                {
+                  spec: {
+                    type: "task-field",
+                    subject: `task:${taskId}`,
+                    expected: { field: "phase", notEquals: "waiting" },
+                  },
                 },
-              },
             },
             attempts: {},
           },
@@ -2575,8 +2590,7 @@ describe("app event contract", () => {
             mode: "maintain",
             owner: "aks-explorer",
             input: {
-              baselineOriginDev:
-                "d4865dbaf1bedfdca8b711d60c2e4c9a2fd0e40c",
+              baselineOriginDev: "d4865dbaf1bedfdca8b711d60c2e4c9a2fd0e40c",
               preservedWaitTaskIds: [
                 "spec/repair-verify-spec-virtualmachines-auto-zone-mixed-sku-disposition-representation",
               ],
@@ -3227,7 +3241,8 @@ describe("app event contract", () => {
             id: taskId,
             phase: "pending",
             input: {
-              scenarioTestPath: "features/secops/tests/secops-fips-pool-add-existing.ts",
+              scenarioTestPath:
+                "features/secops/tests/secops-fips-pool-add-existing.ts",
             },
             evidence: [
               `source-branch:task/${worktreeName}`,
@@ -3435,12 +3450,10 @@ describe("app event contract", () => {
       });
       expect(result).toMatchObject({
         workspaceIntegrityCoveredByTask: {
-          [`canonical:${join(projectDir, "features/ccp-coredns/compact/staging.plan.json")}`]: [
-            compactTaskId,
-          ],
-          [`canonical:${join(projectDir, "features/ccp-coredns/compact/staging.summary.md")}`]: [
-            compactTaskId,
-          ],
+          [`canonical:${join(projectDir, "features/ccp-coredns/compact/staging.plan.json")}`]:
+            [compactTaskId],
+          [`canonical:${join(projectDir, "features/ccp-coredns/compact/staging.summary.md")}`]:
+            [compactTaskId],
         },
       });
       expect(emitted).toEqual([]);

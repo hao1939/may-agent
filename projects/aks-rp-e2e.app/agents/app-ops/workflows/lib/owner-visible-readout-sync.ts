@@ -1,5 +1,5 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   projectRuntimePaths,
   readTaskState,
@@ -61,10 +61,6 @@ type FocusReadoutNarrative = {
   metrics: FocusMetricsSnapshot;
 };
 
-function ensureDir(path: string): void {
-  if (!existsSync(path)) mkdirSync(path, { recursive: true });
-}
-
 function readJsonObject(path: string): JsonObject {
   if (!existsSync(path)) return {};
   try {
@@ -94,16 +90,6 @@ function readTaskTreeSnapshot(
     }
   }
   return readTaskState(config);
-}
-
-function writeJson(path: string, value: unknown): void {
-  ensureDir(dirname(path));
-  writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`, "utf8");
-}
-
-function runtimeMirrorProjectJsonPath(appDir: string): string {
-  const sourceKey = appDir.replace(/[^A-Za-z0-9._-]+/g, "_");
-  return join(appDir, ".state", "runtime-modules", sourceKey, "project.json");
 }
 
 function taskState(tree: TaskTree, taskId: string): string {
@@ -419,104 +405,6 @@ export function computeVisibleFrontier(
   };
 }
 
-function patchProjectJson(
-  projectJson: JsonObject,
-  frontier: VisibleFrontier,
-  narrative: FocusReadoutNarrative,
-  checkedAt: string,
-): JsonObject {
-  const currentFocus = projectJson.currentFocus ?? {};
-  const focusMission = currentFocus.focusMission ?? {};
-  const focusReview = currentFocus.focusReview ?? {};
-  const reviewedAt = narrative.reviewedAt ?? checkedAt;
-  const next: JsonObject = {
-    ...projectJson,
-    currentFocus: {
-      ...currentFocus,
-      summary: currentFocusSummary(narrative),
-      nextAction: currentFocusNextAction(narrative),
-      activeTaskIds: frontier.active,
-      waitingTaskIds: frontier.waiting,
-      blockedTaskIds: frontier.blocked,
-      proposedTaskIds: frontier.allVisible,
-      focusMission: {
-        ...focusMission,
-        ...(narrative.title ? { title: narrative.title } : {}),
-        activeTaskIds: frontier.active,
-        reviewTaskIds: frontier.review,
-        waitingTaskIds: frontier.waiting,
-        runnableTaskIds: frontier.runnable,
-        blockedTaskIds: frontier.blocked,
-        packetCounts: {
-          active: frontier.counts.active,
-          review: frontier.counts.review,
-          waiting: frontier.counts.waiting,
-          runnable: frontier.counts.runnable,
-          blocked: frontier.counts.blocked,
-        },
-        canonicalTreePath: ".state/tasks/tree.json",
-        treeUpdatedAt: frontier.observedTreeUpdatedAt,
-        linkedBlockedTaskIds: unique([
-          ...frontier.waiting,
-          ...frontier.blocked,
-        ]),
-        liveReviewFrontierTaskIds: frontier.review,
-        proposedTaskIds: frontier.allVisible,
-        excludedReviewTaskIds: [],
-        successCriteria: successCriteria(frontier),
-        allowedRisk: focusAllowedRisk(narrative),
-        progressReview: {
-          ...(focusMission.progressReview ?? {}),
-          reviewedAt,
-          last_reviewed_at: reviewedAt,
-          reviewed_at: reviewedAt,
-          status: "updated",
-          state: "updated",
-          result: "updated",
-          summary: currentFocusSummary(narrative),
-          note: focusPlanSummary(narrative),
-        },
-      },
-      focusReview: {
-        ...focusReview,
-        status: "updated",
-        reviewedAt,
-        result: "updated",
-        note: focusPlanSummary(narrative),
-      },
-      snapshot: {
-        version: "project-snapshot-v2",
-        capturedAt: checkedAt,
-        treeUpdatedAt: frontier.observedTreeUpdatedAt,
-      },
-    },
-    ownerNext: currentFocusNextAction(narrative),
-  };
-
-  if (next.focusReview && typeof next.focusReview === "object") {
-    next.focusReview = {
-      ...next.focusReview,
-      ...(narrative.title ? { title: narrative.title } : {}),
-      summary: currentFocusSummary(narrative),
-      status: "updated",
-      reviewedAt,
-    };
-  }
-
-  if (next.focusPlan && typeof next.focusPlan === "object") {
-    next.focusPlan = {
-      ...next.focusPlan,
-      ...(narrative.title ? { title: narrative.title } : {}),
-      summary: focusPlanSummary(narrative),
-      ownerNext: currentFocusNextAction(narrative),
-      reviewedAt,
-      updatedAt: checkedAt,
-    };
-  }
-
-  return next;
-}
-
 function patchProjectState(
   projectState: JsonObject,
   frontier: VisibleFrontier,
@@ -662,16 +550,12 @@ export function syncOwnerVisibleReadout(
     const narrative = focusReviewNarrative(tree, frontier, metrics);
     const liveIds = new Set(Object.keys(tree.tasks ?? {}));
     const projectJsonPath = join(appDir, "project.json");
-    const runtimeMirrorPath = runtimeMirrorProjectJsonPath(appDir);
-
     const projectJson = readJsonObject(projectJsonPath);
     const projectState = readJsonObject(runtimePaths.projectStatePath);
-    const runtimeMirror = readJsonObject(runtimeMirrorPath);
 
     const beforeIds = unique([
       ...advertisedPacketIds(projectJson),
       ...advertisedPacketIds(projectState),
-      ...advertisedPacketIds(runtimeMirror),
     ]);
     const missingBefore = beforeIds.filter((id) => !liveIds.has(id)).sort();
 
@@ -685,24 +569,16 @@ export function syncOwnerVisibleReadout(
       narrative,
       checkedAt,
     );
-    const nextRuntimeMirror = existsSync(runtimeMirrorPath)
-      ? patchProjectJson(runtimeMirror, frontier, narrative, checkedAt)
-      : runtimeMirror;
-
     const projectJsonChanged = false;
     const projectStateChanged =
       JSON.stringify(projectState) !== JSON.stringify(nextProjectState);
-    const runtimeMirrorChanged = existsSync(runtimeMirrorPath)
-      ? JSON.stringify(runtimeMirror) !== JSON.stringify(nextRuntimeMirror)
-      : false;
+    const runtimeMirrorChanged = false;
 
     if (projectStateChanged) saveProjectRuntimeState(appDir, nextProjectState);
-    if (runtimeMirrorChanged) writeJson(runtimeMirrorPath, nextRuntimeMirror);
 
     const afterIds = unique([
       ...advertisedPacketIds(nextProjectJson),
       ...advertisedPacketIds(nextProjectState),
-      ...advertisedPacketIds(nextRuntimeMirror),
     ]);
     const missingAfter = afterIds.filter((id) => !liveIds.has(id)).sort();
 
