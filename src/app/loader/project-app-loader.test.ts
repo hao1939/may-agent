@@ -3103,7 +3103,7 @@ describe("project app loader", () => {
     }
   });
 
-  it("isolates app selectors and closes owner inbox work only after successful handling", async () => {
+  it("isolates direct app selectors without synthesizing owner inbox reviews", async () => {
     const f = fixture();
     try {
       writeApp(f.appDir);
@@ -3132,17 +3132,13 @@ describe("project app loader", () => {
         () =>
           events.some(
             (event) => event.type === "handler.failed" && event.data?.handler === "project-app-event-router",
-          ) &&
-          events.some(
-            (event) =>
-              event.type === "owner.inbox.reviewed" && event.data?.openEventId === (handled as any)[EVENT_ROW_ID],
           ),
       );
 
       const reviewedIds = events
         .filter((event) => event.type === "owner.inbox.reviewed")
         .map((event) => event.data?.openEventId);
-      expect(reviewedIds).toContain((handled as any)[EVENT_ROW_ID]);
+      expect(reviewedIds).not.toContain((handled as any)[EVENT_ROW_ID]);
       expect(reviewedIds).not.toContain((wrongProject as any)[EVENT_ROW_ID]);
       expect(reviewedIds).not.toContain((failed as any)[EVENT_ROW_ID]);
     } finally {
