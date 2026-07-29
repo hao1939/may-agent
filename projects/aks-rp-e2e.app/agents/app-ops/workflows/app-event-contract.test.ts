@@ -910,6 +910,239 @@ describe("app event contract", () => {
     }
   });
 
+  test("syncs feature-compact projection when a live holder reconciles into an exact wait", async () => {
+    const rootDir = mkdtempSync(join(tmpdir(), "feature-compact-projection-"));
+    const appDir = join(rootDir, "aks-rp-e2e.app");
+    const projectDir = join(rootDir, "aks-rp-e2e");
+    const emitted: Record<string, unknown>[] = [];
+    const holderTaskId =
+      "hold-compact-virtualmachines-agentpool-split-residual-frontier-5044f69c-20260728";
+    const conditionId =
+      "mixed-sku-upgrade-master-validation-recovery-converged";
+    try {
+      mkdirSync(resolve(appDir, ".state/tasks"), { recursive: true });
+      mkdirSync(resolve(appDir, ".state/feature-compact-loop"), {
+        recursive: true,
+      });
+      mkdirSync(resolve(projectDir, ".state/feature-compact-loop"), {
+        recursive: true,
+      });
+
+      const staleFeatureRow = {
+        featureKey: "virtualmachines-agentpool",
+        capabilityId: "virtualmachines-agentpool",
+        packetPath: "features/virtualmachines-agentpool.yaml",
+        specsDir: "features/virtualmachines-agentpool/specs",
+        specCount: 22,
+        status: "pending",
+        errorClass: "package-partial",
+        retryable: false,
+        retryReason:
+          "Resume compact work by consuming the exact current same-feature follow-through.",
+        taskId: holderTaskId,
+        frontierTaskIds: [holderTaskId],
+        attempts: 2,
+        lastPlanPath: "features/virtualmachines-agentpool/compact/staging.plan.json",
+        lastSummaryPath:
+          "features/virtualmachines-agentpool/compact/staging.summary.md",
+        lastDiagnosticsPath:
+          "features/virtualmachines-agentpool/compact/staging.diagnostics.json",
+        lastResultPath:
+          "runs/test-results/feature-compact-virtualmachines-agentpool-staging-check",
+        lastWorkflowRunId: "171311555",
+        lastWorkflowRunUrl:
+          "https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=171311555",
+        lastWorkflowLoopKey: null,
+        lastDispatchMetadataPath: null,
+        lastLiveProofVersion: null,
+        activeAttemptId: null,
+        activeTaskSessionId: null,
+        activeWorkflowRunId: null,
+        heartbeatAt: null,
+        lastSummary:
+          "Current compact authority selects 23 active specs with 14 live-ready members and a 9-spec residual frontier.",
+        rootCauseClassification: "repo-local-spec-metadata-split-frontier",
+        inputFingerprint: null,
+        errorFingerprint: null,
+        lastSupportWorkFingerprint: null,
+        ownerReason: "Stale 14/9 holder mapping.",
+        attemptedFixes: [],
+        nextStepClassification:
+          "Consume the active mixed-sku-rest-scale normalization follow-through.",
+        resumeCondition:
+          "Resume the feature holder after domain/normalize-plain-scenario-carrier-virtualmachines-agentpool-tests-virtualmachines-mixed-sku-rest-scale.ts-5044f69c or any represented residual frontier changes materially.",
+        blockedAt: null,
+        blockedReason: null,
+        waitingFor: null,
+        waitingCondition: null,
+        observedBy: null,
+        observationMethod: null,
+        nextCheckAt: null,
+        blockerOwner: "aks-explorer",
+        fallbackAt: null,
+        fallbackAction: null,
+        resumeAction:
+          "Keep the feature represented by the residual-frontier holder.",
+        blockedScope: { kind: "feature", ids: ["virtualmachines-agentpool"] },
+        blockedFingerprint: null,
+        lastCheckedAt: "2026-07-28T16:27:12.475Z",
+        evidencePaths: [
+          "evidence/archive/reconcile-virtualmachines-agentpool-stale-same-feature-holder-routing-20260728.md",
+        ],
+        reviewEvidencePath:
+          "evidence/archive/reconcile-virtualmachines-agentpool-stale-same-feature-holder-routing-20260728.md",
+        verificationBlocker: "Old 23/14/9 frontier still cited.",
+        summary:
+          "Repaired virtualmachines-agentpool app-visible compact routing to cite the current same-feature producer.",
+        updatedAt: "2026-07-28T16:27:12.475Z",
+      };
+      const featureState = {
+        loopTaskId: "aks-feature-compact-loop",
+        windowSize: 3,
+        cursor: 0,
+        features: {
+          "virtualmachines-agentpool": staleFeatureRow,
+        },
+      };
+      writeJson(resolve(appDir, ".state/feature-compact-loop/state.json"), featureState);
+      writeJson(
+        resolve(projectDir, ".state/feature-compact-loop/state.json"),
+        featureState,
+      );
+      writeJson(resolve(appDir, ".state/tasks/state.json"), {
+        version: 2,
+        project: projectId,
+        resources: {
+          [holderTaskId]: {
+            metadata: { id: holderTaskId, generation: 2, resourceVersion: 9 },
+            spec: {
+              parentId: "group/feature-compact",
+              owner: "aks-explorer",
+              outcome:
+                "Preserve the exact virtualmachines-agentpool compact residual frontier at 23 selected / 13 live-ready / 10 residual.",
+              acceptance: [
+                "Preserve the current target residual frontier explicitly.",
+              ],
+              mode: "maintain",
+              input: {
+                featureKey: "virtualmachines-agentpool",
+              },
+            },
+            status: {
+              observedGeneration: 2,
+              phase: "waiting",
+              updatedAt: "2026-07-29T03:34:39.438Z",
+              conditionIds: [conditionId],
+              summary:
+                "The reclassification publish is already integrated and the compact artifacts now truthfully preserve the 23 selected / 13 live-ready / 10 residual virtualmachines-agentpool frontier. Keep this holder waiting only for the exact mixed-sku-upgrade master-validation recovery task to converge with a later current-main pass before any same-surface frontier change is reconsidered.",
+              evidence: [
+                "evidence/archive/reconcile-virtualmachines-agentpool-mixed-sku-upgrade-frontier-20260729.md",
+                "features/virtualmachines-agentpool/compact/staging.summary.md now reports 23 selected / 13 live-ready / 10 residual.",
+              ],
+            },
+          },
+        },
+        conditions: {
+          [conditionId]: {
+            metadata: { id: conditionId, generation: 1, resourceVersion: 1 },
+            spec: {
+              type: "task-field",
+              subject:
+                "task:domain/master-validation-failure/spec.virtualmachines.mixed-sku-upgrade/1f5d75c79e520c91b41c",
+              expected: {
+                field: "completedAt",
+                notEquals: null,
+              },
+            },
+          },
+        },
+        attempts: {},
+      });
+
+      const result = await routeAksEvent(
+        {
+          appPath: (path = ".") => resolve(appDir, path),
+          emit: (value: Record<string, unknown>) => emitted.push(value),
+        } as never,
+        {
+          type: "project.task.reconciled",
+          target: {
+            project: projectId,
+            taskId: holderTaskId,
+          },
+          data: {
+            project: projectId,
+            taskId: holderTaskId,
+            disposition: "waiting",
+          },
+        },
+      );
+
+      expect(result).toMatchObject({
+        featureCompactProjection: {
+          changed: true,
+          taskId: holderTaskId,
+          featureKey: "virtualmachines-agentpool",
+          conditionId,
+        },
+      });
+      expect(emitted).toEqual([]);
+
+      const appState = readJson(
+        resolve(appDir, ".state/feature-compact-loop/state.json"),
+      );
+      const projectState = readJson(
+        resolve(projectDir, ".state/feature-compact-loop/state.json"),
+      );
+      for (const state of [appState, projectState]) {
+        expect(state.features["virtualmachines-agentpool"]).toMatchObject({
+          status: "blocked",
+          retryable: false,
+          taskId: holderTaskId,
+          frontierTaskIds: [holderTaskId],
+          blockedReason:
+            "The reclassification publish is already integrated and the compact artifacts now truthfully preserve the 23 selected / 13 live-ready / 10 residual virtualmachines-agentpool frontier. Keep this holder waiting only for the exact mixed-sku-upgrade master-validation recovery task to converge with a later current-main pass before any same-surface frontier change is reconsidered.",
+          waitingCondition: conditionId,
+          waitingFor: {
+            type: "task-field",
+            taskId:
+              "domain/master-validation-failure/spec.virtualmachines.mixed-sku-upgrade/1f5d75c79e520c91b41c",
+            field: "completedAt",
+            notEquals: null,
+            representedTaskIds: [
+              "domain/master-validation-failure/spec.virtualmachines.mixed-sku-upgrade/1f5d75c79e520c91b41c",
+            ],
+          },
+          ownerReason:
+            "Current task hold-compact-virtualmachines-agentpool-split-residual-frontier-5044f69c-20260728 is the exact feature-level compact holder. The reclassification publish is already integrated and the compact artifacts now truthfully preserve the 23 selected / 13 live-ready / 10 residual virtualmachines-agentpool frontier. Keep this holder waiting only for the exact mixed-sku-upgrade master-validation recovery task to converge with a later current-main pass before any same-surface frontier change is reconsidered.",
+          attemptedFixes: [
+            "Projected hold-compact-virtualmachines-agentpool-split-residual-frontier-5044f69c-20260728 into the feature-compact ledger and rewrote current blocked-state text to the exact remaining wake. The reclassification publish is already integrated and the compact artifacts now truthfully preserve the 23 selected / 13 live-ready / 10 residual virtualmachines-agentpool frontier. Keep this holder waiting only for the exact mixed-sku-upgrade master-validation recovery task to converge with a later current-main pass before any same-surface frontier change is reconsidered.",
+          ],
+          nextStepClassification:
+            "Preserve the current feature-level compact holder and wait only for the exact wait for domain/master-validation-failure/spec.virtualmachines.mixed-sku-upgrade/1f5d75c79e520c91b41c to report completedAt != null before reconsidering same-surface frontier changes.",
+          resumeAction:
+            "Keep the feature represented by hold-compact-virtualmachines-agentpool-split-residual-frontier-5044f69c-20260728 while the exact wait for domain/master-validation-failure/spec.virtualmachines.mixed-sku-upgrade/1f5d75c79e520c91b41c to report completedAt != null remains the exact wake.",
+          resumeCondition:
+            "Resume when domain/master-validation-failure/spec.virtualmachines.mixed-sku-upgrade/1f5d75c79e520c91b41c reports completedAt != null.",
+          verificationBlocker:
+            "Do not rerun the unchanged whole package. The reclassification publish is already integrated and the compact artifacts now truthfully preserve the 23 selected / 13 live-ready / 10 residual virtualmachines-agentpool frontier. Keep this holder waiting only for the exact mixed-sku-upgrade master-validation recovery task to converge with a later current-main pass before any same-surface frontier change is reconsidered.",
+          lastCheckedAt: "2026-07-29T03:34:39.438Z",
+          updatedAt: "2026-07-29T03:34:39.438Z",
+          reviewEvidencePath:
+            "evidence/archive/reconcile-virtualmachines-agentpool-mixed-sku-upgrade-frontier-20260729.md",
+        });
+        expect(state.features["virtualmachines-agentpool"].evidencePaths).toEqual(
+          expect.arrayContaining([
+            "evidence/archive/reconcile-virtualmachines-agentpool-stale-same-feature-holder-routing-20260728.md",
+            "evidence/archive/reconcile-virtualmachines-agentpool-mixed-sku-upgrade-frontier-20260729.md",
+          ]),
+        );
+      }
+    } finally {
+      rmSync(rootDir, { recursive: true, force: true });
+    }
+  });
+
   test("stops waiting-frontier continuation when the agent applied no actions", async () => {
     const emitted: Record<string, unknown>[] = [];
     const result = await routeAksEvent(

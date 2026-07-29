@@ -27,6 +27,7 @@ import {
   standingLoopIntent,
 } from "./task-loops.js";
 import { syncSpecLiveProof } from "./agents/app-ops/workflows/lib/spec-live-proof-sync.js";
+import { syncFeatureCompactProjection } from "./agents/app-ops/workflows/lib/feature-compact-projection-sync.js";
 import { syncOwnerVisibleReadout } from "./agents/app-ops/workflows/lib/owner-visible-readout-sync.js";
 import {
   readCampaignReceipt,
@@ -1901,6 +1902,9 @@ export async function routeAksEvent(
     const specProof = reconciledTaskId
       ? syncSpecLiveProof(appDir, reconciledTaskId)
       : { changed: false };
+    const featureCompactProjection = reconciledTaskId
+      ? syncFeatureCompactProjection(appDir, reconciledTaskId)
+      : { changed: false };
     const wake = loopRefillWakeForTaskEvent(appDir, event);
     if (wake) ctx.emit(wake);
     const actionsApplied = Array.isArray(details.actionsApplied)
@@ -2109,6 +2113,7 @@ export async function routeAksEvent(
       taskStateWaitReplay: taskStateWaitReplays.length > 0,
       taskStateWaitReplayTargets: taskStateWaitReplays,
       specProof,
+      featureCompactProjection,
     };
   }
   if (event.type === "aks.pipeline.check") return observeAksPipelines(ctx);
