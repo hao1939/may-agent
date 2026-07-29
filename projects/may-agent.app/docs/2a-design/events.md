@@ -126,6 +126,11 @@ Only a component taking responsibility reports acceptance:
 - receiving human/channel adapter;
 - queryable owner inbox.
 
+A project app selected as the direct consumer does not also emit
+`owner.inbox.reviewed`. That review is reserved for work actually accepted by
+the owner-inbox fallback; using it to acknowledge direct lifecycle facts can
+feed those facts back into task reconciliation.
+
 Observation and outcome events such as daemon heartbeats, workflow dispatch
 facts, evaluator results, routed metric feedback, and review records are
 accepted directly by the evidence projection. An `owner` on those facts is
