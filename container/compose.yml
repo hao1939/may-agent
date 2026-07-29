@@ -20,6 +20,7 @@ services:
       - "${WEB_PORT:-8080}:8080"
     volumes:
       - /app:/app
+      - /home/hao/.codex:/home/hao/.codex:ro
       - /home/hao/aks-rp:/app/sources/aks-rp:ro
     environment:
       - INSTANCE=${INSTANCE:-background}
