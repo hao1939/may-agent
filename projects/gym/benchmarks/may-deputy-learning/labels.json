@@ -24,25 +24,25 @@
       "approved_at": "2026-07-28T15:40:00Z"
     },
     "may-learn-require-terminal-proof-before-completion": {
-      "status": "draft",
+      "status": "approved",
       "source": "codex-strong-signal-cluster",
       "rationale": "Workflow completion, packets, summaries, and accepted delivery are progress evidence, but May should require the declared terminal outcome before reporting completion.",
-      "approved_by": null,
-      "approved_at": null
+      "approved_by": "hao",
+      "approved_at": "2026-07-29T03:25:43Z"
     },
     "may-learn-repair-ownerless-wait": {
-      "status": "draft",
+      "status": "approved",
       "source": "codex-strong-signal-cluster",
       "rationale": "A wait without an owner, exact future fact, resume path, or fallback is stalled work. May should restore accountable forward motion without creating a duplicate lifecycle or escalating prematurely.",
-      "approved_by": null,
-      "approved_at": null
+      "approved_by": "hao",
+      "approved_at": "2026-07-29T03:25:43Z"
     },
     "may-learn-keep-completion-judgment-with-owner": {
-      "status": "draft",
+      "status": "approved",
       "source": "codex-strong-signal-cluster",
       "rationale": "Code may measure and route deterministic facts, but the accountable owner should judge contextual task completion from acceptance and terminal evidence.",
-      "approved_by": null,
-      "approved_at": null
+      "approved_by": "hao",
+      "approved_at": "2026-07-29T03:25:43Z"
     }
   }
 }

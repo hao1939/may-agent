@@ -131,7 +131,7 @@ describe("May learning registry", () => {
     ]);
   });
 
-  test("combines approved and draft system-deputy cases into one review fingerprint", () => {
+  test("combines approved system-deputy cases into one review fingerprint", () => {
     const review = buildLearningTrackReview(
       gymRoot,
       "system-deputy-operations",
