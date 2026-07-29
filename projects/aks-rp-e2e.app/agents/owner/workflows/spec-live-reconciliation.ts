@@ -48,7 +48,7 @@ export const terminalDispositionSourceRepairInstruction =
 export const acceptedLiveProofSourceInstruction =
   "When this exact run proves the current source passes and hard live-proof validation found no structural gap, return accepted-pass without editing or committing tracked source. A checked-in ready posture, an older accepted run, or missing latestLiveResult fields is not a model defect at this point: the app projects the newly accepted proof after the task receipt is persisted. Do not rewrite the spec, model, generated views, test assertions, sourceVersion, observedAt, statusReason, nextAction, resumeCondition, evidence memo, or equivalent bookkeeping merely to record this successful run. Return committed only when the run exposes an actual behavior or contract defect that requires changed source and a fresh exact run, and cite that defect. When the run reports test_not_implemented or partial live coverage, changing only diagnostics, messages, metadata, or static checks is not a runnable repair: implement the missing live behavior before setting liveReady=true, or return the truthful terminal disposition, exact external wait, or ownership escalation.";
 export const directVitestCompatibilityInstruction =
-  "ADO loads a direct scenario .test.ts carrier through Vitest without guaranteeing the Bun runtime global. Validate a new or repaired direct carrier on the Vitest collection/runtime surface, not only with `bun test`; import test APIs from `vitest`, never `bun:test`; and replace runtime uses such as `Bun.spawn`, `Bun.spawnSync`, and `Bun.file` with portable Node APIs. A Bun-only passing test is not live-ready evidence. Run the normal `bun run spec <spec-id> --check` path with the task target so the runner wires exact target inputs; if a direct Vitest check also needs target inputs, read them from that exact runner target configuration. Never fabricate subscription, region, API version, Kubernetes version, or VM-size placeholders as check evidence.";
+  "ADO loads a direct scenario .test.ts carrier through Vitest without guaranteeing the Bun runtime global. Validate a new or repaired direct carrier on the Vitest collection/runtime surface, not only with `bun test`; import test APIs from `vitest`, never `bun:test`; replace runtime uses such as `Bun.spawn`, `Bun.spawnSync`, and `Bun.file` with portable Node APIs; and ensure every imported scenario library guards CLI execution with `import.meta.main` instead of calling `main()` during Vitest collection. A Bun-only passing test is not live-ready evidence. Run the normal `bun run spec <spec-id> --check` path with the task target so the runner wires exact target inputs; if a direct Vitest check also needs target inputs, read them from that exact runner target configuration. Never fabricate subscription, region, API version, Kubernetes version, or VM-size placeholders as check evidence.";
 export const exactStrictInventoryInstruction =
   "The repository-wide strict inventory is expected to exit nonzero while other rows remain. Capture and parse its JSON anyway; this leaf is clear only when its exact legacy path is absent from both guard.remainingSpecReferencedPlainScenarioUnits and guard.remainingRepoPlainScenarioFiles.";
 export const currentAdoSurfaceInstruction =
@@ -75,7 +75,7 @@ export const workflowContract: WorkflowIoContract = {
       "input.retrySourceCommit",
     ],
     description:
-      "Use only for a finite spec verification/change lifecycle that may require source mutation, exact live verification, and branch integration. target defaults to staging; standaloneBuildId selects an exact standalone RP build.",
+      "Use only for a finite spec verification/change lifecycle that may require source changes, exact live verification, and branch integration. target defaults to staging; standaloneBuildId selects an exact standalone RP build.",
   },
   output: {
     version: workflowResultVersion,
@@ -652,6 +652,58 @@ export function proofProtectedScenarioPaths(paths: string[]): string[] {
       !mergeSafeScenarioAggregatePath(path) &&
       !proofNeutralScenarioSourcePath(path),
   );
+}
+
+export function mergeAcceptedTargetAdvanceProof(input: {
+  workspaceDir: string;
+  sourceCommit: string;
+  targetRef: string;
+  protectedSourcePaths: string[];
+}):
+  | { state: "merged"; mergedCommit: string }
+  | {
+      state: "reverify";
+      reason:
+        "merge-conflict" | "protected-path-changed" | "merge-commit-failed";
+    } {
+  const merge = git(
+    input.workspaceDir,
+    ["merge", "--no-ff", "--no-commit", input.targetRef],
+    true,
+  );
+  if (merge.status !== 0) {
+    git(input.workspaceDir, ["merge", "--abort"], true);
+    return { state: "reverify", reason: "merge-conflict" };
+  }
+
+  const changedTestedPath = input.protectedSourcePaths.length
+    ? git(
+        input.workspaceDir,
+        [
+          "diff",
+          "--quiet",
+          input.sourceCommit,
+          "--",
+          ...input.protectedSourcePaths,
+        ],
+        true,
+      ).status
+    : 0;
+  if (changedTestedPath !== 0) {
+    git(input.workspaceDir, ["merge", "--abort"], true);
+    return { state: "reverify", reason: "protected-path-changed" };
+  }
+
+  const mergeCommit = git(input.workspaceDir, ["commit", "--no-edit"], true);
+  if (mergeCommit.status !== 0) {
+    git(input.workspaceDir, ["merge", "--abort"], true);
+    return { state: "reverify", reason: "merge-commit-failed" };
+  }
+
+  return {
+    state: "merged",
+    mergedCommit: git(input.workspaceDir, ["rev-parse", "HEAD"]).stdout,
+  };
 }
 
 export function targetAdvanceProofDecisionProblem(
@@ -3933,6 +3985,7 @@ export async function reconcileSpecLive(
           : `Current task source ${sourceCommit} still matches integration authority.`,
         "Treat the appended Trigger Event as hot evidence, not merely as a wake. If it reports an exact passing pipeline.spec.observed for this task branch at a different source commit, inspect that tested commit against current HEAD and current integration authority. Restore the exact tested commit only when doing so preserves every required same-task change; otherwise keep the newer source and require a fresh exact run. Equivalent file content alone is not exact source proof.",
         "Inspect the original task, current spec status, model, direct carrier, nearby good/bad examples, and prior evidence. Decide whether this exact source is genuinely ready for live execution.",
+        "Before setting liveReady=true, compare every claim assertion ID declared by the exact spec with the IDs the execute-mode carrier will emit. A local check-mode pass is insufficient when it does not exercise that mapping; repair the mapping and add a scoped assertion-contract check when the mapping is programmatic.",
         "If a bounded repo change is needed, make it, run scoped local checks, commit it, leave the worktree clean, and return decision=committed.",
         directVitestCompatibilityInstruction,
         currentAdoSurfaceInstruction,
@@ -4553,14 +4606,14 @@ export async function reconcileSpecLive(
           const directScenarioNormalization =
             normalizationInput?.loopId === "scenario-normalization";
           const mergeBase = git(
-            repoDir,
+            workspaceDir,
             ["merge-base", sourceCommit, targetRef],
             true,
           );
           const sourcePathResult =
             mergeBase.status === 0
               ? git(
-                  repoDir,
+                  workspaceDir,
                   ["diff", "--name-only", mergeBase.stdout, sourceCommit, "--"],
                   true,
                 )
@@ -4568,7 +4621,7 @@ export async function reconcileSpecLive(
           const targetPathResult =
             mergeBase.status === 0
               ? git(
-                  repoDir,
+                  workspaceDir,
                   ["diff", "--name-only", mergeBase.stdout, targetRef, "--"],
                   true,
                 )
@@ -4586,119 +4639,88 @@ export async function reconcileSpecLive(
           );
           const knowledgeModelStable =
             !targetChangesKnowledgeModel ||
-            (directScenarioNormalization &&
-              knowledgeModelStableForSpec({
-                repoDir,
-                sourceCommit,
-                targetCommit: targetRef,
-                specId,
-              }));
+            knowledgeModelStableForSpec({
+              repoDir: workspaceDir,
+              sourceCommit,
+              targetCommit: targetRef,
+              specId,
+            });
           const protectedSourcePaths = proofProtectedScenarioPaths(sourcePaths);
           const protectedSourcePathSet = new Set(protectedSourcePaths);
           const overlappingProtectedPaths = targetPaths.filter((path) =>
             protectedSourcePathSet.has(path),
           );
-          let proofPreserving = false;
-          if (directScenarioNormalization) {
-            const judgmentHead = git(workspaceDir, [
-              "rev-parse",
-              "HEAD",
-            ]).stdout;
-            const targetAdvanceJudgment = await askAgent(
+          const judgmentHead = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+          const targetAdvanceJudgment = await askAgent(
+            ctx,
+            [
+              `${specId} passed exact live run ${runId} at ${sourceCommit}, and current ${targetRef} advanced to ${git(workspaceDir, ["rev-parse", targetRef]).stdout}.`,
+              "Judge whether the exact live proof still applies after the intervening target changes. Inspect the current Git diff and task evidence yourself; the path lists below are collected facts, not a verdict.",
+              `Merge base: ${mergeBase.status === 0 ? mergeBase.stdout : "unavailable"}`,
+              `Task source paths: ${sourcePaths.join(", ") || "none"}`,
+              `Intervening target paths: ${targetPaths.join(", ") || "none"}`,
+              `Protected-path overlap: ${overlappingProtectedPaths.join(", ") || "none"}`,
+              `Exact-spec knowledge-model projection stable: ${String(knowledgeModelStable)}`,
+              "The target is expected not to contain the task source changes before integration. Its old carrier, old probeRef, or missing task metadata is not an intervening change and must not be used as proof invalidation.",
+              "Judge only changes introduced on the target after the merge base, represented by Intervening target paths. The task source paths are the tested patch that this workflow will merge.",
+              "When protected-path overlap is empty and the exact-spec knowledge projection is stable, return accepted-pass unless one listed intervening target path changes a concrete shared runtime, runner, helper, or expectation used by this exact proof; name that dependency in evidence.",
+              "Checked-in compact plans and diagnostics do not affect a single-spec live proof unless current execution source actually reads them.",
+              "Return accepted-pass only when the tested behavior and declared expectations remain valid. Leave source unchanged; code will merge and independently reject any change to a tested protected path.",
+              "Return test-current when any intervening change can affect this proof; the workflow will refresh the candidate and queue a fresh exact run.",
+              "Do not edit, commit, merge, push, queue ADO, create a task, or edit app state.",
+              "Task:",
+              ctx.task,
+            ].join("\n\n"),
+            {
+              scenarioNormalization: directScenarioNormalization,
+              continueDomainWorkOnValidation: true,
+              validateDecision: targetAdvanceProofDecisionProblem,
+            },
+          );
+          if (
+            git(workspaceDir, ["rev-parse", "HEAD"]).stdout !== judgmentHead ||
+            cleanWorkspace(workspaceDir)
+          ) {
+            return ownerResult(
               ctx,
-              [
-                `${specId} passed exact live run ${runId} at ${sourceCommit}, and current ${targetRef} advanced to ${git(repoDir, ["rev-parse", targetRef]).stdout}.`,
-                "Judge whether the exact live proof still applies after the intervening target changes. Inspect the current Git diff and task evidence yourself; the path lists below are collected facts, not a verdict.",
-                `Merge base: ${mergeBase.status === 0 ? mergeBase.stdout : "unavailable"}`,
-                `Task source paths: ${sourcePaths.join(", ") || "none"}`,
-                `Intervening target paths: ${targetPaths.join(", ") || "none"}`,
-                `Protected-path overlap: ${overlappingProtectedPaths.join(", ") || "none"}`,
-                `Exact-spec knowledge-model projection stable: ${String(knowledgeModelStable)}`,
-                "Return accepted-pass only when the tested behavior and declared expectations remain valid. Leave source unchanged; code will merge and independently reject any change to a tested protected path.",
-                "Return test-current when any intervening change can affect this proof; the workflow will refresh the candidate and queue a fresh exact run.",
-                "Do not edit, commit, merge, push, queue ADO, create a task, or edit app state.",
-                "Task:",
-                ctx.task,
-              ].join("\n\n"),
-              {
-                scenarioNormalization: true,
-                continueDomainWorkOnValidation: true,
-                validateDecision: targetAdvanceProofDecisionProblem,
-              },
+              "Target-advance proof review changed the task worktree; integration was refused.",
+              [...targetAdvanceJudgment.evidence, `workspace:${workspaceDir}`],
             );
-            if (
-              git(workspaceDir, ["rev-parse", "HEAD"]).stdout !==
-                judgmentHead ||
-              cleanWorkspace(workspaceDir)
-            ) {
-              return ownerResult(
-                ctx,
-                "Target-advance proof review changed the task worktree; integration was refused.",
-                [
-                  ...targetAdvanceJudgment.evidence,
-                  `workspace:${workspaceDir}`,
-                ],
-              );
-            }
-            targetAdvanceEvidence = targetAdvanceJudgment.evidence;
-            proofPreserving =
-              targetAdvanceJudgment.decision === "accepted-pass";
           }
-          if (proofPreserving) {
-            const merge = git(
+          targetAdvanceEvidence = targetAdvanceJudgment.evidence;
+          if (targetAdvanceJudgment.decision === "accepted-pass") {
+            const mergedProof = mergeAcceptedTargetAdvanceProof({
               workspaceDir,
-              ["merge", "--no-ff", "--no-commit", targetRef],
-              true,
-            );
-            if (merge.status === 0) {
-              const changedTestedPath = protectedSourcePaths.length
-                ? git(
-                    workspaceDir,
-                    [
-                      "diff",
-                      "--quiet",
-                      sourceCommit,
-                      "--",
-                      ...protectedSourcePaths,
-                    ],
-                    true,
-                  ).status
-                : 0;
-              if (changedTestedPath === 0) {
-                const mergeCommit = git(
-                  workspaceDir,
-                  ["commit", "--no-edit"],
-                  true,
-                );
-                if (mergeCommit.status === 0) {
-                  const push = git(
-                    workspaceDir,
-                    ["push", "origin", `HEAD:${targetBranch}`],
-                    true,
-                  );
-                  if (push.status !== 0) {
-                    lastPushError = push.stderr || push.stdout;
-                    continue;
-                  }
-                  git(repoDir, ["fetch", "origin", targetBranch]);
-                  if (
-                    git(
-                      repoDir,
-                      ["merge-base", "--is-ancestor", sourceCommit, targetRef],
-                      true,
-                    ).status === 0
-                  ) {
-                    integratedCommit = git(repoDir, [
-                      "rev-parse",
-                      targetRef,
-                    ]).stdout;
-                    break;
-                  }
-                  continue;
-                }
+              sourceCommit,
+              targetRef,
+              protectedSourcePaths,
+            });
+            if (mergedProof.state === "merged") {
+              const push = git(
+                workspaceDir,
+                ["push", "origin", `HEAD:${targetBranch}`],
+                true,
+              );
+              if (push.status !== 0) {
+                lastPushError = push.stderr || push.stdout;
+                continue;
               }
+              git(repoDir, ["fetch", "origin", targetBranch]);
+              if (
+                git(
+                  repoDir,
+                  ["merge-base", "--is-ancestor", sourceCommit, targetRef],
+                  true,
+                ).status === 0
+              ) {
+                integratedCommit = git(repoDir, [
+                  "rev-parse",
+                  targetRef,
+                ]).stdout;
+                break;
+              }
+              continue;
             }
-            git(workspaceDir, ["merge", "--abort"], true);
           }
 
           if (directScenarioNormalization) {

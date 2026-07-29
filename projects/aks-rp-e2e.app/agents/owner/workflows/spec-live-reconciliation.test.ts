@@ -42,6 +42,7 @@ import {
   isNonFastForwardPushFailure,
   liveDispatchTargetRefreshRequired,
   matchingTaskRuns,
+  mergeAcceptedTargetAdvanceProof,
   parseTaskPayload,
   pipelineWaitCondition,
   pipelineRunState,
@@ -1298,6 +1299,50 @@ describe("spec-live-reconciliation workflow", () => {
     }
   });
 
+  test("accepts a multi-spec terminal disposition when structured fields agree", () => {
+    const root = mkdtempSync(join(tmpdir(), "scenario-terminal-multi-"));
+    try {
+      const specsDir = join(root, "features", "sample", "specs");
+      mkdirSync(specsDir, { recursive: true });
+      writeFileSync(
+        join(specsDir, "first.json"),
+        JSON.stringify({
+          id: "spec.sample.first",
+          status: "blocked",
+          specState: "reviewed-exception",
+        }),
+      );
+      writeFileSync(
+        join(specsDir, "second.json"),
+        JSON.stringify({
+          id: "spec.sample.second",
+          status: "blocked",
+          specState: "reviewed-exception",
+        }),
+      );
+      const input = {
+        specId: "spec.sample.first,spec.sample.second",
+        specIds: ["spec.sample.first", "spec.sample.second"],
+      };
+      const accepted = specTerminalDispositionCheck(root, input, {
+        specId: "spec.sample.first,spec.sample.second",
+        status: "blocked",
+        specState: "reviewed-exception",
+      });
+      expect(accepted.accepted).toBe(true);
+      expect(accepted.evidence).toContain(
+        "terminal-disposition-spec:spec.sample.first,spec.sample.second",
+      );
+      expect(
+        accepted.evidence.filter((item) =>
+          item.startsWith("terminal-disposition-spec-path:"),
+        ),
+      ).toHaveLength(2);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   test("rejects a terminal disposition bound to another staging region", () => {
     const root = mkdtempSync(join(tmpdir(), "scenario-terminal-target-"));
     try {
@@ -1347,6 +1392,51 @@ describe("spec-live-reconciliation workflow", () => {
           location: "westus2",
         }).accepted,
       ).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("accepts a multi-spec staging terminal disposition when target markers agree", () => {
+    const root = mkdtempSync(join(tmpdir(), "scenario-terminal-target-multi-"));
+    try {
+      const specsDir = join(root, "features", "sample", "specs");
+      mkdirSync(specsDir, { recursive: true });
+      writeFileSync(
+        join(specsDir, "first.json"),
+        JSON.stringify({
+          id: "spec.sample.first",
+          status: "blocked",
+          specState: "reviewed-exception",
+          statusReason:
+            "Wait for pathId ops-staging-westus2-sample-first-followup.",
+        }),
+      );
+      writeFileSync(
+        join(specsDir, "second.json"),
+        JSON.stringify({
+          id: "spec.sample.second",
+          status: "blocked",
+          specState: "reviewed-exception",
+          resumeCondition:
+            "Resume after waitId ops-staging-westus2-sample-second-followup.",
+        }),
+      );
+      const input = {
+        specId: "spec.sample.first,spec.sample.second",
+        specIds: ["spec.sample.first", "spec.sample.second"],
+      };
+      const accepted = specTerminalTargetCheck(root, input, {
+        name: "staging",
+        location: "westus2",
+      });
+      expect(accepted.accepted).toBe(true);
+      expect(accepted.evidence).toContain(
+        "terminal-disposition-target:staging",
+      );
+      expect(accepted.evidence).toContain(
+        "terminal-disposition-location:westus2",
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -2083,6 +2173,210 @@ describe("spec-live-reconciliation workflow", () => {
     ).toBe("reverify-updated-source");
   });
 
+  test("merges a workload-health-style direct candidate after an unrelated target advance", () => {
+    const root = mkdtempSync(join(tmpdir(), "direct-proof-preserve-"));
+    const remote = join(root, "remote.git");
+    const seed = join(root, "seed");
+    const workspace = join(root, "workspace");
+    const run = (cwd: string, args: string[]) =>
+      execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
+    const workloadPaths = [
+      "features/workload-health/specs/system-components-readiness.json",
+      "features/workload-health/tests/system-components-readiness.test.ts",
+      "replays/workload-health-system-components-readiness.ts",
+      "features/workload-health/docs/system-components-readiness.md",
+    ];
+
+    try {
+      mkdirSync(seed);
+      run(root, ["init", "--bare", remote]);
+      run(seed, ["init"]);
+      run(seed, ["config", "user.email", "test@example.com"]);
+      run(seed, ["config", "user.name", "Test"]);
+      writeFileSync(join(seed, "base.txt"), "base\n");
+      run(seed, ["add", "base.txt"]);
+      run(seed, ["commit", "-m", "base"]);
+      run(seed, ["branch", "-M", "dev"]);
+      run(seed, ["remote", "add", "origin", remote]);
+      run(seed, ["push", "origin", "dev"]);
+
+      run(seed, ["checkout", "-b", "task/workload-health"]);
+      for (const [index, file] of workloadPaths.entries()) {
+        mkdirSync(join(seed, file.split("/").slice(0, -1).join("/")), {
+          recursive: true,
+        });
+        writeFileSync(
+          join(seed, file),
+          `workload-health bounded patch ${index + 1}\n`,
+        );
+      }
+      run(seed, ["add", ...workloadPaths]);
+      run(seed, ["commit", "-m", "bounded workload-health patch"]);
+      const sourceCommit = run(seed, ["rev-parse", "HEAD"]);
+      run(seed, ["push", "origin", "task/workload-health"]);
+
+      run(seed, ["checkout", "dev"]);
+      mkdirSync(join(seed, "docs"), { recursive: true });
+      writeFileSync(join(seed, "docs", "unrelated.md"), "unrelated advance\n");
+      run(seed, ["add", "docs/unrelated.md"]);
+      run(seed, ["commit", "-m", "unrelated dev advance"]);
+      run(seed, ["push", "origin", "dev"]);
+
+      run(root, ["clone", remote, workspace]);
+      run(workspace, ["checkout", "task/workload-health"]);
+      run(workspace, ["config", "user.email", "test@example.com"]);
+      run(workspace, ["config", "user.name", "Test"]);
+      run(workspace, ["fetch", "origin", "dev"]);
+
+      const result = mergeAcceptedTargetAdvanceProof({
+        workspaceDir: workspace,
+        sourceCommit,
+        targetRef: "origin/dev",
+        protectedSourcePaths: workloadPaths,
+      });
+
+      expect(result.state).toBe("merged");
+      if (result.state !== "merged") throw new Error(result.reason);
+      expect(
+        spawnSync(
+          "git",
+          ["merge-base", "--is-ancestor", sourceCommit, "HEAD"],
+          {
+            cwd: workspace,
+          },
+        ).status,
+      ).toBe(0);
+      expect(
+        spawnSync(
+          "git",
+          ["merge-base", "--is-ancestor", "origin/dev", "HEAD"],
+          {
+            cwd: workspace,
+          },
+        ).status,
+      ).toBe(0);
+      expect(
+        run(workspace, ["diff", "--name-only", sourceCommit, "HEAD", "--"]),
+      ).toBe("docs/unrelated.md");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("requires a fresh proof when target advance changes a protected direct path", () => {
+    const root = mkdtempSync(join(tmpdir(), "direct-proof-overlap-"));
+    const remote = join(root, "remote.git");
+    const seed = join(root, "seed");
+    const workspace = join(root, "workspace");
+    const run = (cwd: string, args: string[]) =>
+      execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
+    const protectedPath =
+      "features/workload-health/tests/system-components-readiness.test.ts";
+
+    try {
+      mkdirSync(join(seed, "features/workload-health/tests"), {
+        recursive: true,
+      });
+      run(root, ["init", "--bare", remote]);
+      run(seed, ["init"]);
+      run(seed, ["config", "user.email", "test@example.com"]);
+      run(seed, ["config", "user.name", "Test"]);
+      writeFileSync(join(seed, protectedPath), "base\n");
+      run(seed, ["add", protectedPath]);
+      run(seed, ["commit", "-m", "base"]);
+      run(seed, ["branch", "-M", "dev"]);
+      run(seed, ["remote", "add", "origin", remote]);
+      run(seed, ["push", "origin", "dev"]);
+
+      run(seed, ["checkout", "-b", "task/workload-health"]);
+      writeFileSync(join(seed, protectedPath), "task\nbase\n");
+      run(seed, ["add", protectedPath]);
+      run(seed, ["commit", "-m", "task patch"]);
+      const sourceCommit = run(seed, ["rev-parse", "HEAD"]);
+      run(seed, ["push", "origin", "task/workload-health"]);
+
+      run(seed, ["checkout", "dev"]);
+      writeFileSync(join(seed, protectedPath), "base\ndev change\n");
+      run(seed, ["add", protectedPath]);
+      run(seed, ["commit", "-m", "protected path advanced on dev"]);
+      run(seed, ["push", "origin", "dev"]);
+
+      run(root, ["clone", remote, workspace]);
+      run(workspace, ["checkout", "task/workload-health"]);
+      run(workspace, ["config", "user.email", "test@example.com"]);
+      run(workspace, ["config", "user.name", "Test"]);
+      run(workspace, ["fetch", "origin", "dev"]);
+
+      expect(
+        mergeAcceptedTargetAdvanceProof({
+          workspaceDir: workspace,
+          sourceCommit,
+          targetRef: "origin/dev",
+          protectedSourcePaths: [protectedPath],
+        }),
+      ).toEqual({ state: "reverify", reason: "protected-path-changed" });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("requires a fresh proof when target advance creates a direct merge conflict", () => {
+    const root = mkdtempSync(join(tmpdir(), "direct-proof-conflict-"));
+    const remote = join(root, "remote.git");
+    const seed = join(root, "seed");
+    const workspace = join(root, "workspace");
+    const run = (cwd: string, args: string[]) =>
+      execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
+    const protectedPath =
+      "features/workload-health/tests/system-components-readiness.test.ts";
+
+    try {
+      mkdirSync(join(seed, "features/workload-health/tests"), {
+        recursive: true,
+      });
+      run(root, ["init", "--bare", remote]);
+      run(seed, ["init"]);
+      run(seed, ["config", "user.email", "test@example.com"]);
+      run(seed, ["config", "user.name", "Test"]);
+      writeFileSync(join(seed, protectedPath), "value=base\n");
+      run(seed, ["add", protectedPath]);
+      run(seed, ["commit", "-m", "base"]);
+      run(seed, ["branch", "-M", "dev"]);
+      run(seed, ["remote", "add", "origin", remote]);
+      run(seed, ["push", "origin", "dev"]);
+
+      run(seed, ["checkout", "-b", "task/workload-health"]);
+      writeFileSync(join(seed, protectedPath), "value=task\n");
+      run(seed, ["add", protectedPath]);
+      run(seed, ["commit", "-m", "task patch"]);
+      const sourceCommit = run(seed, ["rev-parse", "HEAD"]);
+      run(seed, ["push", "origin", "task/workload-health"]);
+
+      run(seed, ["checkout", "dev"]);
+      writeFileSync(join(seed, protectedPath), "value=dev\n");
+      run(seed, ["add", protectedPath]);
+      run(seed, ["commit", "-m", "conflicting dev change"]);
+      run(seed, ["push", "origin", "dev"]);
+
+      run(root, ["clone", remote, workspace]);
+      run(workspace, ["checkout", "task/workload-health"]);
+      run(workspace, ["config", "user.email", "test@example.com"]);
+      run(workspace, ["config", "user.name", "Test"]);
+      run(workspace, ["fetch", "origin", "dev"]);
+
+      expect(
+        mergeAcceptedTargetAdvanceProof({
+          workspaceDir: workspace,
+          sourceCommit,
+          targetRef: "origin/dev",
+          protectedSourcePaths: [protectedPath],
+        }),
+      ).toEqual({ state: "reverify", reason: "merge-conflict" });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   test("does not recursively re-enter reconciliation on unchanged evidence", () => {
     const source = readFileSync(
       join(import.meta.dir, "spec-live-reconciliation.ts"),
@@ -2128,6 +2422,20 @@ describe("spec-live-reconciliation workflow", () => {
         liveReady: true,
       }),
     ).toContain("bounded judgment only");
+
+    const source = readFileSync(
+      join(import.meta.dir, "spec-live-reconciliation.ts"),
+      "utf8",
+    );
+    expect(source).toContain(
+      "The target is expected not to contain the task source changes before integration.",
+    );
+    expect(source).toContain(
+      "Judge only changes introduced on the target after the merge base",
+    );
+    expect(source).toContain(
+      "Checked-in compact plans and diagnostics do not affect a single-spec live proof",
+    );
   });
 
   test("compares only the exact spec knowledge-model projection", () => {
