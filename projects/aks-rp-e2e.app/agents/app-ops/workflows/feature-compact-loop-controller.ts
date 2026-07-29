@@ -164,8 +164,9 @@ function desiredTaskId(
   featureKey: string,
   item: FeatureCompactItemState,
   revision: string,
+  proofContext: { appDir: string; projectDir: string; statePath: string },
 ): string {
-  if (item.status === "done" && !hasDurableLiveProof(item)) {
+  if (item.status === "done" && !hasDurableLiveProof(item, proofContext)) {
     return proofRepairId(featureKey, revision);
   }
   if (item.status !== "done" && hasStructuredRepresentation(item)) {
@@ -254,11 +255,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   });
   const graph = readGraph(appDir);
   const taskState = readTaskState(appDir);
+  const proofContext = { appDir, projectDir, statePath };
   const historicalIds = new Set(historicalTaskIds(taskState));
   const remaining = Object.entries(state.features)
     .filter(
       ([, item]) =>
-        !hasDurableLiveProof(item) && !isAcceptedTerminalResidue(item),
+        !hasDurableLiveProof(item, proofContext) &&
+        !isAcceptedTerminalResidue(item),
     )
     .sort(([left, leftItem], [right, rightItem]) => {
       const leftRepair = leftItem.status === "done" ? 0 : 1;
@@ -321,12 +324,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     .slice(0, actionBudget)
     .map(([featureKey, item]) => {
       const revision = workRevision(item);
-      const missingProofFields = missingDurableLiveProofFields(item);
+      const missingProofFields = missingDurableLiveProofFields(
+        item,
+        proofContext,
+      );
       const repairsLegacyProof =
         item.status === "done" && missingProofFields.length > 0;
       const repairsRepresentation =
         item.status !== "done" && hasStructuredRepresentation(item);
-      const baseTaskId = desiredTaskId(featureKey, item, revision);
+      const baseTaskId = desiredTaskId(featureKey, item, revision, proofContext);
       const taskId = ensureFreshTaskId(baseTaskId, [
         ...(representedByFeature.get(featureKey)?.terminal ?? []),
         ...historicalIds,

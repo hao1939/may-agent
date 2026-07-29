@@ -6,7 +6,7 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, join, relative } from "node:path";
+import { basename, dirname, isAbsolute, join, relative } from "node:path";
 
 export type FeatureCompactStatus =
   "pending" | "running" | "done" | "blocked" | "error";
@@ -243,20 +243,83 @@ function normalizeExistingItem(
   };
 }
 
+export type FeatureCompactProofContext = {
+  appDir?: string;
+  projectDir?: string;
+  statePath?: string;
+};
+
+function resolveFeatureCompactProofContext(
+  context: FeatureCompactProofContext = {},
+): Required<Pick<FeatureCompactProofContext, "appDir" | "projectDir">> {
+  let { appDir, projectDir } = context;
+  const statePath = context.statePath;
+  const rootDir = statePath
+    ? dirname(dirname(dirname(statePath)))
+    : undefined;
+
+  if (!appDir && rootDir && basename(rootDir).endsWith(".app")) {
+    appDir = rootDir;
+  }
+  if (!projectDir && rootDir && !basename(rootDir).endsWith(".app")) {
+    projectDir = rootDir;
+  }
+
+  if (!projectDir && appDir && basename(appDir).endsWith(".app")) {
+    projectDir = join(dirname(appDir), basename(appDir).slice(0, -4));
+  }
+  if (!appDir && projectDir) {
+    appDir = join(dirname(projectDir), `${basename(projectDir)}.app`);
+  }
+
+  return {
+    appDir: appDir ?? "",
+    projectDir: projectDir ?? "",
+  };
+}
+
+export function resolveExistingFeatureCompactResultPath(
+  item: FeatureCompactItemState | undefined,
+  context: FeatureCompactProofContext = {},
+): string | null {
+  const lastResultPath = item?.lastResultPath;
+  if (typeof lastResultPath !== "string" || !lastResultPath.trim()) {
+    return null;
+  }
+  if (isAbsolute(lastResultPath)) {
+    return existsSync(lastResultPath) ? lastResultPath : null;
+  }
+
+  const { appDir, projectDir } = resolveFeatureCompactProofContext(context);
+  for (const candidate of [
+    appDir ? join(appDir, lastResultPath) : "",
+    projectDir ? join(projectDir, lastResultPath) : "",
+  ]) {
+    if (candidate && existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
 export function hasDurableLiveProof(
   item: FeatureCompactItemState | undefined,
+  context: FeatureCompactProofContext = {},
 ): boolean {
-  return missingDurableLiveProofFields(item).length === 0;
+  return missingDurableLiveProofFields(item, context).length === 0;
 }
 
 export function missingDurableLiveProofFields(
   item: FeatureCompactItemState | undefined,
+  context: FeatureCompactProofContext = {},
 ): string[] {
   if (!item || item.status !== "done") return ["status"];
   return [
     !item.lastWorkflowRunId ? "lastWorkflowRunId" : "",
     !item.lastLiveProofVersion ? "lastLiveProofVersion" : "",
-    !item.lastResultPath ? "lastResultPath" : "",
+    !resolveExistingFeatureCompactResultPath(item, context)
+      ? "lastResultPath"
+      : "",
   ].filter(Boolean);
 }
 
@@ -440,11 +503,15 @@ export function saveFeatureCompactLoopState(
     features: options.pruneAbsentFeatureKeys ? {} : { ...latest.features },
   };
 
+  const proofContext = resolveFeatureCompactProofContext({ statePath: path });
   for (const [featureKey, item] of Object.entries(state.features ?? {})) {
     const previous = merged.features[featureKey];
     const itemTime = Date.parse(item.updatedAt || "");
     const previousTime = Date.parse(previous?.updatedAt || "");
-    if (hasDurableLiveProof(previous) && !hasDurableLiveProof(item)) {
+    if (
+      hasDurableLiveProof(previous, proofContext) &&
+      !hasDurableLiveProof(item, proofContext)
+    ) {
       continue;
     }
     if (

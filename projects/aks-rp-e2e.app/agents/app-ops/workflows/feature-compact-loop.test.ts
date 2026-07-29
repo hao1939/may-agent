@@ -1,10 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, isAbsolute, join } from "node:path";
 import { execute } from "./feature-compact-loop-controller";
 
-async function workspace(item: Record<string, unknown>, represented = false) {
+async function workspace(
+  item: Record<string, unknown>,
+  represented = false,
+  options: { materializeResultPath?: boolean } = {},
+) {
   const root = await mkdtemp(join(tmpdir(), "compact-loop-v2-"));
   const appDir = join(root, "aks-rp-e2e.app");
   const projectDir = join(root, "aks-rp-e2e");
@@ -29,6 +33,18 @@ async function workspace(item: Record<string, unknown>, represented = false) {
       features: { networking: item },
     }),
   );
+  const resultPath =
+    typeof item.lastResultPath === "string" ? item.lastResultPath : null;
+  if (resultPath && options.materializeResultPath !== false) {
+    const resolvedPath = isAbsolute(resultPath)
+      ? resultPath
+      : join(projectDir, resultPath);
+    await mkdir(dirname(resolvedPath), { recursive: true });
+    await writeFile(
+      resolvedPath,
+      JSON.stringify({ status: "passed", runId: "test-proof" }),
+    );
+  }
   await writeFile(
     join(appDir, ".state", "tasks", "tree.json"),
     JSON.stringify({
@@ -126,6 +142,60 @@ describe("feature compact reconciliation workflow", () => {
     expect(acceptance).toContain(
       "rebind the same task to a task-worktree workflow such as domain-task-execution",
     );
+  });
+
+  test("repairs a done row when its relative result artifact is missing", async () => {
+    const ws = await workspace(
+      {
+        ...item("done"),
+        lastResultPath: "runs/missing-result.json",
+      },
+      false,
+      { materializeResultPath: false },
+    );
+
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+    expect(result).toMatchObject({
+      output: {
+        state: "converged",
+        actions: [
+          {
+            input: {
+              featureKey: "networking",
+              repair: "legacy-proof",
+              missingProofFields: ["lastResultPath"],
+            },
+          },
+        ],
+      },
+    });
+  });
+
+  test("repairs a done row when its absolute result artifact is missing", async () => {
+    const ws = await workspace(
+      {
+        ...item("done"),
+        lastResultPath: join(tmpdir(), "compact-loop-missing-proof", "result.json"),
+      },
+      false,
+      { materializeResultPath: false },
+    );
+
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+    expect(result).toMatchObject({
+      output: {
+        state: "converged",
+        actions: [
+          {
+            input: {
+              featureKey: "networking",
+              repair: "legacy-proof",
+              missingProofFields: ["lastResultPath"],
+            },
+          },
+        ],
+      },
+    });
   });
 
   test("declares bounded owner work without assigning it", async () => {
