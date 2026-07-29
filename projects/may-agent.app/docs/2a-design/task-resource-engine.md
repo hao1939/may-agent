@@ -71,6 +71,11 @@ at-least-once around restart boundaries. Duplicate wakes are expected and
 deduplicated by key, while stale claims and results are rejected by generation,
 resource version, and attempt identity.
 
+An unresolved trigger that arrives during a current attempt remains durable,
+but passive resync must not enqueue that key again until the current attempt
+ends. The completion path then replays the trigger. This preserves the wake
+without creating an active-attempt reconciliation loop.
+
 ## Authority
 
 | Surface                   | Authority                                                                                                                          |
