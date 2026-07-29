@@ -2513,9 +2513,10 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
               }
             }
           }
-          if (result !== undefined) {
-            closeInbox("app-onEvent");
-          }
+          // A matching app event selector is a direct consumer, not an owner
+          // inbox fallback. Successful direct handling must not synthesize an
+          // owner-inbox review: that review can itself satisfy task Conditions
+          // and feed lifecycle facts back into reconciliation.
         })
         .catch((err) => {
           opts.bus.emit({
