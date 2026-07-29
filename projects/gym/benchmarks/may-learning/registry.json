@@ -10,6 +10,10 @@
     {
       "id": "system-deputy-operations",
       "path": "units/system-deputy-operations/unit.json"
+    },
+    {
+      "id": "cli-worker-opinions",
+      "path": "units/cli-worker-opinions/unit.json"
     }
   ]
 }

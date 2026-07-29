@@ -208,6 +208,13 @@ Keep three content partitions:
 - **Release assessment:** withheld variants used only after the candidate is
   frozen.
 
+Practice is an execution phase, not another question set. A `practice.md` file
+explains the exercise; a guided-practice manifest tells Gym what May must
+actually do. For tool-use competencies, Gym runs May with the real tool,
+captures the lifecycle and artifacts, asks May to reflect on the result, and
+passes that experience to the candidate builder. A written answer or a mocked
+tool call cannot satisfy live practice.
+
 Do not expose release requests, expected answers, scorer tokens, or prior
 outputs to the candidate implementation agent. Include paraphrases,
 counterfactual pairs, changed entity names, and delayed retests to detect
@@ -481,6 +488,37 @@ approved competency definitions
 Practice and assessment are different phases. Feedback is allowed during
 practice and forbidden during blind assessment. A candidate that improves only
 seen questions does not pass.
+
+### Guided practice loop
+
+Each unit may add a `guided-practice.json` file. Each case states a plain
+objective, the practice task, whether it is live or simulated, the required
+terminal outcomes, and a bounded wait. The shared Gym workflow executes it; a
+new unit does not need a new workflow.
+
+For a live CLI-worker exercise, Gym requires this evidence:
+
+1. May calls `run_cli_agent`; describing the call fails practice.
+2. The durable task records `requested`, `started`, and one terminal event.
+3. May waits without treating `accepted` as completion.
+4. May reads `result.md`, `result.json`, and `events.jsonl`.
+5. May states what the result changed, what evidence it trusts, and what it
+   will do next.
+6. When the exercise is an independent opinion, May starts fresh. When it is a
+   continuation, May resumes the same native session.
+7. A retry names the failure category and changes the failed timeout, context,
+   output contract, or hypothesis. Blind repetition fails practice.
+
+Gym gives one feedback retry. It stores both attempts as learning evidence,
+including failed attempts. The candidate builder receives that record and must
+repair the mechanism behind the miss. Development and release evaluation then
+run without practice feedback or release-answer visibility.
+
+Use real Codex and Claude calls for safe review and investigation exercises.
+Keep patch work isolated and require an explicit worktree. Simulate permission,
+schema, no-output, and orphan recovery when causing the real failure would risk
+the runtime; simulation supplements live practice and never replaces the basic
+real-tool proof.
 
 ### Positive learning path
 

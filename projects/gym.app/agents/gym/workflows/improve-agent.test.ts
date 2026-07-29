@@ -143,6 +143,7 @@ describe("single agent-improvement loop", () => {
     const { targets, fingerprint } = loadCurriculumTargets(gymRoot);
     expect(fingerprint).toMatch(/^sha256:[a-f0-9]{64}$/);
     expect(targets.map(({ id }) => id)).toEqual([
+      "cli-worker-opinions",
       "initiative-and-approval",
       "system-deputy-operations",
       "system-deputy-learning-intake",
@@ -193,6 +194,7 @@ describe("single agent-improvement loop", () => {
     });
     expect(stopped.state).toBe("stopped");
     expect(visited).toEqual([
+      "cli-worker-opinions",
       "initiative-and-approval",
       "system-deputy-operations",
     ]);
@@ -237,6 +239,7 @@ describe("single agent-improvement loop", () => {
         competencies: ["authority.act-vs-approve"],
         lessonPath: "/learning/lesson.md",
         practicePath: "/learning/practice.md",
+        guidedPracticeCases: [],
         evidencePath: "/learning/evidence.jsonl",
         sourcePaths: ["/design/system-model.md"],
       },

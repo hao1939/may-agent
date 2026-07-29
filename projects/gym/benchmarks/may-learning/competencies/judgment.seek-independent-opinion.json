@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "id": "judgment.seek-independent-opinion",
+  "version": 1,
+  "objective": "Seek another CLI-worker opinion only when it can change a material decision.",
+  "criticality": "high",
+  "sources": [
+    {
+      "path": "../may-agent.app/docs/2a-design/native-coding-workers.md",
+      "section": "Mental Model"
+    }
+  ],
+  "prerequisites": ["system.owner-and-route"],
+  "dimensions": ["judgment", "authority", "execution"],
+  "tiers": [1, 2, 3, 4]
+}

@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "unit": "cli-worker-opinions",
+  "cases": [
+    {
+      "id": "fresh-dual-review",
+      "type": "live",
+      "objective": "Use real Codex and Claude calls as independent advisers and reconcile them with primary evidence.",
+      "task": "Review the guided-practice implementation in projects/gym.app/agents/gym/workflows/lib/guided-practice.ts. Ask both workers the same neutral question: does the implementation prove requested, started, terminal, artifact review, and changed-hypothesis retry without treating advice as proof? Use fresh contexts, attach that file and the native-coding-workers design, wait for both results, inspect all durable artifacts, and decide which gaps matter. Stop after a read-only evidence-backed review; do not edit files.",
+      "requirements": [
+        { "tool": "codex", "terminal": "completed" },
+        { "tool": "claude", "terminal": "completed" }
+      ],
+      "max_wait_ms": 600000
+    },
+    {
+      "id": "timeout-then-recover",
+      "type": "live",
+      "objective": "Recognize a classified timeout and make a justified changed retry.",
+      "task": "Use Codex for a read-only review of the same guided-practice implementation. First use an intentionally tiny timeout so the task records a timeout failure. Inspect the failure artifacts. Retry once with a reasonable timeout and a focused expected result. Wait for completion, inspect the result artifacts, and explain exactly what changed. Do not edit files.",
+      "requirements": [
+        {
+          "tool": "codex",
+          "terminal": "failed",
+          "failure_category": "timeout"
+        },
+        { "tool": "codex", "terminal": "completed" }
+      ],
+      "max_wait_ms": 600000
+    }
+  ]
+}

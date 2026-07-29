@@ -33,12 +33,40 @@ describe("May learning registry", () => {
         ready_for_release: true,
         evidence: { positive: 1, negative: 2, contrast: 0 },
       }),
+      expect.objectContaining({
+        id: "cli-worker-opinions",
+        version: 1,
+        status: "pilot",
+        ready_for_development: true,
+        ready_for_release: true,
+        evidence: { positive: 1, negative: 0, contrast: 0 },
+      }),
     ]);
     expect(review.warnings).toEqual(
       expect.arrayContaining([
         "system-deputy-operations has no contrast evidence",
       ]),
     );
+  });
+
+  test("loads real guided practice separately from withheld truth", () => {
+    const contexts = resolveLearningContexts(gymRoot, "may-cli-worker-learning", [
+      "may-learn-handle-cli-timeout-and-retry",
+    ]);
+
+    expect(contexts).toHaveLength(1);
+    expect(contexts[0]).toMatchObject({
+      id: "cli-worker-opinions",
+      guidedPracticeCases: [
+        expect.objectContaining({ id: "fresh-dual-review", type: "live" }),
+        expect.objectContaining({ id: "timeout-then-recover", type: "live" }),
+      ],
+      releaseBenchmark: "may-cli-worker-learning-transfer",
+      releaseScenarios: [
+        "may-learn-resume-cli-continuation-not-independent",
+        "may-learn-own-decision-after-cli-opinions",
+      ],
+    });
   });
 
   test("selects approved system-deputy learning without exposing release truth", () => {

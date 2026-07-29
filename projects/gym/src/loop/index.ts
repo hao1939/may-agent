@@ -8,6 +8,8 @@ export { buildLearningReleaseReview } from "../learning/release-review";
 export type { ExecutionResult, RunOptions, ScenarioExecutor } from "./run";
 export type { LoopRunManifest, RunComparison, StoredTrial } from "./types";
 export type {
+  GuidedPracticeCase,
+  GuidedPracticeRequirement,
   LearningReview,
   LearningUnitContext,
   LearningUnitReview,

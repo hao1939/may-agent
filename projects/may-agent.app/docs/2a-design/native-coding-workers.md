@@ -44,6 +44,20 @@ to the owner. May or the project owner still judges whether the answer is good
 enough, whether the patch should be used, and what follow-up event or task is
 needed.
 
+When the purpose is a second or third opinion, independence matters:
+
+- Follow a tool named by Hao.
+- Otherwise select an available capable worker without inventing claims about
+  vendor strengths.
+- Start a fresh native context for an independent opinion. Resume only to
+  continue the same worker's unfinished line of work.
+- Ask one neutral question and attach only the trusted evidence needed to
+  answer it. Do not give the next worker another worker's conclusion.
+- Resolve disagreement with primary evidence. A majority vote is not proof.
+- Ask for a third opinion only when the decision is material and the evidence
+  still leaves meaningful uncertainty.
+- May owns the final decision, action, and follow-through.
+
 The split is intentional:
 
 - The tool call records May's decision to delegate work; `cli.task.requested`
@@ -57,6 +71,13 @@ The split is intentional:
 May should not block inside a long Codex or Claude process. Once the tool has
 accepted the task, May can keep working while the runner tracks the native
 worker.
+
+Accepted is not completed. Before May uses a result, it waits for
+`cli.task.completed`, `cli.task.failed`, or `cli.task.orphaned`, then inspects
+`result.md`, `result.json`, and `events.jsonl`. A retry must name the observed
+failure category and change the failed assumption, such as timeout, context,
+permission, output contract, or hypothesis. Repeating the same request is not
+recovery.
 
 ## Why This Exists
 
@@ -88,12 +109,12 @@ The native worker does not become May's planner.
 
 The current runtime has two layers:
 
-| Layer | File | Responsibility |
-|-------|------|----------------|
-| Tool surface | `projects/may-agent/src/lib/tools/run-cli-agent.ts` | Create task id, write prompt/request files, emit `cli.task.requested`, return immediately. |
-| Runtime runner | `projects/may-agent/src/app/cli-task-runner.ts` | Subscribe to `cli.task.requested`, spawn Codex/Claude, persist task record, parse output, emit terminal events. |
-| Event schema | `projects/may-agent/src/app/event-bus.ts` | Defines `cli.task.requested`, `started`, `completed`, `failed`, and `orphaned`. |
-| Restart recovery | `projects/may-agent/src/app/daemon-events.ts` | Marks in-flight CLI tasks as orphaned after runtime restart. |
+| Layer            | File                                                | Responsibility                                                                                                  |
+| ---------------- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Tool surface     | `projects/may-agent/src/lib/tools/run-cli-agent.ts` | Create task id, write prompt/request files, emit `cli.task.requested`, return immediately.                      |
+| Runtime runner   | `projects/may-agent/src/app/cli-task-runner.ts`     | Subscribe to `cli.task.requested`, spawn Codex/Claude, persist task record, parse output, emit terminal events. |
+| Event schema     | `projects/may-agent/src/app/event-bus.ts`           | Defines `cli.task.requested`, `started`, `completed`, `failed`, and `orphaned`.                                 |
+| Restart recovery | `projects/may-agent/src/app/daemon-events.ts`       | Marks in-flight CLI tasks as orphaned after runtime restart.                                                    |
 
 The old blocking `codex_worker`, `cc_worker`, and `dual_review` tools are
 retired. Keeping two execution paths produced different session, failure,
@@ -317,12 +338,12 @@ to `sourceOwner`, usually the agent that requested the worker.
 
 The CLI task state describes the worker process, not the project outcome.
 
-| Event | Meaning | Owner response |
-|-------|---------|----------------|
-| `cli.task.started` | The runner accepted the request and spawned the native process. | Usually observe only. |
-| `cli.task.completed` | The native worker produced a usable result artifact. | Review the result and decide whether the original work is resolved. |
-| `cli.task.failed` | The native worker could not produce a usable result. | Retry, adjust prompt/config, or handle the failure directly. |
-| `cli.task.orphaned` | May restarted while the native worker was running, so runtime ownership was lost. | Inspect artifacts/session id, then resume or retry. |
+| Event                | Meaning                                                                           | Owner response                                                      |
+| -------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `cli.task.started`   | The runner accepted the request and spawned the native process.                   | Usually observe only.                                               |
+| `cli.task.completed` | The native worker produced a usable result artifact.                              | Review the result and decide whether the original work is resolved. |
+| `cli.task.failed`    | The native worker could not produce a usable result.                              | Retry, adjust prompt/config, or handle the failure directly.        |
+| `cli.task.orphaned`  | May restarted while the native worker was running, so runtime ownership was lost. | Inspect artifacts/session id, then resume or retry.                 |
 
 Do not close the original project task just because `cli.task.completed` fired.
 Close it only after the owner judges the result.
@@ -425,11 +446,11 @@ decides whether that result resolves the original project problem.
 
 Modes describe intent, not trust:
 
-| Mode | Expected behavior |
-|------|-------------------|
-| `investigate` | Read, reason, and produce an evidence-backed report. |
-| `review` | Inspect code/design and produce findings; no mutation unless explicitly requested. |
-| `patch` | Change files in a bounded scope and report diff plus verification. |
+| Mode          | Expected behavior                                                                  |
+| ------------- | ---------------------------------------------------------------------------------- |
+| `investigate` | Read, reason, and produce an evidence-backed report.                               |
+| `review`      | Inspect code/design and produce findings; no mutation unless explicitly requested. |
+| `patch`       | Change files in a bounded scope and report diff plus verification.                 |
 
 Mutation-heavy work should prefer an isolated worktree when practical. Full
 permission modes are acceptable only inside the trusted May container or an

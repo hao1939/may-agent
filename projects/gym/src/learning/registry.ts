@@ -46,6 +46,7 @@ interface LearningUnit {
   title: string;
   lesson: string;
   practice: string;
+  guided_practice?: string;
   evidence: string;
   competencies: string[];
   sources: SourceReference[];
@@ -54,6 +55,34 @@ interface LearningUnit {
   practice_scenarios: string[];
   development_scenarios: string[];
   release_scenarios: string[];
+}
+
+export interface GuidedPracticeRequirement {
+  tool: "claude" | "codex";
+  terminal: "completed" | "failed" | "orphaned";
+  failure_category?:
+    | "timeout"
+    | "permission"
+    | "tool"
+    | "no_output"
+    | "output_schema"
+    | "process"
+    | "orphaned";
+}
+
+export interface GuidedPracticeCase {
+  id: string;
+  type: "live" | "simulation";
+  objective: string;
+  task: string;
+  requirements: GuidedPracticeRequirement[];
+  max_wait_ms: number;
+}
+
+interface GuidedPracticePlan {
+  schema_version: 1;
+  unit: string;
+  cases: GuidedPracticeCase[];
 }
 
 interface EvidenceRow {
@@ -77,6 +106,8 @@ export interface LearningUnitContext {
   competencies: string[];
   lessonPath: string;
   practicePath: string;
+  guidedPracticePath?: string;
+  guidedPracticeCases: GuidedPracticeCase[];
   evidencePath: string;
   sourcePaths: string[];
   releaseBenchmark: string;
@@ -118,6 +149,8 @@ interface LoadedUnit {
   unitDir: string;
   lessonPath: string;
   practicePath: string;
+  guidedPracticePath?: string;
+  guidedPractice: GuidedPracticePlan | null;
   evidencePath: string;
   sourcePaths: string[];
   evidence: EvidenceRow[];
@@ -178,6 +211,9 @@ function loadUnits(gymRoot: string): {
       unit.practice,
       `${unit.id} practice`,
     );
+    const guidedPracticePath = unit.guided_practice
+      ? localPath(unitDir, unit.guided_practice, `${unit.id} guided practice`)
+      : undefined;
     const evidencePath = localPath(
       unitDir,
       unit.evidence,
@@ -189,6 +225,10 @@ function loadUnits(gymRoot: string): {
       unitDir,
       lessonPath,
       practicePath,
+      guidedPracticePath,
+      guidedPractice: guidedPracticePath
+        ? json<GuidedPracticePlan>(guidedPracticePath)
+        : null,
       evidencePath,
       sourcePaths: unit.sources.map((source) => resolve(gymRoot, source.path)),
       evidence: parseEvidence(evidencePath),
@@ -373,6 +413,7 @@ export function buildLearningReview(
       loadedUnit.lessonPath,
       loadedUnit.practicePath,
       loadedUnit.evidencePath,
+      ...(loadedUnit.guidedPracticePath ? [loadedUnit.guidedPracticePath] : []),
     ]) {
       if (!existsSync(path)) {
         errors.push(`${unit.id} resource is missing: ${path}`);
@@ -409,6 +450,77 @@ export function buildLearningReview(
       !unit.competencies.every((id) => competencyIds.has(id))
     ) {
       errors.push(`${unit.id} references an unknown competency`);
+    }
+
+    if (loadedUnit.guidedPractice) {
+      const plan = loadedUnit.guidedPractice;
+      if (plan.schema_version !== 1) {
+        errors.push(`${unit.id} guided practice schema_version must be 1`);
+      }
+      if (plan.unit !== unit.id) {
+        errors.push(`${unit.id} guided practice names a different unit`);
+      }
+      if (!plan.cases.length) {
+        errors.push(`${unit.id} guided practice has no cases`);
+      }
+      const practiceIds = new Set<string>();
+      for (const practice of plan.cases) {
+        if (!validId(practice.id)) {
+          errors.push(
+            `${unit.id} has invalid guided practice id: ${practice.id}`,
+          );
+        }
+        if (practiceIds.has(practice.id)) {
+          errors.push(
+            `${unit.id} has duplicate guided practice: ${practice.id}`,
+          );
+        }
+        practiceIds.add(practice.id);
+        if (!(practice.type === "live" || practice.type === "simulation")) {
+          errors.push(`${unit.id} ${practice.id} has invalid practice type`);
+        }
+        if (!practice.objective?.trim() || !practice.task?.trim()) {
+          errors.push(
+            `${unit.id} ${practice.id} has incomplete practice instructions`,
+          );
+        }
+        if (
+          !Number.isInteger(practice.max_wait_ms) ||
+          practice.max_wait_ms < 1_000 ||
+          practice.max_wait_ms > 1_800_000
+        ) {
+          errors.push(`${unit.id} ${practice.id} has invalid max_wait_ms`);
+        }
+        if (practice.type === "live" && !practice.requirements.length) {
+          errors.push(
+            `${unit.id} ${practice.id} has no live lifecycle requirement`,
+          );
+        }
+        for (const requirement of practice.requirements) {
+          if (!(
+            requirement.tool === "codex" || requirement.tool === "claude"
+          )) {
+            errors.push(`${unit.id} ${practice.id} names an invalid CLI tool`);
+          }
+          if (!(
+            requirement.terminal === "completed" ||
+            requirement.terminal === "failed" ||
+            requirement.terminal === "orphaned"
+          )) {
+            errors.push(
+              `${unit.id} ${practice.id} names an invalid terminal state`,
+            );
+          }
+          if (
+            requirement.failure_category &&
+            requirement.terminal === "completed"
+          ) {
+            errors.push(
+              `${unit.id} ${practice.id} puts a failure category on completed work`,
+            );
+          }
+        }
+      }
     }
 
     unit.sources.forEach((source, index) => {
@@ -595,6 +707,8 @@ export function resolveLearningContexts(
         competencies: unit.competencies,
         lessonPath: loaded.lessonPath,
         practicePath: loaded.practicePath,
+        guidedPracticePath: loaded.guidedPracticePath,
+        guidedPracticeCases: loaded.guidedPractice?.cases ?? [],
         evidencePath: loaded.evidencePath,
         sourcePaths: loaded.sourcePaths,
         releaseBenchmark: unit.release_benchmark ?? unit.benchmark,

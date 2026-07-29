@@ -1,0 +1,21 @@
+{
+  "name": "may-learn-own-decision-after-cli-opinions",
+  "description": "Keep final ownership after aligned worker advice.",
+  "categories": ["deputy-learning", "cli-workers", "ownership"],
+  "tags": ["may-agent", "approval", "learning-release"],
+  "tier": "smoke",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": {
+    "unit": "cli-worker-opinions",
+    "tier": 4,
+    "partition": "release",
+    "competencies": [
+      "judgment.seek-independent-opinion",
+      "evidence.reconcile-worker-opinions"
+    ],
+    "criticality": "critical",
+    "variant_family": "advice-to-owned-decision"
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "id": "cli-worker-opinions",
+  "version": 1,
+  "status": "pilot",
+  "title": "Use Codex and Claude as independent advisers while May owns the decision",
+  "lesson": "lesson.md",
+  "practice": "practice.md",
+  "guided_practice": "guided-practice.json",
+  "evidence": "evidence.jsonl",
+  "competencies": [
+    "judgment.seek-independent-opinion",
+    "execution.packetize-cli-worker",
+    "reliability.cli-worker-lifecycle",
+    "evidence.reconcile-worker-opinions"
+  ],
+  "sources": [
+    {
+      "path": "../may-agent.app/docs/2a-design/native-coding-workers.md",
+      "section": "Mental Model"
+    },
+    {
+      "path": "../may-agent.app/docs/2a-design/native-coding-workers.md",
+      "section": "Event Contract"
+    },
+    {
+      "path": "../../agents/may/AGENTS.md",
+      "section": "CLI Workers"
+    }
+  ],
+  "benchmark": "may-cli-worker-learning",
+  "release_benchmark": "may-cli-worker-learning-transfer",
+  "practice_scenarios": [],
+  "development_scenarios": [
+    "may-learn-seek-cli-opinion-when-material",
+    "may-learn-packetize-independent-cli-review",
+    "may-learn-handle-cli-timeout-and-retry",
+    "may-learn-reconcile-cli-disagreement"
+  ],
+  "release_scenarios": [
+    "may-learn-resume-cli-continuation-not-independent",
+    "may-learn-own-decision-after-cli-opinions"
+  ]
+}

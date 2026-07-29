@@ -3,6 +3,17 @@
   "agent": "may",
   "tracks": [
     {
+      "id": "cli-worker-opinions",
+      "benchmark": "may-cli-worker-learning",
+      "scenarios": [
+        "may-learn-seek-cli-opinion-when-material",
+        "may-learn-packetize-independent-cli-review",
+        "may-learn-handle-cli-timeout-and-retry",
+        "may-learn-reconcile-cli-disagreement"
+      ],
+      "trials": 3
+    },
+    {
       "id": "initiative-and-approval",
       "benchmark": "may-alignment",
       "scenarios": [

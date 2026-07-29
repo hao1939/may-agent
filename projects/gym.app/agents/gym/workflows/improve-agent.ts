@@ -31,6 +31,10 @@ import type {
   WorkflowResult,
 } from "@may-agent/sdk";
 import { reconciliationPacket, safeKey, triggerDetails } from "./lib/trigger";
+import {
+  readGuidedPracticeResult,
+  runGuidedPractice,
+} from "./lib/guided-practice";
 
 export const name = "improve-agent";
 export const description =
@@ -403,7 +407,10 @@ export async function runCurriculumSequence<T extends Record<string, unknown>>(
   return { state: "exhausted", results };
 }
 
-export function learningPromptLines(units: LearningUnitContext[]): string[] {
+export function learningPromptLines(
+  units: LearningUnitContext[],
+  guidedPracticeResultPath?: string,
+): string[] {
   if (!units.length) return [];
   return [
     "Use these reviewed learning resources to generalize the candidate. Do not copy benchmark-specific names or expected answer wording into the agent:",
@@ -412,9 +419,18 @@ export function learningPromptLines(units: LearningUnitContext[]): string[] {
       `Competencies: ${unit.competencies.join(", ")}`,
       `Lesson: ${unit.lessonPath}`,
       `Practice: ${unit.practicePath}`,
+      ...(unit.guidedPracticePath
+        ? [`Guided practice plan: ${unit.guidedPracticePath}`]
+        : []),
       `Reviewed evidence: ${unit.evidencePath}`,
       `Canonical sources: ${unit.sourcePaths.join(", ")}`,
     ]),
+    ...(guidedPracticeResultPath
+      ? [
+          `Observed guided practice: ${guidedPracticeResultPath}`,
+          "Use the real calls, lifecycle evidence, result review, and reflection in that record. Repair the mechanism behind missed practice; do not merely restate the lesson.",
+        ]
+      : []),
   ];
 }
 
@@ -1694,6 +1710,7 @@ async function runCandidateIteration(
   const workspaceMay = join(workspaceAgentsRoot, plan.agent);
   const candidateId = `gym/${plan.agent}/g${generation}-i${iteration}`;
   const candidateDir = join(workspaceAgentsRoot, ".lab", candidateId);
+  const guidedPracticePath = join(iterationDir, "guided-practice.json");
   rmSync(scratchRoot, { recursive: true, force: true });
   mkdirSync(workspaceAgentsRoot, { recursive: true });
   cpSync(sourceMay, workspaceMay, { recursive: true });
@@ -1704,6 +1721,20 @@ async function runCandidateIteration(
     candidateCheckpointPath,
   );
   if (!candidateCheckpoint || !existsSync(durableCandidate)) {
+    const hasGuidedPractice = plan.learningUnits.some(
+      ({ guidedPracticeCases }) => guidedPracticeCases.length > 0,
+    );
+    let guidedPractice = hasGuidedPractice
+      ? readGuidedPracticeResult(guidedPracticePath)
+      : null;
+    if (!guidedPractice && hasGuidedPractice) {
+      guidedPractice = await runGuidedPractice({
+        ctx,
+        agent: plan.agent,
+        units: plan.learningUnits,
+      });
+      writeJson(guidedPracticePath, guidedPractice);
+    }
     mkdirSync(candidateDir, { recursive: true });
     if (baseCandidatePath && existsSync(baseCandidatePath)) {
       cpSync(baseCandidatePath, candidateDir, { recursive: true });
@@ -1716,7 +1747,10 @@ async function runCandidateIteration(
         `Scenarios: ${JSON.stringify(plan.focus.scenarios)}`,
         `Finding: ${plan.focus.summary}`,
         `Immutable baseline: ${plan.baselineDir}`,
-        ...learningPromptLines(plan.learningUnits),
+        ...learningPromptLines(
+          plan.learningUnits,
+          guidedPractice ? guidedPracticePath : undefined,
+        ),
         ...(plan.revision
           ? [
               `Previous review: ${plan.revision.summary}`,

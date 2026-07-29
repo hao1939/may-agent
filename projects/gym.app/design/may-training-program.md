@@ -18,6 +18,8 @@ human intent, daily refill check, or May revision
   -> evaluate approved behavior
   -> classify every non-pass independently
   -> choose one bounded May failure family
+  -> run guided practice when the learning unit requires real tool use
+  -> preserve May's calls, lifecycle evidence, result review, and reflection
   -> build one isolated candidate
   -> targeted verification
   -> full approved verification
@@ -85,12 +87,15 @@ decision, or real authority boundary still stops the sequence immediately.
 4. Classify every remaining non-pass as May, benchmark, scorer, runtime, or
    noise. Every scenario appears exactly once.
 5. Select one May failure family and freeze a focused development baseline.
-6. Ask the isolated implementation agent for one narrow overlay.
-7. Verify it against the frozen baseline.
-8. If it improves, run the full five-trial release comparison.
-9. If it fails, review the observed answer, expected behavior, scorer, and
-   runtime before deciding whether May should change again.
-10. If the review still establishes a May gap, revise the candidate immediately
+6. Run the unit's guided practice, when present, and checkpoint both successful
+   and failed attempts. Practice may use real safe tools and gives feedback.
+7. Ask the isolated implementation agent for one narrow overlay, including the
+   guided-practice evidence but excluding withheld release truth.
+8. Verify it against the frozen baseline.
+9. If it improves, run the full five-trial release comparison.
+10. If it fails, review the observed answer, expected behavior, scorer, and
+    runtime before deciding whether May should change again.
+11. If the review still establishes a May gap, revise the candidate immediately
     and repeat the implementation and verification steps in the same workflow.
 
 Candidate iterations are sequential, never parallel. Each expensive stage is

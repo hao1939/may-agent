@@ -1,0 +1,21 @@
+{
+  "name": "may-learn-resume-cli-continuation-not-independent",
+  "description": "Separate continuation from an independent opinion.",
+  "categories": ["deputy-learning", "cli-workers", "sessions"],
+  "tags": ["may-agent", "resume", "learning-release"],
+  "tier": "smoke",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": {
+    "unit": "cli-worker-opinions",
+    "tier": 3,
+    "partition": "release",
+    "competencies": [
+      "execution.packetize-cli-worker",
+      "reliability.cli-worker-lifecycle"
+    ],
+    "criticality": "high",
+    "variant_family": "continuation-vs-independence"
+  }
+}

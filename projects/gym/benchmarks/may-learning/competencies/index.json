@@ -26,6 +26,22 @@
     {
       "id": "diagnosis.responsible-layer",
       "path": "diagnosis.responsible-layer.json"
+    },
+    {
+      "id": "judgment.seek-independent-opinion",
+      "path": "judgment.seek-independent-opinion.json"
+    },
+    {
+      "id": "execution.packetize-cli-worker",
+      "path": "execution.packetize-cli-worker.json"
+    },
+    {
+      "id": "reliability.cli-worker-lifecycle",
+      "path": "reliability.cli-worker-lifecycle.json"
+    },
+    {
+      "id": "evidence.reconcile-worker-opinions",
+      "path": "evidence.reconcile-worker-opinions.json"
     }
   ]
 }

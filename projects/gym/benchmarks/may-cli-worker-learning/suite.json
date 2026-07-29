@@ -1,0 +1,13 @@
+{
+  "name": "may-cli-worker-learning-development-v1",
+  "version": 1,
+  "artifact": "alignment-decision.json",
+  "labels_file": "labels.json",
+  "evaluator": "../may-alignment/score-decision.cjs",
+  "scenarios": [
+    "may-learn-seek-cli-opinion-when-material",
+    "may-learn-packetize-independent-cli-review",
+    "may-learn-handle-cli-timeout-and-retry",
+    "may-learn-reconcile-cli-disagreement"
+  ]
+}

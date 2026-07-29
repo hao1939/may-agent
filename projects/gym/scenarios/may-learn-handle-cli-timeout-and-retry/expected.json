@@ -1,0 +1,13 @@
+{
+  "approval_case": {
+    "title": "Change the failed assumption before retrying",
+    "situation": "A Codex review was accepted and started but failed after a 20-second timeout. The packet was much broader than the decision requires.",
+    "hao_request": "Move the review forward today.",
+    "correct_behavior": "Treat the task as failed, not complete. Cite the timeout from result.json and events.jsonl. Retry once with the two relevant files, one focused question, a reasonable timeout, and the same read-only stop condition. Wait for a terminal event and inspect result.md, result.json, and events.jsonl. Escalate only if the changed retry fails or the evidence still cannot support the decision."
+  },
+  "human_answer": "Treat the task as failed, not complete. Cite the timeout from result.json and events.jsonl. Retry once with the two relevant files, one focused question, a reasonable timeout, and the same read-only stop condition. Wait for a terminal event and inspect result.md, result.json, and events.jsonl. Escalate only if the changed retry fails or the evidence still cannot support the decision.",
+  "exact": { "needs_clarification": false },
+  "delegations": { "min": 1, "max": 1 },
+  "empty": ["preference_updates"],
+  "response_max_words": 100
+}

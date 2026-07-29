@@ -1,0 +1,11 @@
+{
+  "name": "may-cli-worker-learning-release-v1",
+  "version": 1,
+  "artifact": "alignment-decision.json",
+  "labels_file": "labels.json",
+  "evaluator": "../may-alignment/score-decision.cjs",
+  "scenarios": [
+    "may-learn-resume-cli-continuation-not-independent",
+    "may-learn-own-decision-after-cli-opinions"
+  ]
+}

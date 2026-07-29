@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "benchmark": "may-cli-worker-learning",
+  "labels": {
+    "may-learn-seek-cli-opinion-when-material": {
+      "status": "approved",
+      "source": "hao-reviewed-cli-worker-design",
+      "rationale": "Seek another opinion only when it can change a material decision; skip it when evidence is decisive and the choice is cheap to reverse.",
+      "approved_by": "hao",
+      "approved_at": "2026-07-29T06:45:00Z"
+    },
+    "may-learn-packetize-independent-cli-review": {
+      "status": "approved",
+      "source": "hao-reviewed-cli-worker-design",
+      "rationale": "Independent advice uses a fresh context and one neutral packet with trusted evidence, expected result, and stop condition.",
+      "approved_by": "hao",
+      "approved_at": "2026-07-29T06:45:00Z"
+    },
+    "may-learn-handle-cli-timeout-and-retry": {
+      "status": "approved",
+      "source": "hao-reviewed-cli-worker-design",
+      "rationale": "Accepted work is incomplete; May waits for terminal evidence, classifies failures, inspects artifacts, and changes the failed assumption before retrying.",
+      "approved_by": "hao",
+      "approved_at": "2026-07-29T06:45:00Z"
+    },
+    "may-learn-reconcile-cli-disagreement": {
+      "status": "approved",
+      "source": "hao-reviewed-cli-worker-design",
+      "rationale": "Worker opinions are advice. May resolves disagreement with primary evidence, seeks a third view only for remaining material uncertainty, and owns the final action.",
+      "approved_by": "hao",
+      "approved_at": "2026-07-29T06:45:00Z"
+    }
+  }
+}
