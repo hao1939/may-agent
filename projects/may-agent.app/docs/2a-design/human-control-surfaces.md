@@ -12,8 +12,9 @@ admission review. Another tested, undeployed candidate gives a fresh Telegram
 turn the focused trace/task, latest durable evidence, and bounded nearby
 conversation. Approved Gym proof, full owner-task reconciliation, broader async
 completion handling, and session-independent caller identity still have
-convergence gaps described below. Legacy socket frames remain compatibility
-ingress.
+convergence gaps described below. A third tested, undeployed candidate wakes a
+fresh May verification turn when a human-linked app task reaches `converged` or
+`attention`. Legacy socket frames remain compatibility ingress.
 **Aligned with**: `events.md`, `sessions.md`, `runtime.md`, `may-console.md`, `webui.md`
 
 ## Purpose
@@ -845,12 +846,16 @@ generic completion abstraction.
 - A May chat turn can launch async work and promise a later result without
   first establishing a linked owner task, completion wake, proof condition, or
   missed-progress checkpoint.
-- App tasks, Conditions, owner reviews, event pairs, and closure links exist,
-  but there is no reconciler that derives "May still owes Hao a reviewed
-  result" across those records and wakes May when it becomes stale.
-- Human-result integrity currently checks delivery of the immediate May
-  session result. It does not verify that a long-running child app branch later
-  produced a May-reviewed closeout linked to the original human intent.
+- A tested, undeployed follow-through candidate joins a terminal
+  `project.task.reconciled` fact to the existing `project.owner.reviewed` task
+  reference and original Telegram trace. For `converged` or `attention`, it
+  starts one deduplicated fresh May review on the original request; `waiting`
+  progress and tasks without a human link stay silent. Missed-checkpoint and
+  stale open-branch reconciliation remain.
+- Human-result integrity checks delivery of each immediate May session result.
+  The follow-through candidate puts its closeout turn on the original human
+  trace, but the integrity report still lacks one explicit invariant proving
+  that every terminal human-linked app branch produced that reviewed closeout.
 - A tested, undeployed candidate holds proactive messages, alerts, and
   child-session summaries until May reviews them; only `deliver` sends May's
   reviewed text, and review failure retries once then fails closed. The

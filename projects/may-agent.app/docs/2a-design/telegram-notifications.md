@@ -10,6 +10,8 @@ alerts, and child-session summaries behind May's admission review. Approved
 Gym proof and broader async completion handling still remain. A separate
 tested, undeployed context candidate gives fresh Telegram turns the exact
 trace/task focus, latest durable evidence, and bounded nearby conversation.
+A tested, undeployed follow-through candidate also wakes one fresh May review
+when a human-linked app task converges or needs attention.
 
 ## Purpose
 
@@ -43,7 +45,8 @@ May attention review exist. A tested, undeployed enforcement candidate fails
 closed and sends only May's reviewed text. Approved Gym proof,
 complete owner-task conversation resolution, session-independent completion,
 reviewed closeout, narrow command failure, and noise control remain convergence
-work. The focused trace/event context slice is a tested, undeployed candidate.
+work. The focused trace/event context and human-linked app-result wake are
+tested, undeployed candidates.
 The current gap list lives in
 [human-control-surfaces.md](human-control-surfaces.md#runtime-convergence-gaps)
 so this accepted contract stays focused on target behavior.
