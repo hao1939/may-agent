@@ -10,7 +10,14 @@ interface CapturedEvent {
   [key: string]: unknown;
 }
 
-function setup(overrides: Partial<{ allowedTargets: string[] | (() => string[]); persistDir: string; triggerResult: boolean }> = {}) {
+function setup(
+  overrides: Partial<{
+    allowedTargets: string[] | (() => string[]);
+    persistDir: string;
+    triggerResult: boolean;
+    callerSessionId: string;
+  }> = {},
+) {
   const events: CapturedEvent[] = [];
   const triggers: string[] = [];
   const tool = createMessageTool({
@@ -23,6 +30,7 @@ function setup(overrides: Partial<{ allowedTargets: string[] | (() => string[]);
       return overrides.triggerResult ?? true;
     },
     allowedTargets: overrides.allowedTargets,
+    getCallerSessionId: () => overrides.callerSessionId,
   });
   return { tool, events, triggers };
 }
@@ -50,6 +58,18 @@ describe("message tool", () => {
     expect(types.filter((t) => t === "message.created")).toHaveLength(1);
   });
 
+  it("attaches the exact caller session to the emitted message", async () => {
+    const { tool, events } = setup({ callerSessionId: "may-turn-45978" });
+    await call(tool, { to: "human", content: "corrected answer" });
+
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        type: "message.created",
+        data: expect.objectContaining({ sourceSessionId: "may-turn-45978" }),
+      }),
+    );
+  });
+
   it("default priority is P2; P0 triggers immediate heartbeat", async () => {
     const { tool, events, triggers } = setup();
 
@@ -64,7 +84,9 @@ describe("message tool", () => {
     expect(triggers).toEqual(["dev"]);
 
     // P0 message.created event carries priority in the canonical data payload.
-    const p0Event = events.find((e) => e.type === "message.created" && (e.data as Record<string, unknown>)?.priority === "P0");
+    const p0Event = events.find(
+      (e) => e.type === "message.created" && (e.data as Record<string, unknown>)?.priority === "P0",
+    );
     expect(p0Event).toBeDefined();
   });
 
@@ -77,18 +99,22 @@ describe("message tool", () => {
     const denied = await call(tool, { to: "qa", content: "hi" });
     expect(denied.error).toMatch(/Unknown message target/);
     expect(triggers).toEqual([]);
-    expect(events.some((e) => e.type === "message.created" && (e.data as Record<string, unknown>)?.to === "qa")).toBe(false);
-    expect(events).toContainEqual(expect.objectContaining({
-      type: "message.delivery_failed",
-      source: "agent:arc",
-      owner: "agent:may",
-      data: expect.objectContaining({
-        from: "arc",
-        to: "qa",
-        reason: expect.stringContaining("qa"),
-        content: "hi",
+    expect(events.some((e) => e.type === "message.created" && (e.data as Record<string, unknown>)?.to === "qa")).toBe(
+      false,
+    );
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        type: "message.delivery_failed",
+        source: "agent:arc",
+        owner: "agent:may",
+        data: expect.objectContaining({
+          from: "arc",
+          to: "qa",
+          reason: expect.stringContaining("qa"),
+          content: "hi",
+        }),
       }),
-    }));
+    );
   });
 
   it("always allows messages to human", async () => {
@@ -121,12 +147,14 @@ describe("message tool", () => {
     const allowed = await call(tool, { to: "human", content: "status" });
     expect(allowed.error).toBeUndefined();
     expect(allowed.to).toBe("human");
-    expect(events).toContainEqual(expect.objectContaining({
-      type: "message.created",
-      source: "agent:arc",
-      owner: "human:operator",
-      data: expect.objectContaining({ to: "human" }),
-    }));
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        type: "message.created",
+        source: "agent:arc",
+        owner: "human:operator",
+        data: expect.objectContaining({ to: "human" }),
+      }),
+    );
   });
 
   it("does not treat personal aliases as human owners", async () => {
@@ -146,13 +174,15 @@ describe("message tool", () => {
     const denied = await call(tool, { to: "functions.message", content: "hi" });
     expect(denied.error).toMatch(/Unknown message target/);
     expect(denied.hint).toMatch(/tool namespace/);
-    expect(events).toContainEqual(expect.objectContaining({
-      type: "message.delivery_failed",
-      data: expect.objectContaining({
-        to: "functions.message",
-        reason: expect.stringContaining("tool namespace"),
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        type: "message.delivery_failed",
+        data: expect.objectContaining({
+          to: "functions.message",
+          reason: expect.stringContaining("tool namespace"),
+        }),
       }),
-    }));
+    );
   });
 
   it("includes intent and content_files in body", async () => {
@@ -174,18 +204,20 @@ describe("message tool", () => {
     const { tool, events } = setup();
     await call(tool, { to: "dev", content: "please implement X", priority: "P1" });
 
-    expect(events).toContainEqual(expect.objectContaining({
-      type: "message.created",
-      source: "agent:arc",
-      owner: "agent:dev",
-      urgency: "high",
-      data: expect.objectContaining({
-        from: "arc",
-        to: "dev",
-        content: "[P1] please implement X",
-        priority: "P1",
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        type: "message.created",
+        source: "agent:arc",
+        owner: "agent:dev",
+        urgency: "high",
+        data: expect.objectContaining({
+          from: "arc",
+          to: "dev",
+          content: "[P1] please implement X",
+          priority: "P1",
+        }),
       }),
-    }));
+    );
   });
 
   it("rejects artifacts outside project root", async () => {

@@ -472,6 +472,7 @@ export type SystemEvent =
         intent?: string;
         artifact?: string;
         priority?: "P0" | "P1" | "P2" | "P3";
+        sourceSessionId?: string;
       };
     }
   | {
