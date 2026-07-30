@@ -20,6 +20,7 @@ import { setDefaultAutoSelectFamily } from "node:net";
 import { resolve } from "node:path";
 import { EVENT_ROW_ID, type EventBus, type EventTrace } from "../event-bus.js";
 import type { SubagentManager } from "../../lib/index.js";
+import { readSessionMeta } from "../../lib/persistence.js";
 import {
   getLatestInboundNotificationMessage,
   getNotificationMessage,
@@ -104,6 +105,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       summary?: string;
       data?: Record<string, unknown>;
       replyToMessageId?: number;
+      allowTraceReplyFallback?: boolean;
       conversationId?: string;
       traceId?: string;
       parentEventId?: number;
@@ -113,7 +115,10 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     if (!pendingChatId) return;
     if (shouldSuppressProactive(text, context)) return;
     const data = { ...(context?.data ?? {}) };
-    const latestInbound = context?.traceId ? getLatestInboundNotificationMessage(persistDir, context.traceId) : null;
+    const latestInbound =
+      context?.traceId && context.allowTraceReplyFallback !== false
+        ? getLatestInboundNotificationMessage(persistDir, context.traceId)
+        : null;
     const inboundData = parseJsonRecord(latestInbound?.data);
     const conversationId =
       context?.conversationId ??
@@ -660,6 +665,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     projectRoot,
     pendingChatId,
     getSessionId,
+    getSessionReplyContext: (sessionId) => readSessionMeta(persistDir, sessionId),
     sendToUser,
     reviewProactive: (candidate) => reviewHumanAttention(_manager, candidate, projectRoot),
   });
