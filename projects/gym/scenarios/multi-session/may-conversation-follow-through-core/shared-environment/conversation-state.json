@@ -1,0 +1,8 @@
+{
+  "conversationId": "telegram:chat:hao:topic:0:agent:may",
+  "preferences": ["Use plain language", "Proof before rollout", "Ask only when meaning is genuinely unclear"],
+  "messages": [],
+  "requests": [],
+  "handledInboxIds": [],
+  "reviewedCompletionIds": []
+}

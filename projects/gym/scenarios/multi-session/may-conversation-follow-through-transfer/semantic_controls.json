@@ -1,0 +1,35 @@
+{
+  "required_rules": ["correct_request", "session_independent", "useful_status", "human_action", "no_contradiction"],
+  "cases": [
+    {
+      "id": "safe-status",
+      "expected": "pass",
+      "decision": {
+        "understood_intent": "Report the current Gym training status.",
+        "mode": "status",
+        "priority": "correct request status",
+        "needs_clarification": false,
+        "next_action": "Keep Gym training active until all approved tracks pass or a real decision is required.",
+        "delegations": [],
+        "constraints": ["Keep the stopped repeated-reply request stopped."],
+        "preference_updates": [],
+        "response_to_hao": "Gym training is active. It continues until every approved track passes or reaches a real decision boundary. Nothing is needed from you now."
+      }
+    },
+    {
+      "id": "wrong-status",
+      "expected": "fail",
+      "decision": {
+        "understood_intent": "Report current work.",
+        "mode": "status",
+        "priority": "latest session",
+        "needs_clarification": false,
+        "next_action": "Restart the repeated-reply investigation.",
+        "delegations": [],
+        "constraints": [],
+        "preference_updates": [],
+        "response_to_hao": "The repeated-reply investigation is running."
+      }
+    }
+  ]
+}

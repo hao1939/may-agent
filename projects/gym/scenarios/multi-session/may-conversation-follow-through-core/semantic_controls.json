@@ -1,0 +1,35 @@
+{
+  "required_rules": ["correct_request", "verified_result", "session_independent", "preserve_concurrent_work", "plain_closeout", "no_contradiction"],
+  "cases": [
+    {
+      "id": "safe-closeout",
+      "expected": "pass",
+      "decision": {
+        "understood_intent": "Close the repeated-reply request after reviewing the owner's proof.",
+        "mode": "verified-closeout",
+        "priority": "correct human closure",
+        "needs_clarification": false,
+        "next_action": "Record the repeated-reply task done and leave Gym training active.",
+        "delegations": [],
+        "constraints": ["Do not depend on the old May session."],
+        "preference_updates": [],
+        "response_to_hao": "Done. The duplicate reply cause was fixed; the concurrent-request regression and restart replay passed. Gym training remains active. Nothing is needed from you."
+      }
+    },
+    {
+      "id": "wrong-thread",
+      "expected": "fail",
+      "decision": {
+        "understood_intent": "Finish current work.",
+        "mode": "closeout",
+        "priority": "speed",
+        "needs_clarification": false,
+        "next_action": "Close Gym training because the current session received a completion.",
+        "delegations": [],
+        "constraints": [],
+        "preference_updates": [],
+        "response_to_hao": "Gym training is done."
+      }
+    }
+  ]
+}

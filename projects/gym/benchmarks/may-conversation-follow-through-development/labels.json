@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "benchmark": "may-conversation-follow-through-development",
+  "labels": {
+    "multi-session/may-conversation-follow-through-core": {
+      "status": "approved",
+      "source": "direct-human-design-poc",
+      "rationale": "Concurrent requests keep separate traces and app owners. A fresh May turn closes owner work from durable task evidence, replies once to the correct request, and preserves unrelated work.",
+      "approved_by": "hao",
+      "approved_at": "2026-07-30T00:00:00+08:00"
+    }
+  }
+}

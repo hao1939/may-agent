@@ -11,7 +11,7 @@ import { buildLearningTrackReview } from "../src/learning/track-review";
 const gymRoot = resolve(import.meta.dirname, "..");
 
 describe("May learning registry", () => {
-  test("loads the approved pilot learning units", () => {
+  test("loads the approved learning units", () => {
     const review = buildLearningReview(gymRoot);
 
     expect(review.errors).toEqual([]);
@@ -23,7 +23,7 @@ describe("May learning registry", () => {
         status: "pilot",
         ready_for_development: true,
         ready_for_release: true,
-        evidence: { positive: 1, negative: 2, contrast: 1 },
+        evidence: { positive: 2, negative: 3, contrast: 1 },
       }),
       expect.objectContaining({
         id: "system-deputy-operations",
@@ -47,7 +47,7 @@ describe("May learning registry", () => {
         status: "pilot",
         ready_for_development: true,
         ready_for_release: false,
-        evidence: { positive: 1, negative: 1, contrast: 1 },
+        evidence: { positive: 1, negative: 2, contrast: 1 },
         release_benchmark: "may-human-inbox-deputy-transfer",
         development_scenarios: [
           "may-learn-inbox-handle-recovered-timeout",
@@ -65,6 +65,20 @@ describe("May learning registry", () => {
           "may-learn-inbox-transfer-sanitize-digest",
           "may-learn-inbox-transfer-handle-bounded-cleanup",
           "may-learn-inbox-transfer-deliver-balanced-decision",
+        ],
+      }),
+      expect.objectContaining({
+        id: "conversation-follow-through",
+        version: 1,
+        status: "active",
+        ready_for_development: true,
+        ready_for_release: true,
+        evidence: { positive: 2, negative: 1, contrast: 1 },
+        development_scenarios: [
+          "multi-session/may-conversation-follow-through-core",
+        ],
+        release_scenarios: [
+          "multi-session/may-conversation-follow-through-transfer",
         ],
       }),
     ]);

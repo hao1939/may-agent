@@ -135,11 +135,29 @@ agent or conversation. They share envelopes, receipts, traces, and execution
 infrastructure without sharing one ambiguous public `send(target, message)`
 contract.
 
-A persistent chat is a conversation container, not a permanent trace. Each
+A human conversation is a logical channel/thread relationship, not a session
+or permanent trace. One conversation may use many bounded sessions, and each
 human turn receives its own trace. Replies to a notification continue the
 referenced trace; unrelated follow-ups start a new trace. If conversation
 judgment creates durable project work, it emits a linked app-intent event rather
-than treating the chat session as task state.
+than treating the chat session as task state. The app task continues after the
+turn session ends; a later owner result starts a fresh May review session when
+needed and final channel delivery links back to the originating human trace.
+
+Session reuse may cache conversational context, but no durable work, caller
+identity, completion route, or promised human follow-up may depend on one
+mutable current session. When an old session is unavailable, runtime prepares
+a new bounded session from the linked human trace, app task, relevant recent
+conversation, and durable preferences.
+
+One human conversation can contain several concurrent request threads. A
+request thread is a read view assembled from a human trace, linked channel
+messages, domain events, and the owning app task; it is not another durable
+request object. A channel reply id is an anchor used to find that trace, not the
+request identity itself. When no explicit anchor exists, routing uses a clearly
+named subject, then the only plausible open request, and otherwise one focused
+clarification. A conversation context reader exposes the focused request and
+compact neighboring context without copying work state out of the owning app.
 
 ## Event Durability And Reliability
 

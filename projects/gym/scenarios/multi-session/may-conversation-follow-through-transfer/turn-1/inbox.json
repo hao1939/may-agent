@@ -1,0 +1,4 @@
+{
+  "id": "human-301", "kind": "ambiguous-command", "messageId": 301,
+  "seq": 3, "text": "continue", "candidateTraceIds": ["trace-replies", "trace-gym"]
+}

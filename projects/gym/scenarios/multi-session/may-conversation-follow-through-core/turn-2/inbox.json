@@ -1,0 +1,13 @@
+{
+  "id": "human-201",
+  "kind": "human",
+  "messageId": 201,
+  "seq": 2,
+  "traceId": "trace-gym",
+  "taskId": "task-gym",
+  "accountableOwner": "Gym app",
+  "subject": "Gym training",
+  "text": "Keep Gym training May until the approved learning material is exhausted.",
+  "outcome": "Continue the approved training tracks and stop only at exhaustion or a real decision boundary.",
+  "requiredProof": "Show that every approved track passed or identify the exact remaining decision boundary."
+}

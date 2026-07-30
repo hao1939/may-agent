@@ -1,0 +1,13 @@
+{
+  "id": "completion-replies-1",
+  "kind": "owner-completion",
+  "completionId": "completion-replies-1",
+  "taskId": "task-replies",
+  "sourceSessionStatus": "gone",
+  "summary": "The platform owner completed the repeated-reply repair.",
+  "evidence": [
+    "The root cause was a completion callback bound to mutable session state.",
+    "The concurrent-request regression test passes.",
+    "A restart replay delivered exactly one closeout to the correct request."
+  ]
+}

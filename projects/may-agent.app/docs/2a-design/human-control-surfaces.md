@@ -1,8 +1,11 @@
 # Design: Human Control Surfaces
 
 **Design status:** Accepted.
-**Implementation status:** Implemented for canonical CLI, Telegram, Web/control
-socket, and console paths. Legacy socket frames remain compatibility ingress.
+**Implementation status:** Partial. Canonical CLI, Telegram, Web/control
+socket, and console ingress exist. Conversation continuity, durable
+long-running follow-through, and session-independent caller identity still
+have convergence gaps described below. Legacy socket frames remain
+compatibility ingress.
 **Aligned with**: `events.md`, `sessions.md`, `runtime.md`, `may-console.md`, `webui.md`
 
 ## Purpose
@@ -12,9 +15,9 @@ agent system. They should differ in presentation, not in routing semantics.
 
 The common rule is:
 
-> Conversational input must target a known session or explicitly request a chat
-> session. Project-directed input targets the project app. There is no
-> free-floating input.
+> Conversational input must target a logical agent conversation or an explicit
+> execution session. Project-directed input targets the project app. There is
+> no free-floating input.
 
 The second rule is:
 
@@ -53,7 +56,7 @@ router emits one semantic child intent:
 
 ```text
 human.input.received
-  -> chat.start.requested       create or bind when no chat target is known
+  -> chat.start.requested       start a bounded conversation turn
   -> session.steer.requested    deliver to an existing session
   -> project.comment.created    attach project direction
   -> project.approval.submitted apply structured approval context
@@ -67,12 +70,88 @@ first record `human.input.received` and then emit the project comment as its
 semantic child. Both paths converge on the same app-owner contract; neither
 adds a request record.
 
-A persistent chat session is a conversation container, not a trace. Each
-standalone human turn receives a new trace even when it reuses the same session.
-A reply to a prior notification/result stays in that prior trace through its
-reply context. The selected input's trace travels with the queued turn through
-session execution, delegation, terminal `session.idle` / `session.end`, and
-channel delivery.
+A human conversation is a logical channel/thread relationship, not a session
+and not a trace. One conversation may use many bounded May sessions. Each
+standalone human turn receives a new trace. A reply to a prior
+notification/result resolves that prior trace through its reply context. May
+still interprets the new human message: a correction or decision continues the
+request, while a clearly unrelated request starts a new linked trace.
+
+### Conversation and request threads
+
+The human sees one conversation with May. Inside it, several requests may be
+open at the same time. A request thread is the connected view of one human
+trace, its messages, linked owner task, evidence, and May closeout. It is not a
+new task record or lifecycle object.
+
+For Telegram, the logical conversation identity is the May agent plus the
+Telegram chat and topic when one exists. `reply_to_message_id` is an explicit
+anchor to a prior message; it is not the durable request identity. Deleting a
+Telegram message or losing a session must not lose the request thread.
+
+The channel message index records enough to recover the connection for every
+inbound and outbound message:
+
+- channel conversation identity and platform message id;
+- platform reply target when present;
+- human trace and parent event;
+- linked app task or domain subject when present; and
+- direction and delivery result.
+
+This index is transport evidence and lookup data. Traces and domain tasks
+remain authoritative for causality and work.
+
+Resolve the request a new message refers to in this order:
+
+1. The stored trace/task of the Telegram message or UI item explicitly replied
+   to.
+2. A subject clearly named by the human.
+3. The only plausible open request in the conversation.
+4. If several consequential requests still fit, state the likely
+   interpretation and ask one focused question.
+
+Do not select the globally latest message, the latest May session, or the
+closest text match as the request identity.
+
+The runtime exposes one read-only conversation view, backed by existing
+messages, events, traces, app tasks, and durable preferences. Given a
+conversation and optional reply target, it returns:
+
+- the focused request: original intent, trace, status, owner, and task;
+- related human and May messages in order;
+- latest meaningful evidence and the next closure condition;
+- compact summaries of other open requests that could make the reference
+  ambiguous; and
+- relevant accepted decisions and human preferences.
+
+The same view may back an internal context reader and a paginated Web/debug
+API. It assembles existing truth; it does not accept work, change status, or
+create another conversation database. Raw history remains available on
+demand, while normal May turns receive only the focused thread and relevant
+nearby context.
+
+Telegram reply presentation follows a separate, simple rule:
+
+1. An immediate answer replies to the exact incoming human message.
+2. A later progress report, decision packet, or closeout replies to the latest
+   human message linked to that request trace.
+3. If no later human message exists, it replies to the original request.
+
+Never route work by that presentation target. After delivery, store the new
+Telegram message id with the same trace and task links so a later human reply
+can recover the request directly.
+
+A session is only one execution attempt. Reusing an idle session may remain a
+context-cache optimization, but correctness must behave as if every turn could
+start in a fresh session. Durable work, caller identity, completion routing,
+and human follow-up must never depend on one mutable "current May session" or
+on that session remaining resumable.
+
+The selected input's trace travels with the bounded turn through session
+execution, delegation, terminal `session.idle` / `session.end`, and channel
+delivery. When the turn creates durable app work, the chat branch may finish
+after May acknowledges the request while the linked app-intent/task branch
+continues. The app branch, not the chat session, owns the unfinished work.
 
 The semantic intent is the lifecycle opener. `human.input.received` itself is
 an external boundary fact and is not convention-paired. For chat work,
@@ -85,12 +164,130 @@ controls. For example, a status button or exact CLI `may status` command can
 query the read model directly. Natural-language text such as "what needs
 attention?" remains human input and goes through Chat-May.
 
+## Long-Running Human Requests
+
+A request is long-running when its result may arrive after the current May
+turn ends. Duration in minutes or days is irrelevant. The convention is:
+
+```text
+human input and turn trace
+  -> bounded May session understands the outcome
+  -> owning app accepts or reuses one durable task
+  -> May acknowledges the owned continuation
+  -> app owner executes, waits, recovers, and records evidence
+  -> completion, failure, material movement, or missed checkpoint wakes May
+  -> a fresh bounded May session reviews the evidence
+  -> May replans, asks one real authority question, or delivers one closeout
+```
+
+There is no new generic human-request record or May task tree. Existing objects
+keep their existing meanings:
+
+| Concern | Source of truth |
+|---|---|
+| What Hao asked | `human.input.received` and its trace |
+| What durable outcome was accepted | linked app intent and owner result |
+| What work remains | the owning app's task resource and Conditions |
+| What execution attempt ran | bounded session, workflow, or CLI-task record |
+| Whether May still owes a result | open durable branch plus missing reviewed channel delivery |
+
+### Ownership and durable continuation
+
+May first finds the app that already owns the requested outcome. The app owner
+answers, rejects, reuses existing work, or creates/revises one durable task.
+May does not choose a foreign app merely to hold work, copy the task into
+`may-agent.app`, or keep unfinished work only in chat text.
+
+A bounded one-off outside an app may use an event-tracked asynchronous worker
+with May accountable for its result. If the work needs repeated recovery,
+waiting, scheduling, or domain state, it belongs in the responsible app.
+
+Before May tells Hao that work will continue, the durable branch must identify:
+
+- the original human trace;
+- the accountable app/owner and canonical task or async reference;
+- the expected owner result and terminal outcome proof; and
+- either the event that wakes May or an exact review checkpoint when no event
+  arrives.
+
+These are links and existing domain fields, not a new closure-contract entity.
+An accepted event, queued task, started worker, completed helper, or owner claim
+is progress only. It is not the terminal outcome unless the owning domain says
+so and the required evidence supports it.
+
+### May supervision
+
+The app owner executes. May supervises outcome and human closure. May wakes on:
+
+- owner progress, failure, attention, or terminal events;
+- a missed task Condition or review checkpoint;
+- a material change in scope, risk, authority, or proof;
+- a correction, status request, or reprioritization from Hao.
+
+At a check-in May reads the durable task and evidence, leaves healthy work
+alone, and steers only outcome, scope, priority, safety, or proof. May does not
+micromanage the owner's patch or commands. One missed checkpoint triggers
+owner review. Continued lack of evidence after a bounded recovery causes May
+to replan through the same task, ask the owner to change execution, route a
+runtime fault to its owner, or escalate the exact remaining authority blocker.
+It does not create duplicate recovery tasks or wait silently forever.
+
+Every long-running request has an event-driven completion wake. A review
+checkpoint is the backstop for missing movement, not a fixed human-update
+schedule. Healthy internal progress is silent.
+
+### Human communication
+
+May uses at most the messages the situation needs:
+
+1. An initial acknowledgement after durable ownership is accepted. State the
+   understood outcome, who owns it in plain language, what proof May will
+   review, and whether Hao needs to act.
+2. A material update only when the outcome, delay, risk, approach, or human
+   need changes. Worker acceptance, retries, and "still working" are internal.
+3. One verified closeout, or one complete decision packet when human authority
+   genuinely remains.
+
+Say "I am routing it" while durable acceptance is pending. Say "the owner is
+handling it" only after acceptance. A promise such as "I will report the
+result" is valid only when the durable branch and May wake already exist.
+
+When Hao asks for status, May reads durable state instead of asking a worker to
+rediscover it. The response states the current phase, latest meaningful
+evidence, next closure condition, and whether Hao needs to act.
+
+### Session loss and prepared context
+
+Losing the original session never loses the request. Completion routes by app
+task and trace; `sessionId` is only an optional execution/resume hint. If the
+old session is alive, runtime may steer it. Otherwise runtime starts a fresh
+bounded May review session with a prepared context packet containing:
+
+- the incoming message or wake event and reply target;
+- the original human intent and May's last delivered response;
+- the accountable owner, task, current state, and latest evidence;
+- the expected terminal proof and next review condition;
+- relevant recent conversation, accepted decisions, and Hao preferences.
+
+Raw messages remain available. A rolling summary alone is insufficient for
+approval, correction, or preference-sensitive meaning. Resolve reply/trace and
+task identities before semantic retrieval. If one interpretation is clearly
+supported, proceed. If several consequential open requests remain plausible,
+state the likely interpretation and ask one focused question.
+
+One logical conversation may therefore have several isolated May sessions at
+once: a current human turn, an owner-result review, a stalled-work review, and
+a proactive-attention review. Each tool call captures its immutable
+conversation, trace, and session context at invocation. Human-facing output is
+serialized through May's reviewed outbound path so concurrent sessions cannot
+send contradictory or duplicate messages.
+
 ## Canonical Human Intent Events
 
 ### Start or create a chat session
 
-Use when a human wants to talk to an agent and no current chat session is known
-for that channel/agent.
+Use for a normal human turn in an agent conversation when the human is not
+explicitly steering one execution session.
 
 ```json
 {
@@ -106,16 +303,17 @@ for that channel/agent.
 }
 ```
 
-The daemon decides whether to create a fresh chat session or bind this request
-to an existing chat session for that channel/agent. If it creates a session, it
-emits normal session lifecycle events.
+This starts a bounded turn in the logical channel/agent conversation. It does
+not require a brand-new conversation identity. Normal continuity comes from
+prepared conversation context, not from requiring one process-local session
+to survive. The daemon creates the bounded session and emits normal session
+lifecycle events. `forceNew` explicitly resets the logical conversation
+context.
 
-This is a create-or-bind request, not a strict "always create" command. If the
-daemon already has an active chat session for the same channel/agent identity,
-it should bind the request to that session and deliver the message there. A
-surface that truly wants a fresh conversation must explicitly reset/close the
-binding or send supported `forceNew` context; absent that intent, continuity
-wins.
+`session.steer.requested` remains appropriate when the human explicitly targets
+one active execution attempt. A normal new chat turn and an autonomous review
+of background work should not be attached to whichever May session happened
+to start most recently.
 
 ### Steer an existing session
 
@@ -300,10 +498,10 @@ ergonomic. That local state is not authoritative.
 
 | Channel | Targeting rule |
 |---|---|
-| May Console | Prompt shows the selected target and status: May with chat id when known, a session, or disconnected. Bare text targets the selected session with `session.steer.requested`, or the selected May chat session; if no May chat is known, emit `chat.start.requested`. |
+| May Console | Prompt shows the selected target and status: May conversation, an explicit session, or disconnected. Bare text starts a May conversation turn with `chat.start.requested`; only an explicitly selected execution session uses `session.steer.requested`. |
 | CLI | Non-interactive commands must name the intent: `chat`, `steer`, `cancel`, `comment`, `emit`. Ambiguous commands fail locally. |
-| Telegram | Reply-to-message context is attached to `human.input.received`; command-router may steer a known session or route to May with an enriched delivery message. Otherwise the chat has a current May chat session; if absent, emit `chat.start.requested`. |
-| Web | Visible UI context selects target. A session page steers that session; an agent chat page targets or creates that agent's chat session; buttons emit one explicit intent event. |
+| Telegram | Reply-to-message context is attached to `human.input.received`; command-router may steer an explicitly referenced active session or route to May with an enriched delivery message. A normal message starts a bounded May turn with `chat.start.requested`. |
+| Web | Visible UI context selects target. A session page steers that explicit session; an agent chat page starts a bounded turn in that agent conversation; buttons emit one explicit intent event. |
 
 If a target cannot be resolved, the channel should fail locally with a clear
 message. It should not silently send the text to May as a fallback.
@@ -335,16 +533,28 @@ Exit behavior:
 
 Telegram is optimized around reply context. The human reply is plain text; the
 system attaches notification metadata and command-router enriches the internal
-delivery message.
+delivery message. Telegram supplies the reply anchor; the conversation view
+resolves the durable request thread.
+
+May owns proactive human attention. A producer's human-directed message or
+escalation is a candidate, not delivery authority. May handles it, routes it,
+returns it for missing context, rejects it, or admits one decision-ready
+message. Telegram delivers only admitted proactive notifications. The full
+contract is in [telegram-notifications.md](telegram-notifications.md#outbound-human-inbox-deputy).
 
 - Replying to a project notification emits `human.input.received` with project
   context; command-router or May decides whether that becomes
   `project.comment.created`, a May chat turn, or a project event.
 - Replying to a session notification emits `human.input.received` with session
-  context; command-router may emit `session.steer.requested` for that known
-  session using an enriched delivery message.
-- A normal message targets the Telegram chat's current May chat session.
-- If that chat session is unknown, the message emits `chat.start.requested`.
+  context. Normal language starts a bounded May turn so May can understand the
+  intent and may then resume or steer that session. Only an explicit session
+  control such as `/steer` targets it directly in command-router.
+- A normal message emits `chat.start.requested` for a bounded turn in the
+  Telegram/May conversation. It does not depend on a current May session.
+- Immediate May answers reply to the incoming message. Later updates and
+  closeouts reply to the latest human message in the resolved trace, falling
+  back to the original request. The Telegram reply target is presentation, not
+  routing state.
 - Unknown slash commands should show help or fail locally. They should not have
   the slash stripped and be sent as ordinary text.
 
@@ -429,18 +639,57 @@ Each human surface should have tests for the same behavior:
 - Conversational free-form input uses `human.input.received` as the trace root
   and one normalized intent as its child; explicit project-comment ingress may
   use `project.comment.created` directly as its receipt and root.
-- Existing-chat input uses `session.steer.requested`; only an unbound or
-  explicitly fresh chat uses `chat.start.requested`.
+- Normal conversation input uses `chat.start.requested` for a bounded turn;
+  `session.steer.requested` is reserved for an explicitly targeted execution
+  attempt or a compatibility path during convergence.
 - The turn's `session.idle` / `session.end` stays in the same trace and closes
-  the semantic intent.
-- Forked/workflow/CLI work and outbound delivery remain connected to the turn
-  trace.
+  the conversational branch. A linked durable app branch remains open until
+  its own terminal event.
+- Forked/workflow/CLI work, app task results, May review, and final outbound
+  delivery remain connected to the originating human trace without depending
+  on the originating session.
+- Losing or restarting the original session starts a fresh May session with a
+  prepared context packet and does not lose durable work or the human closeout.
+- Concurrent May sessions capture immutable caller trace/session context and
+  cannot steal one another's tool results or Telegram delivery.
+- Telegram reply anchors resolve through the channel message index to a trace
+  and optional owner task before semantic retrieval. Deleted or missing reply
+  messages fall back to named subject, then the only plausible open request,
+  then one focused clarification.
+- Conversation context is assembled as a read model over existing events,
+  traces, messages, tasks, and preferences. It does not become a second request
+  lifecycle or task store.
+- A future-result promise is rejected or rewritten unless a durable owner
+  reference, completion wake, and proof condition already exist.
+- A missed review checkpoint wakes May; healthy progress does not create
+  repetitive human updates.
 - Bare cancel never becomes cancel-all; broad cancellation requires the
   explicit `session.cancel_all.requested` intent.
 
 The point of these tests is not UI coverage. It is preventing CLI, Telegram,
 Web, and May Console from drifting into different meanings for the same human
 intent.
+
+## POC Evidence
+
+The isolated Gym proof in
+[May conversation follow-through POC](../../../gym/benchmarks/may-conversation-follow-through/POC-RESULTS.md)
+supports this design direction without changing production routing:
+
+- the trace-based conversation model passed 8/8 deterministic infrastructure
+  cases; the narrow current-session replay model passed 1/8;
+- current May passed the three-turn development trajectory with 10/10 behavior
+  checks and both calibrated semantic judges;
+- current May passed the held-back four-turn transfer trajectory with 8/8
+  behavior checks and both judges; and
+- the typed contract made owner, proof, reply target, and human action explicit.
+  An isolated May prompt overlay was not required for the passing baseline.
+
+This proves the model and test method, not live Telegram readiness. Start with
+one read-only shadow resolver over existing Telegram notification records. It
+reports whether an explicit trace or task link exists and does not change live
+routing. Defer the completion fallback and broader conversation view until this
+small lookup has production-shaped proof.
 
 ## Runtime Convergence Gaps
 
@@ -449,3 +698,37 @@ intent.
 - Non-app legacy projects still use command-router discussion-file mutation.
   V3 project apps receive `project.comment.created` without command-router file
   mutation and own any resulting state change.
+- `ChatSession` still models one persistent session as the conversation and
+  sends normal later turns back into it. Fresh sessions do not yet receive the
+  prepared context packet defined above.
+- `notification_messages` indexes delivered Telegram notifications. A
+  read-only shadow resolver now reports the explicit conversation, trace, task,
+  project, and owner fields already present on a replied-to notification. It
+  does not yet index inbound messages or reply edges, and producers do not yet
+  record trace/task links and stable chat/topic conversation identity
+  consistently. Some use `conversationId` as a per-approval or per-notification
+  id instead.
+- Telegram outbound reply targets are held in process memory and keyed by
+  session. Later progress and closeout cannot yet select the latest human
+  message from the durable request trace after restart or session loss.
+- There is no conversation context reader that resolves an anchor or named
+  subject and assembles focused owner state, evidence, related messages,
+  neighboring open requests, and preferences for a fresh bounded May turn.
+- Tool factories resolve caller identity from one mutable per-agent
+  `getAgentSessionId()` value. Concurrent May sessions can therefore attach a
+  tool request or completion to the wrong session and trace.
+- CLI-task completion emits a typed event but follows up by steering only its
+  captured source session. It does not fall back to a linked app task/original
+  human trace and a fresh May review session when that session is gone.
+- A May chat turn can launch async work and promise a later result without
+  first establishing a linked owner task, completion wake, proof condition, or
+  missed-progress checkpoint.
+- App tasks, Conditions, owner reviews, event pairs, and closure links exist,
+  but there is no reconciler that derives "May still owes Hao a reviewed
+  result" across those records and wakes May when it becomes stale.
+- Human-result integrity currently checks delivery of the immediate May
+  session result. It does not verify that a long-running child app branch later
+  produced a May-reviewed closeout linked to the original human intent.
+- Telegram still auto-forwards child-session summaries and performs proactive
+  human-attention review after delivery in shadow mode. Both paths can bypass
+  May's terminal-proof review and single-voice communication rule.

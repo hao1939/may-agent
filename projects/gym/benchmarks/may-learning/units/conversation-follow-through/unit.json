@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "id": "conversation-follow-through",
+  "version": 1,
+  "status": "active",
+  "title": "Keep human requests owned, separate, and moving across fresh May turns",
+  "lesson": "lesson.md",
+  "practice": "practice.md",
+  "evidence": "evidence.jsonl",
+  "competencies": [
+    "judgment.infer-bounded-intent",
+    "system.owner-and-route",
+    "reliability.delivery-vs-completion",
+    "reliability.semantic-notification-dedup",
+    "communication.human-attention-judgment"
+  ],
+  "sources": [
+    { "path": "../may-agent.app/docs/2a-design/human-control-surfaces.md", "section": "Conversation and request threads" },
+    { "path": "../may-agent.app/docs/2a-design/system-model.md", "section": "Human Loop" },
+    { "path": "../may-agent.app/docs/2a-design/telegram-notifications.md", "section": "Reply Context Model" }
+  ],
+  "benchmark": "may-conversation-follow-through-development",
+  "release_benchmark": "may-conversation-follow-through-transfer",
+  "practice_scenarios": [],
+  "development_scenarios": ["multi-session/may-conversation-follow-through-core"],
+  "release_scenarios": ["multi-session/may-conversation-follow-through-transfer"]
+}

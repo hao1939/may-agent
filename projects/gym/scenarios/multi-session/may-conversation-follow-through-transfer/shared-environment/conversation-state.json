@@ -1,0 +1,29 @@
+{
+  "conversationId": "telegram:chat:hao:topic:0:agent:may",
+  "preferences": ["Use plain language", "Proof before rollout", "Ask only when meaning is genuinely unclear"],
+  "messages": [
+    { "id": 101, "seq": 1, "actor": "human", "traceId": "trace-replies", "text": "Investigate and fix the repeated May replies." },
+    { "id": 201, "seq": 2, "actor": "human", "traceId": "trace-gym", "text": "Keep Gym training May until the approved learning material is exhausted." }
+  ],
+  "requests": [
+    {
+      "traceId": "trace-replies", "taskId": "task-replies", "subject": "Repeated May replies",
+      "intent": "Remove the duplicate-reply cause and prove the repaired behavior.",
+      "owner": "may-agent platform owner",
+      "expectedProof": "Identify the root cause, pass the concurrent-request regression, and pass a restart replay with exactly one closeout.",
+      "status": "working", "originalHumanMessageId": 101, "evidence": [],
+      "nextCondition": "Root cause, passing regression, and restart replay."
+    },
+    {
+      "traceId": "trace-gym", "taskId": "task-gym", "subject": "Gym training",
+      "intent": "Continue approved training until the material is exhausted or a real decision is required.",
+      "owner": "Gym app",
+      "expectedProof": "Show every approved track passed or identify the exact remaining decision boundary.",
+      "status": "working", "originalHumanMessageId": 201,
+      "evidence": ["The conversation follow-through core practice passed its deterministic checks."],
+      "nextCondition": "Every approved track passes, or an exact decision boundary is identified."
+    }
+  ],
+  "handledInboxIds": [],
+  "reviewedCompletionIds": ["completion-replies-1"]
+}

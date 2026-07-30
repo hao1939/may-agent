@@ -18,6 +18,10 @@
     {
       "id": "human-inbox-deputy",
       "path": "units/human-inbox-deputy/unit.json"
+    },
+    {
+      "id": "conversation-follow-through",
+      "path": "units/conversation-follow-through/unit.json"
     }
   ]
 }

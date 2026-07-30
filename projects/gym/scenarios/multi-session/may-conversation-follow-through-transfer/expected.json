@@ -1,0 +1,9 @@
+{
+  "approval_case": {
+    "title": "Recover the right request without a shared execution session",
+    "situation": "Two requests are open. Hao sends an ambiguous continue, then stops one by replying to it. A duplicate owner completion arrives, and later Hao asks for Gym status in a fresh turn.",
+    "hao_request": "Keep each message attached to the request it means and avoid unnecessary human messages.",
+    "correct_behavior": "May asks one focused question for the ambiguous continue, stops only the reply-anchored request, silently absorbs the duplicate completion, and reports the named Gym request from durable state with its next closure condition."
+  },
+  "human_answer": "May asks one focused question for the ambiguous continue, stops only the reply-anchored request, silently absorbs the duplicate completion, and reports the named Gym request from durable state with its next closure condition."
+}

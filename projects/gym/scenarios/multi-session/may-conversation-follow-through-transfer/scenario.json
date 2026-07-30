@@ -1,0 +1,15 @@
+{
+  "name": "may-conversation-follow-through-transfer",
+  "description": "Held-back transfer proof for ambiguity, reply-scoped correction, duplicate completion, and named status across fresh May turns.",
+  "categories": ["deputy-learning", "conversation", "multi-session"],
+  "tags": ["may-agent", "telegram", "behavior", "poc", "transfer"],
+  "tier": "standard",
+  "timeout": 8,
+  "agent_type": "may",
+  "sessions": [
+    { "id": "ambiguous-continue", "task": "turn-1/task.md", "environment": "turn-1" },
+    { "id": "reply-scoped-stop", "task": "turn-2/task.md", "environment": "turn-2" },
+    { "id": "duplicate-completion", "task": "turn-3/task.md", "environment": "turn-3" },
+    { "id": "named-gym-status", "task": "turn-4/task.md", "environment": "turn-4", "artifacts_out": ["alignment-decision.json"] }
+  ]
+}

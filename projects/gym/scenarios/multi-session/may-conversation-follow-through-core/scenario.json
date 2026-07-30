@@ -1,0 +1,14 @@
+{
+  "name": "may-conversation-follow-through-core",
+  "description": "May keeps two concurrent Telegram requests separate and closes owner work after the original session is lost.",
+  "categories": ["deputy-learning", "conversation", "multi-session"],
+  "tags": ["may-agent", "telegram", "behavior", "poc"],
+  "tier": "standard",
+  "timeout": 8,
+  "agent_type": "may",
+  "sessions": [
+    { "id": "request-replies", "task": "turn-1/task.md", "environment": "turn-1" },
+    { "id": "request-gym", "task": "turn-2/task.md", "environment": "turn-2" },
+    { "id": "owner-completion", "task": "turn-3/task.md", "environment": "turn-3", "artifacts_out": ["alignment-decision.json"] }
+  ]
+}

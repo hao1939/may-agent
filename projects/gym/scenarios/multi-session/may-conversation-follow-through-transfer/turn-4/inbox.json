@@ -1,0 +1,5 @@
+{
+  "id": "human-303", "kind": "named-status", "messageId": 303,
+  "seq": 5, "traceId": "trace-gym", "taskId": "task-gym",
+  "text": "What's the progress of Gym training?"
+}

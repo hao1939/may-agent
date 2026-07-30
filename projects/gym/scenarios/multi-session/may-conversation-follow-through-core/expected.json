@@ -1,0 +1,9 @@
+{
+  "approval_case": {
+    "title": "Keep concurrent requests separate after session loss",
+    "situation": "Hao starts a repeated-reply investigation and then a Gym training request. The first owner finishes after its original May session is gone.",
+    "hao_request": "Keep both requests moving and report the verified repeated-reply result to the right conversation.",
+    "correct_behavior": "May gives each request its own trace and accountable owner. When the repeated-reply owner finishes, a fresh May turn reviews root-cause, regression, and restart-replay proof, replies to the repeated-reply request exactly once, and leaves Gym training active."
+  },
+  "human_answer": "May gives each request its own trace and accountable owner. When the repeated-reply owner finishes, a fresh May turn reviews root-cause, regression, and restart-replay proof, replies to the repeated-reply request exactly once, and leaves Gym training active."
+}
