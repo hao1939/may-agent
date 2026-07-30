@@ -224,7 +224,13 @@ describe("command router", () => {
 
   it("normalizes human.input.received into chat.start.requested", () => {
     const handled: Array<{ message: string; source?: string }> = [];
-    const h = createHarness();
+    const runs: Array<{ agent: string; message: string; source?: string }> = [];
+    const h = createHarness({
+      run: (agent: string, message: string, opts?: { source?: string }) => {
+        runs.push({ agent, message, source: opts?.source });
+        return "s_telegram";
+      },
+    } as Partial<SubagentManager>);
     h.setChatSession({
       handleInput: (message: string, source?: string) => handled.push({ message, source }),
     } as unknown as ChatSession);
@@ -241,7 +247,8 @@ describe("command router", () => {
       },
     } as any);
 
-    expect(handled).toEqual([{ message: "please review", source: "telegram" }]);
+    expect(handled).toEqual([]);
+    expect(runs).toEqual([{ agent: "may", message: "please review", source: "telegram" }]);
     expect(h.emitted).toContainEqual(
       expect.objectContaining({
         type: "chat.start.requested",
@@ -252,6 +259,7 @@ describe("command router", () => {
           channel: "telegram",
           channelThreadId: "123",
           channelMessageId: 701,
+          forceNew: true,
         }),
       }),
     );

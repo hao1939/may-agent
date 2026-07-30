@@ -3,9 +3,72 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { closeDb } from "../../lib/db/connection.js";
+import {
+  getLatestInboundNotificationMessage,
+  getRecentTelegramConversationMessages,
+  storeNotificationMessage,
+} from "../../lib/db/notifications.js";
 import { createTelegramClient, splitTelegramMessage } from "./telegram-client.js";
 
 describe("telegram client", () => {
+  it("recovers the latest inbound Telegram anchor for a request trace", () => {
+    const persistDir = mkdtempSync(join(tmpdir(), "telegram-inbound-trace-"));
+    try {
+      for (const [telegramMsgId, sentAt, traceId] of [
+        [500, 1, "trace-a"],
+        [501, 2, "trace-b"],
+        [502, 3, "trace-a"],
+      ] as const) {
+        storeNotificationMessage(persistDir, {
+          telegram_msg_id: telegramMsgId,
+          event_type: "human.input.received",
+          agent: "may",
+          session_id: null,
+          project_id: null,
+          data: JSON.stringify({ direction: "inbound", traceId }),
+          sent_at: sentAt,
+        });
+      }
+
+      expect(getLatestInboundNotificationMessage(persistDir, "trace-a")?.telegram_msg_id).toBe(502);
+      expect(getLatestInboundNotificationMessage(persistDir, "trace-b")?.telegram_msg_id).toBe(501);
+      expect(getLatestInboundNotificationMessage(persistDir, "trace-missing")).toBeNull();
+    } finally {
+      closeDb(persistDir);
+      rmSync(persistDir, { recursive: true, force: true });
+    }
+  });
+
+  it("reads a bounded Telegram conversation window in message order", () => {
+    const persistDir = mkdtempSync(join(tmpdir(), "telegram-conversation-window-"));
+    const conversationId = "telegram:chat:123:topic:0:agent:may";
+    try {
+      for (const [telegramMsgId, direction, text, sentAt] of [
+        [600, "inbound", "Review Gym", 1],
+        [601, "outbound", "Gym is active", 2],
+        [602, "inbound", "What about AKS?", 3],
+      ] as const) {
+        storeNotificationMessage(persistDir, {
+          telegram_msg_id: telegramMsgId,
+          event_type: direction === "inbound" ? "human.input.received" : "response",
+          agent: direction === "inbound" ? "may" : "may",
+          session_id: null,
+          project_id: null,
+          data: JSON.stringify({ direction, conversationId, text, traceId: `trace-${telegramMsgId}` }),
+          sent_at: sentAt,
+        });
+      }
+
+      expect(getRecentTelegramConversationMessages(persistDir, conversationId, 2)).toEqual([
+        expect.objectContaining({ telegramMsgId: 601, direction: "outbound", text: "Gym is active" }),
+        expect.objectContaining({ telegramMsgId: 602, direction: "inbound", text: "What about AKS?" }),
+      ]);
+    } finally {
+      closeDb(persistDir);
+      rmSync(persistDir, { recursive: true, force: true });
+    }
+  });
+
   it("splits long messages without dropping content", () => {
     const chunks = splitTelegramMessage(["one", "two", "three"].join("\n"), 8);
     expect(chunks).toEqual(["one\ntwo", "three"]);
