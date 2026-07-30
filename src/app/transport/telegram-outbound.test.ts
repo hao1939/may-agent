@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { EventBus } from "../event-bus.js";
+import { EVENT_ROW_ID, EventBus } from "../event-bus.js";
 import { attachTelegramOutbound } from "./telegram-outbound.js";
 import type { HumanAttentionCandidate, HumanAttentionReview } from "./human-attention-review.js";
 
@@ -54,6 +54,45 @@ function idle(bus: EventBus, source: string, summary: string, sessionId = "share
 }
 
 describe("Telegram outbound turn ownership", () => {
+  test("preserves root and inherited traces on proactive notifications", () => {
+    const { bus, sent, outbound } = harness();
+    const rootEvent = {
+      type: "message.created",
+      source: "gym",
+      owner: "human:operator",
+      data: {
+        from: "gym",
+        to: "human",
+        content: "Gym needs a decision.",
+        taskId: "train-may",
+      },
+    } as any;
+    Object.defineProperty(rootEvent, EVENT_ROW_ID, { value: 91 });
+
+    bus.emit(rootEvent);
+    bus.emit({
+      type: "message.created",
+      source: "gym",
+      owner: "human:operator",
+      trace: { traceId: "trace-human-92", parentEventId: 91 },
+      data: {
+        from: "gym",
+        to: "human",
+        content: "Gym has a follow-up.",
+      },
+    } as any);
+
+    expect(sent[0]?.context?.data).toMatchObject({
+      traceId: "event:91",
+      taskId: "train-may",
+    });
+    expect(sent[1]?.context?.data).toMatchObject({
+      traceId: "trace-human-92",
+      parentEventId: 91,
+    });
+    outbound.close();
+  });
+
   test("records May's shadow judgment while preserving current proactive delivery", async () => {
     const reviewed: Array<Record<string, unknown>> = [];
     const { bus, sent, outbound } = harness("shared-chat", async () => ({
