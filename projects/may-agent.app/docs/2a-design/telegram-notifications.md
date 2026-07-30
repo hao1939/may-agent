@@ -6,8 +6,9 @@ conversation identity, inbound/outbound trace links, bounded ordinary turns,
 concurrent reply targets, immutable per-session reply context, restart-safe
 reply lookup, exact per-tool caller identity, and a narrow May-owned CLI
 completion fallback. A tested, undeployed candidate puts proactive messages,
-alerts, and child-session summaries behind May's admission review. Approved
-Gym proof and broader async completion handling still remain. A separate
+alerts, and child-session summaries behind May's admission review. Its seven
+approved Gym cases now pass all deterministic gates and both semantic judges.
+Broader async completion handling still remains. A separate
 tested, undeployed context candidate gives fresh Telegram turns the exact
 trace/task focus, latest durable evidence, and bounded nearby conversation.
 A tested, undeployed follow-through candidate also wakes one fresh May review
@@ -44,8 +45,8 @@ clear.
 
 Telegram ingress, delivery, stored reply metadata, exact short controls, and a
 May attention review exist. A tested, undeployed enforcement candidate fails
-closed and sends only May's reviewed text. Approved Gym proof,
-complete owner-task conversation resolution, session-independent completion,
+closed and sends only May's reviewed text. Its approved Gym proof is complete.
+Complete owner-task conversation resolution, session-independent completion,
 reviewed closeout, narrow command failure, and noise control remain convergence
 work. The focused trace/event context and human-linked app-result wake are
 tested, undeployed candidates.
@@ -275,10 +276,15 @@ must include recovered handler errors, project-owned product failures, weak
 approval packets, a valid Gym approval, a secret request, duplicate pull
 request notices, and accepted digests.
 
-The enforcement candidate has transport and end-to-end regression proof. Its
-approved Gym run is currently blocked by a provider connection failure with
-zero model output. Keep the candidate undeployed until all approved cases run
-and recent replay shows zero critical authority violations.
+The enforcement candidate has transport and end-to-end regression proof. On
+2026-07-30 all seven approved Gym cases passed all eight deterministic gates
+and both semantic judges. Two incomplete closure answers were correctly
+rejected; a small May checklist fixed both reruns. Recent replay suppressed a
+recovered timeout and preserved the accepted Ops and Scout digest, with no
+critical authority violation in the proof set.
+
+The proof gate is complete. Keep the candidate undeployed until Hao explicitly
+approves enforcement rollout.
 
 Measure:
 
@@ -304,67 +310,6 @@ decision after owner proof, a materially changed duplicate, a useful digest
 with one secret-bearing item, a cleanup that became bounded, and a balanced
 preference decision. Hao reviews each case in plain language before its label
 changes from `draft` to `approved`. Draft cases do not authorize enforcement.
-
-## Desired Interaction Model
-
-Telegram messages should look like compact action cards:
-
-```text
-AKS RP E2E needs approval
-
-Decision
-Approve live staging execution for aad-rbac and ossku-migration?
-
-Why now
-Check-mode coverage is high, but evidence quality is missing live staging.
-
-Current state
-Most paths pass. The remaining paths are classified and need live evidence.
-
-Reply
-approve
-adjust <changes>
-hold
-
-Open: /projects/aks-rp-e2e/tasks
-```
-
-The message should answer four questions without requiring a web UI:
-
-- What happened?
-- Why am I being notified?
-- What can I say?
-- What happens after I reply?
-
-After May receives the enriched reply, May or the project owner may produce a
-small typed event:
-
-```json
-{
-  "type": "project.approval.submitted",
-  "source": "telegram",
-  "owner": "agent:aks-explorer",
-  "data": {
-    "projectPath": "projects/aks-rp-e2e.app",
-    "planId": "focus-proposal-live-staging-20260613",
-    "decision": "approve",
-    "reply": "approved",
-    "author": "hao"
-  }
-}
-```
-
-The human-facing acknowledgement should describe the effect:
-
-```text
-Approved. The aks-rp-e2e owner is applying the decision now.
-```
-
-Not:
-
-```text
-Approval sent to project event project.approval.submitted.
-```
 
 ## Reply Context Model
 
@@ -857,29 +802,10 @@ review the root cause, regression proof, and rollout result. Nothing is needed
 from you now.
 ```
 
-The deployed path keeps the existing reply acknowledgement when a
-human explicitly replies to a stored notification. A fast ordinary answer is
-sent directly without a redundant receipt. When a silent May turn starts a
-Codex or Claude CLI task, Telegram sends one factual receipt and later sends
-the result on the same trace. Final owner-task closeout still needs the broader
-async completion fallback described in the human-control design.
-
-Late tool results now carry their exact source session. A tested rollout
-recovers that session's reply target from durable metadata after the session
-goes idle and safely handles legacy Telegram request ids. Hao approved it, and
-runtime commit `3c589082` is deployed. Service, binary-hash, deploy-marker, and
-HTTP checks passed. Live message `45998` then recovered `replyToMsgId: 45978`
-from an idle source session whose only durable channel link was
-`requestId: telegram:45978`; several newer human messages were present and none
-was selected.
-
-The routing proof also showed that `45998` was an invalid replay: the rollout
-restart resumed its already-idle Telegram session. Startup recovery must resume
-a chat turn only when its persisted state is `running`. Retire an `idle` turn;
-the next human input starts a fresh bounded turn. The candidate preserves
-running-turn crash recovery. Full CI passed 2,079 tests with zero failures, and
-the May follow-through Gym scenario passed 9/9 behavior checks plus both
-semantic judges. Rollout remains pending approval.
+The deployed path sends fast answers without a redundant receipt, keeps later
+CLI results on the same trace, and recovers exact reply targets from durable
+session metadata. Final owner-task closeout still needs the broader async
+completion fallback described in the human-control design.
 
 ## Noise Control
 

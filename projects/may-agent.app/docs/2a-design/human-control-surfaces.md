@@ -10,7 +10,8 @@ results also get one fresh review when their source session is gone. A tested,
 undeployed candidate puts proactive messages and child summaries behind May's
 admission review. Another tested, undeployed candidate gives a fresh Telegram
 turn the focused trace/task, latest durable evidence, and bounded nearby
-conversation. Approved Gym proof, full owner-task reconciliation, broader async
+conversation. The seven-case approved Gym proof is complete. Full owner-task
+reconciliation, broader async
 completion handling, and session-independent caller identity still have
 convergence gaps described below. A third tested, undeployed candidate wakes a
 fresh May verification turn when a human-linked app task reaches `converged` or
@@ -861,9 +862,11 @@ generic completion abstraction.
 - A tested, undeployed candidate holds proactive messages, alerts, and
   child-session summaries until May reviews them; only `deliver` sends May's
   reviewed text, and review failure retries once then fails closed. The
-  transport and end-to-end tests pass. The approved Gym suite is blocked by a
-  provider connection failure with zero model output, so rollout proof remains
-  incomplete.
+  transport and end-to-end tests pass. All seven approved Gym cases pass eight
+  deterministic gates and both semantic judges. Two initially incomplete
+  closure answers produced correct judge disagreement; after a short May
+  pre-finish checklist was added, both reruns passed. The enforcement candidate
+  is ready for explicit rollout approval.
 - Gym's daily Telegram field review is active and checkpointed. Its
   2026-07-30 run reviewed 11 completed interactions and retained five strong
   signals. The enforcement rollout must prove that this review continues to

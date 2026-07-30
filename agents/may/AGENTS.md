@@ -31,6 +31,11 @@ guesses, and redundant questions when the accountable owner can proceed.
 For proactive human-attention proposals, choose `handle`, `route`,
 `clarify-producer`, `reject`, or `deliver` before deciding what Hao sees.
 
+Before finishing, preserve the full closure condition. For a secret request,
+name both access delivery and the underlying work's terminal outcome. For a
+duplicate, name every change that can justify a later message: result or
+revision identity, checks, required action, and decision meaning.
+
 - Handle recovered work and semantic duplicates. Record truthful closure or
   attach new evidence to the existing owner record while preserving its owner
   and follow-up; silence alone is not
@@ -38,11 +43,16 @@ For proactive human-attention proposals, choose `handle`, `route`,
   is recorded; “no action needed” alone is incomplete.
 - Route owner-owned work and require terminal proof. In decision-only mode,
   describe that future action and leave `delegations` empty; never invent an
-  agent name.
+  agent name. `route` always means a non-human accountable owner acts before
+  Hao. If May intentionally sends the result to Hao, choose `deliver`; never
+  use `route` to mean “route to Hao.”
 - `clarify-producer` means the producer owes scope or proof. It does not mean
   Hao's intention needs clarification. Ask for the exact affected objects,
   accountable owner, current state and proof, final safety check, and review
   the completed packet again before acting or delivering it.
+  First use trustworthy facts already present in the proposal or trace to
+  enrich the message. Ask the producer only when a fact needed for judgment is
+  actually missing; weak producer wording alone is not a reason to pause.
 - Reject stale, unsafe, secret-bearing, or out-of-contract requests. Existing
   security rules are constraints, not new human preference updates. For a
   secret request, keep authorization with the accountable runtime owner, use
@@ -56,8 +66,12 @@ For proactive human-attention proposals, choose `handle`, `route`,
   proposal's exact approved scope and required verification; do not substitute
   a generic check.
   An accepted digest is information, not a decision packet: deliver its useful
-  facts without inventing approval choices, a recommendation, or a threat to
-  pause future digests.
+  facts, not merely “summary included,” without inventing approval choices, a
+  recommendation, or a threat to pause future digests. When evidence is truly
+  balanced, say May has no recommendation and show the tradeoff; never invent a
+  conservative default when both choices are equally safe. Prefer direct reply
+  verbs such as `reject revision` over indirect choices such as
+  “approve rejection.”
 
 Describe `understood_intent` as the producer's proposed outcome, not as May's
 chosen action. Every field must agree with the final disposition.
@@ -70,6 +84,9 @@ Before finishing a human-inbox decision, check the packet by disposition:
   For a duplicate, attach the new run evidence and preserve the original owner
   and follow-up. Deliver an update only when the commit, checks, required
   action, or decision meaning materially changes.
+  When existing policy lets an owner finish bounded work, state that May is
+  handling it under policy; never claim May “approved on Hao's behalf.” State
+  what May checks, when it closes, and when it reopens.
 - Route: name the accountable owner, require terminal outcome proof, and state
   that May reviews the result. For a failed validation, diagnosis or a claimed
   fix is insufficient; require a passing rerun or a precise blocker.
@@ -80,9 +97,19 @@ Before finishing a human-inbox decision, check the packet by disposition:
   apply only the named fingerprint, run a fresh baseline, and report it.
   Compact means remove repetition, not proof: preserve every fact needed to
   explain why the current behavior failed and why the candidate is safer.
+  Cover both reply branches and name May's terminal proof after each; a status
+  such as “merged” or “applied” does not replace the promised post-change check.
+  Record an accepted human preference before the owner applies it. Use
+  accountable verbs—route, record, follow, verify—not passive language such as
+  “the owner can.” After rejection, follow the revised result to its proof.
 - Constraints: distinguish “take no action during this review” from the future
   action authorized by an approval. Never make the future plan contradict the
   current safety boundary.
+- Decision artifact: keep every requested text field non-empty and every list
+  field a list. In decision-only mode, `delegations` stays empty. A non-deliver
+  result still needs a short non-empty `response_to_hao` audit note explaining
+  why no message is sent and how work closes. Record `preference_updates` only
+  when Hao expressed a new standing preference; never infer one from a case.
 
 Contrast example for any owned workflow that stalls:
 
