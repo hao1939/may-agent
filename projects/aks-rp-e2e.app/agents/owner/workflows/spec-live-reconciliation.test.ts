@@ -2274,6 +2274,10 @@ describe("spec-live-reconciliation workflow", () => {
       run(["checkout", "-b", "task/example"]);
       rmSync(join(root, carrier));
       writeFileSync(join(root, adapter), "test('direct', () => {});\n");
+      writeFileSync(
+        join(root, "features/other/noise.ts"),
+        "mixed task noise\n",
+      );
       run(["add", "-A"]);
       run(["commit", "-m", "normalize exact carrier"]);
       const testedSource = run(["rev-parse", "HEAD"]);
@@ -2296,12 +2300,17 @@ describe("spec-live-reconciliation workflow", () => {
         featureIds: ["network-cni"],
       });
 
-      expect(result.state).toBe("replayed");
       if (result.state !== "replayed") throw new Error(JSON.stringify(result));
+      expect(result.state).toBe("replayed");
       expect(result.selectedCommits).toHaveLength(1);
       expect(result.changedPaths).toEqual([carrier, adapter].sort());
       expect(result.protectedPathsEquivalent).toBe(true);
       expect(run(["show", "HEAD:features/other/adopted.ts"])).toBe("adopted");
+      expect(
+        spawnSync("git", ["cat-file", "-e", "HEAD:features/other/noise.ts"], {
+          cwd: root,
+        }).status,
+      ).not.toBe(0);
       expect(
         spawnSync("git", ["cat-file", "-e", `HEAD:${carrier}`], {
           cwd: root,

@@ -5,9 +5,11 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  rmSync,
   writeFileSync,
 } from "node:fs";
 import { join, resolve, sep } from "node:path";
+import { tmpdir } from "node:os";
 import {
   Type,
   isTypedProjectAppConditionSubject,
@@ -1745,6 +1747,7 @@ export type ScenarioNormalizationReplay =
       sourceCommit: string;
       selectedCommits: string[];
       conflictedPaths: string[];
+      error?: string;
     }
   | {
       state: "invalid";
@@ -1757,9 +1760,8 @@ function scenarioReplayAllowedPath(
   path: string,
   featureRoots: string[],
 ): boolean {
-  return (
-    path.startsWith("evidence/") ||
-    featureRoots.some((root) => path === root || path.startsWith(`${root}/`))
+  return featureRoots.some(
+    (root) => path === root || path.startsWith(`${root}/`),
   );
 }
 
@@ -1857,21 +1859,19 @@ export function replayScenarioNormalizationOntoTarget(
       ),
     ),
   ].sort();
-  const outsideScope = selectedPaths.filter(
-    (path) => !scenarioReplayAllowedPath(path, featureRoots),
+  const boundedPaths = selectedPaths.filter((path) =>
+    scenarioReplayAllowedPath(path, featureRoots),
   );
-  if (outsideScope.length) {
+  if (!boundedPaths.length) {
     return {
       state: "invalid",
       sourceCommit: input.sourceCommit,
-      reason: "selected scenario commits expand outside the owning feature",
-      evidence: [
-        ...evidence,
-        ...outsideScope.map((path) => `outside-scope:${path}`),
-      ],
+      reason: "selected scenario commits contain no owning-feature patch",
+      evidence,
     };
   }
 
+  runGit(input.workspaceDir, ["merge", "--abort"], true);
   runGit(input.workspaceDir, ["cherry-pick", "--abort"], true);
   const reset = runGit(
     input.workspaceDir,
@@ -1886,9 +1886,49 @@ export function replayScenarioNormalizationOntoTarget(
       evidence: [...evidence, reset.stderr || reset.stdout],
     };
   }
-  for (const commit of selectedCommits) {
-    const replay = runGit(input.workspaceDir, ["cherry-pick", commit], true);
-    if (replay.status === 0) continue;
+  const patchPath = join(
+    tmpdir(),
+    `aks-scenario-replay-${createHash("sha256")
+      .update(
+        `${input.workspaceDir}\0${input.recordedBaseCommit}\0${input.sourceCommit}`,
+      )
+      .digest("hex")}.patch`,
+  );
+  const patch = spawnSync(
+    "git",
+    [
+      "diff",
+      "--binary",
+      input.recordedBaseCommit,
+      input.sourceCommit,
+      "--",
+      ...boundedPaths,
+    ],
+    {
+      cwd: input.workspaceDir,
+      encoding: null,
+      maxBuffer: 32 * 1024 * 1024,
+    },
+  );
+  if (patch.status !== 0 || !patch.stdout?.length) {
+    return {
+      state: "invalid",
+      sourceCommit: input.sourceCommit,
+      reason: "could not extract the bounded scenario patch",
+      evidence: [
+        ...evidence,
+        patch.stderr?.toString().trim() || "bounded patch was empty",
+      ],
+    };
+  }
+  writeFileSync(patchPath, patch.stdout);
+  const replay = runGit(
+    input.workspaceDir,
+    ["apply", "--3way", "--index", patchPath],
+    true,
+  );
+  rmSync(patchPath, { force: true });
+  if (replay.status !== 0) {
     const conflictedPaths = runGit(
       input.workspaceDir,
       ["diff", "--name-only", "--diff-filter=U"],
@@ -1897,24 +1937,38 @@ export function replayScenarioNormalizationOntoTarget(
       .stdout.split(/\r?\n/)
       .map((value) => value.trim())
       .filter(Boolean);
-    if (!conflictedPaths.length) {
-      const staged = runGit(
-        input.workspaceDir,
-        ["diff", "--cached", "--quiet"],
-        true,
-      );
-      const unstaged = runGit(input.workspaceDir, ["diff", "--quiet"], true);
-      if (staged.status === 0 && unstaged.status === 0) {
-        runGit(input.workspaceDir, ["cherry-pick", "--skip"], true);
-        continue;
-      }
-    }
     return {
       state: "conflicted",
       sourceCommit: input.sourceCommit,
       selectedCommits,
       conflictedPaths,
+      error: replay.stderr || replay.stdout,
     };
+  }
+
+  const staged = runGit(
+    input.workspaceDir,
+    ["diff", "--cached", "--quiet"],
+    true,
+  );
+  if (staged.status !== 0) {
+    const commit = runGit(
+      input.workspaceDir,
+      [
+        "commit",
+        "-m",
+        `Replay bounded scenario normalization from ${input.sourceCommit.slice(0, 12)}`,
+      ],
+      true,
+    );
+    if (commit.status !== 0) {
+      return {
+        state: "invalid",
+        sourceCommit: input.sourceCommit,
+        reason: "could not commit the bounded scenario patch",
+        evidence: [...evidence, commit.stderr || commit.stdout],
+      };
+    }
   }
 
   const resultingCommit = runGit(input.workspaceDir, [
@@ -1930,22 +1984,7 @@ export function replayScenarioNormalizationOntoTarget(
     .map((value) => value.trim())
     .filter(Boolean)
     .sort();
-  const unexpectedPaths = changedPaths.filter(
-    (path) => !scenarioReplayAllowedPath(path, featureRoots),
-  );
-  if (unexpectedPaths.length) {
-    return {
-      state: "invalid",
-      sourceCommit: input.sourceCommit,
-      reason:
-        "replayed scenario patch changed paths outside the owning feature",
-      evidence: [
-        ...evidence,
-        ...unexpectedPaths.map((path) => `outside-scope:${path}`),
-      ],
-    };
-  }
-  const protectedPaths = proofProtectedScenarioPaths(changedPaths);
+  const protectedPaths = proofProtectedScenarioPaths(boundedPaths);
   const protectedPathsEquivalent =
     protectedPaths.length > 0 &&
     frozenCandidateContentEquivalent({
@@ -1959,7 +1998,7 @@ export function replayScenarioNormalizationOntoTarget(
     sourceCommit: input.sourceCommit,
     resultingCommit,
     selectedCommits,
-    changedPaths,
+    changedPaths: boundedPaths,
     protectedPathsEquivalent,
   };
 }
@@ -5125,7 +5164,7 @@ export async function reconcileSpecLive(
                 ctx,
                 [
                   `${specId} passed exact live run ${runId} at ${sourceCommit}, but replaying its bounded task commits on current ${targetRef} conflicts.`,
-                  `Resolve only the current cherry-pick sequence in ${workspaceDir}. Conflicted paths: ${refresh.conflictedPaths.join(", ") || "unknown"}. Preserve the scenario-normalization intent, run scoped checks plus the strict scenario inventory, finish the cherry-pick sequence, leave the worktree clean, and return decision=committed.`,
+                  `Resolve only the current bounded patch application in ${workspaceDir}. Conflicted paths: ${refresh.conflictedPaths.join(", ") || "unknown"}. Preserve the scenario-normalization intent, run scoped checks plus the strict scenario inventory, commit the resolved patch, leave the worktree clean, and return decision=committed.`,
                   "Do not push, queue ADO, create a PR, create another task, or edit app state. The workflow will push the refreshed task branch and require a new exact live run before integration.",
                   "Task:",
                   ctx.task,
