@@ -7,7 +7,8 @@ export MODEL_BASE_URL="${MODEL_BASE_URL:-http://host.docker.internal:4000}"
 export MODEL_API_KEY="${MODEL_API_KEY:-not-needed}"
 codex_home="${CODEX_HOME:-${MAY_CODEX_HOME:-${HOME}/.codex}}"
 
-codex_model="${CODEX_MODEL:-gpt-5.5}"
+codex_model="${CODEX_MODEL:-gpt-5.6-sol}"
+codex_reasoning_effort="${CODEX_REASONING_EFFORT:-high}"
 codex_base_url="${MODEL_BASE_URL}"
 codex_base_url="${codex_base_url%/}"
 case "${codex_base_url}" in
@@ -19,7 +20,7 @@ mkdir -p "${codex_home}"
 cat > "${codex_home}/config.toml" <<EOF
 model_provider = "model_endpoint"
 model = "${codex_model}"
-model_reasoning_effort = "high"
+model_reasoning_effort = "${codex_reasoning_effort}"
 personality = "pragmatic"
 check_for_update_on_startup = false
 
