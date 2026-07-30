@@ -15,11 +15,10 @@ reconciliation, broader async
 completion handling, and session-independent caller identity still have
 convergence gaps described below. A fresh May verification turn now wakes when
 a human-linked app task reaches `converged` or `attention`. Legacy socket frames
-remain compatibility ingress. A narrow candidate also gives an open Condition
+remain compatibility ingress. The deployed runtime also gives an open Condition
 an optional bounded review checkpoint: passive resync wakes the same task
 owner, and a human-linked checkpoint result wakes one deduplicated fresh May
-review even when the task remains `waiting`. Rollout of that candidate is
-pending approval.
+review even when the task remains `waiting`.
 **Aligned with**: `events.md`, `sessions.md`, `runtime.md`, `may-console.md`, `webui.md`
 
 ## Purpose
@@ -870,7 +869,7 @@ generic completion abstraction.
   `project.task.reconciled` fact to the existing `project.owner.reviewed` task
   reference and original Telegram trace. For `converged` or `attention`, it
   starts one deduplicated fresh May review on the original request; `waiting`
-  progress and tasks without a human link stay silent. The narrow candidate
+  progress and tasks without a human link stay silent. The deployed path
   adds one exception: an app owner result caused by
   `condition-review-checkpoint-missed` starts a fresh May review when the task
   is human-linked, even if it remains `waiting`. The request id includes the
@@ -880,10 +879,16 @@ generic completion abstraction.
   task until a May review started from that exact terminal event produces a
   delivered closeout on the original trace. The query uses indexed event types
   and materializes the small human-linked task set; it ran in about 5 ms on the
-  2.2 GB live database. The candidate covers active missed checkpoints through
+  2.2 GB live database. The deployed path covers active missed checkpoints through
   the existing Condition and resync path; a broader query-level invariant for
   every open human-linked branch remains unnecessary unless live proof exposes
   another lost-wake case.
+- Hao approved the stalled-request truth and rollout on 2026-07-31. Runtime
+  commit `487ff749` was deployed from a clean worktree. The staged and installed
+  binaries shared SHA-256
+  `68fd0eb8603df65f32a8d6b7017dffbb2696761f3dbd84016efc10ccc654a14e`,
+  the deploy marker cleared, May, Web, and maintenance returned running, and
+  the Web surface returned HTTP 200.
 - The deployed path holds proactive messages, alerts, and child-session
   summaries until May reviews them; only `deliver` sends May's reviewed text,
   and review failure retries once then fails closed. All seven approved Gym
