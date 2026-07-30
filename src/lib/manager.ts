@@ -96,6 +96,10 @@ export interface RunOptions {
   kind?: SessionKind;
   autoClose?: "immediate" | "never";
   requestId?: string;
+  /** Stable logical human conversation captured when this session starts. */
+  conversationId?: string;
+  /** Channel message this session must answer; never infer it from another turn. */
+  channelMessageId?: number;
   projectId?: string;
   /** Runtime that exclusively owns crash recovery for this session. */
   recoveryOwner?: string;
@@ -135,6 +139,8 @@ interface ActiveSession {
   toolCalls: number;
   turnCount: number;
   requestId?: string;
+  conversationId?: string;
+  channelMessageId?: number;
   projectId?: string;
   recoveryOwner?: string;
   resumeMessages?: AgentMessage[];
@@ -410,6 +416,8 @@ export class SubagentManager {
         kind: meta.kind ?? "job",
         autoClose: meta.autoClose ?? "immediate",
         requestId: meta.requestId,
+        conversationId: meta.conversationId,
+        channelMessageId: meta.channelMessageId,
         orderId: meta.orderId,
         startedAt: meta.startedAt,
         projectId: meta.projectId,
@@ -578,6 +586,8 @@ export class SubagentManager {
       toolCalls: 0,
       turnCount: 0,
       requestId: opts?.requestId,
+      conversationId: opts?.conversationId,
+      channelMessageId: opts?.channelMessageId,
       projectId: opts?.projectId,
       recoveryOwner: opts?.recoveryOwner,
       resumeMessages: opts?.resumeMessages,
@@ -612,6 +622,8 @@ export class SubagentManager {
       stepLabel: opts?.stepLabel ?? existingMeta?.stepLabel,
       source: opts?.source ?? existingMeta?.source,
       requestId: opts?.requestId ?? existingMeta?.requestId,
+      conversationId: opts?.conversationId ?? existingMeta?.conversationId,
+      channelMessageId: opts?.channelMessageId ?? existingMeta?.channelMessageId,
       projectId: opts?.projectId ?? existingMeta?.projectId,
       recoveryOwner: opts?.recoveryOwner ?? existingMeta?.recoveryOwner,
       kind,
@@ -2112,6 +2124,8 @@ export class SubagentManager {
         projectId: session.projectId,
         kind: session.kind,
         requestId: session.requestId,
+        conversationId: session.conversationId,
+        channelMessageId: session.channelMessageId,
         stepLabel: session.stepLabel,
       },
       ...(session.trace ? { trace: session.trace } : {}),

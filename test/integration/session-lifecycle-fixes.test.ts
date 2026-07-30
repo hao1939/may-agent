@@ -299,6 +299,8 @@ describe("session.start metadata", () => {
       source: "metric-alert-reactor:test.metric",
       kind: "call",
       requestId: "req-1",
+      conversationId: "telegram:chat:123:topic:0:agent:may",
+      channelMessageId: 45974,
       parentSessionId: "s_parent",
     });
 
@@ -320,11 +322,17 @@ describe("session.start metadata", () => {
         agent: "test-agent",
         kind: "call",
         requestId: "req-1",
+        conversationId: "telegram:chat:123:topic:0:agent:may",
+        channelMessageId: 45974,
         parentSessionId: "s_parent",
       },
     });
     expect(start).not.toHaveProperty("sessionId");
     expect(start).not.toHaveProperty("agent");
+    expect(readSessionMeta(persistDir, sessionId)).toMatchObject({
+      conversationId: "telegram:chat:123:topic:0:agent:may",
+      channelMessageId: 45974,
+    });
 
     const end = events.find((event) => event.type === "session.end" && (event as any).data?.sessionId === sessionId);
     expect(end).toMatchObject({
