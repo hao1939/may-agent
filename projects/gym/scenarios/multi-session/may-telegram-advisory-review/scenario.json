@@ -1,0 +1,17 @@
+{
+  "name": "may-telegram-advisory-review",
+  "description": "May treats a Telegram request to review and suggest as advisory, even when it uses a Codex second opinion.",
+  "categories": ["deputy-learning", "conversation", "intent"],
+  "tags": ["may-agent", "telegram", "behavior", "runtime-regression"],
+  "tier": "standard",
+  "timeout": 8,
+  "agent_type": "may",
+  "sessions": [
+    {
+      "id": "advisory-review",
+      "task": "turn-1/task.md",
+      "environment": "turn-1",
+      "artifacts_out": ["alignment-decision.json"]
+    }
+  ]
+}

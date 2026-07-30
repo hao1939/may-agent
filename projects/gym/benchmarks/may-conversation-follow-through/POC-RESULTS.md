@@ -4,7 +4,8 @@ Date: 2026-07-30
 
 ## Decision
 
-**Proceed to a bounded runtime implementation. Reject production rollout now.**
+**The bounded runtime candidate is proven. Reject production rollout until
+Hao reviews this evidence.**
 
 The direction is proven in isolation: request identity comes from durable
 trace/task links, not a mutable May session. Current May behaves correctly when
@@ -56,3 +57,28 @@ notification JSON. It adds no lookup, table, or routing behavior.
 
 Do not add a new database, task type, scheduler, daemon, or background system.
 Existing app owners keep unfinished work; May reviews and closes it.
+
+## Bounded runtime candidate
+
+The candidate keeps the simple shape approved by the design:
+
+- ordinary Telegram messages start fresh bounded May turns;
+- only explicit `/steer` targets an execution session;
+- the existing notification index stores stable conversation identity, reply
+  edges, and available trace/task links;
+- concurrent turns keep separate reply targets;
+- a result can recover the latest human message from its trace after restart;
+- a silent turn that starts Codex or Claude sends one factual receipt;
+- fresh turns receive a small recent Telegram context window.
+
+The real incident replay now passes 8/8 deterministic behavior checks and both
+semantic judges. May treats “review and suggest” as advisory authority, may use
+Codex read-only, changes no state, dispatches no work, and returns a proposal
+for Hao to review. The core behavior trajectory remains 10/10, the held-back
+transfer remains 8/8, and the deterministic trace model remains 8/8 versus 1/8
+for the legacy session model.
+
+May-agent verification passes 52 focused routing tests, 33 end-to-end tests,
+and both TypeScript checks. The Gym corpus validates 571 runnable scenarios
+with zero errors. The candidate is committed only after this proof and remains
+undeployed pending rollout approval.

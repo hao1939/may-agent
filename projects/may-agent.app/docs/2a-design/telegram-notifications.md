@@ -1,8 +1,10 @@
 # Design: Telegram Channel
 
 **Design status:** Accepted.
-**Implementation status:** Partial; the foundation is implemented and the
-interaction refinements below remain.
+**Implementation status:** Partial; a proof-gated candidate implements stable
+conversation identity, inbound/outbound trace links, bounded ordinary turns,
+concurrent reply targets, and restart-safe reply lookup. It is not deployed.
+Focused owner context and async completion fallback still remain.
 
 ## Purpose
 
@@ -821,11 +823,12 @@ review the root cause, regression proof, and rollout result. Nothing is needed
 from you now.
 ```
 
-Current implementation gap: `telegram.ts` sends generic delivery
-acknowledgements, while final result confirmation still depends on the old
-session sending a follow-up. The target behavior suppresses a redundant
-acknowledgement and derives the eventual closeout from the request trace and
-owner task.
+The proof-gated candidate keeps the existing reply acknowledgement when a
+human explicitly replies to a stored notification. A fast ordinary answer is
+sent directly without a redundant receipt. When a silent May turn starts a
+Codex or Claude CLI task, Telegram sends one factual receipt and later sends
+the result on the same trace. Final owner-task closeout still needs the broader
+async completion fallback described in the human-control design.
 
 ## Noise Control
 

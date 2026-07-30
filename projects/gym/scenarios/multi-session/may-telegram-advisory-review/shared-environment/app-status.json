@@ -1,0 +1,10 @@
+{
+  "apps": [
+    { "name": "Evaluation", "fact": "Ready aftermath tasks are draining slowly and some older tasks show contract rejections." },
+    { "name": "Gym", "fact": "Training has attention items and needs valid-run proof before increasing volume." },
+    { "name": "AKS RP E2E", "fact": "Live work is active; much of the remaining queue is waiting on exact blockers or proof." },
+    { "name": "Scout", "fact": "Daily output is healthy and intentionally serialized around one shared knowledge tree." }
+  ],
+  "currentStateChanges": [],
+  "currentDelegations": []
+}

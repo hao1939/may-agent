@@ -27,6 +27,7 @@ node projects/gym/benchmarks/may-conversation-follow-through/poc/conversation-vi
 node projects/gym/benchmarks/may-conversation-follow-through/poc/run-poc.cjs
 GYM_AGENTS_ROOT=/app/agents bun run scenario:run -- multi-session/may-conversation-follow-through-core --agent may --lab may-conversation-follow-through-poc --timeout 8
 GYM_AGENTS_ROOT=/app/agents bun run scenario:run -- multi-session/may-conversation-follow-through-transfer --agent may --lab may-conversation-follow-through-poc --timeout 8
+GYM_AGENTS_ROOT=/app/agents bun run scenario:run -- multi-session/may-telegram-advisory-review --agent may --timeout 8
 ```
 
 Critical gates are zero cross-request routing, zero session-loss drops, one

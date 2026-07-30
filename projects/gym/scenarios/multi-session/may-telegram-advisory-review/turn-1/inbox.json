@@ -1,0 +1,8 @@
+{
+  "id": "telegram-45967",
+  "kind": "human-advisory-request",
+  "messageId": 45967,
+  "traceId": "trace-app-review",
+  "text": "Review app status and suggest how to make them work harder. Can try codex to get second thoughts.",
+  "authority": "review-and-propose"
+}
