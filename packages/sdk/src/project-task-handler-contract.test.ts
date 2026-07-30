@@ -227,12 +227,33 @@ describe("project task handler contract", () => {
               type: "credential.ready",
               subject: "credential:xhs",
               expected: { field: "state", equals: "ready" },
+              reviewAfterMs: 300000,
             },
           ],
         },
         workflowOptions,
       ).ok,
     ).toBe(true);
+
+    expect(
+      admitProjectAppTaskHandlerResult(
+        {
+          state: "waiting",
+          summary: "Waiting with an invalid busy review loop",
+          evidence: [],
+          conditions: [
+            {
+              id: "credential-ready:xhs",
+              type: "credential.ready",
+              subject: "credential:xhs",
+              expected: "ready",
+              reviewAfterMs: 1000,
+            },
+          ],
+        },
+        workflowOptions,
+      ).ok,
+    ).toBe(false);
   });
 
   it("admits only explicit verifier verdicts", () => {
