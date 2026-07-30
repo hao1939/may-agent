@@ -18,10 +18,14 @@
 
 import { setDefaultAutoSelectFamily } from "node:net";
 import { resolve } from "node:path";
-import { type EventBus } from "../event-bus.js";
+import { EVENT_ROW_ID, type EventBus, type EventTrace } from "../event-bus.js";
 import type { SubagentManager } from "../../lib/index.js";
-import { getNotificationMessage } from "../../lib/db/notifications.js";
-import { buildTelegramReplyRoute } from "./telegram-reply-router.js";
+import {
+  getLatestInboundNotificationMessage,
+  getNotificationMessage,
+  storeNotificationMessage,
+} from "../../lib/db/notifications.js";
+import { buildTelegramReplyRoute, telegramConversationId } from "./telegram-reply-router.js";
 import { createTelegramClient } from "./telegram-client.js";
 import { attachTelegramOutbound } from "./telegram-outbound.js";
 import { reviewHumanAttention } from "./human-attention-review.js";
@@ -62,6 +66,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     .map((id) => id.trim())
     .filter(Boolean);
   const pendingChatId: string | null = allowedChatIds[0] || null;
+  const persistDir = opts.persistDir ?? ".state";
 
   if (!token) {
     bus.emit({ type: "info", message: "[telegram] TELEGRAM_BOT_TOKEN not set — bot disabled" });
@@ -99,21 +104,44 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       summary?: string;
       data?: Record<string, unknown>;
       replyToMessageId?: number;
+      conversationId?: string;
+      traceId?: string;
+      parentEventId?: number;
+      taskId?: string;
     },
   ) {
     if (!pendingChatId) return;
     if (shouldSuppressProactive(text, context)) return;
+    const data = { ...(context?.data ?? {}) };
+    const latestInbound = context?.traceId ? getLatestInboundNotificationMessage(persistDir, context.traceId) : null;
+    const inboundData = parseJsonRecord(latestInbound?.data);
+    const conversationId =
+      context?.conversationId ??
+      stringValue(inboundData?.conversationId) ??
+      telegramConversationId(pendingChatId, null, opts.interfaceAgent);
+    const priorConversationId = typeof data.conversationId === "string" ? data.conversationId : undefined;
+    if (priorConversationId && priorConversationId !== conversationId && data.requestConversationId === undefined) {
+      data.requestConversationId = priorConversationId;
+    }
+    data.conversationId = conversationId;
+    data.direction = "outbound";
+    if (context?.traceId) data.traceId = context.traceId;
+    if (context?.parentEventId) data.parentEventId = context.parentEventId;
+    if (context?.taskId) data.taskId = context.taskId;
+    const durableReplyTarget = latestInbound?.telegram_msg_id;
+    const replyToMessageId = context?.replyToMessageId ?? durableReplyTarget;
+    if (replyToMessageId) data.replyToMsgId = replyToMessageId;
     const ctx = {
       eventType: context?.eventType || "response",
       agent: context?.agent || opts.interfaceAgent,
       sessionId: context?.sessionId || getSessionId() || undefined,
       projectId: context?.projectId,
       data: JSON.stringify({
-        ...(context?.data ?? {}),
+        ...data,
         text: text.slice(0, 500),
         summary: context?.summary,
       }),
-      replyToMessageId: context?.replyToMessageId,
+      replyToMessageId,
     };
     sendMessage(pendingChatId, text, undefined, ctx)
       .then((messageId) => {
@@ -129,6 +157,14 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
               sessionId: ctx.sessionId,
               resultEventType: ctx.eventType,
             },
+            ...(context?.traceId
+              ? {
+                  trace: {
+                    traceId: context.traceId,
+                    ...(context.parentEventId ? { parentEventId: context.parentEventId } : {}),
+                  },
+                }
+              : {}),
           } as any);
           return;
         }
@@ -143,6 +179,14 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             resultEventType: ctx.eventType,
             reason: "Telegram send returned no message id",
           },
+          ...(context?.traceId
+            ? {
+                trace: {
+                  traceId: context.traceId,
+                  ...(context.parentEventId ? { parentEventId: context.parentEventId } : {}),
+                },
+              }
+            : {}),
         } as any);
       })
       .catch((err) => {
@@ -158,6 +202,14 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             resultEventType: ctx.eventType,
             reason: msg,
           },
+          ...(context?.traceId
+            ? {
+                trace: {
+                  traceId: context.traceId,
+                  ...(context.parentEventId ? { parentEventId: context.parentEventId } : {}),
+                },
+              }
+            : {}),
         } as any);
       });
   }
@@ -207,9 +259,13 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     channelMessageId?: number,
     target?: { sessionId?: string; agent?: string; projectPath?: string },
     context?: Record<string, unknown>,
+    chatId?: string,
+    topicId?: string | number,
+    conversationId?: string,
+    replyToMsgId?: number,
   ): void {
-    const currentSessionId = getSessionId();
-    bus.emit({
+    const receivedTrace = traceFromTelegramContext(context);
+    const received = bus.emit({
       type: "human.input.received",
       source,
       owner: normalizeEventOwner(opts.interfaceAgent),
@@ -218,19 +274,45 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         actor: "human",
         text: message,
         conversation: {
-          id: typeof context?.conversationId === "string" ? context.conversationId : undefined,
+          id: conversationId,
           channel: "telegram",
-          channelThreadId: pendingChatId ?? undefined,
+          channelThreadId: topicId === undefined ? undefined : String(topicId),
           channelMessageId,
+          replyToInputId: replyToMsgId ? `telegram:${replyToMsgId}` : undefined,
         },
-        target:
-          target ??
-          (currentSessionId
-            ? { agent: opts.interfaceAgent, sessionId: currentSessionId }
-            : { agent: opts.interfaceAgent }),
+        target: target ?? { agent: opts.interfaceAgent },
         context,
       },
+      ...(receivedTrace ? { trace: receivedTrace } : {}),
     } as any);
+
+    if (!channelMessageId) return;
+    const rowId = received[EVENT_ROW_ID];
+    const traceId = receivedTrace?.traceId ?? (rowId ? `event:${rowId}` : undefined);
+    const telegramReply = recordField(context, "telegramReply");
+    try {
+      storeNotificationMessage(persistDir, {
+        telegram_msg_id: channelMessageId,
+        event_type: "human.input.received",
+        agent: opts.interfaceAgent,
+        session_id: null,
+        project_id: target?.projectPath ?? stringValue(telegramReply?.projectId) ?? null,
+        data: JSON.stringify({
+          direction: "inbound",
+          conversationId,
+          chatId,
+          topicId: topicId ?? 0,
+          replyToMsgId,
+          traceId,
+          parentEventId: receivedTrace?.parentEventId,
+          sourceEventId: rowId,
+          taskId: stringValue(telegramReply?.taskId),
+          text: message.slice(0, 500),
+        }),
+      });
+    } catch {
+      /* best-effort transport index; canonical input is already durable */
+    }
   }
 
   function emitSessionCancel(sessionId: string): void {
@@ -272,6 +354,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     }
 
     const chatIdStr = String(chatId);
+    const topicId = msg.message_thread_id as number | undefined;
+    const conversationId = telegramConversationId(chatIdStr, topicId, opts.interfaceAgent);
     bus.emit({ type: "info", message: `[telegram] ← ${text.slice(0, 80)}` });
 
     // Reply context is structured on the event. Stored notification replies keep
@@ -295,14 +379,20 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         });
 
         if (route.kind === "notification") {
-          inputContext = {
-            conversationId: route.context.conversationId,
-            telegramReply: route.context,
+          const requestConversationId = route.context.conversationId;
+          const telegramReply = {
+            ...route.context,
+            conversationId,
+            ...(requestConversationId && requestConversationId !== conversationId ? { requestConversationId } : {}),
           };
-          if (route.sessionId || (route.projectPath && isApprovalReplyCandidate(route.context))) {
+          inputContext = {
+            conversationId,
+            telegramReply,
+          };
+          if (route.projectPath && isApprovalReplyCandidate(route.context)) {
             inputTarget = {
-              sessionId: route.sessionId ?? undefined,
-              projectPath: isApprovalReplyCandidate(route.context) ? (route.projectPath ?? undefined) : undefined,
+              agent: opts.interfaceAgent,
+              projectPath: route.projectPath,
             };
           }
           bus.emit({ type: "info", message: route.infoMessage });
@@ -315,7 +405,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
               enriched: true,
               hasSessionCtx: route.hasSessionCtx,
               originalMsgId: replyToMsgId,
-              conversationId: route.context.conversationId,
+              conversationId,
               originalIssue: route.context.originalIssue,
               expectedClosure: route.context.expectedClosure,
               actionHints: route.context.actionHints,
@@ -336,7 +426,12 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             projectId: route.projectPath ?? undefined,
             data: JSON.stringify({
               replyToMsgId,
-              conversationId: route.context.conversationId,
+              conversationId,
+              requestConversationId,
+              direction: "outbound",
+              traceId: route.context.traceId,
+              sourceEventId: route.context.sourceEventId,
+              taskId: route.context.taskId,
               originalIssue: route.context.originalIssue,
               expectedClosure: route.context.expectedClosure,
               actionHints: route.context.actionHints,
@@ -347,8 +442,10 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         } else if (route.kind === "quote") {
           enrichedText = route.enrichedText;
           inputContext = {
+            conversationId,
             telegramReply: {
               replyToMsgId,
+              conversationId,
               fallback: "telegram-quote",
             },
           };
@@ -368,13 +465,20 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           await sendMessage(chatIdStr, "Received. I attached the quoted message and May is handling it.", undefined, {
             eventType: "telegram.reply",
             agent: opts.interfaceAgent,
-            data: JSON.stringify({ replyToMsgId, fallback: "telegram-quote" }),
+            data: JSON.stringify({
+              direction: "outbound",
+              conversationId,
+              replyToMsgId,
+              fallback: "telegram-quote",
+            }),
             replyToMessageId: msg.message_id,
           });
         } else {
           inputContext = {
+            conversationId,
             telegramReply: {
               replyToMsgId,
+              conversationId,
               fallback: "missing-context",
             },
           };
@@ -397,7 +501,12 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             {
               eventType: "telegram.reply",
               agent: opts.interfaceAgent,
-              data: JSON.stringify({ replyToMsgId, fallback: "missing-context" }),
+              data: JSON.stringify({
+                direction: "outbound",
+                conversationId,
+                replyToMsgId,
+                fallback: "missing-context",
+              }),
               replyToMessageId: msg.message_id,
             },
           );
@@ -405,7 +514,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       } catch {}
     }
 
-    if (await handleTelegramCommand(text, chatIdStr)) {
+    if (await handleTelegramCommand(text, chatIdStr, msg, conversationId, topicId, replyToMsgId)) {
       return;
     }
 
@@ -428,10 +537,27 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
     // All input goes through the unified handler (enriched if reply)
     const finalMessage = replyToMsgId ? enrichedText : inputMessage;
-    emitChatStart(finalMessage, "telegram", msg.message_id, inputTarget, inputContext);
+    emitChatStart(
+      finalMessage,
+      "telegram",
+      msg.message_id,
+      inputTarget,
+      inputContext ?? { conversationId },
+      chatIdStr,
+      topicId,
+      conversationId,
+      replyToMsgId,
+    );
   }
 
-  async function handleTelegramCommand(text: string, chatIdStr: string): Promise<boolean> {
+  async function handleTelegramCommand(
+    text: string,
+    chatIdStr: string,
+    msg: any,
+    conversationId: string,
+    topicId?: number,
+    replyToMsgId?: number,
+  ): Promise<boolean> {
     if (!text.startsWith("/")) return false;
 
     const [cmd = "", ...rest] = text.split(/\s+/);
@@ -445,6 +571,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           "*Commands:*\n" +
           "/status — Show active sessions\n" +
           "/cancel — Cancel current task\n" +
+          "/steer <session> <message> — Explicitly steer one execution session\n" +
           "/reload — Reload agent configs\n" +
           "/help — Show this message\n\n" +
           "Prefix with @agent to run directly: @coder fix the bug",
@@ -465,6 +592,39 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       } else {
         emitCancelAll();
       }
+      return true;
+    }
+
+    if (command === "/steer") {
+      const [sessionId, ...messageParts] = rest;
+      const steerText = messageParts.join(" ").trim();
+      if (!sessionId || !steerText) {
+        await sendMessage(chatIdStr, "Use: /steer <session> <message>", undefined, {
+          eventType: "telegram.reply",
+          agent: opts.interfaceAgent,
+          data: JSON.stringify({ direction: "outbound", conversationId }),
+          replyToMessageId: msg.message_id,
+        });
+        return true;
+      }
+      emitChatStart(
+        steerText,
+        "telegram",
+        msg.message_id,
+        { agent: opts.interfaceAgent, sessionId },
+        { conversationId, explicitSessionControl: true },
+        chatIdStr,
+        topicId,
+        conversationId,
+        replyToMsgId,
+      );
+      await sendMessage(chatIdStr, `Received. I steered session ${sessionId}.`, undefined, {
+        eventType: "telegram.reply",
+        agent: opts.interfaceAgent,
+        sessionId,
+        data: JSON.stringify({ direction: "outbound", conversationId }),
+        replyToMessageId: msg.message_id,
+      });
       return true;
     }
 
@@ -572,4 +732,38 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     },
     sendAlert: outbound.sendAlert,
   };
+}
+
+function recordField(value: unknown, key: string): Record<string, unknown> | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const field = (value as Record<string, unknown>)[key];
+  return field && typeof field === "object" && !Array.isArray(field) ? (field as Record<string, unknown>) : undefined;
+}
+
+function stringValue(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function positiveInteger(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : undefined;
+}
+
+function traceFromTelegramContext(context: Record<string, unknown> | undefined): EventTrace | undefined {
+  const reply = recordField(context, "telegramReply");
+  const traceId = stringValue(reply?.traceId);
+  if (!traceId) return undefined;
+  const parentEventId = positiveInteger(reply?.sourceEventId) ?? positiveInteger(reply?.parentEventId);
+  return { traceId, ...(parentEventId ? { parentEventId } : {}) };
+}
+
+function parseJsonRecord(raw: string | null | undefined): Record<string, unknown> | undefined {
+  if (!raw) return undefined;
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : undefined;
+  } catch {
+    return undefined;
+  }
 }

@@ -117,6 +117,7 @@ export async function runAppRuntime(opts: {
       cancelledOnce = false;
     },
     projectRoot: opts.projectRoot,
+    persistDir: opts.persistDir,
     reload: handleReload,
     restart: gracefulRestart,
     shutdown: gracefulShutdown,

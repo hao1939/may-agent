@@ -1,4 +1,4 @@
-import { EVENT_ROW_ID, type EventBus } from "../event-bus.js";
+import { EVENT_ROW_ID, type EventBus, type EventTrace } from "../event-bus.js";
 import type { HumanAttentionCandidate, HumanAttentionReview } from "./human-attention-review.js";
 import { extractProjectPath, normalizeProjectPath } from "./telegram-reply-router.js";
 
@@ -10,6 +10,10 @@ export interface TelegramOutboundContext {
   summary?: string;
   data?: Record<string, unknown>;
   replyToMessageId?: number;
+  conversationId?: string;
+  traceId?: string;
+  parentEventId?: number;
+  taskId?: string;
 }
 
 export interface TelegramOutboundOptions {
@@ -128,10 +132,14 @@ function approvalConversationContext(message: Record<string, unknown>): Record<s
 export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramOutbound {
   const { bus, getSessionId, pendingChatId, sendToUser } = opts;
 
-  let rootChatSessionId: string | null = null;
+  const rootChatSessions = new Set<string>();
+  let latestRootChatSessionId: string | null = null;
   let pendingTelegramReplyToMessageId: number | undefined;
+  let pendingTelegramConversationId: string | undefined;
   const watchedSessions = new Set<string>();
   const replyToMessageIdBySession = new Map<string, number>();
+  const conversationIdBySession = new Map<string, string>();
+  const traceBySession = new Map<string, EventTrace>();
   const outboundBySession = new Map<string, { pendingText: string; sentAnyText: boolean; sentText: string }>();
 
   function reviewInShadow(candidate: HumanAttentionCandidate): void {
@@ -187,16 +195,23 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
       const data = messageData(event);
       const replyToMessageId = numberOrUndefined(data.channelMessageId);
       if (replyToMessageId) pendingTelegramReplyToMessageId = replyToMessageId;
-      bindCurrentChatSession(replyToMessageId);
+      if (typeof data.conversationId === "string") pendingTelegramConversationId = data.conversationId;
+      if (data.forceNew !== true) bindCurrentChatSession(replyToMessageId);
     }
 
     if (event.type === "session.start" && sessionId && isRootChatSession(event)) {
-      rootChatSessionId = sessionId;
+      rootChatSessions.add(sessionId);
+      latestRootChatSessionId = sessionId;
       watchedSessions.add(sessionId);
       outboundBySession.set(sessionId, { pendingText: "", sentAnyText: false, sentText: "" });
+      if (event.trace?.traceId) traceBySession.set(sessionId, event.trace);
       if (pendingTelegramReplyToMessageId) {
         replyToMessageIdBySession.set(sessionId, pendingTelegramReplyToMessageId);
         pendingTelegramReplyToMessageId = undefined;
+      }
+      if (pendingTelegramConversationId) {
+        conversationIdBySession.set(sessionId, pendingTelegramConversationId);
+        pendingTelegramConversationId = undefined;
       }
     }
 
@@ -207,23 +222,26 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
       sessionId
     ) {
       watchedSessions.add(sessionId);
+      if (event.trace?.traceId) traceBySession.set(sessionId, event.trace);
       const parentReplyToMessageId = replyToMessageIdBySession.get(String(session.parentSessionId));
       if (parentReplyToMessageId) replyToMessageIdBySession.set(sessionId, parentReplyToMessageId);
+      const parentConversationId = conversationIdBySession.get(String(session.parentSessionId));
+      if (parentConversationId) conversationIdBySession.set(sessionId, parentConversationId);
     }
 
     if (sessionId && !watchedSessions.has(sessionId)) {
       return;
     }
 
-    const rootSid = rootChatSessionId;
+    const isRootSession = Boolean(sessionId && rootChatSessions.has(sessionId));
 
-    if (event.type === "text" && "sessionId" in event && event.sessionId === rootSid) {
+    if (event.type === "text" && "sessionId" in event && rootChatSessions.has(event.sessionId)) {
       const state = sessionState(event.sessionId);
       state.pendingText += event.text;
       flushPendingText(event.sessionId);
     }
 
-    if (event.type === "turn_end" && "sessionId" in event && event.sessionId === rootSid) {
+    if (event.type === "turn_end" && "sessionId" in event && rootChatSessions.has(event.sessionId)) {
       const state = sessionState(event.sessionId);
       const hadText = state.pendingText.trim().length > 0 || state.sentAnyText;
       flushPendingText(event.sessionId);
@@ -236,7 +254,7 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
       }
     }
 
-    if (event.type === "session.end" && sessionId && sessionId !== rootSid) {
+    if (event.type === "session.end" && sessionId && !isRootSession) {
       if (pendingChatId) {
         const fp = session.finishParams as Record<string, unknown> | undefined;
         const summary =
@@ -250,6 +268,8 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
             sessionId,
             summary,
             replyToMessageId: replyToMessageIdBySession.get(sessionId),
+            conversationId: conversationIdBySession.get(sessionId),
+            ...traceContext(sessionId),
           });
         } else {
           sendToUser(`✅ ${String(session.agent)}: ${summary}`, {
@@ -258,18 +278,40 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
             sessionId,
             summary,
             replyToMessageId: replyToMessageIdBySession.get(sessionId),
+            conversationId: conversationIdBySession.get(sessionId),
+            ...traceContext(sessionId),
           });
         }
       }
       watchedSessions.delete(sessionId);
       replyToMessageIdBySession.delete(sessionId);
+      conversationIdBySession.delete(sessionId);
+      traceBySession.delete(sessionId);
       outboundBySession.delete(sessionId);
+    }
+
+    if (event.type === "cli.task.started" && sessionId && isRootSession) {
+      const state = sessionState(sessionId);
+      if (!state.sentAnyText && !state.pendingText.trim()) {
+        const tool = typeof session.tool === "string" ? session.tool : "a second-opinion tool";
+        const text = `I received this. I’m checking it with ${tool} and will reply with the result.`;
+        sendToUser(text, {
+          eventType: "response",
+          agent: opts.interfaceAgent,
+          sessionId,
+          replyToMessageId: replyToMessageIdBySession.get(sessionId),
+          conversationId: conversationIdBySession.get(sessionId),
+          ...traceContext(sessionId),
+        });
+        state.sentAnyText = true;
+        state.sentText += `\n${text}`;
+      }
     }
 
     if (
       (event.type === "session.end" || event.type === "session.idle") &&
       sessionId &&
-      sessionId === rootSid &&
+      isRootSession &&
       pendingChatId
     ) {
       const state = sessionState(sessionId);
@@ -283,6 +325,8 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
           sessionId,
           summary: errMsg,
           replyToMessageId: replyToMessageIdBySession.get(sessionId),
+          conversationId: conversationIdBySession.get(sessionId),
+          ...traceContext(sessionId),
         });
       } else {
         const summary = String(session.summary ?? "").trim();
@@ -293,6 +337,8 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
             sessionId,
             summary,
             replyToMessageId: replyToMessageIdBySession.get(sessionId),
+            conversationId: conversationIdBySession.get(sessionId),
+            ...traceContext(sessionId),
           });
           state.sentAnyText = true;
           state.sentText += "\n" + summary;
@@ -302,13 +348,20 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
             agent: String(session.agent),
             sessionId,
             replyToMessageId: replyToMessageIdBySession.get(sessionId),
+            conversationId: conversationIdBySession.get(sessionId),
+            ...traceContext(sessionId),
           });
         }
       }
       if (event.type === "session.end" || event.type === "session.idle") {
-        rootChatSessionId = null;
+        rootChatSessions.delete(sessionId);
+        if (latestRootChatSessionId === sessionId) {
+          latestRootChatSessionId = [...rootChatSessions].at(-1) ?? null;
+        }
         watchedSessions.delete(sessionId);
         replyToMessageIdBySession.delete(sessionId);
+        conversationIdBySession.delete(sessionId);
+        traceBySession.delete(sessionId);
         outboundBySession.delete(sessionId);
       }
     }
@@ -369,6 +422,7 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
             : sourceEventId
               ? `event:${sourceEventId}`
               : undefined;
+        if (sourceEventId && data.sourceEventId === undefined) data.sourceEventId = sourceEventId;
         if (traceId && data.traceId === undefined) data.traceId = traceId;
         if (typeof event.trace?.parentEventId === "number" && data.parentEventId === undefined) {
           data.parentEventId = event.trace.parentEventId;
@@ -398,6 +452,10 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
           projectId,
           summary: content.slice(0, 200),
           data,
+          traceId,
+          parentEventId: typeof data.parentEventId === "number" ? data.parentEventId : undefined,
+          taskId: typeof data.taskId === "string" ? data.taskId : undefined,
+          replyToMessageId: traceId ? replyToMessageIdForTrace(traceId) : undefined,
         });
       }
     }
@@ -426,19 +484,26 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
       agent: opts.interfaceAgent,
       sessionId,
       replyToMessageId: replyToMessageIdBySession.get(sessionId),
+      conversationId: conversationIdBySession.get(sessionId),
+      ...traceContext(sessionId),
     });
   }
 
   function bindCurrentChatSession(replyToMessageId?: number): string | null {
     const sessionId = getSessionId();
     if (!sessionId) return null;
-    rootChatSessionId = sessionId;
+    rootChatSessions.add(sessionId);
+    latestRootChatSessionId = sessionId;
     watchedSessions.add(sessionId);
     sessionState(sessionId);
     const effectiveReplyToMessageId = replyToMessageId ?? pendingTelegramReplyToMessageId;
     if (effectiveReplyToMessageId) {
       replyToMessageIdBySession.set(sessionId, effectiveReplyToMessageId);
       pendingTelegramReplyToMessageId = undefined;
+    }
+    if (pendingTelegramConversationId) {
+      conversationIdBySession.set(sessionId, pendingTelegramConversationId);
+      pendingTelegramConversationId = undefined;
     }
     return sessionId;
   }
@@ -465,7 +530,7 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
 
   return {
     close: unsubBus,
-    getRootChatSessionId: () => rootChatSessionId,
+    getRootChatSessionId: () => latestRootChatSessionId,
     sendAlert: (text: string) => {
       reviewInShadow({
         eventType: "alert",
@@ -475,6 +540,18 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
       sendToUser(text, { eventType: "alert" });
     },
   };
+
+  function traceContext(sessionId: string): { traceId?: string; parentEventId?: number } {
+    const trace = traceBySession.get(sessionId);
+    return trace ? { traceId: trace.traceId, parentEventId: trace.parentEventId } : {};
+  }
+
+  function replyToMessageIdForTrace(traceId: string): number | undefined {
+    for (const [sessionId, trace] of traceBySession) {
+      if (trace.traceId === traceId) return replyToMessageIdBySession.get(sessionId);
+    }
+    return undefined;
+  }
 }
 
 function normalizeForCompare(text: string): string {

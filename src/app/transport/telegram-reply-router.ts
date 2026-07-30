@@ -16,6 +16,11 @@ export interface TelegramReplyContext {
   projectId?: string;
   sessionId?: string;
   conversationId?: string;
+  requestConversationId?: string;
+  traceId?: string;
+  parentEventId?: number;
+  sourceEventId?: number;
+  taskId?: string;
   originalIssue?: Record<string, unknown>;
   expectedClosure?: unknown[];
   actionHints?: unknown[];
@@ -174,6 +179,7 @@ function readStoredConversation(data: Record<string, unknown> | null): Record<st
 function buildTelegramReplyContext(ctx: TelegramNotificationContext, replyToMsgId: number): TelegramReplyContext {
   const data = parseNotificationData(ctx.data);
   const conversation = readStoredConversation(data);
+  const originalIssue = objectOrNull(conversation?.originalIssue);
   const expectedClosure = Array.isArray(data?.expectedClosure) ? data.expectedClosure : undefined;
   const actionHints = Array.isArray(data?.actionHints) ? data.actionHints : undefined;
   const notification: TelegramReplyContext["notification"] = {};
@@ -188,7 +194,20 @@ function buildTelegramReplyContext(ctx: TelegramNotificationContext, replyToMsgI
     projectId: ctx.project_id ?? undefined,
     sessionId: ctx.session_id ?? undefined,
     conversationId: stringOrNull(conversation?.conversationId) ?? undefined,
-    originalIssue: objectOrNull(conversation?.originalIssue) ?? undefined,
+    requestConversationId: stringOrNull(data?.requestConversationId) ?? undefined,
+    traceId:
+      stringOrNull(data?.traceId) ??
+      stringOrNull(objectOrNull(data?.conversation)?.traceId) ??
+      stringOrNull(originalIssue?.traceId) ??
+      undefined,
+    parentEventId: integerOrNull(data?.parentEventId) ?? undefined,
+    sourceEventId: integerOrNull(data?.sourceEventId) ?? undefined,
+    taskId:
+      stringOrNull(data?.taskId) ??
+      stringOrNull(objectOrNull(data?.conversation)?.taskId) ??
+      stringOrNull(originalIssue?.taskId) ??
+      undefined,
+    originalIssue: originalIssue ?? undefined,
     expectedClosure,
     actionHints,
     ...(Object.keys(notification).length ? { notification } : {}),
@@ -210,6 +229,20 @@ function objectOrNull(value: unknown): Record<string, unknown> | null {
 
 function stringOrNull(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function integerOrNull(value: unknown): number | null {
+  return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : null;
+}
+
+export function telegramConversationId(
+  chatId: string | number,
+  topicId: string | number | null | undefined,
+  agent: string,
+): string {
+  const normalizedTopic =
+    topicId === null || topicId === undefined || String(topicId).trim() === "" ? "0" : String(topicId);
+  return `telegram:chat:${String(chatId)}:topic:${normalizedTopic}:agent:${agent.trim() || "may"}`;
 }
 
 export function normalizeProjectPath(value: unknown, projectRoot: string): string | null {

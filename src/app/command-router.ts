@@ -4,6 +4,7 @@ import type { SubagentManager } from "../lib/index.js";
 import { log } from "../lib/log.js";
 import type { ChatSession } from "./chat-session.js";
 import { childEventTrace, type EventBus } from "./event-bus.js";
+import { getRecentTelegramConversationMessages } from "../lib/db/notifications.js";
 import { isRecord, normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 
 export interface CommandRouterOptions {
@@ -12,6 +13,7 @@ export interface CommandRouterOptions {
   getChatSession: () => ChatSession | undefined;
   clearCancelLatch: () => void;
   projectRoot: string;
+  persistDir?: string;
   reload: () => void | Promise<void>;
   restart: () => void;
   shutdown: () => void;
@@ -127,6 +129,8 @@ function buildDeliveredHumanMessage(message: string, context: Record<string, unk
   const lines = ["May reply-handling work item", "", "Human reply", message, "", "Attached context"];
 
   const conversationId = stringField(reply, "conversationId");
+  const traceId = stringField(reply, "traceId");
+  const taskId = stringField(reply, "taskId");
   const eventType = stringField(issue, "eventType") ?? stringField(reply, "eventType");
   const escalationId = stringField(issue, "escalationId") ?? stringField(reply, "escalationId");
   const project =
@@ -142,6 +146,8 @@ function buildDeliveredHumanMessage(message: string, context: Record<string, unk
   const expectedClosure = stringList(reply.expectedClosure);
 
   if (conversationId) lines.push(`Conversation: ${conversationId}`);
+  if (traceId) lines.push(`Request trace: ${traceId}`);
+  if (taskId) lines.push(`Owner task: ${taskId}`);
   if (eventType) lines.push(`Original issue: ${eventType}`);
   if (escalationId) lines.push(`Escalation: ${escalationId}`);
   if (project) lines.push(`Project: ${project}`);
@@ -312,7 +318,16 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     const target = isRecord(data.target) ? data.target : {};
     const context = isRecord(data.context) ? data.context : {};
     const source = eventSource(event, nonEmptyString(conversation.channel) ?? "human");
-    const deliveredMessage = buildDeliveredHumanMessage(message, context);
+    let deliveredMessage = buildDeliveredHumanMessage(message, context);
+    if (source === "telegram" && options.persistDir) {
+      const conversationId = nonEmptyString(conversation.id);
+      if (conversationId) {
+        deliveredMessage = appendRecentTelegramContext(
+          deliveredMessage,
+          getRecentTelegramConversationMessages(options.persistDir, conversationId),
+        );
+      }
+    }
     const escalationReply = isEscalationReplyContext(context);
     const approvalReply = approvalReplyContext(context);
     const explicitApprovalDecision = approvalReply ? parseExplicitApprovalDecision(message) : null;
@@ -330,7 +345,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       const responseTarget = objectField(expectedResponse, "target");
       const approvalOwner = normalizedProjectPath
         ? projectOwner(normalizedProjectPath)
-        : stringField(approvalReply, "agent") ?? ownerAgent(eventOwner) ?? "may";
+        : (stringField(approvalReply, "agent") ?? ownerAgent(eventOwner) ?? "may");
       bus.emit({
         type: "project.approval.submitted",
         source,
@@ -412,7 +427,8 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       return;
     }
 
-    if (targetSessionId && !mayBrokerReply) {
+    const explicitSessionControl = context.explicitSessionControl === true;
+    if (targetSessionId && !mayBrokerReply && (source !== "telegram" || explicitSessionControl)) {
       bus.emit({
         type: "session.steer.requested",
         source,
@@ -439,6 +455,8 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
           channelMessageId:
             typeof conversation.channelMessageId === "number" ? conversation.channelMessageId : undefined,
           requestId: nonEmptyString(data.inputId) ?? undefined,
+          conversationId: nonEmptyString(conversation.id) ?? undefined,
+          forceNew: source === "telegram",
           ...(Object.keys(context).length ? { context } : {}),
         },
       } as any);
@@ -458,7 +476,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
 
     const agent = nonEmptyString(target.agent) ?? ownerAgent(eventOwner) ?? "may";
     const boundChatSessionId = agent === "may" ? options.getChatSession()?.getSessionId?.() : null;
-    if (boundChatSessionId && context.forceNew !== true) {
+    if (boundChatSessionId && context.forceNew !== true && source !== "telegram") {
       bus.emit({
         type: "session.steer.requested",
         source,
@@ -481,8 +499,9 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         channel: nonEmptyString(conversation.channel) ?? source,
         channelThreadId: nonEmptyString(conversation.channelThreadId) ?? undefined,
         channelMessageId: typeof conversation.channelMessageId === "number" ? conversation.channelMessageId : undefined,
+        conversationId: nonEmptyString(conversation.id) ?? undefined,
         requestId: nonEmptyString(data.inputId) ?? undefined,
-        forceNew: context.forceNew === true,
+        forceNew: context.forceNew === true || source === "telegram",
         ...(Object.keys(context).length ? { context } : {}),
       },
     } as any);
@@ -653,4 +672,24 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
   });
 
   return { handleInput, close: unsubscribe };
+}
+
+function appendRecentTelegramContext(
+  message: string,
+  recent: ReturnType<typeof getRecentTelegramConversationMessages>,
+): string {
+  if (recent.length === 0) return message;
+  const lines = [message, "", "Recent Telegram context (oldest to newest; system-provided)"];
+  for (const item of recent) {
+    const speaker = item.direction === "inbound" ? "Hao" : item.agent || "May";
+    const links = [item.traceId ? `trace=${item.traceId}` : "", item.taskId ? `task=${item.taskId}` : ""]
+      .filter(Boolean)
+      .join(" ");
+    lines.push(`${speaker}${links ? ` [${links}]` : ""}: ${item.text.slice(0, 400)}`);
+  }
+  lines.push("");
+  lines.push(
+    "Use reply and trace links before prose similarity. Treat unrelated nearby messages as context, not as the target request.",
+  );
+  return lines.join("\n");
 }
