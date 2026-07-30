@@ -3,8 +3,9 @@
 **Design status:** Accepted.
 **Implementation status:** Partial; the deployed path implements stable
 conversation identity, inbound/outbound trace links, bounded ordinary turns,
-concurrent reply targets, and restart-safe reply lookup. Focused owner context
-and async completion fallback still remain.
+concurrent reply targets, immutable per-session reply context, restart-safe
+reply lookup, and a narrow May-owned CLI completion fallback. Focused owner
+context and broader async completion handling still remain.
 
 ## Purpose
 

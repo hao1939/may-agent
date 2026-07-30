@@ -4,10 +4,12 @@
 **Implementation status:** Partial. Canonical CLI, Telegram, Web/control
 socket, and console ingress exist. The deployed Telegram path gives ordinary
 input a fresh bounded May turn, stores inbound and outbound trace links in the
-existing message index, and recovers a reply target after restart. Focused
-owner-state context, durable async completion fallback, and
-session-independent caller identity still have convergence gaps described
-below. Legacy socket frames remain compatibility ingress.
+existing message index, captures each turn's reply target in immutable session
+context, and recovers a reply target after restart. May-owned Telegram CLI
+results also get one fresh review when their source session is gone. Focused
+owner-state context, broader async completion handling, and session-independent
+caller identity still have convergence gaps described below. Legacy socket
+frames remain compatibility ingress.
 **Aligned with**: `events.md`, `sessions.md`, `runtime.md`, `may-console.md`, `webui.md`
 
 ## Purpose
@@ -692,7 +694,7 @@ one read-only shadow resolver over existing Telegram notification records. It
 reports whether an explicit trace or task link exists and does not change live
 routing.
 
-The next narrow candidate now covers CLI-worker completion after the source May
+The deployed narrow path now covers CLI-worker completion after the source May
 session disappears. The CLI task keeps its originating trace. If the captured
 session still exists, the runtime steers it as before. Otherwise, only a
 May-owned result linked to indexed Telegram human input starts one fresh May
@@ -702,15 +704,17 @@ Live evidence also exposed a reply-target race in the deployed bounded-turn
 path: inbound message `45974` and outbound messages `45976`/`45977` shared the
 correct trace, but both outbound messages replied to older message `45971`.
 The command router synchronously started the session before Telegram recorded
-the new target in its mutable pending slot. The candidate now captures
+the new target in its mutable pending slot. The deployed fix captures
 `conversationId` and `channelMessageId` in the session invocation, persists
 them in session metadata, and publishes them on `session.start`. Telegram binds
 the response from that immutable session context; a bounded turn no longer
 uses the shared pending slot.
 
-The candidate passes the focused race, overlap, persistence, closeout, and E2E
+The fix passes the focused race, overlap, persistence, closeout, and E2E
 tests, TypeScript, all 9 deterministic Gym checks, and both calibrated semantic
-judges. The committed candidate remains undeployed until Hao approves rollout.
+judges. Hao approved rollout, and commit `2648a3c9` was deployed on 2026-07-30.
+The installed binary matched the staged binary, the deploy marker cleared, and
+May, Web, and maintenance returned healthy.
 
 Keep the broader conversation view and app-task reconciliation separate. The
 narrow CLI fallback does not justify a new request table, scheduler, daemon, or
@@ -735,24 +739,23 @@ generic completion abstraction.
   identity are now deployed. Approval and notification-specific ids are
   retained as request lineage instead of replacing the stable Telegram
   conversation id.
-- The deployed Telegram path keeps active reply targets per bounded session and
-  can recover the latest inbound human message by trace from the durable index,
-  but its mutable pending handoff can attach an older target when session start
-  races event delivery. The undeployed candidate captures conversation and
-  channel-message identity in each session instead. Owner events must still
-  preserve the trace for restart fallback.
+- The deployed Telegram path keeps active reply targets per bounded session,
+  captures conversation and channel-message identity in immutable session
+  context, and can recover the latest inbound human message by trace from the
+  durable index. Owner events must still preserve the trace for restart
+  fallback.
 - There is no conversation context reader that resolves an anchor or named
   subject and assembles focused owner state, evidence, related messages,
   neighboring open requests, and preferences for a fresh bounded May turn.
 - Tool factories resolve caller identity from one mutable per-agent
   `getAgentSessionId()` value. Concurrent May sessions can therefore attach a
   tool request or completion to the wrong session and trace.
-- CLI-task completion has an undeployed candidate fallback for May-owned
-  Telegram work: preserve the original trace, reuse a live source session, or
-  start one deduplicated fresh May review when that session is gone. The
-  fallback currently uses the latest indexed inbound message on that trace; it
-  does not yet resolve a linked app task or assemble the full prepared context
-  packet described above.
+- CLI-task completion has a deployed fallback for May-owned Telegram work:
+  preserve the original trace, reuse a live source session, or start one
+  deduplicated fresh May review when that session is gone. The fallback
+  currently uses the latest indexed inbound message on that trace; it does not
+  yet resolve a linked app task or assemble the full prepared context packet
+  described above.
 - A May chat turn can launch async work and promise a later result without
   first establishing a linked owner task, completion wake, proof condition, or
   missed-progress checkpoint.
