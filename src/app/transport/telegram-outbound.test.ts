@@ -26,6 +26,7 @@ function start(
   source: string,
   sessionId = "shared-chat",
   trace?: { traceId: string; parentEventId?: number },
+  channel?: { channelMessageId: number; conversationId: string },
 ) {
   bus.emit({
     type: "session.start",
@@ -38,6 +39,7 @@ function start(
       trigger: "chat",
       firedAt: Date.now(),
       kind: "chat",
+      ...(channel ?? {}),
     },
     ...(trace ? { trace } : {}),
   });
@@ -211,7 +213,13 @@ describe("Telegram outbound turn ownership", () => {
         forceNew: true,
       },
     });
-    start(bus, "telegram", "s_gym", { traceId: "trace-gym", parentEventId: 11 });
+    start(
+      bus,
+      "telegram",
+      "s_gym",
+      { traceId: "trace-gym", parentEventId: 11 },
+      { channelMessageId: 501, conversationId: "telegram:chat:123:topic:0:agent:may" },
+    );
 
     bus.emit({
       type: "chat.start.requested",
@@ -224,7 +232,13 @@ describe("Telegram outbound turn ownership", () => {
         forceNew: true,
       },
     });
-    start(bus, "telegram", "s_aks", { traceId: "trace-aks", parentEventId: 12 });
+    start(
+      bus,
+      "telegram",
+      "s_aks",
+      { traceId: "trace-aks", parentEventId: 12 },
+      { channelMessageId: 502, conversationId: "telegram:chat:123:topic:0:agent:may" },
+    );
 
     idle(bus, "telegram", "Gym result", "s_gym");
     idle(bus, "telegram", "AKS result", "s_aks");
@@ -250,6 +264,96 @@ describe("Telegram outbound turn ownership", () => {
     outbound.close();
   });
 
+  test("uses the reply target captured by the session instead of another session's target", () => {
+    const { bus, sent, outbound } = harness("legacy-chat");
+
+    bus.emit({
+      type: "chat.start.requested",
+      source: "telegram",
+      owner: "agent:may",
+      data: {
+        message: "old request",
+        channelMessageId: 45971,
+        conversationId: "telegram:chat:123:topic:0:agent:may",
+        forceNew: false,
+      },
+    });
+    start(
+      bus,
+      "telegram",
+      "s_latest",
+      { traceId: "trace-latest" },
+      { channelMessageId: 45974, conversationId: "telegram:chat:123:topic:0:agent:may" },
+    );
+    idle(bus, "telegram", "Latest answer", "s_latest");
+
+    expect(sent[0]).toMatchObject({
+      text: "Latest answer",
+      context: {
+        sessionId: "s_latest",
+        replyToMessageId: 45974,
+        traceId: "trace-latest",
+      },
+    });
+    outbound.close();
+  });
+
+  test("keeps the correct target when session start is emitted before outbound sees chat start", () => {
+    const bus = new EventBus();
+    const sent: Array<{ text: string; context?: Record<string, unknown> }> = [];
+
+    // Command routing is attached before Telegram outbound in the daemon. It
+    // synchronously starts the session while the original chat event is still
+    // being delivered to subscribers.
+    bus.subscribe((event: any) => {
+      if (event.type !== "chat.start.requested") return;
+      bus.emit({
+        type: "session.start",
+        source: "telegram",
+        owner: "agent:may",
+        data: {
+          sessionId: "s_race",
+          agent: "may",
+          task: event.data.message,
+          trigger: "chat",
+          firedAt: Date.now(),
+          kind: "chat",
+          channelMessageId: event.data.channelMessageId,
+          conversationId: event.data.conversationId,
+        },
+        trace: { traceId: "trace-race" },
+      });
+    });
+    const outbound = attachTelegramOutbound({
+      bus,
+      interfaceAgent: "may",
+      projectRoot: "/app",
+      pendingChatId: "human-chat",
+      getSessionId: () => "legacy-chat",
+      sendToUser: (text, context) => sent.push({ text, context }),
+    });
+
+    bus.emit({
+      type: "chat.start.requested",
+      source: "telegram",
+      owner: "agent:may",
+      data: {
+        message: "latest request",
+        channelMessageId: 45974,
+        conversationId: "telegram:chat:123:topic:0:agent:may",
+        forceNew: true,
+      },
+    });
+    idle(bus, "telegram", "Latest answer", "s_race");
+
+    expect(sent[0]?.context).toMatchObject({
+      sessionId: "s_race",
+      replyToMessageId: 45974,
+      traceId: "trace-race",
+    });
+    outbound.close();
+  });
+
   test("acknowledges a silent Telegram turn when it starts a CLI second opinion", () => {
     const { bus, sent, outbound } = harness("legacy-chat");
     bus.emit({
@@ -263,7 +367,13 @@ describe("Telegram outbound turn ownership", () => {
         forceNew: true,
       },
     });
-    start(bus, "telegram", "s_codex", { traceId: "trace-codex", parentEventId: 13 });
+    start(
+      bus,
+      "telegram",
+      "s_codex",
+      { traceId: "trace-codex", parentEventId: 13 },
+      { channelMessageId: 503, conversationId: "telegram:chat:123:topic:0:agent:may" },
+    );
     bus.emit({
       type: "cli.task.started",
       source: "cli-task-runner",

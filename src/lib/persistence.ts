@@ -47,6 +47,10 @@ export interface PersistedSession {
   source?: string;
   /** Request ID linking this session to the unified request tracker. */
   requestId?: string;
+  /** Stable logical channel conversation captured for this session. */
+  conversationId?: string;
+  /** Channel message this session must answer. */
+  channelMessageId?: number;
   /** Project ID linking this session to a persisted project. */
   projectId?: string;
   /** Runtime that exclusively owns crash recovery for this session. */

@@ -205,6 +205,8 @@ describe("command router human intent contract", () => {
           kind: "chat",
           source: "telegram",
           requestId: "telegram:501",
+          conversationId: "telegram:chat:123:topic:0:agent:may",
+          channelMessageId: 501,
           trace: { traceId: expect.any(String), parentEventId: expect.any(Number) },
         },
       });
@@ -272,6 +274,8 @@ describe("command router human intent contract", () => {
       expect(runs).toHaveLength(2);
       expect(runs[0]?.opts?.requestId).toBe("telegram:601");
       expect(runs[1]?.opts?.requestId).toBe("telegram:602");
+      expect(runs[0]?.opts?.channelMessageId).toBe(601);
+      expect(runs[1]?.opts?.channelMessageId).toBe(602);
       expect((runs[0]?.opts?.trace as any)?.traceId).not.toBe((runs[1]?.opts?.trace as any)?.traceId);
     } finally {
       router.close();

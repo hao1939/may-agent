@@ -194,9 +194,11 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
     if (event.type === "chat.start.requested" && event.source === "telegram") {
       const data = messageData(event);
       const replyToMessageId = numberOrUndefined(data.channelMessageId);
-      if (replyToMessageId) pendingTelegramReplyToMessageId = replyToMessageId;
-      if (typeof data.conversationId === "string") pendingTelegramConversationId = data.conversationId;
-      if (data.forceNew !== true) bindCurrentChatSession(replyToMessageId);
+      if (data.forceNew !== true) {
+        if (replyToMessageId) pendingTelegramReplyToMessageId = replyToMessageId;
+        if (typeof data.conversationId === "string") pendingTelegramConversationId = data.conversationId;
+        bindCurrentChatSession(replyToMessageId);
+      }
     }
 
     if (event.type === "session.start" && sessionId && isRootChatSession(event)) {
@@ -205,14 +207,23 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
       watchedSessions.add(sessionId);
       outboundBySession.set(sessionId, { pendingText: "", sentAnyText: false, sentText: "" });
       if (event.trace?.traceId) traceBySession.set(sessionId, event.trace);
-      if (pendingTelegramReplyToMessageId) {
+      const sessionReplyToMessageId = numberOrUndefined(session.channelMessageId);
+      const sessionConversationId =
+        typeof session.conversationId === "string" && session.conversationId.trim()
+          ? session.conversationId.trim()
+          : undefined;
+      if (sessionReplyToMessageId) {
+        replyToMessageIdBySession.set(sessionId, sessionReplyToMessageId);
+      } else if (pendingTelegramReplyToMessageId) {
         replyToMessageIdBySession.set(sessionId, pendingTelegramReplyToMessageId);
-        pendingTelegramReplyToMessageId = undefined;
       }
-      if (pendingTelegramConversationId) {
+      if (sessionConversationId) {
+        conversationIdBySession.set(sessionId, sessionConversationId);
+      } else if (pendingTelegramConversationId) {
         conversationIdBySession.set(sessionId, pendingTelegramConversationId);
-        pendingTelegramConversationId = undefined;
       }
+      pendingTelegramReplyToMessageId = undefined;
+      pendingTelegramConversationId = undefined;
     }
 
     if (
