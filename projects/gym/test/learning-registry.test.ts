@@ -226,7 +226,7 @@ describe("May learning registry", () => {
     ]);
   });
 
-  test("builds a draft plain-language packet for human-inbox release truth", () => {
+  test("builds a plain-language packet for human-inbox release truth", () => {
     const review = buildLearningReleaseReview(
       gymRoot,
       "may-human-inbox-deputy-transfer",
@@ -234,7 +234,20 @@ describe("May learning registry", () => {
 
     expect(review.approval_fingerprint).toMatch(/^sha256:[a-f0-9]{64}$/);
     expect(review.scenarios).toHaveLength(7);
-    expect(review.scenarios.every((item) => item.status === "draft")).toBe(
+    expect(
+      review.scenarios.find(
+        (item) =>
+          item.id === "may-learn-inbox-handle-self-suppressing-recovery",
+      )?.status,
+    ).toBe("approved");
+    expect(
+      review.scenarios
+        .filter(
+          (item) =>
+            item.id !== "may-learn-inbox-handle-self-suppressing-recovery",
+        )
+        .every((item) => item.status === "draft"),
+    ).toBe(
       true,
     );
     expect(review.scenarios).toEqual(

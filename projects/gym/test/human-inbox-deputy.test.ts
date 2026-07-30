@@ -62,7 +62,7 @@ describe("human inbox deputy learning", () => {
     ).toBe(true);
   });
 
-  test("keeps transfer truth separate and draft until Hao approves it", () => {
+  test("keeps transfer truth separate and records Hao's approval per case", () => {
     const unit = json(
       resolve(
         gymRoot,
@@ -87,13 +87,24 @@ describe("human inbox deputy learning", () => {
     );
     expect(unit.release_scenarios).toEqual(releaseScenarios);
     expect(suite.scenarios).toEqual(releaseScenarios);
+    expect(labels["may-learn-inbox-handle-self-suppressing-recovery"]).toEqual(
+      expect.objectContaining({
+        status: "approved",
+        approved_by: "hao",
+      }),
+    );
     expect(
-      releaseScenarios.every(
-        (scenario) =>
-          labels[scenario]?.status === "draft" &&
-          labels[scenario]?.approved_by === null &&
-          labels[scenario]?.approved_at === null,
-      ),
+      releaseScenarios
+        .filter(
+          (scenario) =>
+            scenario !== "may-learn-inbox-handle-self-suppressing-recovery",
+        )
+        .every(
+          (scenario) =>
+            labels[scenario]?.status === "draft" &&
+            labels[scenario]?.approved_by === null &&
+            labels[scenario]?.approved_at === null,
+        ),
     ).toBe(true);
   });
 
