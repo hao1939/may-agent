@@ -352,6 +352,8 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
           "evidence",
           "resume",
           "conversationId",
+          "traceId",
+          "parentEventId",
           "conversation",
           "originalIssue",
           "lastHandledBy",
@@ -359,6 +361,17 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
           "actionHints",
         ]) {
           if (message[key] !== undefined) data[key] = message[key];
+        }
+        const sourceEventId = typeof event[EVENT_ROW_ID] === "number" ? event[EVENT_ROW_ID] : undefined;
+        const traceId =
+          typeof event.trace?.traceId === "string"
+            ? event.trace.traceId
+            : sourceEventId
+              ? `event:${sourceEventId}`
+              : undefined;
+        if (traceId && data.traceId === undefined) data.traceId = traceId;
+        if (typeof event.trace?.parentEventId === "number" && data.parentEventId === undefined) {
+          data.parentEventId = event.trace.parentEventId;
         }
         const approvalContext = approvalConversationContext(message);
         if (approvalContext.conversationId !== undefined && data.conversationId === undefined) {
@@ -371,7 +384,7 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
           data.expectedClosure = approvalContext.expectedClosure;
         }
         reviewInShadow({
-          sourceEventId: typeof event[EVENT_ROW_ID] === "number" ? event[EVENT_ROW_ID] : undefined,
+          sourceEventId,
           eventType: "message.created",
           from: String(message.from ?? ""),
           content,
