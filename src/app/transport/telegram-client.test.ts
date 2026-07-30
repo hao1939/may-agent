@@ -3,9 +3,11 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { closeDb } from "../../lib/db/connection.js";
+import { getDb } from "../../lib/db/connection.js";
 import {
   getLatestInboundNotificationMessage,
   getRecentTelegramConversationMessages,
+  getTelegramConversationView,
   storeNotificationMessage,
 } from "../../lib/db/notifications.js";
 import { createTelegramClient, splitTelegramMessage } from "./telegram-client.js";
@@ -63,6 +65,72 @@ describe("telegram client", () => {
         expect.objectContaining({ telegramMsgId: 601, direction: "outbound", text: "Gym is active" }),
         expect.objectContaining({ telegramMsgId: 602, direction: "inbound", text: "What about AKS?" }),
       ]);
+    } finally {
+      closeDb(persistDir);
+      rmSync(persistDir, { recursive: true, force: true });
+    }
+  });
+
+  it("assembles an exact focused request from existing trace and message data", () => {
+    const persistDir = mkdtempSync(join(tmpdir(), "telegram-conversation-view-"));
+    const conversationId = "telegram:chat:123:topic:0:agent:may";
+    try {
+      storeNotificationMessage(persistDir, {
+        telegram_msg_id: 610,
+        event_type: "human.input.received",
+        agent: "may",
+        session_id: null,
+        project_id: "gym",
+        data: JSON.stringify({
+          direction: "inbound",
+          conversationId,
+          text: "What happened to the Gym run?",
+          traceId: "trace-gym-1",
+          taskId: "learning/gym-run",
+        }),
+        sent_at: 1,
+      });
+      const db = getDb(persistDir);
+      db.run(
+        `INSERT INTO events (event_type, source, owner, data, project_id, task_id, timestamp)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          "project.owner.result",
+          "gym",
+          "agent:may",
+          JSON.stringify({ status: "waiting", summary: "Provider connection failed; no model output." }),
+          "gym",
+          "learning/gym-run",
+          2,
+        ],
+      );
+      const eventId = Number((db.prepare("SELECT last_insert_rowid() AS id").get() as { id: number }).id);
+      db.run("UPDATE event_traces SET trace_id = ? WHERE event_id = ?", ["trace-gym-1", eventId]);
+
+      expect(
+        getTelegramConversationView(persistDir, {
+          conversationId,
+          traceId: "trace-gym-1",
+          taskId: "learning/gym-run",
+          projectId: "gym",
+        }),
+      ).toMatchObject({
+        focus: {
+          traceId: "trace-gym-1",
+          taskId: "learning/gym-run",
+          projectId: "gym",
+          owner: "agent:may",
+          status: "waiting",
+          events: [
+            expect.objectContaining({
+              eventId,
+              type: "project.owner.result",
+              summary: "Provider connection failed; no model output.",
+            }),
+          ],
+        },
+        recentMessages: [expect.objectContaining({ telegramMsgId: 610 })],
+      });
     } finally {
       closeDb(persistDir);
       rmSync(persistDir, { recursive: true, force: true });
