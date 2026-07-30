@@ -137,9 +137,18 @@ nearby context.
 Telegram reply presentation follows a separate, simple rule:
 
 1. An immediate answer replies to the exact incoming human message.
-2. A later progress report, decision packet, or closeout replies to the latest
+2. A late result from a known source session replies to the human message that
+   started that session.
+3. Other progress reports, decision packets, or closeouts reply to the latest
    human message linked to that request trace.
-3. If no later human message exists, it replies to the original request.
+4. If no later human message exists, they reply to the original request.
+
+When a late result names the exact execution session that produced it, the
+transport first recovers that session's persisted `channelMessageId`. Older
+session records may fall back to `requestId` only when it has the exact form
+`telegram:<positive message id>`. If the exact source session has no valid
+target, send the result without a Telegram reply edge. Never attach it to the
+newest message from a shared trace merely to create a reply.
 
 Never route work by that presentation target. After delivery, store the new
 Telegram message id with the same trace and task links so a later human reply
@@ -734,8 +743,24 @@ fallback. The exact overlapping-session regression, focused Telegram and
 lifecycle suites, TypeScript, and the full 2,074-test CI suite pass. Hao
 approved rollout, and the commit was deployed on 2026-07-30. The installed
 binary matched the staged binary, the deploy marker cleared, and May, Web, and
-maintenance returned healthy. The next applicable late tool message remains
-the live Telegram proof.
+maintenance returned healthy. The next applicable late tool messages provided
+the live Telegram proof below.
+
+The post-rollout proof exposed one final compatibility edge. Late messages
+`45991` and `45992` carried the correct source sessions and content, so they no
+longer attached to a newer unrelated request. They were sent without reply
+edges because both source sessions were already idle and Telegram had deleted
+their in-memory reply maps. Their persisted session records still identified
+the original inputs: newer records use `channelMessageId`, while these legacy
+records retained `requestId: telegram:45984` and `requestId: telegram:45981`.
+
+The narrow candidate fix reads that persisted session record when a late
+source-session message arrives. It prefers `channelMessageId`, accepts the
+strict legacy request-id form, and suppresses shared-trace reply fallback when
+an exact source session is present. A missing or malformed target therefore
+produces a standalone message instead of a wrong reply. Focused tests cover an
+idle source session, a legacy record, a malformed record, and a newer competing
+trace target. Rollout still requires Hao's approval.
 
 Keep the broader conversation view and app-task reconciliation separate. The
 narrow CLI fallback does not justify a new request table, scheduler, daemon, or
@@ -760,19 +785,20 @@ generic completion abstraction.
   identity are now deployed. Approval and notification-specific ids are
   retained as request lineage instead of replacing the stable Telegram
   conversation id.
-- The deployed Telegram path keeps active reply targets per bounded session,
-  captures conversation and channel-message identity in immutable session
-  context, and can recover the latest inbound human message by trace from the
-  durable index. Owner events must still preserve the trace for restart
-  fallback.
+- The deployed Telegram path captures conversation and channel-message
+  identity in immutable session context and can recover the latest inbound
+  human message by trace from the durable index. A tested candidate also
+  recovers an idle source session from persisted metadata, including strict
+  legacy `telegram:<id>` request records, without guessing a newer trace target.
+  Rollout is pending approval.
 - There is no conversation context reader that resolves an anchor or named
   subject and assembles focused owner state, evidence, related messages,
   neighboring open requests, and preferences for a fresh bounded May turn.
 - Tool execution now uses exact async session context and carries the source
   session on outbound messages. The old mutable per-agent value remains only as
-  a compatibility fallback outside a running tool call. The regression proof
-  and rollout are complete; live verification awaits the next applicable late
-  tool message.
+  a compatibility fallback outside a running tool call. Live proof confirmed
+  exact source identity and exposed the idle-session lookup edge described
+  above.
 - CLI-task completion has a deployed fallback for May-owned Telegram work:
   preserve the original trace, reuse a live source session, or start one
   deduplicated fresh May review when that session is gone. The fallback

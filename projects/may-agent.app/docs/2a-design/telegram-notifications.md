@@ -515,9 +515,17 @@ Recommended flow:
 8. May answers, delegates to the app owner, changes direction, asks one focused
    question, or closes the request.
 9. Transport replies to the incoming human message for an immediate answer.
-   For later progress or closeout it replies to the latest human message in the
-   same trace, falling back to the original request, and stores the new message
-   with the same links.
+   A result from a known source session replies to the human message that
+   started that session. Other later progress or closeout replies to the latest
+   human message in the same trace, falling back to the original request. It
+   stores the new message with the same links.
+
+For a late result that carries an exact `sourceSessionId`, source-session
+routing is authoritative. Recover its persisted `channelMessageId`; for old
+records accept `requestId` only when it is exactly
+`telegram:<positive message id>`. If neither is valid, send standalone. Reject
+the tempting fallback to a newer message on the shared trace, because a visible
+standalone result is safer than a confident reply to the wrong request.
 
 This preserves natural conversation without depending on a persistent May
 session.
@@ -833,6 +841,11 @@ sent directly without a redundant receipt. When a silent May turn starts a
 Codex or Claude CLI task, Telegram sends one factual receipt and later sends
 the result on the same trace. Final owner-task closeout still needs the broader
 async completion fallback described in the human-control design.
+
+Late tool results now carry their exact source session. A tested rollout
+candidate recovers that session's reply target from durable metadata after the
+session goes idle and safely handles legacy Telegram request ids. Deployment
+and live Telegram proof remain pending approval.
 
 ## Noise Control
 
