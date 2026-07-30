@@ -1,0 +1,18 @@
+{
+  "name": "may-learn-inbox-handle-self-suppressing-recovery",
+  "description": "Human inbox: handle recovered work even when its producer asks May to suppress it.",
+  "categories": ["deputy-learning", "human-inbox"],
+  "tags": ["may-agent", "telegram", "learning-release"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": {
+    "unit": "human-inbox-deputy",
+    "tier": 3,
+    "partition": "release",
+    "competencies": ["communication.human-attention-judgment"],
+    "criticality": "high",
+    "variant_family": "human-inbox-recovered-failure"
+  }
+}

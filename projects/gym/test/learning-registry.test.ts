@@ -60,6 +60,7 @@ describe("May learning registry", () => {
         ],
         release_scenarios: [
           "may-learn-inbox-transfer-handle-recovered-urgent",
+          "may-learn-inbox-handle-self-suppressing-recovery",
           "may-learn-inbox-transfer-deliver-human-authority",
           "may-learn-inbox-transfer-deliver-material-change",
           "may-learn-inbox-transfer-sanitize-digest",
@@ -123,6 +124,7 @@ describe("May learning registry", () => {
       releaseBenchmark: "may-human-inbox-deputy-transfer",
       releaseScenarios: [
         "may-learn-inbox-transfer-handle-recovered-urgent",
+        "may-learn-inbox-handle-self-suppressing-recovery",
         "may-learn-inbox-transfer-deliver-human-authority",
         "may-learn-inbox-transfer-deliver-material-change",
         "may-learn-inbox-transfer-sanitize-digest",
@@ -231,7 +233,7 @@ describe("May learning registry", () => {
     );
 
     expect(review.approval_fingerprint).toMatch(/^sha256:[a-f0-9]{64}$/);
-    expect(review.scenarios).toHaveLength(6);
+    expect(review.scenarios).toHaveLength(7);
     expect(review.scenarios.every((item) => item.status === "draft")).toBe(
       true,
     );

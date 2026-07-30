@@ -9,6 +9,13 @@
       "approved_by": null,
       "approved_at": null
     },
+    "may-learn-inbox-handle-self-suppressing-recovery": {
+      "status": "draft",
+      "source": "live-human-attention-review-4667420",
+      "rationale": "May must judge recovered work as handle and record closure instead of copying the producer's suppression label into reject.",
+      "approved_by": null,
+      "approved_at": null
+    },
     "may-learn-inbox-transfer-deliver-human-authority": {
       "status": "draft",
       "source": "held-back-human-inbox-transfer",

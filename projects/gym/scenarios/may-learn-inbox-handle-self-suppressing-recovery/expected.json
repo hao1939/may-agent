@@ -1,0 +1,13 @@
+{
+  "approval_case": {
+    "title": "Judge recovered work instead of copying the producer's label",
+    "situation": "An internal release check timed out once, immediately recovered, and already has recovery evidence in its operations record.",
+    "hao_request": "The producer says to suppress the message because no human action remains.",
+    "correct_behavior": "Handle the recovered work without messaging Hao. Preserve the recovery evidence, close the transient candidate, and state that the recorded recovery plus candidate closure is terminal proof. Do not call ordinary completed work reject merely because the producer asked for suppression."
+  },
+  "human_answer": "Handle the recovered work without messaging Hao. Preserve the recovery evidence, close the transient candidate, and state that the recorded recovery plus candidate closure is terminal proof. Do not call ordinary completed work reject merely because the producer asked for suppression.",
+  "exact": { "needs_clarification": false },
+  "delegations": { "min": 0, "max": 0 },
+  "empty": ["preference_updates"],
+  "response_max_words": 80
+}

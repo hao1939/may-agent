@@ -16,6 +16,7 @@ const scenarios = [
 ];
 const releaseScenarios = [
   "may-learn-inbox-transfer-handle-recovered-urgent",
+  "may-learn-inbox-handle-self-suppressing-recovery",
   "may-learn-inbox-transfer-deliver-human-authority",
   "may-learn-inbox-transfer-deliver-material-change",
   "may-learn-inbox-transfer-sanitize-digest",
