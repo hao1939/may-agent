@@ -57,7 +57,13 @@ describe("CLI task runner", () => {
     bus.subscribe((event) => {
       events.push(event);
     });
-    attachCliTaskRunner({ bus, persistDir, projectRoot: root, spawnCommand: fakeSpawn as any });
+    attachCliTaskRunner({
+      bus,
+      persistDir,
+      projectRoot: root,
+      spawnCommand: fakeSpawn as any,
+      sourceSessionAvailable: () => true,
+    });
 
     const tool = createRunCliAgentTool({
       agentName: "may",
@@ -65,6 +71,7 @@ describe("CLI task runner", () => {
       persistDir,
       emit: (event) => bus.emit(event as any),
       getCallerSessionId: () => "chat-1",
+      getCallerTrace: () => ({ traceId: "trace-human-cli", parentEventId: 41 }),
     });
 
     try {
@@ -82,7 +89,10 @@ describe("CLI task runner", () => {
       expect(events.map((event) => event.type)).toContain("cli.task.requested");
       expect(events.map((event) => event.type)).toContain("cli.task.started");
       expect(events.map((event) => event.type)).toContain("cli.task.completed");
+      const started = events.find((event) => event.type === "cli.task.started") as any;
       const completed = events.find((event) => event.type === "cli.task.completed") as any;
+      expect(started?.trace?.traceId).toBe("trace-human-cli");
+      expect(completed?.trace?.traceId).toBe("trace-human-cli");
       expect(completed?.data?.cliSessionId).toBe("codex-session-1");
       expect(completed?.data?.structuredResultPath).toBe(payload.structuredResultPath);
       expect(completed?.data?.resumeCommand).toContain("resume");
@@ -103,6 +113,36 @@ describe("CLI task runner", () => {
         .prepare("SELECT status FROM event_pair_runs WHERE pair_name = 'cli.task' AND correlation_key = ?")
         .get(payload.taskId) as { status: string } | undefined;
       expect(pair?.status).toBe("closed");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("does not steer a source session that is no longer available", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-cli-lost-source-"));
+    const persistDir = join(root, ".state");
+    const bus = new EventBus();
+    const events: AgentEvent[] = [];
+    bus.subscribe((event) => events.push(event));
+    attachCliTaskRunner({
+      bus,
+      persistDir,
+      projectRoot: root,
+      spawnCommand: fakeSpawn as any,
+      sourceSessionAvailable: () => false,
+    });
+    const tool = createRunCliAgentTool({
+      agentName: "may",
+      projectRoot: root,
+      persistDir,
+      emit: (event) => bus.emit(event as any),
+      getCallerSessionId: () => "lost-session",
+      getCallerTrace: () => ({ traceId: "trace-human-cli" }),
+    });
+    try {
+      await tool.execute("call-1", { tool: "codex", prompt: "Review this." });
+      await waitFor(() => events.some((event) => event.type === "cli.task.completed"));
+      expect(events.some((event) => event.type === "session.steer.requested")).toBe(false);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

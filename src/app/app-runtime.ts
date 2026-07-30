@@ -75,7 +75,13 @@ export async function runAppRuntime(opts: {
     bus,
   });
 
-  attachDaemonEventSubscribers({ bus, manager, persistDir: opts.persistDir, projectRoot: opts.projectRoot });
+  attachDaemonEventSubscribers({
+    bus,
+    manager,
+    persistDir: opts.persistDir,
+    projectRoot: opts.projectRoot,
+    interfaceAgent,
+  });
 
   const { loaderOpts } = await prepareDaemonAgents({
     agentsRoot: opts.agentsRoot,

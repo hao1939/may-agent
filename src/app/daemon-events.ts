@@ -11,6 +11,7 @@ import { createEscalationLifecycleSubscriber } from "../lib/escalation-lifecycle
 import { log } from "../lib/log.js";
 import { runAgentCleanup, setAgentSessionId } from "./agent-loader.js";
 import { attachCliTaskRunner, markOrphanedCliTasks } from "./cli-task-runner.js";
+import { attachHumanResultFollowThrough } from "./human-result-follow-through.js";
 import { getDb } from "../lib/db/connection.js";
 
 function createEscalationId(): string {
@@ -91,12 +92,20 @@ export function attachDaemonEventSubscribers(opts: {
   manager: SubagentManager;
   persistDir: string;
   projectRoot: string;
+  interfaceAgent?: string;
 }): void {
   const { bus, manager, persistDir, projectRoot } = opts;
+  const sourceSessionAvailable = (sessionId: string) => manager.activeSessions.has(sessionId);
 
-  attachCliTaskRunner({ bus, persistDir, projectRoot });
+  attachCliTaskRunner({ bus, persistDir, projectRoot, sourceSessionAvailable });
+  attachHumanResultFollowThrough({
+    bus,
+    manager,
+    persistDir,
+    interfaceAgent: opts.interfaceAgent,
+  });
   bus.subscribe(createMetricMutationSubscriber(persistDir));
-  const orphanedCliTasks = markOrphanedCliTasks({ bus, persistDir });
+  const orphanedCliTasks = markOrphanedCliTasks({ bus, persistDir, sourceSessionAvailable });
   if (orphanedCliTasks > 0) {
     bus.emit({
       type: "info",

@@ -576,6 +576,8 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       autoClose: "never",
       source,
       requestId: nonEmptyString(data.requestId) ?? undefined,
+      conversationId: nonEmptyString(data.conversationId) ?? undefined,
+      channelMessageId: typeof data.channelMessageId === "number" ? data.channelMessageId : undefined,
       trace: childEventTrace(event),
     });
     log("info", `[chat.start] Started ${agent} chat session: ${sessionId}`);

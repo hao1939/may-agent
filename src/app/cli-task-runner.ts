@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { eventData, type AgentEvent, type EventBus, type SubscriberResult } from "./event-bus.js";
+import { eventData, type AgentEvent, type EventBus, type EventTrace, type SubscriberResult } from "./event-bus.js";
 
 type CliTool = "claude" | "codex";
 type CliMode = "investigate" | "review" | "patch";
@@ -23,6 +23,7 @@ type CliTaskRecord = {
   timeoutMs: number;
   sourceOwner: string;
   sourceSessionId?: string;
+  sourceTrace?: EventTrace;
   resumeSessionId?: string;
   reuseSession?: boolean;
   files?: string[];
@@ -61,6 +62,7 @@ export type CliTaskRunnerOptions = {
   projectRoot: string;
   spawnCommand?: typeof spawn;
   now?: () => number;
+  sourceSessionAvailable?: (sessionId: string) => boolean;
 };
 
 const DEFAULT_TIMEOUT_MS = 10 * 60 * 1000;
@@ -434,6 +436,7 @@ async function runCliAttempt(opts: {
       sandboxFallbackReason: record.sandboxFallbackReason,
       reuseSession: record.reuseSession,
     },
+    ...(record.sourceTrace ? { trace: record.sourceTrace } : {}),
   } as any);
 
   child.stdout?.on("data", (chunk: Buffer) => {
@@ -472,8 +475,10 @@ function emitSourceSessionUpdate(
   bus: EventBus,
   record: CliTaskRecord,
   status: "completed" | "failed" | "orphaned",
+  sourceSessionAvailable?: (sessionId: string) => boolean,
 ): void {
   if (!record.sourceSessionId) return;
+  if (sourceSessionAvailable && !sourceSessionAvailable(record.sourceSessionId)) return;
   const lines = [
     `CLI task ${record.taskId} ${status}.`,
     `Tool: ${record.tool}`,
@@ -498,7 +503,12 @@ function emitSourceSessionUpdate(
   } as any);
 }
 
-export function markOrphanedCliTasks(opts: { bus: EventBus; persistDir: string; now?: () => number }): number {
+export function markOrphanedCliTasks(opts: {
+  bus: EventBus;
+  persistDir: string;
+  now?: () => number;
+  sourceSessionAvailable?: (sessionId: string) => boolean;
+}): number {
   const now = opts.now ?? Date.now;
   const root = join(opts.persistDir, "cli-tasks");
   if (!existsSync(root)) return 0;
@@ -531,8 +541,9 @@ export function markOrphanedCliTasks(opts: { bus: EventBus; persistDir: string; 
         sandboxFallbackReason: record.sandboxFallbackReason,
         reuseSession: record.reuseSession,
       },
+      ...(record.sourceTrace ? { trace: record.sourceTrace } : {}),
     } as any);
-    emitSourceSessionUpdate(opts.bus, record, "orphaned");
+    emitSourceSessionUpdate(opts.bus, record, "orphaned", opts.sourceSessionAvailable);
     count++;
   }
   return count;
@@ -588,6 +599,7 @@ export function attachCliTaskRunner(opts: CliTaskRunnerOptions): () => void {
         typeof data.timeoutMs === "number" && Number.isFinite(data.timeoutMs) ? data.timeoutMs : DEFAULT_TIMEOUT_MS,
       sourceOwner,
       sourceSessionId: typeof data.sourceSessionId === "string" ? data.sourceSessionId : undefined,
+      sourceTrace: event.trace,
       resumeSessionId: typeof data.resumeSessionId === "string" ? data.resumeSessionId : undefined,
       reuseSession: data.reuseSession === true,
       files: safePathList(filesRoot, data.files),
@@ -610,7 +622,15 @@ export function attachCliTaskRunner(opts: CliTaskRunnerOptions): () => void {
 
     queueMicrotask(() => {
       running.add(taskId);
-      void runCliTask({ bus: opts.bus, spawnCommand, persistDir: opts.persistDir, record, recordPath, now }).finally(
+      void runCliTask({
+        bus: opts.bus,
+        spawnCommand,
+        persistDir: opts.persistDir,
+        record,
+        recordPath,
+        now,
+        sourceSessionAvailable: opts.sourceSessionAvailable,
+      }).finally(
         () => {
           running.delete(taskId);
         },
@@ -633,8 +653,9 @@ async function runCliTask(opts: {
   record: CliTaskRecord;
   recordPath: string;
   now: () => number;
+  sourceSessionAvailable?: (sessionId: string) => boolean;
 }): Promise<void> {
-  const { bus, spawnCommand, persistDir, record, recordPath, now } = opts;
+  const { bus, spawnCommand, persistDir, record, recordPath, now, sourceSessionAvailable } = opts;
   try {
     const prompt = promptForRun(record, readFileSync(record.promptPath, "utf8"));
     record.resumeSessionId ??= reusableSessionId(persistDir, record);
@@ -702,8 +723,9 @@ async function runCliTask(opts: {
           sandboxFallbackReason: record.sandboxFallbackReason,
           reuseSession: record.reuseSession,
         },
+        ...(record.sourceTrace ? { trace: record.sourceTrace } : {}),
       } as any);
-      emitSourceSessionUpdate(bus, record, "completed");
+      emitSourceSessionUpdate(bus, record, "completed", sourceSessionAvailable);
     } else {
       record.status = "failed";
       record.failureCategory = outcome.failureCategory;
@@ -731,8 +753,9 @@ async function runCliTask(opts: {
           sandboxFallbackReason: record.sandboxFallbackReason,
           reuseSession: record.reuseSession,
         },
+        ...(record.sourceTrace ? { trace: record.sourceTrace } : {}),
       } as any);
-      emitSourceSessionUpdate(bus, record, "failed");
+      emitSourceSessionUpdate(bus, record, "failed", sourceSessionAvailable);
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -762,7 +785,8 @@ async function runCliTask(opts: {
         sandboxFallbackReason: record.sandboxFallbackReason,
         reuseSession: record.reuseSession,
       },
+      ...(record.sourceTrace ? { trace: record.sourceTrace } : {}),
     } as any);
-    emitSourceSessionUpdate(bus, record, "failed");
+    emitSourceSessionUpdate(bus, record, "failed", sourceSessionAvailable);
   }
 }
