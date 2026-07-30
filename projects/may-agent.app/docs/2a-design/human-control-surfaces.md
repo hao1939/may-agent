@@ -775,6 +775,18 @@ session had no persisted `channelMessageId`; it retained only
 `replyToMsgId: 45978`. It did not attach the result to newer human messages
 `45981`, `45984`, `45988`, or `45993`.
 
+That correct reply edge also exposed a separate startup-recovery defect: the
+result existed only because deployment resumed several completed idle Telegram
+turns. An idle chat turn has already answered or closed its human input. On
+restart, retire it and reject replay of its old prompt. A chat turn that was
+still `running` may resume so interrupted work can finish.
+
+The narrow candidate applies that rule at startup. It leaves generic session
+recovery unchanged, resumes running chat work, retires idle chat sessions, and
+lets the next human input start a fresh bounded turn. Full CI passed 2,079 tests
+with zero failures. The May follow-through Gym scenario passed all 9 behavior
+checks and both semantic judges. Rollout still requires Hao's approval.
+
 Keep the broader conversation view and app-task reconciliation separate. The
 narrow CLI fallback does not justify a new request table, scheduler, daemon, or
 generic completion abstraction.
@@ -790,6 +802,10 @@ generic completion abstraction.
   deployed Telegram path treats a session as one bounded execution:
   ordinary language starts a new turn, while only explicit `/steer` targets an
   execution session.
+- Startup recovery currently resumes completed idle chat sessions as if their
+  old prompt still needed work. This produced live message `45998` after the
+  rollout restart. A tested candidate retires idle chat sessions while still
+  resuming chat work that was running when the process stopped.
 - `notification_messages` now indexes inbound and outbound Telegram messages,
   reply edges, stable chat/topic/May conversation identity, and available
   trace/task links without adding a table. A seven-day replay had found traces

@@ -851,6 +851,14 @@ from an idle source session whose only durable channel link was
 `requestId: telegram:45978`; several newer human messages were present and none
 was selected.
 
+The routing proof also showed that `45998` was an invalid replay: the rollout
+restart resumed its already-idle Telegram session. Startup recovery must resume
+a chat turn only when its persisted state is `running`. Retire an `idle` turn;
+the next human input starts a fresh bounded turn. The candidate preserves
+running-turn crash recovery. Full CI passed 2,079 tests with zero failures, and
+the May follow-through Gym scenario passed 9/9 behavior checks plus both
+semantic judges. Rollout remains pending approval.
+
 ## Noise Control
 
 Telegram should be attention-first, not event-log-first.
