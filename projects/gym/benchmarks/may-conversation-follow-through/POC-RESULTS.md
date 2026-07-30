@@ -47,5 +47,12 @@ Observe real link quality before adding more. Defer the broader channel message
 index, prepared May context, session-independent completion fallback, and
 reviewed closeout routing until this lookup has production-shaped proof.
 
+The first read-only replay found the exact boundary gap. Across the prior seven
+days, 229 human-directed `message.created` events had durable traces in the
+event graph, but none of the 225 delivered `message.created` notification rows
+stored a trace. Only 39 of all 254 Telegram records had a task link. The next
+bounded change therefore copies the already-known event trace into the existing
+notification JSON. It adds no lookup, table, or routing behavior.
+
 Do not add a new database, task type, scheduler, daemon, or background system.
 Existing app owners keep unfinished work; May reviews and closes it.

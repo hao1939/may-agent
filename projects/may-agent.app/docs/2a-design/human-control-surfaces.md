@@ -706,8 +706,11 @@ small lookup has production-shaped proof.
   project, and owner fields already present on a replied-to notification. It
   does not yet index inbound messages or reply edges, and producers do not yet
   record trace/task links and stable chat/topic conversation identity
-  consistently. Some use `conversationId` as a per-approval or per-notification
-  id instead.
+  consistently. A seven-day replay found traces on all 229 human-directed
+  source events but on none of the 225 delivered `message.created` notification
+  rows, so the outbound boundary now copies that existing trace into stored
+  notification JSON. Some producers still use `conversationId` as a
+  per-approval or per-notification id instead.
 - Telegram outbound reply targets are held in process memory and keyed by
   session. Later progress and closeout cannot yet select the latest human
   message from the durable request trace after restart or session loss.
