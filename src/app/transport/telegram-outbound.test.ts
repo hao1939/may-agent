@@ -14,6 +14,18 @@ function harness(
 ) {
   const bus = new EventBus();
   const sent: Array<{ text: string; context?: Record<string, unknown> }> = [];
+  const effectiveReview =
+    reviewProactive ??
+    (async (candidate: HumanAttentionCandidate): Promise<HumanAttentionReview> => ({
+      status: "completed",
+      sessionId: "default-review",
+      disposition: "deliver",
+      understoodIntent: "Deliver the useful candidate.",
+      reason: "The test keeps human delivery.",
+      nextAction: "Deliver the reviewed text.",
+      evidence: ["Test admission."],
+      deliveredMessage: candidate.eventType === "message.created" ? `📋 ${candidate.content}` : candidate.content,
+    }));
   const outbound = attachTelegramOutbound({
     bus,
     interfaceAgent: "may",
@@ -22,7 +34,7 @@ function harness(
     getSessionId: () => currentSessionId,
     getSessionReplyContext,
     sendToUser: (text, context) => sent.push({ text, context }),
-    reviewProactive,
+    reviewProactive: effectiveReview,
   });
   return { bus, sent, outbound };
 }
@@ -68,7 +80,7 @@ function idle(bus: EventBus, source: string, summary: string, sessionId = "share
 }
 
 describe("Telegram outbound turn ownership", () => {
-  test("preserves root and inherited traces on proactive notifications", () => {
+  test("preserves root and inherited traces on proactive notifications", async () => {
     const { bus, sent, outbound } = harness();
     const rootEvent = {
       type: "message.created",
@@ -95,6 +107,7 @@ describe("Telegram outbound turn ownership", () => {
         content: "Gym has a follow-up.",
       },
     } as any);
+    await outbound.drain();
 
     expect(sent[0]?.context?.data).toMatchObject({
       traceId: "event:91",
@@ -107,7 +120,7 @@ describe("Telegram outbound turn ownership", () => {
     outbound.close();
   });
 
-  test("records May's shadow judgment while preserving current proactive delivery", async () => {
+  test("suppresses proactive delivery when May routes the work to its owner", async () => {
     const reviewed: Array<Record<string, unknown>> = [];
     const { bus, sent, outbound } = harness("shared-chat", async () => ({
       status: "completed",
@@ -118,6 +131,9 @@ describe("Telegram outbound turn ownership", () => {
       nextAction: "Route to the project owner and require rerun proof.",
       owner: "aks-owner",
       evidence: ["The owner has not attempted recovery."],
+      actionTaken: "Sent the failure and proof request to aks-owner.",
+      closureCondition: "A passing rerun or a precise blocker reviewed by May.",
+      reviewAgainWhen: "The owner returns the rerun result or blocker.",
     }));
     const unsubscribe = bus.subscribe((event: any) => {
       if (event.type === "human.attention.reviewed") reviewed.push(event.data);
@@ -135,14 +151,13 @@ describe("Telegram outbound turn ownership", () => {
       },
     } as any);
 
-    for (let attempt = 0; attempt < 20 && reviewed.length === 0; attempt++) {
-      await Bun.sleep(1);
-    }
-    expect(sent.map((entry) => entry.text)).toEqual(["📋 AKS failed. Hao, decide what to do."]);
+    await outbound.drain();
+    expect(sent).toEqual([]);
     expect(reviewed).toEqual([
       expect.objectContaining({
-        mode: "shadow",
-        delivered: true,
+        mode: "enforce",
+        admitted: false,
+        delivered: false,
         status: "completed",
         disposition: "route",
         owner: "aks-owner",
@@ -153,6 +168,204 @@ describe("Telegram outbound turn ownership", () => {
       }),
     ]);
     unsubscribe();
+    outbound.close();
+  });
+
+  test("delivers May's reviewed text instead of the producer's raw proposal", async () => {
+    const reviewed: Array<Record<string, unknown>> = [];
+    const { bus, sent, outbound } = harness("shared-chat", async () => ({
+      status: "completed",
+      sessionId: "review-deliver",
+      disposition: "deliver",
+      understoodIntent: "Ask Hao to approve the proven scorer change.",
+      reason: "Evaluation meaning requires human authority.",
+      nextAction: "Wait for approve or reject.",
+      evidence: ["The scorer and controls pass."],
+      deliveredMessage: "Approve the proven scorer change? May recommends approve.",
+    }));
+    const unsubscribe = bus.subscribe((event: any) => {
+      if (event.type === "human.attention.reviewed") reviewed.push(event.data);
+    });
+
+    bus.emit({
+      type: "message.created",
+      source: "gym",
+      owner: "human:operator",
+      data: {
+        from: "gym",
+        to: "human",
+        content: "RAW INTERNAL SCORER OUTPUT",
+      },
+    } as any);
+    await outbound.drain();
+
+    expect(sent.map((entry) => entry.text)).toEqual([
+      "Approve the proven scorer change? May recommends approve.",
+    ]);
+    expect(reviewed).toEqual([
+      expect.objectContaining({ mode: "enforce", admitted: true, delivered: true, attempts: 1 }),
+    ]);
+    unsubscribe();
+    outbound.close();
+  });
+
+  test("retries one failed review and then fails closed", async () => {
+    let attempts = 0;
+    const reviewed: Array<Record<string, unknown>> = [];
+    const { bus, sent, outbound } = harness("shared-chat", async () => {
+      attempts += 1;
+      return { status: "failed", reason: `review failure ${attempts}` };
+    });
+    const unsubscribe = bus.subscribe((event: any) => {
+      if (event.type === "human.attention.reviewed") reviewed.push(event.data);
+    });
+
+    bus.emit({
+      type: "message.created",
+      source: "ops",
+      owner: "human:operator",
+      data: { from: "ops", to: "human", content: "Unreviewed alert text" },
+    } as any);
+    await outbound.drain();
+
+    expect(attempts).toBe(2);
+    expect(sent).toEqual([]);
+    expect(reviewed).toEqual([
+      expect.objectContaining({
+        mode: "enforce",
+        admitted: false,
+        delivered: false,
+        attempts: 2,
+        status: "failed",
+        reason: "review failure 2",
+      }),
+    ]);
+    unsubscribe();
+    outbound.close();
+  });
+
+  test("keeps proactive deliveries in proposal order while reviews run", async () => {
+    const { bus, sent, outbound } = harness("shared-chat", async (candidate) => {
+      if (candidate.content === "first") await Bun.sleep(5);
+      return {
+        status: "completed",
+        sessionId: `review-${candidate.content}`,
+        disposition: "deliver",
+        understoodIntent: `Deliver ${candidate.content}.`,
+        reason: "Useful ordered update.",
+        nextAction: "Deliver it.",
+        evidence: ["Order test."],
+        deliveredMessage: candidate.content,
+      };
+    });
+
+    for (const content of ["first", "second"]) {
+      bus.emit({
+        type: "message.created",
+        source: "ops",
+        owner: "human:operator",
+        data: { from: "ops", to: "human", content },
+      } as any);
+    }
+    await outbound.drain();
+
+    expect(sent.map((entry) => entry.text)).toEqual(["first", "second"]);
+    outbound.close();
+  });
+
+  test("holds alerts behind the same admission gate", async () => {
+    const { sent, outbound } = harness("shared-chat", async () => ({
+      status: "completed",
+      sessionId: "review-alert",
+      disposition: "handle",
+      understoodIntent: "Report a recovered timeout.",
+      reason: "Recovery already closed the issue.",
+      nextAction: "Keep the recovery in the ops record.",
+      evidence: ["The retry passed."],
+      actionTaken: "Recorded the successful recovery.",
+      closureCondition: "The successful retry is the terminal proof.",
+    }));
+
+    outbound.sendAlert("Timeout: ask Hao what to do.");
+    await outbound.drain();
+
+    expect(sent).toEqual([]);
+    outbound.close();
+  });
+
+  test("holds child-session summaries for May review", async () => {
+    const candidates: HumanAttentionCandidate[] = [];
+    const { bus, sent, outbound } = harness("root-chat", async (candidate) => {
+      candidates.push(candidate);
+      return {
+        status: "completed",
+        sessionId: "review-child",
+        disposition: "handle",
+        understoodIntent: "Review a worker result before speaking for May.",
+        reason: "The worker result does not require Hao.",
+        nextAction: "Merge the proof into May's closeout.",
+        evidence: ["The worker completed successfully."],
+        actionTaken: "Recorded the worker proof for May's closeout.",
+        closureCondition: "May sends one reviewed terminal result when the root request is complete.",
+      };
+    });
+    start(bus, "telegram", "root-chat");
+    bus.emit({
+      type: "session.start",
+      source: "agent:may",
+      owner: "agent:dev",
+      data: {
+        sessionId: "child-session",
+        parentSessionId: "root-chat",
+        agent: "dev",
+        task: "Investigate the failure",
+        kind: "call",
+      },
+    } as any);
+    bus.emit({
+      type: "session.end",
+      source: "agent:dev",
+      owner: "agent:may",
+      data: {
+        sessionId: "child-session",
+        parentSessionId: "root-chat",
+        agent: "dev",
+        status: "done",
+        finishParams: {
+          status: "success",
+          summary: "The worker fixed it.",
+        },
+      },
+    } as any);
+    await outbound.drain();
+
+    expect(sent).toEqual([]);
+    expect(candidates).toEqual([
+      expect.objectContaining({ eventType: "session.end", from: "dev", content: "✅ dev: The worker fixed it." }),
+    ]);
+    outbound.close();
+  });
+
+  test("keeps direct May replies outside proactive admission", () => {
+    let reviews = 0;
+    const { bus, sent, outbound } = harness("root-chat", async (candidate) => {
+      reviews += 1;
+      return {
+        status: "completed",
+        sessionId: "unexpected-review",
+        disposition: "deliver",
+        understoodIntent: "Deliver.",
+        reason: "Test.",
+        nextAction: "Deliver.",
+        evidence: ["Test."],
+        deliveredMessage: candidate.content,
+      };
+    });
+    start(bus, "telegram", "root-chat");
+    idle(bus, "telegram", "May's direct answer.", "root-chat");
+
+    expect(sent.map((entry) => entry.text)).toEqual(["May's direct answer."]);
+    expect(reviews).toBe(0);
     outbound.close();
   });
 
@@ -304,7 +517,7 @@ describe("Telegram outbound turn ownership", () => {
     outbound.close();
   });
 
-  test("keeps a late session message on its own request instead of the latest trace anchor", () => {
+  test("keeps a late session message on its own request instead of the latest trace anchor", async () => {
     const { bus, sent, outbound } = harness("legacy-chat");
     const conversationId = "telegram:chat:123:topic:0:agent:may";
 
@@ -340,6 +553,7 @@ describe("Telegram outbound turn ownership", () => {
       },
       trace: { traceId: "shared-conversation-trace" },
     } as any);
+    await outbound.drain();
 
     expect(sent[0]).toMatchObject({
       text: "📋 Late correction for the earlier request.",
@@ -353,7 +567,7 @@ describe("Telegram outbound turn ownership", () => {
     outbound.close();
   });
 
-  test("recovers an idle source session's persisted reply target", () => {
+  test("recovers an idle source session's persisted reply target", async () => {
     const conversationId = "telegram:chat:123:topic:0:agent:may";
     const { bus, sent, outbound } = harness("legacy-chat", undefined, (sessionId) =>
       sessionId === "s_old"
@@ -377,6 +591,7 @@ describe("Telegram outbound turn ownership", () => {
       },
       trace: { traceId: "shared-trace" },
     } as any);
+    await outbound.drain();
 
     expect(sent[0]).toMatchObject({
       context: {
@@ -389,7 +604,7 @@ describe("Telegram outbound turn ownership", () => {
     outbound.close();
   });
 
-  test("recovers a legacy Telegram target from the persisted request id", () => {
+  test("recovers a legacy Telegram target from the persisted request id", async () => {
     const { bus, sent, outbound } = harness("legacy-chat", undefined, (sessionId) =>
       sessionId === "s_legacy" ? { requestId: "telegram:45981" } : null,
     );
@@ -405,6 +620,7 @@ describe("Telegram outbound turn ownership", () => {
         sourceSessionId: "s_legacy",
       },
     } as any);
+    await outbound.drain();
 
     expect(sent[0]?.context).toMatchObject({
       sessionId: "s_legacy",
@@ -414,7 +630,7 @@ describe("Telegram outbound turn ownership", () => {
     outbound.close();
   });
 
-  test("rejects malformed legacy request ids and never guesses a newer trace target", () => {
+  test("rejects malformed legacy request ids and never guesses a newer trace target", async () => {
     const conversationId = "telegram:chat:123:topic:0:agent:may";
     const { bus, sent, outbound } = harness("legacy-chat", undefined, () => ({
       requestId: "telegram:45984:extra",
@@ -433,6 +649,7 @@ describe("Telegram outbound turn ownership", () => {
       },
       trace: { traceId: "shared-trace" },
     } as any);
+    await outbound.drain();
 
     expect(sent[0]?.context).toMatchObject({
       sessionId: "s_legacy",
