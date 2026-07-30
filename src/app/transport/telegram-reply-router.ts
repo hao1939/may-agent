@@ -28,6 +28,17 @@ export interface TelegramReplyContext {
   };
 }
 
+export interface ShadowConversationView {
+  status: "linked" | "notification-only" | "missing";
+  replyToMsgId: number;
+  conversationId?: string;
+  traceId?: string;
+  taskId?: string;
+  projectId?: string;
+  owner?: string;
+  missing: string[];
+}
+
 export type TelegramReplyRoute =
   | {
       kind: "notification";
@@ -37,15 +48,18 @@ export type TelegramReplyRoute =
       enrichedText: string;
       hasSessionCtx: boolean;
       context: TelegramReplyContext;
+      shadowConversation: ShadowConversationView;
       infoMessage: string;
     }
   | {
       kind: "quote";
       enrichedText: string;
+      shadowConversation: ShadowConversationView;
       infoMessage: string;
     }
   | {
       kind: "missing-context";
+      shadowConversation: ShadowConversationView;
       infoMessage: string;
     };
 
@@ -71,6 +85,7 @@ export function buildTelegramReplyRoute(opts: {
       enrichedText: buildNotificationReplyText({ ctx: opts.ctx, text: opts.text, sessionContext }),
       hasSessionCtx: Boolean(sessionId),
       context,
+      shadowConversation: buildShadowConversationView(opts.ctx, opts.replyToMsgId),
       infoMessage: `[telegram] Enriched reply (ctx: ${opts.ctx.event_type}/${owner}${sessionId ? "/session" : ""})`,
     };
   }
@@ -79,13 +94,67 @@ export function buildTelegramReplyRoute(opts: {
     return {
       kind: "quote",
       enrichedText: buildTelegramQuoteReplyText(opts.text, opts.quotedText),
+      shadowConversation: buildShadowConversationView(null, opts.replyToMsgId),
       infoMessage: `[telegram] Enriched reply from Telegram quote (msg ${opts.replyToMsgId})`,
     };
   }
 
   return {
     kind: "missing-context",
+    shadowConversation: buildShadowConversationView(null, opts.replyToMsgId),
     infoMessage: `[telegram] Reply context missing for msg ${opts.replyToMsgId}`,
+  };
+}
+
+export function buildShadowConversationView(
+  ctx: TelegramNotificationContext | null,
+  replyToMsgId: number,
+): ShadowConversationView {
+  if (!ctx) {
+    return {
+      status: "missing",
+      replyToMsgId,
+      missing: ["conversationId", "traceId", "taskId", "projectId", "owner"],
+    };
+  }
+
+  const data = parseNotificationData(ctx.data);
+  const conversation = objectOrNull(data?.conversation);
+  const originalIssue = objectOrNull(conversation?.originalIssue) ?? objectOrNull(data?.originalIssue);
+  const lastHandledBy = objectOrNull(conversation?.lastHandledBy) ?? objectOrNull(data?.lastHandledBy);
+  const conversationId =
+    stringOrNull(data?.conversationId) ?? stringOrNull(conversation?.conversationId) ?? stringOrNull(conversation?.id);
+  const traceId =
+    stringOrNull(data?.traceId) ?? stringOrNull(conversation?.traceId) ?? stringOrNull(originalIssue?.traceId);
+  const taskId =
+    stringOrNull(data?.taskId) ?? stringOrNull(conversation?.taskId) ?? stringOrNull(originalIssue?.taskId);
+  const projectId =
+    stringOrNull(ctx.project_id) ??
+    stringOrNull(data?.projectId) ??
+    stringOrNull(data?.projectPath) ??
+    stringOrNull(conversation?.projectId) ??
+    stringOrNull(originalIssue?.projectId) ??
+    stringOrNull(originalIssue?.projectPath);
+  const owner =
+    stringOrNull(data?.owner) ??
+    stringOrNull(conversation?.owner) ??
+    stringOrNull(originalIssue?.owner) ??
+    stringOrNull(lastHandledBy?.agent) ??
+    stringOrNull(ctx.agent);
+  const fields = { conversationId, traceId, taskId, projectId, owner };
+  const missing = Object.entries(fields)
+    .filter(([, value]) => value === null)
+    .map(([key]) => key);
+
+  return {
+    status: traceId || taskId ? "linked" : "notification-only",
+    replyToMsgId,
+    ...(conversationId ? { conversationId } : {}),
+    ...(traceId ? { traceId } : {}),
+    ...(taskId ? { taskId } : {}),
+    ...(projectId ? { projectId } : {}),
+    ...(owner ? { owner } : {}),
+    missing,
   };
 }
 
