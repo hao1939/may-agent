@@ -716,6 +716,11 @@ judges. Hao approved rollout, and commit `2648a3c9` was deployed on 2026-07-30.
 The installed binary matched the staged binary, the deploy marker cleared, and
 May, Web, and maintenance returned healthy.
 
+The first post-rollout exchange closed the live proof. Human input `45984`
+started session `s_1785404509853_6` with `channelMessageId: 45984`. Response
+`45987` kept trace `event:4646877` and recorded `replyToMsgId: 45984`. It did
+not reuse the older reply target.
+
 Keep the broader conversation view and app-task reconciliation separate. The
 narrow CLI fallback does not justify a new request table, scheduler, daemon, or
 generic completion abstraction.
