@@ -852,6 +852,8 @@ generic completion abstraction.
   transport and end-to-end tests pass. The approved Gym suite is blocked by a
   provider connection failure with zero model output, so rollout proof remains
   incomplete.
-- Gym has approved human-inbox scenarios and review labels, but no runtime job
-  currently performs the accepted daily Telegram behavior review against live
-  candidates, reviews, closure evidence, and later human corrections.
+- Gym's daily Telegram field review is active and checkpointed. Its
+  2026-07-30 run reviewed 11 completed interactions and retained five strong
+  signals. The enforcement rollout must prove that this review continues to
+  understand admitted delivery, suppression, owner action, closure evidence,
+  and later human corrections.

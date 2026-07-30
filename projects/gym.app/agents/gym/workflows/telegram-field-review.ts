@@ -195,8 +195,10 @@ function reviewPrompt(inputPath: string): string {
     "The primary question is whether May fulfilled Hao's intended outcome. A polished reply, acknowledgement, plan, or promise is not fulfillment by itself.",
     "Use fulfilled when the answer or requested work is evidenced as complete; partial when May made useful progress but left a material part open; missed when May misunderstood, stopped, or claimed completion without evidence; unclear when the packet cannot prove the outcome.",
     "For investigation or change requests, look for diagnosis, action, verification, or a clear owner handoff in sessionEvidence and actionEvents. For a question or decision request, a correct useful answer may itself fulfill the intent.",
-    "Some interactions are proactive-review shadow records. For those, compare the producer's candidate with May's proposed disposition, owner, next action, and delivered text. Shadow mode still delivers the original message, so do not count that delivery as May disobeying her proposed disposition.",
-    "For proactive reviews, treat a failed review, an ownerless suppression, a secret-bearing delivery, or a vague human decision packet as important evidence. Preserve clear correct routing and useful digest delivery as positive evidence when the facts support it.",
+    "Some interactions are proactive human-attention reviews. Compare the producer's candidate with May's disposition, action, owner, closure condition, review trigger, and delivered text.",
+    "In shadow mode the original producer message was still delivered. Do not count that legacy delivery as May disobeying her proposed disposition.",
+    "In enforce mode only deliver may reach Hao. Handle, route, clarify-producer, and reject must suppress delivery and show a real bounded action plus closure condition; route and clarify-producer also require an owner and review trigger.",
+    "For proactive reviews, treat a failed review, an ownerless or actionless suppression, a secret-bearing delivery, a delivery that contradicts the disposition, or a vague human decision packet as important evidence. Preserve clear correct routing, truthful closure, and useful digest delivery as positive evidence when the facts support it.",
     "Quality is more important than quantity. Returning zero signals is a successful review.",
     "Keep only strong reusable evidence: an explicit Hao correction or dissatisfaction, repeated misunderstanding, unsafe or consequential wrong action, clear success followed by approval or productive continuation, or a useful success/failure contrast.",
     "A next message is outcome evidence only when it clearly reacts to the reviewed turn. Discard unrelated continuation, politeness, retries caused by missing output, and weak inference.",
@@ -324,6 +326,15 @@ export function scanTelegramFieldInteractions(
               `Reason: ${text(rootData.reason)}`,
               `Next: ${text(rootData.nextAction)}`,
               text(rootData.owner) ? `Owner: ${text(rootData.owner)}` : "",
+              text(rootData.actionTaken)
+                ? `Action taken: ${text(rootData.actionTaken)}`
+                : "",
+              text(rootData.closureCondition)
+                ? `Closure: ${text(rootData.closureCondition)}`
+                : "",
+              text(rootData.reviewAgainWhen)
+                ? `Review again: ${text(rootData.reviewAgainWhen)}`
+                : "",
               text(rootData.deliveredMessage)
                 ? `Delivered message: ${text(rootData.deliveredMessage)}`
                 : "",
@@ -342,7 +353,10 @@ export function scanTelegramFieldInteractions(
         humanMessage: bounded(text(candidate.content), 6_000),
         replyContext: {
           mode: text(rootData.mode) || "unknown",
+          admitted: rootData.admitted === true,
           delivered: rootData.delivered === true,
+          attempts: Number(rootData.attempts ?? 0),
+          deliveryError: text(rootData.deliveryError),
           producer: text(candidate.from),
           projectId: text(candidate.projectId),
         },

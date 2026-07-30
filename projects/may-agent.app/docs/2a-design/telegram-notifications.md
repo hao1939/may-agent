@@ -238,13 +238,16 @@ resolved and superseded candidates instead of reopening them.
 
 ### Regular behavior review
 
-The daily Telegram field review must read proactive candidates and May's
+Gym's daily Telegram field review reads proactive candidates and May's
 `human.attention.reviewed` facts. It compares the proposed message, May's
 disposition, any delivered text, owner handoff, closure evidence, and a later
 human correction when one exists.
 
-The Gym scenarios and labels exist, but the daily runtime review is not yet
-wired. Until it is, do not claim that regular behavior review is active.
+The runtime schedule and durable checkpoint are active. The 2026-07-30 run
+reviewed 11 completed interactions and retained five strong signals: three
+positive examples and two actionable gaps. Enforcement rollout must verify
+that the scanner continues to interpret `admitted`, `delivered`, owner action,
+and closure fields correctly.
 
 Review every critical failure and a small sample of successful decisions.
 Prefer strong reusable evidence over volume. Classify the responsible layer:

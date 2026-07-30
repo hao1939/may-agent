@@ -303,3 +303,66 @@ test("reviews proactive May shadow judgments without requiring a human reply", (
   expect(scan.waitingForCompletion).toBe(false);
   expect(scan.nextEventId).toBe(105);
 });
+
+test("preserves enforcement action and delivery facts for behavior review", () => {
+  const timestamp = Date.now() - 60_000;
+  const query = {
+    sql(sql: string) {
+      if (sql.includes("root.id AS rootEventId")) {
+        return {
+          rows: [
+            {
+              rootEventId: 106,
+              rootType: "human.attention.reviewed",
+              timestamp,
+              rootData: JSON.stringify({
+                mode: "enforce",
+                admitted: false,
+                delivered: false,
+                attempts: 1,
+                status: "completed",
+                disposition: "route",
+                understoodIntent: "Recover the project-owned failure.",
+                reason: "The owner can act before Hao is needed.",
+                nextAction: "Wait for the owner's passing rerun or precise blocker.",
+                owner: "aks-owner",
+                actionTaken: "Sent the failure and proof bar to aks-owner.",
+                closureCondition: "A passing rerun or a precise blocker reviewed by May.",
+                reviewAgainWhen: "The owner returns the rerun result or blocker.",
+                sessionId: "review-session-106",
+                candidate: {
+                  from: "evaluator",
+                  content: "AKS failed. Hao, decide what to do.",
+                  projectId: "aks-rp-e2e",
+                },
+              }),
+              traceId: "trace-106",
+              hasTerminal: 0,
+              hasDelivery: 0,
+            },
+          ],
+        };
+      }
+      throw new Error(`Unexpected SQL: ${sql}`);
+    },
+  };
+  const ctx = { query } as unknown as WorkflowContext;
+  const scan = scanTelegramFieldInteractions(ctx, 0, 40);
+
+  expect(scan.interactions).toEqual([
+    expect.objectContaining({
+      sourceId: "attention-review-106",
+      mayResponses: [
+        expect.stringContaining(
+          "Action taken: Sent the failure and proof bar to aks-owner.",
+        ),
+      ],
+      replyContext: expect.objectContaining({
+        mode: "enforce",
+        admitted: false,
+        delivered: false,
+        attempts: 1,
+      }),
+    }),
+  ]);
+});
