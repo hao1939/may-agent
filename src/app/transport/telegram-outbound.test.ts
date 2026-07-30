@@ -21,7 +21,12 @@ function harness(
   return { bus, sent, outbound };
 }
 
-function start(bus: EventBus, source: string, sessionId = "shared-chat") {
+function start(
+  bus: EventBus,
+  source: string,
+  sessionId = "shared-chat",
+  trace?: { traceId: string; parentEventId?: number },
+) {
   bus.emit({
     type: "session.start",
     source,
@@ -34,6 +39,7 @@ function start(bus: EventBus, source: string, sessionId = "shared-chat") {
       firedAt: Date.now(),
       kind: "chat",
     },
+    ...(trace ? { trace } : {}),
   });
 }
 
@@ -188,6 +194,89 @@ describe("Telegram outbound turn ownership", () => {
     }
 
     expect(sent.map((entry) => entry.text)).toEqual(["first", "second"]);
+    outbound.close();
+  });
+
+  test("keeps overlapping bounded Telegram turns attached to their own human messages", () => {
+    const { bus, sent, outbound } = harness("legacy-chat");
+
+    bus.emit({
+      type: "chat.start.requested",
+      source: "telegram",
+      owner: "agent:may",
+      data: {
+        message: "review Gym",
+        channelMessageId: 501,
+        conversationId: "telegram:chat:123:topic:0:agent:may",
+        forceNew: true,
+      },
+    });
+    start(bus, "telegram", "s_gym", { traceId: "trace-gym", parentEventId: 11 });
+
+    bus.emit({
+      type: "chat.start.requested",
+      source: "telegram",
+      owner: "agent:may",
+      data: {
+        message: "review AKS",
+        channelMessageId: 502,
+        conversationId: "telegram:chat:123:topic:0:agent:may",
+        forceNew: true,
+      },
+    });
+    start(bus, "telegram", "s_aks", { traceId: "trace-aks", parentEventId: 12 });
+
+    idle(bus, "telegram", "Gym result", "s_gym");
+    idle(bus, "telegram", "AKS result", "s_aks");
+
+    expect(sent).toEqual([
+      expect.objectContaining({
+        text: "Gym result",
+        context: expect.objectContaining({
+          sessionId: "s_gym",
+          replyToMessageId: 501,
+          traceId: "trace-gym",
+        }),
+      }),
+      expect.objectContaining({
+        text: "AKS result",
+        context: expect.objectContaining({
+          sessionId: "s_aks",
+          replyToMessageId: 502,
+          traceId: "trace-aks",
+        }),
+      }),
+    ]);
+    outbound.close();
+  });
+
+  test("acknowledges a silent Telegram turn when it starts a CLI second opinion", () => {
+    const { bus, sent, outbound } = harness("legacy-chat");
+    bus.emit({
+      type: "chat.start.requested",
+      source: "telegram",
+      owner: "agent:may",
+      data: {
+        message: "get a Codex second opinion",
+        channelMessageId: 503,
+        conversationId: "telegram:chat:123:topic:0:agent:may",
+        forceNew: true,
+      },
+    });
+    start(bus, "telegram", "s_codex", { traceId: "trace-codex", parentEventId: 13 });
+    bus.emit({
+      type: "cli.task.started",
+      source: "cli-task-runner",
+      owner: "agent:may",
+      data: { sessionId: "s_codex", tool: "codex", taskId: "cli_1" },
+    } as any);
+    idle(bus, "telegram", "Codex and May agree on the next action.", "s_codex");
+
+    expect(sent.map((entry) => entry.text)).toEqual([
+      "I received this. I’m checking it with codex and will reply with the result.",
+      "Codex and May agree on the next action.",
+    ]);
+    expect(sent[0]?.context).toMatchObject({ replyToMessageId: 503, traceId: "trace-codex" });
     outbound.close();
   });
 });

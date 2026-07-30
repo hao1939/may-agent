@@ -8,6 +8,7 @@ import { childEventTrace, EventBus } from "./event-bus.js";
 import { DbWriter } from "../lib/db-writer.js";
 import { closeDb, getDb } from "../lib/requests.js";
 import { checkEventTraceIntegrity } from "../lib/db/event-traces.js";
+import { storeNotificationMessage } from "../lib/db/notifications.js";
 
 function fixture() {
   const root = mkdtempSync(join(tmpdir(), "may-command-router-"));
@@ -16,6 +17,7 @@ function fixture() {
   bus.setPersistenceSubscriber(writer.handler);
   bus.setDeliveryRecorder(writer.recordDelivery);
   const sent: Array<{ sessionId: string; text: string; opts?: Record<string, unknown> }> = [];
+  const runs: Array<{ agent: string; text: string; opts?: Record<string, unknown> }> = [];
   const cancelled: string[] = [];
   const manager = {
     status: () => [
@@ -28,6 +30,10 @@ function fixture() {
       },
     ],
     send: (sessionId: string, text: string, opts?: Record<string, unknown>) => sent.push({ sessionId, text, opts }),
+    run: (agent: string, text: string, opts?: Record<string, unknown>) => {
+      runs.push({ agent, text, opts });
+      return `s_new_${runs.length}`;
+    },
     cancel: (sessionId: string) => cancelled.push(sessionId),
   };
   const router = attachCommandRouter({
@@ -36,11 +42,12 @@ function fixture() {
     getChatSession: () => undefined,
     clearCancelLatch: () => undefined,
     projectRoot: root,
+    persistDir: root,
     reload: () => undefined,
     restart: () => undefined,
     shutdown: () => undefined,
   });
-  return { root, bus, router, sent, cancelled };
+  return { root, bus, router, sent, runs, cancelled };
 }
 
 describe("command router human intent contract", () => {
@@ -134,6 +141,138 @@ describe("command router human intent contract", () => {
         trace_id: rows[0]!.trace_id,
         parent_event_id: expect.any(Number),
       });
+    } finally {
+      router.close();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("starts a fresh bounded May turn for ordinary Telegram language even when an old session is attached", () => {
+    const { root, bus, router, sent, runs } = fixture();
+    const routed: Array<Record<string, unknown>> = [];
+    const unsubscribe = bus.subscribe((event) => {
+      if (event.type === "chat.start.requested" || event.type === "session.steer.requested") {
+        routed.push(event as unknown as Record<string, unknown>);
+      }
+    });
+    try {
+      storeNotificationMessage(root, {
+        telegram_msg_id: 500,
+        event_type: "response",
+        agent: "may",
+        session_id: "s_old",
+        project_id: null,
+        data: JSON.stringify({
+          direction: "outbound",
+          conversationId: "telegram:chat:123:topic:0:agent:may",
+          traceId: "trace-prior",
+          text: "Gym is training while AKS waits on proof.",
+        }),
+      });
+      bus.emit({
+        type: "human.input.received",
+        source: "telegram",
+        owner: "agent:may",
+        data: {
+          inputId: "telegram:501",
+          actor: "human",
+          text: "review the apps and suggest what to do next",
+          conversation: {
+            id: "telegram:chat:123:topic:0:agent:may",
+            channel: "telegram",
+            channelMessageId: 501,
+          },
+          target: { agent: "may", sessionId: "s_old" },
+          context: { conversationId: "telegram:chat:123:topic:0:agent:may" },
+        },
+      });
+
+      expect(sent).toEqual([]);
+      expect(routed.map((event) => event.type)).toEqual(["chat.start.requested"]);
+      expect(routed[0]).toMatchObject({
+        source: "telegram",
+        data: {
+          forceNew: true,
+          requestId: "telegram:501",
+          conversationId: "telegram:chat:123:topic:0:agent:may",
+        },
+      });
+      expect(runs).toHaveLength(1);
+      expect(runs[0]).toMatchObject({
+        agent: "may",
+        opts: {
+          kind: "chat",
+          source: "telegram",
+          requestId: "telegram:501",
+          trace: { traceId: expect.any(String), parentEventId: expect.any(Number) },
+        },
+      });
+      expect(runs[0]?.text).toContain("review the apps and suggest what to do next");
+      expect(runs[0]?.text).toContain("Recent Telegram context");
+      expect(runs[0]?.text).toContain("Gym is training while AKS waits on proof.");
+    } finally {
+      unsubscribe();
+      router.close();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps explicit Telegram session control available without making it the default", () => {
+    const { root, bus, router, sent, runs } = fixture();
+    try {
+      bus.emit({
+        type: "human.input.received",
+        source: "telegram",
+        owner: "agent:may",
+        data: {
+          actor: "human",
+          text: "use the smaller plan",
+          target: { agent: "may", sessionId: "s_chat" },
+          context: { explicitSessionControl: true },
+        },
+      });
+
+      expect(runs).toEqual([]);
+      expect(sent).toHaveLength(1);
+      expect(sent[0]).toMatchObject({ sessionId: "s_chat", text: "use the smaller plan" });
+    } finally {
+      router.close();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps overlapping Telegram requests on separate traces and bounded turns", () => {
+    const { root, bus, router, runs } = fixture();
+    try {
+      for (const [id, text] of [
+        [601, "review Gym"],
+        [602, "review AKS"],
+      ] as const) {
+        bus.emit({
+          type: "human.input.received",
+          source: "telegram",
+          owner: "agent:may",
+          data: {
+            inputId: `telegram:${id}`,
+            actor: "human",
+            text,
+            conversation: {
+              id: "telegram:chat:123:topic:0:agent:may",
+              channel: "telegram",
+              channelMessageId: id,
+            },
+            target: { agent: "may" },
+          },
+        });
+      }
+
+      expect(runs).toHaveLength(2);
+      expect(runs[0]?.opts?.requestId).toBe("telegram:601");
+      expect(runs[1]?.opts?.requestId).toBe("telegram:602");
+      expect((runs[0]?.opts?.trace as any)?.traceId).not.toBe((runs[1]?.opts?.trace as any)?.traceId);
     } finally {
       router.close();
       closeDb(root);

@@ -62,6 +62,7 @@ export type AgentCommand =
         channel?: string;
         channelThreadId?: string;
         channelMessageId?: number;
+        conversationId?: string;
         forceNew?: boolean;
         requestId?: string;
         context?: Record<string, unknown>;
