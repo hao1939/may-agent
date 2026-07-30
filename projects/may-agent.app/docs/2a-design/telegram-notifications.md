@@ -846,8 +846,10 @@ Late tool results now carry their exact source session. A tested rollout
 recovers that session's reply target from durable metadata after the session
 goes idle and safely handles legacy Telegram request ids. Hao approved it, and
 runtime commit `3c589082` is deployed. Service, binary-hash, deploy-marker, and
-HTTP checks passed. Live Telegram reply-edge proof awaits the next applicable
-late result.
+HTTP checks passed. Live message `45998` then recovered `replyToMsgId: 45978`
+from an idle source session whose only durable channel link was
+`requestId: telegram:45978`; several newer human messages were present and none
+was selected.
 
 ## Noise Control
 

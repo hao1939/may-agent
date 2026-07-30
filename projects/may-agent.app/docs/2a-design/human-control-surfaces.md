@@ -766,8 +766,14 @@ scenario passed all 9 deterministic checks plus both semantic judges.
 Hao approved rollout, and runtime commit `3c589082` was deployed on 2026-07-30.
 The staged and installed binaries had the same SHA-256 hash, the deploy marker
 cleared, May, Web, and maintenance remained running, and the Web surface
-returned HTTP 200. The next natural late source-session result remains the
-visible Telegram reply-edge proof.
+returned HTTP 200.
+
+The next natural late result closed the visible proof. Outbound Telegram
+message `45998` carried source session `s_1785400723038_66`. That idle legacy
+session had no persisted `channelMessageId`; it retained only
+`requestId: telegram:45978`. The deployed fallback recovered `45978` and stored
+`replyToMsgId: 45978`. It did not attach the result to newer human messages
+`45981`, `45984`, `45988`, or `45993`.
 
 Keep the broader conversation view and app-task reconciliation separate. The
 narrow CLI fallback does not justify a new request table, scheduler, daemon, or
@@ -797,8 +803,8 @@ generic completion abstraction.
   human message by trace from the durable index. A tested candidate also
   recovers an idle source session from persisted metadata, including strict
   legacy `telegram:<id>` request records, without guessing a newer trace target.
-  The candidate is deployed; live reply-edge proof awaits the next applicable
-  late result.
+  The candidate is deployed, and live message `45998` proved the legacy
+  recovery path against several newer competing human messages.
 - There is no conversation context reader that resolves an anchor or named
   subject and assembles focused owner state, evidence, related messages,
   neighboring open requests, and preferences for a fresh bounded May turn.
