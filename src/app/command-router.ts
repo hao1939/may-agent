@@ -4,7 +4,7 @@ import type { SubagentManager } from "../lib/index.js";
 import { log } from "../lib/log.js";
 import type { ChatSession } from "./chat-session.js";
 import { childEventTrace, type EventBus } from "./event-bus.js";
-import { getRecentTelegramConversationMessages } from "../lib/db/notifications.js";
+import { getTelegramConversationView, type TelegramConversationView } from "../lib/db/notifications.js";
 import { isRecord, normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 
 export interface CommandRouterOptions {
@@ -322,9 +322,15 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     if (source === "telegram" && options.persistDir) {
       const conversationId = nonEmptyString(conversation.id);
       if (conversationId) {
-        deliveredMessage = appendRecentTelegramContext(
+        const reply = telegramReplyContext(context);
+        deliveredMessage = appendTelegramConversationView(
           deliveredMessage,
-          getRecentTelegramConversationMessages(options.persistDir, conversationId),
+          getTelegramConversationView(options.persistDir, {
+            conversationId,
+            traceId: stringField(reply, "traceId") ?? undefined,
+            taskId: stringField(reply, "taskId") ?? undefined,
+            projectId: stringField(reply, "projectId") ?? undefined,
+          }),
         );
       }
     }
@@ -676,13 +682,26 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
   return { handleInput, close: unsubscribe };
 }
 
-function appendRecentTelegramContext(
+function appendTelegramConversationView(
   message: string,
-  recent: ReturnType<typeof getRecentTelegramConversationMessages>,
+  view: TelegramConversationView,
 ): string {
-  if (recent.length === 0) return message;
-  const lines = [message, "", "Recent Telegram context (oldest to newest; system-provided)"];
-  for (const item of recent) {
+  if (!view.focus && view.recentMessages.length === 0) return message;
+  const lines = [message];
+  if (view.focus) {
+    lines.push("", "Focused request (system-provided durable view)");
+    if (view.focus.traceId) lines.push(`Trace: ${view.focus.traceId}`);
+    if (view.focus.taskId) lines.push(`Owner task: ${view.focus.taskId}`);
+    if (view.focus.projectId) lines.push(`Project: ${view.focus.projectId}`);
+    if (view.focus.owner) lines.push(`Current owner: ${view.focus.owner}`);
+    if (view.focus.status) lines.push(`Current state: ${view.focus.status}`);
+    for (const event of view.focus.events.slice(-6)) {
+      const detail = [event.type, event.status, event.summary].filter(Boolean).join(" — ");
+      lines.push(`Evidence #${event.eventId}: ${detail}`);
+    }
+  }
+  if (view.recentMessages.length) lines.push("", "Recent Telegram context (oldest to newest; system-provided)");
+  for (const item of view.recentMessages) {
     const speaker = item.direction === "inbound" ? "Hao" : item.agent || "May";
     const links = [item.traceId ? `trace=${item.traceId}` : "", item.taskId ? `task=${item.taskId}` : ""]
       .filter(Boolean)
@@ -691,7 +710,7 @@ function appendRecentTelegramContext(
   }
   lines.push("");
   lines.push(
-    "Use reply and trace links before prose similarity. Treat unrelated nearby messages as context, not as the target request.",
+    "Use the focused trace/task before prose similarity. Treat unrelated nearby messages as context, not as the target request. If several consequential requests still fit, state the likely interpretation and ask one focused question.",
   );
   return lines.join("\n");
 }
