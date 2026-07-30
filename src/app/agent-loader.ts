@@ -19,6 +19,7 @@
  */
 
 import type { Cron } from "./cron.js";
+import { currentAgentSessionId } from "../lib/agent-session-context.js";
 import {
   loadAgents as loadAgentsFromRegistry,
   reloadAgents as reloadAgentsFromRegistry,
@@ -27,7 +28,12 @@ import {
 import { loadHandlersForAgentCrons } from "./loader/handler-loader.js";
 
 export { loadAgentConfig, validateAgentConfig, type AgentConfig, type ValidationError } from "./loader/agent-config.js";
-export { listAgentDirectories, listConfiguredAgentNames, listProjectAgentDirectories, listRuntimeAgentDirectories } from "./loader/agent-discovery.js";
+export {
+  listAgentDirectories,
+  listConfiguredAgentNames,
+  listProjectAgentDirectories,
+  listRuntimeAgentDirectories,
+} from "./loader/agent-discovery.js";
 export { buildTools, loadLocalTools } from "./loader/toolset-loader.js";
 export { generateAutoHeartbeats } from "./loader/heartbeat-loader.js";
 export { loadHandlersForAgentCrons } from "./loader/handler-loader.js";
@@ -39,7 +45,7 @@ export type { AgentLoaderOptions, LoadResult } from "./loader/agent-registry-loa
 const agentSessionIds = new Map<string, string>();
 
 export function getAgentSessionId(name: string): string | undefined {
-  return agentSessionIds.get(name);
+  return currentAgentSessionId(name) ?? agentSessionIds.get(name);
 }
 
 export function setAgentSessionId(name: string, sid: string): void {

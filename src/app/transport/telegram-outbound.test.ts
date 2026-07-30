@@ -298,6 +298,55 @@ describe("Telegram outbound turn ownership", () => {
     outbound.close();
   });
 
+  test("keeps a late session message on its own request instead of the latest trace anchor", () => {
+    const { bus, sent, outbound } = harness("legacy-chat");
+    const conversationId = "telegram:chat:123:topic:0:agent:may";
+
+    start(
+      bus,
+      "telegram",
+      "s_old",
+      { traceId: "shared-conversation-trace" },
+      {
+        channelMessageId: 45978,
+        conversationId,
+      },
+    );
+    start(
+      bus,
+      "telegram",
+      "s_latest",
+      { traceId: "shared-conversation-trace" },
+      {
+        channelMessageId: 45984,
+        conversationId,
+      },
+    );
+    bus.emit({
+      type: "message.created",
+      source: "agent:may",
+      owner: "human:operator",
+      data: {
+        from: "may",
+        to: "human",
+        content: "Late correction for the earlier request.",
+        sourceSessionId: "s_old",
+      },
+      trace: { traceId: "shared-conversation-trace" },
+    } as any);
+
+    expect(sent[0]).toMatchObject({
+      text: "📋 Late correction for the earlier request.",
+      context: {
+        sessionId: "s_old",
+        replyToMessageId: 45978,
+        conversationId,
+        traceId: "shared-conversation-trace",
+      },
+    });
+    outbound.close();
+  });
+
   test("keeps the correct target when session start is emitted before outbound sees chat start", () => {
     const bus = new EventBus();
     const sent: Array<{ text: string; context?: Record<string, unknown> }> = [];

@@ -70,13 +70,10 @@ const messageParams = Type.Object({
     }),
   ),
   priority: Type.Optional(
-    Type.Union(
-      [Type.Literal("P0"), Type.Literal("P1"), Type.Literal("P2"), Type.Literal("P3")],
-      {
-        description:
-          "Priority. P0 = urgent, may trigger immediate run. P1 = important. P2/P3 = informational. Default: P2.",
-      },
-    ),
+    Type.Union([Type.Literal("P0"), Type.Literal("P1"), Type.Literal("P2"), Type.Literal("P3")], {
+      description:
+        "Priority. P0 = urgent, may trigger immediate run. P1 = important. P2/P3 = informational. Default: P2.",
+    }),
   ),
   context_files: Type.Optional(
     Type.Array(Type.String(), {
@@ -151,12 +148,10 @@ export function createMessageTool(opts: MessageToolOptions): AgentTool {
     description:
       "Send an async message to another agent. The message is persisted and injected into the receiver's next heartbeat. Sender never waits for a reply; replies are new messages. Use intent='implementation-request' + artifact for work handoffs. Use priority='P0' for urgent breaches.",
     parameters: messageParams,
-    execute: async (
-      _toolCallId: string,
-      _params: unknown,
-    ): Promise<AgentToolResult<undefined>> => {
+    execute: async (_toolCallId: string, _params: unknown): Promise<AgentToolResult<undefined>> => {
       const params = _params as MessageParams;
       const callerTrace = opts.getCallerTrace?.();
+      const callerSessionId = opts.getCallerSessionId?.();
 
       if (!params.to || !params.content) {
         return textResult(JSON.stringify({ error: "'to' and 'content' are required" }));
@@ -180,6 +175,7 @@ export function createMessageTool(opts: MessageToolOptions): AgentTool {
               reason: `${reason}. ${hint}`,
               content: preview(params.content),
               priority: params.priority ?? "P2",
+              ...(callerSessionId ? { sourceSessionId: callerSessionId } : {}),
             },
             ...(callerTrace ? { trace: callerTrace } : {}),
           });
@@ -200,9 +196,7 @@ export function createMessageTool(opts: MessageToolOptions): AgentTool {
         const resolvedArtifact = resolve(params.artifact);
         const projectRoot = resolve(opts.persistDir, "..");
         if (!resolvedArtifact.startsWith(projectRoot)) {
-          return textResult(
-            JSON.stringify({ error: `Artifact path outside project root: ${params.artifact}` }),
-          );
+          return textResult(JSON.stringify({ error: `Artifact path outside project root: ${params.artifact}` }));
         }
         if (!existsSync(resolvedArtifact)) {
           return textResult(JSON.stringify({ error: `Artifact not found: ${params.artifact}` }));
@@ -237,6 +231,7 @@ export function createMessageTool(opts: MessageToolOptions): AgentTool {
             intent: params.intent,
             artifact: params.artifact,
             priority,
+            ...(callerSessionId ? { sourceSessionId: callerSessionId } : {}),
           },
           ...(callerTrace ? { trace: callerTrace } : {}),
         });
@@ -246,8 +241,7 @@ export function createMessageTool(opts: MessageToolOptions): AgentTool {
 
       // P0 messages trigger receiver immediately. Lower priorities wait
       // for the receiver's next scheduled heartbeat.
-      const triggered =
-        priority === "P0" ? (opts.triggerHeartbeat?.(params.to) ?? false) : false;
+      const triggered = priority === "P0" ? (opts.triggerHeartbeat?.(params.to) ?? false) : false;
 
       return textResult(
         JSON.stringify({

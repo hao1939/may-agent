@@ -36,6 +36,7 @@ import {
   extractLastAssistantError,
   extractLastAssistantText,
 } from "./manager-utils.js";
+import { runWithAgentSessionContext } from "./agent-session-context.js";
 
 const CHAT_TOOL_DENYLIST = new Set([
   "bash",
@@ -235,6 +236,17 @@ function applyToolExecutionPolicy(tools: AgentTool[]): AgentTool[] {
   return tools.map((tool) => (SEQUENTIAL_TOOL_NAMES.has(tool.name) ? { ...tool, executionMode: "sequential" } : tool));
 }
 
+function bindToolsToSession(tools: AgentTool[], agentName: string, sessionId: string): AgentTool[] {
+  return tools.map((tool) => {
+    const execute = tool.execute.bind(tool);
+    return {
+      ...tool,
+      execute: (...args: Parameters<AgentTool["execute"]>) =>
+        runWithAgentSessionContext(agentName, sessionId, () => execute(...args)),
+    } as AgentTool;
+  });
+}
+
 function buildGuards(definition: SubagentDefinition, projectRoot: string): BeforeToolCallHook[] {
   const named =
     (guardName: string, guard: BeforeToolCallHook): BeforeToolCallHook =>
@@ -313,7 +325,11 @@ export function prepareAgentExecution(options: AgentPreparationOptions): Prepare
   const outputSchema = normalizeExecutionSchema(options.outputSchema);
   const requireFinish = options.requireFinish === true || outputSchema !== undefined;
   const normalizedOptions = { ...options, outputSchema };
-  const tools = resolveTools(normalizedOptions, requireFinish);
+  const tools = bindToolsToSession(
+    resolveTools(normalizedOptions, requireFinish),
+    options.definition.name,
+    options.sessionId,
+  );
   const guards = buildGuards(options.definition, options.definition.projectRoot ?? options.projectRoot);
   const composed = guards.length ? composeGuards(...guards) : undefined;
   const beforeToolCall = composed

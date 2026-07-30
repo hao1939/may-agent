@@ -381,6 +381,7 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
       const message = messageData(event);
       if (!isHumanTarget(message.to)) return;
       if (pendingChatId) {
+        const sourceSessionId = nonEmptyString(message.sourceSessionId);
         const content = String(message.content ?? "").slice(0, 4000);
         const projectId =
           normalizeProjectPath(message.projectPath ?? message.projectId, opts.projectRoot) ??
@@ -423,6 +424,7 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
           "lastHandledBy",
           "expectedClosure",
           "actionHints",
+          "sourceSessionId",
         ]) {
           if (message[key] !== undefined) data[key] = message[key];
         }
@@ -459,14 +461,17 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
         sendToUser(`📋 ${content}`, {
           eventType: "message.created",
           agent: String(message.from ?? ""),
-          sessionId: "sessionId" in message ? String(message.sessionId) : undefined,
+          sessionId: sourceSessionId ?? ("sessionId" in message ? String(message.sessionId) : undefined),
           projectId,
           summary: content.slice(0, 200),
           data,
           traceId,
           parentEventId: typeof data.parentEventId === "number" ? data.parentEventId : undefined,
           taskId: typeof data.taskId === "string" ? data.taskId : undefined,
-          replyToMessageId: traceId ? replyToMessageIdForTrace(traceId) : undefined,
+          replyToMessageId:
+            (sourceSessionId ? replyToMessageIdBySession.get(sourceSessionId) : undefined) ??
+            (traceId ? replyToMessageIdForTrace(traceId) : undefined),
+          conversationId: sourceSessionId ? conversationIdBySession.get(sourceSessionId) : undefined,
         });
       }
     }
@@ -571,4 +576,8 @@ function normalizeForCompare(text: string): string {
 
 function numberOrUndefined(value: unknown): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function nonEmptyString(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }

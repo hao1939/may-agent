@@ -5,6 +5,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { prepareAgentExecution } from "./agent-execution.js";
+import { currentAgentSessionId } from "./agent-session-context.js";
 import { createFinishTool } from "./tools/lifecycle.js";
 
 const roots: string[] = [];
@@ -80,6 +81,47 @@ describe("shared agent execution preparation", () => {
     expect(prepared.systemPrompt).toContain("shared rules\n\nsample identity");
     expect(prepared.systemPrompt).toContain("Available tools: read, finish");
     expect(prepared.systemPrompt).toContain("Current time: 2026-07-19T00:00:00.000Z");
+  });
+
+  test("binds shared tools to the exact concurrent agent session", async () => {
+    const observations: Array<{ before?: string; after?: string }> = [];
+    const sharedTool: AgentTool = {
+      ...tool("message"),
+      execute: async () => {
+        const before = currentAgentSessionId("may");
+        await Bun.sleep(before === "session-old" ? 5 : 1);
+        observations.push({ before, after: currentAgentSessionId("may") });
+        return { content: [{ type: "text", text: "ok" }] };
+      },
+    };
+    const definition = {
+      name: "may",
+      description: "may",
+      domain: "tests",
+      systemPrompt: "identity",
+      model: { contextWindow: 10_000 } as any,
+      tools: [sharedTool],
+    };
+    const oldTurn = prepareAgentExecution({
+      definition,
+      projectRoot: "/tmp",
+      sessionId: "session-old",
+      task: "old turn",
+    });
+    const latestTurn = prepareAgentExecution({
+      definition,
+      projectRoot: "/tmp",
+      sessionId: "session-latest",
+      task: "latest turn",
+    });
+
+    await Promise.all([
+      oldTurn.tools[0]!.execute("old-call", {} as never),
+      latestTurn.tools[0]!.execute("latest-call", {} as never),
+    ]);
+
+    expect(observations).toContainEqual({ before: "session-old", after: "session-old" });
+    expect(observations).toContainEqual({ before: "session-latest", after: "session-latest" });
   });
 
   test("injects a rule-activated skill before the task", () => {
