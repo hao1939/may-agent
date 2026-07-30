@@ -958,6 +958,7 @@ async function runTaskOwner(input: {
               type: "pipeline-run.state",
               subject: "pipeline-run:123",
               expected: { field: "state", equals: "completed" },
+              reviewAfterMs: 3600000,
             },
           ],
         },
@@ -972,6 +973,7 @@ async function runTaskOwner(input: {
     "When different bounded work is required before this task can satisfy acceptance, create that work as a direct child with parentId equal to the current Reconciliation Task taskId and return waiting. A sibling successor does not complete the current task.",
     "Create a successor task only when this carrier cannot do the work because the target is stale, the task is too broad for one bounded attempt, or a real evidenced blocker requires different follow-up. If that successor is required for current acceptance, it is a direct child and the current task remains waiting.",
     "Use waiting only when there is a real machine-observable wake event or live direct child work. Every authored Condition must be an object with id, type, subject, and expected.",
+    "When an unresolved human request depends on a Condition, set reviewAfterMs to a bounded interval of at least 60000. Missing that checkpoint wakes you to review and steer the same task; it does not send a routine human update.",
     'For a decomposition parent that creates child task actions and cannot yet satisfy its own acceptance, return state "waiting". Infrastructure tracks live direct children and wakes this parent when a child converges or needs attention; do not author task lifecycle Conditions or return "converged" merely because child tasks were declared.',
     'Conditions belong only to the current task when you return state "waiting". A converged task may create only independent successor work after its own acceptance is already satisfied; put that successor\'s wake facts in its task action input/acceptance and omit top-level conditions.',
     "Condition subjects must use typed forms the app can observe, for example task:<taskId>, session:<sessionId>, workflow-run:<runId>, pipeline-run:<runId>, metric:<metricId>, alert:<alertId>, or project:<projectId>.",
@@ -1649,6 +1651,9 @@ async function reconcileTask(input: {
         attemptId: primary.attemptId,
         handler: primary.handler,
         disposition: apply.status === "applied" ? primaryHandlerResult.state : "stale",
+        ...(primary.trigger?.type === "project.task.condition-review.missed"
+          ? { reason: "condition-review-checkpoint-missed" }
+          : {}),
         input: intent.input ?? {},
         summary: primaryHandlerResult.summary,
         evidence: primaryHandlerResult.evidence,

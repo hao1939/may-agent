@@ -3,6 +3,7 @@ import { basename } from "node:path";
 import {
   ensureTaskState,
   isTypedProjectAppConditionSubject,
+  MIN_PROJECT_APP_CONDITION_REVIEW_AFTER_MS,
   isLeaf,
   normalizeStringArray,
   projectRuntimePaths,
@@ -367,7 +368,7 @@ function isProjectAppCondition(value: unknown): value is ProjectAppCondition {
   );
 }
 
-function isOpenCondition(value: Record<string, unknown>): boolean {
+function isOpenCondition(value: unknown): value is ProjectAppCondition {
   return isProjectAppCondition(value) && value.status.state !== "true";
 }
 
@@ -396,6 +397,22 @@ function openTaskConditionIds(tree: TaskTree, task: TaskNode): string[] {
     .filter(([, condition]) => isOpenCondition(condition))
     .map(([id]) => id);
   return [...new Set(ids)];
+}
+
+function missedTaskConditionCheckpointIds(tree: TaskTree, taskId: string, nowMs = Date.now()): string[] {
+  return taskConditionEntries(tree, taskId).flatMap(([id, condition]) => {
+    if (!isOpenCondition(condition)) return [];
+    const reviewAfterMs = condition.spec.reviewAfterMs;
+    const observedAtMs = Date.parse(String(condition.status.observedAt ?? ""));
+    if (
+      !Number.isInteger(reviewAfterMs) ||
+      Number(reviewAfterMs) < MIN_PROJECT_APP_CONDITION_REVIEW_AFTER_MS ||
+      !Number.isFinite(observedAtMs)
+    ) {
+      return [];
+    }
+    return nowMs >= observedAtMs + Number(reviewAfterMs) ? [id] : [];
+  });
 }
 
 function hasSatisfiedTaskCondition(tree: TaskTree, taskId: string): boolean {
@@ -437,6 +454,7 @@ function materializeWaitingConditions(
       subject: raw.subject.trim(),
       expected: raw.expected,
       ...(raw.owner?.trim() ? { owner: raw.owner.trim() } : {}),
+      ...(raw.reviewAfterMs !== undefined ? { reviewAfterMs: raw.reviewAfterMs } : {}),
     };
     const current = registry[id];
     const sameSpec = current && JSON.stringify(stableValue(current.spec)) === JSON.stringify(stableValue(spec));
@@ -1075,6 +1093,7 @@ function isRunnableOnPassiveResync(tree: TaskTree, resource: ProjectAppTaskResou
   if (resource.status.phase === "pending") return true;
   if (resource.status.phase === "waiting") {
     if (hasSatisfiedTaskCondition(tree, task.id)) return true;
+    if (missedTaskConditionCheckpointIds(tree, task.id).length > 0) return true;
     return liveChildTaskIds(tree, task).length === 0 && !(resource.status.conditionIds?.length ?? 0);
   }
   if (resource.status.phase === "attention") return needsOwnerHandoff(tree, resource);
@@ -1607,12 +1626,14 @@ export function claimObservedProjectAppTask(
     }
     const openConditionIds = openTaskConditionIds(tree, task);
     const hasSatisfiedCondition = hasSatisfiedTaskCondition(tree, task.id);
+    const missedCheckpointConditionIds = missedTaskConditionCheckpointIds(tree, task.id);
     const childIds = liveChildTaskIds(tree, task);
     if (
       resource.status.phase === "waiting" &&
       childIds.length > 0 &&
       !pendingTrigger &&
-      !hasSatisfiedCondition
+      !hasSatisfiedCondition &&
+      missedCheckpointConditionIds.length === 0
     ) {
       return { kind: "waiting", taskId: task.id, conditionIds: openConditionIds, childIds };
     }
@@ -1620,7 +1641,8 @@ export function claimObservedProjectAppTask(
       resource.status.phase === "waiting" &&
       openConditionIds.length > 0 &&
       !pendingTrigger &&
-      !hasSatisfiedCondition
+      !hasSatisfiedCondition &&
+      missedCheckpointConditionIds.length === 0
     ) {
       return { kind: "waiting", taskId: task.id, conditionIds: openConditionIds };
     }
@@ -1636,7 +1658,23 @@ export function claimObservedProjectAppTask(
       if (previousAttempt.sessionId) supersededSessionIds.add(previousAttempt.sessionId);
       finishAttempt(tree, resource, "interrupted", "Previous runtime attempt was superseded during recovery", now);
     }
-    const trigger = pendingTrigger?.event ?? previousAttempt?.trigger ?? syntheticAttemptTrigger(config, task.id, input.reason);
+    const trigger =
+      pendingTrigger?.event ??
+      previousAttempt?.trigger ??
+      (missedCheckpointConditionIds.length > 0
+        ? {
+            ...syntheticAttemptTrigger(config, task.id, "condition-review-checkpoint-missed"),
+            type: "project.task.condition-review.missed",
+            data: {
+              project: projectIdFromAppDir(config.appDir) || "project-app",
+              taskId: task.id,
+              task_id: task.id,
+              reason: "condition-review-checkpoint-missed",
+              conditionIds: missedCheckpointConditionIds,
+              synthetic: "controller-review-trigger",
+            },
+          }
+        : syntheticAttemptTrigger(config, task.id, input.reason));
     const specHash = projectAppTaskSpecHash(intent, owner);
     const attempt: ProjectAppTaskAttempt = {
       metadata: { id: attemptId, resourceVersion: 1 },
@@ -1647,7 +1685,8 @@ export function claimObservedProjectAppTask(
       handler,
       runtimeId: reconcilerRuntimeId,
       state: "running",
-      reason: input.reason ?? "event",
+      reason:
+        missedCheckpointConditionIds.length > 0 ? "condition-review-checkpoint-missed" : (input.reason ?? "event"),
       ...(trigger ? { trigger } : {}),
       startedAt: now,
     };
@@ -2098,6 +2137,15 @@ function validateConditions(
     }
     if (!("expected" in condition)) {
       throw new Error(`Handler result Condition ${identity} requires an expected value`);
+    }
+    if (
+      condition.reviewAfterMs !== undefined &&
+      (!Number.isInteger(condition.reviewAfterMs) ||
+        Number(condition.reviewAfterMs) < MIN_PROJECT_APP_CONDITION_REVIEW_AFTER_MS)
+    ) {
+      throw new Error(
+        `Handler result Condition ${identity} reviewAfterMs must be an integer of at least ${MIN_PROJECT_APP_CONDITION_REVIEW_AFTER_MS}`,
+      );
     }
   }
 }

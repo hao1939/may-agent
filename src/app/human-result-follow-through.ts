@@ -21,6 +21,7 @@ export type HumanResultFollowThroughOptions = {
 
 const CLI_TERMINAL_EVENTS = new Set(["cli.task.completed", "cli.task.failed", "cli.task.orphaned"]);
 const PROJECT_TERMINAL_DISPOSITIONS = new Set(["converged", "attention"]);
+const CONDITION_REVIEW_REASON = "condition-review-checkpoint-missed";
 
 /**
  * Start a fresh May review when a human-originated CLI result outlives the May
@@ -39,7 +40,8 @@ export function attachHumanResultFollowThrough(opts: HumanResultFollowThroughOpt
       const disposition = nonEmptyString(data.disposition);
       const taskId = nonEmptyString(data.taskId);
       const projectId = nonEmptyString(data.projectId) ?? nonEmptyString(data.project);
-      if (!taskId || !disposition || !PROJECT_TERMINAL_DISPOSITIONS.has(disposition)) return;
+      const checkpointReview = disposition === "waiting" && data.reason === CONDITION_REVIEW_REASON;
+      if (!taskId || !disposition || (!PROJECT_TERMINAL_DISPOSITIONS.has(disposition) && !checkpointReview)) return;
 
       const humanTraceId = findHumanTraceForProjectTask(opts.persistDir, taskId, projectId);
       if (!humanTraceId) return;
@@ -57,7 +59,11 @@ export function attachHumanResultFollowThrough(opts: HumanResultFollowThroughOpt
       });
 
       const generation = positiveInteger(data.generation);
-      const requestId = `human-result-review:project:${projectId ?? "unknown"}:${taskId}:${generation ?? "current"}`;
+      const attemptId = nonEmptyString(data.attemptId);
+      if (checkpointReview && !attemptId) return;
+      const requestId = checkpointReview
+        ? `human-result-review:project:${projectId ?? "unknown"}:${taskId}:${generation ?? "current"}:checkpoint:${attemptId}`
+        : `human-result-review:project:${projectId ?? "unknown"}:${taskId}:${generation ?? "current"}`;
       if (startedRequestIds.has(requestId) || hasReviewSession(opts.persistDir, requestId)) {
         return {
           accepted: true as const,
@@ -76,6 +82,7 @@ export function attachHumanResultFollowThrough(opts: HumanResultFollowThroughOpt
           conversationId,
           replyToMessageId: inbound.telegram_msg_id,
           conversationView,
+          checkpointReview,
         }),
         {
           kind: "chat",
@@ -173,14 +180,17 @@ function buildProjectReviewPrompt(input: {
   conversationId: string;
   replyToMessageId: number;
   conversationView: TelegramConversationView;
+  checkpointReview: boolean;
 }): string {
   const evidence = Array.isArray(input.data.evidence)
     ? input.data.evidence.map(String).filter(Boolean).slice(0, 8)
     : [];
   return [
-    "May long-running project result review",
+    input.checkpointReview ? "May long-running project checkpoint review" : "May long-running project result review",
     "",
-    "The accountable app task reached a terminal result linked to an earlier human request. Review it in a fresh bounded May turn.",
+    input.checkpointReview
+      ? "The accountable app owner reviewed a missed checkpoint for an earlier human request and the same task is still waiting. Review the evidence in a fresh bounded May turn."
+      : "The accountable app task reached a terminal result linked to an earlier human request. Review it in a fresh bounded May turn.",
     "Do not forward the owner's claim as proof. Inspect the task evidence when needed and preserve the original requested outcome.",
     "",
     "Original human request",
@@ -190,6 +200,7 @@ function buildProjectReviewPrompt(input: {
     `Project: ${nonEmptyString(input.data.projectId) ?? nonEmptyString(input.data.project) ?? "unknown"}`,
     `Task: ${nonEmptyString(input.data.taskId) ?? "unknown"}`,
     `Disposition: ${nonEmptyString(input.data.disposition) ?? "unknown"}`,
+    ...(input.checkpointReview ? [`Review reason: ${CONDITION_REVIEW_REASON}`] : []),
     `Summary: ${nonEmptyString(input.data.summary) ?? "No summary"}`,
     ...(evidence.length ? ["Evidence:", ...evidence.map((item) => `- ${item}`)] : []),
     ...conversationViewLines(input.conversationView),
@@ -198,7 +209,9 @@ function buildProjectReviewPrompt(input: {
     `Conversation: ${input.conversationId}`,
     `Reply to Telegram message: ${input.replyToMessageId}`,
     "",
-    "Verify the terminal outcome. Then send one plain-language closeout, replan missing proof, or ask only for a real authority decision. Keep healthy internal progress silent.",
+    input.checkpointReview
+      ? "Decide whether the same owner task needs changed execution, a proved blocker, or a fresh bounded checkpoint. Route a broken wake path to its runtime owner. Send Hao nothing unless there is a verified result, material change, or exact human-authority decision."
+      : "Verify the terminal outcome. Then send one plain-language closeout, replan missing proof, or ask only for a real authority decision. Keep healthy internal progress silent.",
   ].join("\n");
 }
 

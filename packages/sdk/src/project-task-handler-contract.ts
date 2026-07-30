@@ -7,6 +7,7 @@ import type {
   ProjectAppTaskMode,
   ProjectAppTaskVerificationResult,
 } from "./project-app.js";
+import { MIN_PROJECT_APP_CONDITION_REVIEW_AFTER_MS } from "./project-app.js";
 
 const nonEmptyStringSchema = Type.String({ minLength: 1 });
 const stringArraySchema = Type.Array(nonEmptyStringSchema);
@@ -83,6 +84,7 @@ export const projectAppConditionSchema = Type.Object(
     subject: nonEmptyStringSchema,
     expected: Type.Unknown(),
     owner: Type.Optional(nonEmptyStringSchema),
+    reviewAfterMs: Type.Optional(Type.Integer({ minimum: MIN_PROJECT_APP_CONDITION_REVIEW_AFTER_MS })),
   },
   { additionalProperties: false },
 );
@@ -356,12 +358,20 @@ function normalizeCondition(value: unknown, index: number): ProjectAppConditionS
   if (!("expected" in value)) return `conditions[${index}].expected is required`;
   const owner = optionalString(value, "owner");
   if (!owner.ok) return `conditions[${index}].owner must be a non-empty string when present`;
+  const reviewAfterMs = value.reviewAfterMs;
+  if (
+    reviewAfterMs !== undefined &&
+    (!Number.isInteger(reviewAfterMs) || Number(reviewAfterMs) < MIN_PROJECT_APP_CONDITION_REVIEW_AFTER_MS)
+  ) {
+    return `conditions[${index}].reviewAfterMs must be an integer of at least ${MIN_PROJECT_APP_CONDITION_REVIEW_AFTER_MS}`;
+  }
   return {
     id,
     type,
     subject,
     expected: structuredClone(value.expected),
     ...(owner.value ? { owner: owner.value } : {}),
+    ...(reviewAfterMs !== undefined ? { reviewAfterMs: Number(reviewAfterMs) } : {}),
   };
 }
 

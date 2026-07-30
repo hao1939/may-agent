@@ -231,6 +231,50 @@ describe("human result follow-through", () => {
     expect(runs).toEqual([]);
   });
 
+  it("starts one fresh May review after a human-linked Condition checkpoint stays waiting", () => {
+    const { bus, persistDir, runs } = fixture();
+    storeHumanInput(persistDir, "trace-human-project");
+    bus.emit({
+      type: "project.owner.reviewed",
+      source: "project-app:gym:task-reconciler",
+      owner: "agent:gym",
+      data: { taskRefs: [{ projectId: "gym", taskId: "learning/review" }] },
+      trace: { traceId: "trace-human-project" },
+    } as any);
+
+    const checkpoint = {
+      type: "project.task.reconciled",
+      source: "project-app:gym:task-reconciler",
+      owner: "agent:gym",
+      data: {
+        project: "gym",
+        taskId: "learning/review",
+        generation: 3,
+        attemptId: "attempt-checkpoint-2",
+        disposition: "waiting",
+        reason: "condition-review-checkpoint-missed",
+        summary: "The bounded recheck found no new evidence.",
+        evidence: ["review:no-new-evidence"],
+      },
+      trace: { traceId: "task-run-trace" },
+    } as any;
+    bus.emit(checkpoint);
+    bus.emit({ ...checkpoint });
+
+    expect(runs).toHaveLength(1);
+    expect(runs[0]).toMatchObject({
+      agent: "may",
+      opts: {
+        requestId: "human-result-review:project:gym:learning/review:3:checkpoint:attempt-checkpoint-2",
+        trace: { traceId: "trace-human-project", parentEventId: expect.any(Number) },
+      },
+    });
+    expect(runs[0]?.task).toContain("checkpoint review");
+    expect(runs[0]?.task).toContain("same task is still waiting");
+    expect(runs[0]?.task).toContain("changed execution");
+    expect(runs[0]?.task).toContain("Send Hao nothing unless");
+  });
+
   it("reports a terminal human-linked task until May's closeout is delivered", () => {
     const { bus, persistDir } = fixture();
     storeHumanInput(persistDir, "trace-human-project");
