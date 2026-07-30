@@ -33,6 +33,8 @@ function result(mode, workDir) {
     check("separate-request-threads", replies && gym && replies.taskId !== gym.taskId, "Both human requests retain distinct traces and tasks");
     check("durable-owner-acceptance", acceptReplies?.owner === "may-agent platform owner" && acceptGym?.owner === "Gym app", "Both long requests preserve their accountable app owners");
     check("proof-before-promise", /root cause/i.test(acceptReplies?.expectedProof || "") && /regression/i.test(acceptReplies?.expectedProof || "") && /replay|live/i.test(acceptReplies?.expectedProof || ""), "Repeated-reply acknowledgement names terminal proof");
+    check("completion-wake-before-promise", /project\.task\.reconciled/i.test(acceptReplies?.wakeEvent || "") && /project\.task\.reconciled/i.test(acceptGym?.wakeEvent || ""), "Both accepted requests record the event that wakes May");
+    check("checkpoint-before-promise", /condition/i.test(acceptReplies?.reviewCheckpoint || "") && /condition/i.test(acceptGym?.reviewCheckpoint || ""), "Both accepted requests record a missed-progress checkpoint");
     check("one-closeout", closeouts.length === 1, `Observed ${closeouts.length} repeated-reply closeouts`);
     check("completion-routed-by-task", closeouts[0]?.taskId === "task-replies" && closeouts[0]?.replyTo === 101, "Lost-session completion returns to the original request, not current Gym work");
     check("verified-closeout", replies?.status === "done" && Array.isArray(replies?.evidence) && replies.evidence.length >= 3, "Closeout records owner evidence");

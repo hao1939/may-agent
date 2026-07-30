@@ -72,6 +72,8 @@ function apply(actionFile) {
     if (action.replyTo !== inbox.messageId) fail("accept must reply to the incoming human message");
     requireText(action.owner, "owner");
     requireText(action.expectedProof, "expectedProof");
+    requireText(action.wakeEvent, "wakeEvent");
+    requireText(action.reviewCheckpoint, "reviewCheckpoint");
     requireText(action.response, "response");
     if (state.requests.some((request) => request.traceId === action.traceId || request.taskId === action.taskId)) {
       fail("accept would create a duplicate request or task");
@@ -84,6 +86,8 @@ function apply(actionFile) {
       intent: inbox.outcome,
       owner: action.owner,
       expectedProof: action.expectedProof,
+      wakeEvent: action.wakeEvent,
+      reviewCheckpoint: action.reviewCheckpoint,
       status: "working",
       originalHumanMessageId: inbox.messageId,
       evidence: [],

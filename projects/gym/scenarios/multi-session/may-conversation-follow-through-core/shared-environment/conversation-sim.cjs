@@ -31,6 +31,8 @@ function inspect() {
         replyTo: inbox.messageId,
         owner: inbox.accountableOwner,
         expectedProof: inbox.requiredProof,
+        wakeEvent: inbox.wakeEvent,
+        reviewCheckpoint: inbox.reviewCheckpoint,
         response: "plain-language acknowledgement",
       }
     : taskRequest
@@ -67,14 +69,19 @@ function apply(actionName) {
     if (inbox.kind !== "human") fail("accept requires a human request");
     if (action.traceId !== inbox.traceId || action.taskId !== inbox.taskId) fail("accept must preserve the supplied trace and task");
     if (action.replyTo !== inbox.messageId) fail("accept must reply to the incoming message");
-    text(action.owner, "owner"); text(action.expectedProof, "expectedProof"); text(action.response, "response");
+    text(action.owner, "owner"); text(action.expectedProof, "expectedProof");
+    text(action.wakeEvent, "wakeEvent"); text(action.reviewCheckpoint, "reviewCheckpoint");
+    text(action.response, "response");
     if (action.owner !== inbox.accountableOwner) fail("accept must preserve the accountable app owner");
     if (action.expectedProof !== inbox.requiredProof) fail("accept must preserve the required terminal proof");
+    if (action.wakeEvent !== inbox.wakeEvent) fail("accept must preserve the completion wake");
+    if (action.reviewCheckpoint !== inbox.reviewCheckpoint) fail("accept must preserve the missed-progress checkpoint");
     if (state.requests.some((request) => request.traceId === action.traceId || request.taskId === action.taskId)) fail("duplicate request or task");
     state.messages.push({ id: inbox.messageId, seq: inbox.seq, actor: "human", traceId: action.traceId, text: inbox.text });
     state.requests.push({
       traceId: action.traceId, taskId: action.taskId, subject: inbox.subject,
       intent: inbox.outcome, owner: action.owner, expectedProof: action.expectedProof,
+      wakeEvent: action.wakeEvent, reviewCheckpoint: action.reviewCheckpoint,
       status: "working", originalHumanMessageId: inbox.messageId, evidence: [],
       nextCondition: action.expectedProof,
     });

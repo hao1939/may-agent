@@ -697,8 +697,9 @@ supports this design direction without changing production routing:
 
 - the trace-based conversation model passed 8/8 deterministic infrastructure
   cases; the narrow current-session replay model passed 1/8;
-- current May passed the three-turn development trajectory with 10/10 behavior
-  checks and both calibrated semantic judges;
+- current May passed the three-turn development trajectory with 12/12 behavior
+  checks and both calibrated semantic judges, including accepted completion
+  wakes and missed-progress checkpoints before a later-result promise;
 - current May passed the held-back four-turn transfer trajectory with 8/8
   behavior checks and both judges; and
 - the typed contract made owner, proof, reply target, and human action explicit.
@@ -844,9 +845,12 @@ generic completion abstraction.
   currently uses the latest indexed inbound message on that trace; it does not
   yet resolve a linked app task or assemble the full prepared context packet
   described above.
-- A May chat turn can launch async work and promise a later result without
-  first establishing a linked owner task, completion wake, proof condition, or
-  missed-progress checkpoint.
+- May's deputy rule and Gym contract now reject a later-result promise until
+  the accepted branch names its owner task or worker, terminal proof,
+  completion wake, and missed-progress checkpoint. The strengthened
+  development trajectory passes 12/12 checks and both semantic judges. The
+  remaining runtime gap is structural admission: an unconstrained chat path
+  can still speak before those links are mechanically checked.
 - Deployed follow-through joins a terminal
   `project.task.reconciled` fact to the existing `project.owner.reviewed` task
   reference and original Telegram trace. For `converged` or `attention`, it

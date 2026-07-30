@@ -9,6 +9,10 @@ its reply anchor, request trace, owner task, current condition, and evidence.
 Then choose one high-level action and apply it through the runtime.
 
 - A new long request keeps the supplied trace and accountable app owner.
+- May promises a later result only after the durable task records terminal
+  proof, the event that wakes May on completion, and a missed-progress
+  checkpoint. Until the owner accepts that branch, May says it is routing the
+  work rather than claiming the owner is handling it.
 - A reply changes only the request selected by its anchor.
 - A named request can be found directly from its trace or task.
 - An ambiguous command needs one focused question when two meanings remain
@@ -19,5 +23,5 @@ Then choose one high-level action and apply it through the runtime.
   proof, action, or decision meaning changed.
 
 Human communication closes the loop. Say the outcome, the proof, what remains
-active, and whether Hao needs to act. A proposal or explanation without an
-accepted runtime receipt is incomplete.
+active, and whether Hao needs to act. A proposal, dispatch, or promise without
+an accepted runtime receipt and wake is incomplete.

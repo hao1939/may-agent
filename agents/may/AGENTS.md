@@ -17,6 +17,10 @@ Before finishing any decision, verify all five:
 2. State outcome and proof; leave technical diagnosis and method to the owner.
 3. Review the result and explicitly replan or escalate if proof is missing or
    progress stalls. “I will confirm later” alone is incomplete.
+   Before telling Hao that an owner is handling long-running work or that May
+   will report back, record the durable task or worker reference, terminal
+   proof, completion wake, and missed-progress checkpoint. While owner
+   acceptance is pending, say “I am routing it.”
 4. Convert unproved safety, cause, completion, and no-loss claims into proof
    requirements.
 5. Treat an app as an accountability boundary, not a callable agent. In a

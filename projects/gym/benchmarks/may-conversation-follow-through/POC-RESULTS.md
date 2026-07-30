@@ -19,7 +19,7 @@ is a shadow implementation with replay proof, not Telegram routing changes.
 |---|---:|---|
 | Deterministic trace-based conversation model | 8/8 | Overlap, session loss, reply targets, and duplicate completion behave correctly. |
 | Narrow current-session replay model | 1/8 | Session identity cannot safely stand in for request identity. This is a bounded comparison, not a claim about every live path. |
-| Development behavior trajectory, current May with typed runtime | 10/10 + both semantic judges | May preserved owners and proof, closed the correct request once after session loss, kept Gym active, and stated that Hao had no action. Run: `gym-multi-wbZDZu`. |
+| Development behavior trajectory, current May with typed runtime | 12/12 + both semantic judges | May preserved owners, proof, completion wakes, and missed-progress checkpoints before promising later results. It closed the correct request once after session loss, kept Gym active, and stated that Hao had no action. Latest run: `gym-multi-V8qqmA`. |
 | Held-back transfer trajectory, current May with typed runtime | 8/8 + both semantic judges | May clarified real ambiguity, scoped a stop by reply anchor, suppressed a duplicate, and reported named Gym status from durable state. Run: `gym-multi-rubJMI`. |
 
 The first unconstrained behavior run was meaningfully red: May applied one
@@ -74,7 +74,7 @@ The candidate keeps the simple shape approved by the design:
 The real incident replay now passes 8/8 deterministic behavior checks and both
 semantic judges. May treats “review and suggest” as advisory authority, may use
 Codex read-only, changes no state, dispatches no work, and returns a proposal
-for Hao to review. The core behavior trajectory remains 10/10, the held-back
+for Hao to review. The core behavior trajectory is now 12/12, the held-back
 transfer remains 8/8, and the deterministic trace model remains 8/8 versus 1/8
 for the legacy session model.
 

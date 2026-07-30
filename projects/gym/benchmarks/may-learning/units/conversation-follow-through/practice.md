@@ -13,6 +13,10 @@ reply target, and whether Hao needs to act.
    Record one review and send one closeout.
 5. In a new turn, Hao asks for Gym status by name. Report its durable current
    state and next closure condition, then say whether he needs to act.
+6. An owner says it started a long task but gives no completion wake or
+   missed-progress checkpoint. Keep the claim as “routing,” require those two
+   links on the existing task, and promise a later result only after they are
+   recorded.
 
 Do not solve these by remembering the latest session. Inspect and act through
 the supplied conversation runtime; the accepted action trace is the behavior.

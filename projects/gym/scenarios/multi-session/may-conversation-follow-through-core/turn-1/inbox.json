@@ -9,5 +9,7 @@
   "subject": "Repeated May replies",
   "text": "Investigate why May sent nineteen identical workflow replies, fix the root cause, and verify the result.",
   "outcome": "Remove the duplicate-reply cause and prove the repaired behavior.",
-  "requiredProof": "Identify the root cause, pass the concurrent-request regression, and pass a restart replay with exactly one closeout to the correct request."
+  "requiredProof": "Identify the root cause, pass the concurrent-request regression, and pass a restart replay with exactly one closeout to the correct request.",
+  "wakeEvent": "project.task.reconciled for task-replies",
+  "reviewCheckpoint": "The platform owner task's next declared Condition; if it is missed, wake May for owner review."
 }

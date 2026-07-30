@@ -9,5 +9,7 @@
   "subject": "Gym training",
   "text": "Keep Gym training May until the approved learning material is exhausted.",
   "outcome": "Continue the approved training tracks and stop only at exhaustion or a real decision boundary.",
-  "requiredProof": "Show that every approved track passed or identify the exact remaining decision boundary."
+  "requiredProof": "Show that every approved track passed or identify the exact remaining decision boundary.",
+  "wakeEvent": "project.task.reconciled for task-gym",
+  "reviewCheckpoint": "The Gym task's next declared Condition; if it is missed, wake May for owner review."
 }
