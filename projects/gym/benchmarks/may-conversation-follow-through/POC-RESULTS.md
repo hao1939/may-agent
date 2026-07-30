@@ -4,8 +4,8 @@ Date: 2026-07-30
 
 ## Decision
 
-**The bounded runtime candidate is proven. Reject production rollout until
-Hao reviews this evidence.**
+**The bounded runtime path is proven and deployed. Continue bounded live
+review.**
 
 The direction is proven in isolation: request identity comes from durable
 trace/task links, not a mutable May session. Current May behaves correctly when
@@ -80,5 +80,13 @@ for the legacy session model.
 
 May-agent verification passes 52 focused routing tests, 33 end-to-end tests,
 and both TypeScript checks. The Gym corpus validates 571 runnable scenarios
-with zero errors. The candidate is committed only after this proof and remains
-undeployed pending rollout approval.
+with zero errors.
+
+Hao approved rollout of May commit `0b3587e2` on 2026-07-30. The supervisor
+health gate passed for the daemon, web service, maintenance service, and API.
+In the live smoke test, human message `45971` started fresh session
+`s_1785399302756_11` with the stable Telegram conversation id. May made no
+delegation or state change and delivered response `45973` as a reply to the
+human message on the same request trace. The live event window contained only
+the Telegram input, May turn, reply delivery, and unrelated scheduled app
+events.

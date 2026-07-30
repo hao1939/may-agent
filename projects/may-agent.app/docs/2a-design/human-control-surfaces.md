@@ -2,12 +2,12 @@
 
 **Design status:** Accepted.
 **Implementation status:** Partial. Canonical CLI, Telegram, Web/control
-socket, and console ingress exist. A proof-gated Telegram candidate now gives
-ordinary input a fresh bounded May turn, stores inbound and outbound trace
-links in the existing message index, and recovers a reply target after restart.
-It is not deployed yet. Focused owner-state context, durable async completion
-fallback, and session-independent caller identity still have convergence gaps
-described below. Legacy socket frames remain compatibility ingress.
+socket, and console ingress exist. The deployed Telegram path gives ordinary
+input a fresh bounded May turn, stores inbound and outbound trace links in the
+existing message index, and recovers a reply target after restart. Focused
+owner-state context, durable async completion fallback, and
+session-independent caller identity still have convergence gaps described
+below. Legacy socket frames remain compatibility ingress.
 **Aligned with**: `events.md`, `sessions.md`, `runtime.md`, `may-console.md`, `webui.md`
 
 ## Purpose
@@ -701,18 +701,18 @@ small lookup has production-shaped proof.
   V3 project apps receive `project.comment.created` without command-router file
   mutation and own any resulting state change.
 - Persistent `ChatSession` reuse remains on non-Telegram surfaces. The
-  proof-gated Telegram candidate treats a session as one bounded execution:
+  deployed Telegram path treats a session as one bounded execution:
   ordinary language starts a new turn, while only explicit `/steer` targets an
   execution session.
 - `notification_messages` now indexes inbound and outbound Telegram messages,
   reply edges, stable chat/topic/May conversation identity, and available
   trace/task links without adding a table. A seven-day replay had found traces
   on all 229 human-directed source events but none of the 225 delivered
-  `message.created` rows; outbound trace copying is deployed, while the inbound
-  index and stable identity remain in the proof-gated candidate. Approval and
-  notification-specific ids are retained as request lineage instead of
-  replacing the stable Telegram conversation id.
-- The Telegram candidate keeps active reply targets per bounded session and
+  `message.created` rows. Inbound indexing, outbound trace copying, and stable
+  identity are now deployed. Approval and notification-specific ids are
+  retained as request lineage instead of replacing the stable Telegram
+  conversation id.
+- The Telegram path keeps active reply targets per bounded session and
   can recover the latest inbound human message by trace from the durable index
   after restart. Owner events must still preserve that trace for the fallback
   to work.
