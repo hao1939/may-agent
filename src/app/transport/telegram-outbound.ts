@@ -36,6 +36,7 @@ export interface TelegramOutboundOptions {
 
 export interface TelegramOutbound {
   close: () => void;
+  drain: () => Promise<void>;
   getRootChatSessionId: () => string | null;
   sendAlert: (text: string) => void;
 }
@@ -149,49 +150,90 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
   const conversationIdBySession = new Map<string, string>();
   const traceBySession = new Map<string, EventTrace>();
   const outboundBySession = new Map<string, { pendingText: string; sentAnyText: boolean; sentText: string }>();
+  let closed = false;
+  let proactiveAdmissionQueue = Promise.resolve();
 
-  function reviewInShadow(candidate: HumanAttentionCandidate): void {
-    if (!opts.reviewProactive) return;
-    void opts
-      .reviewProactive(candidate)
-      .then((review) => {
-        bus.emit({
-          type: "human.attention.reviewed",
-          source: "telegram-outbound",
-          owner: "agent:may",
-          data: {
-            sourceEventId: candidate.sourceEventId,
-            mode: "shadow",
-            delivered: true,
-            candidate: {
-              eventType: candidate.eventType,
-              from: candidate.from,
-              content: candidate.content,
-              projectId: candidate.projectId,
-            },
-            ...review,
-          },
-        } as any);
-      })
-      .catch((error) => {
-        bus.emit({
-          type: "human.attention.reviewed",
-          source: "telegram-outbound",
-          owner: "agent:may",
-          data: {
-            sourceEventId: candidate.sourceEventId,
-            mode: "shadow",
-            delivered: true,
-            status: "failed",
-            reason: error instanceof Error ? error.message : String(error),
-            candidate: {
-              eventType: candidate.eventType,
-              from: candidate.from,
-              content: candidate.content,
-              projectId: candidate.projectId,
-            },
-          },
-        } as any);
+  function reviewAudit(
+    candidate: HumanAttentionCandidate,
+    review: HumanAttentionReview,
+    attempts: number,
+    delivered: boolean,
+    deliveryError?: string,
+  ): void {
+    bus.emit({
+      type: "human.attention.reviewed",
+      source: "telegram-outbound",
+      owner: "agent:may",
+      data: {
+        sourceEventId: candidate.sourceEventId,
+        mode: "enforce",
+        admitted: review.status === "completed" && review.disposition === "deliver",
+        delivered,
+        attempts,
+        candidate: {
+          eventType: candidate.eventType,
+          from: candidate.from,
+          content: candidate.content,
+          projectId: candidate.projectId,
+        },
+        ...review,
+        ...(deliveryError ? { deliveryError } : {}),
+      },
+    } as any);
+  }
+
+  async function decideProactive(
+    candidate: HumanAttentionCandidate,
+  ): Promise<{ review: HumanAttentionReview; attempts: number }> {
+    if (!opts.reviewProactive) {
+      return {
+        review: { status: "failed", reason: "Human-attention reviewer is unavailable" },
+        attempts: 0,
+      };
+    }
+
+    let lastFailure: HumanAttentionReview = { status: "failed", reason: "Human-attention review failed" };
+    for (let attempts = 1; attempts <= 2; attempts += 1) {
+      try {
+        const review = await opts.reviewProactive(candidate);
+        if (review.status === "completed") return { review, attempts };
+        lastFailure = review;
+      } catch (error) {
+        lastFailure = {
+          status: "failed",
+          reason: error instanceof Error ? error.message : String(error),
+        };
+      }
+    }
+    return { review: lastFailure, attempts: 2 };
+  }
+
+  function admitProactive(
+    candidate: HumanAttentionCandidate,
+    deliver: (reviewedText: string) => void,
+  ): void {
+    proactiveAdmissionQueue = proactiveAdmissionQueue
+      .catch(() => undefined)
+      .then(async () => {
+        if (closed) return;
+        const { review, attempts } = await decideProactive(candidate);
+        if (closed) return;
+        if (review.status !== "completed" || review.disposition !== "deliver" || !review.deliveredMessage) {
+          reviewAudit(candidate, review, attempts, false);
+          return;
+        }
+        try {
+          deliver(review.deliveredMessage);
+          reviewAudit(candidate, review, attempts, true);
+        } catch (error) {
+          reviewAudit(
+            candidate,
+            review,
+            attempts,
+            false,
+            error instanceof Error ? error.message : String(error),
+          );
+        }
       });
   }
 
@@ -280,27 +322,39 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
           (fp?.summary as string) ??
           (typeof session.outcome === "string" ? session.outcome.slice(0, 200) : "completed");
         const fpStatus = (fp?.status as string) ?? session.status;
-        if (fpStatus === "failure" || fpStatus === "blocked") {
-          sendToUser(`❌ ${String(session.agent)} BLOCKED: ${summary}`, {
-            eventType: "blocked",
-            agent: String(session.agent),
-            sessionId,
-            summary,
-            replyToMessageId: replyToMessageIdBySession.get(sessionId),
-            conversationId: conversationIdBySession.get(sessionId),
-            ...traceContext(sessionId),
-          });
-        } else {
-          sendToUser(`✅ ${String(session.agent)}: ${summary}`, {
+        const rawText =
+          fpStatus === "failure" || fpStatus === "blocked"
+            ? `❌ ${String(session.agent)} BLOCKED: ${summary}`
+            : `✅ ${String(session.agent)}: ${summary}`;
+        const replyToMessageId = replyToMessageIdBySession.get(sessionId);
+        const conversationId = conversationIdBySession.get(sessionId);
+        const trace = traceContext(sessionId);
+        admitProactive(
+          {
+            sourceEventId: typeof event[EVENT_ROW_ID] === "number" ? event[EVENT_ROW_ID] : undefined,
             eventType: "session.end",
-            agent: String(session.agent),
-            sessionId,
-            summary,
-            replyToMessageId: replyToMessageIdBySession.get(sessionId),
-            conversationId: conversationIdBySession.get(sessionId),
-            ...traceContext(sessionId),
-          });
-        }
+            from: String(session.agent),
+            content: rawText,
+            projectId: typeof session.projectId === "string" ? session.projectId : undefined,
+            data: {
+              sessionId,
+              status: fpStatus,
+              summary,
+              ...trace,
+            },
+          },
+          (reviewedText) => {
+            sendToUser(reviewedText, {
+              eventType: fpStatus === "failure" || fpStatus === "blocked" ? "blocked" : "session.end",
+              agent: String(session.agent),
+              sessionId,
+              summary: reviewedText.slice(0, 200),
+              replyToMessageId,
+              conversationId,
+              ...trace,
+            });
+          },
+        );
       }
       watchedSessions.delete(sessionId);
       replyToMessageIdBySession.delete(sessionId);
@@ -459,29 +513,31 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
         if (approvalContext.expectedClosure !== undefined && data.expectedClosure === undefined) {
           data.expectedClosure = approvalContext.expectedClosure;
         }
-        reviewInShadow({
+        const candidate: HumanAttentionCandidate = {
           sourceEventId,
           eventType: "message.created",
           from: String(message.from ?? ""),
           content,
           projectId: projectId ?? (typeof message.projectId === "string" ? message.projectId : undefined),
           data,
-        });
-        sendToUser(`📋 ${content}`, {
-          eventType: "message.created",
-          agent: String(message.from ?? ""),
-          sessionId: sourceSessionId ?? ("sessionId" in message ? String(message.sessionId) : undefined),
-          projectId,
-          summary: content.slice(0, 200),
-          data,
-          traceId,
-          parentEventId: typeof data.parentEventId === "number" ? data.parentEventId : undefined,
-          taskId: typeof data.taskId === "string" ? data.taskId : undefined,
-          replyToMessageId:
-            sourceReplyContext?.replyToMessageId ??
-            (!sourceSessionId && traceId ? replyToMessageIdForTrace(traceId) : undefined),
-          allowTraceReplyFallback: !sourceSessionId,
-          conversationId: sourceReplyContext?.conversationId,
+        };
+        admitProactive(candidate, (reviewedText) => {
+          sendToUser(reviewedText, {
+            eventType: "message.created",
+            agent: String(message.from ?? ""),
+            sessionId: sourceSessionId ?? ("sessionId" in message ? String(message.sessionId) : undefined),
+            projectId,
+            summary: reviewedText.slice(0, 200),
+            data,
+            traceId,
+            parentEventId: typeof data.parentEventId === "number" ? data.parentEventId : undefined,
+            taskId: typeof data.taskId === "string" ? data.taskId : undefined,
+            replyToMessageId:
+              sourceReplyContext?.replyToMessageId ??
+              (!sourceSessionId && traceId ? replyToMessageIdForTrace(traceId) : undefined),
+            allowTraceReplyFallback: !sourceSessionId,
+            conversationId: sourceReplyContext?.conversationId,
+          });
         });
       }
     }
@@ -555,15 +611,21 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
   }
 
   return {
-    close: unsubBus,
+    close: () => {
+      closed = true;
+      unsubBus();
+    },
+    drain: () => proactiveAdmissionQueue,
     getRootChatSessionId: () => latestRootChatSessionId,
     sendAlert: (text: string) => {
-      reviewInShadow({
+      const candidate: HumanAttentionCandidate = {
         eventType: "alert",
         from: opts.interfaceAgent,
         content: text.slice(0, 4000),
+      };
+      admitProactive(candidate, (reviewedText) => {
+        sendToUser(reviewedText, { eventType: "alert" });
       });
-      sendToUser(text, { eventType: "alert" });
     },
   };
 

@@ -21,6 +21,27 @@ function sessionEnd(data: Record<string, unknown>, source = "runtime") {
   return { type: "session.end", source, owner: `agent:${data.agent}`, data };
 }
 
+function attentionReviewManager() {
+  return {
+    async callAgent(_agent: string, prompt: string) {
+      const marker = "Candidate:\n";
+      const candidate = JSON.parse(prompt.slice(prompt.lastIndexOf(marker) + marker.length)) as { content: string };
+      return {
+        status: "done",
+        sessionId: "attention-review",
+        structuredResult: {
+          disposition: "deliver",
+          understoodIntent: "Deliver the useful test notification.",
+          reason: "The e2e fixture admits this notification.",
+          nextAction: "Deliver the reviewed text.",
+          evidence: ["E2E admission fixture."],
+          deliveredMessage: candidate.content,
+        },
+      };
+    },
+  } as any;
+}
+
 async function waitFor(assertion: () => void, timeoutMs = 5000): Promise<void> {
   const start = Date.now();
   let lastErr: unknown;
@@ -110,7 +131,7 @@ describe("telegram reply e2e", () => {
     const bot = attachTelegramBot({
       persistDir,
       bus,
-      manager: {} as any,
+      manager: attentionReviewManager(),
       getSessionId: () => activeSessionId,
       interfaceAgent: "may",
     });
@@ -168,7 +189,10 @@ describe("telegram reply e2e", () => {
       const body = init?.body ? JSON.parse(String(init.body)) : {};
 
       if (method === "getMe") return jsonResponse({ username: "may_test_bot", first_name: "May Test" });
-      if (method === "getUpdates") return jsonResponse([]);
+      if (method === "getUpdates") {
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        return jsonResponse([]);
+      }
       if (method === "sendMessage") {
         sentMessages.push(body);
         return jsonResponse({ message_id: 400 + sentMessages.length });
@@ -181,7 +205,7 @@ describe("telegram reply e2e", () => {
     const bot = attachTelegramBot({
       persistDir,
       bus,
-      manager: {} as any,
+      manager: attentionReviewManager(),
       getSessionId: () => activeSessionId,
       interfaceAgent: "may",
     });
@@ -222,7 +246,10 @@ describe("telegram reply e2e", () => {
       const body = init?.body ? JSON.parse(String(init.body)) : {};
 
       if (method === "getMe") return jsonResponse({ username: "may_test_bot", first_name: "May Test" });
-      if (method === "getUpdates") return jsonResponse([]);
+      if (method === "getUpdates") {
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        return jsonResponse([]);
+      }
       if (method === "sendMessage") {
         sentMessages.push(body);
         return jsonResponse({ message_id: 500 + sentMessages.length });
@@ -235,7 +262,7 @@ describe("telegram reply e2e", () => {
     const bot = attachTelegramBot({
       persistDir,
       bus,
-      manager: {} as any,
+      manager: attentionReviewManager(),
       getSessionId: () => "",
       interfaceAgent: "may",
     });
@@ -315,7 +342,7 @@ describe("telegram reply e2e", () => {
     const bot = attachTelegramBot({
       persistDir,
       bus,
-      manager: {} as any,
+      manager: attentionReviewManager(),
       getSessionId: () => "",
       interfaceAgent: "may",
     });
@@ -464,7 +491,7 @@ describe("telegram reply e2e", () => {
     const bot = attachTelegramBot({
       persistDir,
       bus,
-      manager: {} as any,
+      manager: attentionReviewManager(),
       getSessionId: () => "",
       interfaceAgent: "may",
     });
@@ -611,7 +638,7 @@ describe("telegram reply e2e", () => {
       persistDir,
       projectRoot,
       bus,
-      manager: {} as any,
+      manager: attentionReviewManager(),
       getSessionId: () => activeChatSessionId,
       interfaceAgent: "may",
     });
@@ -795,7 +822,7 @@ describe("telegram reply e2e", () => {
     const bot = attachTelegramBot({
       persistDir,
       bus,
-      manager: {} as any,
+      manager: attentionReviewManager(),
       getSessionId: () => "",
       interfaceAgent: "may",
     });
@@ -933,7 +960,7 @@ describe("telegram reply e2e", () => {
     const bot = attachTelegramBot({
       persistDir,
       bus,
-      manager: {} as any,
+      manager: attentionReviewManager(),
       getSessionId: () => "",
       interfaceAgent: "may",
     });
@@ -1028,7 +1055,7 @@ describe("telegram reply e2e", () => {
     const bot = attachTelegramBot({
       persistDir,
       bus,
-      manager: {} as any,
+      manager: attentionReviewManager(),
       getSessionId: () => "s_active_telegram",
       interfaceAgent: "may",
     });

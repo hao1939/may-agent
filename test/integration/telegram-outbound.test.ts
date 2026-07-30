@@ -14,6 +14,19 @@ function sessionIdle(data: Record<string, unknown>, source = "runtime") {
   return { type: "session.idle", source, owner: `agent:${data.agent}`, data };
 }
 
+async function admitProactive(candidate: { eventType: string; content: string }) {
+  return {
+    status: "completed" as const,
+    sessionId: "attention-review",
+    disposition: "deliver" as const,
+    understoodIntent: "Deliver the useful test notification.",
+    reason: "The integration fixture admits this notification.",
+    nextAction: "Deliver the reviewed text.",
+    evidence: ["Integration admission fixture."],
+    deliveredMessage: candidate.eventType === "message.created" ? `📋 ${candidate.content}` : candidate.content,
+  };
+}
+
 describe("telegram outbound routing", () => {
   it("binds Telegram input to an existing canonical chat session and replies to the triggering message", () => {
     const bus = new EventBus();
@@ -91,7 +104,7 @@ describe("telegram outbound routing", () => {
     outbound.close();
   });
 
-  it("summarizes child sessions in the active Telegram chat tree", () => {
+  it("summarizes child sessions in the active Telegram chat tree", async () => {
     const bus = new EventBus();
     const sent: string[] = [];
     const outbound = attachTelegramOutbound({
@@ -101,6 +114,7 @@ describe("telegram outbound routing", () => {
       pendingChatId: "12345",
       getSessionId: () => "",
       sendToUser: (text) => sent.push(text),
+      reviewProactive: admitProactive,
     });
 
     bus.emit(sessionStart({ sessionId: "s_root", agent: "may", kind: "chat" }, "telegram") as any);
@@ -114,11 +128,13 @@ describe("telegram outbound routing", () => {
       }) as any,
     );
 
+    await outbound.drain();
+
     expect(sent).toEqual(["✅ scout: found a path"]);
     outbound.close();
   });
 
-  it("forwards canonical may-to-human messages", () => {
+  it("forwards canonical may-to-human messages", async () => {
     const bus = new EventBus();
     const sent: string[] = [];
     const outbound = attachTelegramOutbound({
@@ -128,6 +144,7 @@ describe("telegram outbound routing", () => {
       pendingChatId: "12345",
       getSessionId: () => "",
       sendToUser: (text) => sent.push(text),
+      reviewProactive: admitProactive,
     });
 
     bus.emit({
@@ -137,11 +154,13 @@ describe("telegram outbound routing", () => {
       data: { from: "may", to: "human", content: "please review", priority: "P2" },
     } as any);
 
+    await outbound.drain();
+
     expect(sent).toEqual(["📋 please review"]);
     outbound.close();
   });
 
-  it("forwards approval packets addressed to human:operator and preserves approval reply context", () => {
+  it("forwards approval packets addressed to human:operator and preserves approval reply context", async () => {
     const bus = new EventBus();
     const sent: Array<{ text: string; context?: Record<string, unknown> }> = [];
     const outbound = attachTelegramOutbound({
@@ -151,6 +170,7 @@ describe("telegram outbound routing", () => {
       pendingChatId: "12345",
       getSessionId: () => "",
       sendToUser: (text, context) => sent.push({ text, context: context as Record<string, unknown> | undefined }),
+      reviewProactive: admitProactive,
     });
 
     bus.emit({
@@ -178,6 +198,8 @@ describe("telegram outbound routing", () => {
       },
     } as any);
 
+    await outbound.drain();
+
     expect(sent).toHaveLength(1);
     expect(sent[0]).toMatchObject({
       text: "📋 Approval packet dispatch",
@@ -185,7 +207,7 @@ describe("telegram outbound routing", () => {
         eventType: "message.created",
         agent: "aks-explorer",
         projectId: "projects/alpha-project.app",
-        summary: "Approval packet dispatch",
+        summary: "📋 Approval packet dispatch",
       },
     });
     expect(sent[0].context?.data).toMatchObject({
@@ -222,7 +244,7 @@ describe("telegram outbound routing", () => {
     outbound.close();
   });
 
-  it("preserves escalation reply context on human notifications", () => {
+  it("preserves escalation reply context on human notifications", async () => {
     const bus = new EventBus();
     const sent: Array<{ text: string; context?: Record<string, unknown> }> = [];
     const outbound = attachTelegramOutbound({
@@ -232,6 +254,7 @@ describe("telegram outbound routing", () => {
       pendingChatId: "12345",
       getSessionId: () => "",
       sendToUser: (text, context) => sent.push({ text, context: context as Record<string, unknown> | undefined }),
+      reviewProactive: admitProactive,
     });
 
     bus.emit({
@@ -258,6 +281,8 @@ describe("telegram outbound routing", () => {
         },
       },
     } as any);
+
+    await outbound.drain();
 
     expect(sent).toHaveLength(1);
     expect(sent[0]).toMatchObject({
