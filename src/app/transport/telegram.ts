@@ -320,6 +320,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
               expectedClosure: route.context.expectedClosure,
               actionHints: route.context.actionHints,
               notification: route.context.notification,
+              shadowConversation: route.shadowConversation,
               target: {
                 owner: route.owner,
                 sessionId: route.sessionId ?? undefined,
@@ -361,6 +362,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
               hasDbCtx: false,
               fallback: "telegram-quote",
               originalMsgId: replyToMsgId,
+              shadowConversation: route.shadowConversation,
             },
           } as any);
           await sendMessage(chatIdStr, "Received. I attached the quoted message and May is handling it.", undefined, {
@@ -385,6 +387,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
               enriched: false,
               reason: "context-not-found",
               originalMsgId: replyToMsgId,
+              shadowConversation: route.shadowConversation,
             },
           } as any);
           await sendMessage(

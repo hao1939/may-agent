@@ -650,6 +650,14 @@ describe("telegram reply e2e", () => {
       expect(handledInputs[0].message).toContain("Conversation: tg_project_review_1");
       expect(handledInputs[0].message).toContain("please revise the scoped plan");
       expect(replies.some((event) => event.data?.enriched === true)).toBe(true);
+      expect(replies[0]?.data?.shadowConversation).toMatchObject({
+        status: "linked",
+        replyToMsgId: 700,
+        conversationId: "tg_project_review_1",
+        taskId: "review-plan",
+        projectId: "projects/example-project",
+        owner: "may",
+      });
       expect(
         sentMessages.some(
           (m) =>
