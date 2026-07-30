@@ -1,23 +1,55 @@
 #!/usr/bin/env bun
-// @ts-nocheck
-
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Database } from "bun:sqlite";
 import { projectRuntimePaths, readTaskState } from "@may-agent/sdk";
-import { parseTriggerEvent, triggerString } from "../agents/app-ops/workflows/lib/workflow-input.ts";
+import {
+  parseTriggerEvent,
+  triggerString,
+} from "../agents/app-ops/workflows/lib/workflow-input.ts";
 import { loadSpecs } from "../agents/app-ops/workflows/lib/spec-loop-store.ts";
 
 type TaskNode = Record<string, any>;
-type TaskTree = Record<string, any>;
+type TaskAttempt = {
+  metadata?: { id?: string };
+  taskId?: string;
+  state?: string;
+  startedAt?: string;
+  sessionId?: string;
+};
+type TaskTree = {
+  root_task_id?: string;
+  active_task_ids?: string[];
+  tasks?: Record<string, TaskNode>;
+  attempts?: Record<string, TaskAttempt>;
+  [key: string]: any;
+};
 
-type TaskTreeConfigLike = { appDir: string; projectDir: string; worker: string; maxConcurrent: number; statePath: string; journalPath: string; treePath: string; };
+type TaskTreeConfigLike = {
+  appDir: string;
+  projectDir: string;
+  worker: string;
+  maxConcurrent: number;
+  statePath: string;
+  journalPath: string;
+  treePath: string;
+};
 
-function taskTreeConfig(input: { appDir: string; projectDir: string; worker: string; maxConcurrent: number; }): TaskTreeConfigLike {
+function taskTreeConfig(input: {
+  appDir: string;
+  projectDir: string;
+  worker: string;
+  maxConcurrent: number;
+}): TaskTreeConfigLike {
   const paths = projectRuntimePaths(input.appDir);
-  return { ...input, statePath: paths.taskStatePath, journalPath: paths.journalPath, treePath: paths.taskTreePath };
+  return {
+    ...input,
+    statePath: paths.taskStatePath,
+    journalPath: paths.journalPath,
+    treePath: paths.taskTreePath,
+  };
 }
 
 function readTaskTree(config: TaskTreeConfigLike): TaskTree {
@@ -61,12 +93,16 @@ export function liveTaskMetricFrontier(tree: TaskTree): {
         return ["running", "active"].includes(projectionPhase(task));
       }),
       ...leaves
-        .filter(([, task]) => ["running", "active"].includes(projectionPhase(task)))
+        .filter(([, task]) =>
+          ["running", "active"].includes(projectionPhase(task)),
+        )
         .map(([taskId]) => taskId),
     ]),
   ].sort();
   const review = leaves
-    .filter(([, task]) => ["attention", "review"].includes(projectionPhase(task)))
+    .filter(([, task]) =>
+      ["attention", "review"].includes(projectionPhase(task)),
+    )
     .map(([taskId]) => taskId)
     .sort();
   const waiting = leaves
@@ -89,25 +125,95 @@ export function liveTaskMetricFrontier(tree: TaskTree): {
   return { active, review, waiting, runnable, readySatisfiedWaitHolders };
 }
 
-function listRunnableBacklogTaskIds(config: TaskTreeConfigLike, limit = 200): string[] {
+function listRunnableBacklogTaskIds(
+  config: TaskTreeConfigLike,
+  limit = 200,
+): string[] {
   const tree = readTaskTreeProjection(config);
   return liveTaskMetricFrontier(tree).runnable.slice(0, limit);
 }
 
-function peekTaskAssignments(_config: TaskTreeConfigLike): Array<{ taskId: string; attemptId: string; assignedAt: string; sessionId?: string; }> {
-  return [];
+export function activeTaskAssignments(tree: TaskTree): Array<{
+  taskId: string;
+  attemptId: string;
+  assignedAt: string;
+  sessionId?: string;
+}> {
+  return Object.values(tree.attempts ?? {}).flatMap((attempt) => {
+    const taskId =
+      typeof attempt.taskId === "string" ? attempt.taskId.trim() : "";
+    const attemptId =
+      typeof attempt.metadata?.id === "string"
+        ? attempt.metadata.id.trim()
+        : "";
+    const assignedAt =
+      typeof attempt.startedAt === "string" ? attempt.startedAt.trim() : "";
+    if (attempt.state !== "running" || !taskId || !attemptId || !assignedAt) {
+      return [];
+    }
+    const sessionId =
+      typeof attempt.sessionId === "string" ? attempt.sessionId.trim() : "";
+    return [
+      { taskId, attemptId, assignedAt, ...(sessionId ? { sessionId } : {}) },
+    ];
+  });
+}
+
+function peekTaskAssignments(
+  config: TaskTreeConfigLike,
+): ReturnType<typeof activeTaskAssignments> {
+  return activeTaskAssignments(readTaskTree(config));
 }
 
 function planningPacket(config: TaskTreeConfigLike): Record<string, unknown> {
   const tree = readTaskTree(config);
-  const leaves = Object.entries(tree.tasks ?? {}).filter(([taskId, task]) => taskId !== tree.root_task_id && !String(taskId).startsWith("runtime/") && Array.isArray(task?.children) && task.children.length === 0);
-  const phaseOf = (task) => String((task && (task.phase ?? task.state ?? task.status ?? "")) || "");
-  const waiting = leaves.filter(([, task]) => phaseOf(task) === "waiting").map(([taskId]) => taskId);
-  const active = [...new Set([...(tree.active_task_ids ?? []), ...leaves.filter(([,task]) => ["running","active"].includes(phaseOf(task))).map(([taskId]) => taskId)])];
-  const review = leaves.filter(([, task]) => ["attention","review"].includes(phaseOf(task))).map(([taskId]) => taskId);
+  const leaves = Object.entries(tree.tasks ?? {}).filter(
+    ([taskId, task]) =>
+      taskId !== tree.root_task_id &&
+      !String(taskId).startsWith("runtime/") &&
+      Array.isArray(task?.children) &&
+      task.children.length === 0,
+  );
+  const phaseOf = (task) =>
+    String((task && (task.phase ?? task.state ?? task.status ?? "")) || "");
+  const waiting = leaves
+    .filter(([, task]) => phaseOf(task) === "waiting")
+    .map(([taskId]) => taskId);
+  const active = [
+    ...new Set([
+      ...(tree.active_task_ids ?? []),
+      ...leaves
+        .filter(([, task]) => ["running", "active"].includes(phaseOf(task)))
+        .map(([taskId]) => taskId),
+    ]),
+  ];
+  const review = leaves
+    .filter(([, task]) => ["attention", "review"].includes(phaseOf(task)))
+    .map(([taskId]) => taskId);
   const parentGroups = new Map();
-  for (const [taskId, task] of leaves) { if (!waiting.includes(taskId)) continue; const parentId = typeof task.parent_id === 'string' ? task.parent_id : ''; if (!parentId) continue; const entry = parentGroups.get(parentId) || { parent_id: parentId, blocked_leaf_count: 0, sample_blocked_leaf_ids: [] }; entry.blocked_leaf_count += 1; if (entry.sample_blocked_leaf_ids.length < 5) entry.sample_blocked_leaf_ids.push(taskId); parentGroups.set(parentId, entry); }
-  return { blocked_frontier_summary: { blocked_leaf_count: waiting.length, parent_groups: [...parentGroups.values()], repeated_blocker_groups: [] }, blocked_action_warnings: [], frontier: { active, review } };
+  for (const [taskId, task] of leaves) {
+    if (!waiting.includes(taskId)) continue;
+    const parentId = typeof task.parent_id === "string" ? task.parent_id : "";
+    if (!parentId) continue;
+    const entry = parentGroups.get(parentId) || {
+      parent_id: parentId,
+      blocked_leaf_count: 0,
+      sample_blocked_leaf_ids: [],
+    };
+    entry.blocked_leaf_count += 1;
+    if (entry.sample_blocked_leaf_ids.length < 5)
+      entry.sample_blocked_leaf_ids.push(taskId);
+    parentGroups.set(parentId, entry);
+  }
+  return {
+    blocked_frontier_summary: {
+      blocked_leaf_count: waiting.length,
+      parent_groups: [...parentGroups.values()],
+      repeated_blocker_groups: [],
+    },
+    blocked_action_warnings: [],
+    frontier: { active, review },
+  };
 }
 
 function buildProjectSnapshotV2(input: {
@@ -119,7 +225,12 @@ function buildProjectSnapshotV2(input: {
     active: string[];
     review: string[];
     blocked: string[];
-    counts: { active: number; review: number; blocked: number; runnable: number };
+    counts: {
+      active: number;
+      review: number;
+      blocked: number;
+      runnable: number;
+    };
   };
   conditions: Array<{
     source: string;
@@ -173,12 +284,14 @@ function buildProjectSnapshotV2(input: {
   };
 }
 
-function captureRuntimeProjectSnapshotV2(_input: Record<string, unknown>): any {
-  return null;
-}
-
-function specStateSelfRepresentsExactFrontier(spec: Record<string, unknown>): boolean {
-  return spec?.terminalDisposition === true || typeof spec?.resumeCondition === 'string' || typeof spec?.successorDisposition === 'string';
+function specStateSelfRepresentsExactFrontier(
+  spec: Record<string, unknown>,
+): boolean {
+  return (
+    spec?.terminalDisposition === true ||
+    typeof spec?.resumeCondition === "string" ||
+    typeof spec?.successorDisposition === "string"
+  );
 }
 
 type ModelStatus = {
@@ -213,18 +326,6 @@ type PlannerRun = {
   ts?: string;
   durationMs?: number;
   result?: string;
-};
-
-type ReviewApplyCoverage = {
-  coveringTaskId: string;
-  state: string;
-  source: "live" | "archive";
-  reason:
-    | "reviewed-task-link"
-    | "reviewed-source-link"
-    | "reviewed-task-input"
-    | "review-goal-reference";
-  archivePath?: string;
 };
 
 type SpecIndexEntry = {
@@ -358,12 +459,6 @@ const staleActiveNoActivityMs = Number.parseInt(
 );
 const sessionStartGraceMs = Number.parseInt(
   process.env.AKS_RP_E2E_SESSION_START_GRACE_MS ?? "300000",
-  10,
-);
-const reviewApplicationGraceMs = Number.parseInt(
-  process.env.AKS_RP_E2E_REVIEW_APPLICATION_GRACE_MS ??
-    process.env.AKS_RP_E2E_REVIEW_APPLY_GRACE_MS ??
-    "300000",
   10,
 );
 const terminalSessionCompletionGraceMs = Number.parseInt(
@@ -1112,8 +1207,7 @@ function taskCounts() {
     projectSnapshot.conditions
       .filter((condition) => condition.source === "registry")
       .map(
-        (condition) =>
-          `${condition.subject.id}:${condition.subject.revision}`,
+        (condition) => `${condition.subject.id}:${condition.subject.revision}`,
       ),
   );
   const blockedOverdueUnworkedTaskIds = blockedLeafTasks.flatMap(
@@ -1193,228 +1287,6 @@ function taskCounts() {
     projectClosed: tree.project_lifecycle === "closed",
     approvalBlockedDisposition,
   };
-}
-
-function taskReferencesReviewedLineage(input: {
-  task: TaskNode | Record<string, unknown>;
-  taskId: string;
-  attemptId: string;
-}): ReviewApplyCoverage | null {
-  const task = input.task;
-  const id =
-    typeof task.id === "string"
-      ? task.id.trim()
-      : typeof (task as Record<string, unknown>).id === "string"
-        ? String((task as Record<string, unknown>).id).trim()
-        : "";
-  if (!id || id === input.taskId) return null;
-
-  const state =
-    typeof (task as Record<string, unknown>).status === "string"
-      ? String((task as Record<string, unknown>).status).trim()
-      : typeof (task as Record<string, unknown>).state === "string"
-        ? String((task as Record<string, unknown>).state).trim()
-        : "backlog";
-  if (state === "review") return null;
-
-  const conflictScopes = Array.isArray(
-    (task as Record<string, unknown>).conflict_scope,
-  )
-    ? ((task as Record<string, unknown>).conflict_scope as unknown[])
-        .map((value) => (typeof value === "string" ? value.trim() : ""))
-        .filter(Boolean)
-    : [];
-  if (
-    id.includes("review-not-applied") ||
-    conflictScopes.includes("ops:review-not-applied-metric")
-  ) {
-    return null;
-  }
-
-  const context = recordValue((task as Record<string, unknown>).context);
-  const reviewedTask = recordValue(context?.reviewedTask);
-  const reviewedTaskId =
-    stringRecordField(reviewedTask, ["taskId", "task_id"]) || "";
-  const reviewedAttemptId =
-    stringRecordField(reviewedTask, ["attemptId", "attempt_id"]) || "";
-  if (
-    reviewedTaskId === input.taskId &&
-    (!reviewedAttemptId || reviewedAttemptId === input.attemptId)
-  ) {
-    return {
-      coveringTaskId: id,
-      state,
-      source: "live",
-      reason: "reviewed-task-link",
-    };
-  }
-
-  const trace = recordValue((task as Record<string, unknown>).trace);
-  const reviewedSourceTaskId =
-    stringRecordField(trace, ["reviewed_source_task_id"]) || "";
-  const reviewedSourceAttemptId =
-    stringRecordField(trace, ["reviewed_source_attempt_id"]) || "";
-  if (
-    reviewedSourceTaskId === input.taskId &&
-    (!reviewedSourceAttemptId || reviewedSourceAttemptId === input.attemptId)
-  ) {
-    return {
-      coveringTaskId: id,
-      state,
-      source: "live",
-      reason: "reviewed-source-link",
-    };
-  }
-
-  const inputs = Array.isArray((task as Record<string, unknown>).inputs)
-    ? ((task as Record<string, unknown>).inputs as unknown[])
-        .map((value) => (typeof value === "string" ? value.trim() : ""))
-        .filter(Boolean)
-    : [];
-  if (
-    inputs.some(
-      (value) =>
-        value.includes(`Reviewed task: ${input.taskId}`) ||
-        value.includes(input.attemptId),
-    )
-  ) {
-    return {
-      coveringTaskId: id,
-      state,
-      source: "live",
-      reason: "reviewed-task-input",
-    };
-  }
-
-  const goal =
-    typeof (task as Record<string, unknown>).goal === "string"
-      ? String((task as Record<string, unknown>).goal)
-      : "";
-  if (goal.includes(input.taskId)) {
-    return {
-      coveringTaskId: id,
-      state,
-      source: "live",
-      reason: "review-goal-reference",
-    };
-  }
-
-  return null;
-}
-
-function archivedDoneLeafTasks(): Array<{
-  archivePath: string;
-  task: Record<string, unknown>;
-}> {
-  const archiveDir = join(effectiveAppDir, ".state", "tasks", "archive");
-  return listFiles(archiveDir, (path) => path.endsWith(".json")).flatMap(
-    (path) => {
-      const archive = readJson<{ tasks?: Record<string, unknown>[] }>(path, {});
-      return Array.isArray(archive.tasks)
-        ? archive.tasks
-            .filter(
-              (task): task is Record<string, unknown> =>
-                !!task && typeof task === "object" && !Array.isArray(task),
-            )
-            .map((task) => ({ archivePath: path, task }))
-        : [];
-    },
-  );
-}
-
-function reviewApplyCoverage(input: {
-  tree: TaskTree;
-  taskId: string;
-  attemptId: string;
-}): ReviewApplyCoverage | null {
-  for (const task of Object.values(input.tree.tasks ?? {})) {
-    const coverage = taskReferencesReviewedLineage({
-      task,
-      taskId: input.taskId,
-      attemptId: input.attemptId,
-    });
-    if (coverage) return coverage;
-  }
-
-  for (const entry of archivedDoneLeafTasks()) {
-    const coverage = taskReferencesReviewedLineage({
-      task: entry.task,
-      taskId: input.taskId,
-      attemptId: input.attemptId,
-    });
-    if (!coverage) continue;
-    return {
-      ...coverage,
-      source: "archive",
-      archivePath: entry.archivePath,
-    };
-  }
-
-  return null;
-}
-
-function taskReviewNotAppliedDetails(): Array<{
-  taskId: string;
-  attemptId: string;
-  decision: string;
-  reviewedAt: string;
-  coverage?: ReviewApplyCoverage;
-}> {
-  const config = runtimeTaskTreeConfig();
-  const captured = captureRuntimeProjectSnapshotV2({
-    appDir: effectiveAppDir,
-    treePath: config.treePath,
-    stateDbPath,
-    projectId: "aks-rp-e2e",
-    nowMs: now,
-    reviewApplicationGraceMs,
-  });
-  if (!captured) return [];
-  const { snapshot, tree } = captured;
-
-  const offenders: Array<{
-    taskId: string;
-    attemptId: string;
-    decision: string;
-    reviewedAt: string;
-    coverage?: ReviewApplyCoverage;
-  }> = [];
-  for (const finding of snapshot.invariants) {
-    if (finding.type !== "review-decision-not-applied") continue;
-    const review = snapshot.reviews.find(
-      (candidate) =>
-        candidate.taskId === finding.subject.id &&
-        candidate.taskRevision === finding.subject.revision &&
-        candidate.deliveryState === "decision-pending-apply",
-    );
-    if (
-      !review?.attemptId ||
-      !review.latestDecision ||
-      !review.latestDecisionAt
-    ) {
-      continue;
-    }
-    const coverage = reviewApplyCoverage({
-      tree,
-      taskId: review.taskId,
-      attemptId: review.attemptId,
-    });
-    // Revision-0 compatibility work may have been applied through a historical
-    // manual repair path. V2 work must satisfy its exact task/revision/attempt
-    // postcondition and cannot be hidden by a prose/reference heuristic.
-    if (review.taskRevision === 0 && coverage) continue;
-    offenders.push({
-      taskId: review.taskId,
-      attemptId: review.attemptId,
-      decision: review.latestDecision,
-      reviewedAt: review.latestDecisionAt,
-    });
-  }
-  return offenders.sort((left, right) =>
-    left.taskId === right.taskId
-      ? left.attemptId.localeCompare(right.attemptId)
-      : left.taskId.localeCompare(right.taskId),
-  );
 }
 
 function archivedTaskAttemptId(task: TaskNode): string {
@@ -2895,6 +2767,73 @@ function queuedAssignmentTimestampMs(assignment: {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+export function workflowRunRecentSessionGapLooksHealthy(input: {
+  workflowStatus?: string | null;
+  sessionStatus?: string | null;
+  lastSessionEndedAt?: number | null;
+  lastSessionLastActivityAt?: number | null;
+  nowMs?: number;
+  gapGraceMs?: number;
+}): boolean {
+  if (input.workflowStatus !== "running") return false;
+  if (input.sessionStatus === "running") return false;
+  const lastObservedAt =
+    typeof input.lastSessionEndedAt === "number" &&
+    Number.isFinite(input.lastSessionEndedAt)
+      ? input.lastSessionEndedAt
+      : typeof input.lastSessionLastActivityAt === "number" &&
+            Number.isFinite(input.lastSessionLastActivityAt)
+        ? input.lastSessionLastActivityAt
+        : null;
+  if (lastObservedAt === null) return false;
+  const nowMs = input.nowMs ?? Date.now();
+  const gapGraceMs = input.gapGraceMs ?? sessionStartGraceMs;
+  return nowMs >= lastObservedAt && nowMs - lastObservedAt <= gapGraceMs;
+}
+
+function workflowRunRecentSessionGapLooksHealthyFromRow(
+  row: Record<string, unknown> | null,
+): boolean {
+  return workflowRunRecentSessionGapLooksHealthy({
+    workflowStatus:
+      typeof row?.workflowStatus === "string" ? row.workflowStatus : null,
+    sessionStatus: typeof row?.status === "string" ? row.status : null,
+    lastSessionEndedAt:
+      typeof row?.endedAt === "number" && Number.isFinite(row.endedAt)
+        ? row.endedAt
+        : null,
+    lastSessionLastActivityAt:
+      typeof row?.lastActivityAt === "number" &&
+      Number.isFinite(row.lastActivityAt)
+        ? row.lastActivityAt
+        : null,
+  });
+}
+
+export function assignmentStillLooksUnconsumed(input: {
+  taskState: string | null;
+  currentAttemptId: string | null;
+  assignmentAttemptId: string;
+  workerStartedAttemptId?: string | null;
+  hasHealthyWorkerSession?: boolean;
+  hasHealthyOwnerSession?: boolean;
+  hasHealthyWorkflowSession?: boolean;
+  hasHealthyWorkflowGap?: boolean;
+}): boolean {
+  if (
+    input.taskState !== "active" ||
+    input.currentAttemptId !== input.assignmentAttemptId
+  ) {
+    return true;
+  }
+  if (input.workerStartedAttemptId === input.assignmentAttemptId) return false;
+  if (input.hasHealthyWorkerSession) return false;
+  if (input.hasHealthyOwnerSession) return false;
+  if (input.hasHealthyWorkflowSession) return false;
+  if (input.hasHealthyWorkflowGap) return false;
+  return true;
+}
+
 function assignmentNotConsumedDetails(): Array<{
   taskId: string;
   attemptId: string;
@@ -2916,30 +2855,38 @@ function assignmentNotConsumedDetails(): Array<{
     const task = tree.tasks?.[taskId];
     const state = task ? taskState(task) : null;
     const trace = task?.trace ?? {};
-    const currentAttempt =
-      typeof trace.current_attempt_id === "string"
-        ? trace.current_attempt_id.trim()
-        : "";
+    const currentAttempt = activeTaskAttemptId(task);
     const startedAttempt =
       typeof trace.worker_started_attempt_id === "string"
         ? trace.worker_started_attempt_id.trim()
         : "";
+    const sessionId =
+      typeof task?.session_id === "string" && task.session_id.trim()
+        ? task.session_id.trim()
+        : typeof assignment.sessionId === "string" &&
+            assignment.sessionId.trim()
+          ? assignment.sessionId.trim()
+          : null;
+    const workerRow = activeTaskWorkerSessionRow(taskId, attemptId, sessionId);
+    const ownerRow = task ? activeOwnerTaskSessionRow(task) : null;
+    const workflowRow = task ? activeWorkflowTaskSessionRow(task) : null;
 
-    if (state === "active" && currentAttempt === attemptId) {
-      if (startedAttempt === attemptId) return [];
-
-      const sessionId =
-        typeof task?.session_id === "string" && task.session_id.trim()
-          ? task.session_id.trim()
-          : assignment.sessionId.trim() || null;
-      const workerRow = activeTaskWorkerSessionRow(
-        taskId,
-        attemptId,
-        sessionId,
-      );
-      if (sessionRestartReasonFromRow(workerRow) === null) return [];
-
-      return [{ taskId, attemptId, assignedAt, taskState: state }];
+    if (
+      !assignmentStillLooksUnconsumed({
+        taskState: state,
+        currentAttemptId: currentAttempt,
+        assignmentAttemptId: attemptId,
+        workerStartedAttemptId: startedAttempt,
+        hasHealthyWorkerSession:
+          sessionRestartReasonFromRow(workerRow) === null,
+        hasHealthyOwnerSession: sessionRestartReasonFromRow(ownerRow) === null,
+        hasHealthyWorkflowSession:
+          sessionRestartReasonFromRow(workflowRow) === null,
+        hasHealthyWorkflowGap:
+          workflowRunRecentSessionGapLooksHealthyFromRow(workflowRow),
+      })
+    ) {
+      return [];
     }
 
     return [{ taskId, attemptId, assignedAt, taskState: state }];
@@ -2963,7 +2910,9 @@ function activeTaskIsWithinStartGrace(task: TaskNode): boolean {
       ? activeAttempt.started_at
       : undefined,
     typeof status?.updatedAt === "string" ? status.updatedAt : undefined,
-    typeof triggerData?.assignedAt === "string" ? triggerData.assignedAt : undefined,
+    typeof triggerData?.assignedAt === "string"
+      ? triggerData.assignedAt
+      : undefined,
     typeof triggerData?.assigned_at === "string"
       ? triggerData.assigned_at
       : undefined,
@@ -2977,7 +2926,9 @@ function activeTaskIsWithinStartGrace(task: TaskNode): boolean {
   return false;
 }
 
-function activeOwnerTaskSessionRow(task: TaskNode): Record<string, unknown> | null {
+function activeOwnerTaskSessionRow(
+  task: TaskNode,
+): Record<string, unknown> | null {
   if (!existsSync(stateDbPath)) return null;
   const activeAttempt = recordValue(task.active_attempt);
   const resource = activeTaskResource(task);
@@ -3031,14 +2982,54 @@ function activeOwnerTaskSessionRow(task: TaskNode): Record<string, unknown> | nu
   }
 }
 
-function activeWorkflowTaskSessionRow(task: TaskNode): Record<string, unknown> | null {
+export function normalizeWorkflowTaskLivenessRow(
+  workflowRow: Record<string, unknown>,
+  sessionRow: Record<string, unknown> | null,
+): Record<string, unknown> {
+  if (sessionRow) return { ...workflowRow, ...sessionRow };
+
+  const workflowStatus =
+    typeof workflowRow.workflowStatus === "string"
+      ? workflowRow.workflowStatus.trim()
+      : "";
+  const workflowStartedAt =
+    typeof workflowRow.workflowStartedAt === "number" &&
+    Number.isFinite(workflowRow.workflowStartedAt)
+      ? workflowRow.workflowStartedAt
+      : null;
+  const workflowEndedAt =
+    typeof workflowRow.workflowEndedAt === "number" &&
+    Number.isFinite(workflowRow.workflowEndedAt)
+      ? workflowRow.workflowEndedAt
+      : null;
+  const workflowRunId =
+    typeof workflowRow.workflowRunId === "string"
+      ? workflowRow.workflowRunId.trim()
+      : "";
+
+  if (!workflowStatus) return workflowRow;
+
+  return {
+    ...workflowRow,
+    sessionId: workflowRunId || undefined,
+    status: workflowStatus,
+    startedAt: workflowStartedAt,
+    lastActivityAt: workflowEndedAt ?? workflowStartedAt,
+    endedAt: workflowEndedAt,
+  };
+}
+
+function activeWorkflowTaskSessionRow(
+  task: TaskNode,
+): Record<string, unknown> | null {
   const taskId = typeof task.id === "string" ? task.id.trim() : "";
   const resource = activeTaskResource(task);
   const resourceSpec = recordValue(resource?.spec);
   const workflow =
     typeof task.workflow === "string" && task.workflow.trim()
       ? task.workflow.trim()
-      : typeof resourceSpec?.workflow === "string" && resourceSpec.workflow.trim()
+      : typeof resourceSpec?.workflow === "string" &&
+          resourceSpec.workflow.trim()
         ? resourceSpec.workflow.trim()
         : "";
   if (!taskId || !workflow || !existsSync(stateDbPath)) return null;
@@ -3047,35 +3038,54 @@ function activeWorkflowTaskSessionRow(task: TaskNode): Record<string, unknown> |
   );
   const db = new Database(stateDbPath, { readonly: true });
   try {
-    if (!sqliteTableExists(db, "workflow_runs") || !sqliteTableExists(db, "sessions")) {
+    if (!sqliteTableExists(db, "workflow_runs")) {
       return null;
     }
-    const rows = db
+    const workflowRows = db
       .query(
         `
         select
-          s.sessionId as sessionId,
-          s.status as status,
-          s.outcome as outcome,
-          s.startedAt as startedAt,
-          s.lastActivityAt as lastActivityAt,
-          s.endedAt as endedAt,
           w.runId as workflowRunId,
+          w.status as workflowStatus,
+          w.startedAt as workflowStartedAt,
+          w.endedAt as workflowEndedAt,
           w.task as workflowTask
         from workflow_runs w
-        join sessions s on s.workflowRunId = w.runId
         where w.projectId = ?
           and w.workflow = ?
           and w.status = 'running'
-          and s.status = 'running'
         order by w.startedAt desc
         limit 200
       `,
       )
       .all("aks-rp-e2e", workflow) as Array<Record<string, unknown>>;
-    for (const row of rows) {
-      const taskText = typeof row.workflowTask === "string" ? row.workflowTask : "";
-      if (taskIdPattern.test(taskText)) return row;
+    const hasSessions = sqliteTableExists(db, "sessions");
+    for (const workflowRow of workflowRows) {
+      const taskText =
+        typeof workflowRow.workflowTask === "string"
+          ? workflowRow.workflowTask
+          : "";
+      if (!taskIdPattern.test(taskText)) continue;
+      if (!hasSessions) return normalizeWorkflowTaskLivenessRow(workflowRow, null);
+      const workflowRunId =
+        typeof workflowRow.workflowRunId === "string"
+          ? workflowRow.workflowRunId.trim()
+          : "";
+      if (!workflowRunId) {
+        return normalizeWorkflowTaskLivenessRow(workflowRow, null);
+      }
+      const sessionRow = db
+        .query(
+          `
+          select sessionId, status, outcome, startedAt, lastActivityAt, endedAt
+          from sessions
+          where workflowRunId = ?
+          order by case when status = 'running' then 0 else 1 end, startedAt desc
+          limit 1
+        `,
+        )
+        .get(workflowRunId) as Record<string, unknown> | null;
+      return normalizeWorkflowTaskLivenessRow(workflowRow, sessionRow);
     }
     return null;
   } catch {
@@ -3186,6 +3196,9 @@ function activeTaskRestartReason(task: TaskNode): string | null {
     if (sessionRestartReasonFromRow(ownerRow) === null) return null;
     const workflowRow = activeWorkflowTaskSessionRow(task);
     if (sessionRestartReasonFromRow(workflowRow) === null) return null;
+    if (workflowRunRecentSessionGapLooksHealthyFromRow(workflowRow)) {
+      return null;
+    }
     return "missing-session";
   }
   const reason = sessionRestartReason(sessionId);
@@ -3238,7 +3251,9 @@ function staleActiveTaskDetails(): StaleActiveTaskInfo[] {
     const workflowRow = activeWorkflowTaskSessionRow(task);
     const sessionId =
       activeTaskSessionId(task) ||
-      (typeof ownerRow?.sessionId === "string" ? ownerRow.sessionId.trim() : "") ||
+      (typeof ownerRow?.sessionId === "string"
+        ? ownerRow.sessionId.trim()
+        : "") ||
       (typeof workflowRow?.sessionId === "string"
         ? workflowRow.sessionId.trim()
         : "") ||
@@ -3425,7 +3440,6 @@ export function metricSampleOutputsFor(
   const assignmentMismatches =
     openTaskAssignmentStateMismatchDetails(loadTaskTree());
   const assignmentNotConsumed = assignmentNotConsumedDetails();
-  const reviewNotApplied = taskReviewNotAppliedDetails();
   const approvalBlockedSuppression =
     !tasks.projectClosed &&
     tasks.runnable === 0 &&
@@ -3588,13 +3602,6 @@ export function metricSampleOutputsFor(
       sampleSize: assignmentNotConsumed.length,
       note: JSON.stringify({
         assignments: assignmentNotConsumed,
-      }),
-    }),
-    "aks-rp-e2e.process.task.review-not-applied-count": () => ({
-      value: tasks.projectClosed ? 0 : reviewNotApplied.length,
-      sampleSize: reviewNotApplied.length,
-      note: JSON.stringify({
-        reviews: reviewNotApplied,
       }),
     }),
     "aks-rp-e2e.process.unpublished-change-count": () => ({
