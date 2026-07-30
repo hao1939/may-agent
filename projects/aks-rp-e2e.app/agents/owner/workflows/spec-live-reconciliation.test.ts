@@ -50,6 +50,7 @@ import {
   preparationDecisionProblem,
   preparationHeadProblem,
   priorIntegratedProof,
+  replayScenarioNormalizationOntoTarget,
   reconcileRemoteTaskBranchHistory,
   remoteLeaseCommit,
   replayScenarioCandidateForDispatch,
@@ -2242,6 +2243,70 @@ describe("spec-live-reconciliation workflow", () => {
           boundedSourceFiles: ["../outside"],
         }).equivalent,
       ).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("replays only the bounded scenario patch after a squash target rewrite", () => {
+    const root = mkdtempSync(join(tmpdir(), "scenario-bounded-replay-"));
+    const run = (args: string[]) =>
+      execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
+    const carrier = "features/network-cni/tests/example.ts";
+    const adapter = "features/network-cni/tests/example.test.ts";
+
+    try {
+      run(["init"]);
+      run(["config", "user.email", "test@example.com"]);
+      run(["config", "user.name", "Test"]);
+      mkdirSync(join(root, "features/network-cni/tests"), { recursive: true });
+      writeFileSync(join(root, carrier), "legacy carrier\n");
+      writeFileSync(join(root, adapter), "import './example';\n");
+      run(["add", "."]);
+      run(["commit", "-m", "base"]);
+      const baseline = run(["rev-parse", "HEAD"]);
+      run(["branch", "-M", "dev"]);
+
+      mkdirSync(join(root, "features/other"), { recursive: true });
+      writeFileSync(join(root, "features/other/adopted.ts"), "adopted\n");
+      run(["add", "."]);
+      run(["commit", "-m", "unrelated adopted dev work"]);
+      run(["checkout", "-b", "task/example"]);
+      rmSync(join(root, carrier));
+      writeFileSync(join(root, adapter), "test('direct', () => {});\n");
+      run(["add", "-A"]);
+      run(["commit", "-m", "normalize exact carrier"]);
+      const testedSource = run(["rev-parse", "HEAD"]);
+
+      run(["checkout", "--detach", baseline]);
+      mkdirSync(join(root, "features/other"), { recursive: true });
+      writeFileSync(join(root, "features/other/adopted.ts"), "adopted\n");
+      run(["add", "."]);
+      run(["commit", "-m", "squashed dev integration"]);
+      const rewrittenTarget = run(["rev-parse", "HEAD"]);
+      run(["branch", "-f", "dev", rewrittenTarget]);
+      run(["checkout", "task/example"]);
+
+      const result = replayScenarioNormalizationOntoTarget({
+        workspaceDir: root,
+        recordedBaseCommit: baseline,
+        sourceCommit: testedSource,
+        targetRef: "dev",
+        anchorPaths: [carrier, adapter],
+        featureIds: ["network-cni"],
+      });
+
+      expect(result.state).toBe("replayed");
+      if (result.state !== "replayed") throw new Error(JSON.stringify(result));
+      expect(result.selectedCommits).toHaveLength(1);
+      expect(result.changedPaths).toEqual([carrier, adapter].sort());
+      expect(result.protectedPathsEquivalent).toBe(true);
+      expect(run(["show", "HEAD:features/other/adopted.ts"])).toBe("adopted");
+      expect(
+        spawnSync("git", ["cat-file", "-e", `HEAD:${carrier}`], {
+          cwd: root,
+        }).status,
+      ).not.toBe(0);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

@@ -599,18 +599,19 @@ export function frozenCandidateContentEquivalent(input: {
     return { equivalent: false, paths };
   }
   for (const path of paths) {
-    if (
+    const sourceExists =
       git(
         input.repoDir,
         ["cat-file", "-e", `${input.sourceCommit}:${path}`],
         true,
-      ).status !== 0 ||
+      ).status === 0;
+    const targetExists =
       git(
         input.repoDir,
         ["cat-file", "-e", `${input.targetCommit}:${path}`],
         true,
-      ).status !== 0
-    ) {
+      ).status === 0;
+    if (sourceExists !== targetExists) {
       return { equivalent: false, paths };
     }
   }
@@ -1729,6 +1730,239 @@ type GitCommand = (
   args: string[],
   allowFailure?: boolean,
 ) => { status: number; stdout: string; stderr: string };
+
+export type ScenarioNormalizationReplay =
+  | {
+      state: "replayed";
+      sourceCommit: string;
+      resultingCommit: string;
+      selectedCommits: string[];
+      changedPaths: string[];
+      protectedPathsEquivalent: boolean;
+    }
+  | {
+      state: "conflicted";
+      sourceCommit: string;
+      selectedCommits: string[];
+      conflictedPaths: string[];
+    }
+  | {
+      state: "invalid";
+      sourceCommit: string;
+      reason: string;
+      evidence: string[];
+    };
+
+function scenarioReplayAllowedPath(
+  path: string,
+  featureRoots: string[],
+): boolean {
+  return (
+    path.startsWith("evidence/") ||
+    featureRoots.some((root) => path === root || path.startsWith(`${root}/`))
+  );
+}
+
+/** Rebuild one scenario-normalization patch on current target without merging stale history. */
+export function replayScenarioNormalizationOntoTarget(
+  input: {
+    workspaceDir: string;
+    recordedBaseCommit: string;
+    sourceCommit: string;
+    targetRef: string;
+    anchorPaths: string[];
+    featureIds?: string[];
+  },
+  runGit: GitCommand = git,
+): ScenarioNormalizationReplay {
+  const anchors = repoRelativePaths(input.anchorPaths);
+  const featureRoots = [
+    ...new Set([
+      ...(input.featureIds ?? [])
+        .filter((value) => /^[A-Za-z0-9._-]+$/.test(value))
+        .map((value) => `features/${value}`),
+      ...anchors
+        .map((path) => path.match(/^(features\/[^/]+)/)?.[1] ?? "")
+        .filter(Boolean),
+    ]),
+  ];
+  const evidence = [
+    `recorded-base:${input.recordedBaseCommit}`,
+    `tested-source:${input.sourceCommit}`,
+    `target-ref:${input.targetRef}`,
+  ];
+  if (!anchors.length || !featureRoots.length) {
+    return {
+      state: "invalid",
+      sourceCommit: input.sourceCommit,
+      reason: "scenario replay requires exact feature-owned anchor paths",
+      evidence,
+    };
+  }
+  if (
+    runGit(
+      input.workspaceDir,
+      [
+        "merge-base",
+        "--is-ancestor",
+        input.recordedBaseCommit,
+        input.sourceCommit,
+      ],
+      true,
+    ).status !== 0
+  ) {
+    return {
+      state: "invalid",
+      sourceCommit: input.sourceCommit,
+      reason: "recorded scenario baseline is not an ancestor of tested source",
+      evidence,
+    };
+  }
+
+  const selectedCommits = runGit(
+    input.workspaceDir,
+    [
+      "rev-list",
+      "--reverse",
+      "--no-merges",
+      `${input.recordedBaseCommit}..${input.sourceCommit}`,
+      "--",
+      ...anchors,
+    ],
+    true,
+  )
+    .stdout.split(/\r?\n/)
+    .map((value) => value.trim())
+    .filter(Boolean);
+  if (!selectedCommits.length) {
+    return {
+      state: "invalid",
+      sourceCommit: input.sourceCommit,
+      reason: "tested source has no task commit touching the scenario anchors",
+      evidence: [...evidence, ...anchors.map((path) => `anchor:${path}`)],
+    };
+  }
+
+  const selectedPaths = [
+    ...new Set(
+      selectedCommits.flatMap((commit) =>
+        runGit(
+          input.workspaceDir,
+          ["diff-tree", "--no-commit-id", "--name-only", "-r", commit],
+          true,
+        )
+          .stdout.split(/\r?\n/)
+          .map((value) => value.trim())
+          .filter(Boolean),
+      ),
+    ),
+  ].sort();
+  const outsideScope = selectedPaths.filter(
+    (path) => !scenarioReplayAllowedPath(path, featureRoots),
+  );
+  if (outsideScope.length) {
+    return {
+      state: "invalid",
+      sourceCommit: input.sourceCommit,
+      reason: "selected scenario commits expand outside the owning feature",
+      evidence: [
+        ...evidence,
+        ...outsideScope.map((path) => `outside-scope:${path}`),
+      ],
+    };
+  }
+
+  runGit(input.workspaceDir, ["cherry-pick", "--abort"], true);
+  const reset = runGit(
+    input.workspaceDir,
+    ["reset", "--hard", input.targetRef],
+    true,
+  );
+  if (reset.status !== 0) {
+    return {
+      state: "invalid",
+      sourceCommit: input.sourceCommit,
+      reason: "could not reset scenario worktree to current target",
+      evidence: [...evidence, reset.stderr || reset.stdout],
+    };
+  }
+  for (const commit of selectedCommits) {
+    const replay = runGit(input.workspaceDir, ["cherry-pick", commit], true);
+    if (replay.status === 0) continue;
+    const conflictedPaths = runGit(
+      input.workspaceDir,
+      ["diff", "--name-only", "--diff-filter=U"],
+      true,
+    )
+      .stdout.split(/\r?\n/)
+      .map((value) => value.trim())
+      .filter(Boolean);
+    if (!conflictedPaths.length) {
+      const staged = runGit(
+        input.workspaceDir,
+        ["diff", "--cached", "--quiet"],
+        true,
+      );
+      const unstaged = runGit(input.workspaceDir, ["diff", "--quiet"], true);
+      if (staged.status === 0 && unstaged.status === 0) {
+        runGit(input.workspaceDir, ["cherry-pick", "--skip"], true);
+        continue;
+      }
+    }
+    return {
+      state: "conflicted",
+      sourceCommit: input.sourceCommit,
+      selectedCommits,
+      conflictedPaths,
+    };
+  }
+
+  const resultingCommit = runGit(input.workspaceDir, [
+    "rev-parse",
+    "HEAD",
+  ]).stdout;
+  const changedPaths = runGit(
+    input.workspaceDir,
+    ["diff", "--name-only", input.targetRef, resultingCommit, "--"],
+    true,
+  )
+    .stdout.split(/\r?\n/)
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .sort();
+  const unexpectedPaths = changedPaths.filter(
+    (path) => !scenarioReplayAllowedPath(path, featureRoots),
+  );
+  if (unexpectedPaths.length) {
+    return {
+      state: "invalid",
+      sourceCommit: input.sourceCommit,
+      reason:
+        "replayed scenario patch changed paths outside the owning feature",
+      evidence: [
+        ...evidence,
+        ...unexpectedPaths.map((path) => `outside-scope:${path}`),
+      ],
+    };
+  }
+  const protectedPaths = proofProtectedScenarioPaths(changedPaths);
+  const protectedPathsEquivalent =
+    protectedPaths.length > 0 &&
+    frozenCandidateContentEquivalent({
+      repoDir: input.workspaceDir,
+      sourceCommit: input.sourceCommit,
+      targetCommit: resultingCommit,
+      boundedSourceFiles: protectedPaths,
+    }).equivalent;
+  return {
+    state: "replayed",
+    sourceCommit: input.sourceCommit,
+    resultingCommit,
+    selectedCommits,
+    changedPaths,
+    protectedPathsEquivalent,
+  };
+}
 
 export function isNonFastForwardPushFailure(result: {
   stdout: string;
@@ -4644,6 +4878,21 @@ export async function reconcileSpecLive(
       let proofIntegratedPaths: string[] = [];
       let lastPushError = "";
       let targetAdvanceEvidence: string[] = [];
+      const scenarioReplayAnchors = normalizationInput
+        ? repoRelativePaths([
+            normalizationInput.scenarioTestPath,
+            normalizationInput.adapterPath,
+          ])
+        : [];
+      const scenarioReplayFeatures = normalizationInput
+        ? (Array.isArray(normalizationInput.featureIds)
+            ? normalizationInput.featureIds
+            : []
+          ).filter((value): value is string => typeof value === "string")
+        : [];
+      const scenarioReplayBase = nonEmptyString(
+        normalizationInput?.originDevCommit,
+      );
 
       for (let attempt = 1; attempt <= 3; attempt += 1) {
         git(repoDir, ["fetch", "origin", targetBranch]);
@@ -4774,13 +5023,40 @@ export async function reconcileSpecLive(
           }
           targetAdvanceEvidence = targetAdvanceJudgment.evidence;
           if (targetAdvanceJudgment.decision === "accepted-pass") {
-            const mergedProof = mergeAcceptedTargetAdvanceProof({
-              workspaceDir,
-              sourceCommit,
-              targetRef,
-              protectedSourcePaths,
-            });
-            if (mergedProof.state === "merged") {
+            const mergedProof = directScenarioNormalization
+              ? replayScenarioNormalizationOntoTarget({
+                  workspaceDir,
+                  recordedBaseCommit: scenarioReplayBase,
+                  sourceCommit,
+                  targetRef,
+                  anchorPaths: scenarioReplayAnchors,
+                  featureIds: scenarioReplayFeatures,
+                })
+              : mergeAcceptedTargetAdvanceProof({
+                  workspaceDir,
+                  sourceCommit,
+                  targetRef,
+                  protectedSourcePaths,
+                });
+            const acceptedReplay =
+              directScenarioNormalization &&
+              mergedProof.state === "replayed" &&
+              mergedProof.protectedPathsEquivalent;
+            if (mergedProof.state === "merged" || acceptedReplay) {
+              if (acceptedReplay && mergedProof.state === "replayed") {
+                proofIntegrationMode = "bounded-content-equivalent";
+                proofIntegratedPaths = mergedProof.changedPaths;
+                targetAdvanceEvidence = [
+                  ...targetAdvanceEvidence,
+                  "integration-mode:scenario-bounded-replay",
+                  ...mergedProof.selectedCommits.map(
+                    (commit) => `replayed-task-commit:${commit}`,
+                  ),
+                  ...mergedProof.changedPaths.map(
+                    (path) => `integrated-path:${path}`,
+                  ),
+                ];
+              }
               const push = git(
                 workspaceDir,
                 ["push", "origin", `HEAD:${targetBranch}`],
@@ -4790,11 +5066,20 @@ export async function reconcileSpecLive(
                 lastPushError = push.stderr || push.stdout;
                 continue;
               }
+              const pushedCommit = git(workspaceDir, [
+                "rev-parse",
+                "HEAD",
+              ]).stdout;
               git(repoDir, ["fetch", "origin", targetBranch]);
               if (
                 git(
                   repoDir,
-                  ["merge-base", "--is-ancestor", sourceCommit, targetRef],
+                  [
+                    "merge-base",
+                    "--is-ancestor",
+                    acceptedReplay ? pushedCommit : sourceCommit,
+                    targetRef,
+                  ],
                   true,
                 ).status === 0
               ) {
@@ -4806,25 +5091,41 @@ export async function reconcileSpecLive(
               }
               continue;
             }
+            if (
+              directScenarioNormalization &&
+              mergedProof.state === "invalid"
+            ) {
+              return ownerResult(
+                ctx,
+                `Refused broad scenario replay: ${mergedProof.reason}.`,
+                mergedProof.evidence,
+              );
+            }
           }
 
           if (directScenarioNormalization) {
-            const beforeRefresh = git(workspaceDir, [
-              "rev-parse",
-              "HEAD",
-            ]).stdout;
-            const refresh = git(
+            const refresh = replayScenarioNormalizationOntoTarget({
               workspaceDir,
-              ["merge", "--no-ff", "--no-edit", targetRef],
-              true,
-            );
+              recordedBaseCommit: scenarioReplayBase,
+              sourceCommit,
+              targetRef,
+              anchorPaths: scenarioReplayAnchors,
+              featureIds: scenarioReplayFeatures,
+            });
             let refreshEvidence: string[] = [...targetAdvanceEvidence];
-            if (refresh.status !== 0) {
+            if (refresh.state === "invalid") {
+              return ownerResult(
+                ctx,
+                `Refused broad scenario refresh: ${refresh.reason}.`,
+                [...refreshEvidence, ...refresh.evidence],
+              );
+            }
+            if (refresh.state === "conflicted") {
               const decision = await askAgent(
                 ctx,
                 [
-                  `${specId} passed exact live run ${runId} at ${sourceCommit}, but current ${targetRef} contains changes that invalidate that proof or conflict with the task branch.`,
-                  `Resolve only the current merge in ${workspaceDir}, preserve the scenario-normalization intent, run scoped checks plus the strict scenario inventory, commit the resolved source, leave the worktree clean, and return decision=committed.`,
+                  `${specId} passed exact live run ${runId} at ${sourceCommit}, but replaying its bounded task commits on current ${targetRef} conflicts.`,
+                  `Resolve only the current cherry-pick sequence in ${workspaceDir}. Conflicted paths: ${refresh.conflictedPaths.join(", ") || "unknown"}. Preserve the scenario-normalization intent, run scoped checks plus the strict scenario inventory, finish the cherry-pick sequence, leave the worktree clean, and return decision=committed.`,
                   "Do not push, queue ADO, create a PR, create another task, or edit app state. The workflow will push the refreshed task branch and require a new exact live run before integration.",
                   "Task:",
                   ctx.task,
@@ -4835,19 +5136,24 @@ export async function reconcileSpecLive(
                 return ownerResult(ctx, decision.summary, decision.evidence);
               }
               refreshEvidence = decision.evidence;
+            } else {
+              refreshEvidence = [
+                ...refreshEvidence,
+                ...refresh.selectedCommits.map(
+                  (commit) => `replayed-task-commit:${commit}`,
+                ),
+                ...refresh.changedPaths.map((path) => `refreshed-path:${path}`),
+              ];
             }
 
             let refreshedCommit = git(workspaceDir, [
               "rev-parse",
               "HEAD",
             ]).stdout;
-            if (
-              refreshedCommit === beforeRefresh ||
-              cleanWorkspace(workspaceDir)
-            ) {
+            if (cleanWorkspace(workspaceDir)) {
               return ownerResult(
                 ctx,
-                `Refreshing the scenario-normalization candidate from current ${targetBranch} did not leave one new clean commit.`,
+                `Refreshing the scenario-normalization candidate from current ${targetBranch} did not leave one clean bounded commit.`,
                 refreshEvidence,
               );
             }
@@ -5000,7 +5306,10 @@ export async function reconcileSpecLive(
         integratedPaths: proofIntegratedPaths,
       };
       saveProof(contextDir, proof);
-      const summary = `${specId} passed run ${runId} at ${sourceCommit} and directly integrated that tested commit into ${targetBranch}@${integratedCommit}.`;
+      const summary =
+        proofIntegrationMode === "bounded-content-equivalent"
+          ? `${specId} passed run ${runId} at ${sourceCommit}; its bounded content was replayed onto current ${targetBranch}@${integratedCommit}.`
+          : `${specId} passed run ${runId} at ${sourceCommit} and directly integrated that tested commit into ${targetBranch}@${integratedCommit}.`;
       return ctx.done(summary, {
         state: "converged",
         summary,
@@ -5574,26 +5883,34 @@ export async function verify(
       true,
     ).status === 0,
   );
-  const expectedBoundedPaths = repoRelativePaths(
-    (input as Record<string, unknown> | undefined)?.boundedSourceFiles,
-  );
   const proofIntegratedPaths = repoRelativePaths(proof?.integratedPaths);
-  const boundedContentEquivalent = Boolean(
+  const frozenCandidateRule =
     (input as Record<string, unknown> | undefined)?.frozenCandidateRule ===
-      true &&
-      proof?.integrationMode === "bounded-content-equivalent" &&
-      expectedBoundedPaths.length > 0 &&
-      JSON.stringify(proofIntegratedPaths) ===
-        JSON.stringify(expectedBoundedPaths) &&
-      frozenCandidateContentEquivalent({
-        repoDir: context.projectDir,
-        sourceCommit: proof.sourceCommit,
-        targetCommit: "origin/dev",
-        boundedSourceFiles: expectedBoundedPaths,
-      }).equivalent,
+    true;
+  const scenarioBoundedReplay =
+    input?.loopId === "scenario-normalization" &&
+    proof?.integrationMode === "bounded-content-equivalent";
+  const expectedBoundedPaths = frozenCandidateRule
+    ? repoRelativePaths(
+        (input as Record<string, unknown> | undefined)?.boundedSourceFiles,
+      )
+    : scenarioBoundedReplay
+      ? proofIntegratedPaths
+      : [];
+  const boundedContentEquivalent = Boolean(
+    (frozenCandidateRule || scenarioBoundedReplay) &&
+    proof?.integrationMode === "bounded-content-equivalent" &&
+    expectedBoundedPaths.length > 0 &&
+    JSON.stringify(proofIntegratedPaths) ===
+      JSON.stringify(expectedBoundedPaths) &&
+    frozenCandidateContentEquivalent({
+      repoDir: context.projectDir,
+      sourceCommit: proof.sourceCommit,
+      targetCommit: "origin/dev",
+      boundedSourceFiles: expectedBoundedPaths,
+    }).equivalent,
   );
-  const sourceReachable =
-    sourceAncestryReachable || boundedContentEquivalent;
+  const sourceReachable = sourceAncestryReachable || boundedContentEquivalent;
   const integratedCommitReachable = Boolean(
     proof?.mergedCommit &&
     git(

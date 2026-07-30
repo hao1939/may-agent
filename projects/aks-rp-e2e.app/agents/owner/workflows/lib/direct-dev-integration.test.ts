@@ -124,6 +124,53 @@ describe("integrateDirectlyIntoDev", () => {
     expect(inherited.status).not.toBe(0);
   });
 
+  test("does not replay target commits adopted after a stale attempt baseline", () => {
+    const root = mkdtempSync(join(tmpdir(), "direct-dev-integration-"));
+    roots.push(root);
+    const remote = join(root, "remote.git");
+    const seed = join(root, "seed");
+    const task = join(root, "task");
+
+    git(root, "init", "--bare", remote);
+    git(root, "clone", remote, seed);
+    git(seed, "config", "user.name", "Test User");
+    git(seed, "config", "user.email", "test@example.com");
+    const taskBaseCommit = commitFile(seed, "base.txt", "base\n", "base");
+    git(seed, "branch", "-M", "dev");
+    git(seed, "push", "-u", "origin", "dev");
+
+    git(root, "clone", remote, task);
+    git(task, "config", "user.name", "Test User");
+    git(task, "config", "user.email", "test@example.com");
+    git(task, "checkout", "-b", "task/example", "origin/dev");
+
+    commitFile(seed, "dev.txt", "current dev\n", "advance dev");
+    git(seed, "push", "origin", "dev");
+    git(task, "fetch", "origin", "dev");
+    git(task, "reset", "--hard", "origin/dev");
+    const sourceCommit = commitFile(
+      task,
+      "task.txt",
+      "bounded task change\n",
+      "bounded task change",
+    );
+
+    const result = integrateDirectlyIntoDev({
+      repoDir: seed,
+      workspaceDir: task,
+      sourceBranch: "task/example",
+      sourceCommit,
+      taskBaseCommit,
+    });
+
+    expect(result.state).toBe("integrated");
+    git(seed, "fetch", "origin", "dev");
+    expect(git(seed, "show", "origin/dev:task.txt")).toBe(
+      "bounded task change",
+    );
+    expect(git(seed, "show", "origin/dev:dev.txt")).toBe("current dev");
+  });
+
   test("does not publish stale history when the turn created no commit", () => {
     const setup = setupDivergedTask();
 

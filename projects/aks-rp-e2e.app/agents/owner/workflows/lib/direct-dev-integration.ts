@@ -89,34 +89,6 @@ export function integrateDirectlyIntoDev(input: {
     };
   }
 
-  const mergeCommits = git(input.workspaceDir, [
-    "rev-list",
-    "--reverse",
-    "--merges",
-    `${input.taskBaseCommit}..${input.sourceCommit}`,
-  ])
-    .stdout.split(/\r?\n/)
-    .filter(Boolean);
-  if (mergeCommits.length) {
-    return {
-      state: "requires-replay",
-      reason: "attempt-has-merge-commits",
-      sourceCommit: input.sourceCommit,
-      taskBaseCommit: input.taskBaseCommit,
-      targetRef,
-      mergeCommits,
-    };
-  }
-
-  const taskCommits = git(input.workspaceDir, [
-    "rev-list",
-    "--reverse",
-    "--no-merges",
-    `${input.taskBaseCommit}..${input.sourceCommit}`,
-  ])
-    .stdout.split(/\r?\n/)
-    .filter(Boolean);
-
   const remoteSourceRef = `refs/remotes/origin/${input.sourceBranch}`;
   const fetchSource = git(
     input.workspaceDir,
@@ -159,6 +131,39 @@ export function integrateDirectlyIntoDev(input: {
     }
 
     const targetCommit = git(input.repoDir, ["rev-parse", targetRef]).stdout;
+    const mergeCommits = git(input.workspaceDir, [
+      "rev-list",
+      "--reverse",
+      "--merges",
+      `${input.taskBaseCommit}..${input.sourceCommit}`,
+      "--not",
+      targetRef,
+    ])
+      .stdout.split(/\r?\n/)
+      .filter(Boolean);
+    if (mergeCommits.length) {
+      return {
+        state: "requires-replay",
+        reason: "attempt-has-merge-commits",
+        sourceCommit: input.sourceCommit,
+        taskBaseCommit: input.taskBaseCommit,
+        targetRef,
+        mergeCommits,
+      };
+    }
+
+    // An agent may refresh a stale task worktree to current origin/dev before
+    // committing its change. Exclude that adopted target history from replay.
+    const taskCommits = git(input.workspaceDir, [
+      "rev-list",
+      "--reverse",
+      "--no-merges",
+      `${input.taskBaseCommit}..${input.sourceCommit}`,
+      "--not",
+      targetRef,
+    ])
+      .stdout.split(/\r?\n/)
+      .filter(Boolean);
     if (!taskCommits.length) {
       return {
         state: "unchanged",
