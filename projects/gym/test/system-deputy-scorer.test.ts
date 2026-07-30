@@ -204,6 +204,22 @@ const decisions: Record<string, Record<string, unknown>> = {
     response_to_hao:
       "The request has no consumer. I will have the reporting owner prove the durable request-to-report path, review the evidence, and bring the exact production proposal for approval before reload.",
   },
+  "may-learn-replan-stalled-human-task": {
+    ...base,
+    understood_intent:
+      "Finish Hao's existing report request; the repeated wait has no progress evidence.",
+    mode: "replan stalled owner work",
+    priority:
+      "Move the same task toward the verified report without unnecessary human interruption.",
+    next_action:
+      "Keep reports.app on reports/july-reliability. Require changed execution or a real observable blocker with a fresh bounded checkpoint. Review the result and replan the same task; route a broken wake path to its runtime owner.",
+    constraints: [
+      "Create no duplicate task and prescribe no implementation steps.",
+      "Escalate only an exact authority blocker.",
+    ],
+    response_to_hao:
+      "Send nothing now: the verified report is still pending, nothing material changed, and Hao has no action.",
+  },
 };
 
 describe("system deputy learning scorer", () => {

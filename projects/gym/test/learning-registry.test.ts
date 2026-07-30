@@ -30,7 +30,7 @@ describe("May learning registry", () => {
         version: 1,
         status: "pilot",
         ready_for_development: true,
-        ready_for_release: true,
+        ready_for_release: false,
         evidence: { positive: 1, negative: 2, contrast: 0 },
       }),
       expect.objectContaining({
@@ -86,6 +86,7 @@ describe("May learning registry", () => {
     expect(review.warnings).toEqual(
       expect.arrayContaining([
         "system-deputy-operations has no contrast evidence",
+        "system-deputy-operations release truth is not approved: may-learn-replan-stalled-human-task",
         "human-inbox-deputy release truth is not approved: may-learn-inbox-transfer-handle-recovered-urgent",
       ]),
     );
@@ -148,6 +149,7 @@ describe("May learning registry", () => {
       releaseScenarios: [
         "may-learn-route-project-app-request",
         "may-learn-diagnose-unconsumed-event",
+        "may-learn-replan-stalled-human-task",
       ],
     });
   });
@@ -223,6 +225,11 @@ describe("May learning registry", () => {
         status: "approved",
         human_answer: expect.stringContaining("missing consumer"),
       }),
+      expect.objectContaining({
+        id: "may-learn-replan-stalled-human-task",
+        status: "draft",
+        human_answer: expect.stringContaining("repeated evidence-free wait"),
+      }),
     ]);
   });
 
@@ -292,6 +299,7 @@ describe("May learning registry", () => {
       "may-learn-separate-agent-capability-from-app-autonomy",
       "may-learn-route-project-app-request",
       "may-learn-diagnose-unconsumed-event",
+      "may-learn-replan-stalled-human-task",
     ]);
   });
 

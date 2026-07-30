@@ -15,6 +15,13 @@
       "rationale": "May should treat accepted delivery without a report as a missing consumer, give the owner the outcome and durable proof bar, review the result, and wait for approval before production change without prescribing technical steps.",
       "approved_by": "hao",
       "approved_at": "2026-07-28T02:18:52Z"
+    },
+    "may-learn-replan-stalled-human-task": {
+      "status": "draft",
+      "source": "long-running-request-runtime-gap-review",
+      "rationale": "May should replan a repeated evidence-free wait through the same owner task, keep healthy internal supervision silent, and escalate only a real authority blocker.",
+      "approved_by": null,
+      "approved_at": null
     }
   }
 }

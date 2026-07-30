@@ -15,7 +15,11 @@ reconciliation, broader async
 completion handling, and session-independent caller identity still have
 convergence gaps described below. A fresh May verification turn now wakes when
 a human-linked app task reaches `converged` or `attention`. Legacy socket frames
-remain compatibility ingress.
+remain compatibility ingress. A narrow candidate also gives an open Condition
+an optional bounded review checkpoint: passive resync wakes the same task
+owner, and a human-linked checkpoint result wakes one deduplicated fresh May
+review even when the task remains `waiting`. Rollout of that candidate is
+pending approval.
 **Aligned with**: `events.md`, `sessions.md`, `runtime.md`, `may-console.md`, `webui.md`
 
 ## Purpose
@@ -680,8 +684,9 @@ Each human surface should have tests for the same behavior:
   lifecycle or task store.
 - A future-result promise is rejected or rewritten unless a durable owner
   reference, completion wake, and proof condition already exist.
-- A missed review checkpoint wakes May; healthy progress does not create
-  repetitive human updates.
+- A missed review checkpoint wakes the same app owner. Its human-linked result
+  wakes one May review; healthy progress does not create repetitive human
+  updates.
 - Bare cancel never becomes cancel-all; broad cancellation requires the
   explicit `session.cancel_all.requested` intent.
 
@@ -701,7 +706,12 @@ supports this design direction without changing production routing:
   checks and both calibrated semantic judges, including accepted completion
   wakes and missed-progress checkpoints before a later-result promise;
 - current May passed the held-back four-turn transfer trajectory with 8/8
-  behavior checks and both judges; and
+  behavior checks and both judges;
+- current May passed the held-back stalled-request case in three consecutive
+  trials. It kept the same owner task, required changed execution or a proved
+  blocker after an empty recheck, routed broken supervision to its runtime
+  owner, kept routine recovery silent, and reserved Hao for exact authority;
+  and
 - the typed contract made owner, proof, reply target, and human action explicit.
   An isolated May prompt overlay was not required for the passing baseline.
 
@@ -860,14 +870,20 @@ generic completion abstraction.
   `project.task.reconciled` fact to the existing `project.owner.reviewed` task
   reference and original Telegram trace. For `converged` or `attention`, it
   starts one deduplicated fresh May review on the original request; `waiting`
-  progress and tasks without a human link stay silent. Missed-checkpoint and
-  stale open-branch reconciliation remain.
+  progress and tasks without a human link stay silent. The narrow candidate
+  adds one exception: an app owner result caused by
+  `condition-review-checkpoint-missed` starts a fresh May review when the task
+  is human-linked, even if it remains `waiting`. The request id includes the
+  owner attempt, so replay is deduplicated while a later missed checkpoint can
+  still receive a new review.
 - The deployed integrity check reports every terminal human-linked app
   task until a May review started from that exact terminal event produces a
   delivered closeout on the original trace. The query uses indexed event types
   and materializes the small human-linked task set; it ran in about 5 ms on the
-  2.2 GB live database. Missed checkpoints before a task becomes terminal
-  remain outside this invariant.
+  2.2 GB live database. The candidate covers active missed checkpoints through
+  the existing Condition and resync path; a broader query-level invariant for
+  every open human-linked branch remains unnecessary unless live proof exposes
+  another lost-wake case.
 - The deployed path holds proactive messages, alerts, and child-session
   summaries until May reviews them; only `deliver` sends May's reviewed text,
   and review failure retries once then fails closed. All seven approved Gym

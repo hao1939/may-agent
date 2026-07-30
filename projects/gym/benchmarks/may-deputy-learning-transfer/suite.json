@@ -6,6 +6,7 @@
   "evaluator": "../may-alignment/score-decision.cjs",
   "scenarios": [
     "may-learn-route-project-app-request",
-    "may-learn-diagnose-unconsumed-event"
+    "may-learn-diagnose-unconsumed-event",
+    "may-learn-replan-stalled-human-task"
   ]
 }

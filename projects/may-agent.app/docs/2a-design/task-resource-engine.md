@@ -365,9 +365,24 @@ A Condition describes one exact external observation:
   id: "credential-ready:xhs",
   type: "credential.ready",
   subject: "credential:xhs",
-  expected: { field: "state", equals: "ready" }
+  expected: { field: "state", equals: "ready" },
+  reviewAfterMs: 300_000
 }
 ```
+
+`reviewAfterMs` is optional. It is a supervision backstop, not a claim that the
+Condition became true and not a human-update timer. Values must be whole
+milliseconds and at least 60 seconds. At the first passive resync after the
+open Condition reaches that age, the controller claims the same task for the
+same owner with trigger `project.task.condition-review.missed`. It creates no
+timer job, scheduler, task, or request record.
+
+If the owner returns `waiting` with the same open Condition, the checkpoint
+starts again from that accepted result. A satisfied observation still wakes
+the task normally. Repeated empty reviews are evidence of a stall: the owner
+must change execution or prove a real blocker instead of creating duplicate
+work. When the task is linked to a human request, the checkpoint result also
+wakes one fresh May review; ordinary waiting remains silent.
 
 A watcher monitors the external source and emits a semantic event. It does not
 invoke an agent, know task IDs, or mutate task storage. The generic Condition

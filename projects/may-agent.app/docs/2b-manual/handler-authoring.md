@@ -61,6 +61,25 @@ Every handler returns one envelope:
   child after its actions are admitted.
 - `needs-owner` deliberately hands the task to its accountable owner.
 
+For an unresolved human request, give its external Condition a bounded review
+checkpoint:
+
+```ts
+{
+  id: "report-run-finished",
+  type: "pipeline-run.state",
+  subject: "pipeline-run:123",
+  expected: { field: "state", equals: "completed" },
+  reviewAfterMs: 300_000,
+}
+```
+
+The minimum is 60 seconds. When the checkpoint is missed, existing passive
+resync wakes this same task and owner. Returning the same Condition resets the
+checkpoint. Do not add a cron job, duplicate task, or routine Telegram update.
+Change execution or prove a real blocker after an evidence-free recheck; May
+handles any human-facing follow-through separately.
+
 The selected handler may be a direct owner agent or an owner-owned workflow.
 It may use supplied tools and skills; a workflow may also run bounded agent
 steps. Those capabilities may access a database behind an explicit tool or SDK

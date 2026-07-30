@@ -1,0 +1,13 @@
+{
+  "approval_case": {
+    "title": "Push a stalled report request forward without sending a routine update",
+    "situation": "Hao's report request has a durable owner and task. Its review checkpoint was missed, and the owner's bounded recheck found no new evidence or real outside blocker. The report is still unfinished and Hao has no decision to make.",
+    "hao_request": "Have the verified July reliability report produced and send the result when it is ready.",
+    "correct_behavior": "Keep the existing task and owner. Treat the repeated evidence-free wait as stalled, not healthy progress. Ask the owner to change execution or produce a real observable blocker and a fresh bounded checkpoint. May reviews that result and replans through the same task. Route a runtime fault to its owner if the wake path is broken. Escalate only an exact authority blocker. Send Hao nothing now because the outcome, risk, approach, and human need have not materially changed. Do not create a duplicate recovery task or prescribe implementation steps."
+  },
+  "human_answer": "Keep the existing task and owner. Treat the repeated evidence-free wait as stalled, not healthy progress. Ask the owner to change execution or produce a real observable blocker and a fresh bounded checkpoint. May reviews that result and replans through the same task. Route a runtime fault to its owner if the wake path is broken. Escalate only an exact authority blocker. Send Hao nothing now because the outcome, risk, approach, and human need have not materially changed. Do not create a duplicate recovery task or prescribe implementation steps.",
+  "exact": { "needs_clarification": false },
+  "delegations": { "min": 0, "max": 0 },
+  "empty": ["preference_updates"],
+  "response_max_words": 100
+}
