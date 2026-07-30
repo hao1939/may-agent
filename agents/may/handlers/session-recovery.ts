@@ -240,6 +240,50 @@ function reapIdleAutocloseSessions(ctx: HandlerContext): void {
   }
 }
 
+/**
+ * Reap sessions that have a non-null outcome but are still marked 'idle' or
+ * 'running' with no activity for >30min. These are sessions that completed
+ * their work (produced an outcome) but whose status was never transitioned.
+ */
+function reapCompletedIdleSessions(ctx: HandlerContext): void {
+  const now = Date.now();
+  const db = ctx.sdk.getDb();
+  const cutoff = now - STALE_AUTOCLOSE_MS; // 30min
+  const stale = db.prepare(
+    `SELECT sessionId, agent, status, startedAt, lastActivityAt, outcome
+     FROM sessions
+     WHERE status IN ('running', 'idle')
+       AND outcome IS NOT NULL
+       AND outcome != ''
+       AND lastActivityAt < ?
+     ORDER BY lastActivityAt ASC
+     LIMIT ?`,
+  ).all(cutoff, MAX_STALE_AUTOCLOSE_REAPS) as (RunningSessionRow & { lastActivityAt?: number; outcome?: string })[];
+
+  for (const row of stale) {
+    if (!row.sessionId || !row.agent) continue;
+
+    const result = db.prepare(
+      `UPDATE sessions
+       SET status = 'completed', endedAt = ?
+       WHERE sessionId = ?
+         AND status IN ('running', 'idle')`,
+    ).run(now, row.sessionId) as { changes?: number };
+
+    if ((result.changes ?? 0) <= 0) continue;
+
+    ctx.sdk.emit("session.end", {
+      sessionId: row.sessionId,
+      agent: row.agent,
+      status: "completed",
+      outcome: "success",
+      autoClosed: true,
+      reason: "completed_idle_with_outcome",
+    });
+    ctx.sdk.log("info", `[session-recovery] Closed completed-idle session ${row.sessionId} (had outcome, idle since ${new Date(row.lastActivityAt ?? row.startedAt).toISOString()})`);
+  }
+}
+
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   let lastStaleReapAt = 0;
 
@@ -253,6 +297,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       lastStaleReapAt = now;
       reapStaleAutocloseSessions(ctx);
       reapIdleAutocloseSessions(ctx);
+      reapCompletedIdleSessions(ctx);
     }
 
     if (isTimerTick) return;
