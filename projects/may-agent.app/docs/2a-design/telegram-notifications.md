@@ -297,8 +297,20 @@ Post-fix source event `4667365` immediately started a live May review and
 produced enforced audit event `4667420`: `admitted=false`, `delivered=false`.
 No Telegram notification row or Telegram delivery event was created. May
 omitted required action/closure fields twice, so the runtime recorded review
-failure and still failed closed. Keep that behavioral miss in the daily Gym
-review; it does not reopen transport rollout.
+failure and still failed closed. That miss became a held-back Gym case instead
+of approved learning truth. May passed the case's eight gates and both semantic
+judges.
+
+Runtime commit `66e5d944` now requires complete action and closure fields for
+every non-delivery result and teaches that recovered ordinary work is
+`handle`, even when its producer says to suppress or reject the message. The
+clean deployed binary hash is
+`340f4b5cfe14896d34524acfed2aefa271d21507b69da96944a18eb553f75435`.
+Live source event `4668507` produced completed audit event `4668539` on the
+first attempt with `disposition=handle`, non-empty `actionTaken` and
+`closureCondition`, `admitted=false`, and `delivered=false`. No correlated
+Telegram notification row or delivery event exists. The held-back case remains
+draft until Hao reviews it.
 
 Measure:
 

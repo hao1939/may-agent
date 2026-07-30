@@ -865,7 +865,10 @@ generic completion abstraction.
   cases pass eight deterministic gates and both semantic judges. Commit
   `a93fbd7f` also guarantees admission attaches before external ingress and
   cron startup. Live source event `4667365` produced enforced audit `4667420`
-  with no Telegram delivery.
+  with no Telegram delivery. Its incomplete May decision became a held-back
+  Gym case. Runtime commit `66e5d944` requires complete action and closure
+  proof; live source event `4668507` then produced completed `handle` audit
+  `4668539` on the first attempt, with no notification row or delivery event.
 - Gym's daily Telegram field review is active and checkpointed. Its
   2026-07-30 run reviewed 11 completed interactions and retained five strong
   signals. The enforcement rollout must prove that this review continues to
