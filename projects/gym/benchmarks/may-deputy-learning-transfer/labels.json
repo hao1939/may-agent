@@ -17,11 +17,11 @@
       "approved_at": "2026-07-28T02:18:52Z"
     },
     "may-learn-replan-stalled-human-task": {
-      "status": "draft",
+      "status": "approved",
       "source": "long-running-request-runtime-gap-review",
       "rationale": "May should replan a repeated evidence-free wait through the same owner task, keep healthy internal supervision silent, and escalate only a real authority blocker.",
-      "approved_by": null,
-      "approved_at": null
+      "approved_by": "hao",
+      "approved_at": "2026-07-30T16:41:18Z"
     }
   }
 }
