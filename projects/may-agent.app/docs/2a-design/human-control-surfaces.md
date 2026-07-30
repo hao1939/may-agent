@@ -6,10 +6,12 @@ socket, and console ingress exist. The deployed Telegram path gives ordinary
 input a fresh bounded May turn, stores inbound and outbound trace links in the
 existing message index, captures each turn's reply target in immutable session
 context, and recovers a reply target after restart. May-owned Telegram CLI
-results also get one fresh review when their source session is gone. Focused
-owner-state context, broader async completion handling, and session-independent
-caller identity still have convergence gaps described below. Legacy socket
-frames remain compatibility ingress.
+results also get one fresh review when their source session is gone. A tested,
+undeployed candidate puts proactive messages and child summaries behind May's
+admission review. Approved Gym proof, focused owner-state context, broader
+async completion handling, and session-independent caller identity still have
+convergence gaps described below. Legacy socket frames remain compatibility
+ingress.
 **Aligned with**: `events.md`, `sessions.md`, `runtime.md`, `may-console.md`, `webui.md`
 
 ## Purpose
@@ -844,6 +846,12 @@ generic completion abstraction.
 - Human-result integrity currently checks delivery of the immediate May
   session result. It does not verify that a long-running child app branch later
   produced a May-reviewed closeout linked to the original human intent.
-- Telegram still auto-forwards child-session summaries and performs proactive
-  human-attention review after delivery in shadow mode. Both paths can bypass
-  May's terminal-proof review and single-voice communication rule.
+- A tested, undeployed candidate holds proactive messages, alerts, and
+  child-session summaries until May reviews them; only `deliver` sends May's
+  reviewed text, and review failure retries once then fails closed. The
+  transport and end-to-end tests pass. The approved Gym suite is blocked by a
+  provider connection failure with zero model output, so rollout proof remains
+  incomplete.
+- Gym has approved human-inbox scenarios and review labels, but no runtime job
+  currently performs the accepted daily Telegram behavior review against live
+  candidates, reviews, closure evidence, and later human corrections.

@@ -5,8 +5,10 @@
 conversation identity, inbound/outbound trace links, bounded ordinary turns,
 concurrent reply targets, immutable per-session reply context, restart-safe
 reply lookup, exact per-tool caller identity, and a narrow May-owned CLI
-completion fallback. Focused owner context and broader async completion
-handling still remain.
+completion fallback. A tested, undeployed candidate puts proactive messages,
+alerts, and child-session summaries behind May's admission review. Approved
+Gym proof, focused owner context, and broader async completion handling still
+remain.
 
 ## Purpose
 
@@ -36,9 +38,11 @@ clear.
 ## Implementation Posture
 
 Telegram ingress, delivery, stored reply metadata, exact short controls, and a
-shadow May attention review exist. Enforcement, conversation-view resolution,
-session-independent completion, reviewed closeout, narrow command failure, and
-noise control remain convergence work. The current gap list lives in
+May attention review exist. A tested, undeployed enforcement candidate fails
+closed and sends only May's reviewed text. Approved Gym proof,
+conversation-view resolution, session-independent completion, reviewed
+closeout, narrow command failure, and noise control remain convergence work.
+The current gap list lives in
 [human-control-surfaces.md](human-control-surfaces.md#runtime-convergence-gaps)
 so this accepted contract stays focused on target behavior.
 
@@ -234,10 +238,13 @@ resolved and superseded candidates instead of reopening them.
 
 ### Regular behavior review
 
-Gym's existing daily Telegram field review also reads proactive candidates and
-May's `human.attention.reviewed` facts. It compares the proposed message, May's
+The daily Telegram field review must read proactive candidates and May's
+`human.attention.reviewed` facts. It compares the proposed message, May's
 disposition, any delivered text, owner handoff, closure evidence, and a later
 human correction when one exists.
+
+The Gym scenarios and labels exist, but the daily runtime review is not yet
+wired. Until it is, do not claim that regular behavior review is active.
 
 Review every critical failure and a small sample of successful decisions.
 Prefer strong reusable evidence over volume. Classify the responsible layer:
@@ -257,6 +264,11 @@ Replay recent Telegram candidates before enforcing the gate. The proof set
 must include recovered handler errors, project-owned product failures, weak
 approval packets, a valid Gym approval, a secret request, duplicate pull
 request notices, and accepted digests.
+
+The enforcement candidate has transport and end-to-end regression proof. Its
+approved Gym run is currently blocked by a provider connection failure with
+zero model output. Keep the candidate undeployed until all approved cases run
+and recent replay shows zero critical authority violations.
 
 Measure:
 
