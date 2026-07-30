@@ -716,10 +716,23 @@ judges. Hao approved rollout, and commit `2648a3c9` was deployed on 2026-07-30.
 The installed binary matched the staged binary, the deploy marker cleared, and
 May, Web, and maintenance returned healthy.
 
-The first post-rollout exchange closed the live proof. Human input `45984`
-started session `s_1785404509853_6` with `channelMessageId: 45984`. Response
-`45987` kept trace `event:4646877` and recorded `replyToMsgId: 45984`. It did
-not reuse the older reply target.
+The first post-rollout exchange closed the direct-response proof. Human input
+`45984` started session `s_1785404509853_6` with `channelMessageId: 45984`.
+Response `45987` kept trace `event:4646877` and recorded `replyToMsgId: 45984`.
+It did not reuse the older reply target.
+
+The same exchange exposed a separate late-message bug. Message `45986`
+contained a correction produced by earlier May work but replied to newer input
+`45984`. Tool factories still read one mutable current-session value per agent,
+so overlapping May sessions could label a tool call with another session and
+then fall back to the newest message on their shared conversation trace.
+
+Candidate commit `5673f369` binds every tool execution to its own session using
+async execution context. The message event carries that exact source session,
+and Telegram prefers the source session's immutable reply target over a trace
+fallback. The exact overlapping-session regression, focused Telegram and
+lifecycle suites, TypeScript, and the full 2,074-test CI suite pass. This
+candidate remains undeployed until Hao approves rollout.
 
 Keep the broader conversation view and app-task reconciliation separate. The
 narrow CLI fallback does not justify a new request table, scheduler, daemon, or
@@ -752,9 +765,10 @@ generic completion abstraction.
 - There is no conversation context reader that resolves an anchor or named
   subject and assembles focused owner state, evidence, related messages,
   neighboring open requests, and preferences for a fresh bounded May turn.
-- Tool factories resolve caller identity from one mutable per-agent
-  `getAgentSessionId()` value. Concurrent May sessions can therefore attach a
-  tool request or completion to the wrong session and trace.
+- Deployed tool factories still have one mutable per-agent caller identity.
+  Candidate `5673f369` replaces that lookup during tool execution with exact
+  async session context and carries the source session on outbound messages.
+  It has proof but still needs rollout and live verification.
 - CLI-task completion has a deployed fallback for May-owned Telegram work:
   preserve the original trace, reuse a live source session, or start one
   deduplicated fresh May review when that session is gone. The fallback
