@@ -57,6 +57,19 @@ export function shouldResumeStartupSession(
   return { resume: true };
 }
 
+export function shouldResumeStartupChatSession(
+  _sessionId: string,
+  session: PersistedSession,
+): { resume: true } | { resume: false; reason: string } {
+  if (session.status === "idle") {
+    return {
+      resume: false,
+      reason: "Idle chat turn already completed before restart",
+    };
+  }
+  return { resume: true };
+}
+
 export async function startCronRuntime(options: CronRuntimeOptions): Promise<void> {
   const { manager, bus, loaderOpts, chatMode, chatSession } = options;
 
@@ -69,8 +82,12 @@ export async function startCronRuntime(options: CronRuntimeOptions): Promise<voi
     const { interrupted: chatCleaned } = manager.resumeStaleSessions({ abort: true, kinds: ["chat"] });
     orphansCleaned.push(...chatCleaned);
   } else {
-    const { resumed: chatResumed } = manager.resumeStaleSessions({ kinds: ["chat"] });
+    const { resumed: chatResumed, interrupted: chatCleaned } = manager.resumeStaleSessions({
+      kinds: ["chat"],
+      shouldResume: shouldResumeStartupChatSession,
+    });
     resumed.push(...chatResumed);
+    orphansCleaned.push(...chatCleaned);
     chatSession?.resumeAfterLoad();
   }
 
