@@ -143,4 +143,78 @@ describe("human result follow-through", () => {
 
     expect(runs).toHaveLength(1);
   });
+
+  it("starts one fresh May review when a human-linked project task converges", () => {
+    const { bus, persistDir, runs } = fixture();
+    storeHumanInput(persistDir, "trace-human-project");
+    bus.emit({
+      type: "project.owner.reviewed",
+      source: "project-app:gym:task-reconciler",
+      owner: "agent:gym",
+      data: {
+        openEventId: 1,
+        taskRefs: [{ projectId: "gym", taskId: "learning/review" }],
+      },
+      trace: { traceId: "trace-human-project" },
+    } as any);
+
+    const terminal = {
+      type: "project.task.reconciled",
+      source: "project-app:gym:task-reconciler",
+      owner: "agent:gym",
+      data: {
+        project: "gym",
+        taskId: "learning/review",
+        generation: 3,
+        disposition: "converged",
+        summary: "The approved review completed.",
+        evidence: ["run:telegram-field-123"],
+      },
+      trace: { traceId: "task-run-trace" },
+    } as any;
+    bus.emit(terminal);
+    bus.emit({ ...terminal });
+
+    expect(runs).toHaveLength(1);
+    expect(runs[0]).toMatchObject({
+      agent: "may",
+      opts: {
+        kind: "chat",
+        autoClose: "never",
+        source: "telegram",
+        requestId: "human-result-review:project:gym:learning/review:3",
+        conversationId: "telegram:chat:123:topic:0:agent:may",
+        channelMessageId: 700,
+        trace: { traceId: "trace-human-project", parentEventId: expect.any(Number) },
+      },
+    });
+    expect(runs[0]?.task).toContain("Original human request");
+    expect(runs[0]?.task).toContain("The approved review completed.");
+    expect(runs[0]?.task).toContain("Verify the terminal outcome");
+  });
+
+  it("keeps waiting project progress silent and ignores tasks without a human link", () => {
+    const { bus, persistDir, runs } = fixture();
+    storeHumanInput(persistDir, "trace-human-project");
+    bus.emit({
+      type: "project.owner.reviewed",
+      source: "project-app:gym:task-reconciler",
+      owner: "agent:gym",
+      data: { taskRefs: [{ projectId: "gym", taskId: "learning/review" }] },
+      trace: { traceId: "trace-human-project" },
+    } as any);
+    for (const [taskId, disposition] of [
+      ["learning/review", "waiting"],
+      ["unlinked/task", "converged"],
+    ] as const) {
+      bus.emit({
+        type: "project.task.reconciled",
+        source: "project-app:gym:task-reconciler",
+        owner: "agent:gym",
+        data: { project: "gym", taskId, disposition, summary: "progress" },
+      } as any);
+    }
+
+    expect(runs).toEqual([]);
+  });
 });
