@@ -21,12 +21,22 @@ is a shadow implementation with replay proof, not Telegram routing changes.
 | Narrow current-session replay model | 1/8 | Session identity cannot safely stand in for request identity. This is a bounded comparison, not a claim about every live path. |
 | Development behavior trajectory, current May with typed runtime | 12/12 + both semantic judges | May preserved owners, proof, completion wakes, and missed-progress checkpoints before promising later results. It closed the correct request once after session loss, kept Gym active, and stated that Hao had no action. Latest run: `gym-multi-V8qqmA`. |
 | Held-back transfer trajectory, current May with typed runtime | 8/8 + both semantic judges | May clarified real ambiguity, scoped a stop by reply anchor, suppressed a duplicate, and reported named Gym status from durable state. Run: `gym-multi-rubJMI`. |
+| Direct reply before owner acceptance | Initial 0/2; trained 3/3 behavior-correct, with 2 judge passes and 1 judge split | May now says routing and acceptance are pending without promising another message. Its internal commitment keeps the accepted work reference, terminal proof, completion wake, and review checkpoint. Run: `may-conversation-follow-through-transfer-test-20260730T172739Z-32566d1e`. |
 
 The first unconstrained behavior run was meaningfully red: May applied one
 request but only wrote a proposal for the second, assigned owner work to May,
 omitted restart proof, guessed the wrong completion thread, and sent no correct
 closeout. The typed runtime contract removed those failure modes without a
 production May prompt change.
+
+The direct-reply case found a real training conflict. The deputy skill told May
+to use future language in a decision-only response, so May repeatedly promised
+an acceptance update even while labeling the work as `routing`. The fix puts
+future owner work in `next_action`, keeps the human reply to present routing
+state and human-action need, and shows one complete routing commitment. The
+final three decisions were behaviorally correct. One OpenAI judge rejected a
+decision that was materially the same as the two accepted decisions, so that
+trial remains evaluator variance pending human truth approval.
 
 ## Evaluator lesson
 

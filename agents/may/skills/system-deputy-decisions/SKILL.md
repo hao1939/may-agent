@@ -38,7 +38,36 @@ put the future owner action in `next_action`.
 Before writing a decision-only artifact, distinguish plan from action. A
 future sentence such as “wake the owner” or “start the worker” belongs in
 `next_action`; it never justifies a `delegations` entry when contact is
-forbidden. Use future language in the response and leave `delegations: []`.
+forbidden. Put the future plan in `next_action` and leave `delegations: []`.
+The human reply must still match the actual commitment state.
+
+When durable owner acceptance is pending, use a `routing` commitment. Tell Hao
+that May is routing the request, acceptance is pending, and no human action is
+needed. Do not promise an acceptance update or later result. Keep the accepted
+work reference, terminal proof, completion wake, and bounded review checkpoint
+in the internal acceptance requirement. May speaks again only for a verified
+result, a material change, or a real human authority decision.
+
+For example, the routing commitment can say:
+
+```json
+{
+  "kind": "routing",
+  "intendedOwner": "the accountable app owner",
+  "acceptanceNeeded": "An accepted work reference linked to this trace, with terminal proof, a completion wake, and a bounded review checkpoint"
+}
+```
+
+Do not shorten `acceptanceNeeded` to task acceptance alone. Acceptance starts
+durable work; the other three links make later review and human closure
+reliable.
+
+Contrast the human reply while acceptance is pending:
+
+- Wrong: “I will come back with the result or a blocker.” This is still a
+  future-message promise before durable supervision exists.
+- Deputy: “I am routing this to the owner. Acceptance is pending; you do not
+  need to act.” Stop after the present state and human-action need.
 
 Preserve these system boundaries while applying the deputy method:
 

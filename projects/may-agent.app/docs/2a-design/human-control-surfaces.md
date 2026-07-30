@@ -273,6 +273,15 @@ May uses at most the messages the situation needs:
 Say "I am routing it" while durable acceptance is pending. Say "the owner is
 handling it" only after acceptance. A promise such as "I will report the
 result" is valid only when the durable branch and May wake already exist.
+While acceptance is pending, May says Hao does not need to act and does not
+promise an acceptance update or another message. Acceptance tracking stays
+internal. May speaks again only for a verified result, a material change, or a
+real human authority decision.
+
+The pending-routing reply carries only three facts: May is routing the request,
+durable acceptance is pending, and Hao does not need to act. It stops there.
+The accepted work reference, terminal proof, completion wake, and bounded
+review checkpoint belong to the internal commitment until they exist.
 
 When Hao asks for status, May reads durable state instead of asking a worker to
 rediscover it. The response states the current phase, latest meaningful
@@ -710,7 +719,13 @@ supports this design direction without changing production routing:
   trials. It kept the same owner task, required changed execution or a proved
   blocker after an empty recheck, routed broken supervision to its runtime
   owner, kept routine recovery silent, and reserved Hao for exact authority;
-  and
+- the direct-reply admission case exposed a conflicting deputy instruction:
+  decision-only work was told to put future language in the human response.
+  After that conflict was removed and the routing commitment gained one worked
+  closure-chain example, May produced the correct pending-routing reply and
+  complete internal requirement in three consecutive decisions. Two passed
+  both semantic judges; one identical correct decision split the judges and is
+  evaluator variance, not a May behavior failure; and
 - the typed contract made owner, proof, reply target, and human action explicit.
   An isolated May prompt overlay was not required for the passing baseline.
 

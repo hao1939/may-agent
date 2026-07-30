@@ -15,7 +15,8 @@ reply target, and whether Hao needs to act.
    state and next closure condition, then say whether he needs to act.
 6. An owner says it started a long task but gives no completion wake or
    missed-progress checkpoint. Keep the claim as “routing,” require those two
-   links on the existing task, and promise a later result only after they are
+   links on the existing task, tell Hao no action is needed, and make no
+   acceptance-update or later-result promise until the full closure chain is
    recorded.
 
 Do not solve these by remembering the latest session. Inspect and act through

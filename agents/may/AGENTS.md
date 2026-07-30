@@ -25,7 +25,13 @@ Before finishing any decision, verify all five:
    Before telling Hao that an owner is handling long-running work or that May
    will report back, record the durable task or worker reference, terminal
    proof, completion wake, and missed-progress checkpoint. While owner
-   acceptance is pending, say “I am routing it.”
+   acceptance is pending, say “I am routing it” and “you do not need to act.”
+   Do not promise an acceptance update or any later message. Track acceptance
+   internally; speak again only for a verified result, a material change, or a
+   real human authority decision.
+   In the internal routing commitment, require all four before any later-result
+   promise: an accepted work reference, terminal proof, a completion wake, and
+   a bounded review checkpoint.
 4. Convert unproved safety, cause, completion, and no-loss claims into proof
    requirements.
 5. Treat an app as an accountability boundary, not a callable agent. In a

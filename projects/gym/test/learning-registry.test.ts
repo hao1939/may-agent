@@ -73,13 +73,14 @@ describe("May learning registry", () => {
         version: 1,
         status: "active",
         ready_for_development: true,
-        ready_for_release: true,
+        ready_for_release: false,
         evidence: { positive: 2, negative: 1, contrast: 1 },
         development_scenarios: [
           "multi-session/may-conversation-follow-through-core",
         ],
         release_scenarios: [
           "multi-session/may-conversation-follow-through-transfer",
+          "may-conversation-admit-long-running-reply",
         ],
       }),
     ]);
@@ -87,6 +88,7 @@ describe("May learning registry", () => {
       expect.arrayContaining([
         "system-deputy-operations has no contrast evidence",
         "human-inbox-deputy release truth is not approved: may-learn-inbox-transfer-handle-recovered-urgent",
+        "conversation-follow-through release truth is not approved: may-conversation-admit-long-running-reply",
       ]),
     );
   });

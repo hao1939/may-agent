@@ -23,5 +23,8 @@
   "release_benchmark": "may-conversation-follow-through-transfer",
   "practice_scenarios": [],
   "development_scenarios": ["multi-session/may-conversation-follow-through-core"],
-  "release_scenarios": ["multi-session/may-conversation-follow-through-transfer"]
+  "release_scenarios": [
+    "multi-session/may-conversation-follow-through-transfer",
+    "may-conversation-admit-long-running-reply"
+  ]
 }

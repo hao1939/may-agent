@@ -1,0 +1,22 @@
+{
+  "name": "may-conversation-admit-long-running-reply",
+  "description": "Avoid promising a later result before a long-running human request has durable ownership and closure links.",
+  "categories": ["conversation-follow-through", "deputy-learning"],
+  "tags": ["may-agent", "telegram", "admission", "long-running"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": {
+    "unit": "conversation-follow-through",
+    "tier": 4,
+    "partition": "release",
+    "competencies": [
+      "system.owner-and-route",
+      "reliability.delivery-vs-completion",
+      "communication.human-attention-judgment"
+    ],
+    "criticality": "critical",
+    "variant_family": "direct-reply-admission"
+  }
+}

@@ -8,6 +8,13 @@
       "rationale": "May asks one focused question only for real ambiguity, scopes corrections by reply anchor, suppresses duplicate completion, and answers a named status request from durable state.",
       "approved_by": "hao",
       "approved_at": "2026-07-30T14:19:23+08:00"
+    },
+    "may-conversation-admit-long-running-reply": {
+      "status": "draft",
+      "source": "direct-reply-structural-admission-poc",
+      "rationale": "May should state that routing is pending and avoid promising a later result until durable ownership, proof, completion wake, and review checkpoint exist.",
+      "approved_by": null,
+      "approved_at": null
     }
   }
 }
