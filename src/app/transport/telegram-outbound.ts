@@ -10,10 +10,17 @@ export interface TelegramOutboundContext {
   summary?: string;
   data?: Record<string, unknown>;
   replyToMessageId?: number;
+  allowTraceReplyFallback?: boolean;
   conversationId?: string;
   traceId?: string;
   parentEventId?: number;
   taskId?: string;
+}
+
+export interface TelegramSessionReplyContext {
+  channelMessageId?: number;
+  conversationId?: string;
+  requestId?: string;
 }
 
 export interface TelegramOutboundOptions {
@@ -22,6 +29,7 @@ export interface TelegramOutboundOptions {
   projectRoot: string;
   pendingChatId: string | null;
   getSessionId: () => string;
+  getSessionReplyContext?: (sessionId: string) => TelegramSessionReplyContext | null | undefined;
   sendToUser: (text: string, context?: TelegramOutboundContext) => void;
   reviewProactive?: (candidate: HumanAttentionCandidate) => Promise<HumanAttentionReview>;
 }
@@ -382,6 +390,7 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
       if (!isHumanTarget(message.to)) return;
       if (pendingChatId) {
         const sourceSessionId = nonEmptyString(message.sourceSessionId);
+        const sourceReplyContext = sourceSessionId ? replyContextForSession(sourceSessionId) : undefined;
         const content = String(message.content ?? "").slice(0, 4000);
         const projectId =
           normalizeProjectPath(message.projectPath ?? message.projectId, opts.projectRoot) ??
@@ -469,9 +478,10 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
           parentEventId: typeof data.parentEventId === "number" ? data.parentEventId : undefined,
           taskId: typeof data.taskId === "string" ? data.taskId : undefined,
           replyToMessageId:
-            (sourceSessionId ? replyToMessageIdBySession.get(sourceSessionId) : undefined) ??
-            (traceId ? replyToMessageIdForTrace(traceId) : undefined),
-          conversationId: sourceSessionId ? conversationIdBySession.get(sourceSessionId) : undefined,
+            sourceReplyContext?.replyToMessageId ??
+            (!sourceSessionId && traceId ? replyToMessageIdForTrace(traceId) : undefined),
+          allowTraceReplyFallback: !sourceSessionId,
+          conversationId: sourceReplyContext?.conversationId,
         });
       }
     }
@@ -568,6 +578,34 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
     }
     return undefined;
   }
+
+  function replyContextForSession(
+    sessionId: string,
+  ): { replyToMessageId?: number; conversationId?: string } | undefined {
+    const liveReplyToMessageId = replyToMessageIdBySession.get(sessionId);
+    const liveConversationId = conversationIdBySession.get(sessionId);
+    if (liveReplyToMessageId && liveConversationId) {
+      return { replyToMessageId: liveReplyToMessageId, conversationId: liveConversationId };
+    }
+
+    let persisted: TelegramSessionReplyContext | null | undefined;
+    try {
+      persisted = opts.getSessionReplyContext?.(sessionId);
+    } catch {
+      // A missing or unreadable session record must not break human delivery.
+    }
+
+    const persistedReplyToMessageId =
+      positiveIntegerOrUndefined(persisted?.channelMessageId) ?? telegramMessageIdFromRequestId(persisted?.requestId);
+    const persistedConversationId = nonEmptyString(persisted?.conversationId);
+    if (!liveReplyToMessageId && !persistedReplyToMessageId && !liveConversationId && !persistedConversationId) {
+      return undefined;
+    }
+    return {
+      replyToMessageId: liveReplyToMessageId ?? persistedReplyToMessageId,
+      conversationId: liveConversationId ?? persistedConversationId,
+    };
+  }
 }
 
 function normalizeForCompare(text: string): string {
@@ -576,6 +614,16 @@ function normalizeForCompare(text: string): string {
 
 function numberOrUndefined(value: unknown): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function positiveIntegerOrUndefined(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isSafeInteger(value) && value > 0 ? value : undefined;
+}
+
+function telegramMessageIdFromRequestId(value: unknown): number | undefined {
+  if (typeof value !== "string") return undefined;
+  const match = /^telegram:([1-9]\d*)$/.exec(value);
+  return match ? positiveIntegerOrUndefined(Number(match[1])) : undefined;
 }
 
 function nonEmptyString(value: unknown): string | undefined {

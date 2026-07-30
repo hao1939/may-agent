@@ -6,6 +6,11 @@ import type { HumanAttentionCandidate, HumanAttentionReview } from "./human-atte
 function harness(
   currentSessionId = "shared-chat",
   reviewProactive?: (candidate: HumanAttentionCandidate) => Promise<HumanAttentionReview>,
+  getSessionReplyContext?: (sessionId: string) => {
+    channelMessageId?: number;
+    conversationId?: string;
+    requestId?: string;
+  } | null,
 ) {
   const bus = new EventBus();
   const sent: Array<{ text: string; context?: Record<string, unknown> }> = [];
@@ -15,6 +20,7 @@ function harness(
     projectRoot: "/app",
     pendingChatId: "human-chat",
     getSessionId: () => currentSessionId,
+    getSessionReplyContext,
     sendToUser: (text, context) => sent.push({ text, context }),
     reviewProactive,
   });
@@ -344,6 +350,95 @@ describe("Telegram outbound turn ownership", () => {
         traceId: "shared-conversation-trace",
       },
     });
+    outbound.close();
+  });
+
+  test("recovers an idle source session's persisted reply target", () => {
+    const conversationId = "telegram:chat:123:topic:0:agent:may";
+    const { bus, sent, outbound } = harness("legacy-chat", undefined, (sessionId) =>
+      sessionId === "s_old"
+        ? { channelMessageId: 45984, conversationId, requestId: "telegram:45984" }
+        : null,
+    );
+
+    start(bus, "telegram", "s_old", { traceId: "shared-trace" }, { channelMessageId: 45984, conversationId });
+    idle(bus, "telegram", "Initial answer", "s_old");
+    sent.length = 0;
+    start(bus, "telegram", "s_new", { traceId: "shared-trace" }, { channelMessageId: 45990, conversationId });
+    bus.emit({
+      type: "message.created",
+      source: "agent:may",
+      owner: "human:operator",
+      data: {
+        from: "may",
+        to: "human",
+        content: "Late result for the old request.",
+        sourceSessionId: "s_old",
+      },
+      trace: { traceId: "shared-trace" },
+    } as any);
+
+    expect(sent[0]).toMatchObject({
+      context: {
+        sessionId: "s_old",
+        replyToMessageId: 45984,
+        conversationId,
+        allowTraceReplyFallback: false,
+      },
+    });
+    outbound.close();
+  });
+
+  test("recovers a legacy Telegram target from the persisted request id", () => {
+    const { bus, sent, outbound } = harness("legacy-chat", undefined, (sessionId) =>
+      sessionId === "s_legacy" ? { requestId: "telegram:45981" } : null,
+    );
+
+    bus.emit({
+      type: "message.created",
+      source: "agent:may",
+      owner: "human:operator",
+      data: {
+        from: "may",
+        to: "human",
+        content: "Recovered legacy result.",
+        sourceSessionId: "s_legacy",
+      },
+    } as any);
+
+    expect(sent[0]?.context).toMatchObject({
+      sessionId: "s_legacy",
+      replyToMessageId: 45981,
+      allowTraceReplyFallback: false,
+    });
+    outbound.close();
+  });
+
+  test("rejects malformed legacy request ids and never guesses a newer trace target", () => {
+    const conversationId = "telegram:chat:123:topic:0:agent:may";
+    const { bus, sent, outbound } = harness("legacy-chat", undefined, () => ({
+      requestId: "telegram:45984:extra",
+    }));
+    start(bus, "telegram", "s_new", { traceId: "shared-trace" }, { channelMessageId: 45990, conversationId });
+
+    bus.emit({
+      type: "message.created",
+      source: "agent:may",
+      owner: "human:operator",
+      data: {
+        from: "may",
+        to: "human",
+        content: "Result with incomplete legacy routing context.",
+        sourceSessionId: "s_legacy",
+      },
+      trace: { traceId: "shared-trace" },
+    } as any);
+
+    expect(sent[0]?.context).toMatchObject({
+      sessionId: "s_legacy",
+      allowTraceReplyFallback: false,
+    });
+    expect(sent[0]?.context?.replyToMessageId).toBeUndefined();
     outbound.close();
   });
 
