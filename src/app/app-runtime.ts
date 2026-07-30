@@ -135,6 +135,20 @@ export async function runAppRuntime(opts: {
     process.exit(1);
   }
 
+  // Attach the human-attention gate before opening any external ingress or
+  // starting cron work. Otherwise an event accepted during startup can be
+  // persisted and printed while completely missing Telegram admission.
+  telegramBot = TELEGRAM_ENABLED
+    ? attachTelegramBot({
+        bus,
+        manager,
+        persistDir: opts.persistDir,
+        projectRoot: opts.projectRoot,
+        getSessionId: () => taskSessionId ?? chatSession?.getSessionId() ?? "",
+        interfaceAgent,
+      })
+    : { close: () => {}, sendAlert: () => {} };
+
   const { socketPath: SOCKET_PATH, socketUI } = await startInterfaceRuntime({
     socketEnabled: SOCKET_ENABLED,
     persistDir: opts.persistDir,
@@ -206,17 +220,6 @@ export async function runAppRuntime(opts: {
       chatSession,
     });
   }
-
-  telegramBot = TELEGRAM_ENABLED
-    ? attachTelegramBot({
-        bus,
-        manager,
-        persistDir: opts.persistDir,
-        projectRoot: opts.projectRoot,
-        getSessionId: () => taskSessionId ?? chatSession?.getSessionId() ?? "",
-        interfaceAgent,
-      })
-    : { close: () => {}, sendAlert: () => {} };
 
   if (!CHAT_MODE && !CRON_ENABLED && !WEB_ENABLED && !SOCKET_ENABLED && !TELEGRAM_ENABLED) {
     bus.emit({ type: "info", message: "[task] Task completed. Exiting." });
