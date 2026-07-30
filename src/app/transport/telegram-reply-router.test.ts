@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   buildNotificationReplyText,
+  buildShadowConversationView,
   buildTelegramReplyRoute,
   buildTelegramQuoteReplyText,
   extractProjectPath,
@@ -32,6 +33,75 @@ describe("telegram reply router helpers", () => {
   it("extracts the first project path from message text", () => {
     expect(extractProjectPath("Please review projects/demo/project.md now", root)).toBe("projects/demo");
     expect(extractProjectPath("Please review agents/shared/projects/demo/project.md now", root)).toBe("projects/demo");
+  });
+
+  it("observes explicit trace and task links without changing routing", () => {
+    const ctx = {
+      event_type: "message.created",
+      agent: "project-owner",
+      session_id: "s_old",
+      project_id: "projects/demo",
+      data: JSON.stringify({
+        conversationId: "telegram:chat:123:agent:may",
+        traceId: "trace-123",
+        conversation: {
+          originalIssue: { taskId: "task-123" },
+        },
+      }),
+    };
+
+    expect(buildShadowConversationView(ctx, 42)).toEqual({
+      status: "linked",
+      replyToMsgId: 42,
+      conversationId: "telegram:chat:123:agent:may",
+      traceId: "trace-123",
+      taskId: "task-123",
+      projectId: "projects/demo",
+      owner: "project-owner",
+      missing: [],
+    });
+
+    const route = buildTelegramReplyRoute({
+      text: "continue",
+      replyToMsgId: 42,
+      ctx,
+      quotedText: "",
+      projectRoot: root,
+      persistDir: "/tmp/missing",
+      interfaceAgent: "may",
+    });
+    expect(route).toMatchObject({
+      kind: "notification",
+      owner: "project-owner",
+      sessionId: "s_old",
+      projectPath: "projects/demo",
+      shadowConversation: { status: "linked", traceId: "trace-123", taskId: "task-123" },
+    });
+  });
+
+  it("reports notification-only and missing reply context", () => {
+    expect(
+      buildShadowConversationView(
+        {
+          event_type: "message.created",
+          agent: "may",
+          project_id: "projects/demo",
+          data: JSON.stringify({ text: "Needs review" }),
+        },
+        43,
+      ),
+    ).toEqual({
+      status: "notification-only",
+      replyToMsgId: 43,
+      projectId: "projects/demo",
+      owner: "may",
+      missing: ["conversationId", "traceId", "taskId"],
+    });
+    expect(buildShadowConversationView(null, 44)).toEqual({
+      status: "missing",
+      replyToMsgId: 44,
+      missing: ["conversationId", "traceId", "taskId", "projectId", "owner"],
+    });
   });
 
   it("builds notification reply text from stored context and session context", () => {
