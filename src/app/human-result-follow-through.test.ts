@@ -3,9 +3,11 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { closeDb } from "../lib/db/connection.js";
+import { checkEventTraceIntegrity } from "../lib/db/event-traces.js";
+import { getDb } from "../lib/db/connection.js";
 import { storeNotificationMessage } from "../lib/db/notifications.js";
 import { attachEventPersistence } from "./daemon-events.js";
-import { EventBus } from "./event-bus.js";
+import { EVENT_ROW_ID, EventBus } from "./event-bus.js";
 import { attachHumanResultFollowThrough } from "./human-result-follow-through.js";
 
 const roots: string[] = [];
@@ -216,5 +218,73 @@ describe("human result follow-through", () => {
     }
 
     expect(runs).toEqual([]);
+  });
+
+  it("reports a terminal human-linked task until May's closeout is delivered", () => {
+    const { bus, persistDir } = fixture();
+    storeHumanInput(persistDir, "trace-human-project");
+    bus.emit({
+      type: "human.input.received",
+      source: "telegram",
+      owner: "agent:may",
+      data: { text: "Finish the review.", conversation: { channel: "telegram" } },
+      trace: { traceId: "trace-human-project" },
+    } as any);
+    bus.emit({
+      type: "project.owner.reviewed",
+      source: "project-app:gym:task-reconciler",
+      owner: "agent:gym",
+      data: { taskRefs: [{ projectId: "gym", taskId: "learning/review" }] },
+      trace: { traceId: "trace-human-project" },
+    } as any);
+    const terminal = bus.emit({
+      type: "project.task.reconciled",
+      source: "project-app:gym:task-reconciler",
+      owner: "agent:gym",
+      data: {
+        project: "gym",
+        taskId: "learning/review",
+        generation: 4,
+        disposition: "converged",
+        summary: "Review complete.",
+      },
+    } as any);
+    expect(checkEventTraceIntegrity(getDb(persistDir)).humanLinkedTaskWithoutCloseoutCount).toBe(1);
+
+    const reviewStart = bus.emit({
+      type: "session.start",
+      source: "telegram",
+      owner: "agent:may",
+      data: {
+        sessionId: "review-closeout-1",
+        agent: "may",
+        task: "Review the terminal result",
+        trigger: "human-result-follow-through",
+        firedAt: Date.now(),
+      },
+      trace: { traceId: "trace-human-project", parentEventId: terminal[EVENT_ROW_ID] },
+    } as any);
+    bus.emit({
+      type: "session.idle",
+      source: "runtime",
+      owner: "agent:may",
+      data: {
+        sessionId: "review-closeout-1",
+        agent: "may",
+        summary: "Verified closeout.",
+        durationMs: 1,
+        status: "idle",
+      },
+      trace: { traceId: "trace-human-project", parentEventId: reviewStart[EVENT_ROW_ID] },
+    } as any);
+    bus.emit({
+      type: "channel.delivery.completed",
+      source: "telegram",
+      owner: "agent:may",
+      data: { channel: "telegram", sessionId: "review-closeout-1", resultEventType: "session.idle" },
+      trace: { traceId: "trace-human-project" },
+    } as any);
+
+    expect(checkEventTraceIntegrity(getDb(persistDir)).humanLinkedTaskWithoutCloseoutCount).toBe(0);
   });
 });
