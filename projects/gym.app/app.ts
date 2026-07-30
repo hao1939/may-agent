@@ -351,7 +351,12 @@ export function resolveGymTask(
         priority: "P1",
       };
     case "gym.review.requested": {
-      const requestIdentity = details.requestKey ?? `event-${eventId}`;
+      const requestIdentity = [
+        details.requestKey ?? `event-${eventId}`,
+        details.recoveryId,
+      ]
+        .filter(Boolean)
+        .join(":");
       return {
         id: taskIdentity("review-proposal", requestIdentity),
         parentId: "review-proposals",
@@ -369,6 +374,7 @@ export function resolveGymTask(
             "incidentId",
             "incidentPath",
             "outcomePath",
+            "recoveryId",
             "requestKey",
             "runDir",
             "runId",

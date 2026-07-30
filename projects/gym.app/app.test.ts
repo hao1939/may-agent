@@ -203,6 +203,27 @@ describe("gym task reconciliation", () => {
     expect(duplicateReview?.input).toEqual(firstReview?.input);
   });
 
+  test("replays a completed review without changing its artifact key", () => {
+    const original = resolveGymTask({
+      type: "gym.review.requested",
+      eventId: 105,
+      requestKey: "incident-s_failed",
+    });
+    const recovery = resolveGymTask({
+      type: "gym.review.requested",
+      eventId: 106,
+      requestKey: "incident-s_failed",
+      recoveryId: "telegram-46020",
+    });
+
+    expect(recovery?.id).not.toBe(original?.id);
+    expect(recovery?.input).toEqual({
+      kind: "unknown",
+      recoveryId: "telegram-46020",
+      requestKey: "incident-s_failed",
+    });
+  });
+
   test("treats each regression request as a distinct bounded run", () => {
     const first = resolveGymTask({
       type: "gym.regression.requested",
