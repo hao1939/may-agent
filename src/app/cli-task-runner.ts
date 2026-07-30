@@ -186,6 +186,23 @@ function exitCode(code: number | null, signal: NodeJS.Signals | null): number {
   return 1;
 }
 
+const DEFAULT_CODEX_MODEL = "gpt-5.6-sol";
+const DEFAULT_CODEX_REASONING_EFFORT = "high";
+
+function codexBaseArgs(): string[] {
+  const model = process.env.CODEX_MODEL?.trim() || DEFAULT_CODEX_MODEL;
+  const reasoningEffort = process.env.CODEX_REASONING_EFFORT?.trim() || DEFAULT_CODEX_REASONING_EFFORT;
+  return [
+    "exec",
+    "--json",
+    "--skip-git-repo-check",
+    "--model",
+    model,
+    "--config",
+    `model_reasoning_effort=${JSON.stringify(reasoningEffort)}`,
+  ];
+}
+
 function codexEffectiveSandbox(record: CliTaskRecord): {
   effectiveSandbox?: EffectiveSandboxMode;
 } {
@@ -194,7 +211,7 @@ function codexEffectiveSandbox(record: CliTaskRecord): {
 }
 
 function codexArgs(record: CliTaskRecord, prompt: string): string[] {
-  const args = ["exec", "--json", "--skip-git-repo-check"];
+  const args = codexBaseArgs();
   const { effectiveSandbox } = codexEffectiveSandbox(record);
   if (effectiveSandbox) args.push("--sandbox", effectiveSandbox);
   args.push("-o", record.resultPath);
@@ -279,7 +296,7 @@ function extractFinalText(tool: CliTool, stdout: string): string | undefined {
 
 function resumeCommand(record: CliTaskRecord, sessionId: string): string[] {
   if (record.tool === "codex") {
-    const args = ["codex", "exec", "--json", "--skip-git-repo-check"];
+    const args = ["codex", ...codexBaseArgs()];
     if (record.effectiveSandbox) args.push("--sandbox", record.effectiveSandbox);
     args.push("resume", sessionId, "<prompt>");
     return args;

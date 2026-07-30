@@ -155,6 +155,10 @@ describe("CLI task runner", () => {
     const bus = new EventBus();
     const events: AgentEvent[] = [];
     const spawnedArgs: string[][] = [];
+    const originalCodexModel = process.env.CODEX_MODEL;
+    const originalCodexReasoningEffort = process.env.CODEX_REASONING_EFFORT;
+    delete process.env.CODEX_MODEL;
+    delete process.env.CODEX_REASONING_EFFORT;
     attachEventPersistence({ bus, persistDir });
     bus.subscribe((event) => {
       events.push(event);
@@ -187,12 +191,21 @@ describe("CLI task runner", () => {
       await waitFor(() => events.some((event) => event.type === "cli.task.completed"));
 
       expect(spawnedArgs).toHaveLength(1);
+      expect(spawnedArgs[0]).toContain("--model");
+      expect(spawnedArgs[0]?.[spawnedArgs[0].indexOf("--model") + 1]).toBe("gpt-5.6-sol");
+      expect(spawnedArgs[0]).toContain('model_reasoning_effort="high"');
       expect(spawnedArgs[0]).toContain("danger-full-access");
       expect(spawnedArgs[0]).not.toContain("read-only");
       const completed = events.find((event) => event.type === "cli.task.completed") as any;
       expect(completed?.data?.effectiveSandbox).toBe("danger-full-access");
       expect(completed?.data?.sandboxFallbackReason).toContain("requested read-only was normalized");
+      expect(completed?.data?.resumeCommand).toContain("gpt-5.6-sol");
+      expect(completed?.data?.resumeCommand).toContain('model_reasoning_effort="high"');
     } finally {
+      if (originalCodexModel === undefined) delete process.env.CODEX_MODEL;
+      else process.env.CODEX_MODEL = originalCodexModel;
+      if (originalCodexReasoningEffort === undefined) delete process.env.CODEX_REASONING_EFFORT;
+      else process.env.CODEX_REASONING_EFFORT = originalCodexReasoningEffort;
       rmSync(root, { recursive: true, force: true });
     }
   });
