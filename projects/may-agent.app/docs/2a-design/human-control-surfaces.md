@@ -760,7 +760,14 @@ strict legacy request-id form, and suppresses shared-trace reply fallback when
 an exact source session is present. A missing or malformed target therefore
 produces a standalone message instead of a wrong reply. Focused tests cover an
 idle source session, a legacy record, a malformed record, and a newer competing
-trace target. Rollout still requires Hao's approval.
+trace target. The full runtime suite passed 2,077 tests, and the related Gym
+scenario passed all 9 deterministic checks plus both semantic judges.
+
+Hao approved rollout, and runtime commit `3c589082` was deployed on 2026-07-30.
+The staged and installed binaries had the same SHA-256 hash, the deploy marker
+cleared, May, Web, and maintenance remained running, and the Web surface
+returned HTTP 200. The next natural late source-session result remains the
+visible Telegram reply-edge proof.
 
 Keep the broader conversation view and app-task reconciliation separate. The
 narrow CLI fallback does not justify a new request table, scheduler, daemon, or
@@ -790,7 +797,8 @@ generic completion abstraction.
   human message by trace from the durable index. A tested candidate also
   recovers an idle source session from persisted metadata, including strict
   legacy `telegram:<id>` request records, without guessing a newer trace target.
-  Rollout is pending approval.
+  The candidate is deployed; live reply-edge proof awaits the next applicable
+  late result.
 - There is no conversation context reader that resolves an anchor or named
   subject and assembles focused owner state, evidence, related messages,
   neighboring open requests, and preferences for a fresh bounded May turn.

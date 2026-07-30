@@ -843,9 +843,11 @@ the result on the same trace. Final owner-task closeout still needs the broader
 async completion fallback described in the human-control design.
 
 Late tool results now carry their exact source session. A tested rollout
-candidate recovers that session's reply target from durable metadata after the
-session goes idle and safely handles legacy Telegram request ids. Deployment
-and live Telegram proof remain pending approval.
+recovers that session's reply target from durable metadata after the session
+goes idle and safely handles legacy Telegram request ids. Hao approved it, and
+runtime commit `3c589082` is deployed. Service, binary-hash, deploy-marker, and
+HTTP checks passed. Live Telegram reply-edge proof awaits the next applicable
+late result.
 
 ## Noise Control
 
