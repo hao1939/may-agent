@@ -29,6 +29,20 @@ Every trial has three distinct states:
 Runtime or scorer failures are `invalid`; they are never counted as agent
 failures or passes. Machine results are evidence, not human-approved truth.
 
+Gym tests three different layers. Passing one does not imply the others pass:
+
+1. **Preference** — what the agent says it understands in a decision artifact.
+2. **Agent behavior** — what the agent actually applies across one or more
+   turns, including clarification, routing, follow-up, and human communication.
+3. **Runtime behavior** — whether request traces, owner tasks, completion
+   evidence, reply targets, and deduplication survive execution-session loss.
+
+Behavior and runtime scenarios score the full trajectory. Their ground truth
+includes accepted action receipts and final durable state, not only
+`alignment-decision.json`. A final answer cannot repair an action that was
+never applied, was attached to the wrong request, or produced a duplicate
+human message.
+
 ## Ground truth and evaluation
 
 The right answer does not come from the agent or from the run report. It has

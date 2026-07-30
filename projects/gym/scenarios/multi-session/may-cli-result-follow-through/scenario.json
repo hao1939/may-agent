@@ -1,0 +1,17 @@
+{
+  "name": "may-cli-result-follow-through",
+  "description": "May reviews a completed CLI result in a fresh session after the original Telegram session is gone.",
+  "categories": ["deputy-learning", "conversation", "follow-through"],
+  "tags": ["may-agent", "telegram", "cli", "session-loss", "runtime-regression"],
+  "tier": "standard",
+  "timeout": 8,
+  "agent_type": "may",
+  "sessions": [
+    {
+      "id": "review-completed-result",
+      "task": "turn-1/task.md",
+      "environment": "turn-1",
+      "artifacts_out": ["alignment-decision.json"]
+    }
+  ]
+}

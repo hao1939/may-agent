@@ -1,0 +1,25 @@
+{
+  "traceId": "trace-app-review-cli",
+  "latestHumanMessageId": 45967,
+  "originalRequest": {
+    "text": "Review app status and suggest how to make them work harder. You may use Codex for a second opinion.",
+    "authority": "review-and-propose"
+  },
+  "completion": {
+    "eventType": "cli.task.completed",
+    "taskId": "cli-app-status-review",
+    "tool": "codex",
+    "sourceSessionStatus": "gone",
+    "resultPath": "evidence/codex-review.md"
+  },
+  "evidence": [
+    {
+      "ref": "metrics-snapshot",
+      "fact": "Evaluation has ready work below its configured active capacity; Gym has attention items and needs valid-run proof."
+    },
+    {
+      "ref": "task-state",
+      "fact": "AKS is actively draining owned work and Scout output is healthy under intentional serialization."
+    }
+  ]
+}

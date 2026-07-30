@@ -506,8 +506,10 @@ Recommended flow:
 6. Otherwise, approval and escalation replies go to May so May can understand
    the human's intention before changing state.
 7. For normal language, command router starts a bounded May turn with the
-   resolved request and relevant conversation context. Only an explicit
-   session-control command targets an execution session directly.
+   resolved request, stable `conversationId`, incoming `channelMessageId`, and
+   relevant conversation context. These values are immutable session context,
+   not a shared "next reply" slot. Only an explicit session-control command
+   targets an execution session directly.
 8. May answers, delegates to the app owner, changes direction, asks one focused
    question, or closes the request.
 9. Transport replies to the incoming human message for an immediate answer.

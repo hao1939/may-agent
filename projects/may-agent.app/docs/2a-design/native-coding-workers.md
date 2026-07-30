@@ -334,6 +334,13 @@ cli.task.orphaned {
 `cli.task.requested` targets `runtime:cli-task-runner`. Terminal events return
 to `sourceOwner`, usually the agent that requested the worker.
 
+For a May-owned worker started from Telegram, the originating trace is part of
+the durable CLI record. A live source May session receives the terminal update.
+If that session is gone, the runtime may start one fresh May result-review turn
+on the same trace and latest indexed human reply target. That review judges the
+artifact before replying; it does not forward the raw worker result or infer
+new authority. This is a narrow recovery path, not a generic task store.
+
 ## State Semantics
 
 The CLI task state describes the worker process, not the project outcome.
