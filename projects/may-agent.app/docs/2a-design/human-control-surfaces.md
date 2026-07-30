@@ -6,16 +6,16 @@ socket, and console ingress exist. The deployed Telegram path gives ordinary
 input a fresh bounded May turn, stores inbound and outbound trace links in the
 existing message index, captures each turn's reply target in immutable session
 context, and recovers a reply target after restart. May-owned Telegram CLI
-results also get one fresh review when their source session is gone. A tested,
-undeployed candidate puts proactive messages and child summaries behind May's
-admission review. Another tested, undeployed candidate gives a fresh Telegram
-turn the focused trace/task, latest durable evidence, and bounded nearby
-conversation. The seven-case approved Gym proof is complete. Full owner-task
+results also get one fresh review when their source session is gone. Proactive
+messages and child summaries now wait behind May's enforced admission review.
+Fresh Telegram turns receive focused trace/task evidence and bounded nearby
+conversation. The seven-case approved Gym proof and live fail-closed proof are
+complete. Full owner-task
 reconciliation, broader async
 completion handling, and session-independent caller identity still have
-convergence gaps described below. A third tested, undeployed candidate wakes a
-fresh May verification turn when a human-linked app task reaches `converged` or
-`attention`. Legacy socket frames remain compatibility ingress.
+convergence gaps described below. A fresh May verification turn now wakes when
+a human-linked app task reaches `converged` or `attention`. Legacy socket frames
+remain compatibility ingress.
 **Aligned with**: `events.md`, `sessions.md`, `runtime.md`, `may-console.md`, `webui.md`
 
 ## Purpose
@@ -859,14 +859,13 @@ generic completion abstraction.
   and materializes the small human-linked task set; it ran in about 5 ms on the
   2.2 GB live database. Missed checkpoints before a task becomes terminal
   remain outside this invariant.
-- A tested, undeployed candidate holds proactive messages, alerts, and
-  child-session summaries until May reviews them; only `deliver` sends May's
-  reviewed text, and review failure retries once then fails closed. The
-  transport and end-to-end tests pass. All seven approved Gym cases pass eight
-  deterministic gates and both semantic judges. Two initially incomplete
-  closure answers produced correct judge disagreement; after a short May
-  pre-finish checklist was added, both reruns passed. The enforcement candidate
-  is ready for explicit rollout approval.
+- The deployed path holds proactive messages, alerts, and child-session
+  summaries until May reviews them; only `deliver` sends May's reviewed text,
+  and review failure retries once then fails closed. All seven approved Gym
+  cases pass eight deterministic gates and both semantic judges. Commit
+  `a93fbd7f` also guarantees admission attaches before external ingress and
+  cron startup. Live source event `4667365` produced enforced audit `4667420`
+  with no Telegram delivery.
 - Gym's daily Telegram field review is active and checkpointed. Its
   2026-07-30 run reviewed 11 completed interactions and retained five strong
   signals. The enforcement rollout must prove that this review continues to

@@ -5,15 +5,13 @@
 conversation identity, inbound/outbound trace links, bounded ordinary turns,
 concurrent reply targets, immutable per-session reply context, restart-safe
 reply lookup, exact per-tool caller identity, and a narrow May-owned CLI
-completion fallback. A tested, undeployed candidate puts proactive messages,
-alerts, and child-session summaries behind May's admission review. Its seven
-approved Gym cases now pass all deterministic gates and both semantic judges.
-Broader async completion handling still remains. A separate
-tested, undeployed context candidate gives fresh Telegram turns the exact
+completion fallback. Proactive messages, alerts, and child-session summaries
+now wait behind May's enforced admission review. Its seven approved Gym cases
+pass all deterministic gates and both semantic judges. Broader async
+completion handling still remains. Fresh Telegram turns receive exact
 trace/task focus, latest durable evidence, and bounded nearby conversation.
-A tested, undeployed follow-through candidate also wakes one fresh May review
-when a human-linked app task converges or needs attention.
-An accompanying integrity check keeps a terminal human-linked task visible
+One fresh May review also wakes when a human-linked app task converges or needs
+attention. An integrity check keeps a terminal human-linked task visible
 until that May closeout is delivered.
 
 ## Purpose
@@ -43,13 +41,12 @@ clear.
 
 ## Implementation Posture
 
-Telegram ingress, delivery, stored reply metadata, exact short controls, and a
-May attention review exist. A tested, undeployed enforcement candidate fails
-closed and sends only May's reviewed text. Its approved Gym proof is complete.
+Telegram ingress, delivery, stored reply metadata, exact short controls, and
+May attention enforcement exist. The gate fails closed and sends only May's
+reviewed text. Its approved Gym proof and live rollout proof are complete.
 Complete owner-task conversation resolution, session-independent completion,
 reviewed closeout, narrow command failure, and noise control remain convergence
-work. The focused trace/event context and human-linked app-result wake are
-tested, undeployed candidates.
+work.
 The current gap list lives in
 [human-control-surfaces.md](human-control-surfaces.md#runtime-convergence-gaps)
 so this accepted contract stays focused on target behavior.
@@ -170,6 +167,11 @@ current message and records what May would have done. In enforcement mode it
 delivers only a successful `deliver` review. Review failure preserves the
 candidate and fails closed. Direct conversation responses bypass this check.
 
+Attach this check after May is registered but before opening socket/HTTP
+ingress or starting cron work. A durable event accepted before the admission
+subscriber exists is still a silent drop from the deputy, even if another
+transport prints it.
+
 ### Decision packet
 
 When May chooses `deliver`, the human message contains only what Hao needs to
@@ -283,8 +285,20 @@ rejected; a small May checklist fixed both reruns. Recent replay suppressed a
 recovered timeout and preserved the accepted Ops and Scout digest, with no
 critical authority violation in the proof set.
 
-The proof gate is complete. Keep the candidate undeployed until Hao explicitly
-approves enforcement rollout.
+Hao approved enforcement rollout. Runtime commits `ac7bc76e` through
+`4eeb6bf3` were deployed on 2026-07-30. The first smoke exposed a startup race:
+the control socket accepted events `4666830` and `4666832` before Telegram
+admission subscribed. Commit `a93fbd7f` moved admission ahead of external
+ingress and cron startup and added an ordering regression. The clean deployed
+binary hash is
+`19df585a748dab1b5876b20785f5eea779294342ce5929b2cd10c8feb01b1b63`.
+
+Post-fix source event `4667365` immediately started a live May review and
+produced enforced audit event `4667420`: `admitted=false`, `delivered=false`.
+No Telegram notification row or Telegram delivery event was created. May
+omitted required action/closure fields twice, so the runtime recorded review
+failure and still failed closed. Keep that behavioral miss in the daily Gym
+review; it does not reopen transport rollout.
 
 Measure:
 
