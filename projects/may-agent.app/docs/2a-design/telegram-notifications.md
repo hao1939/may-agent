@@ -7,8 +7,9 @@ concurrent reply targets, immutable per-session reply context, restart-safe
 reply lookup, exact per-tool caller identity, and a narrow May-owned CLI
 completion fallback. A tested, undeployed candidate puts proactive messages,
 alerts, and child-session summaries behind May's admission review. Approved
-Gym proof, focused owner context, and broader async completion handling still
-remain.
+Gym proof and broader async completion handling still remain. A separate
+tested, undeployed context candidate gives fresh Telegram turns the exact
+trace/task focus, latest durable evidence, and bounded nearby conversation.
 
 ## Purpose
 
@@ -40,8 +41,9 @@ clear.
 Telegram ingress, delivery, stored reply metadata, exact short controls, and a
 May attention review exist. A tested, undeployed enforcement candidate fails
 closed and sends only May's reviewed text. Approved Gym proof,
-conversation-view resolution, session-independent completion, reviewed
-closeout, narrow command failure, and noise control remain convergence work.
+complete owner-task conversation resolution, session-independent completion,
+reviewed closeout, narrow command failure, and noise control remain convergence
+work. The focused trace/event context slice is a tested, undeployed candidate.
 The current gap list lives in
 [human-control-surfaces.md](human-control-surfaces.md#runtime-convergence-gaps)
 so this accepted contract stays focused on target behavior.

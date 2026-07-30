@@ -8,8 +8,10 @@ existing message index, captures each turn's reply target in immutable session
 context, and recovers a reply target after restart. May-owned Telegram CLI
 results also get one fresh review when their source session is gone. A tested,
 undeployed candidate puts proactive messages and child summaries behind May's
-admission review. Approved Gym proof, focused owner-state context, broader
-async completion handling, and session-independent caller identity still have
+admission review. Another tested, undeployed candidate gives a fresh Telegram
+turn the focused trace/task, latest durable evidence, and bounded nearby
+conversation. Approved Gym proof, full owner-task reconciliation, broader async
+completion handling, and session-independent caller identity still have
 convergence gaps described below. Legacy socket frames remain compatibility
 ingress.
 **Aligned with**: `events.md`, `sessions.md`, `runtime.md`, `may-console.md`, `webui.md`
@@ -823,9 +825,12 @@ generic completion abstraction.
   legacy `telegram:<id>` request records, without guessing a newer trace target.
   The candidate is deployed, and live message `45998` proved the legacy
   recovery path against several newer competing human messages.
-- There is no conversation context reader that resolves an anchor or named
-  subject and assembles focused owner state, evidence, related messages,
-  neighboring open requests, and preferences for a fresh bounded May turn.
+- A tested, undeployed conversation reader uses the already-resolved Telegram
+  reply trace/task, existing event trace, and message index to assemble the
+  focused project, owner, state, latest durable evidence, and a bounded nearby
+  conversation for a fresh May turn. It creates no new request state and never
+  routes by text similarity. Named-subject fallback, canonical app-task detail,
+  neighboring open-request summaries, and filtered preference retrieval remain.
 - Tool execution now uses exact async session context and carries the source
   session on outbound messages. The old mutable per-agent value remains only as
   a compatibility fallback outside a running tool call. Live proof confirmed
