@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import {
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readdirSync,
   rmSync,
@@ -67,5 +68,47 @@ describe("importRuntimeModule", () => {
     expect(await mod.loadValue()).toBe("relative-ok");
     expect(readdirSync(root).some((name) => name.startsWith(".may-runtime-module-"))).toBe(false);
     expect(existsSync(join(root, ".state", "runtime-modules"))).toBe(true);
+  });
+
+  it("prefers the declared file dependency over a stale installed SDK copy", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-runtime-import-file-sdk-"));
+    roots.push(root);
+
+    const sourceSdk = join(root, "packages", "sdk", "src");
+    const installedSdk = join(root, "node_modules", "@may-agent", "sdk", "src");
+    mkdirSync(sourceSdk, { recursive: true });
+    mkdirSync(installedSdk, { recursive: true });
+    writeFileSync(
+      join(root, "package.json"),
+      JSON.stringify({ dependencies: { "@may-agent/sdk": "file:packages/sdk" } }),
+    );
+    writeFileSync(join(sourceSdk, "index.ts"), "export const sdkMarker = 'current-source';\n");
+    writeFileSync(join(installedSdk, "index.ts"), "export const sdkMarker = 'stale-install';\n");
+
+    const modulePath = join(root, "external-handler.ts");
+    writeFileSync(
+      modulePath,
+      `
+        import { sdkMarker } from "@may-agent/sdk";
+        export function marker(): string { return sdkMarker; }
+      `,
+    );
+
+    const previousProjectRoot = process.env.PROJECT_ROOT;
+    const previousSdkRoot = process.env.MAY_AGENT_SDK_ROOT;
+    process.env.PROJECT_ROOT = root;
+    delete process.env.MAY_AGENT_SDK_ROOT;
+    try {
+      const mod = await importRuntimeModule<{ marker(): string }>(modulePath, {
+        forceBundle: true,
+        cacheDir: join(root, ".cache"),
+      });
+      expect(mod.marker()).toBe("current-source");
+    } finally {
+      if (previousProjectRoot === undefined) delete process.env.PROJECT_ROOT;
+      else process.env.PROJECT_ROOT = previousProjectRoot;
+      if (previousSdkRoot === undefined) delete process.env.MAY_AGENT_SDK_ROOT;
+      else process.env.MAY_AGENT_SDK_ROOT = previousSdkRoot;
+    }
   });
 });
