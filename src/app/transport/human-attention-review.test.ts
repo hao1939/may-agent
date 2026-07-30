@@ -13,10 +13,16 @@ function manager(result: Record<string, unknown>): SubagentManager {
 test("teaches decision packets and useful digests as different deliveries", async () => {
   let task = "";
   let toolPolicy = "";
+  let outputSchema: Record<string, unknown> | undefined;
   const reviewManager = {
-    async callAgent(_agent: string, prompt: string, options: { toolPolicy?: string }) {
+    async callAgent(
+      _agent: string,
+      prompt: string,
+      options: { toolPolicy?: string; outputSchema?: Record<string, unknown> },
+    ) {
       task = prompt;
       toolPolicy = options.toolPolicy ?? "";
+      outputSchema = options.outputSchema;
       return {
         status: "done",
         sessionId: "digest-review",
@@ -48,8 +54,14 @@ test("teaches decision packets and useful digests as different deliveries", asyn
   expect(task).toContain("track both access and diagnostic completion");
   expect(task).toContain("Deliver a later update only when");
   expect(task).toContain("perform one bounded action before finishing");
+  expect(task).toContain("A recovered proposal is handle");
   expect(task).toContain("Never contact Hao directly");
   expect(toolPolicy).toBe("full");
+  const variants = (outputSchema as { anyOf?: Array<{ required?: string[] }> })?.anyOf ?? [];
+  expect(variants).toHaveLength(3);
+  expect(variants.slice(0, 2).every((variant) => variant.required?.includes("actionTaken"))).toBe(true);
+  expect(variants.slice(0, 2).every((variant) => variant.required?.includes("closureCondition"))).toBe(true);
+  expect(variants[2]?.required).toContain("deliveredMessage");
 });
 
 test("returns May's structured human-attention judgment", async () => {
