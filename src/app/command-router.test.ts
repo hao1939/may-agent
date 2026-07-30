@@ -171,6 +171,16 @@ describe("command router human intent contract", () => {
         }),
       });
       bus.emit({
+        type: "project.owner.result",
+        source: "gym",
+        owner: "agent:may",
+        data: {
+          status: "waiting",
+          summary: "Gym is waiting for the provider to return model output.",
+        },
+        trace: { traceId: "trace-prior" },
+      } as any);
+      bus.emit({
         type: "human.input.received",
         source: "telegram",
         owner: "agent:may",
@@ -184,7 +194,15 @@ describe("command router human intent contract", () => {
             channelMessageId: 501,
           },
           target: { agent: "may", sessionId: "s_old" },
-          context: { conversationId: "telegram:chat:123:topic:0:agent:may" },
+          context: {
+            conversationId: "telegram:chat:123:topic:0:agent:may",
+            telegramReply: {
+              conversationId: "telegram:chat:123:topic:0:agent:may",
+              traceId: "trace-prior",
+              taskId: "learning/gym-run",
+              projectId: "gym",
+            },
+          },
         },
       });
 
@@ -213,6 +231,10 @@ describe("command router human intent contract", () => {
       expect(runs[0]?.text).toContain("review the apps and suggest what to do next");
       expect(runs[0]?.text).toContain("Recent Telegram context");
       expect(runs[0]?.text).toContain("Gym is training while AKS waits on proof.");
+      expect(runs[0]?.text).toContain("Focused request (system-provided durable view)");
+      expect(runs[0]?.text).toContain("Trace: trace-prior");
+      expect(runs[0]?.text).toContain("Owner task: learning/gym-run");
+      expect(runs[0]?.text).toContain("Gym is waiting for the provider to return model output.");
     } finally {
       unsubscribe();
       router.close();

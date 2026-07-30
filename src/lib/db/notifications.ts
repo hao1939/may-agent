@@ -20,6 +20,30 @@ export type TelegramConversationMessage = {
   sentAt: number;
 };
 
+export type TelegramFocusedEvent = {
+  eventId: number;
+  type: string;
+  timestamp: number;
+  owner?: string;
+  taskId?: string;
+  projectId?: string;
+  status?: string;
+  summary?: string;
+};
+
+export type TelegramConversationView = {
+  conversationId: string;
+  focus: {
+    traceId?: string;
+    taskId?: string;
+    projectId?: string;
+    owner?: string;
+    status?: string;
+    events: TelegramFocusedEvent[];
+  } | null;
+  recentMessages: TelegramConversationMessage[];
+};
+
 export function storeNotificationMessage(
   persistDir: string,
   record: Omit<NotificationMessageRecord, "sent_at"> & { sent_at?: number },
@@ -128,5 +152,111 @@ export function getRecentTelegramConversationMessages(
     });
   } catch {
     return [];
+  }
+}
+
+function nonEmpty(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function eventSummary(data: Record<string, unknown>): string | undefined {
+  for (const key of ["summary", "outcome", "reason", "message", "content", "requestedAction"]) {
+    const value = nonEmpty(data[key]);
+    if (value) return value.slice(0, 600);
+  }
+  return undefined;
+}
+
+/**
+ * Assemble a compact read-only view for one Telegram turn from existing truth.
+ *
+ * The caller resolves the reply anchor first and supplies its trace/task links.
+ * This function adds recent channel messages and the latest durable facts on
+ * that exact request. It does not create conversation or request state.
+ */
+export function getTelegramConversationView(
+  persistDir: string,
+  input: {
+    conversationId: string;
+    traceId?: string;
+    taskId?: string;
+    projectId?: string;
+    messageLimit?: number;
+    eventLimit?: number;
+  },
+): TelegramConversationView {
+  const conversationId = input.conversationId.trim();
+  const traceId = nonEmpty(input.traceId);
+  const taskId = nonEmpty(input.taskId);
+  const projectId = nonEmpty(input.projectId);
+  const recentMessages = conversationId
+    ? getRecentTelegramConversationMessages(persistDir, conversationId, input.messageLimit ?? 8)
+    : [];
+  if (!traceId && !taskId) return { conversationId, focus: null, recentMessages };
+
+  const eventLimit = Math.max(1, Math.min(20, Math.floor(input.eventLimit ?? 10)));
+  try {
+    const db = getDb(persistDir);
+    const rows = traceId
+      ? db
+          .prepare(
+            `SELECT e.id, e.event_type, e.timestamp, e.owner, e.task_id,
+                    e.project_id, e.subject_status, e.data
+               FROM events e
+               JOIN event_traces trace ON trace.event_id = e.id
+              WHERE trace.trace_id = ?
+              ORDER BY e.id DESC
+              LIMIT ?`,
+          )
+          .all(traceId, eventLimit)
+      : db
+          .prepare(
+            `SELECT e.id, e.event_type, e.timestamp, e.owner, e.task_id,
+                    e.project_id, e.subject_status, e.data
+               FROM events e
+              WHERE e.task_id = ?
+              ORDER BY e.id DESC
+              LIMIT ?`,
+          )
+          .all(taskId!, eventLimit);
+    const events = (rows as Array<Record<string, unknown>>).reverse().map((row) => {
+      let data: Record<string, unknown> = {};
+      try {
+        data = typeof row.data === "string" ? JSON.parse(row.data) : {};
+      } catch {
+        data = {};
+      }
+      return {
+        eventId: Number(row.id),
+        type: String(row.event_type),
+        timestamp: Number(row.timestamp),
+        ...(nonEmpty(row.owner) ? { owner: nonEmpty(row.owner) } : {}),
+        ...(nonEmpty(row.task_id) ? { taskId: nonEmpty(row.task_id) } : {}),
+        ...(nonEmpty(row.project_id) ? { projectId: nonEmpty(row.project_id) } : {}),
+        ...(nonEmpty(data.status) || nonEmpty(row.subject_status)
+          ? { status: nonEmpty(data.status) ?? nonEmpty(row.subject_status) }
+          : {}),
+        ...(eventSummary(data) ? { summary: eventSummary(data) } : {}),
+      } satisfies TelegramFocusedEvent;
+    });
+    const latest = events.at(-1);
+    return {
+      conversationId,
+      focus: {
+        ...(traceId ? { traceId } : {}),
+        ...(taskId ?? latest?.taskId ? { taskId: taskId ?? latest?.taskId } : {}),
+        ...(projectId ?? latest?.projectId ? { projectId: projectId ?? latest?.projectId } : {}),
+        ...(latest?.owner ? { owner: latest.owner } : {}),
+        ...(latest?.status ? { status: latest.status } : {}),
+        events,
+      },
+      recentMessages,
+    };
+  } catch {
+    return {
+      conversationId,
+      focus: { ...(traceId ? { traceId } : {}), ...(taskId ? { taskId } : {}), ...(projectId ? { projectId } : {}), events: [] },
+      recentMessages,
+    };
   }
 }
