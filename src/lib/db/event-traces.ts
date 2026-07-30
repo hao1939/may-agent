@@ -26,6 +26,7 @@ export type EventTraceIntegrity = {
   pairTraceSplitCount: number;
   humanRootWithoutSingleIntentCount: number;
   humanResultUndeliveredCount: number;
+  humanLinkedTaskWithoutCloseoutCount: number;
   bookkeepingOnlyAcceptanceCount: number;
   structuralOk: boolean;
   semanticOk: boolean;
@@ -597,6 +598,48 @@ export function checkEventTraceIntegrity(db: SqliteDb): EventTraceIntegrity {
            JOIN event_traces delivery_trace ON delivery_trace.event_id = delivery.id
            WHERE delivery.event_type = 'channel.delivery.completed'
              AND delivery_trace.trace_id = terminal_trace.trace_id
+       )`,
+    ),
+    humanLinkedTaskWithoutCloseoutCount: count(
+      db,
+      `WITH humanTraces AS MATERIALIZED (
+         SELECT DISTINCT trace.trace_id
+         FROM events humanRoot
+         JOIN event_traces trace ON trace.event_id = humanRoot.id
+         WHERE humanRoot.event_type = 'human.input.received'
+       ),
+       humanTasks AS MATERIALIZED (
+         SELECT json_extract(taskRef.value, '$.taskId') AS taskId,
+                json_extract(taskRef.value, '$.projectId') AS projectId
+         FROM events ownerResult
+         JOIN event_traces ownerTrace ON ownerTrace.event_id = ownerResult.id
+         JOIN humanTraces ON humanTraces.trace_id = ownerTrace.trace_id
+         JOIN json_each(ownerResult.data, '$.taskRefs') taskRef
+         WHERE ownerResult.event_type = 'project.owner.reviewed'
+       )
+       SELECT COUNT(DISTINCT terminal.id) AS c
+       FROM humanTasks human
+       CROSS JOIN events terminal INDEXED BY idx_events_type
+       WHERE terminal.event_type = 'project.task.reconciled'
+         AND terminal.task_id = human.taskId
+         AND (terminal.project_id IS NULL OR terminal.project_id = human.projectId)
+         AND json_extract(terminal.data, '$.disposition') IN ('converged', 'attention')
+         AND NOT EXISTS (
+           SELECT 1
+           FROM event_traces reviewTrace
+           JOIN events reviewStart ON reviewStart.id = reviewTrace.event_id
+           WHERE reviewTrace.parent_event_id = terminal.id
+             AND reviewStart.event_type = 'session.start'
+             AND reviewStart.owner = 'agent:may'
+             AND EXISTS (
+               SELECT 1
+               FROM events delivery
+               JOIN event_traces deliveryTrace ON deliveryTrace.event_id = delivery.id
+               WHERE delivery.event_type = 'channel.delivery.completed'
+                 AND delivery.id > terminal.id
+                 AND deliveryTrace.trace_id = reviewTrace.trace_id
+                 AND json_extract(delivery.data, '$.sessionId') = json_extract(reviewStart.data, '$.sessionId')
+             )
          )`,
     ),
     bookkeepingOnlyAcceptanceCount: count(
@@ -625,6 +668,7 @@ export function checkEventTraceIntegrity(db: SqliteDb): EventTraceIntegrity {
     result.pairTraceSplitCount === 0 &&
     result.humanRootWithoutSingleIntentCount === 0 &&
     result.humanResultUndeliveredCount === 0 &&
+    result.humanLinkedTaskWithoutCloseoutCount === 0 &&
     result.bookkeepingOnlyAcceptanceCount === 0;
   result.ok = result.structuralOk && result.semanticOk;
   return result;
