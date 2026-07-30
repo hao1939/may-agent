@@ -827,7 +827,7 @@ generic completion abstraction.
   legacy `telegram:<id>` request records, without guessing a newer trace target.
   The candidate is deployed, and live message `45998` proved the legacy
   recovery path against several newer competing human messages.
-- A tested, undeployed conversation reader uses the already-resolved Telegram
+- The deployed conversation reader uses the already-resolved Telegram
   reply trace/task, existing event trace, and message index to assemble the
   focused project, owner, state, latest durable evidence, and a bounded nearby
   conversation for a fresh May turn. It creates no new request state and never
@@ -847,13 +847,13 @@ generic completion abstraction.
 - A May chat turn can launch async work and promise a later result without
   first establishing a linked owner task, completion wake, proof condition, or
   missed-progress checkpoint.
-- A tested, undeployed follow-through candidate joins a terminal
+- Deployed follow-through joins a terminal
   `project.task.reconciled` fact to the existing `project.owner.reviewed` task
   reference and original Telegram trace. For `converged` or `attention`, it
   starts one deduplicated fresh May review on the original request; `waiting`
   progress and tasks without a human link stay silent. Missed-checkpoint and
   stale open-branch reconciliation remain.
-- A tested, undeployed integrity check reports every terminal human-linked app
+- The deployed integrity check reports every terminal human-linked app
   task until a May review started from that exact terminal event produces a
   delivered closeout on the original trace. The query uses indexed event types
   and materializes the small human-linked task set; it ran in about 5 ms on the
