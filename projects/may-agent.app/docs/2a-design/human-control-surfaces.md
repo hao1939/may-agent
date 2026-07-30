@@ -727,12 +727,15 @@ contained a correction produced by earlier May work but replied to newer input
 so overlapping May sessions could label a tool call with another session and
 then fall back to the newest message on their shared conversation trace.
 
-Candidate commit `5673f369` binds every tool execution to its own session using
+Commit `5673f369` binds every tool execution to its own session using
 async execution context. The message event carries that exact source session,
 and Telegram prefers the source session's immutable reply target over a trace
 fallback. The exact overlapping-session regression, focused Telegram and
-lifecycle suites, TypeScript, and the full 2,074-test CI suite pass. This
-candidate remains undeployed until Hao approves rollout.
+lifecycle suites, TypeScript, and the full 2,074-test CI suite pass. Hao
+approved rollout, and the commit was deployed on 2026-07-30. The installed
+binary matched the staged binary, the deploy marker cleared, and May, Web, and
+maintenance returned healthy. The next applicable late tool message remains
+the live Telegram proof.
 
 Keep the broader conversation view and app-task reconciliation separate. The
 narrow CLI fallback does not justify a new request table, scheduler, daemon, or
@@ -765,10 +768,11 @@ generic completion abstraction.
 - There is no conversation context reader that resolves an anchor or named
   subject and assembles focused owner state, evidence, related messages,
   neighboring open requests, and preferences for a fresh bounded May turn.
-- Deployed tool factories still have one mutable per-agent caller identity.
-  Candidate `5673f369` replaces that lookup during tool execution with exact
-  async session context and carries the source session on outbound messages.
-  It has proof but still needs rollout and live verification.
+- Tool execution now uses exact async session context and carries the source
+  session on outbound messages. The old mutable per-agent value remains only as
+  a compatibility fallback outside a running tool call. The regression proof
+  and rollout are complete; live verification awaits the next applicable late
+  tool message.
 - CLI-task completion has a deployed fallback for May-owned Telegram work:
   preserve the original trace, reuse a live source session, or start one
   deduplicated fresh May review when that session is gone. The fallback
