@@ -844,10 +844,12 @@ generic completion abstraction.
   above.
 - CLI-task completion has a deployed fallback for May-owned Telegram work:
   preserve the original trace, reuse a live source session, or start one
-  deduplicated fresh May review when that session is gone. The fallback
-  currently uses the latest indexed inbound message on that trace; it does not
-  yet resolve a linked app task or assemble the full prepared context packet
-  described above.
+  deduplicated fresh May review when that session is gone. Commit `3f43ddbf`
+  now gives that fresh review the existing durable conversation view: exact
+  trace, available task/project links, recent durable events, and a bounded
+  Telegram window. It adds no request state. Fourteen focused tests and
+  TypeScript pass; the clean deployed binary hash is
+  `06596f1d519e991a2a50a033a907c3e48242934793f05187369874c60d8f1251`.
 - May's deputy rule and Gym contract now reject a later-result promise until
   the accepted branch names its owner task or worker, terminal proof,
   completion wake, and missed-progress checkpoint. The strengthened
