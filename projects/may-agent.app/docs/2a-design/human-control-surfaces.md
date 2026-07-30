@@ -792,7 +792,9 @@ The narrow candidate applies that rule at startup. It leaves generic session
 recovery unchanged, resumes running chat work, retires idle chat sessions, and
 lets the next human input start a fresh bounded turn. Full CI passed 2,079 tests
 with zero failures. The May follow-through Gym scenario passed all 9 behavior
-checks and both semantic judges. Rollout still requires Hao's approval.
+checks and both semantic judges. Hao approved rollout and runtime commit
+`6faa9fbd` was deployed. The later `66e5d944` deployment restart started no
+legacy chat turn and emitted no old chat reply.
 
 Keep the broader conversation view and app-task reconciliation separate. The
 narrow CLI fallback does not justify a new request table, scheduler, daemon, or
@@ -809,10 +811,11 @@ generic completion abstraction.
   deployed Telegram path treats a session as one bounded execution:
   ordinary language starts a new turn, while only explicit `/steer` targets an
   execution session.
-- Startup recovery currently resumes completed idle chat sessions as if their
-  old prompt still needed work. This produced live message `45998` after the
-  rollout restart. A tested candidate retires idle chat sessions while still
-  resuming chat work that was running when the process stopped.
+- Startup recovery now retires completed idle chat turns while still resuming
+  chat work that was running when the process stopped. Commit `6faa9fbd`
+  removed the defect that produced old live message `45998`; the later
+  `66e5d944` deployment restart started no legacy chat turn and emitted no old
+  chat reply.
 - `notification_messages` now indexes inbound and outbound Telegram messages,
   reply edges, stable chat/topic/May conversation identity, and available
   trace/task links without adding a table. A seven-day replay had found traces
