@@ -292,45 +292,50 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     reason: `Gym review ${requestKey} is ready for a human decision.`,
     expectedResponse: approval.expectedResponse,
   });
-  ctx.dispatchEvent("message.created", {
-    to: "human",
-    from: "gym",
-    project: "gym",
-    projectId: "projects/gym.app",
-    projectPath: "projects/gym.app",
-    taskId,
-    taskGeneration: generation,
-    content: [
-      "Gym review ready",
-      "",
-      `Review: ${reviewPath}`,
-      "Decision: approve or reject this proposal.",
-    ].join("\n"),
-    priority: "P1",
-    intent: "gym-approval",
-    approval: {
-      kind: "review-proposal",
-      approvalId: approval.approvalId,
-      waitId: approval.waitId,
+  const existingHumanDecision = String(details.approvedBy ?? "").trim();
+  if (!existingHumanDecision) {
+    ctx.dispatchEvent("message.created", {
+      to: "human",
+      from: "gym",
+      project: "gym",
+      projectId: "projects/gym.app",
+      projectPath: "projects/gym.app",
       taskId,
       taskGeneration: generation,
+      content: [
+        "Gym review ready",
+        "",
+        `Review: ${reviewPath}`,
+        "Decision: approve or reject this proposal.",
+      ].join("\n"),
+      priority: "P1",
+      intent: "gym-approval",
+      approval: {
+        kind: "review-proposal",
+        approvalId: approval.approvalId,
+        waitId: approval.waitId,
+        taskId,
+        taskGeneration: generation,
+        artifactFingerprint: approval.artifactFingerprint,
+        packetPath: reviewPath,
+        question: "Approve or reject this Gym review proposal.",
+        directEvent: approval.expectedResponse,
+      },
+      approvalKind: "review-proposal",
+      approvalId: approval.approvalId,
+      waitId: approval.waitId,
       artifactFingerprint: approval.artifactFingerprint,
       packetPath: reviewPath,
-      question: "Approve or reject this Gym review proposal.",
-      directEvent: approval.expectedResponse,
-    },
-    approvalKind: "review-proposal",
-    approvalId: approval.approvalId,
-    waitId: approval.waitId,
-    artifactFingerprint: approval.artifactFingerprint,
-    packetPath: reviewPath,
-    pathId: taskId,
-    requestedAction: "Approve or reject this Gym review proposal.",
-    reason: `Gym review ${requestKey} is ready for a human decision.`,
-    expectedResponse: approval.expectedResponse,
-    dedupKey: approval.approvalId,
-  });
-  const summary = `Prepared Gym review proposal at ${reviewPath} and requested one typed approval.`;
+      pathId: taskId,
+      requestedAction: "Approve or reject this Gym review proposal.",
+      reason: `Gym review ${requestKey} is ready for a human decision.`,
+      expectedResponse: approval.expectedResponse,
+      dedupKey: approval.approvalId,
+    });
+  }
+  const summary = existingHumanDecision
+    ? `Prepared Gym review proposal at ${reviewPath} and restored typed approval lineage from ${existingHumanDecision}.`
+    : `Prepared Gym review proposal at ${reviewPath} and requested one typed approval.`;
   return ctx.done(summary, {
     state: "waiting",
     summary,

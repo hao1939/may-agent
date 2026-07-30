@@ -190,3 +190,35 @@ test("approved review starts the existing improvement path", async () => {
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("approval recovery restores lineage without asking the human again", async () => {
+  const root = mkdtempSync(join(tmpdir(), "gym-review-recovery-"));
+  const emitted: Record<string, unknown>[] = [];
+  const dispatched: Record<string, unknown>[] = [];
+  try {
+    const result = await execute(
+      context({
+        task: task({
+          type: "gym.review.requested",
+          requestKey: "incident-42",
+          kind: "incident",
+          approvedBy: "telegram:46020",
+        }),
+        projectsRoot: join(root, "projects"),
+        emitted,
+        dispatched,
+      }),
+    );
+
+    expect(result).toMatchObject({
+      type: "done",
+      output: { state: "waiting" },
+    });
+    expect(
+      emitted.some((event) => event.type === "project.approval.requested"),
+    ).toBe(true);
+    expect(dispatched).toEqual([]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
