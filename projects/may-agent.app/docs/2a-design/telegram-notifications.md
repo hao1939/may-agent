@@ -12,6 +12,8 @@ tested, undeployed context candidate gives fresh Telegram turns the exact
 trace/task focus, latest durable evidence, and bounded nearby conversation.
 A tested, undeployed follow-through candidate also wakes one fresh May review
 when a human-linked app task converges or needs attention.
+An accompanying integrity check keeps a terminal human-linked task visible
+until that May closeout is delivered.
 
 ## Purpose
 

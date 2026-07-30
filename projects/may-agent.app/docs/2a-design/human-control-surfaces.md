@@ -852,10 +852,12 @@ generic completion abstraction.
   starts one deduplicated fresh May review on the original request; `waiting`
   progress and tasks without a human link stay silent. Missed-checkpoint and
   stale open-branch reconciliation remain.
-- Human-result integrity checks delivery of each immediate May session result.
-  The follow-through candidate puts its closeout turn on the original human
-  trace, but the integrity report still lacks one explicit invariant proving
-  that every terminal human-linked app branch produced that reviewed closeout.
+- A tested, undeployed integrity check reports every terminal human-linked app
+  task until a May review started from that exact terminal event produces a
+  delivered closeout on the original trace. The query uses indexed event types
+  and materializes the small human-linked task set; it ran in about 5 ms on the
+  2.2 GB live database. Missed checkpoints before a task becomes terminal
+  remain outside this invariant.
 - A tested, undeployed candidate holds proactive messages, alerts, and
   child-session summaries until May reviews them; only `deliver` sends May's
   reviewed text, and review failure retries once then fails closed. The
