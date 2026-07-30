@@ -89,6 +89,13 @@ describe("human result follow-through", () => {
     expect(runs[0]?.task).toContain("session that started this worker is gone");
     expect(runs[0]?.task).toContain("continues the same human request from the durable trace");
     expect(runs[0]?.task).toContain("Review the worker result before answering");
+    expect(runs[0]?.task).toContain("Durable request view");
+    expect(runs[0]?.task).toContain("Trace: trace-human-cli");
+    expect(runs[0]?.task).toContain("Linked task: cli-review-1");
+    expect(runs[0]?.task).toContain("Evidence #");
+    expect(runs[0]?.task).toContain("cli.task.completed");
+    expect(runs[0]?.task).toContain("Nearby Telegram messages");
+    expect(runs[0]?.task).toContain("Hao: Use Codex to review the design");
     expect(runs[0]?.task).toContain("Reply to Telegram message: 700");
   });
 
@@ -193,6 +200,10 @@ describe("human result follow-through", () => {
     expect(runs[0]?.task).toContain("Original human request");
     expect(runs[0]?.task).toContain("The approved review completed.");
     expect(runs[0]?.task).toContain("Verify the terminal outcome");
+    expect(runs[0]?.task).toContain("Durable request view");
+    expect(runs[0]?.task).toContain("Trace: trace-human-project");
+    expect(runs[0]?.task).toContain("Linked task: learning/review");
+    expect(runs[0]?.task).toContain("Nearby Telegram messages");
   });
 
   it("keeps waiting project progress silent and ignores tasks without a human link", () => {

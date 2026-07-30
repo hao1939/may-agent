@@ -1,6 +1,10 @@
 import { EVENT_ROW_ID, childEventTrace, eventData, type AgentEvent, type EventBus, type EventTrace } from "./event-bus.js";
 import { getDb } from "../lib/db/connection.js";
-import { getLatestInboundNotificationMessage } from "../lib/db/notifications.js";
+import {
+  getLatestInboundNotificationMessage,
+  getTelegramConversationView,
+  type TelegramConversationView,
+} from "../lib/db/notifications.js";
 import type { RunOptions } from "../lib/manager.js";
 
 type ReviewManager = {
@@ -45,6 +49,12 @@ export function attachHumanResultFollowThrough(opts: HumanResultFollowThroughOpt
       const conversationId = nonEmptyString(inboundData?.conversationId);
       const humanText = nonEmptyString(inboundData?.text);
       if (!conversationId || !humanText) return;
+      const conversationView = getTelegramConversationView(opts.persistDir, {
+        conversationId,
+        traceId: humanTraceId,
+        taskId,
+        projectId,
+      });
 
       const generation = positiveInteger(data.generation);
       const requestId = `human-result-review:project:${projectId ?? "unknown"}:${taskId}:${generation ?? "current"}`;
@@ -65,6 +75,7 @@ export function attachHumanResultFollowThrough(opts: HumanResultFollowThroughOpt
           humanText,
           conversationId,
           replyToMessageId: inbound.telegram_msg_id,
+          conversationView,
         }),
         {
           kind: "chat",
@@ -107,6 +118,12 @@ export function attachHumanResultFollowThrough(opts: HumanResultFollowThroughOpt
     const conversationId = nonEmptyString(inboundData?.conversationId);
     const humanText = nonEmptyString(inboundData?.text);
     if (!conversationId || !humanText) return;
+    const conversationView = getTelegramConversationView(opts.persistDir, {
+      conversationId,
+      traceId: trace.traceId,
+      taskId,
+      projectId: nonEmptyString(data.projectId) ?? undefined,
+    });
 
     const requestId = `human-result-review:cli:${taskId}`;
     if (startedRequestIds.has(requestId) || hasReviewSession(opts.persistDir, requestId)) {
@@ -128,6 +145,7 @@ export function attachHumanResultFollowThrough(opts: HumanResultFollowThroughOpt
       humanText,
       conversationId,
       replyToMessageId: inbound.telegram_msg_id,
+      conversationView,
     });
     opts.manager.run(interfaceAgent, prompt, {
       kind: "chat",
@@ -154,6 +172,7 @@ function buildProjectReviewPrompt(input: {
   humanText: string;
   conversationId: string;
   replyToMessageId: number;
+  conversationView: TelegramConversationView;
 }): string {
   const evidence = Array.isArray(input.data.evidence)
     ? input.data.evidence.map(String).filter(Boolean).slice(0, 8)
@@ -173,6 +192,7 @@ function buildProjectReviewPrompt(input: {
     `Disposition: ${nonEmptyString(input.data.disposition) ?? "unknown"}`,
     `Summary: ${nonEmptyString(input.data.summary) ?? "No summary"}`,
     ...(evidence.length ? ["Evidence:", ...evidence.map((item) => `- ${item}`)] : []),
+    ...conversationViewLines(input.conversationView),
     "",
     "Delivery context",
     `Conversation: ${input.conversationId}`,
@@ -188,6 +208,7 @@ function buildReviewPrompt(input: {
   humanText: string;
   conversationId: string;
   replyToMessageId: number;
+  conversationView: TelegramConversationView;
 }): string {
   const lines = [
     "May long-running result review",
@@ -215,6 +236,7 @@ function buildReviewPrompt(input: {
     if (value) lines.push(`${label}: ${value}`);
   }
   lines.push(
+    ...conversationViewLines(input.conversationView),
     "",
     "Delivery context",
     `Conversation: ${input.conversationId}`,
@@ -223,6 +245,26 @@ function buildReviewPrompt(input: {
     "Review the worker result before answering. Inspect the referenced evidence when needed. Do not forward raw worker output or treat worker completion as proof by itself. Reply in plain language with the verified result, replan missing proof, or ask only for a real authority decision. Preserve the original request scope.",
   );
   return lines.join("\n");
+}
+
+function conversationViewLines(view: TelegramConversationView): string[] {
+  const lines = ["", "Durable request view"];
+  if (view.focus?.traceId) lines.push(`Trace: ${view.focus.traceId}`);
+  if (view.focus?.taskId) lines.push(`Linked task: ${view.focus.taskId}`);
+  if (view.focus?.projectId) lines.push(`Project: ${view.focus.projectId}`);
+  if (view.focus?.owner) lines.push(`Current owner: ${view.focus.owner}`);
+  if (view.focus?.status) lines.push(`Current state: ${view.focus.status}`);
+  for (const event of view.focus?.events.slice(-6) ?? []) {
+    const detail = [event.type, event.status, event.summary].filter(Boolean).join(" — ");
+    lines.push(`Evidence #${event.eventId}: ${detail}`);
+  }
+  if (view.recentMessages.length) lines.push("Nearby Telegram messages (oldest to newest)");
+  for (const message of view.recentMessages.slice(-8)) {
+    const speaker = message.direction === "inbound" ? "Hao" : message.agent || "May";
+    lines.push(`${speaker}: ${message.text.slice(0, 400)}`);
+  }
+  lines.push("Use the trace and linked task before nearby wording. Nearby messages are context, not a new target.");
+  return lines;
 }
 
 function readPersistedTrace(persistDir: string, eventId: number | undefined): EventTrace | undefined {
