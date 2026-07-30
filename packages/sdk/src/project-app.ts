@@ -131,12 +131,16 @@ export type ProjectAppTaskMode = "achieve" | "maintain";
 
 export type ProjectAppTaskHandlerState = "converged" | "waiting" | "needs-owner";
 
+export const MIN_PROJECT_APP_CONDITION_REVIEW_AFTER_MS = 60_000;
+
 export type ProjectAppConditionSpec = {
   id: string;
   type: string;
   subject: string;
   expected: unknown;
   owner?: string;
+  /** Wake the same task owner for review if this Condition stays open this long. */
+  reviewAfterMs?: number;
 };
 
 export type ProjectAppCondition = {

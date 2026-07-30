@@ -928,7 +928,14 @@ export {
 } from "./heartbeat-data.js";
 
 // ── Project-app manifest/event helpers ───────────────────────────────
-export { defineProjectApp, eventData, eventDetails, eventString, matchesEventSelector } from "./project-app.js";
+export {
+  defineProjectApp,
+  eventData,
+  eventDetails,
+  eventString,
+  matchesEventSelector,
+  MIN_PROJECT_APP_CONDITION_REVIEW_AFTER_MS,
+} from "./project-app.js";
 export type {
   EventSelector,
   ProjectApp,
