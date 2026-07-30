@@ -11,6 +11,31 @@ function task(event: Record<string, unknown>): string {
   return `app: test\n\n## Trigger Event\n\n\`\`\`json\n${JSON.stringify(event, null, 2)}\n\`\`\``;
 }
 
+function reviewTask(event: Record<string, unknown>): string {
+  return [
+    "app: test",
+    "",
+    "## Reconciliation Task",
+    "```json",
+    JSON.stringify({
+      taskId: "runtime/review-proposal/s-e2e-failure",
+      generation: 1,
+      input: {
+        kind: event.kind,
+        requestKey: event.requestKey,
+        incidentId: event.incidentId,
+        incidentPath: event.incidentPath,
+      },
+    }),
+    "```",
+    "",
+    "## Trigger Event",
+    "```json",
+    JSON.stringify(event),
+    "```",
+  ].join("\n");
+}
+
 test("evaluation failure flows from app routing to a durable review proposal", async () => {
   const root = mkdtempSync(join(tmpdir(), "gym-app-e2e-"));
   const projectsRoot = join(root, "projects");
@@ -65,9 +90,9 @@ test("evaluation failure flows from app routing to a durable review proposal", a
   expect(existsSync(incidentPath)).toBe(true);
 
   const reviewEvents: Array<Record<string, unknown>> = [];
-  const notifications: string[] = [];
+  const reviewDispatches: Array<Record<string, unknown>> = [];
   const reviewCtx = {
-    task: task(intakeEvents[0]!),
+    task: reviewTask(intakeEvents[0]!),
     projectsRoot,
     async runAgent(agent: string, prompt: string, options: unknown) {
       expect(agent).toBe("gym");
@@ -90,11 +115,14 @@ test("evaluation failure flows from app routing to a durable review proposal", a
     emit(event: Record<string, unknown>) {
       reviewEvents.push(event);
     },
-    notify(message: string) {
-      notifications.push(message);
+    dispatchEvent(type: string, data: Record<string, unknown>) {
+      reviewDispatches.push({ type, ...data });
     },
-    done(summary: string) {
-      return { type: "done" as const, summary };
+    notify() {
+      throw new Error("typed review approval must replace plain notifications");
+    },
+    done(summary: string, output?: unknown) {
+      return { type: "done" as const, summary, output };
     },
     blocked(reason: string) {
       return { type: "blocked" as const, reason };
@@ -102,7 +130,7 @@ test("evaluation failure flows from app routing to a durable review proposal", a
   } as unknown as WorkflowContext;
   expect((await reviewAndPropose(reviewCtx)).type).toBe("done");
 
-  expect(reviewEvents).toHaveLength(1);
+  expect(reviewEvents).toHaveLength(2);
   expect(reviewEvents[0]).toMatchObject({
     type: "gym.review.ready",
     humanApprovalRequired: true,
@@ -111,5 +139,17 @@ test("evaluation failure flows from app routing to a durable review proposal", a
   expect(readFileSync(reviewPath, "utf8")).toContain(
     "Replay the correction, add a paraphrase, and add an opposite control",
   );
-  expect(notifications).toEqual([`Gym review ready: ${reviewPath}`]);
+  expect(reviewEvents[1]).toMatchObject({
+    type: "project.approval.requested",
+    approvalKind: "review-proposal",
+    packetPath: reviewPath,
+  });
+  expect(reviewDispatches).toEqual([
+    expect.objectContaining({
+      type: "message.created",
+      expectedResponse: expect.objectContaining({
+        type: "project.approval.submitted",
+      }),
+    }),
+  ]);
 });

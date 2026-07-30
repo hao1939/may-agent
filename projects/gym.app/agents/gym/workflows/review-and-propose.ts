@@ -1,8 +1,14 @@
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { Type } from "@earendil-works/pi-ai";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
-import { safeKey, triggerDetails } from "./lib/trigger";
+import {
+  reconciliationInput,
+  reconciliationPacket,
+  safeKey,
+  triggerDetails,
+} from "./lib/trigger";
 
 export const name = "review-and-propose";
 export const description =
@@ -53,9 +59,11 @@ function reviewProposal(result: {
       typeof value.text === "string" ? value.text : contentText(value.content),
     );
   }
-  return candidates
-    .map((candidate) => candidate.trim())
-    .sort((left, right) => right.length - left.length)[0] ?? "";
+  return (
+    candidates
+      .map((candidate) => candidate.trim())
+      .sort((left, right) => right.length - left.length)[0] ?? ""
+  );
 }
 
 function reviewPrompt(details: Record<string, unknown>): string {
@@ -88,11 +96,87 @@ function reviewPrompt(details: Record<string, unknown>): string {
     .join("\n");
 }
 
-export async function execute(
-  ctx: WorkflowContext,
-): Promise<WorkflowResult> {
-  const details = triggerDetails(ctx.task);
-  if (!details) return ctx.blocked("Review trigger event is missing or invalid");
+function reviewFingerprint(reviewPath: string): string {
+  return `sha256:${createHash("sha256").update(readFileSync(reviewPath)).digest("hex")}`;
+}
+
+function reviewApproval(input: {
+  requestKey: string;
+  taskId: string;
+  generation: number;
+  reviewPath: string;
+}) {
+  const artifactFingerprint = reviewFingerprint(input.reviewPath);
+  const approvalId = [
+    "gym",
+    "review-proposal",
+    input.requestKey,
+    `g${input.generation}`,
+    artifactFingerprint.slice(-16),
+  ].join(":");
+  const waitId = `wait:${approvalId}`;
+  const expectedResponse = {
+    type: "project.approval.submitted",
+    approvalKind: "review-proposal",
+    approvalId,
+    waitId,
+    taskId: input.taskId,
+    taskGeneration: input.generation,
+    artifactFingerprint,
+    acceptedDecisions: ["approve", "decline"],
+  };
+  return {
+    approvalId,
+    waitId,
+    artifactFingerprint,
+    expectedResponse,
+    condition: {
+      id: `approval-review-proposal-g${input.generation}-${artifactFingerprint.slice(-16)}`,
+      type: "project.approval.submitted",
+      subject: `approvalId:${approvalId}`,
+      expected: {
+        taskId: input.taskId,
+        taskGeneration: input.generation,
+        artifactFingerprint,
+        acceptedDecisions: ["approve", "decline"],
+      },
+    },
+  };
+}
+
+function approvalDecision(
+  details: Record<string, unknown>,
+  approval: ReturnType<typeof reviewApproval>,
+  taskId: string,
+  generation: number,
+): "approve" | "decline" | null {
+  if (details.type !== "project.approval.submitted") return null;
+  if (
+    details.approvalId !== approval.approvalId ||
+    details.taskId !== taskId ||
+    Number(details.taskGeneration) !== generation ||
+    details.artifactFingerprint !== approval.artifactFingerprint
+  ) {
+    return null;
+  }
+  const decision = String(details.decision ?? "").toLowerCase();
+  return decision === "approve" || decision === "decline" ? decision : null;
+}
+
+export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
+  const trigger = triggerDetails(ctx.task);
+  const input = reconciliationInput(ctx.task);
+  const details = { ...(input ?? {}), ...(trigger ?? {}) };
+  if (!input && !trigger) {
+    return ctx.blocked("Review trigger event is missing or invalid");
+  }
+
+  const packet = reconciliationPacket(ctx.task);
+  const taskId = String(packet?.taskId ?? "").trim();
+  const generation = Number(packet?.generation);
+  if (!taskId || !Number.isInteger(generation) || generation < 1) {
+    return ctx.blocked("Review task identity is missing or invalid");
+  }
 
   const requestKey = safeKey(details.requestKey, "review");
   const reviewDir = join(ctx.projectsRoot, "gym.app", ".state", "reviews");
@@ -132,6 +216,60 @@ export async function execute(
     );
   }
 
+  const approval = reviewApproval({
+    requestKey,
+    taskId,
+    generation,
+    reviewPath,
+  });
+  const decision = approvalDecision(details, approval, taskId, generation);
+
+  if (decision === "approve") {
+    ctx.emit({
+      type: "gym.review.approved",
+      project: "gym",
+      requestKey,
+      reviewPath,
+      approvalId: approval.approvalId,
+      artifactFingerprint: approval.artifactFingerprint,
+    });
+    ctx.emit({
+      type: "gym.improvement.requested",
+      project: "gym",
+      agent: "may",
+      reason: "approved-review-proposal",
+      requestKey,
+      reviewPath,
+      incidentId: details.incidentId,
+      approvalId: approval.approvalId,
+    });
+    const summary = `Accepted Gym review proposal ${requestKey} and started the existing May improvement path.`;
+    return ctx.done(summary, {
+      state: "converged",
+      summary,
+      evidence: [reviewPath, `approval:${approval.approvalId}`],
+      actions: [],
+    });
+  }
+
+  if (decision === "decline") {
+    ctx.emit({
+      type: "gym.review.declined",
+      project: "gym",
+      requestKey,
+      reviewPath,
+      approvalId: approval.approvalId,
+      artifactFingerprint: approval.artifactFingerprint,
+    });
+    const summary = `Rejected Gym review proposal ${requestKey}; no improvement work started.`;
+    return ctx.done(summary, {
+      state: "converged",
+      summary,
+      evidence: [reviewPath, `approval:${approval.approvalId}`],
+      actions: [],
+    });
+  }
+
   ctx.emit({
     type: "gym.review.ready",
     project: "gym",
@@ -140,12 +278,64 @@ export async function execute(
     reviewPath,
     humanApprovalRequired: true,
   });
-  ctx.notify(`Gym review ready: ${reviewPath}`);
-  const summary = `Prepared Gym review proposal at ${reviewPath}.`;
+  ctx.emit({
+    type: "project.approval.requested",
+    project: "gym",
+    taskId,
+    taskGeneration: generation,
+    approvalKind: "review-proposal",
+    approvalId: approval.approvalId,
+    waitId: approval.waitId,
+    artifactFingerprint: approval.artifactFingerprint,
+    packetPath: reviewPath,
+    requestedAction: "Approve or reject this Gym review proposal.",
+    reason: `Gym review ${requestKey} is ready for a human decision.`,
+    expectedResponse: approval.expectedResponse,
+  });
+  ctx.dispatchEvent("message.created", {
+    to: "human",
+    from: "gym",
+    project: "gym",
+    projectId: "projects/gym.app",
+    projectPath: "projects/gym.app",
+    taskId,
+    taskGeneration: generation,
+    content: [
+      "Gym review ready",
+      "",
+      `Review: ${reviewPath}`,
+      "Decision: approve or reject this proposal.",
+    ].join("\n"),
+    priority: "P1",
+    intent: "gym-approval",
+    approval: {
+      kind: "review-proposal",
+      approvalId: approval.approvalId,
+      waitId: approval.waitId,
+      taskId,
+      taskGeneration: generation,
+      artifactFingerprint: approval.artifactFingerprint,
+      packetPath: reviewPath,
+      question: "Approve or reject this Gym review proposal.",
+      directEvent: approval.expectedResponse,
+    },
+    approvalKind: "review-proposal",
+    approvalId: approval.approvalId,
+    waitId: approval.waitId,
+    artifactFingerprint: approval.artifactFingerprint,
+    packetPath: reviewPath,
+    pathId: taskId,
+    requestedAction: "Approve or reject this Gym review proposal.",
+    reason: `Gym review ${requestKey} is ready for a human decision.`,
+    expectedResponse: approval.expectedResponse,
+    dedupKey: approval.approvalId,
+  });
+  const summary = `Prepared Gym review proposal at ${reviewPath} and requested one typed approval.`;
   return ctx.done(summary, {
-    state: "converged",
+    state: "waiting",
     summary,
     evidence: [reviewPath],
     actions: [],
+    conditions: [approval.condition],
   });
 }
