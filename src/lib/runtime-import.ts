@@ -260,11 +260,37 @@ function sdkRootCandidates(importer: string): string[] {
   };
 
   add(process.env.MAY_AGENT_SDK_ROOT);
+  add(fileDependencySdkRoot(process.env.PROJECT_ROOT));
   add(process.env.PROJECT_ROOT ? join(process.env.PROJECT_ROOT, "node_modules", "@may-agent", "sdk") : undefined);
+  add(fileDependencySdkRoot(process.cwd()));
   add(join(process.cwd(), "node_modules", "@may-agent", "sdk"));
   add(findNodeModulesSdk(dirname(importer)));
 
   return roots;
+}
+
+/**
+ * A workspace may install the SDK from a local `file:` dependency. Prefer the
+ * declared source directory over its copied node_modules snapshot so runtime
+ * app imports cannot combine files from two different SDK revisions.
+ */
+function fileDependencySdkRoot(projectRoot: string | undefined): string | undefined {
+  if (!projectRoot) return undefined;
+  const packagePath = join(resolve(projectRoot), "package.json");
+  if (!existsSync(packagePath)) return undefined;
+  try {
+    const pkg = JSON.parse(readFileSync(packagePath, "utf8")) as Record<string, unknown>;
+    for (const field of ["dependencies", "devDependencies", "optionalDependencies"] as const) {
+      const dependencies = pkg[field];
+      if (!dependencies || typeof dependencies !== "object" || Array.isArray(dependencies)) continue;
+      const specifier = (dependencies as Record<string, unknown>)["@may-agent/sdk"];
+      if (typeof specifier !== "string" || !specifier.startsWith("file:")) continue;
+      return resolve(projectRoot, specifier.slice("file:".length));
+    }
+  } catch {
+    return undefined;
+  }
+  return undefined;
 }
 
 function findNodeModulesSdk(startDir: string): string | undefined {
