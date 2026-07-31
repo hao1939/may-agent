@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "practical-judgment",
   "version": 1,
-  "status": "pilot",
+  "status": "active",
   "title": "Use shared principles to make practical decisions and keep work moving",
   "lesson": "lesson.md",
   "practice": "practice.md",
