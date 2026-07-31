@@ -247,6 +247,9 @@ test("approved review never falls back to an unrelated benchmark", async () => {
       type: "done",
       output: { state: "needs-owner" },
     });
+    expect((result as { output?: Record<string, unknown> }).output).not.toHaveProperty(
+      "actions",
+    );
     expect(
       emitted.some((event) => event.type === "gym.improvement.requested"),
     ).toBe(false);

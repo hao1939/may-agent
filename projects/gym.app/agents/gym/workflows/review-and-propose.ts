@@ -306,7 +306,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       state: learningTarget ? "converged" : "needs-owner",
       summary,
       evidence: [reviewPath, `approval:${approval.approvalId}`],
-      actions: [],
+      ...(learningTarget ? { actions: [] } : {}),
     });
   }
 
