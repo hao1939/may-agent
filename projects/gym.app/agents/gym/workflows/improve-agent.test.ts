@@ -435,6 +435,138 @@ describe("single agent-improvement loop", () => {
     });
   });
 
+  test("stops a superseded attempt after its current Gym run", async () => {
+    const root = mkdtempSync(join(tmpdir(), "gym-campaign-fence-"));
+    roots.push(root);
+    const projectsRoot = join(root, "projects");
+    const gymRoot = join(projectsRoot, "gym");
+    const agentsRoot = join(root, "agents");
+    const benchmark = "fenced-track";
+    const scenario = "fenced-case";
+    mkdirSync(join(gymRoot, "benchmarks", "may-learning"), {
+      recursive: true,
+    });
+    mkdirSync(join(gymRoot, "benchmarks", benchmark), { recursive: true });
+    mkdirSync(join(gymRoot, "scenarios", scenario), { recursive: true });
+    mkdirSync(join(agentsRoot, "may"), { recursive: true });
+    writeFileSync(join(agentsRoot, "may", "AGENTS.md"), "# May\n");
+    writeFileSync(
+      join(gymRoot, "benchmarks", "may-learning", "autonomous-training.json"),
+      JSON.stringify({
+        schema_version: 1,
+        agent: "may",
+        tracks: [
+          { id: benchmark, benchmark, scenarios: [scenario], trials: 1 },
+        ],
+      }),
+    );
+    writeFileSync(
+      join(gymRoot, "benchmarks", benchmark, "suite.json"),
+      JSON.stringify({ labels_file: "labels.json", scenarios: [scenario] }),
+    );
+    writeFileSync(
+      join(gymRoot, "benchmarks", benchmark, "labels.json"),
+      JSON.stringify({
+        labels: {
+          [scenario]: {
+            status: "approved",
+            approved_by: "hao",
+            approved_at: "2026-08-01T00:00:00Z",
+          },
+        },
+      }),
+    );
+    writeFileSync(
+      join(gymRoot, "scenarios", scenario, "prompt.md"),
+      "fenced case\n",
+    );
+
+    const taskStatePath = join(
+      projectsRoot,
+      "gym.app",
+      ".state",
+      "tasks",
+      "state.json",
+    );
+    mkdirSync(join(taskStatePath, ".."), { recursive: true });
+    const writeTaskState = (generation: number, attemptId: string) =>
+      writeFileSync(
+        taskStatePath,
+        JSON.stringify({
+          resources: {
+            "improve/may": {
+              metadata: { id: "improve/may", generation },
+              status: { phase: "running", currentAttemptId: attemptId },
+            },
+          },
+        }),
+      );
+    writeTaskState(1, "attempt-1");
+
+    let runCount = 0;
+    const loop: GymLoopApi = {
+      async run(options) {
+        runCount++;
+        writeTaskState(2, "attempt-2");
+        const runId = "superseded-run";
+        const runDir = join(gymRoot, ".state", "benchmarks", runId);
+        mkdirSync(runDir, { recursive: true });
+        const value = manifest(runId, { [scenario]: ["pass"] });
+        value.benchmark = options.benchmark;
+        value.scenarios = [scenario];
+        return { runDir, manifest: value };
+      },
+      async verify() {
+        throw new Error("a superseded assessment must not verify a candidate");
+      },
+    };
+    const ctx = {
+      projectsRoot,
+      task: [
+        "## Reconciliation Task",
+        "```json",
+        JSON.stringify({
+          taskId: "improve/may",
+          generation: 1,
+          input: { agent: "may", curriculumDrain: true },
+        }),
+        "```",
+      ].join("\n"),
+      emit() {
+        throw new Error("a superseded attempt must not emit a continuation");
+      },
+      async runAgent() {
+        throw new Error("a superseded assessment must not classify findings");
+      },
+      done(summary: string, details: Record<string, unknown>) {
+        return { type: "done", summary, ...details };
+      },
+      blocked(reason: string) {
+        return { type: "blocked", reason };
+      },
+    } as unknown as WorkflowContext;
+
+    const result = (await runImprovement(ctx, loop)) as unknown as Record<
+      string,
+      unknown
+    >;
+    expect(result.summary).toBe(
+      "Stopped superseded campaign attempt improve/may@1.",
+    );
+    expect(runCount).toBe(1);
+    expect(
+      existsSync(
+        join(
+          projectsRoot,
+          "gym.app",
+          ".state",
+          "learning",
+          "training-drain.json",
+        ),
+      ),
+    ).toBe(false);
+  });
+
   test("gives candidate builders lessons and evidence without release truth", () => {
     const lines = learningPromptLines([
       {

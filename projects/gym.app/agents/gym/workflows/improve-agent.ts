@@ -202,10 +202,140 @@ export interface GymLoopApi {
   }): ReturnType<typeof verifyLoop>;
 }
 
+interface CampaignLease {
+  statePath: string;
+  taskId: string;
+  generation: number;
+  attemptId: string | null;
+  enforced: boolean;
+}
+
+class CampaignSupersededError extends Error {
+  constructor(taskId: string, generation: number) {
+    super(`Campaign ${taskId}@${generation} was superseded`);
+    this.name = "CampaignSupersededError";
+  }
+}
+
 const defaultLoopApi: GymLoopApi = {
   run: (options) => runLoop(options),
   verify: (input) => verifyLoop(input),
 };
+
+function campaignRuntime(
+  statePath: string,
+  taskId: string,
+): { generation: number | null; attemptId: string | null } | null {
+  const state = readJson<Record<string, unknown>>(statePath);
+  if (!state) return null;
+  const resource = record(record(state.resources)[taskId]);
+  if (!Object.keys(resource).length) {
+    return { generation: null, attemptId: null };
+  }
+  const metadata = record(resource.metadata);
+  const status = record(resource.status);
+  const generation = Number(metadata.generation);
+  return {
+    generation: Number.isInteger(generation) ? generation : null,
+    attemptId:
+      typeof status.currentAttemptId === "string" &&
+      status.currentAttemptId.trim()
+        ? status.currentAttemptId
+        : null,
+  };
+}
+
+function createCampaignLease(
+  ctx: WorkflowContext,
+  taskId: string,
+  generation: number,
+): CampaignLease {
+  const statePath = join(
+    ctx.projectsRoot,
+    "gym.app",
+    ".state",
+    "tasks",
+    "state.json",
+  );
+  const current = campaignRuntime(statePath, taskId);
+  return {
+    statePath,
+    taskId,
+    generation,
+    attemptId: current?.attemptId ?? null,
+    enforced: current !== null,
+  };
+}
+
+function assertCampaignLease(lease: CampaignLease): void {
+  if (!lease.enforced) return;
+  const current = campaignRuntime(lease.statePath, lease.taskId);
+  if (
+    !current ||
+    current.generation !== lease.generation ||
+    current.attemptId !== lease.attemptId
+  ) {
+    throw new CampaignSupersededError(lease.taskId, lease.generation);
+  }
+}
+
+function fencedLoopApi(loop: GymLoopApi, lease: CampaignLease): GymLoopApi {
+  return {
+    async run(options) {
+      assertCampaignLease(lease);
+      const result = await loop.run(options);
+      assertCampaignLease(lease);
+      return result;
+    },
+    async verify(input) {
+      assertCampaignLease(lease);
+      const result = await loop.verify(input);
+      assertCampaignLease(lease);
+      return result;
+    },
+  };
+}
+
+function fencedWorkflowContext(
+  ctx: WorkflowContext,
+  lease: CampaignLease,
+): WorkflowContext {
+  return new Proxy(ctx, {
+    get(target, property, receiver) {
+      const value = Reflect.get(target, property, receiver);
+      if (property === "runAgent") {
+        return async (...args: unknown[]) => {
+          assertCampaignLease(lease);
+          const result = await (value as (...input: unknown[]) => Promise<unknown>)
+            .apply(target, args);
+          assertCampaignLease(lease);
+          return result;
+        };
+      }
+      if (property === "emit" || property === "dispatchEvent") {
+        return (...args: unknown[]) => {
+          assertCampaignLease(lease);
+          return (value as (...input: unknown[]) => unknown).apply(target, args);
+        };
+      }
+      return typeof value === "function" ? value.bind(target) : value;
+    },
+  });
+}
+
+function supersededCampaignResult(
+  ctx: WorkflowContext,
+  taskId: string,
+  generation: number,
+): WorkflowResult {
+  const summary = `Stopped superseded campaign attempt ${taskId}@${generation}.`;
+  return ctx.done(summary, {
+    state: "converged",
+    summary,
+    evidence: [],
+    actions: [],
+  });
+}
 
 const findingSchema = Type.Object(
   {
@@ -2875,8 +3005,32 @@ export async function runImprovement(
   if (!Number.isInteger(generation) || generation < 1) {
     return ctx.blocked("Improvement task has no valid generation");
   }
+  const lease = createCampaignLease(ctx, taskId, generation);
+  try {
+    assertCampaignLease(lease);
+  } catch (error) {
+    if (error instanceof CampaignSupersededError) {
+      return supersededCampaignResult(ctx, taskId, generation);
+    }
+    throw error;
+  }
+  const activeLoop = fencedLoopApi(loop, lease);
+  const activeCtx = fencedWorkflowContext(ctx, lease);
   if (input.curriculumDrain !== true) {
-    return runImprovementOnce(ctx, loop, input, taskId, generation);
+    try {
+      return await runImprovementOnce(
+        activeCtx,
+        activeLoop,
+        input,
+        taskId,
+        generation,
+      );
+    } catch (error) {
+      if (error instanceof CampaignSupersededError) {
+        return supersededCampaignResult(ctx, taskId, generation);
+      }
+      throw error;
+    }
   }
 
   try {
@@ -2952,14 +3106,15 @@ export async function runImprovement(
     // Two independent assessments may run together. Candidate construction,
     // integration, release verification, and promotion remain serialized.
     const experiments = await prepareCurriculumExperiments(
-      ctx,
-      loop,
+      activeCtx,
+      activeLoop,
       remaining.slice(0, 2),
       agent,
       campaignId,
       taskId,
       generation,
     );
+    assertCampaignLease(lease);
     for (const experiment of experiments) {
       const passive = experimentPassiveResult(experiment);
       if (!passive) continue;
@@ -2971,10 +3126,15 @@ export async function runImprovement(
 
     const actionable = experiments.filter(experimentNeedsIntegration);
     if (actionable.length) {
-      const selected = await selectPriorityExperiment(ctx, actionable, input);
+      const selected = await selectPriorityExperiment(
+        activeCtx,
+        actionable,
+        input,
+      );
+      assertCampaignLease(lease);
       const result = await runImprovementOnce(
-        ctx,
-        loop,
+        activeCtx,
+        activeLoop,
         selected.input,
         taskId,
         generation,
@@ -2982,6 +3142,7 @@ export async function runImprovement(
       );
       const outcome = workflowOutcome(result);
       if (outcome.state === "waiting" || outcome.state === "needs-owner") {
+        assertCampaignLease(lease);
         writeJson(checkpointPath, checkpoint);
         return result;
       }
@@ -3000,11 +3161,13 @@ export async function runImprovement(
       });
     }
 
+    assertCampaignLease(lease);
     writeJson(checkpointPath, checkpoint);
     const afterIds = new Set(checkpoint.tracks.map(({ id }) => id));
     const stillRemaining = targets.filter(({ id }) => !afterIds.has(id));
     if (stillRemaining.length) {
-      emitCurriculumContinuation(ctx, campaignId);
+      assertCampaignLease(lease);
+      emitCurriculumContinuation(activeCtx, campaignId);
       const summary = `Gym checkpointed this bounded training stage; ${stillRemaining.length} approved track${stillRemaining.length === 1 ? " remains" : "s remain"}.`;
       return ctx.done(summary, {
         state: "converged",
@@ -3036,6 +3199,9 @@ export async function runImprovement(
       actions: [],
     });
   } catch (error) {
+    if (error instanceof CampaignSupersededError) {
+      return supersededCampaignResult(ctx, taskId, generation);
+    }
     const summary = error instanceof Error ? error.message : String(error);
     return ctx.done(summary, {
       state: "needs-owner",

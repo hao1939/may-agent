@@ -91,6 +91,13 @@ event-specific reason, metric, revision, or request remains trigger evidence.
 If a wake arrives while reconciliation is running, the controller queues it for
 the next reconcile instead of superseding the active attempt.
 
+Every workflow attempt also holds an ownership fence made from the task
+generation and active attempt id. It checks the fence after each expensive Gym
+run and before writing the shared campaign checkpoint or emitting a
+continuation. If recovery or a specification change replaces the attempt, the
+old call may finish, but the old workflow stops immediately afterward. It
+cannot retry, build a candidate, update the campaign, or wake more work.
+
 An autonomous wake keeps reconciling until every approved learning track has
 been reviewed. One reconcile explores no more than two independent tracks,
 saves their results, selects at most one integration path, and emits a
@@ -150,6 +157,11 @@ decision, or real authority boundary still stops the sequence immediately.
     and repeat the implementation and verification steps in the same workflow.
 14. Save the stage checkpoint and wake `improve/may` again when approved work
     remains.
+
+After every benchmark or verification call, confirm that this workflow still
+owns the current task attempt. A superseded attempt returns quietly without
+using its result. This makes restart recovery safe even though an in-flight
+model call cannot always be canceled.
 
 Candidate iterations for the selected hypothesis are sequential, never
 parallel. Each expensive stage is
