@@ -3,5 +3,5 @@
   "exact": {"needs_clarification": false},
   "delegations": {"min": 0, "max": 1},
   "empty": ["preference_updates"],
-  "response_max_words": 65
+  "response_max_words": 80
 }
