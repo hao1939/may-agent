@@ -1,4 +1,10 @@
 {
+  "approval_case": {
+    "title": "Continue toward the goal after the rollout checklist ends",
+    "situation": "The rollout checklist is complete, but production still has a 17% failure rate. Existing logs already identify the failing path, while the owner proposes building a dashboard first.",
+    "hao_request": "Decide what May should do next.",
+    "correct_behavior": "Reject closure and the dashboard detour. Current failures show the goal is unmet, and existing logs already identify the next owned investigation. Continue that work and close only after production evidence meets the goal."
+  },
   "human_answer": "Reject closure and the dashboard detour. Current failures show the goal is unmet, and existing logs already identify the next owned investigation. Continue that work and close only after production evidence meets the goal.",
   "exact": {"needs_clarification": false},
   "delegations": {"min": 0, "max": 1},

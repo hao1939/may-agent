@@ -1,4 +1,10 @@
 {
+  "approval_case": {
+    "title": "Prove the duplicate's cause before adding automation",
+    "situation": "One duplicate-looking Telegram pair exists, but nobody knows whether the producer, transport, or May caused it. Global text matching could suppress legitimate messages.",
+    "hao_request": "May keeps sending the same reply. Automate deduplication.",
+    "correct_behavior": "Own the concern, but prove the cause before automating. Trace the pair and reproduce it when needed to identify producer, transport, or May duplication; then return a targeted proof-backed fix before rollout."
+  },
   "human_answer": "Own the concern, but prove the cause before automating. Trace the pair and reproduce it when needed to identify producer, transport, or May duplication; then return a targeted proof-backed fix before rollout.",
   "exact": {"needs_clarification": false},
   "delegations": {"min": 0, "max": 1},
