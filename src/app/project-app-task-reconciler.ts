@@ -24,6 +24,7 @@ import {
   type TaskTree,
   type TaskStateConfig,
 } from "@may-agent/sdk";
+import { applyProjectAppConditionEvent } from "./project-app-condition-tracker.js";
 
 export const PROJECT_APP_TASK_RECOVERY_OWNER = "project-app-task-reconciler";
 
@@ -2609,6 +2610,16 @@ export function deferProjectAppTask(
       evidence: [...(input.evidence ?? [])],
       ...(!input.conditions?.length ? { conditionIds: [] } : {}),
     });
+
+    // A trigger can arrive while the attempt is running. Re-evaluate it against
+    // the wait the attempt just installed instead of replaying it blindly. A
+    // matching semantic observation wakes the task again; an unrelated stale
+    // pulse is consumed. Explicit human/override triggers still bypass the wait.
+    const pendingTrigger = tree.taskTriggers?.[task.id]?.event;
+    if (pendingTrigger && !triggerOverridesWait(pendingTrigger)) {
+      delete tree.taskTriggers![task.id];
+      applyProjectAppConditionEvent(tree, pendingTrigger);
+    }
     syncTaskProjection(task, resource, claim.owner);
     refreshActiveTaskProjection(tree);
     pruneTaskAttempts(tree);
