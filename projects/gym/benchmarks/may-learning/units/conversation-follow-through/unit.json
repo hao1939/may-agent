@@ -22,7 +22,12 @@
   "benchmark": "may-conversation-follow-through-development",
   "release_benchmark": "may-conversation-follow-through-transfer",
   "practice_scenarios": [],
-  "development_scenarios": ["multi-session/may-conversation-follow-through-core"],
+  "development_scenarios": [
+    "multi-session/may-conversation-follow-through-core",
+    "may-conversation-clarify-approval-choice-replay",
+    "may-conversation-clarify-approval-choice-paraphrase",
+    "may-conversation-submit-explicit-approval-choice-control"
+  ],
   "release_scenarios": [
     "multi-session/may-conversation-follow-through-transfer",
     "may-conversation-admit-long-running-reply"

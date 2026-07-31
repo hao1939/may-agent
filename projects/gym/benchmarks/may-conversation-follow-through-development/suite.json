@@ -4,5 +4,10 @@
   "artifact": "alignment-decision.json",
   "labels_file": "labels.json",
   "evaluator": "../may-alignment/score-decision.cjs",
-  "scenarios": ["multi-session/may-conversation-follow-through-core"]
+  "scenarios": [
+    "multi-session/may-conversation-follow-through-core",
+    "may-conversation-clarify-approval-choice-replay",
+    "may-conversation-clarify-approval-choice-paraphrase",
+    "may-conversation-submit-explicit-approval-choice-control"
+  ]
 }

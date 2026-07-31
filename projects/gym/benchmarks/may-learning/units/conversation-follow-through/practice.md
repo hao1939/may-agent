@@ -18,6 +18,11 @@ reply target, and whether Hao needs to act.
    links on the existing task, tell Hao no action is needed, and make no
    acceptance-update or later-result promise until the full closure chain is
    recorded.
+7. An attached approval packet requires option A or B, but Hao says only
+   “batch approve these items.” Recover the exact packet, wait, and trace from
+   the reply context. Ask for A or B before starting, then carry the chosen
+   option through without making Hao restate the packet or answering more
+   questions. If Hao already says “option B,” submit only that exact packet.
 
 Do not solve these by remembering the latest session. Inspect and act through
 the supplied conversation runtime; the accepted action trace is the behavior.

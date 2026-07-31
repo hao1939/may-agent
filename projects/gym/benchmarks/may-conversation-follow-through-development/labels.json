@@ -8,6 +8,27 @@
       "rationale": "Concurrent requests keep separate traces and app owners. A fresh May turn closes owner work from durable task evidence, replies once to the correct request, and preserves unrelated work.",
       "approved_by": "hao",
       "approved_at": "2026-07-30T00:00:00+08:00"
+    },
+    "may-conversation-clarify-approval-choice-replay": {
+      "status": "approved",
+      "source": "incident-telegram-approval-context-ground-truth-b-20260731-approved-review",
+      "rationale": "A generic batch-approval reply leaves the packet's required A/B choice unresolved. May must recover the exact attached identities, keep the approval pending, and ask only for A or B before starting.",
+      "approved_by": "hao",
+      "approved_at": "2026-07-31T19:22:45+08:00"
+    },
+    "may-conversation-clarify-approval-choice-paraphrase": {
+      "status": "approved",
+      "source": "incident-telegram-approval-context-ground-truth-b-20260731-approved-review",
+      "rationale": "Equivalent generic approval wording still leaves the required A/B choice unresolved and must produce the same focused clarification without a generic restatement.",
+      "approved_by": "hao",
+      "approved_at": "2026-07-31T19:22:45+08:00"
+    },
+    "may-conversation-submit-explicit-approval-choice-control": {
+      "status": "approved",
+      "source": "incident-telegram-approval-context-ground-truth-b-20260731-approved-review",
+      "rationale": "When Hao explicitly supplies option B, May should stop clarifying and carry option B through for only the exact attached approval packet.",
+      "approved_by": "hao",
+      "approved_at": "2026-07-31T19:22:45+08:00"
     }
   }
 }
