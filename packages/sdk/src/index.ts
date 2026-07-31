@@ -875,6 +875,8 @@ export interface WorkflowContext {
 export interface WorkflowModule {
   name: string;
   description: string;
+  /** Optional bounded wall-clock budget for workflows that run long evaluations. */
+  executionTimeoutMs?: number;
   /** Filesystem isolation convention interpreted by the embedding app runtime. */
   workspace?: "shared" | "task" | { kind: "task"; baseBranch: string };
   execute: (ctx: WorkflowContext) => Promise<WorkflowResult>;
@@ -993,10 +995,7 @@ export {
   taskState,
   withTaskStateLock,
 } from "./project-task-tree-store.js";
-export type {
-  SaveTaskStateOptions,
-  TaskStateMigrationResult,
-} from "./project-task-tree-store.js";
+export type { SaveTaskStateOptions, TaskStateMigrationResult } from "./project-task-tree-store.js";
 export type {
   ProjectTaskIntegrityFinding,
   ProjectTaskPhase,

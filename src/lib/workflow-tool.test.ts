@@ -34,10 +34,7 @@ export async function execute(ctx) {
           resolveStep = resolve;
         });
       },
-      status: () =>
-        workflowRunId
-          ? [{ sessionId: "step-session", workflowRunId }]
-          : [],
+      status: () => (workflowRunId ? [{ sessionId: "step-session", workflowRunId }] : []),
       cancel: (sessionId: string) => {
         expect(sessionId).toBe("step-session");
         cancelled += 1;
@@ -67,5 +64,33 @@ export async function execute(ctx) {
     expect(result.type === "error" ? result.error : "").toContain('Workflow "timeout" timed out after 10ms');
     expect(cancelled).toBe(1);
     expect(events.some((event) => event.type === "test.late-effect")).toBe(false);
+  });
+
+  it("lets a workflow declare a longer bounded timeout", async () => {
+    const root = mkdtempSync(join(tmpdir(), "workflow-timeout-override-"));
+    const workflowDir = join(root, "workflows");
+    mkdirSync(workflowDir);
+    writeFileSync(
+      join(workflowDir, "slow.ts"),
+      `
+export const name = "slow";
+export const description = "Workflow timeout override test";
+export const executionTimeoutMs = 1000;
+export async function execute(ctx) {
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  return ctx.done("completed within its own budget");
+}
+`,
+    );
+
+    const runner = createWorkflowRunner({
+      manager: {} as any,
+      workflowDir,
+      agentName: "owner",
+      executionTimeoutMs: 10,
+    });
+
+    const result = await runner.run("slow", "test");
+    expect(result).toMatchObject({ type: "done" });
   });
 });
