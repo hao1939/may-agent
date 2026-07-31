@@ -2365,21 +2365,46 @@ function sqliteTableExists(db: Database, tableName: string): boolean {
   return Boolean(row);
 }
 
-function workflowRunClaimsHealthyLoopOwnership(
+function workflowRunReferencedTaskId(
   row: Record<string, unknown>,
-): boolean {
-  const workflow = typeof row.workflow === "string" ? row.workflow.trim() : "";
-  if (workflow !== "task-worker") return false;
+): string | null {
   const taskText = typeof row.task === "string" ? row.task : "";
   const trigger = parseTriggerEvent(taskText);
-  const taskId =
+  const triggerTaskId =
     triggerString(trigger, "taskId") || triggerString(trigger, "task_id");
+  if (triggerTaskId) return triggerTaskId;
+  const promptMatch = taskText.match(/"(?:taskId|task_id)"\s*:\s*"([^"]+)"/);
+  return promptMatch?.[1]?.trim() || null;
+}
+
+export function workflowRunWithoutSessionLooksHealthy(input: {
+  workflowTask?: string | null;
+  activeTaskState?: string | null;
+  activeTaskRestartReason?: string | null;
+}): boolean {
+  const taskText =
+    typeof input.workflowTask === "string" ? input.workflowTask : "";
+  if (!taskText.trim()) return false;
+  const taskId = workflowRunReferencedTaskId({ task: taskText });
+  if (!taskId) return false;
+  return (
+    input.activeTaskState === "active" && input.activeTaskRestartReason === null
+  );
+}
+
+function workflowRunClaimsHealthyTaskOwnership(
+  row: Record<string, unknown>,
+): boolean {
+  const taskId = workflowRunReferencedTaskId(row);
   if (!taskId) return false;
   const tree = loadTaskTree();
   const task = tree.tasks[taskId];
-  if (!task || taskState(task) !== "active") return false;
-  const restartReason = activeTaskRestartReason(task);
-  return restartReason === null;
+  if (!task) return false;
+  return workflowRunWithoutSessionLooksHealthy({
+    workflowTask: typeof row.task === "string" ? row.task : "",
+    activeTaskState: taskState(task),
+    activeTaskRestartReason: activeTaskRestartReason(task),
+  });
 }
 
 function staleRunningWorkflowRunDetails(): StaleWorkflowRunInfo[] {
@@ -2449,7 +2474,7 @@ function staleRunningWorkflowRunDetails(): StaleWorkflowRunInfo[] {
           : 0;
       if (!runId || !workflow || startedAt == null) return [];
       if (Date.now() - startedAt <= sessionStartGraceMs) return [];
-      if (workflowRunClaimsHealthyLoopOwnership(row)) return [];
+      if (workflowRunClaimsHealthyTaskOwnership(row)) return [];
       if (sessionCount === 0) {
         return [{ runId, workflow, restartReason: "workflow-no-session" }];
       }
