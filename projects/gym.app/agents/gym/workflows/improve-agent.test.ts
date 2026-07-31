@@ -150,6 +150,7 @@ describe("single agent-improvement loop", () => {
       "human-inbox-deputy",
       "admission-review-closure",
       "practical-judgment",
+      "signals-and-context",
     ]);
     expect(
       targets.find(({ id }) => id === "system-deputy-operations")?.scenarios,

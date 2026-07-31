@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "signals-and-context",
   "version": 1,
-  "status": "draft",
+  "status": "pilot",
   "title": "Use metrics and agent inputs as evidence without chasing scores or prompt size",
   "lesson": "lesson.md",
   "practice": "practice.md",

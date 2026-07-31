@@ -82,6 +82,16 @@
         "may-practical-simple-first"
       ],
       "trials": 3
+    },
+    {
+      "id": "signals-and-context",
+      "benchmark": "may-signals-and-context-development",
+      "scenarios": [
+        "may-signal-investigate-metric-before-action",
+        "may-context-debug-agent-input-first",
+        "may-context-discover-dont-dump"
+      ],
+      "trials": 3
     }
   ]
 }
