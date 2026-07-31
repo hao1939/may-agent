@@ -75,7 +75,7 @@ describe("gym app manifest", () => {
       ],
     });
     expect(gymApp.tasks?.resolve).toBe(resolveGymTask);
-    expect(gymApp.tasks?.accepts).toHaveLength(10);
+    expect(gymApp.tasks?.accepts).toHaveLength(11);
     expect(gymApp.taskRoutes).toBeUndefined();
     expect(gymApp.taskWorkflows).toBeUndefined();
     expect(gymApp.ownerEntry).toBeUndefined();
@@ -270,77 +270,70 @@ describe("gym task reconciliation", () => {
         id: "improve/may",
         mode: "maintain",
         workflow: "improve-agent",
-        input: { agent: "may", benchmark: "may-alignment" },
+        input: { agent: "may", curriculumDrain: true },
       });
     }
   });
 
-  test("preserves a requested learning benchmark on the shared task", () => {
-    expect(
-      resolveGymTask({
-        type: "gym.improvement.requested",
-        eventId: 304,
-        params: {
-          benchmark: "may-deputy-learning",
-          scenarios: ["may-learn-select-skill-or-workflow"],
-          trials: 3,
-          reason: "approved-system-deputy-pilot",
-        },
-      }),
-    ).toMatchObject({
-      id: "improve/may",
-      input: {
-        agent: "may",
+  test("keeps request-specific evidence out of the stable task spec", () => {
+    const focused = resolveGymTask({
+      type: "gym.improvement.requested",
+      eventId: 304,
+      params: {
         benchmark: "may-deputy-learning",
         scenarios: ["may-learn-select-skill-or-workflow"],
         trials: 3,
         reason: "approved-system-deputy-pilot",
       },
     });
+    const revision = resolveGymTask({
+      type: "agent.revision.changed",
+      eventId: 305,
+      agent: "may",
+      revision: "sha256:new-may",
+    });
+    expect(focused).toEqual(revision);
+    expect(focused?.input).toEqual({
+      agent: "may",
+      curriculumDrain: true,
+    });
   });
 
-  test("preserves a frozen improvement checkpoint on the shared task", () => {
-    expect(
-      resolveGymTask({
-        type: "gym.improvement.requested",
-        eventId: 306,
-        params: {
-          benchmark: "may-admission-review-closure",
-          baselineRunId: "may-admission-review-closure-test-frozen",
-          focusScenarios: ["incident-replay"],
-          failureFamily: "admission-disposition-before-repair",
-          classificationSummary: "May did not close the admission gate.",
-          classificationEvidence: ["run:incident-replay"],
-        },
-      }),
-    ).toMatchObject({
-      id: "improve/may",
-      input: {
+  test("keeps frozen checkpoint facts in wake evidence rather than desired state", () => {
+    const intent = resolveGymTask({
+      type: "gym.improvement.requested",
+      eventId: 306,
+      params: {
+        benchmark: "may-admission-review-closure",
         baselineRunId: "may-admission-review-closure-test-frozen",
         focusScenarios: ["incident-replay"],
         failureFamily: "admission-disposition-before-repair",
-        classificationSummary: "May did not close the admission gate.",
-        classificationEvidence: ["run:incident-replay"],
       },
     });
+    expect(intent?.input).toEqual({ agent: "may", curriculumDrain: true });
+    expect(intent?.input).not.toHaveProperty("baselineRunId");
   });
 
-  test("a May revision restarts the approved curriculum drain", () => {
+  test("May-owned metric breaches wake the campaign without changing its goal", () => {
     expect(
       resolveGymTask({
-        type: "agent.revision.changed",
-        eventId: 305,
-        agent: "may",
-        revision: "sha256:new-may",
+        type: "metric.breach",
+        eventId: 307,
+        owner: "agent:may",
+        metricId: "may.telegram-follow-through-rate",
       }),
     ).toMatchObject({
       id: "improve/may",
-      input: {
-        curriculumDrain: true,
-        reason: "may-revision-confirmation",
-        revision: "sha256:new-may",
-      },
+      input: { agent: "may", curriculumDrain: true },
     });
+    expect(
+      resolveGymTask({
+        type: "metric.breach",
+        eventId: 308,
+        owner: "agent:app-ops",
+        metricId: "aks.task-timeout-rate",
+      }),
+    ).toBeNull();
   });
 });
 

@@ -1,6 +1,6 @@
 # Autonomous Agent Improvement
 
-**Status:** Accepted target; May is the first agent (2026-07-21)
+**Status:** Accepted target; reconciler model refined (2026-08-01)
 
 ## Goal
 
@@ -13,11 +13,13 @@ supported by trustworthy evidence and no approved regression.
 ## Mental model
 
 ```text
-human intent, daily refill check, Telegram field evidence, or May revision
-  -> improve/may                         one maintain task
-  -> evaluate approved behavior
-  -> classify every non-pass independently
-  -> choose one bounded May failure family
+human intent, daily refill check, May-owned metric breach, field evidence,
+or May revision
+  -> wake improve/may                    one stable desired-state task
+  -> Gym owner prioritizes current evidence and the next useful focus
+  -> evaluate up to two independent hypotheses against one frozen baseline
+  -> compare the findings
+  -> choose one bounded May failure family for integration
   -> run guided practice when the learning unit requires real tool use
   -> preserve May's calls, lifecycle evidence, result review, and reflection
   -> build one isolated candidate
@@ -31,11 +33,27 @@ human intent, daily refill check, Telegram field evidence, or May revision
   -> May revision wakes the loop for confirmation
 ```
 
-There is no separate evaluation task, failure-family task, candidate job, or
-app-specific status machine. Findings and candidate generations are evidence
-inside the one task. A workflow attempt is synchronous and ordered; the task
-waits only for an exact human decision. While autonomous work keeps making
-progress, the same workflow attempt keeps running.
+There is no separate evaluation lifecycle, failure-family task, candidate job,
+or app-specific task state machine. Findings, experiment records, candidate
+generations, and checkpoints are evidence inside the one campaign. The task
+waits only for an exact human or external condition.
+
+The design follows the project-app reconciliation model:
+
+- The task describes the durable target state.
+- Events only wake the task and contribute current evidence. They never replace
+  its specification or interrupt an active generation.
+- The Gym owner owns the goal, interprets evidence, and chooses priority and
+  the next focus.
+- The workflow is learned operational experience: it advances one bounded,
+  idempotent stage, saves proof, and wakes the same task again when work remains.
+
+This gives one campaign with bounded parallel exploration and serialized
+integration and promotion. At most two independent development assessments run
+together. Each experiment has frozen inputs, its own evidence path, and no
+permission to change benchmark or scorer truth. The owner chooses one result
+for candidate integration. Candidate building, revision, release verification,
+approval, application, and confirmation remain ordered.
 
 Gym also runs one daily Telegram field review. It keeps clear successful
 behavior as positive evidence and routes only strong actionable failures into
@@ -66,11 +84,17 @@ of these is true:
 - a non-May evaluation issue has a truthful disposition; or
 - an exact external or human decision is represented as a wait.
 
-A later schedule, user request, approved benchmark change, or May revision
-wakes the same task. It does not create another lifecycle.
+A later schedule, user request, relevant metric breach, approved benchmark
+change, or May revision wakes the same task. It does not create another
+lifecycle. Every wake resolves to the same desired-state specification. Its
+event-specific reason, metric, revision, or request remains trigger evidence.
+If a wake arrives while reconciliation is running, the controller queues it for
+the next reconcile instead of superseding the active attempt.
 
-An autonomous wake drains every approved learning track in sequence. It does
-not stop after the first passing track. It stops only when all current material
+An autonomous wake keeps reconciling until every approved learning track has
+been reviewed. One reconcile explores no more than two independent tracks,
+saves their results, selects at most one integration path, and emits a
+continuation wake when material remains. It stops only when all current material
 passes, a verified proposal needs Hao's decision, or progress reaches a real
 safety or authority boundary. After exhaustion, a fingerprinted checkpoint
 makes the daily refill check a cheap no-op until the curriculum or May's durable
@@ -81,33 +105,54 @@ autonomous-training manifest and learning unit. Loading the curriculum fails if
 an approved case is missing, so a new lesson cannot be reviewed successfully
 and then silently skipped by the live training loop.
 
+Experiment records are checkpoint files, not child tasks. `improve/may` must
+have no owner-recovery, experiment, approval, or worker children. A genuine
+workflow exception returns to the Gym owner for goal and priority judgment; the
+owner records a disposition against the campaign and does not invent a nested
+recovery tree.
+
+The first implementation phase parallelizes the expensive independent
+assessment and diagnosis work. It deliberately serializes candidate creation.
+After this phase proves stable in live autonomous cycles, Gym may allow two
+isolated candidate experiments for different hypotheses, using the same frozen
+baseline and evidence version. Even then, the owner must compare them and send
+only one integrated candidate through release verification and approval. Gym
+must never parallelize revisions of the same hypothesis.
+
 An evaluator or runtime issue in one track does not block evaluation of later,
 independent tracks. Gym finishes the remaining tracks, then reports the issue
 and withholds the exhausted checkpoint. A verified candidate, required human
 decision, or real authority boundary still stops the sequence immediately.
 
-## One bounded synchronous workflow
+## Bounded reconciliation workflow
 
-`improve-agent` performs one ordered improvement burst:
+`improve-agent` performs one bounded, restart-safe reconciliation stage:
 
-1. Check benchmark approval before treating a score as truth.
-2. Run or reuse a bounded baseline.
-3. Retry invalid scenarios once without hiding valid failures.
-4. Classify every remaining non-pass as May, benchmark, scorer, runtime, or
+1. Read the stable goal, wake evidence, and campaign checkpoint.
+2. Check benchmark approval before treating a score as truth.
+3. Run or reuse no more than two independent development assessments in
+   parallel.
+4. Retry invalid scenarios once without hiding valid failures.
+5. Classify every remaining non-pass as May, benchmark, scorer, runtime, or
    noise. Every scenario appears exactly once.
-5. Select one May failure family and freeze a focused development baseline.
-6. Run the unit's guided practice, when present, and checkpoint both successful
+6. Give comparable findings to the Gym owner, who selects the highest-priority
+   integration path. Preserve unselected valid evidence for the next reconcile.
+7. Select one May failure family and freeze a focused development baseline.
+8. Run the unit's guided practice, when present, and checkpoint both successful
    and failed attempts. Practice may use real safe tools and gives feedback.
-7. Ask the isolated implementation agent for one narrow overlay, including the
+9. Ask the isolated implementation agent for one narrow overlay, including the
    guided-practice evidence but excluding withheld release truth.
-8. Verify it against the frozen baseline.
-9. If it improves, run the full five-trial release comparison.
-10. If it fails, review the observed answer, expected behavior, scorer, and
+10. Verify it against the frozen baseline.
+11. If it improves, run the full five-trial release comparison.
+12. If it fails, review the observed answer, expected behavior, scorer, and
     runtime before deciding whether May should change again.
-11. If the review still establishes a May gap, revise the candidate immediately
+13. If the review still establishes a May gap, revise the candidate immediately
     and repeat the implementation and verification steps in the same workflow.
+14. Save the stage checkpoint and wake `improve/may` again when approved work
+    remains.
 
-Candidate iterations are sequential, never parallel. Each expensive stage is
+Candidate iterations for the selected hypothesis are sequential, never
+parallel. Each expensive stage is
 checkpointed before the next stage starts, so runtime recovery reuses completed
 implementation, verification, baseline, and review evidence. A repeated
 artifact fingerprint or the five-iteration safety bound stops the burst as a
@@ -121,7 +166,9 @@ second scheduler or weakening the evaluation gates.
 
 `revise-candidate` is an internal workflow decision. It does not mutate the
 running task and does not notify Hao. A workflow never remains open across
-human approval, an external callback, or a later schedule.
+human approval, an external callback, or a later schedule. The 60-minute limit
+is a safety ceiling; campaign progress comes from checkpoints and repeated
+reconciliation, not from hoping one long attempt finishes.
 
 ## Approval through Telegram
 
@@ -162,8 +209,10 @@ Use explicit names because “Gym” otherwise refers to three different things:
 - **Gym runner (`projects/gym`)** owns benchmark source, execution, comparison,
   reports, and immutable run evidence.
 - **Gym App (`projects/gym.app`)** owns the autonomous improvement loop.
-- **Gym owner agent (`gym`)** is read-only. It judges failure responsibility and
-  candidate evidence.
+- **Gym owner agent (`gym`)** owns the campaign outcome and priority. It is
+  read-only: it interprets wake evidence, judges failure responsibility,
+  selects the next focus, compares candidate evidence, and identifies a real
+  authority boundary without directly changing task or benchmark state.
 - **Implementation agent (`gym-implementer`)** writes only an isolated May
   overlay. It cannot change production, benchmark truth, or promotion state.
 
@@ -233,9 +282,11 @@ the CLI and parsing its output.
 ## Triggers
 
 - `improve-may-now` or free-form project intent starts an immediate cycle.
-- One enabled daily refill check resumes the sequential curriculum drain after
-  recovery or newly approved material. The drain itself runs aggressively until
+- One enabled daily refill check resumes bounded curriculum reconciliation after
+  recovery or newly approved material. Continuation wakes keep it moving until
   material is exhausted or approval is required.
+- A May-owned `metric.breach` wakes the campaign as evidence to investigate; a
+  metric never decides the repair by itself.
 - `agent.revision.changed` for May confirms the actual promoted behavior.
 
 Do not connect broad session-evaluation events until Gym can consume their

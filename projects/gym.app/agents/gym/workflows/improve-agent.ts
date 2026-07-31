@@ -149,13 +149,29 @@ export interface CurriculumTarget {
 }
 
 interface TrainingDrainCheckpoint {
-  schema_version: 1;
+  schema_version: 2;
   agent: string;
+  campaign_id: string;
   curriculum_fingerprint: string;
   agent_fingerprint: string;
-  exhausted_at: string;
-  targets: string[];
+  updated_at: string;
+  exhausted_at: string | null;
+  tracks: Array<{
+    id: string;
+    state: "complete" | "issue";
+    summary: string;
+    evidence: string[];
+  }>;
   evidence: string[];
+}
+
+interface CurriculumExperiment {
+  target: CurriculumTarget;
+  input: Record<string, unknown>;
+  scope: string;
+  assessmentPath: string;
+  assessment: Assessment;
+  problem?: string;
 }
 
 type ApprovalKind = "agent-improvement" | "benchmark-fix";
@@ -244,6 +260,15 @@ const failedReviewSchema = Type.Object(
     ]),
     summary: Type.String({ minLength: 1, maxLength: 1_000 }),
     proposedChange: Type.String({ minLength: 1, maxLength: 2_000 }),
+    evidence: Type.Array(Type.String({ minLength: 1 }), { maxItems: 16 }),
+  },
+  { additionalProperties: false },
+);
+
+const prioritySelectionSchema = Type.Object(
+  {
+    targetId: Type.String({ minLength: 1, maxLength: 120 }),
+    reason: Type.String({ minLength: 1, maxLength: 1_000 }),
     evidence: Type.Array(Type.String({ minLength: 1 }), { maxItems: 16 }),
   },
   { additionalProperties: false },
@@ -1826,16 +1851,17 @@ async function runCandidateIteration(
     saveWorkflowResult(resultPath, {
       task_id: taskId,
       generation,
-      workflow_state: "needs-owner",
+      workflow_state: "converged",
       summary,
       evidence: [candidateCheckpointPath, durableCandidate],
       conditions: [],
       approval: null,
     });
     return ctx.done(summary, {
-      state: "needs-owner",
+      state: "converged",
       summary,
       evidence: [candidateCheckpointPath, durableCandidate],
+      actions: [],
     });
   }
 
@@ -2006,7 +2032,11 @@ async function runCandidateIteration(
           reason: `${review!.summary} ${benchmarkFix.summary}`,
         })
       : null;
-  const workflowState = approval ? "waiting" : "needs-owner";
+  const workflowState = approval
+    ? "waiting"
+    : review?.disposition === "needs-human"
+      ? "needs-owner"
+      : "converged";
   const summary = verificationPassed
     ? `May candidate passed targeted and release verification and is waiting for approval of the exact artifact. ${candidateCheckpoint.implementationSummary}`
     : benchmarkFix
@@ -2074,9 +2104,10 @@ async function runCandidateIteration(
   if (approval) dispatchApproval(ctx, approval);
   if (!approval) {
     return ctx.done(summary, {
-      state: "needs-owner",
+      state: workflowState,
       summary,
       evidence: boundedEvidence(evidence),
+      ...(workflowState === "converged" ? { actions: [] } : {}),
     });
   }
   return ctx.done(summary, {
@@ -2196,6 +2227,21 @@ async function runCandidate(
         previous.approval.kind === "agent-improvement"
           ? `Applied approved May candidate ${previous.approval.artifactFingerprint}.`
           : `Applied approved benchmark/scorer fix ${previous.approval.artifactFingerprint}.`;
+      writeJson(resultPath, {
+        ...stored,
+        workflow_state: "converged",
+        summary,
+        evidence: boundedEvidence([
+          ...(Array.isArray(stored.evidence)
+            ? stored.evidence.map(String)
+            : []),
+          decisionPath,
+          artifactPath,
+        ]),
+        conditions: [],
+        approval: null,
+        applied_at: new Date().toISOString(),
+      });
       return ctx.done(summary, {
         state: "converged",
         summary,
@@ -2460,6 +2506,45 @@ async function handleAssessmentBenchmarkFix(
   });
 }
 
+function improvementStatePaths(
+  ctx: WorkflowContext,
+  taskId: string,
+  generation: number,
+  scope?: string,
+): { stateDir: string; assessmentPath: string } {
+  const taskKey = safeKey(taskId, "improve-may");
+  const scopeKey = scope ? safeKey(scope, "curriculum-track") : null;
+  return {
+    stateDir: join(
+      ctx.projectsRoot,
+      "gym.app",
+      ".state",
+      "candidates",
+      taskKey,
+      String(generation),
+      ...(scopeKey ? ["tracks", scopeKey] : []),
+    ),
+    assessmentPath: scopeKey
+      ? join(
+          ctx.projectsRoot,
+          "gym.app",
+          ".state",
+          "assessments",
+          taskKey,
+          String(generation),
+          `${scopeKey}.json`,
+        )
+      : join(
+          ctx.projectsRoot,
+          "gym.app",
+          ".state",
+          "assessments",
+          taskKey,
+          `${generation}.json`,
+        ),
+  };
+}
+
 async function runImprovementOnce(
   ctx: WorkflowContext,
   loop: GymLoopApi,
@@ -2468,35 +2553,12 @@ async function runImprovementOnce(
   generation: number,
   scope?: string,
 ): Promise<WorkflowResult> {
-  const taskKey = safeKey(taskId, "improve-may");
-  const scopeKey = scope ? safeKey(scope, "curriculum-track") : null;
-  const stateDir = join(
-    ctx.projectsRoot,
-    "gym.app",
-    ".state",
-    "candidates",
-    taskKey,
-    String(generation),
-    ...(scopeKey ? ["tracks", scopeKey] : []),
+  const { stateDir, assessmentPath } = improvementStatePaths(
+    ctx,
+    taskId,
+    generation,
+    scope,
   );
-  const assessmentPath = scopeKey
-    ? join(
-        ctx.projectsRoot,
-        "gym.app",
-        ".state",
-        "assessments",
-        taskKey,
-        String(generation),
-        `${scopeKey}.json`,
-      )
-    : join(
-        ctx.projectsRoot,
-        "gym.app",
-        ".state",
-        "assessments",
-        taskKey,
-        `${generation}.json`,
-      );
 
   let plan = planFromInput(ctx, input);
   if (!plan) {
@@ -2510,9 +2572,10 @@ async function runImprovementOnce(
       const assessment = prepared.assessment;
       if (prepared.problem) {
         return ctx.done(prepared.problem, {
-          state: "needs-owner",
+          state: "converged",
           summary: prepared.problem,
           evidence: [assessmentPath, assessment.screening_run_dir],
+          actions: [],
         });
       }
       if (!assessment.focus) {
@@ -2541,9 +2604,10 @@ async function runImprovementOnce(
           ? "Gym found evaluation issues but no approved May behavior gap to change."
           : "May has no actionable failures in the current approved evaluation.";
         return ctx.done(summary, {
-          state: actionable.length ? "needs-owner" : "converged",
+          state: "converged",
           summary,
           evidence: [assessmentPath, assessment.screening_run_dir],
+          actions: [],
         });
       }
       if (!assessment.baseline_run_id || !assessment.baseline_run_dir) {
@@ -2578,6 +2642,225 @@ async function runImprovementOnce(
   return runCandidate(ctx, loop, plan, taskId, generation, stateDir);
 }
 
+function workflowOutcome(result: WorkflowResult): {
+  state: string;
+  summary: string;
+  evidence: string[];
+} {
+  const value = record(result);
+  const output = record(value.output);
+  const evidence = Array.isArray(output.evidence)
+    ? output.evidence.map(String)
+    : Array.isArray(value.evidence)
+      ? value.evidence.map(String)
+      : [];
+  return {
+    state: String(output.state ?? value.state ?? value.type ?? ""),
+    summary: String(output.summary ?? value.summary ?? ""),
+    evidence,
+  };
+}
+
+function curriculumInput(
+  agent: string,
+  target: CurriculumTarget,
+): Record<string, unknown> {
+  return {
+    agent,
+    benchmark: target.benchmark,
+    scenarios: target.scenarios,
+    trials: target.trials,
+    reason: `curriculum-drain:${target.id}`,
+  };
+}
+
+function curriculumCampaignId(
+  curriculumFingerprint: string,
+  agentFingerprint: string,
+): string {
+  return `sha256:${createHash("sha256")
+    .update(curriculumFingerprint)
+    .update("\0")
+    .update(agentFingerprint)
+    .digest("hex")}`;
+}
+
+function curriculumScope(campaignId: string, targetId: string): string {
+  return `${targetId}-${campaignId.slice("sha256:".length, "sha256:".length + 16)}`;
+}
+
+async function prepareCurriculumExperiments(
+  ctx: WorkflowContext,
+  loop: GymLoopApi,
+  targets: CurriculumTarget[],
+  agent: string,
+  campaignId: string,
+  taskId: string,
+  generation: number,
+): Promise<CurriculumExperiment[]> {
+  return Promise.all(
+    targets.map(async (target) => {
+      const input = curriculumInput(agent, target);
+      const scope = curriculumScope(campaignId, target.id);
+      const { assessmentPath } = improvementStatePaths(
+        ctx,
+        taskId,
+        generation,
+        scope,
+      );
+      const prepared = await prepareAssessment(
+        ctx,
+        input,
+        assessmentPath,
+        loop,
+      );
+      return {
+        target,
+        input,
+        scope,
+        assessmentPath,
+        assessment: prepared.assessment,
+        ...(prepared.problem ? { problem: prepared.problem } : {}),
+      };
+    }),
+  );
+}
+
+function experimentNeedsIntegration(experiment: CurriculumExperiment): boolean {
+  return Boolean(
+    experiment.assessment.focus ||
+    experiment.assessment.findings.some(
+      ({ classification }) =>
+        classification === "benchmark" || classification === "scorer",
+    ),
+  );
+}
+
+async function selectPriorityExperiment(
+  ctx: WorkflowContext,
+  experiments: CurriculumExperiment[],
+  wake: Record<string, unknown>,
+): Promise<CurriculumExperiment> {
+  if (experiments.length === 1) return experiments[0]!;
+  const choices = experiments.map((experiment) => ({
+    targetId: experiment.target.id,
+    assessmentPath: experiment.assessmentPath,
+    focus: experiment.assessment.focus,
+    findings: experiment.assessment.findings,
+  }));
+  const result = await ctx.runAgent(
+    "gym",
+    [
+      "You own the improve/may goal and must choose the single highest-priority integration path from two independent, frozen development assessments.",
+      "Prioritize safety, human intent, impact, reproducibility, and the clearest bounded proof. Do not change benchmark truth or propose child tasks.",
+      "Select exactly one targetId. The workflow will keep the other assessment checkpoint for the next reconcile.",
+      "Wake evidence:",
+      "```json",
+      JSON.stringify(wake, null, 2),
+      "```",
+      "Choices:",
+      "```json",
+      JSON.stringify(choices, null, 2),
+      "```",
+    ].join("\n"),
+    { schema: prioritySelectionSchema },
+  );
+  const selected = String(result.structuredResult?.targetId ?? "");
+  return (
+    experiments.find(({ target }) => target.id === selected) ?? experiments[0]!
+  );
+}
+
+function checkpointTrack(
+  checkpoint: TrainingDrainCheckpoint,
+  track: TrainingDrainCheckpoint["tracks"][number],
+): void {
+  checkpoint.tracks = [
+    ...checkpoint.tracks.filter(({ id }) => id !== track.id),
+    track,
+  ];
+  checkpoint.updated_at = new Date().toISOString();
+  checkpoint.evidence = boundedEvidence([
+    ...checkpoint.evidence,
+    ...track.evidence,
+  ]);
+}
+
+function experimentPassiveResult(experiment: CurriculumExperiment): {
+  state: "complete" | "issue";
+  summary: string;
+  evidence: string[];
+} | null {
+  if (experimentNeedsIntegration(experiment)) return null;
+  const evidence = boundedEvidence([
+    experiment.assessmentPath,
+    experiment.assessment.screening_run_dir,
+    ...(experiment.assessment.retry_run_dir
+      ? [experiment.assessment.retry_run_dir]
+      : []),
+  ]);
+  if (experiment.problem) {
+    const didNotReproduce = experiment.problem.includes("did not reproduce");
+    return {
+      state: didNotReproduce ? "complete" : "issue",
+      summary: experiment.problem,
+      evidence,
+    };
+  }
+  const actionable = experiment.assessment.findings.filter(
+    ({ classification }) => classification !== "noise",
+  );
+  return actionable.length
+    ? {
+        state: "issue",
+        summary:
+          "Gym found an evaluator or runtime issue; it cannot establish a May behavior change from this track.",
+        evidence,
+      }
+    : {
+        state: "complete",
+        summary:
+          "May has no actionable failures in the current approved evaluation.",
+        evidence,
+      };
+}
+
+function shouldRetryIssues(input: Record<string, unknown>): boolean {
+  return String(input.reason ?? "") !== "curriculum-continue";
+}
+
+function emitCurriculumContinuation(
+  ctx: WorkflowContext,
+  campaignId: string,
+): void {
+  ctx.emit({
+    type: "gym.improvement.requested",
+    project: "gym",
+    params: {
+      agent: "may",
+      curriculumDrain: true,
+      reason: "curriculum-continue",
+      campaignId,
+    },
+  });
+}
+
+export function improvementInput(
+  packet: Record<string, unknown> | null,
+  trigger: Record<string, unknown> | null,
+): Record<string, unknown> {
+  const desired = record(packet?.input);
+  if (!trigger?.type) return desired;
+  const merged = { ...desired, ...trigger };
+  if (
+    trigger.type === "gym.improvement.requested" &&
+    trigger.curriculumDrain !== true
+  ) {
+    delete merged.curriculumDrain;
+  }
+  return merged;
+}
+
 export async function runImprovement(
   ctx: WorkflowContext,
   loop: GymLoopApi = defaultLoopApi,
@@ -2586,7 +2869,7 @@ export async function runImprovement(
   configureGymRoot(gymRoot);
   const packet = reconciliationPacket(ctx.task);
   const trigger = triggerDetails(ctx.task);
-  const input = record(packet?.input ?? trigger);
+  const input = improvementInput(packet, trigger);
   const taskId = String(packet?.taskId ?? "improve/may");
   const generation = Number(packet?.generation ?? 1);
   if (!Number.isInteger(generation) || generation < 1) {
@@ -2602,6 +2885,7 @@ export async function runImprovement(
     if (!agent) throw new Error("Invalid curriculum agent");
     const agentPath = join(dirname(ctx.projectsRoot), "agents", agent);
     const agentFingerprint = `sha256:${fingerprintAgentLearningSurface(agentPath)}`;
+    const campaignId = curriculumCampaignId(fingerprint, agentFingerprint);
     const checkpointPath = join(
       ctx.projectsRoot,
       "gym.app",
@@ -2609,11 +2893,22 @@ export async function runImprovement(
       "learning",
       "training-drain.json",
     );
-    const checkpoint = readJson<TrainingDrainCheckpoint>(checkpointPath);
-    if (
-      checkpoint?.curriculum_fingerprint === fingerprint &&
-      checkpoint.agent_fingerprint === agentFingerprint
-    ) {
+    const stored = readJson<TrainingDrainCheckpoint>(checkpointPath);
+    const checkpoint: TrainingDrainCheckpoint =
+      stored?.schema_version === 2 && stored.campaign_id === campaignId
+        ? stored
+        : {
+            schema_version: 2,
+            agent,
+            campaign_id: campaignId,
+            curriculum_fingerprint: fingerprint,
+            agent_fingerprint: agentFingerprint,
+            updated_at: new Date().toISOString(),
+            exhausted_at: null,
+            tracks: [],
+            evidence: [],
+          };
+    if (checkpoint.exhausted_at) {
       const summary = "May already passes every approved learning track.";
       return ctx.done(summary, {
         state: "converged",
@@ -2623,52 +2918,121 @@ export async function runImprovement(
       });
     }
 
-    const sequence = await runCurriculumSequence(
-      targets,
-      (target) =>
-        runImprovementOnce(
-          ctx,
-          loop,
-          {
-            agent,
-            benchmark: target.benchmark,
-            scenarios: target.scenarios,
-            trials: target.trials,
-            reason: `curriculum-drain:${target.id}`,
-          },
-          taskId,
-          generation,
-          target.id,
-        ) as Promise<Record<string, unknown>>,
-    );
-    if (sequence.state === "stopped") {
-      return sequence.result as unknown as WorkflowResult;
+    if (shouldRetryIssues(input)) {
+      checkpoint.tracks = checkpoint.tracks.filter(
+        ({ state }) => state !== "issue",
+      );
     }
-    const evidence = boundedEvidence(
-      sequence.results.flatMap((result) => {
-        const output = record(result.output);
-        const values = Array.isArray(output.evidence)
-          ? output.evidence
-          : Array.isArray(result.evidence)
-            ? result.evidence
-            : [];
-        return values.map(String);
-      }),
-    );
-    writeJson(checkpointPath, {
-      schema_version: 1,
+    const reviewedIds = new Set(checkpoint.tracks.map(({ id }) => id));
+    const remaining = targets.filter(({ id }) => !reviewedIds.has(id));
+    if (!remaining.length) {
+      const issues = checkpoint.tracks.filter(({ state }) => state === "issue");
+      if (issues.length) {
+        writeJson(checkpointPath, checkpoint);
+        const summary = `Gym reviewed every approved learning track; ${issues.length} evaluator or runtime issue${issues.length === 1 ? " remains" : "s remain"} for the next external wake.`;
+        return ctx.done(summary, {
+          state: "converged",
+          summary,
+          evidence: [checkpointPath, ...checkpoint.evidence],
+          actions: [],
+        });
+      }
+      checkpoint.exhausted_at = new Date().toISOString();
+      checkpoint.updated_at = checkpoint.exhausted_at;
+      writeJson(checkpointPath, checkpoint);
+      const summary = `May passes all ${targets.length} approved learning tracks; training material is exhausted.`;
+      return ctx.done(summary, {
+        state: "converged",
+        summary,
+        evidence: [checkpointPath, ...checkpoint.evidence],
+        actions: [],
+      });
+    }
+
+    // Two independent assessments may run together. Candidate construction,
+    // integration, release verification, and promotion remain serialized.
+    const experiments = await prepareCurriculumExperiments(
+      ctx,
+      loop,
+      remaining.slice(0, 2),
       agent,
-      curriculum_fingerprint: fingerprint,
-      agent_fingerprint: agentFingerprint,
-      exhausted_at: new Date().toISOString(),
-      targets: targets.map(({ id }) => id),
-      evidence,
-    } satisfies TrainingDrainCheckpoint);
+      campaignId,
+      taskId,
+      generation,
+    );
+    for (const experiment of experiments) {
+      const passive = experimentPassiveResult(experiment);
+      if (!passive) continue;
+      checkpointTrack(checkpoint, {
+        id: experiment.target.id,
+        ...passive,
+      });
+    }
+
+    const actionable = experiments.filter(experimentNeedsIntegration);
+    if (actionable.length) {
+      const selected = await selectPriorityExperiment(ctx, actionable, input);
+      const result = await runImprovementOnce(
+        ctx,
+        loop,
+        selected.input,
+        taskId,
+        generation,
+        selected.scope,
+      );
+      const outcome = workflowOutcome(result);
+      if (outcome.state === "waiting" || outcome.state === "needs-owner") {
+        writeJson(checkpointPath, checkpoint);
+        return result;
+      }
+      const complete =
+        outcome.summary.includes("no actionable failures") ||
+        outcome.summary.startsWith("Applied approved") ||
+        outcome.summary.includes("already passes");
+      checkpointTrack(checkpoint, {
+        id: selected.target.id,
+        state: complete ? "complete" : "issue",
+        summary: outcome.summary,
+        evidence: boundedEvidence([
+          selected.assessmentPath,
+          ...outcome.evidence,
+        ]),
+      });
+    }
+
+    writeJson(checkpointPath, checkpoint);
+    const afterIds = new Set(checkpoint.tracks.map(({ id }) => id));
+    const stillRemaining = targets.filter(({ id }) => !afterIds.has(id));
+    if (stillRemaining.length) {
+      emitCurriculumContinuation(ctx, campaignId);
+      const summary = `Gym checkpointed this bounded training stage; ${stillRemaining.length} approved track${stillRemaining.length === 1 ? " remains" : "s remain"}.`;
+      return ctx.done(summary, {
+        state: "converged",
+        summary,
+        evidence: [checkpointPath, ...checkpoint.evidence],
+        actions: [],
+      });
+    }
+
+    const issues = checkpoint.tracks.filter(({ state }) => state === "issue");
+    if (issues.length) {
+      const summary = `Gym reviewed every approved learning track; ${issues.length} evaluator, runtime, or no-progress issue${issues.length === 1 ? " remains" : "s remain"} for the next external wake.`;
+      return ctx.done(summary, {
+        state: "converged",
+        summary,
+        evidence: [checkpointPath, ...checkpoint.evidence],
+        actions: [],
+      });
+    }
+
+    checkpoint.exhausted_at = new Date().toISOString();
+    checkpoint.updated_at = checkpoint.exhausted_at;
+    writeJson(checkpointPath, checkpoint);
     const summary = `May passes all ${targets.length} approved learning tracks; training material is exhausted.`;
     return ctx.done(summary, {
       state: "converged",
       summary,
-      evidence: [checkpointPath, ...evidence],
+      evidence: [checkpointPath, ...checkpoint.evidence],
       actions: [],
     });
   } catch (error) {

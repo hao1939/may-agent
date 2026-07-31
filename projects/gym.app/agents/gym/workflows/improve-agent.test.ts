@@ -18,6 +18,7 @@ import {
   buildApprovalRequest,
   dispatchApproval,
   fingerprintTree,
+  improvementInput,
   learningPromptLines,
   loadCurriculumTargets,
   prepareAssessment,
@@ -94,6 +95,40 @@ function manifest(
 }
 
 describe("single agent-improvement loop", () => {
+  test("keeps desired state stable while a focused wake supplies work", () => {
+    const desired = {
+      taskId: "improve/may",
+      generation: 8,
+      input: { agent: "may", curriculumDrain: true },
+    };
+    expect(
+      improvementInput(desired, {
+        type: "gym.improvement.requested",
+        benchmark: "may-deputy-learning",
+        scenarios: ["may-learn-select-skill-or-workflow"],
+        trials: 3,
+        reason: "approved-pilot",
+      }),
+    ).toEqual({
+      agent: "may",
+      benchmark: "may-deputy-learning",
+      scenarios: ["may-learn-select-skill-or-workflow"],
+      trials: 3,
+      reason: "approved-pilot",
+      type: "gym.improvement.requested",
+    });
+    expect(
+      improvementInput(desired, {
+        type: "agent.revision.changed",
+        revision: "sha256:new-may",
+      }),
+    ).toMatchObject({
+      agent: "may",
+      curriculumDrain: true,
+      revision: "sha256:new-may",
+    });
+  });
+
   test("rejects an autonomous track that omits approved material", () => {
     const root = mkdtempSync(join(tmpdir(), "gym-curriculum-"));
     roots.push(root);
@@ -232,6 +267,172 @@ describe("single agent-improvement loop", () => {
     );
     expect(deferredIssue.state).toBe("stopped");
     expect(visited).toEqual(targets.map(({ id }) => id));
+  });
+
+  test("reconciles two assessments at a time and resumes from the campaign checkpoint", async () => {
+    const root = mkdtempSync(join(tmpdir(), "gym-bounded-campaign-"));
+    roots.push(root);
+    const projectsRoot = join(root, "projects");
+    const gymRoot = join(projectsRoot, "gym");
+    const agentsRoot = join(root, "agents");
+    const learningRoot = join(gymRoot, "benchmarks", "may-learning");
+    mkdirSync(learningRoot, { recursive: true });
+    mkdirSync(join(agentsRoot, "may"), { recursive: true });
+    writeFileSync(join(agentsRoot, "may", "AGENTS.md"), "# May\n");
+
+    const tracks = ["track-one", "track-two", "track-three"].map(
+      (id, index) => ({
+        id,
+        benchmark: id,
+        scenarios: [`case-${index + 1}`],
+        trials: 1,
+      }),
+    );
+    writeFileSync(
+      join(learningRoot, "autonomous-training.json"),
+      JSON.stringify({ schema_version: 1, agent: "may", tracks }),
+    );
+    for (const [index, track] of tracks.entries()) {
+      const benchmarkDir = join(gymRoot, "benchmarks", track.benchmark);
+      const scenario = track.scenarios[0]!;
+      mkdirSync(benchmarkDir, { recursive: true });
+      mkdirSync(join(gymRoot, "scenarios", scenario), { recursive: true });
+      writeFileSync(
+        join(benchmarkDir, "suite.json"),
+        JSON.stringify({ labels_file: "labels.json", scenarios: [scenario] }),
+      );
+      writeFileSync(
+        join(benchmarkDir, "labels.json"),
+        JSON.stringify({
+          labels: {
+            [scenario]: {
+              status: "approved",
+              approved_by: "hao",
+              approved_at: "2026-08-01T00:00:00Z",
+            },
+          },
+        }),
+      );
+      writeFileSync(
+        join(gymRoot, "scenarios", scenario, "prompt.md"),
+        `case ${index + 1}\n`,
+      );
+    }
+
+    let active = 0;
+    let maxActive = 0;
+    let runCount = 0;
+    const loop: GymLoopApi = {
+      async run(options) {
+        active++;
+        maxActive = Math.max(maxActive, active);
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        active--;
+        runCount++;
+        const scenario = options.scenarios![0]!;
+        const runId = `campaign-run-${runCount}`;
+        const runDir = join(gymRoot, ".state", "benchmarks", runId);
+        mkdirSync(runDir, { recursive: true });
+        const value = manifest(runId, { [scenario]: ["pass"] });
+        value.benchmark = options.benchmark;
+        value.scenarios = [scenario];
+        writeFileSync(join(runDir, "manifest.json"), JSON.stringify(value));
+        return { runDir, manifest: value };
+      },
+      async verify() {
+        throw new Error("an all-pass assessment must not build a candidate");
+      },
+    };
+    const emitted: Record<string, unknown>[] = [];
+    const task = (reason: string) =>
+      [
+        "## Reconciliation Task",
+        "```json",
+        JSON.stringify({
+          taskId: "improve/may",
+          generation: 1,
+          input: { agent: "may", curriculumDrain: true },
+        }),
+        "```",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "gym.improvement.requested",
+          params: { curriculumDrain: true, reason },
+        }),
+        "```",
+      ].join("\n");
+    const ctx = {
+      projectsRoot,
+      task: task("curriculum-refill"),
+      emit(event: Record<string, unknown>) {
+        emitted.push(event);
+      },
+      async runAgent() {
+        throw new Error("all-pass assessments need no owner classification");
+      },
+      done(summary: string, details: Record<string, unknown>) {
+        return { type: "done", summary, ...details };
+      },
+      blocked(reason: string) {
+        return { type: "blocked", reason };
+      },
+    } as unknown as WorkflowContext;
+
+    const first = (await runImprovement(ctx, loop)) as unknown as Record<
+      string,
+      unknown
+    >;
+    expect(first.summary).toContain("1 approved track remains");
+    expect(first.actions).toEqual([]);
+    expect(runCount).toBe(2);
+    expect(maxActive).toBe(2);
+    expect(emitted).toEqual([
+      expect.objectContaining({
+        type: "gym.improvement.requested",
+        params: expect.objectContaining({ reason: "curriculum-continue" }),
+      }),
+    ]);
+
+    (ctx as unknown as { task: string }).task = task("curriculum-continue");
+    const second = (await runImprovement(ctx, loop)) as unknown as Record<
+      string,
+      unknown
+    >;
+    expect(second.summary).toContain("training material is exhausted");
+    expect(runCount).toBe(3);
+
+    (ctx as unknown as { task: string }).task = task("curriculum-refill");
+    const replay = (await runImprovement(ctx, loop)) as unknown as Record<
+      string,
+      unknown
+    >;
+    expect(replay.summary).toBe(
+      "May already passes every approved learning track.",
+    );
+    expect(runCount).toBe(3);
+    expect(
+      JSON.parse(
+        readFileSync(
+          join(
+            projectsRoot,
+            "gym.app",
+            ".state",
+            "learning",
+            "training-drain.json",
+          ),
+          "utf8",
+        ),
+      ),
+    ).toMatchObject({
+      schema_version: 2,
+      exhausted_at: expect.any(String),
+      tracks: [
+        { id: "track-one", state: "complete" },
+        { id: "track-two", state: "complete" },
+        { id: "track-three", state: "complete" },
+      ],
+    });
   });
 
   test("gives candidate builders lessons and evidence without release truth", () => {
@@ -871,6 +1072,31 @@ describe("single agent-improvement loop", () => {
         ),
       ).proposals_accepted,
     ).toBe(1);
+
+    (ctx as unknown as { task: string }).task = [
+      task,
+      "",
+      "## Trigger Event",
+      "```json",
+      JSON.stringify({
+        type: "agent.revision.changed",
+        data: {
+          agent: "may",
+          revision: request.artifactFingerprint,
+        },
+      }),
+      "```",
+    ].join("\n");
+    const confirmation = (await runImprovement(ctx, loop)) as unknown as Record<
+      string,
+      unknown
+    >;
+    expect(confirmation.state).toBe("converged");
+    expect(confirmation.summary).toContain("Applied approved May candidate");
+    expect(verifyCount).toBe(2);
+    expect(
+      emitted.filter((event) => event.type === "agent.revision.changed"),
+    ).toHaveLength(1);
   });
 
   test("revises a failed candidate inside one ordered workflow attempt", async () => {

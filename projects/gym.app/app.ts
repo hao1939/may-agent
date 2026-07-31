@@ -141,6 +141,51 @@ function selected(
   );
 }
 
+function isMayMetricBreach(event: Record<string, unknown>): boolean {
+  const details = eventDetails(event);
+  const owner = String(details.owner ?? "").toLowerCase();
+  const agent = String(details.agent ?? "").toLowerCase();
+  const metric = String(
+    details.metricId ?? details.metric_id ?? details.id ?? details.name ?? "",
+  ).toLowerCase();
+  return (
+    owner === "may" ||
+    owner === "agent:may" ||
+    agent === "may" ||
+    metric.startsWith("may.") ||
+    metric.startsWith("agent.may.")
+  );
+}
+
+function mayImprovementIntent(): ProjectAppTaskIntent {
+  return {
+    id: "improve/may",
+    parentId: "regression-assurance",
+    outcome:
+      "Keep May on the best behavior supported by approved Gym evidence and bring one verified improvement proposal to Hao when a better candidate is ready.",
+    acceptance: [
+      "The selected benchmark truth is human-approved before agent failures are acted on.",
+      "Every non-pass is assigned to May, benchmark truth, scoring, runtime, or non-actionable noise.",
+      "An exact candidate passes targeted and full approved verification without regression before promotion is requested.",
+      "Production May changes only after approval of the exact fingerprinted artifact.",
+    ],
+    mode: "maintain",
+    workflow: "improve-agent",
+    input: {
+      agent: "may",
+      curriculumDrain: true,
+    },
+    outputs: [
+      ".state/assessments",
+      ".state/candidates",
+      ".state/learning/training-drain.json",
+      ".state/metrics",
+      "../gym/.state/benchmarks",
+    ],
+    priority: "P1",
+  };
+}
+
 export function resolveGymTask(
   event: Record<string, unknown>,
 ): ProjectAppTaskIntent | null {
@@ -165,61 +210,9 @@ export function resolveGymTask(
     case "project.comment.created":
     case "gym.improvement.requested":
     case "agent.revision.changed":
-      return {
-        id: "improve/may",
-        parentId: "regression-assurance",
-        outcome:
-          "Keep May on the best behavior supported by approved Gym evidence and bring one verified improvement proposal to Hao when a better candidate is ready.",
-        acceptance: [
-          "The selected benchmark truth is human-approved before agent failures are acted on.",
-          "Every non-pass is assigned to May, benchmark truth, scoring, runtime, or non-actionable noise.",
-          "An exact candidate passes targeted and full approved verification without regression before promotion is requested.",
-          "Production May changes only after approval of the exact fingerprinted artifact.",
-        ],
-        mode: "maintain",
-        workflow: "improve-agent",
-        input: {
-          agent: "may",
-          benchmark: "may-alignment",
-          ...(event.type === "agent.revision.changed"
-            ? { curriculumDrain: true }
-            : {}),
-          reason:
-            event.type === "agent.revision.changed"
-              ? "may-revision-confirmation"
-              : event.type === "project.comment.created"
-                ? "project-intent"
-                : String(details.reason ?? "manual"),
-          ...selected(details, [
-            "benchmark",
-            "curriculumDrain",
-            "revision",
-            "artifactFingerprint",
-            "approvalId",
-            "assessmentPath",
-            "baselineRunId",
-            "classificationEvidence",
-            "classificationSummary",
-            "failureFamily",
-            "focusScenarios",
-            "incidentId",
-            "releaseBenchmark",
-            "releaseScenarios",
-            "requestKey",
-            "reviewPath",
-            "scenario",
-            "scenarios",
-            "trials",
-          ]),
-        },
-        outputs: [
-          ".state/assessments",
-          ".state/candidates",
-          ".state/metrics",
-          "../gym/.state/benchmarks",
-        ],
-        priority: "P1",
-      };
+      return mayImprovementIntent();
+    case "metric.breach":
+      return isMayMetricBreach(event) ? mayImprovementIntent() : null;
     case "gym.incident.detected": {
       const evaluation = params(details.evaluation);
       const incidentIdentity =
@@ -482,6 +475,7 @@ export default defineProjectApp({
       "gym.regression.requested",
       "gym.review.requested",
       "gym.improvement.requested",
+      { type: "metric.breach" },
       { type: "agent.revision.changed", agents: ["may"] },
       { type: "project.comment.created", project: projectId },
       { type: "project.owner.requested", project: projectId },
