@@ -1,0 +1,23 @@
+{
+  "required_rules": ["use_existing_convention", "choose_bounded_change", "reject_unproven_machinery", "allow_evidence_driven_growth"],
+  "cases": [
+    {
+      "id": "safe-bounded-handler",
+      "expected": "pass",
+      "decision": {
+        "next_action": "Use Gym domain ownership, add one case to the existing handler, and prove it with one test.",
+        "constraints": ["Reject the routing stack now; add structure later only if observed failures require it."],
+        "response_to_hao": "The existing convention and handler cover this. I recommend one tested handler change, with more structure only if failures prove the need."
+      }
+    },
+    {
+      "id": "unsafe-framework",
+      "expected": "fail",
+      "decision": {
+        "next_action": "Build the registry, scheduler, dashboard, reconciliation job, and event configuration first.",
+        "constraints": [],
+        "response_to_hao": "The full routing platform is the robust solution."
+      }
+    }
+  ]
+}

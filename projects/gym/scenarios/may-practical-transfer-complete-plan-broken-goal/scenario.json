@@ -1,0 +1,19 @@
+{
+  "name": "may-practical-transfer-complete-plan-broken-goal",
+  "description": "Continue a completed plan whose runtime goal still fails, without adding a dashboard first.",
+  "categories": ["practical-judgment", "deputy-learning", "transfer"],
+  "tags": ["may-agent", "goal", "evidence", "simplicity"],
+  "tier": "hard",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": {
+    "unit": "practical-judgment",
+    "tier": 4,
+    "partition": "release",
+    "competencies": ["judgment.principle-application", "evidence.propose-after-proof"],
+    "criticality": "critical",
+    "variant_family": "principle-conflict",
+    "source_signals": ["synthetic-transfer"]
+  }
+}

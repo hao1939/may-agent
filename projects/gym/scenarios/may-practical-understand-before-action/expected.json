@@ -1,0 +1,7 @@
+{
+  "human_answer": "Inspect references safely, then ask Hao one focused question: remove reproducible generated runs or human review history? Preserve both until that consequential boundary is clear.",
+  "exact": {"needs_clarification": true},
+  "delegations": {"min": 0, "max": 0},
+  "empty": ["preference_updates"],
+  "response_max_words": 55
+}

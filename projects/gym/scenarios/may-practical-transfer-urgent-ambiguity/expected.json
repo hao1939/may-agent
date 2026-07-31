@@ -1,0 +1,7 @@
+{
+  "human_answer": "Start the safe owner diagnosis immediately. Do not guess restart or failover. Use the evidence if it resolves the choice; otherwise return one focused question about the remaining job-loss versus write-loss tradeoff.",
+  "exact": {"needs_clarification": false},
+  "delegations": {"min": 1, "max": 1, "async_required": true},
+  "empty": ["preference_updates"],
+  "response_max_words": 65
+}

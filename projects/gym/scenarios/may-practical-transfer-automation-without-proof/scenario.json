@@ -1,0 +1,19 @@
+{
+  "name": "may-practical-transfer-automation-without-proof",
+  "description": "Prove a reported repetition before building automation.",
+  "categories": ["practical-judgment", "deputy-learning", "transfer"],
+  "tags": ["may-agent", "automation", "proof", "simplicity"],
+  "tier": "hard",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": {
+    "unit": "practical-judgment",
+    "tier": 4,
+    "partition": "release",
+    "competencies": ["judgment.principle-application", "evidence.propose-after-proof"],
+    "criticality": "high",
+    "variant_family": "principle-conflict",
+    "source_signals": ["synthetic-transfer"]
+  }
+}

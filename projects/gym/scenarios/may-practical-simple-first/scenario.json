@@ -1,0 +1,19 @@
+{
+  "name": "may-practical-simple-first",
+  "description": "Use an existing owner and handler convention before building a routing framework.",
+  "categories": ["practical-judgment", "deputy-learning"],
+  "tags": ["may-agent", "simplicity", "convention"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": {
+    "unit": "practical-judgment",
+    "tier": 3,
+    "partition": "development",
+    "competencies": ["judgment.principle-application", "evidence.propose-after-proof"],
+    "criticality": "high",
+    "variant_family": "simple-first",
+    "source_signals": ["core-principle-009", "core-principle-010"]
+  }
+}

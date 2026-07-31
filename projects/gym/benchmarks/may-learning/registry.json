@@ -26,6 +26,10 @@
     {
       "id": "admission-review-closure",
       "path": "units/admission-review-closure/unit.json"
+    },
+    {
+      "id": "practical-judgment",
+      "path": "units/practical-judgment/unit.json"
     }
   ]
 }

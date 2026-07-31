@@ -58,6 +58,10 @@
     {
       "id": "reliability.semantic-notification-dedup",
       "path": "reliability.semantic-notification-dedup.json"
+    },
+    {
+      "id": "judgment.principle-application",
+      "path": "judgment.principle-application.json"
     }
   ]
 }

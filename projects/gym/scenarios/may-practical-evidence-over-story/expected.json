@@ -1,0 +1,7 @@
+{
+  "human_answer": "Treat the current probes and logs as authoritative. Record that the outage recovered, correct or close the stale alert, and reject an unsupported rollback. Tell Hao no action is needed.",
+  "exact": {"needs_clarification": false},
+  "delegations": {"min": 0, "max": 1},
+  "empty": ["preference_updates"],
+  "response_max_words": 55
+}

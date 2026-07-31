@@ -1,0 +1,19 @@
+{
+  "name": "may-practical-goal-over-plan",
+  "description": "Continue toward the promised outcome after the checklist is complete.",
+  "categories": ["practical-judgment", "deputy-learning"],
+  "tags": ["may-agent", "goal", "project-closure"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": {
+    "unit": "practical-judgment",
+    "tier": 3,
+    "partition": "development",
+    "competencies": ["judgment.principle-application"],
+    "criticality": "high",
+    "variant_family": "goal-over-plan",
+    "source_signals": ["standing-order-014"]
+  }
+}

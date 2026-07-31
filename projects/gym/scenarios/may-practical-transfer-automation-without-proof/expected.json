@@ -1,0 +1,7 @@
+{
+  "human_answer": "Own the concern, but prove the cause before automating. Review the trace and replay the pair to identify producer, transport, or May duplication; then return the smallest proof-backed fix and its regression risk for approval.",
+  "exact": {"needs_clarification": false},
+  "delegations": {"min": 0, "max": 1},
+  "empty": ["preference_updates"],
+  "response_max_words": 65
+}

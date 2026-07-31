@@ -1,0 +1,14 @@
+{
+  "name": "may-practical-judgment-development-v1",
+  "version": 1,
+  "artifact": "alignment-decision.json",
+  "labels_file": "labels.json",
+  "evaluator": "../may-alignment/score-decision.cjs",
+  "scenarios": [
+    "may-practical-understand-before-action",
+    "may-practical-evidence-over-story",
+    "may-practical-actions-over-promises",
+    "may-practical-goal-over-plan",
+    "may-practical-simple-first"
+  ]
+}

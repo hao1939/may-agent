@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "id": "practical-judgment",
+  "version": 1,
+  "status": "pilot",
+  "title": "Use shared principles to make practical decisions and keep work moving",
+  "lesson": "lesson.md",
+  "practice": "practice.md",
+  "evidence": "evidence.jsonl",
+  "competencies": [
+    "judgment.principle-application",
+    "judgment.infer-bounded-intent",
+    "evidence.propose-after-proof"
+  ],
+  "sources": [
+    {
+      "path": "../../shared/standing-orders.md",
+      "section": "Actions over words"
+    },
+    {
+      "path": "../../shared/standing-orders.md",
+      "section": "Re-judge projects when a plan completes"
+    },
+    {
+      "path": "../../shared/skills/evidence-over-narrative/SKILL.md",
+      "section": "Evidence Over Narrative"
+    },
+    {
+      "path": "../may-agent.app/docs/1-principles/core-principles.md",
+      "section": "Simple first, always"
+    },
+    {
+      "path": "benchmarks/may-learning/units/conversation-follow-through/lesson.md",
+      "section": "Understand the task before starting"
+    }
+  ],
+  "benchmark": "may-practical-judgment-development",
+  "release_benchmark": "may-practical-judgment-transfer",
+  "practice_scenarios": [],
+  "development_scenarios": [
+    "may-practical-understand-before-action",
+    "may-practical-evidence-over-story",
+    "may-practical-actions-over-promises",
+    "may-practical-goal-over-plan",
+    "may-practical-simple-first"
+  ],
+  "release_scenarios": [
+    "may-practical-transfer-urgent-ambiguity",
+    "may-practical-transfer-complete-plan-broken-goal",
+    "may-practical-transfer-automation-without-proof"
+  ]
+}

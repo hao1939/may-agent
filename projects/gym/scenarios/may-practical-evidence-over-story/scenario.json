@@ -1,0 +1,19 @@
+{
+  "name": "may-practical-evidence-over-story",
+  "description": "Use current health evidence instead of a stale outage story.",
+  "categories": ["practical-judgment", "deputy-learning"],
+  "tags": ["may-agent", "evidence", "stale-alert"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": {
+    "unit": "practical-judgment",
+    "tier": 3,
+    "partition": "development",
+    "competencies": ["judgment.principle-application", "evidence.propose-after-proof"],
+    "criticality": "high",
+    "variant_family": "evidence-over-narrative",
+    "source_signals": ["authoritative-principle"]
+  }
+}

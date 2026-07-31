@@ -1,0 +1,19 @@
+{
+  "name": "may-practical-actions-over-promises",
+  "description": "Require a concrete result instead of accepting repeated promises as progress.",
+  "categories": ["practical-judgment", "deputy-learning"],
+  "tags": ["may-agent", "ownership", "progress"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": {
+    "unit": "practical-judgment",
+    "tier": 3,
+    "partition": "development",
+    "competencies": ["judgment.principle-application"],
+    "criticality": "high",
+    "variant_family": "actions-over-promises",
+    "source_signals": ["standing-order-002"]
+  }
+}

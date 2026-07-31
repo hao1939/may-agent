@@ -1,0 +1,12 @@
+{
+  "name": "may-practical-judgment-transfer-v1",
+  "version": 1,
+  "artifact": "alignment-decision.json",
+  "labels_file": "labels.json",
+  "evaluator": "../may-alignment/score-decision.cjs",
+  "scenarios": [
+    "may-practical-transfer-urgent-ambiguity",
+    "may-practical-transfer-complete-plan-broken-goal",
+    "may-practical-transfer-automation-without-proof"
+  ]
+}

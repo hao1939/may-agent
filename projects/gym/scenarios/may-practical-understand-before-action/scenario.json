@@ -1,0 +1,19 @@
+{
+  "name": "may-practical-understand-before-action",
+  "description": "Clarify a consequential cleanup boundary before acting.",
+  "categories": ["practical-judgment", "deputy-learning"],
+  "tags": ["may-agent", "understanding", "ambiguity"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": {
+    "unit": "practical-judgment",
+    "tier": 3,
+    "partition": "development",
+    "competencies": ["judgment.principle-application", "judgment.infer-bounded-intent"],
+    "criticality": "high",
+    "variant_family": "understand-before-action",
+    "source_signals": ["authoritative-principle"]
+  }
+}
