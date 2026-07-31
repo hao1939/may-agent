@@ -3269,6 +3269,85 @@ describe("project app task reconciler state", () => {
     expect(readTaskState(config).tasks["pipeline-monitor"].blocker).toBeUndefined();
   });
 
+  it("consumes an unrelated trigger queued while the task installs a wait", () => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: { ...intent("maintain"), id: "work/queued-pulse" },
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+
+    expect(
+      recordProjectAppTaskTrigger(config, claim.taskId, {
+        type: "project.task.tick",
+        data: { taskId: claim.taskId, reason: "periodic-pulse" },
+      }),
+    ).toEqual({ kind: "recorded" });
+
+    deferProjectAppTask(config, claim, {
+      disposition: "waiting",
+      summary: "waiting for pipeline completion",
+      conditions: [
+        {
+          id: "pipeline-run:42:completed",
+          type: "pipeline-run.state",
+          subject: "pipeline-run:42",
+          expected: "completed",
+        },
+      ],
+    });
+
+    expect(readProjectAppTaskTrigger(config, claim.taskId)).toBeUndefined();
+    expect(
+      claimObservedProjectAppTask(config, {
+        taskId: claim.taskId,
+        appOwner: "app-owner",
+        handler: "workflow:known-workflow",
+      }),
+    ).toMatchObject({ kind: "waiting", conditionIds: ["pipeline-run:42:completed"] });
+  });
+
+  it("preserves a queued trigger that satisfies the wait installed by the attempt", () => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: { ...intent("maintain"), id: "work/queued-completion" },
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+
+    const completion = {
+      type: "pipeline-run.state",
+      pipelineRunId: "42",
+      state: "completed",
+      source: "pipeline-watcher",
+    };
+    expect(recordProjectAppTaskTrigger(config, claim.taskId, completion)).toEqual({ kind: "recorded" });
+
+    deferProjectAppTask(config, claim, {
+      disposition: "waiting",
+      summary: "waiting for pipeline completion",
+      conditions: [
+        {
+          id: "pipeline-run:42:completed",
+          type: "pipeline-run.state",
+          subject: "pipeline-run:42",
+          expected: "completed",
+        },
+      ],
+    });
+
+    expect(readTaskState(config).conditions?.["pipeline-run:42:completed"]?.status.state).toBe("true");
+    expect(readProjectAppTaskTrigger(config, claim.taskId)).toEqual(completion);
+    const resumed = claimObservedProjectAppTask(config, {
+      taskId: claim.taskId,
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    expect(resumed).toMatchObject({ kind: "claimed", trigger: completion });
+  });
+
   it("keeps a decomposition parent open while applying child task actions", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {

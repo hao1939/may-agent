@@ -263,6 +263,21 @@ function applyConditionEvent(
   return changed;
 }
 
+/**
+ * Re-evaluate one already-persisted event against the current Condition level.
+ *
+ * The task reconciler uses this when an event arrived while a task was running
+ * and the task only declared its next wait at the end of that attempt.
+ */
+export function applyProjectAppConditionEvent(
+  tree: TaskTree,
+  event: Record<string, unknown>,
+): ProjectAppConditionWake[] {
+  const wakes = new Map<string, ProjectAppConditionWake>();
+  applyConditionEvent(tree, event, wakes);
+  return [...wakes.values()];
+}
+
 /** Correlate semantic observations with durable Conditions in one state transaction. */
 export function trackProjectAppConditionEvents(
   config: TaskStateConfig,
