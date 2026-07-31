@@ -16,6 +16,7 @@ declare const Bun: {
     websocket: { open(ws: any): void; message(ws: any, msg: any): void; close(ws: any): void };
   }): { port: number };
 };
+import { randomUUID } from "node:crypto";
 import { appendFileSync, readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { extname, join, relative, resolve } from "node:path";
 import type { Duplex } from "node:stream";
@@ -63,6 +64,51 @@ const DASHBOARD_SESSION_ROW_LIMIT = 2_000;
 export interface WebUIOptions {
   stateDir: string;
   port: number;
+}
+
+type DaemonFrameResult = { ok: boolean; error?: string; eventId?: number };
+
+export async function sendDaemonFrameWithRetry(
+  socketPath: string,
+  frame: Record<string, unknown>,
+  send: typeof sendDaemonEvent = sendDaemonEvent,
+): Promise<DaemonFrameResult> {
+  const originalData =
+    frame.data && typeof frame.data === "object" && !Array.isArray(frame.data)
+      ? (frame.data as Record<string, unknown>)
+      : {};
+  const idempotencyKey =
+    typeof originalData.idempotencyKey === "string" && originalData.idempotencyKey.trim()
+      ? originalData.idempotencyKey.trim()
+      : `web-${randomUUID()}`;
+  const durableFrame = {
+    ...frame,
+    data: { ...originalData, idempotencyKey },
+  };
+
+  for (const timeoutMs of [2_000, 5_000]) {
+    try {
+      const response = await send(socketPath, durableFrame, { timeoutMs });
+      const eventId = Number(response.eventId);
+      return {
+        ok: true,
+        ...(Number.isInteger(eventId) && eventId > 0 ? { eventId } : {}),
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const outcomeMayBeDurable = message === "Socket timeout" || message.includes("outcome unknown");
+      if (timeoutMs === 2_000 && outcomeMayBeDurable) continue;
+      return {
+        ok: false,
+        error: `daemon socket delivery failed at ${socketPath}: ${message}`,
+      };
+    }
+  }
+
+  return {
+    ok: false,
+    error: `daemon socket delivery failed at ${socketPath}: acknowledgement unavailable`,
+  };
 }
 
 function platformUiContentTypeFor(path: string): string {
@@ -3418,17 +3464,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     frame: Record<string, unknown>,
   ): Promise<{ ok: boolean; error?: string; eventId?: number }> {
     const socketPath = conventionSocketPath();
-    try {
-      const response = await sendDaemonEvent(socketPath, frame, { timeoutMs: 2000 });
-      const eventId = Number(response.eventId);
-      return {
-        ok: true,
-        ...(Number.isInteger(eventId) && eventId > 0 ? { eventId } : {}),
-      };
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      return { ok: false, error: `daemon socket delivery failed at ${socketPath}: ${message}` };
-    }
+    return sendDaemonFrameWithRetry(socketPath, frame);
   }
 
   async function handleSessionCancel(sessionId: string): Promise<Response> {
