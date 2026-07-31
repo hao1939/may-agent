@@ -22,6 +22,10 @@
     {
       "id": "conversation-follow-through",
       "path": "units/conversation-follow-through/unit.json"
+    },
+    {
+      "id": "admission-review-closure",
+      "path": "units/admission-review-closure/unit.json"
     }
   ]
 }

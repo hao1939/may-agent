@@ -83,6 +83,21 @@ describe("May learning registry", () => {
           "may-conversation-admit-long-running-reply",
         ],
       }),
+      expect.objectContaining({
+        id: "admission-review-closure",
+        version: 1,
+        status: "active",
+        ready_for_development: true,
+        ready_for_release: true,
+        evidence: { positive: 0, negative: 1, contrast: 0 },
+        development_scenarios: [
+          "may-learn-admission-review-disposition-before-runtime-repair",
+          "may-learn-admission-review-complete-gate-before-debugging",
+        ],
+        release_scenarios: [
+          "may-learn-admission-review-material-human-authority-deliver",
+        ],
+      }),
     ]);
     expect(review.warnings).toEqual(
       expect.arrayContaining([

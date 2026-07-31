@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "id": "admission-review-closure",
+  "version": 1,
+  "status": "active",
+  "title": "Close admission reviews before optional runtime repair",
+  "lesson": "lesson.md",
+  "practice": "practice.md",
+  "evidence": "evidence.jsonl",
+  "competencies": [
+    "communication.human-attention-judgment",
+    "system.owner-and-route",
+    "reliability.delivery-vs-completion",
+    "diagnosis.responsible-layer"
+  ],
+  "sources": [
+    {
+      "path": "../gym.app/.state/reviews/incident-s_1785429339590_53.md",
+      "section": "Intended outcome"
+    },
+    {
+      "path": "../may-agent.app/docs/2a-design/escalation.md",
+      "section": "Boundary"
+    },
+    {
+      "path": "../may-agent.app/docs/2a-design/agent-app.md",
+      "section": "Primary mental model"
+    }
+  ],
+  "benchmark": "may-admission-review-closure",
+  "release_benchmark": "may-admission-review-closure",
+  "practice_scenarios": [],
+  "development_scenarios": [
+    "may-learn-admission-review-disposition-before-runtime-repair",
+    "may-learn-admission-review-complete-gate-before-debugging"
+  ],
+  "release_scenarios": [
+    "may-learn-admission-review-material-human-authority-deliver"
+  ]
+}

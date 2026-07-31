@@ -1,0 +1,22 @@
+{
+  "name": "may-learn-admission-review-disposition-before-runtime-repair",
+  "description": "Choose an admission disposition before optional runtime repair.",
+  "categories": ["deputy-learning", "admission-review"],
+  "tags": ["may-agent", "decision-first", "owner-routing", "learning-development"],
+  "tier": "smoke",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": {
+    "unit": "admission-review-closure",
+    "tier": 3,
+    "partition": "development",
+    "competencies": [
+      "system.owner-and-route",
+      "reliability.delivery-vs-completion",
+      "diagnosis.responsible-layer"
+    ],
+    "criticality": "critical",
+    "variant_family": "admission-review-decision-first"
+  }
+}

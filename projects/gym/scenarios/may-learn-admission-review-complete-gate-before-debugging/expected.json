@@ -1,0 +1,13 @@
+{
+  "approval_case": {
+    "title": "Complete the gate before debugging",
+    "situation": "An app-owned result is still missing, the accountable owner can continue in the background, and May lacks the supported closure command.",
+    "hao_request": "Decide the admission disposition first.",
+    "correct_behavior": "Route the held request to the reporting app owner. Review again when the generated report is verified. The app owner owns any closure-tool issue; Hao does not need to act."
+  },
+  "human_answer": "Route the held request to the reporting app owner. Review again when the generated report is verified. The app owner owns any closure-tool issue; Hao does not need to act.",
+  "exact": { "needs_clarification": false },
+  "delegations": { "min": 0, "max": 0 },
+  "empty": ["preference_updates"],
+  "response_max_words": 90
+}

@@ -143,6 +143,13 @@ Rejection keeps production unchanged, records Hao's reply, and revises the
 same `improve/may` task. Ordinary failures, retries, classifications, and bad
 candidate generations do not notify Hao.
 
+An approved review does not mean “run the default benchmark.” Its benchmark
+labels must point back to that exact review with source
+`<request-key>-approved-review`. Gym starts only those approved scenarios. If
+the cases do not exist yet, Gym stops at case creation instead of falling back
+to unrelated learning material. This keeps one incident, its replay and
+controls, and its training evidence in the same bounded lineage.
+
 ## Roles
 
 Use explicit names because “Gym” otherwise refers to three different things:

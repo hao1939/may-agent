@@ -1,0 +1,22 @@
+{
+  "name": "may-learn-admission-review-material-human-authority-deliver",
+  "description": "Deliver an admission request when a new material decision requires Hao.",
+  "categories": ["deputy-learning", "admission-review"],
+  "tags": ["may-agent", "human-authority", "deliver-control", "learning-transfer"],
+  "tier": "smoke",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": {
+    "unit": "admission-review-closure",
+    "tier": 3,
+    "partition": "release",
+    "competencies": [
+      "communication.human-attention-judgment",
+      "system.owner-and-route",
+      "reliability.delivery-vs-completion"
+    ],
+    "criticality": "critical",
+    "variant_family": "admission-review-human-authority-control"
+  }
+}

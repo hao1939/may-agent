@@ -1,5 +1,11 @@
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import { Type } from "@earendil-works/pi-ai";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
@@ -98,6 +104,51 @@ function reviewPrompt(details: Record<string, unknown>): string {
 
 function reviewFingerprint(reviewPath: string): string {
   return `sha256:${createHash("sha256").update(readFileSync(reviewPath)).digest("hex")}`;
+}
+
+function approvedLearningTarget(
+  projectsRoot: string,
+  requestKey: string,
+): { benchmark: string; scenarios: string[] } | null {
+  const benchmarksRoot = join(projectsRoot, "gym", "benchmarks");
+  const source = `${requestKey}-approved-review`;
+  const targets: Array<{ benchmark: string; scenarios: string[] }> = [];
+  if (!existsSync(benchmarksRoot)) return null;
+  for (const benchmark of readdirSync(benchmarksRoot).sort()) {
+    const benchmarkDir = join(benchmarksRoot, benchmark);
+    const suitePath = join(benchmarkDir, "suite.json");
+    if (!existsSync(suitePath)) continue;
+    const suite = JSON.parse(readFileSync(suitePath, "utf8")) as Record<
+      string,
+      unknown
+    >;
+    const labelsPath = join(
+      benchmarkDir,
+      String(suite.labels_file ?? "labels.json"),
+    );
+    if (!existsSync(labelsPath)) continue;
+    const labelsDocument = JSON.parse(
+      readFileSync(labelsPath, "utf8"),
+    ) as Record<string, unknown>;
+    const labels = (labelsDocument.labels ?? {}) as Record<
+      string,
+      Record<string, unknown>
+    >;
+    const scenarios = (Array.isArray(suite.scenarios) ? suite.scenarios : [])
+      .map(String)
+      .filter(
+        (scenario) =>
+          labels[scenario]?.status === "approved" &&
+          labels[scenario]?.source === source,
+      );
+    if (scenarios.length) targets.push({ benchmark, scenarios });
+  }
+  if (targets.length > 1) {
+    throw new Error(
+      `Approved review ${requestKey} maps to multiple learning benchmarks`,
+    );
+  }
+  return targets[0] ?? null;
 }
 
 function reviewApproval(input: {
@@ -225,6 +276,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const decision = approvalDecision(details, approval, taskId, generation);
 
   if (decision === "approve") {
+    const learningTarget = approvedLearningTarget(ctx.projectsRoot, requestKey);
     ctx.emit({
       type: "gym.review.approved",
       project: "gym",
@@ -233,19 +285,25 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       approvalId: approval.approvalId,
       artifactFingerprint: approval.artifactFingerprint,
     });
-    ctx.emit({
-      type: "gym.improvement.requested",
-      project: "gym",
-      agent: "may",
-      reason: "approved-review-proposal",
-      requestKey,
-      reviewPath,
-      incidentId: details.incidentId,
-      approvalId: approval.approvalId,
-    });
-    const summary = `Accepted Gym review proposal ${requestKey} and started the existing May improvement path.`;
+    if (learningTarget) {
+      ctx.emit({
+        type: "gym.improvement.requested",
+        project: "gym",
+        agent: "may",
+        reason: "approved-review-proposal",
+        requestKey,
+        reviewPath,
+        incidentId: details.incidentId,
+        approvalId: approval.approvalId,
+        benchmark: learningTarget.benchmark,
+        scenarios: learningTarget.scenarios,
+      });
+    }
+    const summary = learningTarget
+      ? `Accepted Gym review proposal ${requestKey} and started its ${learningTarget.scenarios.length}-scenario May learning target.`
+      : `Accepted Gym review proposal ${requestKey}; create and approve its benchmark cases before training May.`;
     return ctx.done(summary, {
-      state: "converged",
+      state: learningTarget ? "converged" : "needs-owner",
       summary,
       evidence: [reviewPath, `approval:${approval.approvalId}`],
       actions: [],

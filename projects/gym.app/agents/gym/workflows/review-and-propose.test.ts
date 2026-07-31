@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { WorkflowContext } from "@may-agent/sdk";
@@ -145,6 +145,21 @@ test("approved review starts the existing improvement path", async () => {
     const requested = firstEvents.find(
       (event) => event.type === "project.approval.requested",
     )!;
+    const benchmarkDir = join(
+      projectsRoot,
+      "gym",
+      "benchmarks",
+      "incident-review",
+    );
+    mkdirSync(benchmarkDir, { recursive: true });
+    writeFileSync(
+      join(benchmarkDir, "suite.json"),
+      `${JSON.stringify({ scenarios: ["incident-replay"], labels_file: "labels.json" })}\n`,
+    );
+    writeFileSync(
+      join(benchmarkDir, "labels.json"),
+      `${JSON.stringify({ labels: { "incident-replay": { status: "approved", source: "incident-42-approved-review" } } })}\n`,
+    );
     const expected = requested.expectedResponse as Record<string, unknown>;
     const emitted: Record<string, unknown>[] = [];
     const result = await execute(
@@ -180,11 +195,60 @@ test("approved review starts the existing improvement path", async () => {
           requestKey: "incident-42",
           incidentId: "incident-42",
           approvalId: expected.approvalId,
+          benchmark: "incident-review",
+          scenarios: ["incident-replay"],
         }),
       ]),
     );
     expect(
       emitted.some((event) => event.type === "project.approval.requested"),
+    ).toBe(false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("approved review never falls back to an unrelated benchmark", async () => {
+  const root = mkdtempSync(join(tmpdir(), "gym-review-no-target-"));
+  const projectsRoot = join(root, "projects");
+  const firstEvents: Record<string, unknown>[] = [];
+  try {
+    await execute(
+      context({
+        task: task({
+          type: "gym.review.requested",
+          requestKey: "incident-42",
+          kind: "incident",
+        }),
+        projectsRoot,
+        emitted: firstEvents,
+        dispatched: [],
+      }),
+    );
+    const requested = firstEvents.find(
+      (event) => event.type === "project.approval.requested",
+    )!;
+    const expected = requested.expectedResponse as Record<string, unknown>;
+    const emitted: Record<string, unknown>[] = [];
+    const result = await execute(
+      context({
+        task: task({
+          type: "project.approval.submitted",
+          data: { ...expected, decision: "approve" },
+        }),
+        projectsRoot,
+        emitted,
+        dispatched: [],
+        rejectAgentRun: true,
+      }),
+    );
+
+    expect(result).toMatchObject({
+      type: "done",
+      output: { state: "needs-owner" },
+    });
+    expect(
+      emitted.some((event) => event.type === "gym.improvement.requested"),
     ).toBe(false);
   } finally {
     rmSync(root, { recursive: true, force: true });

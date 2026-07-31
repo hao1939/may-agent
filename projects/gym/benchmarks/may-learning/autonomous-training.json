@@ -60,6 +60,16 @@
         "may-learn-inbox-deliver-useful-digest"
       ],
       "trials": 3
+    },
+    {
+      "id": "admission-review-closure",
+      "benchmark": "may-admission-review-closure",
+      "scenarios": [
+        "may-learn-admission-review-disposition-before-runtime-repair",
+        "may-learn-admission-review-complete-gate-before-debugging",
+        "may-learn-admission-review-material-human-authority-deliver"
+      ],
+      "trials": 3
     }
   ]
 }
