@@ -195,6 +195,7 @@ async function loadWorkflow(filePath: string, sourceScope: "agent" | "project"):
   const mod = await importRuntimeModule<{
     name?: unknown;
     description?: unknown;
+    executionTimeoutMs?: unknown;
     workspace?: unknown;
     execute?: unknown;
     verify?: unknown;
@@ -212,6 +213,16 @@ async function loadWorkflow(filePath: string, sourceScope: "agent" | "project"):
   if (mod.verify !== undefined && typeof mod.verify !== "function") {
     throw new Error(`Workflow file ${filePath} must export 'verify' as a function when present`);
   }
+  if (
+    mod.executionTimeoutMs !== undefined &&
+    (!Number.isInteger(mod.executionTimeoutMs) ||
+      Number(mod.executionTimeoutMs) < 1_000 ||
+      Number(mod.executionTimeoutMs) > 2 * 60 * 60_000)
+  ) {
+    throw new Error(
+      `Workflow file ${filePath} must export 'executionTimeoutMs' as an integer from 1000 through 7200000 when present`,
+    );
+  }
   const taskWorkspace =
     mod.workspace !== null &&
     typeof mod.workspace === "object" &&
@@ -227,6 +238,7 @@ async function loadWorkflow(filePath: string, sourceScope: "agent" | "project"):
   return {
     name: mod.name.trim(),
     description: mod.description.trim(),
+    ...(mod.executionTimeoutMs !== undefined ? { executionTimeoutMs: Number(mod.executionTimeoutMs) } : {}),
     ...(mod.workspace
       ? {
           workspace: taskWorkspace
@@ -1002,7 +1014,8 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     const injectedStepCount = { value: 0 };
     const guardWarnings: string[] = [];
     let executionExpired = false;
-    const executionTimeoutMessage = `Workflow "${workflow.name}" timed out after ${opts.executionTimeoutMs}ms`;
+    const executionTimeoutMs = workflow.executionTimeoutMs ?? opts.executionTimeoutMs;
+    const executionTimeoutMessage = `Workflow "${workflow.name}" timed out after ${executionTimeoutMs}ms`;
     const assertExecutionActive = (): void => {
       if (executionExpired) throw new Error(executionTimeoutMessage);
     };
@@ -1561,7 +1574,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     try {
       const execution = workflow.execute(ctx);
       let executionTimer: ReturnType<typeof setTimeout> | undefined;
-      const result = opts.executionTimeoutMs
+      const result = executionTimeoutMs
         ? await Promise.race([
             execution,
             new Promise<never>((_, reject) => {
@@ -1569,7 +1582,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
                 executionExpired = true;
                 cancelActiveStepSessions();
                 reject(new Error(executionTimeoutMessage));
-              }, opts.executionTimeoutMs);
+              }, executionTimeoutMs);
             }),
           ]).finally(() => {
             if (executionTimer) clearTimeout(executionTimer);
