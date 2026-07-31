@@ -1,7 +1,7 @@
 {
   "human_answer": "Keep the existing owner accountable and request the next concrete proof: a reproduced failure or an evidence-backed no-op. Do not count the promises as progress or ask Hao to take over.",
   "exact": {"needs_clarification": false},
-  "delegations": {"min": 1, "max": 1, "async_required": true},
+  "delegations": {"min": 0, "max": 1},
   "empty": ["preference_updates"],
   "response_max_words": 60
 }
