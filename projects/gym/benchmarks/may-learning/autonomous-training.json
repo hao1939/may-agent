@@ -70,6 +70,18 @@
         "may-learn-admission-review-material-human-authority-deliver"
       ],
       "trials": 3
+    },
+    {
+      "id": "practical-judgment",
+      "benchmark": "may-practical-judgment-development",
+      "scenarios": [
+        "may-practical-understand-before-action",
+        "may-practical-evidence-over-story",
+        "may-practical-actions-over-promises",
+        "may-practical-goal-over-plan",
+        "may-practical-simple-first"
+      ],
+      "trials": 3
     }
   ]
 }
