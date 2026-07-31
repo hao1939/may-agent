@@ -38,6 +38,34 @@ function proofFile(evidence: unknown, appDir: string): string {
   return isAbsolute(path) ? path : join(appDir, path);
 }
 
+function evidencePath(evidence: unknown, prefix: string): string {
+  if (!Array.isArray(evidence)) return "";
+  const value = evidence.find(
+    (entry): entry is string =>
+      typeof entry === "string" && entry.startsWith(prefix),
+  );
+  return value ? value.slice(prefix.length).trim() : "";
+}
+
+function withoutRetiredResultFields(
+  current: Record<string, unknown>,
+): Record<string, unknown> {
+  const next = { ...current };
+  for (const key of [
+    "successorDisposition",
+    "successorEvidencePath",
+    "successorRunId",
+    "successorRunUrl",
+    "successorResultPath",
+    "successorStateReason",
+    "resumeCondition",
+    "lastError",
+  ]) {
+    delete next[key];
+  }
+  return next;
+}
+
 /** Project the accepted workflow receipt into the app-owned spec-loop read model. */
 export function syncSpecLiveProof(appDir: string, taskId: string): SyncResult {
   const taskStatePath = join(appDir, ".state", "tasks", "state.json");
@@ -60,17 +88,29 @@ export function syncSpecLiveProof(appDir: string, taskId: string): SyncResult {
   const specs = record(state.specs);
   const current = record(specs[specId]);
   const acceptedAt = text(proof.reviewedAt) || new Date().toISOString();
+  const acceptedResultPath = evidencePath(
+    record(receipt.acceptanceBasis).evidence,
+    "aggregate-artifact:",
+  );
   const next = {
-    ...current,
+    ...withoutRetiredResultFields(current),
     status: "pass",
+    catalogStatus: "pass",
+    catalogSpecState: "verified",
     taskId: null,
     lastRunId: runId,
+    lastRunUrl: `https://dev.azure.com/msazure/CloudNativeCompute/_build/results?buildId=${encodeURIComponent(runId)}`,
+    lastResultPath: acceptedResultPath || null,
     updatedAt: acceptedAt,
     terminalDisposition: false,
+    failureClass: null,
+    diagnosis: null,
+    inputFingerprint: null,
+    errorFingerprint: null,
     review: {
-      ...record(current.review),
       classification: "exact-live-tested-merged-source",
       acceptedRunId: runId,
+      ...(acceptedResultPath ? { acceptedResultPath } : {}),
       acceptedStatus: "pass",
       acceptedByTaskId: taskId,
       acceptedAt,
