@@ -299,6 +299,32 @@ describe("gym task reconciliation", () => {
     });
   });
 
+  test("preserves a frozen improvement checkpoint on the shared task", () => {
+    expect(
+      resolveGymTask({
+        type: "gym.improvement.requested",
+        eventId: 306,
+        params: {
+          benchmark: "may-admission-review-closure",
+          baselineRunId: "may-admission-review-closure-test-frozen",
+          focusScenarios: ["incident-replay"],
+          failureFamily: "admission-disposition-before-repair",
+          classificationSummary: "May did not close the admission gate.",
+          classificationEvidence: ["run:incident-replay"],
+        },
+      }),
+    ).toMatchObject({
+      id: "improve/may",
+      input: {
+        baselineRunId: "may-admission-review-closure-test-frozen",
+        focusScenarios: ["incident-replay"],
+        failureFamily: "admission-disposition-before-repair",
+        classificationSummary: "May did not close the admission gate.",
+        classificationEvidence: ["run:incident-replay"],
+      },
+    });
+  });
+
   test("a May revision restarts the approved curriculum drain", () => {
     expect(
       resolveGymTask({
