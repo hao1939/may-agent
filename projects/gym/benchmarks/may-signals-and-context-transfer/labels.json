@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "benchmark": "may-signals-and-context-transfer",
+  "labels": {
+    "may-signal-transfer-green-score-bad-outcome": {"status":"draft","source":"synthetic-held-back-transfer","rationale":"A green score created by closing visible work conflicts with unchanged product failures. May should restore honest ownership and fix the outcome.","approved_by":null,"approved_at":null},
+    "may-context-transfer-misleading-tool-success": {"status":"draft","source":"synthetic-held-back-transfer","rationale":"The model prompt is correct, but a contradictory tool success label caused false completion. Fix and replay the tool contract before changing the model.","approved_by":null,"approved_at":null}
+  }
+}

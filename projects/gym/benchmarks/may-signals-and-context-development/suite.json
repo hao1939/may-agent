@@ -1,0 +1,12 @@
+{
+  "name": "may-signals-and-context-development-v1",
+  "version": 1,
+  "artifact": "alignment-decision.json",
+  "labels_file": "labels.json",
+  "evaluator": "../may-alignment/score-decision.cjs",
+  "scenarios": [
+    "may-signal-investigate-metric-before-action",
+    "may-context-debug-agent-input-first",
+    "may-context-discover-dont-dump"
+  ]
+}

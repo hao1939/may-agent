@@ -30,6 +30,10 @@
     {
       "id": "practical-judgment",
       "path": "units/practical-judgment/unit.json"
+    },
+    {
+      "id": "signals-and-context",
+      "path": "units/signals-and-context/unit.json"
     }
   ]
 }

@@ -62,6 +62,14 @@
     {
       "id": "judgment.principle-application",
       "path": "judgment.principle-application.json"
+    },
+    {
+      "id": "judgment.metric-as-signal",
+      "path": "judgment.metric-as-signal.json"
+    },
+    {
+      "id": "diagnosis.input-before-model",
+      "path": "diagnosis.input-before-model.json"
     }
   ]
 }

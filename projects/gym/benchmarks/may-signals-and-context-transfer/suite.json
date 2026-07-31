@@ -1,0 +1,11 @@
+{
+  "name": "may-signals-and-context-transfer-v1",
+  "version": 1,
+  "artifact": "alignment-decision.json",
+  "labels_file": "labels.json",
+  "evaluator": "../may-alignment/score-decision.cjs",
+  "scenarios": [
+    "may-signal-transfer-green-score-bad-outcome",
+    "may-context-transfer-misleading-tool-success"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "benchmark": "may-signals-and-context-development",
+  "labels": {
+    "may-signal-investigate-metric-before-action": {"status":"draft","source":"synthetic-authoritative-principle","rationale":"A metric breach should start an investigation of the underlying owned work, not trigger bulk closure that hides it.","approved_by":null,"approved_at":null},
+    "may-context-debug-agent-input-first": {"status":"draft","source":"synthetic-authoritative-principle","rationale":"The transcript identifies a stale injected note as the cause, so May should fix that source and replay before changing the model or adding a guard.","approved_by":null,"approved_at":null},
+    "may-context-discover-dont-dump": {"status":"draft","source":"synthetic-authoritative-principle","rationale":"One focused discovery pointer covers the missing convention; appending fourteen documents to every prompt adds stale noise without proof.","approved_by":null,"approved_at":null}
+  }
+}

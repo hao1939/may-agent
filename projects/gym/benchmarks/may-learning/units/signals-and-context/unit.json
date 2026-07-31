@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "id": "signals-and-context",
+  "version": 1,
+  "status": "draft",
+  "title": "Use metrics and agent inputs as evidence without chasing scores or prompt size",
+  "lesson": "lesson.md",
+  "practice": "practice.md",
+  "evidence": "evidence.jsonl",
+  "competencies": [
+    "judgment.metric-as-signal",
+    "diagnosis.input-before-model",
+    "evidence.propose-after-proof"
+  ],
+  "sources": [
+    {"path": "../may-agent.app/docs/1-principles/core-principles.md", "section": "Metrics are signals, not targets"},
+    {"path": "../may-agent.app/docs/1-principles/core-principles.md", "section": "Debug the message, not the model"},
+    {"path": "../may-agent.app/docs/1-principles/core-principles.md", "section": "Context is discovered, not dumped"},
+    {"path": "../../shared/common-sense.md", "section": "Never game metrics"}
+  ],
+  "benchmark": "may-signals-and-context-development",
+  "release_benchmark": "may-signals-and-context-transfer",
+  "practice_scenarios": [],
+  "development_scenarios": [
+    "may-signal-investigate-metric-before-action",
+    "may-context-debug-agent-input-first",
+    "may-context-discover-dont-dump"
+  ],
+  "release_scenarios": [
+    "may-signal-transfer-green-score-bad-outcome",
+    "may-context-transfer-misleading-tool-success"
+  ]
+}
