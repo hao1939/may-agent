@@ -40,6 +40,7 @@ export const name = "improve-agent";
 export const description =
   "Evaluate May, classify each finding, and iterate one isolated candidate at a time until progress stops or one verified proposal is ready.";
 export const workspace = "shared";
+export const executionTimeoutMs = 60 * 60_000;
 
 const RELEASE_TRIALS = 5;
 

@@ -114,6 +114,11 @@ artifact fingerprint or the five-iteration safety bound stops the burst as a
 truthful no-progress convergence instead of spinning or invoking a second
 owner loop.
 
+The improvement workflow declares a 60-minute execution budget through the
+standard workflow-module timeout field. Ordinary app workflows keep the
+platform default. This covers multi-trial semantic evaluation without adding a
+second scheduler or weakening the evaluation gates.
+
 `revise-candidate` is an internal workflow decision. It does not mutate the
 running task and does not notify Hao. A workflow never remains open across
 human approval, an external callback, or a later schedule.
