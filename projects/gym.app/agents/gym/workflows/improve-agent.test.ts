@@ -806,7 +806,7 @@ describe("single agent-improvement loop", () => {
     });
   });
 
-  test("retries only invalid cases and still prepares the independent May gap", async () => {
+  test("checkpoints classification and resumes the focused baseline", async () => {
     const root = mkdtempSync(join(tmpdir(), "gym-app-improve-"));
     roots.push(root);
     const projectsRoot = join(root, "projects");
@@ -844,6 +844,9 @@ describe("single agent-improvement loop", () => {
       async run(options) {
         calls.push(options);
         const runId = `run-${calls.length}`;
+        if (calls.length === 3) {
+          throw new Error("simulated baseline interruption");
+        }
         const runDir = join(root, runId);
         mkdirSync(runDir, { recursive: true });
         const created =
@@ -894,9 +897,19 @@ describe("single agent-improvement loop", () => {
     } as unknown as WorkflowContext;
 
     const assessmentPath = join(root, "assessment.json");
+    const input = { benchmark: "test-bench", agent: "may", trials: 3 };
+    await expect(
+      prepareAssessment(ctx, input, assessmentPath, loop),
+    ).rejects.toThrow("simulated baseline interruption");
+    expect(JSON.parse(readFileSync(assessmentPath, "utf8"))).toMatchObject({
+      focus: { failureFamily: "scope-control" },
+      baseline_run_id: null,
+      baseline_run_dir: null,
+    });
+
     const prepared = await prepareAssessment(
       ctx,
-      { benchmark: "test-bench", agent: "may", trials: 3 },
+      input,
       assessmentPath,
       loop,
     );
@@ -904,6 +917,7 @@ describe("single agent-improvement loop", () => {
     expect(calls.map((call) => call.scenarios)).toEqual([
       ["agent-case", "runtime-case"],
       ["runtime-case"],
+      ["agent-case"],
       ["agent-case"],
     ]);
     expect(prepared.assessment.focus?.failureFamily).toBe("scope-control");
@@ -915,7 +929,7 @@ describe("single agent-improvement loop", () => {
         }),
       ]),
     );
-    expect(prepared.assessment.baseline_run_id).toBe("run-3");
+    expect(prepared.assessment.baseline_run_id).toBe("run-4");
     expect(classificationAttempts).toBe(2);
     expect(
       JSON.parse(

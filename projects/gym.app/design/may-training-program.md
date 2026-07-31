@@ -171,6 +171,11 @@ artifact fingerprint or the five-iteration safety bound stops the burst as a
 truthful no-progress convergence instead of spinning or invoking a second
 owner loop.
 
+Broad screening, its one invalid retry, and classification form one assessment
+stage. Gym saves that assessment before starting the focused reproducibility
+baseline. If the execution budget ends during the focused baseline, the next
+reconcile resumes there instead of repeating the broad trials.
+
 The improvement workflow declares a 60-minute execution budget through the
 standard workflow-module timeout field. Ordinary app workflows keep the
 platform default. This covers multi-trial semantic evaluation without adding a

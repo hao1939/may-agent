@@ -957,6 +957,79 @@ async function classifyFailures(
   return validateFindings(findings, failing).length ? null : findings;
 }
 
+async function completeFocusedBaseline(
+  ctx: WorkflowContext,
+  input: Record<string, unknown>,
+  assessmentPath: string,
+  assessment: Assessment,
+  loop: GymLoopApi,
+  sourceRuns: Array<{ runDir: string; manifest: LoopRunManifest }> = [],
+): Promise<{ assessment: Assessment; problem?: string }> {
+  if (!assessment.focus) return { assessment };
+  let baseline = assessment.baseline_run_dir
+    ? {
+        runDir: assessment.baseline_run_dir,
+        manifest: readJson<LoopRunManifest>(
+          join(assessment.baseline_run_dir, "manifest.json"),
+        ),
+      }
+    : sourceRuns.find(
+        (run) =>
+          sameScenarios(run.manifest.scenarios, assessment.focus!.scenarios) &&
+          scenarioVerdicts(run.manifest).invalid.length === 0,
+      );
+  if (baseline && !baseline.manifest) {
+    return {
+      assessment,
+      problem: "The stored development baseline is missing its manifest.",
+    };
+  }
+  const trials = requestedTrials(input.trials);
+  const agentsRoot = join(dirname(ctx.projectsRoot), "agents");
+  if (!baseline) {
+    baseline = await loop.run({
+      phase: "test",
+      benchmark: assessment.benchmark,
+      scenarios: assessment.focus.scenarios,
+      agent: assessment.agent,
+      candidate: "baseline",
+      trials,
+      agentsRoot,
+    });
+  }
+  let baselineVerdicts = scenarioVerdicts(baseline.manifest!);
+  if (baselineVerdicts.invalid.length) {
+    baseline = await loop.run({
+      phase: "test",
+      benchmark: assessment.benchmark,
+      scenarios: assessment.focus.scenarios,
+      agent: assessment.agent,
+      candidate: "baseline",
+      trials,
+      agentsRoot,
+    });
+    baselineVerdicts = scenarioVerdicts(baseline.manifest!);
+  }
+  assessment.baseline_run_id = baseline.manifest!.run_id;
+  assessment.baseline_run_dir = baseline.runDir;
+  writeAssessment(assessmentPath, assessment);
+  if (baselineVerdicts.invalid.length) {
+    return {
+      assessment,
+      problem:
+        "The focused May failure remained invalid after one bounded retry.",
+    };
+  }
+  if (!baselineVerdicts.fail.length) {
+    return {
+      assessment,
+      problem:
+        "The focused May failure did not reproduce in the frozen development baseline.",
+    };
+  }
+  return { assessment };
+}
+
 function sameScenarios(actual: string[], expected: string[]): boolean {
   return (
     JSON.stringify([...actual].sort()) === JSON.stringify([...expected].sort())
@@ -970,11 +1043,16 @@ export async function prepareAssessment(
   loop: GymLoopApi,
 ): Promise<{ assessment: Assessment; problem?: string }> {
   if (existsSync(assessmentPath)) {
-    return {
-      assessment: JSON.parse(
-        readFileSync(assessmentPath, "utf8"),
-      ) as Assessment,
-    };
+    const assessment = JSON.parse(
+      readFileSync(assessmentPath, "utf8"),
+    ) as Assessment;
+    return completeFocusedBaseline(
+      ctx,
+      input,
+      assessmentPath,
+      assessment,
+      loop,
+    );
   }
 
   const benchmark = safeName(input.benchmark, "may-alignment");
@@ -1092,59 +1170,17 @@ export async function prepareAssessment(
     accepted_at: new Date().toISOString(),
   };
   recordAssessmentMetrics(ctx, assessment, sourceRuns);
-
-  if (!focus) {
-    writeAssessment(assessmentPath, assessment);
-    return { assessment };
-  }
-
-  let baseline = sourceRuns.find(
-    (run) =>
-      sameScenarios(run.manifest.scenarios, focus.scenarios) &&
-      scenarioVerdicts(run.manifest).invalid.length === 0,
-  );
-  if (!baseline) {
-    baseline = await loop.run({
-      phase: "test",
-      benchmark,
-      scenarios: focus.scenarios,
-      agent,
-      candidate: "baseline",
-      trials,
-      agentsRoot,
-    });
-  }
-  let baselineVerdicts = scenarioVerdicts(baseline.manifest);
-  if (baselineVerdicts.invalid.length) {
-    baseline = await loop.run({
-      phase: "test",
-      benchmark,
-      scenarios: focus.scenarios,
-      agent,
-      candidate: "baseline",
-      trials,
-      agentsRoot,
-    });
-    baselineVerdicts = scenarioVerdicts(baseline.manifest);
-  }
-  assessment.baseline_run_id = baseline.manifest.run_id;
-  assessment.baseline_run_dir = baseline.runDir;
+  // Classification is a durable stage boundary. Recovery may resume the
+  // focused reproducibility baseline without repeating broad screening.
   writeAssessment(assessmentPath, assessment);
-  if (baselineVerdicts.invalid.length) {
-    return {
-      assessment,
-      problem:
-        "The focused May failure remained invalid after one bounded retry.",
-    };
-  }
-  if (!baselineVerdicts.fail.length) {
-    return {
-      assessment,
-      problem:
-        "The focused May failure did not reproduce in the frozen development baseline.",
-    };
-  }
-  return { assessment };
+  return completeFocusedBaseline(
+    ctx,
+    input,
+    assessmentPath,
+    assessment,
+    loop,
+    sourceRuns,
+  );
 }
 
 function planFromInput(
