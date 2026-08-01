@@ -1736,11 +1736,10 @@ function appendTaskActions(
   return Object.assign(result, { actions });
 }
 
-function approvalDecision(
-  task: string,
+function approvalResponse(
+  trigger: Record<string, unknown> | null,
   request: ApprovalRequest,
 ): { decision: "approve" | "adjust" | "decline"; message: string } | null {
-  const trigger = triggerDetails(task);
   if (trigger?.type !== "project.approval.submitted") return null;
   if (
     trigger.approvalId !== request.approvalId ||
@@ -1761,6 +1760,142 @@ function approvalDecision(
   return {
     decision,
     message: String(trigger.message ?? decision),
+  };
+}
+
+function approvalDecision(
+  task: string,
+  request: ApprovalRequest,
+): { decision: "approve" | "adjust" | "decline"; message: string } | null {
+  return approvalResponse(triggerDetails(task), request);
+}
+
+export function locateApprovalPacket(
+  projectsRoot: string,
+  taskId: string,
+  generation: number,
+  trigger: Record<string, unknown> | null,
+):
+  | { stateDir: string; resultPath: string }
+  | { error: string; evidence: string[] }
+  | null {
+  if (trigger?.type !== "project.approval.submitted") return null;
+  const rawPacketPath = String(trigger.packetPath ?? "").trim();
+  if (!rawPacketPath) return null;
+  const campaignRoot = resolve(
+    projectsRoot,
+    "gym.app",
+    ".state",
+    "candidates",
+    safeKey(taskId, "improve-may"),
+    String(generation),
+  );
+  const resultPath = resolve(rawPacketPath);
+  const packetRelative = relative(campaignRoot, resultPath);
+  if (
+    packetRelative === ".." ||
+    packetRelative.startsWith(`..${sep}`) ||
+    !resultPath.endsWith(`${sep}result.json`)
+  ) {
+    return {
+      error: "Exact approval packet is outside the campaign state",
+      evidence: [resultPath, campaignRoot],
+    };
+  }
+  if (!existsSync(resultPath)) {
+    return {
+      error: "Exact approval packet is missing",
+      evidence: [resultPath],
+    };
+  }
+  let stored: Record<string, unknown>;
+  try {
+    stored = record(JSON.parse(readFileSync(resultPath, "utf8")));
+  } catch (error) {
+    return {
+      error: `Exact approval packet is invalid: ${error instanceof Error ? error.message : String(error)}`,
+      evidence: [resultPath],
+    };
+  }
+  const approval = approvalFromStored(stored);
+  if (!approval || !approvalResponse(trigger, approval)) {
+    return {
+      error: "Approval does not match the exact stored packet",
+      evidence: [resultPath],
+    };
+  }
+  return { stateDir: dirname(resultPath), resultPath };
+}
+
+function planFromApprovalPacket(
+  ctx: WorkflowContext,
+  resultPath: string,
+): CandidatePlan | null {
+  const stored = record(JSON.parse(readFileSync(resultPath, "utf8")));
+  const assessmentPath = String(stored.assessment_path ?? "");
+  if (!assessmentPath || !existsSync(assessmentPath)) return null;
+  const assessment = JSON.parse(
+    readFileSync(assessmentPath, "utf8"),
+  ) as Assessment;
+  const rawFocus = record(stored.focus);
+  const classification = String(rawFocus.classification ?? "") as FindingClass;
+  const scenarios = Array.isArray(rawFocus.scenarios)
+    ? rawFocus.scenarios.map(String)
+    : [];
+  if (
+    !["agent", "benchmark", "scorer", "runtime", "noise"].includes(
+      classification,
+    ) ||
+    !scenarios.length
+  ) {
+    return null;
+  }
+  const focus: Finding = {
+    classification,
+    scenarios,
+    ...(String(rawFocus.failureFamily ?? "")
+      ? { failureFamily: String(rawFocus.failureFamily) }
+      : {}),
+    summary: String(rawFocus.summary ?? "Approved evaluation fix"),
+    evidence: Array.isArray(rawFocus.evidence)
+      ? rawFocus.evidence.map(String)
+      : [],
+  };
+  const baselineRunId = String(
+    stored.baseline_run_id ??
+      assessment.baseline_run_id ??
+      assessment.screening_run_id,
+  );
+  const baselineDir = String(
+    assessment.baseline_run_dir ?? assessment.screening_run_dir,
+  );
+  if (
+    !assessment.agent ||
+    !assessment.benchmark ||
+    !baselineRunId ||
+    !baselineDir
+  ) {
+    return null;
+  }
+  const approval = approvalFromStored(stored);
+  const learningUnits =
+    approval?.kind === "benchmark-fix"
+      ? []
+      : resolveLearningContexts(
+          join(ctx.projectsRoot, "gym"),
+          assessment.benchmark,
+          scenarios,
+        );
+  return {
+    agent: assessment.agent,
+    benchmark: assessment.benchmark,
+    releaseBenchmark: assessment.release_benchmark ?? assessment.benchmark,
+    releaseScenarios: assessment.release_scenarios,
+    baselineRunId,
+    baselineDir,
+    focus,
+    assessmentPath,
+    learningUnits,
   };
 }
 
@@ -3334,6 +3469,51 @@ export async function runImprovement(
   }
   const activeLoop = fencedLoopApi(loop, lease);
   const activeCtx = fencedWorkflowContext(ctx, lease);
+  const approvalPacket = locateApprovalPacket(
+    activeCtx.projectsRoot,
+    taskId,
+    generation,
+    trigger,
+  );
+  if (approvalPacket && "error" in approvalPacket) {
+    return activeCtx.done(approvalPacket.error, {
+      state: "needs-owner",
+      summary: approvalPacket.error,
+      evidence: approvalPacket.evidence,
+    });
+  }
+  if (approvalPacket) {
+    try {
+      const plan = planFromApprovalPacket(activeCtx, approvalPacket.resultPath);
+      if (!plan) {
+        const summary = "Exact approval packet cannot reconstruct its evaluation plan";
+        return activeCtx.done(summary, {
+          state: "needs-owner",
+          summary,
+          evidence: [approvalPacket.resultPath],
+        });
+      }
+      return await runCandidate(
+        activeCtx,
+        activeLoop,
+        plan,
+        taskId,
+        generation,
+        approvalPacket.stateDir,
+        input,
+      );
+    } catch (error) {
+      if (error instanceof CampaignSupersededError) {
+        return supersededCampaignResult(ctx, taskId, generation);
+      }
+      const summary = error instanceof Error ? error.message : String(error);
+      return activeCtx.done(summary, {
+        state: "needs-owner",
+        summary,
+        evidence: [approvalPacket.resultPath],
+      });
+    }
+  }
   if (input.curriculumDrain !== true) {
     try {
       const retry = locateCandidateRetry(

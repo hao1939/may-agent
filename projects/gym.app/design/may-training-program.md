@@ -225,6 +225,14 @@ The task returns `waiting` while Hao decides. Its Condition matches the exact
 approval id, task generation, and artifact fingerprint. A reply to an older
 Telegram message therefore cannot approve a newer candidate.
 
+The submitted approval's `packetPath` is the authoritative recovery pointer.
+Gym validates that it is a `result.json` inside the same campaign generation,
+then resumes that exact stored proposal before recomputing curriculum or agent
+fingerprints. New lessons, changed curriculum order, a daemon restart, or a
+timed-out reconcile therefore cannot orphan an approval that Hao already made.
+The stored approval id and artifact fingerprint must still match before Gym
+applies anything.
+
 The Telegram card states what will change, why it is ready, the artifact
 fingerprint, and the review packet path. Approval applies only that artifact.
 Rejection keeps production unchanged, records Hao's reply, and revises the

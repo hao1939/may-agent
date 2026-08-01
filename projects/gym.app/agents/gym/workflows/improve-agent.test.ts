@@ -22,6 +22,7 @@ import {
   improvementInput,
   learningPromptLines,
   loadCurriculumTargets,
+  locateApprovalPacket,
   locateCandidateRetry,
   prepareAssessment,
   qualifiesHeldBackRelease,
@@ -97,6 +98,202 @@ function manifest(
 }
 
 describe("single agent-improvement loop", () => {
+  test("locates the exact approved packet across curriculum drift", () => {
+    const root = mkdtempSync(join(tmpdir(), "gym-approval-location-"));
+    roots.push(root);
+    const projectsRoot = join(root, "projects");
+    const stateDir = join(
+      projectsRoot,
+      "gym.app",
+      ".state",
+      "candidates",
+      "improve-may",
+      "7",
+      "tracks",
+      "old-curriculum-fingerprint",
+    );
+    const packetPath = join(stateDir, "result.json");
+    mkdirSync(stateDir, { recursive: true });
+    writeFileSync(
+      packetPath,
+      JSON.stringify({
+        summary: "Waiting for exact approval.",
+        workflow_state: "waiting",
+        approval: {
+          kind: "benchmark-fix",
+          approvalId: "approval-7",
+          waitId: "wait:approval-7",
+          taskId: "improve/may",
+          taskGeneration: 7,
+          artifactFingerprint: "sha256:artifact-7",
+          packetPath,
+          requestedAction: "Approve?",
+          reason: "Exact reviewed fix",
+          condition: { id: "approval-7", type: "project.approval.submitted" },
+        },
+      }),
+    );
+
+    const trigger = {
+      type: "project.approval.submitted",
+      approvalId: "approval-7",
+      taskId: "improve/may",
+      taskGeneration: 7,
+      artifactFingerprint: "sha256:artifact-7",
+      packetPath,
+      decision: "approve",
+    };
+    expect(
+      locateApprovalPacket(projectsRoot, "improve/may", 7, trigger),
+    ).toEqual({ stateDir, resultPath: packetPath });
+    expect(
+      locateApprovalPacket(projectsRoot, "improve/may", 7, {
+        ...trigger,
+        packetPath: join(root, "outside", "result.json"),
+      })?.error,
+    ).toContain("outside the campaign state");
+  });
+
+  test("applies an exact approved packet before recomputing curriculum", async () => {
+    const root = mkdtempSync(join(tmpdir(), "gym-approval-resume-"));
+    roots.push(root);
+    const projectsRoot = join(root, "projects");
+    const stateDir = join(
+      projectsRoot,
+      "gym.app",
+      ".state",
+      "candidates",
+      "improve-may",
+      "7",
+      "tracks",
+      "old-curriculum-fingerprint",
+    );
+    const resultPath = join(stateDir, "result.json");
+    const assessmentPath = join(stateDir, "assessment.json");
+    const snapshotPath = join(stateDir, "benchmark-fix");
+    const targetPath = join(projectsRoot, "gym", "benchmarks", "owner");
+    mkdirSync(snapshotPath, { recursive: true });
+    mkdirSync(targetPath, { recursive: true });
+    writeFileSync(join(snapshotPath, "scorer.cjs"), "fixed\n");
+    writeFileSync(join(targetPath, "scorer.cjs"), "old\n");
+    const artifactFingerprint = `sha256:${fingerprintTree(snapshotPath)}`;
+    const approvalId = "approval-7";
+    writeFileSync(
+      assessmentPath,
+      JSON.stringify({
+        schema_version: 1,
+        agent: "may",
+        benchmark: "consumer",
+        release_benchmark: "consumer-transfer",
+        release_scenarios: ["release-case"],
+        screening_run_id: "baseline-7",
+        screening_run_dir: join(root, "baseline-7"),
+        retry_run_id: null,
+        retry_run_dir: null,
+        findings: [],
+        focus: null,
+        baseline_run_id: "baseline-7",
+        baseline_run_dir: join(root, "baseline-7"),
+        accepted_at: "2026-08-01T00:00:00Z",
+      }),
+    );
+    mkdirSync(dirname(resultPath), { recursive: true });
+    writeFileSync(
+      resultPath,
+      JSON.stringify({
+        summary: "Waiting for exact approval.",
+        workflow_state: "waiting",
+        assessment_path: assessmentPath,
+        baseline_run_id: "baseline-7",
+        focus: {
+          classification: "scorer",
+          scenarios: ["development-case"],
+          summary: "Repair the scorer.",
+          evidence: [],
+        },
+        artifact_path: snapshotPath,
+        artifact_target_path: targetPath,
+        approval: {
+          kind: "benchmark-fix",
+          approvalId,
+          waitId: `wait:${approvalId}`,
+          taskId: "improve/may",
+          taskGeneration: 7,
+          artifactFingerprint,
+          packetPath: resultPath,
+          requestedAction: "Approve?",
+          reason: "Exact reviewed fix",
+          condition: { id: approvalId, type: "project.approval.submitted" },
+        },
+        conditions: [],
+        evidence: [],
+      }),
+    );
+    const emitted: Record<string, unknown>[] = [];
+    const task = [
+      "## Reconciliation Task",
+      "```json",
+      JSON.stringify({
+        taskId: "improve/may",
+        generation: 7,
+        input: { agent: "may", curriculumDrain: true },
+      }),
+      "```",
+      "## Trigger Event",
+      "```json",
+      JSON.stringify({
+        type: "project.approval.submitted",
+        data: {
+          approvalId,
+          taskId: "improve/may",
+          taskGeneration: 7,
+          artifactFingerprint,
+          packetPath: resultPath,
+          decision: "approve",
+          message: "Approve",
+        },
+      }),
+      "```",
+    ].join("\n");
+    const ctx = {
+      projectsRoot,
+      task,
+      emit(event: Record<string, unknown>) {
+        emitted.push(event);
+      },
+      done(summary: string, details: Record<string, unknown>) {
+        return { type: "done", summary, ...details };
+      },
+      blocked(reason: string) {
+        return { type: "blocked", reason };
+      },
+    } as unknown as WorkflowContext;
+    const unusedLoop: GymLoopApi = {
+      async run() {
+        throw new Error("approval recovery must not start curriculum runs");
+      },
+      async verify() {
+        throw new Error("approval recovery must not verify before applying");
+      },
+    };
+
+    const result = (await runImprovement(
+      ctx,
+      unusedLoop,
+    )) as unknown as Record<string, unknown>;
+    expect(result.summary).toContain("Applied approved benchmark/scorer fix");
+    expect(readFileSync(join(targetPath, "scorer.cjs"), "utf8")).toBe(
+      "fixed\n",
+    );
+    expect(emitted).toEqual([
+      expect.objectContaining({
+        type: "gym.improvement.requested",
+        reason: "approved-benchmark-fix-applied",
+        artifactFingerprint,
+      }),
+    ]);
+  });
+
   test("locates one exact retry in the generation root or an immediate track", () => {
     const root = mkdtempSync(join(tmpdir(), "gym-retry-location-"));
     roots.push(root);
