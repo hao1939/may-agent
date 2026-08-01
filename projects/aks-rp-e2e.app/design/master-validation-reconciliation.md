@@ -72,6 +72,11 @@ health.
   workflow binding with the exact intended target. The separate binding exists
   only so infrastructure creates the worktree from `main`; it does not invent a
   second recovery process or wait for an impossible aggregate verdict.
+- A finite coverage-expansion leaf whose acceptance requires a passing live
+  result binds `spec-live-reconciliation` with
+  `input.allowTerminalDisposition: false`. Product or environment failure may
+  update its evidence and exact wait, but cannot complete or remove the
+  executable-coverage obligation.
 - The agent owns artifact diagnosis and bounded source judgment inside the
   task worktree. It does not queue pipelines, push, create PRs, schedule
   retries, or edit task state.

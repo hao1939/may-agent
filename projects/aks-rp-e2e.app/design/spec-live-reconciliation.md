@@ -52,6 +52,9 @@ derives the next step from the task branch, exact-run metadata, PR state, and
   `staging`
 - Integration target: direct push to `dev` by convention
 - PR target: `main` when a workflow explicitly requests main promotion
+- Terminal disposition: allowed by default for ordinary finite reconciliation;
+  set `input.allowTerminalDisposition: false` when acceptance requires an exact
+  passing live result
 - Runtime control artifacts: `workspace/tasks/<task-generation>/` in the
   canonical domain workspace
 - Terminal run evidence: `workspace/tasks/<task-generation>/runs/<runId>/`;
@@ -323,13 +326,17 @@ unrelated merge.
   ready or pass before the terminal run. `needs-owner` remains available only
   when the evidence cannot support the domain judgment or a real external
   authority must decide it.
-- A terminal-disposition result is not a live pass. Code may apply it only to
-  the scenario-normalization loop, and only after it proves that the task
-  worktree is clean, the exact plain-carrier row has disappeared from strict
-  inventory, the named spec fields exactly match the structured judgment, and
-  the bounded source commit can be integrated directly into current `dev`.
-  The completion evidence must say explicitly that no new ADO pass was
-  claimed.
+- A terminal-disposition result is not a live pass. Ordinary finite work may
+  use it to preserve a truthful reviewed product or environment posture. A
+  pass-required task sets `input.allowTerminalDisposition: false`; the agent
+  decision validator, executor, final verifier, and same-task revision guard
+  all enforce that policy. Such a task remains repair or an exact wait until a
+  passing proof exists. For scenario normalization, code additionally proves
+  that the task worktree is clean, the exact plain-carrier row has disappeared
+  from strict inventory, the named spec fields exactly match the structured
+  judgment, and the bounded source commit can be integrated directly into
+  current `dev`. Completion evidence must say explicitly that no new ADO pass
+  was claimed.
 - A concurrent `dev` update, replay conflict, or retained task branch that no
   longer descends from the current attempt baseline remains same-task domain
   work. Code reports the exact Git lineage facts with a structured replay
@@ -341,7 +348,7 @@ unrelated merge.
   publication child, or another owner handoff for the same reviewed
   disposition.
 - Initial source preparation accepts `committed`, `test-current`, one exact
-  wait, `needs-owner`, or the scenario-normalization-only
+  wait, `needs-owner`, or, when task policy allows it, the structured
   `terminal-disposition` judgment above. It accepts `accepted-pass` only when
   the caller explicitly asks the workflow to validate an existing later
   current-main recovery observation. Any other preparation verdict stays

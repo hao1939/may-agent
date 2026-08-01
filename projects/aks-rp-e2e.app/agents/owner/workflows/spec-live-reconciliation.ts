@@ -79,9 +79,10 @@ export const workflowContract: WorkflowIoContract = {
       "input.retryPipelineRunId",
       "input.retrySourceBranch",
       "input.retrySourceCommit",
+      "input.allowTerminalDisposition",
     ],
     description:
-      "Use only for a finite spec verification/change lifecycle that may require source changes, exact live verification, and branch integration. target defaults to staging; standaloneBuildId selects an exact standalone RP build.",
+      "Use only for a finite spec verification/change lifecycle that may require source changes, exact live verification, and branch integration. target defaults to staging; standaloneBuildId selects an exact standalone RP build. allowTerminalDisposition defaults to true; set it to false when task acceptance requires an exact pass.",
   },
   output: {
     version: workflowResultVersion,
@@ -313,8 +314,12 @@ export function preparationDecisionProblem(
 
 export function terminalDispositionDecisionProblem(
   decision: AgentDecision,
+  allowTerminalDisposition = true,
 ): string | null {
   if (decision.decision !== "terminal-disposition") return null;
+  if (!allowTerminalDisposition) {
+    return "terminal-disposition is forbidden because this task requires exact passing live proof";
+  }
   if (!decision.terminalDisposition) {
     return "terminal-disposition requires structured specId, status, and specState";
   }
@@ -3165,6 +3170,8 @@ export async function reconcileSpecLive(
   const generation = Number(payload?.generation ?? 1);
   const normalizationInput = payload?.input as
     ScenarioNormalizationInput | undefined;
+  const allowTerminalDisposition =
+    payload?.input?.allowTerminalDisposition !== false;
   const selectedSpecIds = scenarioNormalizationSpecIds(normalizationInput);
   const specId = selectedSpecIds.join(",");
   const requestedLivePlanPath = nonEmptyString(
@@ -4020,13 +4027,27 @@ export async function reconcileSpecLive(
       decision: AgentDecision,
       reviewedRunId = "",
     ): Promise<WorkflowResult> => {
+      if (!allowTerminalDisposition) {
+        return ownerResult(
+          ctx,
+          "Terminal disposition was refused because this task requires exact passing live proof.",
+          [
+            ...decision.evidence,
+            `task:${taskId}@${generation}`,
+            "terminal-disposition-policy:forbidden",
+          ],
+        );
+      }
       const isScenarioNormalization =
         normalizationInput?.loopId === "scenario-normalization";
       const validateCurrentSource = (): {
         problem: string | null;
         evidence: string[];
       } => {
-        const decisionProblem = terminalDispositionDecisionProblem(decision);
+        const decisionProblem = terminalDispositionDecisionProblem(
+          decision,
+          allowTerminalDisposition,
+        );
         if (decisionProblem) return { problem: decisionProblem, evidence: [] };
         if (cleanWorkspace(workspaceDir)) {
           return {
@@ -4854,7 +4875,7 @@ export async function reconcileSpecLive(
         currentAdoSurfaceInstruction,
         "If current source is already the exact content that should be live-tested, leave it unchanged and return decision=test-current.",
         "For committed or test-current, separately set liveReady=true only when this exact source may be sent to ADO now. If source is prepared but an external fact still prevents execution, set liveReady=false and include one exact observable Condition. If this app cannot observe the required fact, return needs-owner instead. Never treat a commit as permission to run.",
-        ...(normalizationInput
+        ...(normalizationInput && allowTerminalDisposition
           ? [terminalDispositionSourceRepairInstruction]
           : []),
         ...(options.existingRecoveryAfterRunId
@@ -4862,7 +4883,9 @@ export async function reconcileSpecLive(
               `This is recovery work for blocking run ${options.existingRecoveryAfterRunId}. If a later current-main run already passed this exact spec and still applies to current main, leave source unchanged and return decision=accepted-pass. Populate recovery={pipelineRunId,sourceBranch,sourceCommit,artifactPath} with the aggregate result artifact that contains this spec verdict, and cite ancestry/relevant-change evidence. Do not dispatch redundant proof.`,
             ]
           : []),
-        "A blocked spec, reviewed exception, or intentionally paused execution path is not live-ready merely because its file layout is normalized. Implement a truthful observable contract, return an exact wait, make the structured terminal-disposition judgment when the scenario-normalization exception above applies, or identify the genuine ownership boundary.",
+        allowTerminalDisposition
+          ? "A blocked spec, reviewed exception, or intentionally paused execution path is not live-ready merely because its file layout is normalized. Implement a truthful observable contract, return an exact wait, make the structured terminal-disposition judgment when the scenario-normalization exception above applies, or identify the genuine ownership boundary."
+          : "This task requires exact passing live proof. A product or environment failure remains an open recovery obligation: repair it or return one exact wait or genuine ownership boundary; do not use terminal-disposition as completion.",
         "Do not queue ADO, create a PR, create another branch/worktree, or edit app task state; this workflow owns those steps.",
         "Use waiting only with one exact machine-observable Condition. Use needs-owner only for a concrete decision that source facts cannot resolve.",
         "Task:",
@@ -4875,7 +4898,11 @@ export async function reconcileSpecLive(
           preparationDecisionProblem(
             candidate,
             Boolean(options.existingRecoveryAfterRunId),
-          ) ?? terminalDispositionDecisionProblem(candidate),
+          ) ??
+          terminalDispositionDecisionProblem(
+            candidate,
+            allowTerminalDisposition,
+          ),
       });
       if (decision.decision === "waiting" && decision.condition) {
         return waitingResult(
@@ -4919,7 +4946,10 @@ export async function reconcileSpecLive(
                 candidate,
                 Boolean(options.existingRecoveryAfterRunId),
               ) ??
-              terminalDispositionDecisionProblem(candidate) ??
+              terminalDispositionDecisionProblem(
+                candidate,
+                allowTerminalDisposition,
+              ) ??
               preparationHeadProblem({
                 decision: candidate,
                 before: correctionBaseline,
@@ -5244,7 +5274,7 @@ export async function reconcileSpecLive(
           "Return accepted-pass only for exact same-spec live proof on this source commit.",
           acceptedLiveProofSourceInstruction,
           "A source-only check or admission refusal is diagnostic evidence, not completion. Implement an observable live negative test when the API contract permits it; otherwise return an exact external wait or a genuine ownership-boundary decision.",
-          ...(normalizationInput
+          ...(normalizationInput && allowTerminalDisposition
             ? [terminalDispositionSourceRepairInstruction]
             : []),
           "For a carrier/spec defect, make the smallest fix in the task worktree, run scoped local checks, commit, leave the worktree clean, and return committed.",
@@ -5265,7 +5295,10 @@ export async function reconcileSpecLive(
               requireSucceededProvider: Boolean(normalizationInput),
               providerResult: runResult,
             }) ??
-            terminalDispositionDecisionProblem(candidate) ??
+            terminalDispositionDecisionProblem(
+              candidate,
+              allowTerminalDisposition,
+            ) ??
             (candidate.decision === "accepted-pass" &&
             !preIntegrationVerification.accepted
               ? preIntegrationVerification.summary
@@ -6186,6 +6219,10 @@ function verifySameTaskRevision(
   const nextSpecIds = scenarioNormalizationSpecIds(
     nextInput as ScenarioNormalizationInput,
   );
+  const currentAllowsTerminalDisposition =
+    currentInput.allowTerminalDisposition !== false;
+  const nextAllowsTerminalDisposition =
+    nextInput.allowTerminalDisposition !== false;
   let currentTarget: LiveExecutionTarget;
   let nextTarget: LiveExecutionTarget;
   try {
@@ -6218,6 +6255,11 @@ function verifySameTaskRevision(
   ) {
     problems.push("self-revision must preserve the exact live target");
   }
+  if (currentAllowsTerminalDisposition !== nextAllowsTerminalDisposition) {
+    problems.push(
+      "self-revision must preserve the terminal-disposition policy",
+    );
+  }
 
   return {
     accepted: problems.length === 0,
@@ -6248,10 +6290,20 @@ function verifyTerminalDispositionResult(
   context: ProjectAppTaskVerificationContext,
   result: ProjectAppTaskHandlerResult,
   input: ScenarioNormalizationInput | undefined,
+  allowTerminalDisposition: boolean,
 ): ProjectAppTaskVerificationResult | null {
   const evidence = resultEvidenceItems(result);
   if (!evidence.includes("terminal-disposition:no-new-ado-pass-claimed")) {
     return null;
+  }
+
+  if (!allowTerminalDisposition) {
+    return {
+      accepted: false,
+      summary:
+        "Terminal spec disposition cannot satisfy a task that requires exact passing live proof.",
+      evidence: ["verification-finding:terminal-disposition-forbidden"],
+    };
   }
 
   if (cleanWorkspace(context.workspaceDir)) {
@@ -6409,6 +6461,8 @@ export async function verify(
   if (sameTaskRevision) return sameTaskRevision;
 
   const input = context.intent.input as ScenarioNormalizationInput | undefined;
+  const allowTerminalDisposition =
+    jsonRecord(context.intent.input).allowTerminalDisposition !== false;
   const specIds = scenarioNormalizationSpecIds(input);
   if (specIds.length === 0) {
     return {
@@ -6422,6 +6476,7 @@ export async function verify(
     context,
     result,
     input,
+    allowTerminalDisposition,
   );
   if (terminalDispositionVerification) {
     return terminalDispositionVerification;

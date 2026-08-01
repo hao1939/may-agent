@@ -1354,6 +1354,9 @@ describe("spec-live-reconciliation workflow", () => {
     };
     expect(preparationDecisionProblem(decision, false)).toBeNull();
     expect(terminalDispositionDecisionProblem(decision)).toBeNull();
+    expect(terminalDispositionDecisionProblem(decision, false)).toContain(
+      "requires exact passing live proof",
+    );
     expect(
       terminalDispositionDecisionProblem({ ...decision, liveReady: false }),
     ).toContain("neither live readiness nor a wait");
@@ -1754,6 +1757,35 @@ describe("spec-live-reconciliation workflow", () => {
     }
   });
 
+  test("rejects terminal evidence when the task requires an exact pass", async () => {
+    const verification = await verify(
+      {
+        projectDir: "/tmp/not-used-for-forbidden-terminal-disposition",
+        workspaceDir: "/tmp/not-used-for-forbidden-terminal-disposition",
+        taskId: "domain/pass-required",
+        generation: 1,
+        intent: {
+          input: {
+            specId: "spec.sample.pass-required",
+            target: "staging",
+            allowTerminalDisposition: false,
+          },
+        },
+      } as any,
+      {
+        state: "converged",
+        summary: "forged terminal result",
+        evidence: ["terminal-disposition:no-new-ado-pass-claimed"],
+      } as any,
+    );
+
+    expect(verification.accepted).toBe(false);
+    expect(verification.summary).toContain("requires exact passing live proof");
+    expect(verification.evidence).toContain(
+      "verification-finding:terminal-disposition-forbidden",
+    );
+  });
+
   test("accepts a same-task correction without treating it as final live proof", async () => {
     const context = {
       projectDir: "/tmp/not-used-for-self-revision",
@@ -1796,6 +1828,15 @@ describe("spec-live-reconciliation workflow", () => {
     expect(accepted.evidence).toContain(
       "task-revision:domain/normalize-one-spec@3",
     );
+
+    const weakenedPolicy = structuredClone(revision);
+    context.intent.input.allowTerminalDisposition = false;
+    const weakenedPolicyVerification = await verify(context, weakenedPolicy);
+    expect(weakenedPolicyVerification.accepted).toBe(false);
+    expect(weakenedPolicyVerification.summary).toContain(
+      "preserve the terminal-disposition policy",
+    );
+    delete context.intent.input.allowTerminalDisposition;
 
     const changedTarget = structuredClone(revision);
     changedTarget.actions[0].input.target = "standalone";
