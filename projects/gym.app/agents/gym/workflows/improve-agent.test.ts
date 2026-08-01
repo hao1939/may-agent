@@ -26,6 +26,7 @@ import {
   locateCandidateRetry,
   prepareAssessment,
   qualifiesHeldBackRelease,
+  recoverCompletedReleaseBaseline,
   runImprovement,
   runCurriculumSequence,
   scenarioVerdicts,
@@ -1001,6 +1002,57 @@ describe("single agent-improvement loop", () => {
         },
       }),
     ).toBe(false);
+  });
+
+  test("recovers the newest completed matching release baseline after interruption", () => {
+    const root = mkdtempSync(join(tmpdir(), "gym-release-recovery-"));
+    roots.push(root);
+    const gymRoot = join(root, "gym");
+    const runsRoot = join(gymRoot, ".state", "benchmarks");
+    mkdirSync(runsRoot, { recursive: true });
+
+    const store = (
+      runId: string,
+      startedAt: string,
+      completedAt: string | null,
+    ) => {
+      const runDir = join(runsRoot, runId);
+      mkdirSync(runDir, { recursive: true });
+      const stored = manifest(runId, {
+        "transfer-a": ["fail", "fail", "fail", "fail", "fail"],
+        "transfer-b": ["fail", "fail", "fail", "fail", "fail"],
+      });
+      stored.benchmark = "transfer-bench";
+      stored.started_at = startedAt;
+      stored.completed_at = completedAt;
+      writeFileSync(join(runDir, "manifest.json"), JSON.stringify(stored));
+      return runDir;
+    };
+
+    store(
+      "before-candidate",
+      "2026-08-01T00:00:00Z",
+      "2026-08-01T00:10:00Z",
+    );
+    const recoveredDir = store(
+      "completed-after-candidate",
+      "2026-08-01T01:00:00Z",
+      "2026-08-01T01:20:00Z",
+    );
+    store("newer-but-incomplete", "2026-08-01T02:00:00Z", null);
+
+    expect(
+      recoverCompletedReleaseBaseline(
+        gymRoot,
+        "transfer-bench",
+        "may",
+        ["transfer-a", "transfer-b"],
+        "2026-08-01T00:30:00Z",
+      ),
+    ).toMatchObject({
+      runDir: recoveredDir,
+      manifest: { run_id: "completed-after-candidate" },
+    });
   });
 
   test("requires exact per-scenario classification coverage", () => {

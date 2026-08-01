@@ -40,7 +40,7 @@ export const name = "improve-agent";
 export const description =
   "Evaluate May, classify each finding, and iterate one isolated candidate at a time until progress stops or one verified proposal is ready.";
 export const workspace = "shared";
-export const executionTimeoutMs = 60 * 60_000;
+export const executionTimeoutMs = 120 * 60_000;
 
 const RELEASE_TRIALS = 5;
 
@@ -2104,6 +2104,47 @@ function isReleaseBaseline(
   );
 }
 
+export function recoverCompletedReleaseBaseline(
+  gymRoot: string,
+  benchmark: string,
+  agent: string,
+  releaseScenarios: string[],
+  notBefore: string | null,
+): { runDir: string; manifest: LoopRunManifest } | null {
+  const runsRoot = join(gymRoot, ".state", "benchmarks");
+  if (!existsSync(runsRoot)) return null;
+  const minimumStartedAt = Date.parse(notBefore ?? "");
+  const recovered = readdirSync(runsRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .flatMap((entry) => {
+      const runDir = join(runsRoot, entry.name);
+      const manifest = readJson<LoopRunManifest>(join(runDir, "manifest.json"));
+      if (
+        !manifest?.completed_at ||
+        manifest.phase !== "test" ||
+        manifest.candidate !== "baseline" ||
+        !isReleaseBaseline(
+          manifest,
+          gymRoot,
+          benchmark,
+          agent,
+          releaseScenarios,
+        ) ||
+        (Number.isFinite(minimumStartedAt) &&
+          Date.parse(manifest.started_at) < minimumStartedAt)
+      ) {
+        return [];
+      }
+      return [{ runDir, manifest }];
+    })
+    .sort(
+      (left, right) =>
+        Date.parse(right.manifest.completed_at!) -
+        Date.parse(left.manifest.completed_at!),
+    );
+  return recovered[0] ?? null;
+}
+
 async function reviewFailedCandidate(
   ctx: WorkflowContext,
   plan: CandidatePlan,
@@ -2427,15 +2468,22 @@ async function runCandidateIteration(
         plan.releaseScenarios,
       )
         ? { runDir: plan.baselineDir, manifest: baselineManifest }
-        : await loop.run({
-            phase: "test",
-            benchmark: plan.releaseBenchmark,
-            scenarios: plan.releaseScenarios,
-            agent: plan.agent,
-            candidate: "baseline",
-            trials: RELEASE_TRIALS,
-            agentsRoot: workspaceAgentsRoot,
-          });
+        : recoverCompletedReleaseBaseline(
+              gymRoot,
+              plan.releaseBenchmark,
+              plan.agent,
+              plan.releaseScenarios,
+              development.manifest.completed_at,
+            ) ??
+            (await loop.run({
+              phase: "test",
+              benchmark: plan.releaseBenchmark,
+              scenarios: plan.releaseScenarios,
+              agent: plan.agent,
+              candidate: "baseline",
+              trials: RELEASE_TRIALS,
+              agentsRoot: workspaceAgentsRoot,
+            }));
       writeJson(releaseBaselineCheckpointPath, releaseBaseline);
     }
     releaseBaselineDir = releaseBaseline.runDir;

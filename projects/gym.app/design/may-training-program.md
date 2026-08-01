@@ -193,16 +193,20 @@ owner loop.
 Broad screening, its one invalid retry, and classification form one assessment
 stage. Gym saves that assessment before starting the focused reproducibility
 baseline. If the execution budget ends during the focused baseline, the next
-reconcile resumes there instead of repeating the broad trials.
+reconcile resumes there instead of repeating the broad trials. The same rule
+applies to release evidence: a completed matching release baseline produced by
+an interrupted attempt is recovered and checkpointed before Gym starts another
+baseline.
 
-The improvement workflow declares a 60-minute execution budget through the
+The improvement workflow declares a 120-minute execution budget through the
 standard workflow-module timeout field. Ordinary app workflows keep the
-platform default. This covers multi-trial semantic evaluation without adding a
-second scheduler or weakening the evaluation gates.
+platform default. This covers candidate construction plus five-trial semantic
+release evaluation on a busy shared host without adding a second scheduler or
+weakening the evaluation gates.
 
 `revise-candidate` is an internal workflow decision. It does not mutate the
 running task and does not notify Hao. A workflow never remains open across
-human approval, an external callback, or a later schedule. The 60-minute limit
+human approval, an external callback, or a later schedule. The 120-minute limit
 is a safety ceiling; campaign progress comes from checkpoints and repeated
 reconciliation, not from hoping one long attempt finishes.
 
