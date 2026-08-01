@@ -34,11 +34,21 @@ function fakeSpawn(_command: string, args: string[]): any {
   queueMicrotask(() => {
     const outputIndex = args.indexOf("-o");
     child.stdout.write(JSON.stringify({ type: "thread.started", thread_id: "codex-session-1" }) + "\n");
+    child.stdout.write(JSON.stringify({ type: "turn.started" }) + "\n");
     if (outputIndex >= 0 && args[outputIndex + 1]) {
       writeFileSync(args[outputIndex + 1], "cli worker completed\n");
     } else {
-      child.stdout.write("cli worker completed\n");
+      child.stdout.write(
+        JSON.stringify({
+          type: "result",
+          subtype: "success",
+          is_error: false,
+          result: "cli worker completed",
+          session_id: "claude-session-1",
+        }) + "\n",
+      );
     }
+    child.stdout.write(JSON.stringify({ type: "turn.completed" }) + "\n");
     child.stdout.end();
     child.stderr.end();
     child.emit("close", 0, null);
@@ -615,6 +625,110 @@ describe("CLI task runner", () => {
       const failed = events.find((event) => event.type === "cli.task.failed") as any;
       expect(failed.data.failureCategory).toBe("output_schema");
       expect(failed.data.error).toContain("valid JSON");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("classifies a handled timeout as timeout even when Codex exits zero", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-cli-handled-timeout-"));
+    const persistDir = join(root, ".state");
+    const bus = new EventBus();
+    const events: AgentEvent[] = [];
+    bus.subscribe((event) => events.push(event));
+    const handledTimeoutSpawn = ((_command: string, _args: string[]) => {
+      const child = new EventEmitter() as EventEmitter & {
+        stdout: PassThrough;
+        stderr: PassThrough;
+        pid: number;
+        kill: (signal: NodeJS.Signals) => boolean;
+      };
+      child.stdout = new PassThrough();
+      child.stderr = new PassThrough();
+      child.pid = 987_654;
+      child.kill = () => {
+        child.stdout.end();
+        child.stderr.end();
+        queueMicrotask(() => child.emit("close", 0, null));
+        return true;
+      };
+      queueMicrotask(() => {
+        child.stdout.write(JSON.stringify({ type: "thread.started", thread_id: "timed-out-session" }) + "\n");
+        child.stdout.write(JSON.stringify({ type: "turn.started" }) + "\n");
+      });
+      return child;
+    }) as any;
+    attachCliTaskRunner({ bus, persistDir, projectRoot: root, spawnCommand: handledTimeoutSpawn });
+    const tool = createRunCliAgentTool({
+      agentName: "may",
+      projectRoot: root,
+      persistDir,
+      emit: (event) => bus.emit(event as any),
+    });
+    try {
+      const accepted = await tool.execute("call-timeout", {
+        tool: "codex",
+        prompt: "Take longer than the deadline.",
+        timeoutMs: 10,
+      });
+      const payload = JSON.parse(accepted.content[0].text);
+      await waitFor(() => events.some((event) => event.type === "cli.task.failed"));
+
+      const failed = events.find((event) => event.type === "cli.task.failed") as any;
+      expect(failed.data.failureCategory).toBe("timeout");
+      expect(events.some((event) => event.type === "cli.task.completed")).toBe(false);
+      const structured = JSON.parse(readFileSync(payload.structuredResultPath, "utf8")) as any;
+      expect(structured.status).toBe("timed_out");
+      expect(structured.failureCategory).toBe("timeout");
+      expect(readFileSync(payload.resultPath, "utf8")).toBe("");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects protocol-only Codex output even when the process exits zero", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-cli-incomplete-protocol-"));
+    const persistDir = join(root, ".state");
+    const bus = new EventBus();
+    const events: AgentEvent[] = [];
+    bus.subscribe((event) => events.push(event));
+    const incompleteSpawn = ((_command: string, _args: string[]) => {
+      const child = new EventEmitter() as EventEmitter & {
+        stdout: PassThrough;
+        stderr: PassThrough;
+        pid: number;
+      };
+      child.stdout = new PassThrough();
+      child.stderr = new PassThrough();
+      child.pid = 123_456;
+      queueMicrotask(() => {
+        child.stdout.write(JSON.stringify({ type: "thread.started", thread_id: "incomplete-session" }) + "\n");
+        child.stdout.write(JSON.stringify({ type: "turn.started" }) + "\n");
+        child.stdout.end();
+        child.stderr.end();
+        child.emit("close", 0, null);
+      });
+      return child;
+    }) as any;
+    attachCliTaskRunner({ bus, persistDir, projectRoot: root, spawnCommand: incompleteSpawn });
+    const tool = createRunCliAgentTool({
+      agentName: "may",
+      projectRoot: root,
+      persistDir,
+      emit: (event) => bus.emit(event as any),
+    });
+    try {
+      await tool.execute("call-incomplete", {
+        tool: "codex",
+        prompt: "Return a result.",
+        timeoutMs: 1_000,
+      });
+      await waitFor(() => events.some((event) => event.type === "cli.task.failed"));
+
+      const failed = events.find((event) => event.type === "cli.task.failed") as any;
+      expect(failed.data.failureCategory).toBe("no_output");
+      expect(failed.data.error).toContain("completed turn");
+      expect(events.some((event) => event.type === "cli.task.completed")).toBe(false);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
