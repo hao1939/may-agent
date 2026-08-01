@@ -288,6 +288,14 @@ checkpoints survive recovery.
 Historical evidence is append-only. Changing benchmark truth, labels, or a
 scorer requires a fresh baseline.
 
+A scorer fix may include scenario-specific calibration or deterministic
+expectations under the evaluator benchmark's `scenarios/<scenario>/`
+directory. The Gym runner overlays those files onto the canonical scenario
+while freezing new run inputs. This lets one exact benchmark artifact repair
+its scorer and the controls that scorer owns; it does not rewrite global
+scenario history. Applying such an artifact still requires Hao's exact
+approval and always starts a fresh baseline.
+
 ## Human boundaries
 
 Gym continues autonomously through ordinary evaluation, classification,

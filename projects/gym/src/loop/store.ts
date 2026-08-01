@@ -163,12 +163,24 @@ export function createRunManifest(input: {
     copyFileSync(evaluatorSource, evaluatorSnapshot);
   }
   const scenariosSnapshot = join(inputsDir, "scenarios");
+  const evaluatorOwner = evaluatorSource ? dirname(evaluatorSource) : null;
+  const scenarioOverlayRoot =
+    evaluatorOwner && evaluatorOwner !== sourceBenchmarkDir
+      ? join(evaluatorOwner, "scenarios")
+      : null;
   for (const scenario of input.scenarios) {
     const source = join(gymRoot, "scenarios", scenario);
     if (!existsSync(source)) throw new Error(`Scenario not found: ${source}`);
-    cpSync(source, join(scenariosSnapshot, safeName(scenario)), {
+    const snapshot = join(scenariosSnapshot, safeName(scenario));
+    cpSync(source, snapshot, {
       recursive: true,
     });
+    const overlay = scenarioOverlayRoot
+      ? join(scenarioOverlayRoot, safeName(scenario))
+      : null;
+    if (overlay && existsSync(overlay)) {
+      cpSync(overlay, snapshot, { recursive: true, force: true });
+    }
   }
   const candidateSnapshot = input.candidatePath
     ? join(runDir, "candidate")

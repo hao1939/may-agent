@@ -194,6 +194,23 @@ describe("loop evaluation", () => {
               existsSync(join(input.scenariosDir, input.scenario, "task.md")),
             ).toBe(true);
             expect(
+              readFileSync(
+                join(input.scenariosDir, input.scenario, "task.md"),
+                "utf8",
+              ),
+            ).toBe(
+              readFileSync(
+                join(
+                  import.meta.dirname,
+                  "..",
+                  "scenarios",
+                  input.scenario,
+                  "task.md",
+                ),
+                "utf8",
+              ),
+            );
+            expect(
               existsSync(
                 join(
                   input.scenariosDir,
@@ -344,6 +361,58 @@ describe("loop evaluation", () => {
             join(created.runDir, created.manifest.source.evaluator_snapshot!),
           ),
         ).toBe(true);
+      } finally {
+        if (previousState === undefined) delete process.env["GYM_STATE_DIR"];
+        else process.env["GYM_STATE_DIR"] = previousState;
+      }
+    }));
+
+  it("freezes evaluator-owned scenario overlays", async () =>
+    withTempDirAsync(async (root) => {
+      const previousState = process.env["GYM_STATE_DIR"];
+      process.env["GYM_STATE_DIR"] = join(root, "state");
+      const scenario =
+        "may-learn-admission-review-material-human-authority-deliver";
+      try {
+        await runLoop(
+          {
+            phase: "test",
+            benchmark: "may-admission-review-closure",
+            scenarios: [scenario],
+            agent: "may",
+            candidate: "baseline",
+            trials: 1,
+          },
+          async (input) => {
+            const frozenCriteria = readFileSync(
+              join(input.scenariosDir, scenario, "semantic_criteria.md"),
+              "utf8",
+            );
+            const ownerCriteria = readFileSync(
+              join(
+                import.meta.dirname,
+                "..",
+                "benchmarks",
+                "may-alignment",
+                "scenarios",
+                scenario,
+                "semantic_criteria.md",
+              ),
+              "utf8",
+            );
+            expect(frozenCriteria).toBe(ownerCriteria);
+            return {
+              stderr: "",
+              result: {
+                scenario: input.scenario,
+                agent: "may",
+                passed: true,
+                checks: [{ name: "decision", passed: true }],
+                agent_status: "success",
+              },
+            };
+          },
+        );
       } finally {
         if (previousState === undefined) delete process.env["GYM_STATE_DIR"];
         else process.env["GYM_STATE_DIR"] = previousState;

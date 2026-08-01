@@ -66,6 +66,14 @@ draft. Editing `expected.json`, its scorer, the evaluator, or a label after a
 baseline invalidates the comparison; start a new baseline so both versions use
 the same frozen inputs.
 
+When several benchmarks reuse one evaluator, that evaluator's benchmark may
+carry narrow scenario overlays under `scenarios/<scenario>/`. Gym copies the
+canonical scenario first, then copies this overlay into the frozen run input.
+This keeps scorer-specific expectations and semantic calibration controls with
+their responsible evaluator while preserving one immutable input fingerprint.
+Overlay truth still requires the scenario's normal human-approved label, and
+changing an overlay requires a fresh baseline.
+
 ## 1. Test the baseline
 
 From `projects/gym`:
