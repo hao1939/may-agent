@@ -128,6 +128,13 @@ If calibrated semantic judges disagree on one exact artifact, the disagreement
 may be a real human boundary, but it remains an exact wait on `improve/may`.
 The owner must never create an adjudication child beneath the campaign.
 
+An exact verification retry names the candidate fingerprint. Gym searches only
+the current generation result and its immediate track results and requires one
+match. It then reuses that track's assessment and candidate checkpoint, clears
+only stale verification and review checkpoints, and verifies the same artifact
+again. No match or more than one match stops safely; Gym does not rebuild the
+candidate, repeat guided practice, or fall back to broad training.
+
 The first implementation phase parallelizes the expensive independent
 assessment and diagnosis work. It deliberately serializes candidate creation.
 After this phase proves stable in live autonomous cycles, Gym may allow two
@@ -265,6 +272,7 @@ Gym App stores only controller-owned assessment and candidate evidence:
 projects/gym.app/.state/
 ├── assessments/
 ├── candidates/improve-may/<task-generation>/iterations/<iteration>/
+├── candidates/improve-may/<task-generation>/tracks/<track>/iterations/<iteration>/
 └── scratch/improve-may/<task-generation>/<iteration>/
 ```
 

@@ -8,7 +8,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import type { LoopRunManifest, RunOptions } from "@may-agent/gym/loop";
 import type { WorkflowContext } from "@may-agent/sdk";
 import {
@@ -22,6 +22,7 @@ import {
   improvementInput,
   learningPromptLines,
   loadCurriculumTargets,
+  locateCandidateRetry,
   prepareAssessment,
   qualifiesHeldBackRelease,
   runImprovement,
@@ -96,6 +97,54 @@ function manifest(
 }
 
 describe("single agent-improvement loop", () => {
+  test("locates one exact retry in the generation root or an immediate track", () => {
+    const root = mkdtempSync(join(tmpdir(), "gym-retry-location-"));
+    roots.push(root);
+    const generationDir = join(
+      root,
+      "gym.app",
+      ".state",
+      "candidates",
+      "improve-may",
+      "7",
+    );
+    const trackDir = join(generationDir, "tracks", "cli-worker");
+    mkdirSync(trackDir, { recursive: true });
+    const fingerprint = "a".repeat(64);
+    writeFileSync(
+      join(trackDir, "result.json"),
+      JSON.stringify({ candidate_fingerprint: fingerprint }),
+    );
+
+    expect(
+      locateCandidateRetry(root, "improve/may", 7, {
+        reason: "retry-candidate-verification",
+        candidateFingerprint: `sha256:${fingerprint}`,
+      }),
+    ).toMatchObject({
+      scope: "cli-worker",
+      resultPath: join(trackDir, "result.json"),
+    });
+
+    expect(
+      locateCandidateRetry(root, "improve/may", 7, {
+        reason: "retry-candidate-verification",
+        candidateFingerprint: "b".repeat(64),
+      })?.error,
+    ).toContain("no matching result");
+
+    writeFileSync(
+      join(generationDir, "result.json"),
+      JSON.stringify({ candidate_fingerprint: fingerprint }),
+    );
+    expect(
+      locateCandidateRetry(root, "improve/may", 7, {
+        reason: "retry-candidate-verification",
+        candidateFingerprint: fingerprint,
+      })?.error,
+    ).toContain("multiple matching results");
+  });
+
   test("keeps desired state stable while a focused wake supplies work", () => {
     const desired = {
       taskId: "improve/may",
@@ -1629,5 +1678,233 @@ describe("single agent-improvement loop", () => {
         ),
       ),
     ).toBe(false);
+  });
+
+  test("retries the exact track candidate without rebuilding it", async () => {
+    const root = mkdtempSync(join(tmpdir(), "gym-track-retry-"));
+    roots.push(root);
+    const projectsRoot = join(root, "projects");
+    const gymRoot = join(projectsRoot, "gym");
+    const agentsRoot = join(root, "agents");
+    const benchmarkDir = join(gymRoot, "benchmarks", "test-bench");
+    const runsDir = join(gymRoot, ".state", "benchmarks");
+    const baselineDir = join(runsDir, "baseline");
+    const scope = "cli-worker-track";
+    const stateDir = join(
+      projectsRoot,
+      "gym.app",
+      ".state",
+      "candidates",
+      "improve-may",
+      "7",
+      "tracks",
+      scope,
+    );
+    const iterationDir = join(stateDir, "iterations", "2");
+    const candidateDir = join(iterationDir, "may");
+    const assessmentPath = join(
+      projectsRoot,
+      "gym.app",
+      ".state",
+      "assessments",
+      "improve-may",
+      "7",
+      `${scope}.json`,
+    );
+    mkdirSync(benchmarkDir, { recursive: true });
+    mkdirSync(baselineDir, { recursive: true });
+    mkdirSync(join(agentsRoot, "may"), { recursive: true });
+    mkdirSync(candidateDir, { recursive: true });
+    mkdirSync(dirname(assessmentPath), { recursive: true });
+    writeFileSync(join(agentsRoot, "may", "AGENTS.md"), "# May\n");
+    writeFileSync(join(candidateDir, "AGENTS.md"), "# Exact candidate\n");
+    writeFileSync(
+      join(benchmarkDir, "suite.json"),
+      JSON.stringify({ scenarios: ["agent-case"] }),
+    );
+    const baseline = manifest("baseline", {
+      "agent-case": ["fail", "fail", "fail"],
+    });
+    writeFileSync(join(baselineDir, "manifest.json"), JSON.stringify(baseline));
+    const candidateFingerprint = fingerprintTree(candidateDir);
+    writeFileSync(
+      join(iterationDir, "candidate.json"),
+      JSON.stringify({
+        candidateId: "gym/may/g7-i2",
+        candidatePath: candidateDir,
+        candidateFingerprint,
+        implementationSummary: "Existing exact candidate",
+        implementationEvidence: ["existing-candidate"],
+      }),
+    );
+    writeFileSync(
+      assessmentPath,
+      JSON.stringify({
+        schema_version: 1,
+        agent: "may",
+        benchmark: "test-bench",
+        release_benchmark: "test-bench",
+        release_scenarios: ["agent-case"],
+        screening_run_id: "baseline",
+        screening_run_dir: baselineDir,
+        retry_run_id: null,
+        retry_run_dir: null,
+        findings: [
+          {
+            classification: "agent",
+            scenarios: ["agent-case"],
+            failureFamily: "cli-recovery",
+            summary: "May missed the requested independent review.",
+            evidence: [baselineDir],
+          },
+        ],
+        focus: {
+          classification: "agent",
+          scenarios: ["agent-case"],
+          failureFamily: "cli-recovery",
+          summary: "May missed the requested independent review.",
+          evidence: [baselineDir],
+        },
+        baseline_run_id: "baseline",
+        baseline_run_dir: baselineDir,
+        accepted_at: "2026-08-01T00:00:00Z",
+      }),
+    );
+    for (const file of [
+      "development-verification.json",
+      "release-baseline.json",
+      "release-verification.json",
+      "failed-review.json",
+    ]) {
+      writeFileSync(join(iterationDir, file), JSON.stringify({ stale: true }));
+    }
+    writeFileSync(
+      join(stateDir, "result.json"),
+      JSON.stringify({
+        schema_version: 1,
+        task_id: "improve/may",
+        generation: 7,
+        iteration: 2,
+        candidate_path: candidateDir,
+        candidate_fingerprint: candidateFingerprint,
+        verification_run_dir: "old-verification",
+        summary: "Old verification needs review.",
+        evidence: [],
+        workflow_state: "needs-owner",
+        conditions: [],
+        approval: null,
+      }),
+    );
+
+    let verifyCount = 0;
+    const newRunDir = join(runsDir, "retry-verification");
+    const loop: GymLoopApi = {
+      async run() {
+        throw new Error("the frozen baseline must be reused");
+      },
+      async verify() {
+        verifyCount++;
+        mkdirSync(newRunDir, { recursive: true });
+        const value = manifest("retry-verification", {
+          "agent-case": ["fail", "fail", "fail"],
+        });
+        value.phase = "verify";
+        value.proof.candidate_fingerprint = candidateFingerprint;
+        const comparison = {
+          baseline_run_id: "baseline",
+          candidate_run_id: "retry-verification",
+          labels_approved: true,
+          no_invalid_runs: true,
+          no_regressions: true,
+          improved: false,
+          gate: "fail" as const,
+          scenarios: [],
+        };
+        writeFileSync(join(newRunDir, "manifest.json"), JSON.stringify(value));
+        writeFileSync(
+          join(newRunDir, "comparison.json"),
+          JSON.stringify(comparison),
+        );
+        return { runDir: newRunDir, manifest: value, comparison };
+      },
+    };
+    const calledAgents: string[] = [];
+    const ctx = {
+      projectsRoot,
+      task: [
+        "## Reconciliation Task",
+        "```json",
+        JSON.stringify({
+          taskId: "improve/may",
+          generation: 7,
+          input: { agent: "may", curriculumDrain: true },
+          children: {
+            live: [
+              {
+                taskId: "improve/may/adjudicate-old-trial",
+                generation: 3,
+              },
+            ],
+          },
+        }),
+        "```",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "gym.improvement.requested",
+          params: {
+            reason: "retry-candidate-verification",
+            candidateFingerprint,
+          },
+        }),
+        "```",
+      ].join("\n"),
+      async runAgent(agent: string) {
+        calledAgents.push(agent);
+        expect(agent).toBe("gym");
+        return {
+          status: "done",
+          structuredResult: {
+            disposition: "needs-human",
+            summary: "Fresh evidence still needs human judgment.",
+            proposedChange: "Review the fresh evidence.",
+            evidence: [newRunDir],
+          },
+        };
+      },
+      emit() {},
+      dispatchEvent() {},
+      done(summary: string, details: Record<string, unknown>) {
+        return { type: "done", summary, ...details };
+      },
+      blocked(reason: string) {
+        return { type: "blocked", reason };
+      },
+    } as unknown as WorkflowContext;
+
+    const result = (await runImprovement(ctx, loop)) as unknown as Record<
+      string,
+      unknown
+    >;
+    expect(result.state).toBe("needs-owner");
+    expect(verifyCount).toBe(1);
+    expect(calledAgents).toEqual(["gym"]);
+    expect(fingerprintTree(candidateDir)).toBe(candidateFingerprint);
+    expect(result.actions).toEqual([
+      expect.objectContaining({
+        kind: "close-task",
+        taskId: "improve/may/adjudicate-old-trial",
+        expectedGeneration: 3,
+      }),
+    ]);
+    expect(
+      JSON.parse(readFileSync(join(stateDir, "result.json"), "utf8"))
+        .candidate_fingerprint,
+    ).toBe(candidateFingerprint);
+    expect(
+      JSON.parse(
+        readFileSync(join(iterationDir, "verification-retry.json"), "utf8"),
+      ).candidate_fingerprint,
+    ).toBe(candidateFingerprint);
   });
 });

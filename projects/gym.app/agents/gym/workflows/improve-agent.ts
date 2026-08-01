@@ -1547,6 +1547,147 @@ function existingResult(path: string): StoredResult | null {
   };
 }
 
+function requestedCandidateRetry(
+  input: Record<string, unknown>,
+  stored: Record<string, unknown>,
+): boolean {
+  if (String(input.reason ?? "") !== "retry-candidate-verification") {
+    return false;
+  }
+  const requested = String(input.candidateFingerprint ?? "").replace(
+    /^sha256:/,
+    "",
+  );
+  const actual = String(stored.candidate_fingerprint ?? "").replace(
+    /^sha256:/,
+    "",
+  );
+  return Boolean(requested && actual && requested === actual);
+}
+
+interface CandidateRetryLocation {
+  scope?: string;
+  resultPath?: string;
+  error?: string;
+  evidence: string[];
+}
+
+export function locateCandidateRetry(
+  projectsRoot: string,
+  taskId: string,
+  generation: number,
+  input: Record<string, unknown>,
+): CandidateRetryLocation | null {
+  if (String(input.reason ?? "") !== "retry-candidate-verification") {
+    return null;
+  }
+  const requested = String(input.candidateFingerprint ?? "")
+    .replace(/^sha256:/, "")
+    .trim();
+  if (!/^[a-f0-9]{64}$/.test(requested)) {
+    return {
+      error: "Exact candidate retry requires a valid candidate fingerprint",
+      evidence: [],
+    };
+  }
+
+  const generationDir = join(
+    projectsRoot,
+    "gym.app",
+    ".state",
+    "candidates",
+    safeKey(taskId, "improve-may"),
+    String(generation),
+  );
+  const resultPaths = [join(generationDir, "result.json")];
+  const tracksDir = join(generationDir, "tracks");
+  if (existsSync(tracksDir)) {
+    resultPaths.push(
+      ...readdirSync(tracksDir, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => join(tracksDir, entry.name, "result.json")),
+    );
+  }
+
+  const matches = resultPaths.filter((resultPath) => {
+    const stored = readJson<Record<string, unknown>>(resultPath);
+    return (
+      String(stored?.candidate_fingerprint ?? "").replace(/^sha256:/, "") ===
+      requested
+    );
+  });
+  if (matches.length !== 1) {
+    return {
+      error:
+        matches.length === 0
+          ? "Exact candidate retry found no matching result in this generation"
+          : "Exact candidate retry found multiple matching results in this generation",
+      evidence: matches.length ? matches : resultPaths.filter(existsSync),
+    };
+  }
+
+  const resultPath = matches[0]!;
+  const relativeResult = relative(generationDir, resultPath).split(sep);
+  return {
+    ...(relativeResult[0] === "tracks" ? { scope: relativeResult[1] } : {}),
+    resultPath,
+    evidence: [resultPath],
+  };
+}
+
+function adjudicationChildCloseActions(
+  ctx: WorkflowContext,
+  taskId: string,
+): ProjectAppTaskAction[] {
+  const packet = reconciliationPacket(ctx.task);
+  const live = record(packet?.children).live;
+  if (!Array.isArray(live)) return [];
+  return live.flatMap((value) => {
+    const child = record(value);
+    const childId = String(child.taskId ?? "");
+    const generation = Number(child.generation);
+    if (
+      !childId.startsWith(`${taskId}/adjudicate-`) ||
+      !Number.isInteger(generation) ||
+      generation < 1
+    ) {
+      return [];
+    }
+    return [
+      {
+        kind: "close-task" as const,
+        taskId: childId,
+        expectedGeneration: generation,
+        summary:
+          "Retired nested adjudication state; the exact candidate retry stays on improve/may.",
+      },
+    ];
+  });
+}
+
+function appendTaskActions(
+  result: WorkflowResult,
+  actions: ProjectAppTaskAction[],
+): WorkflowResult {
+  if (result.type !== "done" || !actions.length) return result;
+  if (result.output && typeof result.output === "object") {
+    const output = record(result.output);
+    return {
+      ...result,
+      output: {
+        ...output,
+        actions: [
+          ...(Array.isArray(output.actions)
+            ? (output.actions as ProjectAppTaskAction[])
+            : []),
+          ...actions,
+        ],
+      },
+    };
+  }
+  return Object.assign(result, { actions });
+}
+
 function approvalDecision(
   task: string,
   request: ApprovalRequest,
@@ -2315,13 +2456,62 @@ async function runCandidate(
   taskId: string,
   generation: number,
   candidateStateDir: string,
+  input: Record<string, unknown>,
 ): Promise<WorkflowResult> {
   const resultPath = join(candidateStateDir, "result.json");
   migrateLegacyRevision(candidateStateDir);
-  const previous = existingResult(resultPath);
+  let previous = existingResult(resultPath);
   let plan = initialPlan;
   let startIteration = 1;
   let resumedCandidatePath: string | null = null;
+  let retryCloseActions: ProjectAppTaskAction[] = [];
+  if (previous?.state === "needs-owner") {
+    const stored = record(JSON.parse(readFileSync(resultPath, "utf8")));
+    if (requestedCandidateRetry(input, stored)) {
+      const iteration = Number(stored.iteration);
+      const candidatePath = String(stored.candidate_path ?? "");
+      const candidateFingerprint = String(stored.candidate_fingerprint ?? "");
+      if (
+        !Number.isInteger(iteration) ||
+        iteration < 1 ||
+        !candidatePath ||
+        !existsSync(candidatePath) ||
+        fingerprintTree(candidatePath) !== candidateFingerprint
+      ) {
+        return ctx.done("Exact candidate retry evidence is incomplete", {
+          state: "needs-owner",
+          summary: "Exact candidate retry evidence is incomplete",
+          evidence: [resultPath, candidatePath].filter(Boolean),
+        });
+      }
+      const iterationDir = join(
+        candidateStateDir,
+        "iterations",
+        String(iteration),
+      );
+      writeJson(join(iterationDir, "verification-retry.json"), {
+        schema_version: 1,
+        candidate_fingerprint: candidateFingerprint,
+        previous_verification_run_dir: String(
+          stored.verification_run_dir ?? "",
+        ),
+        reason: String(input.reason),
+        requested_at: new Date().toISOString(),
+      });
+      for (const file of [
+        "development-verification.json",
+        "release-baseline.json",
+        "release-verification.json",
+        "failed-review.json",
+      ]) {
+        rmSync(join(iterationDir, file), { force: true });
+      }
+      rmSync(resultPath, { force: true });
+      previous = null;
+      startIteration = iteration;
+      retryCloseActions = adjudicationChildCloseActions(ctx, taskId);
+    }
+  }
   if (previous) {
     if (previous.state !== "waiting" || !previous.approval) {
       return ctx.done(previous.summary, {
@@ -2513,7 +2703,9 @@ async function runCandidate(
         baseCandidatePath,
       );
       const revision = outcome as IterationRevision;
-      if (revision.kind !== "revise") return outcome as WorkflowResult;
+      if (revision.kind !== "revise") {
+        return appendTaskActions(outcome as WorkflowResult, retryCloseActions);
+      }
       accumulatedEvidence.push(...revision.evidence);
       plan = {
         ...plan,
@@ -2584,7 +2776,15 @@ async function handleAssessmentBenchmarkFix(
   };
   const resultPath = join(stateDir, "result.json");
   if (existingResult(resultPath)) {
-    return runCandidate(ctx, loop, plan, taskId, generation, stateDir);
+    return runCandidate(
+      ctx,
+      loop,
+      plan,
+      taskId,
+      generation,
+      stateDir,
+      workflowInput,
+    );
   }
   const review: FailedReview = {
     disposition:
@@ -2828,7 +3028,7 @@ async function runImprovementOnce(
       });
     }
   }
-  return runCandidate(ctx, loop, plan, taskId, generation, stateDir);
+  return runCandidate(ctx, loop, plan, taskId, generation, stateDir, input);
 }
 
 function workflowOutcome(result: WorkflowResult): {
@@ -3080,12 +3280,26 @@ export async function runImprovement(
   const activeCtx = fencedWorkflowContext(ctx, lease);
   if (input.curriculumDrain !== true) {
     try {
+      const retry = locateCandidateRetry(
+        activeCtx.projectsRoot,
+        taskId,
+        generation,
+        input,
+      );
+      if (retry?.error) {
+        return activeCtx.done(retry.error, {
+          state: "needs-owner",
+          summary: retry.error,
+          evidence: retry.evidence,
+        });
+      }
       return await runImprovementOnce(
         activeCtx,
         activeLoop,
         input,
         taskId,
         generation,
+        retry?.scope,
       );
     } catch (error) {
       if (error instanceof CampaignSupersededError) {
