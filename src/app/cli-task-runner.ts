@@ -33,6 +33,7 @@ type CliTaskRecord = {
   cliSessionId?: string;
   resumeCommand?: string[];
   status: "requested" | "running" | "completed" | "failed" | "orphaned";
+  runnerPid?: number;
   pid?: number;
   requestedAt: string;
   startedAt?: string;
@@ -495,6 +496,7 @@ async function runCliAttempt(opts: {
     detached: process.platform !== "win32",
     stdio: ["ignore", "pipe", "pipe"],
   });
+  record.runnerPid = process.pid;
   record.pid = child.pid;
   writeRecord(recordPath, record);
   const stdoutChunks: string[] = [];
@@ -624,6 +626,14 @@ export function markOrphanedCliTasks(opts: {
     const path = taskRecordPath(opts.persistDir, taskId);
     const record = readRecord(path);
     if (!record || record.status !== "running") continue;
+    if (record.runnerPid) {
+      try {
+        process.kill(record.runnerPid, 0);
+        continue;
+      } catch {
+        // The runtime that owned this task is gone, so recovery may orphan it.
+      }
+    }
     record.status = "orphaned";
     record.finishedAt = iso(now);
     record.error = "Runtime restarted while CLI task was running";

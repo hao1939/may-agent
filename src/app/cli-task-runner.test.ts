@@ -850,4 +850,46 @@ describe("CLI task runner", () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  it("preserves running CLI tasks owned by a live daemon", () => {
+    const root = mkdtempSync(join(tmpdir(), "may-cli-live-owner-"));
+    const persistDir = join(root, ".state");
+    const taskDir = join(persistDir, "cli-tasks", "cli-running");
+    mkdirSync(taskDir, { recursive: true });
+    writeFileSync(
+      join(taskDir, "task.json"),
+      `${JSON.stringify(
+        {
+          taskId: "cli-running",
+          tool: "codex",
+          mode: "investigate",
+          cwd: root,
+          promptPath: join(taskDir, "prompt.md"),
+          resultPath: join(taskDir, "result.md"),
+          timeoutMs: 60000,
+          sourceOwner: "agent:may",
+          status: "running",
+          requestedAt: "2026-06-19T00:00:00.000Z",
+          startedAt: "2026-06-19T00:00:01.000Z",
+          runnerPid: process.pid,
+          pid: 999,
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    const bus = new EventBus();
+    const events: AgentEvent[] = [];
+    bus.subscribe((event) => events.push(event));
+
+    try {
+      const count = markOrphanedCliTasks({ bus, persistDir, now: () => 1 });
+      expect(count).toBe(0);
+      expect(events.some((event) => event.type === "cli.task.orphaned")).toBe(false);
+      const record = JSON.parse(readFileSync(join(taskDir, "task.json"), "utf8"));
+      expect(record.status).toBe("running");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });
