@@ -14,6 +14,7 @@ import {
   acceptedLiveProofSourceInstruction,
   askAgent,
   agentConditionProblem,
+  authoritativeRunReference,
   artifactObservedClaimIds,
   artifactProvesCleanup,
   artifactProvesDeclaredClaims,
@@ -21,6 +22,7 @@ import {
   artifactProvesTarget,
   artifactVitestTestCount,
   checkLiveDispatchAdmission,
+  compactPlanPipelineParameters,
   collectTerminalRunEvidence,
   completedPullRequestIntegration,
   currentAdoSurfaceInstruction,
@@ -42,6 +44,7 @@ import {
   integrationMode,
   isNonFastForwardPushFailure,
   liveDispatchTargetRefreshRequired,
+  matchingTaskGenerationRuns,
   matchingTaskRuns,
   mergeAcceptedTargetAdvanceProof,
   parseTaskPayload,
@@ -67,6 +70,7 @@ import {
   shouldReviewBeforeInitialLiveDispatch,
   scenarioNormalizationWaitProblem,
   sourceChangeMayAffectSpec,
+  supersededQueuedTaskRuns,
   taskContextDir,
   taskScopedAgentCondition,
   terminalDispositionDecisionProblem,
@@ -84,6 +88,18 @@ import {
 } from "./lib/scenario-normalization-invariant.js";
 
 describe("spec-live-reconciliation workflow", () => {
+  test("queues an optional validated compact plan with the exact spec filter", () => {
+    expect(
+      compactPlanPipelineParameters(
+        "features/serverless/compact/staging.plan.json",
+      ),
+    ).toEqual(["plan_path=features/serverless/compact/staging.plan.json"]);
+    expect(compactPlanPipelineParameters("")).toEqual([]);
+    expect(() =>
+      compactPlanPipelineParameters("runs/plans/untrusted.json"),
+    ).toThrow("Invalid compact live plan path");
+  });
+
   test("requires direct carriers to validate on the ADO Vitest surface", () => {
     expect(directVitestCompatibilityInstruction).toContain("through Vitest");
     expect(directVitestCompatibilityInstruction).toContain(
@@ -186,6 +202,15 @@ describe("spec-live-reconciliation workflow", () => {
     );
     expect(terminalDispositionSourceRepairInstruction).toContain(
       "actual unavailable capability or authority",
+    );
+    expect(terminalDispositionSourceRepairInstruction).toContain(
+      "source-layout normalization separate from product-contract adjudication",
+    );
+    expect(terminalDispositionSourceRepairInstruction).toContain(
+      "keep the approval or escalation as independent follow-up",
+    );
+    expect(terminalDispositionSourceRepairInstruction).toContain(
+      "not merely how observed product behavior is judged",
     );
   });
 
@@ -511,6 +536,120 @@ describe("spec-live-reconciliation workflow", () => {
           normalizationInvariantSatisfied: true,
         }),
       ).toMatchObject({ accepted: false });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("accepts an authoritative parent-lineage run when the proof contract matches", () => {
+    const root = mkdtempSync(join(tmpdir(), "spec-live-authoritative-"));
+    try {
+      const aggregatePath = join(root, "result.json");
+      const specPath = join(root, "spec.json");
+      writeFileSync(
+        aggregatePath,
+        JSON.stringify({
+          target: {
+            name: "staging",
+            environment: "staging",
+            subscriptionId: "26fe00f8-9173-4872-9134-bb1d2e00343a",
+            location: "westus2",
+          },
+          specResults: [
+            {
+              specId: "spec.image-integrity.master-validation",
+              status: "pass",
+            },
+          ],
+        }),
+      );
+      writeFileSync(
+        specPath,
+        JSON.stringify({
+          specId: "spec.image-integrity.master-validation",
+          status: "pass",
+          raw: {
+            assertions: [
+              {
+                name: "assert.image-integrity.live-proof",
+                verdictImpact: "claim",
+                ok: true,
+              },
+              {
+                name: "cleanup.resource-group-delete-requested",
+                verdictImpact: "cleanup",
+                ok: true,
+              },
+            ],
+          },
+        }),
+      );
+
+      expect(
+        verifySpecLiveProofFacts({
+          taskId:
+            "spec/verify-spec-image-integrity-master-validation-cab25239d-20260801",
+          generation: 2,
+          specIds: ["spec.image-integrity.master-validation"],
+          target: "staging",
+          standaloneBuildId: "",
+          proof: {
+            version: 1,
+            taskId:
+              "spec/verify-spec-image-integrity-master-validation-cab25239d-20260801",
+            generation: 2,
+            providerGeneration: 1,
+            specId: "spec.image-integrity.master-validation",
+            target: "staging",
+            sourceBranch:
+              "task/domain-reconcile-image-integrity-contract-unpaired-adapter-origin-dev-c8-0bbf416f08",
+            sourceCommit: "cab25239d9c5d1994bcc303cd831b69773d42e70",
+            runId: "174756648",
+            runResult: "succeeded",
+            verdict: "pass",
+            summary: "authoritative live pass",
+            evidence: ["pipeline-run:174756648"],
+            reviewedAt: "2026-08-01T03:00:00Z",
+          },
+          run: {
+            id: "174756648",
+            status: "completed",
+            result: "succeeded",
+            sourceBranch:
+              "refs/heads/task/domain-reconcile-image-integrity-contract-unpaired-adapter-origin-dev-c8-0bbf416f08",
+            sourceVersion: "cab25239d9c5d1994bcc303cd831b69773d42e70",
+            definition: { id: 467665 },
+            templateParameters: {
+              specs: "spec.image-integrity.master-validation",
+              target: "staging",
+              standalone_build_id: "",
+              metadata: JSON.stringify({
+                taskId:
+                  "domain/reconcile-image-integrity-contract-unpaired-adapter-origin-dev-c8ce69cb-20260801",
+                generation: 1,
+                specId: "spec.image-integrity.master-validation",
+                sourceBranch:
+                  "task/domain-reconcile-image-integrity-contract-unpaired-adapter-origin-dev-c8-0bbf416f08",
+                sourceCommit: "cab25239d9c5d1994bcc303cd831b69773d42e70",
+                target: "staging",
+              }),
+            },
+          },
+          artifactPaths: [aggregatePath, specPath],
+          expectedClaimIdsBySpec: {
+            "spec.image-integrity.master-validation": [
+              "assert.image-integrity.live-proof",
+            ],
+          },
+          sourceReachable: false,
+          integratedCommitReachable: false,
+          normalizationInvariantSatisfied: true,
+          requireIntegration: false,
+          providerTaskIds: [
+            "domain/reconcile-image-integrity-contract-unpaired-adapter-origin-dev-c8ce69cb-20260801",
+          ],
+        }).accepted,
+      ).toBe(true);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -1797,6 +1936,128 @@ describe("spec-live-reconciliation workflow", () => {
     ).toEqual([wrongGeneration, exact]);
   });
 
+  test("parses an authoritative same-source run reference from parent lineage", () => {
+    expect(
+      authoritativeRunReference({
+        authoritativeRunId: "174756648",
+        authoritativeSourceBranch:
+          "refs/heads/task/domain-reconcile-image-integrity-contract-unpaired-adapter-origin-dev-c8-0bbf416f08",
+        authoritativeSourceCommit: "cab25239d9c5d1994bcc303cd831b69773d42e70",
+        authoritativeTaskId:
+          "domain/reconcile-image-integrity-contract-unpaired-adapter-origin-dev-c8ce69cb-20260801",
+      }),
+    ).toEqual({
+      runId: "174756648",
+      sourceBranch:
+        "task/domain-reconcile-image-integrity-contract-unpaired-adapter-origin-dev-c8-0bbf416f08",
+      sourceCommit: "cab25239d9c5d1994bcc303cd831b69773d42e70",
+      taskId:
+        "domain/reconcile-image-integrity-contract-unpaired-adapter-origin-dev-c8ce69cb-20260801",
+    });
+    expect(authoritativeRunReference({ authoritativeRunId: "174756648" })).toBe(
+      null,
+    );
+  });
+
+  test("finds same-task exact runs across branch lineages but preserves redispatch on material differences", () => {
+    const exact = {
+      id: 42,
+      sourceBranch: "refs/heads/task/spec-example-a",
+      sourceVersion: "cab25239d9c5d1994bcc303cd831b69773d42e70",
+      templateParameters: {
+        specs: "spec.image-integrity.master-validation",
+        target: "staging",
+        metadata: JSON.stringify({
+          taskId:
+            "spec/verify-spec-image-integrity-master-validation-cab25239d-20260801",
+          generation: 2,
+        }),
+      },
+    };
+    const sameTaskDifferentBranch = {
+      ...exact,
+      id: 43,
+      sourceBranch: "refs/heads/task/spec-example-b",
+    };
+    const differentSourceCommit = {
+      ...exact,
+      id: 44,
+      sourceVersion: "different-source",
+    };
+    const differentGeneration = {
+      ...exact,
+      id: 45,
+      templateParameters: {
+        ...exact.templateParameters,
+        metadata: JSON.stringify({
+          taskId:
+            "spec/verify-spec-image-integrity-master-validation-cab25239d-20260801",
+          generation: 1,
+        }),
+      },
+    };
+
+    expect(
+      matchingTaskGenerationRuns(
+        [
+          differentSourceCommit,
+          differentGeneration,
+          sameTaskDifferentBranch,
+          exact,
+        ],
+        {
+          taskId:
+            "spec/verify-spec-image-integrity-master-validation-cab25239d-20260801",
+          generation: 2,
+          specId: "spec.image-integrity.master-validation",
+          sourceCommit: "cab25239d9c5d1994bcc303cd831b69773d42e70",
+        },
+      ),
+    ).toEqual([sameTaskDifferentBranch, exact]);
+  });
+
+  test("retires only superseded queued proof for the same task generation", () => {
+    const run = (
+      id: number,
+      status: string,
+      sourceVersion: string,
+      generation = 2,
+    ) => ({
+      id,
+      status,
+      sourceVersion,
+      templateParameters: {
+        specs: "spec.example.lifecycle",
+        target: "staging",
+        metadata: JSON.stringify({
+          taskId: "spec/example-a1b2c3",
+          generation,
+        }),
+      },
+    });
+
+    const oldQueued = run(42, "notStarted", "old-commit");
+    const olderQueued = run(41, "notStarted", "older-commit");
+    expect(
+      supersededQueuedTaskRuns(
+        [
+          oldQueued,
+          run(45, "notStarted", "current-commit"),
+          run(44, "inProgress", "old-commit"),
+          run(43, "completed", "old-commit"),
+          run(40, "notStarted", "old-generation", 1),
+          olderQueued,
+        ],
+        {
+          taskId: "spec/example-a1b2c3",
+          generation: 2,
+          specId: "spec.example.lifecycle",
+          sourceCommit: "current-commit",
+        },
+      ),
+    ).toEqual([olderQueued, oldQueued]);
+  });
+
   test("preserves an exact standalone live target across recovery", () => {
     const exact = {
       id: 52,
@@ -2568,6 +2829,14 @@ describe("spec-live-reconciliation workflow", () => {
         summary: "proof still applies",
         evidence: ["reviewed current diff"],
         liveReady: true,
+      }),
+    ).toBeNull();
+    expect(
+      targetAdvanceProofDecisionProblem({
+        decision: "accepted-pass",
+        summary: "proof does not apply",
+        evidence: ["reviewed current diff"],
+        liveReady: false,
       }),
     ).toContain("bounded judgment only");
 

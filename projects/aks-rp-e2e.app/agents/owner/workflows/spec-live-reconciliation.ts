@@ -46,7 +46,7 @@ const defaultLiveTarget = "staging";
 const stagingSubscriptionId = "26fe00f8-9173-4872-9134-bb1d2e00343a";
 const stagingLocation = "westus2";
 export const terminalDispositionSourceRepairInstruction =
-  "If exact evidence supports a reviewed terminal posture, keep that judgment in this domain workflow. When the spec still carries a stale ready/pass posture, update its structured status, specState, statusReason, and latest-live-result evidence from the exact facts, add any needed durable source memo, run scoped checks, commit the bounded change, and return decision=terminal-disposition with terminalDisposition={specId,status,specState}. For scenario normalization, changing the spec to blocked/environment-blocked because no unchanged live run is currently truthful is a terminal disposition for this source iteration, even when a separate approval or environment change may reopen product testing later. Do not return committed with liveReady=false merely to keep that truthful normalized source off dev; terminal here means the current source posture is complete and reviewable, not that the feature is abandoned forever. A terminal disposition is neither live readiness nor a wait: omit liveReady and condition entirely. Preserve the resolved live target in statusReason, nextAction, resumeCondition, and every active approval/wait/path identifier; never bind a staging disposition to a stale identifier for another subscription or region. Do not return needs-owner merely because recording the terminal product gap requires this source update. Compact package status, compact-plan eligibility, a sibling compact task, or an arbitrary origin/dev advance is context, not an external prerequisite for this same-spec normalization; do not wait on any of them. An exact external wait must name the actual unavailable capability or authority, its real producer, and the observable fact that lets this same source continue. Use needs-owner only when the evidence cannot support the domain judgment or a real external authority must decide it. The workflow will validate and integrate the committed terminal source without claiming a failed run as a pass.";
+  "If exact evidence supports a reviewed terminal posture, keep that judgment in this domain workflow. When the spec still carries a stale ready/pass posture, update its structured status, specState, statusReason, and latest-live-result evidence from the exact facts, add any needed durable source memo, run scoped checks, commit the bounded change, and return decision=terminal-disposition with terminalDisposition={specId,status,specState}. For scenario normalization, changing the spec to blocked/environment-blocked because no unchanged live run is currently truthful is a terminal disposition for this source iteration, even when a separate approval or environment change may reopen product testing later. Keep source-layout normalization separate from product-contract adjudication: when the existing behavior, assertions, and disputed expectation can be preserved unchanged while moving a plain carrier into direct .test.ts or feature lib source, normalize and integrate that source with the truthful current terminal posture, and keep the approval or escalation as independent follow-up. Wait for external authority only when it must decide how the source itself is implemented, not merely how observed product behavior is judged. Do not return committed with liveReady=false merely to keep that truthful normalized source off dev; terminal here means the current source posture is complete and reviewable, not that the feature is abandoned forever. A terminal disposition is neither live readiness nor a wait: omit liveReady and condition entirely. Preserve the resolved live target in statusReason, nextAction, resumeCondition, and every active approval/wait/path identifier; never bind a staging disposition to a stale identifier for another subscription or region. Do not return needs-owner merely because recording the terminal product gap requires this source update. Compact package status, compact-plan eligibility, a sibling compact task, or an arbitrary origin/dev advance is context, not an external prerequisite for this same-spec normalization; do not wait on any of them. An exact external wait must name the actual unavailable capability or authority, its real producer, and the observable fact that lets this same source continue. Use needs-owner only when the evidence cannot support the domain judgment or a real external authority must decide it. The workflow will validate and integrate the committed terminal source without claiming a failed run as a pass.";
 export const acceptedLiveProofSourceInstruction =
   "When this exact run proves the current source passes and hard live-proof validation found no structural gap, return accepted-pass without editing or committing tracked source. A checked-in ready posture, an older accepted run, or missing latestLiveResult fields is not a model defect at this point: the app projects the newly accepted proof after the task receipt is persisted. Do not rewrite the spec, model, generated views, test assertions, sourceVersion, observedAt, statusReason, nextAction, resumeCondition, evidence memo, or equivalent bookkeeping merely to record this successful run. Return committed only when the run exposes an actual behavior or contract defect that requires changed source and a fresh exact run, and cite that defect. When the run reports test_not_implemented or partial live coverage, changing only diagnostics, messages, metadata, or static checks is not a runnable repair: implement the missing live behavior before setting liveReady=true, or return the truthful terminal disposition, exact external wait, or ownership escalation.";
 export const directVitestCompatibilityInstruction =
@@ -72,6 +72,10 @@ export const workflowContract: WorkflowIoContract = {
       "input.target",
       "input.standaloneBuildId",
       "input.priorVerificationRunId",
+      "input.authoritativeRunId",
+      "input.authoritativeSourceBranch",
+      "input.authoritativeSourceCommit",
+      "input.authoritativeTaskId",
       "input.retryPipelineRunId",
       "input.retrySourceBranch",
       "input.retrySourceCommit",
@@ -702,6 +706,14 @@ function mergeSafeScenarioAggregatePath(path: string): boolean {
   return /^features\/[^/]+\/compact\/staging\.plan\.json$/.test(path);
 }
 
+export function compactPlanPipelineParameters(planPath: string): string[] {
+  if (!planPath) return [];
+  if (!mergeSafeScenarioAggregatePath(planPath)) {
+    throw new Error(`Invalid compact live plan path: ${planPath}`);
+  }
+  return [`plan_path=${planPath}`];
+}
+
 function proofNeutralScenarioSourcePath(path: string): boolean {
   return (
     path.startsWith("evidence/") ||
@@ -779,12 +791,15 @@ export function targetAdvanceProofDecisionProblem(
     return "target-advance proof review must return accepted-pass when the exact live proof still applies or test-current when current source requires a fresh exact run";
   }
   if (
-    decision.liveReady !== undefined ||
+    (decision.liveReady !== undefined &&
+      !(
+        decision.decision === "accepted-pass" && decision.liveReady === true
+      )) ||
     decision.condition !== undefined ||
     decision.terminalDisposition !== undefined ||
     decision.recovery !== undefined
   ) {
-    return "target-advance proof review is a bounded judgment only; omit liveReady, condition, terminalDisposition, and recovery";
+    return "target-advance proof review is a bounded judgment only; accepted-pass may redundantly confirm liveReady=true, but omit liveReady otherwise and omit condition, terminalDisposition, and recovery";
   }
   return null;
 }
@@ -1075,11 +1090,18 @@ export function verifySpecLiveProofFacts(input: {
   normalizationInvariantSatisfied: boolean;
   expectedVitestTestCount?: number;
   requireIntegration?: boolean;
+  providerTaskIds?: string[];
 }): ProjectAppTaskVerificationResult {
   const problems: string[] = [];
   const proof = input.proof;
   const requireIntegration = input.requireIntegration !== false;
   const expectedSpecId = [...input.specIds].sort().join(",");
+  const providerTaskIds = [
+    input.taskId,
+    ...(input.providerTaskIds ?? []),
+  ].filter(
+    (value, index, values) => Boolean(value) && values.indexOf(value) === index,
+  );
   if (!proof) {
     problems.push("structured proof.json is missing or invalid");
   } else {
@@ -1138,8 +1160,10 @@ export function verifySpecLiveProofFacts(input: {
     ) {
       problems.push("provider run standalone build does not match task");
     }
-    if (nonEmptyString(metadata.taskId) !== input.taskId) {
-      problems.push("provider metadata task id does not match");
+    if (!providerTaskIds.includes(nonEmptyString(metadata.taskId))) {
+      problems.push(
+        `provider metadata task id does not match any accepted lineage (${providerTaskIds.join(", ")})`,
+      );
     }
     if (
       Number(metadata.generation) !==
@@ -2089,6 +2113,206 @@ export function reconcileRemoteTaskBranchHistory(
   };
 }
 
+export type PreparedSourceRequirement = {
+  sourceBranch: string;
+  sourceCommit: string;
+};
+
+export type AuthoritativeRunReference = {
+  runId: string;
+  sourceBranch: string;
+  sourceCommit: string;
+  taskId?: string;
+};
+
+export function preparedSourceRequirement(
+  input: Record<string, unknown> | undefined,
+): PreparedSourceRequirement | null {
+  if (!input) return null;
+  const sourceBranch = nonEmptyString(input.sourceBranch).replace(
+    /^refs\/heads\//,
+    "",
+  );
+  const sourceCommit = nonEmptyString(input.sourceCommit);
+  if (!sourceBranch || !sourceCommit) return null;
+  return { sourceBranch, sourceCommit };
+}
+
+export function authoritativeRunReference(
+  input: Record<string, unknown> | undefined,
+): AuthoritativeRunReference | null {
+  if (!input) return null;
+  const runId = nonEmptyString(input.authoritativeRunId);
+  const sourceBranch = nonEmptyString(input.authoritativeSourceBranch).replace(
+    /^refs\/heads\//,
+    "",
+  );
+  const sourceCommit = nonEmptyString(input.authoritativeSourceCommit);
+  const taskId = nonEmptyString(input.authoritativeTaskId);
+  if (!runId || !sourceBranch || !sourceCommit) return null;
+  return {
+    runId,
+    sourceBranch,
+    sourceCommit,
+    ...(taskId ? { taskId } : {}),
+  };
+}
+
+export type PreparedSourceReconciliation =
+  | {
+      state: "current" | "merged";
+      sourceBranch: string;
+      sourceCommit: string;
+      resultingCommit: string;
+      evidence: string[];
+    }
+  | {
+      state: "conflicted";
+      sourceBranch: string;
+      sourceCommit: string;
+      conflictedPaths: string[];
+      evidence: string[];
+    }
+  | { state: "failed"; evidence: string[]; error: string };
+
+/**
+ * Bring an explicitly referenced task source into the current task worktree.
+ * The merge preserves both histories so the exact prerequisite remains
+ * auditable and cannot be silently dropped before live dispatch.
+ */
+export function reconcilePreparedTaskSource(
+  workspaceDir: string,
+  requirement: PreparedSourceRequirement,
+  runGit: GitCommand = git,
+): PreparedSourceReconciliation {
+  const sourceBranch = requirement.sourceBranch.replace(/^refs\/heads\//, "");
+  const sourceCommit = requirement.sourceCommit;
+  const evidence = [
+    `required-source-branch:${sourceBranch}`,
+    `required-source-commit:${sourceCommit}`,
+  ];
+  if (!sourceBranch.startsWith("task/")) {
+    return {
+      state: "failed",
+      evidence,
+      error: "prepared source must use a dedicated task branch",
+    };
+  }
+  if (!/^[0-9a-f]{40}$/i.test(sourceCommit)) {
+    return {
+      state: "failed",
+      evidence,
+      error: "prepared source commit must be an exact 40-character Git commit",
+    };
+  }
+
+  const remoteRef = `refs/remotes/origin/${sourceBranch}`;
+  const fetch = runGit(
+    workspaceDir,
+    ["fetch", "origin", `+refs/heads/${sourceBranch}:${remoteRef}`],
+    true,
+  );
+  if (fetch.status !== 0) {
+    return {
+      state: "failed",
+      evidence,
+      error: fetch.stderr || fetch.stdout || "prepared source fetch failed",
+    };
+  }
+  if (
+    runGit(
+      workspaceDir,
+      ["merge-base", "--is-ancestor", sourceCommit, remoteRef],
+      true,
+    ).status !== 0
+  ) {
+    return {
+      state: "failed",
+      evidence: [...evidence, `required-source-remote:${remoteRef}`],
+      error:
+        "prepared source commit is not present on its declared remote branch",
+    };
+  }
+
+  const head = runGit(workspaceDir, ["rev-parse", "HEAD"], true);
+  if (head.status !== 0 || !head.stdout) {
+    return {
+      state: "failed",
+      evidence,
+      error: head.stderr || head.stdout || "task worktree HEAD is unavailable",
+    };
+  }
+  if (
+    runGit(
+      workspaceDir,
+      ["merge-base", "--is-ancestor", sourceCommit, head.stdout],
+      true,
+    ).status === 0
+  ) {
+    return {
+      state: "current",
+      sourceBranch,
+      sourceCommit,
+      resultingCommit: head.stdout,
+      evidence: [...evidence, `prepared-source-current:${head.stdout}`],
+    };
+  }
+
+  const merge = runGit(
+    workspaceDir,
+    ["merge", "--no-ff", "--no-edit", sourceCommit],
+    true,
+  );
+  if (merge.status === 0) {
+    const resultingCommit = runGit(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+    if (
+      resultingCommit &&
+      runGit(
+        workspaceDir,
+        ["merge-base", "--is-ancestor", sourceCommit, resultingCommit],
+        true,
+      ).status === 0
+    ) {
+      return {
+        state: "merged",
+        sourceBranch,
+        sourceCommit,
+        resultingCommit,
+        evidence: [...evidence, `prepared-source-merged:${resultingCommit}`],
+      };
+    }
+    return {
+      state: "failed",
+      evidence,
+      error: "prepared source merge did not preserve the required commit",
+    };
+  }
+
+  const conflictedPaths = runGit(
+    workspaceDir,
+    ["diff", "--name-only", "--diff-filter=U"],
+    true,
+  )
+    .stdout.split(/\r?\n/)
+    .map((value) => value.trim())
+    .filter(Boolean);
+  if (conflictedPaths.length > 0) {
+    return {
+      state: "conflicted",
+      sourceBranch,
+      sourceCommit,
+      conflictedPaths,
+      evidence,
+    };
+  }
+  runGit(workspaceDir, ["merge", "--abort"], true);
+  return {
+    state: "failed",
+    evidence,
+    error: merge.stderr || merge.stdout || "prepared source merge failed",
+  };
+}
+
 async function azJson(cwd: string, args: string[]): Promise<unknown> {
   const result = await commandAsync(
     azCli,
@@ -2273,6 +2497,78 @@ export function matchingTaskRuns(
       );
     })
     .sort((left, right) => Number(right.id ?? 0) - Number(left.id ?? 0));
+}
+
+export function matchingTaskGenerationRuns(
+  runs: PipelineRun[],
+  input: {
+    taskId: string;
+    generation: number;
+    specId: string;
+    sourceCommit: string;
+    target?: string;
+    standaloneBuildId?: string;
+  },
+): PipelineRun[] {
+  const target = input.target || defaultLiveTarget;
+  const standaloneBuildId = input.standaloneBuildId || "";
+  return runs
+    .filter((run) => {
+      const parameters =
+        run.templateParameters &&
+        typeof run.templateParameters === "object" &&
+        !Array.isArray(run.templateParameters)
+          ? (run.templateParameters as Record<string, unknown>)
+          : {};
+      const metadata = metadataOf(run);
+      return (
+        nonEmptyString(run.sourceVersion) === input.sourceCommit &&
+        nonEmptyString(parameters.specs) === input.specId &&
+        nonEmptyString(parameters.target) === target &&
+        nonEmptyString(parameters.standalone_build_id) === standaloneBuildId &&
+        nonEmptyString(metadata.taskId) === input.taskId &&
+        Number(metadata.generation) === input.generation
+      );
+    })
+    .sort((left, right) => Number(right.id ?? 0) - Number(left.id ?? 0));
+}
+
+export function supersededQueuedTaskRuns(
+  runs: PipelineRun[],
+  input: {
+    taskId: string;
+    generation: number;
+    specId: string;
+    sourceCommit: string;
+    target?: string;
+    standaloneBuildId?: string;
+  },
+): PipelineRun[] {
+  const target = input.target || defaultLiveTarget;
+  const standaloneBuildId = input.standaloneBuildId || "";
+  return runs
+    .filter((run) => {
+      const parameters =
+        run.templateParameters &&
+        typeof run.templateParameters === "object" &&
+        !Array.isArray(run.templateParameters)
+          ? (run.templateParameters as Record<string, unknown>)
+          : {};
+      const metadata = metadataOf(run);
+      const sourceCommit = nonEmptyString(run.sourceVersion);
+      return (
+        pipelineRunState(run).toLowerCase() === "notstarted" &&
+        Boolean(nonEmptyString(run.id)) &&
+        Boolean(sourceCommit) &&
+        sourceCommit !== input.sourceCommit &&
+        nonEmptyString(parameters.specs) === input.specId &&
+        nonEmptyString(parameters.target) === target &&
+        nonEmptyString(parameters.standalone_build_id) === standaloneBuildId &&
+        nonEmptyString(metadata.taskId) === input.taskId &&
+        Number(metadata.generation) === input.generation
+      );
+    })
+    .sort((left, right) => Number(left.id ?? 0) - Number(right.id ?? 0));
 }
 
 export function runMatchesPriorVerification(
@@ -2464,22 +2760,52 @@ async function taskRuns(
 ): Promise<PipelineRun[]> {
   return discoverTaskRuns(contextDir, sourceBranch, {
     getExactRun: (runId) => getPipelineRun(repoDir, runId),
-    listBranchRuns: async (branch) => {
-      const value = await azJson(repoDir, [
-        "pipelines",
-        "runs",
-        "list",
-        "--pipeline-ids",
-        pipelineId,
-        "--branch",
-        branch,
-        "--query-order",
-        "QueueTimeDesc",
-        "--top",
-        "20",
-      ]);
-      return Array.isArray(value) ? (value as PipelineRun[]) : [];
-    },
+    listBranchRuns: (branch) => branchPipelineRuns(repoDir, branch),
+  });
+}
+
+async function branchPipelineRuns(
+  repoDir: string,
+  sourceBranch: string,
+): Promise<PipelineRun[]> {
+  const value = await azJson(repoDir, [
+    "pipelines",
+    "runs",
+    "list",
+    "--pipeline-ids",
+    pipelineId,
+    "--branch",
+    sourceBranch,
+    "--query-order",
+    "QueueTimeDesc",
+    "--top",
+    "20",
+  ]);
+  return Array.isArray(value) ? (value as PipelineRun[]) : [];
+}
+
+async function recentPipelineRuns(repoDir: string): Promise<PipelineRun[]> {
+  const value = await azJson(repoDir, [
+    "pipelines",
+    "runs",
+    "list",
+    "--pipeline-ids",
+    pipelineId,
+    "--query-order",
+    "QueueTimeDesc",
+    "--top",
+    "50",
+  ]);
+  return Array.isArray(value) ? (value as PipelineRun[]) : [];
+}
+
+function uniqueRuns(runs: PipelineRun[]): PipelineRun[] {
+  const seen = new Set<string>();
+  return runs.filter((run) => {
+    const id = nonEmptyString(run.id);
+    if (!id || seen.has(id)) return false;
+    seen.add(id);
+    return true;
   });
 }
 
@@ -2493,6 +2819,7 @@ async function queueRun(
     sourceCommit: string;
     target: string;
     standaloneBuildId: string;
+    planPath?: string;
     retryOfRunId?: string;
   },
 ): Promise<PipelineRun> {
@@ -2506,6 +2833,7 @@ async function queueRun(
     ...(input.standaloneBuildId
       ? { standaloneBuildId: input.standaloneBuildId }
       : {}),
+    ...(input.planPath ? { planPath: input.planPath } : {}),
     ...(input.retryOfRunId ? { retryOfRunId: input.retryOfRunId } : {}),
   });
   const value = await azJson(repoDir, [
@@ -2519,6 +2847,7 @@ async function queueRun(
     input.sourceCommit,
     "--parameters",
     `specs=${input.specId}`,
+    ...compactPlanPipelineParameters(input.planPath || ""),
     `target=${input.target}`,
     ...(input.standaloneBuildId
       ? [`standalone_build_id=${input.standaloneBuildId}`]
@@ -2838,6 +3167,23 @@ export async function reconcileSpecLive(
     ScenarioNormalizationInput | undefined;
   const selectedSpecIds = scenarioNormalizationSpecIds(normalizationInput);
   const specId = selectedSpecIds.join(",");
+  const requestedLivePlanPath = nonEmptyString(
+    normalizationInput?.livePlanPath,
+  );
+  if (
+    requestedLivePlanPath &&
+    !mergeSafeScenarioAggregatePath(requestedLivePlanPath)
+  ) {
+    return ownerResult(
+      ctx,
+      "livePlanPath must name a feature compact staging plan.",
+      [
+        `task:${taskId || "missing"}`,
+        `live-plan-path:${requestedLivePlanPath}`,
+      ],
+    );
+  }
+  const livePlanPath = requestedLivePlanPath || undefined;
   const expectedVitestTestCountRaw =
     normalizationInput?.expectedVitestTestCount;
   const expectedVitestTestCount = Number(expectedVitestTestCountRaw);
@@ -2871,12 +3217,20 @@ export async function reconcileSpecLive(
   const retryPipelineRunId = nonEmptyString(payload?.input?.retryPipelineRunId);
   const priorVerificationRunId =
     declaredPriorVerificationRunId || retryPipelineRunId;
+  const requiredSource = preparedSourceRequirement(payload?.input);
+  const authoritativeReference = authoritativeRunReference(payload?.input);
   const preparedSourceCommit =
     nonEmptyString(payload?.input?.carrierCommit) ||
-    nonEmptyString(payload?.input?.retrySourceCommit);
-  const preparedSourceBranch = nonEmptyString(
-    payload?.input?.retrySourceBranch,
-  );
+    nonEmptyString(payload?.input?.retrySourceCommit) ||
+    requiredSource?.sourceCommit ||
+    "";
+  const preparedSourceBranch =
+    nonEmptyString(payload?.input?.retrySourceBranch) ||
+    requiredSource?.sourceBranch ||
+    "";
+  const providerTaskIds = authoritativeReference?.taskId
+    ? [authoritativeReference.taskId]
+    : [];
   const repoDir = ctx.projectDir ?? "/app/projects/aks-rp-e2e";
   const workspaceDir = ctx.workspaceDir ?? repoDir;
 
@@ -3031,6 +3385,85 @@ export async function reconcileSpecLive(
 
     let sourceCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
     const baseCommit = git(repoDir, ["rev-parse", targetRef]).stdout;
+    let preparedSourceEvidence: string[] = [];
+    if (requiredSource) {
+      const prepared = reconcilePreparedTaskSource(
+        workspaceDir,
+        requiredSource,
+      );
+      preparedSourceEvidence = prepared.evidence;
+      if (prepared.state === "failed") {
+        return ownerResult(
+          ctx,
+          `Could not load the task's required prepared source: ${prepared.error}.`,
+          prepared.evidence,
+        );
+      }
+      if (prepared.state === "conflicted") {
+        const beforeResolution = sourceCommit;
+        const decision = await askAgent(
+          ctx,
+          [
+            `The task requires prepared source ${prepared.sourceBranch}@${prepared.sourceCommit}, and the workflow started a merge into the current task worktree ${workspaceDir}.`,
+            `Resolve only this prepared-source merge. Conflicted paths: ${prepared.conflictedPaths.join(", ")}.`,
+            "Preserve both the current same-task work and the required prepared-source history, run scoped checks, commit the merge, leave the task worktree clean, and return decision=committed.",
+            "Do not abort the merge, replace it with a cherry-pick, push, queue ADO, create another task, or edit task state. This workflow owns publication and live dispatch.",
+            "Task:",
+            ctx.task,
+          ].join("\n\n"),
+          {
+            scenarioNormalization: Boolean(normalizationInput),
+            continueDomainWorkOnValidation: true,
+            validateDecision: (candidate) => {
+              if (candidate.decision !== "committed") {
+                return "prepared-source conflict must be resolved in this task before live dispatch";
+              }
+              if (cleanWorkspace(workspaceDir)) {
+                return "prepared-source resolution must leave the task worktree clean";
+              }
+              const head = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+              if (head === beforeResolution) {
+                return "prepared-source resolution did not create a new commit";
+              }
+              return git(
+                workspaceDir,
+                ["merge-base", "--is-ancestor", prepared.sourceCommit, head],
+                true,
+              ).status === 0
+                ? null
+                : `resolved source must preserve ${prepared.sourceCommit} in its ancestry`;
+            },
+          },
+        );
+        preparedSourceEvidence = [
+          ...preparedSourceEvidence,
+          ...decision.evidence,
+        ];
+      }
+      sourceCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+      if (
+        cleanWorkspace(workspaceDir) ||
+        git(
+          workspaceDir,
+          [
+            "merge-base",
+            "--is-ancestor",
+            requiredSource.sourceCommit,
+            sourceCommit,
+          ],
+          true,
+        ).status !== 0
+      ) {
+        return ownerResult(
+          ctx,
+          "Prepared source reconciliation did not leave one clean source containing the required commit.",
+          [
+            ...preparedSourceEvidence,
+            `source-commit:${sourceCommit || "unresolved"}`,
+          ],
+        );
+      }
+    }
     const recordedTaskBase = nonEmptyString(
       normalizationInput?.originDevCommit,
     );
@@ -3360,7 +3793,7 @@ export async function reconcileSpecLive(
         integrationMode(targetBranch) === "direct" &&
         normalizationInput?.loopId === "scenario-normalization";
       let dispatchCommit = candidateCommit;
-      const dispatchEvidence: string[] = [];
+      const dispatchEvidence: string[] = [...preparedSourceEvidence];
 
       for (let targetAttempt = 1; targetAttempt <= 3; targetAttempt += 1) {
         if (!directScenarioNormalization) break;
@@ -3503,6 +3936,31 @@ export async function reconcileSpecLive(
           continue;
         }
 
+        const supersededQueuedRuns = supersededQueuedTaskRuns(
+          await branchPipelineRuns(repoDir, sourceBranch),
+          {
+            taskId,
+            generation,
+            specId,
+            sourceCommit: dispatchCommit,
+            target: liveTarget,
+            standaloneBuildId,
+          },
+        );
+        for (const superseded of supersededQueuedRuns) {
+          const supersededRunId = nonEmptyString(superseded.id);
+          await azJson(repoDir, [
+            "pipelines",
+            "build",
+            "cancel",
+            "--build-id",
+            supersededRunId,
+          ]);
+          dispatchEvidence.push(
+            `superseded-queued-run-canceled:${supersededRunId}@${nonEmptyString(superseded.sourceVersion)}`,
+          );
+        }
+
         const run = await queueRun(repoDir, {
           taskId,
           generation,
@@ -3511,6 +3969,7 @@ export async function reconcileSpecLive(
           sourceCommit: dispatchCommit,
           target: liveTarget,
           standaloneBuildId,
+          ...(livePlanPath ? { planPath: livePlanPath } : {}),
           ...(retryOfRunId && dispatchCommit === candidateCommit
             ? { retryOfRunId }
             : {}),
@@ -3534,6 +3993,7 @@ export async function reconcileSpecLive(
             sourceCommit: dispatchCommit,
             target: liveTarget,
             standaloneBuildId,
+            ...(livePlanPath ? { planPath: livePlanPath } : {}),
             ...(retryOfRunId ? { retryOfRunId } : {}),
           }),
           sourceCommit: dispatchCommit,
@@ -3920,6 +4380,12 @@ export async function reconcileSpecLive(
       const recordedTaskBase = nonEmptyString(
         normalizationInput.originDevCommit,
       );
+      const sourceIsInTarget =
+        git(
+          repoDir,
+          ["merge-base", "--is-ancestor", sourceCommit, targetRef],
+          true,
+        ).status === 0;
       const priorReplay = readScenarioReplayState(contextDir);
       const priorReplayBase =
         priorReplay?.recordedTaskBase === recordedTaskBase &&
@@ -3959,13 +4425,7 @@ export async function reconcileSpecLive(
         inferredMergeBase,
         recordedFirstParentMergeCount: recordedFirstParentMerges.length,
       });
-      const sourceIsInTarget =
-        git(
-          repoDir,
-          ["merge-base", "--is-ancestor", sourceCommit, targetRef],
-          true,
-        ).status === 0;
-      if (!/^[0-9a-f]{40}$/i.test(recordedTaskBase)) {
+      if (!sourceIsInTarget && !/^[0-9a-f]{40}$/i.test(recordedTaskBase)) {
         return ownerResult(
           ctx,
           "Scenario normalization cannot replay a stale task branch without its exact recorded origin/dev base.",
@@ -3977,13 +4437,15 @@ export async function reconcileSpecLive(
         );
       }
       if (
-        git(workspaceDir, ["cat-file", "-e", `${taskBase}^{commit}`], true)
-          .status !== 0 ||
-        git(
-          workspaceDir,
-          ["merge-base", "--is-ancestor", taskBase, "HEAD"],
-          true,
-        ).status !== 0
+        (!sourceIsInTarget &&
+          git(workspaceDir, ["cat-file", "-e", `${taskBase}^{commit}`], true)
+            .status !== 0) ||
+        (!sourceIsInTarget &&
+          git(
+            workspaceDir,
+            ["merge-base", "--is-ancestor", taskBase, "HEAD"],
+            true,
+          ).status !== 0)
       ) {
         return ownerResult(
           ctx,
@@ -4236,68 +4698,133 @@ export async function reconcileSpecLive(
       }
     }
 
-    let runs = matchingTaskRuns(
+    const exactRunFilter = {
+      taskId,
+      generation,
+      specId,
+      sourceCommit,
+      target: liveTarget,
+      standaloneBuildId,
+    };
+    const branchExactRuns = matchingTaskRuns(
       await taskRuns(repoDir, contextDir, sourceBranch),
-      {
-        taskId,
-        generation,
-        specId,
-        sourceCommit,
-        target: liveTarget,
-        standaloneBuildId,
-      },
+      exactRunFilter,
     );
+    const recentExactTaskGenerationRuns = matchingTaskGenerationRuns(
+      await recentPipelineRuns(repoDir),
+      exactRunFilter,
+    );
+    let runs = uniqueRuns([
+      ...recentExactTaskGenerationRuns,
+      ...branchExactRuns,
+    ]);
     let latestRun = runs[0];
     let proofSourceBranch = sourceBranch;
     let providerGeneration = generation;
-    if (authoritativeRetryRun) {
-      const authoritativeSourceCommit = nonEmptyString(
-        authoritativeRetryRun.sourceVersion,
-      );
-      const authoritativeSourceRef = nonEmptyString(
-        authoritativeRetryRun.sourceBranch,
-      );
-      const authoritativeSourceBranch = authoritativeSourceRef.replace(
+    const adoptExistingRun = (run: PipelineRun): string | null => {
+      const adoptedSourceCommit = nonEmptyString(run.sourceVersion);
+      const adoptedSourceBranch = nonEmptyString(run.sourceBranch).replace(
         /^refs\/heads\//,
         "",
       );
-      const authoritativeMetadata = metadataOf(authoritativeRetryRun);
-      const authoritativeGeneration = Number(authoritativeMetadata.generation);
+      const adoptedMetadata = metadataOf(run);
+      const adoptedGeneration = Number(adoptedMetadata.generation);
       if (
-        !authoritativeSourceCommit ||
-        !authoritativeSourceBranch ||
-        !Number.isInteger(authoritativeGeneration) ||
-        authoritativeGeneration < 1
+        !adoptedSourceCommit ||
+        !adoptedSourceBranch ||
+        !Number.isInteger(adoptedGeneration) ||
+        adoptedGeneration < 1
       ) {
-        return ownerResult(
-          ctx,
-          `Task-designated retry ${priorVerificationRunId} lacks exact source or generation metadata.`,
-          [`pipeline-run:${priorVerificationRunId}`],
-        );
+        return "existing exact run lacks exact source or generation metadata";
       }
-      git(repoDir, ["fetch", "origin", authoritativeSourceBranch]);
+      git(repoDir, ["fetch", "origin", adoptedSourceBranch]);
       if (
         git(
           repoDir,
-          ["cat-file", "-e", `${authoritativeSourceCommit}^{commit}`],
+          ["cat-file", "-e", `${adoptedSourceCommit}^{commit}`],
           true,
         ).status !== 0
       ) {
+        return "existing exact run source commit is not available locally after fetching its branch";
+      }
+      sourceCommit = adoptedSourceCommit;
+      proofSourceBranch = adoptedSourceBranch;
+      providerGeneration = adoptedGeneration;
+      latestRun = run;
+      runs = uniqueRuns([run, ...runs]);
+      saveRunReceipt(contextDir, run, sourceCommit);
+      return null;
+    };
+    if (authoritativeRetryRun) {
+      const adoptionProblem = adoptExistingRun(authoritativeRetryRun);
+      if (adoptionProblem) {
         return ownerResult(
           ctx,
-          `Task-designated retry ${priorVerificationRunId} source commit is not available locally after fetching its branch.`,
+          `Task-designated retry ${priorVerificationRunId} ${adoptionProblem}.`,
+          [`pipeline-run:${priorVerificationRunId}`],
+        );
+      }
+    } else if (
+      authoritativeReference &&
+      authoritativeReference.sourceCommit === sourceCommit
+    ) {
+      const authoritativeRun = await getPipelineRun(
+        repoDir,
+        authoritativeReference.runId,
+      );
+      if (
+        !authoritativeRun ||
+        !runMatchesPriorVerification(authoritativeRun, {
+          ...(authoritativeReference.taskId
+            ? { taskId: authoritativeReference.taskId }
+            : {}),
+          specId,
+          target: liveTarget,
+          standaloneBuildId,
+          sourceBranch: authoritativeReference.sourceBranch,
+          sourceCommit: authoritativeReference.sourceCommit,
+        })
+      ) {
+        return ownerResult(
+          ctx,
+          `Authoritative run ${authoritativeReference.runId} does not match the exact same-spec same-source proof contract for this task source.`,
           [
-            `pipeline-run:${priorVerificationRunId}`,
-            `source-branch:${authoritativeSourceBranch}`,
-            `source-commit:${authoritativeSourceCommit}`,
+            `pipeline-run:${authoritativeReference.runId}`,
+            `spec:${specId}`,
+            `source-branch:${authoritativeReference.sourceBranch}`,
+            `source-commit:${authoritativeReference.sourceCommit}`,
+            `live-target:${liveTarget}`,
+            ...(standaloneBuildId
+              ? [`standalone-build-id:${standaloneBuildId}`]
+              : []),
           ],
         );
       }
-      sourceCommit = authoritativeSourceCommit;
-      proofSourceBranch = authoritativeSourceBranch;
-      providerGeneration = authoritativeGeneration;
-      runs = [authoritativeRetryRun];
-      latestRun = authoritativeRetryRun;
+      const adoptionProblem = adoptExistingRun(authoritativeRun);
+      if (adoptionProblem) {
+        return ownerResult(
+          ctx,
+          `Authoritative run ${authoritativeReference.runId} ${adoptionProblem}.`,
+          [
+            `pipeline-run:${authoritativeReference.runId}`,
+            `source-branch:${authoritativeReference.sourceBranch}`,
+            `source-commit:${authoritativeReference.sourceCommit}`,
+          ],
+        );
+      }
+    } else if (latestRun) {
+      const adoptionProblem = adoptExistingRun(latestRun);
+      if (adoptionProblem) {
+        return ownerResult(
+          ctx,
+          `Existing exact task-generation run ${nonEmptyString(latestRun.id) || "unknown"} ${adoptionProblem}.`,
+          [
+            `task:${taskId}@${generation}`,
+            `spec:${specId}`,
+            `source-commit:${sourceCommit}`,
+          ],
+        );
+      }
     }
 
     const sourceDiffersFromBase = sourceCommit !== baseCommit;
@@ -4519,18 +5046,39 @@ export async function reconcileSpecLive(
         );
       }
       sourceCommit = after;
-      runs = matchingTaskRuns(
-        await taskRuns(repoDir, contextDir, sourceBranch),
-        {
+      runs = uniqueRuns([
+        ...matchingTaskGenerationRuns(await recentPipelineRuns(repoDir), {
           taskId,
           generation,
           specId,
           sourceCommit,
           target: liveTarget,
           standaloneBuildId,
-        },
-      );
+        }),
+        ...matchingTaskRuns(await taskRuns(repoDir, contextDir, sourceBranch), {
+          taskId,
+          generation,
+          specId,
+          sourceCommit,
+          target: liveTarget,
+          standaloneBuildId,
+        }),
+      ]);
       latestRun = runs[0];
+      if (latestRun) {
+        const adoptionProblem = adoptExistingRun(latestRun);
+        if (adoptionProblem) {
+          return ownerResult(
+            ctx,
+            `Existing exact task-generation run ${nonEmptyString(latestRun.id) || "unknown"} ${adoptionProblem}.`,
+            [
+              `task:${taskId}@${generation}`,
+              `spec:${specId}`,
+              `source-commit:${sourceCommit}`,
+            ],
+          );
+        }
+      }
     }
 
     if (terminalDispositionDecision) {
@@ -4673,6 +5221,7 @@ export async function reconcileSpecLive(
           ? { expectedVitestTestCount }
           : {}),
         requireIntegration: false,
+        providerTaskIds,
       });
       const decision = await askAgent(
         ctx,
@@ -4901,6 +5450,7 @@ export async function reconcileSpecLive(
         ? { expectedVitestTestCount }
         : {}),
       requireIntegration: false,
+      providerTaskIds,
     });
     if (!preIntegrationVerification.accepted) {
       return ownerResult(
@@ -5973,6 +6523,7 @@ export async function verify(
       normalizationInvariantSatisfied = false;
     }
   }
+  const authoritativeReference = authoritativeRunReference(input);
 
   const verification = verifySpecLiveProofFacts({
     taskId: context.taskId,
@@ -5991,6 +6542,9 @@ export async function verify(
     sourceReachable,
     integratedCommitReachable,
     normalizationInvariantSatisfied,
+    providerTaskIds: authoritativeReference?.taskId
+      ? [authoritativeReference.taskId]
+      : [],
     ...(input?.expectedVitestTestCount !== undefined
       ? {
           expectedVitestTestCount: Number(input.expectedVitestTestCount),
