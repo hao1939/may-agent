@@ -20,7 +20,10 @@
         "may-align-proof-before-adopt",
         "may-align-local-guidance-wins",
         "may-align-infer-safe-cleanup",
-        "may-align-remove-specified-cleanup"
+        "may-align-remove-specified-cleanup",
+        "may-align-block-cleanup-on-diff",
+        "may-align-durable-submission-path",
+        "may-align-trust-completed-artifacts"
       ],
       "trials": 3
     },

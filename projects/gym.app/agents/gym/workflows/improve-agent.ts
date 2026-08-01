@@ -1572,6 +1572,51 @@ interface CandidateRetryLocation {
   evidence: string[];
 }
 
+interface CandidateRetryCheckpoint {
+  iteration: number;
+  candidatePath: string;
+  candidateFingerprint: string;
+}
+
+function candidateRetryCheckpoint(
+  stateDir: string,
+  requested: string,
+): CandidateRetryCheckpoint | null {
+  const iterationsDir = join(stateDir, "iterations");
+  if (!existsSync(iterationsDir)) return null;
+  const matches = readdirSync(iterationsDir, { withFileTypes: true }).flatMap(
+    (entry) => {
+      if (!entry.isDirectory() || !/^\d+$/.test(entry.name)) return [];
+      const iteration = Number(entry.name);
+      const iterationDir = join(iterationsDir, entry.name);
+      const retry = readJson<Record<string, unknown>>(
+        join(iterationDir, "verification-retry.json"),
+      );
+      const candidate = readJson<CandidateCheckpoint>(
+        join(iterationDir, "candidate.json"),
+      );
+      if (
+        String(retry?.candidate_fingerprint ?? "").replace(/^sha256:/, "") !==
+          requested ||
+        candidate?.candidateFingerprint !== requested ||
+        !candidate.candidatePath ||
+        !existsSync(candidate.candidatePath) ||
+        fingerprintTree(candidate.candidatePath) !== requested
+      ) {
+        return [];
+      }
+      return [
+        {
+          iteration,
+          candidatePath: candidate.candidatePath,
+          candidateFingerprint: requested,
+        },
+      ];
+    },
+  );
+  return matches.length === 1 ? matches[0]! : null;
+}
+
 export function locateCandidateRetry(
   projectsRoot: string,
   taskId: string,
@@ -1611,10 +1656,13 @@ export function locateCandidateRetry(
 
   const matches = resultPaths.filter((resultPath) => {
     const stored = readJson<Record<string, unknown>>(resultPath);
-    return (
+    if (
       String(stored?.candidate_fingerprint ?? "").replace(/^sha256:/, "") ===
       requested
-    );
+    ) {
+      return true;
+    }
+    return candidateRetryCheckpoint(dirname(resultPath), requested) !== null;
   });
   if (matches.length !== 1) {
     return {
@@ -2465,6 +2513,14 @@ async function runCandidate(
   let startIteration = 1;
   let resumedCandidatePath: string | null = null;
   let retryCloseActions: ProjectAppTaskAction[] = [];
+  const recoveringRetry = candidateRetryCheckpoint(
+    candidateStateDir,
+    String(input.candidateFingerprint ?? "").replace(/^sha256:/, ""),
+  );
+  if (!previous && recoveringRetry) {
+    startIteration = recoveringRetry.iteration;
+    retryCloseActions = adjudicationChildCloseActions(ctx, taskId);
+  }
   if (previous?.state === "needs-owner") {
     const stored = record(JSON.parse(readFileSync(resultPath, "utf8")));
     if (requestedCandidateRetry(input, stored)) {

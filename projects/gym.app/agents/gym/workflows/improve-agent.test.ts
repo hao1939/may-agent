@@ -143,6 +143,34 @@ describe("single agent-improvement loop", () => {
         candidateFingerprint: fingerprint,
       })?.error,
     ).toContain("multiple matching results");
+
+    rmSync(join(generationDir, "result.json"));
+    rmSync(join(trackDir, "result.json"));
+    const iterationDir = join(trackDir, "iterations", "2");
+    const candidateDir = join(iterationDir, "may");
+    mkdirSync(candidateDir, { recursive: true });
+    writeFileSync(join(candidateDir, "AGENTS.md"), "# Candidate\n");
+    const recoveryFingerprint = fingerprintTree(candidateDir);
+    writeFileSync(
+      join(iterationDir, "candidate.json"),
+      JSON.stringify({
+        candidateId: "gym/may/g7-i2",
+        candidatePath: candidateDir,
+        candidateFingerprint: recoveryFingerprint,
+        implementationSummary: "Candidate",
+        implementationEvidence: [],
+      }),
+    );
+    writeFileSync(
+      join(iterationDir, "verification-retry.json"),
+      JSON.stringify({ candidate_fingerprint: recoveryFingerprint }),
+    );
+    expect(
+      locateCandidateRetry(root, "improve/may", 7, {
+        reason: "retry-candidate-verification",
+        candidateFingerprint: recoveryFingerprint,
+      }),
+    ).toMatchObject({ scope: "cli-worker" });
   });
 
   test("keeps desired state stable while a focused wake supplies work", () => {
@@ -1906,5 +1934,17 @@ describe("single agent-improvement loop", () => {
         readFileSync(join(iterationDir, "verification-retry.json"), "utf8"),
       ).candidate_fingerprint,
     ).toBe(candidateFingerprint);
+
+    rmSync(join(stateDir, "result.json"));
+    rmSync(join(iterationDir, "development-verification.json"));
+    rmSync(join(iterationDir, "failed-review.json"));
+    const recovered = (await runImprovement(ctx, loop)) as unknown as Record<
+      string,
+      unknown
+    >;
+    expect(recovered.state).toBe("needs-owner");
+    expect(verifyCount).toBe(2);
+    expect(calledAgents).toEqual(["gym", "gym"]);
+    expect(fingerprintTree(candidateDir)).toBe(candidateFingerprint);
   });
 });

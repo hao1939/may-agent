@@ -133,7 +133,9 @@ the current generation result and its immediate track results and requires one
 match. It then reuses that track's assessment and candidate checkpoint, clears
 only stale verification and review checkpoints, and verifies the same artifact
 again. No match or more than one match stops safely; Gym does not rebuild the
-candidate, repeat guided practice, or fall back to broad training.
+candidate, repeat guided practice, or fall back to broad training. A durable
+verification-retry checkpoint preserves the iteration and fingerprint so a
+runtime restart resumes the same verification after `result.json` is cleared.
 
 The first implementation phase parallelizes the expensive independent
 assessment and diagnosis work. It deliberately serializes candidate creation.
