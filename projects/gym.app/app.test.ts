@@ -265,6 +265,12 @@ describe("gym task reconciliation", () => {
         eventId: 303,
         project: "gym",
       },
+      {
+        type: "project.approval.submitted",
+        eventId: 304,
+        taskId: "improve/may",
+        approvalId: "approval-304",
+      },
     ]) {
       expect(resolveGymTask(event)).toMatchObject({
         id: "improve/may",
@@ -273,6 +279,13 @@ describe("gym task reconciliation", () => {
         input: { agent: "may", curriculumDrain: true },
       });
     }
+    expect(
+      resolveGymTask({
+        type: "project.approval.submitted",
+        eventId: 305,
+        taskId: "another/task",
+      }),
+    ).toBeNull();
   });
 
   test("keeps request-specific evidence out of the stable task spec", () => {

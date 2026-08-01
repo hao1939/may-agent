@@ -211,6 +211,10 @@ export function resolveGymTask(
     case "gym.improvement.requested":
     case "agent.revision.changed":
       return mayImprovementIntent();
+    case "project.approval.submitted":
+      return String(details.taskId ?? details.pathId ?? "") === "improve/may"
+        ? mayImprovementIntent()
+        : null;
     case "metric.breach":
       return isMayMetricBreach(event) ? mayImprovementIntent() : null;
     case "gym.incident.detected": {

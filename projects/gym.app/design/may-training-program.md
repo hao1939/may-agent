@@ -231,7 +231,8 @@ then resumes that exact stored proposal before recomputing curriculum or agent
 fingerprints. New lessons, changed curriculum order, a daemon restart, or a
 timed-out reconcile therefore cannot orphan an approval that Hao already made.
 The stored approval id and artifact fingerprint must still match before Gym
-applies anything.
+applies anything. An approval naming `improve/may` also wakes that stable task
+directly, even if a previous timed-out attempt lost its transient Condition.
 
 The Telegram card states what will change, why it is ready, the artifact
 fingerprint, and the review packet path. Approval applies only that artifact.
