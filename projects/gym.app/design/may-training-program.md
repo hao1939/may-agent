@@ -118,6 +118,16 @@ workflow exception returns to the Gym owner for goal and priority judgment; the
 owner records a disposition against the campaign and does not invent a nested
 recovery tree.
 
+A stored focused baseline with invalid trials means the one bounded retry was
+already exhausted. A later wake reuses that disposition; it does not run the
+same retry again. A track with such a recorded problem is checkpointed as an
+evaluation issue and cannot enter candidate integration merely because its
+earlier assessment also contains a May finding.
+
+If calibrated semantic judges disagree on one exact artifact, the disagreement
+may be a real human boundary, but it remains an exact wait on `improve/may`.
+The owner must never create an adjudication child beneath the campaign.
+
 The first implementation phase parallelizes the expensive independent
 assessment and diagnosis work. It deliberately serializes candidate creation.
 After this phase proves stable in live autonomous cycles, Gym may allow two

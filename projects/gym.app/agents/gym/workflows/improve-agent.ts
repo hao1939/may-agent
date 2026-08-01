@@ -306,8 +306,9 @@ function fencedWorkflowContext(
       if (property === "runAgent") {
         return async (...args: unknown[]) => {
           assertCampaignLease(lease);
-          const result = await (value as (...input: unknown[]) => Promise<unknown>)
-            .apply(target, args);
+          const result = await (
+            value as (...input: unknown[]) => Promise<unknown>
+          ).apply(target, args);
           assertCampaignLease(lease);
           return result;
         };
@@ -315,7 +316,10 @@ function fencedWorkflowContext(
       if (property === "emit" || property === "dispatchEvent") {
         return (...args: unknown[]) => {
           assertCampaignLease(lease);
-          return (value as (...input: unknown[]) => unknown).apply(target, args);
+          return (value as (...input: unknown[]) => unknown).apply(
+            target,
+            args,
+          );
         };
       }
       return typeof value === "function" ? value.bind(target) : value;
@@ -966,6 +970,7 @@ async function completeFocusedBaseline(
   sourceRuns: Array<{ runDir: string; manifest: LoopRunManifest }> = [],
 ): Promise<{ assessment: Assessment; problem?: string }> {
   if (!assessment.focus) return { assessment };
+  const storedBaseline = Boolean(assessment.baseline_run_dir);
   let baseline = assessment.baseline_run_dir
     ? {
         runDir: assessment.baseline_run_dir,
@@ -983,6 +988,24 @@ async function completeFocusedBaseline(
       assessment,
       problem: "The stored development baseline is missing its manifest.",
     };
+  }
+  if (storedBaseline) {
+    const storedVerdicts = scenarioVerdicts(baseline!.manifest!);
+    if (storedVerdicts.invalid.length) {
+      return {
+        assessment,
+        problem:
+          "The focused May failure remained invalid after one bounded retry.",
+      };
+    }
+    if (!storedVerdicts.fail.length) {
+      return {
+        assessment,
+        problem:
+          "The focused May failure did not reproduce in the frozen development baseline.",
+      };
+    }
+    return { assessment };
   }
   const trials = requestedTrials(input.trials);
   const agentsRoot = join(dirname(ctx.projectsRoot), "agents");
@@ -2892,7 +2915,10 @@ async function prepareCurriculumExperiments(
   );
 }
 
-function experimentNeedsIntegration(experiment: CurriculumExperiment): boolean {
+export function experimentNeedsIntegration(
+  experiment: CurriculumExperiment,
+): boolean {
+  if (experiment.problem) return false;
   return Boolean(
     experiment.assessment.focus ||
     experiment.assessment.findings.some(
@@ -2957,7 +2983,6 @@ function experimentPassiveResult(experiment: CurriculumExperiment): {
   summary: string;
   evidence: string[];
 } | null {
-  if (experimentNeedsIntegration(experiment)) return null;
   const evidence = boundedEvidence([
     experiment.assessmentPath,
     experiment.assessment.screening_run_dir,
@@ -2973,6 +2998,7 @@ function experimentPassiveResult(experiment: CurriculumExperiment): {
       evidence,
     };
   }
+  if (experimentNeedsIntegration(experiment)) return null;
   const actionable = experiment.assessment.findings.filter(
     ({ classification }) => classification !== "noise",
   );

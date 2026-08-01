@@ -17,6 +17,7 @@ import {
   buildBenchmarkFixRetryEvent,
   buildApprovalRequest,
   dispatchApproval,
+  experimentNeedsIntegration,
   fingerprintTree,
   improvementInput,
   learningPromptLines,
@@ -608,6 +609,84 @@ describe("single agent-improvement loop", () => {
     });
   });
 
+  test("does not repeat an exhausted focused baseline retry", async () => {
+    const root = mkdtempSync(join(tmpdir(), "gym-focused-retry-"));
+    roots.push(root);
+    const baselineDir = join(root, "stored-invalid-baseline");
+    mkdirSync(baselineDir, { recursive: true });
+    const stored = manifest("stored-invalid-baseline", {
+      "agent-case": ["fail", "invalid", "fail"],
+    });
+    writeFileSync(join(baselineDir, "manifest.json"), JSON.stringify(stored));
+    const assessmentPath = join(root, "assessment.json");
+    writeFileSync(
+      assessmentPath,
+      JSON.stringify({
+        schema_version: 1,
+        agent: "may",
+        benchmark: "test-bench",
+        release_benchmark: "test-bench",
+        release_scenarios: ["agent-case"],
+        screening_run_id: "screening",
+        screening_run_dir: root,
+        retry_run_id: null,
+        retry_run_dir: null,
+        findings: [
+          {
+            classification: "agent",
+            scenarios: ["agent-case"],
+            failureFamily: "scope-control",
+            summary: "May missed the required behavior.",
+            evidence: [root],
+          },
+        ],
+        focus: {
+          classification: "agent",
+          scenarios: ["agent-case"],
+          failureFamily: "scope-control",
+          summary: "May missed the required behavior.",
+          evidence: [root],
+        },
+        baseline_run_id: "stored-invalid-baseline",
+        baseline_run_dir: baselineDir,
+        accepted_at: "2026-08-01T00:00:00Z",
+      }),
+    );
+    let runCount = 0;
+    const prepared = await prepareAssessment(
+      { projectsRoot: join(root, "projects") } as WorkflowContext,
+      { benchmark: "test-bench", agent: "may", trials: 3 },
+      assessmentPath,
+      {
+        async run() {
+          runCount++;
+          throw new Error("stored retry must not run again");
+        },
+        async verify() {
+          throw new Error("verification is not used by assessment");
+        },
+      },
+    );
+
+    expect(prepared.problem).toContain("remained invalid");
+    expect(runCount).toBe(0);
+    expect(
+      experimentNeedsIntegration({
+        target: {
+          id: "test-bench",
+          benchmark: "test-bench",
+          scenarios: ["agent-case"],
+          trials: 3,
+        },
+        input: {},
+        scope: "test-bench-campaign",
+        assessmentPath,
+        assessment: prepared.assessment,
+        problem: prepared.problem,
+      }),
+    ).toBe(false);
+  });
+
   test("qualifies an all-pass held-back run at a perfect baseline ceiling", () => {
     const verified = manifest("release-verify", {
       "transfer-a": ["pass", "pass", "pass", "pass", "pass"],
@@ -907,12 +986,7 @@ describe("single agent-improvement loop", () => {
       baseline_run_dir: null,
     });
 
-    const prepared = await prepareAssessment(
-      ctx,
-      input,
-      assessmentPath,
-      loop,
-    );
+    const prepared = await prepareAssessment(ctx, input, assessmentPath, loop);
 
     expect(calls.map((call) => call.scenarios)).toEqual([
       ["agent-case", "runtime-case"],

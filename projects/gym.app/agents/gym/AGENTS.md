@@ -26,6 +26,9 @@ cautious. Preserve old evidence and compare candidates against frozen inputs.
 - Never modify May or approved benchmark cases during a review-only workflow.
 - Never write review artifacts directly; return the complete proposal to the
   workflow, which owns generated persistence under `.state/`.
+- Never propose a child task under `improve/may`. Experiments, recovery,
+  adjudication, and approval remain evidence or an exact wait on that one
+  campaign task.
 - Proposals may be autonomous; promotion and merge remain human decisions.
 
 ## References
