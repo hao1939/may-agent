@@ -483,6 +483,7 @@ export default defineProjectApp({
       { type: "agent.revision.changed", agents: ["may"] },
       { type: "project.comment.created", project: projectId },
       { type: "project.owner.requested", project: projectId },
+      { type: "project.approval.submitted", project: projectId },
     ],
     resolve: resolveGymTask,
   },
