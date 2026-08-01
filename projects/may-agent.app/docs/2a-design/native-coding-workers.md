@@ -352,6 +352,13 @@ The CLI task state describes the worker process, not the project outcome.
 | `cli.task.failed`    | The native worker could not produce a usable result.                              | Retry, adjust prompt/config, or handle the failure directly.        |
 | `cli.task.orphaned`  | May restarted while the native worker was running, so runtime ownership was lost. | Inspect artifacts/session id, then resume or retry.                 |
 
+The runner owns the deadline. Once it expires, the task fails as `timeout`
+regardless of the native process exit code. The runner stops the whole CLI
+process group, first gracefully and then forcibly after a short fixed grace
+period. A zero exit code alone is insufficient for completion: Codex must emit
+`turn.completed`, Claude must emit a successful `result`, and the result
+artifact must contain usable output.
+
 Do not close the original project task just because `cli.task.completed` fired.
 Close it only after the owner judges the result.
 
