@@ -1,4 +1,11 @@
-import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  cpSync,
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -155,11 +162,12 @@ function refreshObservedProvenance(manifest: LoopRunManifest): void {
   );
 }
 
-function assertFrozenInputs(
+export function assertFrozenInputs(
   baselineDir: string,
   baseline: LoopRunManifest,
 ): void {
   const { suite, path: suitePath } = loadSuite(baseline.benchmark);
+  const sourceBenchmarkDir = join(gymRoot, "benchmarks", baseline.benchmark);
   assertSameFile(
     suitePath,
     join(baselineDir, baseline.source.suite_snapshot),
@@ -184,6 +192,16 @@ function assertFrozenInputs(
       suite.evaluator,
     );
   }
+  const evaluatorSource = suite.evaluator
+    ? resolve(sourceBenchmarkDir, suite.evaluator)
+    : null;
+  const evaluatorOwner = evaluatorSource
+    ? resolve(evaluatorSource, "..")
+    : null;
+  const scenarioOverlayRoot =
+    evaluatorOwner && evaluatorOwner !== sourceBenchmarkDir
+      ? join(evaluatorOwner, "scenarios")
+      : null;
   for (const scenario of baseline.scenarios) {
     const frozenCase = join(
       baselineDir,
@@ -191,7 +209,22 @@ function assertFrozenInputs(
       safeName(scenario),
     );
     const currentCase = join(gymRoot, "scenarios", scenario);
-    assertSameFile(currentCase, frozenCase, scenario);
+    const overlay = scenarioOverlayRoot
+      ? join(scenarioOverlayRoot, safeName(scenario))
+      : null;
+    if (!overlay || !existsSync(overlay)) {
+      assertSameFile(currentCase, frozenCase, scenario);
+      continue;
+    }
+    const temporaryRoot = mkdtempSync(join(tmpdir(), "gym-input-check-"));
+    const effectiveCase = join(temporaryRoot, safeName(scenario));
+    try {
+      cpSync(currentCase, effectiveCase, { recursive: true });
+      cpSync(overlay, effectiveCase, { recursive: true, force: true });
+      assertSameFile(effectiveCase, frozenCase, scenario);
+    } finally {
+      rmSync(temporaryRoot, { recursive: true, force: true });
+    }
   }
 }
 

@@ -17,7 +17,7 @@ import {
   machineVerdict,
   readManifest,
 } from "../src/loop/store";
-import { runLoop, verifyLoop } from "../src/loop/run";
+import { assertFrozenInputs, runLoop, verifyLoop } from "../src/loop/run";
 import type {
   GroundTruthCatalog,
   LoopRunManifest,
@@ -374,7 +374,7 @@ describe("loop evaluation", () => {
       const scenario =
         "may-learn-admission-review-material-human-authority-deliver";
       try {
-        await runLoop(
+        const created = await runLoop(
           {
             phase: "test",
             benchmark: "may-admission-review-closure",
@@ -413,6 +413,9 @@ describe("loop evaluation", () => {
             };
           },
         );
+        expect(() =>
+          assertFrozenInputs(created.runDir, created.manifest),
+        ).not.toThrow();
       } finally {
         if (previousState === undefined) delete process.env["GYM_STATE_DIR"];
         else process.env["GYM_STATE_DIR"] = previousState;
