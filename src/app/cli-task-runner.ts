@@ -321,7 +321,10 @@ function sandboxMode(value: unknown): SandboxMode {
   return "danger-full-access";
 }
 
-function effectiveSandboxFor(_tool: CliTool, requested: SandboxMode): {
+function effectiveSandboxFor(
+  _tool: CliTool,
+  requested: SandboxMode,
+): {
   effectiveSandbox: EffectiveSandboxMode;
   sandboxFallbackReason?: string;
 } {
@@ -336,8 +339,43 @@ type CliAttemptResult = {
   exitCode: number;
   stdout: string;
   stderr: string;
+  timedOut: boolean;
   error?: string;
 };
+
+const CLI_TERMINATION_GRACE_MS = 1_000;
+
+function signalCliProcessTree(child: ReturnType<typeof spawn>, signal: NodeJS.Signals): void {
+  if (process.platform !== "win32" && child.pid) {
+    try {
+      process.kill(-child.pid, signal);
+      return;
+    } catch {
+      // Fall back to the direct child when it did not start a process group.
+    }
+  }
+  try {
+    child.kill(signal);
+  } catch {
+    // The process may already have exited.
+  }
+}
+
+function hasCompletedProtocol(tool: CliTool, stdout: string): boolean {
+  for (const line of stdout.split("\n")) {
+    if (!line.trim()) continue;
+    try {
+      const event = JSON.parse(line) as Record<string, unknown>;
+      if (tool === "codex" && event.type === "turn.completed") return true;
+      if (tool === "claude" && event.type === "result" && event.subtype === "success" && event.is_error !== true) {
+        return true;
+      }
+    } catch {
+      continue;
+    }
+  }
+  return false;
+}
 
 function structuredStatus(record: CliTaskRecord): StructuredCliResult["status"] {
   if (record.status === "orphaned") return "failed";
@@ -347,13 +385,17 @@ function structuredStatus(record: CliTaskRecord): StructuredCliResult["status"] 
 }
 
 function classifyCliOutcome(
+  tool: CliTool,
   attempt: CliAttemptResult,
   resultText: string,
   expected?: CliTaskRecord["expectedOutput"],
 ): { failureCategory?: CliTaskRecord["failureCategory"]; error?: string } {
   const diagnosticText = `${attempt.stderr}\n${attempt.stdout}\n${attempt.error ?? ""}`;
-  if (attempt.error?.toLowerCase().includes("timeout") || attempt.error?.toLowerCase().includes("terminated")) {
-    return { failureCategory: "timeout", error: attempt.error };
+  if (attempt.timedOut) {
+    return {
+      failureCategory: "timeout",
+      error: attempt.error ?? "CLI task exceeded its timeout",
+    };
   }
   if (/permission denied|not permitted|approval required|sandbox.*denied|EACCES/i.test(diagnosticText)) {
     return { failureCategory: "permission", error: "CLI worker was denied a required permission" };
@@ -361,6 +403,12 @@ function classifyCliOutcome(
   if (attempt.exitCode !== 0) {
     const category = /tool.*(?:failed|error)|command not found|ENOENT/i.test(diagnosticText) ? "tool" : "process";
     return { failureCategory: category, error: attempt.error ?? `CLI exited with code ${attempt.exitCode}` };
+  }
+  if (!hasCompletedProtocol(tool, attempt.stdout)) {
+    return {
+      failureCategory: "no_output",
+      error: `CLI exited without a completed ${tool === "codex" ? "turn" : "result"}`,
+    };
   }
   if (!resultText.trim()) {
     return { failureCategory: "no_output", error: "CLI worker exited successfully without a usable result" };
@@ -370,10 +418,16 @@ function classifyCliOutcome(
       const parsed = JSON.parse(resultText) as Record<string, unknown>;
       const missing = (expected.requiredFields ?? []).filter((field) => !(field in parsed));
       if (missing.length > 0) {
-        return { failureCategory: "output_schema", error: `CLI JSON result is missing required fields: ${missing.join(", ")}` };
+        return {
+          failureCategory: "output_schema",
+          error: `CLI JSON result is missing required fields: ${missing.join(", ")}`,
+        };
       }
     } catch (err) {
-      return { failureCategory: "output_schema", error: `CLI result is not valid JSON: ${err instanceof Error ? err.message : String(err)}` };
+      return {
+        failureCategory: "output_schema",
+        error: `CLI result is not valid JSON: ${err instanceof Error ? err.message : String(err)}`,
+      };
     }
   }
   return {};
@@ -425,7 +479,7 @@ async function runCliAttempt(opts: {
   const child = spawnCommand(command, args, {
     cwd: record.worktree ?? record.cwd,
     env: cliEnv(),
-    timeout: record.timeoutMs,
+    detached: process.platform !== "win32",
     stdio: ["ignore", "pipe", "pipe"],
   });
   record.pid = child.pid;
@@ -468,20 +522,43 @@ async function runCliAttempt(opts: {
   });
 
   return await new Promise<CliAttemptResult>((resolveDone) => {
+    let settled = false;
+    let timedOut = false;
+    let forceTimer: ReturnType<typeof setTimeout> | undefined;
+    const timeoutTimer = setTimeout(() => {
+      timedOut = true;
+      signalCliProcessTree(child, "SIGTERM");
+      forceTimer = setTimeout(() => {
+        signalCliProcessTree(child, "SIGKILL");
+      }, CLI_TERMINATION_GRACE_MS);
+    }, record.timeoutMs);
+    const finish = (result: CliAttemptResult): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutTimer);
+      if (forceTimer) clearTimeout(forceTimer);
+      resolveDone(result);
+    };
     child.on("close", (code, signal) => {
-      resolveDone({
+      finish({
         exitCode: exitCode(code, signal),
         stdout: stdoutChunks.join(""),
         stderr: stderrChunks.join(""),
-        error: signal === "SIGTERM" ? `CLI task was terminated, likely after timeout ${record.timeoutMs}ms` : undefined,
+        timedOut,
+        error: timedOut
+          ? `CLI task exceeded timeout ${record.timeoutMs}ms`
+          : signal
+            ? `CLI task was terminated by ${signal}`
+            : undefined,
       });
     });
     child.on("error", (err) => {
       const message = err instanceof Error ? err.message : String(err);
-      resolveDone({
+      finish({
         exitCode: 1,
         stdout: stdoutChunks.join(""),
         stderr: stderrChunks.join(""),
+        timedOut,
         error: message,
       });
     });
@@ -627,7 +704,9 @@ export function attachCliTaskRunner(opts: CliTaskRunnerOptions): () => void {
           ? {
               format: (data.expectedOutput as any).format === "json" ? "json" : "markdown",
               requiredFields: Array.isArray((data.expectedOutput as any).requiredFields)
-                ? (data.expectedOutput as any).requiredFields.filter((field: unknown): field is string => typeof field === "string")
+                ? (data.expectedOutput as any).requiredFields.filter(
+                    (field: unknown): field is string => typeof field === "string",
+                  )
                 : undefined,
             }
           : undefined,
@@ -647,11 +726,9 @@ export function attachCliTaskRunner(opts: CliTaskRunnerOptions): () => void {
         recordPath,
         now,
         sourceSessionAvailable: opts.sourceSessionAvailable,
-      }).finally(
-        () => {
-          running.delete(taskId);
-        },
-      );
+      }).finally(() => {
+        running.delete(taskId);
+      });
     });
 
     return {
@@ -689,7 +766,7 @@ async function runCliTask(opts: {
     record.finishedAt = iso(now);
     if (!existsSync(record.resultPath)) {
       const finalText = extractFinalText(record.tool, attempt.stdout);
-      writeFileSync(record.resultPath, finalText ?? `${attempt.stdout}${attempt.stderr}${attempt.error ?? ""}`);
+      writeFileSync(record.resultPath, finalText ?? "");
     }
     const cliSessionId = extractCliSessionId(record.tool, attempt.stdout);
     if (cliSessionId) {
@@ -716,7 +793,7 @@ async function runCliTask(opts: {
     }
     const resultText = existsSync(record.resultPath) ? readFileSync(record.resultPath, "utf8") : "";
     record.summary = summarize(resultText);
-    const outcome = classifyCliOutcome(attempt, resultText, record.expectedOutput);
+    const outcome = classifyCliOutcome(record.tool, attempt, resultText, record.expectedOutput);
     if (!outcome.failureCategory) {
       record.status = "completed";
       writeStructuredResult(record);
