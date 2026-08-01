@@ -221,6 +221,52 @@ describe("progressive master-validation observation", () => {
     expect(replay).toEqual([]);
   });
 
+  test("accepts Azure provider-field progress when currentOperation is display text", () => {
+    const live = timelineSpecProgress([
+      {
+        type: "aks-spec-progress",
+        name: "spec.running",
+        state: "inProgress",
+        currentOperation: "Scenario execution started.",
+        changeId: 4,
+        startTime: "2026-08-01T07:08:00Z",
+        pipelineRunId: "174773413",
+        sliceId: "03",
+      },
+      {
+        type: "aks-spec-progress",
+        name: "spec.failed",
+        state: "completed",
+        result: "failed",
+        currentOperation: null,
+        changeId: 7,
+        startTime: "2026-08-01T07:08:00Z",
+        finishTime: "2026-08-01T07:22:00Z",
+        pipelineRunId: "174773413",
+        sliceId: "03",
+      },
+    ]);
+
+    expect(live).toEqual([
+      expect.objectContaining({
+        runId: "174773413",
+        sliceId: "03",
+        specId: "spec.failed",
+        executionState: "completed",
+        verdict: "fail",
+        phase: "provider-timeline",
+      }),
+      expect.objectContaining({
+        runId: "174773413",
+        sliceId: "03",
+        specId: "spec.running",
+        executionState: "running",
+        verdict: "unknown",
+        phaseDetail: "Scenario execution started.",
+      }),
+    ]);
+  });
+
   test("turns a soft admission exclusion into durable repair work", () => {
     const root = mkdtempSync(join(tmpdir(), "aks-plan-"));
     roots.push(root);

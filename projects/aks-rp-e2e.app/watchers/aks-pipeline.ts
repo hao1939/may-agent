@@ -16,6 +16,8 @@ import type { ProjectAppContext, ProjectAppEvent } from "@may-agent/sdk";
 type PipelineWatcherState = {
   schemaVersion?: string;
   fingerprints?: Record<string, string>;
+  localRunStates?: Record<string, string>;
+  localCompletionFingerprints?: Record<string, string>;
   adoFingerprints?: Record<string, string>;
   trackedRunIds?: string[];
   observedArtifacts?: Record<string, string>;
@@ -33,12 +35,20 @@ type PipelineResult = {
   updatedAt?: unknown;
 };
 
+type LocalRunObservation = {
+  path: string | null;
+  status: string | null;
+  endedAt: string | null;
+  state: "active" | "terminal" | "unknown";
+};
+
 type ObservedResult = {
   runId: string;
   path: string;
   fingerprint: string;
   mtimeMs: number;
   result: PipelineResult;
+  run: LocalRunObservation;
 };
 
 type AdoRun = {
@@ -53,12 +63,19 @@ type AdoRun = {
 };
 
 export type AdoTimelineRecord = {
+  id?: unknown;
+  parentId?: unknown;
   type?: unknown;
   name?: unknown;
   state?: unknown;
   result?: unknown;
   currentOperation?: unknown;
+  startTime?: unknown;
   finishTime?: unknown;
+  changeId?: unknown;
+  details?: unknown;
+  pipelineRunId?: unknown;
+  sliceId?: unknown;
 };
 
 export type TimelineSpecProgress = {
@@ -182,13 +199,14 @@ const MAX_RESULTS_PER_SCAN = 200;
 const MAX_EVENTS_PER_SCAN = 20;
 const MAX_ADO_RUNS_PER_SCAN = 100;
 const MAX_PROGRESS_ARTIFACTS_PER_SCAN = 3;
+const MAX_PROGRESS_TIMELINE_DETAILS_PER_RUN = 12;
 export const MAX_TASK_ARTIFACT_RUNS_PER_SCAN = 12;
 export const MAX_TRACKED_RUN_IDS = 25;
 export const MASTER_VALIDATION_QUEUE_OVERDUE_MS = 90 * 60 * 1_000;
 const ADO_ORGANIZATION = "https://dev.azure.com/msazure";
 const ADO_PROJECT = "CloudNativeCompute";
 const ADO_PIPELINE_ID = "467665";
-const WATCHER_SCHEMA_VERSION = "9";
+const WATCHER_SCHEMA_VERSION = "10";
 export const LIVE_PROGRESS_STALE_MS = 3 * 60 * 1_000;
 const AZ_CLI =
   process.env.AZURE_CLI_PATH ||
@@ -211,6 +229,42 @@ function saveState(path: string, state: PipelineWatcherState): void {
   writeFileSync(path, `${JSON.stringify(state, null, 2)}\n`, "utf8");
 }
 
+function observeLocalRun(path: string): LocalRunObservation {
+  const runPath = join(dirname(path), "run.json");
+  if (!existsSync(runPath)) {
+    return {
+      path: null,
+      status: null,
+      endedAt: null,
+      state: "unknown",
+    };
+  }
+  try {
+    const run = record(JSON.parse(readFileSync(runPath, "utf8")));
+    const status = text(run.status) || null;
+    const endedAt = text(run.endedAt) || null;
+    const terminal =
+      Boolean(endedAt) || (status !== null && status !== "running");
+    return {
+      path: runPath,
+      status,
+      endedAt,
+      state: terminal
+        ? "terminal"
+        : status === "running"
+          ? "active"
+          : "unknown",
+    };
+  } catch {
+    return {
+      path: runPath,
+      status: null,
+      endedAt: null,
+      state: "unknown",
+    };
+  }
+}
+
 function observeResult(path: string): ObservedResult | null {
   try {
     const content = readFileSync(path);
@@ -225,10 +279,43 @@ function observeResult(path: string): ObservedResult | null {
       fingerprint: createHash("sha256").update(content).digest("hex"),
       mtimeMs: statSync(path).mtimeMs,
       result,
+      run: observeLocalRun(path),
     };
   } catch {
     return null;
   }
+}
+
+function localResultReadyForCompletion(observed: ObservedResult): boolean {
+  return observed.run.state !== "active";
+}
+
+function localResultCompletionEvent(observed: ObservedResult): ProjectAppEvent {
+  const status = String(observed.result.status ?? "unknown");
+  const base = pipelineFactBase({
+    runId: observed.runId,
+    status,
+    result: status,
+  });
+  return {
+    type: "project.test_run.completed",
+    source: "aks-pipeline-watcher",
+    target: { project: "aks-rp-e2e" },
+    ...base,
+    data: {
+      ...base,
+      planId: observed.result.planId ?? null,
+      counts: observed.result.counts ?? {},
+      specResults: observed.result.specResults ?? [],
+      updatedAt: observed.result.updatedAt ?? null,
+      artifact: observed.path,
+      resultPath: observed.path,
+      runPath: observed.run.path,
+      runStatus: observed.run.status,
+      runEndedAt: observed.run.endedAt,
+      runState: observed.run.state,
+    },
+  };
 }
 
 export function scanPipelineResults(resultsRoot: string): ObservedResult[] {
@@ -382,7 +469,10 @@ function getAdoRun(runId: string): ObservedAdoRun | null {
   return run && typeof run === "object" ? adoRunFromApi(run as AdoRun) : null;
 }
 
-function getAdoTimeline(runId: string): AdoTimelineRecord[] {
+function getAdoTimelinePage(
+  runId: string,
+  timelineId?: string,
+): AdoTimelineRecord[] {
   const timeline = record(
     runAzJson([
       "devops",
@@ -396,6 +486,7 @@ function getAdoTimeline(runId: string): AdoTimelineRecord[] {
       "--route-parameters",
       `project=${ADO_PROJECT}`,
       `buildId=${runId}`,
+      ...(timelineId ? [`timelineId=${timelineId}`] : []),
       "-o",
       "json",
     ]),
@@ -405,26 +496,99 @@ function getAdoTimeline(runId: string): AdoTimelineRecord[] {
     : [];
 }
 
+export function progressTimelineDetailIds(
+  timeline: AdoTimelineRecord[],
+  limit = MAX_PROGRESS_TIMELINE_DETAILS_PER_RUN,
+): string[] {
+  return [
+    ...new Set(
+      timeline
+        .filter(
+          (entry) =>
+            text(entry.type) === "Task" &&
+            text(entry.name) === "Auth and execute plan slice",
+        )
+        .map((entry) => text(record(entry.details).id))
+        .filter(Boolean),
+    ),
+  ].slice(0, Math.max(0, limit));
+}
+
+function getAdoTimeline(runId: string): AdoTimelineRecord[] {
+  const root = getAdoTimelinePage(runId);
+  const rootById = new Map(root.map((entry) => [text(entry.id), entry]));
+  const progress = root
+    .filter(
+      (entry) =>
+        text(entry.type) === "Task" &&
+        text(entry.name) === "Auth and execute plan slice" &&
+        text(record(entry.details).id),
+    )
+    .slice(0, MAX_PROGRESS_TIMELINE_DETAILS_PER_RUN)
+    .flatMap((entry) => {
+      const timelineId = text(record(entry.details).id);
+      const parent = rootById.get(text(entry.parentId));
+      const sliceId =
+        /^Execute slice slice_(\d+)$/i
+          .exec(text(parent?.name))?.[1]
+          ?.padStart(2, "0") ?? "unknown";
+      return getAdoTimelinePage(runId, timelineId).map((progressEntry) => ({
+        ...progressEntry,
+        pipelineRunId: runId,
+        sliceId,
+      }));
+    });
+  return [...root, ...progress];
+}
+
 export function timelineSpecProgress(
   timeline: AdoTimelineRecord[],
 ): TimelineSpecProgress[] {
   const latest = new Map<string, TimelineSpecProgress>();
   for (const entry of timeline) {
     if (text(entry.type).toLowerCase() !== "aks-spec-progress") continue;
-    let value: Record<string, unknown>;
+    let value: Record<string, unknown> = {};
     try {
       value = record(JSON.parse(text(entry.currentOperation)));
     } catch {
-      continue;
+      // Newer Azure timeline records expose the stable spec name/state/result
+      // as fields and keep currentOperation as display text (or clear it on
+      // completion). Fall through to those provider fields below.
     }
-    const runId = text(value.runId);
-    const rawSliceId = text(value.sliceId);
+    const runId = text(value.runId) || text(entry.pipelineRunId);
+    const rawSliceId = text(value.sliceId) || text(entry.sliceId);
     const sliceId = rawSliceId ? rawSliceId.padStart(2, "0") : "";
     const testRunId = text(value.testRunId);
-    const specId = text(value.specId);
-    const sequence = Number(value.sequence);
-    const executionState = text(value.executionState);
-    const verdict = normalizedVerdict(text(value.verdict));
+    const specId = text(value.specId) || text(entry.name);
+    const providerState = text(entry.state).toLowerCase();
+    const executionState =
+      text(value.executionState) ||
+      (providerState === "pending" || providerState === "notstarted"
+        ? "queued"
+        : providerState === "inprogress"
+          ? "running"
+          : providerState === "completed"
+            ? "completed"
+            : "");
+    const providerResult = text(entry.result).toLowerCase();
+    const verdict = normalizedVerdict(
+      text(value.verdict) ||
+        (providerResult === "succeeded"
+          ? "pass"
+          : providerResult === "failed"
+            ? "fail"
+            : providerResult === "canceled"
+              ? "error"
+              : "unknown"),
+    );
+    const sequenceValue = Number(value.sequence ?? entry.changeId);
+    const sequence = Number.isFinite(sequenceValue)
+      ? sequenceValue
+      : executionState === "completed"
+        ? 3
+        : executionState === "running"
+          ? 2
+          : 1;
     if (
       !runId ||
       !sliceId ||
@@ -443,10 +607,15 @@ export function timelineSpecProgress(
       sequence,
       executionState: executionState as TimelineSpecProgress["executionState"],
       verdict: verdict as TimelineSpecProgress["verdict"],
-      phase: text(value.phase),
-      phaseDetail: text(value.phaseDetail),
-      message: text(value.message).slice(0, 280),
-      updatedAt: text(value.updatedAt),
+      phase: text(value.phase) || "provider-timeline",
+      phaseDetail:
+        text(value.phaseDetail) || text(entry.currentOperation) || executionState,
+      message: (
+        text(value.message) ||
+        `Azure timeline reports ${specId} ${verdict} before slice artifacts are available.`
+      ).slice(0, 280),
+      updatedAt:
+        text(value.updatedAt) || text(entry.finishTime) || text(entry.startTime),
       elapsedSeconds: Math.max(0, Number(value.elapsedSeconds) || 0),
       category: text(value.category) || "unknown",
     } satisfies TimelineSpecProgress;
@@ -565,6 +734,36 @@ function listAdoArtifactNames(runId: string): string[] {
     .sort();
 }
 
+function adoExecutionRank(status: string): number {
+  if (["completed", "canceled"].includes(status)) return 3;
+  if (status === "inProgress") return 2;
+  if (status === "notStarted") return 1;
+  return 0;
+}
+
+export function mergeAdoRunObservations(
+  runs: ObservedAdoRun[],
+): ObservedAdoRun[] {
+  const byId = new Map<string, ObservedAdoRun>();
+  for (const run of runs) {
+    const current = byId.get(run.runId);
+    if (!current) {
+      byId.set(run.runId, run);
+      continue;
+    }
+
+    const currentRank = adoExecutionRank(current.status);
+    const nextRank = adoExecutionRank(run.status);
+    if (
+      nextRank > currentRank ||
+      (nextRank === currentRank && !current.finishTime && run.finishTime)
+    ) {
+      byId.set(run.runId, run);
+    }
+  }
+  return [...byId.values()];
+}
+
 export function scanAdoPipelineRuns(
   trackedRunIds: string[] = [],
 ): ObservedAdoRun[] {
@@ -590,9 +789,11 @@ export function scanAdoPipelineRuns(
     .filter(Array.isArray)
     .flat() as AdoRun[];
   const observed = listed.length
-    ? listed
-        .map((run: AdoRun): ObservedAdoRun | null => adoRunFromApi(run))
-        .filter((run): run is ObservedAdoRun => run !== null)
+    ? mergeAdoRunObservations(
+        listed
+          .map((run: AdoRun): ObservedAdoRun | null => adoRunFromApi(run))
+          .filter((run): run is ObservedAdoRun => run !== null),
+      )
     : [];
 
   const byId = new Map(observed.map((run) => [run.runId, run]));
@@ -1459,6 +1660,8 @@ function pipelineFactBase(observed: {
   finishTime?: string | null;
   queueTime?: string | null;
   artifacts?: string[];
+  metadataTaskId?: string | null;
+  metadataGeneration?: string | null;
 }): Record<string, unknown> {
   return {
     project: "aks-rp-e2e",
@@ -1473,6 +1676,10 @@ function pipelineFactBase(observed: {
     ...(observed.finishTime ? { finishTime: observed.finishTime } : {}),
     ...(observed.queueTime ? { queueTime: observed.queueTime } : {}),
     ...(observed.artifacts ? { artifacts: observed.artifacts } : {}),
+    ...(observed.metadataTaskId ? { taskId: observed.metadataTaskId } : {}),
+    ...(observed.metadataGeneration
+      ? { generation: observed.metadataGeneration }
+      : {}),
   };
 }
 
@@ -1645,7 +1852,7 @@ export function pipelineLevelEvent(observed: ObservedAdoRun): ProjectAppEvent {
   };
 }
 
-/** Observe domain pipeline artifacts and emit facts; never reads or mutates task state. */
+/** Observe domain pipeline artifacts and emit facts; never reads or changes task state. */
 export async function observeAksPipelines(
   ctx: ProjectAppContext,
 ): Promise<unknown> {
@@ -1655,6 +1862,9 @@ export async function observeAksPipelines(
     prior.schemaVersion || prior.fingerprints || prior.adoFingerprints,
   );
   const priorFingerprints = prior.fingerprints ?? {};
+  const priorLocalRunStates = prior.localRunStates ?? {};
+  const priorLocalCompletionFingerprints =
+    prior.localCompletionFingerprints ?? prior.fingerprints ?? {};
   const priorAdoFingerprints = prior.adoFingerprints ?? {};
   const observedArtifacts = { ...(prior.observedArtifacts ?? {}) };
   const overdueQueueRunIds = new Set(prior.overdueQueueRunIds ?? []);
@@ -1664,6 +1874,12 @@ export async function observeAksPipelines(
   const fingerprints = Object.fromEntries(
     results.map((result) => [result.runId, result.fingerprint]),
   );
+  const localRunStates = Object.fromEntries(
+    results.map((result) => [result.runId, result.run.state]),
+  );
+  const localCompletionFingerprints = {
+    ...(prior.localCompletionFingerprints ?? prior.fingerprints ?? {}),
+  };
   const adoRuns = scanAdoPipelineRuns(
     boundedTrackedRunIds(prior.trackedRunIds ?? []),
   );
@@ -1913,6 +2129,8 @@ export async function observeAksPipelines(
   saveState(statePath, {
     schemaVersion: WATCHER_SCHEMA_VERSION,
     fingerprints,
+    localRunStates,
+    localCompletionFingerprints,
     adoFingerprints,
     trackedRunIds,
     observedArtifacts,
@@ -1967,30 +2185,24 @@ export async function observeAksPipelines(
 
   const changed = results
     .filter(
-      (result) => priorFingerprints?.[result.runId] !== result.fingerprint,
+      (result) =>
+        priorFingerprints?.[result.runId] !== result.fingerprint ||
+        priorLocalRunStates?.[result.runId] !== result.run.state,
     )
     .slice(0, MAX_EVENTS_PER_SCAN);
+  let localResults = 0;
   for (const observed of changed) {
-    const status = String(observed.result.status ?? "unknown");
-    const base = pipelineFactBase({
-      runId: observed.runId,
-      status,
-      result: status,
-    });
-    ctx.emit({
-      type: "project.test_run.completed",
-      source: "aks-pipeline-watcher",
-      target: { project: "aks-rp-e2e" },
-      ...base,
-      data: {
-        ...base,
-        planId: observed.result.planId ?? null,
-        counts: observed.result.counts ?? {},
-        specResults: observed.result.specResults ?? [],
-        updatedAt: observed.result.updatedAt ?? null,
-        artifact: observed.path,
-      },
-    });
+    if (!localResultReadyForCompletion(observed)) continue;
+    if (
+      priorLocalCompletionFingerprints?.[observed.runId] ===
+      observed.fingerprint
+    ) {
+      localCompletionFingerprints[observed.runId] = observed.fingerprint;
+      continue;
+    }
+    ctx.emit(localResultCompletionEvent(observed));
+    localCompletionFingerprints[observed.runId] = observed.fingerprint;
+    localResults += 1;
   }
 
   const changedAdo = adoRuns
@@ -2006,7 +2218,7 @@ export async function observeAksPipelines(
   }
 
   const observedCount =
-    changed.length +
+    localResults +
     changedAdo.length +
     downloadedArtifacts +
     observedFailures +
@@ -2015,7 +2227,7 @@ export async function observeAksPipelines(
   return observedCount > 0
     ? {
         observed: observedCount,
-        localResults: changed.length,
+        localResults,
         adoRuns: changedAdo.length,
         downloadedArtifacts,
         observedFailures,
