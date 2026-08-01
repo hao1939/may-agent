@@ -600,6 +600,17 @@ function readManifest(runDir: string): LoopRunManifest {
   ) as LoopRunManifest;
 }
 
+export function verificationBenchmark(
+  verificationDir: string,
+  fallback: string,
+): string {
+  const benchmark = safeName(readManifest(verificationDir).benchmark, fallback);
+  if (!benchmark) {
+    throw new Error("Failed verification has an invalid benchmark name");
+  }
+  return benchmark;
+}
+
 export function scenarioVerdicts(manifest: LoopRunManifest): {
   pass: string[];
   fail: string[];
@@ -1979,10 +1990,23 @@ async function buildBenchmarkFix(
   evidence: string[];
 } | null> {
   const gymRoot = join(ctx.projectsRoot, "gym");
+  const consumerBenchmark = verificationBenchmark(
+    verificationDir,
+    plan.benchmark,
+  );
+  const failedManifest = readManifest(verificationDir);
+  const failedScenarios = [
+    ...new Set(
+      failedManifest.trials
+        .filter((trial) => trial.machine_verdict !== "pass")
+        .map((trial) => trial.scenario),
+    ),
+  ];
   const target = benchmarkFixTarget({
     gymRoot,
-    benchmark: plan.benchmark,
+    benchmark: consumerBenchmark,
     disposition: review.disposition,
+    scenario: failedScenarios.length === 1 ? failedScenarios[0] : undefined,
   });
   const targetPath = target.path;
   const workspacePath = join(scratchRoot, "benchmark-fix", target.benchmark);
@@ -2000,8 +2024,8 @@ async function buildBenchmarkFix(
     [
       "Build one narrow isolated benchmark/scorer fix from this reviewed Gym evidence.",
       `Responsible layer: ${review.disposition}`,
-      `Consumer benchmark: ${plan.benchmark}`,
-      `Writable owner benchmark: ${target.benchmark}`,
+      `Consumer benchmark: ${consumerBenchmark}`,
+      `Writable artifact: ${target.path}`,
       ...(target.evaluatorPath
         ? [`Resolved evaluator: ${target.evaluatorPath}`]
         : []),
@@ -2040,9 +2064,23 @@ export function benchmarkFixTarget(input: {
   gymRoot: string;
   benchmark: string;
   disposition: FailedReview["disposition"];
+  scenario?: string;
 }): { benchmark: string; path: string; evaluatorPath: string | null } {
   const benchmarksRoot = resolve(input.gymRoot, "benchmarks");
   const consumerPath = join(benchmarksRoot, input.benchmark);
+  if (input.disposition === "review-benchmark" && input.scenario) {
+    const scenario = safeName(input.scenario, "");
+    const scenarioPath = scenario
+      ? join(resolve(input.gymRoot, "scenarios"), scenario)
+      : "";
+    if (scenario && existsSync(scenarioPath)) {
+      return {
+        benchmark: scenario,
+        path: scenarioPath,
+        evaluatorPath: null,
+      };
+    }
+  }
   if (input.disposition !== "review-scorer") {
     return {
       benchmark: input.benchmark,

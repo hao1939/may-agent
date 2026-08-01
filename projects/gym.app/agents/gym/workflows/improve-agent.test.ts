@@ -30,6 +30,7 @@ import {
   runImprovement,
   runCurriculumSequence,
   scenarioVerdicts,
+  verificationBenchmark,
   validateFindings,
   type Finding,
   type GymLoopApi,
@@ -1207,6 +1208,40 @@ describe("single agent-improvement loop", () => {
     ).toEqual({
       benchmark: "deputy-learning",
       path: consumer,
+      evaluatorPath: null,
+    });
+  });
+
+  test("targets benchmark fixes at the benchmark that failed verification", () => {
+    const root = mkdtempSync(join(tmpdir(), "gym-verification-benchmark-"));
+    roots.push(root);
+    writeFileSync(
+      join(root, "manifest.json"),
+      JSON.stringify({ benchmark: "held-back-release" }),
+    );
+
+    expect(verificationBenchmark(root, "development")).toBe(
+      "held-back-release",
+    );
+  });
+
+  test("targets one failed benchmark scenario at its scenario contract", () => {
+    const root = mkdtempSync(join(tmpdir(), "gym-scenario-fix-"));
+    roots.push(root);
+    const gymRoot = join(root, "gym");
+    const scenarioPath = join(gymRoot, "scenarios", "held-back-case");
+    mkdirSync(scenarioPath, { recursive: true });
+
+    expect(
+      benchmarkFixTarget({
+        gymRoot,
+        benchmark: "held-back-release",
+        disposition: "review-benchmark",
+        scenario: "held-back-case",
+      }),
+    ).toEqual({
+      benchmark: "held-back-case",
+      path: scenarioPath,
       evaluatorPath: null,
     });
   });
