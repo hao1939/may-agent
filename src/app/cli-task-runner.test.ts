@@ -56,6 +56,40 @@ function fakeSpawn(_command: string, args: string[]): any {
   return child;
 }
 
+function fakeSuccessfulSpawnWithPermissionWords(_command: string, args: string[]): any {
+  const child = new EventEmitter() as EventEmitter & {
+    stdout: PassThrough;
+    stderr: PassThrough;
+    pid: number;
+  };
+  child.stdout = new PassThrough();
+  child.stderr = new PassThrough();
+  child.pid = 12346;
+  queueMicrotask(() => {
+    const outputIndex = args.indexOf("-o");
+    child.stdout.write(
+      JSON.stringify({ type: "thread.started", thread_id: "codex-session-2" }) + "\n",
+    );
+    child.stdout.write(
+      JSON.stringify({
+        type: "item.completed",
+        item: {
+          type: "agent_message",
+          text: "The reviewed documentation mentions permission denied and approval required.",
+        },
+      }) + "\n",
+    );
+    if (outputIndex >= 0 && args[outputIndex + 1]) {
+      writeFileSync(args[outputIndex + 1], "successful review\n");
+    }
+    child.stdout.write(JSON.stringify({ type: "turn.completed" }) + "\n");
+    child.stdout.end();
+    child.stderr.end();
+    child.emit("close", 0, null);
+  });
+  return child;
+}
+
 describe("CLI task runner", () => {
   it("tracks run_cli_agent through requested, started, and completed events", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-cli-runner-"));
@@ -123,6 +157,47 @@ describe("CLI task runner", () => {
         .prepare("SELECT status FROM event_pair_runs WHERE pair_name = 'cli.task' AND correlation_key = ?")
         .get(payload.taskId) as { status: string } | undefined;
       expect(pair?.status).toBe("closed");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("does not treat permission words in a successful Codex review as a failure", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-cli-permission-words-"));
+    const persistDir = join(root, ".state");
+    mkdirSync(persistDir, { recursive: true });
+    const bus = new EventBus();
+    const events: AgentEvent[] = [];
+    bus.subscribe((event) => events.push(event));
+    attachCliTaskRunner({
+      bus,
+      persistDir,
+      projectRoot: root,
+      spawnCommand: fakeSuccessfulSpawnWithPermissionWords as any,
+    });
+    const tool = createRunCliAgentTool({
+      agentName: "may",
+      projectRoot: root,
+      persistDir,
+      emit: (event) => bus.emit(event as any),
+    });
+
+    try {
+      const result = await tool.execute("call-1", {
+        tool: "codex",
+        mode: "review",
+        prompt: "Review permission handling documentation.",
+        cwd: root,
+      });
+      const payload = JSON.parse(result.content[0].text);
+      await waitFor(() => events.some((event) => event.type === "cli.task.completed"));
+
+      expect(events.some((event) => event.type === "cli.task.failed")).toBe(false);
+      const structured = JSON.parse(
+        readFileSync(payload.structuredResultPath, "utf8"),
+      ) as any;
+      expect(structured.status).toBe("completed");
+      expect(structured.failureCategory).toBeUndefined();
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

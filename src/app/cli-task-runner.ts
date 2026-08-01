@@ -391,20 +391,33 @@ function classifyCliOutcome(
   expected?: CliTaskRecord["expectedOutput"],
 ): { failureCategory?: CliTaskRecord["failureCategory"]; error?: string } {
   const diagnosticText = `${attempt.stderr}\n${attempt.stdout}\n${attempt.error ?? ""}`;
+  const permissionFailure =
+    /permission denied|not permitted|approval required|sandbox.*denied|EACCES/i.test(
+      diagnosticText,
+    );
   if (attempt.timedOut) {
     return {
       failureCategory: "timeout",
       error: attempt.error ?? "CLI task exceeded its timeout",
     };
   }
-  if (/permission denied|not permitted|approval required|sandbox.*denied|EACCES/i.test(diagnosticText)) {
-    return { failureCategory: "permission", error: "CLI worker was denied a required permission" };
-  }
   if (attempt.exitCode !== 0) {
+    if (permissionFailure) {
+      return {
+        failureCategory: "permission",
+        error: "CLI worker was denied a required permission",
+      };
+    }
     const category = /tool.*(?:failed|error)|command not found|ENOENT/i.test(diagnosticText) ? "tool" : "process";
     return { failureCategory: category, error: attempt.error ?? `CLI exited with code ${attempt.exitCode}` };
   }
   if (!hasCompletedProtocol(tool, attempt.stdout)) {
+    if (permissionFailure) {
+      return {
+        failureCategory: "permission",
+        error: "CLI worker was denied a required permission",
+      };
+    }
     return {
       failureCategory: "no_output",
       error: `CLI exited without a completed ${tool === "codex" ? "turn" : "result"}`,
