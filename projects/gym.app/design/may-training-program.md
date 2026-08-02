@@ -64,6 +64,15 @@ signal. Gym allows this source review to use a second app task slot while the
 ordered `improve/may` workflow is running; candidate iterations inside that
 workflow remain sequential.
 
+Gym runs one daily design-alignment review as a stable, read-only owner task.
+The periodic event only wakes the task. The Gym owner compares critical
+accepted promises with the relevant code and newest runtime evidence. It
+records a quiet evidence-backed no-op when aligned. When it finds a real gap,
+it names the root cause, impact, smallest repair, proof needed, and exact human
+boundary. The review prefers one strong gap over a catalog of speculation. It
+does not create another improvement lifecycle or change benchmark truth or
+production May.
+
 ## One task
 
 ```text
@@ -311,6 +320,20 @@ checkpoints survive recovery.
 
 Historical evidence is append-only. Changing benchmark truth, labels, or a
 scorer requires a fresh baseline.
+
+The post-approval confirmation uses a state scope derived from the exact
+approved artifact fingerprint. It cannot reuse the campaign root result or an
+assessment created before that artifact was applied. Replaying the same event
+resumes the same confirmation scope; a different artifact gets a different
+scope. The event carries the consumer benchmark and exact non-passing scenarios
+that produced the fix, including held-back release cases; it never substitutes
+the earlier development focus.
+
+Open-ended intent is judged by the calibrated semantic judges. Deterministic
+checks enforce only objective structure and boundaries such as schema, worker
+identity and count, asynchronous execution, empty fields, and exact safety or
+approval constraints. Do not repair a meaning failure by expanding a list of
+phrases or synonyms.
 
 A release comparison also requires exactly one matching framework revision in
 both baseline and candidate runs. A mixed-revision run remains useful for

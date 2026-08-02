@@ -14,6 +14,7 @@ import type { WorkflowContext } from "@may-agent/sdk";
 import {
   applyDirectorySnapshot,
   authoritativeAssessmentProblems,
+  benchmarkFixConfirmationScope,
   benchmarkFixTarget,
   buildBenchmarkFixRetryEvent,
   buildApprovalRequest,
@@ -175,10 +176,20 @@ describe("single agent-improvement loop", () => {
     const assessmentPath = join(stateDir, "assessment.json");
     const snapshotPath = join(stateDir, "benchmark-fix");
     const targetPath = join(projectsRoot, "gym", "benchmarks", "owner");
+    const verificationDir = join(root, "release-verification-7");
     mkdirSync(snapshotPath, { recursive: true });
     mkdirSync(targetPath, { recursive: true });
+    mkdirSync(verificationDir, { recursive: true });
     writeFileSync(join(snapshotPath, "scorer.cjs"), "fixed\n");
     writeFileSync(join(targetPath, "scorer.cjs"), "old\n");
+    const verificationManifest = manifest("release-7", {
+      "release-case": ["fail"],
+    });
+    verificationManifest.benchmark = "consumer-transfer";
+    writeFileSync(
+      join(verificationDir, "manifest.json"),
+      JSON.stringify(verificationManifest),
+    );
     const artifactFingerprint = `sha256:${fingerprintTree(snapshotPath)}`;
     const approvalId = "approval-7";
     writeFileSync(
@@ -216,6 +227,7 @@ describe("single agent-improvement loop", () => {
         },
         artifact_path: snapshotPath,
         artifact_target_path: targetPath,
+        verification_run_dir: verificationDir,
         approval: {
           kind: "benchmark-fix",
           approvalId,
@@ -293,6 +305,8 @@ describe("single agent-improvement loop", () => {
         type: "gym.improvement.requested",
         reason: "approved-benchmark-fix-applied",
         artifactFingerprint,
+        benchmark: "consumer-transfer",
+        scenarios: ["release-case"],
       }),
     ]);
   });
@@ -1153,6 +1167,134 @@ describe("single agent-improvement loop", () => {
       trials: 3,
       reason: "approved-benchmark-fix-applied",
     });
+  });
+
+  test("isolates a benchmark-fix confirmation from an old root result", async () => {
+    const root = mkdtempSync(join(tmpdir(), "gym-benchmark-confirmation-"));
+    roots.push(root);
+    const projectsRoot = join(root, "projects");
+    const gymRoot = join(projectsRoot, "gym");
+    const benchmark = "may-alignment";
+    const scenario = "confirmation-case";
+    const fingerprint = `sha256:${"b".repeat(64)}`;
+    const benchmarkDir = join(gymRoot, "benchmarks", benchmark);
+    mkdirSync(benchmarkDir, { recursive: true });
+    mkdirSync(join(gymRoot, "scenarios", scenario), { recursive: true });
+    writeFileSync(
+      join(benchmarkDir, "suite.json"),
+      JSON.stringify({ labels_file: "labels.json", scenarios: [scenario] }),
+    );
+    writeFileSync(
+      join(benchmarkDir, "labels.json"),
+      JSON.stringify({
+        labels: {
+          [scenario]: {
+            status: "approved",
+            approved_by: "hao",
+            approved_at: "2026-08-02T00:00:00Z",
+          },
+        },
+      }),
+    );
+
+    const generationDir = join(
+      projectsRoot,
+      "gym.app",
+      ".state",
+      "candidates",
+      "improve-may",
+      "7",
+    );
+    mkdirSync(generationDir, { recursive: true });
+    const rootResultPath = join(generationDir, "result.json");
+    writeFileSync(
+      rootResultPath,
+      JSON.stringify({
+        workflow_state: "converged",
+        summary: "Applied approved benchmark/scorer fix sha256:old.",
+      }),
+    );
+
+    let runCount = 0;
+    const loop: GymLoopApi = {
+      async run(options) {
+        runCount++;
+        const runId = `confirmation-run-${runCount}`;
+        const runDir = join(gymRoot, ".state", "benchmarks", runId);
+        mkdirSync(runDir, { recursive: true });
+        const value = manifest(runId, { [scenario]: ["pass"] });
+        value.benchmark = String(options.benchmark);
+        value.scenarios = [scenario];
+        writeFileSync(join(runDir, "manifest.json"), JSON.stringify(value));
+        return { runDir, manifest: value };
+      },
+      async verify() {
+        throw new Error("an all-pass confirmation must not build a candidate");
+      },
+    };
+    const event = buildBenchmarkFixRetryEvent({
+      agent: "may",
+      benchmark,
+      scenarios: [scenario],
+      artifactFingerprint: fingerprint,
+      taskId: "improve/may",
+      taskGeneration: 7,
+      approvalId: "approval-7",
+    });
+    const task = [
+      "## Reconciliation Task",
+      "```json",
+      JSON.stringify({
+        taskId: "improve/may",
+        generation: 7,
+        input: { agent: "may", curriculumDrain: true },
+      }),
+      "```",
+      "## Trigger Event",
+      "```json",
+      JSON.stringify(event),
+      "```",
+    ].join("\n");
+    const ctx = {
+      projectsRoot,
+      task,
+      emit() {},
+      done(summary: string, details: Record<string, unknown>) {
+        return { type: "done", summary, ...details };
+      },
+      blocked(reason: string) {
+        return { type: "blocked", reason };
+      },
+    } as unknown as WorkflowContext;
+
+    const result = (await runImprovement(ctx, loop)) as unknown as Record<
+      string,
+      unknown
+    >;
+    expect(runCount).toBe(1);
+    expect(result.summary).toBe(
+      "May has no actionable failures in the current approved evaluation.",
+    );
+    const scope = benchmarkFixConfirmationScope(event, "improve/may", 7);
+    expect(scope).toEqual({
+      scope: `benchmark-fix-confirmation-${"b".repeat(64)}`,
+    });
+    expect(
+      existsSync(
+        join(
+          projectsRoot,
+          "gym.app",
+          ".state",
+          "assessments",
+          "improve-may",
+          "7",
+          `${(scope as { scope: string }).scope}.json`,
+        ),
+      ),
+    ).toBe(true);
+    expect(JSON.parse(readFileSync(rootResultPath, "utf8")).summary).toContain(
+      "sha256:old",
+    );
   });
 
   test("applies only the approved benchmark snapshot", () => {

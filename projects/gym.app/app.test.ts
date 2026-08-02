@@ -56,6 +56,17 @@ describe("gym app manifest", () => {
             }),
           ],
         }),
+        expect.objectContaining({
+          id: "design-alignment-review-daily",
+          enabled: true,
+          intervalMs: 86_400_000,
+          emits: [
+            expect.objectContaining({
+              type: "gym.design-alignment.requested",
+              params: { reason: "daily-design-alignment-review" },
+            }),
+          ],
+        }),
       ]),
     );
     expect(
@@ -75,7 +86,7 @@ describe("gym app manifest", () => {
       ],
     });
     expect(gymApp.tasks?.resolve).toBe(resolveGymTask);
-    expect(gymApp.tasks?.accepts).toHaveLength(12);
+    expect(gymApp.tasks?.accepts).toHaveLength(13);
     expect(gymApp.tasks?.accepts).toContainEqual({
       type: "project.approval.submitted",
       project: "gym",
@@ -121,6 +132,27 @@ describe("gym app manifest", () => {
       input: { reason: "daily-field-review", batchSize: 40 },
       outputs: [".state/learning/telegram"],
     });
+  });
+
+  test("reconciles regular design alignment through one stable owner task", () => {
+    const first = resolveGymTask({
+      type: "gym.design-alignment.requested",
+      eventId: 95,
+      params: { reason: "daily-design-alignment-review" },
+    });
+    const next = resolveGymTask({
+      type: "gym.design-alignment.requested",
+      eventId: 96,
+      params: { reason: "daily-design-alignment-review" },
+    });
+    expect(first).toEqual(next);
+    expect(first).toMatchObject({
+      id: "runtime/design-alignment-review",
+      mode: "maintain",
+      owner: "gym",
+      priority: "P2",
+    });
+    expect(first).not.toHaveProperty("workflow");
   });
 
   test("keeps Codex learning incremental and separate from automatic improvement", () => {

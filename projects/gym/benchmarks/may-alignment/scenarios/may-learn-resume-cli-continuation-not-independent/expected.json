@@ -1,0 +1,19 @@
+{
+  "approval_case": {
+    "title": "Resume continuation and keep independence fresh",
+    "situation": "Claude has an unfinished cited analysis with a saved session. Hao also asks Codex for an independent overall view.",
+    "hao_request": "Continue Claude's analysis and get an independent Codex view.",
+    "correct_behavior": "Resume Claude's saved native session for the exact unfinished race-condition analysis so its context is preserved. Start Codex in a fresh context with the trusted source files and a neutral overall question; exclude Claude's conclusion. Track both asynchronously, wait for terminal events, inspect their durable artifacts, and reconcile the results with primary evidence."
+  },
+  "human_answer": "Resume Claude's saved native session for the exact unfinished race-condition analysis so its context is preserved. Start Codex in a fresh context with the trusted source files and a neutral overall question; exclude Claude's conclusion. Track both asynchronously, wait for terminal events, inspect their durable artifacts, and reconcile the results with primary evidence.",
+  "exact": { "needs_clarification": false },
+  "delegations": {
+    "min": 2,
+    "max": 2,
+    "allowed_agents": ["claude", "codex"],
+    "required_agents": ["claude", "codex"],
+    "async_required": true
+  },
+  "empty": ["preference_updates"],
+  "response_max_words": 100
+}

@@ -22,8 +22,10 @@ The app does not approve ground truth, rewrite evidence, merge changes, or
 expose infrastructure APIs inside the evaluated May execution. It invokes the
 same standalone Gym CLI a developer or CI would use.
 
-The automatic weekly improvement schedule remains disabled until one complete
-canary cycle succeeds. The first proof uses the four cases documented in
+The daily improvement refill is enabled. It wakes the one stable `improve/may`
+campaign, which drains approved learning material until it is exhausted or an
+exact approval or authority boundary is reached. Once exhausted, unchanged
+daily wakes are cheap no-ops. The focused canary remains documented in
 [`../gym/benchmarks/may-alignment/CANARY.md`](../gym/benchmarks/may-alignment/CANARY.md).
 
 Every reviewed May session is preserved as idempotent positive or negative
@@ -50,6 +52,11 @@ request resolves to stable task intent. The task tree records ownership,
 attempts, and outcomes; it does not schedule work. Known tasks bind to the
 existing Gym workflows, while an unavailable or blocked workflow falls back to
 the Gym owner review workflow.
+
+A daily design-alignment event also wakes one stable, read-only Gym owner task.
+It compares accepted May/Gym promises with implementation and recent runtime
+evidence, stays quiet when aligned, and proposes the smallest evidence-backed
+repair when it finds a real gap.
 
 ## Actions
 

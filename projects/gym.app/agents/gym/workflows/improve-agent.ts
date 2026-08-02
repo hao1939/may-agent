@@ -1994,6 +1994,8 @@ async function buildBenchmarkFix(
   fingerprint: string;
   summary: string;
   evidence: string[];
+  confirmationBenchmark: string;
+  confirmationScenarios: string[];
 } | null> {
   const gymRoot = join(ctx.projectsRoot, "gym");
   const consumerBenchmark = verificationBenchmark(
@@ -2063,7 +2065,41 @@ async function buildBenchmarkFix(
     fingerprint: `sha256:${fingerprintTree(durablePath)}`,
     summary: String(result.structuredResult.summary),
     evidence: result.structuredResult.evidence.map(String),
+    confirmationBenchmark: consumerBenchmark,
+    confirmationScenarios: failedScenarios,
   };
+}
+
+function benchmarkFixConfirmationTarget(
+  stored: Record<string, unknown>,
+  plan: CandidatePlan,
+): { benchmark: string; scenarios: string[] } {
+  const storedBenchmark = safeName(stored.confirmation_benchmark, "");
+  const storedScenarios = Array.isArray(stored.confirmation_scenarios)
+    ? stored.confirmation_scenarios
+        .map((scenario) => safeName(scenario, ""))
+        .filter((scenario): scenario is string => Boolean(scenario))
+    : [];
+  if (storedBenchmark && storedScenarios.length) {
+    return { benchmark: storedBenchmark, scenarios: storedScenarios };
+  }
+
+  const verificationDir = String(stored.verification_run_dir ?? "").trim();
+  const manifestPath = join(verificationDir, "manifest.json");
+  if (verificationDir && existsSync(manifestPath)) {
+    const manifest = readManifest(verificationDir);
+    const benchmark = safeName(manifest.benchmark, plan.benchmark);
+    const scenarios = [
+      ...new Set(
+        manifest.trials
+          .filter((trial) => trial.machine_verdict !== "pass")
+          .map((trial) => trial.scenario),
+      ),
+    ];
+    if (benchmark && scenarios.length) return { benchmark, scenarios };
+  }
+
+  return { benchmark: plan.benchmark, scenarios: [...plan.focus.scenarios] };
 }
 
 export function benchmarkFixTarget(input: {
@@ -2683,6 +2719,8 @@ async function runCandidateIteration(
     candidate_fingerprint: candidateFingerprint,
     artifact_path: benchmarkFix?.path ?? durableCandidate,
     artifact_target_path: benchmarkFix?.targetPath ?? null,
+    confirmation_benchmark: benchmarkFix?.confirmationBenchmark ?? null,
+    confirmation_scenarios: benchmarkFix?.confirmationScenarios ?? null,
     development_verification_run_dir: development.runDir,
     release_baseline_run_dir: releaseBaselineDir,
     verification_run_dir: verificationDir,
@@ -2877,8 +2915,7 @@ async function runCandidate(
             }
           : buildBenchmarkFixRetryEvent({
               agent: plan.agent,
-              benchmark: plan.benchmark,
-              scenarios: plan.focus.scenarios,
+              ...benchmarkFixConfirmationTarget(stored, plan),
               artifactFingerprint: previous.approval.artifactFingerprint,
               taskId,
               taskGeneration: generation,
@@ -3144,6 +3181,8 @@ async function handleAssessmentBenchmarkFix(
         focus: finding,
         artifact_path: fix.path,
         artifact_target_path: fix.targetPath,
+        confirmation_benchmark: fix.confirmationBenchmark,
+        confirmation_scenarios: fix.confirmationScenarios,
         verification_run_dir: assessment.screening_run_dir,
         recommendation: review.disposition,
         review,
@@ -3536,6 +3575,53 @@ export function improvementInput(
   return merged;
 }
 
+export function benchmarkFixConfirmationScope(
+  input: Record<string, unknown>,
+  taskId: string,
+  generation: number,
+): { scope: string } | { error: string } | null {
+  if (String(input.reason ?? "") !== "approved-benchmark-fix-applied") {
+    return null;
+  }
+  const fingerprint = String(input.artifactFingerprint ?? "").trim();
+  if (!/^sha256:[a-f0-9]{64}$/.test(fingerprint)) {
+    return {
+      error:
+        "Benchmark-fix confirmation requires the approved artifact fingerprint",
+    };
+  }
+  if (String(input.approvalId ?? "").trim() === "") {
+    return { error: "Benchmark-fix confirmation requires the exact approval id" };
+  }
+  if (String(input.taskId ?? "") !== taskId) {
+    return {
+      error:
+        "Benchmark-fix confirmation task does not match the active campaign",
+    };
+  }
+  if (Number(input.taskGeneration) !== generation) {
+    return {
+      error:
+        "Benchmark-fix confirmation generation does not match the active campaign",
+    };
+  }
+  if (!safeName(input.benchmark, "")) {
+    return { error: "Benchmark-fix confirmation requires a valid benchmark" };
+  }
+  try {
+    if (!requestedScenarios(input).length) {
+      return {
+        error: "Benchmark-fix confirmation requires its approved scenarios",
+      };
+    }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : String(error) };
+  }
+  return {
+    scope: `benchmark-fix-confirmation-${fingerprint.slice("sha256:".length)}`,
+  };
+}
+
 export async function runImprovement(
   ctx: WorkflowContext,
   loop: GymLoopApi = defaultLoopApi,
@@ -3608,6 +3694,18 @@ export async function runImprovement(
   }
   if (input.curriculumDrain !== true) {
     try {
+      const confirmation = benchmarkFixConfirmationScope(
+        input,
+        taskId,
+        generation,
+      );
+      if (confirmation && "error" in confirmation) {
+        return activeCtx.done(confirmation.error, {
+          state: "needs-owner",
+          summary: confirmation.error,
+          evidence: [],
+        });
+      }
       const retry = locateCandidateRetry(
         activeCtx.projectsRoot,
         taskId,
@@ -3627,7 +3725,7 @@ export async function runImprovement(
         input,
         taskId,
         generation,
-        retry?.scope,
+        confirmation?.scope ?? retry?.scope,
       );
     } catch (error) {
       if (error instanceof CampaignSupersededError) {

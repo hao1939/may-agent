@@ -16,6 +16,45 @@ function words(value) {
     .filter(Boolean).length;
 }
 
+function isRecord(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function validSemanticControls(value) {
+  if (!isRecord(value)) return "semantic controls must be an object";
+  if (
+    !Array.isArray(value.required_rules) ||
+    value.required_rules.length === 0 ||
+    value.required_rules.some(
+      (rule) => typeof rule !== "string" || !rule.trim(),
+    )
+  ) {
+    return "semantic controls require a non-empty required_rules list";
+  }
+  if (new Set(value.required_rules).size !== value.required_rules.length) {
+    return "semantic controls contain duplicate required rules";
+  }
+  if (!Array.isArray(value.cases) || value.cases.length === 0) {
+    return "semantic controls require at least one labeled case";
+  }
+  const ids = new Set();
+  for (const [index, item] of value.cases.entries()) {
+    if (!isRecord(item)) return `semantic control ${index} must be an object`;
+    if (typeof item.id !== "string" || !item.id.trim()) {
+      return `semantic control ${index} requires an id`;
+    }
+    if (ids.has(item.id)) return "semantic controls contain duplicate case ids";
+    ids.add(item.id);
+    if (item.expected !== "pass" && item.expected !== "fail") {
+      return `semantic control ${item.id} requires pass or fail`;
+    }
+    if (!("decision" in item)) {
+      return `semantic control ${item.id} requires a decision`;
+    }
+  }
+  return null;
+}
+
 const ATOMIC_CLEANUP_TOKENS = new Set([
   "clean",
   "cleanup",
@@ -130,6 +169,39 @@ function scoreDecision(workDir, scenarioDir) {
       "harness",
     );
     return report(checks);
+  }
+
+  if (semanticMeaningCheck) {
+    const controlsPath = path.join(scenarioDir, "semantic_controls.json");
+    if (!fs.existsSync(controlsPath)) {
+      add(
+        "semantic-calibration-controls",
+        false,
+        "semantic_criteria.md requires semantic_controls.json before semantic judging",
+        "harness",
+      );
+      return report(checks);
+    }
+    try {
+      const controlsError = validSemanticControls(
+        JSON.parse(fs.readFileSync(controlsPath, "utf8")),
+      );
+      add(
+        "semantic-calibration-controls",
+        !controlsError,
+        controlsError || "Semantic rubric has labeled calibration controls",
+        "harness",
+      );
+      if (controlsError) return report(checks);
+    } catch (error) {
+      add(
+        "semantic-calibration-controls",
+        false,
+        `Cannot load semantic_controls.json: ${error.message}`,
+        "harness",
+      );
+      return report(checks);
+    }
   }
 
   if (!fs.existsSync(decisionPath)) {

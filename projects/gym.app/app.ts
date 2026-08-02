@@ -113,6 +113,14 @@ function telegramFieldReviewRequested(input: unknown = {}): ProjectAppEvent {
   };
 }
 
+function designAlignmentRequested(input: unknown = {}): ProjectAppEvent {
+  return {
+    type: "gym.design-alignment.requested",
+    project: projectId,
+    params: params(input),
+  };
+}
+
 function durableEventId(event: Record<string, unknown>): number | null {
   const value = event.eventId;
   return typeof value === "number" && Number.isInteger(value) && value > 0
@@ -206,6 +214,22 @@ export function resolveGymTask(
         mode: "maintain",
         owner: "gym",
         priority: "P1",
+      };
+    case "gym.design-alignment.requested":
+      return {
+        id: "runtime/design-alignment-review",
+        parentId: "review-proposals",
+        outcome:
+          "Keep Gym and May behavior aligned with their accepted design, and propose the smallest evidence-backed repair when they drift.",
+        acceptance: [
+          "Compare critical accepted design promises with the relevant implementation and newest runtime evidence.",
+          "An aligned review records a quiet evidence-backed no-op; speculation is discarded.",
+          "A real gap identifies the root cause, impact, smallest repair, proof needed, and any exact human approval boundary.",
+          "The review never changes benchmark truth or production May without exact artifact approval.",
+        ],
+        mode: "maintain",
+        owner: "gym",
+        priority: "P2",
       };
     case "project.comment.created":
     case "gym.improvement.requested":
@@ -468,6 +492,14 @@ export default defineProjectApp({
       intervalMs: 86_400_000,
       emits: [telegramFieldReviewRequested({ reason: "daily-field-review" })],
     },
+    {
+      id: "design-alignment-review-daily",
+      enabled: true,
+      intervalMs: 86_400_000,
+      emits: [
+        designAlignmentRequested({ reason: "daily-design-alignment-review" }),
+      ],
+    },
   ],
 
   tasks: {
@@ -476,6 +508,7 @@ export default defineProjectApp({
       "gym.learning.evidence.observed",
       "gym.codex.learning.requested",
       "gym.telegram.field-review.requested",
+      "gym.design-alignment.requested",
       "gym.regression.requested",
       "gym.review.requested",
       "gym.improvement.requested",
