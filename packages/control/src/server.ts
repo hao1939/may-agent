@@ -414,8 +414,9 @@ export async function attachControlSocket(opts: AttachControlSocketOptions): Pro
   if (existsSync(socketPath)) {
     const alive = await isSocketAlive(socketPath);
     if (alive) {
-      onInfo?.(`[control] Socket ${socketPath} is owned by another instance. Running WITHOUT a control socket. Set INSTANCE=<name> to use a separate socket.`);
-      return { close: () => {}, clientCount: () => 0 };
+      const message = `[control] Socket ${socketPath} already has a live owner. Refusing to start without control-socket ownership; use a different INSTANCE for a separate daemon.`;
+      onInfo?.(message);
+      throw new Error(message);
     }
     unlinkSync(socketPath);
   }
