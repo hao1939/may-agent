@@ -16,8 +16,18 @@ import {
   listProjectAppDirs,
   normalizeTaskHandlerResult,
   parseProjectAppTaskSessionBinding,
+  projectAppGlobalConcurrency,
   projectAppHostFingerprint,
 } from "./project-app-loader";
+
+describe("project app host backpressure", () => {
+  it("uses a safe convention while allowing one explicit override", () => {
+    expect(projectAppGlobalConcurrency(undefined)).toBe(6);
+    expect(projectAppGlobalConcurrency("3")).toBe(3);
+    expect(projectAppGlobalConcurrency("0")).toBe(6);
+    expect(projectAppGlobalConcurrency("invalid")).toBe(6);
+  });
+});
 
 function fixture() {
   const root = join(tmpdir(), `project-app-loader-${Date.now()}-${Math.random().toString(36).slice(2)}`);
