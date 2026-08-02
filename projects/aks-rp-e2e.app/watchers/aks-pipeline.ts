@@ -91,6 +91,7 @@ export type TimelineSpecProgress = {
   message: string;
   updatedAt: string;
   elapsedSeconds: number;
+  timingSource?: "payload" | "provider-record";
   category: string;
 };
 
@@ -599,6 +600,8 @@ export function timelineSpecProgress(
     ) {
       continue;
     }
+    const payloadUpdatedAt = text(value.updatedAt);
+    const hasPayloadElapsed = value.elapsedSeconds !== undefined;
     const progress = {
       runId,
       sliceId,
@@ -609,14 +612,20 @@ export function timelineSpecProgress(
       verdict: verdict as TimelineSpecProgress["verdict"],
       phase: text(value.phase) || "provider-timeline",
       phaseDetail:
-        text(value.phaseDetail) || text(entry.currentOperation) || executionState,
+        text(value.phaseDetail) ||
+        text(entry.currentOperation) ||
+        executionState,
       message: (
         text(value.message) ||
         `Azure timeline reports ${specId} ${verdict} before slice artifacts are available.`
       ).slice(0, 280),
       updatedAt:
-        text(value.updatedAt) || text(entry.finishTime) || text(entry.startTime),
+        payloadUpdatedAt || text(entry.finishTime) || text(entry.startTime),
       elapsedSeconds: Math.max(0, Number(value.elapsedSeconds) || 0),
+      timingSource:
+        payloadUpdatedAt || hasPayloadElapsed
+          ? ("payload" as const)
+          : ("provider-record" as const),
       category: text(value.category) || "unknown",
     } satisfies TimelineSpecProgress;
     const prior = latest.get(specId);
@@ -669,8 +678,22 @@ export function pipelineTestNonpassingEvent(
     )
     .digest("hex")
     .slice(0, 20);
+  const factBase = pipelineFactBase(run);
+  const taskId = text(factBase.taskId);
+  const generation = text(factBase.generation);
+  const progressiveFactBase = run.progressive
+    ? Object.fromEntries(
+        Object.entries(factBase).filter(
+          ([key]) => key !== "taskId" && key !== "generation",
+        ),
+      )
+    : factBase;
   const data = {
-    ...pipelineFactBase(run),
+    ...progressiveFactBase,
+    ...(run.progressive && taskId ? { validationTaskId: taskId } : {}),
+    ...(run.progressive && generation
+      ? { validationGeneration: generation }
+      : {}),
     specId: progress.specId,
     sliceId: progress.sliceId,
     status: progress.verdict,
@@ -815,6 +838,36 @@ export function boundedTrackedRunIds(
     .slice(0, limit);
 }
 
+export function retainedTrackedRunIds(input: {
+  priorRunIds: string[];
+  runs: ObservedAdoRun[];
+  pendingTerminalArtifactRunIds: Set<string>;
+}): string[] {
+  const currentById = new Map(input.runs.map((run) => [run.runId, run]));
+  const providerReturnedRuns = input.runs.length > 0;
+  return boundedTrackedRunIds([
+    ...input.priorRunIds.filter((runId) => {
+      const current = currentById.get(runId);
+      // Preserve the prior set during a total provider outage. When Azure did
+      // return current runs, a missing historical lookup must not become an
+      // immortal retry entry.
+      if (!current) return !providerReturnedRuns;
+      return (
+        !["completed", "canceled"].includes(current.status) ||
+        input.pendingTerminalArtifactRunIds.has(runId)
+      );
+    }),
+    ...input.runs
+      .filter(
+        (run) =>
+          run.artifactObservable &&
+          !["completed", "canceled"].includes(run.status),
+      )
+      .map((run) => run.runId),
+    ...input.pendingTerminalArtifactRunIds,
+  ]);
+}
+
 export function hasObservedArtifactsForRun(
   observedArtifacts: Record<string, string>,
   runId: string,
@@ -831,6 +884,10 @@ export function artifactRunCandidates(input: {
   observedArtifacts: Record<string, string>;
   taskRunLimit?: number;
 }): ObservedAdoRun[] {
+  const newestProgressiveRunId = input.runs
+    .filter((run) => run.progressive)
+    .map((run) => run.runId)
+    .sort((left, right) => Number(right) - Number(left))[0];
   const taskRuns = input.runs.filter(
     (run) => run.artifactObservable && !run.progressive,
   );
@@ -867,6 +924,17 @@ export function artifactRunCandidates(input: {
 
   return input.runs.filter((run) => {
     const forceRescan = historicalSpecRunIds.has(run.runId);
+    const terminalHistoricalProgressive =
+      run.progressive &&
+      run.runId !== newestProgressiveRunId &&
+      ["completed", "canceled"].includes(run.status) &&
+      input.previouslyTrackedRunIds.has(run.runId) &&
+      input.priorFingerprints[run.runId] === run.fingerprint;
+    // A completed master-validation campaign gets one transition scan. Once a
+    // newer campaign exists, an unchanged old campaign must not retry a
+    // permanently absent or malformed artifact forever and starve live work.
+    // Focused task-owned runs retain their independent artifact recovery path.
+    if (terminalHistoricalProgressive) return false;
     return (
       (run.progressive ||
         selectedTaskIds.has(run.runId) ||
@@ -1222,6 +1290,25 @@ function normalizedVerdict(value: string): string {
   return status === "passed" ? "pass" : status === "failed" ? "fail" : status;
 }
 
+function projectedElapsedSeconds(
+  progress: TimelineSpecProgress | undefined,
+  checkedAtMs: number,
+): number {
+  if (!progress) return 0;
+  const recorded = Math.max(0, progress.elapsedSeconds || 0);
+  if (progress.executionState !== "running") return recorded;
+  // Azure may create a queued detail record at slice start and later change
+  // only its provider state to running. Its startTime is then not the next
+  // scenario's start time, so only explicit progress-payload timing may be
+  // projected forward.
+  if (progress.timingSource === "provider-record") return recorded;
+  const updatedAtMs = Date.parse(progress.updatedAt);
+  if (!Number.isFinite(checkedAtMs) || !Number.isFinite(updatedAtMs)) {
+    return recorded;
+  }
+  return recorded + Math.floor(Math.max(0, checkedAtMs - updatedAtMs) / 1_000);
+}
+
 export function buildMasterValidationProgress(input: {
   run: ObservedAdoRun;
   planRoot: string | null;
@@ -1293,8 +1380,10 @@ export function buildMasterValidationProgress(input: {
           const current = live.get(specId);
           const currentVerdict = current?.verdict ?? "unknown";
           const hasLiveVerdict = currentVerdict !== "unknown";
+          const elapsedSeconds = projectedElapsedSeconds(current, checkedAtMs);
           const currentUpdatedAtMs = Date.parse(current?.updatedAt ?? "");
           const stale =
+            !value &&
             current?.executionState === "running" &&
             Number.isFinite(checkedAtMs) &&
             Number.isFinite(currentUpdatedAtMs) &&
@@ -1312,16 +1401,24 @@ export function buildMasterValidationProgress(input: {
               value?.reason ??
               current?.message ??
               "Awaiting a completed slice verdict.",
-            ...(current
+            ...(value
               ? {
-                  executionState: current.executionState,
-                  phase: current.phase,
-                  phaseDetail: current.phaseDetail,
-                  updatedAt: current.updatedAt,
-                  elapsedSeconds: current.elapsedSeconds,
-                  ...(stale ? { stale: true } : {}),
+                  executionState: "completed" as const,
+                  phase: "artifact-result",
+                  phaseDetail: normalizedVerdict(value.status),
+                  updatedAt: checkedAt,
+                  elapsedSeconds,
                 }
-              : {}),
+              : current
+                ? {
+                    executionState: current.executionState,
+                    phase: current.phase,
+                    phaseDetail: current.phaseDetail,
+                    updatedAt: current.updatedAt,
+                    elapsedSeconds,
+                    ...(stale ? { stale: true } : {}),
+                  }
+                : {}),
             ...(value ? { artifactPath: value.artifactPath } : {}),
           };
         }),
@@ -2099,27 +2196,11 @@ export async function observeAksPipelines(
     }
   }
 
-  const currentById = new Map(adoRuns.map((run) => [run.runId, run]));
-  const trackedRunIds = boundedTrackedRunIds([
-    ...new Set([
-      ...(prior.trackedRunIds ?? []).filter((runId) => {
-        const current = currentById.get(runId);
-        return (
-          !current ||
-          !["completed", "canceled"].includes(current.status) ||
-          pendingTerminalArtifactRunIds.has(runId)
-        );
-      }),
-      ...adoRuns
-        .filter(
-          (run) =>
-            run.artifactObservable &&
-            !["completed", "canceled"].includes(run.status),
-        )
-        .map((run) => run.runId),
-      ...pendingTerminalArtifactRunIds,
-    ]),
-  ]);
+  const trackedRunIds = retainedTrackedRunIds({
+    priorRunIds: prior.trackedRunIds ?? [],
+    runs: adoRuns,
+    pendingTerminalArtifactRunIds,
+  });
   const retainedProgressRunIds = new Set(trackedRunIds);
   const retainedLiveProgressFingerprints = Object.fromEntries(
     Object.entries(liveProgressFingerprints)

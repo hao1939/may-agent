@@ -199,6 +199,7 @@ describe("progressive master-validation observation", () => {
           status: "pending",
           executionState: "running",
           phaseDetail: "cluster-create",
+          elapsedSeconds: 60,
         }),
         expect.objectContaining({
           specId: "spec.failed",
@@ -265,6 +266,28 @@ describe("progressive master-validation observation", () => {
         phaseDetail: "Scenario execution started.",
       }),
     ]);
+
+    const projection = buildMasterValidationProgress({
+      run: {
+        runId: "174773413",
+        fingerprint: "provider-fields",
+        status: "inProgress",
+        result: "inProgress",
+        sourceBranch: "refs/heads/main",
+        sourceVersion: "abc",
+        finishTime: null,
+        queueTime: "2026-08-01T07:00:00Z",
+        artifacts: [],
+        progressive: true,
+      },
+      planRoot: null,
+      artifactRoots: {},
+      timelineProgress: live,
+      checkedAt: "2026-08-01T09:08:00Z",
+    });
+    expect(
+      projection.specs.find((spec) => spec.specId === "spec.running"),
+    ).toMatchObject({ elapsedSeconds: 0 });
   });
 
   test("turns a soft admission exclusion into durable repair work", () => {
@@ -370,6 +393,88 @@ describe("progressive master-validation observation", () => {
         { sliceId: "02", specId: "spec.passing", status: "pass" },
         { sliceId: "02", specId: "spec.pending", status: "pending" },
       ],
+    });
+  });
+
+  test("lets an artifact verdict complete a stale running timeline row", () => {
+    const planRoot = mkdtempSync(join(tmpdir(), "aks-plan-"));
+    const artifactRoot = mkdtempSync(join(tmpdir(), "aks-slice-"));
+    roots.push(planRoot, artifactRoot);
+    const planDir = join(planRoot, "plan-slices", "plan-1");
+    const resultDir = join(artifactRoot, "runs", "test-results", "slice-run");
+    mkdirSync(planDir, { recursive: true });
+    mkdirSync(resultDir, { recursive: true });
+    writeFileSync(
+      join(planDir, "slice-11.json"),
+      JSON.stringify({ slice: "11", specIds: ["spec.fips"] }),
+    );
+    writeFileSync(
+      join(resultDir, "result.json"),
+      JSON.stringify({
+        specResults: [
+          {
+            specId: "spec.fips",
+            status: "pass",
+            category: "none",
+            reason: "FIPS validation passed.",
+          },
+        ],
+      }),
+    );
+
+    const projection = buildMasterValidationProgress({
+      run: {
+        runId: "174826569",
+        fingerprint: "fp",
+        status: "inProgress",
+        result: "inProgress",
+        sourceBranch: "refs/heads/main",
+        sourceVersion: "abc",
+        finishTime: null,
+        queueTime: "2026-08-02T04:50:17Z",
+        artifacts: [],
+        progressive: true,
+      },
+      planRoot,
+      artifactRoots: { "slice-11-test-results": artifactRoot },
+      timelineProgress: [
+        {
+          runId: "174826569",
+          sliceId: "11",
+          testRunId: "fips-live",
+          specId: "spec.fips",
+          sequence: 1,
+          executionState: "running",
+          verdict: "unknown",
+          phase: "provider-timeline",
+          phaseDetail: "Scenario execution started.",
+          message: "Scenario execution started.",
+          updatedAt: "2026-08-02T05:27:09Z",
+          elapsedSeconds: 0,
+          category: "unknown",
+        },
+      ],
+      checkedAt: "2026-08-02T06:10:10Z",
+    });
+
+    expect(projection.specs).toEqual([
+      expect.objectContaining({
+        specId: "spec.fips",
+        status: "pass",
+        executionState: "completed",
+        phase: "artifact-result",
+        phaseDetail: "pass",
+        updatedAt: "2026-08-02T06:10:10Z",
+        elapsedSeconds: 2581,
+        artifactPath: expect.stringContaining("result.json"),
+      }),
+    ]);
+    expect(projection.specs[0]).not.toHaveProperty("stale");
+    expect(projection.counts).toMatchObject({
+      observed: 1,
+      pending: 0,
+      running: 0,
+      pass: 1,
     });
   });
 
