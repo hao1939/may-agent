@@ -1835,17 +1835,20 @@ export function invokeLoadedProjectAppAction(input: {
 const appTaskControllersByBus = new WeakMap<EventBus, Map<string, ProjectAppTaskController>>();
 const appTaskCapacityByBus = new WeakMap<EventBus, ProjectAppTaskCapacity>();
 const appTaskCapacityByAppByBus = new WeakMap<EventBus, Map<string, ProjectAppTaskCapacity>>();
-const DEFAULT_GLOBAL_PROJECT_APP_CONCURRENCY = 10;
+// This is mechanical host backpressure, not an app scheduler. Every resource
+// remains independently reconciled, but a recovery burst must leave enough CPU
+// and memory for event ingress, persistence, and human control.
+const DEFAULT_GLOBAL_PROJECT_APP_CONCURRENCY = 6;
 
-function globalProjectAppConcurrency(): number {
-  const configured = Number(process.env.MAY_PROJECT_APP_GLOBAL_CONCURRENCY ?? DEFAULT_GLOBAL_PROJECT_APP_CONCURRENCY);
+export function projectAppGlobalConcurrency(value: unknown = process.env.MAY_PROJECT_APP_GLOBAL_CONCURRENCY): number {
+  const configured = Number(value ?? DEFAULT_GLOBAL_PROJECT_APP_CONCURRENCY);
   return Number.isInteger(configured) && configured > 0 ? configured : DEFAULT_GLOBAL_PROJECT_APP_CONCURRENCY;
 }
 
 function taskCapacityForBus(bus: EventBus): ProjectAppTaskCapacity {
   const existing = appTaskCapacityByBus.get(bus);
   if (existing) return existing;
-  const capacity = new ProjectAppTaskCapacity(globalProjectAppConcurrency());
+  const capacity = new ProjectAppTaskCapacity(projectAppGlobalConcurrency());
   appTaskCapacityByBus.set(bus, capacity);
   return capacity;
 }
