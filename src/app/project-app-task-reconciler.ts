@@ -976,6 +976,23 @@ export type ProjectAppTaskChildContext = {
   }>;
 };
 
+const MAX_LIVE_CHILD_CONTEXT = 16;
+const MAX_COMPLETED_CHILD_CONTEXT = 8;
+const MAX_CHILD_EVIDENCE = 4;
+const MAX_CHILD_CONTEXT_TEXT = 512;
+
+function boundedChildContextText(value: string): string {
+  return value.length <= MAX_CHILD_CONTEXT_TEXT
+    ? value
+    : `${value.slice(0, MAX_CHILD_CONTEXT_TEXT - 3)}...`;
+}
+
+function boundedChildEvidence(evidence: string[]): string[] {
+  return evidence
+    .slice(0, MAX_CHILD_EVIDENCE)
+    .map(boundedChildContextText);
+}
+
 /** Bounded current child state supplied to an executable parent reconciliation. */
 export function readProjectAppTaskChildContext(
   config: TaskStateConfig,
@@ -987,28 +1004,30 @@ export function readProjectAppTaskChildContext(
       .map((childId) => tree.resources?.[childId])
       .filter((resource): resource is ProjectAppTaskResource => Boolean(resource))
       .sort((left, right) => left.metadata.id.localeCompare(right.metadata.id))
-      .slice(0, 32)
+      .slice(0, MAX_LIVE_CHILD_CONTEXT)
       .map((resource) => ({
         taskId: resource.metadata.id,
         generation: resource.metadata.generation,
         phase: resource.status.phase,
-        outcome: resource.spec.outcome,
+        outcome: boundedChildContextText(resource.spec.outcome),
         ...(resource.spec.owner ? { owner: resource.spec.owner } : {}),
         ...(resource.spec.workflow ? { workflow: resource.spec.workflow } : {}),
-        ...(resource.status.summary ? { summary: resource.status.summary } : {}),
-        evidence: [...(resource.status.evidence ?? [])].slice(0, 8),
+        ...(resource.status.summary
+          ? { summary: boundedChildContextText(resource.status.summary) }
+          : {}),
+        evidence: boundedChildEvidence([...(resource.status.evidence ?? [])]),
       }));
     const completed = Object.values(tree.receipts ?? {})
       .filter((receipt) => receipt.parentId === taskId)
       .sort((left, right) => right.completedAt.localeCompare(left.completedAt))
-      .slice(0, 32)
+      .slice(0, MAX_COMPLETED_CHILD_CONTEXT)
       .map((receipt) => ({
         taskId: receipt.metadata.id,
         generation: receipt.metadata.generation,
-        outcome: receipt.outcome,
+        outcome: boundedChildContextText(receipt.outcome),
         owner: receipt.owner,
-        summary: receipt.summary,
-        evidence: [...receipt.evidence].slice(0, 8),
+        summary: boundedChildContextText(receipt.summary),
+        evidence: boundedChildEvidence([...receipt.evidence]),
         completedAt: receipt.completedAt,
       }));
     return { live, completed };
