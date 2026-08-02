@@ -358,4 +358,37 @@ describe("control socket protocol", () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  it("fails startup instead of silently running without the requested socket", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-control-socket-owner-"));
+    try {
+      const socketPath = join(root, "may.sock");
+      const first = await attachControlSocket({
+        socketPath,
+        getSessionId: () => "",
+        getStatus: () => [],
+        emitEvent: () => {},
+        subscribeEvents: () => () => {},
+        agentName: "may",
+        instance: "background",
+      });
+      sockets.push(first);
+
+      await expect(
+        attachControlSocket({
+          socketPath,
+          getSessionId: () => "",
+          getStatus: () => [],
+          emitEvent: () => {},
+          subscribeEvents: () => () => {},
+          agentName: "may",
+          instance: "background",
+        }),
+      ).rejects.toThrow("Refusing to start without control-socket ownership");
+
+      expect(statSync(socketPath).mode & 0o777).toBe(0o600);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });
