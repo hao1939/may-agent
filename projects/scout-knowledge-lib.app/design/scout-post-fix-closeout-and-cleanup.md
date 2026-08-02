@@ -208,7 +208,7 @@ Then:
 
 - retain the existing post-fix HN and GitHub results as lane acceptance;
 - observe one arXiv reconciliation under the committed workflow;
-- observe one XHS reconciliation, or its exact `credential.ready` wait; and
+- observe one XHS reconciliation, or its exact `credential.state` wait; and
 - observe the next naturally scheduled HN and GitHub cycle rather than forcing
   repeated manual runs.
 

@@ -196,7 +196,7 @@ export function xhsWaitResult(
     conditions: [
       {
         id: "credential-ready:xhs",
-        type: "credential.ready",
+        type: "credential.state",
         subject: "credential:xhs",
         expected: { field: "state", equals: "ready" },
       },

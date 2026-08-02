@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { xhsCredentialEvents } from "./xhs-credential";
 
 describe("XHS credential watcher", () => {
-  it("replays a semantic ready observation for exact Conditions", () => {
+  it("replays the current credential level for exact Conditions", () => {
     expect(
       xhsCredentialEvents({
         credential: "xhs",
@@ -12,7 +12,7 @@ describe("XHS credential watcher", () => {
       }),
     ).toMatchObject([
       {
-        type: "credential.ready",
+        type: "credential.state",
         credential: "xhs",
         state: "ready",
       },
@@ -27,8 +27,11 @@ describe("XHS credential watcher", () => {
       evidence: ["login-wall:true"],
     };
     expect(xhsCredentialEvents(status, { state: "ready" })).toMatchObject([
+      { type: "credential.state", state: "unavailable" },
       { type: "message.created", to: "human" },
     ]);
-    expect(xhsCredentialEvents(status, { state: "unavailable" })).toEqual([]);
+    expect(xhsCredentialEvents(status, { state: "unavailable" })).toMatchObject(
+      [{ type: "credential.state", state: "unavailable" }],
+    );
   });
 });

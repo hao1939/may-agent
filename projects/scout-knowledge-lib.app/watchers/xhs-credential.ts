@@ -32,26 +32,24 @@ export function xhsCredentialEvents(
   status: XhsCredentialStatus,
   previous: XhsCredentialWatcherState = {},
 ): ProjectAppEvent[] {
-  if (status.state === "ready") {
-    return [
-      {
-        type: "credential.ready",
-        source: "scout-xhs-credential-watcher",
-        target: { project: "scout-knowledge-lib" },
-        credential: "xhs",
-        state: "ready",
-        data: {
-          project: "scout-knowledge-lib",
-          credential: "xhs",
-          state: "ready",
-          evidence: status.evidence,
-        },
-      },
-    ];
+  const observation: ProjectAppEvent = {
+    type: "credential.state",
+    source: "scout-xhs-credential-watcher",
+    target: { project: "scout-knowledge-lib" },
+    credential: "xhs",
+    state: status.state,
+    data: {
+      project: "scout-knowledge-lib",
+      credential: "xhs",
+      state: status.state,
+      evidence: status.evidence,
+    },
+  };
+  if (status.state === "ready" || previous.state === "unavailable") {
+    return [observation];
   }
-
-  if (previous.state === "unavailable") return [];
   return [
+    observation,
     {
       type: "message.created",
       source: "scout-xhs-credential-watcher",

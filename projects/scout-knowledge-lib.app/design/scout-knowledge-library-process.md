@@ -218,7 +218,7 @@ The XHS credential flow is the reference case:
 ```text
 explore-xhs finds credentials unavailable
   -> return waiting
-  -> Condition: credential.ready / credential:xhs / state=ready
+  -> Condition: credential.state / credential:xhs / state=ready
   -> infrastructure notifies the human outside task execution
   -> credential watcher or human action emits the semantic observation
   -> the Condition becomes true

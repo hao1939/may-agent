@@ -157,6 +157,33 @@ It must not:
 Cron owns time. Watchers own external observation. The controller owns task
 mechanics.
 
+## Cross-app adoption
+
+The pattern is adopted one app at a time, from the smallest operational risk to
+the largest:
+
+1. `scout-knowledge-lib.app`
+2. `gym.app`
+3. `evaluation.app`
+4. `may-agent.app`
+5. `aks-rp-e2e.app`
+
+An app moves to the next stage only after all of these are true:
+
+- each recurring responsibility resolves to one stable `maintain` resource;
+- finite work resolves to an `achieve` resource with a semantic identity;
+- timers and domain observations wake the affected resource instead of scanning
+  the task tree;
+- the app has no `project.task.reconciled` scheduling or recovery handler;
+- Conditions represent external facts, while child transitions and retries are
+  left to the shared controller;
+- source tests pass and current live state proves the same behavior; and
+- any old live resources are closed or explicitly classified as migration
+  residue before the app is considered aligned.
+
+The order is a migration rule, not runtime coordination. Apps remain independent
+resources and continue reconciling normally while later apps are migrated.
+
 ## Handler resolution
 
 Ownership resolves by convention:
@@ -363,7 +390,7 @@ A Condition describes one exact external observation:
 ```ts
 {
   id: "credential-ready:xhs",
-  type: "credential.ready",
+  type: "credential.state",
   subject: "credential:xhs",
   expected: { field: "state", equals: "ready" },
   reviewAfterMs: 300_000
