@@ -10,6 +10,8 @@ import {
   markProjectAppTaskAttention,
   readProjectAppTaskIntent,
   readProjectAppTaskTrigger,
+  recordProjectAppTaskTrigger,
+  releaseStaleProjectAppTaskResult,
   taskReconciliationConfig,
 } from "./project-app-task-reconciler.ts";
 
@@ -103,6 +105,44 @@ describe("project app parent semantics", () => {
       disposition: "converged",
     });
     expect(readProjectAppTaskIntent(config, "parent")).not.toBeNull();
+    expect(listRunnableProjectAppTaskIds(config)).toEqual(["parent"]);
+  });
+
+  it("retries a parent when its child completes while the parent is deciding to wait", () => {
+    const config = fixture();
+    recordProjectAppTaskTrigger(config, "parent", {
+      type: "project.task.tick",
+      data: { taskId: "parent", reason: "review-live-child" },
+    });
+    const parentClaim = claimObservedProjectAppTask(config, {
+      taskId: "parent",
+      appOwner: "app-owner",
+      handler: "owner",
+      reason: "test",
+    });
+    if (parentClaim.kind !== "claimed") throw new Error(`expected parent claim, got ${parentClaim.kind}`);
+
+    completeProjectAppTask(config, claimChild(config), {
+      summary: "child completed while parent was running",
+      evidence: ["proof"],
+    });
+
+    expect(() =>
+      deferProjectAppTask(config, parentClaim, {
+        disposition: "waiting",
+        summary: "waiting on the child observed at attempt start",
+        evidence: ["child was running when reviewed"],
+      }),
+    ).toThrow("Handler action for parent is stale");
+
+    expect(readProjectAppTaskTrigger(config, "parent")).toMatchObject({
+      type: "project.task.child-transitioned",
+      childTaskId: "child",
+      disposition: "converged",
+    });
+    expect(
+      releaseStaleProjectAppTaskResult(config, parentClaim, "Child changed while parent was reconciling"),
+    ).toMatchObject({ status: "released" });
     expect(listRunnableProjectAppTaskIds(config)).toEqual(["parent"]);
   });
 
