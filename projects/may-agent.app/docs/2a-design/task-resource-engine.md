@@ -512,6 +512,12 @@ transaction. The in-memory queue hint follows that commit and passive resync
 can reconstruct it. When several children change together, key deduplication
 collapses their wakes and the parent rereads all current children and receipts.
 
+If a parent reconciliation observes a live child and returns `waiting` without
+an external Condition, but that child finishes before the result is applied,
+the result is stale rather than invalid. The engine preserves the child
+transition trigger and immediately retries the parent from current evidence;
+it must not turn this normal race into `attention`.
+
 - Every live `parentId` resolves to a live task resource or structural group.
 - Missing parents, self-parenting, and cycles are rejected.
 - Structural groups are passive and are never enqueued.
