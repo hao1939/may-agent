@@ -1838,7 +1838,7 @@ const appTaskCapacityByAppByBus = new WeakMap<EventBus, Map<string, ProjectAppTa
 // This is mechanical host backpressure, not an app scheduler. Every resource
 // remains independently reconciled, but a recovery burst must leave enough CPU
 // and memory for event ingress, persistence, and human control.
-const DEFAULT_GLOBAL_PROJECT_APP_CONCURRENCY = 6;
+const DEFAULT_GLOBAL_PROJECT_APP_CONCURRENCY = 2;
 
 export function projectAppGlobalConcurrency(value: unknown = process.env.MAY_PROJECT_APP_GLOBAL_CONCURRENCY): number {
   const configured = Number(value ?? DEFAULT_GLOBAL_PROJECT_APP_CONCURRENCY);
