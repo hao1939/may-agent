@@ -22,10 +22,10 @@ import {
 
 describe("project app host backpressure", () => {
   it("uses a safe convention while allowing one explicit override", () => {
-    expect(projectAppGlobalConcurrency(undefined)).toBe(6);
+    expect(projectAppGlobalConcurrency(undefined)).toBe(2);
     expect(projectAppGlobalConcurrency("3")).toBe(3);
-    expect(projectAppGlobalConcurrency("0")).toBe(6);
-    expect(projectAppGlobalConcurrency("invalid")).toBe(6);
+    expect(projectAppGlobalConcurrency("0")).toBe(2);
+    expect(projectAppGlobalConcurrency("invalid")).toBe(2);
   });
 });
 
