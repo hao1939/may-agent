@@ -2576,7 +2576,7 @@ export function reconcilePreparedTaskSource(
   runGit(workspaceDir, ["merge", "--abort"], true);
   return {
     state: "failed",
-    evidence,
+    evidence: boundedWorkflowEvidence(evidence),
     error: merge.stderr || merge.stdout || "prepared source merge failed",
   };
 }
@@ -3417,8 +3417,27 @@ function ownerResult(
   return ctx.done(summary, {
     state: "needs-owner",
     summary,
-    evidence,
+    evidence: boundedWorkflowEvidence(evidence),
   });
+}
+
+export function boundedWorkflowEvidence(
+  evidence: string[],
+  limit = 32,
+): string[] {
+  const entries = [
+    ...new Set(evidence.map((value) => value.trim()).filter(Boolean)),
+  ];
+  if (entries.length <= limit) return entries;
+  const retainedCount = Math.max(0, limit - 2);
+  const retainedTailCount = Math.min(6, retainedCount);
+  const retainedHeadCount = retainedCount - retainedTailCount;
+  return [
+    ...entries.slice(0, retainedHeadCount),
+    ...entries.slice(-retainedTailCount),
+    `evidence-entry-count:${entries.length}`,
+    `evidence-entry-omitted:${entries.length - retainedCount}`,
+  ];
 }
 
 export async function reconcileSpecLive(

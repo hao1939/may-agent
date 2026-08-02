@@ -22,6 +22,7 @@ import {
   artifactProvesSpecPass,
   artifactProvesTarget,
   artifactVitestTestCount,
+  boundedWorkflowEvidence,
   checkLiveDispatchAdmission,
   compactPlanPipelineParameters,
   collectTerminalRunEvidence,
@@ -182,6 +183,67 @@ describe("spec-live-reconciliation workflow", () => {
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
+  });
+
+  test("rejects quality regressions introduced while clearing cited issues", () => {
+    const root = mkdtempSync(join(tmpdir(), "scenario-quality-regression-"));
+    const scenarioTestPath = "features/example/tests/example.test.ts";
+    const specFile = "features/example/specs/example.json";
+    try {
+      mkdirSync(join(root, "features/example/specs"), { recursive: true });
+      mkdirSync(join(root, "features/example/tests"), { recursive: true });
+      writeFileSync(
+        join(root, specFile),
+        JSON.stringify({
+          id: "spec.example",
+          cleanup: ["delete fixture"],
+          sourceRefs: ["https://learn.microsoft.com/en-us/azure/aks/"],
+        }),
+      );
+      writeFileSync(join(root, scenarioTestPath), "direct carrier\n");
+      const result = evaluateScenarioQualityInvariant(
+        root,
+        {
+          normalizationScope: "quality",
+          scenarioTestPath,
+          specIds: ["spec.example"],
+          qualityIssueCodes: ["missing-learn-api-grounding"],
+        },
+        {
+          report: {
+            rows: [
+              {
+                specId: "spec.example",
+                specFile,
+                scenarioTestPath,
+                directVitestImplementation: true,
+                scenarioSignals: {
+                  hasCheckModeGuard: true,
+                  hasExecuteFlag: false,
+                  hasMutationGateEnv: true,
+                  hasCleanupSignal: true,
+                },
+              },
+            ],
+          },
+        },
+      );
+      expect(result.accepted).toBe(false);
+      expect(result.remainingIssueCodes).toEqual(["missing-execute-flag"]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("bounds workflow evidence while retaining terminal identifiers", () => {
+    const evidence = Array.from({ length: 40 }, (_, index) =>
+      index === 39 ? "pipeline-run:174841985" : `finding:${index}`,
+    );
+    const bounded = boundedWorkflowEvidence(evidence);
+    expect(bounded).toHaveLength(32);
+    expect(bounded).toContain("finding:0");
+    expect(bounded).toContain("pipeline-run:174841985");
+    expect(bounded).toContain("evidence-entry-count:40");
   });
 
   test("states that green ADO execution cannot waive cited quality defects", () => {

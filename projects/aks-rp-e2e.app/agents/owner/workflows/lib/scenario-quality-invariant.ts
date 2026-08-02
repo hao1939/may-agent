@@ -270,8 +270,7 @@ export function evaluateScenarioQualityInvariant(
   const citedIssueCodes = citedStructuralIssueCodes(input);
   const scenarioTestPath = text(input?.scenarioTestPath);
   const specIds = selectedSpecIds(input);
-  const applies =
-    input?.normalizationScope === "quality" && citedIssueCodes.length > 0;
+  const applies = input?.normalizationScope === "quality";
   const baseEvidence = [
     `quality-invariant-scope:${text(input?.normalizationScope) || "none"}`,
     ...(scenarioTestPath
@@ -343,10 +342,7 @@ export function evaluateScenarioQualityInvariant(
   const currentIssueCodes = [
     ...new Set(currentIssues.map((issue) => issue.code)),
   ].sort();
-  const currentIssueSet = new Set(currentIssueCodes);
-  const remainingIssueCodes = citedIssueCodes.filter((code) =>
-    currentIssueSet.has(code),
-  );
+  const remainingIssueCodes = currentIssueCodes;
   const accepted =
     matchingRows.length > 0 &&
     missingSpecIds.length === 0 &&
@@ -357,7 +353,7 @@ export function evaluateScenarioQualityInvariant(
       : matchingRows.length === 0
         ? `strict quality inventory has no exact rows for ${scenarioTestPath}`
         : remainingIssueCodes.length > 0
-          ? `quality task still has cited structural issues: ${remainingIssueCodes.join(", ")}`
+          ? `quality task still has structural issues: ${remainingIssueCodes.join(", ")}`
           : undefined;
 
   return {
@@ -387,7 +383,7 @@ export function scenarioQualityInvariant(
   input: ScenarioQualityInput | undefined,
 ): ScenarioQualityInvariant {
   const citedIssueCodes = citedStructuralIssueCodes(input);
-  if (input?.normalizationScope !== "quality" || citedIssueCodes.length === 0) {
+  if (input?.normalizationScope !== "quality") {
     return evaluateScenarioQualityInvariant(worktreeDir, input, {});
   }
 
