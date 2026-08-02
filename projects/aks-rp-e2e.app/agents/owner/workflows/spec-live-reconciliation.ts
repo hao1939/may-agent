@@ -30,6 +30,10 @@ import {
   type ScenarioNormalizationInput,
   type SpecTerminalDisposition,
 } from "./lib/scenario-normalization-invariant.js";
+import {
+  scenarioQualityInvariant,
+  type ScenarioQualityInvariant,
+} from "./lib/scenario-quality-invariant.js";
 import { integrateDirectlyIntoDev } from "./lib/direct-dev-integration.js";
 
 export const name = "spec-live-reconciliation";
@@ -49,12 +53,16 @@ export const terminalDispositionSourceRepairInstruction =
   "If exact evidence supports a reviewed terminal posture, keep that judgment in this domain workflow. When the spec still carries a stale ready/pass posture, update its structured status, specState, statusReason, and latest-live-result evidence from the exact facts, add any needed durable source memo, run scoped checks, commit the bounded change, and return decision=terminal-disposition with terminalDisposition={specId,status,specState}. For scenario normalization, changing the spec to blocked/environment-blocked because no unchanged live run is currently truthful is a terminal disposition for this source iteration, even when a separate approval or environment change may reopen product testing later. Keep source-layout normalization separate from product-contract adjudication: when the existing behavior, assertions, and disputed expectation can be preserved unchanged while moving a plain carrier into direct .test.ts or feature lib source, normalize and integrate that source with the truthful current terminal posture, and keep the approval or escalation as independent follow-up. Wait for external authority only when it must decide how the source itself is implemented, not merely how observed product behavior is judged. Do not return committed with liveReady=false merely to keep that truthful normalized source off dev; terminal here means the current source posture is complete and reviewable, not that the feature is abandoned forever. A terminal disposition is neither live readiness nor a wait: omit liveReady and condition entirely. Preserve the resolved live target in statusReason, nextAction, resumeCondition, and every active approval/wait/path identifier; never bind a staging disposition to a stale identifier for another subscription or region. Do not return needs-owner merely because recording the terminal product gap requires this source update. Compact package status, compact-plan eligibility, a sibling compact task, or an arbitrary origin/dev advance is context, not an external prerequisite for this same-spec normalization; do not wait on any of them. An exact external wait must name the actual unavailable capability or authority, its real producer, and the observable fact that lets this same source continue. Use needs-owner only when the evidence cannot support the domain judgment or a real external authority must decide it. The workflow will validate and integrate the committed terminal source without claiming a failed run as a pass.";
 export const acceptedLiveProofSourceInstruction =
   "When this exact run proves the current source passes and hard live-proof validation found no structural gap, return accepted-pass without editing or committing tracked source. A checked-in ready posture, an older accepted run, or missing latestLiveResult fields is not a model defect at this point: the app projects the newly accepted proof after the task receipt is persisted. Do not rewrite the spec, model, generated views, test assertions, sourceVersion, observedAt, statusReason, nextAction, resumeCondition, evidence memo, or equivalent bookkeeping merely to record this successful run. Return committed only when the run exposes an actual behavior or contract defect that requires changed source and a fresh exact run, and cite that defect. When the run reports test_not_implemented or partial live coverage, changing only diagnostics, messages, metadata, or static checks is not a runnable repair: implement the missing live behavior before setting liveReady=true, or return the truthful terminal disposition, exact external wait, or ownership escalation.";
+export const semanticClaimEvidenceInstruction =
+  "Judge every declared claim against the exact observation recorded for that claim, not against its ok flag, assertion name, summary, or provider result. Configuration or enablement proves only configuration or enablement; it does not by itself prove that a runtime component is healthy, an operation was optimized, or another claimed behavior occurred. If assertion evidence says the required observation was unavailable, not performed, assumed from provisioning, or requires a tool that was not used, that claim is not proven and accepted-pass is forbidden. Repair the carrier to observe the behavior directly, narrow or correct an inaccurate claim only when official authority supports that change, or return the exact unavailable capability. Do not convert this judgment into a code-side prose heuristic.";
 export const directVitestCompatibilityInstruction =
   "ADO loads a direct scenario .test.ts carrier through Vitest without guaranteeing the Bun runtime global. Validate a new or repaired direct carrier on the Vitest collection/runtime surface, not only with `bun test`; import test APIs from `vitest`, never `bun:test`; replace runtime uses such as `Bun.spawn`, `Bun.spawnSync`, and `Bun.file` with portable Node APIs; and ensure every imported scenario library guards CLI execution with `import.meta.main` instead of calling `main()` during Vitest collection. A Bun-only passing test is not live-ready evidence. Run the normal `bun run spec <spec-id> --check` path with the task target so the runner wires exact target inputs; if a direct Vitest check also needs target inputs, read them from that exact runner target configuration. Never fabricate subscription, region, API version, Kubernetes version, or VM-size placeholders as check evidence.";
 export const exactStrictInventoryInstruction =
   "The repository-wide strict inventory is expected to exit nonzero while other rows remain. Capture and parse its JSON anyway; this leaf is clear only when its exact legacy path is absent from both guard.remainingSpecReferencedPlainScenarioUnits and guard.remainingRepoPlainScenarioFiles.";
 export const currentAdoSurfaceInstruction =
   "Do not treat uncertainty about a secret or variable on the current ADO execution surface as proof of a blocker. Missing-input evidence from an older backend, different source commit, or different target is context only. When hard admission checks pass and no exact current-surface observation proves the input unavailable, set liveReady=true so this workflow can dispatch the bounded run and collect the current fact. Use a wait or needs-owner only after exact current evidence identifies the unavailable input, its producer, and the observable resume condition.";
+export const scenarioQualityRepairInstruction =
+  "For a quality-normalization task, resolve every cited structural quality issue before requesting ADO. Read the current strict inventory and exact source yourself, repair the same carrier/spec in this task, and keep iterating until the cited issue codes are absent. A green ADO run proves execution only; it does not waive missing official grounding, migration-only scaffolding, target/mutation gates, or fixture/cleanup ownership.";
 const azCli =
   process.env.AZURE_CLI_PATH ||
   (existsSync("/app/.state/.local/bin/az")
@@ -80,6 +88,9 @@ export const workflowContract: WorkflowIoContract = {
       "input.retrySourceBranch",
       "input.retrySourceCommit",
       "input.allowTerminalDisposition",
+      "input.invalidatedRunId",
+      "input.invalidatedClaimIds",
+      "input.invalidatedSourcePaths",
     ],
     description:
       "Use only for a finite spec verification/change lifecycle that may require source changes, exact live verification, and branch integration. target defaults to staging; standaloneBuildId selects an exact standalone RP build. allowTerminalDisposition defaults to true; set it to false when task acceptance requires an exact pass.",
@@ -96,6 +107,9 @@ type TaskPayload = {
   taskId?: unknown;
   generation?: unknown;
   input?: Record<string, unknown>;
+  children?: {
+    completed?: unknown;
+  };
 };
 
 type PipelineRun = {
@@ -118,6 +132,13 @@ type PullRequest = {
   lastMergeSourceCommit?: { commitId?: unknown };
   lastMergeCommit?: { commitId?: unknown };
   url?: unknown;
+};
+
+type SemanticInvalidationContext = {
+  runId: string;
+  claimIds: string[];
+  sourceCommit: string;
+  sourcePaths: string[];
 };
 
 export function completedPullRequestIntegration(input: {
@@ -195,7 +216,7 @@ type RunReceipt = {
   queuedAt: string;
 };
 
-type ScenarioReplayState = {
+export type ScenarioReplayState = {
   version: 1;
   recordedTaskBase: string;
   replayBase: string;
@@ -291,6 +312,7 @@ export function shouldReviewBeforeInitialLiveDispatch(input: {
 export function preparationDecisionProblem(
   decision: AgentDecision,
   allowExistingRecovery: boolean,
+  allowAuthoritativePass = false,
 ): string | null {
   if (["committed", "test-current"].includes(decision.decision)) {
     if (typeof decision.liveReady !== "boolean") {
@@ -304,11 +326,14 @@ export function preparationDecisionProblem(
   if (decision.decision === "terminal-disposition") {
     return null;
   }
-  if (decision.decision === "accepted-pass" && allowExistingRecovery) {
+  if (
+    decision.decision === "accepted-pass" &&
+    (allowExistingRecovery || allowAuthoritativePass)
+  ) {
     return null;
   }
-  return allowExistingRecovery
-    ? "preparation must return committed, test-current, accepted-pass with exact recovery proof, waiting, or needs-owner"
+  return allowExistingRecovery || allowAuthoritativePass
+    ? "preparation must return committed, test-current, accepted-pass from exact recovery/current-source proof, waiting, or needs-owner"
     : "preparation cannot accept a prior run as proof for the rewritten source; return test-current to dispatch it, commit a repair, wait on an exact fact, or identify a genuine ownership boundary";
 }
 
@@ -327,6 +352,16 @@ export function terminalDispositionDecisionProblem(
     return "terminal-disposition is neither live readiness nor a wait; omit liveReady and condition";
   }
   return null;
+}
+
+export function exactPassNeedsOwnerProblem(
+  decision: AgentDecision,
+  allowTerminalDisposition = true,
+): string | null {
+  if (allowTerminalDisposition || decision.decision !== "needs-owner") {
+    return null;
+  }
+  return "needs-owner is invalid because this task requires exact passing live proof; fix internal source gaps in the same workflow or return waiting with one exact observable Condition for a genuine external blocker";
 }
 
 export function shouldReplayReviewedTerminalWriteback(input: {
@@ -386,6 +421,41 @@ export function scenarioNormalizationReplayBase(input: {
     return input.inferredMergeBase;
   }
   return input.recordedTaskBase;
+}
+
+export function scenarioIntegrationReplayBase(
+  input: {
+    workspaceDir: string;
+    recordedTaskBase: string;
+    replayState: ScenarioReplayState | null;
+    sourceCommit: string;
+    targetRef: string;
+  },
+  runGit: GitCommand = git,
+): string {
+  const validAncestor = (candidate: string): boolean =>
+    /^[0-9a-f]{40}$/i.test(candidate) &&
+    runGit(
+      input.workspaceDir,
+      ["merge-base", "--is-ancestor", candidate, input.sourceCommit],
+      true,
+    ).status === 0;
+
+  const persistedReplayBase =
+    input.replayState?.sourceCommit === input.sourceCommit
+      ? input.replayState.replayBase
+      : "";
+  if (validAncestor(persistedReplayBase)) return persistedReplayBase;
+  if (validAncestor(input.recordedTaskBase)) return input.recordedTaskBase;
+
+  const mergeBase = runGit(
+    input.workspaceDir,
+    ["merge-base", input.sourceCommit, input.targetRef],
+    true,
+  );
+  return mergeBase.status === 0 && validAncestor(mergeBase.stdout)
+    ? mergeBase.stdout
+    : "";
 }
 
 export function novelScenarioReplayCommits(cherryOutput: string): string[] {
@@ -597,6 +667,57 @@ function repoRelativePaths(value: unknown): string[] {
         ),
     ),
   ].sort();
+}
+
+function changedPathsBetweenCommits(
+  repoDir: string,
+  baseCommit: string,
+  sourceCommit: string,
+): string[] {
+  if (!baseCommit || !sourceCommit) return [];
+  const result = git(
+    repoDir,
+    ["diff", "--name-only", baseCommit, sourceCommit, "--"],
+    true,
+  );
+  if (result.status !== 0) return [];
+  return repoRelativePaths(result.stdout.split(/\r?\n/));
+}
+
+export function semanticInvalidationSourceState(input: {
+  repoDir: string;
+  invalidatedCommit: string;
+  candidateCommit: string;
+  paths: unknown;
+}): { changed: boolean; paths: string[]; problem?: string } {
+  const paths = repoRelativePaths(input.paths);
+  if (!input.invalidatedCommit || !input.candidateCommit || !paths.length) {
+    return {
+      changed: false,
+      paths,
+      problem:
+        "semantic invalidation requires exact invalidated and candidate commits plus at least one structured source path",
+    };
+  }
+  const result = git(
+    input.repoDir,
+    [
+      "diff",
+      "--quiet",
+      input.invalidatedCommit,
+      input.candidateCommit,
+      "--",
+      ...paths,
+    ],
+    true,
+  );
+  if (result.status === 0) return { changed: false, paths };
+  if (result.status === 1) return { changed: true, paths };
+  return {
+    changed: false,
+    paths,
+    problem: `could not compare semantic-invalidation source paths: ${result.stderr || result.stdout || `git exited ${result.status}`}`,
+  };
 }
 
 export function frozenCandidateContentEquivalent(input: {
@@ -1616,6 +1737,16 @@ export function checkLiveDispatchAdmission(
   return { accepted, evidence };
 }
 
+export function scenarioQualityInvariantProblem(
+  workspaceDir: string,
+  input: ScenarioNormalizationInput | undefined,
+): string | null {
+  const invariant = scenarioQualityInvariant(workspaceDir, input);
+  return invariant.accepted
+    ? null
+    : invariant.problem || "scenario quality invariant is not satisfied";
+}
+
 function git(
   cwd: string,
   args: string[],
@@ -1672,6 +1803,36 @@ function featurePathIdsForSpecAtCommit(
       : [];
   }
   return null;
+}
+
+function specFileForSpecAtCommit(
+  repoDir: string,
+  commit: string,
+  specId: string,
+): string {
+  const candidates = git(
+    repoDir,
+    [
+      "grep",
+      "-l",
+      "-F",
+      specId,
+      commit,
+      "--",
+      ":(glob)features/*/specs/*.json",
+    ],
+    true,
+  );
+  if (candidates.status !== 0 && !candidates.stdout) return "";
+  for (const candidate of candidates.stdout.split(/\r?\n/).filter(Boolean)) {
+    const marker = `${commit}:`;
+    const path = candidate.startsWith(marker)
+      ? candidate.slice(marker.length)
+      : candidate;
+    const spec = jsonObjectAtCommit(repoDir, commit, path);
+    if (spec && nonEmptyString(spec.id) === specId) return path;
+  }
+  return "";
 }
 
 function claimAssertionIdsForSpecAtCommit(
@@ -1789,8 +1950,20 @@ function scenarioReplayAllowedPath(
   path: string,
   featureRoots: string[],
 ): boolean {
-  return featureRoots.some(
-    (root) => path === root || path.startsWith(`${root}/`),
+  if (
+    featureRoots.some(
+      (root) =>
+        path === root || path === `${root}.yaml` || path.startsWith(`${root}/`),
+    )
+  ) {
+    return true;
+  }
+  if (path.startsWith("features/")) {
+    return false;
+  }
+  return (
+    !mergeSafeScenarioAggregatePath(path) &&
+    !proofNeutralScenarioSourcePath(path)
   );
 }
 
@@ -2161,6 +2334,96 @@ export function authoritativeRunReference(
     sourceCommit,
     ...(taskId ? { taskId } : {}),
   };
+}
+
+function proofPathFromEvidence(evidence: unknown, appDir: string): string {
+  if (!Array.isArray(evidence)) return "";
+  const proofEntry = evidence.find(
+    (entry): entry is string =>
+      typeof entry === "string" && entry.startsWith("proof:"),
+  );
+  if (!proofEntry) return "";
+  const proofPath = proofEntry.slice("proof:".length).trim();
+  if (!proofPath) return "";
+  return resolve(appDir, proofPath);
+}
+
+function receiptProofPath(taskId: string, appDir: string): string {
+  if (!taskId) return "";
+  const taskState = readJsonRecord(
+    join(appDir, ".state", "tasks", "state.json"),
+  );
+  const receipt = jsonRecord(jsonRecord(taskState?.receipts)[taskId]);
+  return (
+    proofPathFromEvidence(receipt.evidence, appDir) ||
+    proofPathFromEvidence(jsonRecord(receipt.acceptanceBasis).evidence, appDir)
+  );
+}
+
+function completedChildProofPath(
+  child: Record<string, unknown>,
+  appDir: string,
+): string {
+  const childTaskId =
+    nonEmptyString(child.taskId) ||
+    nonEmptyString(jsonRecord(child.metadata).id);
+  return (
+    proofPathFromEvidence(child.evidence, appDir) ||
+    proofPathFromEvidence(jsonRecord(child.acceptanceBasis).evidence, appDir) ||
+    receiptProofPath(childTaskId, appDir)
+  );
+}
+
+export function inheritedAuthoritativeRunReference(
+  payload: TaskPayload | null,
+  appDir: string,
+  specId: string,
+  target: string,
+): AuthoritativeRunReference | null {
+  if (!payload || !specId || specId.includes(",")) return null;
+  const completed = Array.isArray(payload.children?.completed)
+    ? [...payload.children.completed]
+    : [];
+  for (const entry of completed.reverse()) {
+    const child = jsonRecord(entry);
+    const proofPath = completedChildProofPath(child, appDir);
+    if (!proofPath || !existsSync(proofPath)) continue;
+    const proof = readJsonRecord(proofPath);
+    if (!proof) continue;
+    if (nonEmptyString(proof.verdict) !== "pass") continue;
+    if (nonEmptyString(proof.specId) !== specId) continue;
+    if (nonEmptyString(proof.target) !== target) continue;
+    const runId = nonEmptyString(proof.runId);
+    const sourceBranch = nonEmptyString(proof.sourceBranch).replace(
+      /^refs\/heads\//,
+      "",
+    );
+    const sourceCommit = nonEmptyString(proof.sourceCommit);
+    const taskId =
+      nonEmptyString(child.taskId) ||
+      nonEmptyString(jsonRecord(child.metadata).id) ||
+      nonEmptyString(proof.taskId);
+    if (!runId || !sourceBranch || !sourceCommit) continue;
+    return {
+      runId,
+      sourceBranch,
+      sourceCommit,
+      ...(taskId ? { taskId } : {}),
+    };
+  }
+  return null;
+}
+
+export function resolvedAuthoritativeRunReference(
+  payload: TaskPayload | null,
+  appDir: string,
+  specId: string,
+  target: string,
+): AuthoritativeRunReference | null {
+  return (
+    authoritativeRunReference(payload?.input) ??
+    inheritedAuthoritativeRunReference(payload, appDir, specId, target)
+  );
 }
 
 export type PreparedSourceReconciliation =
@@ -3225,7 +3488,12 @@ export async function reconcileSpecLive(
   const priorVerificationRunId =
     declaredPriorVerificationRunId || retryPipelineRunId;
   const requiredSource = preparedSourceRequirement(payload?.input);
-  const authoritativeReference = authoritativeRunReference(payload?.input);
+  const authoritativeReference = resolvedAuthoritativeRunReference(
+    payload,
+    ctx.appDir ?? "/app/projects/aks-rp-e2e.app",
+    specId,
+    liveTarget,
+  );
   const preparedSourceCommit =
     nonEmptyString(payload?.input?.carrierCommit) ||
     nonEmptyString(payload?.input?.retrySourceCommit) ||
@@ -3274,6 +3542,142 @@ export async function reconcileSpecLive(
 
   try {
     git(repoDir, ["fetch", "origin", targetBranch]);
+    let semanticInvalidation: SemanticInvalidationContext | null = null;
+    const invalidatedRunId = nonEmptyString(
+      normalizationInput?.invalidatedRunId,
+    );
+    const invalidatedClaimIds = Array.isArray(
+      normalizationInput?.invalidatedClaimIds,
+    )
+      ? [
+          ...new Set(
+            normalizationInput.invalidatedClaimIds
+              .map(nonEmptyString)
+              .filter(Boolean),
+          ),
+        ].sort()
+      : [];
+    if (invalidatedRunId || invalidatedClaimIds.length > 0) {
+      if (!invalidatedRunId || invalidatedClaimIds.length === 0) {
+        return ownerResult(
+          ctx,
+          "Semantic proof invalidation requires both invalidatedRunId and invalidatedClaimIds.",
+          [
+            `invalidated-run:${invalidatedRunId || "missing"}`,
+            `invalidated-claims:${invalidatedClaimIds.join(",") || "missing"}`,
+          ],
+        );
+      }
+      const invalidatedRun = await getPipelineRun(repoDir, invalidatedRunId);
+      const invalidatedSourceCommit = nonEmptyString(
+        invalidatedRun?.sourceVersion,
+      );
+      const invalidatedParameters =
+        invalidatedRun?.templateParameters &&
+        typeof invalidatedRun.templateParameters === "object" &&
+        !Array.isArray(invalidatedRun.templateParameters)
+          ? (invalidatedRun.templateParameters as Record<string, unknown>)
+          : {};
+      const invalidatedSpecId = nonEmptyString(invalidatedParameters.specs);
+      const invalidatedTarget = nonEmptyString(invalidatedParameters.target);
+      if (
+        !invalidatedRun ||
+        !invalidatedSourceCommit ||
+        invalidatedSpecId !== specId ||
+        invalidatedTarget !== liveTarget
+      ) {
+        return ownerResult(
+          ctx,
+          `Invalidated run ${invalidatedRunId} does not identify the exact ${specId} ${liveTarget} source.`,
+          [
+            `invalidated-run:${invalidatedRunId}`,
+            `invalidated-run-spec:${invalidatedSpecId || "missing"}`,
+            `invalidated-run-target:${invalidatedTarget || "missing"}`,
+            `invalidated-source-commit:${invalidatedSourceCommit || "missing"}`,
+          ],
+        );
+      }
+      const invalidatedSourceBranch = nonEmptyString(
+        invalidatedRun.sourceBranch,
+      ).replace(/^refs\/heads\//, "");
+      if (
+        git(
+          repoDir,
+          ["cat-file", "-e", `${invalidatedSourceCommit}^{commit}`],
+          true,
+        ).status !== 0 &&
+        invalidatedSourceBranch
+      ) {
+        git(repoDir, ["fetch", "origin", invalidatedSourceBranch], true);
+      }
+      const explicitInvalidatedSourcePaths = repoRelativePaths(
+        normalizationInput?.invalidatedSourcePaths,
+      );
+      const invalidatedSourcePaths = explicitInvalidatedSourcePaths.length
+        ? explicitInvalidatedSourcePaths
+        : repoRelativePaths([
+            normalizationInput?.scenarioTestPath,
+            normalizationInput?.specPath,
+            ...selectedSpecIds.map((selectedSpecId) =>
+              specFileForSpecAtCommit(
+                repoDir,
+                invalidatedSourceCommit,
+                selectedSpecId,
+              ),
+            ),
+          ]);
+      if (!invalidatedSourcePaths.length) {
+        return ownerResult(
+          ctx,
+          "Semantic proof invalidation could not resolve an exact spec or carrier source path.",
+          [
+            `invalidated-run:${invalidatedRunId}`,
+            `invalidated-source-commit:${invalidatedSourceCommit}`,
+          ],
+        );
+      }
+      semanticInvalidation = {
+        runId: invalidatedRunId,
+        claimIds: invalidatedClaimIds,
+        sourceCommit: invalidatedSourceCommit,
+        sourcePaths: invalidatedSourcePaths,
+      };
+    }
+    const semanticInvalidationProblem = (
+      candidateCommit: string,
+    ): string | null => {
+      if (!semanticInvalidation) return null;
+      const state = semanticInvalidationSourceState({
+        repoDir,
+        invalidatedCommit: semanticInvalidation.sourceCommit,
+        candidateCommit,
+        paths: semanticInvalidation.sourcePaths,
+      });
+      if (state.problem) return state.problem;
+      return state.changed
+        ? null
+        : `semantic proof from run ${semanticInvalidation.runId} was explicitly invalidated for claims ${semanticInvalidation.claimIds.join(", ")}; change at least one structured source path before live dispatch: ${state.paths.join(", ")}`;
+    };
+    const semanticInvalidationPrompt = semanticInvalidation
+      ? [
+          `Run ${semanticInvalidation.runId} is invalidated semantic evidence for claims ${semanticInvalidation.claimIds.join(", ")}.`,
+          `Its exact source commit is ${semanticInvalidation.sourceCommit}. Relevant structured source paths: ${semanticInvalidation.sourcePaths.join(", ")}.`,
+          "Inspect the current source and repair or re-evaluate the product contract. The workflow will not dispatch identical relevant source again. Do not treat the earlier green provider result as acceptance evidence.",
+        ]
+      : [];
+    const semanticInvalidationDecisionProblem = (
+      decision: AgentDecision,
+    ): string | null => {
+      if (
+        !["committed", "test-current"].includes(decision.decision) ||
+        decision.liveReady !== true
+      ) {
+        return null;
+      }
+      return semanticInvalidationProblem(
+        git(workspaceDir, ["rev-parse", "HEAD"]).stdout,
+      );
+    };
     let priorVerificationSummary = "";
     let authoritativeRetryRun: PipelineRun | null = null;
     if (priorVerificationRunId) {
@@ -3506,6 +3910,8 @@ export async function reconcileSpecLive(
           standaloneBuildId,
         })
       : null;
+    const currentQualityInvariant = (): ScenarioQualityInvariant =>
+      scenarioQualityInvariant(workspaceDir, normalizationInput);
     if (
       priorProof &&
       priorProof.proof.targetRef === targetRef &&
@@ -3518,7 +3924,8 @@ export async function reconcileSpecLive(
           targetRef,
         ],
         true,
-      ).status === 0
+      ).status === 0 &&
+      currentQualityInvariant().accepted
     ) {
       const proof = priorProof.proof;
       const summary = `${specId} retains exact live proof from run ${proof.runId}; PR ${proof.pullRequestId} integrated it as ${proof.mergedCommit} in ${targetBranch}.`;
@@ -3549,8 +3956,20 @@ export async function reconcileSpecLive(
 
       for (let attempt = 1; attempt <= 3; attempt += 1) {
         const admission = checkLiveDispatchAdmission(workspaceDir, specId);
-        accumulatedEvidence.push(...admission.evidence);
-        if (admission.accepted) {
+        const semanticProblem = semanticInvalidationProblem(currentCommit);
+        const qualityInvariant = currentQualityInvariant();
+        const qualityProblem = qualityInvariant.accepted
+          ? null
+          : qualityInvariant.problem ||
+            "scenario quality invariant is not satisfied";
+        accumulatedEvidence.push(
+          ...admission.evidence,
+          ...qualityInvariant.evidence,
+          ...(semanticProblem
+            ? [`semantic-invalidation-dispatch-refusal:${semanticProblem}`]
+            : []),
+        );
+        if (admission.accepted && !semanticProblem && !qualityProblem) {
           return {
             state: "ready",
             sourceCommit: currentCommit,
@@ -3564,8 +3983,10 @@ export async function reconcileSpecLive(
           [
             `ADO dispatch is refused for ${specId} at ${currentCommit}.`,
             `Dispatch context: ${reason}.`,
-            "The workflow ran the same private-source and live-admission checks used by the pipeline in the exact task worktree. Inspect the current source and the raw findings below; do not trust this summary alone.",
-            ...admission.evidence,
+            ...semanticInvalidationPrompt,
+            scenarioQualityRepairInstruction,
+            "The workflow evaluated the same private-source and live-admission checks used by the pipeline, the task's explicitly cited structural quality issues, and any semantic-invalidation source boundary in the exact task worktree. Inspect the current source and the raw findings below; do not trust this summary alone.",
+            ...accumulatedEvidence,
             "Continue this same task. For a carrier/spec defect, make the smallest repair, run the same checks plus scoped tests, commit it, leave the worktree clean, and return decision=committed.",
             directVitestCompatibilityInstruction,
             "Unsupported product behavior is not automatically nonlive. If the public API exposes an observable rejection or no-op contract, implement a truthful live negative test for that behavior.",
@@ -3577,6 +3998,17 @@ export async function reconcileSpecLive(
           {
             scenarioNormalization: Boolean(normalizationInput),
             continueDomainWorkOnValidation: true,
+            validateDecision: (candidate) =>
+              exactPassNeedsOwnerProblem(candidate, allowTerminalDisposition) ??
+              (candidate.decision === "committed"
+                ? (scenarioQualityInvariantProblem(
+                    workspaceDir,
+                    normalizationInput,
+                  ) ??
+                  semanticInvalidationProblem(
+                    git(workspaceDir, ["rev-parse", "HEAD"]).stdout,
+                  ))
+                : null),
           },
         );
         if (decision.decision === "waiting" && decision.condition) {
@@ -4618,7 +5050,11 @@ export async function reconcileSpecLive(
           "Task:",
           ctx.task,
         ].join("\n\n"),
-        { scenarioNormalization: true },
+        {
+          scenarioNormalization: true,
+          validateDecision: (candidate) =>
+            exactPassNeedsOwnerProblem(candidate, allowTerminalDisposition),
+        },
       );
       if (decision.decision === "waiting" && decision.condition) {
         return waitingResult(
@@ -4867,9 +5303,11 @@ export async function reconcileSpecLive(
         sourceDiffersFromBase
           ? `Current task source ${sourceCommit} already differs from integration authority after an earlier repair. Treat that commit as evidence to review, not automatic permission to dispatch.`
           : `Current task source ${sourceCommit} still matches integration authority.`,
+        ...semanticInvalidationPrompt,
         "Treat the appended Trigger Event as hot evidence, not merely as a wake. If it reports an exact passing pipeline.spec.observed for this task branch at a different source commit, inspect that tested commit against current HEAD and current integration authority. Restore the exact tested commit only when doing so preserves every required same-task change; otherwise keep the newer source and require a fresh exact run. Equivalent file content alone is not exact source proof.",
         "Inspect the original task, current spec status, model, direct carrier, nearby good/bad examples, and prior evidence. Decide whether this exact source is genuinely ready for live execution.",
         "Before setting liveReady=true, compare every claim assertion ID declared by the exact spec with the IDs the execute-mode carrier will emit. A local check-mode pass is insufficient when it does not exercise that mapping; repair the mapping and add a scoped assertion-contract check when the mapping is programmatic.",
+        scenarioQualityRepairInstruction,
         "If a bounded repo change is needed, make it, run scoped local checks, commit it, leave the worktree clean, and return decision=committed.",
         directVitestCompatibilityInstruction,
         currentAdoSurfaceInstruction,
@@ -4902,7 +5340,14 @@ export async function reconcileSpecLive(
           terminalDispositionDecisionProblem(
             candidate,
             allowTerminalDisposition,
-          ),
+          ) ??
+          exactPassNeedsOwnerProblem(candidate, allowTerminalDisposition) ??
+          (["committed", "test-current", "accepted-pass"].includes(
+            candidate.decision,
+          )
+            ? scenarioQualityInvariantProblem(workspaceDir, normalizationInput)
+            : null) ??
+          semanticInvalidationDecisionProblem(candidate),
       });
       if (decision.decision === "waiting" && decision.condition) {
         return waitingResult(
@@ -4950,6 +5395,16 @@ export async function reconcileSpecLive(
                 candidate,
                 allowTerminalDisposition,
               ) ??
+              exactPassNeedsOwnerProblem(candidate, allowTerminalDisposition) ??
+              (["committed", "test-current", "accepted-pass"].includes(
+                candidate.decision,
+              )
+                ? scenarioQualityInvariantProblem(
+                    workspaceDir,
+                    normalizationInput,
+                  )
+                : null) ??
+              semanticInvalidationDecisionProblem(candidate) ??
               preparationHeadProblem({
                 decision: candidate,
                 before: correctionBaseline,
@@ -5258,6 +5713,7 @@ export async function reconcileSpecLive(
         [
           `Review terminal Azure DevOps run ${runId} for ${specId}.`,
           `The exact source is ${proofSourceBranch}@${sourceCommit}; provider result is ${runResult}.`,
+          ...semanticInvalidationPrompt,
           `The exact live target is ${liveTarget}${standaloneBuildId ? ` with standalone_build_id=${standaloneBuildId}` : ""}.`,
           exactLiveTargetInstruction(liveTarget, standaloneBuildId),
           `Workflow code collected authenticated run evidence in ${runContextDir}. Run metadata: ${collectedRunEvidence.runPath}. Artifact list: ${collectedRunEvidence.artifactListPath}. Downloaded artifact directories: ${collectedRunEvidence.artifactPaths.join(", ") || "none"}. Collection errors: ${collectedRunEvidence.errors.join(" | ") || "none"}.`,
@@ -5266,6 +5722,8 @@ export async function reconcileSpecLive(
             : `Hard live-proof validation findings to resolve or explain: ${preIntegrationVerification.summary}`,
           `Use ${runContextDir} exclusively for diagnosis for this run. Do not reuse task-root or earlier-run evidence, do not scrape Azure DevOps web pages, and do not write runtime artifacts into tracked source paths.`,
           "Inspect run metadata, plan inputs, per-spec result, live resource identity, assertions, and cleanup proof. The aggregate provider result alone is not a spec verdict.",
+          semanticClaimEvidenceInstruction,
+          scenarioQualityRepairInstruction,
           ...(expectedVitestTestCountRaw !== undefined
             ? [
                 `This task declares the hard generated-suite invariant expectedVitestTestCount=${expectedVitestTestCount}. Inspect the exact downloaded vitest.json; accepted-pass requires numTotalTests to equal that value.`,
@@ -5299,9 +5757,19 @@ export async function reconcileSpecLive(
               candidate,
               allowTerminalDisposition,
             ) ??
+            exactPassNeedsOwnerProblem(candidate, allowTerminalDisposition) ??
+            (["accepted-pass", "committed"].includes(candidate.decision)
+              ? scenarioQualityInvariantProblem(
+                  workspaceDir,
+                  normalizationInput,
+                )
+              : null) ??
             (candidate.decision === "accepted-pass" &&
             !preIntegrationVerification.accepted
               ? preIntegrationVerification.summary
+              : null) ??
+            (candidate.decision === "accepted-pass"
+              ? semanticInvalidationProblem(sourceCommit)
               : null),
         },
       );
@@ -5452,10 +5920,9 @@ export async function reconcileSpecLive(
     let preIntegrationInvariantSatisfied = true;
     if (normalizationInput?.loopId === "scenario-normalization") {
       try {
-        preIntegrationInvariantSatisfied = !scenarioNormalizationInvariant(
-          workspaceDir,
-          normalizationInput,
-        ).stillListed;
+        preIntegrationInvariantSatisfied =
+          !scenarioNormalizationInvariant(workspaceDir, normalizationInput)
+            .stillListed && currentQualityInvariant().accepted;
       } catch {
         preIntegrationInvariantSatisfied = false;
       }
@@ -5512,9 +5979,38 @@ export async function reconcileSpecLive(
             : []
           ).filter((value): value is string => typeof value === "string")
         : [];
-      const scenarioReplayBase = nonEmptyString(
-        normalizationInput?.originDevCommit,
-      );
+      const scenarioReplayBase = normalizationInput
+        ? scenarioIntegrationReplayBase({
+            workspaceDir,
+            recordedTaskBase: nonEmptyString(
+              normalizationInput.originDevCommit,
+            ),
+            replayState: readScenarioReplayState(contextDir),
+            sourceCommit,
+            targetRef,
+          })
+        : "";
+      const scenarioReceiptPaths = normalizationInput
+        ? [
+            ...new Set([
+              ...changedPathsBetweenCommits(
+                workspaceDir,
+                scenarioReplayBase,
+                sourceCommit,
+              ),
+              ...scenarioReplayAnchors,
+              ...selectedSpecIds
+                .map((selectedSpecId) =>
+                  specFileForSpecAtCommit(
+                    workspaceDir,
+                    sourceCommit,
+                    selectedSpecId,
+                  ),
+                )
+                .filter(Boolean),
+            ]),
+          ].sort()
+        : [];
 
       for (let attempt = 1; attempt <= 3; attempt += 1) {
         git(repoDir, ["fetch", "origin", targetBranch]);
@@ -5920,6 +6416,12 @@ export async function reconcileSpecLive(
         existingPrId && nonEmptyString(existingPr?.status) === "active"
           ? await abandonPullRequest(repoDir, existingPrId)
           : false;
+      if (
+        proofIntegratedPaths.length === 0 &&
+        scenarioReceiptPaths.length > 0
+      ) {
+        proofIntegratedPaths = scenarioReceiptPaths;
+      }
       proof = {
         ...proof,
         targetRef,
@@ -6572,7 +7074,9 @@ export async function verify(
         input,
       );
       normalizationInvariantSatisfied = Boolean(
-        invariant && !invariant.stillListed,
+        invariant &&
+        !invariant.stillListed &&
+        scenarioQualityInvariant(context.workspaceDir, input).accepted,
       );
     } catch {
       normalizationInvariantSatisfied = false;

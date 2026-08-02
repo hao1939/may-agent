@@ -15,6 +15,7 @@ import {
   askAgent,
   agentConditionProblem,
   authoritativeRunReference,
+  inheritedAuthoritativeRunReference,
   artifactObservedClaimIds,
   artifactProvesCleanup,
   artifactProvesDeclaredClaims,
@@ -28,10 +29,12 @@ import {
   currentAdoSurfaceInstruction,
   decisionCorrectionPrompt,
   directVitestCompatibilityInstruction,
+  exactPassNeedsOwnerProblem,
   directIntegrationAction,
   exactStrictInventoryInstruction,
   exactLiveTargetInstruction,
   frozenCandidateContentEquivalent,
+  semanticInvalidationSourceState,
   discoverTaskRuns,
   proofProtectedScenarioPaths,
   targetAdvanceProofDecisionProblem,
@@ -64,8 +67,12 @@ import {
   resolveLiveExecutionTarget,
   runMatchesPriorVerification,
   scenarioNormalizationReplayBase,
+  scenarioIntegrationReplayBase,
+  scenarioQualityInvariantProblem,
   novelScenarioReplayCommits,
   scenarioNormalizationReplayRequired,
+  semanticClaimEvidenceInstruction,
+  scenarioQualityRepairInstruction,
   shouldFastForwardIntegratedSource,
   shouldReviewBeforeInitialLiveDispatch,
   scenarioNormalizationWaitProblem,
@@ -86,8 +93,111 @@ import {
   specTerminalDispositionCheck,
   specTerminalTargetCheck,
 } from "./lib/scenario-normalization-invariant.js";
+import {
+  evaluateScenarioQualityInvariant,
+  type InventoryRowRecord,
+} from "./lib/scenario-quality-invariant.js";
 
 describe("spec-live-reconciliation workflow", () => {
+  test("keeps cited quality issues ahead of ADO dispatch and integration", () => {
+    const root = mkdtempSync(join(tmpdir(), "scenario-quality-invariant-"));
+    const scenarioTestPath =
+      "features/ccp-agent/tests/ccp-daily-master.test.ts";
+    const specFile = "features/ccp-agent/specs/ccp-daily-master.json";
+    const specId = "spec.ccp-autoupgrader.pipeline-daily-master";
+    const row: InventoryRowRecord = {
+      specId,
+      specFile,
+      featureId: "ccp-agent",
+      scenarioTestPath,
+      directVitestImplementation: true,
+      scenarioSignals: {
+        hasCheckModeGuard: true,
+        hasExecuteFlag: true,
+        hasMutationGateEnv: true,
+        hasCleanupSignal: true,
+        hasHardCodedSubscriptionDefault: false,
+      },
+    };
+    const input = {
+      normalizationScope: "quality",
+      scenarioTestPath,
+      specIds: [specId],
+      qualityIssueCodes: [
+        "migration-only-scaffolding",
+        "missing-learn-api-grounding",
+        "current-source-staging-live-proof",
+      ],
+    };
+    const evaluate = () =>
+      evaluateScenarioQualityInvariant(root, input, {
+        report: { rows: [row] },
+      });
+
+    try {
+      mkdirSync(join(root, "features/ccp-agent/specs"), { recursive: true });
+      mkdirSync(join(root, "features/ccp-agent/tests"), { recursive: true });
+      writeFileSync(
+        join(root, specFile),
+        JSON.stringify({ id: specId, cleanup: ["delete fixture"] }),
+      );
+      writeFileSync(
+        join(root, scenarioTestPath),
+        'execFile("bun", ["features/ccp-agent/tests/ccp-daily-master.ts", "--execute"]);\n',
+      );
+
+      const unresolved = evaluate();
+      expect(unresolved.accepted).toBe(false);
+      expect(unresolved.remainingIssueCodes).toEqual([
+        "migration-only-scaffolding",
+        "missing-learn-api-grounding",
+      ]);
+
+      writeFileSync(
+        join(root, specFile),
+        JSON.stringify({
+          id: specId,
+          cleanup: ["delete fixture"],
+          sourceRefs: [
+            "https://learn.microsoft.com/en-us/azure/aks/upgrade-cluster",
+          ],
+        }),
+      );
+      const partial = evaluate();
+      expect(partial.accepted).toBe(false);
+      expect(partial.remainingIssueCodes).toEqual([
+        "migration-only-scaffolding",
+      ]);
+
+      writeFileSync(
+        join(root, scenarioTestPath),
+        'import { test } from "vitest";\ntest("direct", () => {});\n',
+      );
+      const repaired = evaluate();
+      expect(repaired.accepted).toBe(true);
+      expect(repaired.remainingIssueCodes).toEqual([]);
+      expect(repaired.citedIssueCodes).not.toContain(
+        "current-source-staging-live-proof",
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("states that green ADO execution cannot waive cited quality defects", () => {
+    expect(scenarioQualityRepairInstruction).toContain(
+      "resolve every cited structural quality issue before requesting ADO",
+    );
+    expect(scenarioQualityRepairInstruction).toContain(
+      "A green ADO run proves execution only",
+    );
+    expect(
+      scenarioQualityInvariantProblem("/missing", {
+        normalizationScope: "layout",
+      }),
+    ).toBeNull();
+  });
+
   test("queues an optional validated compact plan with the exact spec filter", () => {
     expect(
       compactPlanPipelineParameters(
@@ -157,6 +267,24 @@ describe("spec-live-reconciliation workflow", () => {
     );
     expect(acceptedLiveProofSourceInstruction).toContain(
       "implement the missing live behavior before setting liveReady=true",
+    );
+  });
+
+  test("requires semantic observations behind structurally passing claims", () => {
+    expect(semanticClaimEvidenceInstruction).toContain(
+      "not against its ok flag",
+    );
+    expect(semanticClaimEvidenceInstruction).toContain(
+      "Configuration or enablement proves only configuration or enablement",
+    );
+    expect(semanticClaimEvidenceInstruction).toContain(
+      "required observation was unavailable",
+    );
+    expect(semanticClaimEvidenceInstruction).toContain(
+      "accepted-pass is forbidden",
+    );
+    expect(semanticClaimEvidenceInstruction).toContain(
+      "Do not convert this judgment into a code-side prose heuristic",
     );
   });
 
@@ -1088,6 +1216,60 @@ describe("spec-live-reconciliation workflow", () => {
     expect(prompts[2]).toContain("workflow owns task-branch publication");
   });
 
+  test("keeps an Airlock-shaped exact-pass source gap inside workflow repair instead of needs-owner", async () => {
+    const prompts: string[] = [];
+    const decisions = [
+      {
+        status: "done",
+        structuredResult: {
+          decision: "needs-owner",
+          summary:
+            "execute mode still does not implement the declared compliance/status claims",
+          evidence: [
+            "execute-mode-remains-nonlive-reviewed-exception",
+            "No Azure resource changes were attempted.",
+          ],
+        },
+      },
+      {
+        status: "done",
+        structuredResult: {
+          decision: "committed",
+          summary:
+            "implemented the missing execute-mode compliance/status claims",
+          evidence: ["source-commit:def"],
+          liveReady: true,
+        },
+      },
+    ];
+    const ctx = {
+      agent: "aks-explorer",
+      runAgent: async (_agent: string, prompt: string) => {
+        prompts.push(prompt);
+        return decisions.shift();
+      },
+    };
+
+    const result = await askAgent(
+      ctx as never,
+      "Repair spec.airlock.compliance-check from the current task worktree.",
+      {
+        scenarioNormalization: true,
+        continueDomainWorkOnValidation: true,
+        retryDelayMs: 0,
+        validateDecision: (candidate) =>
+          exactPassNeedsOwnerProblem(candidate, false),
+      },
+    );
+
+    expect(result.decision).toBe("committed");
+    expect(prompts).toHaveLength(2);
+    expect(prompts[1]).toContain("requires exact passing live proof");
+    expect(prompts[1]).toContain(
+      "execute mode still does not implement the declared compliance/status claims",
+    );
+  });
+
   test("isolates terminal evidence by exact pipeline run", () => {
     const contextDir = "/tmp/task-generation";
     expect(terminalRunContextDir(contextDir, "173647479")).toBe(
@@ -1360,6 +1542,19 @@ describe("spec-live-reconciliation workflow", () => {
     expect(
       terminalDispositionDecisionProblem({ ...decision, liveReady: false }),
     ).toContain("neither live readiness nor a wait");
+  });
+
+  test("rejects needs-owner for exact-pass work unless the agent returns an exact wait instead", () => {
+    const decision = {
+      decision: "needs-owner" as const,
+      summary:
+        "execute mode still does not implement the declared compliance/status claims",
+      evidence: ["execute-mode-remains-nonlive-reviewed-exception"],
+    };
+    expect(exactPassNeedsOwnerProblem(decision, false)).toContain(
+      "requires exact passing live proof",
+    );
+    expect(exactPassNeedsOwnerProblem(decision, true)).toBeNull();
   });
 
   test("keeps terminal lineage replay source-only", () => {
@@ -2000,6 +2195,67 @@ describe("spec-live-reconciliation workflow", () => {
     );
   });
 
+  test("inherits an authoritative pass from the completed child receipt when payload evidence is absent", () => {
+    const appDir = mkdtempSync(join(tmpdir(), "spec-live-child-proof-"));
+    try {
+      const proofPath = join(appDir, "proof.json");
+      mkdirSync(join(appDir, ".state", "tasks"), { recursive: true });
+      writeFileSync(
+        proofPath,
+        JSON.stringify({
+          version: 1,
+          taskId:
+            "domain/recover-spec-traffic-api-proxy-cert-rotation-post-rotation-proxy-500-20260801",
+          specId: "spec.traffic-api-proxy.cert-rotation",
+          target: "staging",
+          sourceBranch:
+            "refs/heads/task/domain-recover-spec-traffic-api-proxy-cert-rotation-post-rotation-proxy--4af72e8065",
+          sourceCommit: "138491461614979b9eaa95394ddacb2630ded2a8",
+          runId: "174776400",
+          verdict: "pass",
+        }),
+      );
+      writeFileSync(
+        join(appDir, ".state", "tasks", "state.json"),
+        JSON.stringify({
+          receipts: {
+            "domain/recover-spec-traffic-api-proxy-cert-rotation-post-rotation-proxy-500-20260801":
+              {
+                evidence: [`proof:${proofPath}`],
+              },
+          },
+        }),
+      );
+
+      expect(
+        inheritedAuthoritativeRunReference(
+          {
+            children: {
+              completed: [
+                {
+                  taskId:
+                    "domain/recover-spec-traffic-api-proxy-cert-rotation-post-rotation-proxy-500-20260801",
+                },
+              ],
+            },
+          } as any,
+          appDir,
+          "spec.traffic-api-proxy.cert-rotation",
+          "staging",
+        ),
+      ).toEqual({
+        runId: "174776400",
+        sourceBranch:
+          "task/domain-recover-spec-traffic-api-proxy-cert-rotation-post-rotation-proxy--4af72e8065",
+        sourceCommit: "138491461614979b9eaa95394ddacb2630ded2a8",
+        taskId:
+          "domain/recover-spec-traffic-api-proxy-cert-rotation-post-rotation-proxy-500-20260801",
+      });
+    } finally {
+      rmSync(appDir, { recursive: true, force: true });
+    }
+  });
+
   test("finds same-task exact runs across branch lineages but preserves redispatch on material differences", () => {
     const exact = {
       id: 42,
@@ -2381,6 +2637,65 @@ describe("spec-live-reconciliation workflow", () => {
     ).toBe("checkpointed-base");
   });
 
+  test("integrates a replacement task from its persisted dispatch replay base", () => {
+    const calls: string[][] = [];
+    const persistedBase = "1".repeat(40);
+    const inferredBase = "2".repeat(40);
+    const sourceCommit = "3".repeat(40);
+    const result = scenarioIntegrationReplayBase(
+      {
+        workspaceDir: "/repo",
+        recordedTaskBase: "",
+        replayState: {
+          version: 1,
+          recordedTaskBase: "",
+          replayBase: persistedBase,
+          sourceCommit,
+        },
+        sourceCommit,
+        targetRef: "origin/dev",
+      },
+      (_cwd, args) => {
+        calls.push(args);
+        if (args[0] === "merge-base" && args[1] === "--is-ancestor") {
+          return { status: 0, stdout: "", stderr: "" };
+        }
+        return { status: 0, stdout: inferredBase, stderr: "" };
+      },
+    );
+
+    expect(result).toBe(persistedBase);
+    expect(calls).toEqual([
+      ["merge-base", "--is-ancestor", persistedBase, sourceCommit],
+    ]);
+  });
+
+  test("recovers a missing replacement-task baseline from the Git merge base", () => {
+    const inferredBase = "2".repeat(40);
+    const sourceCommit = "3".repeat(40);
+    const result = scenarioIntegrationReplayBase(
+      {
+        workspaceDir: "/repo",
+        recordedTaskBase: "",
+        replayState: null,
+        sourceCommit,
+        targetRef: "origin/dev",
+      },
+      (_cwd, args) => {
+        if (args[0] === "merge-base" && args[1] === "--is-ancestor") {
+          return {
+            status: args[2] === inferredBase ? 0 : 1,
+            stdout: "",
+            stderr: "",
+          };
+        }
+        return { status: 0, stdout: inferredBase, stderr: "" };
+      },
+    );
+
+    expect(result).toBe(inferredBase);
+  });
+
   test("replays only patches not already integrated into the current target", () => {
     expect(
       novelScenarioReplayCommits(
@@ -2550,20 +2865,98 @@ describe("spec-live-reconciliation workflow", () => {
     }
   });
 
-  test("replays only the bounded scenario patch after a squash target rewrite", () => {
+  test("requires a relevant source change after semantic proof invalidation", () => {
+    const repoDir = mkdtempSync(join(tmpdir(), "semantic-invalidation-"));
+    try {
+      execFileSync("git", ["init"], { cwd: repoDir });
+      execFileSync("git", ["config", "user.email", "test@example.com"], {
+        cwd: repoDir,
+      });
+      execFileSync("git", ["config", "user.name", "Test User"], {
+        cwd: repoDir,
+      });
+      mkdirSync(join(repoDir, "features", "feature-a", "tests"), {
+        recursive: true,
+      });
+      const carrierPath = "features/feature-a/tests/case-a.test.ts";
+      writeFileSync(
+        join(repoDir, carrierPath),
+        "export const proof = 'old';\n",
+      );
+      execFileSync("git", ["add", "."], { cwd: repoDir });
+      execFileSync("git", ["commit", "-m", "invalidated source"], {
+        cwd: repoDir,
+      });
+      const invalidatedCommit = execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: repoDir,
+        encoding: "utf8",
+      }).trim();
+
+      writeFileSync(join(repoDir, "README.md"), "unrelated\n");
+      execFileSync("git", ["add", "."], { cwd: repoDir });
+      execFileSync("git", ["commit", "-m", "unrelated change"], {
+        cwd: repoDir,
+      });
+      const unrelatedCommit = execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: repoDir,
+        encoding: "utf8",
+      }).trim();
+      expect(
+        semanticInvalidationSourceState({
+          repoDir,
+          invalidatedCommit,
+          candidateCommit: unrelatedCommit,
+          paths: [carrierPath],
+        }),
+      ).toEqual({ changed: false, paths: [carrierPath] });
+
+      writeFileSync(
+        join(repoDir, carrierPath),
+        "export const proof = 'new';\n",
+      );
+      execFileSync("git", ["add", "."], { cwd: repoDir });
+      execFileSync("git", ["commit", "-m", "repair semantic proof"], {
+        cwd: repoDir,
+      });
+      const repairedCommit = execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: repoDir,
+        encoding: "utf8",
+      }).trim();
+      expect(
+        semanticInvalidationSourceState({
+          repoDir,
+          invalidatedCommit,
+          candidateCommit: repairedCommit,
+          paths: [carrierPath],
+        }),
+      ).toEqual({ changed: true, paths: [carrierPath] });
+    } finally {
+      rmSync(repoDir, { recursive: true, force: true });
+    }
+  });
+
+  test("replays the bounded scenario patch plus shared runner support after a squash target rewrite", () => {
     const root = mkdtempSync(join(tmpdir(), "scenario-bounded-replay-"));
     const run = (args: string[]) =>
       execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
     const carrier = "features/network-cni/tests/example.ts";
     const adapter = "features/network-cni/tests/example.test.ts";
+    const featurePacket = "features/network-cni.yaml";
+    const sharedRunner = "runner/plan-run.ts";
 
     try {
       run(["init"]);
       run(["config", "user.email", "test@example.com"]);
       run(["config", "user.name", "Test"]);
       mkdirSync(join(root, "features/network-cni/tests"), { recursive: true });
+      mkdirSync(join(root, "runner"), { recursive: true });
+      writeFileSync(join(root, featurePacket), "status: draft\n");
       writeFileSync(join(root, carrier), "legacy carrier\n");
       writeFileSync(join(root, adapter), "import './example';\n");
+      writeFileSync(
+        join(root, sharedRunner),
+        "export const names = 'legacy';\n",
+      );
       run(["add", "."]);
       run(["commit", "-m", "base"]);
       const baseline = run(["rev-parse", "HEAD"]);
@@ -2575,7 +2968,12 @@ describe("spec-live-reconciliation workflow", () => {
       run(["commit", "-m", "unrelated adopted dev work"]);
       run(["checkout", "-b", "task/example"]);
       rmSync(join(root, carrier));
+      writeFileSync(join(root, featurePacket), "status: grounded\n");
       writeFileSync(join(root, adapter), "test('direct', () => {});\n");
+      writeFileSync(
+        join(root, sharedRunner),
+        "export const names = 'shared-proof';\n",
+      );
       writeFileSync(
         join(root, "features/other/noise.ts"),
         "mixed task noise\n",
@@ -2605,9 +3003,15 @@ describe("spec-live-reconciliation workflow", () => {
       if (result.state !== "replayed") throw new Error(JSON.stringify(result));
       expect(result.state).toBe("replayed");
       expect(result.selectedCommits).toHaveLength(1);
-      expect(result.changedPaths).toEqual([carrier, adapter].sort());
+      expect(result.changedPaths).toEqual(
+        [carrier, adapter, featurePacket, sharedRunner].sort(),
+      );
       expect(result.protectedPathsEquivalent).toBe(true);
       expect(run(["show", "HEAD:features/other/adopted.ts"])).toBe("adopted");
+      expect(run(["show", `HEAD:${featurePacket}`])).toBe("status: grounded");
+      expect(run(["show", `HEAD:${sharedRunner}`])).toBe(
+        "export const names = 'shared-proof';",
+      );
       expect(
         spawnSync("git", ["cat-file", "-e", "HEAD:features/other/noise.ts"], {
           cwd: root,
