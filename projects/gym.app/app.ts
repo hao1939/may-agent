@@ -222,9 +222,11 @@ export function resolveGymTask(
         outcome:
           "Keep Gym and May behavior aligned with their accepted design, and propose the smallest evidence-backed repair when they drift.",
         acceptance: [
-          "Compare critical accepted design promises with the relevant implementation and newest runtime evidence.",
+          "Check the newest improve/may task, result, relevant trigger, and run evidence as well as the implementation; source code and tests alone cannot prove alignment.",
+          "Explicitly verify wake delivery, one-campaign state, fresh fingerprint-scoped evidence after evaluator changes, the correct consumer benchmark and cases, exact approval boundaries, and continuation or truthful exhaustion.",
+          "Mark each promise aligned, drifted, or inconclusive with exact evidence; never turn missing live proof into an aligned result.",
           "An aligned review records a quiet evidence-backed no-op; speculation is discarded.",
-          "A real gap identifies the root cause, impact, smallest repair, proof needed, and any exact human approval boundary.",
+          "For at most three real gaps, identify the root cause, impact, smallest repair, proof needed, and any exact human approval boundary.",
           "The review never changes benchmark truth or production May without exact artifact approval.",
         ],
         mode: "maintain",

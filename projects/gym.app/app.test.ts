@@ -151,6 +151,11 @@ describe("gym app manifest", () => {
       mode: "maintain",
       owner: "gym",
       priority: "P2",
+      acceptance: expect.arrayContaining([
+        expect.stringContaining("source code and tests alone cannot prove"),
+        expect.stringContaining("fresh fingerprint-scoped evidence"),
+        expect.stringContaining("never turn missing live proof"),
+      ]),
     });
     expect(first).not.toHaveProperty("workflow");
   });

@@ -67,11 +67,15 @@ workflow remain sequential.
 Gym runs one daily design-alignment review as a stable, read-only owner task.
 The periodic event only wakes the task. The Gym owner compares critical
 accepted promises with the relevant code and newest runtime evidence. It
-records a quiet evidence-backed no-op when aligned. When it finds a real gap,
-it names the root cause, impact, smallest repair, proof needed, and exact human
-boundary. The review prefers one strong gap over a catalog of speculation. It
-does not create another improvement lifecycle or change benchmark truth or
-production May.
+must inspect the newest `improve/may` task, result, relevant trigger, and run
+evidence; source code and tests alone cannot establish alignment. It explicitly
+checks wake delivery, one-campaign state, fresh post-evaluator evidence, the
+correct consumer benchmark and cases, approval boundaries, and continuation or
+truthful exhaustion. Missing live proof is inconclusive, never aligned. When it
+finds a real gap, it names the root cause, impact, smallest repair, proof needed,
+and exact human boundary. The review prefers at most three strong gaps over a
+catalog of speculation. It does not create another improvement lifecycle or
+change benchmark truth or production May.
 
 ## One task
 
