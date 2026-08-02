@@ -115,8 +115,14 @@ and then silently skipped by the live training loop.
 Experiment records are checkpoint files, not child tasks. `improve/may` must
 have no owner-recovery, experiment, approval, or worker children. A genuine
 workflow exception returns to the Gym owner for goal and priority judgment; the
-owner records a disposition against the campaign and does not invent a nested
-recovery tree.
+owner records a disposition against the campaign and does not invent a child
+or sibling recovery task. The repaired source or runtime emits an improvement
+wake after it has proof, so the same campaign resumes without a manual bridge.
+
+Task reconciliation supplies only a small recent child summary. Historical
+receipts remain durable task evidence, but legacy recovery trees are excluded
+from the working prompt beyond the latest decision-ready entries. Campaign
+checkpoints, rather than task history, carry Gym's improvement state.
 
 A stored focused baseline with invalid trials means the one bounded retry was
 already exhausted. A later wake reuses that disposition; it does not run the
