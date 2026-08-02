@@ -5,27 +5,32 @@ Gym remains runnable from its CLI without this app. This app supplies a bounded
 autonomous improvement loop, reviewed-session learning intake, owner review,
 exact-artifact approval, and operating metrics.
 
-## Autonomous flow
+## Autonomous resource model
 
 ```text
-reviewed success ─────> positive learning evidence ───────────────┐
-reviewed failure ─────> negative evidence + incident ─> review ───┤
-new Codex sessions ───> strong Hao intent candidates ─────────────┤
-                                                               learning unit
-                                                                    │
-manual canary wake ──> lesson-informed candidate ─> blind verification
-                                                    └─> exact human approval
-task workflow failure ─────────────────────────────> Gym owner fallback
+timer or domain event
+  -> wake the affected task resource
+  -> reconcile its desired state from durable evidence
+  -> save proof
+  -> stop, wait, or emit a domain event that wakes another resource
 ```
+
+Gym has no central scheduler task or app-specific pipeline state machine.
+`improve/may`, Codex learning intake, Telegram field review, design-alignment
+review, and bounded incident/review tasks each own their target and reconcile
+independently. Workflows are learned reconciliation procedures, not durable job
+state.
 
 The app does not approve ground truth, rewrite evidence, merge changes, or
 expose infrastructure APIs inside the evaluated May execution. It invokes the
 same standalone Gym CLI a developer or CI would use.
 
-The daily improvement refill is enabled. It wakes the one stable `improve/may`
-campaign, which drains approved learning material until it is exhausted or an
-exact approval or authority boundary is reached. Once exhausted, unchanged
-daily wakes are cheap no-ops. The focused canary remains documented in
+The daily improvement refill is enabled. It wakes the stable `improve/may`
+resource, which drains approved learning material until it is exhausted or an
+exact approval or authority boundary is reached. Human requests, May-owned
+metric breaches, exact approvals, and May revisions wake the same resource
+immediately. Once exhausted, unchanged daily wakes are cheap no-ops. The
+focused canary remains documented in
 [`../gym/benchmarks/may-alignment/CANARY.md`](../gym/benchmarks/may-alignment/CANARY.md).
 
 Every reviewed May session is preserved as idempotent positive or negative

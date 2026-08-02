@@ -152,12 +152,43 @@ describe("gym app manifest", () => {
       owner: "gym",
       priority: "P2",
       acceptance: expect.arrayContaining([
+        expect.stringContaining("latest accepted design"),
+        expect.stringContaining("historical evidence, not desired state"),
         expect.stringContaining("source code and tests alone cannot prove"),
         expect.stringContaining("fresh fingerprint-scoped evidence"),
+        expect.stringContaining(
+          "never call an intentional newer accepted change drift",
+        ),
         expect.stringContaining("never turn missing live proof"),
       ]),
     });
     expect(first).not.toHaveProperty("workflow");
+  });
+
+  test("keeps periodic concerns as independent stable resources", () => {
+    const eventTypes = [
+      "gym.improvement.requested",
+      "gym.codex.learning.requested",
+      "gym.telegram.field-review.requested",
+      "gym.design-alignment.requested",
+    ];
+    const first = eventTypes.map((type, index) =>
+      resolveGymTask({ type, eventId: 200 + index, params: {} }),
+    );
+    const next = eventTypes.map((type, index) =>
+      resolveGymTask({ type, eventId: 300 + index, params: {} }),
+    );
+
+    expect(first.map((intent) => intent?.id)).toEqual([
+      "improve/may",
+      "learning/codex-sessions",
+      "learning/telegram-field-review",
+      "runtime/design-alignment-review",
+    ]);
+    expect(next.map((intent) => intent?.id)).toEqual(
+      first.map((intent) => intent?.id),
+    );
+    expect(new Set(first.map((intent) => intent?.id)).size).toBe(4);
   });
 
   test("keeps Codex learning incremental and separate from automatic improvement", () => {

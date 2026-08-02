@@ -10,43 +10,48 @@ evaluated, tries isolated improvements, and brings Hao one verified proposal.
 Running benchmarks is a method, not the goal. The goal is better agent behavior
 supported by trustworthy evidence and no approved regression.
 
-## Mental model
+## Resource model
 
 ```text
-human intent, daily refill check, May-owned metric breach, field evidence,
-or May revision
-  -> wake improve/may                    one stable desired-state task
-  -> Gym owner prioritizes current evidence and the next useful focus
-  -> evaluate up to two independent hypotheses against one frozen baseline
-  -> compare the findings
-  -> choose one bounded May failure family for integration
-  -> run guided practice when the learning unit requires real tool use
-  -> preserve May's calls, lifecycle evidence, result review, and reflection
-  -> build one isolated candidate
-  -> targeted verification
-  -> full approved verification
-       -> bad result: review the responsible layer
-       -> confirmed May gap: try the next generation
-       -> sufficient result: prepare one proposal
-  -> Telegram asks Hao to approve the exact artifact
-  -> approve: apply it; reject: revise the same task
-  -> May revision wakes the loop for confirmation
+timer or domain event
+  -> resolve the affected task resource
+  -> read its desired state, current status, and evidence
+  -> take the next bounded action
+  -> save status and proof
+  -> stop, wait for an exact condition, or emit a domain event
 ```
 
-There is no separate evaluation lifecycle, failure-family task, candidate job,
-or app-specific task state machine. Findings, experiment records, candidate
-generations, and checkpoints are evidence inside the one campaign. The task
-waits only for an exact human or external condition.
+There is no central Gym task or pipeline coordinating the whole flywheel. Each
+task is a K8s-style resource with its own target, owner, status, evidence, and
+optional workflow. Timers own time. Events carry facts and wake the affected
+resource. One resource may emit a domain event that wakes another, but it does
+not control the other resource's lifecycle.
+
+The regular resources are independent:
+
+| Resource | Typical wakes | Responsibility |
+| --- | --- | --- |
+| `improve/may` | daily refill, human request, May metric, approval, May revision | Keep May at the best approved behavior |
+| `learning/codex-sessions` | hourly timer | Extract strong reusable Hao intent |
+| `learning/telegram-field-review` | daily timer | Learn from real deputy conversations |
+| `runtime/design-alignment-review` | daily timer or explicit review event | Find design and implementation drift |
+
+Incident and proposal resources are created for one concrete piece of evidence
+and reconcile their own bounded outcome. They still follow the same resource
+model; they are not phases owned by a master task.
 
 The design follows the project-app reconciliation model:
 
-- The task describes the durable target state.
-- Events only wake the task and contribute current evidence. They never replace
-  its specification or interrupt an active generation.
-- The Gym owner owns the goal, interprets evidence, and chooses priority and
-  the next focus.
-- The workflow is learned operational experience: it advances one bounded,
-  idempotent stage, saves proof, and wakes the same task again when work remains.
+- A task resource describes one durable target state.
+- Events only wake the relevant resource and contribute current evidence. They
+  never replace its specification or interrupt an active generation.
+- The resource owner owns its goal, interprets evidence, and chooses the next
+  priority move.
+- Its workflow is learned operational experience: it advances one bounded,
+  idempotent stage, saves proof, and emits a continuation event when work
+  remains.
+- Duplicate wakes, a lost session, and daemon restart are handled by reading
+  durable resource state again; they do not need a second recovery lifecycle.
 
 This gives one campaign with bounded parallel exploration and serialized
 integration and promotion. At most two independent development assessments run
@@ -66,18 +71,22 @@ workflow remain sequential.
 
 Gym runs one daily design-alignment review as a stable, read-only owner task.
 The periodic event only wakes the task. The Gym owner compares critical
-accepted promises with the relevant code and newest runtime evidence. It
-must inspect the newest `improve/may` task, result, relevant trigger, and run
-evidence; source code and tests alone cannot establish alignment. It explicitly
-checks wake delivery, one-campaign state, fresh post-evaluator evidence, the
-correct consumer benchmark and cases, approval boundaries, and continuation or
-truthful exhaustion. Missing live proof is inconclusive, never aligned. When it
-finds a real gap, it names the root cause, impact, smallest repair, proof needed,
-and exact human boundary. The review prefers at most three strong gaps over a
+accepted promises with the relevant code and newest runtime evidence. It first
+establishes the latest accepted design and chronological approved-change
+lineage. An older approved artifact is historical evidence, not desired state,
+when a newer accepted revision supersedes it. The review must inspect the newest
+`improve/may` task, result, relevant trigger, approval or revision identity, and
+run evidence; source code and tests alone cannot establish alignment. It
+explicitly checks wake delivery, one-campaign state, fresh post-evaluator
+evidence, the correct consumer benchmark and cases, approval boundaries, and
+continuation or truthful exhaustion. Missing live proof is inconclusive, never
+aligned. An intentional newer accepted change is not drift. When it finds a
+real gap, it names the root cause, impact, smallest repair, proof needed, and
+exact human boundary. The review prefers at most three strong gaps over a
 catalog of speculation. It does not create another improvement lifecycle or
 change benchmark truth or production May.
 
-## One task
+## May improvement resource
 
 ```text
 id: improve/may
