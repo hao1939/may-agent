@@ -42,14 +42,21 @@ export function compareRuns(
     };
   });
   const labelsApproved = baseline.scenarios.every((scenario) => labels?.labels[scenario]?.status === "approved");
+  const sameFrameworkRevision =
+    baseline.proof.framework_revisions.length === 1 &&
+    candidate.proof.framework_revisions.length === 1 &&
+    baseline.proof.framework_revisions[0] ===
+      candidate.proof.framework_revisions[0];
   const noInvalidRuns = [...baseline.trials, ...candidate.trials].every((trial) => trial.machine_verdict !== "invalid");
   const noRegressions = scenarios.every((scenario) => !scenario.regression);
   const improved = scenarios.some((scenario) => scenario.delta_passes > 0);
-  const machineGatePassed = noInvalidRuns && noRegressions && improved;
+  const machineGatePassed =
+    sameFrameworkRevision && noInvalidRuns && noRegressions && improved;
   return {
     baseline_run_id: baseline.run_id,
     candidate_run_id: candidate.run_id,
     labels_approved: labelsApproved,
+    same_framework_revision: sameFrameworkRevision,
     no_invalid_runs: noInvalidRuns,
     no_regressions: noRegressions,
     improved,
@@ -187,6 +194,7 @@ export function renderReport(
       "",
       `Gate: **${comparison.gate}**`,
       `- Ground truth approved: ${comparison.labels_approved}`,
+      `- One matching framework revision: ${comparison.same_framework_revision}`,
       `- No invalid runs: ${comparison.no_invalid_runs}`,
       `- No regressions: ${comparison.no_regressions}`,
       `- At least one improvement: ${comparison.improved}`,

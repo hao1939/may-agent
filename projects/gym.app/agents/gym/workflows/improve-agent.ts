@@ -925,6 +925,7 @@ export function qualifiesHeldBackRelease(
     complete &&
     candidatePassedEveryTrial &&
     comparison.labels_approved &&
+    comparison.same_framework_revision &&
     comparison.no_invalid_runs &&
     comparison.no_regressions
   );

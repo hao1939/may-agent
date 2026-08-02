@@ -150,6 +150,7 @@ export interface RunComparison {
   baseline_run_id: string;
   candidate_run_id: string;
   labels_approved: boolean;
+  same_framework_revision: boolean;
   no_invalid_runs: boolean;
   no_regressions: boolean;
   improved: boolean;

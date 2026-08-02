@@ -307,6 +307,11 @@ checkpoints survive recovery.
 Historical evidence is append-only. Changing benchmark truth, labels, or a
 scorer requires a fresh baseline.
 
+A release comparison also requires exactly one matching framework revision in
+both baseline and candidate runs. A mixed-revision run remains useful for
+diagnosis, but it cannot authorize promotion; Gym starts fresh evidence after
+the workspace settles.
+
 A scorer fix may include scenario-specific calibration or deterministic
 expectations under the evaluator benchmark's `scenarios/<scenario>/`
 directory. The Gym runner overlays those files onto the canonical scenario

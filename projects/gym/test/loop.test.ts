@@ -133,6 +133,7 @@ describe("loop evaluation", () => {
     expect(comparison.gate).toBe("pass");
     expect(comparison.improved).toBe(true);
     expect(comparison.no_regressions).toBe(true);
+    expect(comparison.same_framework_revision).toBe(true);
 
     const draft = structuredClone(approvedLabels);
     draft.labels["case-a"]!.status = "draft";
@@ -150,6 +151,23 @@ describe("loop evaluation", () => {
         draft,
       ).gate,
     ).toBe("needs-human-review");
+  });
+
+  it("rejects comparisons with mixed or different framework revisions", () => {
+    const baseline = manifest("baseline", ["fail"]);
+    const candidate = manifest("candidate", ["pass"]);
+    baseline.proof.framework_revisions = ["framework-a", "framework-b"];
+    candidate.proof.framework_revisions = ["framework-b"];
+
+    const mixed = compareRuns(baseline, candidate, approvedLabels);
+
+    expect(mixed.same_framework_revision).toBe(false);
+    expect(mixed.gate).toBe("fail");
+
+    baseline.proof.framework_revisions = ["framework-a"];
+    const different = compareRuns(baseline, candidate, approvedLabels);
+    expect(different.same_framework_revision).toBe(false);
+    expect(different.gate).toBe("fail");
   });
 
   it("persists frozen inputs, agent artifacts, and append-only reviews", async () =>
