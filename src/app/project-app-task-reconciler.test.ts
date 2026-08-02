@@ -19,6 +19,7 @@ import {
   listRunnableProjectAppTaskQueueEntries,
   listRunnableProjectAppTaskIds,
   readProjectAppTaskIntent,
+  readProjectAppTaskChildContext,
   readProjectAppTaskTrigger,
   recordProjectAppTaskTrigger,
   pendingProjectAppTaskRecoveryAttention,
@@ -1485,6 +1486,53 @@ describe("project app task reconciler state", () => {
     expect(Object.keys(completed.receipts ?? {})).toHaveLength(1_002);
     expect(completed.receipts?.["completed-0"]).toBeTruthy();
     expect(completed.receipts?.[claim.taskId]).toBeTruthy();
+  });
+
+  it("keeps reconciliation child history small and decision-ready", () => {
+    const { config } = fixture();
+    const tree = readTaskState(config);
+    const longText = "x".repeat(700);
+    tree.receipts = Object.fromEntries(
+      Array.from({ length: 12 }, (_, index) => {
+        const id = `child-${index}`;
+        return [
+          id,
+          {
+            metadata: { id, generation: 1, resourceVersion: 1 },
+            specHash: `hash-${index}`,
+            parentId: "pipeline-monitor",
+            outcome: longText,
+            acceptance: ["Completed"],
+            owner: "app-owner",
+            handler: "owner:app-owner",
+            summary: longText,
+            evidence: Array.from({ length: 6 }, () => longText),
+            acceptanceBasis: { method: "owner-judgment", evidence: [] },
+            failureFingerprints: [],
+            completedAt: new Date(index).toISOString(),
+          },
+        ];
+      }),
+    );
+    saveTaskState(config, tree);
+
+    const context = readProjectAppTaskChildContext(config, "pipeline-monitor");
+
+    expect(context.completed).toHaveLength(8);
+    expect(context.completed.map(({ taskId }) => taskId)).toEqual([
+      "child-11",
+      "child-10",
+      "child-9",
+      "child-8",
+      "child-7",
+      "child-6",
+      "child-5",
+      "child-4",
+    ]);
+    expect(context.completed[0]?.outcome.length).toBeLessThanOrEqual(512);
+    expect(context.completed[0]?.summary.length).toBeLessThanOrEqual(512);
+    expect(context.completed[0]?.evidence).toHaveLength(4);
+    expect(context.completed[0]?.evidence[0]?.length).toBeLessThanOrEqual(512);
   });
 
   it("commits a receipt and identifies dependents in the same absorption transaction", () => {
