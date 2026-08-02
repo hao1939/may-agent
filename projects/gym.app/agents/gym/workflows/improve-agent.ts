@@ -629,12 +629,35 @@ export function scenarioVerdicts(manifest: LoopRunManifest): {
   };
   for (const scenario of manifest.scenarios) {
     const observed = verdicts.get(scenario) ?? new Set<string>();
-    if (observed.has("invalid") || observed.size === 0)
+    if (observed.size === 0) {
       result.invalid.push(scenario);
-    else if (observed.has("fail")) result.fail.push(scenario);
-    else result.pass.push(scenario);
+      continue;
+    }
+    if (observed.has("fail")) result.fail.push(scenario);
+    if (observed.has("invalid")) result.invalid.push(scenario);
+    if (!observed.has("fail") && !observed.has("invalid"))
+      result.pass.push(scenario);
   }
   return result;
+}
+
+export function authoritativeAssessmentProblems(
+  screening: LoopRunManifest,
+  retry: LoopRunManifest | null,
+): { failing: string[]; invalid: string[] } {
+  const screened = scenarioVerdicts(screening);
+  const retried = retry ? scenarioVerdicts(retry) : null;
+  const failing = new Set([
+    ...screened.fail,
+    ...(retried?.fail ?? []),
+  ]);
+  const invalid = (retried?.invalid ?? screened.invalid).filter(
+    (scenario) => !failing.has(scenario),
+  );
+  return {
+    failing: [...failing].sort(),
+    invalid: [...new Set(invalid)].sort(),
+  };
 }
 
 function approvalGate(
@@ -1126,28 +1149,10 @@ export async function prepareAssessment(
     });
   }
 
-  const authoritative = new Map<string, "pass" | "fail" | "invalid">();
-  for (const scenario of screeningVerdicts.pass)
-    authoritative.set(scenario, "pass");
-  for (const scenario of screeningVerdicts.fail)
-    authoritative.set(scenario, "fail");
-  for (const scenario of screeningVerdicts.invalid)
-    authoritative.set(scenario, "invalid");
-  if (retry) {
-    const retried = scenarioVerdicts(retry.manifest);
-    for (const scenario of retried.pass) authoritative.set(scenario, "pass");
-    for (const scenario of retried.fail) authoritative.set(scenario, "fail");
-    for (const scenario of retried.invalid)
-      authoritative.set(scenario, "invalid");
-  }
-  const failing = [...authoritative]
-    .filter(([, verdict]) => verdict === "fail")
-    .map(([scenario]) => scenario)
-    .sort();
-  const invalid = [...authoritative]
-    .filter(([, verdict]) => verdict === "invalid")
-    .map(([scenario]) => scenario)
-    .sort();
+  const { failing, invalid } = authoritativeAssessmentProblems(
+    screening.manifest,
+    retry?.manifest ?? null,
+  );
   const runDirs = [screening.runDir, ...(retry ? [retry.runDir] : [])];
   const sourceRuns = [screening, ...(retry ? [retry] : [])];
   let classified = await classifyFailures(ctx, failing, runDirs);

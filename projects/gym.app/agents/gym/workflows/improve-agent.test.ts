@@ -13,6 +13,7 @@ import type { LoopRunManifest, RunOptions } from "@may-agent/gym/loop";
 import type { WorkflowContext } from "@may-agent/sdk";
 import {
   applyDirectorySnapshot,
+  authoritativeAssessmentProblems,
   benchmarkFixTarget,
   buildBenchmarkFixRetryEvent,
   buildApprovalRequest,
@@ -871,17 +872,26 @@ describe("single agent-improvement loop", () => {
   });
 
   test("keeps valid failures visible when another scenario is invalid", () => {
-    const facts = scenarioVerdicts(
-      manifest("mixed", {
-        pass: ["pass", "pass", "pass"],
-        gap: ["fail", "fail", "fail"],
-        runtime: ["fail", "invalid", "fail"],
-      }),
-    );
+    const screening = manifest("mixed", {
+      pass: ["pass", "pass", "pass"],
+      gap: ["fail", "fail", "fail"],
+      runtime: ["fail", "invalid", "fail"],
+      retryable: ["pass", "invalid", "pass"],
+    });
+    const facts = scenarioVerdicts(screening);
     expect(facts).toEqual({
       pass: ["pass"],
-      fail: ["gap"],
-      invalid: ["runtime"],
+      fail: ["gap", "runtime"],
+      invalid: ["runtime", "retryable"],
+    });
+
+    const retry = manifest("retry", {
+      runtime: ["invalid", "invalid", "invalid"],
+      retryable: ["invalid", "invalid", "invalid"],
+    });
+    expect(authoritativeAssessmentProblems(screening, retry)).toEqual({
+      failing: ["gap", "runtime"],
+      invalid: ["retryable"],
     });
   });
 

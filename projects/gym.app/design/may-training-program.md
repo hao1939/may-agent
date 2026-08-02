@@ -167,6 +167,11 @@ decision, or real authority boundary still stops the sequence immediately.
 4. Retry invalid scenarios once without hiding valid failures.
 5. Classify every remaining non-pass as May, benchmark, scorer, runtime, or
    noise. Every scenario appears exactly once.
+
+A valid failed trial remains classification evidence even when another trial
+for the same scenario is invalid. The bounded retry can clear the invalid
+status, but it cannot erase an observed valid failure. Only a scenario with no
+valid failure after both runs is recorded solely as an evaluation issue.
 6. Give comparable findings to the Gym owner, who selects the highest-priority
    integration path. Preserve unselected valid evidence for the next reconcile.
 7. Select one May failure family and freeze a focused development baseline.
