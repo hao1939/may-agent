@@ -2585,6 +2585,20 @@ export function deferProjectAppTask(
     const waitsForChildren =
       liveChildTaskIds(tree, task).length > 0 ||
       actions.some((action) => action.kind === "create-task" && action.parentId === claim.taskId);
+    const pendingTrigger = tree.taskTriggers?.[task.id]?.event;
+    if (
+      input.disposition === "waiting" &&
+      !input.conditions?.length &&
+      !waitsForChildren &&
+      pendingTrigger?.type === "project.task.child-transitioned"
+    ) {
+      throw new ProjectAppTaskActionStaleError({
+        taskId: claim.taskId,
+        expectedGeneration: claim.generation,
+        currentGeneration: resource.metadata.generation,
+        currentPhase: resource.status.phase,
+      });
+    }
     validateConditions(input.conditions, {
       required: input.disposition === "waiting" && !waitsForChildren,
       taskId: claim.taskId,
@@ -2615,7 +2629,6 @@ export function deferProjectAppTask(
     // the wait the attempt just installed instead of replaying it blindly. A
     // matching semantic observation wakes the task again; an unrelated stale
     // pulse is consumed. Explicit human/override triggers still bypass the wait.
-    const pendingTrigger = tree.taskTriggers?.[task.id]?.event;
     if (pendingTrigger && !triggerOverridesWait(pendingTrigger)) {
       delete tree.taskTriggers![task.id];
       applyProjectAppConditionEvent(tree, pendingTrigger);
