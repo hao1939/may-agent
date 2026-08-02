@@ -3682,6 +3682,55 @@ describe("project app task reconciler state", () => {
     ).toEqual([]);
   });
 
+  it("does not replay an old level observation into a newly established state wait", async () => {
+    const { config } = fixture();
+    const taskIntent = intent("maintain");
+    const condition = {
+      id: "credential-ready:xhs",
+      type: "credential.state",
+      subject: "credential:xhs",
+      expected: { field: "state", equals: "ready" },
+    } as const;
+    const first = declareAndClaimTask(config, {
+      intent: taskIntent,
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (first.kind !== "claimed") throw new Error("expected claim");
+    deferProjectAppTask(config, first, {
+      disposition: "waiting",
+      summary: "waiting for credential",
+      conditions: [condition],
+    });
+
+    const readyObservation = {
+      type: "credential.state",
+      credential: "xhs",
+      state: "ready",
+      timestamp: Date.now(),
+    };
+    expect(trackProjectAppConditionEvent(config, readyObservation)).toEqual([
+      { conditionId: condition.id, taskId: taskIntent.id },
+    ]);
+    const resumed = declareAndClaimTask(config, {
+      intent: taskIntent,
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (resumed.kind !== "claimed") throw new Error("expected resumed claim");
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    deferProjectAppTask(config, resumed, {
+      disposition: "waiting",
+      summary: "credential was lost before use",
+      conditions: [condition],
+    });
+
+    expect(trackProjectAppConditionEvent(config, readyObservation)).toEqual([]);
+    expect(readTaskState(config).conditions?.[condition.id]).toMatchObject({
+      status: { observedGeneration: 0, state: "unknown" },
+    });
+  });
+
   it("advances Condition generation when its desired observation changes", () => {
     const { config } = fixture();
     const first = declareAndClaimTask(config, {
