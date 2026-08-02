@@ -154,6 +154,8 @@ describe("gym app manifest", () => {
       acceptance: expect.arrayContaining([
         expect.stringContaining("latest accepted design"),
         expect.stringContaining("historical evidence, not desired state"),
+        expect.stringContaining("stable resource identity"),
+        expect.stringContaining("resource-local checkpoint coherence"),
         expect.stringContaining("source code and tests alone cannot prove"),
         expect.stringContaining("fresh fingerprint-scoped evidence"),
         expect.stringContaining(

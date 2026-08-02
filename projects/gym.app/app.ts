@@ -224,7 +224,7 @@ export function resolveGymTask(
         acceptance: [
           "Establish the latest accepted design and approved change lineage before comparing it with implementation; older approved artifacts are historical evidence, not desired state when a newer accepted revision supersedes them.",
           "Check the newest improve/may task, result, relevant trigger, approval or revision identity, and run evidence as well as the implementation; source code and tests alone cannot prove alignment.",
-          "Explicitly verify wake delivery, one-campaign state, fresh fingerprint-scoped evidence after evaluator changes, the correct consumer benchmark and cases, exact approval boundaries, and continuation or truthful exhaustion.",
+          "Explicitly verify wake delivery, stable resource identity, resource-local checkpoint coherence, fresh fingerprint-scoped evidence after evaluator changes, the correct consumer benchmark and cases, exact approval boundaries, and continuation or truthful exhaustion.",
           "Mark each promise aligned, drifted, or inconclusive with exact evidence; never call an intentional newer accepted change drift, and never turn missing live proof into an aligned result.",
           "An aligned review records a quiet evidence-backed no-op; speculation is discarded.",
           "For at most three real gaps, identify the root cause, impact, smallest repair, proof needed, and any exact human approval boundary.",

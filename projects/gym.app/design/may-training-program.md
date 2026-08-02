@@ -53,8 +53,10 @@ The design follows the project-app reconciliation model:
 - Duplicate wakes, a lost session, and daemon restart are handled by reading
   durable resource state again; they do not need a second recovery lifecycle.
 
-This gives one campaign with bounded parallel exploration and serialized
-integration and promotion. At most two independent development assessments run
+Inside the `improve/may` resource, one resource-local improvement cycle may use
+bounded parallel exploration followed by serialized integration and promotion.
+That cycle is status owned by `improve/may`; it is not a coordinator for the
+other Gym resources. At most two independent development assessments run
 together. Each experiment has frozen inputs, its own evidence path, and no
 permission to change benchmark or scorer truth. The owner chooses one result
 for candidate integration. Candidate building, revision, release verification,
@@ -77,12 +79,13 @@ lineage. An older approved artifact is historical evidence, not desired state,
 when a newer accepted revision supersedes it. The review must inspect the newest
 `improve/may` task, result, relevant trigger, approval or revision identity, and
 run evidence; source code and tests alone cannot establish alignment. It
-explicitly checks wake delivery, one-campaign state, fresh post-evaluator
-evidence, the correct consumer benchmark and cases, approval boundaries, and
-continuation or truthful exhaustion. Missing live proof is inconclusive, never
-aligned. An intentional newer accepted change is not drift. When it finds a
-real gap, it names the root cause, impact, smallest repair, proof needed, and
-exact human boundary. The review prefers at most three strong gaps over a
+explicitly checks wake delivery, stable resource identity, resource-local
+checkpoint coherence, fresh post-evaluator evidence, the correct consumer
+benchmark and cases, approval boundaries, and continuation or truthful
+exhaustion. Missing live proof is inconclusive, never aligned. An intentional
+newer accepted change is not drift. When it finds a real gap, it names the root
+cause, impact, smallest repair, proof needed, and exact human boundary. The
+review prefers at most three strong gaps over a
 catalog of speculation. It does not create another improvement lifecycle or
 change benchmark truth or production May.
 
