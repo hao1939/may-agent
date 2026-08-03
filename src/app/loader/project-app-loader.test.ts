@@ -1885,7 +1885,7 @@ describe("project app loader", () => {
     }
   });
 
-  it("records failed owner sessions as attention with the runtime error summary", async () => {
+  it("records failed owner sessions as attention and only releases them from a same-task success", async () => {
     const f = fixture();
     const ownerCalls: string[] = [];
     try {
@@ -1901,11 +1901,14 @@ describe("project app loader", () => {
         sharedRoot: join(f.root, "shared"),
         manager: {
           hasAgent: () => true,
-          async callAgent(_agent: string, task: string) {
+          run(_agent: string, task: string) {
             ownerCalls.push(task);
-            if (ownerCalls.length > 1) {
+            return ownerCalls.length > 1 ? "owner-recovered-session" : "owner-error-session";
+          },
+          async waitFor(sessionId: string) {
+            if (sessionId === "owner-recovered-session") {
               return {
-                sessionId: "owner-recovered-session",
+                sessionId,
                 status: "done",
                 structuredResult: {
                   state: "converged",
@@ -1914,21 +1917,22 @@ describe("project app loader", () => {
                   actions: [],
                 },
                 lastAssistantText: "owner recovered",
-                messages: [],
                 duration: "0s",
                 outputDir: "",
               };
             }
             return {
-              sessionId: "owner-error-session",
+              sessionId,
               status: "error",
               structuredResult: { state: "converged", summary: "", evidence: [], actions: [] },
               error: "provider returned 429",
               lastAssistantText: "",
-              messages: [],
               duration: "0s",
               outputDir: "",
             };
+          },
+          progress() {
+            return [];
           },
         } as any,
         bus,
@@ -1969,11 +1973,28 @@ describe("project app loader", () => {
 
       writeSessionMeta(f.persistDir, "owner-error-session", {
         agent: "sample-owner",
-        task: "failed owner task",
+        task: `## Reconciliation Task\n\`\`\`json\n${JSON.stringify(
+          { appId: "sample", taskId: "work/owner-error", generation: 1 },
+          null,
+          2,
+        )}\n\`\`\``,
+        workflowRunId: "wr_owner_error",
         status: "error",
         startedAt: Date.now() - 10_000,
         endedAt: Date.now() - 5_000,
         error: "structured test failure",
+      });
+      writeSessionMeta(f.persistDir, "independent-owner-success", {
+        agent: "sample-owner",
+        task: `## Reconciliation Task\n\`\`\`json\n${JSON.stringify(
+          { appId: "sample", taskId: "work/owner-error", generation: 1 },
+          null,
+          2,
+        )}\n\`\`\``,
+        workflowRunId: "wr_owner_error",
+        status: "done",
+        startedAt: Date.now() - 4_000,
+        endedAt: Date.now() - 1_000,
       });
       bus.emit({
         type: "session.end",
@@ -1987,6 +2008,7 @@ describe("project app loader", () => {
           outcome: "done",
           summary: "owner runtime is working again",
           durationMs: 1,
+          workflowRunId: "wr_owner_error",
         },
       } as any);
       await waitUntil(() => {
@@ -2001,9 +2023,178 @@ describe("project app loader", () => {
             taskId: "work/owner-error",
             reason: "owner-session-succeeded-after-handler-execution-failure",
             evidenceSessionId: "independent-owner-success",
+            evidenceWorkflowRunId: "wr_owner_error",
           }),
         }),
       );
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps CPU task attention when nginx-large-header success is unrelated, so a later task tick still reconciles it", async () => {
+    const f = fixture();
+    const ownerCalls: string[] = [];
+    try {
+      writeApp(f.appDir);
+      const bus = new EventBus();
+      const events: any[] = [];
+      bus.subscribe((event) => events.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: {
+          hasAgent: () => true,
+          run(_agent: string, task: string) {
+            ownerCalls.push(task);
+            return ownerCalls.length === 1 ? "cpu-owner-error-session" : "cpu-comment-retry-session";
+          },
+          async waitFor(sessionId: string) {
+            if (sessionId === "cpu-owner-error-session") {
+              return {
+                sessionId,
+                status: "error",
+                structuredResult: { state: "converged", summary: "", evidence: [], actions: [] },
+                error: "provider returned 429",
+                lastAssistantText: "",
+                duration: "0s",
+                outputDir: "",
+              };
+            }
+            return {
+              sessionId,
+              status: "done",
+              structuredResult: {
+                state: "converged",
+                summary: "comment-triggered correction reconciled the CPU task",
+                evidence: ["task tick retried the same carrier"],
+                actions: [],
+              },
+              lastAssistantText: "owner recovered",
+              duration: "0s",
+              outputDir: "",
+            };
+          },
+          progress() {
+            return [];
+          },
+        } as any,
+        bus,
+        agentCrons: new Map(),
+      });
+
+      bus.emit({
+        type: "sample.work",
+        project: "sample",
+        itemId: "domain/reconcile-master-validation-api-proxy-cpu-overload-manager-admission-and-live-proof-20260801",
+        ownerOnly: true,
+      } as any);
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId ===
+              "work/domain/reconcile-master-validation-api-proxy-cpu-overload-manager-admission-and-live-proof-20260801" &&
+            event.data?.disposition === "attention",
+        ),
+      );
+
+      writeSessionMeta(f.persistDir, "cpu-owner-error-session", {
+        agent: "sample-owner",
+        task: `## Reconciliation Task\n\`\`\`json\n${JSON.stringify(
+          {
+            appId: "sample",
+            taskId: "work/domain/reconcile-master-validation-api-proxy-cpu-overload-manager-admission-and-live-proof-20260801",
+            generation: 1,
+          },
+          null,
+          2,
+        )}\n\`\`\``,
+        workflowRunId: "wr_1785777545995_gq65",
+        status: "error",
+        startedAt: Date.now() - 10_000,
+        endedAt: Date.now() - 5_000,
+        error: "structured test failure",
+      });
+      writeSessionMeta(f.persistDir, "s_1785777019171_31", {
+        agent: "sample-owner",
+        task: `## Reconciliation Task\n\`\`\`json\n${JSON.stringify(
+          {
+            appId: "sample",
+            taskId: "work/domain/recover-master-validation-nginx-large-header-rp-ingress-proof-20260801",
+            generation: 1,
+          },
+          null,
+          2,
+        )}\n\`\`\``,
+        workflowRunId: "wr_1785776992271_4mdf",
+        status: "done",
+        startedAt: Date.now() - 4_000,
+        endedAt: Date.now() - 1_000,
+      });
+
+      bus.emit({
+        type: "session.end",
+        source: "runtime",
+        owner: "agent:sample-owner",
+        timestamp: Date.now() + 1_000,
+        data: {
+          sessionId: "s_1785777019171_31",
+          agent: "sample-owner",
+          status: "done",
+          outcome: "done",
+          summary: "nginx-large-header workflow completed",
+          durationMs: 1,
+          workflowRunId: "wr_1785776992271_4mdf",
+        },
+      } as any);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const current = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
+      expect(current.resources[
+        "work/domain/reconcile-master-validation-api-proxy-cpu-overload-manager-admission-and-live-proof-20260801"
+      ].status.phase).toBe("attention");
+      expect(ownerCalls).toHaveLength(1);
+      expect(
+        events.some(
+          (event) =>
+            event.type === "project.task.handler.recovered" &&
+            event.data?.taskId ===
+              "work/domain/reconcile-master-validation-api-proxy-cpu-overload-manager-admission-and-live-proof-20260801",
+        ),
+      ).toBe(false);
+
+      bus.emit({
+        type: "project.task.tick",
+        project: "sample",
+        target: {
+          project: "sample",
+          taskId:
+            "work/domain/reconcile-master-validation-api-proxy-cpu-overload-manager-admission-and-live-proof-20260801",
+        },
+        data: {
+          project: "sample",
+          taskId:
+            "work/domain/reconcile-master-validation-api-proxy-cpu-overload-manager-admission-and-live-proof-20260801",
+          task_id:
+            "work/domain/reconcile-master-validation-api-proxy-cpu-overload-manager-admission-and-live-proof-20260801",
+          reason: "capacity-backoff-and-task-scoped-recovery-correction",
+          ownerCommentEventId: 4951602,
+        },
+      } as any);
+      await waitUntil(() => {
+        const latest = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
+        return Boolean(
+          latest.receipts?.[
+            "work/domain/reconcile-master-validation-api-proxy-cpu-overload-manager-admission-and-live-proof-20260801"
+          ],
+        );
+      });
+      expect(ownerCalls).toHaveLength(2);
     } finally {
       closeDb(f.persistDir);
       rmSync(f.root, { recursive: true, force: true });
