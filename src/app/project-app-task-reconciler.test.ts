@@ -379,16 +379,16 @@ describe("project app task reconciler state", () => {
       status: "done",
     });
     expect(listRunnableProjectAppTaskIds(config)).toEqual([
-      "work/attention",
       "work/waiting",
+      "work/attention",
       "categorized-task",
       "work/pending",
     ]);
 
     expect(releaseHandlerUnavailableProjectAppTask(config, "work/unavailable")).toBe(true);
     expect(listRunnableProjectAppTaskIds(config)).toEqual([
-      "work/attention",
       "work/waiting",
+      "work/attention",
       "categorized-task",
       "work/pending",
       "work/unavailable",
@@ -812,6 +812,12 @@ describe("project app task reconciler state", () => {
     expect(wake?.taskId).toBe(waitingIntent.id);
 
     expect(readProjectAppTaskTrigger(config, waitingIntent.id)).toEqual(event);
+    expect(projectAppTaskQueueEntries(config, [waitingIntent.id])).toEqual([
+      {
+        taskId: waitingIntent.id,
+        options: { front: true, priority: "P0" },
+      },
+    ]);
     expect(readProjectAppTaskIntent(config, waitingIntent.id)?.category).toBe("domain");
     const resumed = claimObservedProjectAppTask(config, {
       taskId: waitingIntent.id,
