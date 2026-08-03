@@ -180,8 +180,8 @@ Adoption status (2026-08-03):
 | --- | --- | --- |
 | `scout-knowledge-lib.app` | aligned | A fresh `credential.state=ready` observation woke `explore-xhs` once; the workflow returned to its exact unavailable wait, and later unavailable plus stale ready observations started no new attempt. |
 | `gym.app` | aligned | `learning/codex-sessions` reached generation 9 and converged from its durable checkpoint with no recovery child or internal Condition; `runtime/unified-resource-migration-v1` closed six pre-contract carriers into receipts; tree integrity is clean. |
-| `evaluation.app` | next | Source and live-state review has not started. |
-| `may-agent.app` | pending | Starts only after Evaluation passes the same gate. |
+| `evaluation.app` | aligned | Fourteen standing responsibilities are healthy, finite `runtime/session-aftermath/*` work leaves receipts, and the live tree has zero integrity or attention findings. Under sustained AKS session load, a newly completed audit was followed by the oldest ready audit, proving the shared controller drains recovery work without an app-local scheduler. The remaining ready frontier is throughput pressure, not task-resource drift. |
+| `may-agent.app` | next | Starts after Evaluation passed the same gate. |
 | `aks-rp-e2e.app` | last | Starts only after the four smaller apps pass. |
 
 An aligned app may still contain a current task in `attention`. That is a
