@@ -899,8 +899,21 @@ describe("app event contract", () => {
       id: "runtime/unified-resource-migration-feature-loop-residue-v1",
       parentId: "group/app-operations",
       workflow: "unified-feature-loop-residue-migration",
-      input: { migration: "feature-loop-residue-v1" },
+      input: { migration: "feature-loop-residue-v1", batch: "1" },
       priority: "P0",
+    });
+  });
+
+  test("uses a stable resource for each bounded feature residue batch", () => {
+    expect(
+      resolveAksTask({
+        type: "aks.feature-loop-residue-migration.requested",
+        target: { project: projectId },
+        data: { batch: "2" },
+      }),
+    ).toMatchObject({
+      id: "runtime/unified-resource-migration-feature-loop-residue-v2",
+      input: { migration: "feature-loop-residue-v1", batch: "2" },
     });
   });
 

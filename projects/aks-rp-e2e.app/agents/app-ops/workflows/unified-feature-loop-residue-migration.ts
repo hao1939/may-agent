@@ -6,6 +6,7 @@ import type {
   WorkflowContext,
   WorkflowResult,
 } from "@may-agent/sdk";
+import { parseReconciliationTaskPayload } from "./lib/workflow-input.ts";
 
 export const name = "unified-feature-loop-residue-migration";
 export const description =
@@ -60,7 +61,21 @@ export function featureLoopResidueMigrationActions(
             : {}),
         },
       ];
-    });
+    })
+    .slice(0, 16);
+}
+
+export function featureLoopResidueMigrationBatch(rawTask: string): number {
+  const payload = parseReconciliationTaskPayload(rawTask);
+  const input = payload?.input;
+  const rawBatch =
+    input && typeof input === "object"
+      ? Number.parseInt(
+          String((input as Record<string, unknown>).batch ?? "1"),
+          10,
+        )
+      : 1;
+  return Number.isInteger(rawBatch) && rawBatch > 0 ? rawBatch : 1;
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
@@ -70,12 +85,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const taskState = JSON.parse(
     readFileSync(join(ctx.appDir, ".state", "tasks", "state.json"), "utf8"),
   ) as TaskState;
+  const batch = featureLoopResidueMigrationBatch(ctx.task);
   const actions = featureLoopResidueMigrationActions(taskState);
-  const summary = `Moved ${actions.length} remaining feature resources under the executable feature loop.`;
+  const summary = `Moved ${actions.length} remaining feature resources under the executable feature loop in batch ${batch}.`;
   return ctx.done(summary, {
     state: "converged",
     summary,
-    evidence: ["migration:feature-loop-residue-v1"],
+    evidence: ["migration:feature-loop-residue-v1", `batch:${batch}`],
     actions,
   });
 }

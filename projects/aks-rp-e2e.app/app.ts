@@ -973,8 +973,7 @@ export function resolveAksTask(
     return {
       id: `runtime/unified-resource-migration-feature-loop-history-v${batch}`,
       parentId: "group/app-operations",
-      outcome:
-        `Compact batch ${batch} of stale completed feature-compact holders so the task tree contains work instead of retained history.`,
+      outcome: `Compact batch ${batch} of stale completed feature-compact holders so the task tree contains work instead of retained history.`,
       acceptance: [
         "At most 16 stale converged childless maintain holders under the legacy feature group become receipts.",
         "Current feature references, open Conditions, child-backed resources, and unfinished work remain unchanged.",
@@ -990,11 +989,12 @@ export function resolveAksTask(
   }
 
   if (event.type === "aks.feature-loop-residue-migration.requested") {
+    const batch = stringDetail(details, "batch") || "1";
+    if (!/^[1-2]$/.test(batch)) return null;
     return {
-      id: "runtime/unified-resource-migration-feature-loop-residue-v1",
+      id: `runtime/unified-resource-migration-feature-loop-residue-v${batch}`,
       parentId: "group/app-operations",
-      outcome:
-        "Move the remaining unfinished or child-backed feature resources under the executable standing loop.",
+      outcome: `Move batch ${batch} of the remaining unfinished or child-backed feature resources under the executable standing loop.`,
       acceptance: [
         "Every remaining pending, waiting, or child-backed feature group sibling becomes a direct child of the standing feature loop.",
         "Finite maintain carriers become achieve tasks while their Conditions and children remain unchanged.",
@@ -1003,7 +1003,7 @@ export function resolveAksTask(
       mode: "achieve",
       owner: "app-ops",
       workflow: "unified-feature-loop-residue-migration",
-      input: { migration: "feature-loop-residue-v1" },
+      input: { migration: "feature-loop-residue-v1", batch },
       priority: "P0",
       category: "ops",
     };

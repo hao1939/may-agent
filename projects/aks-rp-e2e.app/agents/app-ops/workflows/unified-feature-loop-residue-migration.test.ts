@@ -1,6 +1,9 @@
 import { describe, expect, test } from "bun:test";
 
-import { featureLoopResidueMigrationActions } from "./unified-feature-loop-residue-migration";
+import {
+  featureLoopResidueMigrationActions,
+  featureLoopResidueMigrationBatch,
+} from "./unified-feature-loop-residue-migration";
 
 describe("feature loop residue migration", () => {
   test("moves unfinished and child-backed residues without deleting work", () => {
@@ -49,5 +52,31 @@ describe("feature loop residue migration", () => {
         parentId: "aks-feature-compact-loop",
       },
     ]);
+  });
+
+  test("limits one reconciliation to the shared 16-action contract", () => {
+    const resources = Object.fromEntries(
+      Array.from({ length: 20 }, (_, index) => [
+        `waiting-${String(index).padStart(2, "0")}`,
+        {
+          metadata: { generation: 1 },
+          spec: { parentId: "group/feature-compact", mode: "achieve" },
+          status: { phase: "waiting" },
+        },
+      ]),
+    );
+
+    expect(featureLoopResidueMigrationActions({ resources })).toHaveLength(16);
+  });
+
+  test("reads the batch label from the reconciliation task prompt", () => {
+    expect(
+      featureLoopResidueMigrationBatch(`
+## Reconciliation Task
+\`\`\`json
+{"input":{"batch":"2"}}
+\`\`\`
+`),
+    ).toBe(2);
   });
 });
