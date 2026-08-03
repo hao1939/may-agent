@@ -76,6 +76,15 @@ bun run migrate:session-aftermath --resume
 # reload project apps again
 ```
 
+After the one-time legacy cleanup, use `--structural-only` for a later repair
+of the two parent resources. This preserves explicit per-session task receipts
+created after the migration:
+
+```text
+bun run migrate:session-aftermath --structural-only
+bun run migrate:session-aftermath --structural-only --apply --expected-revision=<dry-run revision>
+```
+
 ## Ownership And Waits
 
 Task execution follows one rule:

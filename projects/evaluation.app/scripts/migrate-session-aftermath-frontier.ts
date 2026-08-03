@@ -24,14 +24,21 @@ const structuralParentIds = ["evaluator-reliability", "pipeline-health"];
 
 export function migrateSessionAftermathFrontier(
   tree: TaskTree,
+  options: { retireLegacySessionTasks?: boolean } = {},
 ): SessionAftermathMigrationStats {
+  const retireLegacySessionTasks =
+    options.retireLegacySessionTasks === undefined
+      ? true
+      : options.retireLegacySessionTasks;
   const legacyTaskIds = new Set(
-    [
-      ...Object.keys(tree.resources ?? {}),
-      ...Object.keys(tree.taskTriggers ?? {}),
-      ...Object.values(tree.attempts ?? {}).map((attempt) => attempt.taskId),
-      ...Object.keys(tree.receipts ?? {}),
-    ].filter((id) => id.startsWith(legacySessionTaskPrefix)),
+    retireLegacySessionTasks
+      ? [
+          ...Object.keys(tree.resources ?? {}),
+          ...Object.keys(tree.taskTriggers ?? {}),
+          ...Object.values(tree.attempts ?? {}).map((attempt) => attempt.taskId),
+          ...Object.keys(tree.receipts ?? {}),
+        ].filter((id) => id.startsWith(legacySessionTaskPrefix))
+      : [],
   );
   const remainingDependencies = Object.values(tree.resources ?? {}).flatMap(
     (resource) =>
@@ -76,17 +83,17 @@ export function migrateSessionAftermathFrontier(
     stats.resourcesRemoved += 1;
   }
   for (const taskId of Object.keys(tree.taskTriggers ?? {})) {
-    if (!taskId.startsWith(legacySessionTaskPrefix)) continue;
+    if (!legacyTaskIds.has(taskId)) continue;
     delete tree.taskTriggers?.[taskId];
     stats.triggersRemoved += 1;
   }
   for (const [attemptId, attempt] of Object.entries(tree.attempts ?? {})) {
-    if (!attempt.taskId.startsWith(legacySessionTaskPrefix)) continue;
+    if (!legacyTaskIds.has(attempt.taskId)) continue;
     delete tree.attempts?.[attemptId];
     stats.attemptsRemoved += 1;
   }
   for (const taskId of Object.keys(tree.receipts ?? {})) {
-    if (!taskId.startsWith(legacySessionTaskPrefix)) continue;
+    if (!legacyTaskIds.has(taskId)) continue;
     delete tree.receipts?.[taskId];
     stats.receiptsRemoved += 1;
   }
@@ -131,6 +138,7 @@ if (import.meta.main) {
   const pause = process.argv.includes("--pause");
   const resume = process.argv.includes("--resume");
   const apply = process.argv.includes("--apply");
+  const structuralOnly = process.argv.includes("--structural-only");
   if ([pause, resume, apply].filter(Boolean).length > 1) {
     throw new Error("Choose only one of --pause, --resume, or --apply");
   }
@@ -158,7 +166,9 @@ if (import.meta.main) {
     dryRun: !apply,
     allowShrinkage: true,
     migrate: (tree) => {
-      stats = migrateSessionAftermathFrontier(tree);
+      stats = migrateSessionAftermathFrontier(tree, {
+        retireLegacySessionTasks: !structuralOnly,
+      });
     },
   });
   console.log(
@@ -167,6 +177,7 @@ if (import.meta.main) {
         mode: apply ? "apply" : "dry-run",
         ...result,
         stats,
+        scope: structuralOnly ? "structural-parents" : "legacy-and-structural",
         disposition:
           "The evaluation database and session eval trails remain the audit history; the standing aftermath frontier will rediscover any terminal session without an evaluation.",
       },

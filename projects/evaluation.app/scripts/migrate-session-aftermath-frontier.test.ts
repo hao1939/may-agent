@@ -202,4 +202,25 @@ describe("session aftermath frontier migration", () => {
       "still used as dependencies",
     );
   });
+
+  test("repairs structural parents without removing later explicit session history", () => {
+    const tree = fixture();
+    const stats = migrateSessionAftermathFrontier(tree, {
+      retireLegacySessionTasks: false,
+    });
+    expect(stats).toMatchObject({
+      resourcesRemoved: 0,
+      triggersRemoved: 0,
+      attemptsRemoved: 0,
+      receiptsRemoved: 0,
+      structuralParentsRepaired: 2,
+    });
+    expect(tree.resources?.["runtime/session-aftermath/s_old"]).toBeDefined();
+    expect(tree.attempts?.legacy).toBeDefined();
+    expect(tree.receipts?.["runtime/session-aftermath/s_done"]).toBeDefined();
+    expect(tree.resources?.["evaluator-reliability"]?.spec.workflow).toBe(
+      undefined,
+    );
+    expect(tree.resources?.["pipeline-health"]?.spec.workflow).toBe(undefined);
+  });
 });
