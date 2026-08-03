@@ -61,13 +61,13 @@ master validation, and reusable workflows for repeated processes.
 The same 2026-08-03 read-only audit shows that the unified runtime is already
 the common base, but conformance and operational health are different things:
 
-| App | Live resources | Main finding |
-| --- | --------------: | ------------ |
-| Scout | Aligned | Stable maintain resources use timer/event wakes and exact external waits. |
-| Gym | Aligned | Stable learning resources reconcile through the shared controller; legacy residue is retired. |
-| Evaluation | Aligned | Finite audits leave receipts and sustained backlog advances through shared capacity. |
-| May Agent | Aligned | Stable maintain resources remain, obsolete tasks are retired, and one truthful finite attention task is preserved. |
-| AKS | Migrating | Largest graph and the only remaining app-specific reconciliation-result scheduler. |
+| App        | Live resources | Main finding                                                                                                       |
+| ---------- | -------------: | ------------------------------------------------------------------------------------------------------------------ |
+| Scout      |        Aligned | Stable maintain resources use timer/event wakes and exact external waits.                                          |
+| Gym        |        Aligned | Stable learning resources reconcile through the shared controller; legacy residue is retired.                      |
+| Evaluation |        Aligned | Finite audits leave receipts and sustained backlog advances through shared capacity.                               |
+| May Agent  |        Aligned | Stable maintain resources remain, obsolete tasks are retired, and one truthful finite attention task is preserved. |
+| AKS        |      Migrating | Largest graph and the only remaining app-specific reconciliation-result scheduler.                                 |
 
 Therefore the remaining work is AKS convergence, not a framework rewrite.
 Scout is the small reference shape; the other three apps provide proof that
@@ -225,6 +225,12 @@ shared tracker cannot interpret. `legacy-repo-ref-conditions-v1` returns only
 the fixed matching waits to their current owners. A truthful replacement uses
 the canonical `repoRef:<ref>` subject and `commit notEquals <baseline>` shape;
 the app no longer scans and emits duplicate task ticks on every ref observation.
+
+Repo-ref owner handoff and satisfied-Condition continuation now also stay in
+the shared controller. A workflow `needs-owner` result immediately requeues the
+same task for its resolved owner, and exact Condition satisfaction wakes that
+same task through the generic tracker or passive resync. AKS no longer turns
+either `project.task.reconciled` result into another app-local task tick.
 
 Attention is not a completion state. Each attention resource must retain an
 accountable owner, exact failure evidence, and a truthful next wake or

@@ -33,7 +33,6 @@ import {
   readCampaignReceipt,
   type CampaignReceipt,
 } from "./agents/app-ops/workflows/lib/master-validation-campaign.js";
-import { repoRefWaitExternalProducer } from "./agents/owner/workflows/wait-for-repo-ref-advance.js";
 
 const projectId = "aks-rp-e2e";
 const domainPolicyMaxConcurrent = 5;
@@ -229,8 +228,6 @@ type TaskStateResource = {
   status?: { phase?: unknown; conditionIds?: unknown };
 };
 
-type TaskIntentSnapshot = ProjectAppTaskIntent;
-
 type TaskStateCondition = {
   spec?: {
     type?: unknown;
@@ -242,14 +239,9 @@ type TaskStateCondition = {
   };
 };
 
-type TaskStateAttempt = {
-  taskId?: unknown;
-};
-
 type TaskStateSnapshot = {
   resources?: Record<string, TaskStateResource>;
   conditions?: Record<string, TaskStateCondition>;
-  attempts?: Record<string, TaskStateAttempt>;
 };
 
 type ApprovalWaitContractProblem = {
@@ -258,25 +250,6 @@ type ApprovalWaitContractProblem = {
   phase?: string;
   conditionId: string;
   issues: string[];
-};
-
-type RepoRefWaitContractProblem = {
-  taskId: string;
-  workflow?: string;
-  phase?: string;
-  conditionId: string;
-  repoRef: string;
-  baselineCommit: string;
-  issues: string[];
-  replayReason?:
-    "malformed-repo-ref-wait-contract" | "triggerless-pending-repo-ref-wait";
-};
-
-type RepoRefWaitReplay = {
-  taskId: string;
-  conditionId: string;
-  repoRef: string;
-  baselineCommit: string;
 };
 
 const canonicalApprovalDispatchDecisions = [
@@ -307,125 +280,6 @@ function stringList(value: unknown): string[] {
           typeof entry === "string" && Boolean(entry.trim()),
       )
     : [];
-}
-
-function modeDetail(value: unknown): "achieve" | "maintain" | undefined {
-  return value === "achieve" || value === "maintain" ? value : undefined;
-}
-
-function taskIntentSnapshotFromResource(
-  taskId: string,
-  resource: TaskStateResource | null,
-  options?: { clearWorkflow?: boolean },
-): TaskIntentSnapshot | null {
-  const spec = isRecord(resource?.spec) ? resource?.spec : null;
-  if (!spec) return null;
-
-  const owner = stringDetail(spec, "owner");
-  const outcome = stringDetail(spec, "outcome");
-  const parentId = stringDetail(spec, "parentId");
-  const mode = modeDetail(spec.mode);
-  if (!owner || !outcome || !parentId || !mode) return null;
-
-  const snapshot: TaskIntentSnapshot = {
-    id: taskId,
-    parentId,
-    outcome,
-    acceptance: stringList(spec.acceptance),
-    mode,
-    owner,
-  };
-
-  if (!options?.clearWorkflow) {
-    const workflow = stringDetail(spec, "workflow");
-    if (workflow) snapshot.workflow = workflow;
-  }
-
-  const input = isRecord(spec.input) ? spec.input : null;
-  if (input) snapshot.input = input;
-
-  const outputs = stringList(spec.outputs);
-  if (outputs.length) snapshot.outputs = outputs;
-
-  const priority = stringDetail(spec, "priority");
-  if (["P0", "P1", "P2", "P3"].includes(priority)) {
-    snapshot.priority = priority as "P0" | "P1" | "P2" | "P3";
-  }
-
-  const category = stringDetail(spec, "category");
-  if (category) snapshot.category = category;
-
-  const dependsOn = stringList(spec.dependsOn);
-  if (dependsOn.length) snapshot.dependsOn = dependsOn;
-
-  return snapshot;
-}
-
-function repoRefWaitNeedsDirectOwnerReplay(
-  details: Record<string, unknown>,
-): boolean {
-  if (stringDetail(details, "action") !== "repo-ref-wait-contract-replay") {
-    return false;
-  }
-  const issues = stringList(details.issues);
-  return issues.some((issue) =>
-    issue.includes("generic origin/dev churn is not such a producer"),
-  );
-}
-
-function repoRefOwnerHandoffReplayIntent(
-  details: Record<string, unknown>,
-): TaskIntentSnapshot | null {
-  const taskIntent = recordDetail(details, "taskIntent", "task_intent");
-  if (!taskIntent) return null;
-  const taskId = stringDetail(taskIntent, "id");
-  if (!taskId) return null;
-
-  const snapshot = taskIntentSnapshotFromResource(
-    taskId,
-    { spec: taskIntent },
-    { clearWorkflow: true },
-  );
-  if (!snapshot) return null;
-
-  const input = isRecord(snapshot.input) ? { ...snapshot.input } : {};
-  const repoRef = stringDetail(input, "baseRef") || "origin/dev";
-  const previousBaselineCommit = stringDetail(input, "resumeBaselineCommit");
-  input.repoRefOwnerHandoff = {
-    reason: "repo-ref-wait-owner-handoff",
-    preserveSameTaskId: true,
-    priorWorkflow: "wait-for-repo-ref-advance",
-    ...(previousBaselineCommit ? { previousBaselineCommit } : {}),
-  };
-  snapshot.input = input;
-  snapshot.acceptance = [
-    ...snapshot.acceptance,
-    `Treat the previous ${repoRef} baseline wait${previousBaselineCommit ? ` for ${previousBaselineCommit}` : ""} as already satisfied by the wake; re-read only the same bounded scope from current repo truth.`,
-    `If the same scope still needs a supported ${repoRef} wait, keep this same task id waiting from the current baseline instead of creating a child or successor wait-named descendant.`,
-    "If the inherited wait wording is stale after the wake, revise that wording on this same task path rather than spawning another repo-ref carrier.",
-  ];
-  return snapshot;
-}
-
-function taskIntentSnapshotFromEvent(
-  details: Record<string, unknown>,
-): TaskIntentSnapshot | null {
-  if (stringDetail(details, "action") === "repo-ref-owner-handoff-replay") {
-    return repoRefOwnerHandoffReplayIntent(details);
-  }
-
-  const taskIntent = recordDetail(details, "taskIntent", "task_intent");
-  if (!taskIntent) return null;
-  const taskId = stringDetail(taskIntent, "id");
-  return taskId
-    ? taskIntentSnapshotFromResource(
-        taskId,
-        { spec: taskIntent },
-        {
-          clearWorkflow: repoRefWaitNeedsDirectOwnerReplay(details),
-        },
-      )
-    : null;
 }
 
 type LiveTaskReadiness = {
@@ -839,290 +693,6 @@ export function malformedApprovalWaitContract(
   return null;
 }
 
-function unsupportedRepoRefWaitIssue(
-  taskId: string,
-  spec: Record<string, unknown>,
-): string | null {
-  const input = isRecord(spec.input) ? spec.input : {};
-  const producer = repoRefWaitExternalProducer({
-    taskId,
-    repoRef: stringDetail(input, "baseRef") || "origin/dev",
-    baselineCommit: stringDetail(input, "resumeBaselineCommit"),
-    specId: stringDetail(input, "specId"),
-    sourceCommit: stringDetail(input, "sourceCommit"),
-    publicationBranch: stringDetail(input, "publicationBranch"),
-    sourceBranch: stringDetail(input, "sourceBranch"),
-    authorizedRef: stringDetail(input, "authorizedRef"),
-    pullRequestId: stringDetail(input, "pullRequestId", "pullRequestNumber"),
-  });
-  return producer.supported
-    ? null
-    : (producer.reason ?? "unsupported repo-ref wait");
-}
-
-function repoRefWaitConditionProblem(
-  taskId: string,
-  resource: TaskStateResource,
-  conditionId: string,
-  condition: TaskStateCondition | null,
-): RepoRefWaitContractProblem | null {
-  const spec = isRecord(resource.spec) ? resource.spec : {};
-  if (stringDetail(spec, "workflow") !== "wait-for-repo-ref-advance") {
-    return null;
-  }
-  const phase = stringDetail(
-    isRecord(resource.status) ? resource.status : {},
-    "phase",
-  );
-  if (phase !== "waiting") return null;
-
-  const input = isRecord(spec.input) ? spec.input : {};
-  const repoRef = stringDetail(input, "baseRef");
-  const baselineCommit = stringDetail(input, "resumeBaselineCommit");
-  const conditionSpec = isRecord(condition?.spec) ? condition?.spec : {};
-  const expected = isRecord(conditionSpec.expected)
-    ? conditionSpec.expected
-    : {};
-  const issues: string[] = [];
-
-  if (!repoRef) issues.push("missing input.baseRef");
-  if (!baselineCommit) issues.push("missing input.resumeBaselineCommit");
-  if (!conditionId) issues.push("missing conditionId");
-  const unsupportedRepoRefWait = unsupportedRepoRefWaitIssue(taskId, spec);
-  if (unsupportedRepoRefWait) issues.push(unsupportedRepoRefWait);
-  if (stringDetail(conditionSpec, "type") !== "aks.repo-ref.observed") {
-    issues.push(`type=${JSON.stringify(conditionSpec.type ?? null)}`);
-  }
-  if (stringDetail(conditionSpec, "subject") !== `repoRef:${repoRef}`) {
-    issues.push(`subject=${JSON.stringify(conditionSpec.subject ?? null)}`);
-  }
-  if (stringDetail(expected, "field") !== "commit") {
-    issues.push(`expected.field=${JSON.stringify(expected.field ?? null)}`);
-  }
-  if (stringDetail(expected, "notEquals") !== baselineCommit) {
-    issues.push(
-      `expected.notEquals=${JSON.stringify(expected.notEquals ?? null)}`,
-    );
-  }
-
-  if (!issues.length) return null;
-  return {
-    taskId,
-    workflow: stringDetail(spec, "workflow"),
-    phase,
-    conditionId,
-    repoRef,
-    baselineCommit,
-    issues,
-    replayReason: "malformed-repo-ref-wait-contract",
-  };
-}
-
-function hasPersistedAttempt(
-  state: TaskStateSnapshot,
-  taskId: string,
-): boolean {
-  return Object.values(state.attempts ?? {}).some(
-    (attempt) => stringDetail(attempt, "taskId") === taskId,
-  );
-}
-
-function pendingRepoRefWaitReplayProblem(
-  state: TaskStateSnapshot,
-  taskId: string,
-  resource: TaskStateResource,
-  repoRef: string,
-  commit: string,
-): RepoRefWaitContractProblem | null {
-  const spec = isRecord(resource.spec) ? resource.spec : {};
-  if (stringDetail(spec, "workflow") !== "wait-for-repo-ref-advance") {
-    return null;
-  }
-  const phase = stringDetail(
-    isRecord(resource.status) ? resource.status : {},
-    "phase",
-  );
-  if (phase !== "pending") return null;
-
-  const input = isRecord(spec.input) ? spec.input : {};
-  const taskRepoRef = stringDetail(input, "baseRef");
-  const baselineCommit = stringDetail(input, "resumeBaselineCommit");
-  const conditionIds = stringList(resource.status?.conditionIds);
-  const unsupportedRepoRefWait = unsupportedRepoRefWaitIssue(taskId, spec);
-  if (taskRepoRef !== repoRef) return null;
-  if (!baselineCommit || baselineCommit === commit) return null;
-  if (conditionIds.length > 0) return null;
-  if (hasPersistedAttempt(state, taskId)) return null;
-
-  return {
-    taskId,
-    workflow: stringDetail(spec, "workflow"),
-    phase,
-    conditionId: "",
-    repoRef: taskRepoRef,
-    baselineCommit,
-    issues: [
-      ...(unsupportedRepoRefWait ? [unsupportedRepoRefWait] : []),
-      "pending-phase-without-attempt",
-      "missing conditionId",
-      `observed.commit=${JSON.stringify(commit)}`,
-    ],
-    replayReason: "triggerless-pending-repo-ref-wait",
-  };
-}
-
-export function malformedRepoRefWaitContract(
-  appDir: string,
-  taskId: string,
-): RepoRefWaitContractProblem | null {
-  const state = readTaskStateSnapshot(appDir);
-  if (!state) return null;
-  const resource = state.resources?.[taskId];
-  if (!resource) return null;
-  const conditionIds = stringList(resource.status?.conditionIds);
-  if (!conditionIds.length) {
-    return repoRefWaitConditionProblem(taskId, resource, "", null);
-  }
-  for (const conditionId of conditionIds) {
-    const problem = repoRefWaitConditionProblem(
-      taskId,
-      resource,
-      conditionId,
-      state.conditions?.[conditionId] ?? null,
-    );
-    if (problem) return problem;
-  }
-  return null;
-}
-
-function satisfiedRepoRefWaitReplays(
-  appDir: string,
-  repoRef: string,
-  commit: string,
-): RepoRefWaitReplay[] {
-  const state = readTaskStateSnapshot(appDir);
-  if (!state?.resources || !state.conditions) return [];
-  const replays: RepoRefWaitReplay[] = [];
-  for (const [taskId, resource] of Object.entries(state.resources)) {
-    if (hasPersistedAttempt(state, taskId)) continue;
-    const spec = isRecord(resource.spec) ? resource.spec : {};
-    const phase = stringDetail(
-      isRecord(resource.status) ? resource.status : {},
-      "phase",
-    );
-    if (stringDetail(spec, "workflow") !== "wait-for-repo-ref-advance") {
-      continue;
-    }
-    if (phase !== "waiting") continue;
-    const conditionIds = stringList(resource.status?.conditionIds);
-    if (!conditionIds.length) continue;
-    for (const conditionId of conditionIds) {
-      const condition = state.conditions[conditionId] ?? null;
-      if (
-        repoRefWaitConditionProblem(taskId, resource, conditionId, condition)
-      ) {
-        continue;
-      }
-      const conditionSpec = isRecord(condition?.spec) ? condition.spec : {};
-      const expected = isRecord(conditionSpec.expected)
-        ? conditionSpec.expected
-        : {};
-      const baselineCommit = stringDetail(expected, "notEquals");
-      if (
-        stringDetail(conditionSpec, "type") !== "aks.repo-ref.observed" ||
-        stringDetail(conditionSpec, "subject") !== `repoRef:${repoRef}` ||
-        stringDetail(expected, "field") !== "commit" ||
-        !baselineCommit ||
-        baselineCommit === commit
-      ) {
-        continue;
-      }
-      replays.push({ taskId, conditionId, repoRef, baselineCommit });
-      break;
-    }
-  }
-  return replays;
-}
-
-function satisfiedRepoRefWaitReplayForTask(
-  appDir: string,
-  taskId: string,
-): RepoRefWaitReplay | null {
-  const state = readTaskStateSnapshot(appDir);
-  if (!state?.resources || !state.conditions) return null;
-  if (hasPersistedAttempt(state, taskId)) return null;
-  const resource = state.resources[taskId] ?? null;
-  if (!resource) return null;
-  const spec = isRecord(resource.spec) ? resource.spec : {};
-  const phase = stringDetail(
-    isRecord(resource.status) ? resource.status : {},
-    "phase",
-  );
-  if (stringDetail(spec, "workflow") !== "wait-for-repo-ref-advance") {
-    return null;
-  }
-  if (phase !== "waiting") return null;
-  for (const conditionId of stringList(resource.status?.conditionIds)) {
-    const condition = state.conditions[conditionId] ?? null;
-    if (repoRefWaitConditionProblem(taskId, resource, conditionId, condition)) {
-      continue;
-    }
-    const conditionSpec = isRecord(condition?.spec) ? condition.spec : {};
-    const expected = isRecord(conditionSpec.expected)
-      ? conditionSpec.expected
-      : {};
-    const repoRef = stringDetail(conditionSpec, "subject").replace(
-      /^repoRef:/,
-      "",
-    );
-    const baselineCommit = stringDetail(expected, "notEquals");
-    if (
-      stringDetail(conditionSpec, "type") !== "aks.repo-ref.observed" ||
-      !repoRef ||
-      !baselineCommit ||
-      stringDetail(condition?.status, "state") !== "true"
-    ) {
-      continue;
-    }
-    return { taskId, conditionId, repoRef, baselineCommit };
-  }
-  return null;
-}
-
-function repoRefWaitBackfillCandidates(
-  appDir: string,
-  repoRef: string,
-  commit: string,
-): RepoRefWaitContractProblem[] {
-  const state = readTaskStateSnapshot(appDir);
-  if (!state?.resources) return [];
-  const candidates: RepoRefWaitContractProblem[] = [];
-  for (const [taskId, resource] of Object.entries(state.resources)) {
-    const conditionIds = stringList(resource.status?.conditionIds);
-    const malformedProblem = conditionIds.length
-      ? repoRefWaitConditionProblem(
-          taskId,
-          resource,
-          conditionIds[0],
-          state.conditions?.[conditionIds[0]] ?? null,
-        )
-      : repoRefWaitConditionProblem(taskId, resource, "", null);
-    const pendingProblem = pendingRepoRefWaitReplayProblem(
-      state,
-      taskId,
-      resource,
-      repoRef,
-      commit,
-    );
-    const problem = malformedProblem ?? pendingProblem;
-    if (!problem) continue;
-    if (problem.repoRef !== repoRef) continue;
-    if (!problem.baselineCommit || problem.baselineCommit === commit) continue;
-    candidates.push(problem);
-  }
-  return candidates;
-}
-
 export function masterValidationScheduleGate(
   appDir: string,
   nowMs = Date.now(),
@@ -1201,7 +771,10 @@ const aksTaskSelectors: EventSelector[] = [
   { type: "aks.task-state-migration.requested", target: projectTarget },
   { type: "aks.task-tick-migration.requested", target: projectTarget },
   { type: "aks.repo-ref-condition-migration.requested", target: projectTarget },
-  { type: "aks.project-state-residue-migration.requested", target: projectTarget },
+  {
+    type: "aks.project-state-residue-migration.requested",
+    target: projectTarget,
+  },
   { type: "pipeline.failure.observed", target: projectTarget },
   { type: "pipeline.test.nonpassing", target: projectTarget },
   { type: "project.owner.requested", target: projectTarget },
@@ -1445,14 +1018,6 @@ export function resolveAksTask(
   switch (event.type) {
     case "project.task.tick": {
       const action = stringDetail(details, "action");
-      if (
-        action === "repo-ref-owner-handoff-replay" ||
-        action === "repo-ref-wait-contract-replay" ||
-        action === "repo-ref-condition-satisfied"
-      ) {
-        const replayIntent = taskIntentSnapshotFromEvent(details);
-        if (replayIntent) return replayIntent;
-      }
       if (
         action === "waiting-frontier-review" ||
         taskId === waitingFrontierReviewTaskId
@@ -1721,10 +1286,6 @@ export async function routeAksEvent(
     const details = eventDetails(event);
     const appDir = ctx.appPath(".");
     const reconciledTaskId = targetTaskId(event);
-    const taskState = readTaskStateSnapshot(appDir);
-    const reconciledResource = reconciledTaskId
-      ? (taskState?.resources?.[reconciledTaskId] ?? null)
-      : null;
     const specProof = reconciledTaskId
       ? syncSpecLiveProof(appDir, reconciledTaskId)
       : { changed: false };
@@ -1747,24 +1308,10 @@ export async function routeAksEvent(
       details.disposition === "attention" &&
       Boolean(reconciledTaskId) &&
       reconciledTaskId !== waitingFrontierReviewTaskId;
-    const replayRepoRefOwnerHandoff =
-      details.disposition === "owner-handoff" &&
-      stringDetail(details, "handler") ===
-        "workflow:wait-for-repo-ref-advance" &&
-      Boolean(reconciledTaskId);
-    const repoRefOwnerHandoffIntent = reconciledTaskId
-      ? taskIntentSnapshotFromResource(reconciledTaskId, reconciledResource, {
-          clearWorkflow: true,
-        })
-      : null;
     const malformedApprovalWaitReplay =
       details.disposition === "waiting" &&
       Boolean(reconciledTaskId) &&
       malformedApprovalWaitContract(appDir, reconciledTaskId);
-    const repoRefWaitReplay =
-      details.disposition === "waiting" && reconciledTaskId
-        ? satisfiedRepoRefWaitReplayForTask(appDir, reconciledTaskId)
-        : null;
     if (continueWaitingFrontierReview) {
       ctx.emit({
         type: "project.task.tick",
@@ -1803,29 +1350,6 @@ export async function routeAksEvent(
         },
       });
     }
-    if (replayRepoRefOwnerHandoff) {
-      ctx.emit({
-        type: "project.task.tick",
-        source: "aks-rp-e2e-app",
-        target: {
-          project: projectId,
-          taskId: reconciledTaskId,
-        },
-        urgency: "high",
-        action: "repo-ref-owner-handoff-replay",
-        data: {
-          project: projectId,
-          taskId: reconciledTaskId,
-          task_id: reconciledTaskId,
-          reason: "repo-ref-wait-owner-handoff",
-          previousDisposition: details.disposition,
-          previousHandler: stringDetail(details, "handler"),
-          ...(repoRefOwnerHandoffIntent
-            ? { taskIntent: repoRefOwnerHandoffIntent }
-            : {}),
-        },
-      });
-    }
     if (malformedApprovalWaitReplay && reconciledTaskId) {
       ctx.emit({
         type: "project.task.tick",
@@ -1853,7 +1377,6 @@ export async function routeAksEvent(
       refillWake: Boolean(wake),
       waitingFrontierContinuation: continueWaitingFrontierReview,
       waitingFrontierAttentionWake: reviewNewAttention,
-      repoRefOwnerHandoffReplay: replayRepoRefOwnerHandoff,
       malformedApprovalWaitReplay: Boolean(malformedApprovalWaitReplay),
       malformedApprovalWaitProblem: malformedApprovalWaitReplay,
       specProof,

@@ -14,7 +14,6 @@ import { basename, dirname, join, resolve } from "node:path";
 import app, {
   masterValidationScheduleGate,
   malformedApprovalWaitContract,
-  malformedRepoRefWaitContract,
   resolveAksTask,
   routeAksEvent,
   scenarioTestFrontierWakeEvent,
@@ -1036,7 +1035,8 @@ describe("app event contract", () => {
         taskId: holderTaskId,
         frontierTaskIds: [holderTaskId],
         attempts: 2,
-        lastPlanPath: "features/virtualmachines-agentpool/compact/staging.plan.json",
+        lastPlanPath:
+          "features/virtualmachines-agentpool/compact/staging.plan.json",
         lastSummaryPath:
           "features/virtualmachines-agentpool/compact/staging.summary.md",
         lastDiagnosticsPath:
@@ -1125,7 +1125,9 @@ describe("app event contract", () => {
         errorFingerprint: null,
         lastSupportWorkFingerprint: null,
         ownerReason: "Published split frontier remains authoritative.",
-        attemptedFixes: ["Published split-frontier source truth to origin/dev."],
+        attemptedFixes: [
+          "Published split-frontier source truth to origin/dev.",
+        ],
         nextStepClassification: "No same-surface action required.",
         resumeCondition: null,
         blockedAt: null,
@@ -1148,7 +1150,8 @@ describe("app event contract", () => {
         reviewEvidencePath:
           "evidence/archive/reconcile-canonical-root-ccp-coredns-split-frontier-residue-20260728.md",
         verificationBlocker: null,
-        summary: "CCP CoreDNS row is already newer than the projected holder update.",
+        summary:
+          "CCP CoreDNS row is already newer than the projected holder update.",
         updatedAt: "2026-07-29T03:59:59.000Z",
       };
       const featureState = {
@@ -1160,7 +1163,10 @@ describe("app event contract", () => {
           "ccp-coredns": unrelatedNewerRow,
         },
       };
-      writeJson(resolve(appDir, ".state/feature-compact-loop/state.json"), featureState);
+      writeJson(
+        resolve(appDir, ".state/feature-compact-loop/state.json"),
+        featureState,
+      );
       writeJson(
         resolve(projectDir, ".state/feature-compact-loop/state.json"),
         featureState,
@@ -1287,7 +1293,9 @@ describe("app event contract", () => {
           reviewEvidencePath:
             "evidence/archive/reconcile-virtualmachines-agentpool-mixed-sku-upgrade-frontier-20260729.md",
         });
-        expect(state.features["virtualmachines-agentpool"].evidencePaths).toEqual(
+        expect(
+          state.features["virtualmachines-agentpool"].evidencePaths,
+        ).toEqual(
           expect.arrayContaining([
             "evidence/archive/reconcile-virtualmachines-agentpool-stale-same-feature-holder-routing-20260728.md",
             "evidence/archive/reconcile-virtualmachines-agentpool-mixed-sku-upgrade-frontier-20260729.md",
@@ -1375,115 +1383,7 @@ describe("app event contract", () => {
     });
   });
 
-  test("replays repo-ref owner handoffs through an exact same-task tick", async () => {
-    const appDir = mkdtempSync(join(tmpdir(), "repo-ref-owner-handoff-"));
-    const emitted: Record<string, unknown>[] = [];
-    const taskId =
-      "wait-compact-ccp-metricsserver-reviewed-exception-origin-dev-advance-c17c6450-20260724";
-    const taskIntent = {
-      id: taskId,
-      parentId: "compact/compact-feature-ccp",
-      outcome: "Recheck the exact CCP row after origin/dev advances.",
-      acceptance: ["Use current origin/dev evidence."],
-      mode: "achieve",
-      owner: "aks-explorer",
-      input: {
-        baseRef: "origin/dev",
-        resumeBaselineCommit: "c17c6450",
-      },
-      priority: "P2",
-    };
-    try {
-      mkdirSync(resolve(appDir, ".state/tasks"), { recursive: true });
-      writeFileSync(
-        resolve(appDir, ".state/tasks/state.json"),
-        JSON.stringify({
-          resources: {
-            [taskId]: {
-              spec: {
-                ...taskIntent,
-                workflow: "wait-for-repo-ref-advance",
-              },
-              status: { phase: "running", conditionIds: [] },
-            },
-          },
-        }),
-      );
-      const result = await routeAksEvent(
-        {
-          appPath: () => appDir,
-          emit: (value: Record<string, unknown>) => emitted.push(value),
-        } as never,
-        {
-          type: "project.task.reconciled",
-          target: {
-            project: projectId,
-            taskId,
-          },
-          data: {
-            project: projectId,
-            taskId,
-            disposition: "owner-handoff",
-            handler: "workflow:wait-for-repo-ref-advance",
-            summary:
-              "origin/dev advanced beyond the baseline and the same task now needs owner judgment.",
-          },
-        },
-      );
-
-      expect(result).toMatchObject({
-        repoRefOwnerHandoffReplay: true,
-      });
-      expect(emitted).toContainEqual({
-        type: "project.task.tick",
-        source: "aks-rp-e2e-app",
-        target: {
-          project: projectId,
-          taskId,
-        },
-        urgency: "high",
-        action: "repo-ref-owner-handoff-replay",
-        data: {
-          project: projectId,
-          taskId,
-          task_id: taskId,
-          reason: "repo-ref-wait-owner-handoff",
-          previousDisposition: "owner-handoff",
-          previousHandler: "workflow:wait-for-repo-ref-advance",
-          taskIntent,
-        },
-      });
-      expect(resolveAksTask(emitted[0])).toMatchObject({
-        id: taskId,
-        parentId: "compact/compact-feature-ccp",
-        outcome: "Recheck the exact CCP row after origin/dev advances.",
-        mode: "achieve",
-        owner: "aks-explorer",
-        input: {
-          baseRef: "origin/dev",
-          resumeBaselineCommit: "c17c6450",
-          repoRefOwnerHandoff: {
-            reason: "repo-ref-wait-owner-handoff",
-            preserveSameTaskId: true,
-            priorWorkflow: "wait-for-repo-ref-advance",
-            previousBaselineCommit: "c17c6450",
-          },
-        },
-        priority: "P2",
-      });
-      expect(resolveAksTask(emitted[0])?.acceptance).toEqual(
-        expect.arrayContaining([
-          "Use current origin/dev evidence.",
-          "If the same scope still needs a supported origin/dev wait, keep this same task id waiting from the current baseline instead of creating a child or successor wait-named descendant.",
-        ]),
-      );
-      expect(resolveAksTask(emitted[0])?.workflow).toBeUndefined();
-    } finally {
-      rmSync(appDir, { recursive: true, force: true });
-    }
-  });
-
-  test("repo-ref owner-handoff replay carries a direct-owner task intent snapshot", async () => {
+  test("leaves repo-ref owner handoff continuation to the shared controller", async () => {
     const appDir = mkdtempSync(join(tmpdir(), "repo-ref-owner-handoff-"));
     const emitted: Record<string, unknown>[] = [];
     const taskId =
@@ -1524,7 +1424,7 @@ describe("app event contract", () => {
         ),
       );
 
-      await routeAksEvent(
+      const result = await routeAksEvent(
         {
           appPath: (path = ".") => resolve(appDir, path),
           emit: (value: Record<string, unknown>) => emitted.push(value),
@@ -1546,58 +1446,8 @@ describe("app event contract", () => {
         },
       );
 
-      const replayEvent = emitted.find(
-        (entry) => entry.action === "repo-ref-owner-handoff-replay",
-      ) as Record<string, unknown> | undefined;
-      expect(replayEvent).toBeTruthy();
-      expect(replayEvent).toMatchObject({
-        data: {
-          taskIntent: {
-            id: taskId,
-            parentId: "project",
-            owner: "aks-explorer",
-            mode: "achieve",
-            outcome:
-              "After origin/dev advances, recheck the exact same compact frontier.",
-            input: {
-              baseRef: "origin/dev",
-              resumeBaselineCommit: "63c7519aa1420391aaa5b19967f1a7c8bcbcf786",
-            },
-          },
-        },
-      });
-      expect(
-        (
-          (replayEvent?.data as Record<string, unknown>)?.taskIntent as Record<
-            string,
-            unknown
-          >
-        )?.workflow,
-      ).toBeUndefined();
-      expect(resolveAksTask(replayEvent ?? {})).toMatchObject({
-        id: taskId,
-        owner: "aks-explorer",
-        mode: "achieve",
-        outcome:
-          "After origin/dev advances, recheck the exact same compact frontier.",
-        input: {
-          baseRef: "origin/dev",
-          resumeBaselineCommit: "63c7519aa1420391aaa5b19967f1a7c8bcbcf786",
-          repoRefOwnerHandoff: {
-            reason: "repo-ref-wait-owner-handoff",
-            preserveSameTaskId: true,
-            priorWorkflow: "wait-for-repo-ref-advance",
-            previousBaselineCommit: "63c7519aa1420391aaa5b19967f1a7c8bcbcf786",
-          },
-        },
-      });
-      expect(resolveAksTask(replayEvent ?? {})?.acceptance).toEqual(
-        expect.arrayContaining([
-          "Preserve same-task bounded owner judgment.",
-          "If the same scope still needs a supported origin/dev wait, keep this same task id waiting from the current baseline instead of creating a child or successor wait-named descendant.",
-        ]),
-      );
-      expect(resolveAksTask(replayEvent ?? {})?.workflow).toBeUndefined();
+      expect(result).not.toHaveProperty("repoRefOwnerHandoffReplay");
+      expect(emitted).toEqual([]);
     } finally {
       rmSync(appDir, { recursive: true, force: true });
     }
