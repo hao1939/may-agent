@@ -371,26 +371,6 @@ function waitCondition(runId: string): ProjectAppConditionSpec {
   };
 }
 
-export function campaignPulseAt(nowMs = Date.now()): number {
-  return Math.floor(nowMs / 300_000);
-}
-
-export function nextCampaignPulseCondition(
-  notBeforeMs: number,
-): ProjectAppConditionSpec {
-  const currentPulse = campaignPulseAt(notBeforeMs);
-  return {
-    id: `master-validation-campaign-pulse-after-${currentPulse}-${notBeforeMs}`,
-    type: "project.task.tick",
-    subject: "task:master-validation-staging-cycle",
-    expected: {
-      reason: "master-validation-campaign-reconcile",
-      pulse: { gt: currentPulse },
-      timestamp: { gte: notBeforeMs },
-    },
-  };
-}
-
 export function transientMasterValidationAccessFailure(
   message: string,
 ): boolean {
@@ -423,42 +403,41 @@ function waiting(
   });
 }
 
-function waitForCampaignChange(
+function completeCampaignObservation(
   ctx: WorkflowContext,
   campaign: CampaignReceipt,
   summary: string,
   evidence: string[] = [],
 ): WorkflowResult {
-  const notBeforeMs = Date.now();
   return ctx.done(summary, {
-    state: "waiting",
+    state: "converged",
     summary,
     evidence: [
       `campaign-branch:${campaign.branch}`,
       `campaign-base:${campaign.baseCommit}`,
       `campaign-commit:${campaign.currentCommit}`,
+      "next-observation:schedule:master-validation-staging-cycle",
       ...evidence,
     ],
     actions: [],
-    conditions: [nextCampaignPulseCondition(notBeforeMs)],
   });
 }
 
-function waitForTransientAccessRecovery(
+function completeTransientAccessObservation(
   ctx: WorkflowContext,
   appDir: string,
   summary: string,
   message: string,
 ): WorkflowResult {
-  const notBeforeMs = Date.now();
   const campaign = readCampaignReceipt(appDir);
   return ctx.done(summary, {
-    state: "waiting",
+    state: "converged",
     summary,
     evidence: [
       `transient-ado-access:${message}`,
       `pipeline:${pipelineId}`,
       `source-ref:${sourceRef}`,
+      "next-observation:schedule:master-validation-staging-cycle",
       ...(campaign
         ? [
             `campaign-branch:${campaign.branch}`,
@@ -468,7 +447,6 @@ function waitForTransientAccessRecovery(
         : []),
     ],
     actions: [],
-    conditions: [nextCampaignPulseCondition(notBeforeMs)],
   });
 }
 
@@ -809,7 +787,7 @@ function queueCycle(
       );
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
-      return waitForCampaignChange(
+      return completeCampaignObservation(
         ctx,
         campaign,
         `Another reconciliation is already queueing ${runBranch}@${sourceCommit}; wait for its durable receipt instead of creating a duplicate run.`,
@@ -962,7 +940,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
               prior.runId,
             );
           }
-          return waitForCampaignChange(
+          return completeCampaignObservation(
             ctx,
             composed.receipt,
             `Campaign run ${prior.runId} failed on the frozen ${composed.receipt.baseCommit} snapshot. A new focused PR head reruns immediately; otherwise the same snapshot reruns at the six-hour recovery cadence.`,
@@ -1006,7 +984,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
             prior.runId,
             open.map(({ fix }) => fix.pullRequestId),
           );
-          return waitForCampaignChange(
+          return completeCampaignObservation(
             ctx,
             composed.receipt,
             `Campaign run ${prior.runId} passed. The repair loop may now wait for its ${open.length} focused PR(s) to merge into main.`,
@@ -1109,7 +1087,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           prior.runId,
         );
       }
-      return waitForCampaignChange(
+      return completeCampaignObservation(
         ctx,
         campaign,
         `Main run ${prior.runId} failed at frozen commit ${prior.sourceCommit}. The campaign branch is ready and will run as soon as a focused repair PR is available.`,
@@ -1134,7 +1112,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     const message = error instanceof Error ? error.message : String(error);
     if (transientMasterValidationAccessFailure(message)) {
       const summary = `Master validation cycle hit a transient Azure DevOps access failure while queueing or observing its run: ${message}. Wait for the next master-validation reconcile pulse before retrying instead of sending repeated blind owner retries.`;
-      return waitForTransientAccessRecovery(ctx, appDir, summary, message);
+      return completeTransientAccessObservation(ctx, appDir, summary, message);
     }
     const summary = `Master validation cycle could not queue or observe its run: ${message}`;
     return ctx.done(summary, {

@@ -10,7 +10,6 @@ import {
   completedCycleState,
   fixVerificationTrigger,
   latestCampaignFixes,
-  nextCampaignPulseCondition,
   transientMasterValidationAccessFailure,
   verifiedFixNotificationContent,
 } from "./master-validation-cycle.js";
@@ -113,19 +112,6 @@ describe("master-validation cycle", () => {
         },
       ]),
     ).toMatchObject({ id: 15 });
-  });
-
-  test("uses the next five-minute pulse to recover a red campaign", () => {
-    expect(nextCampaignPulseCondition(12_600_042)).toEqual({
-      id: "master-validation-campaign-pulse-after-42-12600042",
-      type: "project.task.tick",
-      subject: "task:master-validation-staging-cycle",
-      expected: {
-        reason: "master-validation-campaign-reconcile",
-        pulse: { gt: 42 },
-        timestamp: { gte: 12_600_042 },
-      },
-    });
   });
 
   test("keeps only the newest active focused PR per stable task", () => {
