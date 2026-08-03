@@ -142,6 +142,11 @@ function nextRows(ctx: WorkflowContext, afterId: number, limit: number): Row[] {
        FROM events
       WHERE event_type = 'evaluation.reviewed'
         AND id > ?
+        AND lower(COALESCE(
+          json_extract(data, '$.agent'),
+          json_extract(data, '$.params.agent'),
+          ''
+        )) = 'may'
       ORDER BY id ASC`,
       [afterId],
       { limit },

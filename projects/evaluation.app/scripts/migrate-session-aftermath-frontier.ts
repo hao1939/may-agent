@@ -17,7 +17,10 @@ export type SessionAftermathMigrationStats = {
   attemptsRemoved: number;
   receiptsRemoved: number;
   conditionsRemoved: number;
+  structuralParentsRepaired: number;
 };
+
+const structuralParentIds = ["evaluator-reliability", "pipeline-health"];
 
 export function migrateSessionAftermathFrontier(
   tree: TaskTree,
@@ -48,7 +51,17 @@ export function migrateSessionAftermathFrontier(
     attemptsRemoved: 0,
     receiptsRemoved: 0,
     conditionsRemoved: 0,
+    structuralParentsRepaired: 0,
   };
+
+  for (const taskId of structuralParentIds) {
+    const resource = tree.resources?.[taskId];
+    if (!resource?.spec.workflow) continue;
+    delete resource.spec.workflow;
+    resource.metadata.generation += 1;
+    resource.metadata.resourceVersion += 1;
+    stats.structuralParentsRepaired += 1;
+  }
 
   const removedConditionIds = new Set(
     Object.entries(tree.resources ?? {}).flatMap(([taskId, resource]) =>

@@ -50,6 +50,46 @@ function fixture(): TaskTree {
           conditionIds: [],
         },
       },
+      "evaluator-reliability": {
+        metadata: {
+          id: "evaluator-reliability",
+          generation: 2,
+          resourceVersion: 8,
+        },
+        spec: {
+          parentId: "root",
+          outcome: "keep evaluator reliable",
+          acceptance: [],
+          mode: "maintain",
+          workflow: "evaluator-heartbeat",
+        },
+        status: {
+          observedGeneration: 2,
+          phase: "converged",
+          updatedAt: "2026-08-03T00:00:00.000Z",
+          conditionIds: [],
+        },
+      },
+      "pipeline-health": {
+        metadata: {
+          id: "pipeline-health",
+          generation: 2,
+          resourceVersion: 9,
+        },
+        spec: {
+          parentId: "evaluator-reliability",
+          outcome: "keep pipeline healthy",
+          acceptance: [],
+          mode: "maintain",
+          workflow: "evaluator-heartbeat",
+        },
+        status: {
+          observedGeneration: 2,
+          phase: "converged",
+          updatedAt: "2026-08-03T00:00:00.000Z",
+          conditionIds: [],
+        },
+      },
     },
     taskTriggers: {
       "runtime/session-aftermath/s_old": {
@@ -115,10 +155,21 @@ describe("session aftermath frontier migration", () => {
       attemptsRemoved: 1,
       receiptsRemoved: 1,
       conditionsRemoved: 1,
+      structuralParentsRepaired: 2,
     });
     expect(Object.keys(tree.resources ?? {})).toEqual([
       "runtime/aftermath-backfill",
+      "evaluator-reliability",
+      "pipeline-health",
     ]);
+    expect(tree.resources?.["evaluator-reliability"]?.spec.workflow).toBe(
+      undefined,
+    );
+    expect(tree.resources?.["pipeline-health"]?.spec.workflow).toBe(undefined);
+    expect(tree.resources?.["evaluator-reliability"]?.metadata).toMatchObject({
+      generation: 3,
+      resourceVersion: 9,
+    });
     expect(tree.taskTriggers).toEqual({});
     expect(tree.attempts).toEqual({});
     expect(tree.receipts).toEqual({});

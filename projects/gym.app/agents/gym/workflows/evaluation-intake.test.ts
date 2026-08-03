@@ -39,11 +39,13 @@ describe("evaluation-intake", () => {
       },
     ];
     const emitted: Record<string, unknown>[] = [];
+    const queries: string[] = [];
     const ctx = {
       appDir,
       projectsRoot: join(root, "projects"),
       query: {
-        sql(_sql: string, params: unknown[], options: { limit: number }) {
+        sql(sql: string, params: unknown[], options: { limit: number }) {
+          queries.push(sql);
           const after = Number(params[0]);
           return {
             rows: rows.filter((row) => row.id > after).slice(0, options.limit),
@@ -62,6 +64,8 @@ describe("evaluation-intake", () => {
     } as unknown as WorkflowContext;
 
     await execute(ctx);
+    expect(queries[0]).toContain("json_extract(data, '$.agent')");
+    expect(queries[0]).toContain("= 'may'");
     expect(emitted).toEqual([
       expect.objectContaining({
         type: "project.task.tick",

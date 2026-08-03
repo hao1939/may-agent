@@ -19,8 +19,8 @@ of the app. They use `reconcile_mode: "maintain"`:
 | `session-audit`            | Eligible terminal sessions have traceable evaluations or structured skips.                                                                     |
 | `project-app-audit`        | Every watched app has a current independent health assessment.                                                                                 |
 | `finding-delivery`         | Actionable findings reach owners and useful human decisions without duplicates.                                                                |
-| `evaluator-reliability`    | Evaluation's own workflows and control path remain reliable and bounded; reconciles through the filtered `evaluator-heartbeat` owner workflow. |
-| `pipeline-health`          | Coverage, throughput, review delivery, and anomaly state remain observable through `evaluator-heartbeat`.                                      |
+| `evaluator-reliability`    | Structural parent for evaluation's bounded reliability responsibilities; it reflects child state without starting an owner session.            |
+| `pipeline-health`          | Structural parent for pipeline observation and the aftermath frontier; changed anomaly signals wake explicit review work instead.               |
 | `criteria-and-calibration` | Criteria remain versioned and calibrated against concrete samples.                                                                             |
 | `drift-detection`          | Comparable cohorts expose meaningful quality drift without speculative work.                                                                   |
 | `system-integrity`         | Evaluator-local state, routing, ownership, and reports remain internally consistent.                                                           |
@@ -61,7 +61,9 @@ The one-time migration removes the former automatic
 `runtime/session-aftermath/<session>` live resources, triggers, attempts, and
 receipts. It does not remove evaluations, session transcripts, eval trails, or
 reports. Any terminal session without an evaluation is rediscovered by the
-standing frontier.
+standing frontier. It also removes the legacy `evaluator-heartbeat` workflow
+from `evaluator-reliability` and `pipeline-health`, making those parents
+structural as declared by the current seed and design.
 
 Run it only with evaluation reconciliation paused and attempts drained:
 
