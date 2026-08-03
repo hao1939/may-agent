@@ -61,6 +61,8 @@ export const exactStrictInventoryInstruction =
   "The repository-wide strict inventory is expected to exit nonzero while other rows remain. Capture and parse its JSON anyway; this leaf is clear only when its exact legacy path is absent from both guard.remainingSpecReferencedPlainScenarioUnits and guard.remainingRepoPlainScenarioFiles.";
 export const currentAdoSurfaceInstruction =
   "Do not treat uncertainty about a secret or variable on the current ADO execution surface as proof of a blocker. Missing-input evidence from an older backend, different source commit, or different target is context only. When hard admission checks pass and no exact current-surface observation proves the input unavailable, set liveReady=true so this workflow can dispatch the bounded run and collect the current fact. Use a wait or needs-owner only after exact current evidence identifies the unavailable input, its producer, and the observable resume condition.";
+export const transientRetryDiagnosisInstruction =
+  "Do not trust a result's blocked/error category or environment/transient label as the diagnosis. A timeout, generic ARM failure, incomplete provisioning state, or successful cleanup alone does not prove that an unchanged retry is truthful. Before retry-transient, inspect the exact task source and failure-stage evidence for deterministic ordering, identity, authorization, configuration, and API-contract mistakes, and state affirmative evidence that excludes those causes. When the available evidence cannot distinguish a provider incident from a source defect, improve the carrier's failure diagnostics or return one exact observable wait; do not guess transient.";
 export const scenarioQualityRepairInstruction =
   "For a quality-normalization task, resolve every cited structural quality issue before requesting ADO. Read the current strict inventory and exact source yourself, repair the same carrier/spec in this task, and keep iterating until the cited issue codes are absent. A green ADO run proves execution only; it does not waive missing official grounding, migration-only scaffolding, target/mutation gates, or fixture/cleanup ownership.";
 const azCli =
@@ -5736,7 +5738,7 @@ export async function reconcileSpecLive(
           preIntegrationVerification.accepted
             ? "Hard live-proof validation found no structural proof gaps."
             : `Hard live-proof validation findings to resolve or explain: ${preIntegrationVerification.summary}`,
-          `Use ${runContextDir} exclusively for diagnosis for this run. Do not reuse task-root or earlier-run evidence, do not scrape Azure DevOps web pages, and do not write runtime artifacts into tracked source paths.`,
+          `Use ${runContextDir} as the exclusive source of run-specific facts for this run. Also inspect the exact task source and official contract sources when diagnosing why those facts occurred. Do not reuse task-root or earlier-run run evidence, do not scrape Azure DevOps web pages, and do not write runtime artifacts into tracked source paths.`,
           "Inspect run metadata, plan inputs, per-spec result, live resource identity, assertions, and cleanup proof. The aggregate provider result alone is not a spec verdict.",
           semanticClaimEvidenceInstruction,
           scenarioQualityRepairInstruction,
@@ -5754,6 +5756,7 @@ export async function reconcileSpecLive(
           "For a carrier/spec defect, make the smallest fix in the task worktree, run scoped local checks, commit, leave the worktree clean, and return committed.",
           directVitestCompatibilityInstruction,
           "When returning committed, separately set liveReady=true only if the repaired exact source may be sent to ADO now. If an external fact still prevents execution, set liveReady=false with one exact observable Condition; use needs-owner when the app cannot observe that boundary. A commit alone is not permission to rerun.",
+          transientRetryDiagnosisInstruction,
           failedRunsForCommit >= 2
             ? "The same source commit already has at least two terminal nonpassing runs. Do not request another unchanged retry; commit a fix, return an exact wait, or request owner judgment."
             : "Use retry-transient only when artifacts prove a transient provider/environment failure and an unchanged retry is truthful.",

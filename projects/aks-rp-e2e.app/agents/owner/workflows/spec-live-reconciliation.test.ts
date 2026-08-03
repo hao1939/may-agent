@@ -73,6 +73,7 @@ import {
   novelScenarioReplayCommits,
   scenarioNormalizationReplayRequired,
   semanticClaimEvidenceInstruction,
+  transientRetryDiagnosisInstruction,
   scenarioQualityRepairInstruction,
   shouldFastForwardIntegratedSource,
   shouldReviewBeforeInitialLiveDispatch,
@@ -290,6 +291,18 @@ describe("spec-live-reconciliation workflow", () => {
     );
     expect(directVitestCompatibilityInstruction).toContain(
       "Never fabricate subscription, region, API version, Kubernetes version, or VM-size placeholders",
+    );
+  });
+
+  test("requires evidence before an unchanged transient retry", () => {
+    expect(transientRetryDiagnosisInstruction).toContain(
+      "timeout, generic ARM failure",
+    );
+    expect(transientRetryDiagnosisInstruction).toContain(
+      "deterministic ordering, identity, authorization, configuration",
+    );
+    expect(transientRetryDiagnosisInstruction).toContain(
+      "do not guess transient",
     );
   });
 
