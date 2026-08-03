@@ -2504,6 +2504,85 @@ describe("project app task reconciler state", () => {
     });
   });
 
+  it("preserves newer owner steering while releasing one execution failure", () => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: intent(),
+      appOwner: "app-owner",
+      handler: "owner:branch-owner",
+      trigger: { type: "project.task.tick", data: { reason: "initial" } },
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    recordProjectAppTaskAttemptSession(config, claim, "failed-owner-session");
+    markProjectAppTaskAttention(config, claim, {
+      summary: "owner execution ended without a decision",
+      reason: "HandlerExecutionFailed",
+    });
+    expect(
+      recordProjectAppTaskTrigger(config, claim.taskId, {
+        type: "project.comment.created",
+        data: { project: "sample", comment: "Use the exact evidence paths" },
+      }),
+    ).toEqual({ kind: "recorded" });
+
+    expect(
+      releaseHandlerExecutionFailedProjectAppTask(config, claim.taskId, {
+        owner: "branch-owner",
+        sessionId: "new-success",
+        observedAt: "2099-01-01T00:00:00.000Z",
+      }),
+    ).toBe(true);
+    expect(readProjectAppTaskTrigger(config, claim.taskId)).toEqual({
+      type: "project.comment.created",
+      data: { project: "sample", comment: "Use the exact evidence paths" },
+    });
+  });
+
+  it("does not revive repeated execution failures from unrelated owner success", () => {
+    const { config } = fixture();
+    const first = declareAndClaimTask(config, {
+      intent: intent(),
+      appOwner: "app-owner",
+      handler: "owner:branch-owner",
+      trigger: { type: "project.task.tick", data: { reason: "initial" } },
+    });
+    if (first.kind !== "claimed") throw new Error("expected first claim");
+    recordProjectAppTaskAttemptSession(config, first, "first-failed-session");
+    markProjectAppTaskAttention(config, first, {
+      summary: "first owner execution failure",
+      reason: "HandlerExecutionFailed",
+    });
+    expect(
+      releaseHandlerExecutionFailedProjectAppTask(config, first.taskId, {
+        owner: "branch-owner",
+        sessionId: "first-health-proof",
+        observedAt: "2099-01-01T00:00:00.000Z",
+      }),
+    ).toBe(true);
+
+    const second = declareAndClaimTask(config, {
+      intent: intent(),
+      appOwner: "app-owner",
+      handler: "owner:branch-owner",
+      trigger: { type: "project.task.tick", data: { reason: "automatic-retry" } },
+    });
+    if (second.kind !== "claimed") throw new Error("expected second claim");
+    recordProjectAppTaskAttemptSession(config, second, "second-failed-session");
+    markProjectAppTaskAttention(config, second, {
+      summary: "second owner execution failure",
+      reason: "HandlerExecutionFailed",
+    });
+
+    expect(
+      releaseHandlerExecutionFailedProjectAppTask(config, second.taskId, {
+        owner: "branch-owner",
+        sessionId: "unrelated-success",
+        observedAt: "2100-01-01T00:00:00.000Z",
+      }),
+    ).toBe(false);
+    expect(readTaskState(config).resources?.[second.taskId].status.phase).toBe("attention");
+  });
+
   it("accepts the current attempt after a status-only resource version change", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {

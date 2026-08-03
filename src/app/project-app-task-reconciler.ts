@@ -1481,6 +1481,18 @@ export function releaseHandlerExecutionFailedProjectAppTask(
       attempt.handler === `owner:${attempt.owner}` &&
       Boolean(attempt.sessionId);
     if (!executionFailed && !legacyExecutionFailed) return false;
+    const repeatedExecutionFailure =
+      executionFailed &&
+      Object.values(tree.attempts ?? {}).filter(
+        (candidate) =>
+          candidate.taskId === taskId &&
+          candidate.taskGeneration === resource.metadata.generation &&
+          candidate.failureReason === "HandlerExecutionFailed",
+      ).length > 1;
+    // One later owner success is enough to prove that a transient owner/runtime
+    // failure may be retried. Repeated task-specific failures require fresh
+    // task input instead of being revived by unrelated successful owner work.
+    if (repeatedExecutionFailure) return false;
     const observedAt = Date.parse(evidence.observedAt);
     const failedAt = Date.parse(attempt.finishedAt);
     if (!Number.isFinite(observedAt) || !Number.isFinite(failedAt) || observedAt <= failedAt) return false;
@@ -1494,12 +1506,21 @@ export function releaseHandlerExecutionFailedProjectAppTask(
     });
     if (attempt.trigger) {
       const previous = tree.taskTriggers?.[taskId];
+      // Preserve an explicit wake or owner comment recorded after this failed
+      // attempt. Restoring the attempt trigger here would erase the exact
+      // steering needed to change approach on retry.
+      if (previous) {
+        syncTaskProjection(task, resource, attempt.owner);
+        refreshActiveTaskProjection(tree);
+        saveTaskState(config, tree);
+        return true;
+      }
       tree.taskTriggers = {
         ...(tree.taskTriggers ?? {}),
         [taskId]: {
           taskId,
           taskGeneration: resource.metadata.generation,
-          resourceVersion: (previous?.resourceVersion ?? 0) + 1,
+          resourceVersion: 1,
           event: structuredClone(attempt.trigger),
           observedAt: evidence.observedAt,
         },
