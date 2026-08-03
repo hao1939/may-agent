@@ -61,22 +61,47 @@ export function migrateSessionAftermathFrontier(
     structuralParentsRepaired: 0,
   };
 
-  for (const taskId of structuralParentIds) {
-    const resource = tree.resources?.[taskId];
-    if (!resource?.spec.workflow) continue;
-    delete resource.spec.workflow;
-    resource.metadata.generation += 1;
-    resource.metadata.resourceVersion += 1;
-    stats.structuralParentsRepaired += 1;
-  }
-
   const removedConditionIds = new Set(
     Object.entries(tree.resources ?? {}).flatMap(([taskId, resource]) =>
-      taskId.startsWith(legacySessionTaskPrefix)
+      taskId.startsWith(legacySessionTaskPrefix) ||
+      structuralParentIds.includes(taskId)
         ? (resource.status.conditionIds ?? [])
         : [],
     ),
   );
+  for (const taskId of structuralParentIds) {
+    const resource = tree.resources?.[taskId];
+    if (!resource) continue;
+    if (!tree.groups?.[taskId]) {
+      throw new Error(`Cannot retire structural parent ${taskId}: group missing`);
+    }
+    if (resource.status.currentAttemptId) {
+      throw new Error(
+        `Cannot retire structural parent ${taskId}: attempt still running`,
+      );
+    }
+    delete tree.resources?.[taskId];
+    delete tree.taskTriggers?.[taskId];
+    for (const [attemptId, attempt] of Object.entries(tree.attempts ?? {})) {
+      if (attempt.taskId !== taskId) continue;
+      delete tree.attempts?.[attemptId];
+      stats.attemptsRemoved += 1;
+    }
+    if (tree.receipts?.[taskId]) {
+      delete tree.receipts[taskId];
+      stats.receiptsRemoved += 1;
+    }
+    stats.structuralParentsRepaired += 1;
+  }
+  tree.active_task_ids = (tree.active_task_ids ?? []).filter(
+    (taskId) => !structuralParentIds.includes(taskId),
+  );
+  if (
+    tree.active_task_id &&
+    structuralParentIds.includes(tree.active_task_id)
+  ) {
+    tree.active_task_id = null;
+  }
   for (const taskId of legacyTaskIds) {
     if (!tree.resources?.[taskId]) continue;
     delete tree.resources?.[taskId];

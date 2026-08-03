@@ -7,6 +7,16 @@ function fixture(): TaskTree {
     project_lifecycle: "paused",
     groups: {
       root: { id: "root", parent_id: null, owner: "evaluator" },
+      "evaluator-reliability": {
+        id: "evaluator-reliability",
+        parent_id: "root",
+        owner: "evaluator",
+      },
+      "pipeline-health": {
+        id: "pipeline-health",
+        parent_id: "evaluator-reliability",
+        owner: "evaluator",
+      },
     },
     tasks: {},
     resources: {
@@ -159,17 +169,9 @@ describe("session aftermath frontier migration", () => {
     });
     expect(Object.keys(tree.resources ?? {})).toEqual([
       "runtime/aftermath-backfill",
-      "evaluator-reliability",
-      "pipeline-health",
     ]);
-    expect(tree.resources?.["evaluator-reliability"]?.spec.workflow).toBe(
-      undefined,
-    );
-    expect(tree.resources?.["pipeline-health"]?.spec.workflow).toBe(undefined);
-    expect(tree.resources?.["evaluator-reliability"]?.metadata).toMatchObject({
-      generation: 3,
-      resourceVersion: 9,
-    });
+    expect(tree.groups?.["evaluator-reliability"]).toBeDefined();
+    expect(tree.groups?.["pipeline-health"]).toBeDefined();
     expect(tree.taskTriggers).toEqual({});
     expect(tree.attempts).toEqual({});
     expect(tree.receipts).toEqual({});
@@ -218,9 +220,9 @@ describe("session aftermath frontier migration", () => {
     expect(tree.resources?.["runtime/session-aftermath/s_old"]).toBeDefined();
     expect(tree.attempts?.legacy).toBeDefined();
     expect(tree.receipts?.["runtime/session-aftermath/s_done"]).toBeDefined();
-    expect(tree.resources?.["evaluator-reliability"]?.spec.workflow).toBe(
-      undefined,
-    );
-    expect(tree.resources?.["pipeline-health"]?.spec.workflow).toBe(undefined);
+    expect(tree.resources?.["evaluator-reliability"]).toBeUndefined();
+    expect(tree.resources?.["pipeline-health"]).toBeUndefined();
+    expect(tree.groups?.["evaluator-reliability"]).toBeDefined();
+    expect(tree.groups?.["pipeline-health"]).toBeDefined();
   });
 });

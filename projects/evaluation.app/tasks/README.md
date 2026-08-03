@@ -61,9 +61,10 @@ The one-time migration removes the former automatic
 `runtime/session-aftermath/<session>` live resources, triggers, attempts, and
 receipts. It does not remove evaluations, session transcripts, eval trails, or
 reports. Any terminal session without an evaluation is rediscovered by the
-standing frontier. It also removes the legacy `evaluator-heartbeat` workflow
-from `evaluator-reliability` and `pipeline-health`, making those parents
-structural as declared by the current seed and design.
+standing frontier. It also removes the legacy executable resources named
+`evaluator-reliability` and `pipeline-health`. Their same-named groups remain,
+making those parents structural as declared by the current seed and design.
+Session and event stores retain the old owner-run history outside task state.
 
 Run it only with evaluation reconciliation paused and attempts drained:
 
