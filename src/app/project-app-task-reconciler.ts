@@ -1130,6 +1130,13 @@ function triggerHasDirectProjectComment(event: Record<string, unknown> | undefin
     : false;
 }
 
+function hasSatisfiedConditionReconciliation(
+  tree: TaskTree,
+  resource: ProjectAppTaskResource,
+): boolean {
+  return resource.status.phase === "waiting" && hasSatisfiedTaskCondition(tree, resource.metadata.id);
+}
+
 export type ProjectAppTaskQueueEntry = {
   taskId: string;
   options: {
@@ -1169,7 +1176,7 @@ export function listRunnableProjectAppTaskQueueEntries(config: TaskStateConfig):
     const hasPersistedTrigger = (resource: ProjectAppTaskResource): boolean =>
       Boolean(tree.taskTriggers?.[resource.metadata.id]?.event);
     const effectivePriority = (resource: ProjectAppTaskResource) =>
-      hasDirectProjectComment(resource)
+      hasDirectProjectComment(resource) || hasSatisfiedConditionReconciliation(tree, resource)
         ? "P0"
         : effectiveProjectAppTaskPriority(
             resource,
@@ -1225,7 +1232,9 @@ export function projectAppTaskQueueEntries(
           taskId,
           options: {
             front: Boolean(trigger?.event),
-            priority: triggerHasDirectProjectComment(trigger?.event)
+            priority:
+              triggerHasDirectProjectComment(trigger?.event) ||
+              hasSatisfiedConditionReconciliation(tree, resource)
               ? "P0"
               : effectiveProjectAppTaskPriority(resource, nowMs, trigger?.observedAt),
           },
