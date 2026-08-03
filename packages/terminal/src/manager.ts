@@ -115,7 +115,7 @@ function makeProfiles(projectRoot: string): TerminalProfile[] {
       id: "claude",
       label: "Claude",
       description: "Interactive Claude Code CLI session with container-local permission bypass and session resume enabled.",
-      command: "bash -lc 'cd \"${PROJECT_ROOT:-/app}\"; exec claude --continue --dangerously-skip-permissions --permission-mode bypassPermissions --add-dir /app'",
+      command: "bash -lc 'export ANTHROPIC_BASE_URL=\"${MODEL_BASE_URL:-http://host.docker.internal:4000}\" ANTHROPIC_API_KEY=\"${MODEL_API_KEY:-not-needed}\"; cd \"${PROJECT_ROOT:-/app}\"; exec claude --model \"${CLAUDE_MODEL:-claude-opus-5}\" --continue --dangerously-skip-permissions --permission-mode bypassPermissions --add-dir /app'",
       cwd: root,
     },
     {

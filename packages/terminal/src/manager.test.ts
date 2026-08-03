@@ -100,6 +100,14 @@ describe("terminal manager", () => {
     expect(codex?.command).toContain("exec codex --no-alt-screen");
   });
 
+  test("launches Claude with the configured endpoint and Opus 5 by default", () => {
+    const manager = createTerminalManager({ projectRoot: "/app" });
+    const claude = manager.getStatus().profiles.find((profile) => profile.id === "claude");
+
+    expect(claude?.command).toContain("ANTHROPIC_BASE_URL");
+    expect(claude?.command).toContain("${CLAUDE_MODEL:-claude-opus-5}");
+  });
+
   test("reattaches a detached terminal through the warm bridge", async () => {
     const root = mkdtempSync(join(tmpdir(), "terminal-manager-"));
     try {
