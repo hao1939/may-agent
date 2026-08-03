@@ -54,6 +54,21 @@ export function resolveMayAgentTask(
         workflow: "ops-health-review",
         priority: "P1",
       };
+    case "may-agent.resource-migration.requested":
+      return {
+        id: "runtime/unified-resource-migration-v1",
+        parentId: "project",
+        outcome:
+          "Retire the fixed set of pre-contract May Agent task resources whose outcomes are now implemented or superseded.",
+        acceptance: [
+          "Only the named version-1 legacy resources are closed, dependent work before its dependency, and every closure leaves a completion receipt.",
+          "The unresolved evidence-archive secret-redaction task remains live until its archive-wide guarantee is proven.",
+        ],
+        mode: "achieve",
+        workflow: "unified-resource-migration",
+        input: { migration: "unified-resource-v1" },
+        priority: "P0",
+      };
     case "project.comment.created":
     case "project.owner.requested":
       return {
@@ -307,6 +322,7 @@ export default defineProjectApp({
     accepts: [
       { type: "project.ops_digest.tick", project: projectId },
       { type: "project.ops_health.tick", project: projectId },
+      { type: "may-agent.resource-migration.requested", project: projectId },
       { type: "project.owner.requested", project: projectId },
       { type: "project.comment.created", project: projectId },
     ],

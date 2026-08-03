@@ -57,6 +57,10 @@ describe("may-agent task reconciliation manifest", () => {
     expect(app.tasks?.accepts).toEqual([
       { type: "project.ops_digest.tick", project: "may-agent" },
       { type: "project.ops_health.tick", project: "may-agent" },
+      {
+        type: "may-agent.resource-migration.requested",
+        project: "may-agent",
+      },
       { type: "project.owner.requested", project: "may-agent" },
       { type: "project.comment.created", project: "may-agent" },
     ]);
@@ -69,5 +73,19 @@ describe("may-agent task reconciliation manifest", () => {
 
   it("does not manufacture tasks for unrelated events", () => {
     expect(resolveMayAgentTask({ type: "unrelated.event" })).toBeNull();
+  });
+
+  it("maps the bounded legacy cleanup to one finite resource", () => {
+    expect(
+      resolveMayAgentTask({
+        type: "may-agent.resource-migration.requested",
+        project: "may-agent",
+      }),
+    ).toMatchObject({
+      id: "runtime/unified-resource-migration-v1",
+      mode: "achieve",
+      workflow: "unified-resource-migration",
+      priority: "P0",
+    });
   });
 });
