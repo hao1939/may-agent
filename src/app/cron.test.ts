@@ -97,6 +97,83 @@ describe("Cron event dispatch", () => {
     }
   });
 
+  it("notifies only after three consecutive transient handler failures", async () => {
+    const root = tempRoot();
+    const notifications: string[] = [];
+    const failures: any[] = [];
+    const cron = new Cron(
+      join(root, "missing-cron.json"),
+      {} as any,
+      () => "s1",
+      undefined,
+      root,
+      (message) => notifications.push(message),
+      (event) => failures.push(event),
+    );
+    try {
+      cron.registerHandler("flaky-handler", async () => {
+        throw new Error("database is locked");
+      });
+      cron.addSyntheticEntry({
+        name: "flaky-handler",
+        enabled: true,
+        handler: "flaky-handler",
+      });
+
+      for (let attempt = 1; attempt <= 3; attempt += 1) {
+        expect(cron.triggerNow("flaky-handler", { force: true })).toBe(true);
+        await tick();
+        expect(notifications).toHaveLength(attempt === 3 ? 1 : 0);
+      }
+      expect(failures.filter((event) => event.type === "handler.failed")).toHaveLength(3);
+    } finally {
+      cron.stop();
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("resets transient failure suppression after a successful run", async () => {
+    const root = tempRoot();
+    const notifications: string[] = [];
+    const cron = new Cron(
+      join(root, "missing-cron.json"),
+      {} as any,
+      () => "s1",
+      undefined,
+      root,
+      (message) => notifications.push(message),
+    );
+    let fail = true;
+    try {
+      cron.registerHandler("recovering-handler", async () => {
+        if (fail) throw new Error("SQLITE_BUSY");
+      });
+      cron.addSyntheticEntry({
+        name: "recovering-handler",
+        enabled: true,
+        handler: "recovering-handler",
+      });
+
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        expect(cron.triggerNow("recovering-handler", { force: true })).toBe(true);
+        await tick();
+      }
+      fail = false;
+      expect(cron.triggerNow("recovering-handler", { force: true })).toBe(true);
+      await tick();
+      fail = true;
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        expect(cron.triggerNow("recovering-handler", { force: true })).toBe(true);
+        await tick();
+      }
+
+      expect(notifications).toEqual([]);
+    } finally {
+      cron.stop();
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("does not fire project-scoped workflow handlers for untargeted project events", async () => {
     const root = tempRoot();
     const bus = new EventBus();

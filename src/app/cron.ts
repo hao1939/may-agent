@@ -36,6 +36,23 @@ function asRecord(value: unknown): Record<string, unknown> | undefined {
   return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined;
 }
 
+// Transient errors that should not escalate to human notification unless they
+// persist for multiple consecutive ticks (see reportFailure suppression logic).
+const TRANSIENT_ERROR_PATTERNS: RegExp[] = [
+  /database is locked/i,
+  /SQLITE_BUSY/i,
+  /ECONNRESET/i,
+  /ETIMEDOUT/i,
+  /socket hang up/i,
+];
+
+/** Number of consecutive transient failures before escalating to notify(). */
+const TRANSIENT_ESCALATION_THRESHOLD = 3;
+
+function isTransientError(msg: string): boolean {
+  return TRANSIENT_ERROR_PATTERNS.some((p) => p.test(msg));
+}
+
 function workflowHandler(handler: CronEntry["handler"]): WorkflowBackedHandler | undefined {
   return handler && typeof handler === "object" && typeof handler.workflow === "string" ? handler : undefined;
 }
@@ -184,6 +201,9 @@ export class Cron {
 
   /** Last fire time per entry. */
   private lastFireTimes = new Map<string, number>();
+
+  /** Consecutive transient failure count per entry (reset on success or non-transient error). */
+  private transientFailureCounts = new Map<string, number>();
 
   constructor(
     private configPath: string,
@@ -1056,6 +1076,16 @@ export class Cron {
         ...(trace ? { trace } : {}),
       });
       this.onError?.(`Cron handler "${entry.name}" failed: ${errMsg}`);
+
+      // Transient-error suppression: known-transient failures (e.g. "database is locked")
+      // only escalate to human notification after TRANSIENT_ESCALATION_THRESHOLD consecutive
+      // occurrences. The handler.failed event is always emitted for observability.
+      if (isTransientError(errMsg)) {
+        const count = (this.transientFailureCounts.get(entry.name) ?? 0) + 1;
+        this.transientFailureCounts.set(entry.name, count);
+        if (count < TRANSIENT_ESCALATION_THRESHOLD) return;
+      }
+      this.transientFailureCounts.delete(entry.name); // reset on escalation or non-transient
       this.notify?.(`\u26a0\ufe0f Handler "${entry.name}" failed: ${errMsg}`);
     };
     const timeoutTimer = setTimeout(() => {
@@ -1083,6 +1113,7 @@ export class Cron {
           data: { handler: entry.name, handlerRunId, agent, durationMs: Date.now() - startMs },
           ...(trace ? { trace } : {}),
         });
+        this.transientFailureCounts.delete(entry.name); // reset on success
         this.drainQueuedEventTrigger(entry.name);
       })
       .catch((err) => {
