@@ -144,6 +144,11 @@ already-declared typed action. Free-form intent reaches owner judgment before
 domain work is selected; a typed action may map directly only because the app
 has already encoded and published that exact mapping.
 
+`project.owner.reviewed.taskRefs` names only durable domain work that remains
+after the owner turn. A direct answer, rejection, or no-op has no task refs and
+is delivered from the owner result. Internal owner-review carriers are never
+exposed to May or the human caller.
+
 A human conversation is a logical channel/thread relationship, not a session
 or permanent trace. One conversation may use many bounded sessions, and each
 human turn receives its own trace. Replies to a notification continue the
