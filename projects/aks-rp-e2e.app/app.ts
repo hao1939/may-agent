@@ -775,6 +775,10 @@ const aksTaskSelectors: EventSelector[] = [
     type: "aks.project-state-residue-migration.requested",
     target: projectTarget,
   },
+  {
+    type: "aks.spec-loop-ownership-migration.requested",
+    target: projectTarget,
+  },
   { type: "pipeline.failure.observed", target: projectTarget },
   { type: "pipeline.test.nonpassing", target: projectTarget },
   { type: "project.owner.requested", target: projectTarget },
@@ -906,6 +910,26 @@ export function resolveAksTask(
       owner: "app-ops",
       workflow: "unified-project-state-residue-migration",
       input: { migration: "project-state-residue-v2" },
+      priority: "P0",
+      category: "ops",
+    };
+  }
+
+  if (event.type === "aks.spec-loop-ownership-migration.requested") {
+    return {
+      id: "runtime/unified-resource-migration-spec-loop-ownership-v1",
+      parentId: "group/app-operations",
+      outcome:
+        "Move the exact safe legacy spec-loop siblings under the executable standing loop and compact completed holders.",
+      acceptance: [
+        "The child-backed serverless wait becomes a direct child of the standing spec loop without disturbing an external Condition.",
+        "The two exact completed childless maintain holders become receipts.",
+        "Any changed topology, phase, generation, or Condition leaves that resource untouched.",
+      ],
+      mode: "achieve",
+      owner: "app-ops",
+      workflow: "unified-spec-loop-ownership-migration",
+      input: { migration: "spec-loop-siblings-v1" },
       priority: "P0",
       category: "ops",
     };

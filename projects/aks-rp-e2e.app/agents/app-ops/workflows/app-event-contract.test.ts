@@ -831,6 +831,21 @@ describe("app event contract", () => {
     });
   });
 
+  test("routes the safe spec-loop ownership migration", () => {
+    expect(
+      resolveAksTask({
+        type: "aks.spec-loop-ownership-migration.requested",
+        target: { project: projectId },
+      }),
+    ).toMatchObject({
+      id: "runtime/unified-resource-migration-spec-loop-ownership-v1",
+      parentId: "group/app-operations",
+      workflow: "unified-spec-loop-ownership-migration",
+      input: { migration: "spec-loop-siblings-v1" },
+      priority: "P0",
+    });
+  });
+
   test("leaves repo-ref Condition matching and wakeup to the shared runtime", async () => {
     const emitted: Record<string, unknown>[] = [];
     const result = await routeAksEvent(

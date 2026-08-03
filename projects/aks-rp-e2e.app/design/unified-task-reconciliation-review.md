@@ -232,6 +232,13 @@ same task for its resolved owner, and exact Condition satisfaction wakes that
 same task through the generic tracker or passive resync. AKS no longer turns
 either `project.task.reconciled` result into another app-local task tick.
 
+Loop ownership is migrating from the safest edge inward. The first bounded
+slice, `spec-loop-siblings-v1`, reparents only the one child-backed spec wait
+that has no external Condition and compacts two exact completed childless
+holders. The remaining approval/pipeline-backed sibling stays unchanged until
+its exact wait resolves; migration never clears a truthful external wait just
+to reshape the tree.
+
 Attention is not a completion state. Each attention resource must retain an
 accountable owner, exact failure evidence, and a truthful next wake or
 escalation path. Generic mechanical recovery may requeue it when the failed
