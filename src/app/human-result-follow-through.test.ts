@@ -206,6 +206,46 @@ describe("human result follow-through", () => {
     expect(runs[0]?.task).toContain("Nearby Telegram messages");
   });
 
+  it("starts one fresh May review for a direct app-owner answer without exposing its carrier task", () => {
+    const { bus, persistDir, runs } = fixture();
+    storeHumanInput(persistDir, "trace-human-project");
+    const directResult = {
+      type: "project.owner.reviewed",
+      source: "project-app:gym:task-reconciler",
+      owner: "agent:gym",
+      data: {
+        openEventId: 1,
+        projectId: "gym",
+        disposition: "answered",
+        taskDisposition: "converged",
+        summary: "No change is needed because the requested state already holds.",
+        taskRefs: [],
+      },
+      trace: { traceId: "trace-human-project" },
+    } as any;
+
+    bus.emit(directResult);
+    bus.emit({ ...directResult });
+
+    expect(runs).toHaveLength(1);
+    expect(runs[0]).toMatchObject({
+      agent: "may",
+      opts: {
+        kind: "chat",
+        autoClose: "never",
+        source: "telegram",
+        requestId: "human-result-review:project:gym:owner:1",
+        conversationId: "telegram:chat:123:topic:0:agent:may",
+        channelMessageId: 700,
+        trace: { traceId: "trace-human-project", parentEventId: expect.any(Number) },
+      },
+    });
+    expect(runs[0]?.task).toContain("Original human request");
+    expect(runs[0]?.task).toContain("Use Codex to review the design");
+    expect(runs[0]?.task).toContain("No change is needed");
+    expect(runs[0]?.task).not.toContain("runtime/owner-review");
+  });
+
   it("keeps waiting project progress silent and ignores tasks without a human link", () => {
     const { bus, persistDir, runs } = fixture();
     storeHumanInput(persistDir, "trace-human-project");
