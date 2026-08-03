@@ -234,6 +234,21 @@ export function resolveGymTask(
         owner: "gym",
         priority: "P2",
       };
+    case "gym.resource-migration.requested":
+      return {
+        id: "runtime/unified-resource-migration-v1",
+        parentId: "review-proposals",
+        outcome:
+          "Retire the named pre-contract Gym task resources after their durable event and run evidence has been preserved.",
+        acceptance: [
+          "Only the fixed version-1 legacy resource set is closed, child before parent, and every closure leaves a completion receipt.",
+        ],
+        mode: "achieve",
+        workflow: "unified-resource-migration",
+        input: { migration: "unified-resource-v1" },
+        outputs: [],
+        priority: "P0",
+      };
     case "project.comment.created":
     case "gym.improvement.requested":
     case "agent.revision.changed":
@@ -513,6 +528,7 @@ export default defineProjectApp({
       "gym.codex.learning.requested",
       "gym.telegram.field-review.requested",
       "gym.design-alignment.requested",
+      "gym.resource-migration.requested",
       "gym.regression.requested",
       "gym.review.requested",
       "gym.improvement.requested",

@@ -162,6 +162,12 @@ history remain the evidence. Current finite incident and review resources stay
 live until they converge, wait on an exact external decision, or enter visible
 owner attention. Attention by itself is a truthful state, not a scheduler.
 
+The one-time `runtime/unified-resource-migration-v1` achieve resource performs
+that cleanup through ordinary `close-task` actions, child before parent. It has
+no timer and cannot become another controller. Its fixed six-resource scope
+covers only the obsolete evaluation, benchmark-case approval, old human-review,
+Codex failure-preservation, and CLI verification carriers present at cutover.
+
 A stored focused baseline with invalid trials means the one bounded retry was
 already exhausted. A later wake reuses that disposition; it does not run the
 same retry again. A track with such a recorded problem is checkpointed as an

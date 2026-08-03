@@ -86,7 +86,7 @@ describe("gym app manifest", () => {
       ],
     });
     expect(gymApp.tasks?.resolve).toBe(resolveGymTask);
-    expect(gymApp.tasks?.accepts).toHaveLength(13);
+    expect(gymApp.tasks?.accepts).toHaveLength(14);
     expect(gymApp.tasks?.accepts).toContainEqual({
       type: "project.approval.submitted",
       project: "gym",
@@ -209,6 +209,21 @@ describe("gym app manifest", () => {
         batchSize: 200,
         maxBatches: 1,
       },
+    });
+  });
+
+  test("represents legacy cleanup as one finite resource", () => {
+    expect(
+      resolveGymTask({
+        type: "gym.resource-migration.requested",
+        eventId: 97,
+      }),
+    ).toMatchObject({
+      id: "runtime/unified-resource-migration-v1",
+      mode: "achieve",
+      workflow: "unified-resource-migration",
+      input: { migration: "unified-resource-v1" },
+      priority: "P0",
     });
   });
 });
