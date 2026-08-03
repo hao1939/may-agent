@@ -152,6 +152,19 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
   const outboundBySession = new Map<string, { pendingText: string; sentAnyText: boolean; sentText: string }>();
   let closed = false;
   let proactiveAdmissionQueue = Promise.resolve();
+  /** Track resolved approval decisions so stale approval prompts can be suppressed. */
+  const resolvedApprovalKeys = new Set<string>();
+  const maxRememberedApprovalResolutions = 1_024;
+
+  function rememberApprovalResolution(key: string): void {
+    resolvedApprovalKeys.delete(key);
+    resolvedApprovalKeys.add(key);
+    while (resolvedApprovalKeys.size > maxRememberedApprovalResolutions) {
+      const oldest = resolvedApprovalKeys.values().next().value;
+      if (typeof oldest !== "string") break;
+      resolvedApprovalKeys.delete(oldest);
+    }
+  }
 
   function reviewAudit(
     candidate: HumanAttentionCandidate,
@@ -182,11 +195,7 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
     } as any);
   }
 
-  function routeFailedReview(
-    candidate: HumanAttentionCandidate,
-    review: HumanAttentionReview,
-    attempts: number,
-  ): void {
+  function routeFailedReview(candidate: HumanAttentionCandidate, review: HumanAttentionReview, attempts: number): void {
     bus.emit({
       type: "project.owner.requested",
       source: "telegram-outbound",
@@ -236,10 +245,26 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
     return { review: lastFailure, attempts: 2 };
   }
 
-  function admitProactive(
-    candidate: HumanAttentionCandidate,
-    deliver: (reviewedText: string) => void,
-  ): void {
+  function candidateApprovalResolved(candidate: HumanAttentionCandidate): boolean {
+    const d = candidate.data ?? {};
+    const approvalId =
+      typeof d.approvalId === "string"
+        ? d.approvalId
+        : typeof (d.approval as any)?.approvalId === "string"
+          ? (d.approval as any).approvalId
+          : undefined;
+    const waitId =
+      typeof d.waitId === "string"
+        ? d.waitId
+        : typeof (d.approval as any)?.waitId === "string"
+          ? (d.approval as any).waitId
+          : undefined;
+    if (approvalId && resolvedApprovalKeys.has(approvalId)) return true;
+    if (waitId && resolvedApprovalKeys.has(`wait:${waitId}`)) return true;
+    return false;
+  }
+
+  function admitProactive(candidate: HumanAttentionCandidate, deliver: (reviewedText: string) => void): void {
     proactiveAdmissionQueue = proactiveAdmissionQueue
       .catch(() => undefined)
       .then(async () => {
@@ -256,16 +281,15 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
           return;
         }
         try {
+          // Revalidate: if the approval was resolved during review, suppress delivery.
+          if (candidateApprovalResolved(candidate)) {
+            reviewAudit(candidate, review, attempts, false, "approval-resolved-during-review");
+            return;
+          }
           deliver(review.deliveredMessage);
           reviewAudit(candidate, review, attempts, true);
         } catch (error) {
-          reviewAudit(
-            candidate,
-            review,
-            attempts,
-            false,
-            error instanceof Error ? error.message : String(error),
-          );
+          reviewAudit(candidate, review, attempts, false, error instanceof Error ? error.message : String(error));
         }
       });
   }
@@ -273,6 +297,13 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
   const unsubBus = bus.subscribe((event: any) => {
     const session = sessionData(event);
     const sessionId = typeof session.sessionId === "string" ? session.sessionId : undefined;
+
+    // Track resolved approvals so stale approval prompts are suppressed.
+    if (event.type === "project.approval.submitted") {
+      const d = messageData(event);
+      if (typeof d.approvalId === "string") rememberApprovalResolution(d.approvalId);
+      if (typeof d.waitId === "string") rememberApprovalResolution(`wait:${d.waitId}`);
+    }
 
     if (event.type === "chat.start.requested" && event.source === "telegram") {
       const data = messageData(event);

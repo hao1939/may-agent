@@ -199,9 +199,7 @@ describe("Telegram outbound turn ownership", () => {
     } as any);
     await outbound.drain();
 
-    expect(sent.map((entry) => entry.text)).toEqual([
-      "Approve the proven scorer change? May recommends approve.",
-    ]);
+    expect(sent.map((entry) => entry.text)).toEqual(["Approve the proven scorer change? May recommends approve."]);
     expect(reviewed).toEqual([
       expect.objectContaining({ mode: "enforce", admitted: true, delivered: true, attempts: 1 }),
     ]);
@@ -585,9 +583,7 @@ describe("Telegram outbound turn ownership", () => {
   test("recovers an idle source session's persisted reply target", async () => {
     const conversationId = "telegram:chat:123:topic:0:agent:may";
     const { bus, sent, outbound } = harness("legacy-chat", undefined, (sessionId) =>
-      sessionId === "s_old"
-        ? { channelMessageId: 45984, conversationId, requestId: "telegram:45984" }
-        : null,
+      sessionId === "s_old" ? { channelMessageId: 45984, conversationId, requestId: "telegram:45984" } : null,
     );
 
     start(bus, "telegram", "s_old", { traceId: "shared-trace" }, { channelMessageId: 45984, conversationId });
@@ -763,6 +759,133 @@ describe("Telegram outbound turn ownership", () => {
       "Codex and May agree on the next action.",
     ]);
     expect(sent[0]?.context).toMatchObject({ replyToMessageId: 503, traceId: "trace-codex" });
+    outbound.close();
+  });
+
+  test("suppresses a stale approval prompt when the approval is resolved during review", async () => {
+    let reviewResolve: ((v: HumanAttentionReview) => void) | undefined;
+    let markReviewStarted: (() => void) | undefined;
+    const reviewStarted = new Promise<void>((resolve) => {
+      markReviewStarted = resolve;
+    });
+    const { bus, sent, outbound } = harness(
+      "shared-chat",
+      () =>
+        new Promise<HumanAttentionReview>((resolve) => {
+          reviewResolve = resolve;
+          markReviewStarted?.();
+        }),
+    );
+    const audits: Array<Record<string, unknown>> = [];
+    const unsubscribe = bus.subscribe((event: any) => {
+      if (event.type === "human.attention.reviewed") audits.push(event.data);
+    });
+
+    const evt = {
+      type: "message.created",
+      source: "gym",
+      owner: "agent:may",
+      data: {
+        to: "human",
+        from: "gym",
+        content: "Approve proposal X?",
+        approvalId: "gym:review-proposal:incident-1:g1:abc123",
+      },
+    } as any;
+    evt[EVENT_ROW_ID] = 100;
+    bus.emit(evt);
+    await reviewStarted;
+
+    bus.emit({
+      type: "project.approval.submitted",
+      source: "command-router",
+      owner: "agent:may",
+      data: {
+        approvalId: "gym:review-proposal:incident-1:g1:abc123",
+        decision: "decline",
+      },
+    } as any);
+
+    reviewResolve!({
+      status: "completed",
+      sessionId: "rev-1",
+      disposition: "deliver",
+      understoodIntent: "Ask Hao to approve.",
+      reason: "Human authority remains.",
+      nextAction: "Wait.",
+      evidence: ["Proven."],
+      deliveredMessage: "Approve proposal X?",
+    });
+
+    await outbound.drain();
+
+    expect(sent).toHaveLength(0);
+    expect(audits).toEqual([
+      expect.objectContaining({
+        sourceEventId: 100,
+        admitted: true,
+        delivered: false,
+        deliveryError: "approval-resolved-during-review",
+      }),
+    ]);
+    unsubscribe();
+    outbound.close();
+  });
+
+  test("delivers approval prompt when no matching resolution arrived", async () => {
+    let reviewResolve: ((v: HumanAttentionReview) => void) | undefined;
+    let markReviewStarted: (() => void) | undefined;
+    const reviewStarted = new Promise<void>((resolve) => {
+      markReviewStarted = resolve;
+    });
+    const { bus, sent, outbound } = harness(
+      "shared-chat",
+      () =>
+        new Promise<HumanAttentionReview>((resolve) => {
+          reviewResolve = resolve;
+          markReviewStarted?.();
+        }),
+    );
+
+    const evt = {
+      type: "message.created",
+      source: "gym",
+      owner: "agent:may",
+      data: {
+        to: "human",
+        from: "gym",
+        content: "Approve proposal Y?",
+        approvalId: "gym:review-proposal:incident-2:g1:def456",
+      },
+    } as any;
+    evt[EVENT_ROW_ID] = 101;
+    bus.emit(evt);
+    await reviewStarted;
+
+    bus.emit({
+      type: "project.approval.submitted",
+      source: "command-router",
+      owner: "agent:may",
+      data: {
+        approvalId: "gym:review-proposal:OTHER:g1:xyz",
+        decision: "approve",
+      },
+    } as any);
+
+    reviewResolve!({
+      status: "completed",
+      sessionId: "rev-2",
+      disposition: "deliver",
+      understoodIntent: "Ask Hao.",
+      reason: "Human authority remains.",
+      nextAction: "Wait.",
+      evidence: ["Valid."],
+      deliveredMessage: "Approve proposal Y?",
+    });
+
+    await outbound.drain();
+    expect(sent).toHaveLength(1);
+    expect(sent[0]!.text).toBe("Approve proposal Y?");
     outbound.close();
   });
 });
