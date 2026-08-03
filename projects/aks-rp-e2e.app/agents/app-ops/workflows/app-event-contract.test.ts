@@ -816,6 +816,22 @@ describe("app event contract", () => {
     });
   });
 
+  test("routes the topology-aware project-state residue migration", () => {
+    expect(
+      resolveAksTask({
+        type: "aks.project-state-residue-migration.requested",
+        target: { project: projectId },
+      }),
+    ).toMatchObject({
+      id: "runtime/unified-resource-migration-project-state-v2",
+      parentId: "group/app-operations",
+      mode: "achieve",
+      owner: "app-ops",
+      workflow: "unified-project-state-residue-migration",
+      input: { migration: "project-state-residue-v2" },
+    });
+  });
+
   test("leaves repo-ref Condition matching and wakeup to the shared runtime", async () => {
     const emitted: Record<string, unknown>[] = [];
     const result = await routeAksEvent(

@@ -215,6 +215,11 @@ childless legacy compact holders that wait on `project.task.tick`. Future
 review is owned by the stable feature loop, which timers and semantic events
 wake directly through the shared controller. Changed holders remain untouched.
 
+`project-state-residue-v2` handles the two project-state cases that cannot use
+the childless v1 rule. It compacts two exact completed LocalDNS children before
+their holder, then closes the exact finite runtime-container repair. Every
+action is guarded by identity, topology, mode, phase, Condition, and generation.
+
 Legacy repo-ref waits use one older project-scoped Condition shape that the
 shared tracker cannot interpret. `legacy-repo-ref-conditions-v1` returns only
 the fixed matching waits to their current owners. A truthful replacement uses

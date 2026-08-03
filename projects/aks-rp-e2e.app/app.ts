@@ -1201,6 +1201,7 @@ const aksTaskSelectors: EventSelector[] = [
   { type: "aks.task-state-migration.requested", target: projectTarget },
   { type: "aks.task-tick-migration.requested", target: projectTarget },
   { type: "aks.repo-ref-condition-migration.requested", target: projectTarget },
+  { type: "aks.project-state-residue-migration.requested", target: projectTarget },
   { type: "pipeline.failure.observed", target: projectTarget },
   { type: "pipeline.test.nonpassing", target: projectTarget },
   { type: "project.owner.requested", target: projectTarget },
@@ -1312,6 +1313,26 @@ export function resolveAksTask(
       owner: "app-ops",
       workflow: "unified-repo-ref-condition-migration",
       input: { migration: "legacy-repo-ref-conditions-v1" },
+      priority: "P0",
+      category: "ops",
+    };
+  }
+
+  if (event.type === "aks.project-state-residue-migration.requested") {
+    return {
+      id: "runtime/unified-resource-migration-project-state-v2",
+      parentId: "group/app-operations",
+      outcome:
+        "Retire the exact LocalDNS and runtime-container project-state residues after topology-aware checks.",
+      acceptance: [
+        "The two completed LocalDNS children close before their exact childless holder.",
+        "The finite runtime-container representation repair closes only while unchanged and childless.",
+        "Any topology, generation, phase, mode, or Condition mismatch leaves the affected resources untouched.",
+      ],
+      mode: "achieve",
+      owner: "app-ops",
+      workflow: "unified-project-state-residue-migration",
+      input: { migration: "project-state-residue-v2" },
       priority: "P0",
       category: "ops",
     };
