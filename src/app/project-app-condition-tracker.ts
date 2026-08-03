@@ -140,7 +140,9 @@ function timestampMillis(value: unknown): number | null {
 
 function isFreshLevelObservation(condition: ProjectAppCondition, event: Record<string, unknown>): boolean {
   const levelObservation =
-    condition.spec.type === "aks.repo-ref.observed" || condition.spec.type.endsWith(".state");
+    condition.spec.type === "aks.repo-ref.observed" ||
+    condition.spec.type.endsWith(".state") ||
+    condition.spec.type.endsWith(".check");
   if (!levelObservation) return true;
   const conditionEstablishedAt = timestampMillis(condition.status.observedAt);
   const eventObservedAt = timestampMillis(event.timestamp);
