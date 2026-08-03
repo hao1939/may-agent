@@ -266,6 +266,13 @@ Conditions stay attached, while finite maintain carriers become achieve tasks.
 Once both batches converge, the feature group contains only the standing loop
 and generic parent wakeup replaces sibling reconstruction.
 
+Scenario normalization follows the same ownership rule. The standing
+`scenario-normalization` task is the executable parent; two bounded migration
+resources move legacy pending, waiting, or child-backed group siblings beneath
+it without changing their learned workflows or external Conditions. New
+normalization leaves already use this shape, so the migration removes history
+drift rather than adding a second scheduling path.
+
 Attention is not a completion state. Each attention resource must retain an
 accountable owner, exact failure evidence, and a truthful next wake or
 escalation path. Generic mechanical recovery may requeue it when the failed

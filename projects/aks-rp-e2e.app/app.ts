@@ -791,6 +791,10 @@ const aksTaskSelectors: EventSelector[] = [
     type: "aks.feature-loop-residue-migration.requested",
     target: projectTarget,
   },
+  {
+    type: "aks.scenario-loop-ownership-migration.requested",
+    target: projectTarget,
+  },
   { type: "pipeline.failure.observed", target: projectTarget },
   { type: "pipeline.test.nonpassing", target: projectTarget },
   { type: "project.owner.requested", target: projectTarget },
@@ -1004,6 +1008,27 @@ export function resolveAksTask(
       owner: "app-ops",
       workflow: "unified-feature-loop-residue-migration",
       input: { migration: "feature-loop-residue-v1", batch },
+      priority: "P0",
+      category: "ops",
+    };
+  }
+
+  if (event.type === "aks.scenario-loop-ownership-migration.requested") {
+    const batch = stringDetail(details, "batch") || "1";
+    if (!/^[1-2]$/.test(batch)) return null;
+    return {
+      id: `runtime/unified-resource-migration-scenario-loop-ownership-v${batch}`,
+      parentId: "group/app-operations",
+      outcome: `Move batch ${batch} of legacy scenario-normalization siblings under the executable standing loop.`,
+      acceptance: [
+        "At most 16 pending, waiting, or child-backed scenario group siblings become direct children of scenario-normalization.",
+        "Existing workflows, children, Conditions, ownership, and task intent remain unchanged.",
+        "The standing loop and completed childless history remain untouched.",
+      ],
+      mode: "achieve",
+      owner: "app-ops",
+      workflow: "unified-scenario-loop-ownership-migration",
+      input: { migration: "scenario-loop-ownership-v1", batch },
       priority: "P0",
       category: "ops",
     };

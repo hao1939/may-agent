@@ -917,6 +917,22 @@ describe("app event contract", () => {
     });
   });
 
+  test("routes scenario siblings to their executable loop", () => {
+    expect(
+      resolveAksTask({
+        type: "aks.scenario-loop-ownership-migration.requested",
+        target: { project: projectId },
+        data: { batch: "2" },
+      }),
+    ).toMatchObject({
+      id: "runtime/unified-resource-migration-scenario-loop-ownership-v2",
+      parentId: "group/app-operations",
+      workflow: "unified-scenario-loop-ownership-migration",
+      input: { migration: "scenario-loop-ownership-v1", batch: "2" },
+      priority: "P0",
+    });
+  });
+
   test("leaves repo-ref Condition matching and wakeup to the shared runtime", async () => {
     const emitted: Record<string, unknown>[] = [];
     const result = await routeAksEvent(
