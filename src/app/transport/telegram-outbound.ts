@@ -182,6 +182,34 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
     } as any);
   }
 
+  function routeFailedReview(
+    candidate: HumanAttentionCandidate,
+    review: HumanAttentionReview,
+    attempts: number,
+  ): void {
+    bus.emit({
+      type: "project.owner.requested",
+      source: "telegram-outbound",
+      owner: "agent:tech-lead",
+      data: {
+        project: "may-agent",
+        reason: "telegram-admission-review-failed",
+        params: {
+          instruction:
+            "Recover the held Telegram admission candidate from its durable audit. Retry or route it under the existing ownership convention. Keep raw candidate text internal and contact Hao only after a successful deliver disposition.",
+          sourceEventId: candidate.sourceEventId,
+          candidateEventType: candidate.eventType,
+          candidateFrom: candidate.from,
+          candidateProjectId: candidate.projectId,
+          reviewReason: review.reason,
+          attempts,
+          closureCondition:
+            "A later admission review records a terminal handle, route, clarify-producer, reject, or deliver disposition.",
+        },
+      },
+    } as any);
+  }
+
   async function decideProactive(
     candidate: HumanAttentionCandidate,
   ): Promise<{ review: HumanAttentionReview; attempts: number }> {
@@ -219,6 +247,11 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
         const { review, attempts } = await decideProactive(candidate);
         if (closed) return;
         if (review.status !== "completed" || review.disposition !== "deliver" || !review.deliveredMessage) {
+          if (review.status === "failed") {
+            reviewAudit(candidate, review, attempts, false);
+            routeFailedReview(candidate, review, attempts);
+            return;
+          }
           reviewAudit(candidate, review, attempts, false);
           return;
         }
