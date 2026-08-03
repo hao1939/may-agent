@@ -345,12 +345,23 @@ export function isTypedProjectAppConditionSubject(subject: string): boolean {
   return /^[A-Za-z][A-Za-z0-9_.-]*$/.test(subject.slice(0, separator));
 }
 
+const INTERNAL_TASK_SCHEDULING_CONDITION_TYPES = new Set([
+  "project.state",
+  "project.task.tick",
+  "task-field",
+  "task-phase",
+  "task.phase",
+]);
+
 function normalizeCondition(value: unknown, index: number): ProjectAppConditionSpec | string {
   if (!isRecord(value)) return `conditions[${index}] must be an object`;
   const id = normalizedString(value.id);
   if (!id) return `conditions[${index}].id must be a non-empty string`;
   const type = normalizedString(value.type);
   if (!type) return `conditions[${index}].type must be a non-empty string`;
+  if (INTERNAL_TASK_SCHEDULING_CONDITION_TYPES.has(type)) {
+    return `conditions[${index}].type ${type} is internal task scheduling; use a direct child, dependsOn, or an external observable Condition`;
+  }
   const subject = normalizedString(value.subject);
   if (!subject || !isTypedProjectAppConditionSubject(subject)) {
     return `conditions[${index}].subject must be a typed subject`;

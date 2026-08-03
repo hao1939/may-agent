@@ -256,6 +256,38 @@ describe("project task handler contract", () => {
     ).toBe(false);
   });
 
+  it("rejects Conditions that turn task state into a second scheduler", () => {
+    for (const type of [
+      "project.state",
+      "project.task.tick",
+      "task-field",
+      "task-phase",
+      "task.phase",
+    ]) {
+      expect(
+        admitProjectAppTaskHandlerResult(
+          {
+            state: "waiting",
+            summary: "Waiting on internal task state",
+            evidence: [],
+            conditions: [
+              {
+                id: `internal-${type}`,
+                type,
+                subject: "task:child",
+                expected: { field: "phase", equals: "converged" },
+              },
+            ],
+          },
+          workflowOptions,
+        ),
+      ).toEqual({
+        ok: false,
+        error: `conditions[0].type ${type} is internal task scheduling; use a direct child, dependsOn, or an external observable Condition`,
+      });
+    }
+  });
+
   it("admits only explicit verifier verdicts", () => {
     expect(
       admitProjectAppTaskVerificationResult({
