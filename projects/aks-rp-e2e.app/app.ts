@@ -1432,6 +1432,7 @@ const aksTaskSelectors: EventSelector[] = [
   { type: "project.task.tick", target: projectTarget },
   { type: "aks.resource-migration.requested", target: projectTarget },
   { type: "aks.task-state-migration.requested", target: projectTarget },
+  { type: "aks.task-tick-migration.requested", target: projectTarget },
   { type: "pipeline.failure.observed", target: projectTarget },
   { type: "pipeline.test.nonpassing", target: projectTarget },
   { type: "project.owner.requested", target: projectTarget },
@@ -1503,6 +1504,26 @@ export function resolveAksTask(
       owner: "app-ops",
       workflow: "unified-task-state-migration",
       input: { migration: "task-state-waits-v1" },
+      priority: "P0",
+      category: "ops",
+    };
+  }
+
+  if (event.type === "aks.task-tick-migration.requested") {
+    return {
+      id: "runtime/unified-resource-migration-task-tick-v1",
+      parentId: "group/app-operations",
+      outcome:
+        "Retire the fixed legacy compact holders that use project.task.tick Conditions as a second scheduler.",
+      acceptance: [
+        "Only named childless maintain holders still waiting on a project.task.tick Condition are closed, and every closure leaves a receipt.",
+        "Timers and semantic events wake the stable feature loop directly through the shared controller.",
+        "Any holder that changed generation, gained child work, or no longer matches the legacy contract remains live for owner judgment.",
+      ],
+      mode: "achieve",
+      owner: "app-ops",
+      workflow: "unified-task-tick-migration",
+      input: { migration: "task-tick-holders-v1" },
       priority: "P0",
       category: "ops",
     };

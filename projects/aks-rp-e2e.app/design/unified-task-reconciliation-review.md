@@ -205,6 +205,11 @@ become ordinary `dependsOn` relationships, and one named wait whose subject is
 already absent is unblocked for fresh same-task judgment. Both paths remove the
 legacy Condition and rely on shared dependency or task reconciliation.
 
+The third migration is `task-tick-holders-v1`. It closes the two fixed,
+childless legacy compact holders that wait on `project.task.tick`. Future
+review is owned by the stable feature loop, which timers and semantic events
+wake directly through the shared controller. Changed holders remain untouched.
+
 Attention is not a completion state. Each attention resource must retain an
 accountable owner, exact failure evidence, and a truthful next wake or
 escalation path. Generic mechanical recovery may requeue it when the failed

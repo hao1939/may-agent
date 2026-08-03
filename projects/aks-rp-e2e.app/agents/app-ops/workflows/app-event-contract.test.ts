@@ -785,6 +785,22 @@ describe("app event contract", () => {
     });
   });
 
+  test("routes the task-tick holder migration to one finite resource", () => {
+    expect(
+      resolveAksTask({
+        type: "aks.task-tick-migration.requested",
+        target: { project: projectId },
+      }),
+    ).toMatchObject({
+      id: "runtime/unified-resource-migration-task-tick-v1",
+      parentId: "group/app-operations",
+      mode: "achieve",
+      owner: "app-ops",
+      workflow: "unified-task-tick-migration",
+      input: { migration: "task-tick-holders-v1" },
+    });
+  });
+
   test("turns an origin main advance into one targeted validation wake", async () => {
     const emitted: Record<string, unknown>[] = [];
     const result = await routeAksEvent(
