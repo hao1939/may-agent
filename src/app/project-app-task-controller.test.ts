@@ -348,6 +348,44 @@ describe("ProjectAppTaskController", () => {
     await current.whenDrained();
   });
 
+  it("cancels stale capacity waits when hot reload replaces controllers", async () => {
+    const globalCapacity = new ProjectAppTaskCapacity(1);
+    const appCapacity = new ProjectAppTaskCapacity(5, globalCapacity);
+    const releaseGlobal = await globalCapacity.acquire();
+    const started: string[] = [];
+
+    for (let index = 0; index < 50; index++) {
+      const stale = new ProjectAppTaskController({
+        maxConcurrent: 5,
+        capacity: appCapacity,
+        reconcile: async (taskId) => {
+          started.push(taskId);
+        },
+      });
+      stale.enqueue(`stale-${index}`);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      stale.close();
+    }
+
+    const current = new ProjectAppTaskController({
+      maxConcurrent: 5,
+      capacity: appCapacity,
+      reconcile: async (taskId) => {
+        started.push(taskId);
+      },
+    });
+    current.enqueue("current");
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    expect(started).toEqual([]);
+    expect(globalCapacity.snapshot().waiting).toBe(1);
+
+    releaseGlobal();
+    await waitUntil(() => started.includes("current"));
+    expect(started).toEqual(["current"]);
+    current.close();
+    await current.whenDrained();
+  });
+
   it("keeps replacement controllers behind the draining predecessor chain", async () => {
     const started: string[] = [];
     let releaseOld: (() => void) | undefined;
