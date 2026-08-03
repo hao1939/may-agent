@@ -258,6 +258,13 @@ generation, or different parent excludes the resource. Git and the resulting
 receipts retain history; the active task graph does not. Batch resources run
 one by one so every bounded result is proven before the next wake.
 
+The final feature topology slice, `feature-loop-residue-v1`, moves every
+remaining pending, waiting, or child-backed group sibling under the standing
+feature loop. It does not reinterpret the work: children and Conditions stay
+attached, while finite maintain carriers become achieve tasks. Once this
+slice converges, the feature group contains only the standing loop and generic
+parent wakeup replaces sibling reconstruction.
+
 Attention is not a completion state. Each attention resource must retain an
 accountable owner, exact failure evidence, and a truthful next wake or
 escalation path. Generic mechanical recovery may requeue it when the failed

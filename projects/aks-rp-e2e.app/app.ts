@@ -787,6 +787,10 @@ const aksTaskSelectors: EventSelector[] = [
     type: "aks.feature-loop-history-migration.requested",
     target: projectTarget,
   },
+  {
+    type: "aks.feature-loop-residue-migration.requested",
+    target: projectTarget,
+  },
   { type: "pipeline.failure.observed", target: projectTarget },
   { type: "pipeline.test.nonpassing", target: projectTarget },
   { type: "project.owner.requested", target: projectTarget },
@@ -980,6 +984,26 @@ export function resolveAksTask(
       owner: "app-ops",
       workflow: "unified-feature-loop-history-migration",
       input: { migration: "feature-loop-history-v1", batch },
+      priority: "P0",
+      category: "ops",
+    };
+  }
+
+  if (event.type === "aks.feature-loop-residue-migration.requested") {
+    return {
+      id: "runtime/unified-resource-migration-feature-loop-residue-v1",
+      parentId: "group/app-operations",
+      outcome:
+        "Move the remaining unfinished or child-backed feature resources under the executable standing loop.",
+      acceptance: [
+        "Every remaining pending, waiting, or child-backed feature group sibling becomes a direct child of the standing feature loop.",
+        "Finite maintain carriers become achieve tasks while their Conditions and children remain unchanged.",
+        "The standing loop and any completed childless history remain untouched.",
+      ],
+      mode: "achieve",
+      owner: "app-ops",
+      workflow: "unified-feature-loop-residue-migration",
+      input: { migration: "feature-loop-residue-v1" },
       priority: "P0",
       category: "ops",
     };
