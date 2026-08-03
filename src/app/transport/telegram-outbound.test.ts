@@ -212,12 +212,14 @@ describe("Telegram outbound turn ownership", () => {
   test("retries one failed review and then fails closed", async () => {
     let attempts = 0;
     const reviewed: Array<Record<string, unknown>> = [];
+    const ownerRequests: Array<Record<string, unknown>> = [];
     const { bus, sent, outbound } = harness("shared-chat", async () => {
       attempts += 1;
       return { status: "failed", reason: `review failure ${attempts}` };
     });
     const unsubscribe = bus.subscribe((event: any) => {
       if (event.type === "human.attention.reviewed") reviewed.push(event.data);
+      if (event.type === "project.owner.requested") ownerRequests.push(event.data);
     });
 
     bus.emit({
@@ -238,6 +240,19 @@ describe("Telegram outbound turn ownership", () => {
         attempts: 2,
         status: "failed",
         reason: "review failure 2",
+      }),
+    ]);
+    expect(ownerRequests).toEqual([
+      expect.objectContaining({
+        project: "may-agent",
+        reason: "telegram-admission-review-failed",
+        params: expect.objectContaining({
+          candidateEventType: "message.created",
+          candidateFrom: "ops",
+          reviewReason: "review failure 2",
+          attempts: 2,
+          closureCondition: expect.stringContaining("later admission review"),
+        }),
       }),
     ]);
     unsubscribe();
