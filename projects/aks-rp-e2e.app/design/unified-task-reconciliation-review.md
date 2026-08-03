@@ -205,6 +205,11 @@ become ordinary `dependsOn` relationships, and one named wait whose subject is
 already absent is unblocked for fresh same-task judgment. Both paths remove the
 legacy Condition and rely on shared dependency or task reconciliation.
 
+Live proof on 2026-08-03 applied all eight guarded actions through the shared
+controller and stored the migration receipt. The internal task-state Condition
+count is now zero, so AKS no longer replays task-phase or task-field changes
+from `project.task.reconciled`.
+
 The third migration is `task-tick-holders-v1`. It closes the two fixed,
 childless legacy compact holders that wait on `project.task.tick`. Future
 review is owned by the stable feature loop, which timers and semantic events
