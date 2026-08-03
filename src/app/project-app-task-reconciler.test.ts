@@ -3816,6 +3816,45 @@ describe("project app task reconciler state", () => {
     });
   });
 
+  it("does not replay an old scheduled check into a newly established pulse wait", () => {
+    const { config } = fixture();
+    const taskIntent = intent("maintain");
+    const condition = {
+      id: "next-master-validation-check",
+      type: "aks.master-validation.check",
+      subject: "project:demo",
+      expected: { field: "project", equals: "demo" },
+    } as const;
+    const oldPulse = {
+      type: "aks.master-validation.check",
+      project: "demo",
+      timestamp: Date.now() - 10_000,
+    };
+    const first = declareAndClaimTask(config, {
+      intent: taskIntent,
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (first.kind !== "claimed") throw new Error("expected claim");
+    deferProjectAppTask(config, first, {
+      disposition: "waiting",
+      summary: "waiting for the next scheduled check",
+      conditions: [condition],
+    });
+
+    expect(trackProjectAppConditionEvent(config, oldPulse)).toEqual([]);
+    expect(readTaskState(config).conditions?.[condition.id]).toMatchObject({
+      status: { observedGeneration: 0, state: "unknown" },
+    });
+
+    expect(
+      trackProjectAppConditionEvent(config, {
+        ...oldPulse,
+        timestamp: Date.now() + 1_000,
+      }),
+    ).toEqual([{ conditionId: condition.id, taskId: taskIntent.id }]);
+  });
+
   it("advances Condition generation when its desired observation changes", () => {
     const { config } = fixture();
     const first = declareAndClaimTask(config, {
