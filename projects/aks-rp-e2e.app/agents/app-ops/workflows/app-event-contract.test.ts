@@ -846,6 +846,21 @@ describe("app event contract", () => {
     });
   });
 
+  test("routes current feature work to the executable feature loop", () => {
+    expect(
+      resolveAksTask({
+        type: "aks.feature-loop-ownership-migration.requested",
+        target: { project: projectId },
+      }),
+    ).toMatchObject({
+      id: "runtime/unified-resource-migration-feature-loop-current-v1",
+      parentId: "group/app-operations",
+      workflow: "unified-feature-loop-ownership-migration",
+      input: { migration: "feature-loop-current-v1" },
+      priority: "P0",
+    });
+  });
+
   test("leaves repo-ref Condition matching and wakeup to the shared runtime", async () => {
     const emitted: Record<string, unknown>[] = [];
     const result = await routeAksEvent(

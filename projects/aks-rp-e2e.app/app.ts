@@ -779,6 +779,10 @@ const aksTaskSelectors: EventSelector[] = [
     type: "aks.spec-loop-ownership-migration.requested",
     target: projectTarget,
   },
+  {
+    type: "aks.feature-loop-ownership-migration.requested",
+    target: projectTarget,
+  },
   { type: "pipeline.failure.observed", target: projectTarget },
   { type: "pipeline.test.nonpassing", target: projectTarget },
   { type: "project.owner.requested", target: projectTarget },
@@ -930,6 +934,26 @@ export function resolveAksTask(
       owner: "app-ops",
       workflow: "unified-spec-loop-ownership-migration",
       input: { migration: "spec-loop-siblings-v1" },
+      priority: "P0",
+      category: "ops",
+    };
+  }
+
+  if (event.type === "aks.feature-loop-ownership-migration.requested") {
+    return {
+      id: "runtime/unified-resource-migration-feature-loop-current-v1",
+      parentId: "group/app-operations",
+      outcome:
+        "Move current feature-compact work under the executable standing loop so shared parent wakeup owns continuation.",
+      acceptance: [
+        "Current feature-compact tasks that are still direct group siblings become direct children of the standing feature loop.",
+        "Finite maintain carriers become achieve tasks while truthful external Conditions and child topology remain unchanged.",
+        "Stale, completed, changed, or already-parented resources remain untouched.",
+      ],
+      mode: "achieve",
+      owner: "app-ops",
+      workflow: "unified-feature-loop-ownership-migration",
+      input: { migration: "feature-loop-current-v1" },
       priority: "P0",
       category: "ops",
     };

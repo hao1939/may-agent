@@ -239,6 +239,13 @@ holders. The remaining approval/pipeline-backed sibling stays unchanged until
 its exact wait resolves; migration never clears a truthful external wait just
 to reshape the tree.
 
+Feature-loop migration follows the same boundary in two stages. First,
+`feature-loop-current-v1` reparents only the current pending or waiting tasks
+still named by the compact domain state and turns finite maintain carriers
+into achieve tasks. Their Conditions and children are preserved. Stale
+completed siblings are compacted separately, so moving current work and
+removing history remain independently verifiable changes.
+
 Attention is not a completion state. Each attention resource must retain an
 accountable owner, exact failure evidence, and a truthful next wake or
 escalation path. Generic mechanical recovery may requeue it when the failed
