@@ -769,6 +769,22 @@ describe("app event contract", () => {
     });
   });
 
+  test("routes the task-state wait migration to one finite resource", () => {
+    expect(
+      resolveAksTask({
+        type: "aks.task-state-migration.requested",
+        target: { project: projectId },
+      }),
+    ).toMatchObject({
+      id: "runtime/unified-resource-migration-task-state-v1",
+      parentId: "group/app-operations",
+      mode: "achieve",
+      owner: "app-ops",
+      workflow: "unified-task-state-migration",
+      input: { migration: "task-state-waits-v1" },
+    });
+  });
+
   test("turns an origin main advance into one targeted validation wake", async () => {
     const emitted: Record<string, unknown>[] = [];
     const result = await routeAksEvent(

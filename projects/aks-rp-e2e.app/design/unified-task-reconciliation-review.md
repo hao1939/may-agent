@@ -200,6 +200,11 @@ generation, phase, Condition type, and child topology. Any mismatch remains
 live. The standing feature loop owns the next observation rather than a
 project-state Condition.
 
+The second migration is `task-state-waits-v1`. Seven named live-subject waits
+become ordinary `dependsOn` relationships, and one named wait whose subject is
+already absent is unblocked for fresh same-task judgment. Both paths remove the
+legacy Condition and rely on shared dependency or task reconciliation.
+
 Attention is not a completion state. Each attention resource must retain an
 accountable owner, exact failure evidence, and a truthful next wake or
 escalation path. Generic mechanical recovery may requeue it when the failed

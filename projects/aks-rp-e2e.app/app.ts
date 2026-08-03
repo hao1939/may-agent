@@ -1431,6 +1431,7 @@ const ownerReviewEventTypes = new Set([
 const aksTaskSelectors: EventSelector[] = [
   { type: "project.task.tick", target: projectTarget },
   { type: "aks.resource-migration.requested", target: projectTarget },
+  { type: "aks.task-state-migration.requested", target: projectTarget },
   { type: "pipeline.failure.observed", target: projectTarget },
   { type: "pipeline.test.nonpassing", target: projectTarget },
   { type: "project.owner.requested", target: projectTarget },
@@ -1482,6 +1483,26 @@ export function resolveAksTask(
       owner: "app-ops",
       workflow: "unified-resource-migration",
       input: { migration: "project-state-holders-v1" },
+      priority: "P0",
+      category: "ops",
+    };
+  }
+
+  if (event.type === "aks.task-state-migration.requested") {
+    return {
+      id: "runtime/unified-resource-migration-task-state-v1",
+      parentId: "group/app-operations",
+      outcome:
+        "Replace the fixed set of legacy task-phase and task-field Conditions with task-resource relationships.",
+      acceptance: [
+        "A named wait on a live prerequisite uses dependsOn and is woken by shared dependency reconciliation.",
+        "The one named wait whose subject has already left the live graph is returned to owner judgment.",
+        "Any changed or mismatched resource remains live and unchanged.",
+      ],
+      mode: "achieve",
+      owner: "app-ops",
+      workflow: "unified-task-state-migration",
+      input: { migration: "task-state-waits-v1" },
       priority: "P0",
       category: "ops",
     };
