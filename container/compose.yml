@@ -20,9 +20,12 @@ services:
       - "${WEB_PORT:-8080}:8080"
     volumes:
       - /app:/app
-      - /home/hao/aks-rp:/app/sources/aks-rp:ro
+      - /app/sources/aks-rp:/app/sources/aks-rp:ro
     environment:
       - INSTANCE=${INSTANCE:-background}
       - MAY_WEB_TERMINAL=${MAY_WEB_TERMINAL:-1}
       - MODEL_BASE_URL=${MODEL_BASE_URL:-http://host.docker.internal:4000}
       - CONTEXT_LEARN_AGENTS=coder,may,bob,coach,optimizer,tech-lead
+      - GIT_CONFIG_COUNT=1
+      - GIT_CONFIG_KEY_0=safe.directory
+      - GIT_CONFIG_VALUE_0=/app/sources/aks-rp
