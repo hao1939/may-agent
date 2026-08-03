@@ -17,11 +17,16 @@ export type ProjectAppTaskControllerOptions = {
   };
 };
 
+type CapacityWaiter = {
+  active: boolean;
+  grant(release: () => void): void;
+};
+
 /** Mechanical backpressure shared by every app task controller in one daemon. */
 export class ProjectAppTaskCapacity {
   private limit: number;
   private running = 0;
-  private readonly waiters: Array<(release: () => void) => void> = [];
+  private readonly waiters: CapacityWaiter[] = [];
 
   constructor(
     maxConcurrent: number,
@@ -74,6 +79,53 @@ export class ProjectAppTaskCapacity {
     return this.combinedRelease(localRelease, parentRelease);
   }
 
+  /** Reserve one slot, with cancellation while the caller is still waiting. */
+  acquireCancellable(callback: (release: () => void) => void): () => void {
+    let active = true;
+    let localRelease: (() => void) | undefined;
+    let cancelLocal: (() => void) | undefined;
+    let cancelParent: (() => void) | undefined;
+
+    cancelLocal = this.acquireLocalCancellable((release) => {
+      if (!active) {
+        release();
+        return;
+      }
+      localRelease = release;
+      if (!this.parent) {
+        active = false;
+        localRelease = undefined;
+        callback(release);
+        return;
+      }
+      cancelParent = this.parent.acquireCancellable((parentRelease) => {
+        if (!active) {
+          parentRelease();
+          localRelease?.();
+          localRelease = undefined;
+          return;
+        }
+        const reservedLocalRelease = localRelease;
+        if (!reservedLocalRelease) {
+          parentRelease();
+          return;
+        }
+        active = false;
+        localRelease = undefined;
+        callback(this.combinedRelease(reservedLocalRelease, parentRelease));
+      });
+    });
+
+    return () => {
+      if (!active) return;
+      active = false;
+      cancelLocal?.();
+      cancelParent?.();
+      localRelease?.();
+      localRelease = undefined;
+    };
+  }
+
   snapshot(): { running: number; waiting: number } {
     return { running: this.running, waiting: this.waiters.length };
   }
@@ -101,15 +153,53 @@ export class ProjectAppTaskCapacity {
   private acquireLocal(): Promise<() => void> {
     const release = this.tryAcquireLocal();
     if (release) return Promise.resolve(release);
-    return new Promise((resolve) => this.waiters.push(resolve));
+    return new Promise((resolve) => this.waiters.push({ active: true, grant: resolve }));
+  }
+
+  private acquireLocalCancellable(callback: (release: () => void) => void): () => void {
+    let active = true;
+    let reservedRelease: (() => void) | undefined;
+    const waiter: CapacityWaiter = {
+      active: true,
+      grant: (release) => {
+        reservedRelease = release;
+        queueMicrotask(() => {
+          if (!active) {
+            reservedRelease?.();
+            reservedRelease = undefined;
+            return;
+          }
+          active = false;
+          reservedRelease = undefined;
+          callback(release);
+        });
+      },
+    };
+    const release = this.tryAcquireLocal();
+    if (release) waiter.grant(release);
+    else this.waiters.push(waiter);
+
+    return () => {
+      if (!active) return;
+      active = false;
+      if (waiter.active) {
+        waiter.active = false;
+        const index = this.waiters.indexOf(waiter);
+        if (index >= 0) this.waiters.splice(index, 1);
+      }
+      reservedRelease?.();
+      reservedRelease = undefined;
+    };
   }
 
   private drainWaiters(): void {
     while (this.running < this.limit) {
       const next = this.waiters.shift();
       if (!next) return;
+      if (!next.active) continue;
+      next.active = false;
       this.running += 1;
-      next(this.releaseHandle());
+      next.grant(this.releaseHandle());
     }
   }
 
@@ -132,6 +222,7 @@ export class ProjectAppTaskController {
   private closed = false;
   private startReady: boolean;
   private waitingForCapacity = false;
+  private cancelCapacityWait?: () => void;
   private readonly drainWaiters = new Set<() => void>();
   private readonly resyncTimer?: ReturnType<typeof setInterval>;
 
@@ -169,6 +260,9 @@ export class ProjectAppTaskController {
 
   close(): void {
     this.closed = true;
+    this.cancelCapacityWait?.();
+    this.cancelCapacityWait = undefined;
+    this.waitingForCapacity = false;
     if (this.resyncTimer) clearInterval(this.resyncTimer);
     this.resolveDrainWaiters();
   }
@@ -217,8 +311,9 @@ export class ProjectAppTaskController {
   private waitForCapacity(): void {
     if (this.waitingForCapacity || this.closed || !this.startReady || !this.options.capacity) return;
     this.waitingForCapacity = true;
-    void this.options.capacity.acquire().then((release) => {
+    this.cancelCapacityWait = this.options.capacity.acquireCancellable((release) => {
       this.waitingForCapacity = false;
+      this.cancelCapacityWait = undefined;
       if (this.closed || !this.startReady) {
         release();
         this.resolveDrainWaiters();
@@ -227,7 +322,6 @@ export class ProjectAppTaskController {
       const taskId = this.queue.take();
       if (taskId) this.run(taskId, release);
       else release();
-      this.schedulePump();
     });
   }
 

@@ -72,6 +72,7 @@ export async function sendDaemonFrameWithRetry(
   socketPath: string,
   frame: Record<string, unknown>,
   send: typeof sendDaemonEvent = sendDaemonEvent,
+  confirm?: (idempotencyKey: string) => number | undefined | Promise<number | undefined>,
 ): Promise<DaemonFrameResult> {
   const originalData =
     frame.data && typeof frame.data === "object" && !Array.isArray(frame.data)
@@ -98,6 +99,12 @@ export async function sendDaemonFrameWithRetry(
       const message = error instanceof Error ? error.message : String(error);
       const outcomeMayBeDurable = message === "Socket timeout" || message.includes("outcome unknown");
       if (timeoutMs === 2_000 && outcomeMayBeDurable) continue;
+      if (outcomeMayBeDurable && confirm) {
+        const eventId = Number(await confirm(idempotencyKey));
+        if (Number.isInteger(eventId) && eventId > 0) {
+          return { ok: true, eventId };
+        }
+      }
       return {
         ok: false,
         error: `daemon socket delivery failed at ${socketPath}: ${message}`,
@@ -3464,7 +3471,19 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     frame: Record<string, unknown>,
   ): Promise<{ ok: boolean; error?: string; eventId?: number }> {
     const socketPath = conventionSocketPath();
-    return sendDaemonFrameWithRetry(socketPath, frame);
+    return sendDaemonFrameWithRetry(socketPath, frame, sendDaemonEvent, (idempotencyKey) => {
+      const row = _db()
+        .prepare(
+          `SELECT id
+           FROM events
+           WHERE idempotency_key = ?
+           ORDER BY id DESC
+           LIMIT 1`,
+        )
+        .get(idempotencyKey) as { id?: unknown } | undefined;
+      const eventId = Number(row?.id);
+      return Number.isInteger(eventId) && eventId > 0 ? eventId : undefined;
+    });
   }
 
   async function handleSessionCancel(sessionId: string): Promise<Response> {

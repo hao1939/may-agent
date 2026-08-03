@@ -50,4 +50,25 @@ describe("HTTP event ingress acknowledgement recovery", () => {
     expect(frames).toHaveLength(1);
     expect((frames[0].data as Record<string, unknown>).idempotencyKey).toBe("existing-key");
   });
+
+  it("returns the durable event when both transport acknowledgements time out", async () => {
+    const keys: string[] = [];
+    const send = async () => {
+      throw new Error("Socket timeout");
+    };
+
+    const result = await sendDaemonFrameWithRetry(
+      "/tmp/may.sock",
+      { type: "aks.finite-holder-migration.requested", data: { project: "alpha-project" } },
+      send,
+      (idempotencyKey) => {
+        keys.push(idempotencyKey);
+        return 4936896;
+      },
+    );
+
+    expect(result).toEqual({ ok: true, eventId: 4936896 });
+    expect(keys).toHaveLength(1);
+    expect(keys[0]).toMatch(/^web-/);
+  });
 });
