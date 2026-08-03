@@ -10,6 +10,10 @@ import { readSessionMeta, writeSessionMeta } from "../../lib/persistence";
 import { projectRuntimePaths } from "@may-agent/sdk";
 import { prepareProjectTaskWorkspace } from "../project-task-workspace";
 import {
+  releaseHandlerExecutionFailedProjectAppTask,
+  taskReconciliationConfig,
+} from "../project-app-task-reconciler";
+import {
   inferProjectAppOwner,
   installProjectApps,
   invokeLoadedProjectAppAction,
@@ -1068,7 +1072,7 @@ describe("project app loader", () => {
            const marker = ${JSON.stringify(join(f.root, "flaky-failed"))};
            if (!existsSync(marker)) {
              writeFileSync(marker, "failed");
-             return ctx.blocked("transient provider failure");
+             throw new Error("transient provider failure");
            }
            const path = ${JSON.stringify(orderPath)};
            const order = existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : [];
@@ -1147,17 +1151,23 @@ describe("project app loader", () => {
 
       bus.emit({ type: "sample.work", project: "sample", itemId: "seed", ownerOnly: true } as any);
       await waitUntil(() => Boolean(releaseSeed));
-      bus.emit({
-        type: "session.end",
-        source: "runtime",
-        timestamp: Date.now() + 1_000,
-        data: {
-          sessionId: "owner-runtime-recovered",
-          agent: "sample-owner",
-          status: "done",
-          outcome: "done",
-        },
-      } as any);
+      expect(
+        releaseHandlerExecutionFailedProjectAppTask(
+          taskReconciliationConfig({
+            appDir: f.appDir,
+            projectDir: f.root,
+            owner: "sample-owner",
+            maxConcurrent: 1,
+          }),
+          "work/old",
+          {
+            owner: "sample-owner",
+            sessionId: "same-owner-recovered",
+            observedAt: new Date(Date.now() + 1_000).toISOString(),
+          },
+        ),
+      ).toBe(true);
+      bus.emit({ type: "sample.work", project: "sample", itemId: "old", workflow: "flaky" } as any);
       await waitUntil(() => {
         const state = JSON.parse(readFileSync(join(f.appDir, ".state/tasks/state.json"), "utf8"));
         return state.resources["work/old"]?.status?.phase === "pending";
