@@ -871,8 +871,21 @@ describe("app event contract", () => {
       id: "runtime/unified-resource-migration-feature-loop-history-v1",
       parentId: "group/app-operations",
       workflow: "unified-feature-loop-history-migration",
-      input: { migration: "feature-loop-history-v1" },
+      input: { migration: "feature-loop-history-v1", batch: "1" },
       priority: "P0",
+    });
+  });
+
+  test("uses a stable resource for each bounded feature history batch", () => {
+    expect(
+      resolveAksTask({
+        type: "aks.feature-loop-history-migration.requested",
+        target: { project: projectId },
+        data: { batch: "2" },
+      }),
+    ).toMatchObject({
+      id: "runtime/unified-resource-migration-feature-loop-history-v2",
+      input: { migration: "feature-loop-history-v1", batch: "2" },
     });
   });
 

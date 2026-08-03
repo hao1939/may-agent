@@ -87,7 +87,8 @@ export function featureLoopHistoryMigrationActions(
             "Compacted stale completed feature holder; the standing feature loop owns future reconciliation.",
         },
       ];
-    });
+    })
+    .slice(0, 16);
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {

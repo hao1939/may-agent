@@ -964,20 +964,22 @@ export function resolveAksTask(
   }
 
   if (event.type === "aks.feature-loop-history-migration.requested") {
+    const batch = stringDetail(details, "batch") || "1";
+    if (!/^[1-5]$/.test(batch)) return null;
     return {
-      id: "runtime/unified-resource-migration-feature-loop-history-v1",
+      id: `runtime/unified-resource-migration-feature-loop-history-v${batch}`,
       parentId: "group/app-operations",
       outcome:
-        "Compact stale completed feature-compact holders so the task tree contains work instead of retained history.",
+        `Compact batch ${batch} of stale completed feature-compact holders so the task tree contains work instead of retained history.`,
       acceptance: [
-        "Stale converged childless maintain holders under the legacy feature group become receipts.",
+        "At most 16 stale converged childless maintain holders under the legacy feature group become receipts.",
         "Current feature references, open Conditions, child-backed resources, and unfinished work remain unchanged.",
         "Every close uses the observed generation so concurrent revisions are rejected.",
       ],
       mode: "achieve",
       owner: "app-ops",
       workflow: "unified-feature-loop-history-migration",
-      input: { migration: "feature-loop-history-v1" },
+      input: { migration: "feature-loop-history-v1", batch },
       priority: "P0",
       category: "ops",
     };

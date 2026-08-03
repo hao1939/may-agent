@@ -54,4 +54,21 @@ describe("feature loop history migration", () => {
       ],
     );
   });
+
+  test("limits one reconciliation to the shared 16-action contract", () => {
+    const resources = Object.fromEntries(
+      Array.from({ length: 20 }, (_, index) => [
+        `stale-${String(index).padStart(2, "0")}`,
+        {
+          metadata: { generation: 1 },
+          spec: { parentId: "group/feature-compact", mode: "maintain" },
+          status: { phase: "converged", conditionIds: [] },
+        },
+      ]),
+    );
+
+    expect(
+      featureLoopHistoryMigrationActions({ resources }, { features: {} }),
+    ).toHaveLength(16);
+  });
 });

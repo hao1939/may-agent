@@ -250,12 +250,13 @@ The live `feature-loop-current-v1` run moved all 16 matching current resources.
 The standing loop now owns those continuations directly; no current pending or
 waiting compact resource remains a group sibling.
 
-The second feature slice, `feature-loop-history-v1`, is a single guarded
-cleanup. It compacts only stale, converged, childless maintain holders that
-are no longer named by current compact domain state. Any current reference,
-open Condition, child, unfinished phase, changed generation, or different
-parent excludes the resource. Git and the resulting receipts retain history;
-the active task graph does not.
+The second feature slice, `feature-loop-history-v1`, is a guarded sequence of
+stable batch resources. Each reconciliation compacts at most 16 stale,
+converged, childless maintain holders, matching the shared action limit. A
+current reference, open Condition, child, unfinished phase, changed
+generation, or different parent excludes the resource. Git and the resulting
+receipts retain history; the active task graph does not. Batch resources run
+one by one so every bounded result is proven before the next wake.
 
 Attention is not a completion state. Each attention resource must retain an
 accountable owner, exact failure evidence, and a truthful next wake or
