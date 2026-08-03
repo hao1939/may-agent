@@ -1,6 +1,13 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, readdirSync, readFileSync, symlinkSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  symlinkSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import { delimiter, join, relative } from "node:path";
 import type {
   ProjectAppTaskAction,
@@ -282,7 +289,13 @@ export function runRequiredRepositoryCheck(
       }
     } else {
       const setupCommand = "bun install --frozen-lockfile";
-      const setup = run("bun", ["install", "--frozen-lockfile"], worktreeDir);
+      const bunTempDir = join(tmpdir(), "aks-rp-e2e-bun-install");
+      const bunCacheDir = join(bunTempDir, "cache");
+      mkdirSync(bunCacheDir, { recursive: true });
+      const setup = run("bun", ["install", "--frozen-lockfile"], worktreeDir, {
+        TMPDIR: bunTempDir,
+        BUN_INSTALL_CACHE_DIR: bunCacheDir,
+      });
       evidence.push(
         `repository-check-setup-command:${setupCommand}`,
         `repository-check-setup-status:${setup.status === 0 ? "passed" : "failed"}`,
@@ -1223,9 +1236,6 @@ function workflowAttentionRetries<Row extends { residueTaskIds: string[] }>(
 }
 
 function hasPipelineRunWait(node: GraphNode): boolean {
-  if (!["waiting", "blocked"].includes(node.state)) {
-    return false;
-  }
   return node.conditionIds.some(
     (conditionId) =>
       conditionId.startsWith("pipeline-run-") &&
@@ -1368,7 +1378,12 @@ function scenarioLiveExecutionCapacity(
   nodesById: ReadonlyMap<string, GraphNode>,
   frontierLimit: number,
 ): ReturnType<typeof liveExecutionCapacity> {
-  const taskIds = scenarioNormalizationLineageTaskIds(nodes);
+  const taskIds = scenarioNormalizationLineageTaskIds(nodes).filter(
+    (taskId) => {
+      const node = nodesById.get(taskId);
+      return node ? canRepresentFrontierRow(node) : false;
+    },
+  );
   const accounting = loopFrontierAccounting(
     taskIds.map((taskId) => ({
       taskId,
@@ -2422,6 +2437,26 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           (row) =>
             `quality-row:${row.scenarioTestPath};specs=${row.specIds.join(",") || "unknown"};issues=${row.issueCodes.join(",")};actionable=${row.actionableTaskIds.length};waiting=${row.waitingTaskIds.length};residue=${row.residueTaskIds.length};branches=${branchCandidateEvidence(row)}`,
         );
+        if (openQualityCoverageTaskIds.length > 0) {
+          const liveCoverageSummary =
+            actions.length === 0
+              ? `Scenario frontier completed file-layout normalization and the required repository check on ${source} ${originDevCommit}, but ${openQualityCoverageTaskIds.length} current scenario-normalization quality task(s) still represent active same-spec work or exact waits under group/scenario-normalization and no new bounded repair was declared from this pass. Keep the stable frontier task waiting until those represented current-source quality rows settle instead of converging merely because direct children are empty.`
+              : `Scenario frontier completed file-layout normalization and the required repository check on ${source} ${originDevCommit}, and declared ${actions.length} bounded quality-normalization task action(s), but ${openQualityCoverageTaskIds.length} current scenario-normalization quality task(s) still represent active same-spec work or exact waits under group/scenario-normalization. Keep the stable frontier task waiting until both the newly declared repairs and the already represented current-source quality rows settle instead of converging while live frontier work remains.`;
+          return ctx.done(liveCoverageSummary, {
+            state: "waiting",
+            summary: liveCoverageSummary,
+            evidence: capEvidence(
+              capEvidence(
+                qualityEvidence,
+                reviewedQualityLiveCoverage.incompleteSpecIds,
+                (specId) => `quality-live-incomplete-spec:${specId}`,
+              ),
+              openQualityCoverageTaskIds,
+              (taskId) => `open-quality-coverage-task:${taskId}`,
+            ),
+            ...(actions.length > 0 ? { actions } : {}),
+          });
+        }
         return ctx.done(summary, {
           state: "converged",
           summary,
@@ -2452,9 +2487,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         });
       }
       if (fileLayoutOnlyComplete && openQualityCoverageTaskIds.length > 0) {
-        const summary = `Scenario frontier completed file-layout normalization and current reviewed/live coverage on ${source} ${originDevCommit}, but ${openQualityCoverageTaskIds.length} current scenario-normalization quality task(s) still represent active same-spec work or exact waits under group/scenario-normalization. Keep the stable frontier task open until those represented current-source quality rows settle instead of converging merely because direct children are empty.`;
+        const summary = `Scenario frontier completed file-layout normalization and current reviewed/live coverage on ${source} ${originDevCommit}, but ${openQualityCoverageTaskIds.length} current scenario-normalization quality task(s) still represent active same-spec work or exact waits under group/scenario-normalization. Keep the stable frontier task waiting until those represented current-source quality rows settle instead of converging merely because direct children are empty.`;
         return ctx.done(summary, {
-          state: "needs-owner",
+          state: "waiting",
           summary,
           evidence: capEvidence(
             evidence,
