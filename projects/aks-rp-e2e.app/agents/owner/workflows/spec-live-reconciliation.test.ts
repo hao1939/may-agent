@@ -62,6 +62,7 @@ import {
   reconcileRemoteTaskBranchHistory,
   remoteLeaseCommit,
   replayScenarioCandidateForDispatch,
+  resolvePriorVerificationInput,
   scenarioReplayForceWithLeaseArg,
   pullRequestSourceUpdateCondition,
   pullRequestWaitCondition,
@@ -2366,6 +2367,40 @@ describe("spec-live-reconciliation workflow", () => {
     expect(authoritativeRunReference({ authoritativeRunId: "174756648" })).toBe(
       null,
     );
+  });
+
+  test("treats an accepted exact run as authoritative across task revisions", () => {
+    expect(
+      resolvePriorVerificationInput({
+        acceptedRunId: "174996775",
+        acceptedSourceCommit: "b652f7dc878f4d1dc724c22698e1bd1e7bf89325",
+      }),
+    ).toEqual({
+      value: {
+        runId: "174996775",
+        authoritative: true,
+        acceptedSourceCommit: "b652f7dc878f4d1dc724c22698e1bd1e7bf89325",
+        kind: "accepted",
+      },
+      problem: null,
+    });
+    expect(
+      resolvePriorVerificationInput({ acceptedRunId: "174996775" }).problem,
+    ).toContain("must be declared together");
+    expect(
+      resolvePriorVerificationInput({
+        acceptedRunId: "174996775",
+        acceptedSourceCommit: "b652f7dc878f4d1dc724c22698e1bd1e7bf89325",
+        retryPipelineRunId: "175005656",
+      }).problem,
+    ).toContain("conflicting prior verification run ids");
+    expect(
+      resolvePriorVerificationInput({
+        acceptedRunId: "174996775",
+        acceptedSourceCommit: "b652f7dc878f4d1dc724c22698e1bd1e7bf89325",
+        priorVerificationRunId: "174996775",
+      }).problem,
+    ).toBeNull();
   });
 
   test("inherits an authoritative pass from the completed child receipt when payload evidence is absent", () => {

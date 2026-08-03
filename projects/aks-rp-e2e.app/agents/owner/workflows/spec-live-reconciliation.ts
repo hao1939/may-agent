@@ -83,6 +83,8 @@ export const workflowContract: WorkflowIoContract = {
       "input.target",
       "input.standaloneBuildId",
       "input.priorVerificationRunId",
+      "input.acceptedRunId",
+      "input.acceptedSourceCommit",
       "input.authoritativeRunId",
       "input.authoritativeSourceBranch",
       "input.authoritativeSourceCommit",
@@ -2329,6 +2331,50 @@ export type AuthoritativeRunReference = {
   taskId?: string;
 };
 
+export type PriorVerificationInput = {
+  runId: string;
+  authoritative: boolean;
+  acceptedSourceCommit: string;
+  kind: "accepted" | "retry" | "prior";
+};
+
+export function resolvePriorVerificationInput(
+  input: Record<string, unknown> | undefined,
+): { value: PriorVerificationInput | null; problem: string | null } {
+  if (!input) return { value: null, problem: null };
+  const priorRunId = nonEmptyString(input.priorVerificationRunId);
+  const retryRunId = nonEmptyString(input.retryPipelineRunId);
+  const acceptedRunId = nonEmptyString(input.acceptedRunId);
+  const acceptedSourceCommit = nonEmptyString(input.acceptedSourceCommit);
+  if (Boolean(acceptedRunId) !== Boolean(acceptedSourceCommit)) {
+    return {
+      value: null,
+      problem:
+        "acceptedRunId and acceptedSourceCommit must be declared together",
+    };
+  }
+  const distinctRunIds = [
+    ...new Set([priorRunId, retryRunId, acceptedRunId]),
+  ].filter(Boolean);
+  if (distinctRunIds.length > 1) {
+    return {
+      value: null,
+      problem: `conflicting prior verification run ids: ${distinctRunIds.join(", ")}`,
+    };
+  }
+  const runId = distinctRunIds[0] || "";
+  if (!runId) return { value: null, problem: null };
+  return {
+    value: {
+      runId,
+      authoritative: Boolean(acceptedRunId || retryRunId),
+      acceptedSourceCommit,
+      kind: acceptedRunId ? "accepted" : retryRunId ? "retry" : "prior",
+    },
+    problem: null,
+  };
+}
+
 export function preparedSourceRequirement(
   input: Record<string, unknown> | undefined,
 ): PreparedSourceRequirement | null {
@@ -3532,12 +3578,12 @@ export async function reconcileSpecLive(
     );
   }
   const { target: liveTarget, standaloneBuildId } = liveExecution;
-  const declaredPriorVerificationRunId = nonEmptyString(
-    payload?.input?.priorVerificationRunId,
-  );
-  const retryPipelineRunId = nonEmptyString(payload?.input?.retryPipelineRunId);
-  const priorVerificationRunId =
-    declaredPriorVerificationRunId || retryPipelineRunId;
+  const priorVerificationInput = resolvePriorVerificationInput(payload?.input);
+  const priorVerificationRunId = priorVerificationInput.value?.runId || "";
+  const authoritativePriorVerification =
+    priorVerificationInput.value?.authoritative === true;
+  const acceptedSourceCommit =
+    priorVerificationInput.value?.acceptedSourceCommit || "";
   const requiredSource = preparedSourceRequirement(payload?.input);
   const authoritativeReference = resolvedAuthoritativeRunReference(
     payload,
@@ -3545,11 +3591,13 @@ export async function reconcileSpecLive(
     specId,
     liveTarget,
   );
-  const preparedSourceCommit =
+  const otherwisePreparedSourceCommit =
     nonEmptyString(payload?.input?.carrierCommit) ||
     nonEmptyString(payload?.input?.retrySourceCommit) ||
     requiredSource?.sourceCommit ||
     "";
+  const preparedSourceCommit =
+    acceptedSourceCommit || otherwisePreparedSourceCommit;
   const preparedSourceBranch =
     nonEmptyString(payload?.input?.retrySourceBranch) ||
     requiredSource?.sourceBranch ||
@@ -3573,17 +3621,24 @@ export async function reconcileSpecLive(
       [`task:${taskId || "missing"}`, `spec:${specId || "missing"}`],
     );
   }
+  if (priorVerificationInput.problem) {
+    return ownerResult(
+      ctx,
+      `The task declares an invalid prior verification reference: ${priorVerificationInput.problem}.`,
+      [`task:${taskId}`, `spec:${specId}`],
+    );
+  }
   if (
-    declaredPriorVerificationRunId &&
-    retryPipelineRunId &&
-    declaredPriorVerificationRunId !== retryPipelineRunId
+    acceptedSourceCommit &&
+    otherwisePreparedSourceCommit &&
+    acceptedSourceCommit !== otherwisePreparedSourceCommit
   ) {
     return ownerResult(
       ctx,
-      "The task declares conflicting priorVerificationRunId and retryPipelineRunId values.",
+      "The task's acceptedSourceCommit conflicts with another prepared source commit.",
       [
-        `prior-verification-run:${declaredPriorVerificationRunId}`,
-        `retry-pipeline-run:${retryPipelineRunId}`,
+        `accepted-source-commit:${acceptedSourceCommit}`,
+        `prepared-source-commit:${otherwisePreparedSourceCommit}`,
       ],
     );
   }
@@ -3736,7 +3791,7 @@ export async function reconcileSpecLive(
       if (
         !priorRun ||
         !runMatchesPriorVerification(priorRun, {
-          ...(retryPipelineRunId ? { taskId } : {}),
+          ...(authoritativePriorVerification ? { taskId } : {}),
           specId,
           target: liveTarget,
           standaloneBuildId,
@@ -3782,9 +3837,9 @@ export async function reconcileSpecLive(
           pipelineWaitCondition(priorVerificationRunId),
         );
       }
-      if (retryPipelineRunId) {
+      if (authoritativePriorVerification) {
         authoritativeRetryRun = priorRun;
-        priorVerificationSummary = `Task-designated retry ${priorVerificationRunId} is terminal with provider result ${priorResult}. Review this exact run as the current task proof; do not replace it merely because the task generation advanced while it was running.`;
+        priorVerificationSummary = `Task-designated ${priorVerificationInput.value?.kind || "authoritative"} run ${priorVerificationRunId} is terminal with provider result ${priorResult}. Review this exact run as the current task proof; do not replace it merely because the task generation advanced.`;
       } else {
         priorVerificationSummary = `Prior exact verification run ${priorVerificationRunId} is terminal with provider result ${priorResult}. Treat its artifacts as repair context; current-task proof still requires the exact task source commit.`;
       }
@@ -5264,6 +5319,25 @@ export async function reconcileSpecLive(
       ) {
         return "existing exact run source commit is not available locally after fetching its branch";
       }
+      if (cleanWorkspace(workspaceDir)) {
+        return "cannot adopt exact source into a dirty task worktree";
+      }
+      if (
+        git(workspaceDir, ["rev-parse", "HEAD"]).stdout !== adoptedSourceCommit
+      ) {
+        const reset = git(
+          workspaceDir,
+          ["reset", "--hard", adoptedSourceCommit],
+          true,
+        );
+        if (
+          reset.status !== 0 ||
+          git(workspaceDir, ["rev-parse", "HEAD"]).stdout !==
+            adoptedSourceCommit
+        ) {
+          return "could not restore the exact live-tested source in the task worktree";
+        }
+      }
       sourceCommit = adoptedSourceCommit;
       proofSourceBranch = adoptedSourceBranch;
       providerGeneration = adoptedGeneration;
@@ -5279,7 +5353,10 @@ export async function reconcileSpecLive(
       }
       return null;
     };
-    if (authoritativeRetryRun) {
+    if (
+      authoritativeRetryRun &&
+      !(priorVerificationInput.value?.kind === "accepted" && latestRun)
+    ) {
       const adoptionProblem = adoptExistingRun(authoritativeRetryRun);
       if (adoptionProblem) {
         return ownerResult(
@@ -6547,12 +6624,15 @@ export async function reconcileSpecLive(
       });
     }
 
-    let pr = (await pullRequests(repoDir, sourceBranch, targetBranch))[0];
+    const pullRequestSourceBranch = proofSourceBranch || sourceBranch;
+    let pr = (
+      await pullRequests(repoDir, pullRequestSourceBranch, targetBranch)
+    )[0];
     if (!pr) {
       pr = await createPullRequest(repoDir, {
         taskId,
         specId,
-        sourceBranch,
+        sourceBranch: pullRequestSourceBranch,
         sourceCommit,
         runId,
         targetBranch,
