@@ -835,7 +835,7 @@ describe("app event contract", () => {
     });
   });
 
-  test("immediately wakes newly created ready children after reconciled actions apply", async () => {
+  test("leaves newly created ready children to the shared controller queue", async () => {
     const appDir = mkdtempSync(join(tmpdir(), "created-ready-child-"));
     const emitted: Record<string, unknown>[] = [];
     const parentTaskId =
@@ -885,26 +885,13 @@ describe("app event contract", () => {
         },
       );
 
-      expect(result).toMatchObject({
-        createdReadyTaskWake: true,
-        createdReadyTaskIds: [childTaskId],
-      });
-      expect(emitted).toContainEqual({
-        type: "project.task.tick",
-        source: "aks-rp-e2e-app",
-        target: {
-          project: projectId,
-          taskId: childTaskId,
-        },
-        urgency: "high",
-        data: {
-          project: projectId,
-          taskId: childTaskId,
-          task_id: childTaskId,
-          reason: "created-task-ready",
-          sourceTaskId: parentTaskId,
-        },
-      });
+      expect(result).not.toHaveProperty("createdReadyTaskWake");
+      expect(emitted).not.toContainEqual(
+        expect.objectContaining({
+          type: "project.task.tick",
+          target: { project: projectId, taskId: childTaskId },
+        }),
+      );
     } finally {
       rmSync(appDir, { recursive: true, force: true });
     }

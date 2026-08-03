@@ -482,52 +482,6 @@ function readLiveTaskTree(appDir: string): LiveTaskTreeSnapshot | null {
   }
 }
 
-function createdReadyTaskWakes(
-  appDir: string,
-  actionsApplied: string[],
-  sourceTaskId: string,
-): ProjectAppEvent[] {
-  if (!actionsApplied.length) return [];
-  const tree = readLiveTaskTree(appDir);
-  if (!tree?.tasks) return [];
-
-  const createdTaskIds = new Set<string>();
-  for (const entry of actionsApplied) {
-    const match = entry.match(/^created\s+(.+)$/i);
-    const taskId = match?.[1]?.trim();
-    if (taskId) createdTaskIds.add(taskId);
-  }
-
-  const wakes: ProjectAppEvent[] = [];
-  for (const taskId of createdTaskIds) {
-    const task = tree.tasks[taskId];
-    if (!task || typeof task !== "object") continue;
-    const phase =
-      typeof task.phase === "string" ? task.phase.trim().toLowerCase() : "";
-    const readiness = isRecord(task.readiness) ? task.readiness : {};
-    const readinessState =
-      typeof readiness.state === "string"
-        ? readiness.state.trim().toLowerCase()
-        : "";
-    if (phase !== "pending" && phase !== "backlog") continue;
-    if (readinessState !== "ready") continue;
-    wakes.push({
-      type: "project.task.tick",
-      source: "aks-rp-e2e-app",
-      target: { project: projectId, taskId },
-      urgency: "high",
-      data: {
-        project: projectId,
-        taskId,
-        task_id: taskId,
-        reason: "created-task-ready",
-        sourceTaskId,
-      },
-    });
-  }
-  return wakes;
-}
-
 function normalizePath(path: string): string {
   return resolve(path).replace(/\/+$/, "");
 }
@@ -1913,9 +1867,6 @@ export async function routeAksEvent(
             typeof entry === "string" && Boolean(entry.trim()),
         )
       : [];
-    const createdReadyTaskTicks = reconciledTaskId
-      ? createdReadyTaskWakes(appDir, actionsApplied, reconciledTaskId)
-      : [];
     const continueWaitingFrontierReview =
       reconciledTaskId === waitingFrontierReviewTaskId &&
       details.disposition === "converged" &&
@@ -1957,9 +1908,6 @@ export async function routeAksEvent(
               : undefined,
         })
       : [];
-    for (const tick of createdReadyTaskTicks) {
-      ctx.emit(tick);
-    }
     if (continueWaitingFrontierReview) {
       ctx.emit({
         type: "project.task.tick",
@@ -2097,10 +2045,6 @@ export async function routeAksEvent(
     }
     return {
       refillWake: Boolean(wake),
-      createdReadyTaskWake: createdReadyTaskTicks.length > 0,
-      createdReadyTaskIds: createdReadyTaskTicks.map(
-        (tick) => tick.target?.taskId,
-      ),
       waitingFrontierContinuation: continueWaitingFrontierReview,
       waitingFrontierAttentionWake: reviewNewAttention,
       repoRefOwnerHandoffReplay: replayRepoRefOwnerHandoff,

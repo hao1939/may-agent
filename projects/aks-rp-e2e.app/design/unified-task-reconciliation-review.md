@@ -182,6 +182,9 @@ behavioral slice at a time and keep current tasks recoverable.
   observable Condition instead.
 - AKS owner guidance and the spec-live workflow use the same rule, removing the
   former instruction that loop leaves must be siblings.
+- AKS no longer turns `actionsApplied` into duplicate ready-task ticks. Created
+  and revised tasks enter the shared controller queue directly as part of the
+  atomic reconciliation result.
 
 The live graph still contains 27 internal Conditions admitted before this
 guard. They are migration residue, not accepted future behavior. Retire or
