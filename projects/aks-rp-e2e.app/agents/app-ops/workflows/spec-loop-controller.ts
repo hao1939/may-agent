@@ -254,7 +254,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         return {
           kind: "create-task",
           id: dispositionRepairId(specId, spec),
-          parentId: "group/spec-verification",
+          parentId: specLoopTaskId,
           outcome: `Repair the spec-loop representation for ${specId}: the ledger already has a structured reviewed disposition, but no live task holder and no terminalDisposition=true flag, so the controller cannot tell whether to wait, finish, or rerun.`,
           mode: "achieve",
           owner: "aks-explorer",
@@ -280,7 +280,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       return {
         kind: "create-task",
         id: workId(specId, spec),
-        parentId: "group/spec-verification",
+        parentId: specLoopTaskId,
         outcome: `Reconcile ${specId} to a passing live result, an exact wait, or a reviewed terminal disposition.`,
         mode: "achieve",
         owner: "aks-explorer",

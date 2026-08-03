@@ -207,7 +207,7 @@ describe("feature compact reconciliation workflow", () => {
         actions: [
           {
             kind: "create-task",
-            parentId: "group/feature-compact",
+            parentId: "aks-feature-compact-loop",
             owner: "aks-explorer",
             input: { featureKey: "networking" },
           },
@@ -404,7 +404,7 @@ describe("feature compact reconciliation workflow", () => {
         actions: [
           {
             kind: "create-task",
-            parentId: "group/feature-compact",
+            parentId: "aks-feature-compact-loop",
             input: { featureKey: "storage" },
           },
         ],

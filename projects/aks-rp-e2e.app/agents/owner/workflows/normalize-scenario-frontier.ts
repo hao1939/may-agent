@@ -1461,7 +1461,7 @@ function actionForRow(
   return {
     kind: "create-task",
     id,
-    parentId: "group/scenario-normalization",
+    parentId: scenarioNormalizationTaskId,
     outcome: `Reconcile current origin/dev missing scenario adapter ${row.adapterPath} for ${row.specId || "the owning spec"} into exactly one next truthful state: integrated directly into dev, smallest same-spec repair, exact external wait, terminal disposition, or escalation.`,
     mode: "achieve",
     owner: "aks-explorer",
@@ -1514,7 +1514,7 @@ function actionForPlainCarrierRow(
   return {
     kind: "create-task",
     id,
-    parentId: "group/scenario-normalization",
+    parentId: scenarioNormalizationTaskId,
     outcome: `Normalize current origin/dev plain scenario carrier ${row.scenarioTestPath} for ${owningSpecs} into exactly one next truthful state: direct .test.ts implementation integrated into dev, smallest same-scope repair, exact external wait, terminal disposition, or escalation.`,
     mode: "achieve",
     owner: "aks-explorer",
@@ -2075,7 +2075,7 @@ function actionForQualityRow(
   return {
     kind: "create-task",
     id,
-    parentId: "group/scenario-normalization",
+    parentId: scenarioNormalizationTaskId,
     outcome: qualityRowOutcome(row),
     mode: "achieve",
     owner: "aks-explorer",

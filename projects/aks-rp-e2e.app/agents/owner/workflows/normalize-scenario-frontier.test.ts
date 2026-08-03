@@ -176,7 +176,7 @@ describe("normalize scenario frontier workflow", () => {
       actions: [
         {
           kind: "create-task",
-          parentId: "group/scenario-normalization",
+          parentId: "scenario-normalization",
           owner: "aks-explorer",
           workflow: "spec-live-reconciliation",
           priority: "P0",
@@ -191,7 +191,7 @@ describe("normalize scenario frontier workflow", () => {
         },
         {
           kind: "create-task",
-          parentId: "group/scenario-normalization",
+          parentId: "scenario-normalization",
           owner: "aks-explorer",
           workflow: "spec-live-reconciliation",
           priority: "P0",
@@ -234,7 +234,7 @@ describe("normalize scenario frontier workflow", () => {
     expect(
       result.output.actions.every(
         (action: Record<string, unknown>) =>
-          action.parentId === "group/scenario-normalization",
+          action.parentId === "scenario-normalization",
       ),
     ).toBe(true);
     expect(
@@ -915,7 +915,7 @@ describe("normalize scenario frontier workflow", () => {
       actions: [
         {
           kind: "create-task",
-          parentId: "group/scenario-normalization",
+          parentId: "scenario-normalization",
           owner: "aks-explorer",
           workflow: "spec-live-reconciliation",
           priority: "P0",
@@ -1153,7 +1153,7 @@ describe("normalize scenario frontier workflow", () => {
       actions: [
         {
           kind: "create-task",
-          parentId: "group/scenario-normalization",
+          parentId: "scenario-normalization",
           owner: "aks-explorer",
           workflow: "domain-task-execution",
           input: {
@@ -1204,7 +1204,7 @@ describe("normalize scenario frontier workflow", () => {
       actions: [
         {
           kind: "create-task",
-          parentId: "group/scenario-normalization",
+          parentId: "scenario-normalization",
           owner: "aks-explorer",
           input: {
             adapterPath,
@@ -1302,7 +1302,7 @@ describe("normalize scenario frontier workflow", () => {
       actions: [
         {
           kind: "create-task",
-          parentId: "group/scenario-normalization",
+          parentId: "scenario-normalization",
           owner: "aks-explorer",
           input: {
             adapterPath,

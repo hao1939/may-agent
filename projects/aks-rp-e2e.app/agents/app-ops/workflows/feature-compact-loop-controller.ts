@@ -340,7 +340,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       return {
         kind: "create-task",
         id: taskId,
-        parentId: "group/feature-compact",
+        parentId: featureCompactLoopTaskId,
         outcome: repairsLegacyProof
           ? `Repair the accepted proof record for feature compact package ${featureKey} without launching an unchanged live rerun.`
           : repairsRepresentation
