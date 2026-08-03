@@ -176,6 +176,11 @@ event path.
 6. Define workflows — write TypeScript files that orchestrate multi-agent sequences
 7. Resume on crash — call `resumeAgent()` after restart to pick up where you left off
 
+Claude workers and the interactive Claude terminal use `claude-opus-5` by
+default. Codex workers and its terminal use `gpt-5.6-sol` with high reasoning.
+Set `CLAUDE_MODEL`, `CODEX_MODEL`, or `CODEX_REASONING_EFFORT` to override
+those defaults.
+
 ## Project Structure
 
 ```

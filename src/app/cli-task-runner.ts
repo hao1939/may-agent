@@ -189,6 +189,7 @@ function exitCode(code: number | null, signal: NodeJS.Signals | null): number {
 
 const DEFAULT_CODEX_MODEL = "gpt-5.6-sol";
 const DEFAULT_CODEX_REASONING_EFFORT = "high";
+const DEFAULT_CLAUDE_MODEL = "claude-opus-5";
 
 function codexBaseArgs(): string[] {
   const model = process.env.CODEX_MODEL?.trim() || DEFAULT_CODEX_MODEL;
@@ -221,10 +222,15 @@ function codexArgs(record: CliTaskRecord, prompt: string): string[] {
   return args;
 }
 
+function claudeModelArgs(): string[] {
+  return ["--model", process.env.CLAUDE_MODEL?.trim() || DEFAULT_CLAUDE_MODEL];
+}
+
 function claudeArgs(record: CliTaskRecord, prompt: string): string[] {
   const args = [
     "-p",
     prompt,
+    ...claudeModelArgs(),
     "--output-format",
     "stream-json",
     "--verbose",
@@ -306,6 +312,7 @@ function resumeCommand(record: CliTaskRecord, sessionId: string): string[] {
     "claude",
     "-p",
     "<prompt>",
+    ...claudeModelArgs(),
     "--output-format",
     "stream-json",
     "--verbose",
