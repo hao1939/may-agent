@@ -636,6 +636,122 @@ describe("progressive master-validation observation", () => {
     });
   });
 
+  test("downgrades aggregate pass rows when exact spec-runner coverage is incomplete", () => {
+    const root = mkdtempSync(join(tmpdir(), "aks-slice-"));
+    roots.push(root);
+    const resultDir = join(
+      root,
+      "runs",
+      "test-results",
+      "test_20260803183502618_boysnr_631191",
+    );
+    const specRunnerDir = join(
+      resultDir,
+      "artifacts",
+      "traffic-api-proxy-upgrade-survival",
+      "spec-runner",
+    );
+    mkdirSync(specRunnerDir, { recursive: true });
+    writeFileSync(
+      join(resultDir, "result.json"),
+      JSON.stringify({
+        status: "nonpassing",
+        specResults: [
+          {
+            specId: "spec.traffic-api-proxy.upgrade-survival",
+            status: "pass",
+            category: "none",
+            reason:
+              "traffic-api-proxy-upgrade-survival passed: 1 claims verified.",
+            artifactRefs: [
+              "runs/test-results/test_20260803183502618_boysnr_631191/artifacts/traffic-api-proxy-upgrade-survival/spec-runner/result.json",
+            ],
+          },
+        ],
+      }),
+    );
+    writeFileSync(
+      join(specRunnerDir, "result.json"),
+      JSON.stringify({
+        status: "passed",
+        summary:
+          "traffic-api-proxy-upgrade-survival passed: 1 claims verified.",
+        probeEvidence: {
+          status: "pass",
+          summary:
+            "traffic-api-proxy-upgrade-survival passed: 1 claims verified.",
+          assertions: [
+            {
+              name: "all-assertions-present",
+              ok: true,
+              detail:
+                "Expected [assert.pre-upgrade.proxy-works, assert.upgrade.succeeded, assert.post-upgrade.proxy-works], found [assert.pre-upgrade.proxy-works, assert.upgrade.succeeded, assert.post-upgrade.proxy-works]",
+              verdictImpact: "preflight",
+            },
+            {
+              name: "claim.cluster-ready",
+              ok: true,
+              detail:
+                "Cluster created, provisioningState=Succeeded. Feature validation requires kubectl for full assertion coverage.",
+              verdictImpact: "claim",
+            },
+          ],
+        },
+      }),
+    );
+
+    const observations = specObservationsFromArtifact({
+      root,
+      pipelineRunId: "174976032",
+      sourceBranch: "refs/heads/validation/master-validation-173853081",
+      sourceCommit: "3ffc651bdbaccc9ba08e47d2eb9671ede3aad2f4",
+      artifactName: "slice-07-test-results",
+    });
+    expect(observations).toEqual([
+      expect.objectContaining({
+        specId: "spec.traffic-api-proxy.upgrade-survival",
+        status: "error",
+        category: "insufficient_claim_coverage",
+        artifactPath: join(specRunnerDir, "result.json"),
+        reason: expect.stringContaining(
+          "Missing successful claim/audit assertions: assert.pre-upgrade.proxy-works, assert.upgrade.succeeded, assert.post-upgrade.proxy-works.",
+        ),
+      }),
+    ]);
+
+    const projection = buildMasterValidationProgress({
+      run: {
+        runId: "174976032",
+        fingerprint: "fp",
+        status: "completed",
+        result: "failed",
+        sourceBranch: "refs/heads/validation/master-validation-173853081",
+        sourceVersion: "3ffc651bdbaccc9ba08e47d2eb9671ede3aad2f4",
+        finishTime: "2026-08-03T19:38:47.439Z",
+        queueTime: "2026-08-03T18:33:35.176Z",
+        artifacts: [],
+        progressive: true,
+      },
+      planRoot: null,
+      artifactRoots: { "slice-07-test-results": root },
+      checkedAt: "2026-08-03T22:53:51.253Z",
+    });
+    expect(projection.counts).toMatchObject({
+      selected: 1,
+      observed: 1,
+      pass: 0,
+      error: 1,
+      other: 0,
+    });
+    expect(projection.specs).toEqual([
+      expect.objectContaining({
+        specId: "spec.traffic-api-proxy.upgrade-survival",
+        status: "error",
+        category: "insufficient_claim_coverage",
+      }),
+    ]);
+  });
+
   test("keeps the failure fingerprint stable across run-specific numbers", () => {
     const make = (reason: string) => {
       const root = mkdtempSync(join(tmpdir(), "aks-slice-"));

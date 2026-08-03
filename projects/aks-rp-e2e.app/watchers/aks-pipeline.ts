@@ -1703,6 +1703,87 @@ export function failureObservationsFromArtifact(input: {
   return failures;
 }
 
+function expectedCoverageAssertionNames(
+  assertions: Record<string, unknown>[],
+): string[] {
+  const preflight = assertions.find(
+    (entry) => text(entry.name) === "all-assertions-present",
+  );
+  const detail = text(preflight?.detail);
+  const match = detail.match(/Expected \[(.*?)\](?:, found|$)/);
+  if (!match) return [];
+  return match[1]
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
+function exactCoverageOverride(input: {
+  root: string;
+  specId: string;
+  spec: Record<string, unknown>;
+}): {
+  status: string;
+  category: string;
+  reason: string;
+  artifactPath: string;
+} | null {
+  const artifactRef = stringArray(input.spec.artifactRefs).find((entry) =>
+    entry.endsWith("/spec-runner/result.json"),
+  );
+  if (!artifactRef) return null;
+  const artifactPath = join(input.root, artifactRef);
+  if (!existsSync(artifactPath)) return null;
+  try {
+    const result = record(JSON.parse(readFileSync(artifactPath, "utf8")));
+    const rawStatus = normalizedVerdict(
+      text(result.status) || text(record(result.probeEvidence).status),
+    );
+    if (rawStatus !== "pass") return null;
+    const probe = record(result.probeEvidence);
+    const assertions = Array.isArray(probe.assertions)
+      ? probe.assertions.map(record)
+      : [];
+    const expected = expectedCoverageAssertionNames(assertions);
+    if (!expected.length) return null;
+    const proved = new Set(
+      assertions
+        .filter(
+          (entry) =>
+            entry.ok === true &&
+            ["claim", "audit"].includes(text(entry.verdictImpact)) &&
+            expected.includes(text(entry.name)),
+        )
+        .map((entry) => text(entry.name)),
+    );
+    if (expected.every((name) => proved.has(name))) return null;
+    const missing = expected.filter((name) => !proved.has(name));
+    const diagnostic = assertions.find((entry) => {
+      const detail = text(entry.detail);
+      return (
+        detail &&
+        /requires|full assertion coverage|full feature validation/i.test(detail)
+      );
+    });
+    const summary =
+      text(result.summary) ||
+      text(probe.summary) ||
+      text(input.spec.reason) ||
+      "Pass artifact did not prove every expected live claim.";
+    const detail = text(diagnostic?.detail);
+    return {
+      status: "error",
+      category: "insufficient_claim_coverage",
+      reason: summarizedFailureReason(
+        `Exact spec-runner artifact did not prove every expected live claim for ${input.specId}. Missing successful claim/audit assertions: ${missing.join(", ")}. ${summary}${detail ? ` ${detail}` : ""}`,
+      ),
+      artifactPath,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function specObservationsFromArtifact(input: {
   root: string;
   pipelineRunId: string;
@@ -1723,19 +1804,26 @@ export function specObservationsFromArtifact(input: {
         const specId = text(spec.specId ?? spec.spec_id);
         if (!specId || seen.has(specId)) continue;
         seen.add(specId);
+        const override = exactCoverageOverride({
+          root: input.root,
+          specId,
+          spec,
+        });
         observations.push({
           pipelineRunId: input.pipelineRunId,
           sourceBranch: input.sourceBranch,
           sourceCommit: input.sourceCommit,
           artifactName: input.artifactName,
-          artifactPath: path,
+          artifactPath: override?.artifactPath ?? path,
           sliceId,
           specId,
-          status: text(spec.status) || "unknown",
-          category: text(spec.category) || "unknown",
-          reason: summarizedFailureReason(
-            text(spec.reason) || "No result reason was recorded.",
-          ),
+          status: (override?.status ?? text(spec.status)) || "unknown",
+          category: (override?.category ?? text(spec.category)) || "unknown",
+          reason:
+            override?.reason ??
+            summarizedFailureReason(
+              text(spec.reason) || "No result reason was recorded.",
+            ),
         });
       }
     } catch {
