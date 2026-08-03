@@ -1175,10 +1175,23 @@ function emitOwnerResultForTask(
   trigger: EventEnvelope | undefined,
   taskId: string,
   summary: string,
-  disposition: string,
+  taskDisposition: string,
+  actions: ProjectAppTaskAction[],
 ): void {
   if (trigger?.type !== "project.owner.requested" && trigger?.type !== "project.comment.created") return;
   const triggerRecord = trigger as unknown as Record<string, unknown>;
+  const actionTaskIds = actions.flatMap((action) =>
+    action.kind === "create-task" ? [action.id] : action.kind === "close-task" ? [] : [action.taskId],
+  );
+  const taskRefs = [...new Set([...actionTaskIds, ...(taskDisposition === "converged" ? [] : [taskId])])].map(
+    (referencedTaskId) => ({ projectId: descriptor.id, taskId: referencedTaskId }),
+  );
+  const disposition =
+    taskRefs.length === 0
+      ? "answered"
+      : actions.some((action) => action.kind === "create-task")
+        ? "task-created"
+        : "task-updated";
   for (const intent of ownerIntentRefs(triggerRecord)) {
     if (opts.persistDir) {
       const existing = getDb(opts.persistDir)
@@ -1202,10 +1215,10 @@ function emitOwnerResultForTask(
         openEventType: intent.eventType,
         project: descriptor.id,
         projectId: descriptor.id,
-        disposition: "task-updated",
-        taskDisposition: disposition,
+        disposition,
+        taskDisposition,
         summary,
-        taskRefs: [{ projectId: descriptor.id, taskId }],
+        taskRefs,
       },
       trace: {
         traceId:
@@ -1615,6 +1628,15 @@ async function reconcileTask(input: {
           acceptanceBasis,
         });
         const stale = apply.status === "stale" ? recoverStaleTaskResult(config, primary) : null;
+        emitOwnerResultForTask(
+          opts,
+          descriptor,
+          event,
+          intent.id,
+          primaryHandlerResult.summary,
+          apply.status === "applied" ? (apply.taskContinues ? "revised" : "converged") : "stale",
+          primaryHandlerResult.actions,
+        );
         emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
           generation: primary.generation,
           attemptId: primary.attemptId,
@@ -1633,19 +1655,12 @@ async function reconcileTask(input: {
           ...(stale ? { staleRecovery: stale.staleRecovery } : {}),
           workflowRunId: primaryResult.runId,
         });
-        emitOwnerResultForTask(
-          opts,
-          descriptor,
-          event,
-          intent.id,
-          primaryHandlerResult.summary,
-          apply.status === "applied" ? (apply.taskContinues ? "revised" : "converged") : "stale",
-        );
         return stale?.reconcileTaskIds ?? apply.dependentTaskIds;
       } catch (error) {
         const stale = recoverStaleTaskActionResult(config, primary, error);
         if (stale) {
           const summary = error instanceof Error ? error.message : String(error);
+          emitOwnerResultForTask(opts, descriptor, event, intent.id, summary, "stale", primaryHandlerResult.actions);
           emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
             generation: primary.generation,
             attemptId: primary.attemptId,
@@ -1661,7 +1676,6 @@ async function reconcileTask(input: {
             staleRecovery: stale.staleRecovery,
             workflowRunId: primaryResult.runId,
           });
-          emitOwnerResultForTask(opts, descriptor, event, intent.id, summary, "stale");
           return stale.reconcileTaskIds;
         }
         primaryHandlerResult.state = "error";
@@ -1689,6 +1703,15 @@ async function reconcileTask(input: {
         conditions: primaryHandlerResult.conditions,
       });
       const stale = apply.status === "stale" ? recoverStaleTaskResult(config, primary) : null;
+      emitOwnerResultForTask(
+        opts,
+        descriptor,
+        event,
+        intent.id,
+        primaryHandlerResult.summary,
+        apply.status === "applied" ? primaryHandlerResult.state : "stale",
+        primaryHandlerResult.actions,
+      );
       emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
         generation: primary.generation,
         attemptId: primary.attemptId,
@@ -1704,14 +1727,6 @@ async function reconcileTask(input: {
         ...(stale ? { staleRecovery: stale.staleRecovery } : {}),
         workflowRunId: primaryResult.runId,
       });
-      emitOwnerResultForTask(
-        opts,
-        descriptor,
-        event,
-        intent.id,
-        primaryHandlerResult.summary,
-        apply.status === "applied" ? primaryHandlerResult.state : "stale",
-      );
       const replayedTaskIds =
         apply.status === "applied"
           ? replayPersistedConditionEvents(opts, descriptor, config, {
@@ -1723,6 +1738,7 @@ async function reconcileTask(input: {
       const stale = recoverStaleTaskActionResult(config, primary, error);
       if (stale) {
         const summary = error instanceof Error ? error.message : String(error);
+        emitOwnerResultForTask(opts, descriptor, event, intent.id, summary, "stale", primaryHandlerResult.actions);
         emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
           generation: primary.generation,
           attemptId: primary.attemptId,
@@ -1734,7 +1750,6 @@ async function reconcileTask(input: {
           staleRecovery: stale.staleRecovery,
           workflowRunId: primaryResult.runId,
         });
-        emitOwnerResultForTask(opts, descriptor, event, intent.id, summary, "stale");
         return stale.reconcileTaskIds;
       }
       primaryHandlerResult.state = "error";
@@ -1760,6 +1775,15 @@ async function reconcileTask(input: {
     wakeParent: !ownerHandoff,
   });
   if (!ownerHandoff) {
+    emitOwnerResultForTask(
+      opts,
+      descriptor,
+      event,
+      intent.id,
+      primaryHandlerResult.summary,
+      "attention",
+      primaryHandlerResult.actions,
+    );
     emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
       generation: primary.generation,
       attemptId: primary.attemptId,
@@ -1768,7 +1792,6 @@ async function reconcileTask(input: {
       input: intent.input ?? {},
       summary: primaryHandlerResult.summary,
     });
-    emitOwnerResultForTask(opts, descriptor, event, intent.id, primaryHandlerResult.summary, "attention");
     return attention.status === "applied" && attention.parentTaskId ? [attention.parentTaskId] : [];
   }
   emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {

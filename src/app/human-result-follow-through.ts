@@ -21,6 +21,7 @@ export type HumanResultFollowThroughOptions = {
 
 const CLI_TERMINAL_EVENTS = new Set(["cli.task.completed", "cli.task.failed", "cli.task.orphaned"]);
 const PROJECT_TERMINAL_DISPOSITIONS = new Set(["converged", "attention"]);
+const PROJECT_DIRECT_DISPOSITIONS = new Set(["answered", "rejected", "no-op"]);
 const CONDITION_REVIEW_REASON = "condition-review-checkpoint-missed";
 
 /**
@@ -35,6 +36,68 @@ export function attachHumanResultFollowThrough(opts: HumanResultFollowThroughOpt
 
   return opts.bus.subscribe((event) => {
     const eventType = String((event as unknown as { type?: unknown }).type ?? "");
+    if (eventType === "project.owner.reviewed") {
+      const data = eventData(event);
+      const taskRefs = Array.isArray(data.taskRefs) ? data.taskRefs : [];
+      const disposition = nonEmptyString(data.disposition);
+      if (taskRefs.length > 0 || !disposition || !PROJECT_DIRECT_DISPOSITIONS.has(disposition)) return;
+
+      const eventId = positiveInteger((event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID]);
+      const trace = event.trace ?? readPersistedTrace(opts.persistDir, eventId);
+      if (!trace?.traceId) return;
+      const inbound = getLatestInboundNotificationMessage(opts.persistDir, trace.traceId);
+      if (!inbound) return;
+      const inboundData = parseRecord(inbound.data);
+      const conversationId = nonEmptyString(inboundData?.conversationId);
+      const humanText = nonEmptyString(inboundData?.text);
+      if (!conversationId || !humanText) return;
+      const projectId = nonEmptyString(data.projectId) ?? nonEmptyString(data.project);
+      const openEventId = positiveInteger(data.openEventId) ?? eventId;
+      const requestId = `human-result-review:project:${projectId ?? "unknown"}:owner:${openEventId ?? "current"}`;
+      if (startedRequestIds.has(requestId) || hasReviewSession(opts.persistDir, requestId)) {
+        return {
+          accepted: true as const,
+          by: "human-result-follow-through",
+          route: "direct" as const,
+          note: "existing May direct owner-result review reused",
+        };
+      }
+      const conversationView = getTelegramConversationView(opts.persistDir, {
+        conversationId,
+        traceId: trace.traceId,
+        projectId,
+      });
+      opts.manager.run(
+        interfaceAgent,
+        buildDirectProjectReviewPrompt({
+          data,
+          humanText,
+          conversationId,
+          replyToMessageId: inbound.telegram_msg_id,
+          conversationView,
+        }),
+        {
+          kind: "chat",
+          autoClose: "never",
+          source: "telegram",
+          requestId,
+          conversationId,
+          channelMessageId: inbound.telegram_msg_id,
+          trace: {
+            traceId: trace.traceId,
+            ...(eventId ? { parentEventId: eventId } : {}),
+          },
+        },
+      );
+      startedRequestIds.add(requestId);
+      return {
+        accepted: true as const,
+        by: "human-result-follow-through",
+        route: "direct" as const,
+        note: "fresh May review started for direct app-owner result",
+      };
+    }
+
     if (eventType === "project.task.reconciled") {
       const data = eventData(event);
       const disposition = nonEmptyString(data.disposition);
@@ -172,6 +235,36 @@ export function attachHumanResultFollowThrough(opts: HumanResultFollowThroughOpt
       note: "fresh May review started for human-originated CLI result",
     };
   });
+}
+
+function buildDirectProjectReviewPrompt(input: {
+  data: Record<string, unknown>;
+  humanText: string;
+  conversationId: string;
+  replyToMessageId: number;
+  conversationView: TelegramConversationView;
+}): string {
+  return [
+    "May direct project-owner result review",
+    "",
+    "The accountable app owner answered an earlier human request without leaving durable follow-up work. Review that answer in a fresh bounded May turn.",
+    "Do not expose app-internal routing or treat the owner's claim as proof when the requested outcome requires evidence.",
+    "",
+    "Original human request",
+    input.humanText,
+    "",
+    "Owner result",
+    `Project: ${nonEmptyString(input.data.projectId) ?? nonEmptyString(input.data.project) ?? "unknown"}`,
+    `Disposition: ${nonEmptyString(input.data.disposition) ?? "unknown"}`,
+    `Summary: ${nonEmptyString(input.data.summary) ?? "No summary"}`,
+    ...conversationViewLines(input.conversationView),
+    "",
+    "Delivery context",
+    `Conversation: ${input.conversationId}`,
+    `Reply to Telegram message: ${input.replyToMessageId}`,
+    "",
+    "Reply in plain language with the direct answer or no-op reason. Replan missing proof through the app, and ask Hao only for a real authority decision.",
+  ].join("\n");
 }
 
 function buildProjectReviewPrompt(input: {
