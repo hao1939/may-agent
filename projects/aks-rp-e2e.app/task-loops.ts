@@ -340,6 +340,28 @@ function persistedTaskLoopId(
   }
 }
 
+function hasExecutableLoopAncestor(appDir: string, taskId: string): boolean {
+  try {
+    const state = JSON.parse(
+      readFileSync(projectRuntimePaths(appDir).taskStatePath, "utf8"),
+    ) as TaskStateParentProjection;
+    const visited = new Set<string>();
+    let currentTaskId: string | undefined = taskId;
+    while (currentTaskId && !visited.has(currentTaskId)) {
+      visited.add(currentTaskId);
+      const parentId =
+        state.resources?.[currentTaskId]?.spec?.parentId ??
+        state.receipts?.[currentTaskId]?.parentId;
+      if (typeof parentId !== "string" || !parentId) return false;
+      if (isStandingLoopId(parentId)) return true;
+      currentTaskId = parentId;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 function eventTaskId(event: Record<string, unknown>): string {
   const target =
     event.target &&
@@ -358,6 +380,7 @@ export function loopRefillWakeForTaskEvent(
   if (event.type !== "project.task.reconciled") return null;
   const taskId = eventTaskId(event);
   if (!taskId || isStandingLoopId(taskId)) return null;
+  if (hasExecutableLoopAncestor(appDir, taskId)) return null;
 
   const data =
     event.data && typeof event.data === "object" && !Array.isArray(event.data)

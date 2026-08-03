@@ -263,6 +263,37 @@ describe("AKS standing-loop convention", () => {
     });
   });
 
+  test("leaves executable loop child wakes to the shared runtime", async () => {
+    const appDir = await mkdtemp(join(tmpdir(), "aks-loop-parent-wake-"));
+    await mkdir(join(appDir, ".state", "tasks"), { recursive: true });
+    await writeFile(
+      join(appDir, ".state", "tasks", "tree.json"),
+      JSON.stringify({ tasks: {} }),
+    );
+    await writeFile(
+      join(appDir, ".state", "tasks", "state.json"),
+      JSON.stringify({
+        receipts: {
+          "spec/verify-example": { parentId: specLoopTaskId },
+          "ops/recover-example": { parentId: "spec/verify-example" },
+        },
+      }),
+    );
+
+    for (const taskId of ["spec/verify-example", "ops/recover-example"]) {
+      expect(
+        loopRefillWakeForTaskEvent(appDir, {
+          type: "project.task.reconciled",
+          target: { project: "aks-rp-e2e", taskId },
+          data: {
+            disposition: "converged",
+            input: { loopId: specLoopTaskId },
+          },
+        }),
+      ).toBeNull();
+    }
+  });
+
   test("refills the owning loop after a nested task descendant completes", async () => {
     const appDir = await mkdtemp(join(tmpdir(), "aks-loop-nested-wake-"));
     await mkdir(join(appDir, ".state", "tasks"), { recursive: true });
