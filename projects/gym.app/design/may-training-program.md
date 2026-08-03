@@ -36,6 +36,12 @@ The regular resources are independent:
 | `learning/telegram-field-review` | daily timer | Learn from real deputy conversations |
 | `runtime/design-alignment-review` | daily timer or explicit review event | Find design and implementation drift |
 
+`learning/codex-sessions` uses contract revision 1. The revision is part of
+the stable desired state so the first new hourly observation replaces its old
+recovery-child generation. The current workflow resumes from its durable
+checkpoint and review artifacts. It never creates a recovery child or waits on
+an internal `task.state` Condition.
+
 Incident and proposal resources are created for one concrete piece of evidence
 and reconcile their own bounded outcome. They still follow the same resource
 model; they are not phases owned by a master task.
@@ -148,6 +154,13 @@ Task reconciliation supplies only a small recent child summary. Historical
 receipts remain durable task evidence, but legacy recovery trees are excluded
 from the working prompt beyond the latest decision-ready entries. Campaign
 checkpoints, rather than task history, carry Gym's improvement state.
+
+For the unified-resource migration, obsolete pre-contract tasks are removed
+from the live tree after their event and run evidence is confirmed durable.
+This is cleanup, not a second archive: the event journal, run artifacts, and Git
+history remain the evidence. Current finite incident and review resources stay
+live until they converge, wait on an exact external decision, or enter visible
+owner attention. Attention by itself is a truthful state, not a scheduler.
 
 A stored focused baseline with invalid trials means the one bounded retry was
 already exhausted. A later wake reuses that disposition; it does not run the

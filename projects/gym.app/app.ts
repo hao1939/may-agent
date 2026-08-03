@@ -335,6 +335,7 @@ export function resolveGymTask(
         mode: "maintain",
         workflow: "codex-learning-intake",
         input: {
+          contractRevision: 1,
           reason: String(details.reason ?? "daily"),
           ...selected(details, ["batchSize", "maxBatches"]),
         },

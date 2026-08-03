@@ -203,7 +203,12 @@ describe("gym app manifest", () => {
       id: "learning/codex-sessions",
       mode: "maintain",
       workflow: "codex-learning-intake",
-      input: { reason: "daily", batchSize: 200, maxBatches: 1 },
+      input: {
+        contractRevision: 1,
+        reason: "daily",
+        batchSize: 200,
+        maxBatches: 1,
+      },
     });
   });
 });
