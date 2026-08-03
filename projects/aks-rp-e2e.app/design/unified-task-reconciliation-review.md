@@ -210,6 +210,12 @@ childless legacy compact holders that wait on `project.task.tick`. Future
 review is owned by the stable feature loop, which timers and semantic events
 wake directly through the shared controller. Changed holders remain untouched.
 
+Legacy repo-ref waits use one older project-scoped Condition shape that the
+shared tracker cannot interpret. `legacy-repo-ref-conditions-v1` returns only
+the fixed matching waits to their current owners. A truthful replacement uses
+the canonical `repoRef:<ref>` subject and `commit notEquals <baseline>` shape;
+the app no longer scans and emits duplicate task ticks on every ref observation.
+
 Attention is not a completion state. Each attention resource must retain an
 accountable owner, exact failure evidence, and a truthful next wake or
 escalation path. Generic mechanical recovery may requeue it when the failed

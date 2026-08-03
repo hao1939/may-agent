@@ -1433,6 +1433,7 @@ const aksTaskSelectors: EventSelector[] = [
   { type: "aks.resource-migration.requested", target: projectTarget },
   { type: "aks.task-state-migration.requested", target: projectTarget },
   { type: "aks.task-tick-migration.requested", target: projectTarget },
+  { type: "aks.repo-ref-condition-migration.requested", target: projectTarget },
   { type: "pipeline.failure.observed", target: projectTarget },
   { type: "pipeline.test.nonpassing", target: projectTarget },
   { type: "project.owner.requested", target: projectTarget },
@@ -1524,6 +1525,26 @@ export function resolveAksTask(
       owner: "app-ops",
       workflow: "unified-task-tick-migration",
       input: { migration: "task-tick-holders-v1" },
+      priority: "P0",
+      category: "ops",
+    };
+  }
+
+  if (event.type === "aks.repo-ref-condition-migration.requested") {
+    return {
+      id: "runtime/unified-resource-migration-repo-ref-condition-v1",
+      parentId: "group/app-operations",
+      outcome:
+        "Replace the fixed legacy repo-ref Condition shape with canonical external observation waits.",
+      acceptance: [
+        "Only named waiting tasks with the legacy project-scoped repo-ref Condition are returned to current owner judgment.",
+        "The next wait uses subject repoRef:<ref> with expected field=commit and notEquals=<baseline>, or the task closes if no wait remains truthful.",
+        "Canonical Conditions and changed tasks remain untouched.",
+      ],
+      mode: "achieve",
+      owner: "app-ops",
+      workflow: "unified-repo-ref-condition-migration",
+      input: { migration: "legacy-repo-ref-conditions-v1" },
       priority: "P0",
       category: "ops",
     };
@@ -2195,119 +2216,11 @@ export async function routeAksEvent(
     const details = eventDetails(event);
     const repoRef = stringDetail(details, "repoRef", "repo_ref");
     const commit = stringDetail(details, "commit");
-    const taskState = readTaskStateSnapshot(ctx.appPath("."));
-    const satisfiedRepoRefWaits = satisfiedRepoRefWaitReplays(
-      ctx.appPath("."),
-      repoRef,
-      commit,
-    );
-    const malformedRepoRefWaitReplays = repoRefWaitBackfillCandidates(
-      ctx.appPath("."),
-      repoRef,
-      commit,
-    );
-    const malformedSelfTaskStateWaitReplays =
-      selfTaskStateWaitAfterRepoAdvanceCandidates(
-        ctx.appPath("."),
-        repoRef,
-        commit,
-      );
-    for (const replay of satisfiedRepoRefWaits) {
-      const taskIntent = taskIntentSnapshotFromResource(
-        replay.taskId,
-        taskState?.resources?.[replay.taskId] ?? null,
-      );
-      ctx.emit({
-        type: "project.task.tick",
-        source: "aks-rp-e2e-app",
-        target: { project: projectId, taskId: replay.taskId },
-        urgency: "high",
-        action: "repo-ref-condition-satisfied",
-        data: {
-          project: projectId,
-          taskId: replay.taskId,
-          task_id: replay.taskId,
-          reason: "repo-ref-condition-satisfied",
-          repoRef,
-          commit,
-          baselineCommit: replay.baselineCommit,
-          conditionId: replay.conditionId,
-          ...(taskIntent ? { taskIntent } : {}),
-        },
-      });
-    }
-    for (const problem of malformedRepoRefWaitReplays) {
-      const taskIntent = taskIntentSnapshotFromResource(
-        problem.taskId,
-        taskState?.resources?.[problem.taskId] ?? null,
-      );
-      ctx.emit({
-        type: "project.task.tick",
-        source: "aks-rp-e2e-app",
-        target: { project: projectId, taskId: problem.taskId },
-        urgency: "high",
-        action: "repo-ref-wait-contract-replay",
-        data: {
-          project: projectId,
-          taskId: problem.taskId,
-          task_id: problem.taskId,
-          reason: problem.replayReason ?? "malformed-repo-ref-wait-contract",
-          repoRef,
-          commit,
-          baselineCommit: problem.baselineCommit,
-          conditionId: problem.conditionId,
-          issues: problem.issues,
-          workflow: problem.workflow,
-          ...(taskIntent ? { taskIntent } : {}),
-        },
-      });
-    }
-    for (const problem of malformedSelfTaskStateWaitReplays) {
-      const taskIntent = taskIntentSnapshotFromResource(
-        problem.taskId,
-        taskState?.resources?.[problem.taskId] ?? null,
-      );
-      ctx.emit({
-        type: "project.task.tick",
-        source: "aks-rp-e2e-app",
-        target: { project: projectId, taskId: problem.taskId },
-        urgency: "high",
-        action: "task-state-wait-contract-replay",
-        overrideWait: true,
-        data: {
-          project: projectId,
-          taskId: problem.taskId,
-          task_id: problem.taskId,
-          reason:
-            problem.replayReason ?? "self-task-state-wait-after-repo-advance",
-          overrideWait: true,
-          repoRef,
-          commit,
-          baselineCommit: problem.baselineCommit,
-          conditionId: problem.conditionId,
-          issues: problem.issues,
-          workflow: problem.workflow,
-          ...(taskIntent ? { taskIntent } : {}),
-        },
-      });
-    }
     return {
       observed: true,
       repoRef,
       commit,
-      repoRefWaitReplay: satisfiedRepoRefWaits.length > 0,
-      repoRefWaitReplayTaskIds: satisfiedRepoRefWaits.map(
-        (replay) => replay.taskId,
-      ),
-      repoRefWaitContractReplay: malformedRepoRefWaitReplays.length > 0,
-      replayTaskIds: malformedRepoRefWaitReplays.map(
-        (problem) => problem.taskId,
-      ),
-      malformedRepoRefWaitReplay: malformedRepoRefWaitReplays.length > 0,
-      malformedRepoRefWaitProblems: malformedRepoRefWaitReplays,
-      malformedSelfTaskStateWaitReplay:
-        malformedSelfTaskStateWaitReplays.length > 0,
-      malformedSelfTaskStateWaitProblems: malformedSelfTaskStateWaitReplays,
+      conditionTracking: "shared-runtime",
     };
   }
   if (event.type === "aks.repo-ref.changed") {
