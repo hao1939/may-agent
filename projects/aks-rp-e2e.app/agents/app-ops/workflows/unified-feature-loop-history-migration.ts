@@ -6,6 +6,7 @@ import type {
   WorkflowContext,
   WorkflowResult,
 } from "@may-agent/sdk";
+import { parseReconciliationTaskPayload } from "./lib/workflow-input.ts";
 
 export const name = "unified-feature-loop-history-migration";
 export const description =
@@ -91,6 +92,19 @@ export function featureLoopHistoryMigrationActions(
     .slice(0, 16);
 }
 
+export function featureLoopHistoryMigrationBatch(rawTask: string): number {
+  const payload = parseReconciliationTaskPayload(rawTask);
+  const input = payload?.input;
+  const rawBatch =
+    input && typeof input === "object"
+      ? Number.parseInt(
+          String((input as Record<string, unknown>).batch ?? "1"),
+          10,
+        )
+      : 1;
+  return Number.isInteger(rawBatch) && rawBatch > 0 ? rawBatch : 1;
+}
+
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   if (!ctx.appDir) {
     throw new Error("unified-feature-loop-history-migration requires appDir");
@@ -104,12 +118,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       "utf8",
     ),
   ) as FeatureState;
+  const batch = featureLoopHistoryMigrationBatch(ctx.task);
   const actions = featureLoopHistoryMigrationActions(taskState, featureState);
-  const summary = `Compacted ${actions.length} stale completed feature holders into receipts.`;
+  const summary = `Compacted ${actions.length} stale completed feature holders into receipts for batch ${batch}.`;
   return ctx.done(summary, {
     state: "converged",
     summary,
-    evidence: ["migration:feature-loop-history-v1"],
+    evidence: ["migration:feature-loop-history-v1", `batch:${batch}`],
     actions,
   });
 }

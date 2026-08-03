@@ -1,6 +1,9 @@
 import { describe, expect, test } from "bun:test";
 
-import { featureLoopHistoryMigrationActions } from "./unified-feature-loop-history-migration";
+import {
+  featureLoopHistoryMigrationActions,
+  featureLoopHistoryMigrationBatch,
+} from "./unified-feature-loop-history-migration";
 
 describe("feature loop history migration", () => {
   test("compacts only stale converged childless maintain holders", () => {
@@ -70,5 +73,16 @@ describe("feature loop history migration", () => {
     expect(
       featureLoopHistoryMigrationActions({ resources }, { features: {} }),
     ).toHaveLength(16);
+  });
+
+  test("reads the batch label from the reconciliation task prompt", () => {
+    expect(
+      featureLoopHistoryMigrationBatch(`
+## Reconciliation Task
+\`\`\`json
+{"input":{"batch":"3"}}
+\`\`\`
+`),
+    ).toBe(3);
   });
 });
