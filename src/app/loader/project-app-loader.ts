@@ -974,6 +974,7 @@ async function runTaskOwner(input: {
     "Create a successor task only when this carrier cannot do the work because the target is stale, the task is too broad for one bounded attempt, or a real evidenced blocker requires different follow-up. If that successor is required for current acceptance, it is a direct child and the current task remains waiting.",
     "Use waiting only when there is a real machine-observable wake event or live direct child work. Every authored Condition must be an object with id, type, subject, and expected.",
     "When an unresolved human request depends on a Condition, set reviewAfterMs to a bounded interval of at least 60000. Missing that checkpoint wakes you to review and steer the same task; it does not send a routine human update.",
+    "A condition-review trigger includes reviewAttempt and finalReview. By the final unchanged review, change the approach or leave a proved event-driven blocker without another timer; the controller removes a repeated timer after the third review so an unchanged wait cannot spin forever.",
     'For a decomposition parent that creates child task actions and cannot yet satisfy its own acceptance, return state "waiting". Infrastructure tracks live direct children and wakes this parent when a child converges or needs attention; do not author task lifecycle Conditions or return "converged" merely because child tasks were declared.',
     'Conditions belong only to the current task when you return state "waiting". A converged task may create only independent successor work after its own acceptance is already satisfied; put that successor\'s wake facts in its task action input/acceptance and omit top-level conditions.',
     "Condition subjects must use typed forms the app can observe, for example task:<taskId>, session:<sessionId>, workflow-run:<runId>, pipeline-run:<runId>, metric:<metricId>, alert:<alertId>, or project:<projectId>.",
@@ -1567,12 +1568,7 @@ async function reconcileTask(input: {
           generation: primary.generation,
           attemptId: primary.attemptId,
           handler: primary.handler,
-          disposition:
-            apply.status === "applied"
-              ? apply.taskContinues
-                ? "revised"
-                : "converged"
-              : "stale",
+          disposition: apply.status === "applied" ? (apply.taskContinues ? "revised" : "converged") : "stale",
           outcome: intent.outcome,
           mode: intent.mode,
           owner: intent.owner ?? descriptor.owner,
@@ -1592,11 +1588,7 @@ async function reconcileTask(input: {
           event,
           intent.id,
           primaryHandlerResult.summary,
-          apply.status === "applied"
-            ? apply.taskContinues
-              ? "revised"
-              : "converged"
-            : "stale",
+          apply.status === "applied" ? (apply.taskContinues ? "revised" : "converged") : "stale",
         );
         return stale?.reconcileTaskIds ?? apply.dependentTaskIds;
       } catch (error) {
