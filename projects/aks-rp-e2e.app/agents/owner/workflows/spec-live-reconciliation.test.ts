@@ -451,6 +451,7 @@ describe("spec-live-reconciliation workflow", () => {
     const root = mkdtempSync(join(tmpdir(), "spec-live-verifier-"));
     try {
       const aggregatePath = join(root, "result.json");
+      const standaloneAggregatePath = join(root, "standalone-result.json");
       const specPath = join(root, "spec.json");
       const topLevelSpecPath = join(root, "spec-top-level.json");
       const nestedRawSpecPath = join(root, "spec-nested-raw.json");
@@ -486,6 +487,18 @@ describe("spec-live-reconciliation workflow", () => {
               },
             ],
           },
+        }),
+      );
+      writeFileSync(
+        standaloneAggregatePath,
+        JSON.stringify({
+          target: {
+            name: "standalone",
+            environment: "standalone",
+            subscriptionId: "feb5b150-60fe-4441-be73-8c02a524f55a",
+            location: "eastus2",
+          },
+          specResults: [{ specId: "spec.sample.live", status: "pass" }],
         }),
       );
       writeFileSync(
@@ -526,6 +539,19 @@ describe("spec-live-reconciliation workflow", () => {
         true,
       );
       expect(artifactProvesTarget(aggregatePath, "staging")).toBe(true);
+      expect(artifactProvesTarget(standaloneAggregatePath, "staging")).toBe(
+        false,
+      );
+      expect(
+        artifactProvesTarget(
+          standaloneAggregatePath,
+          "staging",
+          "174794632",
+        ),
+      ).toBe(true);
+      expect(
+        artifactProvesTarget(standaloneAggregatePath, "dev", "174794632"),
+      ).toBe(false);
       expect(
         artifactProvesDeclaredClaims(specPath, "spec.sample.live", [
           "assert.sample.behavior",
@@ -620,6 +646,34 @@ describe("spec-live-reconciliation workflow", () => {
           proof,
           run,
           artifactPaths: [aggregatePath, specPath, vitestPath],
+          expectedClaimIdsBySpec: {
+            "spec.sample.live": ["assert.sample.behavior"],
+          },
+          sourceReachable: true,
+          integratedCommitReachable: true,
+          normalizationInvariantSatisfied: true,
+          expectedVitestTestCount: 1,
+        }),
+      ).toMatchObject({ accepted: true });
+      expect(
+        verifySpecLiveProofFacts({
+          taskId: "domain/sample",
+          generation: 2,
+          specIds: ["spec.sample.live"],
+          target: "staging",
+          standaloneBuildId: "174794632",
+          proof: {
+            ...proof,
+            standaloneBuildId: "174794632",
+          },
+          run: {
+            ...run,
+            templateParameters: {
+              ...run.templateParameters,
+              standalone_build_id: "174794632",
+            },
+          },
+          artifactPaths: [standaloneAggregatePath, specPath, vitestPath],
           expectedClaimIdsBySpec: {
             "spec.sample.live": ["assert.sample.behavior"],
           },

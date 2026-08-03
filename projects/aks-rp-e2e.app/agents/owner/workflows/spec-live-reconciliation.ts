@@ -1150,16 +1150,27 @@ export function artifactProvesDeclaredClaims(
 export function artifactProvesTarget(
   path: string,
   targetName: string,
+  standaloneBuildId = "",
 ): boolean {
   const artifact = readJsonRecord(path);
   if (!artifact) return false;
   const target = jsonRecord(artifact.target);
-  if (
-    ![nonEmptyString(target.name), nonEmptyString(target.environment)].includes(
-      targetName,
-    )
-  ) {
+  const observedTargetNames = [
+    nonEmptyString(target.name),
+    nonEmptyString(target.environment),
+  ];
+  const directTargetMatch = observedTargetNames.includes(targetName);
+  const standaloneResolutionMatch =
+    targetName === defaultLiveTarget &&
+    Boolean(standaloneBuildId) &&
+    observedTargetNames.includes("standalone");
+  if (!directTargetMatch && !standaloneResolutionMatch) {
     return false;
+  }
+  if (standaloneResolutionMatch) {
+    return Boolean(
+      nonEmptyString(target.subscriptionId) && nonEmptyString(target.location),
+    );
   }
   if (targetName !== defaultLiveTarget) return true;
   return (
@@ -1329,7 +1340,7 @@ export function verifySpecLiveProofFacts(input: {
   const aggregatePath = input.artifactPaths.find(
     (path) =>
       input.specIds.every((specId) => artifactProvesSpecPass(path, specId)) &&
-      artifactProvesTarget(path, input.target),
+      artifactProvesTarget(path, input.target, input.standaloneBuildId),
   );
   if (!aggregatePath) {
     problems.push(
