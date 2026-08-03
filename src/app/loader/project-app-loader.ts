@@ -163,6 +163,57 @@ function firstNonEmptyString(...values: unknown[]): string | null {
   return null;
 }
 
+type ProjectAppTaskSessionScope = {
+  binding: { appId: string; taskId: string; generation: number } | null;
+  workflowRunId: string | null;
+};
+
+function readProjectAppTaskSessionScope(
+  persistDir: string | undefined,
+  sessionId: string,
+): ProjectAppTaskSessionScope {
+  if (!persistDir) {
+    return {
+      binding: null,
+      workflowRunId: null,
+    };
+  }
+  const meta = readSessionMeta(persistDir, sessionId);
+  if (!meta) {
+    return {
+      binding: null,
+      workflowRunId: null,
+    };
+  }
+  return {
+    binding: parseProjectAppTaskSessionBinding(meta.task),
+    workflowRunId: firstNonEmptyString(meta.workflowRunId),
+  };
+}
+
+function taskRecoverySessionScopesMatch(
+  appId: string,
+  persistDir: string | undefined,
+  failedSessionId: string | undefined,
+  successfulSession: ProjectAppTaskSessionScope,
+): boolean {
+  if (!failedSessionId) return false;
+  const failed = readProjectAppTaskSessionScope(persistDir, failedSessionId);
+  if (failed.binding && successfulSession.binding) {
+    return (
+      failed.binding.appId === appId &&
+      successfulSession.binding.appId === appId &&
+      failed.binding.taskId === successfulSession.binding.taskId &&
+      failed.binding.generation === successfulSession.binding.generation
+    );
+  }
+  return Boolean(
+    failed.workflowRunId &&
+      successfulSession.workflowRunId &&
+      failed.workflowRunId === successfulSession.workflowRunId,
+  );
+}
+
 function configuredAgentName(agentDir: string, fallback: string): string | null {
   const configPath = join(agentDir, "agent.json");
   if (!existsSync(configPath)) return fallback;
@@ -2258,11 +2309,21 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
       event.agent.trim() &&
       typeof event.sessionId === "string" &&
       event.sessionId.trim()
-        ? {
-            owner: event.agent.trim(),
-            sessionId: event.sessionId.trim(),
-            observedAt: new Date(typeof event.timestamp === "number" ? event.timestamp : Date.now()).toISOString(),
-          }
+        ? (() => {
+            const sessionId = event.sessionId.trim();
+            const scope = readProjectAppTaskSessionScope(opts.persistDir, sessionId);
+            return {
+              owner: event.agent.trim(),
+              sessionId,
+              observedAt: new Date(typeof event.timestamp === "number" ? event.timestamp : Date.now()).toISOString(),
+              binding: scope.binding,
+              workflowRunId: firstNonEmptyString(
+                scope.workflowRunId,
+                event.workflowRunId,
+                isRecord(event.data) ? event.data.workflowRunId : undefined,
+              ),
+            };
+          })()
         : null;
     for (const descriptor of appRouterDescriptorsByBus.get(opts.bus) ?? []) {
       if (descriptor.reconciliationPaused) continue;
@@ -2276,13 +2337,23 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
         });
         for (const candidate of listHandlerExecutionFailedProjectAppTasks(config)) {
           if (candidate.owner !== successfulOwner.owner) continue;
+          if (
+            !taskRecoverySessionScopesMatch(descriptor.id, opts.persistDir, candidate.sessionId, {
+              binding: successfulOwner.binding,
+              workflowRunId: successfulOwner.workflowRunId,
+            })
+          ) {
+            continue;
+          }
           const legacySession = candidate.failureReason === "handler-blocked" ? candidate.sessionId : undefined;
           const allowLegacyHandlerBlocked = Boolean(
             legacySession && opts.persistDir && readSessionMeta(opts.persistDir, legacySession)?.status === "error",
           );
           if (
             !releaseHandlerExecutionFailedProjectAppTask(config, candidate.taskId, {
-              ...successfulOwner,
+              owner: successfulOwner.owner,
+              sessionId: successfulOwner.sessionId,
+              observedAt: successfulOwner.observedAt,
               allowLegacyHandlerBlocked,
             })
           ) {
@@ -2300,6 +2371,9 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
               handler: "owner-execution",
               reason: "owner-session-succeeded-after-handler-execution-failure",
               evidenceSessionId: successfulOwner.sessionId,
+              ...(successfulOwner.workflowRunId
+                ? { evidenceWorkflowRunId: successfulOwner.workflowRunId }
+                : {}),
             },
           } as unknown as AgentEvent);
         }
