@@ -410,8 +410,11 @@ The default interface is plain intent:
 
 > Improve May using the current approved benchmark.
 
-The project-comment receipt is asynchronous. The owner wakes or updates
-`improve/may`; the user follows that task and does not wait on the HTTP request.
+The project-comment receipt is asynchronous. A free-form comment first wakes
+Gym owner judgment. The owner interprets the requested outcome and may answer,
+record a no-op, or organize the appropriate durable work. May and other callers
+do not choose Gym's task, workflow, or wake path. The user follows the owner
+disposition and any resulting task instead of waiting on the HTTP request.
 
 The optional typed shortcut is `improve-may-now`. It emits
 `gym.improvement.requested` and wakes the same task. It does not create a job.
@@ -422,7 +425,9 @@ the CLI and parsing its output.
 
 ## Triggers
 
-- `improve-may-now` or free-form project intent starts an immediate cycle.
+- `improve-may-now` starts an immediate cycle. Free-form project intent wakes
+  Gym owner judgment, which decides whether the campaign or different work is
+  appropriate.
 - One enabled daily refill check resumes bounded curriculum reconciliation after
   recovery or newly approved material. Continuation wakes keep it moving until
   material is exhausted or approval is required.

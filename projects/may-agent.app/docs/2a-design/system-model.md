@@ -135,6 +135,15 @@ agent or conversation. They share envelopes, receipts, traces, and execution
 infrastructure without sharing one ambiguous public `send(target, message)`
 contract.
 
+The app boundary is intentionally opaque to May and other external callers.
+They state the desired outcome, relevant evidence, safety or approval bounds,
+and required proof. They do not select the app's task, owner, workflow,
+session, or wake mechanism. The app owner interprets that intent and decides
+whether to answer, record a no-op, revise or wake durable work, or use an
+already-declared typed action. Free-form intent reaches owner judgment before
+domain work is selected; a typed action may map directly only because the app
+has already encoded and published that exact mapping.
+
 A human conversation is a logical channel/thread relationship, not a session
 or permanent trace. One conversation may use many bounded sessions, and each
 human turn receives its own trace. Replies to a notification continue the

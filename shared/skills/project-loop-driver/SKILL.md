@@ -23,6 +23,19 @@ Use the project frame when it helps preserve context, evidence, decisions,
 signals, or next actions. If it stops helping, simplify the project or
 escalate with a concrete reason.
 
+## Address The Right Boundary
+
+Give an app the desired outcome, relevant evidence, constraints, approval
+boundary, and terminal proof. Do not choose its task id, owner, workflow,
+session, or internal wake path. Follow the app receipt to its owner disposition
+and then to terminal evidence; owner review is movement, not completion.
+
+Give an agent one bounded executable assignment with exact inputs, constraints,
+stop condition, and completion evidence. Use direct agent work only when it is
+outside an existing app boundary or when the accountable app owner has already
+decomposed that bounded work. The agent returns execution evidence; it does not
+claim the app's broader outcome.
+
 ## Operating Modes
 
 There are only two practical modes:

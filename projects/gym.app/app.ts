@@ -161,6 +161,23 @@ function mayImprovementIntent(): ProjectAppTaskIntent {
   };
 }
 
+function gymOwnerReviewIntent(): ProjectAppTaskIntent {
+  return {
+    id: "runtime/owner-review",
+    parentId: "review-proposals",
+    outcome:
+      "Keep the Gym project reviewed by its accountable owner and organize the smallest useful next step from current evidence.",
+    acceptance: [
+      "Interpret the exact requested outcome before selecting work; a free-form comment is intent, not an instruction to run the normal May campaign.",
+      "Answer, record an evidence-backed no-op, or propose bounded durable follow-up without changing benchmark truth.",
+      "Keep task ids, owners, workflows, and wake paths inside Gym; the caller receives the owner disposition and follows any resulting work to terminal proof.",
+    ],
+    mode: "maintain",
+    owner: "gym",
+    priority: "P1",
+  };
+}
+
 export function resolveGymTask(
   event: Record<string, unknown>,
 ): ProjectAppTaskIntent | null {
@@ -193,19 +210,9 @@ export function resolveGymTask(
             priority: "P1",
           }
         : null;
+    case "project.comment.created":
     case "project.owner.requested":
-      return {
-        id: "runtime/owner-review",
-        parentId: "review-proposals",
-        outcome:
-          "Keep the Gym project reviewed by its accountable owner and organize the smallest useful next step from current evidence.",
-        acceptance: [
-          "The owner answers, records an evidence-backed no-op, or proposes bounded durable follow-up without changing benchmark truth.",
-        ],
-        mode: "maintain",
-        owner: "gym",
-        priority: "P1",
-      };
+      return gymOwnerReviewIntent();
     case "gym.design-alignment.requested":
       return {
         id: "runtime/design-alignment-review",
@@ -240,7 +247,6 @@ export function resolveGymTask(
         outputs: [],
         priority: "P0",
       };
-    case "project.comment.created":
     case "gym.improvement.requested":
     case "agent.revision.changed":
       return mayImprovementIntent();

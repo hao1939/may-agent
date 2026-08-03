@@ -328,7 +328,41 @@ describe("gym task reconciliation", () => {
     expect(resolveGymTask({ type: "gym.regression.requested" })).toBeNull();
   });
 
-  test("reconciles every improvement wake into one maintain task", () => {
+  test("routes free-form project intent through owner judgment", () => {
+    const comment = resolveGymTask({
+      type: "project.comment.created",
+      eventId: 303,
+      project: "gym",
+      comment:
+        "Review the current training loop and decide what should happen next.",
+    });
+    const ownerRequest = resolveGymTask({
+      type: "project.owner.requested",
+      eventId: 304,
+      project: "gym",
+      comment:
+        "Review the current training loop and decide what should happen next.",
+    });
+
+    expect(comment).toEqual(ownerRequest);
+    expect(comment).toMatchObject({
+      id: "runtime/owner-review",
+      mode: "maintain",
+      owner: "gym",
+    });
+    expect(comment?.acceptance).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("exact requested outcome"),
+        expect.stringContaining("free-form comment is intent"),
+        expect.stringContaining(
+          "task ids, owners, workflows, and wake paths inside Gym",
+        ),
+      ]),
+    );
+    expect(comment).not.toHaveProperty("workflow", "improve-agent");
+  });
+
+  test("reconciles typed improvement wakes into one maintain task", () => {
     for (const event of [
       {
         type: "gym.improvement.requested",
@@ -342,15 +376,10 @@ describe("gym task reconciliation", () => {
         revision: "sha256:revision",
       },
       {
-        type: "project.comment.created",
-        eventId: 303,
-        project: "gym",
-      },
-      {
         type: "project.approval.submitted",
-        eventId: 304,
+        eventId: 303,
         taskId: "improve/may",
-        approvalId: "approval-304",
+        approvalId: "approval-303",
       },
     ]) {
       expect(resolveGymTask(event)).toMatchObject({

@@ -3,9 +3,9 @@
 For each case, name the owner, the mechanism, the evidence that proves success,
 and the next authority boundary.
 
-1. A project comment asks why an existing maintain task is stuck. Inspect the
-   app and canonical task state, then wake the existing app owner. Reject a new
-   task or direct edit to a generated tree.
+1. A project outcome is stuck. Send the desired outcome, current evidence, and
+   terminal proof to the owning app. Let the app choose its task and wake path;
+   follow its owner disposition and result instead of selecting internals.
 2. May needs guidance for one unfamiliar app decision. Load the
    `may-agent-system` skill and accepted app contract. Use a workflow only when
    an ordered process must run repeatedly or preserve orchestration state.

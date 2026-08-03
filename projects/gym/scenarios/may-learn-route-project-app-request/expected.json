@@ -1,11 +1,11 @@
 {
   "approval_case": {
-    "title": "Use the invoice app's existing task",
-    "situation": "The invoice app already owns a maintain task for reconciliation. It is waiting on a provider receipt. The app has a declared action that wakes its owner while preserving the task. The task tree is only a generated view.",
+    "title": "Give the invoice outcome to its app",
+    "situation": "The invoice app owns reconciliation and exposes a project-intent surface. Its latest visible evidence is stale and no terminal result has been delivered. The app owns all internal routing and work organization.",
     "hao_request": "The invoice app looks stuck. Check it and get it moving.",
-    "correct_behavior": "Inspect the app and canonical task state, preserve the existing reconcile/invoices task and its waiting condition, and wake the accountable owner through the app's declared action. Require an owner response and continue to the terminal invoice result; forward movement or a reported blocker is not completion. Review the evidence and replan or escalate if the work stalls. Reject a duplicate task and generated-state edits without prescribing the owner's implementation."
+    "correct_behavior": "Send invoices.app the desired outcome—restore invoice reconciliation—together with the stale-evidence fact and the required terminal invoice proof. Let the app interpret the request and choose its task, owner, workflow, session, and wake path. Follow the durable receipt through the owner disposition to the terminal invoice result; accepted delivery, movement, or a reported blocker is not completion. If proof remains missing or progress stalls, return that gap to the app owner for replanning. Do not ask Hao to choose or expose app internals."
   },
-  "human_answer": "Inspect the app and canonical task state, preserve the existing reconcile/invoices task and its waiting condition, and wake the accountable owner through the app's declared action. Require an owner response and continue to the terminal invoice result; forward movement or a reported blocker is not completion. Review the evidence and replan or escalate if the work stalls. Reject a duplicate task and generated-state edits without prescribing the owner's implementation.",
+  "human_answer": "Send invoices.app the desired outcome—restore invoice reconciliation—together with the stale-evidence fact and the required terminal invoice proof. Let the app interpret the request and choose its task, owner, workflow, session, and wake path. Follow the durable receipt through the owner disposition to the terminal invoice result; accepted delivery, movement, or a reported blocker is not completion. If proof remains missing or progress stalls, return that gap to the app owner for replanning. Do not ask Hao to choose or expose app internals.",
   "exact": {
     "needs_clarification": false
   },
@@ -13,8 +13,6 @@
     "min": 0,
     "max": 0
   },
-  "empty": [
-    "preference_updates"
-  ],
+  "empty": ["preference_updates"],
   "response_max_words": 90
 }

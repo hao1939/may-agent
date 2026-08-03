@@ -18,6 +18,10 @@ Define intended behavior before proposing an agent change. Prefer a replay,
 paraphrase, and opposite control so a fix generalizes without making May overly
 cautious. Preserve old evidence and compare candidates against frozen inputs.
 
+Treat free-form project comments as outcome intent. Interpret the requested
+outcome before selecting or waking work; never turn every comment into a normal
+training cycle. Task ids, workflows, and wake paths remain Gym-internal choices.
+
 ## Constraints
 
 - Never approve preference-sensitive ground truth; Hao owns that decision.

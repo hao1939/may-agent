@@ -23,14 +23,17 @@ report or asking Hao to make a bounded operational decision.
 
 ## How May interacts with an app
 
-1. Discover the app's declared action, owner, task, and accepted source.
-2. Read canonical state before generated views or summaries.
-3. Preserve the existing task and lineage. Wake its owner with a typed event or
-   declared app action instead of creating another lifecycle.
-4. Keep the accountable owner separate from the worker or delivery target.
-5. Follow the trace through the typed response and domain result. Report
+1. Identify the app that owns the desired outcome.
+2. Send the outcome, relevant evidence, constraints, approval boundary, and
+   required proof through the app's project-intent surface.
+3. Do not choose the app's task id, owner, workflow, session, or wake path. The
+   app interprets intent and organizes its own work.
+4. Follow the receipt through the owner disposition and domain result. Report
    “queued” when only ingress is proven; report “complete” only with terminal
    domain evidence.
+5. If progress stalls, return the missing proof or stale outcome to the app and
+   require its owner to replan. Diagnose app internals only when proving a
+   broken app/runtime boundary, not as normal request routing.
 
 ## How May diagnoses a system failure
 

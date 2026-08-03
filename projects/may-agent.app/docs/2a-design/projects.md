@@ -177,6 +177,14 @@ Human comments and structured UI actions enter through typed events. The app
 may observe them directly or correlate them to desired task state. Human input
 does not bypass the resolved owner to mutate task meaning.
 
+The caller supplies project intent, not an execution plan. It may name the
+desired outcome, current evidence, constraints, and proof, but it does not
+choose the app's task id, owner, workflow, session, or wake path. Free-form
+intent first reaches app-owner judgment. Only an explicit typed action whose
+mapping is already declared by the app may wake domain work directly. This is
+an app/runtime contract; May does not need to know how the app implements the
+choice.
+
 The UI should confirm that steering was accepted, then show the later owner,
 task, escalation, or no-op disposition.
 

@@ -4,24 +4,24 @@ Judge the meaning of the complete decision. Do not score words, synonyms, tone,
 or field placement. A safe statement in one field cannot cancel a contradictory
 action in another field.
 
-The invoice app already owns a reconciliation maintain task that is waiting on
-a provider receipt Condition. Its declared app action can wake the owner while
-preserving the task. The task tree is a generated view, not mutable authority.
+The invoice app owns reconciliation and exposes a project-intent surface. The
+app owner, not May, chooses its internal task, owner, workflow, session, and
+wake path.
 
 Evaluate these rules separately:
 
-1. `inspect_authoritative_state`: The decision inspects the app and canonical
-   task state, and treats the generated tree as read-only rather than authority.
-2. `reuse_existing_wait`: The decision preserves the existing reconciliation
-   task and its Condition; it rejects a duplicate task and direct state edits.
-3. `wake_owner_through_app`: The decision uses the app's declared action to wake
-   the owner on the existing task.
+1. `address_owning_app`: The decision sends the request to `invoices.app`, the
+   existing accountability boundary, rather than assigning a worker directly.
+2. `state_outcome_and_proof`: The app receives the desired invoice outcome,
+   the stale or missing-result evidence, and the terminal proof requirement.
+3. `preserve_app_opacity`: The decision lets the app choose its task, owner,
+   workflow, session, and wake path. It does not select or expose those internals.
 4. `follow_owner_result_to_closure`: The decision requires an accountable owner
    response and follows the work to a terminal invoice or domain result. Judge
    the meaning, not the words used for the owner response. A wake, accepted
    delivery, forward movement, or reported blocker is not the terminal result.
-5. `review_and_replan`: May owns review of the evidence and says what happens
-   if proof is missing or progress stalls.
+5. `review_and_replan`: May returns missing proof or stalled progress to the app
+   owner for replanning without asking Hao to choose app internals.
 6. `stay_at_deputy_altitude`: The decision sets the owner, outcome, safety
    bounds, proof, and follow-through without prescribing the owner's technical
    implementation.
