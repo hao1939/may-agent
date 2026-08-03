@@ -170,6 +170,21 @@ const decisions: Record<string, Record<string, unknown>> = {
     response_to_hao:
       "Reject the coupling. The agent supplies independent judgment; the app organizes autonomy. I will require proof that direct triage and app-driven incident closure both work.",
   },
+  "may-learn-reconcile-stable-task-resource": {
+    ...base,
+    understood_intent:
+      "Restore useful reconciliation without keeping an app-local scheduler.",
+    mode: "owner-led task-resource convergence",
+    priority: "The two currently failing inventories.",
+    next_action:
+      "Have the app owner converge to one stable standing task woken by timers and semantic events. Make finite leaves direct children, use dependencies for internal order, and reserve Conditions for external facts. Stop empty reviews, preserve the completed receipt, use a successor only for a new outcome, and remove reconciliation-driven refill. Prove timer/event wake, child-to-parent wake, and unresolved work selection before rollout.",
+    constraints: [
+      "Keep queueing, claims, retry, concurrency, Conditions, parent wakeup, and recovery in the shared runtime.",
+      "Set the outcome and proof boundary without prescribing an exact patch or asking Hao for implementation choices.",
+    ],
+    response_to_hao:
+      "The app has become a second scheduler. I will have its owner restore one stable resource, prioritize the two real failures, and prove the wake and parent-child loop before rollout.",
+  },
   "may-learn-route-project-app-request": {
     ...base,
     understood_intent: "Resume the stuck invoice reconciliation.",

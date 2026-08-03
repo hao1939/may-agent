@@ -32,7 +32,7 @@ describe("May learning registry", () => {
           status: "pilot",
           ready_for_development: true,
           ready_for_release: true,
-          evidence: { positive: 1, negative: 2, contrast: 0 },
+          evidence: { positive: 1, negative: 2, contrast: 1 },
         }),
         expect.objectContaining({
           id: "cli-worker-opinions",
@@ -77,7 +77,6 @@ describe("May learning registry", () => {
     );
     expect(review.warnings).toEqual(
       expect.arrayContaining([
-        "system-deputy-operations has no contrast evidence",
         "human-inbox-deputy release truth is not approved: may-learn-inbox-transfer-handle-recovered-urgent",
         "conversation-follow-through release truth is not approved: may-conversation-admit-long-running-reply",
       ]),
@@ -289,6 +288,7 @@ describe("May learning registry", () => {
       "may-learn-keep-repair-in-owner-task",
       "may-learn-choose-durable-execution-owner",
       "may-learn-separate-agent-capability-from-app-autonomy",
+      "may-learn-reconcile-stable-task-resource",
       "may-learn-route-project-app-request",
       "may-learn-diagnose-unconsumed-event",
       "may-learn-replan-stalled-human-task",

@@ -30,6 +30,13 @@ system signal -> owner/target routing -> app resolver or handler -> evidence -> 
 The root event and trace are the commitment. Do not add a parallel request
 record or lifecycle.
 
+For task-enabled apps, control-plane activity is a wake, not a second
+scheduler. A timer, semantic event, external Condition observation, or
+meaningful direct-child transition wakes the same stable task key. The shared
+runtime owns queueing, claims, retry, concurrency, and recovery; app code owns
+domain correlation and policy. `project.task.reconciled` is an observation for
+read models, never a refill or recovery command.
+
 Direct DB reads are for diagnosis. Direct DB writes are mechanical infra work
 only, and should normally live behind SDK/query/metrics helpers.
 
@@ -142,3 +149,7 @@ Do not rely only on TypeScript compile success for control-plane changes.
 - Fixing Telegram, Web UI, and CLI as separate behavior paths for the same
   operator action.
 - Declaring a runtime fix without a new event/app/task/workflow trace.
+- Encoding task phase, child completion, retry, or refill as an external
+  Condition.
+- Reusing a completed task identity instead of creating a successor for a new
+  desired outcome.

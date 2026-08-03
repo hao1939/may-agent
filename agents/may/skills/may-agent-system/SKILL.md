@@ -1,6 +1,6 @@
 ---
 name: may-agent-system
-description: Maintain and evolve the May-agent system and project apps. Use when May works on May-agent projects, project apps, task trees, event handlers, metrics, runtime health, blocker handling, escalation flows, agent conventions, or design-doc-aligned changes under /app/projects/may-agent.app, /app/projects/*.app, agents/, shared/, or May-agent runtime code.
+description: Maintain and evolve the May-agent system and project apps. Use for Kubernetes-style task-resource reconciliation, stable tasks, task trees, Conditions, event/timer wakes, project apps, event handlers, metrics, runtime health, blocker handling, escalation flows, agent conventions, or design-doc-aligned changes under /app/projects/may-agent.app, /app/projects/*.app, agents/, shared/, or May-agent runtime code.
 ---
 
 # May-Agent System
@@ -251,6 +251,15 @@ Keep domain projects portable and May-agent control planes separate.
 - Treat the project owner as the semantic backstop. Workflows preserve a proven
   process; the app runtime owns claims, retries, validation, and atomic task
   mutation.
+- Give each independent standing responsibility one stable task identity.
+  Timers, semantic events, child transitions, and external observations wake
+  that resource; they do not create timestamped work records or scan the task
+  tree for something to schedule.
+- Keep responsibilities explicit: the app declares the goal boundary,
+  topology, ownership, and domain policy; the owner prioritizes the highest
+  value unresolved frontier and judges progress; workflows preserve learned
+  ordered experience; infrastructure owns queues, claims, concurrency,
+  retries, recovery, and Condition correlation.
 - `.state/tasks/state.json` is the sole mutable task-resource store.
   `tasks/seed.json` is bootstrap intent; `.state/tasks/tree.json` is a generated
   read projection.
@@ -270,9 +279,24 @@ Keep domain projects portable and May-agent control planes separate.
 - Resource `spec` is desired state and resource `status.phase` is observed
   reconciliation state. The old task-state vocabulary may appear only in a
   derived human projection, never as a second execution authority.
+- Use Conditions only for observable external facts. Use direct children for
+  decomposition and `dependsOn` for internal ordering; never model task phase,
+  child completion, retry, or refill as a Condition.
+- Make a standing parent own its finite leaves directly. Let meaningful child
+  convergence or attention wake the parent through the shared controller;
+  reject sibling layouts that require an app-local refill or recovery handler.
 - An `achieve` task is absorbed into a completion receipt and removed from the
   live graph. A `maintain` task stays live for later wake events. Parent/child
   structure is decomposition, not scheduling.
+- Treat completion receipts as immutable. Never recreate a completed task ID;
+  create a deterministic successor only when a genuinely new desired outcome
+  exists.
+- Bound passive review of an unchanged external Condition. If repeated reviews
+  produce no new evidence, change the owner approach or settle into the
+  event-driven wait; reject endless empty checkpoint loops.
+- Derive priority from the unresolved current goal and frontier. Passed,
+  superseded, or completed work cannot remain the active priority merely
+  because an old list still names it.
 
 ## Metrics And Runtime Health
 

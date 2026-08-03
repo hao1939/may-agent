@@ -71,6 +71,13 @@
       "rationale": "An agent should remain independently usable capability and judgment; an app and its infrastructure organize durable autonomous work without coupling events, tasks, databases, or scheduling into the agent core.",
       "approved_by": "hao",
       "approved_at": "2026-07-29T05:00:32Z"
+    },
+    "may-learn-reconcile-stable-task-resource": {
+      "status": "approved",
+      "source": "direct-human-design",
+      "rationale": "Hao approved the unified Kubernetes-style pattern: stable resources describe desired work, timers and events wake reconciliation, owners hold goals and priorities, workflows preserve experience, and shared infrastructure owns scheduling and recovery.",
+      "approved_by": "hao",
+      "approved_at": "2026-08-03T19:35:00+08:00"
     }
   }
 }

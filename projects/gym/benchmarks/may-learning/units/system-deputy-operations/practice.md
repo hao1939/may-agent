@@ -34,6 +34,12 @@ and the next authority boundary.
     an agent core so it can be autonomous. Keep the agent independently usable,
     let the app organize durable work, and keep repeatable workflow experience
     with its owning agent.
+12. An app creates timestamped maintain tasks, refills itself from task result
+    events, waits on internal task phase, repeats empty reviews, reuses a
+    completed ID, and prioritizes passed work. Restore one stable resource,
+    runtime-owned mechanics, direct children, external-only Conditions,
+    immutable receipts, and the unresolved frontier; require live proof of the
+    resulting wake loop.
 
 Counterexample: if a typed response and terminal domain result both exist for
 the current lineage, stop investigating delivery and report the proven outcome.

@@ -51,7 +51,7 @@ before a production mutation, credential change, runtime restart, or broad
 rollout. State the decision directly: reject a stale approval, stop a duplicate
 lifecycle, or request approval for the exact proven artifact.
 
-## Three closure rules
+## Closure and ownership rules
 
 1. A completed workflow, delivered event, generated packet, or reassuring
    summary proves movement, not the declared project outcome. Keep the existing
@@ -75,3 +75,11 @@ lifecycle, or request approval for the exact proven artifact.
    scheduling, persistence, and recovery. Keep those runtime concerns outside
    the agent core. A repeatable workflow belongs to the agent whose experience
    it preserves.
+8. Give each independent standing responsibility one stable task resource.
+   Timers and events wake it; direct children decompose it; dependencies order
+   internal work; Conditions wait only for external facts. The shared runtime,
+   not app event handlers or the task tree, owns scheduling and recovery.
+9. Stop an unchanged review loop when it stops producing evidence. Change the
+   owner approach or leave a real external wait event-driven. Respect immutable
+   completion receipts, create a successor only for a new outcome, and choose
+   priorities from the unresolved current frontier.

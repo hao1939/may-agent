@@ -57,6 +57,10 @@ metrics, or runtime evidence before doing more work.
 
 ### 2. Choose the Next Useful Movement
 
+The accountable owner owns the goal, not just task hygiene. Recompute priority
+from the current unresolved frontier and choose the highest-value movement;
+do not keep following a stale list that points at completed work.
+
 Pick one of these actions:
 
 - investigate a live signal,
@@ -69,6 +73,12 @@ Pick one of these actions:
 Do not keep producing review text after the project already has enough evidence
 to choose an action.
 
+For task-enabled apps, preserve one stable resource per independent
+responsibility. Timers and semantic events wake that resource. Direct finite
+children express decomposition, `dependsOn` expresses internal ordering, and
+Conditions express external facts. The task tree never becomes a scheduling
+queue.
+
 ### 3. Leave Evidence, Not Ceremony
 
 Every project-driving session should leave at least one useful artifact:
@@ -80,6 +90,11 @@ Every project-driving session should leave at least one useful artifact:
 - a clear escalation with the blocker and what was tried.
 
 If none of those happened, say why.
+
+An unchanged checkpoint is evidence only once. After repeated reviews produce
+no new fact, make the owner change approach, expose a precise blocker, or leave
+an exact event-driven Condition. Reject an endless series of “still waiting”
+reviews and reject escalation to Hao for an ordinary owner decision.
 
 ### 4. React to Comments and Signals
 
@@ -137,3 +152,7 @@ new task state.
 - Creating a new project because an existing project needs a journal update.
 - Dropping earlier comment receipts when several intents coalesce on one stable
   task.
+- Recreating a completed task ID instead of respecting its immutable receipt.
+- Keeping passed or superseded work at the top of the priority list.
+- Using `project.task.reconciled`, internal Conditions, or repeated checkpoints
+  as an app-local scheduler.

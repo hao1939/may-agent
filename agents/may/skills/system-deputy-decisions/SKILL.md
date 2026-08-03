@@ -1,6 +1,6 @@
 ---
 name: system-deputy-decisions
-description: Make May-agent deputy decisions for unfamiliar or stuck project apps, app task/Condition/owner routing, timed-out workflows, and accepted requests with missing outputs. Use when May must choose an owner, existing task or app action, proof plan, follow-through, or authority boundary.
+description: Make May-agent deputy decisions for unfamiliar or stuck project apps, Kubernetes-style task-resource reconciliation, app task/Condition/owner routing, timed-out workflows, and accepted requests with missing outputs. Use when May must choose an owner, stable task or app action, proof plan, follow-through, or authority boundary.
 ---
 
 # System Deputy Decisions
@@ -122,6 +122,32 @@ Decide at the system level:
    domain result or artifact.
 5. Review the evidence. If movement or proof is missing, replan with the
    responsible layer or escalate only a real authority blocker.
+
+For a task-enabled app design or recovery, make the resource contract explicit
+in the decision. Do not hide it inside “follow the accepted design”:
+
+1. Give each independent standing responsibility one stable task identity.
+   Timers and semantic events wake that same resource; they do not create
+   timestamped maintain work.
+2. Keep task mechanics in the shared runtime: keyed queueing, claims,
+   concurrency, retry, parent wakeup, Condition correlation, and recovery. App
+   code owns goal correlation and domain policy; `project.task.reconciled`
+   cannot become refill or recovery scheduling.
+3. Make the standing parent own its finite leaves directly. Use `dependsOn`
+   for internal ordering and Conditions only for external facts.
+4. Stop repeated no-evidence reviews. Change the owner approach or leave a
+   real external wait event-driven.
+5. Respect immutable completion receipts. Use a deterministic successor only
+   for a genuinely new desired outcome.
+6. Recompute priority from the unresolved current frontier, never a stale list
+   of completed or passing work.
+7. Require behavioral proof: one timer or event wakes the stable resource, a
+   meaningful child transition wakes its parent, unresolved work is selected,
+   and no app-local refill path remains.
+
+These are outcome and proof boundaries, not an exact code patch. State them
+when they are relevant; omitting the topology or live proof leaves the owner
+free to preserve the same broken scheduler under new wording.
 
 A missed checkpoint wakes owner review; it does not by itself justify a human
 message. If a bounded owner review returns the same wait without new evidence,

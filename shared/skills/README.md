@@ -19,6 +19,8 @@ to learn specific capabilities.
 - Loose Markdown files are legacy documentation, not discovered skills.
 - Keep skills narrow. If a behavior needs deterministic execution, use a
   workflow or handler instead of adding a longer skill.
+- Treat the immediate `<name>/SKILL.md` packages as the catalog. Do not maintain
+  a second hand-written registry or copy skill bodies into knowledge files.
 
 ## Current System Skills
 

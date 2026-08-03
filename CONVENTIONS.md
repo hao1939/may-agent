@@ -11,7 +11,6 @@ The canonical convention docs are maintained under the current app layout:
 ### Agent Operating Skills
 
 → `shared/skills/README.md`
-→ `shared/skills/LIBRARY.md`
 → `shared/skills/*/SKILL.md`
 
 ### Design Philosophy And Work Model

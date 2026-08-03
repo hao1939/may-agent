@@ -1,0 +1,28 @@
+{
+  "name": "may-learn-reconcile-stable-task-resource",
+  "description": "System design judgment: restore one stable task-resource loop and remove app-local scheduling.",
+  "categories": ["deputy-learning", "system-operations", "architecture"],
+  "tags": [
+    "may-agent",
+    "task-resource",
+    "reconciliation",
+    "learning-development"
+  ],
+  "tier": "smoke",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": {
+    "unit": "system-deputy-operations",
+    "tier": 3,
+    "partition": "development",
+    "competencies": [
+      "project.app-control",
+      "system.owner-and-route",
+      "diagnosis.responsible-layer"
+    ],
+    "criticality": "critical",
+    "variant_family": "stable-task-resource-reconciliation",
+    "source_signals": ["hao-unified-k8s-task-resource-design"]
+  }
+}
