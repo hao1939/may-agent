@@ -174,6 +174,21 @@ the largest:
 4. `may-agent.app`
 5. `aks-rp-e2e.app`
 
+Adoption status (2026-08-03):
+
+| App | State | Live proof |
+| --- | --- | --- |
+| `scout-knowledge-lib.app` | aligned | A fresh `credential.state=ready` observation woke `explore-xhs` once; the workflow returned to its exact unavailable wait, and later unavailable plus stale ready observations started no new attempt. |
+| `gym.app` | aligned | `learning/codex-sessions` reached generation 9 and converged from its durable checkpoint with no recovery child or internal Condition; `runtime/unified-resource-migration-v1` closed six pre-contract carriers into receipts; tree integrity is clean. |
+| `evaluation.app` | next | Source and live-state review has not started. |
+| `may-agent.app` | pending | Starts only after Evaluation passes the same gate. |
+| `aks-rp-e2e.app` | last | Starts only after the four smaller apps pass. |
+
+An aligned app may still contain a current task in `attention`. That is a
+visible owner decision state, not a scheduling mechanism. Alignment requires
+that a later matching event can reclaim the same resource and that the app does
+not invent a recovery tree around it.
+
 An app moves to the next stage only after all of these are true:
 
 - each recurring responsibility resolves to one stable `maintain` resource;
