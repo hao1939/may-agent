@@ -3400,8 +3400,10 @@ describe("project app loader", () => {
       expect(results[0]).toMatchObject({
         data: {
           openEventType: "project.comment.created",
+          disposition: "answered",
+          taskDisposition: "converged",
           summary: "workflow done",
-          taskRefs: [{ projectId: "sample", taskId: "work/owner-review" }],
+          taskRefs: [],
         },
       });
       expect(results[0].trace.links).toContainEqual({
@@ -3409,11 +3411,101 @@ describe("project app loader", () => {
         type: "closure",
         label: "project.owner.reviewed",
       });
+      const resultIndex = events.indexOf(results[0]);
+      const terminalIndex = events.findIndex(
+        (event) =>
+          event.type === "project.task.reconciled" &&
+          event.data?.taskId === "work/owner-review" &&
+          event.trace?.traceId === results[0].trace?.traceId,
+      );
+      expect(terminalIndex).toBeGreaterThan(resultIndex);
       expect(
         events.filter(
           (event) => event.type === "project.owner.reviewed" && event.data?.openEventId === secondCommentEventId,
         ),
       ).toHaveLength(1);
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("links an owner request to durable work before publishing its terminal carrier result", async () => {
+    const f = fixture();
+    try {
+      writeApp(f.appDir);
+      const bus = new EventBus();
+      const events: any[] = [];
+      let nextEventId = 1;
+      bus.setPersistenceSubscriber((event) => {
+        (event as any)[EVENT_ROW_ID] = nextEventId++;
+      });
+      bus.subscribe((event) => events.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: {
+          hasAgent: () => true,
+          async callAgent() {
+            return {
+              sessionId: "owner-created-followup",
+              status: "done",
+              structuredResult: {
+                state: "converged",
+                summary: "Created the bounded follow-up.",
+                evidence: ["owner proof"],
+                actions: [
+                  {
+                    kind: "create-task",
+                    id: "work/followup",
+                    parentId: "operations",
+                    outcome: "Run the bounded follow-up",
+                    acceptance: ["Follow-up converges"],
+                    mode: "achieve",
+                    owner: "sample-owner",
+                    dependsOn: ["external-ready"],
+                  },
+                ],
+              },
+              lastAssistantText: "created follow-up",
+              messages: [],
+              duration: "0s",
+              outputDir: "",
+            };
+          },
+        } as any,
+        bus,
+        agentCrons: new Map(),
+      });
+
+      const request = bus.emit({ type: "project.owner.requested", project: "sample", ownerOnly: true } as any);
+      const requestEventId = (request as any)[EVENT_ROW_ID];
+      await waitUntil(() =>
+        events.some((event) => event.type === "project.owner.reviewed" && event.data?.openEventId === requestEventId),
+      );
+
+      const ownerResult = events.find(
+        (event) => event.type === "project.owner.reviewed" && event.data?.openEventId === requestEventId,
+      );
+      expect(ownerResult).toMatchObject({
+        data: {
+          disposition: "task-created",
+          taskDisposition: "converged",
+          summary: "Created the bounded follow-up.",
+          taskRefs: [{ projectId: "sample", taskId: "work/followup" }],
+        },
+      });
+      const ownerResultIndex = events.indexOf(ownerResult);
+      const carrierTerminalIndex = events.findIndex(
+        (event) =>
+          event.type === "project.task.reconciled" &&
+          event.data?.taskId === "work/owner-review" &&
+          event.trace?.traceId === ownerResult.trace?.traceId,
+      );
+      expect(carrierTerminalIndex).toBeGreaterThan(ownerResultIndex);
     } finally {
       closeDb(f.persistDir);
       rmSync(f.root, { recursive: true, force: true });
