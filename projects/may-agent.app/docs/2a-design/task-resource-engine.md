@@ -49,6 +49,12 @@ The compact rule is:
 > controller enforces mechanics. Conditions represent external facts. Read
 > models explain canonical state.
 
+An awakened resource remains hot until it reaches a stable level. Stable means
+that its outcome is satisfied, it is waiting on a live direct child or exact
+external Condition, or it has entered visible attention. It never means that
+the app emitted another internal tick. Bounded attempts may end, but the
+resource loop continues through the same queue and task identity.
+
 ## Keyed runtime contract
 
 The execution key is `(appId, taskId)`. The controller serializes one current
@@ -180,6 +186,19 @@ An app moves to the next stage only after all of these are true:
 - source tests pass and current live state proves the same behavior; and
 - any old live resources are closed or explicitly classified as migration
   residue before the app is considered aligned.
+
+The conformance boundary is behavioral, not a required task-tree shape. Each
+app may choose flat tasks, executable parents, groups, dependencies, parallel
+children, direct owners, or learned workflows. The shared requirements are:
+
+- every runnable task is eventually represented by its stable key in the app
+  queue;
+- a waiting task has an exact external Condition or a live direct child;
+- child creation and parent waiting are admitted atomically;
+- child convergence or attention durably wakes an executable parent;
+- schedules and watchers wake tasks but never decide their completion; and
+- `project.task.reconciled` may update a read projection, but may not emit
+  refill, replay, or recovery work.
 
 The order is a migration rule, not runtime coordination. Apps remain independent
 resources and continue reconciling normally while later apps are migrated.
@@ -421,6 +440,12 @@ tracker matches the event and, in one state transaction:
 
 The worker later claims the current task spec and that exact trigger together.
 A queue hint alone is never treated as the observation.
+
+Events whose type ends in `.state` are level observations. After a task
+consumes one and establishes a new wait, the tracker rejects the older event
+for that new Condition. A watcher must publish the current state again when it
+changes or on its next bounded observation cycle. Immutable completion events
+such as `session.end` remain facts and do not use this freshness rule.
 
 Semantic observations carry the provider's observation time as
 `data.observedAt` and, when the provider exposes one, a monotonic
