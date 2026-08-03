@@ -20,7 +20,6 @@ import { observeWorkspaceIntegrityChanges } from "./watchers/workspace-integrity
 import {
   featureCompactLoopTaskId,
   legacyBranchReconciliationTaskId,
-  loopRefillWakeForTaskEvent,
   repositorySkillMaintenanceTaskId,
   scenarioNormalizationTaskId,
   specLoopTaskId,
@@ -1415,8 +1414,6 @@ export async function routeAksEvent(
     const featureCompactProjection = reconciledTaskId
       ? syncFeatureCompactProjection(appDir, reconciledTaskId)
       : { changed: false };
-    const wake = loopRefillWakeForTaskEvent(appDir, event);
-    if (wake) ctx.emit(wake);
     const actionsApplied = Array.isArray(details.actionsApplied)
       ? details.actionsApplied.filter(
           (entry): entry is string =>
@@ -1497,7 +1494,6 @@ export async function routeAksEvent(
       });
     }
     return {
-      refillWake: Boolean(wake),
       waitingFrontierContinuation: continueWaitingFrontierReview,
       waitingFrontierAttentionWake: reviewNewAttention,
       malformedApprovalWaitReplay: Boolean(malformedApprovalWaitReplay),

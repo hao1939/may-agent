@@ -273,6 +273,12 @@ it without changing their learned workflows or external Conditions. New
 normalization leaves already use this shape, so the migration removes history
 drift rather than adding a second scheduling path.
 
+With spec, feature, and scenario leaves owned by their executable parents,
+AKS no longer reconstructs loop ownership from `project.task.reconciled`.
+Shared parent wakeup now owns continuation; the app keeps that event only for
+deterministic read-model projections and the remaining recovery paths that are
+migrated in the next slices.
+
 Attention is not a completion state. Each attention resource must retain an
 accountable owner, exact failure evidence, and a truthful next wake or
 escalation path. Generic mechanical recovery may requeue it when the failed

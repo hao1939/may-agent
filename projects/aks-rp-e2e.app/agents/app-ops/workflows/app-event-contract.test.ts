@@ -168,6 +168,11 @@ describe("app event contract", () => {
     expect(appManifest).not.toHaveProperty("eventGraph");
   });
 
+  test("leaves loop continuation to shared parent wakeup", () => {
+    const source = readFileSync(resolve(import.meta.dir, "../../../app.ts"), "utf8");
+    expect(source).not.toContain("loopRefillWakeForTaskEvent");
+  });
+
   test("every manifest-produced event is resolver-handled or a direct task wake", () => {
     const failures: string[] = [];
 
