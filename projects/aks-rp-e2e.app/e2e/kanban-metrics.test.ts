@@ -15,6 +15,7 @@ const retiredMetricIds = [
   "aks-rp-e2e.task.completed-24h",
   "aks-rp-e2e.task.stale-active-with-gaps",
   "aks-rp-e2e.planner.slow-count-24h",
+  "aks-rp-e2e.process.task.review-not-applied-count",
 ];
 
 const activeMetrics = [
@@ -190,11 +191,15 @@ describe("kanban metrics contract", () => {
           });
         }
 
-        const historyMatch = url.pathname.match(/^\/api\/metrics\/(.+)\/history$/);
+        const historyMatch = url.pathname.match(
+          /^\/api\/metrics\/(.+)\/history$/,
+        );
         if (historyMatch) {
           const metricId = decodeURIComponent(historyMatch[1] || "");
           historyRequests.push(metricId);
-          return jsonResponse(historyByMetricId.get(metricId) || { snapshots: [] });
+          return jsonResponse(
+            historyByMetricId.get(metricId) || { snapshots: [] },
+          );
         }
 
         if (url.pathname === "/api/projects/artifact") {
@@ -253,7 +258,9 @@ describe("kanban metrics contract", () => {
       expect(metricsText).not.toContain("Done 24h");
       expect(metricsText).not.toContain("Underfilled");
       expect(metricsText).not.toContain("No work");
-      expect(metricsText).toContain("Planner timeout alert should stay visible");
+      expect(metricsText).toContain(
+        "Planner timeout alert should stay visible",
+      );
       expect(metricsText).not.toContain(
         "Retired planner slow alert should be hidden",
       );

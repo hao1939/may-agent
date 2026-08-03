@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { execFileSync } from "node:child_process";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join } from "node:path";
@@ -100,12 +101,718 @@ function context(appDir: string, projectDir: string) {
   } as any;
 }
 
+function git(
+  cwd: string,
+  args: string[],
+  options: { stdio?: "pipe" | "ignore" } = {},
+): string {
+  const output = execFileSync("git", args, {
+    cwd,
+    stdio: ["ignore", options.stdio ?? "pipe", "pipe"],
+    encoding: "utf8",
+  });
+  return typeof output === "string" ? output.trim() : "";
+}
+
+function initializeOriginDevFixture(projectDir: string): void {
+  git(projectDir, ["init"]);
+  git(projectDir, ["config", "user.name", "Test User"]);
+  git(projectDir, ["config", "user.email", "test@example.com"]);
+  git(projectDir, ["add", "."]);
+  git(projectDir, ["commit", "-m", "initial fixture"], { stdio: "ignore" });
+  const head = git(projectDir, ["rev-parse", "HEAD"]);
+  git(projectDir, ["update-ref", "refs/remotes/origin/dev", head]);
+}
+
 describe("feature compact reconciliation workflow", () => {
   test("converges when every package has live proof", async () => {
     const ws = await workspace(item("done"));
     expect(await execute(context(ws.appDir, ws.projectDir))).toMatchObject({
       output: { state: "converged", actions: [] },
     });
+  });
+
+  test("records a current input fingerprint without reopening unchanged done rows", async () => {
+    const ws = await workspace(item("done"));
+
+    expect(await execute(context(ws.appDir, ws.projectDir))).toMatchObject({
+      output: { state: "converged", actions: [] },
+    });
+
+    const state = JSON.parse(
+      await readFile(
+        join(ws.appDir, ".state", "feature-compact-loop", "state.json"),
+        "utf-8",
+      ),
+    );
+    expect(state.features.networking.inputFingerprint).toEqual(
+      expect.any(String),
+    );
+
+    expect(await execute(context(ws.appDir, ws.projectDir))).toMatchObject({
+      output: { state: "converged", actions: [] },
+    });
+  });
+
+  test("baselines an unversioned fingerprint without reopening settled work", async () => {
+    const ws = await workspace({
+      ...item("done"),
+      inputFingerprint: "legacy-unversioned-fingerprint",
+    });
+    initializeOriginDevFixture(ws.projectDir);
+
+    expect(await execute(context(ws.appDir, ws.projectDir))).toMatchObject({
+      output: { state: "converged", actions: [] },
+    });
+
+    const state = JSON.parse(
+      await readFile(
+        join(ws.appDir, ".state", "feature-compact-loop", "state.json"),
+        "utf-8",
+      ),
+    );
+    expect(state.features.networking.status).toBe("done");
+    expect(state.features.networking.inputFingerprint).toMatch(
+      /^feature-input-v1:/,
+    );
+  });
+
+  test("uses committed origin/dev feature truth instead of dirty local residue", async () => {
+    const ws = await workspace(item("done"));
+    initializeOriginDevFixture(ws.projectDir);
+
+    expect(await execute(context(ws.appDir, ws.projectDir))).toMatchObject({
+      output: { state: "converged", actions: [] },
+    });
+
+    const initialState = JSON.parse(
+      await readFile(
+        join(ws.appDir, ".state", "feature-compact-loop", "state.json"),
+        "utf-8",
+      ),
+    );
+    const committedFingerprint =
+      initialState.features.networking.inputFingerprint;
+
+    await mkdir(join(ws.projectDir, "features", "networking", "tests"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(
+        ws.projectDir,
+        "features",
+        "networking",
+        "tests",
+        "local-only.test.ts",
+      ),
+      "console.log('dirty local residue');\n",
+    );
+
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+    expect(result).toMatchObject({
+      output: { state: "converged", actions: [] },
+    });
+
+    const afterDirtyState = JSON.parse(
+      await readFile(
+        join(ws.appDir, ".state", "feature-compact-loop", "state.json"),
+        "utf-8",
+      ),
+    );
+    expect(afterDirtyState.features.networking.inputFingerprint).toBe(
+      committedFingerprint,
+    );
+  });
+
+  test("does not reopen a done row when only compact live-proof writeback files change", async () => {
+    const ws = await workspace(item("done"));
+    initializeOriginDevFixture(ws.projectDir);
+
+    expect(await execute(context(ws.appDir, ws.projectDir))).toMatchObject({
+      output: { state: "converged", actions: [] },
+    });
+
+    const baselineState = JSON.parse(
+      await readFile(
+        join(ws.appDir, ".state", "feature-compact-loop", "state.json"),
+        "utf-8",
+      ),
+    );
+    const baselineFingerprint =
+      baselineState.features.networking.inputFingerprint;
+
+    await mkdir(join(ws.projectDir, "features", "networking", "compact"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(
+        ws.projectDir,
+        "features",
+        "networking",
+        "compact",
+        "staging.summary.md",
+      ),
+      "# Live Proof writeback\n",
+    );
+    await writeFile(
+      join(
+        ws.projectDir,
+        "features",
+        "networking",
+        "compact",
+        "staging.diagnostics.json",
+      ),
+      JSON.stringify({ reviewed: true }),
+    );
+    git(ws.projectDir, ["add", "."]);
+    git(ws.projectDir, ["commit", "-m", "write back live proof"], {
+      stdio: "ignore",
+    });
+    const writebackHead = git(ws.projectDir, ["rev-parse", "HEAD"]);
+    git(ws.projectDir, [
+      "update-ref",
+      "refs/remotes/origin/dev",
+      writebackHead,
+    ]);
+
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+    expect(result).toMatchObject({
+      output: { state: "converged", actions: [] },
+    });
+
+    const afterWritebackState = JSON.parse(
+      await readFile(
+        join(ws.appDir, ".state", "feature-compact-loop", "state.json"),
+        "utf-8",
+      ),
+    );
+    expect(afterWritebackState.features.networking.inputFingerprint).toBe(
+      baselineFingerprint,
+    );
+  });
+
+  test("reopens a settled done row when committed origin/dev feature truth changes", async () => {
+    const ws = await workspace(item("done"));
+    initializeOriginDevFixture(ws.projectDir);
+
+    expect(await execute(context(ws.appDir, ws.projectDir))).toMatchObject({
+      output: { state: "converged", actions: [] },
+    });
+
+    const baselineState = JSON.parse(
+      await readFile(
+        join(ws.appDir, ".state", "feature-compact-loop", "state.json"),
+        "utf-8",
+      ),
+    );
+    const baselineFingerprint =
+      baselineState.features.networking.inputFingerprint;
+
+    await mkdir(join(ws.projectDir, "features", "networking", "tests"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(ws.projectDir, "features", "networking", "tests", "case.test.ts"),
+      "export const changed = true;\n",
+    );
+    git(ws.projectDir, ["add", "."]);
+    git(ws.projectDir, ["commit", "-m", "change committed feature truth"], {
+      stdio: "ignore",
+    });
+    const head = git(ws.projectDir, ["rev-parse", "HEAD"]);
+    git(ws.projectDir, ["update-ref", "refs/remotes/origin/dev", head]);
+
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+    expect(result).toMatchObject({
+      output: {
+        state: "converged",
+        actions: [
+          {
+            kind: "create-task",
+            input: {
+              featureKey: "networking",
+            },
+          },
+        ],
+      },
+    });
+    expect(result.output.actions[0].input.workRevision).toEqual(
+      expect.any(String),
+    );
+
+    const reopenedState = JSON.parse(
+      await readFile(
+        join(ws.appDir, ".state", "feature-compact-loop", "state.json"),
+        "utf-8",
+      ),
+    );
+    expect(reopenedState.features.networking.status).toBe("pending");
+    expect(reopenedState.features.networking.inputFingerprint).toEqual(
+      expect.any(String),
+    );
+    expect(reopenedState.features.networking.inputFingerprint).not.toBe(
+      baselineFingerprint,
+    );
+  });
+
+  test("reopens a settled blocked exact-wait row and clears stale wait fields when committed feature truth changes", async () => {
+    const ws = await workspace({
+      ...item("blocked", "stale-holder"),
+      frontierTaskIds: ["stale-holder"],
+      retryable: false,
+      nextStepClassification: "package-partial-exact-wait",
+      resumeCondition:
+        "Resume when origin/dev advances or same-surface evidence changes.",
+      waitingFor: {
+        taskId: "stale-holder",
+        conditionId: "wait:stale-holder",
+      },
+      waitingCondition: "stale wait",
+      observedBy: { workflow: "owner:aks-explorer" },
+      observationMethod: "exact wait",
+      summary: "Blocked on exact wait",
+    });
+    initializeOriginDevFixture(ws.projectDir);
+    await writeFile(
+      join(ws.appDir, ".state", "tasks", "tree.json"),
+      JSON.stringify({
+        schema_version: 2,
+        tasks: {
+          "stale-holder": {
+            id: "stale-holder",
+            phase: "waiting",
+            input: {
+              loopId: "aks-feature-compact-loop",
+              workKey: "networking",
+              workRevision: "older-ledger-revision",
+            },
+          },
+        },
+        conditions: {},
+        satisfied_dependency_ids: [],
+      }),
+    );
+
+    expect(await execute(context(ws.appDir, ws.projectDir))).toMatchObject({
+      output: { state: "converged", actions: [] },
+    });
+
+    const baselineState = JSON.parse(
+      await readFile(
+        join(ws.appDir, ".state", "feature-compact-loop", "state.json"),
+        "utf-8",
+      ),
+    );
+    const baselineFingerprint =
+      baselineState.features.networking.inputFingerprint;
+
+    await mkdir(join(ws.projectDir, "features", "networking", "tests"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(ws.projectDir, "features", "networking", "tests", "case.test.ts"),
+      "export const changed = true;\n",
+    );
+    git(ws.projectDir, ["add", "."]);
+    git(ws.projectDir, ["commit", "-m", "change blocked feature truth"], {
+      stdio: "ignore",
+    });
+    const head = git(ws.projectDir, ["rev-parse", "HEAD"]);
+    git(ws.projectDir, ["update-ref", "refs/remotes/origin/dev", head]);
+
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+    expect(result).toMatchObject({
+      output: {
+        state: "converged",
+        actions: [
+          {
+            kind: "create-task",
+            input: { featureKey: "networking" },
+          },
+        ],
+      },
+    });
+
+    const updatedState = JSON.parse(
+      await readFile(
+        join(ws.appDir, ".state", "feature-compact-loop", "state.json"),
+        "utf-8",
+      ),
+    );
+    expect(updatedState.features.networking.status).toBe("pending");
+    expect(updatedState.features.networking.inputFingerprint).toEqual(
+      expect.any(String),
+    );
+    expect(updatedState.features.networking.inputFingerprint).not.toBe(
+      baselineFingerprint,
+    );
+    expect(updatedState.features.networking.taskId).toBeNull();
+    expect(updatedState.features.networking.frontierTaskIds).toBeNull();
+    expect(updatedState.features.networking.nextStepClassification).toBeNull();
+    expect(updatedState.features.networking.resumeCondition).toBeNull();
+    expect(updatedState.features.networking.waitingFor).toBeNull();
+    expect(updatedState.features.networking.waitingCondition).toBeNull();
+    expect(updatedState.features.networking.observedBy).toBeNull();
+    expect(updatedState.features.networking.observationMethod).toBeNull();
+  });
+
+  test("rebinds a reopened blocked compact frontier row to its live hold-compact carrier", async () => {
+    const holderTaskId =
+      "hold-compact-networking-split-frontier-older-revision";
+    const ws = await workspace({
+      ...item("blocked", holderTaskId),
+      frontierTaskIds: [holderTaskId],
+      retryable: false,
+      nextStepClassification: "repo-local-spec-metadata-split-frontier",
+      resumeCondition:
+        "Resume when the exact holder changes or same-surface evidence materially changes.",
+      waitingFor: {
+        taskId: holderTaskId,
+        conditionId:
+          "project:feature-compact-loop:networking:lastCheckedAt-changed",
+      },
+      waitingCondition:
+        "project:feature-compact-loop:networking:lastCheckedAt-changed",
+      summary:
+        "Current networking compact frontier is still represented by the existing holder.",
+    });
+    initializeOriginDevFixture(ws.projectDir);
+    await writeFile(
+      join(ws.appDir, ".state", "tasks", "tree.json"),
+      JSON.stringify({
+        schema_version: 2,
+        tasks: {
+          [holderTaskId]: {
+            id: holderTaskId,
+            phase: "waiting",
+            parent_id:
+              "compact/repair-compact-feature-networking-representation-older-revision",
+            input: {
+              featureKey: "networking",
+              workRevision: "older-ledger-revision",
+            },
+          },
+        },
+        conditions: {},
+        satisfied_dependency_ids: [],
+      }),
+    );
+
+    expect(await execute(context(ws.appDir, ws.projectDir))).toMatchObject({
+      output: { state: "converged", actions: [] },
+    });
+
+    const baselineState = JSON.parse(
+      await readFile(
+        join(ws.appDir, ".state", "feature-compact-loop", "state.json"),
+        "utf-8",
+      ),
+    );
+    const baselineFingerprint =
+      baselineState.features.networking.inputFingerprint;
+
+    await mkdir(join(ws.projectDir, "features", "networking", "tests"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(ws.projectDir, "features", "networking", "tests", "case.test.ts"),
+      "export const changed = true;\n",
+    );
+    git(ws.projectDir, ["add", "."]);
+    git(
+      ws.projectDir,
+      ["commit", "-m", "change represented blocked feature truth"],
+      {
+        stdio: "ignore",
+      },
+    );
+    const head = git(ws.projectDir, ["rev-parse", "HEAD"]);
+    git(ws.projectDir, ["update-ref", "refs/remotes/origin/dev", head]);
+
+    expect(await execute(context(ws.appDir, ws.projectDir))).toMatchObject({
+      output: { state: "converged", actions: [] },
+    });
+
+    const reboundState = JSON.parse(
+      await readFile(
+        join(ws.appDir, ".state", "feature-compact-loop", "state.json"),
+        "utf-8",
+      ),
+    );
+    expect(reboundState.features.networking.status).toBe("blocked");
+    expect(reboundState.features.networking.inputFingerprint).toEqual(
+      expect.any(String),
+    );
+    expect(reboundState.features.networking.inputFingerprint).not.toBe(
+      baselineFingerprint,
+    );
+    expect(reboundState.features.networking.taskId).toBe(holderTaskId);
+    expect(reboundState.features.networking.frontierTaskIds).toEqual([
+      holderTaskId,
+    ]);
+    expect(reboundState.features.networking.waitingFor).toEqual({
+      taskId: holderTaskId,
+      conditionId:
+        "project:feature-compact-loop:networking:lastCheckedAt-changed",
+    });
+  });
+
+  test("rebinds a reopened blocked compact frontier row to its live compact child wait", async () => {
+    const holderTaskId =
+      "domain/wait-networking-origin-dev-advance-older-revision";
+    const ws = await workspace({
+      ...item("blocked", holderTaskId),
+      frontierTaskIds: [holderTaskId],
+      retryable: false,
+      resumeCondition:
+        "Resume when origin/dev advances beyond the represented frontier baseline.",
+      waitingFor: {
+        taskId: holderTaskId,
+        conditionId: "aks.repo-ref.observed:origin/dev:next",
+      },
+      waitingCondition: "aks.repo-ref.observed:origin/dev:next",
+      summary:
+        "Current networking compact frontier is still represented by the exact repo-ref wait.",
+    });
+    initializeOriginDevFixture(ws.projectDir);
+    await writeFile(
+      join(ws.appDir, ".state", "tasks", "tree.json"),
+      JSON.stringify({
+        schema_version: 2,
+        tasks: {
+          [holderTaskId]: {
+            id: holderTaskId,
+            phase: "waiting",
+            parent_id: "compact/compact-feature-networking",
+            input: {
+              baseRef: "origin/dev",
+              resumeBaselineCommit: "deadbeef",
+            },
+          },
+        },
+        conditions: {},
+        satisfied_dependency_ids: [],
+      }),
+    );
+
+    expect(await execute(context(ws.appDir, ws.projectDir))).toMatchObject({
+      output: { state: "converged", actions: [] },
+    });
+
+    await mkdir(join(ws.projectDir, "features", "networking", "tests"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(
+        ws.projectDir,
+        "features",
+        "networking",
+        "tests",
+        "domain-wait-change.test.ts",
+      ),
+      "export const changed = true;\n",
+    );
+    git(ws.projectDir, ["add", "."]);
+    git(
+      ws.projectDir,
+      ["commit", "-m", "change compact child wait feature truth"],
+      {
+        stdio: "ignore",
+      },
+    );
+    const head = git(ws.projectDir, ["rev-parse", "HEAD"]);
+    git(ws.projectDir, ["update-ref", "refs/remotes/origin/dev", head]);
+
+    expect(await execute(context(ws.appDir, ws.projectDir))).toMatchObject({
+      output: { state: "converged", actions: [] },
+    });
+
+    const reboundState = JSON.parse(
+      await readFile(
+        join(ws.appDir, ".state", "feature-compact-loop", "state.json"),
+        "utf-8",
+      ),
+    );
+    expect(reboundState.features.networking.status).toBe("blocked");
+    expect(reboundState.features.networking.taskId).toBe(holderTaskId);
+    expect(reboundState.features.networking.frontierTaskIds).toEqual([
+      holderTaskId,
+    ]);
+    expect(reboundState.features.networking.waitingFor).toEqual({
+      taskId: holderTaskId,
+      conditionId: "aks.repo-ref.observed:origin/dev:next",
+    });
+  });
+
+  test("rebinds a pending null row to its live compact holder from current tree evidence", async () => {
+    const holderTaskId =
+      "hold-compact-networking-split-frontier-current-authority";
+    const ws = await workspace({
+      ...item("pending"),
+      inputFingerprint: "feature-input-v1:current-authority",
+      retryReason:
+        "Resume because current feature source inputs changed after reviewed fingerprint prior-author.",
+      ownerReason:
+        "Current feature source fingerprint current-auth materially changed after reviewed fingerprint prior-author.",
+      summary:
+        "Reopened because current feature source inputs materially changed after the previously reviewed compact fingerprint.",
+    });
+    initializeOriginDevFixture(ws.projectDir);
+    await writeFile(
+      join(ws.appDir, ".state", "tasks", "tree.json"),
+      JSON.stringify({
+        schema_version: 2,
+        tasks: {
+          [holderTaskId]: {
+            id: holderTaskId,
+            phase: "waiting",
+            parent_id:
+              "compact/repair-compact-feature-networking-representation-current-authority",
+            input: {
+              featureKey: "networking",
+              workRevision: "current-authority",
+            },
+          },
+        },
+        conditions: {},
+        satisfied_dependency_ids: [],
+      }),
+    );
+
+    expect(await execute(context(ws.appDir, ws.projectDir))).toMatchObject({
+      output: { state: "converged", actions: [] },
+    });
+
+    const reboundState = JSON.parse(
+      await readFile(
+        join(ws.appDir, ".state", "feature-compact-loop", "state.json"),
+        "utf-8",
+      ),
+    );
+    expect(reboundState.features.networking.status).toBe("blocked");
+    expect(reboundState.features.networking.taskId).toBe(holderTaskId);
+    expect(reboundState.features.networking.frontierTaskIds).toEqual([
+      holderTaskId,
+    ]);
+    expect(reboundState.features.networking.summary).toBe(
+      "Reopened because current feature source inputs materially changed after the previously reviewed compact fingerprint.",
+    );
+  });
+
+  test("rebinds a pending null row to a hold carrier that advertises the feature only in task input", async () => {
+    const holderTaskId = "hold-compact-net-split-frontier-current-authority";
+    const ws = await workspace({
+      ...item("pending"),
+      inputFingerprint: "feature-input-v1:current-authority",
+      retryReason:
+        "Resume because current feature source inputs changed after reviewed fingerprint prior-author.",
+      ownerReason:
+        "Current feature source fingerprint current-auth materially changed after reviewed fingerprint prior-author.",
+      summary:
+        "Reopened because current feature source inputs materially changed after the previously reviewed compact fingerprint.",
+    });
+    await writeFile(
+      join(ws.appDir, ".state", "tasks", "tree.json"),
+      JSON.stringify({
+        schema_version: 2,
+        tasks: {
+          "compact/compact-feature-networking-current-authority": {
+            id: "compact/compact-feature-networking-current-authority",
+            phase: "waiting",
+            parent_id: "group/feature-compact",
+            input: {
+              featureKey: "networking",
+              workRevision: "current-authority",
+            },
+          },
+          [holderTaskId]: {
+            id: holderTaskId,
+            phase: "waiting",
+            parent_id: "compact/compact-feature-networking-current-authority",
+            input: {
+              featureKey: "networking",
+              workRevision: "current-authority",
+            },
+          },
+        },
+        conditions: {},
+        satisfied_dependency_ids: [],
+      }),
+    );
+
+    expect(await execute(context(ws.appDir, ws.projectDir))).toMatchObject({
+      output: { state: "converged", actions: [] },
+    });
+
+    const reboundState = JSON.parse(
+      await readFile(
+        join(ws.appDir, ".state", "feature-compact-loop", "state.json"),
+        "utf-8",
+      ),
+    );
+    expect(reboundState.features.networking.status).toBe("blocked");
+    expect(reboundState.features.networking.taskId).toBe(holderTaskId);
+    expect(reboundState.features.networking.frontierTaskIds).toEqual([
+      holderTaskId,
+    ]);
+  });
+
+  test("rebinds a pending null row to a wait carrier when that is the only live holder", async () => {
+    const holderTaskId =
+      "wait-compact-networking-isolated-owner-decision-return-current";
+    const ws = await workspace({
+      ...item("pending"),
+      inputFingerprint: "feature-input-v1:current-authority",
+      retryReason:
+        "Resume because current feature source inputs changed after reviewed fingerprint prior-author.",
+      ownerReason:
+        "Current feature source fingerprint current-auth materially changed after reviewed fingerprint prior-author.",
+      summary:
+        "Reopened because current feature source inputs materially changed after the previously reviewed compact fingerprint.",
+    });
+    await writeFile(
+      join(ws.appDir, ".state", "tasks", "tree.json"),
+      JSON.stringify({
+        schema_version: 2,
+        tasks: {
+          [holderTaskId]: {
+            id: holderTaskId,
+            phase: "waiting",
+            parent_id: "group/feature-compact",
+            input: {
+              approvalId: "approval-123",
+            },
+          },
+          "compact/compact-feature-networking-current-authority": {
+            id: "compact/compact-feature-networking-current-authority",
+            phase: "waiting",
+            parent_id: "group/feature-compact",
+            input: {
+              featureKey: "networking",
+              workRevision: "current-authority",
+            },
+          },
+        },
+        conditions: {},
+        satisfied_dependency_ids: [],
+      }),
+    );
+
+    expect(await execute(context(ws.appDir, ws.projectDir))).toMatchObject({
+      output: { state: "converged", actions: [] },
+    });
+
+    const reboundState = JSON.parse(
+      await readFile(
+        join(ws.appDir, ".state", "feature-compact-loop", "state.json"),
+        "utf-8",
+      ),
+    );
+    expect(reboundState.features.networking.status).toBe("blocked");
+    expect(reboundState.features.networking.taskId).toBe(holderTaskId);
+    expect(reboundState.features.networking.frontierTaskIds).toEqual([
+      holderTaskId,
+    ]);
   });
 
   test("does not accept a done label without durable live proof", async () => {
@@ -140,8 +847,10 @@ describe("feature compact reconciliation workflow", () => {
     expect(acceptance).toContain("exact branch/worktree in place");
     expect(acceptance).toContain("shared canonical dev checkout");
     expect(acceptance).toContain(
-      "rebind the same task to a task-worktree workflow such as domain-task-execution",
+      "rebind the same task to spec-live-reconciliation",
     );
+    expect(acceptance).toContain("complete feature specIds");
+    expect(acceptance).toContain("prepared sourceBranch/sourceCommit");
   });
 
   test("repairs a done row when its relative result artifact is missing", async () => {
@@ -175,7 +884,11 @@ describe("feature compact reconciliation workflow", () => {
     const ws = await workspace(
       {
         ...item("done"),
-        lastResultPath: join(tmpdir(), "compact-loop-missing-proof", "result.json"),
+        lastResultPath: join(
+          tmpdir(),
+          "compact-loop-missing-proof",
+          "result.json",
+        ),
       },
       false,
       { materializeResultPath: false },
@@ -235,7 +948,9 @@ describe("feature compact reconciliation workflow", () => {
     expect(acceptance).toContain("shared/read-only");
     expect(acceptance).toContain("exact branch/worktree in place");
     expect(acceptance).toContain("shared canonical dev checkout");
-    expect(acceptance).toContain("Rebind the same task to a task-worktree workflow");
+    expect(acceptance).toContain(
+      "Rebind the same task to spec-live-reconciliation",
+    );
     expect(acceptance).toContain("domain-task-execution");
     expect(acceptance).toContain("one natural ordered journey candidate");
     expect(acceptance).toContain("partial constraints");
@@ -456,8 +1171,9 @@ describe("feature compact reconciliation workflow", () => {
     expect(acceptance).toContain("exact branch/worktree in place");
     expect(acceptance).toContain("shared canonical dev checkout");
     expect(acceptance).toContain(
-      "rebind the same task to a task-worktree workflow such as domain-task-execution",
+      "rebind the same task to spec-live-reconciliation",
     );
+    expect(acceptance).toContain("complete feature specIds");
     expect(acceptance).toContain("repair the representation first");
   });
 
@@ -698,6 +1414,116 @@ describe("feature compact reconciliation workflow", () => {
     });
   });
 
+  test("keeps a revisioned running parent as the in-flight feature transition", async () => {
+    const ws = await workspace(item("pending"));
+    await writeFile(
+      join(ws.appDir, ".state", "tasks", "tree.json"),
+      JSON.stringify({
+        schema_version: 2,
+        tasks: {
+          "running-prior-revision": {
+            id: "running-prior-revision",
+            phase: "running",
+            input: {
+              loopId: "aks-feature-compact-loop",
+              workKey: "networking",
+              workRevision: "prior-source-revision",
+            },
+          },
+        },
+        conditions: {},
+        satisfied_dependency_ids: [],
+      }),
+    );
+
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+    expect(result.output).toMatchObject({
+      state: "converged",
+      actions: [],
+    });
+    expect(result.output.summary).toContain("observed 1 actionable");
+  });
+
+  test("keeps a prior-revision parent while its direct child is live", async () => {
+    const ws = await workspace(item("pending"));
+    await writeFile(
+      join(ws.appDir, ".state", "tasks", "tree.json"),
+      JSON.stringify({
+        schema_version: 2,
+        tasks: {
+          "waiting-prior-revision": {
+            id: "waiting-prior-revision",
+            phase: "waiting",
+            children: ["live-repair-child"],
+            input: {
+              loopId: "aks-feature-compact-loop",
+              workKey: "networking",
+              workRevision: "prior-source-revision",
+            },
+          },
+          "live-repair-child": {
+            id: "live-repair-child",
+            parent_id: "waiting-prior-revision",
+            phase: "running",
+            input: {},
+          },
+        },
+        conditions: {},
+        satisfied_dependency_ids: [],
+      }),
+    );
+
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+    expect(result.output).toMatchObject({
+      state: "converged",
+      actions: [],
+    });
+    expect(result.output.summary).toContain("1 waiting");
+  });
+
+  test("does not let a waiting prior revision with only terminal children hide current work", async () => {
+    const ws = await workspace(item("pending"));
+    await writeFile(
+      join(ws.appDir, ".state", "tasks", "tree.json"),
+      JSON.stringify({
+        schema_version: 2,
+        tasks: {
+          "waiting-prior-revision": {
+            id: "waiting-prior-revision",
+            phase: "waiting",
+            children: ["completed-repair-child"],
+            input: {
+              loopId: "aks-feature-compact-loop",
+              workKey: "networking",
+              workRevision: "prior-source-revision",
+            },
+          },
+          "completed-repair-child": {
+            id: "completed-repair-child",
+            parent_id: "waiting-prior-revision",
+            phase: "done",
+            input: {},
+          },
+        },
+        conditions: {},
+        satisfied_dependency_ids: [],
+      }),
+    );
+
+    expect(await execute(context(ws.appDir, ws.projectDir))).toMatchObject({
+      output: {
+        state: "converged",
+        actions: [
+          {
+            id: expect.stringMatching(
+              /^compact\/compact-feature-networking-[a-f0-9]{10}$/,
+            ),
+          },
+        ],
+      },
+    });
+  });
+
   test("does not let old-shape compact task input hide current work", async () => {
     const ws = await workspace(item("pending"));
     await writeFile(
@@ -738,12 +1564,6 @@ describe("feature compact reconciliation workflow", () => {
   });
 
   test("replaces terminal current-revision history with fresh bounded refill up to capacity", async () => {
-    const revisionSeed = await workspace(item("pending"));
-    const initial = (await execute(
-      context(revisionSeed.appDir, revisionSeed.projectDir),
-    )) as any;
-    const workRevision = initial.output.actions[0].input.workRevision;
-    const terminalTaskId = `compact/compact-feature-compute-${workRevision}`;
     const ws = await workspace(item("pending", "live-networking"));
     await mkdir(join(ws.projectDir, "features", "compute", "specs"), {
       recursive: true,
@@ -784,6 +1604,16 @@ describe("feature compact reconciliation workflow", () => {
         },
       }),
     );
+
+    const seed = (await execute(context(ws.appDir, ws.projectDir))) as any;
+    const networkingRevision = seed.output.actions.find(
+      (action: any) => action.input.featureKey === "networking",
+    ).input.workRevision;
+    const computeRevision = seed.output.actions.find(
+      (action: any) => action.input.featureKey === "compute",
+    ).input.workRevision;
+    const terminalTaskId = `compact/compact-feature-compute-${computeRevision}`;
+
     await writeFile(
       join(ws.appDir, ".state", "tasks", "tree.json"),
       JSON.stringify({
@@ -795,7 +1625,7 @@ describe("feature compact reconciliation workflow", () => {
             input: {
               loopId: "aks-feature-compact-loop",
               workKey: "networking",
-              workRevision,
+              workRevision: networkingRevision,
             },
           },
           [terminalTaskId]: {
@@ -804,7 +1634,7 @@ describe("feature compact reconciliation workflow", () => {
             input: {
               loopId: "aks-feature-compact-loop",
               workKey: "compute",
-              workRevision,
+              workRevision: computeRevision,
             },
           },
         },
@@ -814,7 +1644,9 @@ describe("feature compact reconciliation workflow", () => {
     );
 
     const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
-    expect(result.output.summary).toContain("declared 2 bounded task action(s)");
+    expect(result.output.summary).toContain(
+      "declared 2 bounded task action(s)",
+    );
     expect(result.output.summary).toContain("observed 1 actionable");
     expect(result.output.summary).toContain("1 stale terminal representation");
     expect(result.output.actions).toHaveLength(2);
@@ -826,7 +1658,7 @@ describe("feature compact reconciliation workflow", () => {
       (action: any) => action.input.featureKey === "storage",
     );
 
-    expect(computeAction.input.workRevision).toBe(workRevision);
+    expect(computeAction.input.workRevision).toBe(computeRevision);
     expect(computeAction.id).not.toBe(terminalTaskId);
     expect(computeAction.id).toMatch(
       new RegExp(`^${terminalTaskId}-[a-f0-9]{10}$`),
@@ -865,5 +1697,79 @@ describe("feature compact reconciliation workflow", () => {
       output: { state: "needs-owner" },
     });
     expect(result.output).not.toHaveProperty("actions");
+  });
+
+  test("reopens a blocked row whose every declared holder left the live tree", async () => {
+    const ws = await workspace({
+      ...item("blocked", "hold-compact-networking-retired"),
+      frontierTaskIds: ["hold-compact-networking-retired"],
+      waitingCondition: "Wait for the exact networking approval return.",
+      resumeCondition: "Resume when the networking approval returns.",
+      blockedReason: "Reviewed terminal split preserved.",
+    });
+    await writeFile(
+      join(ws.appDir, ".state", "tasks", "tree.json"),
+      JSON.stringify({
+        schema_version: 2,
+        tasks: {},
+        conditions: {},
+        satisfied_dependency_ids: [],
+      }),
+    );
+
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+
+    expect(result.output.actions.length).toBeGreaterThan(0);
+    const state = JSON.parse(
+      await readFile(
+        join(ws.appDir, ".state", "feature-compact-loop", "state.json"),
+        "utf8",
+      ),
+    );
+    expect(state.features.networking.status).not.toBe("blocked");
+    expect(state.features.networking.frontierTaskIds).toBeNull();
+    expect(state.features.networking.waitingCondition).toBeNull();
+  });
+
+  test("leaves a blocked row alone while any declared holder is still live", async () => {
+    const ws = await workspace({
+      ...item("blocked", "hold-compact-networking-retired"),
+      frontierTaskIds: [
+        "hold-compact-networking-retired",
+        "hold-compact-networking-live",
+      ],
+      resumeCondition: "Resume when the networking approval returns.",
+    });
+    await writeFile(
+      join(ws.appDir, ".state", "tasks", "tree.json"),
+      JSON.stringify({
+        schema_version: 2,
+        tasks: {
+          "hold-compact-networking-live": {
+            id: "hold-compact-networking-live",
+            phase: "waiting",
+            input: {
+              loopTaskId: "aks-feature-compact-loop",
+              featureKey: "networking",
+            },
+          },
+        },
+        conditions: {},
+        satisfied_dependency_ids: [],
+      }),
+    );
+
+    await execute(context(ws.appDir, ws.projectDir));
+
+    const state = JSON.parse(
+      await readFile(
+        join(ws.appDir, ".state", "feature-compact-loop", "state.json"),
+        "utf8",
+      ),
+    );
+    expect(state.features.networking.status).toBe("blocked");
+    expect(state.features.networking.frontierTaskIds).toContain(
+      "hold-compact-networking-live",
+    );
   });
 });

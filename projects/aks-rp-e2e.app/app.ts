@@ -98,16 +98,16 @@ function safeTaskIdPart(value: string, fallback: string): string {
   return `${normalized.slice(0, 83) || fallback}-${digest}`;
 }
 
+function masterValidationFailureTaskId(specId: string): string {
+  return `domain/master-validation-failure/${safeTaskIdPart(specId, "spec")}`;
+}
+
 const projectTarget = { project: projectId };
 const masterValidationCycleIntervalMs = 21_600_000;
 const masterValidationCycleWakeSkewMs = 60_000;
 
 export function masterValidationCycleSlot(nowMs = Date.now()): number {
   return Math.floor(nowMs / masterValidationCycleIntervalMs);
-}
-
-export function masterValidationCampaignPulse(nowMs = Date.now()): number {
-  return Math.floor(nowMs / 300_000);
 }
 
 const ownerVisibleRefreshEventTypes = new Set([
@@ -221,9 +221,14 @@ function readMasterValidationCycleReceipt(
 }
 
 type TaskStateResource = {
-  metadata?: { generation?: unknown };
+  metadata?: { generation?: unknown; resourceVersion?: unknown };
   spec?: Record<string, unknown>;
-  status?: { phase?: unknown; conditionIds?: unknown };
+  status?: {
+    phase?: unknown;
+    conditionIds?: unknown;
+    summary?: unknown;
+    evidence?: unknown;
+  };
 };
 
 type TaskStateCondition = {
@@ -258,6 +263,138 @@ const canonicalApprovalDispatchDecisions = [
   "reroute",
 ] as const;
 
+type CanonicalApprovalDecision =
+  (typeof canonicalApprovalDispatchDecisions)[number];
+
+type ParsedApprovalDecisionMessage = {
+  approvalId: string;
+  waitId: string;
+  project: string;
+  decision: CanonicalApprovalDecision;
+  message: string;
+};
+
+type ApprovalDecisionProjection = ParsedApprovalDecisionMessage & {
+  pathId: string;
+  packetPath?: string;
+  conditionIds: string[];
+  taskIds: string[];
+};
+
+function canonicalApprovalDecision(
+  value: string,
+): CanonicalApprovalDecision | null {
+  const normalized = value.trim().toLowerCase();
+  return canonicalApprovalDispatchDecisions.includes(
+    normalized as CanonicalApprovalDecision,
+  )
+    ? (normalized as CanonicalApprovalDecision)
+    : null;
+}
+
+function parseApprovalDecisionMessage(
+  event: AppTaskEvent,
+): ParsedApprovalDecisionMessage | null {
+  if (String(event.type ?? "") !== "message.created") return null;
+  const details = eventDetails(event);
+  if (stringDetail(details, "intent") !== "approval-decision") return null;
+  const message = stringDetail(details, "content", "message", "text");
+  if (!message) return null;
+
+  const decision = canonicalApprovalDecision(
+    message.match(
+      /(?:^|\n)\s*(?:\[approval-decision\]\s*)?Decision:\s*([^\n]+)/i,
+    )?.[1] ?? "",
+  );
+  const approvalId =
+    message.match(/(?:^|\n)\s*Approval id:\s*([^\n]+)/i)?.[1]?.trim() ?? "";
+  const waitId =
+    message.match(/(?:^|\n)\s*Wait id:\s*([^\n]+)/i)?.[1]?.trim() ?? "";
+  const project =
+    message.match(/(?:^|\n)\s*Project:\s*([^\n]+)/i)?.[1]?.trim() || projectId;
+
+  if (!decision || !approvalId || !waitId) return null;
+  return { approvalId, waitId, project, decision, message };
+}
+
+function approvalDecisionProjection(
+  appDir: string,
+  event: AppTaskEvent,
+): ApprovalDecisionProjection | null {
+  const parsed = parseApprovalDecisionMessage(event);
+  if (!parsed) return null;
+
+  const state = readTaskStateSnapshot(appDir);
+  if (!state?.conditions || !state.resources) return null;
+
+  const taskIdsByCondition = new Map<string, string[]>();
+  for (const [taskId, resource] of Object.entries(state.resources)) {
+    const phase = stringDetail(
+      isRecord(resource.status) ? resource.status : {},
+      "phase",
+    );
+    if (phase !== "waiting") continue;
+    for (const conditionId of stringList(resource.status?.conditionIds)) {
+      const taskIds = taskIdsByCondition.get(conditionId) ?? [];
+      taskIds.push(taskId);
+      taskIdsByCondition.set(conditionId, taskIds);
+    }
+  }
+
+  const matches: Array<{
+    conditionId: string;
+    project: string;
+    pathId: string;
+    packetPath?: string;
+    taskIds: string[];
+  }> = [];
+  for (const [conditionId, condition] of Object.entries(state.conditions)) {
+    const spec = isRecord(condition.spec) ? condition.spec : null;
+    if (spec?.type !== "project.approval.submitted") continue;
+    const subject = stringDetail(spec, "subject");
+    const conditionProject = subject.replace(/^project:/, "");
+    if (!conditionProject || conditionProject !== parsed.project) continue;
+    const expected = isRecord(spec.expected) ? spec.expected : {};
+    const approvalKind = stringDetail(expected, "approvalKind");
+    if (approvalKind && approvalKind !== "approval-packet-dispatch") continue;
+    if (stringDetail(expected, "approvalId") !== parsed.approvalId) continue;
+    if (stringDetail(expected, "waitId") !== parsed.waitId) continue;
+    const acceptedDecisions = stringList(expected.acceptedDecisions);
+    if (
+      acceptedDecisions.length &&
+      !acceptedDecisions.includes(parsed.decision)
+    ) {
+      continue;
+    }
+    if (condition.status?.state === "true") continue;
+    const pathId = stringDetail(expected, "pathId");
+    if (!pathId) continue;
+    const taskIds = taskIdsByCondition.get(conditionId) ?? [];
+    if (!taskIds.length) continue;
+    matches.push({
+      conditionId,
+      project: conditionProject,
+      pathId,
+      packetPath: stringDetail(expected, "packetPath") || undefined,
+      taskIds,
+    });
+  }
+  if (!matches.length) return null;
+
+  const uniqueProjects = [...new Set(matches.map((entry) => entry.project))];
+  const uniquePathIds = [...new Set(matches.map((entry) => entry.pathId))];
+  if (uniqueProjects.length !== 1 || uniquePathIds.length !== 1) return null;
+
+  return {
+    ...parsed,
+    pathId: uniquePathIds[0],
+    packetPath:
+      matches.find((entry) => entry.packetPath)?.packetPath ?? undefined,
+    conditionIds: [...new Set(matches.map((entry) => entry.conditionId))],
+    taskIds: [...new Set(matches.flatMap((entry) => entry.taskIds))],
+  };
+}
+
 function readTaskStateSnapshot(appDir: string): TaskStateSnapshot | null {
   const path = `${appDir}/.state/tasks/state.json`;
   if (!existsSync(path)) return null;
@@ -280,15 +417,96 @@ function stringList(value: unknown): string[] {
     : [];
 }
 
+type MasterValidationFailureCarrier = {
+  taskId: string;
+  input: Record<string, unknown>;
+  generation: number;
+  resourceVersion: number;
+};
+
+function numericMetadata(value: unknown): number {
+  return typeof value === "number"
+    ? value
+    : typeof value === "string" && /^\d+$/.test(value)
+      ? Number(value)
+      : 0;
+}
+
+function selectNewestCarrier(
+  carriers: MasterValidationFailureCarrier[],
+): MasterValidationFailureCarrier | null {
+  if (carriers.length === 0) return null;
+  if (carriers.length === 1) return carriers[0]!;
+  const ranked = [...carriers].sort(
+    (left, right) =>
+      right.generation - left.generation ||
+      right.resourceVersion - left.resourceVersion ||
+      left.taskId.localeCompare(right.taskId),
+  );
+  const [best, next] = ranked;
+  if (!best) return null;
+  if (!next) return best;
+  if (
+    best.generation !== next.generation ||
+    best.resourceVersion !== next.resourceVersion
+  ) {
+    return best;
+  }
+  return null;
+}
+
+function existingMasterValidationFailureCarrier(
+  taskState: TaskStateSnapshot | null,
+  specId: string,
+  sourceCommit?: string,
+): MasterValidationFailureCarrier | null {
+  const resources = taskState?.resources ?? {};
+  const matches = Object.entries(resources).flatMap(([taskId, resource]) => {
+    const spec = isRecord(resource?.spec) ? resource.spec : null;
+    if (!spec) return [];
+    if (stringDetail(spec, "workflow") !== "master-validation-failure") {
+      return [];
+    }
+    const input = isRecord(spec.input) ? spec.input : null;
+    if (!input || stringDetail(input, "specId") !== specId) return [];
+    const phase = stringDetail(resource?.status ?? {}, "phase").toLowerCase();
+    if (["done", "closed", "converged"].includes(phase)) return [];
+    return [
+      {
+        taskId,
+        input,
+        generation: numericMetadata(resource?.metadata?.generation),
+        resourceVersion: numericMetadata(resource?.metadata?.resourceVersion),
+      },
+    ];
+  });
+
+  const normalizedSourceCommit = sourceCommit?.trim() ?? "";
+  if (normalizedSourceCommit) {
+    const sameSource = matches.filter(
+      (carrier) =>
+        stringDetail(carrier.input, "sourceCommit", "sourceVersion") ===
+        normalizedSourceCommit,
+    );
+    const selectedSameSource = selectNewestCarrier(sameSource);
+    if (selectedSameSource) return selectedSameSource;
+    if (sameSource.length > 0) return null;
+  }
+
+  return matches.length === 1 ? matches[0] : null;
+}
+
 type LiveTaskReadiness = {
   state?: unknown;
 };
 
 type LiveTaskTreeTask = {
   id?: unknown;
+  generation?: unknown;
   phase?: unknown;
   input?: unknown;
   evidence?: unknown;
+  outputs?: unknown;
   readiness?: LiveTaskReadiness;
 };
 
@@ -423,6 +641,56 @@ function taskWorktreeClaimFromEvidence(
   return resolve(repoDir, "../../worktrees", basename(repoDir), worktreeName);
 }
 
+function taskWorktreeLeaf(taskId: string, generation: number): string {
+  const safeTaskId =
+    taskId
+      .replace(/[^A-Za-z0-9._-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 72) || "task";
+  const hash = createHash("sha256")
+    .update(`${taskId}@${generation}`)
+    .digest("hex")
+    .slice(0, 10);
+  return `${safeTaskId}-${hash}`;
+}
+
+function taskOwnsWorktreePath(
+  taskId: string,
+  task: LiveTaskTreeTask,
+  targetPath: string,
+  repoDir: string,
+): boolean {
+  const worktreeRoot = normalizePath(
+    resolve(repoDir, "../../worktrees", basename(repoDir)),
+  );
+  const normalizedTarget = normalizePath(targetPath);
+  if (!normalizedTarget.startsWith(`${worktreeRoot}/`)) return false;
+  const relativeTarget = normalizedTarget.slice(worktreeRoot.length + 1);
+  if (!relativeTarget || relativeTarget.includes("/")) return false;
+  const generation = task.generation;
+  if (
+    typeof generation !== "number" ||
+    !Number.isInteger(generation) ||
+    generation < 1
+  ) {
+    return false;
+  }
+  return relativeTarget === taskWorktreeLeaf(taskId, generation);
+}
+
+function inferredWorktreeOwners(
+  tasks: Record<string, LiveTaskTreeTask>,
+  targetPath: string,
+  repoDir: string,
+): string[] {
+  return Object.entries(tasks)
+    .filter(([taskId, task]) =>
+      taskOwnsWorktreePath(taskId, task, targetPath, repoDir),
+    )
+    .map(([taskId]) => taskId)
+    .sort();
+}
+
 function taskPathClaims(
   taskId: string,
   task: LiveTaskTreeTask,
@@ -443,6 +711,7 @@ function taskPathClaims(
     record.filePaths,
     record.scopedPaths,
     record.sourcePaths,
+    task.outputs,
   ]) {
     for (const entry of stringList(value))
       addPathClaim(claims, entry, repoBase);
@@ -542,8 +811,13 @@ function workspaceIntegrityCoverage(
     }
     if (kind === "unowned-dirty" && normalizedPath === repoRoot) continue;
     const coveringTasks = findCoveringTasks(taskClaims, normalizedPath);
-    if (coveringTasks.length) {
-      coveredByTask[`${kind}:${normalizedPath}`] = coveringTasks;
+    const inferredTasks =
+      coveringTasks.length === 0 && kind === "unowned-dirty"
+        ? inferredWorktreeOwners(tree.tasks, normalizedPath, repoDir)
+        : [];
+    const matchingTasks = coveringTasks.length ? coveringTasks : inferredTasks;
+    if (matchingTasks.length) {
+      coveredByTask[`${kind}:${normalizedPath}`] = matchingTasks;
       continue;
     }
     uncovered.push({
@@ -760,7 +1034,6 @@ const ownerReviewEventTypes = new Set([
   "metric.breach",
   "metric.recovered",
   "learning.feedback",
-  "pipeline.test.nonpassing",
 ]);
 
 const aksTaskSelectors: EventSelector[] = [
@@ -806,7 +1079,6 @@ const aksTaskSelectors: EventSelector[] = [
     target: projectTarget,
   },
   { type: "pipeline.failure.observed", target: projectTarget },
-  { type: "pipeline.test.nonpassing", target: projectTarget },
   { type: "project.owner.requested", target: projectTarget },
   { type: "project.comment.created", target: projectTarget },
   { type: "project.approval.submitted", target: projectTarget },
@@ -843,19 +1115,21 @@ export function resolveAksTask(
 
   if (event.type === "aks.resource-migration.requested") {
     return {
-      id: "runtime/unified-resource-migration-project-state-v1",
+      id: "runtime/unified-resource-migration-resource-liveness-v2",
       parentId: "group/app-operations",
       outcome:
-        "Retire the fixed set of childless legacy compact holders that use project-state Conditions as a second scheduler.",
+        "Retire fixed producerless waits and repair completed task identity reuse left by the unified-resource migration.",
       acceptance: [
         "Only named childless maintain holders still waiting on a project.state Condition are closed, and every closure leaves a receipt.",
+        "Only the five named waiting repair tasks with no Condition and no live child are removed.",
+        "A representation repair that targeted a completed task ID is revised in place to choose a new deterministic holder identity.",
         "The feature compact loop remains the standing owner and is woken through normal parent or scheduled reconciliation.",
         "Any holder that gained child work or no longer matches the legacy contract remains live for owner judgment; expectedGeneration rejects a concurrent revision at apply time.",
       ],
       mode: "achieve",
       owner: "app-ops",
       workflow: "unified-resource-migration",
-      input: { migration: "project-state-holders-v1" },
+      input: { migration: "resource-liveness-v2" },
       priority: "P0",
       category: "ops",
     };
@@ -1119,7 +1393,7 @@ export function resolveAksTask(
     const pipelineFailure =
       failureCategory === "pipeline_failure" || specId.startsWith("pipeline.");
     return {
-      id: `domain/master-validation-failure/${safeTaskIdPart(specId, "spec")}/${safeTaskIdPart(failureFingerprint, "failure")}`,
+      id: masterValidationFailureTaskId(specId),
       parentId: "group/domain-work",
       outcome: pipelineFailure
         ? "Repair the repository-owned master-validation pipeline/bootstrap failure that prevented any parseable spec verdict, then prove the accumulated fix through the frozen campaign and current main."
@@ -1127,7 +1401,7 @@ export function resolveAksTask(
       acceptance: pipelineFailure
         ? [
             "Inspect the exact failed Azure pipeline step and logs; absence of a spec verdict is actionable pipeline repair, not an inconclusive product result.",
-            "Keep the repair in one focused PR to main and merge its exact unmerged head into the frozen campaign without waiting for PR merge.",
+            "Keep the repair in one focused PR to current main and replay only its focused patch onto the frozen campaign without waiting for PR merge or importing main ancestry.",
             "A later campaign must progress beyond the failed bootstrap; any newly exposed failure remains active repair work on the same campaign.",
             "The issue remains open until the focused fix merges and a full run from current main passes.",
           ]
@@ -1138,7 +1412,7 @@ export function resolveAksTask(
             "Excluding a misrouted spec may keep the aggregate moving, but exclusion alone never verifies the claim and never closes the issue.",
             "A squash or rebase merge is valid when Azure reports the exact tested PR head and its resulting merged commit is present in main; the PR head itself does not need to remain in main ancestry.",
             "A product issue leaves source unchanged, notifies the human operator through message.created for Telegram delivery, and remains open until a deployed product fix passes the affected spec from current main.",
-            "Repeated observations revise this stable fingerprinted task and its Condition; they do not create per-run recovery tasks.",
+            "Repeated observations and changed failure fingerprints revise this one current spec task and its Condition; fingerprints remain episode evidence and do not create parallel carriers or per-run recovery tasks.",
             "Classification, notification, PR creation, PR merge, and unrelated main advancement are progress evidence; none alone is final verification.",
           ],
       mode: "achieve",
@@ -1158,6 +1432,7 @@ export function resolveAksTask(
         reason: stringDetail(details, "reason"),
         artifactName: stringDetail(details, "artifactName"),
         artifactPath: stringDetail(details, "artifactPath"),
+        progressiveObservation: details.progressiveObservation === true,
       },
       priority: "P0",
       category: "domain",
@@ -1204,6 +1479,9 @@ export function resolveAksTask(
         "Keep the AKS project reviewed by its accountable owner and organize the smallest useful next step from current evidence.",
       acceptance: [
         "The owner performs one useful project step or returns an evidence-backed no-op with typed follow-up actions.",
+        "A progressive master-validation nonpassing event without an artifact-backed stable failure carrier is progress evidence only: inspect or report it, but do not classify it, change source, or queue a retry before pipeline.failure.observed supplies the terminal artifact.",
+        "Do not create domain/normalize-plain-scenario-carrier-* tasks from owner review. scenario-normalization is the sole frontier and live-capacity owner for that work.",
+        "When scenario inventory is red or normalization capacity appears free, wake the existing scenario-normalization task with current evidence and let its workflow select any new leaves.",
       ],
       mode: "maintain",
       owner: "app-ops",
@@ -1235,9 +1513,9 @@ export function resolveAksTask(
           acceptance: [
             "Each due cycle queues pipeline 467665 with feature_set=master-validation, target=staging, slices=12, slice_max_parallel=6, branch main, and the exact resolved origin/main commit.",
             "Only one aggregate master-validation cycle is active at a time.",
-            "Completed slice artifacts are observed while the aggregate run is still active and each nonpassing spec becomes one stable fingerprinted sibling known-issue task.",
-            "A failed main run forks one campaign branch from that exact commit; focused issue PR heads merge onto the same branch in stable order without rebasing onto newer main.",
-            "A failed campaign reruns immediately when its accumulated fix heads change and every six hours when unchanged, so repository fixes and deployed product recovery are both observed without rebasing onto newer main.",
+            "Completed slice artifacts are observed while the aggregate run is still active and each nonpassing spec has one current sibling known-issue task; changed failure fingerprints remain episode history on that task.",
+            "A failed main run forks one campaign branch from that exact commit; focused issue patches replay onto it in stable order while their PRs remain based on current main.",
+            "A failed campaign reruns immediately when its accumulated focused patches change and every six hours when unchanged, so repository fixes and deployed product recovery are both observed without importing newer main.",
             "Only a green campaign may wait for its focused PRs to merge, and only a later passing full run from current main verifies the standing task green.",
           ],
           mode: "maintain",
@@ -1278,6 +1556,8 @@ export function resolveAksTask(
         "taskId",
         "task_id",
       );
+      const affectedTaskId =
+        taskId || stringDetail(details, "taskId", "task_id") || null;
       return {
         id: `runtime/problem-solver/${safeTaskIdPart(problemKey, "project")}`,
         parentId: "group/app-operations",
@@ -1289,7 +1569,7 @@ export function resolveAksTask(
         mode: "achieve",
         owner: "app-ops",
         workflow: "problem-solver",
-        input: { problemKey, targetTaskId: taskId || null },
+        input: { problemKey, targetTaskId: affectedTaskId },
         priority: "P1",
       };
     }
@@ -1347,6 +1627,13 @@ export function resolveAksTask(
         stringDetail(details, "summary") || stringDetail(params, "summary");
       const target =
         stringDetail(details, "target") || stringDetail(params, "target");
+      const authority =
+        stringDetail(details, "authority") || stringDetail(params, "authority");
+      const requiresHumanDecision =
+        details.requiresHumanDecision === true ||
+        details.requires_human_decision === true ||
+        params.requiresHumanDecision === true ||
+        params.requires_human_decision === true;
       const approvalId =
         stringDetail(details, "approvalId", "approval_id") ||
         stringDetail(params, "approvalId", "approval_id");
@@ -1357,7 +1644,7 @@ export function resolveAksTask(
         id: `runtime/approval-dispatch/${safeTaskIdPart(approvalKey, "pending")}`,
         parentId: "group/app-operations",
         outcome:
-          "Deliver one exact AKS approval packet through the human-facing approval path.",
+          "Route one exact AKS decision packet to its declared owner and use the human channel only for an explicit human authority boundary.",
         acceptance: [
           "A valid packet is delivered once for its semantic correlation key, or missing/invalid input is reported with evidence.",
         ],
@@ -1373,6 +1660,8 @@ export function resolveAksTask(
           requestedAction,
           summary,
           target,
+          authority,
+          requiresHumanDecision,
           targetTaskId: taskId || null,
           waitId,
         },
@@ -1384,6 +1673,63 @@ export function resolveAksTask(
   }
 }
 
+function masterValidationProgressiveFailureProjection(
+  details: Record<string, unknown>,
+  carrier: MasterValidationFailureCarrier,
+): Record<string, unknown> | null {
+  const specId = stringDetail(details, "specId", "spec_id");
+  const validationTaskId = stringDetail(
+    details,
+    "validationTaskId",
+    "validation_task_id",
+    "taskId",
+    "task_id",
+  );
+  if (!specId || !validationTaskId) return null;
+
+  const carrierInput = carrier.input;
+  const observedCategory = stringDetail(details, "category");
+  const failureFingerprint = stringDetail(
+    carrierInput,
+    "failureFingerprint",
+    "fingerprint",
+  );
+  if (!failureFingerprint) return null;
+
+  return {
+    project: projectId,
+    validationTaskId,
+    pipelineRunId: stringDetail(details, "pipelineRunId", "runId"),
+    sourceBranch:
+      stringDetail(details, "sourceBranch") ||
+      stringDetail(carrierInput, "sourceBranch"),
+    sourceCommit:
+      stringDetail(details, "sourceCommit", "sourceVersion") ||
+      stringDetail(carrierInput, "sourceCommit", "sourceVersion"),
+    specId,
+    sliceId:
+      stringDetail(details, "sliceId") || stringDetail(carrierInput, "sliceId"),
+    status:
+      stringDetail(details, "status") || stringDetail(carrierInput, "status"),
+    category:
+      observedCategory && observedCategory !== "unknown"
+        ? observedCategory
+        : stringDetail(carrierInput, "category") || observedCategory,
+    reason: stringDetail(carrierInput, "artifactPath")
+      ? stringDetail(carrierInput, "reason") || stringDetail(details, "reason")
+      : stringDetail(details, "reason") || stringDetail(carrierInput, "reason"),
+    phase: stringDetail(details, "phase"),
+    phaseDetail: stringDetail(details, "phaseDetail"),
+    testRunId: stringDetail(details, "testRunId"),
+    artifactName: stringDetail(carrierInput, "artifactName"),
+    artifactPath: stringDetail(carrierInput, "artifactPath"),
+    fingerprint: failureFingerprint,
+    failureFingerprint,
+    stableTaskId: masterValidationFailureTaskId(specId),
+    progressiveObservation: true,
+  };
+}
+
 export async function routeAksEvent(
   ctx: ProjectAppContext,
   event: Record<string, unknown>,
@@ -1393,6 +1739,134 @@ export async function routeAksEvent(
     event,
   );
 
+  if (event.type === "message.created" && typeof ctx.appPath === "function") {
+    const projectedApprovalDecision = approvalDecisionProjection(
+      ctx.appPath("."),
+      event,
+    );
+    if (projectedApprovalDecision) {
+      const data: Record<string, unknown> = {
+        project: projectedApprovalDecision.project,
+        approvalKind: "approval-packet-dispatch",
+        approvalId: projectedApprovalDecision.approvalId,
+        waitId: projectedApprovalDecision.waitId,
+        pathId: projectedApprovalDecision.pathId,
+        decision: projectedApprovalDecision.decision,
+        message: projectedApprovalDecision.message,
+        sourceMessageType: "message.created",
+        sourceMessageIntent: "approval-decision",
+        sourceMessageOwner:
+          typeof event.owner === "string" ? event.owner : undefined,
+        sourceMessageEventId:
+          typeof event.eventId === "number" ? event.eventId : undefined,
+      };
+      if (projectedApprovalDecision.packetPath) {
+        data.packetPath = projectedApprovalDecision.packetPath;
+      }
+      ctx.emit({
+        type: "project.approval.submitted",
+        source: "aks-rp-e2e-app",
+        target: { project: projectedApprovalDecision.project },
+        data,
+      });
+      return {
+        approvalDecisionProjected: true,
+        projectedApprovalDecision,
+      };
+    }
+  }
+
+  if (event.type === "pipeline.test.nonpassing") {
+    const details = eventDetails(event);
+    const validationTaskId = stringDetail(
+      details,
+      "validationTaskId",
+      "validation_task_id",
+      "taskId",
+      "task_id",
+    );
+    if (validationTaskId !== masterValidationCycleTaskId) {
+      ctx.emit({
+        type: "project.owner.requested",
+        source: "aks-rp-e2e-app",
+        target: { project: projectId },
+        data: {
+          project: projectId,
+          reason: "pipeline-test-nonpassing",
+          taskId: validationTaskId || null,
+          validationTaskId: validationTaskId || null,
+          pipelineRunId: stringDetail(details, "pipelineRunId", "runId"),
+          specId: stringDetail(details, "specId", "spec_id"),
+          status: stringDetail(details, "status"),
+        },
+      });
+      return {
+        masterValidationFailureRouted: false,
+        ownerReviewRequested: true,
+        reason: "non-aggregate-task-owner-review-requested",
+      };
+    }
+
+    const carrier =
+      typeof ctx.appPath === "function"
+        ? existingMasterValidationFailureCarrier(
+            readTaskStateSnapshot(ctx.appPath(".")),
+            stringDetail(details, "specId", "spec_id"),
+            stringDetail(details, "sourceCommit", "sourceVersion"),
+          )
+        : null;
+    if (!carrier) {
+      ctx.emit({
+        type: "project.owner.requested",
+        source: "aks-rp-e2e-app",
+        target: { project: projectId },
+        data: {
+          project: projectId,
+          reason: "master-validation-progressive-nonpassing",
+          validationTaskId,
+          pipelineRunId: stringDetail(details, "pipelineRunId", "runId"),
+          sourceBranch: stringDetail(details, "sourceBranch"),
+          sourceCommit: stringDetail(details, "sourceCommit", "sourceVersion"),
+          specId: stringDetail(details, "specId", "spec_id"),
+          status: stringDetail(details, "status"),
+          category: stringDetail(details, "category"),
+          summary:
+            "A progressive master-validation verdict became nonpassing before an artifact-backed stable failure carrier was available. Review current provider progress, but leave classification and source-changing work to the later pipeline.failure.observed artifact event.",
+        },
+      });
+      return {
+        masterValidationFailureRouted: false,
+        ownerReviewRequested: true,
+        reason: "master-validation-progressive-awaiting-artifact",
+      };
+    }
+    const failure = masterValidationProgressiveFailureProjection(
+      details,
+      carrier,
+    );
+    if (!failure) {
+      return {
+        masterValidationFailureRouted: false,
+        reason: "missing-master-validation-nonpassing-details",
+      };
+    }
+
+    ctx.emit({
+      type: "pipeline.failure.observed",
+      source: "aks-rp-e2e-app",
+      target: { project: projectId },
+      ...failure,
+      data: failure,
+    });
+    return {
+      masterValidationFailureRouted: true,
+      pipelineRunId: failure.pipelineRunId,
+      specId: failure.specId,
+      failureFingerprint: failure.failureFingerprint,
+      stableTaskId: failure.stableTaskId,
+    };
+  }
+
   if (
     event.type === "project.task.reconcile.started" ||
     event.type === "project.task.reconcile.skipped"
@@ -1400,6 +1874,15 @@ export async function routeAksEvent(
     return {
       ownerVisibleReadoutRefreshed,
       eventType: event.type,
+    };
+  }
+  if (event.type === "project.task.handler.recovered") {
+    const taskId = targetTaskId(event);
+    return {
+      ownerVisibleReadoutRefreshed,
+      eventType: event.type,
+      recoveredTaskId: taskId || null,
+      recoveryScheduling: "shared-runtime",
     };
   }
   if (event.type === "pipeline.spec.observed") {
@@ -1483,7 +1966,6 @@ export async function routeAksEvent(
             ? "master-validation-campaign-reconcile"
             : "scheduled-six-hour-master-validation",
         cycleSlot: masterValidationCycleSlot(),
-        pulse: masterValidationCampaignPulse(),
       },
     });
     return {
@@ -1520,6 +2002,19 @@ export async function routeAksEvent(
       data: message,
     });
     return { operatorNotified: true, pipelineRunId: runId };
+  }
+  if (
+    event.type === "pipeline-run.state" ||
+    event.type === "pipeline.completed" ||
+    event.type === "pipeline-artifact.available"
+  ) {
+    const taskId = targetTaskId(event);
+    return {
+      ownerVisibleReadoutRefreshed,
+      eventType: event.type,
+      taskId: taskId || null,
+      conditionScheduling: "shared-runtime",
+    };
   }
   if (event.type === "aks.pull-request.check")
     return observeAksPullRequests(ctx);
@@ -1609,9 +2104,19 @@ export async function routeAksEvent(
   if (event.type === "aks.scenario-test-inventory.check")
     return observeScenarioTestInventory(ctx);
   if (event.type === "aks.scenario-test-inventory.observed") {
-    const wake = scenarioTestFrontierWakeEvent(event);
-    ctx.emit(wake);
-    return { taskId: scenarioTestFrontierTaskId, observed: true };
+    const wakeSuppressed = suppressScenarioTestFrontierWake(
+      ctx.appPath("."),
+      event,
+    );
+    if (!wakeSuppressed) {
+      const wake = scenarioTestFrontierWakeEvent(event);
+      ctx.emit(wake);
+    }
+    return {
+      taskId: scenarioTestFrontierTaskId,
+      observed: true,
+      wakeSuppressed,
+    };
   }
   return undefined;
 }
@@ -1640,6 +2145,179 @@ export function verifiedCampaignFixPullRequestIds(
   return campaign.integratedFixes
     .filter((fix) => fix.taskId.includes(`/${specId}/`))
     .map((fix) => fix.pullRequestId);
+}
+
+type ScenarioTestInventoryObservationDetails = {
+  sourceRef: string;
+  sourceCommit: string;
+  sourceKind: string;
+  state: string;
+  strictPassed: boolean;
+  missingAdapterCount: number;
+  remainingSpecReferencedPlainScenarioCount: number;
+  remainingRepoPlainScenarioFileCount: number;
+};
+
+function numberDetail(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function booleanDetail(value: unknown): boolean | null {
+  return typeof value === "boolean" ? value : null;
+}
+
+function scenarioTestInventoryObservationDetails(
+  event: Record<string, unknown>,
+): ScenarioTestInventoryObservationDetails | null {
+  const details = eventDetails(event);
+  const observation = recordDetail(details, "observation");
+  if (!observation) return null;
+
+  const sourceRef = stringDetail(observation, "sourceRef");
+  const sourceCommit = stringDetail(observation, "sourceCommit");
+  const sourceKind = stringDetail(observation, "sourceKind");
+  const state = stringDetail(observation, "state");
+  const strictPassed = booleanDetail(observation.strictPassed);
+  const missingAdapterFiles = Array.isArray(observation.missingAdapterFiles)
+    ? observation.missingAdapterFiles.filter(
+        (value): value is string =>
+          typeof value === "string" && Boolean(value.trim()),
+      )
+    : [];
+  const remainingSpecReferencedPlainScenarioCount = numberDetail(
+    observation.remainingSpecReferencedPlainScenarioCount,
+  );
+  const remainingRepoPlainScenarioFileCount = numberDetail(
+    observation.remainingRepoPlainScenarioFileCount,
+  );
+
+  if (
+    !sourceRef ||
+    !sourceCommit ||
+    !sourceKind ||
+    !state ||
+    strictPassed === null ||
+    remainingSpecReferencedPlainScenarioCount === null ||
+    remainingRepoPlainScenarioFileCount === null
+  ) {
+    return null;
+  }
+
+  return {
+    sourceRef,
+    sourceCommit,
+    sourceKind,
+    state,
+    strictPassed,
+    missingAdapterCount: missingAdapterFiles.length,
+    remainingSpecReferencedPlainScenarioCount,
+    remainingRepoPlainScenarioFileCount,
+  };
+}
+
+function taskStatusEvidenceValue(
+  evidence: string[],
+  key: string,
+): string | undefined {
+  const prefix = `${key}:`;
+  const match = evidence.find((entry) => entry.startsWith(prefix));
+  return match ? match.slice(prefix.length).trim() : undefined;
+}
+
+export function suppressScenarioTestFrontierWake(
+  appDir: string,
+  event: Record<string, unknown>,
+): boolean {
+  const observation = scenarioTestInventoryObservationDetails(event);
+  if (!observation) return false;
+  if (
+    observation.sourceRef !== "origin/dev" ||
+    observation.sourceKind !== "clean-ref-worktree" ||
+    observation.state !== "red" ||
+    observation.strictPassed !== false ||
+    observation.missingAdapterCount !== 0
+  ) {
+    return false;
+  }
+
+  const taskState = readTaskStateSnapshot(appDir);
+  const resource = taskState?.resources?.[scenarioTestFrontierTaskId] ?? null;
+  const status = isRecord(resource?.status) ? resource.status : null;
+  if (!status) return false;
+  if (
+    String(status.phase ?? "")
+      .trim()
+      .toLowerCase() !== "converged"
+  ) {
+    return false;
+  }
+
+  const evidence = stringList(status.evidence);
+  if (evidence.length === 0) return false;
+
+  const declaredActionCount = numberDetail(
+    taskStatusEvidenceValue(evidence, "declared-normalization-actions"),
+  );
+  const actionableCount = numberDetail(
+    taskStatusEvidenceValue(evidence, "actionable-plain-rows"),
+  );
+  const waitingCount = numberDetail(
+    taskStatusEvidenceValue(evidence, "waiting-plain-rows"),
+  );
+  if (
+    declaredActionCount !== 0 ||
+    actionableCount !== 0 ||
+    waitingCount === null
+  ) {
+    return false;
+  }
+  if (waitingCount !== observation.remainingSpecReferencedPlainScenarioCount) {
+    return false;
+  }
+
+  const currentSourceCommit = taskStatusEvidenceValue(
+    evidence,
+    "origin-dev-commit",
+  );
+  const currentStrictPassed = taskStatusEvidenceValue(
+    evidence,
+    "strict-passed",
+  );
+  const currentMissingAdapters = numberDetail(
+    taskStatusEvidenceValue(evidence, "missing-adapters"),
+  );
+  const currentPlainScenarioCount = numberDetail(
+    taskStatusEvidenceValue(
+      evidence,
+      "remaining-spec-referenced-plain-scenario-units",
+    ),
+  );
+  const currentRepoPlainFileCount = numberDetail(
+    taskStatusEvidenceValue(evidence, "remaining-repo-plain-scenario-files"),
+  );
+  const currentUnrepresentedPlainRows = numberDetail(
+    taskStatusEvidenceValue(evidence, "unrepresented-plain-rows"),
+  );
+
+  if (
+    currentSourceCommit !== observation.sourceCommit ||
+    currentStrictPassed !== String(observation.strictPassed) ||
+    currentMissingAdapters !== observation.missingAdapterCount ||
+    currentPlainScenarioCount !==
+      observation.remainingSpecReferencedPlainScenarioCount ||
+    currentRepoPlainFileCount !==
+      observation.remainingRepoPlainScenarioFileCount ||
+    currentUnrepresentedPlainRows !== 0
+  ) {
+    return false;
+  }
+
+  return true;
 }
 
 export function scenarioTestFrontierWakeEvent(
@@ -1709,10 +2387,10 @@ export default defineProjectApp({
     {
       id: "master-validation-staging-cycle",
       enabled: true,
-      // The workflow receipt owns the six-hour due rule. Keep the level
-      // observation pulse short so daemon/app reloads cannot postpone a due
-      // cycle by another six hours.
-      intervalMs: 300_000,
+      // Pipeline, campaign-head, and focused-PR transitions wake active work.
+      // This schedule is only the healthy due cadence and slow recovery
+      // backstop for missed observations or unchanged external recovery.
+      intervalMs: masterValidationCycleIntervalMs,
       emits: [
         {
           type: "aks.master-validation.check",
@@ -1899,6 +2577,8 @@ export default defineProjectApp({
     { type: "project.task.reconcile.started", target: projectTarget },
     { type: "project.task.reconcile.skipped", target: projectTarget },
     { type: "project.task.reconciled", target: projectTarget },
+    { type: "project.task.handler.recovered", target: projectTarget },
+    { type: "message.created", owner: "agent:app-ops" },
     { type: "aks.pipeline.check", target: projectTarget },
     { type: "aks.master-validation.check", target: projectTarget },
     { type: "aks.pull-request.check", target: projectTarget },
@@ -2032,7 +2712,7 @@ export default defineProjectApp({
     "dispatch-approval-packet": {
       type: "async",
       description:
-        "Create one packet-linked human-facing approval message record using the proven message.created path.",
+        "Route one packet-linked decision to the project owner, escalating to a human only when human authority is explicitly required.",
       inputSchema: actionInputSchema,
       event(params) {
         return {

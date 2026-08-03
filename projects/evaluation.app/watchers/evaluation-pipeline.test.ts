@@ -140,4 +140,37 @@ describe("evaluation pipeline monitor", () => {
     ).toBe(true);
     expect(workflowRunIsFailure({ status: "error" })).toBe(true);
   });
+
+  test("requests review-failed events directly so limited event pages cannot hide the anomaly", () => {
+    let eventsFilter: Record<string, unknown> | undefined;
+    const snapshot = collectSnapshot(
+      {
+        query: {
+          sql: () => ({ rows: [{ count: 0 }] }),
+          metrics: () => [],
+          workflowRuns: () => [],
+          events: (filter: Record<string, unknown>) => {
+            eventsFilter = filter;
+            return {
+              rows: [
+                { event_type: "evaluation.review_failed" },
+                { event_type: "evaluation.routed" },
+              ],
+            };
+          },
+        },
+      } as never,
+      900_000,
+    );
+
+    expect(eventsFilter).toMatchObject({
+      type: "evaluation.review_failed",
+      since: 0,
+      limit: 200,
+    });
+    expect(snapshot.reviewFailureCount).toBe(1);
+    expect(decidePipelineWake(snapshot).anomalyFamilies).toContain(
+      "review-failed",
+    );
+  });
 });

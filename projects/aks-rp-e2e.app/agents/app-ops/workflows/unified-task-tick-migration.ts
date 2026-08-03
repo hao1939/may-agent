@@ -70,7 +70,8 @@ export function taskTickHolderCloseActions(
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  if (!ctx.appDir) throw new Error("unified-task-tick-migration requires appDir");
+  if (!ctx.appDir)
+    throw new Error("unified-task-tick-migration requires appDir");
   const state = JSON.parse(
     readFileSync(join(ctx.appDir, ".state", "tasks", "state.json"), "utf8"),
   ) as StateSnapshot;

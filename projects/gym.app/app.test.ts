@@ -1,20 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
-import type { ProjectAppContext } from "@may-agent/sdk";
 import mayCanary from "../gym/benchmarks/may-alignment/canary.json";
-import gymApp, { resolveGymTask, routeGymEvent } from "./app.ts";
-
-function context(emitted: Array<Record<string, unknown>>): ProjectAppContext {
-  return {
-    emit(event: Record<string, unknown>) {
-      emitted.push(event);
-      return event;
-    },
-    noop(reason: string) {
-      return { reason };
-    },
-  } as unknown as ProjectAppContext;
-}
+import gymApp, { resolveGymTask } from "./app.ts";
 
 describe("gym app manifest", () => {
   test("owns the autonomous benchmark loop without replacing Gym", () => {
@@ -86,7 +73,7 @@ describe("gym app manifest", () => {
       ],
     });
     expect(gymApp.tasks?.resolve).toBe(resolveGymTask);
-    expect(gymApp.tasks?.accepts).toHaveLength(14);
+    expect(gymApp.tasks?.accepts).toHaveLength(15);
     expect(gymApp.tasks?.accepts).toContainEqual({
       type: "project.approval.submitted",
       project: "gym",
@@ -444,67 +431,43 @@ describe("gym task reconciliation", () => {
   });
 });
 
-describe("gym app event routing", () => {
-  test("turns an actionable May evaluation into incident intake", async () => {
-    const emitted: Array<Record<string, unknown>> = [];
-    await routeGymEvent(context(emitted), {
+describe("gym evaluation frontier", () => {
+  test("routes all May evaluations to one stable sequential task", () => {
+    const failure = resolveGymTask({
       type: "evaluation.reviewed",
+      eventId: 401,
       source: "evaluator-aftermath",
       agent: "may",
       lane: "needs_triage",
       reviewedVerdict: "needs_improvement",
       sessionId: "s_bad_may_run",
     });
-
-    expect(emitted).toHaveLength(2);
-    expect(emitted[0]).toMatchObject({
-      type: "gym.learning.evidence.observed",
-      project: "gym",
-      params: {
-        polarity: "negative",
-        evaluation: { sessionId: "s_bad_may_run" },
-      },
-    });
-    expect(emitted[1]).toMatchObject({
-      type: "gym.incident.detected",
-      project: "gym",
-      params: {
-        reason: "may-evaluation-failure",
-        evaluation: { sessionId: "s_bad_may_run" },
-      },
-    });
-  });
-
-  test("preserves good May evaluations as positive learning evidence", async () => {
-    const emitted: Array<Record<string, unknown>> = [];
-    const result = await routeGymEvent(context(emitted), {
+    const success = resolveGymTask({
       type: "evaluation.reviewed",
+      eventId: 402,
       agent: "may",
       lane: "success_candidate",
       reviewedVerdict: "good",
       sessionId: "s_good_may_run",
     });
-    expect(emitted).toEqual([
-      expect.objectContaining({
-        type: "gym.learning.evidence.observed",
-        params: {
-          polarity: "positive",
-          evaluation: expect.objectContaining({ sessionId: "s_good_may_run" }),
-        },
-      }),
-    ]);
-    expect(result).toEqual({ recorded: "positive-learning-evidence" });
+    expect(failure).toMatchObject({
+      id: "runtime/evaluation-intake",
+      mode: "maintain",
+      workflow: "evaluation-intake",
+    });
+    expect(success?.id).toBe(failure?.id);
+    expect(success?.input).toEqual({ contractRevision: 1 });
   });
 
-  test("ignores non-May evaluations", async () => {
-    const emitted: Array<Record<string, unknown>> = [];
-    const result = await routeGymEvent(context(emitted), {
-      type: "evaluation.reviewed",
-      agent: "coder",
-      lane: "needs_triage",
-      reviewedVerdict: "needs_improvement",
-    });
-    expect(emitted).toHaveLength(0);
-    expect(result).toEqual({ reason: "evaluation is not for May" });
+  test("ignores non-May evaluations", () => {
+    expect(
+      resolveGymTask({
+        type: "evaluation.reviewed",
+        eventId: 403,
+        agent: "coder",
+        lane: "needs_triage",
+        reviewedVerdict: "needs_improvement",
+      }),
+    ).toBeNull();
   });
 });

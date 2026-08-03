@@ -33,18 +33,9 @@ const azCli =
     ? "/app/.state/.local/bin/az"
     : "az");
 
-export type CampaignRepairReplay = {
-  activePullRequestId: string;
-  activeSourceCommit: string;
-  campaignBranch: string;
-  campaignHeadCommit: string;
+export type CampaignRepairContext = {
   conflictingPaths: string[];
-  frozenCampaignBaseCommit: string;
-  priorMergedPullRequestId: string;
-  priorMergedSourceBranch: string;
-  priorMergedSourceCommit: string;
   reason: string;
-  replayMode: string;
 };
 
 export type FailureInput = {
@@ -59,8 +50,9 @@ export type FailureInput = {
   reason: string;
   category: string;
   status: string;
+  progressiveObservation: boolean;
   carrierCommit: string;
-  campaignRepairReplay: CampaignRepairReplay | null;
+  campaignRepairReplay: CampaignRepairContext | null;
 };
 
 type PullRequest = {
@@ -137,22 +129,13 @@ function stringArray(value: unknown): string[] {
 
 function parseCampaignRepairReplay(
   value: unknown,
-): CampaignRepairReplay | null {
+): CampaignRepairContext | null {
   const replay = record(value);
-  const parsed: CampaignRepairReplay = {
-    activePullRequestId: text(replay.activePullRequestId),
-    activeSourceCommit: text(replay.activeSourceCommit),
-    campaignBranch: text(replay.campaignBranch),
-    campaignHeadCommit: text(replay.campaignHeadCommit),
+  const parsed: CampaignRepairContext = {
     conflictingPaths: stringArray(replay.conflictingPaths),
-    frozenCampaignBaseCommit: text(replay.frozenCampaignBaseCommit),
-    priorMergedPullRequestId: text(replay.priorMergedPullRequestId),
-    priorMergedSourceBranch: text(replay.priorMergedSourceBranch),
-    priorMergedSourceCommit: text(replay.priorMergedSourceCommit),
     reason: text(replay.reason),
-    replayMode: text(replay.replayMode),
   };
-  return parsed.replayMode || parsed.priorMergedSourceCommit ? parsed : null;
+  return parsed.reason || parsed.conflictingPaths.length ? parsed : null;
 }
 
 export function nestedWorkflowOutput(value: unknown): Record<string, unknown> {
@@ -203,6 +186,7 @@ export function parseFailureInput(raw: string): FailureInput | null {
       reason: text(input.reason),
       category: text(input.category),
       status: text(input.status),
+      progressiveObservation: input.progressiveObservation === true,
       carrierCommit: text(input.carrierCommit),
       campaignRepairReplay: parseCampaignRepairReplay(
         input.campaignRepairReplay,
@@ -422,6 +406,22 @@ export function productRecoveryCondition(
         : { sourceBranch: "refs/heads/main" }),
       pipelineRunId: { gt: afterRunId },
     },
+  };
+}
+
+export function progressiveArtifactObservationCondition(
+  input: FailureInput,
+): ProjectAppConditionSpec {
+  return {
+    id: `master-validation-progressive-artifact-${input.failureFingerprint}-run-${input.pipelineRunId || "unknown"}`,
+    type: "pipeline.failure.observed",
+    subject: "project:aks-rp-e2e",
+    expected: {
+      specId: input.specId,
+      pipelineRunId: input.pipelineRunId,
+      failureFingerprint: input.failureFingerprint,
+    },
+    reviewAfterMs: 900000,
   };
 }
 
@@ -742,114 +742,14 @@ export function alignCleanRepairWorkspace(input: {
   return git(input.workspaceDir, ["rev-parse", "HEAD"]).stdout;
 }
 
-export function replayCampaignRepairBaseCommit(input: FailureInput): string {
-  const replay = input.campaignRepairReplay;
-  return replay?.replayMode ===
-    "append-only-repair-on-existing-campaign-lineage"
-    ? replay.priorMergedSourceCommit
-    : "";
-}
-
-export function alignCampaignRepairReplayWorkspace(input: {
-  workspaceDir: string;
-  replayBaseCommit: string;
-}): { headCommit: string; reset: boolean } {
-  const headCommit = git(input.workspaceDir, ["rev-parse", "HEAD"]).stdout;
-  if (!input.replayBaseCommit || headCommit === input.replayBaseCommit) {
-    return { headCommit, reset: false };
-  }
-  if (git(input.workspaceDir, ["status", "--porcelain=v1"]).stdout) {
-    return { headCommit, reset: false };
-  }
-  if (
-    git(
-      input.workspaceDir,
-      ["cat-file", "-e", `${input.replayBaseCommit}^{commit}`],
-      true,
-    ).status !== 0
-  ) {
-    return { headCommit, reset: false };
-  }
-  git(input.workspaceDir, ["reset", "--hard", input.replayBaseCommit]);
-  return {
-    headCommit: git(input.workspaceDir, ["rev-parse", "HEAD"]).stdout,
-    reset: true,
-  };
-}
-
 export function campaignRepairReady(input: {
   headCommit: string;
   repairBaseCommit: string;
-  replayBaseCommit?: string;
 }): boolean {
-  const baseCommit =
-    text(input.replayBaseCommit) || text(input.repairBaseCommit);
+  const baseCommit = text(input.repairBaseCommit);
   return Boolean(
     baseCommit && input.headCommit && input.headCommit !== baseCommit,
   );
-}
-
-export function repairBranchImportsNewerMain(input: {
-  workspaceDir: string;
-  targetRef: string;
-  repairBaseCommit: string;
-  headCommit?: string;
-}): { forkCommit: string; importsNewerMain: boolean } {
-  const headCommit =
-    text(input.headCommit) ||
-    git(input.workspaceDir, ["rev-parse", "HEAD"]).stdout;
-  if (!headCommit || !input.repairBaseCommit) {
-    return { forkCommit: "", importsNewerMain: false };
-  }
-  const forkCommit = git(
-    input.workspaceDir,
-    ["merge-base", headCommit, input.targetRef],
-    true,
-  ).stdout;
-  if (!forkCommit) {
-    return { forkCommit: "", importsNewerMain: false };
-  }
-  return {
-    forkCommit,
-    importsNewerMain:
-      git(
-        input.workspaceDir,
-        ["merge-base", "--is-ancestor", forkCommit, input.repairBaseCommit],
-        true,
-      ).status !== 0,
-  };
-}
-
-export function resetInvalidCampaignRepairWorkspace(input: {
-  workspaceDir: string;
-  targetRef: string;
-  repairBaseCommit: string;
-  headCommit?: string;
-}): { headCommit: string; reset: boolean; forkCommit: string } {
-  const headCommit =
-    text(input.headCommit) ||
-    git(input.workspaceDir, ["rev-parse", "HEAD"]).stdout;
-  if (!input.repairBaseCommit || headCommit === input.repairBaseCommit) {
-    return { headCommit, reset: false, forkCommit: "" };
-  }
-  if (git(input.workspaceDir, ["status", "--porcelain=v1"]).stdout) {
-    return { headCommit, reset: false, forkCommit: "" };
-  }
-  const branchState = repairBranchImportsNewerMain({
-    workspaceDir: input.workspaceDir,
-    targetRef: input.targetRef,
-    repairBaseCommit: input.repairBaseCommit,
-    headCommit,
-  });
-  if (!branchState.importsNewerMain) {
-    return { headCommit, reset: false, forkCommit: branchState.forkCommit };
-  }
-  git(input.workspaceDir, ["reset", "--hard", input.repairBaseCommit]);
-  return {
-    headCommit: git(input.workspaceDir, ["rev-parse", "HEAD"]).stdout,
-    reset: true,
-    forkCommit: branchState.forkCommit,
-  };
 }
 
 function triggerEvent(raw: string): Record<string, unknown> | null {
@@ -884,7 +784,9 @@ export function passingRecoveryObservation(
   options: { requireCurrentMain?: boolean } = {},
 ): Record<string, unknown> | null {
   const trigger = triggerEvent(raw);
-  return trigger ? matchingPassingRecoveryObservation(trigger, input, options) : null;
+  return trigger
+    ? matchingPassingRecoveryObservation(trigger, input, options)
+    : null;
 }
 
 function eventData(value: unknown): Record<string, unknown> {
@@ -1613,6 +1515,24 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     ]);
   }
 
+  if (input.progressiveObservation && !input.artifactPath) {
+    const summary = `Observed an early progressive placeholder for ${input.specId} in aggregate run ${input.pipelineRunId}; wait for the later artifact-backed pipeline.failure.observed event before any classification, source edit, or PR action.`;
+    return waiting(
+      ctx,
+      summary,
+      [
+        `blocking-pipeline-run:${input.pipelineRunId}`,
+        ...(input.sourceCommit ? [`source-commit:${input.sourceCommit}`] : []),
+        `progressive-placeholder-fingerprint:${input.failureFingerprint}`,
+        `progressive-placeholder-category:${input.category || "unknown"}`,
+        "progressive-observation:true",
+        "artifact-observation-required:true",
+      ],
+      progressiveArtifactObservationCondition(input),
+      absorbLegacyRecoveryActions(ctx.task),
+    );
+  }
+
   try {
     const campaign = progressedCampaign(
       input,
@@ -1717,37 +1637,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       input,
       ctx.appDir ?? "/app/projects/aks-rp-e2e.app",
     );
-    const repairBaseCommit = frozenBaseCommit || baseCommit;
-    const replayBaseCommit = replayCampaignRepairBaseCommit(input);
-    let headCommit = alignCleanRepairWorkspace({
+    // The human-facing PR always stays based on current main. The campaign
+    // controller replays only its focused patch onto the frozen snapshot.
+    const repairBaseCommit = baseCommit;
+    const headCommit = alignCleanRepairWorkspace({
       workspaceDir,
       targetRef,
       repairBaseCommit,
     });
-    let resetImportedMainFork = "";
-    if (frozenBaseCommit) {
-      const repairedWorkspace = resetInvalidCampaignRepairWorkspace({
-        workspaceDir,
-        targetRef,
-        repairBaseCommit,
-        headCommit,
-      });
-      headCommit = repairedWorkspace.headCommit;
-      resetImportedMainFork = repairedWorkspace.reset
-        ? repairedWorkspace.forkCommit
-        : "";
-    }
-    const replayWorkspace =
-      frozenBaseCommit && replayBaseCommit
-        ? alignCampaignRepairReplayWorkspace({
-            workspaceDir,
-            replayBaseCommit,
-          })
-        : { headCommit, reset: false };
-    headCommit = replayWorkspace.headCommit;
-    const replayRepairPending = Boolean(
-      frozenBaseCommit && replayBaseCommit && headCommit === replayBaseCommit,
-    );
     const recovery = latestPassingRecoveryObservation(ctx, input, {
       requireCurrentMain: productRecoveryWaitRequiresCurrentMain(input),
     });
@@ -1818,7 +1715,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         campaignRepairReady({
           headCommit,
           repairBaseCommit,
-          replayBaseCommit,
         })
       ) {
         return prepareCampaignRepair(ctx, input, {
@@ -1830,15 +1726,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           evidence: [
             "resumed-existing-campaign-repair",
             `repair-base:${repairBaseCommit}`,
-            ...(replayWorkspace.reset
-              ? [`replay-base:${replayBaseCommit}`]
-              : []),
           ],
         });
       }
-      if (!replayRepairPending) {
-        return reconcileTestIssue(ctx, input);
-      }
+      return reconcileTestIssue(ctx, input);
     }
     const priorProduct = priorProductClassification(ctx.task);
     if (
@@ -1919,7 +1810,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         campaignRepairReady({
           headCommit,
           repairBaseCommit,
-          replayBaseCommit,
         })
       ) {
         return prepareCampaignRepair(ctx, input, {
@@ -1931,15 +1821,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           evidence: [
             "resumed-existing-campaign-repair",
             `repair-base:${repairBaseCommit}`,
-            ...(replayWorkspace.reset
-              ? [`replay-base:${replayBaseCommit}`]
-              : []),
           ],
         });
       }
-      if (!replayRepairPending) {
-        return reconcileTestIssue(ctx, input);
-      }
+      return reconcileTestIssue(ctx, input);
     }
 
     if (git(workspaceDir, ["status", "--porcelain=v1"]).stdout) {
@@ -1957,18 +1842,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `Failure reason: ${input.reason || "not recorded"}`,
       `Downloaded slice artifact: ${input.artifactPath || "not available"}`,
       `The tested main commit was ${input.sourceCommit || "unknown"}.`,
-      resetImportedMainFork
-        ? `The retained repair branch had imported newer main through ${resetImportedMainFork}; this run reset the workspace back to frozen campaign base ${repairBaseCommit} before authoring any new fix.`
-        : "",
-      replayWorkspace.reset && replayBaseCommit
-        ? `Campaign composition already conflicted on this stable task. The workspace was reset to prior integrated campaign lineage commit ${replayBaseCommit}; preserve only the exact follow-up delta needed for this fingerprint instead of replaying a fresh branch from the frozen base.`
-        : "",
       input.campaignRepairReplay?.reason || "",
       input.campaignRepairReplay?.conflictingPaths.length
         ? `Previous conflicting paths: ${input.campaignRepairReplay.conflictingPaths.join(", ")}.`
         : "",
       frozenBaseCommit
-        ? `Work only in ${workspaceDir}, aligned to frozen campaign base ${repairBaseCommit}. Do not merge or rebase newer main into this repair branch while the campaign is red.`
+        ? `Work only in ${workspaceDir}, based on current ${targetRef}@${baseCommit}. Keep the PR mergeable to main; the campaign controller will replay only the focused patch onto frozen base ${frozenBaseCommit}.`
         : `Work only in ${workspaceDir}, which is based on ${targetRef}@${baseCommit}.`,
       "Classify the root cause as test_issue, prod_issue, or inconclusive.",
       "Use prod_issue when live evidence identifies a provider/product operation that failed or remained stuck, including shared cluster setup before feature assertions; name that actual operation and do not imply a feature-specific regression. Use inconclusive only when the evidence cannot distinguish provider behavior from a repository-owned carrier, assertion, cleanup, or orchestration defect.",

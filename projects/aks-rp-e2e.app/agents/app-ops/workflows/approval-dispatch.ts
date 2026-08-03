@@ -66,7 +66,9 @@ function recordValue(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
-function approvalDispatchTaskInput(raw: string): Record<string, unknown> | null {
+function approvalDispatchTaskInput(
+  raw: string,
+): Record<string, unknown> | null {
   const payload = parseReconciliationTaskPayload(raw);
   return recordValue(payload?.input);
 }
@@ -144,12 +146,17 @@ function approvalDispatchLedgerPath(appDir: string): string {
   return join(appDir, ".state", "approval-dispatch-runs.jsonl");
 }
 
-function isTrustedDispatchLedgerRow(parsed: {
+type DispatchLedgerRow = {
   workflow?: unknown;
   result?: unknown;
   correlationKey?: unknown;
   packetAbsolutePath?: unknown;
-}): boolean {
+  approvalId?: unknown;
+  waitId?: unknown;
+  pathId?: unknown;
+};
+
+function isTrustedDispatchLedgerRow(parsed: DispatchLedgerRow): boolean {
   if (
     parsed.workflow !== "approval-dispatch" ||
     !["message.created", "project.owner.requested"].includes(
@@ -165,12 +172,12 @@ function isTrustedDispatchLedgerRow(parsed: {
   );
 }
 
-function hasPriorDispatchForCorrelation(input: {
+function latestTrustedDispatchLedgerRow(input: {
   appDir: string;
   correlationKey: string;
-}): boolean {
+}): DispatchLedgerRow | null {
   const path = approvalDispatchLedgerPath(input.appDir);
-  if (!existsSync(path)) return false;
+  if (!existsSync(path)) return null;
 
   try {
     const lines = readFileSync(path, "utf8").trim().split("\n");
@@ -178,40 +185,182 @@ function hasPriorDispatchForCorrelation(input: {
       const line = lines[index]?.trim();
       if (!line) continue;
       try {
-        const parsed = JSON.parse(line) as {
-          workflow?: unknown;
-          result?: unknown;
-          correlationKey?: unknown;
-          packetAbsolutePath?: unknown;
-        };
+        const parsed = JSON.parse(line) as DispatchLedgerRow;
         if (
           parsed.correlationKey === input.correlationKey &&
           isTrustedDispatchLedgerRow(parsed)
         ) {
-          return true;
+          return parsed;
         }
       } catch {
         continue;
       }
     }
   } catch {
-    return false;
+    return null;
   }
 
-  return false;
+  return null;
+}
+
+function booleanFlag(value: unknown): boolean | null {
+  if (value === true || value === 1 || value === "1") return true;
+  if (value === false || value === 0 || value === "0") return false;
+  return null;
+}
+
+function priorHumanDispatchRemainsDuplicateProof(
+  ctx: WorkflowContext,
+  input: {
+    approvalId: string;
+    waitId: string;
+    pathId: string;
+    correlationKey: string;
+  },
+): {
+  suppress: boolean;
+  reason: string;
+} {
+  try {
+    const db = ctx.getDb?.();
+    if (!db || typeof db.prepare !== "function") {
+      return {
+        suppress: true,
+        reason:
+          "runtime-db-unavailable; preserve duplicate suppression rather than guessing delivery failure",
+      };
+    }
+
+    const lineageParams = [
+      input.approvalId,
+      input.waitId,
+      input.pathId,
+      input.correlationKey,
+    ];
+    const notificationRow = db
+      .prepare(
+        `SELECT telegram_msg_id AS telegramMsgId
+           FROM notification_messages
+          WHERE json_extract(data, '$.approvalId') = ?
+             OR json_extract(data, '$.waitId') = ?
+             OR json_extract(data, '$.pathId') = ?
+             OR json_extract(data, '$.correlationKey') = ?
+          ORDER BY sent_at DESC, telegram_msg_id DESC
+          LIMIT 1`,
+      )
+      .get(...lineageParams) as { telegramMsgId?: unknown } | undefined;
+    if (notificationRow?.telegramMsgId !== undefined) {
+      return {
+        suppress: true,
+        reason: `durable notification_messages proof still exists (${String(notificationRow.telegramMsgId)})`,
+      };
+    }
+
+    const submittedRow = db
+      .prepare(
+        `SELECT id
+           FROM events
+          WHERE event_type = 'project.approval.submitted'
+            AND (
+              json_extract(data, '$.approvalId') = ?
+              OR json_extract(data, '$.waitId') = ?
+              OR json_extract(data, '$.pathId') = ?
+              OR json_extract(data, '$.correlationKey') = ?
+            )
+          ORDER BY id DESC
+          LIMIT 1`,
+      )
+      .get(...lineageParams) as { id?: unknown } | undefined;
+    if (submittedRow?.id !== undefined) {
+      return {
+        suppress: true,
+        reason: `project.approval.submitted already returned for this lineage (${String(submittedRow.id)})`,
+      };
+    }
+
+    const messageRow = db
+      .prepare(
+        `SELECT id
+           FROM events
+          WHERE event_type = 'message.created'
+            AND (
+              json_extract(data, '$.approvalId') = ?
+              OR json_extract(data, '$.waitId') = ?
+              OR json_extract(data, '$.pathId') = ?
+              OR json_extract(data, '$.correlationKey') = ?
+            )
+          ORDER BY id DESC
+          LIMIT 1`,
+      )
+      .get(...lineageParams) as { id?: unknown } | undefined;
+    const sourceEventId = Number(messageRow?.id);
+    if (!Number.isFinite(sourceEventId)) {
+      return {
+        suppress: true,
+        reason:
+          "trusted ledger row exists but no matching runtime message.created row is currently queryable",
+      };
+    }
+
+    const reviewRow = db
+      .prepare(
+        `SELECT id,
+                json_extract(data, '$.delivered') AS delivered,
+                json_extract(data, '$.admitted') AS admitted
+           FROM events
+          WHERE event_type = 'human.attention.reviewed'
+            AND json_extract(data, '$.sourceEventId') = ?
+          ORDER BY id DESC
+          LIMIT 1`,
+      )
+      .get(sourceEventId) as
+      | { id?: unknown; delivered?: unknown; admitted?: unknown }
+      | undefined;
+    const delivered = booleanFlag(reviewRow?.delivered);
+    const admitted = booleanFlag(reviewRow?.admitted);
+    if (
+      reviewRow?.id !== undefined &&
+      delivered === false &&
+      admitted === false
+    ) {
+      return {
+        suppress: false,
+        reason: `human.attention.reviewed ${String(reviewRow.id)} verified non-delivery for message.created ${sourceEventId}`,
+      };
+    }
+
+    return {
+      suppress: true,
+      reason:
+        reviewRow?.id !== undefined
+          ? `human dispatch still has a live return producer after review ${String(reviewRow.id)}`
+          : `message.created ${sourceEventId} still stands as the live return producer for this lineage`,
+    };
+  } catch {
+    return {
+      suppress: true,
+      reason:
+        "runtime-db-query-failed; preserve duplicate suppression rather than guessing delivery failure",
+    };
+  }
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const projectDir =
     ctx.projectDir ?? field(ctx.task, "project") ?? "/app/projects/aks-rp-e2e";
-  const appDir =
-    ctx.appDir ?? resolveAppDir(projectDir, field(ctx.task, "app"));
+  const appDir = resolveAppDir(
+    projectDir,
+    ctx.appDir ?? field(ctx.task, "app"),
+  );
   const trigger = parseTriggerEvent(ctx.task);
   const taskInput = approvalDispatchTaskInput(ctx.task);
   const recoveredFromTaskTick =
     trigger?.type === "project.task.tick" && Boolean(taskInput);
 
-  if (trigger?.type !== "project.approval.requested" && !recoveredFromTaskTick) {
+  if (
+    trigger?.type !== "project.approval.requested" &&
+    !recoveredFromTaskTick
+  ) {
     return finishApprovalDispatch(ctx, {
       state: "needs-owner",
       summary: `Approval dispatch ignored trigger ${String(trigger?.type ?? "unknown")}; use project.approval.requested.`,
@@ -342,31 +491,50 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   const correlationKey = `aks-rp-e2e:approval:${stableIdPart(pathId)}:${stableIdPart(repoPacketPath)}`;
-  if (
-    hasPriorDispatchForCorrelation({
-      appDir,
-      correlationKey,
-    })
-  ) {
-    appendDispatchRun(appDir, {
-      result: "duplicate-suppressed",
-      packetPath: repoPacketPath,
-      packetAbsolutePath: absolutePacketPath,
-      pathId,
-      requestedAction,
-      correlationKey,
-      duplicateReason:
-        "prior approval-dispatch ledger row already emitted message.created for this correlationKey",
-    });
-    return finishApprovalDispatch(ctx, {
-      state: "converged",
-      summary: `Approval dispatch suppressed duplicate message.created for ${pathId} using ${repoPacketPath}.`,
-      evidence: [`approval-dispatch:${correlationKey}`],
-    });
-  }
-
   const approvalId = explicitApprovalId || correlationKey;
   const waitId = explicitWaitId || `wait:${correlationKey}`;
+  const priorDispatch = latestTrustedDispatchLedgerRow({
+    appDir,
+    correlationKey,
+  });
+  if (priorDispatch) {
+    const priorResult = String(priorDispatch.result ?? "");
+    const duplicateDisposition =
+      priorResult === "project.owner.requested"
+        ? {
+            suppress: true,
+            reason:
+              "prior project.owner.requested routing already owns this approval lineage",
+          }
+        : priorHumanDispatchRemainsDuplicateProof(ctx, {
+            approvalId,
+            waitId,
+            pathId,
+            correlationKey,
+          });
+    if (duplicateDisposition.suppress) {
+      appendDispatchRun(appDir, {
+        result: "duplicate-suppressed",
+        packetPath: repoPacketPath,
+        packetAbsolutePath: absolutePacketPath,
+        pathId,
+        requestedAction,
+        approvalId,
+        waitId,
+        correlationKey,
+        duplicateReason: duplicateDisposition.reason,
+      });
+      return finishApprovalDispatch(ctx, {
+        state: "converged",
+        summary: `Approval dispatch suppressed duplicate message.created for ${pathId} using ${repoPacketPath}.`,
+        evidence: [
+          `approval-dispatch:${correlationKey}`,
+          `approval-dispatch:duplicate-proof:${duplicateDisposition.reason}`,
+        ],
+      });
+    }
+  }
+
   const expectedResponse = {
     type: "project.approval.submitted",
     target: { project: "aks-rp-e2e" },

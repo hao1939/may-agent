@@ -1,6 +1,12 @@
 # AKS Standing Loop Task Contract and Liveness
 
-Status: accepted; core liveness implementation 2026-07-20
+Status: accepted domain contract; unified-controller migration pending
+
+The original 2026-07-20 implementation used sibling leaves and an AKS event
+fan-in. The current cross-app contract supersedes that scheduling detail: a
+loop-owned leaf is a direct child, and the shared controller wakes the parent
+after a meaningful child transition. The frontier, ledger, and domain rules in
+this document remain current.
 
 ## Decision summary
 
@@ -16,23 +22,22 @@ should not be merged:
 Strengthen all three with one common controller contract:
 
 - a standing loop is a `maintain` resource that observes and declares work;
-- the controller and its finite leaves remain siblings under a structural
-  group;
+- each finite leaf owned by a loop is its direct child; unrelated work remains
+  under the structural group;
 - the controller runs as one synchronous workflow block and then converges;
 - finite leaves perform adaptive domain work through their resolved owner;
 - structured `loopId` and `workKey` identify representation;
 - exact waits represent an item but do not consume actionable frontier
   capacity;
 - attention residue does not represent healthy progress;
-- a reconciled leaf emits one coalesced wake for its loop, while periodic
-  pulses remain recovery;
+- a meaningful child transition durably wakes its loop through the shared
+  controller, while periodic pulses remain recovery;
 - every resumable wait has both an observer and a real producer or sent human
   handoff; and
 - the runtime remains the only scheduler and concurrency authority.
 
 Do not add a request type, a meta-loop scheduler, a dedicated loop reconciler,
-parallel execution inside a workflow, or controller-to-child lifecycle
-ownership.
+parallel execution inside a workflow, or an app-specific completion fan-in.
 
 ## Why refine the loops
 
@@ -104,8 +109,16 @@ by controller-created leaves. The root loop and the leaf must carry the same
 worker expectations, so human pulses, watchdog pulses, and automatic refills
 all produce work that follows the current best path.
 
-The controller never waits on all leaves and never owns their completion
-lifecycle. Periodic resync remains the simple recovery path.
+The controller does not infer its own acceptance from child status. It may
+converge a synced maintain pass while direct children remain live; their later
+convergence or attention wakes it to refill or reassess. An achieve parent
+still waits until required children resolve. Periodic resync remains the simple
+recovery path.
+
+Continuously refilled maintenance frontiers and their ordinary leaves share
+the P1 lane. P0 is reserved for a concrete current incident or safety repair;
+otherwise one infinite frontier can consume every domain slot and starve the
+other standing loops.
 
 One invalid unit does not stop unrelated eligible work. Its attention resource
 remains visible while the controller fills other free actionable slots. A
@@ -132,7 +145,7 @@ input: {
 `workRevision` changes desired generation rather than creating identity churn.
 After an achieve leaf becomes an immutable completion receipt, a still-red row
 is renewed with a revision-qualified resource ID. Controllers still match the
-renewed leaf by `loopId + workKey`; they never mutate or recreate the completed
+renewed leaf by `loopId + workKey`; they never change or recreate the completed
 receipt.
 
 Controllers do not infer ownership from summaries, acceptance prose, feature
@@ -195,6 +208,12 @@ review and metrics must inspect `waiting` and `attention`; querying only the
 retired `blocked` phase can report a false healthy zero. A stale wait is a
 signal for owner reevaluation, not permission for code to infer the domain
 decision from its prose.
+
+`reviewAfterMs` is bounded supervision, not an endless polling policy. The
+shared controller marks the third unchanged review of the same Condition and
+task generation as final; if the owner preserves that same wait, the timer is
+removed while the external event wake remains active. This keeps human-linked
+work supervised without spending owner turns to rediscover the same fact.
 
 The waiting-frontier watchdog is its own stable `maintain` task. Its periodic
 schedule emits a direct task tick instead of adding another request to the
@@ -283,6 +302,20 @@ reviewed merge of any newer rows.
 
 The top-level ledger revision and `updatedAt` change whenever any row changes.
 
+Before every controller decision, reconcile ledger identities against one
+clean, identified `origin/dev` snapshot. Add current catalog IDs as pending,
+remove IDs no longer present in that snapshot, apply current catalog terminal
+dispositions, and persist the reconciled app-owned ledger before selecting
+work or declaring convergence. The mutable canonical checkout is never catalog
+authority because local repair files or a stale local `dev` branch can hide or
+invent rows.
+
+Scenario normalization may read this reconciled ledger as its behavioral-proof
+completion gate, but it does not create a second proof ledger or duplicate the
+spec loop's work. Structural inventory remains owned by scenario
+normalization; per-spec live pass, exact wait, and reviewed terminal state
+remain owned by the spec loop.
+
 ### Representation and selection
 
 - Prefer the row's exact linked task when valid.
@@ -290,6 +323,9 @@ The top-level ledger revision and `updatedAt` change whenever any row changes.
 - Do not scan unrelated task prose or feature-family prefixes.
 - Select explicit priority specs first, then the oldest eligible unrepresented
   rows, so alphabetic ordering cannot starve late identities.
+- Derive the default priority frontier from the current `runners` feature set
+  and retain only unresolved rows. Passing rows leave the priority list and
+  re-enter automatically if current catalog truth makes them unresolved again.
 - A review/attention task triggers bounded representation repair or
   `needs-owner`; it does not silently fill capacity.
 
@@ -301,6 +337,11 @@ conclusion, and accepted timestamp.
 
 `terminal=true` is valid only for a reviewed final decision. If a disposition
 says "resume when", it is not terminal: retain one live exact wait instead.
+
+Completion also requires exact identity equality between the clean current
+catalog and the persisted ledger. Equal counts are insufficient: malformed
+combined IDs, retired IDs, and newly added IDs must be reported and reconciled
+by identity.
 
 ## Loop 2: feature compact
 
@@ -437,11 +478,40 @@ acceptance:
     the exact strict-inventory row is gone. The workflow integrates that source
     directly into `dev` and records that no new ADO pass was claimed. Code never
     infers this exception from prose or a failed run.
+  - Source-layout normalization and product-contract adjudication are separate
+    concerns. When the agent can move a plain carrier into direct `.test.ts` or
+    feature `lib/` source without changing its existing behavior, assertions,
+    or disputed expectation, an unresolved owner decision does not block that
+    normalization. The agent preserves the current claim, records the exact
+    nonpassing or unresolved posture, integrates the normalized source, and
+    keeps the approval/escalation as independent follow-up. It waits only when
+    the missing authority is genuinely required to decide how the source must
+    be implemented, not merely how the observed product behavior is judged.
+  - Therefore a product, environment, or approval wait does not by itself own
+    the source-layout row. The controller preserves that wait and may declare a
+    separate bounded normalization leaf carrying the wait task IDs as context.
+    A runnable source leaf, an exact ADO run wait for that source, or an active
+    owner handoff still owns the row and prevents duplicate source work. The
+    domain agent then judges whether layout can proceed unchanged or truly
+    requires the external authority; code only performs this structured
+    accounting and routing.
+  - Exact waits represent the current rows, but they do not make a strict-red
+    inventory healthy. If the same clean `origin/dev` inventory remains red
+    with no actionable normalization work and every row only waiting, the
+    inventory observer signals the existing waiting-frontier review. That
+    review samples a bounded set, reads current source, run, and owner-return
+    facts, and lets the agent choose same-task work, a still-exact wait, a
+    structured terminal disposition, or escalation. Code detects the
+    wait-only frontier; it does not decide the AKS disposition.
   - Loop completion requires `strict-passed: true`, zero spec-referenced plain
     scenario units, zero repository plain scenario files on clean current
-    origin/dev, and fresh accepted ADO proof for every runnable normalization
-    change made by this loop. Local checks, an old run, or an untested merge
-    into `dev` are progress, not completion.
+    origin/dev, a passing full `bun run check` from that same clean revision,
+    and fresh accepted ADO proof for every runnable normalization change made
+    by this loop. The full check is the source-control hygiene gate as well as
+    the repository regression gate: tracked runtime/generated evidence keeps
+    the loop open and returns the exact failure to domain owner judgment.
+    Local checks, an old run, or an untested merge into `dev` are progress, not
+    completion.
 ```
 
 ### Authority and identity
@@ -486,6 +556,16 @@ Standing desired state has one authoring source:
 Use `frontierLimit`, not `maxConcurrent`. The former bounds desired actionable
 representation; the latter belongs to the runtime budget.
 
+`scenario-normalization` is also the sole author of normalization frontier
+leaves. Generic owner review, stall review, metrics, and watchdog recovery may
+collect evidence and wake this standing controller, but they must not select or
+create `domain/normalize-plain-scenario-carrier-*` leaves themselves. The
+controller reads the current strict inventory and all in-flight live-execution
+slots in one reconciliation, so bypassing it can exceed the five-slot limit or
+duplicate a row. A review that finds apparent free capacity emits or requests a
+targeted tick for `scenario-normalization`; the controller decides whether any
+new leaf is admissible.
+
 ## Wake policy
 
 Use event-driven refill with periodic recovery:
@@ -493,13 +573,13 @@ Use event-driven refill with periodic recovery:
 - spec and compact controllers receive the ten-minute durable-loop pulse;
 - scenario normalization receives its content-driven inventory observation;
 - external Conditions wake their exact finite leaves; and
-- every reconciled leaf carrying a recognized `loopId` emits one targeted,
-  coalesced controller wake; and
+- every meaningful direct-child transition wakes its loop through the shared
+  controller; and
 - controller pulses absorb changed ledger or inventory state missed by an
   event.
 
-Do not add per-child Conditions or a dedicated loop reconciler. The fan-in is
-an app event route, not parent lifecycle ownership and not another scheduler.
+Do not add per-child Conditions, a dedicated loop reconciler, or an app event
+route that translates `project.task.reconciled` back into a refill tick.
 
 ## Read model and WebUI
 
@@ -532,6 +612,8 @@ The implementation and tests must enforce:
 9. Repeating a pulse with unchanged source is idempotent.
 10. A changed work revision updates the stable resource generation rather than
     creating identity churn.
+11. No generic review or recovery path creates a normalization leaf; it wakes
+    `scenario-normalization`, which is the single frontier and capacity owner.
 
 ## Delivery
 
@@ -543,8 +625,8 @@ The core liveness slice is implemented:
    frontier and no longer infer representation from prose or feature families.
 4. Scenario leaf IDs stay stable while live; renewed work after an immutable
    receipt uses the exact current `workRevision` suffix.
-5. Reconciled structured leaves fan back into their controller immediately;
-   periodic pulses remain recovery.
+5. Meaningful direct-child transitions wake their controller through the
+   shared task runtime; periodic pulses remain recovery.
 6. `tasks/seed.json` contains structure only.
 
 The controlled live-state transition retains exact legacy task references only

@@ -11,7 +11,13 @@ test("closes exact completed LocalDNS children before their holder and closes th
     "wait-localdns-compact-mixed-frontier-origin-dev-advance-68084bdc-20260728";
   const runtimeCarrier =
     "compact/repair-compact-feature-runtime-container-representation-c4c7695238-ceb5e59f32";
-  const projectState = (parentId: string, mode: string, phase: string, generation: number, conditionId?: string) => ({
+  const projectState = (
+    parentId: string,
+    mode: string,
+    phase: string,
+    generation: number,
+    conditionId?: string,
+  ) => ({
     metadata: { generation },
     spec: { parentId, mode },
     status: { phase, conditionIds: conditionId ? [conditionId] : [] },
@@ -75,8 +81,7 @@ test("closes exact completed LocalDNS children before their holder and closes th
 });
 
 test("skips the LocalDNS family when its topology changed", () => {
-  const holder =
-    "hold-compact-localdns-mixed-frontier-a564608562-20260728";
+  const holder = "hold-compact-localdns-mixed-frontier-a564608562-20260728";
   expect(
     projectStateResidueCloseActions({
       resources: {

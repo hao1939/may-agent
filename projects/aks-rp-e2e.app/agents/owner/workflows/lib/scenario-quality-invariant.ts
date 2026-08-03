@@ -135,15 +135,20 @@ export function migrationOnlyScaffolding(
 ): boolean {
   const legacyPath = scenarioTestPath.replace(/\.test\.ts$/, ".ts");
   if (/vitest-scenario-adapter/.test(scenarioText)) return true;
+  const launchesChildProcess =
+    /\b(?:execFile|execFileSync|spawn|spawnSync)\s*\(/.test(scenarioText) ||
+    /\bBun\.(?:spawn|spawnSync)\s*\(/.test(scenarioText) ||
+    /promisify\s*\(\s*execFile\s*\)/.test(scenarioText);
+  if (!launchesChildProcess) return false;
   if (
     scenarioText.includes(legacyPath) &&
-    /(execFile|spawn|run\(|bun",\s*\[|bun',\s*\[|bun`)/.test(scenarioText)
+    /(\bbun\b|execFile|spawn)/.test(scenarioText)
   ) {
     return true;
   }
   return (
     /--execute/.test(scenarioText) &&
-    /(execFile|spawn|run\(|promisify\(execFile\))/.test(scenarioText) &&
+    launchesChildProcess &&
     /\.ts["'`]/.test(scenarioText)
   );
 }

@@ -24,6 +24,7 @@ import {
   type CampaignReceipt,
   type CampaignFix,
 } from "./lib/master-validation-campaign.js";
+import { appendTrackedPipelineRunId } from "../../../watchers/aks-pipeline.js";
 
 export const name = "master-validation-cycle";
 export const description =
@@ -65,6 +66,7 @@ type PullRequest = {
   sourceRefName?: unknown;
   targetRefName?: unknown;
   lastMergeSourceCommit?: { commitId?: unknown };
+  lastMergeTargetCommit?: { commitId?: unknown };
   isDraft?: unknown;
 };
 
@@ -519,6 +521,49 @@ function activeCampaignFixes(repoDir: string): CampaignFix[] {
     : [];
 }
 
+function completedCampaignReplacements(
+  repoDir: string,
+  campaign: CampaignReceipt | null,
+): CampaignFix[] {
+  if (!campaign) return [];
+  const taskIds = new Set(
+    campaign.integratedFixes
+      .map((fix) => fix.taskId)
+      .filter((taskId) => !taskId.startsWith("pull-request/")),
+  );
+  if (!taskIds.size) return [];
+  const integratedPullRequestIds = new Set(
+    campaign.integratedFixes.map((fix) => fix.pullRequestId),
+  );
+  const value = azJson(
+    [
+      "repos",
+      "pr",
+      "list",
+      "--repository",
+      repository,
+      "--target-branch",
+      targetBranch,
+      "--status",
+      "completed",
+      "--top",
+      "200",
+    ],
+    repoDir,
+  );
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((pullRequest) => {
+    const fix = campaignFixFromPullRequest(pullRequest as PullRequest, {
+      includeCompleted: true,
+    });
+    return fix &&
+      taskIds.has(fix.taskId) &&
+      !integratedPullRequestIds.has(fix.pullRequestId)
+      ? [fix]
+      : [];
+  });
+}
+
 function pullRequest(repoDir: string, pullRequestId: string): PullRequest {
   return record(
     azJson(["repos", "pr", "show", "--id", pullRequestId], repoDir, {
@@ -572,6 +617,10 @@ function publishPullRequest(
     evidence: `pull-request:${pullRequestId}:published`,
     actionable: true,
   };
+}
+
+export function registerMasterValidationRun(appDir: string, runId: string) {
+  return appendTrackedPipelineRunId(appDir, runId);
 }
 
 function publishVerifiedFixes(
@@ -814,6 +863,10 @@ function queueCycle(
     const runId = text(queued.id);
     if (!runId)
       throw new Error("Azure DevOps did not return a pipeline run id");
+    registerMasterValidationRun(
+      ctx.appDir ?? "/app/projects/aks-rp-e2e.app",
+      runId,
+    );
     saveReceipt(receiptPath(ctx), {
       runId,
       sourceBranch: runBranch,
@@ -913,6 +966,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           baselineRunId: campaign.baselineRunId,
           baseCommit: campaign.baseCommit,
           fixes: activeCampaignFixes(repoDir),
+          replacementFixes: completedCampaignReplacements(repoDir, campaign),
           prior: campaign,
         });
         if (composed.receipt.currentCommit !== prior.sourceCommit) {
@@ -1070,6 +1124,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         baselineRunId: prior.runId,
         baseCommit: prior.sourceCommit,
         fixes: activeCampaignFixes(repoDir),
+        replacementFixes: completedCampaignReplacements(
+          repoDir,
+          existingCampaign?.baselineRunId === prior.runId
+            ? existingCampaign
+            : null,
+        ),
         prior:
           existingCampaign?.baselineRunId === prior.runId
             ? existingCampaign

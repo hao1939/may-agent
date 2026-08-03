@@ -124,7 +124,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       },
     });
     return ctx.done(summary, {
-      state: "needs-owner",
+      state: "converged",
       summary,
       evidence: [`session:${result.sessionId}`],
       actions: [],
@@ -135,7 +135,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   if (!evaluation) {
     const summary = `Deep evaluator did not produce a valid artifact for ${candidate.sessionId}.`;
     return ctx.done(summary, {
-      state: "needs-owner",
+      state: "converged",
       summary,
       evidence: [`session:${result.sessionId}`],
       actions: [],

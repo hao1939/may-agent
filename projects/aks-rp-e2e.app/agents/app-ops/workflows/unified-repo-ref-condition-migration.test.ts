@@ -3,8 +3,7 @@ import { expect, test } from "bun:test";
 import { legacyRepoRefConditionMigrationActions } from "./unified-repo-ref-condition-migration";
 
 test("unblocks only a named wait with the legacy repo-ref condition shape", () => {
-  const eligible =
-    "hold-compact-localdns-split-frontier-e8d7677892-20260730";
+  const eligible = "hold-compact-localdns-split-frontier-e8d7677892-20260730";
   const canonical =
     "hold-compact-serverless-split-frontier-8f0161ccfd-20260730";
   const waiting = (generation: number, conditionId: string) => ({

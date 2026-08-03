@@ -912,11 +912,9 @@ function getModeFromTrigger(trigger: any): string {
 }
 
 export function triggerRequiresSessionId(trigger: any): boolean {
-  return [
-    "session.end",
-    "evaluation.session.requested",
-    "evaluation.deep.requested",
-  ].includes(getTriggerType(trigger));
+  return ["evaluation.session.requested", "evaluation.deep.requested"].includes(
+    getTriggerType(trigger),
+  );
 }
 
 export function backfillCandidateSessionId(
@@ -981,10 +979,15 @@ export function reviewFailureDetails(review: any): Record<string, unknown> {
       text,
     );
   const authFailure =
-    /\b401\b|\b403\b|unauthorized|forbidden|permission|api key|token/i.test(
+    /\b401\b|\b403\b|unauthorized|forbidden|permission|api key|authenticationerror|auth(?:entication)? failure|ide token expired|\btoken\s+(?:expired|invalid|unauthorized)\b/i.test(
+      text,
+    );
+  const explicitEmptyTurn =
+    /empty assistant turn|ended without calling finish|without calling finish\(\)/i.test(
       text,
     );
   const emptyRuntime =
+    explicitEmptyTurn ||
     Number(review?.opCount ?? 0) === 0 ||
     (/status["']?\s*:\s*["']?error/i.test(text) &&
       !/tool|assistant|content/i.test(text));
@@ -1010,7 +1013,7 @@ export function reviewProcessFailureOutcome(
   session: any,
   details: Record<string, unknown>,
 ): {
-  state: "needs-owner";
+  state: "converged";
   summary: string;
   evidence: string[];
   actions: [];
@@ -1021,12 +1024,12 @@ export function reviewProcessFailureOutcome(
       ? details.reviewSessionId
       : "unknown-review-session";
   return {
-    state: "needs-owner",
-    summary: `Recorded durable heuristic evaluation for ${sessionId}; evaluator review process failed (${failureType}) in ${reviewSessionId}, so the standard owner fallback must decide the next bounded attempt.`,
+    state: "converged",
+    summary: `Recorded durable heuristic evaluation for ${sessionId}; evaluator review process failed (${failureType}) in ${reviewSessionId}, and evaluation.review_failed now carries the retry/evidence signal without mutating the reconciler-owned runtime task.`,
     evidence: [
       `evaluations.overall.review records failureScope=review_process reviewFailureType=${failureType}`,
       `evaluation.review_failed event emitted for concrete session ${sessionId}`,
-      "runtime/session-aftermath closure semantics: the workflow preserves retry evidence and delegates policy through the standard owner fallback",
+      "runtime/session-aftermath closure semantics: the workflow publishes durable review-process failure evidence and returns no task mutation for the reconciler-owned runtime task",
     ],
     actions: [],
   };
@@ -1444,10 +1447,20 @@ export function ownerEventTarget(owner: unknown): string {
     : text.startsWith("human:")
       ? "may"
       : text;
+  const flatTarget = (target || "may").split("/")[0] || "may";
   // Message targets are flat agent names. Owner labels can include scoped
   // pseudo-owners such as `agent:may/runtime` for responsibility tracking, but
   // sending to `may/runtime` is invalid and produces message.delivery_failed.
-  return (target || "may").split("/")[0] || "may";
+  // The app task reconciler is also an internal platform module, not a
+  // registered message target; route those runtime/control-plane findings to
+  // May instead of emitting an undeliverable owner label.
+  if (
+    flatTarget === "app-task-reconciler" ||
+    flatTarget === "project-app-task-reconciler"
+  ) {
+    return "may";
+  }
+  return flatTarget;
 }
 
 function findingNeedsHuman(owner: unknown): boolean {
@@ -2261,6 +2274,7 @@ export function buildReviewTask(params: {
     ``,
     `The workflow facts and heuristic are routing signals, not the final judgment. Your job is to decide from goal/context/facts whether the session produced real value, merely avoided errors, or needs repair.`,
     `Use bounded transcript commands (grep/jq/sed/head/tail) for targeted evidence. Do not load the whole session.jsonl into context. When the session changed files or produced artifacts, inspect the actual artifacts, diffs, or relevant files; do not judge from transcript self-claims alone.`,
+    `For project-app/task-owner sessions, verify the owner decision at the persisted finish payload path (usually result.json.finishParams.result) before calling the decision missing; do not downgrade solely because a top-level result field is null or absent when finishParams.result contains the required state/actions/evidence. If both locations are absent or controller evidence shows actions were dropped, cite that exact evidence.`,
     ``,
     `Lane purpose: ${lanePurpose}`,
     `Write your concise review to: ${artifactPath}`,
@@ -2279,7 +2293,7 @@ export function buildReviewTask(params: {
     `4. Immediately call read() on that same artifact path and confirm the file contains the required sections.`,
     `5. For needs_triage: do not silently fix the project as evaluator. Classify each important issue by scope, assign owner as agent:<name> or human:<role>, and suggest possible actions for that owner.`,
     `6. Owner-feedback delivery must be deduped by finding family, not by session. Before calling message(), compare target owner/project + root cause + remediation ask against already-delivered cohort feedback. Regression family: events 3582689, 3583286, 3583498, and 3583812 show Scout nested-output-path aftermath findings after a cohort-level delivery; use family key agent:scout|scout-knowledge-lib.app|root:nested-/app/projects/scout-knowledge-lib/projects-output-path|ask:reconcile-canonical-artifacts-and-use-absolute-/app/projects-output-verification. If a Scout review is unchanged in that family, do not send another owner message; preserve this session's artifact/session link in the artifact and eval trail instead. Only send a new owner message for this family when the root cause/remediation ask materially changes, severity increases, or Scout explicitly asks for per-session follow-up. This rule is narrow: unrelated Scout findings with a different root cause or ask still use normal high-severity owner notification.`,
-    `7. Notify immediately only for high-severity or blocked/waiting findings that are not suppressed by the finding-family dedupe rule; routine critique belongs in the eval trail or digest.`,
+    `7. Notify immediately only for high-severity or blocked/waiting findings that are not suppressed by the finding-family dedupe rule; routine critique belongs in the eval trail or digest. Use only registered message targets: route platform/runtime or task-reconciler/control-plane findings to may, route project-owner or evaluation.app ownership findings to tech-lead, and never address messages to app-task-reconciler or project-app-task-reconciler because those are internal modules, not agents.`,
     `8. For success_candidate: extract why it worked. If there is reusable learning, record the candidate with evidence instead of promoting a global rule from one session.`,
     `9. Only then call finish(success) or finish(partial); the verify-after-write guard rejects success if the artifact was written but not read back.`,
     ``,
@@ -2287,11 +2301,33 @@ export function buildReviewTask(params: {
   ].join("\n");
 }
 
+export function aftermathContinuationEvent(): Record<string, unknown> {
+  return {
+    type: "evaluation.aftermath.scan",
+    source: "workflow:evaluator-aftermath",
+    owner: "evaluator",
+    project: "evaluation",
+    params: { reason: "backlog-remains" },
+  };
+}
+
+function continueAftermathSweep(
+  ctx: WorkflowContext,
+  processedSessionId?: string,
+): void {
+  const nextSessionId = backfillCandidateSessionId(ctx);
+  if (!nextSessionId || nextSessionId === processedSessionId) return;
+  ctx.emit(aftermathContinuationEvent() as any);
+}
+
 function converged(
   ctx: WorkflowContext,
   summary: string,
   evidence: string[] = [],
+  continueSweep = false,
+  processedSessionId?: string,
 ): WorkflowResult {
+  if (continueSweep) continueAftermathSweep(ctx, processedSessionId);
   return ctx.done(summary, {
     state: "converged",
     summary,
@@ -2302,6 +2338,7 @@ function converged(
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const trigger = extractTrigger(String(ctx.task ?? ""));
+  const continueSweep = !triggerRequiresSessionId(trigger);
   const triggerSessionId = getSessionIdFromTrigger(trigger);
   const triggerType = getTriggerType(trigger);
   const mode = getModeFromTrigger(trigger);
@@ -2352,6 +2389,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return converged(
       ctx,
       `Cancelled stale ${session.status} session ${sessionId} (${session.agent}), age ${Math.round(ageMs / 60000)}m.`,
+      [],
+      continueSweep,
+      sessionId,
     );
   }
 
@@ -2371,6 +2411,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       return converged(
         ctx,
         `Session ${sessionId} already skipped (${skipAftermath.reason}).`,
+        [],
+        continueSweep,
+        sessionId,
       );
     }
 
@@ -2437,6 +2480,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return converged(
       ctx,
       `Skipped aftermath for ${sessionId}: ${skipAftermath.reason}.`,
+      [],
+      continueSweep,
+      sessionId,
     );
   }
 
@@ -2457,6 +2503,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return converged(
       ctx,
       `Session ${sessionId} already evaluated (${evaluation.verdict}).`,
+      [],
+      continueSweep,
+      sessionId,
     );
   }
 
@@ -2556,6 +2605,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return converged(
       ctx,
       `Evaluated ${sessionId}: ${normalized.heuristic.verdict} (${normalized.route.lane}). No review needed.`,
+      [],
+      continueSweep,
+      sessionId,
     );
   }
 
@@ -2626,6 +2678,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       session,
       details,
     );
+    if (continueSweep) continueAftermathSweep(ctx, sessionId);
     return ctx.done(reviewFailureOutcome.summary, reviewFailureOutcome);
   }
 
@@ -2763,5 +2816,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   return converged(
     ctx,
     `Evaluated ${sessionId}: ${normalized.heuristic.verdict} (${normalized.route.lane}). Review session: ${(review as any).sessionId}. Artifact: ${postReviewArtifactPath}`,
+    [],
+    continueSweep,
+    sessionId,
   );
 }

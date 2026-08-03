@@ -11,7 +11,10 @@ import {
   scenarioNormalizationInvariant,
   type ScenarioNormalizationInput,
 } from "./lib/scenario-normalization-invariant.js";
-import { reconcileSpecLive } from "./spec-live-reconciliation.js";
+import {
+  pipelineWaitCondition,
+  reconcileSpecLive,
+} from "./spec-live-reconciliation.js";
 
 export const name = "domain-task-execution";
 export const description =
@@ -71,7 +74,7 @@ function matchingJsonObject(text: string, start: number): string | null {
 
 type ReconciliationTaskPayload = {
   taskId?: unknown;
-  input?: ScenarioNormalizationInput;
+  input?: unknown;
   children?: {
     live?: unknown;
   };
@@ -101,6 +104,54 @@ export function reconciliationTaskId(raw: string): string | null {
 function reconciliationTaskHasLiveChildren(raw: string): boolean {
   const liveChildren = reconciliationTaskPayload(raw)?.children?.live;
   return Array.isArray(liveChildren) && liveChildren.length > 0;
+}
+
+function stringValue(value: unknown): string | null {
+  if (typeof value === "string" && value.trim()) return value.trim();
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value);
+  }
+  return null;
+}
+
+function queuedPipelineRunId(raw: string): string | null {
+  const input = reconciliationTaskPayload(raw)?.input;
+  if (!input || typeof input !== "object") return null;
+  return stringValue(
+    (input as Record<string, unknown>).queuedPipelineRunId ??
+      (input as Record<string, unknown>).pipelineRunId,
+  );
+}
+
+function pipelineRunIdFromEvidence(
+  result: ProjectAppTaskHandlerResult,
+): string | null {
+  const runIds = new Set<string>();
+  for (const text of [result.summary, ...(result.evidence ?? [])]) {
+    if (typeof text !== "string") continue;
+    for (const match of text.matchAll(/\bpipeline-run:(\d+)\b/g)) {
+      runIds.add(match[1]);
+    }
+  }
+  if (runIds.size !== 1) return null;
+  return [...runIds][0] ?? null;
+}
+
+function exactPipelineWaitCoverage(
+  rawTask: string,
+  result: ProjectAppTaskHandlerResult,
+): ProjectAppTaskHandlerResult | null {
+  const runId =
+    queuedPipelineRunId(rawTask) ?? pipelineRunIdFromEvidence(result);
+  if (!runId) return null;
+  return {
+    ...result,
+    conditions: [pipelineWaitCondition(runId)],
+    evidence: [
+      ...(result.evidence ?? []),
+      `pipeline-wait-recovered:${runId}`,
+    ],
+  };
 }
 
 function selfTargetingActionIndexes(
@@ -183,6 +234,94 @@ function waitsOnDirectChild(
   );
 }
 
+function convergedWithLiveChildProblem(
+  result: ProjectAppTaskHandlerResult,
+  taskId: string | null,
+  hasExistingLiveChild: boolean,
+): string | null {
+  if (result.state !== "converged") return null;
+  if (!hasExistingLiveChild && !waitsOnDirectChild(result, taskId)) return null;
+  return `Converged result for ${taskId ?? "the current task"} cannot be applied while it has or creates a live direct child`;
+}
+
+async function correctConvergedWithLiveChild(input: {
+  ctx: WorkflowContext;
+  currentTaskId: string | null;
+  hasExistingLiveChild: boolean;
+  phase: string;
+  sessionId: string;
+  result: ProjectAppTaskHandlerResult;
+}): Promise<ProjectAppTaskHandlerResult> {
+  let ownerResult = input.result;
+  let sessionId = input.sessionId;
+
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    const problem = convergedWithLiveChildProblem(
+      ownerResult,
+      input.currentTaskId,
+      input.hasExistingLiveChild,
+    );
+    if (!problem) return ownerResult;
+
+    const prompt = [
+      `Correct the structured result from the ${input.phase} phase; do not redo the domain work.`,
+      `Hard validation failure: ${problem}.`,
+      "Decide from the current evidence whether the child work is genuinely required.",
+      `If it is required, preserve or create the direct child and return state "waiting" for ${input.currentTaskId ?? "the current task"}; infrastructure will wake the parent after the child changes state.`,
+      'If it is not required, remove the child-creating action and return state "converged" with the existing completion evidence.',
+      "Do not claim the parent converged while leaving live child work behind.",
+      "Previous result:",
+      JSON.stringify(ownerResult, null, 2),
+    ].join("\n\n");
+    const correction = input.ctx.runAgentSession
+      ? await input.ctx.runAgentSession(input.ctx.agent, prompt, sessionId, {
+          timeoutMs: 600_000,
+          schema: projectAppTaskHandlerResultSchema,
+        })
+      : await input.ctx.runAgent(input.ctx.agent, prompt, {
+          timeoutMs: 600_000,
+          schema: projectAppTaskHandlerResultSchema,
+        });
+    if (correction.status === "error" || correction.status === "interrupted") {
+      return {
+        state: "needs-owner",
+        summary: `The ${input.phase} result could not be corrected to a valid parent/child state`,
+        evidence: [
+          `task:${input.currentTaskId ?? "unknown"}`,
+          `child-state-validation:${attempt}`,
+          `correction-session:${correction.sessionId}`,
+        ],
+      };
+    }
+
+    sessionId = correction.sessionId;
+    ownerResult = await correctSelfTargetingActions({
+      ctx: input.ctx,
+      currentTaskId: input.currentTaskId,
+      phase: `${input.phase} parent-child correction`,
+      sessionId,
+      result: correction.structuredResult as ProjectAppTaskHandlerResult,
+    });
+  }
+
+  const problem = convergedWithLiveChildProblem(
+    ownerResult,
+    input.currentTaskId,
+    input.hasExistingLiveChild,
+  );
+  if (!problem) return ownerResult;
+  return {
+    state: "needs-owner",
+    summary: `The ${input.phase} result still contradicts its live child state after correction`,
+    evidence: [
+      ...(ownerResult.evidence ?? []),
+      `task:${input.currentTaskId ?? "unknown"}`,
+      "child-state-validation:failed",
+      `child-state-problem:${problem}`,
+    ],
+  };
+}
+
 function waitingCoverageProblem(
   result: ProjectAppTaskHandlerResult,
   taskId: string | null,
@@ -213,6 +352,9 @@ async function correctWaitingCoverage(input: {
       input.hasExistingLiveChild,
     );
     if (!problem) return ownerResult;
+
+    const exactPipelineWait = exactPipelineWaitCoverage(input.ctx.task, ownerResult);
+    if (exactPipelineWait) return exactPipelineWait;
 
     const prompt = [
       `Correct the structured result from the ${input.phase} phase; do not redo the domain work.`,
@@ -387,8 +529,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     "Do not push or create a pull request. After your converged judgment, this workflow integrates the clean accepted branch directly into dev; a dev conflict returns to you on the same task for repair.",
     "A converged result must leave the worktree clean. If work cannot be committed cleanly, return needs-owner with exact recovery evidence; use waiting only for an external fact with an exact Condition.",
     `If the truthful next step is carried by another task, create or update that holder as a direct child of ${currentTaskId ?? "the current task"} and return waiting only after the child exists or the current task has its own exact Condition.`,
+    'If you already have an exact queued Azure DevOps run id, preserve that wait on this same task with condition type "pipeline-run.state", subject "pipeline-run:<runId>", and expected { field: "state", anyOf: ["completed"] } instead of prose-only waiting.',
     `The currently running task is ${currentTaskId ?? "identified in the Reconciliation Task payload"}. The workflow result itself updates this task. Never return an update-task, close-task, or unblock-task action targeting it.`,
-    "The generic reconciler alone mutates task state. Use typed actions only for other tasks that independently need a change.",
+    "Only the generic reconciler may change task state. Use typed actions for other tasks that independently need a change.",
     'For a master-validation product-recovery wait, use the semantic pass event: type pipeline.spec.observed, subject project:aks-rp-e2e, expected { specId: "<spec id>", status: "pass", sourceBranch: "refs/heads/main" }. The project subject is the routing scope; the expected fields select the exact proof.',
     "",
     ctx.task,
@@ -414,6 +557,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     sessionId: result.sessionId,
     result: result.structuredResult as ProjectAppTaskHandlerResult,
   });
+  ownerResult = await correctConvergedWithLiveChild({
+    ctx,
+    currentTaskId,
+    hasExistingLiveChild,
+    phase: "domain execution",
+    sessionId: result.sessionId,
+    result: ownerResult,
+  });
   ownerResult = await correctWaitingCoverage({
     ctx,
     currentTaskId,
@@ -427,6 +578,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     currentTaskId,
     sessionId: result.sessionId,
     normalizationInput,
+    result: ownerResult,
+  });
+  ownerResult = await correctConvergedWithLiveChild({
+    ctx,
+    currentTaskId,
+    hasExistingLiveChild,
+    phase: "scenario normalization correction",
+    sessionId: result.sessionId,
     result: ownerResult,
   });
   ownerResult = await correctWaitingCoverage({

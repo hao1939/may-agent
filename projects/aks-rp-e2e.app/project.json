@@ -19,24 +19,26 @@
       "mirrorAndPublication": "git@github.com:hao1939/aks-rp-e2e.git"
     }
   },
-  "goal": "Drive AKS RP e2e feature knowledge, runnable test specs, replay execution, evidence diagnosis, and model feedback.",
+  "goal": "Drive current-source AKS RP e2e quality normalization to completion: every active scenario carrier is standalone, officially grounded, mutation-safe, fixture- and cleanup-owned, and backed by accepted staging proof before direct origin/dev integration or an exact external blocker.",
   "strategy": [
-    "Ground feature intent in source, API/spec, documentation, design, implementation, and current evidence.",
-    "Keep feature-owned specs and compact plans executable and verified through live staging evidence.",
+    "Let the existing scenario-normalization task and aks-explorer directly own quality-normalization selection, repair, staging proof, and origin/dev integration.",
+    "Ground every normalized carrier in official Learn or Azure REST API contracts plus checked-in design evidence, using implementation source only as supporting evidence.",
+    "Keep a bounded three-to-five-leaf normalization frontier moving while preserving exact pipeline, capability, approval, and environment waits.",
     "Use bounded controllers to declare current work; use the canonical task projection to observe live state.",
-    "Feed verified results and durable experience back into the model without mirroring live task lists here."
+    "Have May and app-ops monitor throughput and integrity, repair orchestration or runtime failures, and return domain judgment to the app rather than performing AKS normalization work themselves."
   ],
   "planning": {
     "horizon": "12-24h",
-    "focus": "Preserve the no-new-live verifier and result-drain envelope while bounded spec, compact, and scenario controllers rebuild only current represented work.",
+    "focus": "Drive the existing scenario-normalization resource against clean current origin/dev while May monitors execution, repairs control-plane issues, and prevents the bounded quality frontier from stalling.",
     "successCriteria": [
-      "Standing controllers remain live, bounded, and converged when their current work is represented.",
-      "Every durable wait names an exact typed fact with a registered observer or explicit human return path.",
-      "Current task state and counts are read from .state/tasks/tree.json rather than copied into project metadata."
+      "scenario-normalization remains the single quality-frontier owner and keeps three to five useful domain leaves represented whenever eligible work exists.",
+      "Every active scenario carrier has current-source structural review, official contract grounding, explicit target and mutation gates, fixture and cleanup ownership, and accepted staging proof.",
+      "A row leaves the frontier only after its tested change is integrated into origin/dev or an exact typed external blocker or escalation is durably represented.",
+      "The clean-origin/dev strict inventory and required full repository check pass, and every current quality row is covered without stale terminal residue.",
+      "May and app-ops repair task integrity, delivery, authentication, watcher, and controller faults without taking ownership of AKS domain implementation."
     ],
     "evidence": [
-      "design/task-graph-integrity-and-simplification-proposal.md",
-      "evidence/domain-frontier-reconciliation-gap-20260720.md"
+      "design/task-graph-integrity-and-simplification-proposal.md"
     ]
   }
 }

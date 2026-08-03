@@ -77,6 +77,14 @@ at-least-once around restart boundaries. Duplicate wakes are expected and
 deduplicated by key, while stale claims and results are rejected by generation,
 resource version, and attempt identity.
 
+A high-rate event stream must not create one task resource per observation when
+the real desired state is a current frontier. Reduce those events to one compact
+wake for a standing `maintain` task, keep the event or domain store as the
+source of truth, and reconcile a bounded ordered batch or one item plus a
+continuation wake. Use per-item `achieve` tasks only when each item is
+independently assigned, reviewed, depended on, or explicitly requested. This
+keeps task state from becoming a second event archive.
+
 An unresolved trigger that arrives during a current attempt remains durable,
 but passive resync must not enqueue that key again until the current attempt
 ends. The completion path then replays the trigger. This preserves the wake
@@ -116,6 +124,22 @@ a hash of omitted detail. The append-only task journal and referenced evidence
 remain the audit surfaces; `state.json` must not grow as the permanent archive.
 Consumers that need recovery or audit history must read the appropriate
 canonical, journal, evidence, or trace surface, not infer it from `tree.json`.
+
+The default storage limits are mechanical and app-independent:
+
+- keep full detail for the newest 32 completion receipts under each parent;
+- compact older receipt acceptance, evidence, acceptance basis evidence, and
+  workspace lineage into a SHA-256 digest while retaining completion identity,
+  ownership, outcome, summary, and dependency lineage;
+- keep at most 1,000 attempts, except that running attempts are never removed;
+  prune the oldest terminal attempts first; and
+- keep full triggers only for running attempts and the latest recovery-relevant
+  attempt of each live generation; compact older trigger payloads to identity
+  fields plus a SHA-256 digest.
+
+These limits protect controller recovery, not domain history. An app that needs
+long-term evidence must write it to its session, workflow, pipeline, or domain
+store and reference it from the task result.
 
 ## Task resource
 
@@ -174,15 +198,22 @@ the largest:
 4. `may-agent.app`
 5. `aks-rp-e2e.app`
 
-Adoption status (2026-08-03):
+Adoption status (2026-08-04):
 
-| App | State | Live proof |
-| --- | --- | --- |
-| `scout-knowledge-lib.app` | aligned | A fresh `credential.state=ready` observation woke `explore-xhs` once; the workflow returned to its exact unavailable wait, and later unavailable plus stale ready observations started no new attempt. |
-| `gym.app` | aligned | `learning/codex-sessions` reached generation 9 and converged from its durable checkpoint with no recovery child or internal Condition; `runtime/unified-resource-migration-v1` closed six pre-contract carriers into receipts; tree integrity is clean. |
-| `evaluation.app` | aligned | Fourteen standing responsibilities are healthy, finite `runtime/session-aftermath/*` work leaves receipts, and the live tree has zero integrity or attention findings. Under sustained AKS session load, a newly completed audit was followed by the oldest ready audit, proving the shared controller drains recovery work without an app-local scheduler. The remaining ready frontier is throughput pressure, not task-resource drift. |
-| `may-agent.app` | aligned | Hourly timer observations repeatedly wake the stable `runtime/ops-health-observer` at unchanged generation and leave workflow evidence. `runtime/unified-resource-migration-v1` waited durably for shared capacity, then closed six implemented or superseded pre-contract carriers into receipts. The live graph now contains three healthy standing resources plus one truthful unresolved finite redaction task, with no integrity findings. |
-| `aks-rp-e2e.app` | aligned | `project.task.reconciled` is projection-only, internal task/project Conditions are gone, standing loops own their leaves, and the retired waiting-frontier plus finite holder history drain through bounded shared-controller resources. The complete AKS check and shared cross-app conformance suite pass. |
+- `scout-knowledge-lib.app` is structurally aligned. Credential observations
+  are level-triggered and repeated unchanged observations do not wake work.
+- `gym.app` is structurally aligned. Its remaining cleanup is to reduce
+  deterministic per-evaluation intake to one standing frontier while keeping
+  independently reviewable proposals as tasks.
+- `evaluation.app` is aligned. Automatic session aftermath now uses one
+  standing, sequential frontier; explicit session requests still receive an
+  independently auditable task.
+- `may-agent.app` is structurally aligned. Its ops observer still needs to
+  suppress unchanged signal-family wakes to stay within its session budget.
+- `aks-rp-e2e.app` is structurally aligned, but its live state shows excessive
+  historical receipts, old waits, duplicate failure carriers, and five-minute
+  master-validation churn. Those are app-policy cleanup, not new controller
+  concepts.
 
 An aligned app may still contain a current task in `attention`. That is a
 visible owner decision state, not a scheduling mechanism. Alignment requires
@@ -439,11 +470,19 @@ same owner with trigger `project.task.condition-review.missed`. It creates no
 timer job, scheduler, task, or request record.
 
 If the owner returns `waiting` with the same open Condition, the checkpoint
-starts again from that accepted result. A satisfied observation still wakes
-the task normally. Repeated empty reviews are evidence of a stall: the owner
-must change execution or prove a real blocker instead of creating duplicate
-work. When the task is linked to a human request, the checkpoint result also
-wakes one fresh May review; ordinary waiting remains silent.
+starts again from that accepted result, for at most three reviews of that exact
+Condition in one task generation. The trigger carries `reviewAttempt` and
+`finalReview`. If the final review returns the same Condition with another
+timer, the controller removes the timer and leaves the exact event-driven wait.
+A new task generation or Condition identity starts a new bounded review cycle.
+A satisfied observation still wakes the task normally.
+
+Repeated empty reviews are evidence of a stall: the owner must change
+execution or prove a real blocker instead of creating duplicate work. The
+bounded cycle makes that rule mechanical and prevents a supervision backstop
+from becoming a polling loop. When the task is linked to a human request, the
+checkpoint result also wakes one fresh May review; ordinary waiting remains
+silent.
 
 A watcher monitors the external source and emits a semantic event. It does not
 invoke an agent, know task IDs, or mutate task storage. The generic Condition
@@ -601,6 +640,24 @@ their immutable completion identity and a digest of compacted detail; old
 terminal attempts keep full payload only while a live task may need it for
 recovery. The engine does not keep an archive tree. Reusable experience belongs
 in workflows, skills, tests, design, and domain evidence.
+
+## Operational signals
+
+Every attached app exposes enough data to answer five questions without reading
+the whole journal:
+
+- How large are canonical task state and its receipts?
+- How many times did each task and generation start in the last hour?
+- How old is each unresolved wait, and what exact Condition or child can wake it?
+- How large and how fresh is the append-only journal?
+- How many parent starts resulted from each meaningful child transition?
+
+The UI and health observers report state bytes, receipt bytes and count, starts
+per task per hour, oldest wait age, journal bytes and last-write time, and
+parent-wake amplification. Each app may set tighter budgets, but a growing
+metric with unchanged desired state is itself a design signal: inspect event
+deduplication, frontier identity, and history placement before adding retries,
+timers, or recovery tasks.
 
 ## Recovery and lifecycle
 

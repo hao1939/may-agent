@@ -1,6 +1,6 @@
 import type { MetricDefinition, MetricService } from "@may-agent/sdk";
 import {
-  metricSampleOutputFor,
+  metricSampleOutputsFor,
   type MetricSampleOutput,
 } from "../../../../scripts/project-metrics.ts";
 
@@ -16,6 +16,7 @@ type ProjectMetricDefinition = {
   speed: string;
   description: string;
   configText?: string;
+  status?: MetricDefinition["status"];
 };
 
 const projectMetricDefinitionsBase: ProjectMetricDefinition[] = [
@@ -231,12 +232,13 @@ const projectMetricDefinitionsBase: ProjectMetricDefinition[] = [
     target: 0,
     threshold: 0,
     unit: "count",
-    priority: "P0",
+    priority: "P3",
     alertOp: ">",
     speed: "fast",
     description:
-      "P0 process signal: task-reviewer emitted a decision for the current attempt, but the task is still in review after the planner-application grace window. The planner should apply the decision, stale-noop it with proof, or create owned repair work.",
-    configText: '{"alert":{"mode":"consecutive_failures","count":1}}',
+      "Retired with the legacy asynchronous task-reviewer application path. The generic task reconciler now applies workflow results directly.",
+    configText: '{"alert":{"mode":"disabled","disabled":true}}',
+    status: "closed",
   },
   {
     id: "aks-rp-e2e.process.unowned-work-count",
@@ -523,7 +525,7 @@ export function projectMetricDefinitions(appDir: string): MetricDefinition[] {
     source: "source_command",
     sourceCommand: metricSourceCommand(appDir, definition.id),
     measureInterval: 300_000,
-    status: "active",
+    status: definition.status ?? "active",
   }));
 }
 
@@ -536,11 +538,17 @@ export function publishProjectMetrics(input: {
 
   const definitions = projectMetricDefinitions(input.appDir);
   input.metrics.defineMany(definitions);
+  const activeDefinitions = definitions.filter(
+    (definition) => definition.status === "active",
+  );
+  const samples = metricSampleOutputsFor(
+    activeDefinitions.map((definition) => definition.id),
+  );
 
   const published: Array<{ id: string; value: number; measuredAt: number }> =
     [];
-  for (const definition of definitions) {
-    const sample: MetricSampleOutput = metricSampleOutputFor(definition.id);
+  for (const definition of activeDefinitions) {
+    const sample: MetricSampleOutput = samples[definition.id]!;
     input.metrics.record(definition.id, sample.value, {
       measuredAt: sample.measuredAt,
       measuredBy: input.measuredBy,

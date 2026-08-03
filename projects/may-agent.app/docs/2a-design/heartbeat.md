@@ -91,6 +91,13 @@ app schedule
 The same owner workflow reviews event-driven and scheduled input. The schedule
 does not create another planning controller or task lifecycle.
 
+An observer records every bounded packet but wakes the owner only when the
+canonical signal-family fingerprint changes, a previously reported signal
+recovers, or an explicit recheck is due. The persisted fingerprint contains
+stable signal identity and decision-relevant values, not timestamps or packet
+paths. Repeated unchanged red observations remain visible in health history and
+do not spend another owner session.
+
 ## Human Steering
 
 Human steering should target the relevant chat, session, or project directly.

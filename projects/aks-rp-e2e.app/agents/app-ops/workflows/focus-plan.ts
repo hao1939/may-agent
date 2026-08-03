@@ -23,8 +23,6 @@ import {
   type ObservedTaskTree,
   type TaskPlanningObservation,
 } from "./lib/task-observation.ts";
-import { publishFocusMetrics } from "./lib/focus-metric-publication.ts";
-import { publishProjectMetrics } from "./lib/project-metric-publication.ts";
 import {
   field,
   parseTriggerEvent,
@@ -36,7 +34,7 @@ import {
 
 export const name = "focus-plan";
 export const description =
-  "Review aks-rp-e2e mid-term focus and return an evidence-backed proposal without mutating the task graph.";
+  "Review aks-rp-e2e mid-term focus and return an evidence-backed proposal without changing the task graph.";
 export const workflowContract: WorkflowIoContract = {
   workflow: name,
   version: "focus-plan-v1",
@@ -386,7 +384,7 @@ Purpose:
 Boundaries:
 - This workflow is observation-only. Do not edit task-tree or project-state files.
 - Return proposed changes through the result and semantic events; the app
-  controller is the only task-graph mutation authority.
+  controller is the only component allowed to change the task graph.
 - Do not execute worker tasks or live tests from this session.
 - Do not replace the durable project lanes. The focus branch should connect to
   the existing lanes: source discovery, feature extraction, spec generation,
@@ -839,8 +837,10 @@ function appendFocusRun(appDir: string, entry: Record<string, unknown>): void {
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const projectDir =
     ctx.projectDir ?? field(ctx.task, "project") ?? "/app/projects/aks-rp-e2e";
-  const appDir =
-    ctx.appDir ?? resolveAppDir(projectDir, field(ctx.task, "app"));
+  const appDir = resolveAppDir(
+    projectDir,
+    ctx.appDir ?? field(ctx.task, "app"),
+  );
   const trigger = parseTriggerEvent(ctx.task);
   const triggerType = trigger?.type;
   const kind = focusRunKind(trigger);
@@ -850,32 +850,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     appDir,
     Number(field(ctx.task, "maxConcurrent") ?? 50),
   );
-
-  try {
-    const metrics = (ctx as WorkflowContext & {
-      metrics?: WorkflowContext["metrics"];
-    }).metrics;
-    const publishedFocus = publishFocusMetrics({
-      metrics,
-      appDir,
-      projectDir,
-      measuredBy: "workflow:focus-plan",
-    });
-    const publishedProject = publishProjectMetrics({
-      metrics,
-      appDir,
-      measuredBy: "workflow:focus-plan",
-    });
-    if (publishedFocus.length || publishedProject.length) {
-      ctx.log(
-        `Published ${publishedFocus.length} focus metrics and ${publishedProject.length} project metrics before focus-plan ${kind} review.`,
-      );
-    }
-  } catch (error) {
-    ctx.log(
-      `Metric publication failed before focus-plan ${kind} review: ${String(error)}`,
-    );
-  }
 
   const focusAgentResult = await runFocusAgent({
     ctx,

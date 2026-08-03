@@ -396,6 +396,69 @@ exit 0
     });
   });
 
+  it("preserves an exact queued pipeline wait on the same task instead of leaving a stranded waiting result", async () => {
+    const result = await execute(
+      context({
+        task: `## Reconciliation Task\n\`\`\`json\n${JSON.stringify({
+          taskId:
+            "domain/reconcile-image-integrity-contract-unpaired-adapter-origin-dev-c8ce69cb-20260801",
+          input: {
+            queuedPipelineRunId: "174756648",
+            queuedSourceBranch:
+              "refs/heads/task/domain-reconcile-image-integrity-contract-unpaired-adapter-origin-dev-c8-0bbf416f08",
+            queuedSourceCommit:
+              "cab25239d9c5d1994bcc303cd831b69773d42e70",
+          },
+          children: { live: [], completed: [] },
+        })}\n\`\`\``,
+        runAgent: (async () => ({
+          status: "done",
+          sessionId: "session-1",
+          lastAssistantText: "waiting",
+          messages: [],
+          duration: "1s",
+          outputDir: "/tmp",
+          finishResult: { status: "success", summary: "waiting" },
+          structuredResult: {
+            state: "waiting",
+            summary:
+              "The source repair is committed and locally verified, but the changed commit still needs one exact staging live verification pass before this reconciliation can integrate.",
+            evidence: [
+              "source-branch:task/domain-reconcile-image-integrity-contract-unpaired-adapter-origin-dev-c8-0bbf416f08",
+              "source-commit:cab25239d9c5d1994bcc303cd831b69773d42e70",
+            ],
+            actions: [],
+            conditions: [],
+          },
+        })) as WorkflowContext["runAgent"],
+        runAgentSession: (async () => {
+          throw new Error(
+            "exact queued pipeline wait should be recovered without a correction session",
+          );
+        }) as NonNullable<WorkflowContext["runAgentSession"]>,
+      }),
+    );
+
+    expect(result).toMatchObject({
+      type: "done",
+      output: {
+        state: "waiting",
+        actions: [],
+        conditions: [
+          {
+            id: "pipeline-run-174756648-completed",
+            type: "pipeline-run.state",
+            subject: "pipeline-run:174756648",
+            expected: { field: "state", anyOf: ["completed"] },
+          },
+        ],
+        evidence: expect.arrayContaining([
+          "pipeline-wait-recovered:174756648",
+        ]),
+      },
+    });
+  });
+
   it("asks the agent to convert a repo-ref follow-through wait into direct child coverage", async () => {
     const prompts: string[] = [];
     const result = await execute(
@@ -416,22 +479,27 @@ exit 0
             finishResult: { status: "success", summary: "waiting" },
             structuredResult: {
               state: "waiting",
-              summary: "preserve one new exact wait keyed to origin/dev@a954836b",
+              summary:
+                "preserve one new exact wait keyed to origin/dev@a954836b",
               evidence: ["serverless frontier unchanged"],
               actions: [
                 {
                   kind: "create-task",
                   id: "wait-compact-serverless-package-partial-origin-dev-advance-a954836b-20260724",
                   parentId: "project",
-                  outcome: "Refresh the serverless repo-ref wait after origin/dev advances again.",
+                  outcome:
+                    "Refresh the serverless repo-ref wait after origin/dev advances again.",
                   mode: "achieve",
                   priority: "P2",
                   owner: "aks-explorer",
                   workflow: "wait-for-repo-ref-advance",
-                  acceptance: ["Recheck the same frontier after the next origin/dev advance."],
+                  acceptance: [
+                    "Recheck the same frontier after the next origin/dev advance.",
+                  ],
                   input: {
                     baseRef: "origin/dev",
-                    resumeBaselineCommit: "a954836be05afcbc95c0845c1ed49857526d0460",
+                    resumeBaselineCommit:
+                      "a954836be05afcbc95c0845c1ed49857526d0460",
                   },
                 },
               ],
@@ -451,22 +519,27 @@ exit 0
             finishResult: { status: "success", summary: "corrected" },
             structuredResult: {
               state: "waiting",
-              summary: "preserve one new exact wait keyed to origin/dev@a954836b",
+              summary:
+                "preserve one new exact wait keyed to origin/dev@a954836b",
               evidence: ["serverless frontier unchanged"],
               actions: [
                 {
                   kind: "create-task",
                   id: "wait-compact-serverless-package-partial-origin-dev-advance-a954836b-20260724",
                   parentId: "compact/compact-feature-serverless",
-                  outcome: "Refresh the serverless repo-ref wait after origin/dev advances again.",
+                  outcome:
+                    "Refresh the serverless repo-ref wait after origin/dev advances again.",
                   mode: "achieve",
                   priority: "P2",
                   owner: "aks-explorer",
                   workflow: "wait-for-repo-ref-advance",
-                  acceptance: ["Recheck the same frontier after the next origin/dev advance."],
+                  acceptance: [
+                    "Recheck the same frontier after the next origin/dev advance.",
+                  ],
                   input: {
                     baseRef: "origin/dev",
-                    resumeBaselineCommit: "a954836be05afcbc95c0845c1ed49857526d0460",
+                    resumeBaselineCommit:
+                      "a954836be05afcbc95c0845c1ed49857526d0460",
                   },
                 },
               ],
@@ -489,6 +562,86 @@ exit 0
           {
             kind: "create-task",
             parentId: "compact/compact-feature-serverless",
+          },
+        ],
+      },
+    });
+  });
+
+  it("asks the agent to correct a converged parent that creates live child work", async () => {
+    const prompts: string[] = [];
+    const childAction = {
+      kind: "create-task" as const,
+      id: "domain/repair-daily-master-suite-count",
+      parentId: "domain/normalize-rapid-carrier",
+      outcome: "Repair the remaining daily-master suite count mismatch.",
+      mode: "achieve" as const,
+      priority: "P1" as const,
+      owner: "aks-explorer",
+      workflow: "domain-task-execution",
+      acceptance: ["The suite count matches the current source."],
+      input: {},
+    };
+    const result = await execute(
+      context({
+        task: `## Reconciliation Task\n\`\`\`json\n${JSON.stringify({
+          taskId: "domain/normalize-rapid-carrier",
+          input: {},
+        })}\n\`\`\``,
+        runAgent: (async (_agent: string, prompt: string) => {
+          prompts.push(prompt);
+          return {
+            status: "done",
+            sessionId: "session-1",
+            lastAssistantText: "converged with follow-up",
+            messages: [],
+            duration: "1s",
+            outputDir: "/tmp",
+            finishResult: { status: "success", summary: "done" },
+            structuredResult: {
+              state: "converged",
+              summary:
+                "carrier normalized; repair the related suite count next",
+              evidence: ["strict inventory row removed"],
+              actions: [childAction],
+            },
+          };
+        }) as WorkflowContext["runAgent"],
+        runAgentSession: (async (_agent: string, prompt: string) => {
+          prompts.push(prompt);
+          return {
+            status: "done",
+            sessionId: "session-1",
+            lastAssistantText: "waiting on child",
+            messages: [],
+            duration: "1s",
+            outputDir: "/tmp",
+            finishResult: { status: "success", summary: "corrected" },
+            structuredResult: {
+              state: "waiting",
+              summary:
+                "carrier normalized; child now carries the remaining suite repair",
+              evidence: ["strict inventory row removed"],
+              actions: [childAction],
+              conditions: [],
+            },
+          };
+        }) as NonNullable<WorkflowContext["runAgentSession"]>,
+      }),
+    );
+
+    expect(prompts).toHaveLength(2);
+    expect(prompts[1]).toContain(
+      "cannot be applied while it has or creates a live direct child",
+    );
+    expect(result).toMatchObject({
+      type: "done",
+      output: {
+        state: "waiting",
+        actions: [
+          {
+            kind: "create-task",
+            parentId: "domain/normalize-rapid-carrier",
           },
         ],
       },
@@ -518,7 +671,8 @@ exit 0
           finishResult: { status: "success", summary: "waiting" },
           structuredResult: {
             state: "waiting",
-            summary: "the existing repo-ref wait child still truthfully carries the frontier",
+            summary:
+              "the existing repo-ref wait child still truthfully carries the frontier",
             evidence: ["existing holder already captures the same frontier"],
             actions: [],
             conditions: [],
@@ -563,8 +717,11 @@ exit 0
               finishResult: { status: "success", summary: "waiting" },
               structuredResult: {
                 state: "waiting",
-                summary: "wait on the existing exact holder after compact regeneration",
-                evidence: ["existing holder already captures the same frontier"],
+                summary:
+                  "wait on the existing exact holder after compact regeneration",
+                evidence: [
+                  "existing holder already captures the same frontier",
+                ],
                 actions: [],
                 conditions: [],
               },
@@ -582,8 +739,11 @@ exit 0
               finishResult: { status: "success", summary: "converged" },
               structuredResult: {
                 state: "converged",
-                summary: "the existing holder already preserves the frontier, so this compact task can converge",
-                evidence: ["existing holder already captures the same frontier"],
+                summary:
+                  "the existing holder already preserves the frontier, so this compact task can converge",
+                evidence: [
+                  "existing holder already captures the same frontier",
+                ],
                 actions: [],
               },
             };

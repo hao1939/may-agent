@@ -147,7 +147,7 @@ describe("legacy branch verifier", () => {
     );
   });
 
-  test("runs changed plain carriers in their non-mutating check mode", () => {
+  test("runs changed plain carriers in their check-only mode", () => {
     const repo = fixture();
     let base = git(repo, "rev-parse", "HEAD");
     let baseline = captureLegacyVerificationBaseline(repo);

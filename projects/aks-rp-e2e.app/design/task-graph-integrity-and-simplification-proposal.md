@@ -1,6 +1,14 @@
 # AKS Task Graph Integrity and Simplification
 
-Status: implemented 2026-07-20
+Status: historical migration implemented 2026-07-20; scheduling shape
+superseded by the unified controller contract
+
+This document records the integrity cutover and its evidence. Its historical
+sibling-controller/fan-in scheduling shape is no longer the target. The current
+direction is
+[`unified-task-reconciliation-review.md`](unified-task-reconciliation-review.md):
+loop-owned work uses direct children and generic parent wakeup, while
+`project.task.reconciled` is never an app scheduler.
 
 ## Implementation outcome
 
@@ -9,7 +17,7 @@ reviewed exact-ID manifest in `tasks/task-graph-migration-v1.json`, and the
 locked revision-checked migration command. Its second dry-run reported no
 changes before reconciliation resumed.
 
-After targeted controller wakes, the live graph has six structural groups and
+At that cutover, after targeted controller wakes, the live graph had six structural groups and
 only bounded current resources. All three standing controllers are converged,
 generation-current, and have no child fan-out Conditions. Remaining waits use
 registered `aks.repo-ref.changed`, `pipeline.completed`, and
@@ -17,6 +25,9 @@ registered `aks.repo-ref.changed`, `pipeline.completed`, and
 `project.task.reconciled` continuations where predecessor disposition matters.
 The schema-v2 projection has no integrity findings and contains neither full
 attempts nor receipts.
+
+Those internal reconciliation continuations and sibling refill routes are now
+migration residue, not the accepted steady-state design.
 
 Post-resume validation also exposed and fixed two controller liveness issues:
 deterministic compact leaves were not recognized before ledger writeback, and
@@ -32,8 +43,8 @@ migration:
 - `.state/tasks/state.json` is the sole mutable task authority;
 - `.state/tasks/tree.json` is a compact, disposable schema-v2 projection;
 - stable structural groups organize the AKS work domains;
-- standing loop controllers and the work they declare are siblings under those
-  groups;
+- standing loop controllers use direct children for work whose transitions
+  must wake and refill that loop;
 - loop controllers inspect current state, declare bounded actions, and converge;
 - scheduled ticks and semantic observations rerun controllers;
 - dependencies express task-to-task ordering;
@@ -48,9 +59,10 @@ validates a quiescent snapshot, and resumes through targeted controller wakes.
 Migration code applies declared decisions; it never infers domain meaning from
 task IDs or prose.
 
-This proposal does not remove general support for executable parents. It makes
-the simpler group/controller/leaf shape the AKS convention because the current
-AKS controllers do not need to own their declared tasks' completion lifecycle.
+The original cutover used a sibling group/controller/leaf shape. The unified
+controller now makes executable parents the simpler convention when the loop
+must observe child transitions; maintain-parent convergence still does not
+automatically assert child completion.
 
 ## Why change
 
@@ -72,6 +84,16 @@ The task contracts are mostly sound: resources have purpose, acceptance, owner,
 mode, and valid runtime bindings; waits have linked Conditions; and running
 resources have attempts. The problem is accumulated operational drift and
 mixed relationship semantics, not the absence of a task model.
+
+The 2026-08-04 live review found a second, simpler form of drift after the
+structural cutover: canonical state was about 21 MB, with 7,062 receipts, 212
+waiting tasks, 145 waits older than one day, 63 unresolved approval Conditions,
+and several specs represented by two or three historical fingerprint tasks.
+The master-validation task also started 143 times in one day because a
+five-minute level check kept waking an active campaign. The old journal was
+1.15 GB but had stopped changing, so it is migration residue rather than the
+current scheduler. These are history-placement and wake-policy problems; they
+do not justify another controller or task type.
 
 Some prerequisites are already implemented: `state.json` is authoritative,
 `tree.json` is schema v2 and omits full attempts and receipts, and the task-state
@@ -104,7 +126,7 @@ Watchers
 
 WebUI and queries
   -> read the disposable projection plus bounded audit history
-  -> never become mutation authority
+  -> never gain permission to change task state
 ```
 
 ## Target AKS graph
@@ -114,27 +136,26 @@ Create stable groups in initialization state:
 ```text
 project
 ├── group/spec-verification
-│   ├── aks-spec-verification-loop
-│   └── spec verification leaves
+│   └── aks-spec-verification-loop
+│       └── spec verification leaves
 ├── group/feature-compact
-│   ├── aks-feature-compact-loop
-│   └── feature compact leaves
+│   └── aks-feature-compact-loop
+│       └── feature compact leaves
 ├── group/scenario-normalization
-│   ├── scenario-normalization
-│   └── scenario normalization leaves
+│   └── scenario-normalization
+│       └── scenario normalization leaves
 ├── group/domain-work
 └── group/app-operations
 ```
 
 Groups provide organization only. Controllers are maintain resources. Finite
-domain work is normally an achieve leaf. A task may still be executable and
-have children when it has an independently reconcilable outcome and explicitly
-owns decomposition; this should be exceptional rather than the default AKS
-loop shape.
+domain work is normally an achieve child. An executable parent keeps its own
+acceptance and uses children to express owned decomposition; child status never
+automatically decides the parent's domain result.
 
-`parentId` answers “where does this work belong?” `dependsOn` answers “what
-must finish first?” Neither relationship assigns a worker or introduces a
-second scheduler.
+`parentId` answers “which task owns this decomposition?” or, when it names a
+group, “where is this organized?” `dependsOn` answers “what must finish first?”
+Neither relationship assigns a worker or introduces a second scheduler.
 
 Keep the existing stable spec and compact controller IDs. Replace the dated
 scenario maintain identity once with `scenario-normalization`; record the old
@@ -148,9 +169,9 @@ Ownership is explicit at the stable boundaries:
 - `group/scenario-normalization` and `group/domain-work`: `aks-explorer`; and
 - finite leaves keep an explicit owner when it differs from their group.
 
-Loop-created leaves belong to the same group as their controller. Independent
-domain work belongs to `group/domain-work`; runtime review and repair work
-belongs to `group/app-operations`.
+Loop-created leaves belong directly to their controller. Independent domain
+work belongs to `group/domain-work`; runtime review and repair work belongs to
+`group/app-operations`.
 
 ## Controller lifecycle
 
@@ -159,20 +180,22 @@ The three AKS controllers use the same bounded lifecycle:
 1. A schedule, manual action, or relevant semantic observation targets the
    controller.
 2. Its workflow reads the current domain ledger and compact task projection.
-3. It declares at most its configured bounded number of missing leaves.
-4. It returns `converged` after those declarations are admitted.
-5. A later tick or relevant domain observation reruns it.
+3. It declares at most its configured bounded number of missing direct-child
+   leaves.
+4. It returns `converged` after the current pass and declarations are admitted.
+5. A meaningful child transition, later timer, or relevant domain observation
+   reruns it.
 
-An open child is therefore evidence that work is represented, not a reason for
-the controller to remain waiting. The current ten-minute durable-loop pulse is
-the normal resync bound for the spec and compact controllers. The scenario
-inventory watcher supplies a content-driven wake for scenario normalization.
+An open child is therefore evidence that work is represented, not by itself a
+reason for a maintain controller to remain waiting. The current ten-minute
+durable-loop pulse is a recovery bound for the spec and compact controllers.
+The scenario inventory watcher supplies a content-driven wake for scenario
+normalization.
 
-Do not attach dozens of `project.task.reconciled` Conditions to a standing
-controller. Use a dependency for a real bounded successor and an exact external
-Condition for an external fact. If sub-ten-minute response to arbitrary leaf
-completion later proves necessary, add one explicit fan-in semantic wake to the
-controller rather than reconstructing child ownership through Conditions.
+Do not attach `project.task.reconciled` Conditions or add an app fan-in to a
+standing controller. Use direct children when their transitions belong to the
+loop, a dependency for ordering, and an exact Condition for an external fact.
+The shared controller supplies prompt child-to-parent wakeup.
 
 This does not introduce parallel workflow execution. Each workflow remains a
 single ordered execution block; the existing app controller alone governs
@@ -214,10 +237,10 @@ are handled only through a reviewed disposition manifest:
 Do not move every legacy wait to attention or infer a replacement from names or
 prose. That would replace waiting bloat with attention bloat.
 
-`project.task.reconciled` should not represent standing controller fan-out. It
-may be retained only for a bounded internal continuation whose exact predecessor
-identity and required disposition are explicit; prefer `dependsOn` when the
-relationship is ordering.
+`project.task.reconciled` is a runtime observation, not a Condition or
+scheduling input. Replace legacy internal continuations with a direct child
+when the parent owns the result or `dependsOn` when the relationship is
+ordering.
 
 ## Generation integrity
 
@@ -330,12 +353,12 @@ genuinely new task identity.
 ### Phase 2: graph migration
 
 1. Add the stable structural groups to `tasks/seed.json`.
-2. Move loop controllers and their work beneath the corresponding groups as
-   siblings.
+2. Move loop controllers beneath the corresponding groups and loop-owned work
+   beneath each controller as direct children.
 3. Apply only reviewed predecessor dispositions: convert proven ordering to
    dependencies, flatten pure lineage, and preserve genuine containment.
-4. Preserve exceptional executable parents only after confirming independent
-   parent acceptance.
+4. Preserve independent parent acceptance; child status is wake context, not
+   automatic parent completion.
 
 ### Phase 3: controller and Condition migration
 
@@ -379,8 +402,8 @@ The migration is complete when:
 - every waiting resource has at least one linked, current-generation, exact
   Condition with a known producer;
 - no `evidence.available` Condition remains;
-- the three loop controllers have no executable children and no fan-out of
-  child-reconciliation Conditions;
+- the three loop controllers use direct children for loop-owned work and have
+  no fan-out of child-reconciliation Conditions;
 - every ordering edge represented as a parent chain has been converted to
   `dependsOn`;
 - no task is in attention because a handler tried to close or converge a live
@@ -420,9 +443,8 @@ disposable projection, and then resume. Never restore `tree.json` as authority.
 3. `app-ops` owns the app; `aks-explorer` owns AKS domain judgment.
 4. A legacy wait without a reconstructable fact receives a reviewed explicit
    disposition; migration never invents one.
-5. Use `dependsOn` for ordinary ordering. Retain an exact bounded
-   `project.task.reconciled` Condition only when a particular predecessor
-   disposition matters.
+5. Use `dependsOn` for ordinary ordering and direct children for owned
+   decomposition. Do not represent internal predecessor state as a Condition.
 
 ## Non-goals
 

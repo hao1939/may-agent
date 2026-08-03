@@ -461,6 +461,15 @@ const sessionStartGraceMs = Number.parseInt(
   process.env.AKS_RP_E2E_SESSION_START_GRACE_MS ?? "300000",
   10,
 );
+// handler.workflow_dispatched(status=started) is emitted before runWorkflowDirect()
+// inserts the workflow_runs row. Recent AKS reproductions showed healthy queue
+// latency of ~8.5-10.2 minutes before the first workflow start became visible,
+// so this grace covers queued handoff latency without suppressing genuinely
+// stale unconsumed assignments indefinitely.
+const workflowDispatchStartGraceMs = Number.parseInt(
+  process.env.AKS_RP_E2E_WORKFLOW_DISPATCH_START_GRACE_MS ?? "900000",
+  10,
+);
 const terminalSessionCompletionGraceMs = Number.parseInt(
   process.env.AKS_RP_E2E_TERMINAL_SESSION_GRACE_MS ?? "600000",
   10,
@@ -671,21 +680,69 @@ function stringArrayField(
     .filter(Boolean);
 }
 
+export function representedWaitCoveredFrontierDisposition(input: {
+  projectClosed: boolean;
+  runnable: number;
+  healthyActive: number;
+  review: number;
+  openGaps: number;
+  loopUnrepresentedCount: number;
+  loopAuthorityObservationCount: number;
+  waitingTaskIds: string[];
+}): { covered: boolean; note?: string } {
+  const waitingTaskIds = input.waitingTaskIds.filter(
+    (taskId) => typeof taskId === "string" && taskId.trim().length > 0,
+  );
+  const covered =
+    !input.projectClosed &&
+    input.runnable === 0 &&
+    input.healthyActive === 0 &&
+    input.review === 0 &&
+    input.openGaps > 0 &&
+    input.loopUnrepresentedCount === 0 &&
+    input.loopAuthorityObservationCount > 0 &&
+    waitingTaskIds.length > 0;
+  if (!covered) return { covered: false };
+  return {
+    covered: true,
+    note: JSON.stringify({
+      disposition: "represented-wait-covered-frontier",
+      waitingTaskCount: waitingTaskIds.length,
+      waitingTaskIds: waitingTaskIds.slice(0, 10),
+      openGapCount: input.openGaps,
+      loopUnrepresentedCount: input.loopUnrepresentedCount,
+      loopAuthorityObservationCount: input.loopAuthorityObservationCount,
+    }),
+  };
+}
+
 function loopUnrepresentedRecordDetails(): {
   value: number;
+  authorityObservationCount: number;
   taskIds: string[];
   records: Record<string, unknown>[];
 } {
   const tree = loadTaskTree();
   let value = 0;
+  let authorityObservationCount = 0;
   const taskIds: string[] = [];
   const records: Record<string, unknown>[] = [];
+  const authorityTaskIds = new Set<string>();
   for (const task of Object.values(tree.tasks ?? {})) {
     const context = recordValue(task.context);
     const progress = objectRecordField(context, ["workflowProgress"]);
-    const count = numberRecordField(progress, [
-      "unrepresentedNonTerminalCount",
-    ]);
+    const rawCount = progress?.unrepresentedNonTerminalCount;
+    const count =
+      typeof rawCount === "number" && Number.isFinite(rawCount)
+        ? rawCount
+        : typeof rawCount === "string" && rawCount.trim()
+          ? Number.parseInt(rawCount.trim(), 10)
+          : Number.NaN;
+    if (!Number.isFinite(count)) continue;
+    authorityObservationCount += 1;
+    if (typeof task.id === "string" && task.id.trim()) {
+      authorityTaskIds.add(task.id.trim());
+    }
     if (count <= 0) continue;
     value += count;
     if (typeof task.id === "string" && task.id.trim()) {
@@ -716,7 +773,31 @@ function loopUnrepresentedRecordDetails(): {
       });
     }
   }
-  return { value, taskIds, records };
+
+  const specLoopState = loadSpecLoopState();
+  const specLoopTaskId = specLoopState.loopTaskId || "aks-spec-verification-loop";
+  if (!authorityTaskIds.has(specLoopTaskId)) {
+    const fallback = specLoopRepresentationAuthority({
+      tree,
+      state: specLoopState,
+    });
+    if (fallback.authorityObserved) {
+      authorityObservationCount += 1;
+      value += fallback.unrepresentedNonTerminalCount;
+      taskIds.push(specLoopTaskId);
+      records.push({
+        taskId: specLoopTaskId,
+        source: "spec-loop-state-fallback",
+        nonTerminalSpecCount: fallback.nonTerminalSpecCount,
+        representedSpecCount: fallback.representedSpecIds.length,
+        unrepresentedNonTerminalCount: fallback.unrepresentedNonTerminalCount,
+        waitingTaskIds: fallback.waitingTaskIds,
+        unrepresentedSpecIds: fallback.unrepresentedSpecIds,
+      });
+    }
+  }
+
+  return { value, authorityObservationCount, taskIds, records };
 }
 
 function blockedOverdueScope(parentId: unknown): string {
@@ -1262,6 +1343,8 @@ function taskCounts() {
     activeTaskIds,
     activeOpsTaskIds,
     activeDomainTaskIds,
+    waiting: liveFrontier.waiting.length,
+    waitingTaskIds: liveFrontier.waiting,
     readySatisfiedWaitHolderIds: liveFrontier.readySatisfiedWaitHolders,
     activeRunning,
     activeStale,
@@ -2039,6 +2122,58 @@ function exactSpecLoopOwnerTaskId(input: {
   return null;
 }
 
+export function specLoopRepresentationAuthority(input: {
+  tree: TaskTree;
+  state: SpecLoopState;
+}): {
+  authorityObserved: boolean;
+  nonTerminalSpecCount: number;
+  unrepresentedNonTerminalCount: number;
+  representedSpecIds: string[];
+  unrepresentedSpecIds: string[];
+  waitingTaskIds: string[];
+} {
+  let nonTerminalSpecCount = 0;
+  const representedSpecIds: string[] = [];
+  const unrepresentedSpecIds: string[] = [];
+  const waitingTaskIds = new Set<string>();
+
+  for (const [specId, spec] of Object.entries(input.state.specs ?? {})) {
+    const status = normalizeSpecStatus(spec.status);
+    if (status === "pass" || status === "done") continue;
+
+    nonTerminalSpecCount += 1;
+    const taskId = exactSpecLoopOwnerTaskId({
+      tree: input.tree,
+      state: input.state,
+      specId,
+    });
+    const selfRepresented = specStateSelfRepresentsExactFrontier(
+      spec as Parameters<typeof specStateSelfRepresentsExactFrontier>[0],
+    );
+
+    if (!taskId && !selfRepresented) {
+      unrepresentedSpecIds.push(specId);
+      continue;
+    }
+
+    representedSpecIds.push(specId);
+    const task = taskId ? input.tree.tasks?.[taskId] : null;
+    if (taskId && task && projectionPhase(task) === "waiting") {
+      waitingTaskIds.add(taskId);
+    }
+  }
+
+  return {
+    authorityObserved: nonTerminalSpecCount > 0,
+    nonTerminalSpecCount,
+    unrepresentedNonTerminalCount: unrepresentedSpecIds.length,
+    representedSpecIds,
+    unrepresentedSpecIds,
+    waitingTaskIds: [...waitingTaskIds].sort((a, b) => a.localeCompare(b)),
+  };
+}
+
 function specLoopRecoveryStats(): {
   retryExhausted: number;
   recoveryUnowned: number;
@@ -2295,22 +2430,46 @@ function sessionRestartReasonFromRow(
   return null;
 }
 
+export function terminalSessionCompletionGapLooksHealthy(input: {
+  sessionStatus?: string | null;
+  lastSessionEndedAt?: number | null;
+  lastSessionLastActivityAt?: number | null;
+  lastSessionStartedAt?: number | null;
+  nowMs?: number;
+  gapGraceMs?: number;
+}): boolean {
+  if (!input || input.sessionStatus === "running") return false;
+  const lastObservedAt =
+    recentTerminalSessionObservedAtMs(input) ??
+    (typeof input.lastSessionStartedAt === "number" &&
+    Number.isFinite(input.lastSessionStartedAt)
+      ? input.lastSessionStartedAt
+      : null);
+  if (lastObservedAt === null) return false;
+  const nowMs = input.nowMs ?? Date.now();
+  const gapGraceMs = input.gapGraceMs ?? terminalSessionCompletionGraceMs;
+  return nowMs >= lastObservedAt && nowMs - lastObservedAt <= gapGraceMs;
+}
+
 function sessionFinishedWithinTerminalCompletionGrace(
   row: Record<string, unknown> | null,
 ): boolean {
-  if (!row || row.status === "running") return false;
-  const endedAt =
-    typeof row.endedAt === "number" && Number.isFinite(row.endedAt)
-      ? row.endedAt
-      : typeof row.lastActivityAt === "number" &&
-          Number.isFinite(row.lastActivityAt)
+  return terminalSessionCompletionGapLooksHealthy({
+    sessionStatus: typeof row?.status === "string" ? row.status : null,
+    lastSessionEndedAt:
+      typeof row?.endedAt === "number" && Number.isFinite(row.endedAt)
+        ? row.endedAt
+        : null,
+    lastSessionLastActivityAt:
+      typeof row?.lastActivityAt === "number" &&
+      Number.isFinite(row.lastActivityAt)
         ? row.lastActivityAt
-        : typeof row.startedAt === "number" && Number.isFinite(row.startedAt)
-          ? row.startedAt
-          : null;
-  return (
-    endedAt !== null && Date.now() - endedAt <= terminalSessionCompletionGraceMs
-  );
+        : null,
+    lastSessionStartedAt:
+      typeof row?.startedAt === "number" && Number.isFinite(row.startedAt)
+        ? row.startedAt
+        : null,
+  });
 }
 
 function sessionRestartReason(sessionId: string): string | null {
@@ -2792,24 +2951,87 @@ function queuedAssignmentTimestampMs(assignment: {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function recentTerminalSessionObservedAtMs(input: {
+  lastSessionEndedAt?: number | null;
+  lastSessionLastActivityAt?: number | null;
+}): number | null {
+  return typeof input.lastSessionEndedAt === "number" &&
+    Number.isFinite(input.lastSessionEndedAt)
+    ? input.lastSessionEndedAt
+    : typeof input.lastSessionLastActivityAt === "number" &&
+          Number.isFinite(input.lastSessionLastActivityAt)
+      ? input.lastSessionLastActivityAt
+      : null;
+}
+
+export function ownerSessionRecentCompletionGapLooksHealthy(input: {
+  sessionStatus?: string | null;
+  sessionOutcome?: string | null;
+  lastSessionEndedAt?: number | null;
+  lastSessionLastActivityAt?: number | null;
+  nowMs?: number;
+  gapGraceMs?: number;
+}): boolean {
+  if (input.sessionStatus !== "done") return false;
+  if (input.sessionOutcome === "error" || input.sessionOutcome === "interrupted") {
+    return false;
+  }
+  const lastObservedAt = recentTerminalSessionObservedAtMs(input);
+  if (lastObservedAt === null) return false;
+  const nowMs = input.nowMs ?? Date.now();
+  const gapGraceMs = input.gapGraceMs ?? sessionStartGraceMs;
+  return nowMs >= lastObservedAt && nowMs - lastObservedAt <= gapGraceMs;
+}
+
+function ownerSessionRecentCompletionGapLooksHealthyFromRow(
+  row: Record<string, unknown> | null,
+): boolean {
+  return ownerSessionRecentCompletionGapLooksHealthy({
+    sessionStatus: typeof row?.status === "string" ? row.status : null,
+    sessionOutcome: typeof row?.outcome === "string" ? row.outcome : null,
+    lastSessionEndedAt:
+      typeof row?.endedAt === "number" && Number.isFinite(row.endedAt)
+        ? row.endedAt
+        : null,
+    lastSessionLastActivityAt:
+      typeof row?.lastActivityAt === "number" &&
+      Number.isFinite(row.lastActivityAt)
+        ? row.lastActivityAt
+        : null,
+  });
+}
+
 export function workflowRunRecentSessionGapLooksHealthy(input: {
   workflowStatus?: string | null;
+  workflowEndedAt?: number | null;
   sessionStatus?: string | null;
   lastSessionEndedAt?: number | null;
   lastSessionLastActivityAt?: number | null;
   nowMs?: number;
   gapGraceMs?: number;
 }): boolean {
-  if (input.workflowStatus !== "running") return false;
+  if (input.workflowStatus !== "running" && input.workflowStatus !== "done") {
+    return false;
+  }
   if (input.sessionStatus === "running") return false;
+  if (
+    input.sessionStatus === "error" ||
+    input.sessionStatus === "interrupted"
+  ) {
+    return false;
+  }
+  const sessionObservedAt = recentTerminalSessionObservedAtMs(input);
+  const workflowEndedAt =
+    typeof input.workflowEndedAt === "number" &&
+    Number.isFinite(input.workflowEndedAt)
+      ? input.workflowEndedAt
+      : null;
   const lastObservedAt =
-    typeof input.lastSessionEndedAt === "number" &&
-    Number.isFinite(input.lastSessionEndedAt)
-      ? input.lastSessionEndedAt
-      : typeof input.lastSessionLastActivityAt === "number" &&
-            Number.isFinite(input.lastSessionLastActivityAt)
-        ? input.lastSessionLastActivityAt
-        : null;
+    sessionObservedAt === null
+      ? workflowEndedAt
+      : workflowEndedAt === null
+        ? sessionObservedAt
+        : Math.max(sessionObservedAt, workflowEndedAt);
   if (lastObservedAt === null) return false;
   const nowMs = input.nowMs ?? Date.now();
   const gapGraceMs = input.gapGraceMs ?? sessionStartGraceMs;
@@ -2822,6 +3044,11 @@ function workflowRunRecentSessionGapLooksHealthyFromRow(
   return workflowRunRecentSessionGapLooksHealthy({
     workflowStatus:
       typeof row?.workflowStatus === "string" ? row.workflowStatus : null,
+    workflowEndedAt:
+      typeof row?.workflowEndedAt === "number" &&
+      Number.isFinite(row.workflowEndedAt)
+        ? row.workflowEndedAt
+        : null,
     sessionStatus: typeof row?.status === "string" ? row.status : null,
     lastSessionEndedAt:
       typeof row?.endedAt === "number" && Number.isFinite(row.endedAt)
@@ -2835,6 +3062,46 @@ function workflowRunRecentSessionGapLooksHealthyFromRow(
   });
 }
 
+export function workflowDispatchRecentStartLooksHealthy(input: {
+  dispatchStatus?: string | null;
+  dispatchTimestamp?: number | null;
+  nowMs?: number;
+  gapGraceMs?: number;
+}): boolean {
+  if (
+    input.dispatchStatus !== "started" &&
+    input.dispatchStatus !== "done"
+  ) {
+    return false;
+  }
+  const dispatchTimestamp =
+    typeof input.dispatchTimestamp === "number" &&
+    Number.isFinite(input.dispatchTimestamp)
+      ? input.dispatchTimestamp
+      : null;
+  if (dispatchTimestamp === null) return false;
+  const nowMs = input.nowMs ?? Date.now();
+  const gapGraceMs =
+    input.gapGraceMs ?? workflowDispatchStartGraceMs;
+  return (
+    nowMs >= dispatchTimestamp && nowMs - dispatchTimestamp <= gapGraceMs
+  );
+}
+
+function workflowDispatchRecentStartLooksHealthyFromRow(
+  row: Record<string, unknown> | null,
+): boolean {
+  return workflowDispatchRecentStartLooksHealthy({
+    dispatchStatus:
+      typeof row?.dispatchStatus === "string" ? row.dispatchStatus : null,
+    dispatchTimestamp:
+      typeof row?.dispatchTimestamp === "number" &&
+      Number.isFinite(row.dispatchTimestamp)
+        ? row.dispatchTimestamp
+        : null,
+  });
+}
+
 export function assignmentStillLooksUnconsumed(input: {
   taskState: string | null;
   currentAttemptId: string | null;
@@ -2842,8 +3109,10 @@ export function assignmentStillLooksUnconsumed(input: {
   workerStartedAttemptId?: string | null;
   hasHealthyWorkerSession?: boolean;
   hasHealthyOwnerSession?: boolean;
+  hasHealthyOwnerGap?: boolean;
   hasHealthyWorkflowSession?: boolean;
   hasHealthyWorkflowGap?: boolean;
+  hasHealthyDispatchStartGap?: boolean;
 }): boolean {
   if (
     input.taskState !== "active" ||
@@ -2854,8 +3123,10 @@ export function assignmentStillLooksUnconsumed(input: {
   if (input.workerStartedAttemptId === input.assignmentAttemptId) return false;
   if (input.hasHealthyWorkerSession) return false;
   if (input.hasHealthyOwnerSession) return false;
+  if (input.hasHealthyOwnerGap) return false;
   if (input.hasHealthyWorkflowSession) return false;
   if (input.hasHealthyWorkflowGap) return false;
+  if (input.hasHealthyDispatchStartGap) return false;
   return true;
 }
 
@@ -2895,6 +3166,9 @@ function assignmentNotConsumedDetails(): Array<{
     const workerRow = activeTaskWorkerSessionRow(taskId, attemptId, sessionId);
     const ownerRow = task ? activeOwnerTaskSessionRow(task) : null;
     const workflowRow = task ? activeWorkflowTaskSessionRow(task) : null;
+    const dispatchRow = task
+      ? activeWorkflowDispatchEventRow(task, assignedMs)
+      : null;
 
     if (
       !assignmentStillLooksUnconsumed({
@@ -2905,10 +3179,14 @@ function assignmentNotConsumedDetails(): Array<{
         hasHealthyWorkerSession:
           sessionRestartReasonFromRow(workerRow) === null,
         hasHealthyOwnerSession: sessionRestartReasonFromRow(ownerRow) === null,
+        hasHealthyOwnerGap:
+          ownerSessionRecentCompletionGapLooksHealthyFromRow(ownerRow),
         hasHealthyWorkflowSession:
           sessionRestartReasonFromRow(workflowRow) === null,
         hasHealthyWorkflowGap:
           workflowRunRecentSessionGapLooksHealthyFromRow(workflowRow),
+        hasHealthyDispatchStartGap:
+          workflowDispatchRecentStartLooksHealthyFromRow(dispatchRow),
       })
     ) {
       return [];
@@ -2951,10 +3229,62 @@ function activeTaskIsWithinStartGrace(task: TaskNode): boolean {
   return false;
 }
 
+export function ownerTaskSessionMatchesTaskId(input: {
+  taskId?: string | null;
+  sessionTask?: string | null;
+}): boolean {
+  const taskId =
+    typeof input.taskId === "string" ? input.taskId.trim() : "";
+  const sessionTask =
+    typeof input.sessionTask === "string" ? input.sessionTask : "";
+  if (!taskId || !sessionTask) return false;
+  return [
+    `"taskId": "${taskId}"`,
+    `"taskId":"${taskId}"`,
+    `"task_id": "${taskId}"`,
+    `"task_id":"${taskId}"`,
+  ].some((needle) => sessionTask.includes(needle));
+}
+
+const ownerTaskSessionPromptCache = new Map<string, string | null>();
+
+function ownerTaskSessionPromptFromRef(taskRef: string): string | null {
+  const normalizedRef = taskRef.trim();
+  if (!normalizedRef) return null;
+  if (ownerTaskSessionPromptCache.has(normalizedRef)) {
+    return ownerTaskSessionPromptCache.get(normalizedRef) ?? null;
+  }
+  const meta = readJson<{ task?: unknown }>(
+    resolve(sessionsDirPath, "..", normalizedRef),
+    {},
+  );
+  const task = typeof meta.task === "string" ? meta.task : null;
+  ownerTaskSessionPromptCache.set(normalizedRef, task);
+  return task;
+}
+
+function ownerTaskSessionRowMatchesTaskId(
+  row: Record<string, unknown>,
+  taskId: string,
+): boolean {
+  const inlineTask = typeof row.task === "string" ? row.task : null;
+  if (ownerTaskSessionMatchesTaskId({ taskId, sessionTask: inlineTask })) {
+    return true;
+  }
+  const taskRef =
+    typeof row.task_ref === "string" ? row.task_ref.trim() : "";
+  if (!taskRef) return false;
+  return ownerTaskSessionMatchesTaskId({
+    taskId,
+    sessionTask: ownerTaskSessionPromptFromRef(taskRef),
+  });
+}
+
 function activeOwnerTaskSessionRow(
   task: TaskNode,
 ): Record<string, unknown> | null {
   if (!existsSync(stateDbPath)) return null;
+  const taskId = typeof task.id === "string" ? task.id.trim() : "";
   const activeAttempt = recordValue(task.active_attempt);
   const resource = activeTaskResource(task);
   const resourceSpec = recordValue(resource?.spec);
@@ -2965,7 +3295,7 @@ function activeOwnerTaskSessionRow(
       : typeof resourceSpec?.owner === "string" && resourceSpec.owner.trim()
         ? `owner:${resourceSpec.owner.trim()}`
         : "";
-  if (!handler.startsWith("owner:")) return null;
+  if (!taskId || !handler.startsWith("owner:")) return null;
   const agent = handler.slice("owner:".length).trim();
   const startedAtText =
     typeof activeAttempt?.started_at === "string"
@@ -2981,15 +3311,29 @@ function activeOwnerTaskSessionRow(
     const rows = db
       .query(
         `
-        select sessionId, status, outcome, startedAt, lastActivityAt, endedAt
+        select
+          sessionId,
+          status,
+          outcome,
+          startedAt,
+          lastActivityAt,
+          endedAt,
+          task,
+          task_ref
         from sessions
         where projectId = ?
           and source = 'project-app-task-owner'
           and agent = ?
-          and status = 'running'
           and startedAt between ? and ?
-        order by abs(startedAt - ?) asc
-        limit 5
+        order by
+          case
+            when status = 'running' then 0
+            when status = 'done' then 1
+            else 2
+          end,
+          abs(startedAt - ?) asc,
+          startedAt desc
+        limit 10
       `,
       )
       .all(
@@ -2999,7 +3343,10 @@ function activeOwnerTaskSessionRow(
         startedAt + 60000,
         startedAt,
       ) as Array<Record<string, unknown>>;
-    return rows[0] ?? null;
+    for (const row of rows) {
+      if (ownerTaskSessionRowMatchesTaskId(row, taskId)) return row;
+    }
+    return null;
   } catch {
     return null;
   } finally {
@@ -3078,8 +3425,14 @@ function activeWorkflowTaskSessionRow(
         from workflow_runs w
         where w.projectId = ?
           and w.workflow = ?
-          and w.status = 'running'
-        order by w.startedAt desc
+          and w.status in ('running', 'done')
+        order by
+          case
+            when w.status = 'running' then 0
+            when w.status = 'done' then 1
+            else 2
+          end,
+          coalesce(w.endedAt, w.startedAt) desc
         limit 200
       `,
       )
@@ -3113,6 +3466,53 @@ function activeWorkflowTaskSessionRow(
       return normalizeWorkflowTaskLivenessRow(workflowRow, sessionRow);
     }
     return null;
+  } catch {
+    return null;
+  } finally {
+    db.close();
+  }
+}
+
+function activeWorkflowDispatchEventRow(
+  task: TaskNode,
+  earliestTimestampMs?: number | null,
+): Record<string, unknown> | null {
+  const taskId = typeof task.id === "string" ? task.id.trim() : "";
+  const resource = activeTaskResource(task);
+  const resourceSpec = recordValue(resource?.spec);
+  const workflow =
+    typeof task.workflow === "string" && task.workflow.trim()
+      ? task.workflow.trim()
+      : typeof resourceSpec?.workflow === "string" &&
+          resourceSpec.workflow.trim()
+        ? resourceSpec.workflow.trim()
+        : "";
+  if (!taskId || !workflow || !existsSync(stateDbPath)) return null;
+  const minTimestampMs =
+    typeof earliestTimestampMs === "number" &&
+    Number.isFinite(earliestTimestampMs)
+      ? earliestTimestampMs
+      : 0;
+  const db = new Database(stateDbPath, { readonly: true });
+  try {
+    if (!sqliteTableExists(db, "events")) return null;
+    return db
+      .query(
+        `
+        select
+          subject_status as dispatchStatus,
+          timestamp as dispatchTimestamp,
+          workflow_run_id as workflowRunId
+        from events
+        where project_id = ?
+          and task_id = ?
+          and event_type = 'handler.workflow_dispatched'
+          and timestamp >= ?
+        order by timestamp desc
+        limit 1
+      `,
+      )
+      .get("aks-rp-e2e", taskId, minTimestampMs) as Record<string, unknown> | null;
   } catch {
     return null;
   } finally {
@@ -3217,11 +3617,23 @@ function activeTaskRestartReason(task: TaskNode): string | null {
     ) {
       return null;
     }
+    const workerRow = taskId
+      ? activeTaskWorkerSessionRow(taskId, currentAttemptId, null)
+      : null;
+    if (sessionFinishedWithinTerminalCompletionGrace(workerRow)) return null;
+    if (sessionRestartReasonFromRow(workerRow) === null) return null;
     const ownerRow = activeOwnerTaskSessionRow(task);
     if (sessionRestartReasonFromRow(ownerRow) === null) return null;
+    if (ownerSessionRecentCompletionGapLooksHealthyFromRow(ownerRow)) {
+      return null;
+    }
     const workflowRow = activeWorkflowTaskSessionRow(task);
     if (sessionRestartReasonFromRow(workflowRow) === null) return null;
     if (workflowRunRecentSessionGapLooksHealthyFromRow(workflowRow)) {
+      return null;
+    }
+    const dispatchRow = activeWorkflowDispatchEventRow(task);
+    if (workflowDispatchRecentStartLooksHealthyFromRow(dispatchRow)) {
       return null;
     }
     return "missing-session";
@@ -3272,6 +3684,10 @@ function staleActiveTaskDetails(): StaleActiveTaskInfo[] {
   return activeLeafTasks().flatMap((task) => {
     const restartReason = activeTaskRestartReason(task);
     const taskId = typeof task.id === "string" ? task.id.trim() : "";
+    const currentAttemptId = activeTaskAttemptId(task) || null;
+    const workerRow = taskId
+      ? activeTaskWorkerSessionRow(taskId, currentAttemptId, null)
+      : null;
     const ownerRow = activeOwnerTaskSessionRow(task);
     const workflowRow = activeWorkflowTaskSessionRow(task);
     const sessionId =
@@ -3281,6 +3697,9 @@ function staleActiveTaskDetails(): StaleActiveTaskInfo[] {
         : "") ||
       (typeof workflowRow?.sessionId === "string"
         ? workflowRow.sessionId.trim()
+        : "") ||
+      (typeof workerRow?.sessionId === "string"
+        ? workerRow.sessionId.trim()
         : "") ||
       null;
     if (!restartReason || !taskId) return [];
@@ -3480,8 +3899,21 @@ export function metricSampleOutputsFor(
           tasks.approvalBlockedDisposition.governingWaitTaskIds,
       })
     : undefined;
+  const waitCoveredFrontier = representedWaitCoveredFrontierDisposition({
+    projectClosed: tasks.projectClosed,
+    runnable: tasks.runnable,
+    healthyActive,
+    review: tasks.review,
+    openGaps,
+    loopUnrepresentedCount: loopUnrepresented.value,
+    loopAuthorityObservationCount: loopUnrepresented.authorityObservationCount,
+    waitingTaskIds: tasks.waitingTaskIds,
+  });
+  const waitCoveredSuppression =
+    !approvalBlockedSuppression && waitCoveredFrontier.covered;
   const fragileActiveOnlyRecovery =
     !approvalBlockedSuppression &&
+    !waitCoveredSuppression &&
     !tasks.projectClosed &&
     tasks.runnable === 0 &&
     tasks.review === 0 &&
@@ -3537,6 +3969,7 @@ export function metricSampleOutputsFor(
     "aks-rp-e2e.task.no-work-with-gaps": () => ({
       value:
         !approvalBlockedSuppression &&
+        !waitCoveredSuppression &&
         !tasks.projectClosed &&
         tasks.runnable === 0 &&
         healthyActive === 0 &&
@@ -3546,14 +3979,20 @@ export function metricSampleOutputsFor(
       sampleSize: approvalBlockedSuppression
         ? tasks.approvalBlockedDisposition.focusTaskIds.length +
           tasks.approvalBlockedDisposition.governingWaitTaskIds.length
-        : fragileActiveOnlyRecovery
-          ? tasks.activeTaskIds.length
-          : undefined,
-      note: approvalBlockedNote ?? fragileActiveOnlyRecoveryNote,
+        : waitCoveredSuppression
+          ? tasks.waitingTaskIds.length
+          : fragileActiveOnlyRecovery
+            ? tasks.activeTaskIds.length
+            : undefined,
+      note:
+        approvalBlockedNote ??
+        waitCoveredFrontier.note ??
+        fragileActiveOnlyRecoveryNote,
     }),
     "aks-rp-e2e.task.ready-starvation-with-gaps": () => ({
       value:
         !approvalBlockedSuppression &&
+        !waitCoveredSuppression &&
         !tasks.projectClosed &&
         tasks.runnable === 0 &&
         healthyActive === 0 &&
@@ -3564,10 +4003,15 @@ export function metricSampleOutputsFor(
       sampleSize: approvalBlockedSuppression
         ? tasks.approvalBlockedDisposition.focusTaskIds.length +
           tasks.approvalBlockedDisposition.governingWaitTaskIds.length
-        : fragileActiveOnlyRecovery
-          ? tasks.activeTaskIds.length
-          : undefined,
-      note: approvalBlockedNote ?? fragileActiveOnlyRecoveryNote,
+        : waitCoveredSuppression
+          ? tasks.waitingTaskIds.length
+          : fragileActiveOnlyRecovery
+            ? tasks.activeTaskIds.length
+            : undefined,
+      note:
+        approvalBlockedNote ??
+        waitCoveredFrontier.note ??
+        fragileActiveOnlyRecoveryNote,
     }),
     "aks-rp-e2e.task.capacity-underfilled-with-gaps": () => ({
       value:
@@ -3636,6 +4080,7 @@ export function metricSampleOutputsFor(
       value: loopUnrepresented.value,
       sampleSize: loopUnrepresented.taskIds.length,
       note: JSON.stringify({
+        authorityObservationCount: loopUnrepresented.authorityObservationCount,
         taskIds: loopUnrepresented.taskIds,
         records: loopUnrepresented.records,
       }),

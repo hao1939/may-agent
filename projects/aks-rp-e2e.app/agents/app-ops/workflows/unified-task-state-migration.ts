@@ -57,10 +57,7 @@ type StateSnapshot = {
       status?: { phase?: string; conditionIds?: string[] };
     }
   >;
-  conditions?: Record<
-    string,
-    { spec?: { type?: string; subject?: string } }
-  >;
+  conditions?: Record<string, { spec?: { type?: string; subject?: string } }>;
 };
 
 function matchingTaskStateCondition(
@@ -97,7 +94,9 @@ export function taskStateWaitMigrationActions(
       kind: "update-task",
       taskId,
       expectedGeneration: generation as number,
-      dependsOn: [...new Set([...(resource.spec?.dependsOn ?? []), dependencyId])],
+      dependsOn: [
+        ...new Set([...(resource.spec?.dependsOn ?? []), dependencyId]),
+      ],
     });
   }
 
@@ -120,7 +119,8 @@ export function taskStateWaitMigrationActions(
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  if (!ctx.appDir) throw new Error("unified-task-state-migration requires appDir");
+  if (!ctx.appDir)
+    throw new Error("unified-task-state-migration requires appDir");
   const state = JSON.parse(
     readFileSync(join(ctx.appDir, ".state", "tasks", "state.json"), "utf8"),
   ) as StateSnapshot;

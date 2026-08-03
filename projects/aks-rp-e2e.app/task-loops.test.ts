@@ -1,7 +1,4 @@
 import { describe, expect, test } from "bun:test";
-import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import {
   featureCompactLoopTaskId,
   legacyBranchReconciliationTaskId,
@@ -9,7 +6,6 @@ import {
   learnedScenarioNormalizationAcceptance,
   learnedSpecVerificationAcceptance,
   loopFrontierAccounting,
-  loopRefillWakeForTaskEvent,
   repositorySkillMaintenanceTaskId,
   scenarioNormalizationTaskId,
   specLoopTaskId,
@@ -26,6 +22,14 @@ describe("AKS standing-loop convention", () => {
     });
     expect(standingLoopIntent(scenarioNormalizationTaskId).input).toEqual({
       frontierLimit: 5,
+      qualityInventoryRequired: true,
+      qualityInventoryFocus: [
+        "official-learn-api-grounding",
+        "standalone-direct-carrier-contract",
+        "canonical-target-mutation-fixture-cleanup",
+        "current-source-staging-live-proof",
+      ],
+      requiredRepositoryCheckCommand: "bun run check",
     });
     expect(standingLoopIntent(legacyBranchReconciliationTaskId).input).toEqual({
       frontierLimit: 1,
@@ -83,6 +87,21 @@ describe("AKS standing-loop convention", () => {
     );
     expect(standingLoopIntent(scenarioNormalizationTaskId).acceptance).toEqual(
       expect.arrayContaining(learnedScenarioNormalizationAcceptance),
+    );
+    const normalizationAcceptance = standingLoopIntent(
+      scenarioNormalizationTaskId,
+    ).acceptance.join("\n");
+    expect(normalizationAcceptance).toContain(
+      "source-layout normalization separate from product-contract adjudication",
+    );
+    expect(normalizationAcceptance).toContain(
+      "execute the scenario in-process on the Vitest surface",
+    );
+    expect(normalizationAcceptance).toContain(
+      "official Learn, Azure REST API specs, and checked-in design docs",
+    );
+    expect(normalizationAcceptance).toContain(
+      "private/local filesystem paths cannot be required carrier inputs",
     );
     expect(
       standingLoopIntent(legacyBranchReconciliationTaskId).acceptance.join(
@@ -154,211 +173,5 @@ describe("AKS standing-loop convention", () => {
       terminalTaskIds: ["terminal"],
       available: 3,
     });
-  });
-
-  test("fans a reconciled loop leaf back into one controller wake", async () => {
-    const appDir = await mkdtemp(join(tmpdir(), "aks-loop-wake-"));
-    await mkdir(join(appDir, ".state", "tasks"), { recursive: true });
-    await writeFile(
-      join(appDir, ".state", "tasks", "tree.json"),
-      JSON.stringify({
-        tasks: {
-          "spec/verify-example": {
-            input: {
-              loopId: specLoopTaskId,
-              workKey: "spec.example",
-              workRevision: "abc123",
-            },
-          },
-        },
-      }),
-    );
-
-    expect(
-      loopRefillWakeForTaskEvent(appDir, {
-        type: "project.task.reconciled",
-        target: { project: "aks-rp-e2e", taskId: "spec/verify-example" },
-        data: { disposition: "waiting" },
-      }),
-    ).toMatchObject({
-      type: "project.task.tick",
-      action: "spec-loop",
-      target: { project: "aks-rp-e2e", taskId: specLoopTaskId },
-      data: {
-        sourceTaskId: "spec/verify-example",
-        disposition: "waiting",
-      },
-    });
-  });
-
-  test("uses the reconciliation input after a completed leaf leaves the graph", async () => {
-    const appDir = await mkdtemp(join(tmpdir(), "aks-loop-complete-wake-"));
-    await mkdir(join(appDir, ".state", "tasks"), { recursive: true });
-    await writeFile(
-      join(appDir, ".state", "tasks", "tree.json"),
-      JSON.stringify({ tasks: {} }),
-    );
-
-    expect(
-      loopRefillWakeForTaskEvent(appDir, {
-        type: "project.task.reconciled",
-        target: { project: "aks-rp-e2e", taskId: "compact/feature-a" },
-        data: {
-          disposition: "converged",
-          input: {
-            loopId: featureCompactLoopTaskId,
-            workKey: "feature-a",
-            workRevision: "rev-2",
-          },
-        },
-      }),
-    ).toMatchObject({
-      type: "project.task.tick",
-      action: "feature-compact-loop",
-      target: {
-        project: "aks-rp-e2e",
-        taskId: featureCompactLoopTaskId,
-      },
-    });
-  });
-
-  test("uses a completed leaf receipt when loop metadata was omitted", async () => {
-    const appDir = await mkdtemp(join(tmpdir(), "aks-loop-receipt-wake-"));
-    await mkdir(join(appDir, ".state", "tasks"), { recursive: true });
-    await writeFile(
-      join(appDir, ".state", "tasks", "tree.json"),
-      JSON.stringify({ tasks: {} }),
-    );
-    await writeFile(
-      join(appDir, ".state", "tasks", "state.json"),
-      JSON.stringify({
-        receipts: {
-          "domain/normalized-row": {
-            parentId: "group/scenario-normalization",
-          },
-        },
-      }),
-    );
-
-    expect(
-      loopRefillWakeForTaskEvent(appDir, {
-        type: "project.task.reconciled",
-        target: {
-          project: "aks-rp-e2e",
-          taskId: "domain/normalized-row",
-        },
-        data: { disposition: "converged", input: {} },
-      }),
-    ).toMatchObject({
-      type: "project.task.tick",
-      action: "scenario-normalization",
-      target: {
-        project: "aks-rp-e2e",
-        taskId: scenarioNormalizationTaskId,
-      },
-      data: {
-        sourceTaskId: "domain/normalized-row",
-        disposition: "converged",
-      },
-    });
-  });
-
-  test("leaves executable loop child wakes to the shared runtime", async () => {
-    const appDir = await mkdtemp(join(tmpdir(), "aks-loop-parent-wake-"));
-    await mkdir(join(appDir, ".state", "tasks"), { recursive: true });
-    await writeFile(
-      join(appDir, ".state", "tasks", "tree.json"),
-      JSON.stringify({ tasks: {} }),
-    );
-    await writeFile(
-      join(appDir, ".state", "tasks", "state.json"),
-      JSON.stringify({
-        receipts: {
-          "spec/verify-example": { parentId: specLoopTaskId },
-          "ops/recover-example": { parentId: "spec/verify-example" },
-        },
-      }),
-    );
-
-    for (const taskId of ["spec/verify-example", "ops/recover-example"]) {
-      expect(
-        loopRefillWakeForTaskEvent(appDir, {
-          type: "project.task.reconciled",
-          target: { project: "aks-rp-e2e", taskId },
-          data: {
-            disposition: "converged",
-            input: { loopId: specLoopTaskId },
-          },
-        }),
-      ).toBeNull();
-    }
-  });
-
-  test("refills the owning loop after a nested task descendant completes", async () => {
-    const appDir = await mkdtemp(join(tmpdir(), "aks-loop-nested-wake-"));
-    await mkdir(join(appDir, ".state", "tasks"), { recursive: true });
-    await writeFile(
-      join(appDir, ".state", "tasks", "tree.json"),
-      JSON.stringify({ tasks: {} }),
-    );
-    await writeFile(
-      join(appDir, ".state", "tasks", "state.json"),
-      JSON.stringify({
-        resources: {
-          "compact/feature-a": {
-            spec: { parentId: "group/feature-compact" },
-          },
-        },
-        receipts: {
-          "ops/recover-feature-a-artifacts": {
-            parentId: "compact/feature-a",
-          },
-        },
-      }),
-    );
-
-    expect(
-      loopRefillWakeForTaskEvent(appDir, {
-        type: "project.task.reconciled",
-        target: {
-          project: "aks-rp-e2e",
-          taskId: "ops/recover-feature-a-artifacts",
-        },
-        data: { disposition: "converged", input: {} },
-      }),
-    ).toMatchObject({
-      type: "project.task.tick",
-      action: "feature-compact-loop",
-      target: {
-        project: "aks-rp-e2e",
-        taskId: featureCompactLoopTaskId,
-      },
-      data: {
-        sourceTaskId: "ops/recover-feature-a-artifacts",
-        disposition: "converged",
-      },
-    });
-  });
-
-  test("does not wake a controller for itself or unrelated work", async () => {
-    const appDir = await mkdtemp(join(tmpdir(), "aks-loop-no-wake-"));
-    await mkdir(join(appDir, ".state", "tasks"), { recursive: true });
-    await writeFile(
-      join(appDir, ".state", "tasks", "tree.json"),
-      JSON.stringify({ tasks: { unrelated: { input: {} } } }),
-    );
-
-    expect(
-      loopRefillWakeForTaskEvent(appDir, {
-        type: "project.task.reconciled",
-        target: { project: "aks-rp-e2e", taskId: specLoopTaskId },
-      }),
-    ).toBeNull();
-    expect(
-      loopRefillWakeForTaskEvent(appDir, {
-        type: "project.task.reconciled",
-        target: { project: "aks-rp-e2e", taskId: "unrelated" },
-      }),
-    ).toBeNull();
   });
 });

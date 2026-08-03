@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
+import { join } from "node:path";
 import {
   resolveTaskTreePath,
   workflowResultVersion,
@@ -10,10 +11,14 @@ import {
 } from "@may-agent/sdk";
 import {
   defaultSpecLoopStatePath,
+  importNewerSpecLoopMirrorRows,
+  isSpecLoopSpecSatisfied,
   loadSpecLoopState,
   safeTaskIdForSpec,
+  saveSpecLoopState,
   type SpecLoopSpecState,
 } from "./lib/spec-loop-store.ts";
+import { withCurrentOriginDevSnapshot } from "./lib/origin-dev-snapshot.ts";
 import {
   field,
   frontierLimit,
@@ -65,6 +70,11 @@ type Graph = {
   satisfied_dependency_ids?: string[];
 };
 
+type TaskState = {
+  receipts?: Record<string, unknown>;
+  resources?: Record<string, unknown>;
+};
+
 function readGraph(appDir: string): Graph {
   try {
     return JSON.parse(
@@ -73,6 +83,23 @@ function readGraph(appDir: string): Graph {
   } catch {
     return {};
   }
+}
+
+function readTaskState(appDir: string): TaskState {
+  try {
+    return JSON.parse(
+      readFileSync(join(appDir, ".state", "tasks", "state.json"), "utf8"),
+    ) as TaskState;
+  } catch {
+    return {};
+  }
+}
+
+function historicalTaskIds(taskState: TaskState): string[] {
+  return [
+    ...Object.keys(taskState.receipts ?? {}),
+    ...Object.keys(taskState.resources ?? {}),
+  ];
 }
 
 function represented(graph: Graph, taskId: string | null | undefined): boolean {
@@ -120,7 +147,10 @@ function representedTaskIdsForSpec(
     representedTaskIds.add(deterministicTaskId);
   const legacyTaskId = `spec/${safeTaskIdForSpec(specId)}`;
   if (represented(graph, legacyTaskId)) representedTaskIds.add(legacyTaskId);
-  const deterministicDispositionRepairTaskId = dispositionRepairId(specId, spec);
+  const deterministicDispositionRepairTaskId = dispositionRepairId(
+    specId,
+    spec,
+  );
   if (represented(graph, deterministicDispositionRepairTaskId)) {
     representedTaskIds.add(deterministicDispositionRepairTaskId);
   }
@@ -153,6 +183,21 @@ function workRevision(spec: SpecLoopSpecState): string {
   return createHash("sha256").update(source).digest("hex").slice(0, 10);
 }
 
+function digest(value: string): string {
+  return createHash("sha256").update(value).digest("hex").slice(0, 10);
+}
+
+function ensureFreshTaskId(baseId: string, historicalIds: string[]): string {
+  const occupied = new Set(historicalIds);
+  if (!occupied.has(baseId)) return baseId;
+  const seed = [...occupied].sort().join(":");
+  for (let attempt = 1; attempt < 1000; attempt += 1) {
+    const candidate = `${baseId}-${digest(`${seed}:${attempt}`)}`;
+    if (!occupied.has(candidate)) return candidate;
+  }
+  return `${baseId}-${digest(`${seed}:overflow`)}`;
+}
+
 function workId(specId: string, spec: SpecLoopSpecState): string {
   return `spec/${safeTaskIdForSpec(specId)}-${workRevision(spec)}`;
 }
@@ -163,14 +208,6 @@ function legacyDispositionRepairId(specId: string): string {
 
 function dispositionRepairId(specId: string, spec: SpecLoopSpecState): string {
   return `${legacyDispositionRepairId(specId)}-${workRevision(spec)}`;
-}
-
-function isSatisfied(spec: SpecLoopSpecState): boolean {
-  return (
-    spec.status === "pass" ||
-    spec.status === "done" ||
-    spec.terminalDisposition === true
-  );
 }
 
 function hasStructuredDisposition(spec: SpecLoopSpecState): boolean {
@@ -185,25 +222,56 @@ function hasStructuredDisposition(spec: SpecLoopSpecState): boolean {
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const projectDir =
     ctx.projectDir ?? field(ctx.task, "project") ?? "/app/projects/aks-rp-e2e";
-  const appDir =
-    ctx.appDir ?? resolveAppDir(projectDir, field(ctx.task, "app"));
+  const appDir = resolveAppDir(
+    projectDir,
+    ctx.appDir ?? field(ctx.task, "app"),
+  );
   const trigger = parseTriggerEvent(ctx.task);
   const loopTaskId =
     triggerString(trigger, "taskId") ||
     triggerString(trigger, "task_id") ||
     "aks-spec-verification-loop";
   const statePath = defaultSpecLoopStatePath(appDir);
-  const { state } = loadSpecLoopState({
-    appDir,
+  const { state, catalogSource } = withCurrentOriginDevSnapshot(
     projectDir,
-    loopTaskId,
-    windowSize: 5,
-    statePath,
-    refreshFromProject: false,
-  });
+    (snapshot) => {
+      if (snapshot.source !== "origin/dev") {
+        return { state: null, catalogSource: "project-dir@untrusted" };
+      }
+      return {
+        state: loadSpecLoopState({
+          appDir,
+          projectDir: snapshot.dir,
+          loopTaskId,
+          windowSize: 5,
+          statePath,
+          refreshFromProject: true,
+        }).state,
+        catalogSource: `${snapshot.source}@${snapshot.commit ?? "unknown"}`,
+      };
+    },
+  );
+  if (!state) {
+    const summary =
+      "Spec loop cannot reconcile catalog identities because a clean origin/dev snapshot is unavailable.";
+    return ctx.done(summary, {
+      state: "needs-owner",
+      summary,
+      evidence: [`spec-loop-catalog-source:${catalogSource}`],
+    });
+  }
+  const projectStatePath = join(
+    projectDir,
+    ".state",
+    "spec-loop",
+    "state.json",
+  );
+  importNewerSpecLoopMirrorRows(state, projectStatePath);
+  saveSpecLoopState(statePath, state, [projectStatePath]);
   const graph = readGraph(appDir);
+  const historicalIds = historicalTaskIds(readTaskState(appDir));
   const remaining = Object.entries(state.specs)
-    .filter(([, spec]) => !isSatisfied(spec))
+    .filter(([, spec]) => !isSpecLoopSpecSatisfied(spec))
     .sort(([left], [right]) => {
       const leftPriority = state.prioritySpecIds.indexOf(left);
       const rightPriority = state.prioritySpecIds.indexOf(right);
@@ -224,7 +292,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return ctx.done(summary, {
       state: "converged",
       summary,
-      evidence: [`spec-loop-state:${statePath}`],
+      evidence: [
+        `spec-loop-state:${statePath}`,
+        `spec-loop-catalog-source:${catalogSource}`,
+      ],
       actions: [],
     });
   }
@@ -251,9 +322,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     .slice(0, actionBudget)
     .map(([specId, spec]) => {
       if (hasStructuredDisposition(spec)) {
+        const taskId = ensureFreshTaskId(
+          dispositionRepairId(specId, spec),
+          historicalIds,
+        );
         return {
           kind: "create-task",
-          id: dispositionRepairId(specId, spec),
+          id: taskId,
           parentId: specLoopTaskId,
           outcome: `Repair the spec-loop representation for ${specId}: the ledger already has a structured reviewed disposition, but no live task holder and no terminalDisposition=true flag, so the controller cannot tell whether to wait, finish, or rerun.`,
           mode: "achieve",
@@ -268,6 +343,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           },
           outputs: [statePath, "../aks-rp-e2e/evidence/archive/"],
           acceptance: [
+            ...learnedSpecVerificationAcceptance,
             "Inspect the current spec-loop row, source, model, runner, cited evidence, and current .state/tasks/tree.json before changing anything.",
             "Treat any taskId, successorTaskId, or review.frontierTaskId that is absent from the current .state/tasks/tree.json as stale history; do not return an action that references a missing task id.",
             "If the reviewed disposition is still valid and no further run is truthful, make it controller-visible by setting terminalDisposition=true or by creating/repointing one exact live holder task and updating taskId/review pointers.",
@@ -277,9 +353,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           priority: "P1",
         };
       }
+      const taskId = ensureFreshTaskId(workId(specId, spec), historicalIds);
       return {
         kind: "create-task",
-        id: workId(specId, spec),
+        id: taskId,
         parentId: specLoopTaskId,
         outcome: `Reconcile ${specId} to a passing live result, an exact wait, or a reviewed terminal disposition.`,
         mode: "achieve",
@@ -314,13 +391,19 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return ctx.done(summary, {
       state: resultState,
       summary,
-      evidence: [`spec-loop-state:${statePath}`],
+      evidence: [
+        `spec-loop-state:${statePath}`,
+        `spec-loop-catalog-source:${catalogSource}`,
+      ],
     });
   }
   return ctx.done(summary, {
     state: resultState,
     summary,
-    evidence: [`spec-loop-state:${statePath}`],
+    evidence: [
+      `spec-loop-state:${statePath}`,
+      `spec-loop-catalog-source:${catalogSource}`,
+    ],
     actions,
   });
 }

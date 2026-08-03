@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -38,6 +38,18 @@ function campaignFixture(): {
   const baseCommit = git(repoDir, "rev-parse", "HEAD");
   git(repoDir, "push", "-u", "origin", "main");
   return { root, repoDir, appDir, baseCommit };
+}
+
+function commitFile(
+  repoDir: string,
+  path: string,
+  content: string,
+  message: string,
+): string {
+  writeFileSync(join(repoDir, path), content);
+  git(repoDir, "add", path);
+  git(repoDir, "commit", "-m", message);
+  return git(repoDir, "rev-parse", "HEAD");
 }
 
 describe("frozen master-validation campaign", () => {
@@ -85,14 +97,38 @@ describe("frozen master-validation campaign", () => {
         lastMergeSourceCommit: { commitId: "soft123" },
       }),
     ).toMatchObject({ pullRequestId: "16560089" });
+    const completed = {
+      pullRequestId: 16560090,
+      status: "completed",
+      mergeStatus: "succeeded",
+      title: "Fix master validation bootstrap",
+      description:
+        "Task: domain/master-validation-failure/pipeline.master-validation.bootstrap/fp",
+      sourceRefName: "refs/heads/fix/bootstrap-current-main",
+      targetRefName: "refs/heads/main",
+      lastMergeSourceCommit: { commitId: "source123" },
+      lastMergeTargetCommit: { commitId: "target123" },
+    };
+    expect(campaignFixFromPullRequest(completed)).toBeNull();
+    expect(
+      campaignFixFromPullRequest(completed, { includeCompleted: true }),
+    ).toMatchObject({
+      pullRequestId: "16560090",
+      sourceCommit: "source123",
+      targetCommit: "target123",
+    });
   });
 
   test("accepts a focused fix rooted at the frozen snapshot after main advances", () => {
     const fixture = campaignFixture();
     try {
       git(fixture.repoDir, "checkout", "-b", "fix/frozen", fixture.baseCommit);
-      git(fixture.repoDir, "commit", "--allow-empty", "-m", "focused fix");
-      const sourceCommit = git(fixture.repoDir, "rev-parse", "HEAD");
+      const sourceCommit = commitFile(
+        fixture.repoDir,
+        "focused.txt",
+        "repair\n",
+        "focused fix",
+      );
       git(fixture.repoDir, "push", "-u", "origin", "fix/frozen");
       git(fixture.repoDir, "checkout", "main");
       git(
@@ -137,8 +173,12 @@ describe("frozen master-validation campaign", () => {
         "fix/appended",
         fixture.baseCommit,
       );
-      git(fixture.repoDir, "commit", "--allow-empty", "-m", "focused fix");
-      const firstSourceCommit = git(fixture.repoDir, "rev-parse", "HEAD");
+      const firstSourceCommit = commitFile(
+        fixture.repoDir,
+        "focused.txt",
+        "repair\n",
+        "focused fix",
+      );
       git(fixture.repoDir, "push", "-u", "origin", "fix/appended");
 
       const first = composeFrozenCampaign({
@@ -157,14 +197,12 @@ describe("frozen master-validation campaign", () => {
         ],
       });
 
-      git(
+      const appendedSourceCommit = commitFile(
         fixture.repoDir,
-        "commit",
-        "--allow-empty",
-        "-m",
+        "evidence.txt",
+        "corrected\n",
         "correct focused fix evidence",
       );
-      const appendedSourceCommit = git(fixture.repoDir, "rev-parse", "HEAD");
       git(fixture.repoDir, "push", "origin", "fix/appended");
 
       const updated = composeFrozenCampaign({
@@ -209,33 +247,208 @@ describe("frozen master-validation campaign", () => {
     }
   });
 
-  test("refuses a fix branch that would resync newer main into the campaign", () => {
+  test("takes only the focused patch from a PR based on newer main", () => {
     const fixture = campaignFixture();
     try {
-      git(fixture.repoDir, "commit", "--allow-empty", "-m", "newer main");
+      const targetCommit = commitFile(
+        fixture.repoDir,
+        "main-only.txt",
+        "must not enter campaign\n",
+        "newer main",
+      );
       git(fixture.repoDir, "push", "origin", "main");
       git(fixture.repoDir, "checkout", "-b", "fix/from-new-main");
-      git(fixture.repoDir, "commit", "--allow-empty", "-m", "focused fix");
-      const sourceCommit = git(fixture.repoDir, "rev-parse", "HEAD");
+      const sourceCommit = commitFile(
+        fixture.repoDir,
+        "focused.txt",
+        "repair\n",
+        "focused fix",
+      );
       git(fixture.repoDir, "push", "-u", "origin", "fix/from-new-main");
 
-      expect(() =>
-        composeFrozenCampaign({
-          appDir: fixture.appDir,
-          repoDir: fixture.repoDir,
-          baselineRunId: "101",
-          baseCommit: fixture.baseCommit,
-          fixes: [
-            {
-              pullRequestId: "2",
-              taskId: "domain/master-validation-failure/spec.example/fp",
-              sourceBranch: "fix/from-new-main",
-              sourceCommit,
-              title: "Focused fix from newer main",
-            },
-          ],
+      const result = composeFrozenCampaign({
+        appDir: fixture.appDir,
+        repoDir: fixture.repoDir,
+        baselineRunId: "101",
+        baseCommit: fixture.baseCommit,
+        fixes: [
+          {
+            pullRequestId: "2",
+            taskId: "domain/master-validation-failure/spec.example/fp",
+            sourceBranch: "fix/from-new-main",
+            sourceCommit,
+            targetCommit,
+            title: "Focused fix from newer main",
+          },
+        ],
+      });
+      expect(result.changed).toBe(true);
+      git(fixture.repoDir, "fetch", "origin", result.receipt.branch);
+      expect(
+        git(
+          fixture.repoDir,
+          "show",
+          `origin/${result.receipt.branch}:focused.txt`,
+        ),
+      ).toBe("repair");
+      expect(
+        spawnSync(
+          "git",
+          ["cat-file", "-e", `origin/${result.receipt.branch}:main-only.txt`],
+          { cwd: fixture.repoDir },
+        ).status,
+      ).not.toBe(0);
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  test("binds an equivalent current-main PR to an already tested logical repair", () => {
+    const fixture = campaignFixture();
+    try {
+      git(fixture.repoDir, "checkout", "-b", "fix/frozen", fixture.baseCommit);
+      const frozenFixCommit = commitFile(
+        fixture.repoDir,
+        "focused.txt",
+        "repair\n",
+        "focused fix",
+      );
+      git(fixture.repoDir, "push", "-u", "origin", "fix/frozen");
+      const first = composeFrozenCampaign({
+        appDir: fixture.appDir,
+        repoDir: fixture.repoDir,
+        baselineRunId: "103",
+        baseCommit: fixture.baseCommit,
+        fixes: [
+          {
+            pullRequestId: "10",
+            taskId: "domain/master-validation-failure/spec.example/fp",
+            sourceBranch: "fix/frozen",
+            sourceCommit: frozenFixCommit,
+            title: "Frozen repair",
+          },
+        ],
+      });
+
+      git(fixture.repoDir, "checkout", "main");
+      const targetCommit = commitFile(
+        fixture.repoDir,
+        "main-only.txt",
+        "new main context\n",
+        "new main context",
+      );
+      git(fixture.repoDir, "push", "origin", "main");
+      git(fixture.repoDir, "checkout", "-b", "fix/current-main");
+      const currentMainFixCommit = commitFile(
+        fixture.repoDir,
+        "focused.txt",
+        "repair\n",
+        "focused fix",
+      );
+      git(fixture.repoDir, "push", "-u", "origin", "fix/current-main");
+
+      const rebound = composeFrozenCampaign({
+        appDir: fixture.appDir,
+        repoDir: fixture.repoDir,
+        baselineRunId: "103",
+        baseCommit: fixture.baseCommit,
+        fixes: [],
+        replacementFixes: [
+          {
+            pullRequestId: "11",
+            taskId: "domain/master-validation-failure/spec.example/fp",
+            sourceBranch: "fix/current-main",
+            sourceCommit: currentMainFixCommit,
+            targetCommit,
+            title: "Current-main repair",
+          },
+        ],
+        prior: first.receipt,
+      });
+
+      expect(rebound.changed).toBe(false);
+      expect(rebound.receipt.currentCommit).toBe(first.receipt.currentCommit);
+      expect(rebound.receipt.integratedFixes).toEqual([
+        expect.objectContaining({
+          pullRequestId: "11",
+          sourceCommit: currentMainFixCommit,
+          patchIds: first.receipt.integratedFixes[0].patchIds,
         }),
-      ).toThrow("forks from newer main commit");
+      ]);
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  test("applies a materially new patch for the same task and requires a rerun", () => {
+    const fixture = campaignFixture();
+    try {
+      git(fixture.repoDir, "checkout", "-b", "fix/first", fixture.baseCommit);
+      const firstCommit = commitFile(
+        fixture.repoDir,
+        "first.txt",
+        "first repair\n",
+        "first repair",
+      );
+      git(fixture.repoDir, "push", "-u", "origin", "fix/first");
+      const first = composeFrozenCampaign({
+        appDir: fixture.appDir,
+        repoDir: fixture.repoDir,
+        baselineRunId: "104",
+        baseCommit: fixture.baseCommit,
+        fixes: [
+          {
+            pullRequestId: "12",
+            taskId: "domain/master-validation-failure/spec.example/fp",
+            sourceBranch: "fix/first",
+            sourceCommit: firstCommit,
+            title: "First repair",
+          },
+        ],
+      });
+
+      git(fixture.repoDir, "checkout", "main");
+      const targetCommit = git(fixture.repoDir, "rev-parse", "HEAD");
+      git(fixture.repoDir, "checkout", "-b", "fix/additional");
+      const additionalCommit = commitFile(
+        fixture.repoDir,
+        "additional.txt",
+        "additional repair\n",
+        "additional repair",
+      );
+      git(fixture.repoDir, "push", "-u", "origin", "fix/additional");
+
+      const updated = composeFrozenCampaign({
+        appDir: fixture.appDir,
+        repoDir: fixture.repoDir,
+        baselineRunId: "104",
+        baseCommit: fixture.baseCommit,
+        fixes: [
+          {
+            pullRequestId: "13",
+            taskId: "domain/master-validation-failure/spec.example/fp",
+            sourceBranch: "fix/additional",
+            sourceCommit: additionalCommit,
+            targetCommit,
+            title: "Additional repair",
+          },
+        ],
+        prior: first.receipt,
+      });
+
+      expect(updated.changed).toBe(true);
+      expect(updated.receipt.currentCommit).not.toBe(
+        first.receipt.currentCommit,
+      );
+      expect(updated.receipt.integratedFixes).toHaveLength(2);
+      git(fixture.repoDir, "fetch", "origin", updated.receipt.branch);
+      expect(
+        git(
+          fixture.repoDir,
+          "show",
+          `origin/${updated.receipt.branch}:additional.txt`,
+        ),
+      ).toBe("additional repair");
     } finally {
       rmSync(fixture.root, { recursive: true, force: true });
     }

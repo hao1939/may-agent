@@ -208,6 +208,7 @@ const ADO_ORGANIZATION = "https://dev.azure.com/msazure";
 const ADO_PROJECT = "CloudNativeCompute";
 const ADO_PIPELINE_ID = "467665";
 const WATCHER_SCHEMA_VERSION = "10";
+const WATCHER_REGISTRATION_SCHEMA_VERSION = "1";
 export const LIVE_PROGRESS_STALE_MS = 3 * 60 * 1_000;
 const AZ_CLI =
   process.env.AZURE_CLI_PATH ||
@@ -228,6 +229,91 @@ function readState(path: string): PipelineWatcherState {
 function saveState(path: string, state: PipelineWatcherState): void {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, `${JSON.stringify(state, null, 2)}\n`, "utf8");
+}
+
+type PipelineWatcherRegistrationState = {
+  schemaVersion?: string;
+  runIds?: string[];
+  updatedAt?: string;
+};
+
+function registrationStatePath(appDir: string): string {
+  return join(appDir, ".state/watchers/aks-pipeline-registrations.json");
+}
+
+function readRegistrationState(
+  appDir: string,
+): PipelineWatcherRegistrationState {
+  const path = registrationStatePath(appDir);
+  if (!existsSync(path)) return {};
+  try {
+    const value = JSON.parse(readFileSync(path, "utf8"));
+    return value && typeof value === "object" ? value : {};
+  } catch {
+    return {};
+  }
+}
+
+export function registeredTrackedRunIds(appDir: string): string[] {
+  return boundedTrackedRunIds(
+    readRegistrationState(appDir).runIds ?? [],
+    MAX_TRACKED_RUN_IDS,
+  );
+}
+
+export function registerTrackedPipelineRunIds(
+  appDir: string,
+  runIds: string[],
+): { changed: boolean; runIds: string[]; path: string } {
+  const nextRunIds = boundedTrackedRunIds(runIds, 100);
+  const path = registrationStatePath(appDir);
+  const priorRunIds = registeredTrackedRunIds(appDir);
+  const changed = stableJson(priorRunIds) !== stableJson(nextRunIds);
+  if (changed || !existsSync(path)) {
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(
+      path,
+      `${JSON.stringify(
+        {
+          schemaVersion: WATCHER_REGISTRATION_SCHEMA_VERSION,
+          runIds: nextRunIds,
+          updatedAt: new Date().toISOString(),
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+  }
+  return { changed, runIds: nextRunIds, path };
+}
+
+export function appendTrackedPipelineRunIds(
+  appDir: string,
+  runIds: string[],
+): { changed: boolean; runIds: string[]; path: string } {
+  return registerTrackedPipelineRunIds(appDir, [
+    ...registeredTrackedRunIds(appDir),
+    ...runIds,
+  ]);
+}
+
+export function appendTrackedPipelineRunId(
+  appDir: string,
+  runId: string,
+): { changed: boolean; runIds: string[]; path: string } {
+  return appendTrackedPipelineRunIds(appDir, [runId]);
+}
+
+export function acknowledgeTrackedPipelineRunIds(
+  appDir: string,
+  observedRunIds: string[],
+): { changed: boolean; runIds: string[]; path: string } {
+  const observed = new Set(observedRunIds);
+  return registerTrackedPipelineRunIds(
+    appDir,
+    registeredTrackedRunIds(appDir).filter((runId) => !observed.has(runId)),
+  );
 }
 
 function observeLocalRun(path: string): LocalRunObservation {
@@ -842,6 +928,7 @@ export function retainedTrackedRunIds(input: {
   priorRunIds: string[];
   runs: ObservedAdoRun[];
   pendingTerminalArtifactRunIds: Set<string>;
+  registeredRunIds?: string[];
 }): string[] {
   const currentById = new Map(input.runs.map((run) => [run.runId, run]));
   const providerReturnedRuns = input.runs.length > 0;
@@ -864,6 +951,14 @@ export function retainedTrackedRunIds(input: {
           !["completed", "canceled"].includes(run.status),
       )
       .map((run) => run.runId),
+    ...(input.registeredRunIds ?? []).filter((runId) => {
+      const current = currentById.get(runId);
+      if (!current) return !providerReturnedRuns;
+      return (
+        !["completed", "canceled"].includes(current.status) ||
+        input.pendingTerminalArtifactRunIds.has(runId)
+      );
+    }),
     ...input.pendingTerminalArtifactRunIds,
   ]);
 }
@@ -1977,8 +2072,12 @@ export async function observeAksPipelines(
   const localCompletionFingerprints = {
     ...(prior.localCompletionFingerprints ?? prior.fingerprints ?? {}),
   };
+  const registrationRunIds = registeredTrackedRunIds(ctx.appPath("."));
   const adoRuns = scanAdoPipelineRuns(
-    boundedTrackedRunIds(prior.trackedRunIds ?? []),
+    boundedTrackedRunIds(
+      [...(prior.trackedRunIds ?? []), ...registrationRunIds],
+      100,
+    ),
   );
   const adoFingerprints = Object.fromEntries(
     adoRuns.map((run) => [run.runId, run.fingerprint]),
@@ -2200,6 +2299,7 @@ export async function observeAksPipelines(
     priorRunIds: prior.trackedRunIds ?? [],
     runs: adoRuns,
     pendingTerminalArtifactRunIds,
+    registeredRunIds: registrationRunIds,
   });
   const retainedProgressRunIds = new Set(trackedRunIds);
   const retainedLiveProgressFingerprints = Object.fromEntries(
@@ -2219,6 +2319,10 @@ export async function observeAksPipelines(
     liveProgressFingerprints: retainedLiveProgressFingerprints,
     checkedAt,
   });
+  acknowledgeTrackedPipelineRunIds(
+    ctx.appPath("."),
+    adoRuns.map((run) => run.runId),
+  );
 
   const latestProgressiveRun = adoRuns
     .filter((run) => run.progressive)

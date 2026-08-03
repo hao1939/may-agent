@@ -36,6 +36,11 @@ const WATCHED_TARGETS = [
     targetDomainDir: "/app/projects/scout-knowledge-lib",
   },
   {
+    targetProject: "gym.app",
+    targetAppDir: "/app/projects/gym.app",
+    targetDomainDir: "/app/projects/gym",
+  },
+  {
     targetProject: "evaluation.app",
     targetAppDir: "/app/projects/evaluation.app",
     targetDomainDir: "/app/projects/evaluation.app",
@@ -405,7 +410,9 @@ function stringValue(value: unknown): string | undefined {
   return typeof value === "string" && value.length > 0 ? value : undefined;
 }
 
-function targetConfig(trigger: Record<string, unknown> | null): TargetConfig {
+export function targetConfig(
+  trigger: Record<string, unknown> | null,
+): TargetConfig {
   const details = eventDetails(trigger);
   const requestedTarget =
     stringValue(details.targetProject) ??
@@ -1607,6 +1614,24 @@ export function projectHealthJudgmentFromResult(
   const record = objectRecord(result);
   const finishResult = objectRecord(record.finishResult);
   const candidates: Array<{ source: string; text: string }> = [];
+  const status = String(record.status ?? "");
+  if (["error", "interrupted"].includes(status)) {
+    const details = [
+      `Project-health inner evaluator session ended with status=${status}.`,
+      typeof record.sessionId === "string" && record.sessionId
+        ? `sessionId=${record.sessionId}.`
+        : "sessionId=unknown.",
+      typeof record.error === "string" && record.error
+        ? `error=${record.error}.`
+        : "error=not recorded.",
+      typeof record.lastAssistantText === "string" &&
+      record.lastAssistantText.trim()
+        ? `lastAssistantText=${truncate(record.lastAssistantText.trim(), 500)}`
+        : "lastAssistantText empty or unavailable.",
+      "The workflow will use deterministic fact-packet fallback judgment instead of blocking on the optional inner audit carrier.",
+    ].join(" ");
+    candidates.push({ source: `inner-session:${status}`, text: details });
+  }
   for (const [source, value] of [
     ["lastAssistantText", record.lastAssistantText],
     ["message", record.message],
@@ -2341,16 +2366,24 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const result = await ctx.runAgent("evaluator", prompt, {
     timeoutMs: 900_000,
   });
+  const judgmentSource = projectHealthJudgmentFromResult(result);
+
   if (result.status === "error" || result.status === "interrupted") {
-    return ctx.blocked("Project/app health evaluator session failed", {
-      targetProject: target.targetProject,
-      sessionId: result.sessionId,
-      status: result.status,
-      summary: result.lastAssistantText,
+    ctx.emit({
+      type: "evaluation.project.inner_audit_failed_fallback",
+      source: "agent:evaluator",
+      owner: "agent:evaluator",
+      data: {
+        targetProject: target.targetProject,
+        sessionId: result.sessionId,
+        status: result.status,
+        error: (result as { error?: unknown }).error ?? null,
+        reviewReason: reviewDecision.reason,
+        fallbackDedupeKey: fallback.dedupeKey,
+      },
     });
   }
 
-  const judgmentSource = projectHealthJudgmentFromResult(result);
 
   const judgment = reconcileJudgmentWithFacts(
     target,

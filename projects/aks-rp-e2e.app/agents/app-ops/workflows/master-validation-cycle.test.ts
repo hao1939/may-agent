@@ -1,4 +1,7 @@
 import { describe, expect, test } from "bun:test";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
   resolveAksTask,
   verifiedCampaignFixPullRequestIds,
@@ -10,6 +13,7 @@ import {
   completedCycleState,
   fixVerificationTrigger,
   latestCampaignFixes,
+  registerMasterValidationRun,
   transientMasterValidationAccessFailure,
   verifiedFixNotificationContent,
 } from "./master-validation-cycle.js";
@@ -67,6 +71,32 @@ describe("master-validation cycle", () => {
       purpose: "master-validation-campaign",
       campaignBaseCommit: "main123",
     });
+  });
+
+  test("registers queued master-validation runs for watcher observation", () => {
+    const appDir = mkdtempSync(join(tmpdir(), "master-validation-watch-"));
+    try {
+      const registration = registerMasterValidationRun(appDir, "174851380");
+      expect(registration).toMatchObject({
+        changed: true,
+        runIds: ["174851380"],
+      });
+      expect(
+        JSON.parse(
+          readFileSync(
+            join(
+              appDir,
+              ".state",
+              "watchers",
+              "aks-pipeline-registrations.json",
+            ),
+            "utf8",
+          ),
+        ),
+      ).toMatchObject({ runIds: ["174851380"] });
+    } finally {
+      rmSync(appDir, { recursive: true, force: true });
+    }
   });
 
   test("finds an active matching cycle and ignores completed or unrelated runs", () => {

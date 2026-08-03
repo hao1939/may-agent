@@ -2,7 +2,8 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "bun:test";
-import { execute } from "./evaluator-heartbeat";
+import { admitProjectAppTaskHandlerResult } from "@may-agent/sdk";
+import { execute, normalizeOwnerResult } from "./evaluator-heartbeat";
 
 function context(result: Record<string, unknown>) {
   const emitted: Array<Record<string, unknown>> = [];
@@ -69,6 +70,148 @@ describe("evaluation owner action boundary", () => {
     }
   });
 
+  it("converts failed inner owner review sessions into visible no-action fallback", async () => {
+    const harness = context({
+      state: "converged",
+      summary: "unused",
+      evidence: [],
+      actions: [],
+    });
+    harness.ctx.runAgent = async (
+      _agent: string,
+      _prompt: string,
+      _options: Record<string, unknown>,
+    ) => {
+      return {
+        sessionId: "s_empty_owner",
+        status: "error",
+        lastAssistantText: "",
+        messages: [],
+        structuredResult: undefined,
+      };
+    };
+
+    const result = await execute(harness.ctx);
+
+    expect(result.type).toBe("done");
+    expect(harness.emitted.map((event) => event.type)).toContain(
+      "evaluation.owner_review_failed_fallback",
+    );
+    expect(harness.emitted.at(-1)).toMatchObject({
+      type: "evaluation.owner_reviewed",
+      data: { state: "converged", proposedActions: [] },
+    });
+    if (result.type === "done") {
+      expect(result.output).toMatchObject({
+        state: "converged",
+        actions: [],
+      });
+      expect(JSON.stringify(result.output)).toContain(
+        "owner-review-session:s_empty_owner",
+      );
+    }
+  });
+
+  it("coerces invalid needs-owner payloads with actions or conditions to a converged no-op", async () => {
+    const harness = context({
+      state: "needs-owner",
+      summary: "Need owner action with a condition.",
+      evidence: ["affected session-aftermath case"],
+      actions: [
+        {
+          kind: "create-task",
+          id: "repair-invalid-needs-owner",
+          outcome: "Repair invalid handoff.",
+          acceptance: ["no rejected needs-owner payload"],
+        },
+      ],
+      conditions: [
+        {
+          id: "invalid-wait",
+          type: "session.state",
+          subject: "session:s_owner",
+          expected: { field: "status", equals: "done" },
+        },
+      ],
+    });
+
+    const result = await execute(harness.ctx);
+
+    expect(result.type).toBe("done");
+    expect(harness.emitted.at(-1)).toMatchObject({
+      type: "evaluation.owner_reviewed",
+      data: { state: "converged", proposedActions: [] },
+    });
+    if (result.type === "done") {
+      expect(result.output).toMatchObject({
+        state: "converged",
+        actions: [],
+      });
+      expect(JSON.stringify(result.output)).toContain(
+        "invalid needs-owner with actions and conditions",
+      );
+      expect(JSON.stringify(result.output)).toContain(
+        "needs-owner cannot include actions or Conditions",
+      );
+      expect(JSON.stringify(result.output)).not.toContain(
+        "repair-invalid-needs-owner",
+      );
+      expect(result.output).not.toHaveProperty("conditions");
+      const admitted = admitProjectAppTaskHandlerResult(result.output, {
+        allowNeedsOwner: true,
+        defaultParentId: "evaluation-system",
+      });
+      expect(admitted.ok).toBe(true);
+    }
+  });
+
+  it("normalizes a representative malformed needs-owner aftermath payload into an admitted handler result", () => {
+    const malformed = {
+      state: "needs-owner",
+      summary: "Session aftermath needs owner action and a retry condition.",
+      evidence: ["runtime/session-aftermath/s_example rejected previously"],
+      actions: [
+        {
+          kind: "create-task",
+          id: "retry-session-aftermath-example",
+          outcome: "Retry session aftermath.",
+          acceptance: ["accepted by handler contract"],
+        },
+      ],
+      conditions: [
+        {
+          id: "session-aftermath-example-retry",
+          type: "session.state",
+          subject: "session:s_example",
+          expected: { field: "status", equals: "done" },
+        },
+      ],
+    };
+
+    expect(
+      admitProjectAppTaskHandlerResult(malformed, {
+        allowNeedsOwner: true,
+        defaultParentId: "evaluation-system",
+      }),
+    ).toMatchObject({
+      ok: false,
+      error: "needs-owner cannot include actions or Conditions",
+    });
+
+    const normalized = normalizeOwnerResult(malformed);
+    expect(normalized).toMatchObject({
+      state: "converged",
+      actions: [],
+    });
+    expect(normalized).not.toHaveProperty("conditions");
+    expect(
+      admitProjectAppTaskHandlerResult(normalized, {
+        allowNeedsOwner: true,
+        defaultParentId: "evaluation-system",
+      }),
+    ).toMatchObject({ ok: true });
+  });
+
   it("coerces a waiting no-op without exact conditions to converged", async () => {
     const harness = context({
       state: "waiting",
@@ -133,28 +276,229 @@ describe("evaluation owner action boundary", () => {
     }
   });
 
-  it("returns proposed actions without applying them inside the workflow", async () => {
-    const harness = context({
-      state: "converged",
-      summary: "Change the controller task.",
-      evidence: [],
-      actions: [
-        {
-          kind: "close-task",
-          taskId: "runtime/owner-review",
-          expectedGeneration: 1,
-          summary: "closed",
-        },
-      ],
-    });
-
-    const result = await execute(harness.ctx);
-
-    expect(result.type).toBe("done");
-    if (result.type === "done") {
-      expect(result.output).toMatchObject({
-        actions: [{ kind: "close-task", taskId: "runtime/owner-review" }],
+  it("filters proposed mutations of reconciler-owned runtime tasks", async () => {
+    const tmp = mkdtempSync(join(tmpdir(), "evaluator-heartbeat-runtime-"));
+    const previous = process.env.MAY_AGENT_TASK_TREE_PATH;
+    try {
+      process.env.MAY_AGENT_TASK_TREE_PATH = join(tmp, "tree.json");
+      writeFileSync(
+        process.env.MAY_AGENT_TASK_TREE_PATH,
+        JSON.stringify({
+          version: 1,
+          project: "evaluation",
+          root_task_id: "root",
+          active_task_ids: ["root", "normal-evaluator-task"],
+          tasks: {
+            root: { id: "root", item_type: "task", phase: "waiting" },
+            "runtime/owner-review": {
+              id: "runtime/owner-review",
+              item_type: "task",
+              phase: "attention",
+              generation: 1,
+            },
+            "normal-evaluator-task": {
+              id: "normal-evaluator-task",
+              item_type: "task",
+              phase: "attention",
+              generation: 2,
+            },
+          },
+        }),
+      );
+      const harness = context({
+        state: "converged",
+        summary: "Change the controller task.",
+        evidence: [],
+        actions: [
+          {
+            kind: "close-task",
+            taskId: "runtime/owner-review",
+            expectedGeneration: 1,
+            summary: "closed",
+          },
+          {
+            kind: "update-task",
+            taskId: "normal-evaluator-task",
+            expectedGeneration: 2,
+            priority: "P1",
+          },
+        ],
       });
+
+      const result = await execute(harness.ctx);
+
+      expect(result.type).toBe("done");
+      expect(harness.emitted.at(-1)).toMatchObject({
+        type: "evaluation.owner_reviewed",
+        data: {
+          proposedActions: [
+            {
+              kind: "update-task",
+              taskId: "normal-evaluator-task",
+            },
+          ],
+        },
+      });
+      if (result.type === "done") {
+        expect(result.output).toMatchObject({
+          actions: [{ kind: "update-task", taskId: "normal-evaluator-task" }],
+        });
+        expect(JSON.stringify(result.output)).toContain(
+          "Filtered 1 illegal runtime task mutation",
+        );
+      }
+    } finally {
+      if (previous === undefined) {
+        delete process.env.MAY_AGENT_TASK_TREE_PATH;
+      } else {
+        process.env.MAY_AGENT_TASK_TREE_PATH = previous;
+      }
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  it("filters pipeline-health owner mutations of standing runtime children", async () => {
+    const tmp = mkdtempSync(join(tmpdir(), "evaluator-heartbeat-pipeline-"));
+    const previous = process.env.MAY_AGENT_TASK_TREE_PATH;
+    try {
+      process.env.MAY_AGENT_TASK_TREE_PATH = join(tmp, "tree.json");
+      writeFileSync(
+        process.env.MAY_AGENT_TASK_TREE_PATH,
+        JSON.stringify({
+          version: 1,
+          project: "evaluation",
+          root_task_id: "root",
+          active_task_ids: ["pipeline-health"],
+          tasks: {
+            root: { id: "root", item_type: "task", phase: "waiting" },
+            "pipeline-health": {
+              id: "pipeline-health",
+              item_type: "task",
+              phase: "running",
+              generation: 1,
+              children: ["runtime/deep-eval-scan", "runtime/aftermath-backfill"],
+            },
+            "runtime/deep-eval-scan": {
+              id: "runtime/deep-eval-scan",
+              item_type: "task",
+              phase: "attention",
+              generation: 7,
+            },
+            "runtime/aftermath-backfill": {
+              id: "runtime/aftermath-backfill",
+              item_type: "task",
+              phase: "waiting",
+              generation: 8,
+            },
+          },
+        }),
+      );
+      const harness = context({
+        state: "converged",
+        summary: "Directly clean up standing pipeline children.",
+        evidence: ["owner attempted illegal runtime child mutation"],
+        actions: [
+          {
+            kind: "close-task",
+            taskId: "runtime/deep-eval-scan",
+            expectedGeneration: 7,
+            summary: "closed by owner",
+          },
+          {
+            kind: "unblock-task",
+            taskId: "runtime/aftermath-backfill",
+            expectedGeneration: 8,
+            reason: "retry scan",
+          },
+        ],
+      });
+
+      const result = await execute(harness.ctx);
+
+      expect(result.type).toBe("done");
+      expect(harness.emitted.at(-1)).toMatchObject({
+        type: "evaluation.owner_reviewed",
+        data: { proposedActions: [] },
+      });
+      if (result.type === "done") {
+        expect(result.output).toMatchObject({ actions: [] });
+        expect(JSON.stringify(result.output)).toContain(
+          "Filtered 2 illegal runtime task mutation",
+        );
+        expect(JSON.stringify(result.output)).toContain(
+          "runtime/deep-eval-scan",
+        );
+        expect(JSON.stringify(result.output)).toContain(
+          "runtime/aftermath-backfill",
+        );
+      }
+    } finally {
+      if (previous === undefined) {
+        delete process.env.MAY_AGENT_TASK_TREE_PATH;
+      } else {
+        process.env.MAY_AGENT_TASK_TREE_PATH = previous;
+      }
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  it("filters stale owner actions whose target recovered before dispatch", async () => {
+    const tmp = mkdtempSync(join(tmpdir(), "evaluator-heartbeat-stale-"));
+    const previous = process.env.MAY_AGENT_TASK_TREE_PATH;
+    try {
+      process.env.MAY_AGENT_TASK_TREE_PATH = join(tmp, "tree.json");
+      writeFileSync(
+        process.env.MAY_AGENT_TASK_TREE_PATH,
+        JSON.stringify({
+          version: 1,
+          project: "evaluation",
+          root_task_id: "root",
+          active_task_ids: ["root"],
+          tasks: {
+            root: { id: "root", item_type: "task", phase: "waiting" },
+            "pipeline-health": {
+              id: "pipeline-health",
+              item_type: "task",
+              phase: "converged",
+              generation: 1,
+            },
+          },
+        }),
+      );
+      const harness = context({
+        state: "converged",
+        summary: "Propose unblocking recovered pipeline-health.",
+        evidence: ["pipeline-health looked waiting in the owner prompt"],
+        actions: [
+          {
+            kind: "unblock-task",
+            taskId: "pipeline-health",
+            expectedGeneration: 1,
+            reason: "recovery tick arrived",
+          },
+        ],
+      });
+
+      const result = await execute(harness.ctx);
+
+      expect(result.type).toBe("done");
+      expect(harness.emitted.at(-1)).toMatchObject({
+        type: "evaluation.owner_reviewed",
+        data: { proposedActions: [] },
+      });
+      if (result.type === "done") {
+        expect(result.output).toMatchObject({ actions: [] });
+        expect(JSON.stringify(result.output)).toContain(
+          "pipeline-health is not waiting or in attention",
+        );
+      }
+    } finally {
+      if (previous === undefined) {
+        delete process.env.MAY_AGENT_TASK_TREE_PATH;
+      } else {
+        process.env.MAY_AGENT_TASK_TREE_PATH = previous;
+      }
+      rmSync(tmp, { recursive: true, force: true });
     }
   });
 

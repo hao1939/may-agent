@@ -61,7 +61,9 @@ function firstReviewEvidencePath(evidence: string[]): string | null {
   return path ?? null;
 }
 
-function phaseToStatus(phase: string): "pending" | "running" | "blocked" | null {
+function phaseToStatus(
+  phase: string,
+): "pending" | "running" | "blocked" | null {
   if (phase === "waiting") return "blocked";
   if (phase === "running") return "running";
   if (phase === "pending" || phase === "ready" || phase === "attention") {
@@ -86,8 +88,12 @@ function projectedWait(condition: Record<string, unknown>): {
   ) {
     const taskId = subject.slice("task:".length);
     const equals = text(expected.equals);
-    const field = text(expected.field) || (type === "task-field" ? "field" : "phase");
-    const hasNotEquals = Object.prototype.hasOwnProperty.call(expected, "notEquals");
+    const field =
+      text(expected.field) || (type === "task-field" ? "field" : "phase");
+    const hasNotEquals = Object.prototype.hasOwnProperty.call(
+      expected,
+      "notEquals",
+    );
     const notEquals = hasNotEquals ? expected.notEquals : undefined;
     return {
       waitingCondition: conditionId || null,
@@ -141,9 +147,13 @@ function projectedWaitTarget(
 
   const type = text(waitingFor.type);
   const taskId = text(waitingFor.taskId);
-  const field = text(waitingFor.field) || (type === "task-field" ? "field" : "phase");
+  const field =
+    text(waitingFor.field) || (type === "task-field" ? "field" : "phase");
   const equals = text(waitingFor.equals);
-  const hasNotEquals = Object.prototype.hasOwnProperty.call(waitingFor, "notEquals");
+  const hasNotEquals = Object.prototype.hasOwnProperty.call(
+    waitingFor,
+    "notEquals",
+  );
   const notEquals = hasNotEquals ? waitingFor.notEquals : undefined;
 
   if (taskId && equals) {
@@ -337,8 +347,7 @@ export function syncFeatureCompactProjection(
       mappedStatus === "blocked"
         ? summary || currentItem.blockedReason || null
         : null,
-    waitingCondition:
-      mappedStatus === "blocked" ? wait.waitingCondition : null,
+    waitingCondition: mappedStatus === "blocked" ? wait.waitingCondition : null,
     waitingFor: mappedStatus === "blocked" ? wait.waitingFor : null,
     resumeCondition:
       mappedStatus === "blocked"
@@ -387,14 +396,25 @@ export function syncFeatureCompactProjection(
     lastCheckedAt: statusUpdatedAt,
     updatedAt: statusUpdatedAt,
     reviewEvidencePath:
-      firstReviewEvidencePath(evidence) || currentItem.reviewEvidencePath || null,
+      firstReviewEvidencePath(evidence) ||
+      currentItem.reviewEvidencePath ||
+      null,
     evidencePaths:
       evidence.length > 0
-        ? [...new Set([...(stringList(currentItem.evidencePaths) ?? []), ...evidence])]
+        ? [
+            ...new Set([
+              ...(stringList(currentItem.evidencePaths) ?? []),
+              ...evidence,
+            ]),
+          ]
         : currentItem.evidencePaths || null,
   };
 
-  const appChanged = updateStateFile(appStatePath(appDir), featureKey, nextItem);
+  const appChanged = updateStateFile(
+    appStatePath(appDir),
+    featureKey,
+    nextItem,
+  );
   const pairedProjectPath = projectStatePath(appDir);
   const projectChanged = pairedProjectPath
     ? updateStateFile(pairedProjectPath, featureKey, nextItem)

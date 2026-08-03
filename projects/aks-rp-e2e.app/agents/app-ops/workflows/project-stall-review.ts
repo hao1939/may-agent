@@ -1,7 +1,7 @@
 /**
  * project-stall-review — app-ops deep-dive fallback for project liveness stalls.
  *
- * Code gathers state without mutating the task graph. The agent judges why the
+ * Code gathers state without changing the task graph. The agent judges why the
  * project is not moving; the app controller owns all resulting task changes.
  */
 
@@ -391,7 +391,7 @@ You are judging why the aks-rp-e2e project is not moving.
 Division of responsibility:
 - Workflow code collected the packet below and applied only mechanical repair.
 - You judge the process root cause and the next project move.
-- Do not mutate the task tree from this diagnostic session. The planner will
+- Do not change the task tree from this diagnostic session. The planner will
   consume project.stall.reviewed and make task-tree decisions.
 - Use the durable task tree, loop state, and recent journal facts. Do not treat
   lack of perfect information as a reason to block; recommend the best concrete

@@ -225,6 +225,141 @@ describe("app event contract", () => {
     );
   });
 
+  test("projects May approval-decision messages into project.approval.submitted when an exact approval wait is asleep", async () => {
+    const appDir = mkdtempSync(join(tmpdir(), "approval-decision-projection-"));
+    const emitted: Record<string, unknown>[] = [];
+    const waitingTaskId =
+      "ops/reconcile-unowned-dirty-detached-tmp-origin-dev-42642b6c-20260801";
+    const approvalId =
+      "aks-rp-e2e:approval:ops/request-approval-tmp-origin-dev-42642b6c-residue-cleanup-20260801:evidence-archive-ops-request-tmp-origin-dev-42642b6c-residue-cleanup-approval-20260801-packet.md";
+    const waitId =
+      "wait:aks-rp-e2e:approval:ops/request-approval-tmp-origin-dev-42642b6c-residue-cleanup-20260801:evidence-archive-ops-request-tmp-origin-dev-42642b6c-residue-cleanup-approval-20260801-packet.md";
+    const pathId =
+      "ops/request-approval-tmp-origin-dev-42642b6c-residue-cleanup-20260801";
+    const conditionId = "approval-return:tmp-origin-dev-42642b6c-cleanup";
+
+    try {
+      writeJson(resolve(appDir, ".state/tasks/state.json"), {
+        version: 2,
+        project: projectId,
+        resources: {
+          [waitingTaskId]: {
+            metadata: { id: waitingTaskId, generation: 1, resourceVersion: 1 },
+            spec: { owner: "app-ops" },
+            status: {
+              phase: "waiting",
+              conditionIds: [conditionId],
+            },
+          },
+        },
+        conditions: {
+          [conditionId]: {
+            metadata: { id: conditionId, generation: 1, resourceVersion: 1 },
+            spec: {
+              type: "project.approval.submitted",
+              subject: "project:aks-rp-e2e",
+              expected: {
+                approvalKind: "approval-packet-dispatch",
+                approvalId,
+                waitId,
+                pathId,
+                packetPath:
+                  "evidence/archive/ops-request-tmp-origin-dev-42642b6c-residue-cleanup-approval-20260801-packet.md",
+                acceptedDecisions: [
+                  "approve",
+                  "adjust",
+                  "hold",
+                  "decline",
+                  "reroute",
+                ],
+              },
+            },
+            status: {
+              observedGeneration: 0,
+              state: "unknown",
+              observedAt: "2026-08-01T22:34:07.589Z",
+            },
+          },
+        },
+        attempts: {},
+      });
+
+      const result = await routeAksEvent(
+        {
+          appPath: (path = ".") => resolve(appDir, path),
+          emit: (value: Record<string, unknown>) => emitted.push(value),
+        } as never,
+        {
+          type: "message.created",
+          source: "agent:may",
+          owner: "agent:app-ops",
+          eventId: 4844998,
+          data: {
+            from: "may",
+            to: "app-ops",
+            intent: "approval-decision",
+            content:
+              "[approval-decision] Decision: approve\n\nApproval id: " +
+              approvalId +
+              "\nWait id: " +
+              waitId +
+              "\nProject: aks-rp-e2e\n\nApprove deletion of only /tmp/aks-origin-dev-42642b6c/node_modules subject to the final execution-time reread safety checks already specified in the packet.",
+          },
+        },
+      );
+
+      expect(result).toEqual({
+        approvalDecisionProjected: true,
+        projectedApprovalDecision: {
+          approvalId,
+          waitId,
+          project: "aks-rp-e2e",
+          decision: "approve",
+          message:
+            "[approval-decision] Decision: approve\n\nApproval id: " +
+            approvalId +
+            "\nWait id: " +
+            waitId +
+            "\nProject: aks-rp-e2e\n\nApprove deletion of only /tmp/aks-origin-dev-42642b6c/node_modules subject to the final execution-time reread safety checks already specified in the packet.",
+          pathId,
+          packetPath:
+            "evidence/archive/ops-request-tmp-origin-dev-42642b6c-residue-cleanup-approval-20260801-packet.md",
+          conditionIds: [conditionId],
+          taskIds: [waitingTaskId],
+        },
+      });
+      expect(emitted).toEqual([
+        {
+          type: "project.approval.submitted",
+          source: "aks-rp-e2e-app",
+          target: { project: projectId },
+          data: {
+            project: projectId,
+            approvalKind: "approval-packet-dispatch",
+            approvalId,
+            waitId,
+            pathId,
+            decision: "approve",
+            message:
+              "[approval-decision] Decision: approve\n\nApproval id: " +
+              approvalId +
+              "\nWait id: " +
+              waitId +
+              "\nProject: aks-rp-e2e\n\nApprove deletion of only /tmp/aks-origin-dev-42642b6c/node_modules subject to the final execution-time reread safety checks already specified in the packet.",
+            sourceMessageType: "message.created",
+            sourceMessageIntent: "approval-decision",
+            sourceMessageOwner: "agent:app-ops",
+            sourceMessageEventId: 4844998,
+            packetPath:
+              "evidence/archive/ops-request-tmp-origin-dev-42642b6c-residue-cleanup-approval-20260801-packet.md",
+          },
+        },
+      ]);
+    } finally {
+      rmSync(appDir, { recursive: true, force: true });
+    }
+  });
+
   test("refreshes owner-visible readout when the controller promotes a runnable task into the live active frontier", async () => {
     const rootDir = mkdtempSync(join(tmpdir(), "owner-visible-refresh-"));
     const appDir = join(rootDir, "aks-rp-e2e.app");
@@ -765,12 +900,12 @@ describe("app event contract", () => {
         target: { project: projectId },
       }),
     ).toMatchObject({
-      id: "runtime/unified-resource-migration-project-state-v1",
+      id: "runtime/unified-resource-migration-resource-liveness-v2",
       parentId: "group/app-operations",
       mode: "achieve",
       owner: "app-ops",
       workflow: "unified-resource-migration",
-      input: { migration: "project-state-holders-v1" },
+      input: { migration: "resource-liveness-v2" },
     });
   });
 
@@ -956,6 +1091,20 @@ describe("app event contract", () => {
     });
   });
 
+  test("routes rejected waiting-frontier migration cleanup to its own receipt", () => {
+    expect(
+      resolveAksTask({
+        type: "aks.waiting-frontier-migration-cleanup.requested",
+        target: { project: projectId },
+      }),
+    ).toMatchObject({
+      id: "runtime/unified-resource-migration-waiting-frontier-v1",
+      mode: "achieve",
+      workflow: "unified-waiting-frontier-migration",
+      input: { migration: "waiting-frontier-direct-resolver-v2" },
+    });
+  });
+
   test("routes finite holder cleanup through stable bounded batches", () => {
     expect(
       resolveAksTask({
@@ -1123,13 +1272,204 @@ describe("app event contract", () => {
         },
       );
 
-      expect(result).not.toHaveProperty("createdReadyTaskWake");
+      expect(result).not.toHaveProperty("appliedReadyTaskWake");
       expect(emitted).not.toContainEqual(
         expect.objectContaining({
           type: "project.task.tick",
           target: { project: projectId, taskId: childTaskId },
         }),
       );
+    } finally {
+      rmSync(appDir, { recursive: true, force: true });
+    }
+  });
+
+  test("leaves updated ready tasks to the shared controller queue", async () => {
+    const appDir = mkdtempSync(join(tmpdir(), "updated-ready-task-"));
+    const emitted: Record<string, unknown>[] = [];
+    const sourceTaskId = "runtime/owner-review";
+    const taskId =
+      "domain/reconcile-direct-scenario-quality-app-routing-default-domain-istio";
+    try {
+      mkdirSync(resolve(appDir, ".state/tasks"), { recursive: true });
+      writeFileSync(
+        resolve(appDir, ".state/tasks/tree.json"),
+        JSON.stringify({
+          active_task_ids: [],
+          tasks: {
+            [taskId]: {
+              id: taskId,
+              phase: "pending",
+              readiness: { state: "ready" },
+            },
+          },
+        }),
+      );
+
+      const result = await routeAksEvent(
+        {
+          appPath: (path = ".") => resolve(appDir, path),
+          emit: (value: Record<string, unknown>) => emitted.push(value),
+        } as never,
+        {
+          type: "project.task.reconciled",
+          target: { project: projectId, taskId: sourceTaskId },
+          data: {
+            project: projectId,
+            taskId: sourceTaskId,
+            disposition: "converged",
+            actionsApplied: [`updated ${taskId}`],
+          },
+        },
+      );
+
+      expect(result).not.toHaveProperty("appliedReadyTaskWake");
+      expect(emitted).not.toContainEqual(
+        expect.objectContaining({
+          type: "project.task.tick",
+          target: { project: projectId, taskId },
+        }),
+      );
+    } finally {
+      rmSync(appDir, { recursive: true, force: true });
+    }
+  });
+
+  test("leaves recovered-task scheduling to the shared runtime", async () => {
+    const appDir = mkdtempSync(join(tmpdir(), "recovered-ready-task-"));
+    const emitted: Record<string, unknown>[] = [];
+    const taskId =
+      "domain/reconcile-direct-scenario-quality-autoupgrader-tests-autoupgrader-vm-prerelease-umbrella-7ab9b4c8";
+    try {
+      mkdirSync(resolve(appDir, ".state/tasks"), { recursive: true });
+      writeFileSync(
+        resolve(appDir, ".state/tasks/tree.json"),
+        JSON.stringify(
+          {
+            active_task_ids: [],
+            tasks: {
+              [taskId]: {
+                id: taskId,
+                phase: "pending",
+                readiness: {
+                  state: "ready",
+                  reason: "Task recovered and is ready to retry",
+                  related_ids: [],
+                },
+              },
+            },
+          },
+          null,
+          2,
+        ),
+      );
+
+      const result = await routeAksEvent(
+        {
+          appPath: (path = ".") => resolve(appDir, path),
+          emit: (value: Record<string, unknown>) => emitted.push(value),
+        } as never,
+        {
+          type: "project.task.handler.recovered",
+          target: { project: projectId, taskId },
+          data: {
+            project: projectId,
+            taskId,
+            task_id: taskId,
+            reason: "owner-session-succeeded-after-handler-execution-failure",
+          },
+        },
+      );
+
+      expect(result).toMatchObject({
+        eventType: "project.task.handler.recovered",
+        recoveredTaskId: taskId,
+        recoveryScheduling: "shared-runtime",
+      });
+      expect(emitted).toEqual([]);
+    } finally {
+      rmSync(appDir, { recursive: true, force: true });
+    }
+  });
+
+  test("leaves satisfied-Condition scheduling to the shared runtime", async () => {
+    const appDir = mkdtempSync(join(tmpdir(), "pipeline-ready-task-"));
+    const emitted: Record<string, unknown>[] = [];
+    const taskId =
+      "domain/reconcile-direct-scenario-quality-autoupgrader-tests-autoupgrader-vm-prerelease-umbrella-7ab9b4c8";
+    try {
+      mkdirSync(resolve(appDir, ".state/tasks"), { recursive: true });
+      writeFileSync(
+        resolve(appDir, ".state/tasks/tree.json"),
+        JSON.stringify(
+          {
+            active_task_ids: [],
+            tasks: {
+              [taskId]: {
+                id: taskId,
+                phase: "waiting",
+                readiness: {
+                  state: "waiting",
+                  reason: "Projection has not observed the condition yet",
+                  related_ids: ["pipeline-run-174886017-completed"],
+                },
+              },
+            },
+          },
+          null,
+          2,
+        ),
+      );
+      writeFileSync(
+        resolve(appDir, ".state/tasks/state.json"),
+        JSON.stringify(
+          {
+            resources: {
+              [taskId]: {
+                status: {
+                  phase: "waiting",
+                  conditionIds: ["pipeline-run-174886017-completed"],
+                },
+              },
+            },
+            conditions: {
+              "pipeline-run-174886017-completed": {
+                status: { state: "true" },
+              },
+            },
+            attempts: {},
+          },
+          null,
+          2,
+        ),
+      );
+
+      const result = await routeAksEvent(
+        {
+          appPath: (path = ".") => resolve(appDir, path),
+          emit: (value: Record<string, unknown>) => emitted.push(value),
+        } as never,
+        {
+          type: "pipeline.completed",
+          target: { project: projectId },
+          data: {
+            project: projectId,
+            taskId,
+            task_id: taskId,
+            pipelineRunId: "174886017",
+            runId: "174886017",
+            status: "completed",
+            result: "succeeded",
+          },
+        },
+      );
+
+      expect(result).toMatchObject({
+        eventType: "pipeline.completed",
+        taskId,
+        conditionScheduling: "shared-runtime",
+      });
+      expect(emitted).toEqual([]);
     } finally {
       rmSync(appDir, { recursive: true, force: true });
     }
@@ -1504,6 +1844,106 @@ describe("app event contract", () => {
       );
 
       expect(result).not.toHaveProperty("repoRefOwnerHandoffReplay");
+      expect(emitted).toEqual([]);
+    } finally {
+      rmSync(appDir, { recursive: true, force: true });
+    }
+  });
+
+  test("leaves satisfied repo-ref continuation to the shared Condition tracker", async () => {
+    const appDir = mkdtempSync(join(tmpdir(), "repo-ref-wait-reconciled-"));
+    const taskId =
+      "ops/reconcile-reraised-traffic-api-proxy-contract-helper-retained-worktree-7bbb6f45ba-at-ed1c33b9-20260801";
+    try {
+      mkdirSync(resolve(appDir, ".state/tasks"), { recursive: true });
+      mkdirSync(resolve(appDir, ".state/watchers"), { recursive: true });
+      writeFileSync(
+        resolve(appDir, ".state/tasks/state.json"),
+        JSON.stringify(
+          {
+            version: 2,
+            project: projectId,
+            resources: {
+              [taskId]: {
+                metadata: { id: taskId, generation: 3, resourceVersion: 29 },
+                spec: {
+                  parentId: "runtime/owner-review",
+                  outcome:
+                    "From current origin/dev, re-read the retained traffic-api-proxy worktree and preserve or revise its same-surface disposition from current facts.",
+                  acceptance: [
+                    "Keep the exact retained worktree path claimed while this carrier remains live.",
+                  ],
+                  mode: "achieve",
+                  owner: "app-ops",
+                  input: {
+                    workspacePath:
+                      "/app/worktrees/aks-rp-e2e/domain-reconcile-traffic-api-proxy-contract-helper-unpaired-adapter-orig-7bbb6f45ba",
+                  },
+                },
+                status: {
+                  phase: "waiting",
+                  conditionIds: [
+                    "aks-rp-e2e-origin-dev-advance-after-70f667c7-traffic-api-proxy",
+                  ],
+                },
+              },
+            },
+            conditions: {
+              "aks-rp-e2e-origin-dev-advance-after-70f667c7-traffic-api-proxy":
+                {
+                  spec: {
+                    type: "aks.repo-ref.observed",
+                    subject: "project:aks-rp-e2e",
+                    expected: {
+                      baseRef: "origin/dev",
+                      shaNotEquals: "70f667c7b688155e1786b419c384b99942f0d827",
+                    },
+                  },
+                  status: {
+                    observedGeneration: 0,
+                    state: "unknown",
+                    observedAt: "2026-08-01T16:31:08.653Z",
+                  },
+                },
+            },
+            attempts: {},
+          },
+          null,
+          2,
+        ),
+      );
+      writeFileSync(
+        resolve(appDir, ".state/watchers/repo-ref.json"),
+        JSON.stringify(
+          {
+            refs: {
+              "origin/dev": "a189864494c5a93aebedb99502e8fa1349c97dc4",
+            },
+            checkedAt: "2026-08-02T13:44:07.661Z",
+          },
+          null,
+          2,
+        ),
+      );
+
+      const emitted: Record<string, unknown>[] = [];
+      const result = await routeAksEvent(
+        {
+          appPath: (path = ".") => resolve(appDir, path),
+          emit: (value: Record<string, unknown>) => emitted.push(value),
+        } as never,
+        {
+          type: "project.task.reconciled",
+          target: { project: projectId, taskId },
+          data: {
+            project: projectId,
+            taskId,
+            disposition: "waiting",
+          },
+        },
+      );
+
+      expect(result).not.toHaveProperty("repoRefWaitReplay");
       expect(emitted).toEqual([]);
     } finally {
       rmSync(appDir, { recursive: true, force: true });
@@ -2150,6 +2590,208 @@ describe("app event contract", () => {
     }
   });
 
+  test("workspace-integrity coverage recognizes live task worktree inference and output-owned canonical slices", async () => {
+    const rootDir = mkdtempSync(
+      join(tmpdir(), "workspace-integrity-lived-worktree-and-outputs-"),
+    );
+    const appDir = join(rootDir, "aks-rp-e2e.app");
+    const projectDir = join(rootDir, "projects", "aks-rp-e2e");
+    const worktreePath = resolve(
+      projectDir,
+      "../../worktrees",
+      basename(projectDir),
+      "domain-repair-net-integration-cross-tenant-accepted-path-compact-sync-20-d18eaea04b",
+    );
+    const unmatchedWorktreePath = resolve(
+      projectDir,
+      "../../worktrees",
+      basename(projectDir),
+      "domain-repair-net-integration-cross-tenant-accepted-path-compact-sync-20-fffffffffe",
+    );
+    const netIntegrationTaskId =
+      "domain/repair-net-integration-cross-tenant-accepted-path-compact-sync-20260730";
+    const knowledgeMapTaskId =
+      "domain/reconcile-clean-origin-dev-knowledge-map-slice-ccp-net-private-20260730";
+    const knowledgeMapPaths = [
+      "model/knowledge-map/model.json",
+      "model/knowledge-map/views/evidence-index.md",
+      "model/knowledge-map/views/evidence-matrix.json",
+      "model/knowledge-map/views/graph-view.json",
+      "model/knowledge-map/views/model.generated.md",
+      "model/knowledge-map/views/path-summary.json",
+      "model/knowledge-map/views/status-summary.json",
+    ];
+    const uncoveredRelativePath = "features/unclaimed/spec.json";
+    try {
+      mkdirSync(resolve(appDir, ".state/tasks"), { recursive: true });
+      mkdirSync(worktreePath, { recursive: true });
+      execFileSync("git", ["init", "-b", "dev", projectDir]);
+      git(projectDir, "config", "user.email", "test@example.com");
+      git(projectDir, "config", "user.name", "Test");
+      for (const relativePath of knowledgeMapPaths) {
+        const absolutePath = join(projectDir, relativePath);
+        mkdirSync(dirname(absolutePath), { recursive: true });
+        writeFileSync(absolutePath, "base\n");
+      }
+      git(projectDir, "add", ...knowledgeMapPaths);
+      git(projectDir, "commit", "-m", "base");
+      for (const relativePath of knowledgeMapPaths) {
+        const absolutePath = join(projectDir, relativePath);
+        writeFileSync(absolutePath, `base\n${relativePath}\n`);
+      }
+
+      const coveredEvent = {
+        type: "aks.workspace.integrity.changed",
+        target: { project: projectId },
+        data: {
+          checkedAt: "2026-07-30T15:23:45.769Z",
+          fingerprint: "demo-lived-worktree-and-outputs-covered",
+          canonical: {
+            branch: "dev",
+            head: "489628037a4ef9a8ae54e91765eb2f2663d775d4",
+            expectedHead: "d4a775c0ac42ed1b4eca2c952c0f18ead2b0b11d",
+            clean: false,
+            healthy: false,
+          },
+          anomalies: [
+            { path: projectDir, kind: "canonical-unhealthy" },
+            { path: projectDir, kind: "unowned-dirty" },
+            { path: worktreePath, kind: "unowned-dirty" },
+          ],
+        },
+      };
+
+      writeJson(resolve(appDir, ".state/tasks/tree.json"), {
+        root_task_id: "project",
+        tasks: {
+          project: {
+            id: "project",
+            children: [netIntegrationTaskId, knowledgeMapTaskId],
+          },
+          [netIntegrationTaskId]: {
+            id: netIntegrationTaskId,
+            generation: 1,
+            phase: "pending",
+            input: {
+              baseRef: "origin/dev",
+              featureKey: "net-integration",
+            },
+          },
+          [knowledgeMapTaskId]: {
+            id: knowledgeMapTaskId,
+            phase: "waiting",
+            outputs: knowledgeMapPaths,
+          },
+        },
+      });
+
+      const coveredEmitted: Record<string, unknown>[] = [];
+      const coveredResult = await routeAksEvent(
+        {
+          appPath: (path = ".") =>
+            path === "../aks-rp-e2e" ? projectDir : resolve(appDir, path),
+          emit: (value: Record<string, unknown>) => coveredEmitted.push(value),
+        } as never,
+        coveredEvent,
+      );
+
+      expect(coveredResult).toMatchObject({
+        ownerReviewRequested: false,
+        workspaceIntegrityOwnerReviewSuppressed: true,
+        workspaceIntegrityCoveredByTask: {
+          [`unowned-dirty:${worktreePath}`]: [netIntegrationTaskId],
+          [`canonical:${join(projectDir, "model/knowledge-map/model.json")}`]: [
+            knowledgeMapTaskId,
+          ],
+          [`canonical:${join(projectDir, "model/knowledge-map/views/evidence-index.md")}`]:
+            [knowledgeMapTaskId],
+          [`canonical:${join(projectDir, "model/knowledge-map/views/evidence-matrix.json")}`]:
+            [knowledgeMapTaskId],
+          [`canonical:${join(projectDir, "model/knowledge-map/views/graph-view.json")}`]:
+            [knowledgeMapTaskId],
+          [`canonical:${join(projectDir, "model/knowledge-map/views/model.generated.md")}`]:
+            [knowledgeMapTaskId],
+          [`canonical:${join(projectDir, "model/knowledge-map/views/path-summary.json")}`]:
+            [knowledgeMapTaskId],
+          [`canonical:${join(projectDir, "model/knowledge-map/views/status-summary.json")}`]:
+            [knowledgeMapTaskId],
+        },
+      });
+      expect(coveredEmitted).toEqual([]);
+
+      mkdirSync(dirname(join(projectDir, uncoveredRelativePath)), {
+        recursive: true,
+      });
+      writeFileSync(
+        join(projectDir, uncoveredRelativePath),
+        "base\nuncovered\n",
+      );
+      mkdirSync(unmatchedWorktreePath, { recursive: true });
+
+      const uncoveredEmitted: Record<string, unknown>[] = [];
+      const uncoveredResult = await routeAksEvent(
+        {
+          appPath: (path = ".") =>
+            path === "../aks-rp-e2e" ? projectDir : resolve(appDir, path),
+          emit: (value: Record<string, unknown>) =>
+            uncoveredEmitted.push(value),
+        } as never,
+        {
+          ...coveredEvent,
+          data: {
+            ...coveredEvent.data,
+            fingerprint: "demo-lived-worktree-and-outputs-uncovered",
+            anomalies: [
+              ...coveredEvent.data.anomalies,
+              { path: unmatchedWorktreePath, kind: "unowned-dirty" },
+            ],
+          },
+        },
+      );
+
+      expect(uncoveredResult).toMatchObject({
+        ownerReviewRequested: true,
+        workspaceIntegrityOwnerReviewSuppressed: false,
+        workspaceIntegrityUncovered: [
+          {
+            path: unmatchedWorktreePath,
+            kind: "unowned-dirty",
+            reason: "no-live-task-claim",
+          },
+          {
+            path: join(projectDir, uncoveredRelativePath),
+            kind: "canonical-dirty-path",
+            reason: "no-live-task-claim",
+          },
+        ],
+      });
+      expect(uncoveredEmitted).toContainEqual(
+        expect.objectContaining({
+          type: "project.owner.requested",
+          target: { project: projectId },
+          data: expect.objectContaining({
+            project: projectId,
+            reason: "workspace-integrity-changed",
+            uncovered: [
+              {
+                path: unmatchedWorktreePath,
+                kind: "unowned-dirty",
+                reason: "no-live-task-claim",
+              },
+              {
+                path: join(projectDir, uncoveredRelativePath),
+                kind: "canonical-dirty-path",
+                reason: "no-live-task-claim",
+              },
+            ],
+          }),
+        }),
+      );
+    } finally {
+      rmSync(rootDir, { recursive: true, force: true });
+    }
+  });
+
   test("workspace-integrity coverage lets compact holders cover feature compact and source directories", async () => {
     const rootDir = mkdtempSync(
       join(tmpdir(), "workspace-integrity-compact-holder-"),
@@ -2370,7 +3012,7 @@ describe("app event contract", () => {
     );
   });
 
-  test("resolver maps semantic events to stable domain tasks", () => {
+  test("resolver maps semantic events to stable domain tasks", async () => {
     const ownerA = resolveAksTask({
       type: "project.owner.requested",
       target: { project: projectId },
@@ -2386,6 +3028,12 @@ describe("app event contract", () => {
       mode: "maintain",
       owner: "app-ops",
     });
+    expect(ownerA?.acceptance?.join("\n")).toContain(
+      "scenario-normalization is the sole frontier and live-capacity owner",
+    );
+    expect(ownerA?.acceptance?.join("\n")).toContain(
+      "wake the existing scenario-normalization task",
+    );
     expect(ownerB?.id).toBe(ownerA?.id);
     expect(ownerA?.workflow).toBeUndefined();
     expect(ownerA?.input).toBeUndefined();
@@ -2400,12 +3048,249 @@ describe("app event contract", () => {
         status: "fail",
       },
     };
-    expect(resolveAksTask(earlyFailure)).toMatchObject({
+    expect(resolveAksTask(earlyFailure)).toBeNull();
+    expect(eventIsHandled(earlyFailure)).toBe(true);
+    const earlyFailureEmits: Record<string, unknown>[] = [];
+    await expect(
+      routeAksEvent(
+        {
+          emit: (value: Record<string, unknown>) =>
+            earlyFailureEmits.push(value),
+        } as never,
+        earlyFailure,
+      ),
+    ).resolves.toMatchObject({
+      masterValidationFailureRouted: false,
+      ownerReviewRequested: true,
+      reason: "non-aggregate-task-owner-review-requested",
+    });
+    expect(earlyFailureEmits).toEqual([
+      expect.objectContaining({
+        type: "project.owner.requested",
+        source: "aks-rp-e2e-app",
+        target: { project: projectId },
+        data: expect.objectContaining({
+          project: projectId,
+          reason: "pipeline-test-nonpassing",
+          pipelineRunId: "173790426",
+          specId: "spec.example",
+          status: "fail",
+        }),
+      }),
+    ]);
+    expect(resolveAksTask(earlyFailureEmits[0])).toMatchObject({
       id: "runtime/owner-review",
       mode: "maintain",
       owner: "app-ops",
     });
-    expect(eventIsHandled(earlyFailure)).toBe(true);
+
+    const routedFailures: Record<string, unknown>[] = [];
+    const progressiveFailure = {
+      type: "pipeline.test.nonpassing",
+      target: { project: projectId },
+      validationTaskId: "master-validation-staging-cycle",
+      validationGeneration: "6",
+      data: {
+        project: projectId,
+        validationTaskId: "master-validation-staging-cycle",
+        validationGeneration: "6",
+        pipelineRunId: "174796530",
+        sourceBranch: "refs/heads/validation/master-validation-173853081",
+        sourceVersion: "3ffc651bdbaccc9ba08e47d2eb9671ede3aad2f4",
+        specId: "spec.managed-namespaces.lifecycle",
+        sliceId: "05",
+        status: "fail",
+        category: "unknown",
+        reason:
+          "Azure timeline reported a failure before artifacts were available.",
+        phase: "provider-timeline",
+        phaseDetail: "completed",
+        failureFingerprint: "0d59e858d6a1339cb058",
+      },
+    };
+    expect(progressiveFailure).not.toHaveProperty("taskId");
+    expect(progressiveFailure.data).not.toHaveProperty("taskId");
+
+    await expect(
+      routeAksEvent(
+        {
+          emit: (value: Record<string, unknown>) => routedFailures.push(value),
+        } as never,
+        progressiveFailure,
+      ),
+    ).resolves.toMatchObject({
+      masterValidationFailureRouted: false,
+      ownerReviewRequested: true,
+      reason: "master-validation-progressive-awaiting-artifact",
+    });
+    expect(routedFailures).toHaveLength(1);
+    expect(routedFailures[0]).toMatchObject({
+      type: "project.owner.requested",
+      source: "aks-rp-e2e-app",
+      target: { project: projectId },
+      data: expect.objectContaining({
+        reason: "master-validation-progressive-nonpassing",
+        validationTaskId: "master-validation-staging-cycle",
+        pipelineRunId: "174796530",
+        specId: "spec.managed-namespaces.lifecycle",
+        summary: expect.stringContaining(
+          "leave classification and source-changing work to the later pipeline.failure.observed artifact event",
+        ),
+      }),
+    });
+    expect(routedFailures[0]).not.toHaveProperty("taskId");
+    expect(resolveAksTask(routedFailures[0])).toMatchObject({
+      id: "runtime/owner-review",
+      owner: "app-ops",
+    });
+
+    const appDir = mkdtempSync(
+      join(tmpdir(), "master-validation-progressive-reuse-"),
+    );
+    try {
+      writeJson(resolve(appDir, ".state/tasks/state.json"), {
+        resources: {
+          "domain/master-validation-failure/spec.managed-namespaces.lifecycle/c17abe6e8a69376e9e6f":
+            {
+              metadata: { generation: 46, resourceVersion: 210 },
+              spec: {
+                parentId: "group/domain-work",
+                outcome:
+                  "Classify and resolve the progressively observed master-validation failure or temporary admission exclusion for spec.managed-namespaces.lifecycle without waiting for the aggregate pipeline to finish.",
+                acceptance: [
+                  "Keep the stable managed-namespaces carrier current.",
+                ],
+                mode: "achieve",
+                owner: "aks-explorer",
+                workflow: "master-validation-failure",
+                input: {
+                  pipelineRunId: "174826569",
+                  sourceBranch:
+                    "refs/heads/validation/master-validation-173853081",
+                  sourceCommit: "3ffc651bdbaccc9ba08e47d2eb9671ede3aad2f4",
+                  specId: "spec.managed-namespaces.lifecycle",
+                  status: "fail",
+                  category: "product_failure",
+                  reason: "one or more public kube validations failed",
+                  failureFingerprint: "c17abe6e8a69376e9e6f",
+                  artifactName: "slice-05-test-results",
+                  artifactPath:
+                    "/artifacts/174826569/slice-05-test-results/result.json",
+                },
+                priority: "P0",
+                category: "domain",
+              },
+              status: { phase: "waiting" },
+            },
+          "domain/master-validation-failure/spec.managed-namespaces.lifecycle/63cb03e81dc5a71f4fb8":
+            {
+              metadata: { generation: 3, resourceVersion: 57 },
+              spec: {
+                parentId: "group/domain-work",
+                outcome:
+                  "Classify and resolve the progressively observed master-validation failure or temporary admission exclusion for spec.managed-namespaces.lifecycle without waiting for the aggregate pipeline to finish.",
+                acceptance: [
+                  "Keep the older managed-namespaces carrier current.",
+                ],
+                mode: "achieve",
+                owner: "aks-explorer",
+                workflow: "master-validation-failure",
+                input: {
+                  pipelineRunId: "174541834",
+                  sourceBranch:
+                    "refs/heads/validation/master-validation-173301999",
+                  sourceCommit: "e6fc6f662ec8debb0ee6d8bd7df0b5f7c4913c9c",
+                  specId: "spec.managed-namespaces.lifecycle",
+                  status: "fail",
+                  category: "product_failure",
+                  reason: "older artifact-backed managed-namespaces failure",
+                  failureFingerprint: "63cb03e81dc5a71f4fb8",
+                },
+                priority: "P0",
+                category: "domain",
+              },
+              status: { phase: "waiting" },
+            },
+        },
+      });
+
+      const unrelatedOwnerReview = {
+        type: "project.comment.created",
+        target: { project: projectId },
+        data: { project: projectId, comment: "unrelated owner review" },
+      };
+      expect(resolveAksTask(unrelatedOwnerReview)).toMatchObject({
+        id: "runtime/owner-review",
+        mode: "maintain",
+        owner: "app-ops",
+      });
+
+      const reusedFailures: Record<string, unknown>[] = [];
+      await expect(
+        routeAksEvent(
+          {
+            appPath: (path = ".") => resolve(appDir, path),
+            emit: (value: Record<string, unknown>) =>
+              reusedFailures.push(value),
+          } as never,
+          progressiveFailure,
+        ),
+      ).resolves.toMatchObject({
+        masterValidationFailureRouted: true,
+        pipelineRunId: "174796530",
+        specId: "spec.managed-namespaces.lifecycle",
+        failureFingerprint: "c17abe6e8a69376e9e6f",
+        stableTaskId:
+          "domain/master-validation-failure/spec.managed-namespaces.lifecycle",
+      });
+      expect(reusedFailures).toEqual([
+        expect.objectContaining({
+          type: "pipeline.failure.observed",
+          source: "aks-rp-e2e-app",
+          target: { project: projectId },
+          failureFingerprint: "c17abe6e8a69376e9e6f",
+          stableTaskId:
+            "domain/master-validation-failure/spec.managed-namespaces.lifecycle",
+          data: expect.objectContaining({
+            pipelineRunId: "174796530",
+            specId: "spec.managed-namespaces.lifecycle",
+            category: "product_failure",
+            reason: "one or more public kube validations failed",
+            artifactName: "slice-05-test-results",
+            artifactPath:
+              "/artifacts/174826569/slice-05-test-results/result.json",
+            progressiveObservation: true,
+          }),
+        }),
+      ]);
+      expect(resolveAksTask(reusedFailures[0])).toMatchObject({
+        id: "domain/master-validation-failure/spec.managed-namespaces.lifecycle",
+        parentId: "group/domain-work",
+        owner: "aks-explorer",
+        workflow: "master-validation-failure",
+        input: expect.objectContaining({
+          validationTaskId: "master-validation-staging-cycle",
+          pipelineRunId: "174796530",
+          specId: "spec.managed-namespaces.lifecycle",
+          failureFingerprint: "c17abe6e8a69376e9e6f",
+          progressiveObservation: true,
+        }),
+      });
+      expect(
+        resolveAksTask({
+          ...reusedFailures[0],
+          failureFingerprint: "different-episode",
+          data: {
+            ...(reusedFailures[0] as { data: Record<string, unknown> }).data,
+            failureFingerprint: "different-episode",
+          },
+        })?.id,
+      ).toBe(
+        "domain/master-validation-failure/spec.managed-namespaces.lifecycle",
+      );
+    } finally {
+      rmSync(appDir, { recursive: true, force: true });
+    }
 
     expect(
       resolveAksTask({
@@ -2445,6 +3330,7 @@ describe("app event contract", () => {
       owner: "aks-explorer",
       workflow: "normalize-scenario-frontier",
       mode: "maintain",
+      priority: "P1",
     });
     expect(
       resolveAksTask({
@@ -2466,6 +3352,17 @@ describe("app event contract", () => {
       eventId: 202,
     });
     expect(problemA?.input).toEqual(problemB?.input);
+    expect(
+      resolveAksTask({
+        type: "project.problem.investigation.requested",
+        target: { project: projectId },
+        problemKey: "localdns-producerless-project-state-condition-20260730",
+        taskId: "hold-compact-localdns-split-frontier-e8d7677892-20260730",
+      })?.input,
+    ).toMatchObject({
+      problemKey: "localdns-producerless-project-state-condition-20260730",
+      targetTaskId: "hold-compact-localdns-split-frontier-e8d7677892-20260730",
+    });
     expect(
       resolveAksTask({
         type: "project.focus.review.requested",
@@ -2490,6 +3387,8 @@ describe("app event contract", () => {
           requestedAction: "Approve one bounded live execution",
           summary: "Preserve the exact approval tuple on the runtime task.",
           target: "human:operator",
+          authority: "human",
+          requiresHumanDecision: true,
           approvalId:
             "aks-rp-e2e:approval:path.network-cni-azure-overlay-dual-stack-migration:evidence-archive-network-cni-approval-packet.md",
           waitId:
@@ -2506,6 +3405,8 @@ describe("app event contract", () => {
         reason: "manual-approval-packet-dispatch-request",
         requestedAction: "Approve one bounded live execution",
         summary: "Preserve the exact approval tuple on the runtime task.",
+        authority: "human",
+        requiresHumanDecision: true,
         waitId:
           "wait:aks-rp-e2e:approval:path.network-cni-azure-overlay-dual-stack-migration:evidence-archive-network-cni-approval-packet.md",
       },
@@ -2563,7 +3464,7 @@ describe("app event contract", () => {
     const schedule = appManifest.schedules?.find(
       (entry) => entry.id === "master-validation-staging-cycle",
     );
-    expect(schedule?.intervalMs).toBe(300_000);
+    expect(schedule?.intervalMs).toBe(21_600_000);
     expect(scheduleEvents("master-validation-staging-cycle")).toEqual([
       expect.objectContaining({
         type: "aks.master-validation.check",
@@ -2631,7 +3532,7 @@ describe("app event contract", () => {
     }
   });
 
-  test("an active frozen campaign reconciles on the five-minute pulse", async () => {
+  test("an active frozen campaign reconciles on the six-hour recovery pulse", async () => {
     const appDir = mkdtempSync(
       join(tmpdir(), "master-validation-campaign-gate-"),
     );
@@ -2939,6 +3840,217 @@ describe("app event contract", () => {
         action: "waiting-frontier-review",
       }),
     ).toBeNull();
+  });
+
+  test("suppresses an unchanged strict-red wait-only frontier without a recovery scan", async () => {
+    const appDir = mkdtempSync(join(tmpdir(), "scenario-inventory-dedupe-"));
+
+    try {
+      writeJson(resolve(appDir, ".state/tasks/state.json"), {
+        version: 2,
+        project: projectId,
+        resources: {
+          "scenario-normalization": {
+            status: {
+              phase: "converged",
+              summary: "Agent-authored summary is not machine parsed.",
+              evidence: [
+                "origin-dev-commit:23d754e9ce82252103471e106a7ce7e43f5b6209",
+                "strict-passed:false",
+                "missing-adapters:0",
+                "remaining-spec-referenced-plain-scenario-units:22",
+                "remaining-repo-plain-scenario-files:100",
+                "declared-normalization-actions:0",
+                "actionable-plain-rows:0",
+                "waiting-plain-rows:22",
+                "unrepresented-plain-rows:0",
+              ],
+            },
+          },
+        },
+      });
+
+      const emitted: Record<string, unknown>[] = [];
+      const result = await routeAksEvent(
+        {
+          appPath: (path = ".") => resolve(appDir, path),
+          emit: (value: Record<string, unknown>) => emitted.push(value),
+        } as never,
+        {
+          type: "aks.scenario-test-inventory.observed",
+          target: { project: projectId },
+          data: {
+            project: projectId,
+            observation: {
+              observedAt: "2026-07-29T23:49:34.251Z",
+              sourceRef: "origin/dev",
+              sourceCommit: "23d754e9ce82252103471e106a7ce7e43f5b6209",
+              sourceKind: "clean-ref-worktree",
+              state: "red",
+              strictPassed: false,
+              activeSpecCount: 701,
+              referencedPlainActiveSpecCount: 22,
+              referencedScenarioWithAdapterCount: 22,
+              directVitestImplementationCount: 674,
+              remainingSpecReferencedPlainScenarioCount: 22,
+              remainingRepoPlainScenarioFileCount: 100,
+              missingAdapterFiles: [],
+            },
+          },
+        },
+      );
+
+      expect(result).toEqual({
+        taskId: "scenario-normalization",
+        observed: true,
+        wakeSuppressed: true,
+      });
+      expect(emitted).toEqual([]);
+    } finally {
+      rmSync(appDir, { recursive: true, force: true });
+    }
+  });
+
+  test("does not suppress a changed strict-inventory frontier commit", async () => {
+    const appDir = mkdtempSync(
+      join(tmpdir(), "scenario-inventory-commit-change-"),
+    );
+
+    try {
+      writeJson(resolve(appDir, ".state/tasks/state.json"), {
+        version: 2,
+        project: projectId,
+        resources: {
+          "scenario-normalization": {
+            status: {
+              phase: "converged",
+              summary:
+                "Scenario frontier remains strict-red on origin/dev 23d754e9ce82252103471e106a7ce7e43f5b6209 with zero missing adapter files: declared 0 bounded plain-carrier normalization task action(s), observed 0 actionable and 22 waiting plain-carrier task(s), counted 0 exact pipeline-backed wait(s) and 0 pending owner-adjudication handoff(s) against live execution capacity for 0/5 occupied slot(s), found 22 current spec-referenced plain scenario unit(s), 100 remaining repo plain scenario file(s), and 0 row(s) represented only by attention or stale terminal residue.",
+              evidence: [
+                "origin-dev-commit:23d754e9ce82252103471e106a7ce7e43f5b6209",
+                "strict-passed:false",
+                "missing-adapters:0",
+                "remaining-spec-referenced-plain-scenario-units:22",
+                "remaining-repo-plain-scenario-files:100",
+                "declared-normalization-actions:0",
+                "actionable-plain-rows:0",
+                "waiting-plain-rows:22",
+                "unrepresented-plain-rows:0",
+              ],
+            },
+          },
+        },
+      });
+
+      const emitted: Record<string, unknown>[] = [];
+      const result = await routeAksEvent(
+        {
+          appPath: (path = ".") => resolve(appDir, path),
+          emit: (value: Record<string, unknown>) => emitted.push(value),
+        } as never,
+        {
+          type: "aks.scenario-test-inventory.observed",
+          target: { project: projectId },
+          data: {
+            project: projectId,
+            observation: {
+              observedAt: "2026-07-30T00:10:00.000Z",
+              sourceRef: "origin/dev",
+              sourceCommit: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              sourceKind: "clean-ref-worktree",
+              state: "red",
+              strictPassed: false,
+              remainingSpecReferencedPlainScenarioCount: 22,
+              remainingRepoPlainScenarioFileCount: 100,
+              missingAdapterFiles: [],
+            },
+          },
+        },
+      );
+
+      expect(result).toEqual({
+        taskId: "scenario-normalization",
+        observed: true,
+        wakeSuppressed: false,
+      });
+      expect(emitted).toHaveLength(1);
+      expect(emitted[0]).toMatchObject({
+        type: "project.task.tick",
+        target: { project: projectId, taskId: "scenario-normalization" },
+      });
+    } finally {
+      rmSync(appDir, { recursive: true, force: true });
+    }
+  });
+
+  test("does not suppress when the latest converged frontier shows uncovered or actionable drift", async () => {
+    const appDir = mkdtempSync(join(tmpdir(), "scenario-inventory-uncovered-"));
+
+    try {
+      writeJson(resolve(appDir, ".state/tasks/state.json"), {
+        version: 2,
+        project: projectId,
+        resources: {
+          "scenario-normalization": {
+            status: {
+              phase: "converged",
+              summary:
+                "Scenario frontier remains strict-red on origin/dev 23d754e9ce82252103471e106a7ce7e43f5b6209 with zero missing adapter files: declared 0 bounded plain-carrier normalization task action(s), observed 0 actionable and 22 waiting plain-carrier task(s), counted 0 exact pipeline-backed wait(s) and 0 pending owner-adjudication handoff(s) against live execution capacity for 0/5 occupied slot(s), found 22 current spec-referenced plain scenario unit(s), 100 remaining repo plain scenario file(s), and 0 row(s) represented only by attention or stale terminal residue.",
+              evidence: [
+                "origin-dev-commit:23d754e9ce82252103471e106a7ce7e43f5b6209",
+                "strict-passed:false",
+                "missing-adapters:0",
+                "remaining-spec-referenced-plain-scenario-units:22",
+                "remaining-repo-plain-scenario-files:100",
+                "declared-normalization-actions:0",
+                "actionable-plain-rows:0",
+                "waiting-plain-rows:22",
+                "unrepresented-plain-rows:1",
+              ],
+            },
+          },
+        },
+      });
+
+      const emitted: Record<string, unknown>[] = [];
+      const result = await routeAksEvent(
+        {
+          appPath: (path = ".") => resolve(appDir, path),
+          emit: (value: Record<string, unknown>) => emitted.push(value),
+        } as never,
+        {
+          type: "aks.scenario-test-inventory.observed",
+          target: { project: projectId },
+          data: {
+            project: projectId,
+            observation: {
+              observedAt: "2026-07-29T23:49:34.251Z",
+              sourceRef: "origin/dev",
+              sourceCommit: "23d754e9ce82252103471e106a7ce7e43f5b6209",
+              sourceKind: "clean-ref-worktree",
+              state: "red",
+              strictPassed: false,
+              remainingSpecReferencedPlainScenarioCount: 22,
+              remainingRepoPlainScenarioFileCount: 100,
+              missingAdapterFiles: [],
+            },
+          },
+        },
+      );
+
+      expect(result).toEqual({
+        taskId: "scenario-normalization",
+        observed: true,
+        wakeSuppressed: false,
+      });
+      expect(emitted).toHaveLength(1);
+      expect(emitted[0]).toMatchObject({
+        type: "project.task.tick",
+        target: { project: projectId, taskId: "scenario-normalization" },
+      });
+    } finally {
+      rmSync(appDir, { recursive: true, force: true });
+    }
   });
 
   test("strict inventory wakes its domain frontier without owner-review indirection", () => {

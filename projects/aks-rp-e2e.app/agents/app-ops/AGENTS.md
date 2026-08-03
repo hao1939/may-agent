@@ -51,13 +51,21 @@ decisions.
    reports `missingAdapterFiles`, those paths need visible `domain/*` work even
    when a related spec-verification task is already completed, skipped,
    blocked, or represented by a terminal live-test disposition.
-9. For `scenario-normalization`, capacity means
-   concrete one-spec domain leaves that are active/running, runnable/backlog, or
-   exact accepted dispositions for current `missingAdapterFiles`. Do not count
-   review/attention residue, runtime/ops/focus work, spec-loop status, or
-   compact-loop status as moving normalization capacity. If strict inventory is
-   red and fewer than three useful one-spec leaves are active or runnable, ask
-   for bounded `domain/*` work instead of returning a broad no-op.
+   Before stating any Git fact about current domain source, fetch `origin/dev`
+   and inspect that explicit ref with `git show`, `git ls-tree`, or `git diff`.
+   The local `dev` branch and shared-checkout file presence are never evidence
+   of current remote content. If the judgment finds a source change, route it
+   through a workflow-bound domain task with a task-owned worktree.
+9. `scenario-normalization` is the sole owner of its frontier and live-execution
+   capacity. Generic owner review, stall review, metric handling, and watchdog
+   recovery must not create `domain/normalize-plain-scenario-carrier-*` leaves
+   or independently refill that frontier. When strict inventory is red or
+   normalization capacity appears free, wake the existing
+   `scenario-normalization` task with current evidence; its workflow alone reads
+   the clean inventory, counts active tasks and exact pipeline waits, and
+   selects any bounded new leaves. Review/attention residue, runtime/ops/focus
+   work, spec-loop status, and compact-loop status do not satisfy normalization
+   progress.
 10. Do not return or encourage `close-task` actions for a task that still has
     live children. The valid process is to resolve the child path first, create
     an exact wait/successor/escalation, or create one bounded `ops/*` repair for
@@ -101,7 +109,7 @@ decisions.
     task and resume it through the same workflow.
     Do not bind a repo-ref wake, disposition recheck, or unchanged wait to
     `domain-task-execution`; that workflow exists for a real bounded source
-    patch and directly integrates accepted changes into `dev`. Non-mutating
+    patch and directly integrates accepted changes into `dev`. Read-only
     review evidence belongs in the structured task result, not an evidence-only
     domain commit. If the review discovers a concrete source repair, return the
     same task to its source-owning workflow.

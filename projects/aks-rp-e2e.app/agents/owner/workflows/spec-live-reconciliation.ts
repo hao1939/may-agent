@@ -22,6 +22,7 @@ import {
   type WorkflowIoContract,
   type WorkflowResult,
 } from "@may-agent/sdk";
+import { appendTrackedPipelineRunId } from "../../../watchers/aks-pipeline.js";
 import {
   scenarioNormalizationInvariant,
   scenarioNormalizationSpecIds,
@@ -56,7 +57,7 @@ export const acceptedLiveProofSourceInstruction =
 export const semanticClaimEvidenceInstruction =
   "Judge every declared claim against the exact observation recorded for that claim, not against its ok flag, assertion name, summary, or provider result. Configuration or enablement proves only configuration or enablement; it does not by itself prove that a runtime component is healthy, an operation was optimized, or another claimed behavior occurred. If assertion evidence says the required observation was unavailable, not performed, assumed from provisioning, or requires a tool that was not used, that claim is not proven and accepted-pass is forbidden. Repair the carrier to observe the behavior directly, narrow or correct an inaccurate claim only when official authority supports that change, or return the exact unavailable capability. Do not convert this judgment into a code-side prose heuristic.";
 export const directVitestCompatibilityInstruction =
-  "ADO loads a direct scenario .test.ts carrier through Vitest without guaranteeing the Bun runtime global. Validate a new or repaired direct carrier on the Vitest collection/runtime surface, not only with `bun test`; import test APIs from `vitest`, never `bun:test`; replace runtime uses such as `Bun.spawn`, `Bun.spawnSync`, and `Bun.file` with portable Node APIs; and ensure every imported scenario library guards CLI execution with `import.meta.main` instead of calling `main()` during Vitest collection. A Bun-only passing test is not live-ready evidence. Run the normal `bun run spec <spec-id> --check` path with the task target so the runner wires exact target inputs; if a direct Vitest check also needs target inputs, read them from that exact runner target configuration. Never fabricate subscription, region, API version, Kubernetes version, or VM-size placeholders as check evidence.";
+  "ADO loads a direct scenario .test.ts carrier through Vitest without guaranteeing the Bun runtime global. A standalone direct carrier means no child-process wrapper: do not `execFile`, `spawn`, or shell out to Bun or a sibling plain scenario file just to reach the real implementation. Validate a new or repaired direct carrier on the Vitest collection/runtime surface, not only with `bun test`; import test APIs from `vitest`, never `bun:test`; replace runtime uses such as `Bun.spawn`, `Bun.spawnSync`, and `Bun.file` with portable Node APIs; and ensure every imported scenario library guards CLI execution with `import.meta.main` instead of calling `main()` during Vitest collection. A Bun-only passing test is not live-ready evidence. Run the normal `bun run spec <spec-id> --check` path with the task target so the runner wires exact target inputs; if a direct Vitest check also needs target inputs, read them from that exact runner target configuration. Never fabricate subscription, region, API version, Kubernetes version, or VM-size placeholders as check evidence.";
 export const exactStrictInventoryInstruction =
   "The repository-wide strict inventory is expected to exit nonzero while other rows remain. Capture and parse its JSON anyway; this leaf is clear only when its exact legacy path is absent from both guard.remainingSpecReferencedPlainScenarioUnits and guard.remainingRepoPlainScenarioFiles.";
 export const currentAdoSurfaceInstruction =
@@ -64,7 +65,7 @@ export const currentAdoSurfaceInstruction =
 export const transientRetryDiagnosisInstruction =
   "Do not trust a result's blocked/error category or environment/transient label as the diagnosis. A timeout, generic ARM failure, incomplete provisioning state, or successful cleanup alone does not prove that an unchanged retry is truthful. Before retry-transient, inspect the exact task source and failure-stage evidence for deterministic ordering, identity, authorization, configuration, and API-contract mistakes, and state affirmative evidence that excludes those causes. When the available evidence cannot distinguish a provider incident from a source defect, improve the carrier's failure diagnostics or return one exact observable wait; do not guess transient.";
 export const scenarioQualityRepairInstruction =
-  "For a quality-normalization task, resolve every cited structural quality issue before requesting ADO. Read the current strict inventory and exact source yourself, repair the same carrier/spec in this task, and keep iterating until the cited issue codes are absent. A green ADO run proves execution only; it does not waive missing official grounding, migration-only scaffolding, target/mutation gates, or fixture/cleanup ownership.";
+  "For a quality-normalization task, resolve every cited structural quality issue before requesting ADO. Read the current strict inventory and exact source yourself, repair the same carrier/spec in this task, and keep iterating until the cited issue codes are absent. Ground contract expectations in official Learn, Azure REST API specs, and checked-in design docs; treat mounted AKS RP or Go source as implementation evidence only, and never require a private/local filesystem path as carrier authority. A green ADO run proves execution only; it does not waive missing official grounding, migration-only scaffolding, target/mutation gates, or fixture/cleanup ownership.";
 const azCli =
   process.env.AZURE_CLI_PATH ||
   (existsSync("/app/.state/.local/bin/az")
@@ -153,7 +154,9 @@ export function completedPullRequestIntegration(input: {
   | {
       status: "unproven";
       reason:
-        "merge-not-succeeded" | "source-mismatch" | "merge-commit-missing";
+        | "merge-not-succeeded"
+        | "source-mismatch"
+        | "merge-commit-missing";
     } {
   if (input.mergeStatus !== "succeeded") {
     return { status: "unproven", reason: "merge-not-succeeded" };
@@ -239,6 +242,7 @@ export type LiveDispatchAdmission = {
 
 export type SpecLiveReconciliationOptions = {
   targetBranch?: string;
+  allowTerminalDisposition?: boolean;
   existingRecoveryAfterRunId?: string;
   reusePriorIntegratedProof?: boolean;
   reviewedScenarioPatch?: boolean;
@@ -363,7 +367,17 @@ export function exactPassNeedsOwnerProblem(
   if (allowTerminalDisposition || decision.decision !== "needs-owner") {
     return null;
   }
-  return "needs-owner is invalid because this task requires exact passing live proof; fix internal source gaps in the same workflow or return waiting with one exact observable Condition for a genuine external blocker";
+  const requiredEvidencePrefixes = [
+    "external-capability:",
+    "external-producer:",
+    "artifact:",
+    "resume-condition:",
+  ];
+  const missingPrefixes = requiredEvidencePrefixes.filter(
+    (prefix) => !decision.evidence.some((entry) => entry.startsWith(prefix)),
+  );
+  if (missingPrefixes.length === 0) return null;
+  return `needs-owner cannot defer an exact-pass task without a precise external ownership boundary; keep internal source gaps in this workflow, use waiting for an observable external fact, or identify the unavailable capability with ${missingPrefixes.join(", ")} evidence`;
 }
 
 export function shouldReplayReviewedTerminalWriteback(input: {
@@ -870,7 +884,9 @@ export function mergeAcceptedTargetAdvanceProof(input: {
   | {
       state: "reverify";
       reason:
-        "merge-conflict" | "protected-path-changed" | "merge-commit-failed";
+        | "merge-conflict"
+        | "protected-path-changed"
+        | "merge-commit-failed";
     } {
   const merge = git(
     input.workspaceDir,
@@ -2882,6 +2898,10 @@ export function pipelineWaitCondition(runId: string): ProjectAppConditionSpec {
   };
 }
 
+export function registerSpecLiveTrackedRun(appDir: string, runId: string) {
+  return appendTrackedPipelineRunId(appDir, runId);
+}
+
 export function taskScopedAgentCondition(
   taskId: string,
   generation: number,
@@ -3450,8 +3470,10 @@ export async function reconcileSpecLive(
   const taskId = nonEmptyString(payload?.taskId);
   const generation = Number(payload?.generation ?? 1);
   const normalizationInput = payload?.input as
-    ScenarioNormalizationInput | undefined;
+    | ScenarioNormalizationInput
+    | undefined;
   const allowTerminalDisposition =
+    options.allowTerminalDisposition ??
     payload?.input?.allowTerminalDisposition !== false;
   const selectedSpecIds = scenarioNormalizationSpecIds(normalizationInput);
   const specId = selectedSpecIds.join(",");
@@ -4431,6 +4453,10 @@ export async function reconcileSpecLive(
             ? { retryOfRunId }
             : {}),
         });
+        registerSpecLiveTrackedRun(
+          ctx.appDir ?? "/app/projects/aks-rp-e2e.app",
+          nonEmptyString(run.id),
+        );
         return {
           state: "queued",
           run,
@@ -4440,19 +4466,24 @@ export async function reconcileSpecLive(
       }
 
       if (!directScenarioNormalization) {
+        const run = await queueRun(repoDir, {
+          taskId,
+          generation,
+          specId,
+          sourceBranch,
+          sourceCommit: dispatchCommit,
+          target: liveTarget,
+          standaloneBuildId,
+          ...(livePlanPath ? { planPath: livePlanPath } : {}),
+          ...(retryOfRunId ? { retryOfRunId } : {}),
+        });
+        registerSpecLiveTrackedRun(
+          ctx.appDir ?? "/app/projects/aks-rp-e2e.app",
+          nonEmptyString(run.id),
+        );
         return {
           state: "queued",
-          run: await queueRun(repoDir, {
-            taskId,
-            generation,
-            specId,
-            sourceBranch,
-            sourceCommit: dispatchCommit,
-            target: liveTarget,
-            standaloneBuildId,
-            ...(livePlanPath ? { planPath: livePlanPath } : {}),
-            ...(retryOfRunId ? { retryOfRunId } : {}),
-          }),
+          run,
           sourceCommit: dispatchCommit,
           evidence: dispatchEvidence,
         };
@@ -5228,6 +5259,13 @@ export async function reconcileSpecLive(
       latestRun = run;
       runs = uniqueRuns([run, ...runs]);
       saveRunReceipt(contextDir, run, sourceCommit);
+      const runId = nonEmptyString(run.id);
+      if (runId) {
+        registerSpecLiveTrackedRun(
+          ctx.appDir ?? "/app/projects/aks-rp-e2e.app",
+          runId,
+        );
+      }
       return null;
     };
     if (authoritativeRetryRun) {
@@ -5341,7 +5379,7 @@ export async function reconcileSpecLive(
           : []),
         allowTerminalDisposition
           ? "A blocked spec, reviewed exception, or intentionally paused execution path is not live-ready merely because its file layout is normalized. Implement a truthful observable contract, return an exact wait, make the structured terminal-disposition judgment when the scenario-normalization exception above applies, or identify the genuine ownership boundary."
-          : "This task requires exact passing live proof. A product or environment failure remains an open recovery obligation: repair it or return one exact wait or genuine ownership boundary; do not use terminal-disposition as completion.",
+          : "This task requires exact passing live proof. A product or environment failure remains an open recovery obligation: repair it or return one exact wait or genuine ownership boundary; do not use terminal-disposition as completion. When the app cannot observe a genuine external blocker, return needs-owner and name it with external-capability:<capability>, external-producer:<producer>, artifact:<evidence path>, and resume-condition:<observable fact> evidence.",
         "Do not queue ADO, create a PR, create another branch/worktree, or edit app task state; this workflow owns those steps.",
         "Use waiting only with one exact machine-observable Condition. Use needs-owner only for a concrete decision that source facts cannot resolve.",
         "Task:",

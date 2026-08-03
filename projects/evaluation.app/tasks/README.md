@@ -13,17 +13,17 @@ The normative schema and authoring rules live in
 `tasks/seed.json` contains only responsibilities that remain true for the life
 of the app. They use `reconcile_mode: "maintain"`:
 
-| Task | Desired state |
-| --- | --- |
-| `evaluation-system` | Independent evaluation stays current, useful, and reliable. |
-| `session-audit` | Eligible terminal sessions have traceable evaluations or structured skips. |
-| `project-app-audit` | Every watched app has a current independent health assessment. |
-| `finding-delivery` | Actionable findings reach owners and useful human decisions without duplicates. |
-| `evaluator-reliability` | Evaluation's own workflows and control path remain reliable and bounded. |
-| `pipeline-health` | Coverage, throughput, review delivery, and anomaly state remain observable. |
-| `criteria-and-calibration` | Criteria remain versioned and calibrated against concrete samples. |
-| `drift-detection` | Comparable cohorts expose meaningful quality drift without speculative work. |
-| `system-integrity` | Evaluator-local state, routing, ownership, and reports remain internally consistent. |
+| Task                       | Desired state                                                                                                                                  |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `evaluation-system`        | Independent evaluation stays current, useful, and reliable.                                                                                    |
+| `session-audit`            | Eligible terminal sessions have traceable evaluations or structured skips.                                                                     |
+| `project-app-audit`        | Every watched app has a current independent health assessment.                                                                                 |
+| `finding-delivery`         | Actionable findings reach owners and useful human decisions without duplicates.                                                                |
+| `evaluator-reliability`    | Evaluation's own workflows and control path remain reliable and bounded; reconciles through the filtered `evaluator-heartbeat` owner workflow. |
+| `pipeline-health`          | Coverage, throughput, review delivery, and anomaly state remain observable through `evaluator-heartbeat`.                                      |
+| `criteria-and-calibration` | Criteria remain versioned and calibrated against concrete samples.                                                                             |
+| `drift-detection`          | Comparable cohorts expose meaningful quality drift without speculative work.                                                                   |
+| `system-integrity`         | Evaluator-local state, routing, ownership, and reports remain internally consistent.                                                           |
 
 Completed migrations, retired ideas, incidents, and dated repair tasks do not
 belong in the seed. They are bounded `achieve` children and leave the live graph
@@ -33,20 +33,46 @@ after their result is absorbed.
 
 `app.ts` maps known events to task intent:
 
-| Task key | Mode | Handler | Convergence |
-| --- | --- | --- | --- |
-| `runtime/session-aftermath/<session>` | `achieve` | `evaluator-aftermath` | The exact session has a durable evaluation or structured skip. |
-| `runtime/deep-eval/<session>` | `achieve` | `evaluator-deep-eval` | The requested session has one workflow-traced deep judgment. |
-| `runtime/pipeline-monitor` | `maintain` | `evaluator-pipeline-monitor` | The current snapshot is recorded and unchanged state creates no owner wake. |
-| `runtime/aftermath-backfill` | `maintain` | `evaluator-aftermath` | At most one missed session is recovered, or no eligible candidate exists now. |
-| `runtime/deep-eval-scan` | `maintain` | `evaluator-deep-eval` | At most one candidate is reviewed, or none exists now. |
-| `runtime/project-audit/<target>` | `maintain` | `project-health-evaluator` | The target fingerprint is current and any due report/feedback is persisted. |
-| `runtime/owner-review` | `maintain` | evaluator owner | Typed task actions are applied atomically, or the owner records a justified no-op. |
+| Task key                              | Mode       | Handler                      | Convergence                                                                                    |
+| ------------------------------------- | ---------- | ---------------------------- | ---------------------------------------------------------------------------------------------- |
+| `runtime/aftermath-backfill`          | `maintain` | `evaluator-aftermath`        | The oldest eligible missing evaluation is recorded; the same task continues while more remain. |
+| `runtime/session-aftermath/<session>` | `achieve`  | `evaluator-aftermath`        | An explicitly requested session has a durable evaluation or structured skip.                   |
+| `runtime/deep-eval/<session>`         | `achieve`  | `evaluator-deep-eval`        | The requested session has one workflow-traced deep judgment.                                   |
+| `runtime/pipeline-monitor`            | `maintain` | `evaluator-pipeline-monitor` | The current snapshot is recorded and unchanged state creates no owner wake.                    |
+| `runtime/deep-eval-scan`              | `maintain` | `evaluator-deep-eval`        | At most one candidate is reviewed, or none exists now.                                         |
+| `runtime/project-audit/<target>`      | `maintain` | `project-health-evaluator`   | The target fingerprint is current and any due report/feedback is persisted.                    |
+| `runtime/owner-review`                | `maintain` | evaluator owner              | Typed task actions are applied atomically, or the owner records a justified no-op.             |
 
 Changing trigger payloads are observations. They are passed to the handler as
 the trigger event, not copied into a standing task's desired specification.
 Only stable configuration belongs in a `maintain` task input. This prevents a
 metric timestamp or manual review reason from creating a new task generation.
+
+For automatic aftermath, `session.end` is first reduced to a compact
+`evaluation.aftermath.scan` event. The workflow discovers work from the session
+and evaluation tables, evaluates one session in order, and emits the same
+compact wake when another eligible session remains. The database and session
+eval trails hold per-session history; the task tree holds only the standing
+frontier. Explicit requests may still use a short-lived per-session task.
+
+## Legacy Aftermath Migration
+
+The one-time migration removes the former automatic
+`runtime/session-aftermath/<session>` live resources, triggers, attempts, and
+receipts. It does not remove evaluations, session transcripts, eval trails, or
+reports. Any terminal session without an evaluation is rediscovered by the
+standing frontier.
+
+Run it only with evaluation reconciliation paused and attempts drained:
+
+```text
+bun run migrate:session-aftermath --pause
+# reload project apps and wait for running evaluation attempts to finish
+bun run migrate:session-aftermath
+bun run migrate:session-aftermath --apply --expected-revision=<dry-run revision>
+bun run migrate:session-aftermath --resume
+# reload project apps again
+```
 
 ## Ownership And Waits
 

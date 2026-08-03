@@ -228,6 +228,13 @@ explore-xhs finds credentials unavailable
 Scout remains the owner throughout. The design must not create or repeatedly
 run a child task owned by `human`.
 
+Credential observations are level-triggered. A transition to `ready` wakes the
+waiting source task once; repeated `ready` observations and stale observations
+from an older credential revision do not start work. A transition back to
+`unavailable` updates the level and future exact wait without creating a retry
+storm. Regression tests cover repeated same-level observations, stale
+revisions, restart, and ready/unavailable transitions.
+
 ## Library Health
 
 `agents/scout/workflows/library-health.ts` is code-only observation. It

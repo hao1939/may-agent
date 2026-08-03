@@ -2375,7 +2375,7 @@
         ? "Do not invoke az CLI for this test. The CLI surface is the scenario/source of the captured payload, not the runtime executor."
         : "",
       "",
-      "Before mutation, verify owner preflight, ARM auth, explicit cloud gate, cleanup plan, and assertion boundaries.",
+      "Before changing Azure resources, verify owner preflight, ARM authentication, the live-run safety key, the cleanup plan, and assertion boundaries.",
       "After execution, record JSON and markdown evidence under evidence/archive, update model status only for proven verdict-driving assertions, and report the result back to the task tree and feature page.",
     ]
       .filter(function (line) {
@@ -2746,11 +2746,11 @@
         specLine +
         pathList +
         "\n\n" +
-        "⚠️ This generates a script artifact only — it does NOT execute cloud mutation.\n\n" +
+        "⚠️ This only generates a script. It does not change Azure resources.\n\n" +
         "Requirements:\n" +
         "1. Produce a run-plan referencing the test spec assertions and knowledge paths\n" +
-        "2. Generate a TypeScript REST probe with correct API version, resource path, and request body\n" +
-        "3. Wire execution gates: --check mode, DRY_RUN=1 default, ALLOW_CLOUD_MUTATION guard\n" +
+        "2. Generate a TypeScript REST scenario test with the correct API version, resource path, and request body\n" +
+        "3. Keep --check and dry-run paths safe, and require the exact live-run safety key before changing Azure resources\n" +
         "4. Include cleanup expectations and rollback steps\n" +
         "5. Include ARM auth verification as a pre-step\n" +
         "6. Output the script to the appropriate replays/ directory\n\n" +
@@ -2777,8 +2777,8 @@
         "3. Internal project-owner preflight must be clean\n" +
         "4. ARM auth must be verified on the execution host\n" +
         "5. Cleanup path must be documented\n" +
-        "6. ALLOW_CLOUD_MUTATION gate variable must be explicitly set\n\n" +
-        "Do NOT execute — only produce the approval artifact for human review."
+        "6. The live-run safety key must be set to the exact test value\n\n" +
+        "Do not execute it. Only produce the approval artifact for human review."
       );
     }
     if (kind === "review-script") {

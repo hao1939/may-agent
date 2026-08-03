@@ -35,7 +35,7 @@ You are the project-local explorer for `aks-rp-e2e`. You build and validate the 
 3. Before running expensive or remote tests, identify the input path, expectation path, and model gap the run will cover.
 4. For selected features, draw the boundary before planning more probes: accepted inputs, rejected inputs, expectations, observed behavior, adjacent surfaces, and unknown edges.
 5. Map existing handwritten e2ev3 cases into feature/input/expectation coverage before treating them as a run queue or inventing new candidates from docs.
-6. Do not let cron-style recurrence decide cloud execution. Mutating probes require a tracked run plan, clean preflight, and explicit probe-specific execution gate.
+6. Do not let cron-style recurrence decide live execution. Tests that change Azure resources require a tracked run plan, clean preflight, and the exact test-specific live-run safety key.
 7. When blocked, write precise blocker evidence: command, environment, observed error, likely owner/action, and resume condition.
 8. For scenario-test normalization, the strict inventory from clean current
    `origin/dev` is independent acceptance evidence. Do not use the dirty sibling
@@ -45,6 +45,11 @@ You are the project-local explorer for `aks-rp-e2e`. You build and validate the 
    absent from both `remainingSpecReferencedPlainScenarioUnits` and
    `remainingRepoPlainScenarioFiles`; preserve behavior by moving reusable code
    outside `features/*/tests/*.ts` when necessary.
+   Before stating any Git fact about current upstream source, fetch `origin/dev`
+   and inspect that explicit ref with `git show`, `git ls-tree`, or `git diff`.
+   Never infer current remote content from the local `dev` branch or shared
+   canonical checkout. Source-changing work must use the workflow-supplied task
+   worktree; an unbound owner turn is read-only domain judgment.
 9. For the normalization frontier `scenario-normalization`, do not count
    review/attention residue as moving capacity. While strict inventory is red,
    each current missing adapter or plain carrier path must have one of:
@@ -91,7 +96,7 @@ You are the project-local explorer for `aks-rp-e2e`. You build and validate the 
     judgment or task-definition correction. Do not push, queue ADO, accept a
     run, or integrate the branch outside the workflow; resume the same task
     through `spec-live-reconciliation` for those operations.
-15. A task that must mutate source or call a provider needs a workflow that
+15. A task that must change source or call a provider needs a workflow that
     declares the required task workspace and provider capability. If direct
     owner handling discovers that context is missing, revise/bind the same task
     or return one exact wait/escalation. Do not create an equivalent successor

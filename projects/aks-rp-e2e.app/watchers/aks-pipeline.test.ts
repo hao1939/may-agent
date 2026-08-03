@@ -15,9 +15,13 @@ import {
   artifactDirectoryReady,
   boundedTrackedRunIds,
   masterValidationNoVerdictFailure,
+  mergeAdoRunObservations,
   pipelineLevelEvent,
   pipelineObservationEvents,
   pipelineQueueOverdueEvent,
+  pipelineTestNonpassingEvent,
+  progressTimelineDetailIds,
+  retainedTrackedRunIds,
   shouldEmitMasterValidationFailure,
   shouldEmitPipelineLevel,
   shouldScanProgressiveArtifacts,
@@ -98,6 +102,154 @@ describe("progressive artifact scan selection", () => {
     ).toBe(false);
   });
 
+  test("does not let stale filtered ADO results downgrade a terminal run", () => {
+    const base = {
+      runId: "174259208",
+      sourceBranch: "refs/heads/task/example",
+      sourceVersion: "abc123",
+      queueTime: "2026-07-29T04:57:51Z",
+      artifacts: [],
+      progressive: false,
+      fingerprint: "",
+    };
+    const merged = mergeAdoRunObservations([
+      {
+        ...base,
+        status: "completed",
+        result: "failed",
+        finishTime: "2026-07-29T05:14:48Z",
+      },
+      {
+        ...base,
+        status: "inProgress",
+        result: "inProgress",
+        finishTime: null,
+      },
+      {
+        ...base,
+        status: "notStarted",
+        result: "notStarted",
+        finishTime: null,
+      },
+    ]);
+
+    expect(merged).toHaveLength(1);
+    expect(merged[0]).toMatchObject({
+      status: "completed",
+      result: "failed",
+      finishTime: "2026-07-29T05:14:48Z",
+    });
+  });
+
+  test("finds bounded nested progress timelines for slice execution tasks", () => {
+    expect(
+      progressTimelineDetailIds(
+        [
+          {
+            type: "Task",
+            name: "Auth and execute plan slice",
+            details: { id: "timeline-slice-01" },
+          },
+          {
+            type: "Task",
+            name: "Auth and execute plan slice",
+            details: { id: "timeline-slice-01" },
+          },
+          {
+            type: "Task",
+            name: "Publish slice test result artifacts",
+            details: { id: "not-progress" },
+          },
+          {
+            type: "Task",
+            name: "Auth and execute plan slice",
+            details: { id: "timeline-slice-02" },
+          },
+        ],
+        1,
+      ),
+    ).toEqual(["timeline-slice-01"]);
+  });
+
+  test("preserves task correlation on early nonpassing events", () => {
+    expect(
+      pipelineTestNonpassingEvent(
+        {
+          ...completed,
+          status: "inProgress",
+          result: "inProgress",
+          progressive: false,
+          metadataTaskId: "domain/verify-serverless",
+          metadataGeneration: "6",
+        },
+        {
+          runId: "123",
+          sliceId: "01",
+          testRunId: "serverless-live",
+          specId: "spec.serverless-virtual-nodes.enable",
+          sequence: 4,
+          executionState: "completed",
+          verdict: "fail",
+          phase: "runtime",
+          phaseDetail: "virtual-node-readiness",
+          message: "virtual-node-aci-linux did not become Ready",
+          updatedAt: "2026-07-29T21:20:46Z",
+          elapsedSeconds: 900,
+          category: "runtime_readiness",
+        },
+      ),
+    ).toMatchObject({
+      type: "pipeline.test.nonpassing",
+      taskId: "domain/verify-serverless",
+      generation: "6",
+      data: expect.objectContaining({
+        taskId: "domain/verify-serverless",
+        generation: "6",
+      }),
+    });
+  });
+
+  test("keeps progressive nonpassing events app-routable instead of targeting the sleeping master-validation task", () => {
+    const event = pipelineTestNonpassingEvent(
+      {
+        ...completed,
+        status: "inProgress",
+        result: "inProgress",
+        progressive: true,
+        metadataTaskId: "master-validation-staging-cycle",
+        metadataGeneration: "6",
+      },
+      {
+        runId: "174826569",
+        sliceId: "05",
+        testRunId: "managed-namespaces-live",
+        specId: "spec.managed-namespaces.lifecycle",
+        sequence: 4,
+        executionState: "completed",
+        verdict: "fail",
+        phase: "provider-timeline",
+        phaseDetail: "completed",
+        message:
+          "Azure timeline reports spec.managed-namespaces.lifecycle fail before slice artifacts are available.",
+        updatedAt: "2026-08-02T05:06:40Z",
+        elapsedSeconds: 900,
+        category: "unknown",
+      },
+    );
+
+    expect(event).toMatchObject({
+      type: "pipeline.test.nonpassing",
+      validationTaskId: "master-validation-staging-cycle",
+      validationGeneration: "6",
+      data: expect.objectContaining({
+        validationTaskId: "master-validation-staging-cycle",
+        validationGeneration: "6",
+      }),
+    });
+    expect(event).not.toHaveProperty("taskId");
+    expect(event.data).not.toHaveProperty("taskId");
+  });
+
   test("bounds historical task artifacts while retaining active and progressive runs", () => {
     const taskRuns = Array.from({ length: 15 }, (_, index) => ({
       ...completed,
@@ -123,6 +275,63 @@ describe("progressive artifact scan selection", () => {
 
     expect(selected).toEqual(["50", "100", "113", "114"]);
     expect(boundedTrackedRunIds(["2", "1", "3", "2"], 2)).toEqual(["3", "2"]);
+  });
+
+  test("does not let an unchanged historical campaign retry artifacts forever", () => {
+    const selected = artifactRunCandidates({
+      runs: [
+        {
+          ...completed,
+          runId: "100",
+          fingerprint: "old-terminal",
+        },
+        {
+          ...completed,
+          runId: "150",
+          fingerprint: "just-finished",
+        },
+        {
+          ...completed,
+          runId: "200",
+          fingerprint: "current-live",
+          status: "inProgress",
+          result: "inProgress",
+        },
+      ],
+      previouslyTrackedRunIds: new Set(["100", "150", "200"]),
+      priorFingerprints: {
+        "100": "old-terminal",
+        "150": "previous-live",
+        "200": "current-live",
+      },
+      observedArtifacts: {},
+    }).map((run) => run.runId);
+
+    expect(selected).toEqual(["150", "200"]);
+  });
+
+  test("drops missing historical run ids after Azure returns current runs", () => {
+    const active = {
+      ...completed,
+      runId: "200",
+      status: "inProgress",
+      result: "inProgress",
+    };
+    expect(
+      retainedTrackedRunIds({
+        priorRunIds: ["100", "200"],
+        runs: [active],
+        pendingTerminalArtifactRunIds: new Set(),
+      }),
+    ).toEqual(["200"]);
+
+    expect(
+      retainedTrackedRunIds({
+        priorRunIds: ["100", "200"],
+        runs: [],
+        pendingTerminalArtifactRunIds: new Set(),
+      }),
+    ).toEqual(["200", "100"]);
   });
 
   test("recovers recent completed spec runs that still lack local artifact roots", () => {
@@ -240,7 +449,10 @@ describe("master-validation pipeline failures", () => {
   });
 });
 
-function fixture() {
+function fixture(options?: {
+  result?: Record<string, unknown>;
+  run?: Record<string, unknown> | null;
+}) {
   process.env.MAY_AGENT_AKS_PIPELINE_WATCHER_ADO = "0";
   const root = mkdtempSync(join(tmpdir(), "aks-pipeline-watcher-"));
   roots.push(root);
@@ -251,15 +463,25 @@ function fixture() {
   const resultPath = join(resultDir, "result.json");
   writeFileSync(
     resultPath,
-    JSON.stringify({ runId: "run-1", status: "passed", counts: { pass: 1 } }),
+    JSON.stringify(
+      options?.result ?? {
+        runId: "run-1",
+        status: "passed",
+        counts: { pass: 1 },
+      },
+    ),
   );
+  const runPath = join(resultDir, "run.json");
+  if (options?.run !== null && options?.run !== undefined) {
+    writeFileSync(runPath, JSON.stringify(options.run));
+  }
   const emitted: Record<string, unknown>[] = [];
   const ctx = {
     appPath: (path: string) => resolve(appDir, path),
     emit: (event: Record<string, unknown>) => emitted.push(event),
     noop: (reason: string) => ({ reason }),
   } as ProjectAppContext;
-  return { ctx, emitted, resultPath, resultsRoot: dirname(resultDir) };
+  return { ctx, emitted, resultPath, runPath, resultsRoot: dirname(resultDir) };
 }
 
 describe("AKS pipeline watcher", () => {
@@ -311,6 +533,73 @@ describe("AKS pipeline watcher", () => {
 
     await observeAksPipelines(ctx);
     expect(emitted).toEqual([]);
+  });
+
+  test("waits for the sibling local run record to become terminal before emitting completion", async () => {
+    const { ctx, emitted, resultPath, runPath } = fixture({
+      result: {
+        runId: "run-1",
+        status: "empty",
+        counts: { pass: 0, fail: 0, blocked: 0, error: 0, skipped: 0 },
+        specResults: [],
+        updatedAt: "2026-07-29T07:41:57.920Z",
+      },
+      run: {
+        runId: "run-1",
+        status: "running",
+        startedAt: "2026-07-29T07:41:56.817Z",
+        endedAt: null,
+        updatedAt: "2026-07-29T07:41:57.920Z",
+      },
+    });
+
+    await observeAksPipelines(ctx);
+    expect(emitted).toEqual([]);
+
+    writeFileSync(
+      resultPath,
+      JSON.stringify({
+        runId: "run-1",
+        status: "empty",
+        counts: { pass: 0, fail: 0, blocked: 0, error: 0, skipped: 0 },
+        specResults: [],
+        updatedAt: "2026-07-29T07:42:10.000Z",
+      }),
+    );
+    await observeAksPipelines(ctx);
+    expect(emitted).toEqual([]);
+
+    writeFileSync(
+      runPath,
+      JSON.stringify({
+        runId: "run-1",
+        status: "passed",
+        startedAt: "2026-07-29T07:41:56.817Z",
+        endedAt: null,
+        updatedAt: "2026-07-29T07:49:03.803Z",
+      }),
+    );
+    await observeAksPipelines(ctx);
+
+    const completionEvents = emitted.filter(
+      (event) => event.type === "project.test_run.completed",
+    );
+    expect(completionEvents).toHaveLength(1);
+    expect(completionEvents[0]).toMatchObject({
+      pipelineRunId: "run-1",
+      status: "empty",
+      data: expect.objectContaining({
+        resultPath,
+        runPath,
+        runStatus: "passed",
+        runState: "terminal",
+      }),
+    });
+
+    await observeAksPipelines(ctx);
+    expect(
+      emitted.filter((event) => event.type === "project.test_run.completed"),
+    ).toHaveLength(1);
   });
 
   test("emits terminal ADO facts separately from artifact materialization", () => {

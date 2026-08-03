@@ -17,7 +17,7 @@ Azure DevOps to keep it moving.
 Use the existing app reconciler, provider watcher, workflows, and Conditions:
 
 ```text
-five-minute reconciliation pulse
+six-hour recovery/due pulse or a campaign transition
   -> queue one due or newly changed origin/main run
   -> sleep on pipeline-run.state
 
@@ -35,8 +35,8 @@ stable failure task
 
 failed aggregate
   -> freeze one campaign branch at the exact tested main commit
-  -> merge focused unmerged fix heads into that branch
-  -> run -> observe -> fix -> merge another fix head -> rerun
+  -> replay only each focused PR patch onto that branch
+  -> run -> observe -> fix -> replay another focused patch -> rerun
   -> do not rebase the red campaign when main advances
   -> green campaign: wait for its focused PRs to merge
   -> verify latest main once
@@ -95,10 +95,11 @@ Every due cycle queues pipeline `467665` with these conventions:
 - `slice_max_parallel=6`.
 
 Only one matching run may be queued or running. A compact receipt preserves
-the run across process reloads. The five-minute schedule is a reconciliation
-pulse; the receipt owns the six-hour due decision. A full pass means healthy
-now, not finished forever: the maintain task remains live and queues another
-full run when the six-hour interval becomes due.
+the run across process reloads. Pipeline completion, campaign-head change, and
+focused-PR change wake the task immediately. One six-hour pulse is the recovery
+and healthy-due backstop; it is not the normal campaign progress path. A full
+pass means healthy now, not finished forever: the maintain task remains live
+and queues another full run when the six-hour interval becomes due.
 
 Every passing main result is compared with current `origin/main` before it is
 accepted. If `main` advanced during a passing run, the app queues the latest
@@ -107,11 +108,11 @@ becomes the immutable base of one repair campaign. Later main advances are
 recorded but do not continuously move that red campaign. They coalesce into one
 latest-main verification after the campaign is green and its focused PRs merge.
 
-The six-hour interval is the healthy periodic cadence. During repair, the same
-five-minute reconciliation pulse observes the campaign branch, fix PR heads,
-and active run. A changed campaign head runs immediately. An unchanged red
-campaign runs again after six hours so a deployed product or environment
-recovery can be observed without changing the source snapshot.
+The six-hour interval is the healthy periodic cadence and slow recovery
+backstop. During repair, semantic pipeline, campaign-head, and focused-PR
+transitions wake the cycle. A changed campaign head runs immediately. An
+unchanged red campaign runs again after six hours so a deployed product or
+environment recovery can be observed without changing the source snapshot.
 The wait requires a schedule event created after the Condition was admitted;
 an older manual wake with an arbitrarily large pulse value cannot be replayed
 into an immediate reconciliation loop.
@@ -133,29 +134,33 @@ main@M0
 
 - There is at most one active campaign branch.
 - Its base is the exact commit tested by the failed main run.
-- That base never moves. Do not merge or rebase newer `main` into the campaign,
-  including indirectly through a fix branch forked from newer `main`.
+- That base never moves. Do not merge or rebase newer `main` into the campaign.
 - Each repository-owned issue still has one focused branch and PR targeting
-  `main`. The campaign merges the PR head without completing the PR.
+  current `main`. The campaign replays only the commits between the PR's
+  recorded target and source heads; it never merges the PR branch ancestry.
 - Before new repair work starts, a clean task workspace with no task-only
-  commits is aligned to the frozen base. A retained workspace with unmerged
-  task work is preserved and reconciled explicitly; it is never reset merely
-  because `main` moved.
-- A focused fix branch may fork from the frozen base, an ancestor already in
-  that base, or existing approved campaign lineage. The campaign controller
-  rejects a PR head whose fork point would import newer `main`; the focused
-  change must be transplanted back onto the frozen lineage first.
-- Merge every available focused fix onto the campaign in stable PR order, then
-  test the resulting exact branch head. There is no separate candidate branch,
-  dependency plan, or blocker ranking.
+  commits is aligned to current `main`, keeping its focused PR reviewable and
+  mergeable. A retained workspace with unmerged task work is preserved and
+  reconciled explicitly; it is never reset merely because `main` moved.
+- A focused PR normally forks from current `main`, so it remains reviewable and
+  mergeable. Stable Git patch identities let the campaign recognize the same
+  repair after a rebase. An equivalent replacement PR is rebound to the repair
+  already present in the campaign without replaying it or importing new base
+  commits.
+- Replay every new focused patch onto the campaign in stable PR order, then
+  test the resulting exact branch head. A materially changed or additional
+  patch changes the campaign head and requires another run. A conflict returns
+  to the same repair task with exact evidence; it never causes the controller
+  to merge the whole source branch.
 - The failed main run already tested the untouched base, so creating the branch
   does not queue a duplicate run. A fix changing the branch head queues the
   next campaign run immediately.
 - If no repository fix changes the head, a red campaign reruns that exact head
   every six hours. This is the recovery probe for product and environment
   failures; it does not merge newer `main`.
-- Published fix branches are append-only during a campaign. A later repair adds
-  a commit; it does not rewrite a head already merged into the campaign.
+- Published focused patch series are append-only during a campaign. A later
+  repair adds a commit; it does not rewrite an already tested patch. The
+  campaign receipt records patch identities as well as PR and task identity.
 - The branch history and compact app receipt are the durable composition. No
   task-tree issue ledger or workflow phase database is added.
 - A red campaign ignores newer main commits. Once it passes and all included
@@ -183,10 +188,11 @@ watcher pulse. An empty directory is never accepted as an artifact receipt.
 
 Passes remain provider observations. As soon as one completed slice contains a
 parseable nonpassing spec result, the watcher emits its failure without waiting
-for the aggregate run. Each failure creates or updates an independently
-runnable durable task while the remaining slices continue. The stable identity
-is spec plus normalized failure fingerprint, so repeated scans and later runs
-do not create duplicate tasks.
+for the aggregate run. Each failing spec has one independently runnable current
+task while the remaining slices continue. The stable identity is the semantic
+spec key. The normalized failure fingerprint is episode history inside the
+campaign/domain record and task input; it may revise the current generation,
+but it does not create a second simultaneous carrier for the same spec.
 
 The watcher also maintains one replace-in-place provider projection at
 `.state/watchers/aks-pipeline-progress.json`. It combines the immutable plan
@@ -212,11 +218,23 @@ there is no unrelated work to preserve.
 Live `master-validation-failure` tasks are the known-issue list. No separate
 issue ledger or workflow phase database is introduced.
 
+The identity cutover is guarded. Before deploying the spec-keyed resolver, run
+`bun run migrate:master-validation-carriers --pause`, wait for attempts to
+drain, run the command without flags to review its state revision and exact
+disposition, then run it with `--apply --expected-revision=<revision>`. Deploy
+the matching app source while still paused and resume with
+`bun run migrate:master-validation-carriers --resume`. The migration keeps the
+newest live carrier and exact wait for each spec, retargets dependencies, and
+turns superseded fingerprint identities into receipts. It preserves unrelated
+orphan Conditions and refuses to run with a current carrier attempt.
+
 - The task input records `validationTaskId`, spec, normalized fingerprint,
   first/current pipeline evidence, artifact path, source commit, and desired
   terminal verdict. A prepared repair also records its exact commit/files and
   live target; standalone work records the exact build id.
-- The same spec and fingerprint update the same task when observed again.
+- The same spec always updates its one current task. A changed fingerprint is
+  retained as a new failure episode in campaign history and revises that task;
+  it does not create another live task.
 - Once that stable fingerprint has durable product-classification evidence, a
   repeated matching observation preserves the classification and refreshes its
   recovery wait. It does not forget task history and downgrade the same known
@@ -252,15 +270,17 @@ issue ledger or workflow phase database is introduced.
   and absorbs the inactive child only after the parent has integration or
   superseding current-main proof; it must not discard the child's useful branch
   or proof by merely closing it.
-- A materially different failure fingerprint creates another task.
+- A materially different failure fingerprint creates another recorded episode
+  under the same spec task. Only genuinely independent desired outcomes use
+  separate tasks.
 - A newer `main` commit does not defer repair inside the frozen campaign. Main
   drift is reconciled once, after the campaign passes; any resulting failure
   becomes the next exact snapshot campaign rather than invalidating work in
   progress.
 - Independent issue tasks may diagnose, run targeted proof, and prepare fixes
   concurrently within normal app capacity while the aggregate run continues.
-- As soon as a focused fix head is available, the standing workflow may merge
-  it into the frozen campaign and continue aggregate discovery without waiting
+- As soon as a focused fix patch is available, the standing workflow may replay
+  it onto the frozen campaign and continue aggregate discovery without waiting
   for that PR to merge into `main`.
 - A campaign failure does not require a separate targeted live run before its
   focused PR can join the campaign. The repair workflow runs scoped local
@@ -268,7 +288,7 @@ issue ledger or workflow phase database is introduced.
   Use a targeted live run only when it answers a narrower safety question; the
   full campaign rerun is the required integration proof.
 - Draft means the fix is still being verified. As soon as the affected spec
-  passes from the exact campaign commit containing that PR head, publish the PR
+  passes from the exact campaign commit containing that PR patch, publish the PR
   as non-draft and notify the human merge owner, even if unrelated campaign
   specs remain red. A fully green campaign also publishes any remaining
   included drafts before asking for merges. The app never merges a focused PR
@@ -300,7 +320,7 @@ evidence into convergence.
 
 ```text
 bounded fix commit and focused PR to main
-  -> merge the exact unmerged head into the frozen campaign
+  -> replay only the focused patch onto the frozen campaign
   -> targeted proof only when useful; full campaign proof is the integration gate
   -> fix and rerun when either path still fails
   -> green campaign may wait for focused PR merge
@@ -436,9 +456,9 @@ The design is working when:
   six-hour cadence;
 - a failed main run freezes one campaign at the tested commit and does not chase
   later main commits while red;
-- each focused test fix remains one PR to main while its exact head can be
-  tested immediately in the campaign;
-- a red campaign reruns after accumulated fix heads change and never waits only
+- each focused test fix remains one PR to current main while its focused patch
+  can be tested immediately on the frozen campaign without importing main;
+- a red campaign reruns after accumulated fix patches change and never waits only
   because those PRs are unmerged;
 - only a green campaign may wait for its focused PRs to merge;
 - each slice is ingested once only after a complete download;

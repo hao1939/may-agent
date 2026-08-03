@@ -39,14 +39,8 @@ describe("spec-loop-store", () => {
       "utf8",
     );
     await writeFile(
-      join(
-        projectDir,
-        ".github",
-        "workflows",
-        "feature-sets",
-        "dev-infra-core.txt",
-      ),
-      "path.priority\n",
+      join(projectDir, ".github", "workflows", "feature-sets", "runners.txt"),
+      "path.priority\nspec.existing\n",
       "utf8",
     );
     await writeFile(
@@ -133,13 +127,7 @@ describe("spec-loop-store", () => {
       "utf8",
     );
     await writeFile(
-      join(
-        projectDir,
-        ".github",
-        "workflows",
-        "feature-sets",
-        "dev-infra-core.txt",
-      ),
+      join(projectDir, ".github", "workflows", "feature-sets", "runners.txt"),
       "",
       "utf8",
     );

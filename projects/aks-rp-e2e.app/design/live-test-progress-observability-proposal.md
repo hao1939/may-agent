@@ -50,12 +50,19 @@ state:
 - the existing AKS pipeline watcher reads each active progressive run's
   timeline once, merges current levels with artifact-backed terminal verdicts,
   and writes the existing progress projection;
+- overlapping ADO run-list queries are merged monotonically for each run id:
+  a terminal observation cannot be downgraded by an eventually-consistent
+  `inProgress` result, and `inProgress` cannot be downgraded to `notStarted`;
+  this keeps exact waits wakeable even when filtered provider queries lag;
 - standard ADO slice-job records provide a truthful queued/running/draining
   fallback for the slice row when a runner predates per-spec detail records;
   this fallback never guesses which individual spec has started;
 - only the first fail/error observation for one run and spec emits
-  `pipeline.test.nonpassing`; it routes to the stable owner-review task, while
-  the later artifact-backed event creates or revises durable failure work;
+  `pipeline.test.nonpassing`; the event carries validation correlation without
+  targeting the sleeping validation task. If the same source already has a
+  stable failure carrier, the app reuses it. Otherwise it wakes owner review
+  for awareness only; classification, source changes, and retries wait for the
+  later artifact-backed event, which creates the durable failure work;
 - the AKS domain page and `master-validation:status` read the same projection;
   neither reads task state or raw session logs; and
 - ARM polling now exposes an optional bounded progress callback and safe
@@ -310,11 +317,13 @@ If an active record has no update for three minutes, mark it stale in the read
 model. Do not classify the test as failed until ADO or terminal test evidence
 says so.
 
-A nonpassing verdict can wake the app owner immediately. The owner may start a
-bounded investigation from the run and spec identity, but source-changing work
-must wait for enough evidence. When the terminal artifact appears, the existing
-`pipeline.failure.observed` path supplies the authoritative reason, category,
-artifact path, and cleanup proof.
+A nonpassing verdict can wake the app owner immediately. The owner may inspect
+current provider progress from the run and spec identity, but must not classify
+the issue, change source, or queue a retry before artifact evidence exists. If
+the same source already has a stable failure carrier, the app may wake that
+carrier without creating another task. When the terminal artifact appears, the
+existing `pipeline.failure.observed` path supplies the authoritative reason,
+category, artifact path, and cleanup proof.
 
 The task tree does not store heartbeats or progress rows. It stores the durable
 investigation/fix/wait only after the app decides one is needed.

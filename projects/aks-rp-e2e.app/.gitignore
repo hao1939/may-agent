@@ -16,9 +16,11 @@ tasks/*.bak*
 workflows/.may-runtime-module-*.mjs
 workspace/
 
-# Runtime evidence artifacts (metric alerts, ops repair notes)
-evidence/metric-alert-*
-evidence/metric-recovered-*
-evidence/archive/metric-alert-*
-evidence/archive/ops-*
-evidence/archive/ops/
+# Runtime evidence stays local. Durable conclusions belong in design, code,
+# tests, or the domain repository rather than dated app-run artifacts.
+/evidence/
+
+# Bounded repair/migration helpers are disposable once their conclusion is
+# represented by maintained code or documentation.
+/scripts/ops-*.ts
+/scripts/tmp-*.ts

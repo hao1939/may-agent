@@ -166,7 +166,7 @@ describe("ops-health-review", () => {
     ]);
     expect(emitted[1]).toMatchObject({
       project: "may-agent",
-      reason: "ops-health-signal",
+      reason: "ops-health-signal-changed",
       params: {
         signalCount: 1,
         signals: [
@@ -179,6 +179,57 @@ describe("ops-health-review", () => {
     });
     expect(packetLines(appDir)[0].signals[0]).toMatchObject({
       kind: "stale-escalation",
+    });
+  });
+
+  it("wakes only when signal families change or recover", async () => {
+    const { db, emitted, ctx, close } = setup();
+    const twoHoursAgo = Date.now() - 2 * 60 * 60_000;
+    db.run(
+      "INSERT INTO events (event_type, owner, source, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+      [
+        "escalation.created",
+        "agent:tech-lead",
+        "telegram",
+        JSON.stringify({ escalationId: "esc_dedup", reason: "needs reply" }),
+        twoHoursAgo,
+      ],
+    );
+    pairLatestEscalation(db, "esc_dedup");
+
+    await execute(ctx);
+    const unchanged = await execute(ctx);
+    expect(unchanged).toEqual({
+      type: "done",
+      summary:
+        "Ops health observer recorded 1 unchanged signal(s); no owner wake.",
+    });
+    expect(
+      emitted.filter((event) => event.type === "project.owner.requested"),
+    ).toHaveLength(1);
+
+    db.run(
+      "UPDATE event_pair_runs SET status = 'closed', closed_at = ? WHERE correlation_key = ?",
+      [Date.now(), "esc_dedup"],
+    );
+    const recovered = await execute(ctx);
+    close();
+
+    expect(recovered).toEqual({
+      type: "done",
+      summary: "Ops health observer recorded recovery; owner wake emitted.",
+    });
+    expect(
+      emitted.filter((event) => event.type === "project.owner.requested"),
+    ).toHaveLength(2);
+    expect(emitted.at(-1)).toMatchObject({
+      type: "project.owner.requested",
+      reason: "ops-health-recovered",
+      params: {
+        signalCount: 0,
+        activeFamilies: [],
+        previousFamilies: [{ kind: "stale-escalation", severity: "P1" }],
+      },
     });
   });
 
@@ -284,7 +335,7 @@ describe("ops-health-review", () => {
     ]);
     expect(emitted[1]).toMatchObject({
       project: "may-agent",
-      reason: "ops-health-signal",
+      reason: "ops-health-signal-changed",
       params: {
         signals: [
           expect.objectContaining({

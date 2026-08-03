@@ -15,9 +15,28 @@ import {
   taskEscalationPacket,
   taskTreePacket,
   projectHealthConvergedResult,
+  targetConfig,
 } from "./project-health-evaluator.ts";
 
 describe("project health correction contract", () => {
+  test("resolves gym.app trigger to gym coverage instead of defaulting to aks", () => {
+    expect(
+      targetConfig({
+        params: {
+          targetProject: "gym.app",
+          targetAppDir: "/app/projects/gym.app",
+          targetDomainDir: "/app/projects/gym",
+          reason: "scheduled",
+        },
+      }),
+    ).toEqual({
+      targetProject: "gym.app",
+      targetAppDir: "/app/projects/gym.app",
+      targetDomainDir: "/app/projects/gym",
+      reason: "scheduled",
+    });
+  });
+
   test("shapes runtime project-audit no-op as reconciler-accepted converged output", () => {
     const result = projectHealthConvergedResult(
       {
@@ -120,6 +139,23 @@ describe("project health correction contract", () => {
       affectedArtifacts: ["workflow:project-planner"],
       verification: ["The next output passes review."],
     });
+  });
+
+  test("uses deterministic fallback evidence for failed inner audit sessions", () => {
+    const source = projectHealthJudgmentFromResult({
+      status: "error",
+      sessionId: "s_1784760004824_308",
+      error: "Agent ended with an empty assistant turn",
+      lastAssistantText: "",
+    });
+
+    expect(source).toMatchObject({
+      raw: null,
+      source: "inner-session:error",
+    });
+    expect(source.text).toContain("s_1784760004824_308");
+    expect(source.text).toContain("Agent ended with an empty assistant turn");
+    expect(source.text).toContain("deterministic fact-packet fallback");
   });
 });
 

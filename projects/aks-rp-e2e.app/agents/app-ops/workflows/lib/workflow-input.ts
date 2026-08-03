@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, sep } from "node:path";
 
 export type TriggerEvent = {
   type?: string;
@@ -25,7 +25,17 @@ export function resolveAppDir(
   projectDir: string,
   explicitAppDir?: string,
 ): string {
-  if (explicitAppDir) return explicitAppDir;
+  if (explicitAppDir) {
+    const isBundledRuntimeDir = explicitAppDir.includes(
+      `${sep}.state${sep}runtime-modules`,
+    );
+    if (
+      !isBundledRuntimeDir ||
+      existsSync(join(explicitAppDir, "project.json"))
+    ) {
+      return explicitAppDir;
+    }
+  }
   const siblingAppDir = projectDir.endsWith(".app")
     ? projectDir
     : `${projectDir}.app`;

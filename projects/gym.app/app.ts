@@ -3,7 +3,6 @@ import {
   defineProjectApp,
   eventDetails,
   Type,
-  type ProjectAppContext,
   type ProjectAppEvent,
   type ProjectAppTaskIntent,
 } from "@may-agent/sdk";
@@ -54,40 +53,8 @@ function improvementRequested(input: unknown = {}): ProjectAppEvent {
   };
 }
 
-function isMayFailure(event: Record<string, unknown>): boolean {
-  const details = eventDetails(event);
-  if (String(details.agent ?? "").toLowerCase() !== "may") return false;
-
-  const lane = String(details.lane ?? "").toLowerCase();
-  const verdict = String(
-    details.reviewedVerdict ?? details.verdict ?? "",
-  ).toLowerCase();
-  return (
-    lane === "needs_triage" ||
-    [
-      "fail",
-      "failed",
-      "partial",
-      "poor",
-      "needs_improvement",
-      "blocked",
-    ].includes(verdict)
-  );
-}
-
 function isMayEvaluation(event: Record<string, unknown>): boolean {
   return String(eventDetails(event).agent ?? "").toLowerCase() === "may";
-}
-
-function learningEvidenceObserved(
-  polarity: "positive" | "negative",
-  evaluation: Record<string, unknown>,
-): ProjectAppEvent {
-  return {
-    type: "gym.learning.evidence.observed",
-    project: projectId,
-    params: { polarity, evaluation },
-  };
 }
 
 function codexLearningRequested(input: unknown = {}): ProjectAppEvent {
@@ -202,6 +169,30 @@ export function resolveGymTask(
   if (!eventId) return null;
 
   switch (event.type) {
+    case "evaluation.reviewed":
+      return isMayEvaluation(event)
+        ? {
+            id: "runtime/evaluation-intake",
+            parentId: "incident-learning",
+            outcome:
+              "Keep reviewed May evaluations classified and filed, and turn only actionable failures into independently reviewable proposals.",
+            acceptance: [
+              "Process the oldest unprocessed reviewed May evaluation from durable event history.",
+              "Record positive and negative learning evidence without creating per-evaluation evidence tasks.",
+              "Create durable incident evidence and one review request only for an actionable May failure.",
+              "Wake the same frontier while another unprocessed evaluation remains.",
+            ],
+            mode: "maintain",
+            workflow: "evaluation-intake",
+            input: { contractRevision: 1 },
+            outputs: [
+              ".state/learning/evidence",
+              ".state/incidents",
+              ".state/learning/evaluation-intake.json",
+            ],
+            priority: "P1",
+          }
+        : null;
     case "project.owner.requested":
       return {
         id: "runtime/owner-review",
@@ -437,33 +428,6 @@ export function resolveGymTask(
   }
 }
 
-export async function routeGymEvent(
-  ctx: ProjectAppContext,
-  event: Record<string, unknown>,
-): Promise<unknown> {
-  if (event.type === "evaluation.reviewed") {
-    if (!isMayEvaluation(event)) {
-      return ctx.noop("evaluation is not for May");
-    }
-    const details = eventDetails(event);
-    const failure = isMayFailure(event);
-    ctx.emit(
-      learningEvidenceObserved(failure ? "negative" : "positive", details),
-    );
-    if (failure) {
-      return ctx.emit(
-        incidentDetected({
-          reason: "may-evaluation-failure",
-          evaluation: details,
-        }),
-      );
-    }
-    return { recorded: "positive-learning-evidence" };
-  }
-
-  return undefined;
-}
-
 export default defineProjectApp({
   id: projectId,
   version: 1,
@@ -523,6 +487,7 @@ export default defineProjectApp({
 
   tasks: {
     accepts: [
+      { type: "evaluation.reviewed", agents: ["may"] },
       "gym.incident.detected",
       "gym.learning.evidence.observed",
       "gym.codex.learning.requested",
@@ -540,14 +505,6 @@ export default defineProjectApp({
     ],
     resolve: resolveGymTask,
   },
-
-  events: [
-    {
-      type: "evaluation.reviewed",
-      agents: ["may"],
-      lanes: ["needs_triage", "success_candidate"],
-    },
-  ],
 
   actions: {
     "improve-may-now": {
@@ -603,9 +560,5 @@ export default defineProjectApp({
         });
       },
     },
-  },
-
-  async onEvent(ctx, event) {
-    return routeGymEvent(ctx, event);
   },
 });

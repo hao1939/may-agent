@@ -19,6 +19,48 @@ function triggerEvent(event: Record<string, unknown>): string {
 }
 
 describe("problem solver", () => {
+  test("returns needs-owner without actions for unsupported triggers", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        triggerEvent({
+          type: "project.task.tick",
+          project: "aks-rp-e2e",
+          taskId: "runtime/problem-solver/example",
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string, output?: unknown) => ({
+        status: "done",
+        message,
+        output,
+      }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result).toMatchObject({
+      output: {
+        state: "needs-owner",
+        summary: expect.stringContaining(
+          "Problem solver ignored trigger project.task.tick",
+        ),
+        evidence: ["problem-solver:invalid-trigger"],
+      },
+    });
+    expect((result as { output?: Record<string, unknown> }).output).not.toHaveProperty(
+      "actions",
+    );
+  });
+
   test("emits resolved problem result for explicit solver success", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     const prompts: string[] = [];
@@ -139,6 +181,86 @@ describe("problem solver", () => {
         project: "aks-rp-e2e",
         problemKey: "aks-rp-e2e:azure-quota",
         affectedTasks: ["quota-blocked-task"],
+      },
+    });
+  });
+
+  test("recovers from reconciler task ticks using task input", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "## Reconciliation Task",
+        "```json",
+        JSON.stringify(
+          {
+            appId: "aks-rp-e2e",
+            taskId: "runtime/problem-solver/localdns-producerless-project-state-condition-20260730",
+            owner: "app-ops",
+            workflow: "problem-solver",
+            input: {
+              problemKey: "localdns-producerless-project-state-condition-20260730",
+              targetTaskId: "hold-compact-localdns-split-frontier-e8d7677892-20260730",
+            },
+          },
+          null,
+          2,
+        ),
+        "```",
+        triggerEvent({
+          type: "project.task.tick",
+          project: "aks-rp-e2e",
+          taskId:
+            "runtime/problem-solver/localdns-producerless-project-state-condition-20260730",
+          reason: "run-created-problem-investigation",
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string, output?: unknown) => ({
+        status: "done",
+        message,
+        output,
+      }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => ({
+        status: "success",
+        message:
+          "ROOT_CAUSE: producerless project.state condition\nACTION_TAKEN: verified owner handoff path\nVERIFICATION: LocalDNS holder is pending on current evidence\nPLANNER_NEXT: let the owner-held LocalDNS carrier run\nPROBLEM_RESULT: resolved",
+      }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result).toMatchObject({
+      output: {
+        state: "converged",
+        summary: expect.stringContaining(
+          "project.problem.resolved for localdns-producerless-project-state-condition-20260730",
+        ),
+        actions: [],
+      },
+    });
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]).toMatchObject({
+      type: "project.problem.resolved",
+      payload: {
+        project: "aks-rp-e2e",
+        problemKey: "localdns-producerless-project-state-condition-20260730",
+        affectedTasks: [
+          "hold-compact-localdns-split-frontier-e8d7677892-20260730",
+        ],
       },
     });
   });

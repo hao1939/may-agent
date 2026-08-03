@@ -54,6 +54,7 @@ import {
   parseTaskPayload,
   pipelineWaitCondition,
   pipelineRunState,
+  registerSpecLiveTrackedRun,
   preparationDecisionProblem,
   preparationHeadProblem,
   priorIntegratedProof,
@@ -181,6 +182,21 @@ describe("spec-live-reconciliation workflow", () => {
       expect(repaired.citedIssueCodes).not.toContain(
         "current-source-staging-live-proof",
       );
+
+      writeFileSync(
+        join(root, scenarioTestPath),
+        [
+          'import { test } from "vitest";',
+          'import { runScenario } from "../lib/ccp-daily-master.ts";',
+          'const executeFlag = "--execute";',
+          'const execFileToken = ["exec", "File("].join("");',
+          "const bunChildLaunchToken = ['run(\"', 'bun\"'].join(\"\");",
+          'test("direct", () => runScenario(executeFlag));',
+        ].join("\n"),
+      );
+      const negativeAssertionTokens = evaluate();
+      expect(negativeAssertionTokens.accepted).toBe(true);
+      expect(negativeAssertionTokens.remainingIssueCodes).toEqual([]);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -252,6 +268,15 @@ describe("spec-live-reconciliation workflow", () => {
       "resolve every cited structural quality issue before requesting ADO",
     );
     expect(scenarioQualityRepairInstruction).toContain(
+      "official Learn, Azure REST API specs, and checked-in design docs",
+    );
+    expect(scenarioQualityRepairInstruction).toContain(
+      "mounted AKS RP or Go source as implementation evidence only",
+    );
+    expect(scenarioQualityRepairInstruction).toContain(
+      "private/local filesystem path as carrier authority",
+    );
+    expect(scenarioQualityRepairInstruction).toContain(
       "A green ADO run proves execution only",
     );
     expect(
@@ -275,6 +300,11 @@ describe("spec-live-reconciliation workflow", () => {
 
   test("requires direct carriers to validate on the ADO Vitest surface", () => {
     expect(directVitestCompatibilityInstruction).toContain("through Vitest");
+    expect(directVitestCompatibilityInstruction).toContain(
+      "A standalone direct carrier means no child-process wrapper",
+    );
+    expect(directVitestCompatibilityInstruction).toContain("`execFile`");
+    expect(directVitestCompatibilityInstruction).toContain("shell out to Bun");
     expect(directVitestCompatibilityInstruction).toContain(
       "not only with `bun test`",
     );
@@ -1339,7 +1369,7 @@ describe("spec-live-reconciliation workflow", () => {
 
     expect(result.decision).toBe("committed");
     expect(prompts).toHaveLength(2);
-    expect(prompts[1]).toContain("requires exact passing live proof");
+    expect(prompts[1]).toContain("keep internal source gaps in this workflow");
     expect(prompts[1]).toContain(
       "execute mode still does not implement the declared compliance/status claims",
     );
@@ -1633,7 +1663,7 @@ describe("spec-live-reconciliation workflow", () => {
     ).toContain("neither live readiness nor a wait");
   });
 
-  test("rejects needs-owner for exact-pass work unless the agent returns an exact wait instead", () => {
+  test("rejects imprecise needs-owner for exact-pass work", () => {
     const decision = {
       decision: "needs-owner" as const,
       summary:
@@ -1641,7 +1671,7 @@ describe("spec-live-reconciliation workflow", () => {
       evidence: ["execute-mode-remains-nonlive-reviewed-exception"],
     };
     expect(exactPassNeedsOwnerProblem(decision, false)).toContain(
-      "requires exact passing live proof",
+      "keep internal source gaps in this workflow",
     );
     expect(exactPassNeedsOwnerProblem(decision, true)).toBeNull();
   });
@@ -2561,6 +2591,32 @@ describe("spec-live-reconciliation workflow", () => {
       subject: "pull-request:77",
       expected: { field: "sourceCommit", notEquals: "abc" },
     });
+  });
+
+  test("registers adopted spec-live runs for watcher observation", () => {
+    const appDir = mkdtempSync(join(tmpdir(), "spec-live-watch-"));
+    try {
+      const registration = registerSpecLiveTrackedRun(appDir, "174851380");
+      expect(registration).toMatchObject({
+        changed: true,
+        runIds: ["174851380"],
+      });
+      expect(
+        JSON.parse(
+          readFileSync(
+            join(
+              appDir,
+              ".state",
+              "watchers",
+              "aks-pipeline-registrations.json",
+            ),
+            "utf8",
+          ),
+        ),
+      ).toMatchObject({ runIds: ["174851380"] });
+    } finally {
+      rmSync(appDir, { recursive: true, force: true });
+    }
   });
 
   test("gives agent-authored waits stable task-local identities", () => {

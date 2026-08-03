@@ -29,6 +29,11 @@ const watchedProjectTargets = [
     targetDomainDir: "/app/projects/scout-knowledge-lib",
   },
   {
+    targetProject: "gym.app",
+    targetAppDir: "/app/projects/gym.app",
+    targetDomainDir: "/app/projects/gym",
+  },
+  {
     targetProject: "evaluation.app",
     targetAppDir: "/app/projects/evaluation.app",
     targetDomainDir: "/app/projects/evaluation.app",
@@ -173,16 +178,9 @@ export function resolveEvaluationTask(
 ): ProjectAppTaskIntent | null {
   const details = eventDetails(event);
   switch (event.type) {
-    case "session.end":
     case "evaluation.session.requested": {
       const sessionId = eventSessionId(event);
       if (!sessionId) return null;
-      const agent = String(details.agent ?? "").trim();
-      if (
-        event.type === "session.end" &&
-        (agent === "evaluator" || agent === "judge")
-      )
-        return null;
       return {
         id: `runtime/session-aftermath/${safeTaskIdPart(sessionId)}`,
         parentId: "session-audit",
@@ -202,14 +200,14 @@ export function resolveEvaluationTask(
         id: "runtime/aftermath-backfill",
         parentId: "pipeline-health",
         outcome:
-          "Reconcile terminal sessions missed by direct session-end evaluation.",
+          "Keep the eligible terminal-session evaluation frontier current.",
         acceptance: [
-          "At most one eligible missed terminal session receives its normal aftermath evaluation.",
-          "If no candidate exists, the reconciliation records that current database observation and creates no session task.",
+          "The oldest eligible unevaluated session receives its normal aftermath evaluation.",
+          "If more eligible sessions remain, the workflow emits one compact continuation wake; otherwise it records that the frontier is current.",
         ],
         mode: "maintain",
         workflow: "evaluator-aftermath",
-        input: { scope: "missed-session-backfill" },
+        input: { scope: "session-aftermath-frontier" },
         priority: "P1",
       };
     case "evaluation.deep.requested": {
@@ -294,6 +292,19 @@ export async function routeEvaluationEvent(
   ctx: ProjectAppContext,
   event: Record<string, unknown>,
 ): Promise<unknown> {
+  if (event.type === "session.end") {
+    const details = eventDetails(event);
+    const agent = String(details.agent ?? "").trim();
+    if (agent === "evaluator" || agent === "judge") {
+      return ctx.noop(`ignored ${agent} session aftermath`);
+    }
+    return ctx.emit({
+      type: "evaluation.aftermath.scan",
+      project: projectId,
+      params: { reason: "session-end" },
+    });
+  }
+
   if (event.type === "evaluation.pipeline.check") {
     if (!ctx.query)
       throw new Error(
@@ -435,7 +446,6 @@ export default defineProjectApp({
 
   tasks: {
     accepts: [
-      "session.end",
       "evaluation.session.requested",
       "evaluation.tick",
       "evaluation.deep.requested",
@@ -449,6 +459,7 @@ export default defineProjectApp({
   },
 
   events: [
+    "session.end",
     { type: "evaluation.pipeline.check", project: projectId },
     "evaluation.review_failed",
     "message.created",

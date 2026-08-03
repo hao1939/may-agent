@@ -197,10 +197,14 @@ export function collectSnapshot(
         .filter((workflow) => workflow !== name),
     ),
   ).sort();
-  const recentEvents = queryRows<Record<string, unknown>>(() =>
-    ctx.query.events({ since: now - CHECK_WINDOW_MS, limit: 200 }),
+  const reviewFailureEvents = queryRows<Record<string, unknown>>(() =>
+    ctx.query.events({
+      type: "evaluation.review_failed",
+      since: now - CHECK_WINDOW_MS,
+      limit: 200,
+    }),
   );
-  const reviewFailureCount = recentEvents.filter(
+  const reviewFailureCount = reviewFailureEvents.filter(
     (row) => String(row.event_type ?? row.type) === "evaluation.review_failed",
   ).length;
 

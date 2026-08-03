@@ -46,6 +46,15 @@ Incident and proposal resources are created for one concrete piece of evidence
 and reconcile their own bounded outcome. They still follow the same resource
 model; they are not phases owned by a master task.
 
+Routine evaluation intake is different. `evaluation.reviewed` is a high-rate
+fact stream, so deterministic classification and evidence filing use one
+standing, sequential intake frontier backed by evaluation and Gym artifact
+stores. The frontier handles one oldest unprocessed evaluation and wakes itself
+while more remain. It creates an incident or proposal task only when that item
+needs independent agent judgment, human review, or a durable dependency. A
+positive evidence file or a mechanically classified non-May result is history,
+not a task.
+
 The design follows the project-app reconciliation model:
 
 - A task resource describes one durable target state.

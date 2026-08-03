@@ -508,8 +508,8 @@ function submitAksRpE2eFeatureReplanPrompt(pathIds, featureIds) {
     ...new Set(featureIds || selectedAksRpE2eFeatureIds()),
   ].filter(Boolean);
   const text = paths.length
-    ? `[resume] Replan aks-rp-e2e combined test cases from selected feature groups.\n\nSelected features:\n${features.map((id) => `- ${id}`).join("\n") || "- not specified"}\n\nSelected knowledge paths:\n${paths.map((id) => `- ${id}`).join("\n")}\n\nUse model/knowledge-map/views/path-summary.json, specs/index.json, features/, and suites/. Combine multiple scenarios only when input shape, cluster lifecycle, cleanup, and diagnosis remain clear. Produce a reviewable run plan and TypeScript probe before live execution; do not run cloud mutation unless explicit gates pass.`
-    : `[resume] Review selected aks-rp-e2e feature groups for combined test replanning.\n\nSelected features:\n${features.map((id) => `- ${id}`).join("\n") || "- not specified"}\n\nFind source-backed knowledge paths and test specs that can be combined into a high-density run. If paths are incompatible, explain why and propose separate run plans. Do not run cloud mutation.`;
+    ? `[resume] Replan aks-rp-e2e combined test cases from selected feature groups.\n\nSelected features:\n${features.map((id) => `- ${id}`).join("\n") || "- not specified"}\n\nSelected knowledge paths:\n${paths.map((id) => `- ${id}`).join("\n")}\n\nUse model/knowledge-map/views/path-summary.json, specs/index.json, features/, and suites/. Combine multiple scenarios only when input shape, cluster lifecycle, cleanup, and diagnosis remain clear. Produce a reviewable run plan and TypeScript test before live execution; do not change Azure resources unless the live request and exact safety key are present.`
+    : `[resume] Review selected aks-rp-e2e feature groups for combined test replanning.\n\nSelected features:\n${features.map((id) => `- ${id}`).join("\n") || "- not specified"}\n\nFind source-backed knowledge paths and test specs that can be combined into a high-density run. If paths are incompatible, explain why and propose separate run plans. Do not change Azure resources.`;
   if (paths.length) submitAksRpE2eAgentMessage(text);
   else submitAksRpE2eProjectComment(text);
 }
@@ -525,7 +525,7 @@ function prefillAksRpE2eFeatureReviewPrompt(featureIds) {
 function prefillAksRpE2eReplanPrompt() {
   const selected = selectedAksRpE2eReplanPaths();
   const text = selected.length
-    ? `[resume] Replan aks-rp-e2e for selected knowledge paths:\n\n${selected.map((id) => `- ${id}`).join("\n")}\n\nUse model/knowledge-map/views/path-summary.json and specs/index.json. Generate or update a reviewable run plan and TypeScript probe that combines compatible paths into the fewest cluster CRUD lifecycles while preserving path-specific diagnosis, cleanup evidence, and model-impact honesty. Run local e2e/dry-run verification before any cloud mutation.`
+    ? `[resume] Replan aks-rp-e2e for selected knowledge paths:\n\n${selected.map((id) => `- ${id}`).join("\n")}\n\nUse model/knowledge-map/views/path-summary.json and specs/index.json. Generate or update a reviewable run plan and TypeScript test that combines compatible paths into the fewest cluster CRUD lifecycles while preserving path-specific diagnosis, cleanup evidence, and model-impact honesty. Run local checks and a dry run before changing Azure resources.`
     : "[resume] Select the best compatible aks-rp-e2e knowledge paths for a high-density replan. Prefer source-backed paths with test specs, clear cleanup, and clean diagnosis. Produce a reviewable run plan and dry-run TypeScript probe.";
   prefillProjectComment(text);
 }
@@ -533,7 +533,7 @@ function prefillAksRpE2eReplanPrompt() {
 function submitAksRpE2eReplanPrompt() {
   const selected = selectedAksRpE2eReplanPaths();
   const text = selected.length
-    ? `[resume] Replan aks-rp-e2e for selected knowledge paths:\n\n${selected.map((id) => `- ${id}`).join("\n")}\n\nUse model/knowledge-map/views/path-summary.json and specs/index.json. Generate or update a reviewable run plan and TypeScript probe that combines compatible paths into the fewest cluster CRUD lifecycles while preserving path-specific diagnosis, cleanup evidence, and model-impact honesty. Run local e2e/dry-run verification before any cloud mutation.`
+    ? `[resume] Replan aks-rp-e2e for selected knowledge paths:\n\n${selected.map((id) => `- ${id}`).join("\n")}\n\nUse model/knowledge-map/views/path-summary.json and specs/index.json. Generate or update a reviewable run plan and TypeScript test that combines compatible paths into the fewest cluster CRUD lifecycles while preserving path-specific diagnosis, cleanup evidence, and model-impact honesty. Run local checks and a dry run before changing Azure resources.`
     : "[resume] Select the best compatible aks-rp-e2e knowledge paths for a high-density replan. Prefer source-backed paths with test specs, clear cleanup, and clean diagnosis. Produce a reviewable run plan and dry-run TypeScript probe.";
   submitAksRpE2eAgentMessage(text);
 }
@@ -1504,7 +1504,7 @@ async function renderAksRpE2eQualityPanel(el) {
       return `[resume] Audit aks-rp-e2e feature ${label} (${ids}). Check source intent, API/docs references, input path, expectation path, mapped evidence, raw output, cleanup, and whether the current status claim is honest. Report gaps before changing the model.`;
     }
     if (kind === "manual") {
-      return `[resume] Produce a manual verification path for aks-rp-e2e feature ${label} (${ids}). Use existing run plans/replays/scripts when available; otherwise draft exact commands, prerequisites, expected observations, cleanup, and evidence files. Do not mutate cloud resources until preflight is clean.`;
+      return `[resume] Produce a manual verification path for aks-rp-e2e feature ${label} (${ids}). Use existing run plans, scenario tests, and scripts when available; otherwise draft exact commands, prerequisites, expected observations, cleanup, and result files. Do not change Azure resources until preflight is clean.`;
     }
     if (kind === "suggest") {
       return `[resume] Consider making aks-rp-e2e feature ${label} (${ids}) the next project move. Evaluate status, gap value, source/API/docs grounding, execution cost, environment risk, cleanup risk, and whether it beats current .app/project.json Next Action. Update .app/project.json only if it is a better direction; otherwise explain why in .app/.state/discussion.jsonl.`;
@@ -1615,7 +1615,7 @@ For each probe/replay script: Does the TypeScript match the test spec assertions
 
 Feature packet: ${packetPath}${specList}${pathList}
 
-⚠️ This generates a script artifact only — it does NOT execute cloud mutation.
+⚠️ This only generates a script. It does not change Azure resources.
 
 Requirements:
 1. Produce a run-plan referencing the test spec assertions and knowledge paths
@@ -1640,7 +1640,7 @@ Prerequisites for staging execution:
 3. Internal project-owner preflight must be clean
 4. ARM auth must be verified on the execution host
 5. Cleanup path must be documented
-6. ALLOW_CLOUD_MUTATION gate variable must be explicitly set
+6. The live-run safety key must be set to the exact test value
 
 State which prerequisites are met and which are not. If internal preflight is missing or stale, create the owner-agent preflight task before staging. If all are met, produce the exact gated execution command with run-id, gate env vars, and cleanup verification steps. Do NOT execute — only produce the approval artifact for human review.`;
     }
@@ -1710,7 +1710,7 @@ Does the TypeScript match the test spec? Are REST calls correct (API version, re
     if (kind === "generate-script") {
       return `[resume] aks-explorer: Generate a REST-first test script (run-plan and probe) for aks-rp-e2e knowledge path ${path.id} (${label}).${specInfo}${runPlanInfo}
 
-⚠️ This generates a script artifact only — it does NOT execute cloud mutation.
+⚠️ This only generates a script. It does not change Azure resources.
 
 Requirements:
 1. Produce a run-plan referencing the test spec assertions for this path
@@ -1727,7 +1727,7 @@ The generated script is an unverified artifact until reviewed and approved. Do n
 
 ⚠️ Approval request only — do NOT execute.
 
-Check prerequisites: spec reviewed, script reviewed, internal project-owner preflight clean, ARM auth verified, cleanup documented, ALLOW_CLOUD_MUTATION gate set. If internal preflight is missing or stale, create the owner-agent preflight task before staging. Produce the exact gated command only if all met. Do not execute.`;
+Check prerequisites: spec reviewed, script reviewed, internal project-owner preflight clean, ARM authentication verified, cleanup documented, and the live-run safety key set to the exact test value. If internal preflight is missing or stale, create the owner-agent preflight task before staging. Produce the exact protected command only if all checks pass. Do not execute it.`;
     }
     if (kind === "classify-result") {
       return `[resume] Classify result for aks-rp-e2e path ${path.id} (${label}).${evidenceInfo}
@@ -1750,7 +1750,7 @@ Current status: ${path.status}${specInfo}${evidenceInfo}
       return `[resume] Audit aks-rp-e2e knowledge path ${path.id} (${label}). Verify scenario ${path.scenarioId}, selected input DAG nodes, expected/observed behavior alignments, evidence links, cleanup, and whether status=${path.status} is honest. Do not change product verdicts without source/evidence support.`;
     }
     if (kind === "verify") {
-      return `[resume] Produce the next verification plan for aks-rp-e2e knowledge path ${path.id} (${label}). Include docs/source/API references, exact inputs, expected behavior, scripted probe or manual steps, execution gates, cleanup, evidence files, and model-update rules. Do not run cloud mutation unless explicitly authorized.`;
+      return `[resume] Produce the next verification plan for aks-rp-e2e knowledge path ${path.id} (${label}). Include docs/source/API references, exact inputs, expected behavior, a scripted test or manual steps, live-run safety checks, cleanup, result files, and model-update rules. Do not change Azure resources unless explicitly authorized.`;
     }
     if (kind === "suggest") {
       return `[resume] Consider path ${path.id} (${label}) as the next aks-rp-e2e project move. Compare it against current gaps by value, source grounding, execution cost, environment risk, cleanup risk, and model impact. Update .app/project.json only if it should become the next direction; otherwise record why not.`;

@@ -25,16 +25,30 @@ const projectStateHolderIds = new Set([
   "hold-compact-workload-identity-reviewed-terminal-frontier-d5a078d6d2-20260728",
 ]);
 
+const producerlessWaitIds = new Set([
+  "compact/repair-compact-feature-app-monitoring-representation-140dcd4cc6",
+  "compact/repair-compact-feature-ccp-metricsserver-representation-1173beaf09",
+  "compact/repair-compact-feature-network-cni-representation-75be0f2c63",
+  "compact/repair-compact-feature-planned-maintenance-representation-234e60d5e2",
+  "compact/repair-compact-feature-trusted-access-representation-e02c40c8b0",
+]);
+
 type StateSnapshot = {
   resources?: Record<
     string,
     {
       metadata?: { generation?: number };
-      spec?: { mode?: string; parentId?: string };
-      status?: { phase?: string; conditionIds?: string[] };
+      spec?: {
+        mode?: string;
+        parentId?: string;
+        outcome?: string;
+        acceptance?: string[];
+      };
+      status?: { phase?: string; conditionIds?: string[]; summary?: string };
     }
   >;
   conditions?: Record<string, { spec?: { type?: string } }>;
+  receipts?: Record<string, unknown>;
 };
 
 export function projectStateHolderCloseActions(
@@ -55,7 +69,10 @@ export function projectStateHolderCloseActions(
       const generation = resource?.metadata?.generation;
       const hasProjectStateCondition = (
         resource?.status?.conditionIds ?? []
-      ).some((conditionId) => conditions[conditionId]?.spec?.type === "project.state");
+      ).some(
+        (conditionId) =>
+          conditions[conditionId]?.spec?.type === "project.state",
+      );
       if (
         resource?.spec?.mode !== "maintain" ||
         resource?.status?.phase !== "waiting" ||
@@ -77,17 +94,99 @@ export function projectStateHolderCloseActions(
     });
 }
 
+export function producerlessWaitCloseActions(
+  state: StateSnapshot,
+): ProjectAppTaskAction[] {
+  const resources = state.resources ?? {};
+  const parentIdsWithLiveChildren = new Set(
+    Object.values(resources)
+      .map((resource) => resource.spec?.parentId)
+      .filter((value): value is string => Boolean(value)),
+  );
+  return [...producerlessWaitIds]
+    .sort()
+    .flatMap((taskId): ProjectAppTaskAction[] => {
+      const resource = resources[taskId];
+      const generation = resource?.metadata?.generation;
+      if (
+        resource?.spec?.mode !== "achieve" ||
+        resource?.status?.phase !== "waiting" ||
+        (resource.status.conditionIds?.length ?? 0) > 0 ||
+        parentIdsWithLiveChildren.has(taskId) ||
+        !Number.isInteger(generation)
+      ) {
+        return [];
+      }
+      return [
+        {
+          kind: "close-task",
+          taskId,
+          expectedGeneration: generation as number,
+          summary:
+            "Removed a producerless representation repair that had no Condition and no child capable of waking it.",
+        },
+      ];
+    });
+}
+
+export function completedIdentityRepairActions(
+  state: StateSnapshot,
+): ProjectAppTaskAction[] {
+  const resources = state.resources ?? {};
+  const receipts = state.receipts ?? {};
+  return Object.entries(resources).flatMap(
+    ([taskId, resource]): ProjectAppTaskAction[] => {
+      const generation = resource.metadata?.generation;
+      const summary = resource.status?.summary ?? "";
+      const completedId = summary.match(
+        /Handler action task already exists or completed: (\S+)/,
+      )?.[1];
+      if (
+        resource.status?.phase !== "attention" ||
+        !resource.spec?.outcome?.includes(
+          "Repair the feature-compact representation",
+        ) ||
+        !completedId ||
+        !receipts[completedId] ||
+        !Number.isInteger(generation)
+      ) {
+        return [];
+      }
+      const acceptance = resource.spec.acceptance ?? [];
+      const completedIdentityRule = `Completed task ID ${completedId} is immutable. Check receipts before creating a holder; if the frontier is still live, create one new deterministic holder ID and repoint the ledger to it.`;
+      return [
+        {
+          kind: "update-task",
+          taskId,
+          expectedGeneration: generation as number,
+          acceptance: acceptance.includes(completedIdentityRule)
+            ? acceptance
+            : [...acceptance, completedIdentityRule],
+        },
+      ];
+    },
+  );
+}
+
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  if (!ctx.appDir) throw new Error("unified-resource-migration requires appDir");
+  if (!ctx.appDir)
+    throw new Error("unified-resource-migration requires appDir");
   const state = JSON.parse(
     readFileSync(join(ctx.appDir, ".state", "tasks", "state.json"), "utf8"),
   ) as StateSnapshot;
-  const actions = projectStateHolderCloseActions(state);
-  const summary = `Retired ${actions.length} childless legacy project-state compact holders.`;
+  const projectStateActions = projectStateHolderCloseActions(state);
+  const producerlessActions = producerlessWaitCloseActions(state);
+  const completedIdentityActions = completedIdentityRepairActions(state);
+  const actions = [
+    ...projectStateActions,
+    ...producerlessActions,
+    ...completedIdentityActions,
+  ];
+  const summary = `Reconciled legacy resources: ${projectStateActions.length} project-state holder(s), ${producerlessActions.length} producerless wait(s), and ${completedIdentityActions.length} completed-identity repair(s).`;
   return ctx.done(summary, {
     state: "converged",
     summary,
-    evidence: ["migration:project-state-holders-v1"],
+    evidence: ["migration:resource-liveness-v2"],
     actions,
   });
 }

@@ -6,7 +6,7 @@
  * - Feature brief: title, purpose, metrics, confidence, recommended next move, reference links
  * - Scenario/input/expectation paths and spec cards
  * - Per-spec actions: Generate Test Script, Request REST Staging Replay, Review Script
- * - Actions create scoped project-owner requests via comment prefill without direct mutation
+ * - Actions create scoped project-owner requests via comment prefill without directly changing state
  * - Evidence section
  * - No "Run Local Check" button shown
  */
@@ -480,7 +480,7 @@ describe("dedicated feature page — managedsystem-pool", () => {
 
   // ── Test 2: Generate Test Script interaction ──
 
-  test("Generate Test Script prefills a scoped prompt without direct mutation", async () => {
+  test("Generate Test Script prefills a scoped prompt without directly changing state", async () => {
     const browser = await puppeteer.launch({
       executablePath: browserPath,
       headless: true,
@@ -541,16 +541,17 @@ describe("dedicated feature page — managedsystem-pool", () => {
       expect(promptValue).toContain("spec.managedsystem.");
       // Prompt references aks-explorer as owner
       expect(promptValue).toContain("aks-explorer");
-      // Prompt warns no cloud mutation
-      expect(promptValue).toContain("does NOT execute cloud mutation");
+      // Prompt says the generated script does not change Azure resources.
+      expect(promptValue).toContain("does not change Azure resources");
       // Prompt mentions script generation
       expect(promptValue).toContain("Generate");
       // Prompt includes knowledge paths
       expect(promptValue).toContain("path.");
-      // Prompt mentions gate checks
-      expect(promptValue).toContain("DRY_RUN");
+      // Prompt explains the check-only path and live-run safety key.
+      expect(promptValue).toContain("dry-run");
+      expect(promptValue).toContain("live-run safety key");
 
-      // No comment was actually submitted (no direct mutation)
+      // No comment was actually submitted (no direct state change).
       expect(comments.length).toBe(beforeCount);
     } finally {
       await browser.close();
@@ -620,10 +621,10 @@ describe("dedicated feature page — managedsystem-pool", () => {
       expect(promptValue).toContain("spec.managedsystem.");
       // Prompt lists prerequisites
       expect(promptValue).toContain("Prerequisites");
-      // Prompt mentions ALLOW_CLOUD_MUTATION gate
-      expect(promptValue).toContain("ALLOW_CLOUD_MUTATION");
+      // Prompt mentions the live-run safety key.
+      expect(promptValue).toContain("live-run safety key");
       // Prompt says not to execute
-      expect(promptValue).toContain("Do NOT execute");
+      expect(promptValue).toContain("Do not execute");
 
       // No comment was submitted
       expect(comments.length).toBe(beforeCount);

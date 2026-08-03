@@ -16,7 +16,7 @@ afterEach(() => {
 });
 
 describe("workspace integrity watcher", () => {
-  it("reports canonical health and unowned dirty worktrees without mutating them", () => {
+  it("reports canonical health and unowned dirty worktrees without changing them", () => {
     const root = mkdtempSync(join(tmpdir(), "aks-workspace-integrity-"));
     roots.push(root);
     const appDir = join(root, "sample.app");

@@ -38,7 +38,7 @@ export const workflowContract: WorkflowIoContract = {
     version: workflowResultVersion,
     fields: ["state", "summary", "evidence", "actions"],
     description:
-      "Declares at most one exact-branch verification task; it never mutates Git refs itself.",
+      "Declares at most one exact-branch verification task; it never changes Git refs itself.",
   },
 };
 

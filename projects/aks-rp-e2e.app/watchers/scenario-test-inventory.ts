@@ -149,7 +149,7 @@ function run(
   });
 }
 
-/** Observe strict inventory and emit a semantic fact; never reads or mutates task state. */
+/** Observe strict inventory and emit a semantic fact; never reads or changes task state. */
 export async function observeScenarioTestInventory(
   ctx: ProjectAppContext,
 ): Promise<unknown> {

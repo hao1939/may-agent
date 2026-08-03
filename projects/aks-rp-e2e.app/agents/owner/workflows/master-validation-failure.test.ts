@@ -4,7 +4,6 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-  alignCampaignRepairReplayWorkspace,
   alignCleanRepairWorkspace,
   boundedChangedFileEvidence,
   boundedEvidence,
@@ -27,10 +26,7 @@ import {
   priorStandaloneVerification,
   productRecoveryCondition,
   publishCampaignRepairBranch,
-  repairBranchImportsNewerMain,
-  replayCampaignRepairBaseCommit,
   requiresStandaloneVerification,
-  resetInvalidCampaignRepairWorkspace,
   runFailureInvestigation,
   shouldReconcileTestFix,
   standaloneRecoveryChild,
@@ -118,7 +114,7 @@ describe("master-validation failure workflow", () => {
     }
   });
 
-  test("aligns a clean failure workspace to the frozen campaign snapshot", () => {
+  test("aligns a clean failure workspace to current main for a mergeable PR", () => {
     const root = mkdtempSync(join(tmpdir(), "master-validation-repair-base-"));
     try {
       git(root, "init");
@@ -130,157 +126,16 @@ describe("master-validation failure workflow", () => {
       const currentMain = git(root, "rev-parse", "HEAD");
       git(root, "branch", "-M", "main");
       git(root, "update-ref", "refs/remotes/origin/main", currentMain);
+      git(root, "checkout", "-b", "task/repair", frozenBase);
 
       expect(
         alignCleanRepairWorkspace({
           workspaceDir: root,
           targetRef: "origin/main",
-          repairBaseCommit: frozenBase,
+          repairBaseCommit: currentMain,
         }),
-      ).toBe(frozenBase);
-      expect(git(root, "rev-parse", "HEAD")).toBe(frozenBase);
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  test("detects and resets a reused campaign repair branch that imported newer main", () => {
-    const root = mkdtempSync(join(tmpdir(), "master-validation-repair-reset-"));
-    try {
-      git(root, "init");
-      git(root, "config", "user.name", "Repair Test");
-      git(root, "config", "user.email", "repair@example.test");
-      writeFileSync(join(root, "task.txt"), "base\n");
-      git(root, "add", "task.txt");
-      git(root, "commit", "-m", "frozen base");
-      const frozenBase = git(root, "rev-parse", "HEAD");
-      git(root, "branch", "-M", "main");
-      git(root, "checkout", "-b", "task/repair");
-      writeFileSync(join(root, "task.txt"), "focused fix\n");
-      git(root, "commit", "-am", "focused fix");
-      git(root, "checkout", "main");
-      writeFileSync(join(root, "main.txt"), "newer main\n");
-      git(root, "add", "main.txt");
-      git(root, "commit", "-m", "newer main");
-      const mergedMain = git(root, "rev-parse", "HEAD");
-      git(root, "update-ref", "refs/remotes/origin/main", mergedMain);
-      git(root, "checkout", "task/repair");
-      git(root, "merge", "--no-ff", "--no-edit", "main");
-      const importedHead = git(root, "rev-parse", "HEAD");
-
-      expect(
-        repairBranchImportsNewerMain({
-          workspaceDir: root,
-          targetRef: "origin/main",
-          repairBaseCommit: frozenBase,
-          headCommit: importedHead,
-        }),
-      ).toEqual({
-        forkCommit: mergedMain,
-        importsNewerMain: true,
-      });
-      expect(
-        resetInvalidCampaignRepairWorkspace({
-          workspaceDir: root,
-          targetRef: "origin/main",
-          repairBaseCommit: frozenBase,
-          headCommit: importedHead,
-        }),
-      ).toEqual({
-        headCommit: frozenBase,
-        reset: true,
-        forkCommit: mergedMain,
-      });
-      expect(git(root, "rev-parse", "HEAD")).toBe(frozenBase);
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  test("parses campaign repair replay metadata for append-only campaign recovery", () => {
-    const input = parseFailureInput(`
-## Reconciliation Task
-${JSON.stringify({
-  taskId: "domain/master-validation-failure/spec.example/fp",
-  generation: 4,
-  input: {
-    specId: "spec.example",
-    pipelineRunId: "101",
-    failureFingerprint: "fp",
-    sourceBranch: "refs/heads/validation/master-validation-100",
-    campaignRepairReplay: {
-      activePullRequestId: "16572555",
-      activeSourceCommit: "active123",
-      campaignBranch: "validation/master-validation-100",
-      campaignHeadCommit: "campaign123",
-      conflictingPaths: ["features/example/test.ts"],
-      frozenCampaignBaseCommit: "frozen123",
-      priorMergedPullRequestId: "16570818",
-      priorMergedSourceBranch:
-        "task/domain-master-validation-failure-spec.example-prior",
-      priorMergedSourceCommit: "prior123",
-      reason: "Repair this stable task from prior approved campaign lineage.",
-      replayMode: "append-only-repair-on-existing-campaign-lineage",
-    },
-  },
-})}
-`)!;
-    expect(input).toMatchObject({
-      campaignRepairReplay: {
-        activePullRequestId: "16572555",
-        conflictingPaths: ["features/example/test.ts"],
-        priorMergedSourceCommit: "prior123",
-        replayMode: "append-only-repair-on-existing-campaign-lineage",
-      },
-    });
-    expect(replayCampaignRepairBaseCommit(input)).toBe("prior123");
-  });
-
-  test("realigns a clean replay workspace to the prior integrated campaign lineage", () => {
-    const root = mkdtempSync(join(tmpdir(), "master-validation-replay-base-"));
-    try {
-      git(root, "init");
-      git(root, "config", "user.name", "Repair Test");
-      git(root, "config", "user.email", "repair@example.test");
-      writeFileSync(join(root, "task.txt"), "base\n");
-      git(root, "add", "task.txt");
-      git(root, "commit", "-m", "frozen base");
-      const frozenBase = git(root, "rev-parse", "HEAD");
-      writeFileSync(join(root, "task.txt"), "prior integrated fix\n");
-      git(root, "commit", "-am", "prior integrated fix");
-      const priorMerged = git(root, "rev-parse", "HEAD");
-      git(root, "branch", "-M", "main");
-      git(root, "update-ref", "refs/remotes/origin/main", priorMerged);
-      git(root, "checkout", "-b", "task/repair");
-      git(root, "reset", "--hard", frozenBase);
-
-      expect(
-        alignCampaignRepairReplayWorkspace({
-          workspaceDir: root,
-          replayBaseCommit: priorMerged,
-        }),
-      ).toEqual({
-        headCommit: priorMerged,
-        reset: true,
-      });
-      expect(git(root, "rev-parse", "HEAD")).toBe(priorMerged);
-      expect(
-        campaignRepairReady({
-          headCommit: priorMerged,
-          repairBaseCommit: frozenBase,
-          replayBaseCommit: priorMerged,
-        }),
-      ).toBe(false);
-      writeFileSync(join(root, "cleanup.txt"), "cleanup delta\n");
-      git(root, "add", "cleanup.txt");
-      git(root, "commit", "-m", "cleanup delta");
-      expect(
-        campaignRepairReady({
-          headCommit: git(root, "rev-parse", "HEAD"),
-          repairBaseCommit: frozenBase,
-          replayBaseCommit: priorMerged,
-        }),
-      ).toBe(true);
+      ).toBe(currentMain);
+      expect(git(root, "rev-parse", "HEAD")).toBe(currentMain);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -1499,6 +1354,90 @@ ${JSON.stringify({
     expect(
       (result as { output: { evidence: string[] } }).output.evidence,
     ).toContain("classification:inconclusive");
+  });
+
+  test("waits for later artifact truth on progressive placeholders before investigation or source work", async () => {
+    const appDir = mkdtempSync(
+      join(tmpdir(), "master-validation-progressive-"),
+    );
+    const repoDir = join(appDir, "repo");
+    const workspaceDir = join(appDir, "workspace");
+    try {
+      mkdirSync(repoDir, { recursive: true });
+      mkdirSync(workspaceDir, { recursive: true });
+      let runAgentCalled = false;
+      let dispatchCount = 0;
+      const ctx = {
+        appDir,
+        projectDir: repoDir,
+        workspaceDir,
+        task: `## Reconciliation Task\n${JSON.stringify({
+          taskId:
+            "domain/master-validation-failure/spec.managed-namespaces.lifecycle/c17abe6e8a69376e9e6f",
+          generation: 46,
+          input: {
+            specId: "spec.managed-namespaces.lifecycle",
+            pipelineRunId: "174826569",
+            failureFingerprint: "c17abe6e8a69376e9e6f",
+            sourceBranch: "refs/heads/validation/master-validation-173853081",
+            sourceCommit: "3ffc651bdbaccc9ba08e47d2eb9671ede3aad2f4",
+            status: "fail",
+            category: "unknown",
+            reason:
+              "Azure timeline reported a failure before artifacts were available.",
+            progressiveObservation: true,
+          },
+        })}`,
+        done: (summary: string, output: Record<string, unknown>) => ({
+          type: "done",
+          summary,
+          output,
+        }),
+        runAgent: async () => {
+          runAgentCalled = true;
+          throw new Error(
+            "progressive placeholder must not start investigation",
+          );
+        },
+        dispatchEvent: () => {
+          dispatchCount += 1;
+        },
+      } as never;
+
+      const result = await execute(ctx);
+      expect(result).toMatchObject({
+        type: "done",
+        output: {
+          state: "waiting",
+          evidence: expect.arrayContaining([
+            "blocking-pipeline-run:174826569",
+            "source-commit:3ffc651bdbaccc9ba08e47d2eb9671ede3aad2f4",
+            "progressive-placeholder-fingerprint:c17abe6e8a69376e9e6f",
+            "progressive-placeholder-category:unknown",
+            "progressive-observation:true",
+            "artifact-observation-required:true",
+          ]),
+          actions: [],
+          conditions: [
+            {
+              id: "master-validation-progressive-artifact-c17abe6e8a69376e9e6f-run-174826569",
+              type: "pipeline.failure.observed",
+              subject: "project:aks-rp-e2e",
+              expected: {
+                specId: "spec.managed-namespaces.lifecycle",
+                pipelineRunId: "174826569",
+                failureFingerprint: "c17abe6e8a69376e9e6f",
+              },
+              reviewAfterMs: 900000,
+            },
+          ],
+        },
+      });
+      expect(runAgentCalled).toBe(false);
+      expect(dispatchCount).toBe(0);
+    } finally {
+      rmSync(appDir, { recursive: true, force: true });
+    }
   });
 
   test("resumes deterministic live reconciliation for a novel fix or existing PR", () => {

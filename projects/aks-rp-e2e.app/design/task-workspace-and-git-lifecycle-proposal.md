@@ -19,7 +19,7 @@ Adopt this operating model for `aks-rp-e2e`:
 clean canonical checkout on dev
   -> observation and current-domain truth
 
-mutating task
+source-changing task
   -> one task-owned worktree from current origin/dev
   -> one task branch
   -> reuse across retries and agent handoff
@@ -175,7 +175,7 @@ The solution should enforce a small set of rules.
 
 ### Task worktree
 
-A persistent worktree exists only for one live mutating task generation:
+A persistent worktree exists only for one live source-changing task generation:
 
 - deterministic path derived from app ID and task ID;
 - branch created from the current observed `origin/dev` commit;
@@ -348,19 +348,19 @@ execution and finalizes it after handler verification.
 For AKS:
 
 - maintain controllers, focus, stall review, approval dispatch, and other
-  observation workflows remain shared and must not mutate the domain checkout;
+  observation workflows remain shared and must not change the domain checkout;
 - deterministic clean-upstream inventory continues to use an internal
   ephemeral detached worktree;
-- reusable domain mutation workflows declare `workspace = "task"`; and
+- reusable domain source-change workflows declare `workspace = "task"`; and
 - an unbound owner task remains shared/read-only. If owner judgment discovers
-  that source mutation is needed, it creates one bounded successor bound to an
-  appropriate mutating workflow instead of editing the canonical checkout.
+  that a source change is needed, it creates one bounded successor bound to an
+  appropriate source-changing workflow instead of editing the canonical checkout.
 
 This makes the workflow carry the learned process: clean base, bounded change,
 verification, commit, and closeout. It avoids adding `workspaceMode` to every
 task or asking the agent to decide topology from prose.
 
-If one generic AKS mutation workflow is needed initially, it should represent
+If one generic AKS source-change workflow is needed initially, it should represent
 real reusable experience—not merely wrap Git:
 
 ```text
@@ -468,12 +468,12 @@ Useful read-model counts are:
 
 The existing topology requires a controlled migration, not a bulk delete.
 
-### Phase 0 — Pause mutation
+### Phase 0 — Pause source changes
 
-- Pause new AKS domain mutation attempts through the supported project/app
+- Pause new AKS domain source-change attempts through the supported project/app
   lifecycle control.
 - Keep external pipeline/ref watchers running so facts continue to arrive.
-- Drain or explicitly interrupt current mutating attempts.
+- Drain or explicitly interrupt current source-changing attempts.
 
 ### Phase 1 — Freeze an inventory
 
@@ -535,11 +535,11 @@ Once the root is clean and all unique work is represented:
 ### Phase 5 — Enable lifecycle enforcement
 
 - Add workflow workspace metadata and the infrastructure adapter.
-- Bind AKS mutation leaves to mutating workflows.
+- Bind AKS source-change leaves to source-changing workflows.
 - Add focused prepare/reuse/finalize/recovery tests.
-- Run a canary mutation task and one retry/handoff task.
+- Run a canary source-change task and one retry/handoff task.
 - Enable integrity observation.
-- Resume normal AKS mutation work.
+- Resume normal AKS source-change work.
 
 ## Acceptance criteria
 
@@ -568,7 +568,7 @@ The migration and lifecycle are successful when:
 
 - one optional workflow metadata convention;
 - one deterministic Git workspace adapter around task workflow execution;
-- one AKS mutating workflow or updates to existing mutating workflows;
+- one AKS source-changing workflow or updates to existing source-changing workflows;
 - migration inventory and careful review of dirty/unmerged residue; and
 - focused UI/read-model counts for workspace integrity.
 
@@ -654,7 +654,7 @@ The pilot is implemented while the app remains paused for final verification:
   history from a stale long-lived task branch into `dev`. A converged turn with
   no new task-owned commit leaves `dev` unchanged unless the recorded source is
   already integrated;
-- repo-ref wakes, disposition rechecks, and other non-mutating reviews return
+- repo-ref wakes, disposition rechecks, and other read-only reviews return
   evidence in their structured task result and do not bind to
   `domain-task-execution` merely to publish a memo; only a real bounded source
   repair enters that direct-integration workflow;
@@ -665,20 +665,13 @@ The pilot is implemented while the app remains paused for final verification:
   committed-branch retention, dirty-result refusal, metadata admission,
   tool-root rebasing, and observer behavior.
 
-Migration results are retained under `evidence/ops/`:
-
-- `task-workspace-migration-cleanup-20260721.json`: 466 clean worktrees
-  removed with zero gate failures and one detached unpublished head preserved
-  as a rescue branch;
-- `task-workspace-dirty-relocation-20260721.json`: all 95 historical dirty
-  non-canonical worktrees relocated to
-  `/app/worktrees/aks-rp-e2e/recovery/` without content loss;
-- `task-workspace-canonical-restoration-20260721.json`: the shared checkout is
-  clean `dev` at `origin/dev`; the former root's 198 status entries, divergent
-  branch/commits, and scratch workspace are visible in one quarantine
-  worktree; and
-- `task-workspace-migration-inventory-20260721.json`: the current
-  post-migration topology and full dirty/untracked status.
+The one-time migration concluded that 466 clean worktrees were removed with
+zero gate failures, one detached unpublished head was preserved as a rescue
+branch, all 95 historical dirty non-canonical worktrees were relocated to
+`/app/worktrees/aks-rp-e2e/recovery/` without content loss, and the shared
+checkout was restored to clean `dev` at `origin/dev`. Migration commands may
+write detailed local snapshots under `evidence/ops/` for immediate audit, but
+those generated snapshots are ignored and are not durable repository content.
 
 The 96 dirty recovery worktrees are intentionally not auto-deleted. They are
 legacy recovery evidence, not execution capacity. Owner review may later

@@ -6,10 +6,11 @@
   "scripts": {
     "bundle": "rm -rf .state/bundle && bun build ./app.ts ./agents/evaluator/workflows/evaluator-aftermath.ts ./agents/evaluator/workflows/evaluator-heartbeat.ts ./agents/evaluator/workflows/evaluator-deep-eval.ts ./agents/evaluator/workflows/project-health-evaluator.ts --target=bun --format=esm --outdir .state/bundle --external @may-agent/sdk",
     "check": "bun run syntax && bun run typecheck && bun run format:check",
+    "migrate:session-aftermath": "bun scripts/migrate-session-aftermath-frontier.ts",
     "syntax": "rm -rf .state/syntax-check && bun build ./app.ts ./agents/evaluator/workflows/evaluator-aftermath.ts ./agents/evaluator/workflows/evaluator-heartbeat.ts ./agents/evaluator/workflows/evaluator-deep-eval.ts ./agents/evaluator/workflows/project-health-evaluator.ts --target=bun --format=esm --outdir .state/syntax-check --external @may-agent/sdk && rm -rf .state/syntax-check",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "format": "bun x prettier --write app.ts package.json project.json tsconfig.json agents/evaluator/workflows/**/*.ts watchers/**/*.ts",
-    "format:check": "bun x prettier --check app.ts package.json project.json tsconfig.json agents/evaluator/workflows/**/*.ts watchers/**/*.ts"
+    "format": "bun x prettier --write app.ts package.json project.json tsconfig.json agents/evaluator/workflows/**/*.ts scripts/**/*.ts watchers/**/*.ts",
+    "format:check": "bun x prettier --check app.ts package.json project.json tsconfig.json agents/evaluator/workflows/**/*.ts scripts/**/*.ts watchers/**/*.ts"
   },
   "dependencies": {
     "@may-agent/sdk": "file:../may-agent/packages/sdk"

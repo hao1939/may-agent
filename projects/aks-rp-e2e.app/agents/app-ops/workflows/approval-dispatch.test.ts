@@ -1,3 +1,4 @@
+import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -11,6 +12,47 @@ async function makeWorkspace() {
   await mkdir(join(appDir, ".state"), { recursive: true });
   await mkdir(join(projectDir, "evidence", "archive"), { recursive: true });
   return { appDir, projectDir };
+}
+
+function runtimeDb() {
+  const db = new Database(":memory:");
+  db.exec(`
+    CREATE TABLE events (
+      id INTEGER PRIMARY KEY,
+      event_type TEXT NOT NULL,
+      source TEXT,
+      owner TEXT,
+      data TEXT,
+      timestamp INTEGER NOT NULL
+    );
+    CREATE TABLE notification_messages (
+      telegram_msg_id INTEGER PRIMARY KEY,
+      event_type TEXT,
+      agent TEXT,
+      session_id TEXT,
+      project_id TEXT,
+      data TEXT,
+      sent_at INTEGER
+    );
+  `);
+  return db;
+}
+
+function stableIdPart(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function approvalLineage(pathId: string, packetPath: string) {
+  const correlationKey = `aks-rp-e2e:approval:${stableIdPart(pathId)}:${stableIdPart(packetPath)}`;
+  return {
+    correlationKey,
+    approvalId: correlationKey,
+    waitId: `wait:${correlationKey}`,
+  };
 }
 
 function triggerEvent(event: Record<string, unknown>): string {
@@ -471,9 +513,11 @@ describe("approval-dispatch workflow", () => {
     expect(runs).not.toContain('"result":"duplicate-suppressed"');
   });
 
-  test("suppresses duplicate message.created for the same approval lineage", async () => {
+  test("suppresses duplicate message.created when durable delivery proof still exists", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     const packetPath = "evidence/archive/network-cni-approval-packet.md";
+    const pathId = "path.network-cni-azure-overlay-dual-stack-migration";
+    const db = runtimeDb();
     await writeFile(
       join(projectDir, packetPath),
       "# exact packet\n\nPlease approve the bounded replay.\n",
@@ -493,7 +537,7 @@ describe("approval-dispatch workflow", () => {
         type: "project.approval.requested",
         project: "aks-rp-e2e",
         packetPath,
-        pathId: "path.network-cni-azure-overlay-dual-stack-migration",
+        pathId,
         requestedAction: "Approve one bounded live execution",
         authority: "human",
         reason: "Need durable local send proof for the exact packet.",
@@ -515,6 +559,40 @@ describe("approval-dispatch workflow", () => {
       summarize: () => "",
     } as any);
 
+    const lineage = approvalLineage(pathId, packetPath);
+    db.prepare(
+      "INSERT INTO events (id, event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
+    ).run(
+      101,
+      "message.created",
+      "agent:aks-explorer",
+      "agent:aks-explorer",
+      JSON.stringify({
+        approvalId: lineage.approvalId,
+        waitId: lineage.waitId,
+        pathId,
+        packetPath,
+        correlationKey: lineage.correlationKey,
+      }),
+      Date.now(),
+    );
+    db.prepare(
+      "INSERT INTO notification_messages (telegram_msg_id, event_type, agent, project_id, data, sent_at) VALUES (?, ?, ?, ?, ?, ?)",
+    ).run(
+      45271,
+      "message.created",
+      "aks-explorer",
+      "projects/aks-rp-e2e.app",
+      JSON.stringify({
+        approvalId: lineage.approvalId,
+        waitId: lineage.waitId,
+        pathId,
+        packetPath,
+        correlationKey: lineage.correlationKey,
+      }),
+      Date.now(),
+    );
+
     const second = await execute({
       task: baseTask,
       agent: "aks-explorer",
@@ -524,6 +602,7 @@ describe("approval-dispatch workflow", () => {
       dispatchEvent(type: string, payload: Record<string, unknown>) {
         dispatched.push({ type, payload });
       },
+      getDb: () => db,
       runAgent: async () => ({ status: "success" }),
       summarize: () => "",
     } as any);
@@ -541,5 +620,129 @@ describe("approval-dispatch workflow", () => {
     );
     expect(runs).toContain('"result":"message.created"');
     expect(runs).toContain('"result":"duplicate-suppressed"');
+    expect(runs).toContain('"duplicateReason":"durable notification_messages proof still exists (45271)"');
+    db.close();
+  });
+
+  test("allows redispatch after reviewed human non-delivery for the same lineage", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const packetPath =
+      "evidence/archive/ops-request-origin-dev-wt-jaeayq-detached-node-modules-cleanup-approval-20260802-packet.md";
+    const pathId =
+      "ops/request-approval-origin-dev-wt-jaeayq-detached-node-modules-cleanup-20260802";
+    const db = runtimeDb();
+    await writeFile(
+      join(projectDir, packetPath),
+      "# exact packet\n\nApprove the bounded cleanup reroute.\n",
+      "utf8",
+    );
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+
+    const baseTask = [
+      `app: ${appDir}`,
+      `project: ${projectDir}`,
+      "agent: app-ops",
+      triggerEvent({
+        type: "project.approval.requested",
+        project: "aks-rp-e2e",
+        packetPath,
+        pathId,
+        requestedAction:
+          "Route this exact detached-worktree cleanup packet through the human lane.",
+        authority: "human",
+        reason: "Retry the exact approval lineage only after transport non-delivery is verified.",
+      }),
+    ].join("\n");
+
+    const first = await execute({
+      task: baseTask,
+      agent: "app-ops",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    dispatched.length = 0;
+    const lineage = approvalLineage(pathId, packetPath);
+    db.prepare(
+      "INSERT INTO events (id, event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
+    ).run(
+      4851137,
+      "message.created",
+      "agent:app-ops",
+      "agent:app-ops",
+      JSON.stringify({
+        approvalId: lineage.approvalId,
+        waitId: lineage.waitId,
+        pathId,
+        packetPath,
+        correlationKey: lineage.correlationKey,
+      }),
+      Date.now(),
+    );
+    db.prepare(
+      "INSERT INTO events (id, event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
+    ).run(
+      4851530,
+      "human.attention.reviewed",
+      "telegram-outbound",
+      "agent:may",
+      JSON.stringify({
+        sourceEventId: 4851137,
+        mode: "enforce",
+        admitted: false,
+        delivered: false,
+        attempts: 2,
+        status: "failed",
+      }),
+      Date.now(),
+    );
+
+    const second = await execute({
+      task: baseTask,
+      agent: "app-ops",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      getDb: () => db,
+      runAgent: async () => ({ status: "success" }),
+      summarize: () => "",
+    } as any);
+
+    expect(first.status).toBe("done");
+    expect(second.status).toBe("done");
+    expect(second.message).toContain(
+      "Approval dispatch emitted message.created",
+    );
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]).toMatchObject({
+      type: "message.created",
+      payload: {
+        pathId,
+        packetPath,
+        approvalId: lineage.approvalId,
+        waitId: lineage.waitId,
+      },
+    });
+
+    const runs = await readFile(
+      join(appDir, ".state", "approval-dispatch-runs.jsonl"),
+      "utf8",
+    );
+    expect(runs).toContain('"result":"message.created"');
+    expect(runs).not.toContain('"result":"duplicate-suppressed"');
+    db.close();
   });
 });

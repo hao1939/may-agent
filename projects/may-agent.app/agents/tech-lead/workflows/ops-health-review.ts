@@ -1,4 +1,12 @@
-import { appendFileSync, mkdirSync } from "node:fs";
+import { createHash } from "node:crypto";
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 
@@ -16,6 +24,13 @@ type Signal = {
   severity: "P0" | "P1" | "P2";
   reason: string;
   evidence?: unknown;
+};
+
+type SignalState = {
+  version: 1;
+  activeFingerprint: string | null;
+  activeFamilies: Array<Pick<Signal, "kind" | "severity">>;
+  updatedAt: string;
 };
 
 type DeliveryHealth = {
@@ -257,6 +272,66 @@ function writePacket(appDir: string, packet: Row): string {
   return packetPath;
 }
 
+function signalFamilies(signals: Signal[]): SignalState["activeFamilies"] {
+  return [
+    ...new Map(
+      signals.map((signal) => [
+        signal.kind,
+        {
+          kind: signal.kind,
+          severity: signal.severity,
+        },
+      ]),
+    ).values(),
+  ].sort((left, right) => left.kind.localeCompare(right.kind));
+}
+
+function signalFingerprint(
+  families: SignalState["activeFamilies"],
+): string | null {
+  if (families.length === 0) return null;
+  return createHash("sha256").update(JSON.stringify(families)).digest("hex");
+}
+
+function readSignalState(appDir: string): SignalState | null {
+  const path = join(appDir, ".state", "ops-health-signal-state.json");
+  if (!existsSync(path)) return null;
+  try {
+    const value = JSON.parse(
+      readFileSync(path, "utf8"),
+    ) as Partial<SignalState>;
+    if (value.version !== 1 || !Array.isArray(value.activeFamilies))
+      return null;
+    return {
+      version: 1,
+      activeFingerprint:
+        typeof value.activeFingerprint === "string"
+          ? value.activeFingerprint
+          : null,
+      activeFamilies: value.activeFamilies.filter(
+        (family): family is Pick<Signal, "kind" | "severity"> =>
+          !!family &&
+          typeof family.kind === "string" &&
+          (family.severity === "P0" ||
+            family.severity === "P1" ||
+            family.severity === "P2"),
+      ),
+      updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : "",
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeSignalState(appDir: string, state: SignalState): void {
+  const stateDir = join(appDir, ".state");
+  mkdirSync(stateDir, { recursive: true });
+  const path = join(stateDir, "ops-health-signal-state.json");
+  const temporaryPath = `${path}.tmp`;
+  writeFileSync(temporaryPath, `${JSON.stringify(state, null, 2)}\n`, "utf8");
+  renameSync(temporaryPath, path);
+}
+
 // Metrics that are intentionally deferred to scheduled project.tick reviews.
 // These should NOT generate ops-health wake signals because:
 // 1. Health-observation metrics oscillate and create breach→review→recover loops
@@ -435,6 +510,7 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
           AND COALESCE(endedAt, startedAt) >= ?
           AND COALESCE(result_reason, result_summary, '') NOT LIKE '%missing original task%'
           AND COALESCE(result_reason, result_summary, '') NOT LIKE '%Secret leak detected%'
+          AND COALESCE(result_reason, result_summary, '') NOT LIKE '%session.failed-triage-rate%'
           AND (projectId = 'may-agent'
                OR (projectId IS NULL
                    AND COALESCE(result_reason, result_summary, '') NOT LIKE '%aks-rp-e2e%'
@@ -460,6 +536,7 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
           AND COALESCE(endedAt, startedAt) < ?
           AND COALESCE(result_reason, result_summary, '') NOT LIKE '%missing original task%'
           AND COALESCE(result_reason, result_summary, '') NOT LIKE '%Secret leak detected%'
+          AND COALESCE(result_reason, result_summary, '') NOT LIKE '%session.failed-triage-rate%'
           AND (projectId = 'may-agent'
                OR (projectId IS NULL
                    AND COALESCE(result_reason, result_summary, '') NOT LIKE '%aks-rp-e2e%'
@@ -645,6 +722,23 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     ctx.appDir ?? field(ctx.task, "app") ?? "/app/projects/may-agent.app";
   const { packet, signals } = buildPacket(ctx);
   const packetPath = writePacket(appDir, packet);
+  const previousSignalState = readSignalState(appDir);
+  const activeFamilies = signalFamilies(signals);
+  const activeFingerprint = signalFingerprint(activeFamilies);
+  const signalChanged = previousSignalState
+    ? previousSignalState.activeFingerprint !== activeFingerprint
+    : activeFingerprint !== null;
+  const recovered = Boolean(
+    signalChanged &&
+    previousSignalState?.activeFingerprint &&
+    activeFingerprint === null,
+  );
+  writeSignalState(appDir, {
+    version: 1,
+    activeFingerprint,
+    activeFamilies,
+    updatedAt: new Date().toISOString(),
+  });
 
   ctx.emit({
     type: "project.ops_health.observed",
@@ -654,22 +748,27 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     signals,
   });
 
-  if (signals.length > 0) {
+  if (signalChanged) {
     ctx.emit({
       type: "project.owner.requested",
       project: "may-agent",
-      reason: "ops-health-signal",
+      reason: recovered ? "ops-health-recovered" : "ops-health-signal-changed",
       params: {
         packetPath,
         signalCount: signals.length,
         signals,
+        activeFamilies,
+        previousFamilies: previousSignalState?.activeFamilies ?? [],
       },
     });
   }
 
-  const summary =
-    signals.length > 0
-      ? `Ops health observer recorded ${signals.length} signal(s); owner wake emitted.`
+  const summary = signalChanged
+    ? recovered
+      ? "Ops health observer recorded recovery; owner wake emitted."
+      : `Ops health observer recorded ${signals.length} changed signal family/families; owner wake emitted.`
+    : signals.length > 0
+      ? `Ops health observer recorded ${signals.length} unchanged signal(s); no owner wake.`
       : "Ops health observer recorded packet with no owner wake.";
   return ctx.done(summary, {
     state: "converged",

@@ -62,8 +62,9 @@ domain watchers.
 - `project-stall-review` — observation-only liveness diagnosis.
 - `approval-dispatch` — idempotent human approval packet delivery.
 - `problem-solver` — bounded evidence-backed problem investigation.
-- `spec-loop-controller` — observes spec-loop state and declares bounded
-  sibling actions, then converges once current work is represented.
+- `spec-loop-controller` — reconciles the app-owned ledger against a detached
+  clean `origin/dev` catalog snapshot, declares bounded sibling actions, then
+  converges once every current spec is represented.
 - `feature-compact-loop-controller` — observes compact-loop state and declares
   bounded sibling actions, then converges once current work is represented.
 - `normalize-scenario-frontier` — observes strict scenario-test inventory on

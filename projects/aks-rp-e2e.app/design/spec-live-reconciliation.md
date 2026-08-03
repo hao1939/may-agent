@@ -5,7 +5,7 @@ Status: implemented AKS workflow contract.
 ## Scope
 
 Use `spec-live-reconciliation` only when one finite AKS spec task may require
-source mutation, exact live verification, fix-forward retries, and integration
+source changes, exact live verification, fix-forward retries, and integration
 into a shared branch. Investigation, approval, observation-only review,
 terminal-disposition repair, compact planning, and ordinary app operations keep
 their existing owners or workflows.
@@ -108,6 +108,31 @@ from summaries or prose. The
 post-integration verifier repeats these checks and additionally proves current
 `origin/dev` ancestry and the scenario-source invariant.
 
+Structural proof is necessary but is not semantic proof. During terminal
+review, the agent must compare each declared claim with the observation in its
+exact assertion evidence. Configuration or enablement proves only that
+configuration or enablement; it does not by itself prove that a runtime
+component is healthy, that an operation was optimized, or that another claimed
+behavior occurred. An assertion whose evidence says the required observation
+was unavailable, not performed, assumed from provisioning, or deferred to a
+different tool cannot support `accepted-pass`, even when the assertion has
+`ok: true` and the provider is green. The agent repairs the carrier to make the
+claim observable, narrows or corrects an inaccurate claim when official
+authority supports that change, or returns the exact unavailable capability.
+Code continues to collect facts and enforce hard structure; it does not infer
+semantic adequacy from assertion prose.
+
+When owner input explicitly invalidates semantic proof from an earlier run, it
+must name `invalidatedRunId` and the affected `invalidatedClaimIds`. The
+workflow resolves that run to its exact source commit and compares the
+structured `invalidatedSourcePaths`, or the task's exact spec and direct
+carrier paths when no narrower list was supplied. It gives those source facts
+to the domain agent and refuses another ADO dispatch while every relevant blob
+is unchanged. Code does not decide how a claim should be implemented or infer
+semantic defects from prose; the agent repairs or re-evaluates the contract.
+A green provider result whose semantic proof was explicitly invalidated is
+diagnostic history, never reusable acceptance evidence.
+
 Before the first exact run for a source commit, the agent reviews that current
 commit against the original task and decides whether it is ready for live
 execution. This review is required even when an earlier workflow step already
@@ -119,6 +144,12 @@ agent chooses a bounded repair, `test-current`, an exact wait, or an ownership
 boundary. Code dispatches only after that judgment and the hard admission
 checks both permit it.
 
+That readiness review compares every `claim` assertion ID declared by the exact
+spec with the IDs the execute-mode carrier will emit. A check-mode pass is not
+enough when check mode does not execute that mapping. When the mapping is
+programmatic, the bounded repair also adds a scoped contract check so the same
+false-green provider run is not spent again.
+
 Before every ADO dispatch, including a replacement run after a repair or merge
 conflict, workflow code runs the repository's own private-source and live
 admission checks in the exact task worktree. These are hard dispatch
@@ -129,8 +160,10 @@ Direct scenario carriers are loaded by the ADO executor through Vitest. For a
 new or repaired direct `.test.ts` carrier, scoped validation therefore uses the
 Vitest collection/runtime surface and not only `bun test`; the carrier imports
 test APIs from `vitest`, never `bun:test`. This is execution compatibility, not
-a product judgment, and a source that has not passed that surface is not ready
-for live dispatch.
+a product judgment. Imported scenario libraries also guard CLI execution with
+`import.meta.main`; an unconditional `main()` would perform a second live
+execution during Vitest collection. A source that has not passed that surface
+and import-side-effect review is not ready for live dispatch.
 Uncertainty about a secret or variable on the current ADO execution surface is
 not itself proof of an external blocker. Evidence from an older backend,
 different source commit, or different target is repair context only. When the
@@ -156,7 +189,7 @@ and reviews the new exact commit before spending a live run. The terminal
 integration check remains the final race guard, but a target advance already
 known at dispatch time must not create a predictably stale live run.
 
-A source- or provider-mutating repair must use this workflow (or another
+A repair that changes source or calls a provider must use this workflow (or another
 workflow that explicitly declares the same capabilities). Its task input keeps
 the decision context—spec, failure, prior proof, and desired result—while the
 workflow supplies the execution context—task worktree, provider tooling,
@@ -236,6 +269,11 @@ unrelated merge.
   workflow reruns deterministic admission and requires a fresh exact live run;
   it asks the agent again only when replay conflicts or the replayed source
   fails admission.
+- A bounded scenario replay preserves every task-commit change owned by the
+  selected feature: both `features/<feature>/...` and the root packet
+  `features/<feature>.yaml`. The root packet is part of the tested task source;
+  replay must not silently integrate only the spec and carrier while dropping
+  its Learn/API grounding or feature judgment changes.
 - One exact terminal run/source pair is judged at most once during a workflow
   attempt. A dispatch-time target advance must not recursively restart
   reconciliation and present that same terminal evidence to the agent again.
@@ -326,6 +364,15 @@ unrelated merge.
   ready or pass before the terminal run. `needs-owner` remains available only
   when the evidence cannot support the domain judgment or a real external
   authority must decide it.
+- For a plain-carrier normalization, first separate source layout from product
+  contract adjudication. If the existing behavior, assertions, and disputed
+  expectation can be preserved unchanged while the carrier moves into direct
+  `.test.ts` or feature `lib/` source, the layout change does not require the
+  external authority to decide the product verdict. The agent records the
+  current nonpassing or unresolved posture, returns the structured terminal
+  disposition for this source iteration, and leaves the exact owner
+  approval/escalation as independent follow-up. A wait is valid only when that
+  authority is required to choose the implementation itself.
 - A terminal-disposition result is not a live pass. Ordinary finite work may
   use it to preserve a truthful reviewed product or environment posture. A
   pass-required task sets `input.allowTerminalDisposition: false`; the agent
@@ -408,6 +455,15 @@ unrelated merge.
   converge. Do not fast-forward the task branch to unrelated newer `dev`
   commits before matching its run; doing so discards valid proof and creates an
   endless moving-target rerun loop.
+- The completion receipt must retain the execution-relevant paths whose blobs
+  make that proof current. This applies to a direct fast-forward, a bounded
+  replay, and a proof-only task that changed no source. A later frontier pulse
+  keeps the pass when the integrated commit remains reachable and those paths
+  are byte-for-byte unchanged; an unrelated `dev` advance must not manufacture
+  another live run. For receipts created before this field was recorded, the
+  frontier reconstructs the bounded path set from the retained task baseline
+  and source commit, falling back to the exact spec and direct carrier paths.
+  It does not infer intent from task prose.
 - A task-owned replay conflict with current `origin/dev` returns to the agent on
   the same task; the repaired commit must receive a fresh exact live run before
   integration.

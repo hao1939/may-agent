@@ -18,6 +18,8 @@ import {
   safeFeatureCompactTaskId,
   type FeatureCompactItemState,
 } from "./lib/feature-compact-loop-store.ts";
+import { publishFocusMetrics } from "./lib/focus-metric-publication.ts";
+import { publishProjectMetrics } from "./lib/project-metric-publication.ts";
 import {
   field,
   frontierLimit,
@@ -57,7 +59,12 @@ export const workflowContract: WorkflowIoContract = {
 type Graph = {
   tasks?: Record<
     string,
-    { phase?: string; state?: string; input?: Record<string, unknown> }
+    {
+      phase?: string;
+      state?: string;
+      children?: string[];
+      input?: Record<string, unknown>;
+    }
   >;
 };
 
@@ -208,13 +215,45 @@ function representsCurrentWork(
   return ownsFeature && input.workRevision === revision;
 }
 
+function representsInFlightFeatureTransition(
+  graph: Graph,
+  taskId: string,
+  featureKey: string,
+): boolean {
+  const task = graph.tasks?.[taskId];
+  if (!task) return false;
+  const phase = representedTaskState(graph, taskId).trim().toLowerCase();
+  const hasLiveChild = (task.children ?? []).some(
+    (childId) =>
+      Boolean(graph.tasks?.[childId]) &&
+      !isTerminalRepresentationPhase(representedTaskState(graph, childId)),
+  );
+  if (phase !== "running" && !(phase === "waiting" && hasLiveChild)) {
+    return false;
+  }
+  const input = task.input ?? {};
+  const ownsFeature =
+    (input.loopId === featureCompactLoopTaskId &&
+      input.workKey === featureKey) ||
+    (input.loopTaskId === featureCompactLoopTaskId &&
+      input.featureKey === featureKey);
+  return (
+    ownsFeature &&
+    typeof input.workRevision === "string" &&
+    Boolean(input.workRevision.trim())
+  );
+}
+
 function isTerminalRepresentationPhase(phase: string): boolean {
   return new Set(["closed", "converged", "done"]).has(
     phase.trim().toLowerCase(),
   );
 }
 
-function ensureFreshTaskId(baseId: string, terminalHistoryIds: string[]): string {
+function ensureFreshTaskId(
+  baseId: string,
+  terminalHistoryIds: string[],
+): string {
   const occupied = new Set(terminalHistoryIds);
   if (!occupied.has(baseId)) {
     return baseId;
@@ -232,8 +271,33 @@ function ensureFreshTaskId(baseId: string, terminalHistoryIds: string[]): string
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const projectDir =
     ctx.projectDir ?? field(ctx.task, "project") ?? "/app/projects/aks-rp-e2e";
-  const appDir =
-    ctx.appDir ?? resolveAppDir(projectDir, field(ctx.task, "app"));
+  const appDir = resolveAppDir(
+    projectDir,
+    ctx.appDir ?? field(ctx.task, "app"),
+  );
+  try {
+    const publishedFocus = publishFocusMetrics({
+      metrics: ctx.metrics,
+      appDir,
+      projectDir,
+      measuredBy: "workflow:feature-compact-loop-controller",
+    });
+    const publishedProject = publishProjectMetrics({
+      metrics: ctx.metrics,
+      appDir,
+      measuredBy: "workflow:feature-compact-loop-controller",
+    });
+    if (publishedFocus.length || publishedProject.length) {
+      ctx.log(
+        `Published ${publishedFocus.length} focus metrics and ${publishedProject.length} project metrics during the durable-loop pulse.`,
+      );
+    }
+  } catch (error) {
+    ctx.log(
+      `Metric publication failed during the durable-loop pulse: ${String(error)}`,
+    );
+  }
+
   const trigger = parseTriggerEvent(ctx.task);
   const loopTaskId =
     triggerString(trigger, "taskId") ||
@@ -288,7 +352,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       const revision = workRevision(item);
       const ids = new Set<string>();
       for (const taskId of Object.keys(graph.tasks ?? {})) {
-        if (representsCurrentWork(graph, taskId, featureKey, revision)) {
+        if (
+          representsCurrentWork(graph, taskId, featureKey, revision) ||
+          representsInFlightFeatureTransition(graph, taskId, featureKey)
+        ) {
           ids.add(taskId);
         }
       }
@@ -304,9 +371,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     }),
   );
   const representedTaskIds = [
-    ...new Set(
-      [...representedByFeature.values()].flatMap(({ all }) => all),
-    ),
+    ...new Set([...representedByFeature.values()].flatMap(({ all }) => all)),
   ];
   const accounting = loopFrontierAccounting(
     representedTaskIds.map((taskId) => ({
@@ -332,7 +397,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         item.status === "done" && missingProofFields.length > 0;
       const repairsRepresentation =
         item.status !== "done" && hasStructuredRepresentation(item);
-      const baseTaskId = desiredTaskId(featureKey, item, revision, proofContext);
+      const baseTaskId = desiredTaskId(
+        featureKey,
+        item,
+        revision,
+        proofContext,
+      );
       const taskId = ensureFreshTaskId(baseTaskId, [
         ...(representedByFeature.get(featureKey)?.terminal ?? []),
         ...historicalIds,
@@ -370,18 +440,19 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
               "Treat any taskId, frontierTaskIds, waitingFor.taskId, or waitingFor.representedTaskIds that are absent from the current .state/tasks/tree.json as stale history; do not return an action that references a missing task id.",
               "If current evidence proves the accepted live result, fill the missing structured proof fields and preserve done.",
               "Otherwise move the item to the exact truthful pending, blocked, or reviewed terminal state without launching an unchanged rerun.",
-              "If review shows repository source must change, rebind the same task to a task-worktree workflow such as domain-task-execution instead of editing or publishing from the shared canonical checkout.",
+              "If review shows an executable compact plan, spec, carrier, or runner source must change, rebind the same task to spec-live-reconciliation with the complete feature specIds, livePlanPath, fixed target, and any prepared sourceBranch/sourceCommit instead of editing or publishing from the shared canonical checkout. Use domain-task-execution only for a truly source-only patch that requires no live behavior proof.",
             ]
           : repairsRepresentation
             ? [
                 "Inspect the current feature-compact row, feature packet, compact artifacts, cited evidence, and current .state/tasks/tree.json before changing anything.",
                 "If the cited evidence names an existing source branch, commit, dispatch metadata file, or task worktree, inspect that exact branch/worktree in place; do not copy its delta into the shared canonical dev checkout just to review it.",
                 "Treat any taskId, frontierTaskIds, waitingFor.taskId, or waitingFor.representedTaskIds that are absent from the current .state/tasks/tree.json as stale history; do not return an action that references a missing task id.",
+                "Before creating a replacement holder, check .state/tasks/state.json receipts as well as the live tree. A completed task ID is immutable; use one new deterministic holder ID and repoint the feature row instead of attempting to recreate a completed ID.",
                 "If the current exact wait/frontier is still truthful, recreate or repoint exactly one live holder task and update the feature-compact row to that holder instead of reopening a broad unchanged compact rerun.",
                 "If the prior exact wait/frontier is stale, replace it with the smallest truthful current pending task, exact wait, reviewed terminal disposition, or done state using current evidence.",
                 "A feature-level holder represents only the workRevision it carries. Preserve still-true narrower waits, but do not let an older or subset-scoped wait hide materially changed runnable work in the same feature.",
                 "Do not relaunch the whole unchanged compact package merely because the prior holder finished or disappeared; repair the representation first.",
-                "If review shows repository source must change, rebind the same task to a task-worktree workflow such as domain-task-execution instead of editing or publishing from the shared canonical checkout.",
+                "If review shows an executable compact plan, spec, carrier, or runner source must change, rebind the same task to spec-live-reconciliation with the complete feature specIds, livePlanPath, fixed target, and any prepared sourceBranch/sourceCommit instead of editing or publishing from the shared canonical checkout. Use domain-task-execution only for a truly source-only patch that requires no live behavior proof.",
               ]
             : [
                 ...learnedCompactVerificationAcceptance,

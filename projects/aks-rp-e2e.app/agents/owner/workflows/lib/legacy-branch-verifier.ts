@@ -220,7 +220,7 @@ export function verifyLegacyBranchCandidate(
         label: `check:${path}`,
         command: `bun ${path} --check`,
         status: 1,
-        output: "Changed carrier has no conventional non-mutating check mode",
+        output: "The changed test has no conventional check-only mode",
       });
       continue;
     }

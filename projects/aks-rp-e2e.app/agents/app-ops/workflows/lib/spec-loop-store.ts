@@ -63,6 +63,14 @@ export type SpecLoopState = {
   specs: Record<string, SpecLoopSpecState>;
 };
 
+export function isSpecLoopSpecSatisfied(spec: SpecLoopSpecState): boolean {
+  return (
+    spec.status === "pass" ||
+    spec.status === "done" ||
+    spec.terminalDisposition === true
+  );
+}
+
 export function normalizeSpecLoopSpecState(
   spec: SpecLoopSpecState,
 ): SpecLoopSpecState {
@@ -274,13 +282,26 @@ function applyCatalogDisposition(
   catalogSpec: SpecRecord,
   now: string,
 ): SpecLoopSpecState {
+  const preserveReviewedTerminalDisposition =
+    !catalogSpec.terminalDisposition &&
+    stateSpec.terminalDisposition === true &&
+    !!(
+      stateSpec.review ||
+      stateSpec.successorDisposition ||
+      stateSpec.resumeCondition
+    );
   const base = {
     ...stateSpec,
     catalogStatus: catalogSpec.status,
     catalogSpecState: catalogSpec.specState,
-    terminalDisposition: catalogSpec.terminalDisposition,
+    terminalDisposition:
+      catalogSpec.terminalDisposition || preserveReviewedTerminalDisposition,
   };
-  if (!catalogSpec.terminalDisposition || stateSpec.status === "pass") {
+  if (
+    (!catalogSpec.terminalDisposition &&
+      !preserveReviewedTerminalDisposition) ||
+    stateSpec.status === "pass"
+  ) {
     return base;
   }
   const alreadyReviewed =
@@ -341,6 +362,23 @@ export function devInfraCorePrioritySpecIds(projectDir: string): string[] {
   return featureSetPrioritySpecIds(projectDir, "dev-infra-core");
 }
 
+export function runnersPrioritySpecIds(projectDir: string): string[] {
+  return featureSetPrioritySpecIds(projectDir, "runners");
+}
+
+function unresolvedPrioritySpecIds(
+  prioritySpecIds: string[],
+  specs: Record<string, SpecLoopSpecState>,
+): string[] {
+  return prioritySpecIds.filter(
+    (specId) =>
+      specs[specId] &&
+      specs[specId].status !== "pass" &&
+      specs[specId].status !== "done" &&
+      specs[specId].terminalDisposition !== true,
+  );
+}
+
 export function loadSpecLoopState(input: {
   appDir: string;
   projectDir: string;
@@ -362,8 +400,8 @@ export function loadSpecLoopState(input: {
     });
     state.loopTaskId ||= input.loopTaskId;
     state.windowSize ||= input.windowSize;
-    state.prioritySpecIds =
-      input.prioritySpecIds ?? devInfraCorePrioritySpecIds(input.projectDir);
+    const configuredPrioritySpecIds =
+      input.prioritySpecIds ?? runnersPrioritySpecIds(input.projectDir);
     state.specs ||= {};
 
     if (input.refreshFromProject !== false) {
@@ -410,11 +448,15 @@ export function loadSpecLoopState(input: {
     for (const [specId, specState] of Object.entries(state.specs)) {
       state.specs[specId] = normalizeSpecLoopSpecState(specState);
     }
+    state.prioritySpecIds = unresolvedPrioritySpecIds(
+      configuredPrioritySpecIds,
+      state.specs,
+    );
     return { state, path, created: false };
   }
 
-  const prioritySpecIds =
-    input.prioritySpecIds ?? devInfraCorePrioritySpecIds(input.projectDir);
+  const configuredPrioritySpecIds =
+    input.prioritySpecIds ?? runnersPrioritySpecIds(input.projectDir);
   const specs: Record<string, SpecLoopSpecState> = {};
   for (const spec of loadSpecs(input.projectDir)) {
     specs[spec.id] = applyCatalogDisposition(
@@ -446,7 +488,10 @@ export function loadSpecLoopState(input: {
     loopTaskId: input.loopTaskId,
     windowSize: input.windowSize,
     cursor: 0,
-    prioritySpecIds,
+    prioritySpecIds: unresolvedPrioritySpecIds(
+      configuredPrioritySpecIds,
+      specs,
+    ),
     specs,
   };
   writeJson(path, state);

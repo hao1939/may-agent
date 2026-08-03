@@ -62,31 +62,46 @@ describe("evaluation app metric routing", () => {
 });
 
 describe("evaluation app task reconciliation", () => {
-  test("binds completed sessions to short-lived aftermath workflow tasks", () => {
+  test("collapses completed sessions into one compact aftermath frontier wake", async () => {
+    const emitted: Array<Record<string, unknown>> = [];
     expect(
       resolveEvaluationTask({
-        type: "session.end",
-        data: { sessionId: "s/eval:42", status: "done" },
+        type: "evaluation.aftermath.scan",
+        params: { reason: "session-end" },
       }),
     ).toMatchObject({
-      id: expect.stringMatching(
-        /^runtime\/session-aftermath\/s-eval-42-[a-f0-9]{12}$/,
-      ),
-      parentId: "session-audit",
-      mode: "achieve",
+      id: "runtime/aftermath-backfill",
+      parentId: "pipeline-health",
+      mode: "maintain",
       workflow: "evaluator-aftermath",
-      input: { sessionId: "s/eval:42" },
+      input: { scope: "session-aftermath-frontier" },
     });
+
+    await routeEvaluationEvent(context(emitted), {
+      type: "session.end",
+      data: {
+        sessionId: "s/eval:42",
+        agent: "may",
+        task: "large session text that must not enter task state",
+      },
+    });
+    expect(emitted).toEqual([
+      {
+        type: "evaluation.aftermath.scan",
+        project: "evaluation",
+        params: { reason: "session-end" },
+      },
+    ]);
   });
 
-  test("uses collision-safe stable keys for normalized session ids", () => {
+  test("keeps explicit session requests collision-safe and independently auditable", () => {
     const first = resolveEvaluationTask({
-      type: "session.end",
-      data: { sessionId: "s/eval:42" },
+      type: "evaluation.session.requested",
+      params: { sessionId: "s/eval:42" },
     });
     const second = resolveEvaluationTask({
-      type: "session.end",
-      data: { sessionId: "s:eval/42" },
+      type: "evaluation.session.requested",
+      params: { sessionId: "s:eval/42" },
     });
 
     expect(first?.id).not.toBe(second?.id);
@@ -96,7 +111,9 @@ describe("evaluation app task reconciliation", () => {
   });
 
   test("keeps deterministic pipeline observation outside the task graph", () => {
-    expect(resolveEvaluationTask({ type: "evaluation.pipeline.check" })).toBeNull();
+    expect(
+      resolveEvaluationTask({ type: "evaluation.pipeline.check" }),
+    ).toBeNull();
     expect(app.events).toContainEqual({
       type: "evaluation.pipeline.check",
       project: "evaluation",
@@ -115,6 +132,47 @@ describe("evaluation app task reconciliation", () => {
       mode: "maintain",
       workflow: "project-health-evaluator",
     });
+  });
+
+  test("keeps reliability parents structural", () => {
+    const seed = JSON.parse(
+      readFileSync(new URL("./tasks/seed.json", import.meta.url), "utf8"),
+    ) as { groups: Record<string, Record<string, unknown>> };
+
+    expect(seed.groups["evaluator-reliability"]).toMatchObject({
+      id: "evaluator-reliability",
+      parent_id: "evaluation-system",
+      owner: "evaluator",
+    });
+    expect(seed.groups["pipeline-health"]).toMatchObject({
+      id: "pipeline-health",
+      parent_id: "evaluator-reliability",
+      owner: "evaluator",
+    });
+    expect(seed.groups["evaluator-reliability"]).not.toHaveProperty("workflow");
+    expect(seed.groups["pipeline-health"]).not.toHaveProperty("workflow");
+  });
+
+  test("keeps gym.app in standing project-health coverage", () => {
+    const task = resolveEvaluationTask({
+      type: "evaluation.project.review.requested",
+      params: { targetProject: "gym.app", reason: "scheduled" },
+    });
+
+    expect(task).toMatchObject({
+      id: "runtime/project-audit/gym.app",
+      parentId: "project-app-audit",
+      mode: "maintain",
+      workflow: "project-health-evaluator",
+      input: {
+        targetProject: "gym.app",
+        targetAppDir: "/app/projects/gym.app",
+        targetDomainDir: "/app/projects/gym",
+      },
+    });
+    expect(app.schedules).toContainEqual(
+      expect.objectContaining({ id: "project-health-loop-gym.app" }),
+    );
   });
 
   test("keeps wake observations out of standing task specifications", () => {
@@ -153,31 +211,34 @@ describe("evaluation app task reconciliation", () => {
     });
   });
 
-  test("does not create malformed per-session tasks without a session id", () => {
-    expect(resolveEvaluationTask({ type: "session.end" })).toBeNull();
+  test("does not create malformed explicit per-session tasks without a session id", () => {
+    expect(
+      resolveEvaluationTask({ type: "evaluation.session.requested" }),
+    ).toBeNull();
     expect(
       resolveEvaluationTask({ type: "evaluation.deep.requested" }),
     ).toBeNull();
   });
 
-  test("filters evaluator and judge session endings before task creation", () => {
-    expect(
-      resolveEvaluationTask({
+  test("filters evaluator and judge session endings before a frontier wake", async () => {
+    for (const agent of ["evaluator", "judge"]) {
+      const emitted: Array<Record<string, unknown>> = [];
+      const result = await routeEvaluationEvent(context(emitted), {
         type: "session.end",
-        data: { sessionId: "s-evaluator", agent: "evaluator" },
-      }),
-    ).toBeNull();
-    expect(
-      resolveEvaluationTask({
-        type: "session.end",
-        data: { sessionId: "s-judge", agent: "judge" },
-      }),
-    ).toBeNull();
+        data: { sessionId: `s-${agent}`, agent },
+      });
+      expect(emitted).toHaveLength(0);
+      expect(result).toMatchObject({
+        reason: `ignored ${agent} session aftermath`,
+      });
+    }
   });
 
   test("declares one convention-first task resolver", () => {
     expect(app.tasks?.resolve).toBe(resolveEvaluationTask);
-    expect(app.tasks?.accepts).toHaveLength(9);
+    expect(app.tasks?.accepts).toHaveLength(8);
+    expect(app.tasks?.accepts).not.toContain("session.end");
+    expect(app.events).toContain("session.end");
     expect(app.ownerEntry).toBeUndefined();
     expect(app.taskWorkflows).toBeUndefined();
     expect(app.taskRoutes).toBeUndefined();
@@ -205,5 +266,7 @@ describe("evaluation app task reconciliation", () => {
       expect(group).not.toHaveProperty("reconcile_mode");
       expect(group).not.toHaveProperty("acceptance");
     }
+    expect(seed.groups["evaluator-reliability"]).not.toHaveProperty("workflow");
+    expect(seed.groups["pipeline-health"]).not.toHaveProperty("workflow");
   });
 });

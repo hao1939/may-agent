@@ -11,6 +11,7 @@ import { appendFileSync, mkdirSync } from "node:fs";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 import {
   field,
+  parseReconciliationTaskPayload,
   parseTriggerEvent,
   resolveAppDir,
   resultText,
@@ -49,10 +50,38 @@ function stringList(value: unknown): string[] {
   return [];
 }
 
-function problemKeyFromTrigger(trigger: ReturnType<typeof parseTriggerEvent>) {
+function recordValue(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function problemSolverTaskInput(
+  raw: string,
+): Record<string, unknown> | null {
+  const payload = parseReconciliationTaskPayload(raw);
+  return recordValue(payload?.input);
+}
+
+function taskInputString(
+  input: Record<string, unknown> | null,
+  ...keys: string[]
+): string {
+  for (const key of keys) {
+    const value = input?.[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "";
+}
+
+function problemKeyFromTrigger(
+  trigger: ReturnType<typeof parseTriggerEvent>,
+  taskInput?: Record<string, unknown> | null,
+) {
   return (
     triggerString(trigger, "problemKey") ||
     triggerString(trigger, "problem_key") ||
+    taskInputString(taskInput ?? null, "problemKey", "problem_key") ||
     triggerString(trigger, "taskId") ||
     triggerString(trigger, "task_id") ||
     `problem_${new Date().toISOString().replace(/\D/g, "").slice(0, 14)}`
@@ -198,25 +227,39 @@ function finishProblemSolver(
     evidence: string[];
   },
 ): WorkflowResult {
-  return ctx.done(input.summary, {
+  const output: {
+    state: "converged" | "needs-owner";
+    summary: string;
+    evidence: string[];
+    actions?: [];
+  } = {
     state: input.state,
     summary: input.summary,
     evidence: input.evidence,
-    actions: [],
-  });
+  };
+  if (input.state === "converged") output.actions = [];
+  return ctx.done(input.summary, output);
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const projectDir =
     ctx.projectDir ?? field(ctx.task, "project") ?? "/app/projects/aks-rp-e2e";
-  const appDir =
-    ctx.appDir ?? resolveAppDir(projectDir, field(ctx.task, "app"));
+  const appDir = resolveAppDir(
+    projectDir,
+    ctx.appDir ?? field(ctx.task, "app"),
+  );
   const sourceRoot = sourceDir(ctx.task);
   const trigger = parseTriggerEvent(ctx.task);
+  const taskInput = problemSolverTaskInput(ctx.task);
   const agent =
     field(ctx.task, "owner") ?? field(ctx.task, "agent") ?? ctx.agent;
+  const recoveredFromTaskTick =
+    trigger?.type === "project.task.tick" && Boolean(taskInput);
 
-  if (trigger?.type !== "project.problem.investigation.requested") {
+  if (
+    trigger?.type !== "project.problem.investigation.requested" &&
+    !recoveredFromTaskTick
+  ) {
     const summary = `Problem solver ignored trigger ${String(trigger?.type ?? "unknown")}; use project.problem.investigation.requested.`;
     return finishProblemSolver(ctx, {
       state: "needs-owner",
@@ -225,14 +268,19 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     });
   }
 
-  const problemKey = problemKeyFromTrigger(trigger);
+  const problemKey = problemKeyFromTrigger(trigger, taskInput);
+  const affectedTaskFromTrigger = recoveredFromTaskTick
+    ? []
+    : [triggerString(trigger, "taskId"), triggerString(trigger, "task_id")];
   const affectedTasks = [
     ...new Set(
       [
         ...stringList(triggerValue(trigger, "affectedTasks")),
         ...stringList(triggerValue(trigger, "affected_tasks")),
-        triggerString(trigger, "taskId"),
-        triggerString(trigger, "task_id"),
+        ...stringList(taskInput?.affectedTasks),
+        ...stringList(taskInput?.affected_tasks),
+        ...affectedTaskFromTrigger,
+        taskInputString(taskInput, "targetTaskId", "target_task_id"),
       ].filter(Boolean),
     ),
   ];

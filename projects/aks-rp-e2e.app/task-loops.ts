@@ -1,10 +1,4 @@
-import { readFileSync } from "node:fs";
-import {
-  projectRuntimePaths,
-  resolveTaskTreePath,
-  type ProjectAppEvent,
-  type ProjectAppTaskIntent,
-} from "@may-agent/sdk";
+import type { ProjectAppTaskIntent } from "@may-agent/sdk";
 
 export const specLoopTaskId = "aks-spec-verification-loop";
 export const featureCompactLoopTaskId = "aks-feature-compact-loop";
@@ -40,6 +34,7 @@ export const learnedSpecVerificationAcceptance = [
   "Prefer repository REST/API helpers for AKS operations; do not add new az CLI behavior inside test carriers unless the spec explicitly tests CLI behavior.",
   "Do not depend on mounted private AKS RP source, hidden precreated clusters, or local-only files. If preflight flags a policy violation, create the exact carrier repair before rerunning.",
   "Before queueing ADO, verify the branch/commit ADO will run. Push intended domain changes first, or explicitly record that the run is proving older remote source.",
+  "Treat execution-surface failures from a retired backend as stale evidence. In particular, a GitHub Actions auth or workflow failure cannot justify a terminal disposition after the project moved to ADO; re-evaluate the ready spec on the current ADO path or preserve one exact current blocker.",
   "A live pass must prove real AKS work when the spec needs it: same spec id, ADO run, result path, resource group or cluster identity, key assertions, and cleanup/disposition evidence. A fast no-cluster pass is inconclusive unless the spec is explicitly source-only.",
   "If test code, spec, model, or runner behavior changes, require a fresh ADO live run for the exact spec on the changed branch before claiming pass; when spec-live-reconciliation is bound, leave dispatch to that workflow after committing the clean source change.",
   "For ADO waits, preserve structured backend, run id, result/artifact path when known, and one exact typed wait condition; when spec-live-reconciliation is bound, the workflow returns that Condition.",
@@ -54,7 +49,7 @@ export const learnedCompactVerificationAcceptance = [
   "Use single-spec learning as input: compact should reuse known-good carriers and represent broken or blocked specs exactly instead of hiding them inside a larger package.",
   "Every feature-owned spec must be covered by the compact package, excluded with a source-grounded reason, or represented by an exact wait or reviewed terminal disposition.",
   "An unbound compact owner task is shared/read-only. When current evidence cites an existing source branch, commit, dispatch metadata, or task worktree, inspect and verify that exact branch/worktree in place; do not copy its delta into the shared canonical dev checkout just to review it.",
-  "If review shows repository source must change, do not edit or publish from the shared canonical checkout. Rebind the same task to a task-worktree workflow such as domain-task-execution and carry forward the exact source branch/worktree evidence needed for the mutating follow-up.",
+  "If review shows an executable compact plan, spec, carrier, or runner source must change, do not edit or publish from the shared canonical checkout. Rebind the same task to spec-live-reconciliation with the complete feature specIds, livePlanPath, fixed target, and any prepared sourceBranch/sourceCommit so one workflow owns repair, publication, exact ADO proof, and post-pass dev integration. Use domain-task-execution only for a truly source-only compact patch that requires no live behavior proof.",
   "Treat the selected feature as one natural ordered journey candidate. Split physical cluster reuse only for a named required immutable-property conflict or an unrecoverable logical-history conflict; scenario names, shape-key names, create calls, and delete calls are not split reasons by themselves.",
   "Model cluster requirements as partial constraints: unspecified properties do not conflict, test-local inputs such as kubeconfig scope do not belong to cluster shape, mutable differences are reconciled, and useful post-state is retained for the next test.",
   "Minimize transitions in this order: reuse current state, create test-local resources, apply a mutable update, apply a disruptive update, then recreate the cluster only when unavoidable. Put destructive work last when dependencies permit.",
@@ -77,8 +72,11 @@ export const learnedScenarioNormalizationAcceptance = [
   "Choose exactly one next state: origin/dev absorbed/equivalent, publish/rebase/recheck, smallest same-spec repair, exact external wait with observer/resume condition, terminal disposition, or escalation.",
   "After the required scoped and live proof passes, integrate the tested commit directly into dev and verify it is reachable from origin/dev; do not open or wait on a PR merely to reach dev.",
   "A task branch, pushed commit, passing run, or active PR is progress evidence, not completion. The row is normalized only when current origin/dev contains the accepted carrier or an exact terminal disposition.",
+  "A standalone direct .test.ts carrier must execute the scenario in-process on the Vitest surface. A child-process wrapper that shells to Bun, a plain .ts carrier, or another local script is migration scaffolding, not normalization completion.",
+  "Use official Learn, Azure REST API specs, and checked-in design docs as contract authority. Mounted AKS RP or Go source is implementation evidence only, and private/local filesystem paths cannot be required carrier inputs or source-of-truth grounding.",
   "For a plain scenario carrier, completion requires current strict inventory to stop listing scenarioTestPath in both remainingSpecReferencedPlainScenarioUnits and remainingRepoPlainScenarioFiles; a sibling .test.ts wrapper that still imports the plain .ts carrier is progress, not completion.",
   "Preserve active behavior while removing a plain carrier by moving reusable code into the direct .test.ts implementation or a shared library outside features/*/tests/*.ts.",
+  "Keep source-layout normalization separate from product-contract adjudication: when existing behavior, assertions, and a disputed expectation can be preserved unchanged in direct .test.ts or feature lib source, integrate that normalized source with the truthful current terminal posture and keep any owner approval or escalation as independent follow-up; wait only when the missing authority must decide the implementation itself.",
   "Do not close from filename similarity, stale task summaries, broad plain-TS counters, or review/attention residue alone.",
 ];
 
@@ -127,17 +125,35 @@ export const standingLoopDefinitions: Record<
     owner: "aks-explorer",
     workflow: "normalize-scenario-frontier",
     frontierLimit: 5,
+    input: {
+      requiredRepositoryCheckCommand: "bun run check",
+      qualityInventoryRequired: true,
+      qualityInventoryFocus: [
+        "official-learn-api-grounding",
+        "standalone-direct-carrier-contract",
+        "canonical-target-mutation-fixture-cleanup",
+        "current-source-staging-live-proof",
+      ],
+    },
     outcome:
-      "Drive clean current origin/dev to a passing strict scenario inventory; represent every missing adapter, spec-referenced plain scenario carrier, and repository-only plain scenario carrier by one actionable normalization leaf, exact external wait, or reviewed terminal disposition until none remain.",
+      "Drive clean current origin/dev beyond file-layout migration into truthful direct-carrier normalization: every active spec should end in a readable standalone direct .test.ts implementation (or exact external blocker), grounded expectations and scoped resource/state DAG, and accepted current-source live proof or exact blocker/escalation; repository-only plain scenario carriers must also be removed or truthfully represented.",
     acceptance: [
-      "Inventory is generated from a clean identified origin/dev revision.",
+      "Inventory and review evidence are generated from a clean identified origin/dev revision, and completion also requires a passing full repository check on the reviewed source.",
       ...learnedScenarioNormalizationAcceptance,
-      "Every remaining missing adapter or plain-carrier strict-inventory row has exactly one scenario-loop representation.",
-      "While eligible work exists, at most five actionable one-adapter leaves are represented; waits and attention do not consume that frontier.",
+      "Treat zero missing adapters / zero spec-referenced plain scenario units / zero repository plain scenario files as file-layout completion only; do not converge while unreferenced plain carriers, unpaired adapters, stale file-layout-only normalization receipts, or active-spec direct-carrier contract gaps remain.",
+      "For each active spec in scope, verify the current spec JSON, direct .test.ts carrier, exact probeRef/implementation path, scoped resource/state DAG and expectations, and primary Learn/API-spec grounding; checked-in design docs may refine the public contract, but mounted AKS RP or Go source remains implementation evidence rather than source-of-truth policy.",
+      "A normalized carrier is a readable standalone direct .test.ts implementation using the canonical resolved target, explicit mutation safety gate, explicit fixture ownership, safe cleanup, truthful result reporting, and shared helpers only for genuinely repeated mechanics or variants; invoke scenario logic in-process instead of via child-process wrappers, and remove migration-only wiring assertions and tracked runtime-evidence scaffolding when they are no longer the current contract.",
+      "Every remaining current surface has exactly one scenario-loop representation: accepted current-source live proof, one exact external blocker/wait/escalation, or one bounded feature-sized repair that still needs staging proof and direct dev integration.",
+      "Reconcile stale normalization children and receipts by replacing any still-relevant file-layout-only lineage with one current feature-sized child or exact blocker; do not create a parallel scenario-normalization controller task.",
+      "While eligible work exists, keep at most five actionable feature-sized normalization repairs represented; waits and attention do not consume that frontier.",
       "Outstanding normalization live-execution slots are separately capped at five total actionable or exact pipeline-backed wait holders so queued/notStarted and inProgress ADO runs cannot grow beyond the intended frontier while earlier runs drain.",
-      "Completion requires strict-passed true, zero spec-referenced plain scenario units, and zero repository plain scenario files on clean current origin/dev; this is source-inventory completion, not a live product verdict.",
+      "Completion requires strict-passed true on clean current origin/dev, a passing full repository check, and accepted current-source live proof or an exact external blocker/escalation for every current spec in scope.",
     ],
-    priority: "P0",
+    // This is a continuously refilled maintenance frontier. Keeping its
+    // ordinary leaves at P0 can occupy every domain slot and starve the spec
+    // and feature-compact loops indefinitely. Concrete incidents may still
+    // use P0; routine normalization shares the P1 maintenance lane.
+    priority: "P1",
   },
   [legacyBranchReconciliationTaskId]: {
     id: legacyBranchReconciliationTaskId,
@@ -183,7 +199,7 @@ export const standingLoopDefinitions: Record<
       "Keep SKILL.md concise and procedural; keep detailed guidance in directly linked references; keep reusable automation in tested TypeScript or JavaScript run with Bun.",
       "Keep SKILL.md frontmatter, agents/openai.yaml, repository README usage, scripts, examples, current CLI, runner behavior, schemas, and pipeline parameters aligned without duplicating design documentation.",
       "After every material change, rerun the same failed user case, the other review cases, the checked-in skill example suite, and proportionate repository checks. Continue until no material gap remains; if that is not possible in the current iteration, leave one exact child task with the failed case, evidence, owner, and acceptance.",
-      "Do not queue live pipelines, use an existing standalone build, or mutate Azure solely for skill evaluation without explicit authorization; inspection, local validation, dry runs, and queue previews are the default.",
+      "Do not queue live pipelines, use an existing standalone build, or change Azure resources solely for skill evaluation without explicit authorization; inspection, local validation, dry runs, and queue previews are the default.",
       "Integrate ordinary correctness and usability improvements directly into dev through the task-owned workflow. Escalate only a real product, policy, benchmark, or human-approval boundary.",
       "Report a compact case table with the prompt, expected outcome, observed result, gap, change, and verification. Do not commit transient run output. When no material gap exists, converge with evidence for the evaluated revisions and wait for the next scheduled or manual pulse.",
       "Maintain this one stable task; do not create recurring review-task chains for the same skill-quality responsibility.",
@@ -272,155 +288,5 @@ export function loopFrontierAccounting(
     attentionTaskIds: [...attentionTaskIds],
     terminalTaskIds: [...terminalTaskIds],
     available: Math.max(0, frontierLimit - actionableTaskIds.size),
-  };
-}
-
-type TaskProjection = {
-  tasks?: Record<
-    string,
-    {
-      input?: Record<string, unknown>;
-    }
-  >;
-};
-
-type TaskStateParentProjection = {
-  resources?: Record<
-    string,
-    {
-      spec?: {
-        parentId?: string;
-      };
-    }
-  >;
-  receipts?: Record<
-    string,
-    {
-      parentId?: string;
-    }
-  >;
-};
-
-const dedicatedLoopIdByParent = new Map<string, StandingLoopId>([
-  [standingLoopDefinitions[specLoopTaskId].parentId, specLoopTaskId],
-  [
-    standingLoopDefinitions[featureCompactLoopTaskId].parentId,
-    featureCompactLoopTaskId,
-  ],
-  [
-    standingLoopDefinitions[scenarioNormalizationTaskId].parentId,
-    scenarioNormalizationTaskId,
-  ],
-]);
-
-function persistedTaskLoopId(
-  appDir: string,
-  taskId: string,
-): StandingLoopId | undefined {
-  try {
-    const state = JSON.parse(
-      readFileSync(projectRuntimePaths(appDir).taskStatePath, "utf8"),
-    ) as TaskStateParentProjection;
-    const visited = new Set<string>();
-    let currentTaskId: string | undefined = taskId;
-    while (currentTaskId && !visited.has(currentTaskId)) {
-      visited.add(currentTaskId);
-      const parentId =
-        state.resources?.[currentTaskId]?.spec?.parentId ??
-        state.receipts?.[currentTaskId]?.parentId;
-      if (typeof parentId !== "string" || !parentId) return undefined;
-      const loopId = dedicatedLoopIdByParent.get(parentId);
-      if (loopId) return loopId;
-      if (isStandingLoopId(parentId)) return parentId;
-      currentTaskId = parentId;
-    }
-    return undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-function hasExecutableLoopAncestor(appDir: string, taskId: string): boolean {
-  try {
-    const state = JSON.parse(
-      readFileSync(projectRuntimePaths(appDir).taskStatePath, "utf8"),
-    ) as TaskStateParentProjection;
-    const visited = new Set<string>();
-    let currentTaskId: string | undefined = taskId;
-    while (currentTaskId && !visited.has(currentTaskId)) {
-      visited.add(currentTaskId);
-      const parentId =
-        state.resources?.[currentTaskId]?.spec?.parentId ??
-        state.receipts?.[currentTaskId]?.parentId;
-      if (typeof parentId !== "string" || !parentId) return false;
-      if (isStandingLoopId(parentId)) return true;
-      currentTaskId = parentId;
-    }
-    return false;
-  } catch {
-    return false;
-  }
-}
-
-function eventTaskId(event: Record<string, unknown>): string {
-  const target =
-    event.target &&
-    typeof event.target === "object" &&
-    !Array.isArray(event.target)
-      ? (event.target as Record<string, unknown>)
-      : {};
-  const value = target.taskId ?? event.taskId ?? event.task_id;
-  return typeof value === "string" ? value.trim() : "";
-}
-
-export function loopRefillWakeForTaskEvent(
-  appDir: string,
-  event: Record<string, unknown>,
-): ProjectAppEvent | null {
-  if (event.type !== "project.task.reconciled") return null;
-  const taskId = eventTaskId(event);
-  if (!taskId || isStandingLoopId(taskId)) return null;
-  if (hasExecutableLoopAncestor(appDir, taskId)) return null;
-
-  const data =
-    event.data && typeof event.data === "object" && !Array.isArray(event.data)
-      ? (event.data as Record<string, unknown>)
-      : {};
-  const eventInput =
-    data.input && typeof data.input === "object" && !Array.isArray(data.input)
-      ? (data.input as Record<string, unknown>)
-      : undefined;
-  let input = eventInput;
-  if (!input) {
-    try {
-      const projection = JSON.parse(
-        readFileSync(resolveTaskTreePath(appDir), "utf8"),
-      ) as TaskProjection;
-      input = projection.tasks?.[taskId]?.input;
-    } catch {
-      return null;
-    }
-  }
-  const loopId = isStandingLoopId(input?.loopId)
-    ? input.loopId
-    : persistedTaskLoopId(appDir, taskId);
-  if (!isStandingLoopId(loopId)) return null;
-  const definition = standingLoopDefinitions[loopId];
-  const disposition =
-    typeof data.disposition === "string" ? data.disposition : undefined;
-
-  return {
-    type: "project.task.tick",
-    source: "aks-rp-e2e-app",
-    target: { project: "aks-rp-e2e", taskId: loopId },
-    action: definition.action,
-    reason: "loop-leaf-reconciled",
-    data: {
-      project: "aks-rp-e2e",
-      taskId: loopId,
-      task_id: loopId,
-      sourceTaskId: taskId,
-      ...(disposition ? { disposition } : {}),
-    },
   };
 }

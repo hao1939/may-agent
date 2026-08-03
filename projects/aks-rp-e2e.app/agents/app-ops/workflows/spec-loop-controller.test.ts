@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { execute } from "./spec-loop-controller";
@@ -8,6 +9,7 @@ async function workspace(input: {
   specs?: Record<string, Record<string, unknown>>;
   tasks?: Record<string, Record<string, unknown>>;
   resources?: Record<string, unknown>;
+  receipts?: Record<string, unknown>;
   catalogSpecs?: Array<{ path: string; content: Record<string, unknown> }>;
 }) {
   const root = await mkdtemp(join(tmpdir(), "spec-loop-v2-"));
@@ -31,15 +33,47 @@ async function workspace(input: {
     JSON.stringify({
       tasks: input.tasks ?? {},
       resources: input.resources ?? {},
-      receipts: {},
+      receipts: input.receipts ?? {},
     }),
   );
-  for (const spec of input.catalogSpecs ?? []) {
+  await writeFile(
+    join(appDir, ".state", "tasks", "state.json"),
+    JSON.stringify({
+      tasks: input.tasks ?? {},
+      resources: input.resources ?? {},
+      receipts: input.receipts ?? {},
+    }),
+  );
+  const catalogSpecs =
+    input.catalogSpecs ??
+    Object.keys(input.specs ?? {}).map((specId) => ({
+      path: `features/test/specs/${specId.replace(/[^A-Za-z0-9_.-]+/g, "-")}.json`,
+      content: { id: specId },
+    }));
+  for (const spec of catalogSpecs) {
     const path = join(projectDir, spec.path);
     await mkdir(dirname(path), { recursive: true });
     await writeFile(path, JSON.stringify(spec.content));
   }
+  git(projectDir, "init", "-b", "dev");
+  git(projectDir, "config", "user.name", "Test User");
+  git(projectDir, "config", "user.email", "test@example.com");
+  git(projectDir, "add", ".");
+  git(projectDir, "commit", "-m", "catalog");
+  git(
+    projectDir,
+    "update-ref",
+    "refs/remotes/origin/dev",
+    git(projectDir, "rev-parse", "HEAD"),
+  );
   return { appDir, projectDir };
+}
+
+function git(projectDir: string, ...args: string[]): string {
+  return execFileSync("git", args, {
+    cwd: projectDir,
+    encoding: "utf8",
+  }).trim();
 }
 
 function context(appDir: string, projectDir: string) {
@@ -55,6 +89,107 @@ function context(appDir: string, projectDir: string) {
 }
 
 describe("spec loop reconciliation workflow", () => {
+  test("reconciles added and retired catalog identities before selecting work", async () => {
+    const ws = await workspace({
+      specs: {
+        "spec.retired": {
+          status: "pass",
+          attempts: 1,
+          lastRunId: "41",
+          updatedAt: "2026-07-19T00:00:00Z",
+        },
+      },
+      catalogSpecs: [
+        {
+          path: "features/current/specs/current.json",
+          content: { id: "spec.current" },
+        },
+      ],
+    });
+
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+
+    expect(result.output.actions).toMatchObject([
+      { input: { specId: "spec.current" } },
+    ]);
+    const persisted = JSON.parse(
+      await readFile(
+        join(ws.appDir, ".state", "spec-loop", "state.json"),
+        "utf8",
+      ),
+    );
+    expect(Object.keys(persisted.specs)).toEqual(["spec.current"]);
+  });
+
+  test("uses clean origin dev instead of a dirty canonical catalog", async () => {
+    const catalogPath = "features/current/specs/current.json";
+    const ws = await workspace({
+      specs: {
+        "spec.current": {
+          status: "pass",
+          attempts: 1,
+          lastRunId: "42",
+          updatedAt: "2026-07-19T00:00:00Z",
+        },
+      },
+      catalogSpecs: [{ path: catalogPath, content: { id: "spec.current" } }],
+    });
+    const sourceCommit = git(ws.projectDir, "rev-parse", "HEAD");
+    await writeFile(
+      join(ws.projectDir, catalogPath),
+      JSON.stringify({ id: "spec.dirty-local-only" }),
+    );
+
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+
+    expect(result.output).toMatchObject({ state: "converged", actions: [] });
+    expect(result.output.evidence).toContain(
+      `spec-loop-catalog-source:origin/dev@${sourceCommit}`,
+    );
+    const persisted = JSON.parse(
+      await readFile(
+        join(ws.appDir, ".state", "spec-loop", "state.json"),
+        "utf8",
+      ),
+    );
+    expect(Object.keys(persisted.specs)).toEqual(["spec.current"]);
+  });
+
+  test("does not reconcile from an untrusted project checkout", async () => {
+    const ws = await workspace({
+      specs: {
+        "spec.current": {
+          status: "pass",
+          attempts: 1,
+          lastRunId: "42",
+          updatedAt: "2026-07-19T00:00:00Z",
+        },
+      },
+    });
+    git(ws.projectDir, "update-ref", "-d", "refs/remotes/origin/dev");
+    await mkdir(join(ws.projectDir, "features/current/specs"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(ws.projectDir, "features/current/specs/dirty.json"),
+      JSON.stringify({ id: "spec.dirty-local-only" }),
+    );
+
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+
+    expect(result.output).toMatchObject({
+      state: "needs-owner",
+      evidence: ["spec-loop-catalog-source:project-dir@untrusted"],
+    });
+    const persisted = JSON.parse(
+      await readFile(
+        join(ws.appDir, ".state", "spec-loop", "state.json"),
+        "utf8",
+      ),
+    );
+    expect(Object.keys(persisted.specs)).toEqual(["spec.current"]);
+  });
+
   test("converges when every spec has a passing result", async () => {
     const ws = await workspace({
       specs: {
@@ -73,7 +208,7 @@ describe("spec loop reconciliation workflow", () => {
     });
   });
 
-  test("declares bounded owner work without mutating or assigning the graph", async () => {
+  test("declares bounded owner work without changing or assigning the graph", async () => {
     const ws = await workspace({
       specs: {
         "spec.example": {
@@ -526,8 +661,165 @@ describe("spec loop reconciliation workflow", () => {
     const acceptance = result.output.actions[0].acceptance.join("\n");
     expect(acceptance).toContain("Do not launch an unchanged rerun");
     expect(acceptance).toContain(
+      "a GitHub Actions auth or workflow failure cannot justify a terminal disposition after the project moved to ADO",
+    );
+    expect(acceptance).toContain(
       "do not return an action that references a missing task id",
     );
+  });
+
+  test("uses a fresh task identity when the deterministic repair identity already completed", async () => {
+    const baseId =
+      "spec/repair-verify-spec-reviewed-disposition-representation-73475cb40a";
+    const ws = await workspace({
+      specs: {
+        "spec.reviewed": {
+          status: "pending",
+          taskId: null,
+          attempts: 1,
+          lastRunId: "42",
+          lastResultPath: "result.json",
+          lastPrUrl: null,
+          updatedAt: "2026-07-19T00:00:00Z",
+          review: {
+            classification: "reviewed_nonlive_source_grounded_wait",
+            reviewedAt: "2026-07-19T00:00:00Z",
+          },
+          successorDisposition: "reviewed_nonlive_source_grounded_wait",
+          successorEvidencePath: "evidence/archive/spec-reviewed.md",
+          resumeCondition:
+            "Resume only after the reviewed execution posture changes.",
+          terminalDisposition: false,
+        },
+      },
+      receipts: {
+        [baseId]: { taskId: baseId, completedAt: "2026-07-20T00:00:00Z" },
+      },
+    });
+
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+
+    expect(result.output.actions).toHaveLength(1);
+    expect(result.output.actions[0]).toMatchObject({
+      kind: "create-task",
+      input: { specId: "spec.reviewed" },
+    });
+    expect(result.output.actions[0].id).toStartWith(`${baseId}-`);
+    expect(result.output.actions[0].id).not.toBe(baseId);
+  });
+
+  test("imports newer project mirror rows before deciding reviewed disposition repair work", async () => {
+    const ws = await workspace({
+      specs: {
+        "spec.reviewed": {
+          status: "pending",
+          taskId: null,
+          attempts: 1,
+          lastRunId: "42",
+          lastResultPath: "result.json",
+          lastPrUrl: null,
+          updatedAt: "2026-07-19T00:00:00Z",
+          review: {
+            classification: "reviewed_nonlive_source_grounded_wait",
+            reviewedAt: "2026-07-19T00:00:00Z",
+          },
+          successorDisposition: "reviewed_nonlive_source_grounded_wait",
+          successorEvidencePath: "evidence/archive/spec-reviewed.md",
+          resumeCondition:
+            "Resume only after the reviewed execution posture changes.",
+          terminalDisposition: false,
+        },
+      },
+    });
+    await mkdir(join(ws.projectDir, ".state", "spec-loop"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(ws.projectDir, ".state", "spec-loop", "state.json"),
+      JSON.stringify({
+        loopTaskId: "aks-spec-verification-loop",
+        windowSize: 5,
+        cursor: 0,
+        prioritySpecIds: [],
+        specs: {
+          "spec.reviewed": {
+            status: "pending",
+            taskId: null,
+            attempts: 1,
+            lastRunId: "42",
+            lastResultPath: "result.json",
+            lastPrUrl: null,
+            updatedAt: "2026-07-20T00:00:00Z",
+            review: {
+              classification: "reviewed_nonlive_source_grounded_wait",
+              reviewedAt: "2026-07-20T00:00:00Z",
+            },
+            successorDisposition: "reviewed_nonlive_source_grounded_wait",
+            successorEvidencePath: "evidence/archive/spec-reviewed.md",
+            resumeCondition:
+              "Resume only after the reviewed execution posture changes.",
+            terminalDisposition: true,
+          },
+        },
+      }),
+    );
+
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+
+    expect(result.output).toMatchObject({ state: "converged", actions: [] });
+    const persisted = JSON.parse(
+      await readFile(
+        join(ws.appDir, ".state", "spec-loop", "state.json"),
+        "utf8",
+      ),
+    );
+    expect(persisted.specs["spec.reviewed"]?.terminalDisposition).toBe(true);
+  });
+
+  test("preserves reviewed terminal disposition through catalog refresh for nonterminal source-grounded specs", async () => {
+    const ws = await workspace({
+      specs: {
+        "spec.reviewed": {
+          status: "pending",
+          taskId: null,
+          attempts: 1,
+          lastRunId: "42",
+          lastResultPath: "result.json",
+          lastPrUrl: null,
+          updatedAt: "2026-07-20T00:00:00Z",
+          review: {
+            classification: "reviewed_nonlive_source_grounded_wait",
+            reviewedAt: "2026-07-20T00:00:00Z",
+          },
+          successorDisposition: "reviewed_nonlive_source_grounded_wait",
+          successorEvidencePath: "evidence/archive/spec-reviewed.md",
+          resumeCondition:
+            "Resume only after the reviewed execution posture changes.",
+          terminalDisposition: true,
+        },
+      },
+      catalogSpecs: [
+        {
+          path: "features/test/specs/spec-reviewed.json",
+          content: {
+            id: "spec.reviewed",
+            status: "draft",
+            specState: "source-grounded",
+          },
+        },
+      ],
+    });
+
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+
+    expect(result.output).toMatchObject({ state: "converged", actions: [] });
+    const persisted = JSON.parse(
+      await readFile(
+        join(ws.appDir, ".state", "spec-loop", "state.json"),
+        "utf8",
+      ),
+    );
+    expect(persisted.specs["spec.reviewed"]?.terminalDisposition).toBe(true);
   });
 
   test("treats existing old-shape disposition repair tasks as represented", async () => {

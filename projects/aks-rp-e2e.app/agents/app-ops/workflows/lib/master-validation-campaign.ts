@@ -16,6 +16,8 @@ export type CampaignFix = {
   taskId: string;
   sourceBranch: string;
   sourceCommit: string;
+  targetCommit?: string;
+  patchIds?: string[];
   title: string;
 };
 
@@ -37,6 +39,8 @@ type PullRequestLike = {
   sourceRefName?: unknown;
   targetRefName?: unknown;
   lastMergeSourceCommit?: { commitId?: unknown };
+  lastMergeTargetCommit?: { commitId?: unknown };
+  mergeStatus?: unknown;
 };
 
 function text(value: unknown): string {
@@ -58,8 +62,15 @@ export function campaignBranchName(baselineRunId: string): string {
 
 export function campaignFixFromPullRequest(
   pullRequest: PullRequestLike,
+  options: { includeCompleted?: boolean } = {},
 ): CampaignFix | null {
-  if (text(pullRequest.status) !== "active") return null;
+  const status = text(pullRequest.status);
+  const eligible =
+    status === "active" ||
+    (options.includeCompleted === true &&
+      status === "completed" &&
+      text(pullRequest.mergeStatus) === "succeeded");
+  if (!eligible) return null;
   if (branchName(pullRequest.targetRefName) !== "main") return null;
   const description = text(pullRequest.description);
   const taskId =
@@ -76,6 +87,7 @@ export function campaignFixFromPullRequest(
   const pullRequestId = text(pullRequest.pullRequestId);
   const sourceBranch = branchName(pullRequest.sourceRefName);
   const sourceCommit = text(pullRequest.lastMergeSourceCommit?.commitId);
+  const targetCommit = text(pullRequest.lastMergeTargetCommit?.commitId);
   const title = text(pullRequest.title);
   const conventionalMasterValidationFix =
     sourceBranch.includes("master-validation") &&
@@ -89,6 +101,7 @@ export function campaignFixFromPullRequest(
     taskId: taskId || `pull-request/${pullRequestId}`,
     sourceBranch,
     sourceCommit,
+    ...(targetCommit ? { targetCommit } : {}),
     title,
   };
 }
@@ -162,73 +175,138 @@ function remoteBranchExists(repoDir: string, branch: string): boolean {
   );
 }
 
-function mergeFix(
-  checkout: string,
-  fix: CampaignFix,
-  input: {
-    baseCommit: string;
-    allowedCampaignCommits: string[];
-  },
-): { fix: CampaignFix; merged: boolean } {
-  git(checkout, [
-    "fetch",
-    "origin",
-    `+refs/heads/${fix.sourceBranch}:refs/remotes/origin/${fix.sourceBranch}`,
-  ]);
-  const fetchedCommit = git(checkout, [
-    "rev-parse",
-    `refs/remotes/origin/${fix.sourceBranch}`,
-  ]).stdout;
-  const currentFix = { ...fix, sourceCommit: fetchedCommit };
-  git(checkout, ["fetch", "origin", "main"]);
-  const forkCommit = git(checkout, [
-    "merge-base",
-    fetchedCommit,
-    "refs/remotes/origin/main",
-  ]).stdout;
-  const rootedAtFrozenBase =
-    git(
-      checkout,
-      ["merge-base", "--is-ancestor", forkCommit, input.baseCommit],
-      true,
-    ).status === 0;
-  const rootedAtIntegratedFix = input.allowedCampaignCommits.some(
-    (commit) =>
-      git(checkout, ["merge-base", "--is-ancestor", forkCommit, commit], true)
-        .status === 0,
-  );
-  if (!rootedAtFrozenBase && !rootedAtIntegratedFix) {
+function ensureCommit(checkout: string, commit: string): void {
+  if (!commit) return;
+  if (
+    git(checkout, ["cat-file", "-e", `${commit}^{commit}`], true).status === 0
+  ) {
+    return;
+  }
+  git(checkout, ["fetch", "origin", commit]);
+}
+
+function patchId(checkout: string, commit: string): string {
+  const patch = git(checkout, ["show", "--pretty=format:", "--binary", commit]);
+  const result = spawnSync("git", ["patch-id", "--stable"], {
+    cwd: checkout,
+    encoding: "utf8",
+    input: patch.stdout,
+    timeout: 180_000,
+    maxBuffer: 32 * 1024 * 1024,
+    env: process.env,
+  });
+  if ((result.status ?? 1) !== 0) {
     throw new Error(
-      `Campaign fix PR ${fix.pullRequestId} forks from newer main commit ${forkCommit}; rebase only the focused fix onto frozen base ${input.baseCommit} or the existing campaign lineage instead of resyncing main.`,
+      (result.stderr || result.error?.message || "git patch-id failed").trim(),
     );
   }
-  if (
-    git(checkout, ["merge-base", "--is-ancestor", fetchedCommit, "HEAD"], true)
-      .status === 0
-  ) {
-    return { fix: currentFix, merged: false };
+  return text(result.stdout).split(/\s+/)[0] ?? "";
+}
+
+function focusedCommits(
+  checkout: string,
+  fix: CampaignFix,
+  excludedCommits: string[],
+  rangeBaseCommit = "",
+): string[] {
+  ensureCommit(checkout, fix.sourceCommit);
+  ensureCommit(checkout, fix.targetCommit ?? "");
+  const inferredParent = git(checkout, [
+    "rev-parse",
+    `${fix.sourceCommit}^`,
+  ]).stdout;
+  const exclusions = [
+    rangeBaseCommit || fix.targetCommit || inferredParent,
+    ...excludedCommits,
+  ].filter(Boolean);
+  const commits = git(checkout, [
+    "rev-list",
+    "--reverse",
+    "--topo-order",
+    fix.sourceCommit,
+    ...exclusions.map((commit) => `^${commit}`),
+  ])
+    .stdout.split(/\r?\n/)
+    .map((commit) => commit.trim())
+    .filter(Boolean);
+  for (const commit of commits) {
+    const parents = git(checkout, ["rev-list", "--parents", "-n", "1", commit])
+      .stdout.split(/\s+/)
+      .filter(Boolean);
+    if (parents.length > 2) {
+      throw new Error(
+        `Campaign fix PR ${fix.pullRequestId} contains merge commit ${commit}; keep the focused PR linear so only its repair patch can enter the frozen campaign.`,
+      );
+    }
   }
-  const merged = git(
+  return commits;
+}
+
+function prepareFix(
+  checkout: string,
+  fix: CampaignFix,
+  excludedCommits: string[],
+  rangeBaseCommit = "",
+): { fix: CampaignFix; commits: string[] } {
+  git(
     checkout,
     [
-      "-c",
-      "user.name=May Agent",
-      "-c",
-      "user.email=may-agent@localhost",
-      "merge",
-      "--no-ff",
-      "--no-edit",
-      fetchedCommit,
+      "fetch",
+      "origin",
+      `+refs/heads/${fix.sourceBranch}:refs/remotes/origin/${fix.sourceBranch}`,
     ],
     true,
   );
-  if (merged.status !== 0) {
-    git(checkout, ["merge", "--abort"], true);
+  ensureCommit(checkout, fix.sourceCommit);
+  const commits = focusedCommits(
+    checkout,
+    fix,
+    excludedCommits,
+    rangeBaseCommit,
+  );
+  const patchIds = commits.map((commit) => patchId(checkout, commit));
+  if (patchIds.some((id) => !id)) {
     throw new Error(
-      `Campaign fix merge conflict for PR ${fix.pullRequestId} (${fix.sourceBranch}): ${merged.stderr || merged.stdout}`,
+      `Campaign fix PR ${fix.pullRequestId} contains an empty focused commit; publish a source-bearing focused repair.`,
     );
   }
-  return { fix: currentFix, merged: true };
+  return {
+    fix: { ...fix, patchIds },
+    commits,
+  };
+}
+
+function samePatchSeries(left: CampaignFix, right: CampaignFix): boolean {
+  return (
+    Boolean(left.patchIds?.length) &&
+    left.patchIds?.join(",") === right.patchIds?.join(",")
+  );
+}
+
+function applyFix(
+  checkout: string,
+  prepared: { fix: CampaignFix; commits: string[] },
+): void {
+  for (const commit of prepared.commits) {
+    const applied = git(
+      checkout,
+      [
+        "-c",
+        "user.name=May Agent",
+        "-c",
+        "user.email=may-agent@localhost",
+        "cherry-pick",
+        commit,
+      ],
+      true,
+    );
+    if (applied.status !== 0) {
+      git(checkout, ["cherry-pick", "--abort"], true);
+      throw new Error(
+        `Campaign focused-patch conflict for PR ${prepared.fix.pullRequestId} (${prepared.fix.sourceBranch}) at ${commit}: ${applied.stderr || applied.stdout}`,
+      );
+    }
+  }
 }
 
 export function composeFrozenCampaign(input: {
@@ -237,6 +315,7 @@ export function composeFrozenCampaign(input: {
   baselineRunId: string;
   baseCommit: string;
   fixes: CampaignFix[];
+  replacementFixes?: CampaignFix[];
   prior?: CampaignReceipt | null;
 }): { receipt: CampaignReceipt; changed: boolean } {
   if (
@@ -302,26 +381,93 @@ export function composeFrozenCampaign(input: {
       git(checkout, ["checkout", "--detach", input.baseCommit]);
     }
 
-    const integrated = new Map(
-      (input.prior?.integratedFixes ?? []).map((fix) => [
-        fix.pullRequestId,
-        fix,
-      ]),
-    );
+    const integrated: CampaignFix[] = [];
     let changed = false;
-    const allowedCampaignCommits = [...integrated.values()].map(
-      (fix) => fix.sourceCommit,
-    );
+    const excludedCommits = [input.baseCommit];
+    for (const fix of input.prior?.integratedFixes ?? []) {
+      const prepared = fix.patchIds?.length
+        ? { fix, commits: [] }
+        : prepareFix(checkout, fix, excludedCommits);
+      integrated.push(prepared.fix);
+      excludedCommits.push(prepared.fix.sourceCommit);
+    }
+
+    const incorporate = (fix: CampaignFix, replacementOnly: boolean): void => {
+      const exactIndex = integrated.findIndex(
+        (candidate) => candidate.pullRequestId === fix.pullRequestId,
+      );
+      if (exactIndex >= 0) {
+        const priorFix = integrated[exactIndex];
+        if (priorFix.sourceCommit === fix.sourceCommit) {
+          integrated[exactIndex] = { ...fix, patchIds: priorFix.patchIds };
+          return;
+        }
+        ensureCommit(checkout, fix.sourceCommit);
+        if (
+          git(
+            checkout,
+            [
+              "merge-base",
+              "--is-ancestor",
+              priorFix.sourceCommit,
+              fix.sourceCommit,
+            ],
+            true,
+          ).status !== 0
+        ) {
+          throw new Error(
+            `Campaign fix PR ${fix.pullRequestId} rewrote its already integrated focused patch. Append a corrective commit or publish a new focused PR so the frozen campaign keeps auditable history.`,
+          );
+        }
+        const delta = prepareFix(
+          checkout,
+          fix,
+          excludedCommits.filter((commit) => commit !== priorFix.sourceCommit),
+          priorFix.sourceCommit,
+        );
+        const updatedFix = {
+          ...delta.fix,
+          patchIds: [
+            ...(priorFix.patchIds ?? []),
+            ...(delta.fix.patchIds ?? []),
+          ],
+        };
+        applyFix(checkout, { ...delta, fix: updatedFix });
+        integrated[exactIndex] = updatedFix;
+        excludedCommits.push(updatedFix.sourceCommit);
+        changed ||= delta.commits.length > 0;
+        return;
+      }
+
+      const prepared = prepareFix(checkout, fix, excludedCommits);
+
+      const equivalentIndex = integrated.findIndex(
+        (candidate) =>
+          candidate.taskId === prepared.fix.taskId &&
+          samePatchSeries(candidate, prepared.fix),
+      );
+      if (equivalentIndex >= 0) {
+        integrated[equivalentIndex] = prepared.fix;
+        excludedCommits.push(prepared.fix.sourceCommit);
+        return;
+      }
+      if (replacementOnly) return;
+
+      applyFix(checkout, prepared);
+      integrated.push(prepared.fix);
+      excludedCommits.push(prepared.fix.sourceCommit);
+      changed ||= prepared.commits.length > 0;
+    };
+
     for (const fix of [...input.fixes].sort(
       (left, right) => Number(left.pullRequestId) - Number(right.pullRequestId),
     )) {
-      const result = mergeFix(checkout, fix, {
-        baseCommit: input.baseCommit,
-        allowedCampaignCommits,
-      });
-      integrated.set(result.fix.pullRequestId, result.fix);
-      allowedCampaignCommits.push(result.fix.sourceCommit);
-      changed ||= result.merged;
+      incorporate(fix, false);
+    }
+    for (const fix of [...(input.replacementFixes ?? [])].sort(
+      (left, right) => Number(left.pullRequestId) - Number(right.pullRequestId),
+    )) {
+      incorporate(fix, true);
     }
     const currentCommit = git(checkout, ["rev-parse", "HEAD"]).stdout;
     if (!existed || changed) {
@@ -333,7 +479,7 @@ export function composeFrozenCampaign(input: {
       baseCommit: input.baseCommit,
       branch,
       currentCommit,
-      integratedFixes: [...integrated.values()].sort(
+      integratedFixes: [...integrated].sort(
         (left, right) =>
           Number(left.pullRequestId) - Number(right.pullRequestId),
       ),

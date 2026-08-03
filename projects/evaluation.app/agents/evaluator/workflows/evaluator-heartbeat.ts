@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import {
+  admitProjectAppTaskHandlerResult,
   projectAppTaskOwnerResultSchema,
   resolveTaskTreePath,
   type ProjectAppTaskHandlerResult,
@@ -26,6 +27,7 @@ type TaskRecord = {
   outcome?: string;
   parent_id?: string | null;
   phase?: string;
+  generation?: number;
   priority?: string;
   owner?: string;
   children?: string[];
@@ -100,12 +102,18 @@ function compactTasks(
   };
 }
 
+function readTaskTree(appDir = APP_DIR): Record<string, unknown> | null {
+  const path = taskTreePath(appDir);
+  if (!existsSync(path)) return null;
+  return readJson(path) as Record<string, unknown>;
+}
+
 function taskPacket(appDir = APP_DIR): Record<string, unknown> {
   const path = taskTreePath(appDir);
-  if (!existsSync(path)) {
+  const tree = readTaskTree(appDir);
+  if (!tree) {
     return { error: `missing ${path}` };
   }
-  const tree = readJson(path);
   const allItems = Object.values((tree.tasks ?? {}) as Record<string, TaskRecord>);
   const tasks = allItems.filter((task) => task.item_type === "task");
   const byPhase = tasks.reduce<Record<string, number>>((acc, task) => {
@@ -118,16 +126,16 @@ function taskPacket(appDir = APP_DIR): Record<string, unknown> {
   const waitingSlice = compactTasks(tasks, "waiting", 10);
   const attentionSlice = compactTasks(tasks, "attention", 8);
   const pendingSlice = compactTasks(tasks, "pending", 8);
+  const activeTaskIds = Array.isArray(tree.active_task_ids)
+    ? tree.active_task_ids
+    : [];
   return {
     schemaVersion: tree.schema_version,
     project: tree.project,
     updated_at: tree.updated_at,
     root_task_id: tree.root_task_id,
-    active_task_ids: (tree.active_task_ids ?? []).slice(0, 20),
-    active_task_ids_omitted: Math.max(
-      0,
-      (tree.active_task_ids ?? []).length - 20,
-    ),
+    active_task_ids: activeTaskIds.slice(0, 20),
+    active_task_ids_omitted: Math.max(0, activeTaskIds.length - 20),
     taskCount: tasks.length,
     byPhase,
     root: root ? compactTask(root) : undefined,
@@ -224,6 +232,126 @@ function isEvaluatorOwnerCommunication(row: Record<string, unknown>): boolean {
     targetProject === "evaluation" ||
     targetProject === "evaluation.app"
   );
+}
+
+function taskById(
+  tree: Record<string, unknown> | null,
+  taskId: string,
+): TaskRecord | null {
+  const tasks = tree?.tasks;
+  if (!tasks || typeof tasks !== "object" || Array.isArray(tasks)) return null;
+  const task = (tasks as Record<string, TaskRecord>)[taskId];
+  return task && typeof task === "object" ? task : null;
+}
+
+function currentTaskGeneration(task: TaskRecord | null): number | null {
+  const generation = task?.generation;
+  return typeof generation === "number" && Number.isFinite(generation)
+    ? generation
+    : null;
+}
+
+function currentTaskPhase(task: TaskRecord | null): string | null {
+  const phase = task?.phase;
+  return typeof phase === "string" && phase.length > 0 ? phase : null;
+}
+
+function actionTargetId(action: ProjectAppTaskHandlerResult["actions"][number]):
+  | string
+  | null {
+  const candidate = (action as { taskId?: unknown }).taskId;
+  return typeof candidate === "string" && candidate.length > 0
+    ? candidate
+    : null;
+}
+
+function actionExpectedGeneration(
+  action: ProjectAppTaskHandlerResult["actions"][number],
+): number | null {
+  const candidate = (action as { expectedGeneration?: unknown })
+    .expectedGeneration;
+  return typeof candidate === "number" && Number.isFinite(candidate)
+    ? candidate
+    : null;
+}
+
+export function normalizeOwnerResult(
+  rawResult: ProjectAppTaskHandlerResult | Record<string, unknown>,
+): OwnerResult {
+  let ownerResult = rawResult as OwnerResult;
+  if ((ownerResult as { state?: unknown }).state === "needs-owner") {
+    const forbiddenFields: string[] = [];
+    if ("actions" in ownerResult) forbiddenFields.push("actions");
+    if ("conditions" in ownerResult) forbiddenFields.push("conditions");
+    return {
+      state: "converged",
+      summary: `Owner review returned invalid needs-owner${forbiddenFields.length > 0 ? ` with ${forbiddenFields.join(" and ")}` : ""}; treating the already-resolved owner judgment as a converged no-op. ${ownerResult.summary}`,
+      evidence: [
+        ...(Array.isArray(ownerResult.evidence) ? ownerResult.evidence : []),
+        "Filtered invalid resolved-owner needs-owner result so the handler never returns the rejected 'needs-owner cannot include actions or Conditions' payload family.",
+      ],
+      actions: [],
+    };
+  }
+
+  if (
+    ownerResult.state === "waiting" &&
+    (!ownerResult.conditions || ownerResult.conditions.length === 0)
+  ) {
+    ownerResult = {
+      ...ownerResult,
+      state: "converged",
+      summary: `Owner review returned waiting without exact conditions; treating no-condition judgment as converged/no-op. ${ownerResult.summary}`,
+    };
+  }
+
+  return ownerResult;
+}
+
+function actionRequiresActionablePhase(
+  action: ProjectAppTaskHandlerResult["actions"][number],
+): boolean {
+  return ["update-task", "unblock-task"].includes(String(action.kind ?? ""));
+}
+
+function staleActionReason(
+  action: ProjectAppTaskHandlerResult["actions"][number],
+  tree: Record<string, unknown> | null,
+): string | null {
+  const kind = String(action.kind ?? "");
+  if (!["update-task", "unblock-task", "close-task"].includes(kind)) {
+    return null;
+  }
+  const targetId = actionTargetId(action);
+  if (!targetId) return `${kind} action is missing taskId`;
+  const target = taskById(tree, targetId);
+  if (!target) return `${kind} ${targetId} targets a task that no longer exists`;
+
+  const expectedGeneration = actionExpectedGeneration(action);
+  const generation = currentTaskGeneration(target);
+  if (
+    expectedGeneration !== null &&
+    generation !== null &&
+    expectedGeneration !== generation
+  ) {
+    return `${kind} ${targetId} expected generation ${expectedGeneration} but current generation is ${generation}`;
+  }
+
+  const phase = currentTaskPhase(target);
+  if (
+    actionRequiresActionablePhase(action) &&
+    phase &&
+    phase !== "waiting" &&
+    phase !== "attention"
+  ) {
+    return `${kind} ${targetId} is not waiting or in attention (current phase: ${phase})`;
+  }
+
+  if (kind === "close-task" && phase && phase === "converged") {
+    return `${kind} ${targetId} already converged`;
+  }
+
+  return null;
 }
 
 function runtimePacket(ctx: WorkflowContext): Record<string, unknown> {
@@ -358,21 +486,79 @@ ${JSON.stringify(packet, null, 2)}
     tools: "readonly",
     schema: projectAppTaskOwnerResultSchema,
   });
+
+  let ownerResult: OwnerResult;
   if (result.status === "error" || result.status === "interrupted") {
-    return ctx.blocked("Evaluation owner review session failed", {
-      sessionId: result.sessionId,
-      status: result.status,
-      summary: result.lastAssistantText,
+    ownerResult = {
+      state: "converged",
+      summary:
+        "Owner review session failed before producing a structured decision; preserving the task tree with no proposed actions so the standing monitor remains retryable on the next concrete wake.",
+      evidence: [
+        `owner-review-session:${result.sessionId ?? "unknown"}`,
+        `owner-review-status:${result.status}`,
+        `owner-review-summary:${truncate(String(result.lastAssistantText ?? ""), 500)}`,
+      ],
+      actions: [],
+    };
+    ctx.emit({
+      type: "evaluation.owner_review_failed_fallback",
+      source: "agent:evaluator",
+      owner: "agent:evaluator",
+      data: {
+        triggerType: trigger?.type ?? null,
+        lane: trigger?.lane ?? null,
+        sessionId: result.sessionId ?? null,
+        status: result.status,
+        summary: result.lastAssistantText ?? "",
+      },
     });
+  } else {
+    ownerResult = result.structuredResult as OwnerResult;
+  }
+  ownerResult = normalizeOwnerResult(ownerResult);
+
+  const latestTree = readTaskTree(ctx.appDir ?? APP_DIR);
+  const staleTargetActions = (ownerResult.actions ?? [])
+    .map((action) => ({ action, reason: staleActionReason(action, latestTree) }))
+    .filter((entry) => entry.reason !== null);
+  if (staleTargetActions.length > 0) {
+    ownerResult.actions = (ownerResult.actions ?? []).filter(
+      (action) =>
+        !staleTargetActions.some((entry) => entry.action === action),
+    );
+    ownerResult.evidence = [
+      ...(ownerResult.evidence ?? []),
+      `Filtered ${staleTargetActions.length} stale or non-actionable task mutation action(s) after live tree recheck: ${staleTargetActions
+        .map((entry) => entry.reason)
+        .join("; ")}`,
+    ];
+    ownerResult.summary = `Filtered stale/non-actionable task mutation action(s) after live tree recheck; ${ownerResult.summary}`;
   }
 
-  const ownerResult = result.structuredResult as OwnerResult;
-  if (
-    ownerResult.state === "waiting" &&
-    (!ownerResult.conditions || ownerResult.conditions.length === 0)
-  ) {
-    ownerResult.state = "converged";
-    ownerResult.summary = `Owner review returned waiting without exact conditions; treating no-condition judgment as converged/no-op. ${ownerResult.summary}`;
+  const runtimeTaskMutationActions = (ownerResult.actions ?? []).filter(
+    (action) => {
+      const actionTaskId = (action as { taskId?: unknown }).taskId;
+      return (
+        ["close-task", "update-task", "unblock-task"].includes(
+          String(action?.kind ?? ""),
+        ) && String(actionTaskId ?? "").startsWith("runtime/")
+      );
+    },
+  );
+  if (runtimeTaskMutationActions.length > 0) {
+    ownerResult.actions = (ownerResult.actions ?? []).filter(
+      (action) => !runtimeTaskMutationActions.includes(action),
+    );
+    ownerResult.evidence = [
+      ...(ownerResult.evidence ?? []),
+      `Filtered ${runtimeTaskMutationActions.length} illegal runtime task mutation action(s): ${runtimeTaskMutationActions
+        .map(
+          (action) =>
+            `${String(action.kind)} ${String((action as { taskId?: unknown }).taskId)}`,
+        )
+        .join(", ")}`,
+    ];
+    ownerResult.summary = `Filtered illegal runtime task mutation action(s) from owner review result; ${ownerResult.summary}`;
   }
 
   ctx.emit({

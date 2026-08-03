@@ -1,3 +1,5 @@
+import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   existsSync,
   mkdirSync,
@@ -78,6 +80,18 @@ export type FeatureCompactLoopState = {
   updatedAt?: string;
   updated_at?: string;
 };
+
+const featureInputFingerprintVersion = "feature-input-v1";
+
+function versionFeatureInputFingerprint(value: string): string {
+  return `${featureInputFingerprintVersion}:${value}`;
+}
+
+function hasCurrentFeatureInputFingerprintVersion(
+  value: string | null | undefined,
+): boolean {
+  return value?.startsWith(`${featureInputFingerprintVersion}:`) === true;
+}
 
 function readJson<T>(path: string, fallback: T): T {
   try {
@@ -254,9 +268,7 @@ function resolveFeatureCompactProofContext(
 ): Required<Pick<FeatureCompactProofContext, "appDir" | "projectDir">> {
   let { appDir, projectDir } = context;
   const statePath = context.statePath;
-  const rootDir = statePath
-    ? dirname(dirname(dirname(statePath)))
-    : undefined;
+  const rootDir = statePath ? dirname(dirname(dirname(statePath))) : undefined;
 
   if (!appDir && rootDir && basename(rootDir).endsWith(".app")) {
     appDir = rootDir;
@@ -361,6 +373,409 @@ export function loadFeatureCompactRecords(
   return records;
 }
 
+function featureInputPathspecs(record: FeatureCompactRecord): string[] {
+  return [
+    ...(record.packetPath ? [record.packetPath] : []),
+    `features/${record.capabilityId}/packets`,
+    `features/${record.capabilityId}/specs`,
+    `features/${record.capabilityId}/tests`,
+    `features/${record.capabilityId}/lib`,
+    `features/${record.capabilityId}/compact/staging.plan.json`,
+  ];
+}
+
+function collectFeatureSourceFiles(
+  projectDir: string,
+  record: FeatureCompactRecord,
+): string[] {
+  const files = new Set<string>();
+  for (const relativePath of featureInputPathspecs(record)) {
+    const fullPath = join(projectDir, relativePath);
+    if (!existsSync(fullPath)) continue;
+    const stats = statSync(fullPath);
+    if (stats.isFile()) {
+      files.add(fullPath);
+      continue;
+    }
+    if (!stats.isDirectory()) continue;
+    const stack = [fullPath];
+    while (stack.length > 0) {
+      const dir = stack.pop();
+      if (!dir) continue;
+      for (const entry of readdirSync(dir).sort((a, b) => a.localeCompare(b))) {
+        const childPath = join(dir, entry);
+        const childStats = statSync(childPath);
+        if (childStats.isDirectory()) {
+          stack.push(childPath);
+          continue;
+        }
+        if (childStats.isFile()) files.add(childPath);
+      }
+    }
+  }
+  return [...files].sort((a, b) => a.localeCompare(b));
+}
+
+function gitFeatureInputFingerprint(
+  projectDir: string,
+  record: FeatureCompactRecord,
+): string | null {
+  try {
+    execFileSync("git", ["rev-parse", "--verify", "origin/dev^{commit}"], {
+      cwd: projectDir,
+      stdio: ["ignore", "ignore", "ignore"],
+    });
+    const listing = execFileSync(
+      "git",
+      ["ls-tree", "-rz", "origin/dev", "--", ...featureInputPathspecs(record)],
+      {
+        cwd: projectDir,
+        maxBuffer: 10 * 1024 * 1024,
+      },
+    );
+    if (!listing.length) return null;
+    return versionFeatureInputFingerprint(
+      createHash("sha256").update(listing).digest("hex"),
+    );
+  } catch {
+    return null;
+  }
+}
+
+function filesystemFeatureInputFingerprint(
+  projectDir: string,
+  record: FeatureCompactRecord,
+): string | null {
+  const hash = createHash("sha256");
+  const orderedFiles = collectFeatureSourceFiles(projectDir, record);
+  if (orderedFiles.length === 0) return null;
+  for (const file of orderedFiles) {
+    hash.update(relative(projectDir, file).replace(/\\/g, "/"));
+    hash.update("\0");
+    hash.update(readFileSync(file));
+    hash.update("\0");
+  }
+  return versionFeatureInputFingerprint(hash.digest("hex"));
+}
+
+function featureInputFingerprint(
+  projectDir: string,
+  record: FeatureCompactRecord,
+): string | null {
+  return (
+    gitFeatureInputFingerprint(projectDir, record) ??
+    filesystemFeatureInputFingerprint(projectDir, record)
+  );
+}
+
+function isSettledFeatureState(
+  item: FeatureCompactItemState | undefined,
+): boolean {
+  if (!item) return false;
+  if (item.status === "done" || item.status === "blocked") return true;
+  return item.status === "error" && item.retryable === false;
+}
+
+type TaskTreeTask = Record<string, unknown>;
+
+function nonterminalTaskPhase(value: unknown): boolean {
+  const phase = typeof value === "string" ? value.trim().toLowerCase() : "";
+  return !new Set(["closed", "converged", "done"]).has(phase);
+}
+
+function structuredRepresentationHolderIds(
+  item: FeatureCompactItemState,
+): string[] {
+  const waitingFor = item.waitingFor ?? {};
+  const waitingTaskId =
+    typeof waitingFor.taskId === "string" ? waitingFor.taskId : null;
+  const representedTaskIds = Array.isArray(waitingFor.representedTaskIds)
+    ? waitingFor.representedTaskIds.filter(
+        (taskId): taskId is string => typeof taskId === "string",
+      )
+    : [];
+  return [
+    item.taskId,
+    ...(item.frontierTaskIds ?? []),
+    waitingTaskId,
+    ...representedTaskIds,
+  ].filter((taskId): taskId is string => typeof taskId === "string");
+}
+
+function readTaskTreeTasks(appDir: string): Record<string, TaskTreeTask> {
+  const tree = readJson<{ tasks?: Record<string, TaskTreeTask> }>(
+    join(appDir, ".state", "tasks", "tree.json"),
+    { tasks: {} },
+  );
+  return tree.tasks ?? {};
+}
+
+function matchesFeatureCompactHolder(
+  featureKey: string,
+  taskId: string,
+  task: TaskTreeTask | undefined,
+): boolean {
+  if (!task || !nonterminalTaskPhase(task.phase)) return false;
+  const featureTaskId = safeKey(featureKey);
+  const parentId =
+    typeof task.parent_id === "string" ? task.parent_id.trim() : "";
+  const input =
+    typeof task.input === "object" && task.input
+      ? (task.input as Record<string, unknown>)
+      : {};
+  const taskFeatureKey =
+    typeof input.featureKey === "string" ? input.featureKey.trim() : "";
+  if (taskFeatureKey && taskFeatureKey !== featureKey) return false;
+  return (
+    taskFeatureKey === featureKey ||
+    taskId.startsWith(`hold-compact-${featureTaskId}`) ||
+    taskId.startsWith(`wait-compact-${featureTaskId}`) ||
+    taskId.startsWith(`compact/compact-feature-${featureTaskId}`) ||
+    taskId.startsWith(
+      `compact/repair-compact-feature-${featureTaskId}-representation-`,
+    ) ||
+    parentId.startsWith(`compact/compact-feature-${featureTaskId}`) ||
+    parentId.startsWith(
+      `compact/repair-compact-feature-${featureTaskId}-representation-`,
+    )
+  );
+}
+
+function featureCompactHolderRank(
+  featureKey: string,
+  taskId: string,
+  task: TaskTreeTask | undefined,
+): number {
+  if (!matchesFeatureCompactHolder(featureKey, taskId, task)) return -1;
+  const featureTaskId = safeKey(featureKey);
+  const parentId =
+    typeof task?.parent_id === "string" ? task.parent_id.trim() : "";
+  const input =
+    typeof task?.input === "object" && task.input
+      ? (task.input as Record<string, unknown>)
+      : {};
+  const taskFeatureKey =
+    typeof input.featureKey === "string" ? input.featureKey.trim() : "";
+  const hasMatchingFeatureKey = taskFeatureKey === featureKey;
+
+  if (hasMatchingFeatureKey && taskId.startsWith("hold-compact-")) return 500;
+  if (taskId.startsWith(`hold-compact-${featureTaskId}`)) return 490;
+  if (taskId.startsWith(`wait-compact-${featureTaskId}`)) return 450;
+  if (
+    hasMatchingFeatureKey &&
+    taskId.startsWith(`compact/compact-feature-${featureTaskId}`)
+  ) {
+    return 400;
+  }
+  if (taskId.startsWith(`compact/compact-feature-${featureTaskId}`)) return 390;
+  if (
+    hasMatchingFeatureKey &&
+    taskId.startsWith(
+      `compact/repair-compact-feature-${featureTaskId}-representation-`,
+    )
+  ) {
+    return 300;
+  }
+  if (
+    taskId.startsWith(
+      `compact/repair-compact-feature-${featureTaskId}-representation-`,
+    )
+  ) {
+    return 290;
+  }
+  if (hasMatchingFeatureKey && parentId.startsWith("hold-compact-")) return 200;
+  if (hasMatchingFeatureKey) return 100;
+  return 0;
+}
+
+function discoverLiveFeatureCompactHolderId(
+  featureKey: string,
+  tasks: Record<string, TaskTreeTask>,
+): string | null {
+  const candidates = Object.entries(tasks)
+    .map(([taskId, task]) => ({
+      taskId,
+      rank: featureCompactHolderRank(featureKey, taskId, task),
+    }))
+    .filter((candidate) => candidate.rank >= 0)
+    .sort(
+      (left, right) =>
+        right.rank - left.rank || left.taskId.localeCompare(right.taskId),
+    );
+  return candidates[0]?.taskId ?? null;
+}
+
+function hasStructuredRepresentation(item: FeatureCompactItemState): boolean {
+  return Boolean(
+    item.taskId ||
+    (item.frontierTaskIds?.length ?? 0) > 0 ||
+    item.waitingFor ||
+    item.waitingCondition ||
+    item.resumeCondition,
+  );
+}
+
+function isInputFingerprintDriftReopenState(
+  item: FeatureCompactItemState | undefined,
+): boolean {
+  if (!item || item.status !== "pending" || hasStructuredRepresentation(item)) {
+    return false;
+  }
+  return (
+    item.retryable !== false &&
+    item.retryReason?.startsWith(
+      "Resume because current feature source inputs changed after reviewed fingerprint ",
+    ) === true &&
+    item.summary ===
+      "Reopened because current feature source inputs materially changed after the previously reviewed compact fingerprint."
+  );
+}
+
+/**
+ * A blocked feature whose declared holder task IDs have all left the live task
+ * tree is stranded: nothing can observe it, wake it, or converge it. The task
+ * resource contract requires a waiting resource to have an exact Condition or a
+ * live direct child, so a blocked row pointing only at retired task IDs is
+ * unrepresented desired state rather than an accepted terminal disposition.
+ */
+function isStrandedBlockedRepresentation(
+  item: FeatureCompactItemState | undefined,
+  tasks: Record<string, TaskTreeTask>,
+): boolean {
+  if (!item || item.status !== "blocked") return false;
+  const declared = structuredRepresentationHolderIds(item);
+  if (declared.length === 0) return false;
+  // Liveness is tree presence at a nonterminal phase. Holder naming is only a
+  // discovery heuristic and must not decide whether a cited holder still exists.
+  return !declared.some((taskId) => {
+    const task = tasks[taskId];
+    return Boolean(task) && nonterminalTaskPhase(task.phase);
+  });
+}
+
+/**
+ * Return a stranded blocked feature to dispatchable desired state so the shared
+ * controller re-creates one live holder for it on the next pulse.
+ */
+function strandedBlockedReopenState(
+  existing: FeatureCompactItemState,
+  now: string,
+): Partial<FeatureCompactItemState> {
+  const retiredHolders = structuredRepresentationHolderIds(existing);
+  return {
+    status: "pending",
+    retryable: true,
+    retryReason: `Resume because every declared compact holder left the live task tree (${retiredHolders.join(", ")}).`,
+    taskId: null,
+    frontierTaskIds: null,
+    waitingFor: null,
+    waitingCondition: null,
+    activeAttemptId: null,
+    activeTaskSessionId: null,
+    activeWorkflowRunId: null,
+    heartbeatAt: null,
+    lastSupportWorkFingerprint: null,
+    blockedAt: null,
+    blockedReason: null,
+    blockedScope: null,
+    blockedFingerprint: null,
+    summary:
+      "Reopened because the previously reviewed compact holder is no longer represented in the live task tree.",
+    lastCheckedAt: now,
+    updatedAt: now,
+  };
+}
+
+function preservedLiveHolderReopenState(
+  existing: FeatureCompactItemState,
+  liveHolderId: string,
+  now: string,
+): Partial<FeatureCompactItemState> {
+  return {
+    status: "blocked",
+    retryable: false,
+    retryReason: existing.retryReason ?? null,
+    taskId: liveHolderId,
+    frontierTaskIds: [liveHolderId],
+    activeAttemptId: null,
+    activeTaskSessionId: null,
+    activeWorkflowRunId: null,
+    heartbeatAt: null,
+    lastSupportWorkFingerprint: null,
+    ownerReason: existing.ownerReason ?? null,
+    attemptedFixes: existing.attemptedFixes ?? null,
+    nextStepClassification: existing.nextStepClassification ?? null,
+    resumeCondition: existing.resumeCondition ?? null,
+    blockedAt: existing.blockedAt ?? now,
+    blockedReason: existing.blockedReason ?? existing.summary ?? null,
+    waitingFor: existing.waitingFor ?? null,
+    waitingCondition: existing.waitingCondition ?? null,
+    observedBy: existing.observedBy ?? null,
+    observationMethod: existing.observationMethod ?? null,
+    nextCheckAt: existing.nextCheckAt ?? null,
+    blockerOwner: existing.blockerOwner ?? null,
+    fallbackAt: existing.fallbackAt ?? null,
+    fallbackAction: existing.fallbackAction ?? null,
+    resumeAction: existing.resumeAction ?? null,
+    blockedScope: existing.blockedScope ?? null,
+    blockedFingerprint: existing.blockedFingerprint ?? null,
+    lastCheckedAt: existing.lastCheckedAt ?? now,
+    summary: existing.summary ?? existing.blockedReason ?? null,
+    updatedAt: now,
+  };
+}
+
+function invalidatedSettledFeatureState(
+  existing: FeatureCompactItemState,
+  currentFingerprint: string,
+  now: string,
+  appDir?: string,
+): Partial<FeatureCompactItemState> {
+  if (appDir) {
+    const tasks = readTaskTreeTasks(appDir);
+    const liveHolderId =
+      structuredRepresentationHolderIds(existing).find((taskId) =>
+        matchesFeatureCompactHolder(existing.featureKey, taskId, tasks[taskId]),
+      ) ?? discoverLiveFeatureCompactHolderId(existing.featureKey, tasks);
+    if (liveHolderId) {
+      return preservedLiveHolderReopenState(existing, liveHolderId, now);
+    }
+  }
+  const priorFingerprint = existing.inputFingerprint?.slice(0, 12) ?? "unknown";
+  return {
+    status: "pending",
+    retryable: true,
+    retryReason: `Resume because current feature source inputs changed after reviewed fingerprint ${priorFingerprint}.`,
+    taskId: null,
+    frontierTaskIds: null,
+    activeAttemptId: null,
+    activeTaskSessionId: null,
+    activeWorkflowRunId: null,
+    heartbeatAt: null,
+    lastSupportWorkFingerprint: null,
+    ownerReason: `Current feature source fingerprint ${currentFingerprint.slice(0, 12)} materially changed after reviewed fingerprint ${priorFingerprint}.`,
+    attemptedFixes: existing.attemptedFixes ?? null,
+    nextStepClassification: null,
+    resumeCondition: null,
+    blockedAt: null,
+    blockedReason: null,
+    waitingFor: null,
+    waitingCondition: null,
+    observedBy: null,
+    observationMethod: null,
+    nextCheckAt: null,
+    blockerOwner: null,
+    fallbackAt: null,
+    fallbackAction: null,
+    resumeAction: null,
+    blockedScope: null,
+    blockedFingerprint: null,
+    lastCheckedAt: null,
+    summary: `Reopened because current feature source inputs materially changed after the previously reviewed compact fingerprint.`,
+    updatedAt: now,
+  };
+}
+
 function previousFeatureState(
   previous: Record<string, FeatureCompactItemState>,
   record: FeatureCompactRecord,
@@ -411,6 +826,7 @@ export function loadFeatureCompactLoopState(input: {
     (record) =>
       scopedFeatureKeys.size === 0 || scopedFeatureKeys.has(record.featureKey),
   );
+  const taskTreeTasks = readTaskTreeTasks(input.appDir);
   const features: Record<string, FeatureCompactItemState> = {};
   for (const record of records) {
     const existing = normalizeExistingItem(
@@ -418,56 +834,102 @@ export function loadFeatureCompactLoopState(input: {
         ? previousFeatureState(previous.features || {}, record)
         : undefined,
     );
+    const currentInputFingerprint =
+      featureInputFingerprint(input.projectDir, record) ??
+      existing?.inputFingerprint ??
+      null;
+    const invalidatedSettledState =
+      existing?.inputFingerprint &&
+      hasCurrentFeatureInputFingerprintVersion(existing.inputFingerprint) &&
+      currentInputFingerprint &&
+      existing.inputFingerprint !== currentInputFingerprint &&
+      isSettledFeatureState(existing)
+        ? invalidatedSettledFeatureState(
+            existing,
+            currentInputFingerprint,
+            now,
+            input.appDir,
+          )
+        : null;
+    const reboundLiveHolderId = isInputFingerprintDriftReopenState(existing)
+      ? discoverLiveFeatureCompactHolderId(record.featureKey, taskTreeTasks)
+      : null;
+    const reboundState =
+      existing && reboundLiveHolderId
+        ? preservedLiveHolderReopenState(existing, reboundLiveHolderId, now)
+        : null;
+    // A blocked row whose declared holders all left the live tree is stranded.
+    // Rebind it to a surviving holder when one exists, otherwise return it to
+    // pending so the shared controller can represent it again.
+    const strandedHolderId = isStrandedBlockedRepresentation(
+      existing,
+      taskTreeTasks,
+    )
+      ? discoverLiveFeatureCompactHolderId(record.featureKey, taskTreeTasks)
+      : null;
+    const strandedState =
+      existing && isStrandedBlockedRepresentation(existing, taskTreeTasks)
+        ? strandedHolderId
+          ? preservedLiveHolderReopenState(existing, strandedHolderId, now)
+          : strandedBlockedReopenState(existing, now)
+        : null;
+    const effective = reboundState
+      ? { ...existing, ...reboundState }
+      : strandedState
+        ? { ...existing, ...strandedState }
+        : invalidatedSettledState
+          ? { ...existing, ...invalidatedSettledState }
+          : existing;
     features[record.featureKey] = {
       ...record,
-      status: normalizeStatus(existing?.status),
-      errorClass: existing?.errorClass ?? null,
-      retryable: existing?.retryable === false ? false : true,
-      retryReason: existing?.retryReason ?? null,
-      taskId: existing?.taskId ?? null,
-      frontierTaskIds: existing?.frontierTaskIds ?? null,
-      attempts: existing?.attempts ?? 0,
-      lastPlanPath: existing?.lastPlanPath ?? null,
-      lastSummaryPath: existing?.lastSummaryPath ?? null,
-      lastDiagnosticsPath: existing?.lastDiagnosticsPath ?? null,
-      lastResultPath: existing?.lastResultPath ?? null,
-      lastWorkflowRunId: existing?.lastWorkflowRunId ?? null,
-      lastWorkflowRunUrl: existing?.lastWorkflowRunUrl ?? null,
-      lastWorkflowLoopKey: existing?.lastWorkflowLoopKey ?? null,
-      lastDispatchMetadataPath: existing?.lastDispatchMetadataPath ?? null,
-      lastLiveProofVersion: existing?.lastLiveProofVersion ?? null,
-      activeAttemptId: existing?.activeAttemptId ?? null,
-      activeTaskSessionId: existing?.activeTaskSessionId ?? null,
-      activeWorkflowRunId: existing?.activeWorkflowRunId ?? null,
-      heartbeatAt: existing?.heartbeatAt ?? null,
-      lastSummary: existing?.lastSummary ?? null,
-      rootCauseClassification: existing?.rootCauseClassification ?? null,
-      inputFingerprint: existing?.inputFingerprint ?? null,
-      errorFingerprint: existing?.errorFingerprint ?? null,
-      lastSupportWorkFingerprint: existing?.lastSupportWorkFingerprint ?? null,
-      ownerReason: existing?.ownerReason ?? null,
-      attemptedFixes: existing?.attemptedFixes ?? null,
-      nextStepClassification: existing?.nextStepClassification ?? null,
-      resumeCondition: existing?.resumeCondition ?? null,
-      blockedAt: existing?.blockedAt ?? null,
-      blockedReason: existing?.blockedReason ?? null,
-      waitingFor: existing?.waitingFor ?? null,
-      waitingCondition: existing?.waitingCondition ?? null,
-      observedBy: existing?.observedBy ?? null,
-      observationMethod: existing?.observationMethod ?? null,
-      nextCheckAt: existing?.nextCheckAt ?? null,
-      blockerOwner: existing?.blockerOwner ?? null,
-      fallbackAt: existing?.fallbackAt ?? null,
-      fallbackAction: existing?.fallbackAction ?? null,
-      resumeAction: existing?.resumeAction ?? null,
-      blockedScope: existing?.blockedScope ?? null,
-      blockedFingerprint: existing?.blockedFingerprint ?? null,
-      lastCheckedAt: existing?.lastCheckedAt ?? null,
-      evidencePaths: existing?.evidencePaths ?? null,
-      reviewEvidencePath: existing?.reviewEvidencePath ?? null,
-      verificationBlocker: existing?.verificationBlocker ?? null,
-      summary: existing?.summary ?? null,
-      updatedAt: existing?.updatedAt ?? now,
+      status: normalizeStatus(effective?.status),
+      errorClass: effective?.errorClass ?? null,
+      retryable: effective?.retryable === false ? false : true,
+      retryReason: effective?.retryReason ?? null,
+      taskId: effective?.taskId ?? null,
+      frontierTaskIds: effective?.frontierTaskIds ?? null,
+      attempts: effective?.attempts ?? 0,
+      lastPlanPath: effective?.lastPlanPath ?? null,
+      lastSummaryPath: effective?.lastSummaryPath ?? null,
+      lastDiagnosticsPath: effective?.lastDiagnosticsPath ?? null,
+      lastResultPath: effective?.lastResultPath ?? null,
+      lastWorkflowRunId: effective?.lastWorkflowRunId ?? null,
+      lastWorkflowRunUrl: effective?.lastWorkflowRunUrl ?? null,
+      lastWorkflowLoopKey: effective?.lastWorkflowLoopKey ?? null,
+      lastDispatchMetadataPath: effective?.lastDispatchMetadataPath ?? null,
+      lastLiveProofVersion: effective?.lastLiveProofVersion ?? null,
+      activeAttemptId: effective?.activeAttemptId ?? null,
+      activeTaskSessionId: effective?.activeTaskSessionId ?? null,
+      activeWorkflowRunId: effective?.activeWorkflowRunId ?? null,
+      heartbeatAt: effective?.heartbeatAt ?? null,
+      lastSummary: effective?.lastSummary ?? null,
+      rootCauseClassification: effective?.rootCauseClassification ?? null,
+      inputFingerprint: currentInputFingerprint,
+      errorFingerprint: effective?.errorFingerprint ?? null,
+      lastSupportWorkFingerprint: effective?.lastSupportWorkFingerprint ?? null,
+      ownerReason: effective?.ownerReason ?? null,
+      attemptedFixes: effective?.attemptedFixes ?? null,
+      nextStepClassification: effective?.nextStepClassification ?? null,
+      resumeCondition: effective?.resumeCondition ?? null,
+      blockedAt: effective?.blockedAt ?? null,
+      blockedReason: effective?.blockedReason ?? null,
+      waitingFor: effective?.waitingFor ?? null,
+      waitingCondition: effective?.waitingCondition ?? null,
+      observedBy: effective?.observedBy ?? null,
+      observationMethod: effective?.observationMethod ?? null,
+      nextCheckAt: effective?.nextCheckAt ?? null,
+      blockerOwner: effective?.blockerOwner ?? null,
+      fallbackAt: effective?.fallbackAt ?? null,
+      fallbackAction: effective?.fallbackAction ?? null,
+      resumeAction: effective?.resumeAction ?? null,
+      blockedScope: effective?.blockedScope ?? null,
+      blockedFingerprint: effective?.blockedFingerprint ?? null,
+      lastCheckedAt: effective?.lastCheckedAt ?? null,
+      evidencePaths: effective?.evidencePaths ?? null,
+      reviewEvidencePath: effective?.reviewEvidencePath ?? null,
+      verificationBlocker: effective?.verificationBlocker ?? null,
+      summary: effective?.summary ?? null,
+      updatedAt: effective?.updatedAt ?? now,
     };
   }
 
@@ -508,9 +970,12 @@ export function saveFeatureCompactLoopState(
     const previous = merged.features[featureKey];
     const itemTime = Date.parse(item.updatedAt || "");
     const previousTime = Date.parse(previous?.updatedAt || "");
+    const preservesSameReviewedFingerprint =
+      previous?.inputFingerprint === item.inputFingerprint;
     if (
       hasDurableLiveProof(previous, proofContext) &&
-      !hasDurableLiveProof(item, proofContext)
+      !hasDurableLiveProof(item, proofContext) &&
+      preservesSameReviewedFingerprint
     ) {
       continue;
     }

@@ -11,6 +11,10 @@ model wins.
 The implemented AKS-specific task-state cleanup is recorded in
 [`task-graph-integrity-and-simplification-proposal.md`](task-graph-integrity-and-simplification-proposal.md).
 
+The current audit and incremental plan for removing AKS-specific scheduling in
+favor of the unified controller is recorded in
+[`unified-task-reconciliation-review.md`](unified-task-reconciliation-review.md).
+
 The implemented standing-loop contract and liveness refinement is recorded in
 [`loop-task-contract-and-liveness-proposal.md`](loop-task-contract-and-liveness-proposal.md).
 
@@ -114,9 +118,9 @@ local `runs/executions` copy.
 The standing loop workflows observe their domain ledgers, count only actionable
 pending/running leaves against their bounded frontier, and converge once the
 current pass is synced. Exact waits preserve coverage without consuming an
-actionable slot. A reconciled structured leaf wakes its loop through one app
-event fan-in; periodic pulses remain recovery. External waits belong to finite
-leaves and use exact typed Conditions.
+actionable slot. A loop-owned leaf is a direct child; its meaningful transition
+wakes the loop through the generic controller. Periodic pulses remain recovery.
+External waits belong to finite leaves and use exact typed Conditions.
 
 A standing-loop leaf represents only the `workRevision` in its task input.
 Materially changed feature/spec facts create a new revision even when an older
@@ -148,6 +152,13 @@ as either `terminalDisposition: true` or one exact live holder task referenced
 by the row. If a row has structured disposition fields but no visible holder
 and no terminal flag, the controller routes a bounded representation-repair task
 instead of recreating generic verification work.
+
+Representation repair is still spec-loop domain work, so it receives the same
+current-evidence and live-verification guidance as an ordinary spec leaf. A
+workflow or authentication failure from a retired execution backend is stale
+process evidence, not a current terminal blocker. After the move to ADO, a
+ready spec previously stopped by GitHub Actions authentication must be
+re-evaluated on ADO or retain one exact blocker that still exists on ADO.
 
 ## Learned workflow rules
 
@@ -199,7 +210,18 @@ commit remains in ancestry; a conflict returns to agent repair and requires a
 fresh live run. Pull requests are reserved for promotion into `main`. Pipeline
 and PR watchers emit provider facts where those facts are actually needed; the
 generic Condition tracker performs correlation. Disposition repair and
-non-mutating investigations do not use this workflow.
+read-only investigations do not use this workflow.
+
+Executable compact-package repair uses the same workflow boundary. Bind the
+same compact task to `spec-live-reconciliation` with the complete feature
+`specIds`, checked-in `livePlanPath`, fixed target, and any prepared
+`sourceBranch`/`sourceCommit`. The workflow reconciles that prepared source into
+the current task worktree, publishes the exact resulting commit, runs the
+compact plan, validates every selected spec and cleanup artifact, and integrates
+only the passing tested source into `dev`. `domain-task-execution` remains for
+source-only patches whose acceptance does not require live behavior proof; it
+must not be used as an intermediate publication step for an executable compact
+package.
 
 The pipeline observer polls represented ADO runs every minute. A terminal run
 is a wake fact for an occupied live slot, so leaving it unseen for a five-minute
