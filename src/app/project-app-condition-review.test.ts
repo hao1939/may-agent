@@ -117,4 +117,48 @@ describe("project app Condition review checkpoint", () => {
     });
     expect(listRunnableProjectAppTaskIds(config)).toEqual([]);
   });
+
+  it("retires an unchanged checkpoint timer after three owner reviews", () => {
+    const config = fixture();
+    const condition = {
+      id: "external-review-finished",
+      type: "review.completed",
+      subject: "task:external-review",
+      expected: "done",
+      reviewAfterMs: 60_000,
+    };
+
+    deferProjectAppTask(config, claim(config), {
+      disposition: "waiting",
+      summary: "Waiting for external review proof",
+      evidence: ["review:queued"],
+      conditions: [condition],
+    });
+
+    for (let reviewAttempt = 1; reviewAttempt <= 3; reviewAttempt += 1) {
+      const stale = readTaskState(config);
+      stale.conditions![condition.id]!.status.observedAt = new Date(Date.now() - 120_000).toISOString();
+      saveTaskState(config, stale);
+
+      const review = claim(config);
+      expect(review.trigger).toMatchObject({
+        type: "project.task.condition-review.missed",
+        data: {
+          conditionIds: [condition.id],
+          reviewAttempt,
+          finalReview: reviewAttempt === 3,
+        },
+      });
+      deferProjectAppTask(config, review, {
+        disposition: "waiting",
+        summary: "The same external result is still pending",
+        evidence: [`review:unchanged:${reviewAttempt}`],
+        conditions: [condition],
+      });
+    }
+
+    const state = readTaskState(config);
+    expect(state.conditions?.[condition.id]?.spec.reviewAfterMs).toBeUndefined();
+    expect(listRunnableProjectAppTaskIds(config)).toEqual([]);
+  });
 });
