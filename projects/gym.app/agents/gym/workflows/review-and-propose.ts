@@ -20,13 +20,43 @@ export const name = "review-and-propose";
 export const description =
   "Review Gym evidence and prepare a human-auditable benchmark proposal.";
 
+const reviewDecisionSchema = Type.Object({
+  disposition: Type.Union([
+    Type.Literal("human-review"),
+    Type.Literal("covered"),
+    Type.Literal("runtime"),
+    Type.Literal("invalid"),
+    Type.Literal("weak"),
+  ]),
+  matchedCoverage: Type.Array(Type.String()),
+  dispositionReason: Type.String({ minLength: 20 }),
+});
+
 const reviewResultSchema = Type.Object({
   proposal: Type.String({
     minLength: 200,
     description:
       "Complete Markdown proposal for human review, including classification, evidence, smallest next action, and approval boundaries.",
   }),
+  disposition: reviewDecisionSchema.properties.disposition,
+  matchedCoverage: reviewDecisionSchema.properties.matchedCoverage,
+  dispositionReason: reviewDecisionSchema.properties.dispositionReason,
 });
+
+const noveltyBoundary = [
+  "Human review owns new external decision meaning and new human authority boundaries.",
+  "App-internal mechanics are not May learning: path resolution, file lookup, search order, event routing, task identity, workflow choice, session choice, wake handling, tool recovery, and durable storage belong to the responsible app or runtime.",
+  "Classify an app-internal mechanics issue as runtime even when the repair is new or reusable; never create a May benchmark that teaches those internals.",
+].join(" ");
+
+type ReviewDisposition =
+  "human-review" | "covered" | "runtime" | "invalid" | "weak";
+
+type ReviewDecision = {
+  disposition: ReviewDisposition;
+  matchedCoverage: string[];
+  dispositionReason: string;
+};
 
 function contentText(content: unknown): string {
   if (typeof content === "string") return content;
@@ -72,7 +102,74 @@ function reviewProposal(result: {
   );
 }
 
-function reviewPrompt(details: Record<string, unknown>): string {
+function coverageSummary(projectsRoot: string): string {
+  const benchmarksRoot = join(projectsRoot, "gym", "benchmarks");
+  const rows: string[] = [];
+  if (existsSync(benchmarksRoot)) {
+    for (const benchmark of readdirSync(benchmarksRoot).sort()) {
+      const labelsPath = join(benchmarksRoot, benchmark, "labels.json");
+      if (!existsSync(labelsPath)) continue;
+      try {
+        const document = JSON.parse(readFileSync(labelsPath, "utf8")) as Record<
+          string,
+          unknown
+        >;
+        const labels = (document.labels ?? {}) as Record<
+          string,
+          Record<string, unknown>
+        >;
+        for (const scenario of Object.keys(labels).sort()) {
+          const label = labels[scenario] ?? {};
+          const status = String(label.status ?? "");
+          if (status !== "approved" && status !== "draft") continue;
+          rows.push(
+            `- ${benchmark}/${scenario} [${status}]: ${String(label.rationale ?? "No rationale recorded.")}`,
+          );
+        }
+      } catch {
+        continue;
+      }
+    }
+  }
+  const registered =
+    rows.join("\n").slice(0, 16_000) ||
+    "No registered scenario coverage was found.";
+  const canonical: string[] = [];
+  const unitsRoot = join(benchmarksRoot, "may-learning", "units");
+  if (existsSync(unitsRoot)) {
+    for (const unit of readdirSync(unitsRoot).sort()) {
+      const lessonPath = join(unitsRoot, unit, "lesson.md");
+      if (!existsSync(lessonPath)) continue;
+      canonical.push(
+        `### Accepted lesson: ${unit}\n${readFileSync(lessonPath, "utf8").slice(0, 2_500)}`,
+      );
+    }
+  }
+  const mayGuidancePath = join(
+    projectsRoot,
+    "..",
+    "agents",
+    "may",
+    "AGENTS.md",
+  );
+  if (existsSync(mayGuidancePath)) {
+    canonical.push(
+      `### Accepted May guidance\n${readFileSync(mayGuidancePath, "utf8").slice(0, 12_000)}`,
+    );
+  }
+  return [
+    "## Registered scenario coverage",
+    registered,
+    "## Accepted lessons and agent guidance",
+    canonical.join("\n\n").slice(0, 30_000) ||
+      "No accepted lesson text was found.",
+  ].join("\n");
+}
+
+function reviewPrompt(
+  details: Record<string, unknown>,
+  existingCoverage: string,
+): string {
   const kind = String(details.kind ?? "unknown");
   const evidencePath =
     kind === "incident"
@@ -90,6 +187,14 @@ function reviewPrompt(details: Record<string, unknown>): string {
     "For a May behavior issue, propose: intended outcome, must/must-not rules, a replay case, a paraphrase, an opposite control, and how the old behavior would be reproduced.",
     "For a regression result, lead with failing/invalid/unapproved cases and the smallest next action.",
     "Explicitly identify every point that requires human approval.",
+    "Also judge semantic novelty. Use human-review only when the evidence requires materially new benchmark meaning or a new human-owned boundary.",
+    noveltyBoundary,
+    "Use covered when approved or draft coverage already teaches the same meaning, even if wording, session, or failure details differ.",
+    "Use runtime when the primary actionable issue belongs to the harness, controller, provider, or control plane; use invalid when an abort or missing evidence prevents a sound May judgment; use weak for acceptable, one-off, or non-reusable evidence.",
+    "Draft coverage counts as covered so repeated incidents strengthen its evidence instead of creating more human requests.",
+    "Quality is more important than quantity. A new incident is not automatically a new lesson.",
+    "Existing approved/draft scenarios plus accepted lessons and agent guidance:",
+    existingCoverage,
     `Review kind: ${kind}`,
     `Evidence path: ${String(evidencePath ?? "")}`,
     runDir ? `Run directory: ${runDir}` : "",
@@ -100,6 +205,65 @@ function reviewPrompt(details: Record<string, unknown>): string {
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+function noveltyPrompt(proposal: string, existingCoverage: string): string {
+  return [
+    "You are the Gym benchmark owner performing a semantic novelty gate.",
+    "Judge meaning, not exact wording. Do not modify files or benchmark truth.",
+    "Return human-review only for materially new expected behavior or a new human-owned boundary.",
+    noveltyBoundary,
+    "Return covered when approved or draft coverage already teaches the same behavior.",
+    "Return runtime for a primary harness/controller/provider/control-plane issue, invalid when abort or missing evidence prevents a sound May judgment, and weak for acceptable or non-reusable evidence.",
+    "Draft coverage counts as covered. Prefer quality over quantity.",
+    "Existing approved/draft scenarios plus accepted lessons and agent guidance:",
+    existingCoverage,
+    "Proposal to classify:",
+    proposal,
+  ].join("\n");
+}
+
+function decisionFromResult(result: {
+  structuredResult?: Record<string, unknown>;
+}): ReviewDecision {
+  const structured = result.structuredResult ?? {};
+  const raw = String(structured.disposition ?? "human-review");
+  const disposition: ReviewDisposition = [
+    "human-review",
+    "covered",
+    "runtime",
+    "invalid",
+    "weak",
+  ].includes(raw)
+    ? (raw as ReviewDisposition)
+    : "human-review";
+  return {
+    disposition,
+    matchedCoverage: Array.isArray(structured.matchedCoverage)
+      ? structured.matchedCoverage.map(String).filter(Boolean).slice(0, 20)
+      : [],
+    dispositionReason:
+      String(structured.dispositionReason ?? "").trim() ||
+      "Legacy review result did not include a semantic novelty disposition, so human review remains the safe default.",
+  };
+}
+
+function readDecision(path: string): ReviewDecision | null {
+  if (!existsSync(path)) return null;
+  try {
+    return decisionFromResult({
+      structuredResult: JSON.parse(readFileSync(path, "utf8")) as Record<
+        string,
+        unknown
+      >,
+    });
+  } catch {
+    return null;
+  }
+}
+
+function writeDecision(path: string, decision: ReviewDecision): void {
+  writeFileSync(path, `${JSON.stringify(decision, null, 2)}\n`, "utf8");
 }
 
 function reviewFingerprint(reviewPath: string): string {
@@ -232,12 +396,20 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const requestKey = safeKey(details.requestKey, "review");
   const reviewDir = join(ctx.projectsRoot, "gym.app", ".state", "reviews");
   const reviewPath = join(reviewDir, `${requestKey}.md`);
+  const decisionPath = join(reviewDir, `${requestKey}.decision.json`);
   mkdirSync(reviewDir, { recursive: true });
+  const existingCoverage = coverageSummary(ctx.projectsRoot);
+  const forceNoveltyRecheck = details.forceNoveltyRecheck === true;
+  let decision = forceNoveltyRecheck ? null : readDecision(decisionPath);
 
   if (!existsSync(reviewPath)) {
-    const result = await ctx.runAgent("gym", reviewPrompt(details), {
-      schema: reviewResultSchema,
-    });
+    const result = await ctx.runAgent(
+      "gym",
+      reviewPrompt(details, existingCoverage),
+      {
+        schema: reviewResultSchema,
+      },
+    );
     if (result.status === "error" || result.status === "interrupted") {
       return ctx.blocked("Gym owner review failed", {
         sessionId: result.sessionId,
@@ -265,6 +437,61 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         "",
       ].join("\n"),
     );
+    decision = decisionFromResult(result);
+    writeDecision(decisionPath, decision);
+  } else if (!decision && details.type === "project.approval.submitted") {
+    decision = {
+      disposition: "human-review",
+      matchedCoverage: [],
+      dispositionReason:
+        "This legacy proposal already has an exact human response; preserve that authority instead of reclassifying it.",
+    };
+    writeDecision(decisionPath, decision);
+  } else if (!decision) {
+    const result = await ctx.runAgent(
+      "gym",
+      noveltyPrompt(readFileSync(reviewPath, "utf8"), existingCoverage),
+      { schema: reviewDecisionSchema },
+    );
+    if (result.status === "error" || result.status === "interrupted") {
+      return ctx.blocked("Gym semantic novelty review failed", {
+        sessionId: result.sessionId,
+        status: result.status,
+        summary: result.lastAssistantText,
+      });
+    }
+    decision = decisionFromResult(result);
+    writeDecision(decisionPath, decision);
+  }
+
+  decision ??= {
+    disposition: "human-review",
+    matchedCoverage: [],
+    dispositionReason: "No semantic novelty decision was available.",
+  };
+
+  if (decision.disposition !== "human-review") {
+    ctx.emit({
+      type: "gym.review.filtered",
+      project: "gym",
+      kind: details.kind,
+      requestKey,
+      reviewPath,
+      decisionPath,
+      disposition: decision.disposition,
+      matchedCoverage: decision.matchedCoverage,
+      reason: decision.dispositionReason,
+    });
+    const matched = decision.matchedCoverage.length
+      ? ` Coverage: ${decision.matchedCoverage.join(", ")}.`
+      : "";
+    const summary = `Filed Gym review ${requestKey} as ${decision.disposition}; no human decision requested.${matched}`;
+    return ctx.done(summary, {
+      state: "converged",
+      summary,
+      evidence: [reviewPath, decisionPath],
+      actions: [],
+    });
   }
 
   const approval = reviewApproval({
@@ -273,9 +500,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     generation,
     reviewPath,
   });
-  const decision = approvalDecision(details, approval, taskId, generation);
+  const humanDecision = approvalDecision(details, approval, taskId, generation);
 
-  if (decision === "approve") {
+  if (humanDecision === "approve") {
     const learningTarget = approvedLearningTarget(ctx.projectsRoot, requestKey);
     ctx.emit({
       type: "gym.review.approved",
@@ -310,7 +537,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     });
   }
 
-  if (decision === "decline") {
+  if (humanDecision === "decline") {
     ctx.emit({
       type: "gym.review.declined",
       project: "gym",

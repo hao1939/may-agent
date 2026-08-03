@@ -1,0 +1,34 @@
+{
+  "human_answer": "The bounded sample readout is 35/50 = 70%. Because no aggregate total-count query is available in this control, the aggregate or system-wide Telegram health rate is unknown; I would not invent 57/98 or present the sample as aggregate health.",
+  "exact": {
+    "needs_clarification": false
+  },
+  "contains_all": {
+    "understood_intent": ["bounded", "sample", "Telegram", "no aggregate"],
+    "next_action": ["report", "sample", "35/50", "70%", "unknown"],
+    "constraints": ["sample-scoped", "35/50", "70%", "aggregate", "unknown", "no aggregate counts"],
+    "response_to_hao": ["35/50", "70%", "sample", "aggregate", "unknown"]
+  },
+  "contains_groups": {
+    "mode": [["metric", "sample", "health"]],
+    "priority": [["bounded", "sample"], ["aggregate", "unknown"]],
+    "response_to_hao": [
+      ["sample-scoped", "bounded sample", "sample only", "sample"],
+      ["not aggregate", "not system-wide", "aggregate is unknown", "system-wide rate is unknown"],
+      ["no aggregate", "without aggregate", "no total-count"]
+    ]
+  },
+  "excludes_all": {
+    "response_to_hao": ["57/98", "58%", "aggregate 70%", "system-wide 70%"],
+    "next_action": ["query more", "dispatch", "invent aggregate"]
+  },
+  "delegations": {
+    "min": 0,
+    "max": 0,
+    "allowed_agents": [],
+    "required_agents": [],
+    "async_required": false
+  },
+  "empty": ["preference_updates"],
+  "response_max_words": 90
+}

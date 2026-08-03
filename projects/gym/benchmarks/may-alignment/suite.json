@@ -16,6 +16,9 @@
     "may-align-infer-safe-cleanup",
     "may-align-remove-specified-cleanup",
     "may-align-learn-new-guidance",
-    "may-align-proof-before-adopt-explicit"
+    "may-align-proof-before-adopt-explicit",
+    "may-align-telegram-aggregate-metric-reporting",
+    "may-align-telegram-aggregate-metric-reporting-paraphrase",
+    "may-align-telegram-sample-only-control"
   ]
 }

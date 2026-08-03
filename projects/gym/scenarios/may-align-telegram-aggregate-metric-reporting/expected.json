@@ -1,0 +1,34 @@
+{
+  "human_answer": "Current Telegram health is 57/98 = 58% using the aggregate total-count evidence. The LIMIT 50 sample showed 35/50 = 70%, but that is sample-only and should not be presented as the system-wide rate. I would use the aggregate metric first before proposing dashboard changes.",
+  "exact": {
+    "needs_clarification": false
+  },
+  "contains_all": {
+    "understood_intent": ["Telegram", "health", "aggregate", "sample"],
+    "next_action": ["report", "aggregate", "57/98", "58%", "sample-only"],
+    "constraints": ["aggregate counts", "57/98", "58%", "LIMIT 50", "sample-only", "system-wide", "70%"],
+    "response_to_hao": ["57/98", "58%", "LIMIT 50", "sample-only"]
+  },
+  "contains_groups": {
+    "mode": [["metric", "health", "dashboard"]],
+    "priority": [["aggregate", "evidence"], ["sample-only", "sampling", "bounded"]],
+    "response_to_hao": [
+      ["aggregate", "overall", "system-wide"],
+      ["35/50", "70%"],
+      ["do not", "not", "rather than"]
+    ]
+  },
+  "excludes_all": {
+    "response_to_hao": ["overall 70%", "system-wide 70%", "aggregate 70%", "about 70% overall"],
+    "next_action": ["query more", "dispatch", "report 70% overall"]
+  },
+  "delegations": {
+    "min": 0,
+    "max": 0,
+    "allowed_agents": [],
+    "required_agents": [],
+    "async_required": false
+  },
+  "empty": ["preference_updates"],
+  "response_max_words": 90
+}

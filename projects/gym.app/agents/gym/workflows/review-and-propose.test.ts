@@ -34,11 +34,18 @@ function context(input: {
   emitted: Record<string, unknown>[];
   dispatched: Record<string, unknown>[];
   rejectAgentRun?: boolean;
+  reviewDecision?: {
+    disposition: "human-review" | "covered" | "runtime" | "invalid" | "weak";
+    matchedCoverage: string[];
+    dispositionReason: string;
+  };
+  agentTasks?: string[];
 }): WorkflowContext {
   return {
     task: input.task,
     projectsRoot: input.projectsRoot,
-    async runAgent() {
+    async runAgent(_agent: string, agentTask: string) {
+      input.agentTasks?.push(agentTask);
       if (input.rejectAgentRun) {
         throw new Error("approved replay must reuse the preserved proposal");
       }
@@ -48,6 +55,7 @@ function context(input: {
         structuredResult: {
           proposal:
             "## Classification\nPrimary May behavior gap.\n\n## Evidence\nThe incident shows a missing disposition before unsupported repair work.\n\n## Smallest next action\nAdd one replay, one paraphrase, and one opposite control; run the approved improvement path and preserve the original evidence.\n\n## Approval boundary\nHao decides whether this proposal should start improvement work.",
+          ...input.reviewDecision,
         },
       } as never;
     },
@@ -68,6 +76,89 @@ function context(input: {
     },
   } as unknown as WorkflowContext;
 }
+
+test("semantic novelty gate files covered evidence without asking the human", async () => {
+  const root = mkdtempSync(join(tmpdir(), "gym-review-covered-"));
+  const emitted: Record<string, unknown>[] = [];
+  const dispatched: Record<string, unknown>[] = [];
+  try {
+    const result = await execute(
+      context({
+        task: task({
+          type: "gym.review.requested",
+          requestKey: "incident-42",
+          kind: "incident",
+        }),
+        projectsRoot: join(root, "projects"),
+        emitted,
+        dispatched,
+        reviewDecision: {
+          disposition: "covered",
+          matchedCoverage: ["may-alignment/durable-submission-path"],
+          dispositionReason:
+            "The approved durable-submission case already teaches the same closure behavior.",
+        },
+      }),
+    );
+
+    expect(result).toMatchObject({
+      type: "done",
+      output: { state: "converged" },
+    });
+    expect(emitted).toEqual([
+      expect.objectContaining({
+        type: "gym.review.filtered",
+        disposition: "covered",
+        matchedCoverage: ["may-alignment/durable-submission-path"],
+      }),
+    ]);
+    expect(dispatched).toEqual([]);
+    expect(
+      emitted.some((event) => event.type === "project.approval.requested"),
+    ).toBe(false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("novelty policy keeps app mechanics out of May learning", async () => {
+  const root = mkdtempSync(join(tmpdir(), "gym-review-boundary-"));
+  const agentTasks: string[] = [];
+  try {
+    await execute(
+      context({
+        task: task({
+          type: "gym.review.requested",
+          requestKey: "incident-42",
+          kind: "incident",
+        }),
+        projectsRoot: join(root, "projects"),
+        emitted: [],
+        dispatched: [],
+        agentTasks,
+        reviewDecision: {
+          disposition: "runtime",
+          matchedCoverage: [],
+          dispositionReason:
+            "Relative report-path lookup is an app-internal file-resolution mechanic, not new May behavior.",
+        },
+      }),
+    );
+
+    expect(agentTasks).toHaveLength(1);
+    expect(agentTasks[0]).toContain(
+      "App-internal mechanics are not May learning",
+    );
+    expect(agentTasks[0]).toContain(
+      "Classify an app-internal mechanics issue as runtime",
+    );
+    expect(agentTasks[0]).toContain(
+      "never create a May benchmark that teaches those internals",
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
 
 test("review proposal requests one typed project approval", async () => {
   const root = mkdtempSync(join(tmpdir(), "gym-review-approval-"));
@@ -247,9 +338,9 @@ test("approved review never falls back to an unrelated benchmark", async () => {
       type: "done",
       output: { state: "needs-owner" },
     });
-    expect((result as { output?: Record<string, unknown> }).output).not.toHaveProperty(
-      "actions",
-    );
+    expect(
+      (result as { output?: Record<string, unknown> }).output,
+    ).not.toHaveProperty("actions");
     expect(
       emitted.some((event) => event.type === "gym.improvement.requested"),
     ).toBe(false);

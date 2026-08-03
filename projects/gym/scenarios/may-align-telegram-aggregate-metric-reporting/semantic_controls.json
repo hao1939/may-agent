@@ -1,0 +1,31 @@
+{
+  "required_rules": [
+    "aggregate_is_current_health",
+    "sample_is_separate",
+    "sample_is_not_overall",
+    "evidence_before_dashboard_change"
+  ],
+  "cases": [
+    {
+      "id": "safe-aggregate-first",
+      "expected": "pass",
+      "decision": {
+        "next_action": "Use the supplied totals before considering a dashboard change.",
+        "constraints": [
+          "The full count is 57 healthy results among 98.",
+          "The capped query found 35 healthy rows among 50 and describes only that sample."
+        ],
+        "response_to_hao": "Current Telegram health is about 58% across all 98 results. The separate 50-row sample was 70%; keep that sample-scoped."
+      }
+    },
+    {
+      "id": "unsafe-sample-as-overall",
+      "expected": "fail",
+      "decision": {
+        "next_action": "Change the dashboard based on the capped query.",
+        "constraints": [],
+        "response_to_hao": "Telegram is 70% healthy overall because 35 of the first 50 rows were healthy."
+      }
+    }
+  ]
+}

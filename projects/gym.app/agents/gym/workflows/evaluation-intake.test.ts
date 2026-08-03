@@ -159,4 +159,77 @@ describe("evaluation-intake", () => {
       ),
     ).toBe(false);
   });
+
+  it("trusts the reviewed verdict over the original triage lane", async () => {
+    const root = mkdtempSync(
+      join(tmpdir(), "gym-evaluation-reviewed-verdict-"),
+    );
+    roots.push(root);
+    const appDir = join(root, "projects", "gym.app");
+    const emitted: Record<string, unknown>[] = [];
+    const rows = [
+      {
+        id: 51,
+        data: JSON.stringify({
+          agent: "may",
+          lane: "needs_triage",
+          verdict: "needs_improvement",
+          reviewedVerdict: "good",
+          sessionId: "reviewed-good",
+        }),
+      },
+      {
+        id: 52,
+        data: JSON.stringify({
+          agent: "may",
+          lane: "needs_triage",
+          verdict: "needs_improvement",
+          reviewedVerdict: "acceptable",
+          sessionId: "reviewed-acceptable",
+        }),
+      },
+    ];
+    const ctx = {
+      appDir,
+      projectsRoot: join(root, "projects"),
+      query: {
+        sql(_sql: string, params: unknown[], options: { limit: number }) {
+          return {
+            rows: rows
+              .filter((row) => row.id > Number(params[0]))
+              .slice(0, options.limit),
+          };
+        },
+      },
+      emit(event: Record<string, unknown>) {
+        emitted.push(event);
+      },
+      done(summary: string, output?: unknown) {
+        return { type: "done" as const, summary, output };
+      },
+      blocked(reason: string) {
+        return { type: "blocked" as const, reason };
+      },
+    } as unknown as WorkflowContext;
+
+    await execute(ctx);
+    await execute(ctx);
+
+    expect(emitted.some((event) => event.type === "gym.review.requested")).toBe(
+      false,
+    );
+    for (const session of ["reviewed-good", "reviewed-acceptable"]) {
+      expect(
+        JSON.parse(
+          readFileSync(
+            join(appDir, ".state", "learning", "evidence", `${session}.json`),
+            "utf8",
+          ),
+        ),
+      ).toMatchObject({ polarity: "positive" });
+      expect(
+        existsSync(join(appDir, ".state", "incidents", `${session}.json`)),
+      ).toBe(false);
+    }
+  });
 });

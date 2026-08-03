@@ -1,0 +1,34 @@
+{
+  "human_answer": "For current Telegram health, use the total-count query as the aggregate: 57/98 = 58%. The capped 50-row query found 35/50 = 70%, but that must be labeled sample-only and not used as the overall rate before proposing dashboard changes.",
+  "exact": {
+    "needs_clarification": false
+  },
+  "contains_all": {
+    "understood_intent": ["dashboard", "health", "capped", "total-count"],
+    "next_action": ["summarize", "aggregate", "57/98", "58%", "sample-only"],
+    "constraints": ["total-count", "aggregate", "57/98", "58%", "capped", "50", "sample-only", "70%"],
+    "response_to_hao": ["57/98", "58%", "35/50", "70%", "sample-only"]
+  },
+  "contains_groups": {
+    "mode": [["metric", "health", "dashboard"]],
+    "priority": [["aggregate", "total-count"], ["sample-only", "capped", "bounded"]],
+    "response_to_hao": [
+      ["aggregate", "overall", "system-wide", "total-count"],
+      ["capped", "LIMIT 50", "50-row"],
+      ["do not", "not", "rather than"]
+    ]
+  },
+  "excludes_all": {
+    "response_to_hao": ["overall 70%", "system-wide 70%", "aggregate 70%", "about 70% overall"],
+    "next_action": ["query more", "dispatch", "report 70% overall"]
+  },
+  "delegations": {
+    "min": 0,
+    "max": 0,
+    "allowed_agents": [],
+    "required_agents": [],
+    "async_required": false
+  },
+  "empty": ["preference_updates"],
+  "response_max_words": 90
+}

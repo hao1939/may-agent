@@ -316,6 +316,14 @@ first produce candidate evidence. Gym then:
 6. registers approved development cases for autonomous training; and
 7. drains the curriculum until it passes or a verified change needs approval.
 
+Before asking Hao, the review workflow uses a semantic novelty gate. It judges
+meaning rather than exact wording. Evidence already covered by an approved or
+draft case is absorbed into that coverage; runtime-owned, invalid, and weak
+evidence is filed without a benchmark-truth request. Only materially new
+expected behavior or a new human-owned boundary reaches Hao. A draft counts as
+coverage so repeated incidents strengthen one candidate instead of creating a
+queue of equivalent proposals.
+
 Processed evidence is not exhausted merely because the current trainable cases
 pass. Supported candidates remain a learning backlog until they are rejected,
 absorbed by an existing case, or promoted into a reviewed lesson. Prefer a few

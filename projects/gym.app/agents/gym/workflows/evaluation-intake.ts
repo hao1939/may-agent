@@ -76,20 +76,18 @@ function evaluationIdentity(
 
 function isFailure(details: Record<string, unknown>): boolean {
   const lane = String(details.lane ?? "").toLowerCase();
-  const verdict = String(
-    details.reviewedVerdict ?? details.verdict ?? "",
-  ).toLowerCase();
-  return (
-    lane === "needs_triage" ||
-    [
-      "fail",
-      "failed",
-      "partial",
-      "poor",
-      "needs_improvement",
-      "blocked",
-    ].includes(verdict)
-  );
+  const reviewedVerdict = String(details.reviewedVerdict ?? "").toLowerCase();
+  const verdict = String(details.verdict ?? "").toLowerCase();
+  const failureVerdicts = [
+    "fail",
+    "failed",
+    "partial",
+    "poor",
+    "needs_improvement",
+    "blocked",
+  ];
+  if (reviewedVerdict) return failureVerdicts.includes(reviewedVerdict);
+  return lane === "needs_triage" || failureVerdicts.includes(verdict);
 }
 
 function writeLearningEvidence(
