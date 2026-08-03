@@ -783,6 +783,10 @@ const aksTaskSelectors: EventSelector[] = [
     type: "aks.feature-loop-ownership-migration.requested",
     target: projectTarget,
   },
+  {
+    type: "aks.feature-loop-history-migration.requested",
+    target: projectTarget,
+  },
   { type: "pipeline.failure.observed", target: projectTarget },
   { type: "pipeline.test.nonpassing", target: projectTarget },
   { type: "project.owner.requested", target: projectTarget },
@@ -954,6 +958,26 @@ export function resolveAksTask(
       owner: "app-ops",
       workflow: "unified-feature-loop-ownership-migration",
       input: { migration: "feature-loop-current-v1" },
+      priority: "P0",
+      category: "ops",
+    };
+  }
+
+  if (event.type === "aks.feature-loop-history-migration.requested") {
+    return {
+      id: "runtime/unified-resource-migration-feature-loop-history-v1",
+      parentId: "group/app-operations",
+      outcome:
+        "Compact stale completed feature-compact holders so the task tree contains work instead of retained history.",
+      acceptance: [
+        "Stale converged childless maintain holders under the legacy feature group become receipts.",
+        "Current feature references, open Conditions, child-backed resources, and unfinished work remain unchanged.",
+        "Every close uses the observed generation so concurrent revisions are rejected.",
+      ],
+      mode: "achieve",
+      owner: "app-ops",
+      workflow: "unified-feature-loop-history-migration",
+      input: { migration: "feature-loop-history-v1" },
       priority: "P0",
       category: "ops",
     };

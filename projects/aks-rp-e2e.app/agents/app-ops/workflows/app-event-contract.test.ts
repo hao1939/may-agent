@@ -861,6 +861,21 @@ describe("app event contract", () => {
     });
   });
 
+  test("routes stale feature history to one guarded cleanup", () => {
+    expect(
+      resolveAksTask({
+        type: "aks.feature-loop-history-migration.requested",
+        target: { project: projectId },
+      }),
+    ).toMatchObject({
+      id: "runtime/unified-resource-migration-feature-loop-history-v1",
+      parentId: "group/app-operations",
+      workflow: "unified-feature-loop-history-migration",
+      input: { migration: "feature-loop-history-v1" },
+      priority: "P0",
+    });
+  });
+
   test("leaves repo-ref Condition matching and wakeup to the shared runtime", async () => {
     const emitted: Record<string, unknown>[] = [];
     const result = await routeAksEvent(
