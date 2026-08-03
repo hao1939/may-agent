@@ -3832,6 +3832,119 @@ describe("project app task reconciler state", () => {
     ).toMatchObject([{ taskId: "pipeline-monitor", conditionId: "approval-returned" }]);
   });
 
+  it("keeps approval-packet waits blocked when only the decision matches but the lineage does not", () => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+
+    const approvalId =
+      "alpha-project:approval:ops-request-approval-serverless-multi-pod-burst-stale-residue-worktree-cleanup-f1273011fd-20260730:evidence-archive-ops-request-serverless-multi-pod-burst-stale-residue-worktree-cleanup-approval-20260730-packet.md";
+    const waitId =
+      "wait:alpha-project:approval:ops-request-approval-serverless-multi-pod-burst-stale-residue-worktree-cleanup-f1273011fd-20260730:evidence-archive-ops-request-serverless-multi-pod-burst-stale-residue-worktree-cleanup-approval-20260730-packet.md";
+    const pathId = "ops/request-approval-serverless-multi-pod-burst-stale-residue-worktree-cleanup-f1273011fd-20260730";
+
+    deferProjectAppTask(config, claim, {
+      disposition: "waiting",
+      summary: "waiting for exact approval lineage",
+      conditions: [
+        {
+          id: waitId,
+          type: "project.approval.submitted",
+          subject: "project:alpha-project",
+          expected: {
+            approvalKind: "approval-packet-dispatch",
+            approvalId,
+            waitId,
+            pathId,
+            acceptedDecisions: ["approve", "adjust", "hold", "decline", "reroute"],
+            field: "decision",
+            anyOf: ["approve", "adjust", "hold", "decline", "reroute"],
+          },
+        },
+      ],
+    });
+
+    expect(
+      trackProjectAppConditionEvent(config, {
+        type: "project.approval.submitted",
+        project: "alpha-project",
+        approvalKind: "approval-packet-dispatch",
+        approvalId:
+          "alpha-project:approval:node-pool-config-skip-gpu-driver-staging-gpu-vmsize-realization-owner-handoff-20260730:evidence-archive-ops-send-node-pool-config-skip-gpu-driver-staging-gpu-vmsize-realization-owner-handoff-20260730-packet.md",
+        waitId:
+          "wait:alpha-project:approval:node-pool-config-skip-gpu-driver-staging-gpu-vmsize-realization-owner-handoff-20260730:evidence-archive-ops-send-node-pool-config-skip-gpu-driver-staging-gpu-vmsize-realization-owner-handoff-20260730-packet.md",
+        pathId: "node-pool-config-skip-gpu-driver-staging-gpu-vmsize-realization-owner-handoff-20260730",
+        decision: "approve",
+      }),
+    ).toEqual([]);
+
+    expect(readTaskState(config).conditions?.[waitId]).toMatchObject({
+      status: { state: "unknown" },
+    });
+  });
+
+  it("wakes approval-packet waits only when the returned event matches the exact lineage", () => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+
+    const approvalId =
+      "alpha-project:approval:ops-request-approval-serverless-multi-pod-burst-stale-residue-worktree-cleanup-f1273011fd-20260730:evidence-archive-ops-request-serverless-multi-pod-burst-stale-residue-worktree-cleanup-approval-20260730-packet.md";
+    const waitId =
+      "wait:alpha-project:approval:ops-request-approval-serverless-multi-pod-burst-stale-residue-worktree-cleanup-f1273011fd-20260730:evidence-archive-ops-request-serverless-multi-pod-burst-stale-residue-worktree-cleanup-approval-20260730-packet.md";
+    const pathId = "ops/request-approval-serverless-multi-pod-burst-stale-residue-worktree-cleanup-f1273011fd-20260730";
+
+    deferProjectAppTask(config, claim, {
+      disposition: "waiting",
+      summary: "waiting for exact approval lineage",
+      conditions: [
+        {
+          id: waitId,
+          type: "project.approval.submitted",
+          subject: "project:alpha-project",
+          expected: {
+            approvalKind: "approval-packet-dispatch",
+            approvalId,
+            waitId,
+            pathId,
+            acceptedDecisions: ["approve", "adjust", "hold", "decline", "reroute"],
+            field: "decision",
+            anyOf: ["approve", "adjust", "hold", "decline", "reroute"],
+          },
+        },
+      ],
+    });
+
+    expect(
+      trackProjectAppConditionEvent(config, {
+        type: "project.approval.submitted",
+        project: "alpha-project",
+        approvalKind: "approval-packet-dispatch",
+        approvalId,
+        waitId,
+        pathId,
+        decision: "approve",
+      }),
+    ).toMatchObject([{ taskId: "pipeline-monitor", conditionId: waitId }]);
+
+    expect(readTaskState(config).conditions?.[waitId]).toMatchObject({
+      status: {
+        state: "true",
+        observed: {
+          eventType: "project.approval.submitted",
+        },
+      },
+    });
+  });
+
   it("matches owner decision conditions using allowedDecisions against event decision", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {

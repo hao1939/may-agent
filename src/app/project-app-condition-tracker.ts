@@ -148,6 +148,47 @@ function isFreshLevelObservation(condition: ProjectAppCondition, event: Record<s
   return eventObservedAt >= conditionEstablishedAt;
 }
 
+function matchesExpectedField(expected: Record<string, unknown>, event: Record<string, unknown>): boolean {
+  const expectedField = expected.field;
+  if (typeof expectedField !== "string" || !expectedField.trim()) return true;
+  const actual = eventField(event, ...fieldAliases(expectedField));
+  const anyOf = expected.anyOf;
+  if (Array.isArray(anyOf)) {
+    return anyOf.some((candidate) => stableEquals(candidate, actual));
+  }
+  if ("equals" in expected) {
+    return stableEquals(expected.equals, actual);
+  }
+  if ("notEquals" in expected) {
+    return actual !== undefined && !stableEquals(expected.notEquals, actual);
+  }
+  return matchesComparator(actual, expected);
+}
+
+function matchesExpectedRecord(expected: Record<string, unknown>, event: Record<string, unknown>): boolean {
+  if (!matchesExpectedField(expected, event)) return false;
+  return Object.entries(expected).every(([field, value]) => {
+    if (
+      field === "field" ||
+      field === "anyOf" ||
+      field === "equals" ||
+      field === "notEquals" ||
+      field === "gt" ||
+      field === "gte" ||
+      field === "lt" ||
+      field === "lte"
+    ) {
+      return true;
+    }
+    if ((field === "allowedDecisions" || field === "acceptedDecisions") && Array.isArray(value)) {
+      const actualDecision = eventField(event, "decision");
+      return value.some((candidate) => stableEquals(candidate, actualDecision));
+    }
+    const actual = eventField(event, ...fieldAliases(field));
+    return matchesComparator(actual, value) || stableEquals(actual, value);
+  });
+}
+
 function matches(condition: ProjectAppCondition, event: Record<string, unknown>): boolean {
   if (condition.spec.type !== event.type) return false;
   // A repo-ref event is a level observation, not an immutable historical fact.
@@ -161,31 +202,7 @@ function matches(condition: ProjectAppCondition, event: Record<string, unknown>)
   if (String(eventField(event, ...fieldAliases(subject.field)) ?? "") !== subject.value) return false;
 
   if (isRecord(condition.spec.expected)) {
-    const expectedField = condition.spec.expected.field;
-    if (typeof expectedField === "string" && expectedField.trim()) {
-      const actual = eventField(event, ...fieldAliases(expectedField));
-      const anyOf = condition.spec.expected.anyOf;
-      if (Array.isArray(anyOf)) {
-        return anyOf.some((candidate) => stableEquals(candidate, actual));
-      }
-      if ("equals" in condition.spec.expected) {
-        return stableEquals(condition.spec.expected.equals, actual);
-      }
-      if ("notEquals" in condition.spec.expected) {
-        return actual !== undefined && !stableEquals(condition.spec.expected.notEquals, actual);
-      }
-      if (matchesComparator(actual, condition.spec.expected)) {
-        return true;
-      }
-    }
-    return Object.entries(condition.spec.expected).every(([field, expected]) => {
-      if ((field === "allowedDecisions" || field === "acceptedDecisions") && Array.isArray(expected)) {
-        const actualDecision = eventField(event, "decision");
-        return expected.some((candidate) => stableEquals(candidate, actualDecision));
-      }
-      const actual = eventField(event, ...fieldAliases(field));
-      return matchesComparator(actual, expected) || stableEquals(actual, expected);
-    });
+    return matchesExpectedRecord(condition.spec.expected, event);
   }
 
   const actual = eventField(event, "state", "status", "disposition", "result", "outcome");
