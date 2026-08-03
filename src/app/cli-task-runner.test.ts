@@ -295,6 +295,62 @@ describe("CLI task runner", () => {
     }
   });
 
+  it("uses Claude Opus 5 by default and allows an explicit Claude model", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-cli-claude-model-"));
+    const persistDir = join(root, ".state");
+    mkdirSync(persistDir, { recursive: true });
+    const bus = new EventBus();
+    const events: AgentEvent[] = [];
+    const spawnedArgs: string[][] = [];
+    const originalClaudeModel = process.env.CLAUDE_MODEL;
+    delete process.env.CLAUDE_MODEL;
+    bus.subscribe((event) => events.push(event));
+    attachCliTaskRunner({
+      bus,
+      persistDir,
+      projectRoot: root,
+      spawnCommand: ((_command: string, args: string[]) => {
+        spawnedArgs.push(args);
+        return fakeSpawn(_command, args);
+      }) as any,
+    });
+
+    const tool = createRunCliAgentTool({
+      agentName: "may",
+      projectRoot: root,
+      persistDir,
+      emit: (event) => bus.emit(event as any),
+    });
+
+    try {
+      await tool.execute("call-1", {
+        tool: "claude",
+        prompt: "Review this.",
+        cwd: root,
+      });
+      await waitFor(() => events.some((event) => event.type === "cli.task.completed"));
+
+      expect(spawnedArgs[0]).toContain("--model");
+      expect(spawnedArgs[0]?.[spawnedArgs[0].indexOf("--model") + 1]).toBe("claude-opus-5");
+      const completed = events.find((event) => event.type === "cli.task.completed") as any;
+      expect(completed?.data?.resumeCommand).toContain("--model");
+      expect(completed?.data?.resumeCommand).toContain("claude-opus-5");
+
+      process.env.CLAUDE_MODEL = "claude-sonnet-5";
+      await tool.execute("call-2", {
+        tool: "claude",
+        prompt: "Review this with Sonnet 5.",
+        cwd: root,
+      });
+      await waitFor(() => events.filter((event) => event.type === "cli.task.completed").length === 2);
+      expect(spawnedArgs[1]?.[spawnedArgs[1].indexOf("--model") + 1]).toBe("claude-sonnet-5");
+    } finally {
+      if (originalClaudeModel === undefined) delete process.env.CLAUDE_MODEL;
+      else process.env.CLAUDE_MODEL = originalClaudeModel;
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("passes scoped files and worktree context to the native worker", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-cli-context-"));
     const persistDir = join(root, ".state");
