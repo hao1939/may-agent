@@ -1439,16 +1439,13 @@ export function existingRecoveryProblem(input: {
 }
 
 const conditionInstruction =
-  "A waiting Condition must use a typed subject such as project:aks-rp-e2e, pipeline-run:<id>, pull-request:<id>, or task:<id> and one event type this app actually observes: pipeline-run.state, pipeline.spec.observed, pull-request.state, project.approval.submitted, project.task.tick, task-field, task-phase, or aks.repo-ref.observed. Its expected value supports exact field equality, or { field, equals|anyOf|notEquals }; do not invent event types, comparison operators, or put prose in subject. The observed fact must be able to advance this exact task and source lineage; reuse an existing approval/task wait when it already owns the external decision, and do not wait for a hypothetical pass on unrelated source.";
+  "A waiting Condition must describe an external observable fact, use a typed subject such as project:aks-rp-e2e, pipeline-run:<id>, or pull-request:<id>, and use one event type this app actually observes: pipeline-run.state, pipeline.spec.observed, pull-request.state, project.approval.submitted, or aks.repo-ref.observed. Use a direct child for required sub-work and dependsOn for task ordering; never turn project state, task state, or task ticks into Conditions. Expected values support exact field equality, or { field, equals|anyOf|notEquals }; do not invent event types, comparison operators, or put prose in subject. The observed fact must be able to advance this exact task and source lineage; reuse an existing approval wait when it already owns the external decision, and do not wait for a hypothetical pass on unrelated source.";
 
 const observableConditionTypes = new Set([
   "pipeline-run.state",
   "pipeline.spec.observed",
   "pull-request.state",
   "project.approval.submitted",
-  "project.task.tick",
-  "task-field",
-  "task-phase",
   "aks.repo-ref.observed",
 ]);
 

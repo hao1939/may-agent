@@ -1551,6 +1551,20 @@ describe("spec-live-reconciliation workflow", () => {
         },
       }),
     ).toBeNull();
+
+    expect(
+      agentConditionProblem({
+        decision: "waiting",
+        summary: "wait for child task state",
+        evidence: ["task:child"],
+        condition: {
+          id: "child-phase",
+          type: "task-phase",
+          subject: "task:child",
+          expected: { field: "phase", equals: "converged" },
+        },
+      }),
+    ).toContain("has no producer");
   });
 
   test("requires an explicit live-readiness judgment before dispatch", () => {

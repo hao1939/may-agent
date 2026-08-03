@@ -63,8 +63,11 @@ decisions.
     an exact wait/successor/escalation, or create one bounded `ops/*` repair for
     the broken live-child shape. Repeating the same rejected ancestor close is a
     process bug, not progress.
-    Standing controllers are siblings of the leaves they declare, so ordinary
-    loop work must not be attached as controller children.
+    A standing loop controller is the executable parent of the finite leaves
+    it declares. Create required loop work as its direct children; the shared
+    runtime wakes the parent after meaningful child transitions.
+    Use `dependsOn` for ordering. Never model task or project state as a
+    Condition; Conditions represent external facts only.
 11. If a domain task is only waiting for `origin/dev` or another repo ref to
     advance and already carries `input.baseRef` plus
     `input.resumeBaselineCommit`, repair it by setting

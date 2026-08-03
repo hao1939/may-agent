@@ -59,8 +59,11 @@ You are the project-local explorer for `aks-rp-e2e`. You build and validate the 
     absorbing the ancestor. If the live-child shape itself is the blocker,
     create or request one bounded `ops/*` repair instead of retrying the same
     invalid close action.
-    Standing controllers are siblings of the leaves they declare, so ordinary
-    loop work must not be attached as controller children.
+    A standing loop controller is the executable parent of the finite leaves
+    it declares. Create required loop work as its direct children; the shared
+    runtime wakes the parent after meaningful child transitions.
+    Use `dependsOn` for ordering. Never model task or project state as a
+    Condition; Conditions represent external facts only.
 11. If the next truthful state is "wait for origin/dev to advance", do not
     create another prose-only successor wait. Create or update the single exact
     wait task with `workflow: "wait-for-repo-ref-advance"` and structured input
