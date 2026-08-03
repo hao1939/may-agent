@@ -1430,6 +1430,7 @@ const ownerReviewEventTypes = new Set([
 
 const aksTaskSelectors: EventSelector[] = [
   { type: "project.task.tick", target: projectTarget },
+  { type: "aks.resource-migration.requested", target: projectTarget },
   { type: "pipeline.failure.observed", target: projectTarget },
   { type: "pipeline.test.nonpassing", target: projectTarget },
   { type: "project.owner.requested", target: projectTarget },
@@ -1465,6 +1466,26 @@ export function resolveAksTask(
 
   const details = eventDetails(event);
   const taskId = targetTaskId(event);
+
+  if (event.type === "aks.resource-migration.requested") {
+    return {
+      id: "runtime/unified-resource-migration-project-state-v1",
+      parentId: "group/app-operations",
+      outcome:
+        "Retire the fixed set of childless legacy compact holders that use project-state Conditions as a second scheduler.",
+      acceptance: [
+        "Only named childless maintain holders still waiting on a project.state Condition are closed, and every closure leaves a receipt.",
+        "The feature compact loop remains the standing owner and is woken through normal parent or scheduled reconciliation.",
+        "Any holder that changed generation, gained child work, or no longer matches the legacy contract remains live for owner judgment.",
+      ],
+      mode: "achieve",
+      owner: "app-ops",
+      workflow: "unified-resource-migration",
+      input: { migration: "project-state-holders-v1" },
+      priority: "P0",
+      category: "ops",
+    };
+  }
 
   if (event.type === "pipeline.failure.observed") {
     const specId = stringDetail(details, "specId", "spec_id");

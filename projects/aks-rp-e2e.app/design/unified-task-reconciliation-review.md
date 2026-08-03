@@ -194,6 +194,12 @@ guard. They are migration residue, not accepted future behavior. Retire or
 reshape their owning tasks in bounded slices before removing the corresponding
 `project.task.reconciled` compatibility replay.
 
+The first live-residue migration is `project-state-holders-v1`. It closes only
+a fixed allowlist of childless legacy maintain holders after rechecking their
+generation, phase, Condition type, and child topology. Any mismatch remains
+live. The standing feature loop owns the next observation rather than a
+project-state Condition.
+
 Attention is not a completion state. Each attention resource must retain an
 accountable owner, exact failure evidence, and a truthful next wake or
 escalation path. Generic mechanical recovery may requeue it when the failed
