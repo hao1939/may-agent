@@ -41,7 +41,6 @@ const appControllerMaxConcurrent =
   domainPolicyMaxConcurrent + appOpsSupportConcurrent;
 const scenarioTestFrontierTaskId = scenarioNormalizationTaskId;
 export const masterValidationCycleTaskId = "master-validation-staging-cycle";
-export const waitingFrontierReviewTaskId = "runtime/waiting-frontier-review";
 const scenarioTestFrontierMinLeaves = 3;
 const actionInputSchema = Type.Object({}, { additionalProperties: true });
 const targetedTaskActionInputSchema = Type.Object(
@@ -794,6 +793,18 @@ const aksTaskSelectors: EventSelector[] = [
     type: "aks.scenario-loop-ownership-migration.requested",
     target: projectTarget,
   },
+  {
+    type: "aks.waiting-frontier-retirement.requested",
+    target: projectTarget,
+  },
+  {
+    type: "aks.waiting-frontier-migration-cleanup.requested",
+    target: projectTarget,
+  },
+  {
+    type: "aks.finite-holder-migration.requested",
+    target: projectTarget,
+  },
   { type: "pipeline.failure.observed", target: projectTarget },
   { type: "pipeline.test.nonpassing", target: projectTarget },
   { type: "project.owner.requested", target: projectTarget },
@@ -839,7 +850,7 @@ export function resolveAksTask(
       acceptance: [
         "Only named childless maintain holders still waiting on a project.state Condition are closed, and every closure leaves a receipt.",
         "The feature compact loop remains the standing owner and is woken through normal parent or scheduled reconciliation.",
-        "Any holder that changed generation, gained child work, or no longer matches the legacy contract remains live for owner judgment.",
+        "Any holder that gained child work or no longer matches the legacy contract remains live for owner judgment; expectedGeneration rejects a concurrent revision at apply time.",
       ],
       mode: "achieve",
       owner: "app-ops",
@@ -859,7 +870,7 @@ export function resolveAksTask(
       acceptance: [
         "A named wait on a live prerequisite uses dependsOn and is woken by shared dependency reconciliation.",
         "The one named wait whose subject has already left the live graph is returned to owner judgment.",
-        "Any changed or mismatched resource remains live and unchanged.",
+        "Any mismatched resource remains live and unchanged; expectedGeneration rejects a concurrent revision at apply time.",
       ],
       mode: "achieve",
       owner: "app-ops",
@@ -879,7 +890,7 @@ export function resolveAksTask(
       acceptance: [
         "Only named childless maintain holders still waiting on a project.task.tick Condition are closed, and every closure leaves a receipt.",
         "Timers and semantic events wake the stable feature loop directly through the shared controller.",
-        "Any holder that changed generation, gained child work, or no longer matches the legacy contract remains live for owner judgment.",
+        "Any holder that gained child work or no longer matches the legacy contract remains live for owner judgment; expectedGeneration rejects a concurrent revision at apply time.",
       ],
       mode: "achieve",
       owner: "app-ops",
@@ -899,7 +910,7 @@ export function resolveAksTask(
       acceptance: [
         "Only named waiting tasks with the legacy project-scoped repo-ref Condition are returned to current owner judgment.",
         "The next wait uses subject repoRef:<ref> with expected field=commit and notEquals=<baseline>, or the task closes if no wait remains truthful.",
-        "Canonical Conditions and changed tasks remain untouched.",
+        "Canonical Conditions and mismatched tasks remain untouched; expectedGeneration rejects a concurrent revision at apply time.",
       ],
       mode: "achieve",
       owner: "app-ops",
@@ -919,7 +930,7 @@ export function resolveAksTask(
       acceptance: [
         "The two completed LocalDNS children close before their exact childless holder.",
         "The finite runtime-container representation repair closes only while unchanged and childless.",
-        "Any topology, generation, phase, mode, or Condition mismatch leaves the affected resources untouched.",
+        "Any topology, phase, mode, or Condition mismatch leaves the affected resources untouched; expectedGeneration rejects a concurrent revision at apply time.",
       ],
       mode: "achieve",
       owner: "app-ops",
@@ -1033,6 +1044,69 @@ export function resolveAksTask(
     };
   }
 
+  if (event.type === "aks.waiting-frontier-retirement.requested") {
+    return {
+      id: "runtime/waiting-frontier-review",
+      parentId: "group/app-operations",
+      outcome:
+        "Finish the existing direct children of the retired waiting-frontier scheduler, then leave the live graph.",
+      acceptance: [
+        "Create no new recovery, review, holder, or scheduling tasks.",
+        "While an existing direct child is live, wait on that child and rely on shared parent wakeup.",
+        "Converge after the last existing direct child leaves the live graph.",
+      ],
+      mode: "achieve",
+      owner: "app-ops",
+      workflow: "retire-waiting-frontier",
+      input: { migration: "waiting-frontier-retirement-v1" },
+      priority: "P0",
+      category: "ops",
+    };
+  }
+
+  if (event.type === "aks.waiting-frontier-migration-cleanup.requested") {
+    return {
+      id: "runtime/unified-resource-migration-waiting-frontier-v1",
+      parentId: "group/app-operations",
+      outcome:
+        "Record that waiting-frontier retirement moved to direct app-resolver ownership after the rejected handler-action attempt.",
+      acceptance: [
+        "The workflow performs no task mutation.",
+        "The direct app resolver owns the runtime/waiting-frontier-review specification.",
+        "The finite cleanup resource converges and leaves a receipt.",
+      ],
+      mode: "achieve",
+      owner: "app-ops",
+      workflow: "unified-waiting-frontier-migration",
+      input: { migration: "waiting-frontier-direct-resolver-v2" },
+      priority: "P0",
+      category: "ops",
+    };
+  }
+
+  if (event.type === "aks.finite-holder-migration.requested") {
+    const requestedBatch = stringDetail(details, "batch");
+    const batch = /^\d+$/.test(requestedBatch) ? requestedBatch : "1";
+    return {
+      id: `runtime/unified-resource-migration-finite-holders-v${batch}`,
+      parentId: "group/app-operations",
+      outcome:
+        "Remove finite hold/wait history from the live graph and classify unfinished finite holders as achieve work.",
+      acceptance: [
+        "Each batch changes at most 16 non-runtime resources.",
+        "A converged holder closes only when it is childless and condition-free.",
+        "A pending or waiting holder keeps its owner, workflow, children, Conditions, and outcome while mode changes from maintain to achieve.",
+        "Mismatched or concurrently changed resources remain untouched through expectedGeneration checks.",
+      ],
+      mode: "achieve",
+      owner: "app-ops",
+      workflow: "unified-finite-holder-migration",
+      input: { migration: "finite-holder-residue-v1", batch },
+      priority: "P0",
+      category: "ops",
+    };
+  }
+
   if (event.type === "pipeline.failure.observed") {
     const specId = stringDetail(details, "specId", "spec_id");
     const failureFingerprint = stringDetail(
@@ -1140,42 +1214,6 @@ export function resolveAksTask(
   switch (event.type) {
     case "project.task.tick": {
       const action = stringDetail(details, "action");
-      if (
-        action === "waiting-frontier-review" ||
-        taskId === waitingFrontierReviewTaskId
-      ) {
-        return {
-          id: waitingFrontierReviewTaskId,
-          parentId: "group/app-operations",
-          outcome:
-            "Continuously review waiting and attention work from current facts and restore a bounded sample to an active recovery path.",
-          acceptance: [
-            "Read current task state and hot external facts instead of trusting stored summaries.",
-            "For each sampled task, choose one truthful outcome: same-task retry after changed evidence, an exact observed wait, a sent escalation across an ownership boundary, or a terminal disposition with evidence.",
-            "Treat a true Condition as generic-reconciler-owned ready work; do not retry or unblock a task merely because its Condition is satisfied.",
-            "Do not leave a producerless Condition or an unattended attention task asleep.",
-          ],
-          mode: "maintain",
-          owner: "app-ops",
-          input: {
-            maxConcurrent: domainPolicyMaxConcurrent,
-            instructions: [
-              "Treat runtime phase=waiting as the current blocked representation; do not search only for the retired blocked phase.",
-              "A true Condition is already level-triggered ready work. Do not return retry-task or unblock-task for it; the generic task controller owns the event wake and bounded passive resync.",
-              "Route a repository wait through wait-for-repo-ref-advance only when a named external producer or publication can directly change the exact row; otherwise return known same-spec source work to its domain owner/workflow. Preserve owner=aks-explorer whenever the bounded post-wake recheck is still AKS domain judgment.",
-              "For scenario-normalization work, a future main-branch spec pass is not a valid producer: it cannot verify or publish the task-owned source commit. Return legacy pipeline.spec.observed waits for refs/heads/main to the same spec-live-reconciliation task for current-source repair, exact live proof, or explicit escalation.",
-              "Return stale Conditions with no current producer to the task owner for fresh judgment.",
-              "Preserve a human or external wait only with exact correlation and durable send proof.",
-              "Review attention tasks that have no active retry or recovery consumer.",
-              "When recovery crosses a real human ownership boundary through approval-dispatch, first write the referenced packet and create the workflow task with non-empty input.packetPath, input.pathId, and input.requestedAction. Do not declare an approval-dispatch task that its workflow cannot execute.",
-              "Do not compete with workflow-to-owner fallback already in flight; inspect current attempts and controller coverage first.",
-              "Choose up to maxConcurrent uncovered tasks, re-read every selected generation and phase immediately before finishing, and return only still-applicable state-changing actions.",
-            ],
-          },
-          priority: "P0",
-          category: "ops",
-        };
-      }
       if (action === "spec-loop" || taskId === specLoopTaskId) {
         return standingLoopIntent(specLoopTaskId);
       }
@@ -1405,7 +1443,6 @@ export async function routeAksEvent(
     };
   }
   if (event.type === "project.task.reconciled") {
-    const details = eventDetails(event);
     const appDir = ctx.appPath(".");
     const reconciledTaskId = targetTaskId(event);
     const specProof = reconciledTaskId
@@ -1414,90 +1451,7 @@ export async function routeAksEvent(
     const featureCompactProjection = reconciledTaskId
       ? syncFeatureCompactProjection(appDir, reconciledTaskId)
       : { changed: false };
-    const actionsApplied = Array.isArray(details.actionsApplied)
-      ? details.actionsApplied.filter(
-          (entry): entry is string =>
-            typeof entry === "string" && Boolean(entry.trim()),
-        )
-      : [];
-    const continueWaitingFrontierReview =
-      reconciledTaskId === waitingFrontierReviewTaskId &&
-      details.disposition === "converged" &&
-      actionsApplied.length > 0;
-    const reviewNewAttention =
-      details.disposition === "attention" &&
-      Boolean(reconciledTaskId) &&
-      reconciledTaskId !== waitingFrontierReviewTaskId;
-    const malformedApprovalWaitReplay =
-      details.disposition === "waiting" &&
-      Boolean(reconciledTaskId) &&
-      malformedApprovalWaitContract(appDir, reconciledTaskId);
-    if (continueWaitingFrontierReview) {
-      ctx.emit({
-        type: "project.task.tick",
-        source: "aks-rp-e2e-app",
-        target: {
-          project: projectId,
-          taskId: waitingFrontierReviewTaskId,
-        },
-        urgency: "high",
-        action: "waiting-frontier-review",
-        data: {
-          project: projectId,
-          taskId: waitingFrontierReviewTaskId,
-          task_id: waitingFrontierReviewTaskId,
-          reason: "continue-after-applied-recovery-actions",
-        },
-      });
-    }
-    if (reviewNewAttention) {
-      ctx.emit({
-        type: "project.task.tick",
-        source: "aks-rp-e2e-app",
-        target: {
-          project: projectId,
-          taskId: waitingFrontierReviewTaskId,
-        },
-        urgency: "high",
-        action: "waiting-frontier-review",
-        data: {
-          project: projectId,
-          taskId: waitingFrontierReviewTaskId,
-          task_id: waitingFrontierReviewTaskId,
-          reason: "task-entered-attention",
-          attentionTaskId: reconciledTaskId,
-          attentionGeneration: details.generation ?? null,
-        },
-      });
-    }
-    if (malformedApprovalWaitReplay && reconciledTaskId) {
-      ctx.emit({
-        type: "project.task.tick",
-        source: "aks-rp-e2e-app",
-        target: {
-          project: projectId,
-          taskId: reconciledTaskId,
-        },
-        urgency: "high",
-        action: "approval-wait-contract-replay",
-        overrideWait: true,
-        data: {
-          project: projectId,
-          taskId: reconciledTaskId,
-          task_id: reconciledTaskId,
-          reason: "malformed-approval-wait-contract",
-          overrideWait: true,
-          conditionId: malformedApprovalWaitReplay.conditionId,
-          issues: malformedApprovalWaitReplay.issues,
-          workflow: malformedApprovalWaitReplay.workflow,
-        },
-      });
-    }
     return {
-      waitingFrontierContinuation: continueWaitingFrontierReview,
-      waitingFrontierAttentionWake: reviewNewAttention,
-      malformedApprovalWaitReplay: Boolean(malformedApprovalWaitReplay),
-      malformedApprovalWaitProblem: malformedApprovalWaitReplay,
       specProof,
       featureCompactProjection,
     };
@@ -1899,25 +1853,6 @@ export default defineProjectApp({
         {
           type: "aks.repo-ref.check",
           target: { project: projectId },
-        },
-      ],
-    },
-    {
-      id: "blocked-frontier-app-ops-review",
-      enabled: true,
-      intervalMs: 1_800_000,
-      emits: [
-        {
-          type: "project.task.tick",
-          target: { project: projectId, taskId: waitingFrontierReviewTaskId },
-          urgency: "high",
-          action: "waiting-frontier-review",
-          data: {
-            project: projectId,
-            taskId: waitingFrontierReviewTaskId,
-            task_id: waitingFrontierReviewTaskId,
-            reason: "scheduled-blocked-frontier-review",
-          },
         },
       ],
     },

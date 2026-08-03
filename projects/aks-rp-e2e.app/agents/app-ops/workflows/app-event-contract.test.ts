@@ -17,7 +17,6 @@ import app, {
   resolveAksTask,
   routeAksEvent,
   scenarioTestFrontierWakeEvent,
-  waitingFrontierReviewTaskId,
 } from "../../../app.ts";
 import { repositorySkillMaintenanceTaskId } from "../../../task-loops.ts";
 
@@ -169,7 +168,10 @@ describe("app event contract", () => {
   });
 
   test("leaves loop continuation to shared parent wakeup", () => {
-    const source = readFileSync(resolve(import.meta.dir, "../../../app.ts"), "utf8");
+    const source = readFileSync(
+      resolve(import.meta.dir, "../../../app.ts"),
+      "utf8",
+    );
     expect(source).not.toContain("loopRefillWakeForTaskEvent");
   });
 
@@ -938,6 +940,37 @@ describe("app event contract", () => {
     });
   });
 
+  test("routes waiting-frontier retirement to the existing runtime resource", () => {
+    expect(
+      resolveAksTask({
+        type: "aks.waiting-frontier-retirement.requested",
+        target: { project: projectId },
+      }),
+    ).toMatchObject({
+      id: "runtime/waiting-frontier-review",
+      parentId: "group/app-operations",
+      mode: "achieve",
+      owner: "app-ops",
+      workflow: "retire-waiting-frontier",
+      input: { migration: "waiting-frontier-retirement-v1" },
+    });
+  });
+
+  test("routes finite holder cleanup through stable bounded batches", () => {
+    expect(
+      resolveAksTask({
+        type: "aks.finite-holder-migration.requested",
+        target: { project: projectId },
+        data: { batch: "3" },
+      }),
+    ).toMatchObject({
+      id: "runtime/unified-resource-migration-finite-holders-v3",
+      mode: "achieve",
+      workflow: "unified-finite-holder-migration",
+      input: { migration: "finite-holder-residue-v1", batch: "3" },
+    });
+  });
+
   test("leaves repo-ref Condition matching and wakeup to the shared runtime", async () => {
     const emitted: Record<string, unknown>[] = [];
     const result = await routeAksEvent(
@@ -1005,7 +1038,7 @@ describe("app event contract", () => {
     ]);
   });
 
-  test("continues a productive waiting-frontier review from structured actions", async () => {
+  test("keeps project.task.reconciled projection-only", async () => {
     const emitted: Record<string, unknown>[] = [];
     const result = await routeAksEvent(
       {
@@ -1016,36 +1049,28 @@ describe("app event contract", () => {
         type: "project.task.reconciled",
         target: {
           project: projectId,
-          taskId: waitingFrontierReviewTaskId,
+          taskId: "domain/example-verifier-rejected",
         },
         data: {
           project: projectId,
-          taskId: waitingFrontierReviewTaskId,
-          disposition: "converged",
+          taskId: "domain/example-verifier-rejected",
+          disposition: "attention",
           actionsApplied: ["unblocked stale-wait"],
         },
       },
     );
 
-    expect(result).toMatchObject({
-      waitingFrontierContinuation: true,
-    });
-    expect(emitted).toContainEqual({
-      type: "project.task.tick",
-      source: "aks-rp-e2e-app",
-      target: {
-        project: projectId,
-        taskId: waitingFrontierReviewTaskId,
+    expect(result).toEqual({
+      specProof: {
+        changed: false,
+        taskId: "domain/example-verifier-rejected",
       },
-      urgency: "high",
-      action: "waiting-frontier-review",
-      data: {
-        project: projectId,
-        taskId: waitingFrontierReviewTaskId,
-        task_id: waitingFrontierReviewTaskId,
-        reason: "continue-after-applied-recovery-actions",
+      featureCompactProjection: {
+        changed: false,
+        taskId: "domain/example-verifier-rejected",
       },
     });
+    expect(emitted).toEqual([]);
   });
 
   test("leaves newly created ready children to the shared controller queue", async () => {
@@ -1415,81 +1440,6 @@ describe("app event contract", () => {
     }
   });
 
-  test("stops waiting-frontier continuation when the agent applied no actions", async () => {
-    const emitted: Record<string, unknown>[] = [];
-    const result = await routeAksEvent(
-      {
-        appPath: () => resolve(import.meta.dir, "../../.."),
-        emit: (value: Record<string, unknown>) => emitted.push(value),
-      } as never,
-      {
-        type: "project.task.reconciled",
-        target: {
-          project: projectId,
-          taskId: waitingFrontierReviewTaskId,
-        },
-        data: {
-          project: projectId,
-          taskId: waitingFrontierReviewTaskId,
-          disposition: "converged",
-          actionsApplied: [],
-        },
-      },
-    );
-
-    expect(result).toMatchObject({
-      waitingFrontierContinuation: false,
-    });
-    expect(emitted).toEqual([]);
-  });
-
-  test("wakes waiting-frontier review when a task enters attention", async () => {
-    const emitted: Record<string, unknown>[] = [];
-    const attentionTaskId = "domain/example-verifier-rejected";
-    const result = await routeAksEvent(
-      {
-        appPath: () => resolve(import.meta.dir, "../../.."),
-        emit: (value: Record<string, unknown>) => emitted.push(value),
-      } as never,
-      {
-        type: "project.task.reconciled",
-        target: {
-          project: projectId,
-          taskId: attentionTaskId,
-        },
-        data: {
-          project: projectId,
-          taskId: attentionTaskId,
-          generation: 3,
-          disposition: "attention",
-          summary: "Verifier rejected the claimed result.",
-        },
-      },
-    );
-
-    expect(result).toMatchObject({
-      waitingFrontierAttentionWake: true,
-    });
-    expect(emitted).toContainEqual({
-      type: "project.task.tick",
-      source: "aks-rp-e2e-app",
-      target: {
-        project: projectId,
-        taskId: waitingFrontierReviewTaskId,
-      },
-      urgency: "high",
-      action: "waiting-frontier-review",
-      data: {
-        project: projectId,
-        taskId: waitingFrontierReviewTaskId,
-        task_id: waitingFrontierReviewTaskId,
-        reason: "task-entered-attention",
-        attentionTaskId,
-        attentionGeneration: 3,
-      },
-    });
-  });
-
   test("leaves repo-ref owner handoff continuation to the shared controller", async () => {
     const appDir = mkdtempSync(join(tmpdir(), "repo-ref-owner-handoff-"));
     const emitted: Record<string, unknown>[] = [];
@@ -1560,7 +1510,7 @@ describe("app event contract", () => {
     }
   });
 
-  test("replays malformed approval-return waits to owner judgment instead of leaving them asleep", async () => {
+  test("reports malformed approval-return waits without scheduling from reconciliation results", async () => {
     const appDir = mkdtempSync(join(tmpdir(), "approval-wait-contract-"));
     const taskId =
       "domain/normalize-plain-scenario-carrier-kms-etcd-encryption-tests-kms-v2plus-enable-cmk-from-v2-vnet-integration.ts";
@@ -1644,33 +1594,11 @@ describe("app event contract", () => {
         },
       );
 
-      expect(result).toMatchObject({
-        malformedApprovalWaitReplay: true,
-        malformedApprovalWaitProblem: {
-          taskId,
-          conditionId:
-            "project-approval-submitted-kms-v2plus-enable-cmk-from-v2-vnet-integration-secret-migration-20260724",
-        },
+      expect(result).toEqual({
+        specProof: { changed: false, taskId },
+        featureCompactProjection: { changed: false, taskId },
       });
-      expect(emitted).toContainEqual({
-        type: "project.task.tick",
-        source: "aks-rp-e2e-app",
-        target: { project: projectId, taskId },
-        urgency: "high",
-        action: "approval-wait-contract-replay",
-        overrideWait: true,
-        data: {
-          project: projectId,
-          taskId,
-          task_id: taskId,
-          reason: "malformed-approval-wait-contract",
-          overrideWait: true,
-          conditionId:
-            "project-approval-submitted-kms-v2plus-enable-cmk-from-v2-vnet-integration-secret-migration-20260724",
-          issues: ["approvalKind=null", "acceptedDecisions=null"],
-          workflow: "spec-live-reconciliation",
-        },
-      });
+      expect(emitted).toEqual([]);
     } finally {
       rmSync(appDir, { recursive: true, force: true });
     }
@@ -1736,8 +1664,9 @@ describe("app event contract", () => {
         },
       );
 
-      expect(result).toMatchObject({
-        malformedApprovalWaitReplay: false,
+      expect(result).toEqual({
+        specProof: { changed: false, taskId },
+        featureCompactProjection: { changed: false, taskId },
       });
       expect(emitted).toEqual([]);
     } finally {
@@ -2995,98 +2924,21 @@ describe("app event contract", () => {
     });
   });
 
-  test("waiting-frontier review has an independent scheduled task lane", () => {
+  test("does not keep an app-local waiting-frontier scheduler", () => {
     const schedule = appManifest.schedules?.find(
       (entry) => entry.id === "blocked-frontier-app-ops-review",
     );
-
-    expect(schedule).toMatchObject({
-      enabled: true,
-      intervalMs: 1_800_000,
-      emits: [
-        {
-          type: "project.task.tick",
-          target: {
-            project: projectId,
-            taskId: waitingFrontierReviewTaskId,
-          },
-          action: "waiting-frontier-review",
-          data: {
-            project: projectId,
-            taskId: waitingFrontierReviewTaskId,
-            reason: "scheduled-blocked-frontier-review",
-          },
-          urgency: "high",
+    expect(schedule).toBeUndefined();
+    expect(
+      resolveAksTask({
+        type: "project.task.tick",
+        target: {
+          project: projectId,
+          taskId: "runtime/waiting-frontier-review",
         },
-      ],
-    });
-
-    const resolved = resolveAksTask(
-      schedule?.emits?.[0] as Record<string, unknown>,
-    );
-    expect(resolved).toMatchObject({
-      id: waitingFrontierReviewTaskId,
-      parentId: "group/app-operations",
-      mode: "maintain",
-      owner: "app-ops",
-      priority: "P0",
-      category: "ops",
-    });
-    expect(resolved?.input?.maxConcurrent).toBe(5);
-    expect(
-      Array.isArray(resolved?.input?.instructions) &&
-        resolved.input.instructions.some(
-          (entry) =>
-            typeof entry === "string" &&
-            /preserve owner=aks-explorer/i.test(entry),
-        ),
-    ).toBe(true);
-    expect(
-      Array.isArray(resolved?.input?.instructions) &&
-        resolved.input.instructions.some(
-          (entry) =>
-            typeof entry === "string" &&
-            /input\.packetPath.*input\.pathId.*input\.requestedAction/i.test(
-              entry,
-            ),
-        ),
-    ).toBe(true);
-    expect(
-      Array.isArray(resolved?.input?.instructions) &&
-        resolved.input.instructions.some(
-          (entry) =>
-            typeof entry === "string" &&
-            /future main-branch spec pass is not a valid producer/i.test(entry),
-        ),
-    ).toBe(true);
-    expect(
-      Array.isArray(resolved?.input?.instructions) &&
-        resolved.input.instructions.some(
-          (entry) =>
-            typeof entry === "string" &&
-            /true Condition is already level-triggered ready work/i.test(
-              entry,
-            ) &&
-            /generic task controller owns/i.test(entry),
-        ),
-    ).toBe(true);
-    expect(
-      Array.isArray(resolved?.acceptance) &&
-        resolved.acceptance.some(
-          (entry) =>
-            typeof entry === "string" &&
-            /do not retry or unblock/i.test(entry) &&
-            /Condition is satisfied/i.test(entry),
-        ),
-    ).toBe(true);
-    expect(
-      Array.isArray(resolved?.acceptance) &&
-        resolved.acceptance.some(
-          (entry) =>
-            typeof entry === "string" &&
-            /read current task state and hot external facts/i.test(entry),
-        ),
-    ).toBe(true);
+        action: "waiting-frontier-review",
+      }),
+    ).toBeNull();
   });
 
   test("strict inventory wakes its domain frontier without owner-review indirection", () => {

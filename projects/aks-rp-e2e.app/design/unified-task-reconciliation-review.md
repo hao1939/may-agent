@@ -1,7 +1,7 @@
 # Unified Task Reconciliation Review
 
-**Status:** In progress. Scout, Gym, Evaluation, and May Agent are aligned; AKS
-is the final migration.
+**Status:** Aligned in source and control flow. AKS live-history cleanup is a
+bounded migration through the same shared controller, not a second scheduler.
 
 The canonical model is the shared
 [Task Resource Engine](../../may-agent.app/docs/2a-design/task-resource-engine.md).
@@ -67,15 +67,15 @@ the common base, but conformance and operational health are different things:
 | Gym        |        Aligned | Stable learning resources reconcile through the shared controller; legacy residue is retired.                      |
 | Evaluation |        Aligned | Finite audits leave receipts and sustained backlog advances through shared capacity.                               |
 | May Agent  |        Aligned | Stable maintain resources remain, obsolete tasks are retired, and one truthful finite attention task is preserved. |
-| AKS        |      Migrating | Largest graph and the only remaining app-specific reconciliation-result scheduler.                                 |
+| AKS        |        Aligned | Projection-only reconciliation results, generic parent/Condition wakeup, and bounded finite live-history cleanup.   |
 
-Therefore the remaining work is AKS convergence, not a framework rewrite.
-Scout is the small reference shape; the other three apps provide proof that
+The migration therefore converged on one framework rather than an AKS-specific
+rewrite. Scout remains the small reference shape; the other apps prove that
 legacy cleanup and sustained workloads both fit the shared controller.
 
-## Current AKS drift
+## Starting AKS drift (historical baseline)
 
-The live audit on 2026-08-03 found:
+The pre-migration live audit on 2026-08-03 found:
 
 - `app.ts` has 3,721 lines; the other task-enabled apps have 336–594;
 - AKS is the only app that consumes `project.task.reconciled` to schedule or
@@ -185,9 +185,9 @@ behavioral slice at a time and keep current tasks recoverable.
 - AKS no longer turns `actionsApplied` into duplicate ready-task ticks. Created
   and revised tasks enter the shared controller queue directly as part of the
   atomic reconciliation result.
-- Loop-refill compatibility now ignores leaves and descendants owned by an
-  executable loop parent. It remains temporarily only for legacy group-owned
-  siblings until those live carriers are retired or reshaped.
+- Loop-refill compatibility has been deleted. All spec, feature, and scenario
+  leaves now continue through shared direct-parent wakeup; the app no longer
+  reconstructs loop ownership from reconciliation results.
 
 The live graph still contains 27 internal Conditions admitted before this
 guard. They are migration residue, not accepted future behavior. Retire or
@@ -196,8 +196,9 @@ reshape their owning tasks in bounded slices before removing the corresponding
 
 The first live-residue migration is `project-state-holders-v1`. It closes only
 a fixed allowlist of childless legacy maintain holders after rechecking their
-generation, phase, Condition type, and child topology. Any mismatch remains
-live. The standing feature loop owns the next observation rather than a
+phase, Condition type, and child topology. Any mismatch remains live, and each
+action uses `expectedGeneration` so a concurrent revision is rejected at apply
+time. The standing feature loop owns the next observation rather than a
 project-state Condition.
 
 The second migration is `task-state-waits-v1`. Seven named live-subject waits
@@ -213,12 +214,14 @@ from `project.task.reconciled`.
 The third migration is `task-tick-holders-v1`. It closes the two fixed,
 childless legacy compact holders that wait on `project.task.tick`. Future
 review is owned by the stable feature loop, which timers and semantic events
-wake directly through the shared controller. Changed holders remain untouched.
+wake directly through the shared controller. Mismatched holders remain
+untouched, and `expectedGeneration` protects the read-to-apply boundary.
 
 `project-state-residue-v2` handles the two project-state cases that cannot use
 the childless v1 rule. It compacts two exact completed LocalDNS children before
 their holder, then closes the exact finite runtime-container repair. Every
-action is guarded by identity, topology, mode, phase, Condition, and generation.
+action is guarded by identity, topology, mode, phase, and Condition, with
+`expectedGeneration` rejecting a concurrent revision.
 
 Legacy repo-ref waits use one older project-scoped Condition shape that the
 shared tracker cannot interpret. `legacy-repo-ref-conditions-v1` returns only
@@ -276,8 +279,48 @@ drift rather than adding a second scheduling path.
 With spec, feature, and scenario leaves owned by their executable parents,
 AKS no longer reconstructs loop ownership from `project.task.reconciled`.
 Shared parent wakeup now owns continuation; the app keeps that event only for
-deterministic read-model projections and the remaining recovery paths that are
-migrated in the next slices.
+deterministic spec-proof and feature-compact read-model projections.
+
+The final scheduling cleanup removes the general
+`runtime/waiting-frontier-review` lane, its 30-minute schedule, attention
+replay, malformed-approval replay, handler-recovery replay, and
+already-satisfied pipeline-Condition replay. These were all second scheduling
+paths over mechanics already owned by the shared runtime. Scenario inventory
+still wakes `scenario-normalization` directly when the observation changes;
+an identical wait-only observation is a no-op rather than a reason to scan the
+task tree. Because `runtime/*` specifications are reconciler-owned and reject
+handler mutation, one app-resolver event changes the existing waiting-frontier
+resource into a finite achieve task. Existing children remain ordinary
+outcome-bearing tasks; a deterministic workflow observes only those direct
+children, creates nothing, and relies on shared parent wakeup until it can
+converge.
+
+The 2026-08-03 post-change source proof is the complete AKS check: 497 app
+tests plus 2 workflow-input tests, clean syntax bundling, formatting, and
+type-checking. The live graph at the cutover has zero internal
+task/project Conditions, `group/feature-compact` contains only
+`aks-feature-compact-loop`, and `group/scenario-normalization` contains only
+`scenario-normalization`. The pre-cutover waiting-frontier resource still has
+live children, so it is retained without any producer until those children
+finish; it must then leave the live graph as finite migration residue rather
+than regain a schedule.
+
+The final graph cleanup treats names as a guarded migration signal, not a new
+runtime convention. A non-runtime `hold-*` or `wait-*` resource in maintain
+mode is finite legacy residue. Bounded 16-action batches close only converged,
+childless, condition-free holders; unfinished pending or waiting holders keep
+their full specification and external waits but change to achieve mode. Every
+action rechecks the current generation. This removes history from the live
+graph while leaving Git, journal records, and task receipts as the audit trail.
+
+Live batches 1 through 8 completed through the shared controller. They applied
+117 guarded actions: 103 obsolete holders became receipts and 14 unfinished
+holders changed from maintain to achieve. The final live audit has 259
+resources (245 achieve and 14 genuine maintain responsibilities), 113 external
+Conditions, zero internal task/project Conditions, and zero non-runtime
+`hold-*`/`wait-*` maintain resources. The retired waiting-frontier is an achieve
+resource with two existing children; it has no schedule or producer and will
+leave the graph through generic parent wakeup after those children finish.
 
 Attention is not a completion state. Each attention resource must retain an
 accountable owner, exact failure evidence, and a truthful next wake or
@@ -287,8 +330,9 @@ for owner correction rather than being retried forever.
 
 ## Cross-app conformance
 
-Add one shared conformance suite and run it against every task-enabled app. It
-should prove:
+The shared conformance suite runs against every task-enabled app. It proves
+the common manifest boundary directly, while shared controller and parent
+semantics tests prove the runtime mechanics. Together they check that:
 
 - timers and semantic events resolve or wake stable task identities;
 - created tasks enter the shared queue without an app-generated tick;

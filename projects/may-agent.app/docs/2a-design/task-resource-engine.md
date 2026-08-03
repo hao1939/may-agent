@@ -182,7 +182,7 @@ Adoption status (2026-08-03):
 | `gym.app` | aligned | `learning/codex-sessions` reached generation 9 and converged from its durable checkpoint with no recovery child or internal Condition; `runtime/unified-resource-migration-v1` closed six pre-contract carriers into receipts; tree integrity is clean. |
 | `evaluation.app` | aligned | Fourteen standing responsibilities are healthy, finite `runtime/session-aftermath/*` work leaves receipts, and the live tree has zero integrity or attention findings. Under sustained AKS session load, a newly completed audit was followed by the oldest ready audit, proving the shared controller drains recovery work without an app-local scheduler. The remaining ready frontier is throughput pressure, not task-resource drift. |
 | `may-agent.app` | aligned | Hourly timer observations repeatedly wake the stable `runtime/ops-health-observer` at unchanged generation and leave workflow evidence. `runtime/unified-resource-migration-v1` waited durably for shared capacity, then closed six implemented or superseded pre-contract carriers into receipts. The live graph now contains three healthy standing resources plus one truthful unresolved finite redaction task, with no integrity findings. |
-| `aks-rp-e2e.app` | next and last | Starts after the four smaller apps passed. |
+| `aks-rp-e2e.app` | aligned | `project.task.reconciled` is projection-only, internal task/project Conditions are gone, standing loops own their leaves, and the retired waiting-frontier plus finite holder history drain through bounded shared-controller resources. The complete AKS check and shared cross-app conformance suite pass. |
 
 An aligned app may still contain a current task in `attention`. That is a
 visible owner decision state, not a scheduling mechanism. Alignment requires
@@ -673,6 +673,17 @@ local running slots remain truthful and a later front promotion can still be
 chosen when capacity becomes available. Releasing one shared slot grants one
 app another choice from its current queue; it does not reserve that slot for an
 older task key selected while capacity was unavailable.
+
+That shared-capacity wait is cancellable. Replacing or closing a controller
+removes its pending claim, while a granted lease remains held only by the task
+that actually starts. Repeated hot reloads therefore cannot leave stale
+waiters ahead of current work.
+
+Event ingress uses one idempotency key across acknowledgement retries. If the
+transport acknowledgement times out after the event was persisted, the
+adapter confirms that key in the durable event log before reporting failure.
+It must not tell a caller to retry work that the controller has already
+accepted.
 
 Front promotion is an urgent FIFO lane, not a LIFO stack. Explicit targeted
 wakes run before ordinary queued work, while reconciler-created child and
