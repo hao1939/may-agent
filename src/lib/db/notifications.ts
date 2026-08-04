@@ -70,6 +70,90 @@ export function getNotificationMessage(persistDir: string, telegramMsgId: number
     .get(telegramMsgId) as NotificationMessageRecord | null;
 }
 
+export type ApprovalNotificationIdentity = {
+  approvalId?: string;
+  waitId?: string;
+  taskId?: string;
+  taskGeneration?: number;
+};
+
+/**
+ * Return true once a proactive notification with this stable key has been
+ * delivered. This makes producer deduplication survive daemon restarts.
+ */
+export function hasDeliveredNotificationKey(persistDir: string, key: string): boolean {
+  const normalized = key.trim();
+  if (!normalized) return false;
+  try {
+    const row = getDb(persistDir)
+      .prepare(
+        `SELECT 1
+           FROM notification_messages
+          WHERE event_type = 'message.created'
+            AND json_valid(data) = 1
+            AND (
+              json_extract(data, '$.dedupKey') = ?
+              OR json_extract(data, '$.approvalId') = ?
+              OR json_extract(data, '$.approval.approvalId') = ?
+            )
+          LIMIT 1`,
+      )
+      .get(normalized, normalized, normalized);
+    return Boolean(row);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Resolve inbox openness from durable control-plane truth, not from the
+ * absence of a reply to one Telegram row. Task identity is intentionally a
+ * fallback because a proposal may be regenerated with a new fingerprint
+ * while the same task has already reached a terminal decision.
+ */
+export function isApprovalNotificationResolved(persistDir: string, identity: ApprovalNotificationIdentity): boolean {
+  const approvalId = identity.approvalId?.trim();
+  const waitId = identity.waitId?.trim();
+  const taskId = identity.taskId?.trim();
+  if (!approvalId && !waitId && !taskId) return false;
+  try {
+    const row = getDb(persistDir)
+      .prepare(
+        `SELECT 1
+           FROM events
+          WHERE event_type IN ('project.approval.submitted', 'project.approval.resolved')
+            AND json_valid(data) = 1
+            AND (
+              (? IS NOT NULL AND json_extract(data, '$.approvalId') = ?)
+              OR (? IS NOT NULL AND json_extract(data, '$.waitId') = ?)
+              OR (
+                ? IS NOT NULL
+                AND json_extract(data, '$.taskId') = ?
+                AND (
+                  ? IS NULL
+                  OR json_extract(data, '$.taskGeneration') IS NULL
+                  OR json_extract(data, '$.taskGeneration') = ?
+                )
+              )
+            )
+          LIMIT 1`,
+      )
+      .get(
+        approvalId ?? null,
+        approvalId ?? null,
+        waitId ?? null,
+        waitId ?? null,
+        taskId ?? null,
+        taskId ?? null,
+        identity.taskGeneration ?? null,
+        identity.taskGeneration ?? null,
+      );
+    return Boolean(row);
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Recover the newest human Telegram message attached to a request trace.
  *
@@ -244,8 +328,8 @@ export function getTelegramConversationView(
       conversationId,
       focus: {
         ...(traceId ? { traceId } : {}),
-        ...(taskId ?? latest?.taskId ? { taskId: taskId ?? latest?.taskId } : {}),
-        ...(projectId ?? latest?.projectId ? { projectId: projectId ?? latest?.projectId } : {}),
+        ...((taskId ?? latest?.taskId) ? { taskId: taskId ?? latest?.taskId } : {}),
+        ...((projectId ?? latest?.projectId) ? { projectId: projectId ?? latest?.projectId } : {}),
         ...(latest?.owner ? { owner: latest.owner } : {}),
         ...(latest?.status ? { status: latest.status } : {}),
         events,
@@ -255,7 +339,12 @@ export function getTelegramConversationView(
   } catch {
     return {
       conversationId,
-      focus: { ...(traceId ? { traceId } : {}), ...(taskId ? { taskId } : {}), ...(projectId ? { projectId } : {}), events: [] },
+      focus: {
+        ...(traceId ? { traceId } : {}),
+        ...(taskId ? { taskId } : {}),
+        ...(projectId ? { projectId } : {}),
+        events: [],
+      },
       recentMessages,
     };
   }

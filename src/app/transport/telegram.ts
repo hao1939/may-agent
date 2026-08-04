@@ -24,6 +24,8 @@ import { readSessionMeta } from "../../lib/persistence.js";
 import {
   getLatestInboundNotificationMessage,
   getNotificationMessage,
+  hasDeliveredNotificationKey,
+  isApprovalNotificationResolved,
   storeNotificationMessage,
 } from "../../lib/db/notifications.js";
 import { buildTelegramReplyRoute, telegramConversationId } from "./telegram-reply-router.js";
@@ -666,6 +668,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     pendingChatId,
     getSessionId,
     getSessionReplyContext: (sessionId) => readSessionMeta(persistDir, sessionId),
+    hasDeliveredNotificationKey: (key) => hasDeliveredNotificationKey(persistDir, key),
+    isApprovalResolved: (identity) => isApprovalNotificationResolved(persistDir, identity),
     sendToUser,
     reviewProactive: (candidate) => reviewHumanAttention(_manager, candidate, projectRoot),
   });

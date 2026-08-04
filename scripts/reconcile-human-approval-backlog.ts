@@ -1,0 +1,165 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { Database } from "bun:sqlite";
+import { daemonSocketPath, emitDaemonEvent } from "../packages/control/src/client.js";
+
+type TaskResource = {
+  metadata?: { id?: string; generation?: number };
+  spec?: { owner?: string };
+  status?: { phase?: string; conditionIds?: string[] };
+};
+
+type Condition = {
+  spec?: {
+    type?: string;
+    expected?: Record<string, unknown>;
+  };
+};
+
+type TaskState = {
+  resources?: Record<string, TaskResource>;
+  conditions?: Record<string, Condition>;
+};
+
+export type ApprovalBacklogItem = {
+  approvalId: string;
+  waitId?: string;
+  pathId?: string;
+  approvalKind: string;
+  taskId: string;
+  taskGeneration?: number;
+  targetOwner: string;
+};
+
+export function collectApprovalBacklog(state: TaskState): ApprovalBacklogItem[] {
+  const found = new Map<string, ApprovalBacklogItem>();
+  for (const [taskId, resource] of Object.entries(state.resources ?? {})) {
+    if (resource.status?.phase !== "waiting") continue;
+    for (const conditionId of resource.status.conditionIds ?? []) {
+      const condition = state.conditions?.[conditionId];
+      if (condition?.spec?.type !== "project.approval.submitted") continue;
+      const expected = condition.spec.expected ?? {};
+      const approvalId = stringValue(expected.approvalId);
+      if (!approvalId) continue;
+      found.set(approvalId, {
+        approvalId,
+        ...(stringValue(expected.waitId) ? { waitId: stringValue(expected.waitId) } : {}),
+        ...(stringValue(expected.pathId) ? { pathId: stringValue(expected.pathId) } : {}),
+        approvalKind: stringValue(expected.approvalKind) ?? "approval-packet-dispatch",
+        taskId,
+        ...(resource.metadata?.generation ? { taskGeneration: resource.metadata.generation } : {}),
+        targetOwner: stringValue(resource.spec?.owner) ?? "app-owner",
+      });
+    }
+  }
+  return [...found.values()].sort((left, right) => left.taskId.localeCompare(right.taskId));
+}
+
+function stringValue(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function alreadyResolvedApprovalIds(dbPath: string): Set<string> {
+  const db = new Database(dbPath, { readonly: true });
+  try {
+    const rows = db
+      .query(
+        `SELECT data
+           FROM events
+          WHERE event_type IN ('project.approval.submitted', 'project.approval.resolved')
+            AND json_valid(data) = 1
+            AND json_extract(data, '$.approvalId') IS NOT NULL`,
+      )
+      .all() as Array<{ data: string }>;
+    return new Set(
+      rows.flatMap((row) => {
+        try {
+          const approvalId = stringValue(JSON.parse(row.data).approvalId);
+          return approvalId ? [approvalId] : [];
+        } catch {
+          return [];
+        }
+      }),
+    );
+  } finally {
+    db.close();
+  }
+}
+
+async function main(): Promise<void> {
+  const apply = process.argv.includes("--apply");
+  const limitArgument = process.argv.find((value) => value.startsWith("--limit="));
+  const limit = limitArgument ? Math.max(1, Number(limitArgument.slice("--limit=".length)) || 1) : Infinity;
+  const appRoot = resolve(process.env.APP_ROOT ?? "/app");
+  const stateDir = resolve(process.env.STATE_DIR ?? resolve(appRoot, ".state"));
+  const projectStatePath = resolve(
+    process.env.PROJECT_TASK_STATE ?? resolve(appRoot, "projects/aks-rp-e2e.app/.state/tasks/state.json"),
+  );
+  const taskState = JSON.parse(readFileSync(projectStatePath, "utf8")) as TaskState;
+  const resolved = alreadyResolvedApprovalIds(resolve(stateDir, "may.db"));
+  const allBacklog = collectApprovalBacklog(taskState).filter((item) => !resolved.has(item.approvalId));
+  const backlog = allBacklog.slice(0, limit);
+
+  console.log(
+    JSON.stringify(
+      { mode: apply ? "apply" : "dry-run", candidates: allBacklog.length, selected: backlog.length },
+      null,
+      2,
+    ),
+  );
+  for (const item of backlog) {
+    console.log(`${item.taskId}\t${item.targetOwner}\t${item.approvalId}`);
+  }
+  if (!apply || backlog.length === 0) return;
+
+  const socket = daemonSocketPath(stateDir, {
+    instance: process.env.DAEMON_INSTANCE ?? "background",
+    interfaceAgent: process.env.DAEMON_AGENT ?? "may",
+  });
+  let applied = 0;
+  const failures: Array<{ approvalId: string; error: string }> = [];
+  for (const item of backlog) {
+    try {
+      const response = await emitDaemonEvent(
+        socket,
+        "project.approval.submitted",
+        {
+          source: "owner:human",
+          owner: "agent:may",
+          project: "aks-rp-e2e",
+          projectId: "aks-rp-e2e",
+          projectPath: "projects/aks-rp-e2e.app",
+          approvalKind: item.approvalKind,
+          approvalId: item.approvalId,
+          ...(item.waitId ? { waitId: item.waitId } : {}),
+          ...(item.pathId ? { pathId: item.pathId } : {}),
+          taskId: item.taskId,
+          ...(item.taskGeneration ? { taskGeneration: item.taskGeneration } : {}),
+          decision: "reroute",
+          targetOwner: item.targetOwner,
+          reason:
+            "Historical human wait rerouted under the ownership convention. The app owner must re-read current evidence and own the next action.",
+          adjustments:
+            "Handle current app-owned work directly. If a real external authority remains, identify the exact authority owner and decision surface; involve Hao only when that authority or preference is genuinely his.",
+          idempotencyKey: `historical-human-wait-reroute:${item.approvalId}`,
+        },
+        { timeoutMs: 10_000 },
+      );
+      if (response.type !== "ok") {
+        throw new Error(response.message ?? response.type);
+      }
+      applied += 1;
+    } catch (error) {
+      failures.push({
+        approvalId: item.approvalId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+  console.log(JSON.stringify({ applied, failures }, null, 2));
+  if (failures.length) process.exitCode = 1;
+}
+
+if (import.meta.main) {
+  await main();
+}
