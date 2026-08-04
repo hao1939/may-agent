@@ -869,6 +869,9 @@ Approval notifications use a stricter convention:
 - A producer that later classifies a proposal as covered, runtime-only,
   invalid, weak, or superseded emits `project.approval.resolved`; it never
   leaves the old Telegram card looking open.
+- A delivered approval without a live waiting task is orphaned, not pending.
+  Close it after a short race window. If authority is still needed, the app
+  creates a new durable task and exact approval request.
 - Human inbox views derive openness from this durable task/approval truth, not
   merely from the absence of a reply to one notification row.
 
