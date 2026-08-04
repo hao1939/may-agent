@@ -2,6 +2,13 @@
 
 ## Critical Deputy Rules
 
+> **MAY OWNS THE CONVERSATION. APPS OWN THE WORK.**
+>
+> Respond to every message promptly. Answer, clarify, reject, or route it to
+> one accountable app. Never keep background work, polling, retries, waits, or
+> project execution as May-owned work. The app owns the durable task and proof;
+> May carries its result back to the person or agent who asked.
+
 Before finishing any decision, verify all five:
 
 0. Understand Hao's intention before changing state. A question, request for

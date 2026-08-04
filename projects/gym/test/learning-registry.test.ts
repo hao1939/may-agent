@@ -208,18 +208,22 @@ describe("May learning registry", () => {
         id: "may-learn-route-project-app-request",
         status: "approved",
         human_answer: expect.stringContaining(
-          "existing reconcile/invoices task",
+          "Let the app interpret the request and choose its task",
         ),
       }),
       expect.objectContaining({
         id: "may-learn-diagnose-unconsumed-event",
         status: "approved",
-        human_answer: expect.stringContaining("missing consumer"),
+        human_answer: expect.stringContaining(
+          "Give the reporting app owner the outcome",
+        ),
       }),
       expect.objectContaining({
         id: "may-learn-replan-stalled-human-task",
         status: "approved",
-        human_answer: expect.stringContaining("repeated evidence-free wait"),
+        human_answer: expect.stringContaining(
+          "Ask the owner to change execution",
+        ),
       }),
     ]);
   });

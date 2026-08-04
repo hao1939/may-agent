@@ -16,6 +16,17 @@ Apps organize work. Agents judge and act. Workflows preserve a repeatable
 method after experience justifies one. Infrastructure schedules, delivers,
 persists, reconciles, and recovers without deciding domain meaning.
 
+The human boundary has one additional, strict convention:
+
+> **May owns the conversation. Apps own the work.**
+
+May understands and answers the current message. If durable work is needed,
+May selects the accountable app and the shared runtime attaches the original
+message to that app's owner request. The app—not May—owns background execution,
+progress, waits, retries, and proof. A terminal app result wakes the bridge so
+May can carry the outcome back. Do not give May a task tree, scheduler, or
+polling responsibility.
+
 ## Roles
 
 | Piece                    | Role                                                                   |
@@ -48,6 +59,60 @@ semantic event, Condition observation, human comment, or resync
 The task attachment is optional. An app may only organize an owner, domain
 context, schedules, events, or actions. Direct and Gym runs use the same agent
 capability without task infrastructure.
+
+## The task loop
+
+A task says what should be true. A wake means "check it now." The task owner or
+workflow reads the current facts, compares them with the task outcome, and does
+the next safe piece of work. It keeps the same task moving until one of these is
+true:
+
+1. the outcome is satisfied now;
+2. it must wait for one exact external fact or live direct child; or
+3. it cannot continue safely and needs visible attention.
+
+One attempt is bounded; the task loop is durable. Immediate work returns to the
+same queue. An external wait records a Condition and releases capacity. The
+observed fact later wakes the same task. No workflow or agent session remains
+open while waiting.
+
+```text
+timer, event, or observed Condition
+  -> wake one stable task ID
+  -> read the target and current facts
+  -> do the next bounded work
+  -> safe work remains and a durable wake exists: pending
+     satisfied: converged
+     exact fact or child needed: waiting
+     cannot continue safely: attention
+```
+
+If a maintain workflow records another wake while it is running, that wake wins
+over the completed attempt: the task stays `pending` and returns to the same
+queue. It must not be published as converged and it does not need another task,
+timer, or open workflow session.
+
+There is one task state. Workflow checkpoints may preserve facts and progress,
+but must not keep a second task phase. Before a workflow returns, its checkpoint
+must agree with the result it returns. A restart may repeat work, so both must
+be safe to read and apply again.
+
+`converged` is a claim that the outcome and acceptance criteria are satisfied by
+current evidence. A failed call, missing artifact, unfinished step, or plan for
+future repair is not converged. `waiting` names the exact fact that will wake the
+task. `attention` names why safe progress stopped. Missing or unknown checkpoint
+state fails closed to attention; absence of a known wait is not completion proof.
+
+Every maintain task must have a way to learn that its facts changed: a domain
+event or watcher, and a scheduled check when events alone are not reliable. The
+controller's frequent resync repairs missed task delivery; it does not replace
+domain observation or run every expensive workflow continuously.
+
+Apps choose outcomes, owners, workflows, and acceptance. The shared runtime
+persists task state, delivers wakes, prevents overlapping attempts, and rejects
+invalid results. It does not decide domain truth. Apps must not create a second
+scheduler by listening to reconciliation results and emitting private retry
+ticks.
 
 ## Owner and workflow
 

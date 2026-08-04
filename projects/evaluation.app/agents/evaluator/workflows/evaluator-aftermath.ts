@@ -1440,7 +1440,26 @@ function buildNotificationDecision(
   };
 }
 
-export function ownerEventTarget(owner: unknown): string {
+function projectOwnerTarget(projectId: unknown, agent: unknown): string | null {
+  const project = String(projectId ?? "")
+    .trim()
+    .replace(/^projects\//, "")
+    .replace(/\.app$/, "");
+  if (project === "aks-rp-e2e") return "app-ops";
+  if (project === "gym") return "gym";
+  if (project === "evaluation") return "evaluator";
+  if (project === "scout-knowledge-lib") return "scout";
+  if (project === "may-agent") return "tech-lead";
+
+  const agentName = String(agent ?? "").replace(/^agent:/, "").split("/")[0];
+  if (["aks-explorer", "app-ops", "owner"].includes(agentName)) return "app-ops";
+  if (agentName === "gym") return "gym";
+  if (agentName === "evaluator" || agentName === "judge") return "evaluator";
+  if (["scout", "amy", "amy-kimi"].includes(agentName)) return "scout";
+  return null;
+}
+
+export function ownerEventTarget(owner: unknown, projectId?: unknown, agent?: unknown): string {
   const text = String(owner ?? "").trim();
   const target = text.startsWith("agent:")
     ? text.slice("agent:".length)
@@ -1451,14 +1470,15 @@ export function ownerEventTarget(owner: unknown): string {
   // Message targets are flat agent names. Owner labels can include scoped
   // pseudo-owners such as `agent:may/runtime` for responsibility tracking, but
   // sending to `may/runtime` is invalid and produces message.delivery_failed.
-  // The app task reconciler is also an internal platform module, not a
-  // registered message target; route those runtime/control-plane findings to
-  // May instead of emitting an undeliverable owner label.
+  // May owns conversation, not background work. Resolve pseudo-owners and May
+  // itself to the concrete target app owner, falling back to the platform
+  // owner for runtime/control-plane findings.
   if (
+    flatTarget === "may" ||
     flatTarget === "app-task-reconciler" ||
     flatTarget === "project-app-task-reconciler"
   ) {
-    return "may";
+    return projectOwnerTarget(projectId, agent) ?? "tech-lead";
   }
   return flatTarget;
 }
@@ -1492,7 +1512,7 @@ export function learningFeedbackEventPayload(params: {
   return {
     type: "learning.feedback",
     source: "evaluator-aftermath",
-    owner: ownerEventTarget(params.finding.owner),
+    owner: ownerEventTarget(params.finding.owner, params.projectId, params.agent),
     kind: "owner_finding",
     needsHuman: findingNeedsHuman(params.finding.owner),
     sessionId: params.sessionId,
@@ -2293,7 +2313,7 @@ export function buildReviewTask(params: {
     `4. Immediately call read() on that same artifact path and confirm the file contains the required sections.`,
     `5. For needs_triage: do not silently fix the project as evaluator. Classify each important issue by scope, assign owner as agent:<name> or human:<role>, and suggest possible actions for that owner.`,
     `6. Owner-feedback delivery must be deduped by finding family, not by session. Before calling message(), compare target owner/project + root cause + remediation ask against already-delivered cohort feedback. Regression family: events 3582689, 3583286, 3583498, and 3583812 show Scout nested-output-path aftermath findings after a cohort-level delivery; use family key agent:scout|scout-knowledge-lib.app|root:nested-/app/projects/scout-knowledge-lib/projects-output-path|ask:reconcile-canonical-artifacts-and-use-absolute-/app/projects-output-verification. If a Scout review is unchanged in that family, do not send another owner message; preserve this session's artifact/session link in the artifact and eval trail instead. Only send a new owner message for this family when the root cause/remediation ask materially changes, severity increases, or Scout explicitly asks for per-session follow-up. This rule is narrow: unrelated Scout findings with a different root cause or ask still use normal high-severity owner notification.`,
-    `7. Notify immediately only for high-severity or blocked/waiting findings that are not suppressed by the finding-family dedupe rule; routine critique belongs in the eval trail or digest. Use only registered message targets: route platform/runtime or task-reconciler/control-plane findings to may, route project-owner or evaluation.app ownership findings to tech-lead, and never address messages to app-task-reconciler or project-app-task-reconciler because those are internal modules, not agents.`,
+    `7. Notify immediately only for high-severity or blocked/waiting findings that are not suppressed by the finding-family dedupe rule; routine critique belongs in the eval trail or digest. May owns conversation, not background work. Route every finding to the accountable app owner by reading the target app manifest: platform/runtime/control-plane -> may-agent app owner; AKS -> aks-rp-e2e app owner; Gym -> gym app owner; Scout -> scout-knowledge-lib app owner; evaluator-local -> evaluation app owner. Never address project work to may, app-task-reconciler, or project-app-task-reconciler.`,
     `8. For success_candidate: extract why it worked. If there is reusable learning, record the candidate with evidence instead of promoting a global rule from one session.`,
     `9. Only then call finish(success) or finish(partial); the verify-after-write guard rejects success if the artifact was written but not read back.`,
     ``,

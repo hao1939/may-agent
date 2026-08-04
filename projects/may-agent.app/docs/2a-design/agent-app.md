@@ -18,6 +18,11 @@ Host       = optional events, schedules, watchers, tasks, persistence, recovery
 
 The public unit is the app. The execution unit remains an agent.
 
+May is deliberately not an app. May owns the immediate conversation with Hao
+and bridges messages into and out of app-owned work. Durable work always moves
+to an accountable app; putting May behind an app controller would mix human
+conversation with background ownership and duplicate existing task trees.
+
 See [Projects](projects.md) for durable project posture,
 [Task Resource Engine](task-resource-engine.md) for optional task autonomy, and
 [Workflows](workflows.md) for reusable process ownership.
@@ -129,7 +134,11 @@ event routes, schedules, queues, task controllers, recovery, or resync. This
 keeps a direct workflow, one-shot task, status command, and Web UI process from
 claiming work owned by the daemon.
 
-`budget.maxConcurrent` bounds the app task controller. `sessionsPerDay` and
+`budget.maxConcurrent` bounds the app task controller. The autonomous host also
+applies one shared concurrency bound across all app controllers, with a
+two-task default for the standard host, so simultaneous recovery in several
+apps cannot start an unbounded session storm. Work above either bound stays in
+the ordinary durable queue. `sessionsPerDay` and
 `tokensPerDay` are currently planning and observation metadata, not enforced
 daily quotas. Schedules must therefore be designed below the planning envelope,
 and actual use must be observed. Hard quota enforcement is a separate runtime
@@ -188,7 +197,7 @@ desired task state. `tasks.resolve` returns one stable task intent or `null`.
 It is pure and cheap: it identifies work but does not execute it or mutate
 storage.
 
-Targeted task wakes, Condition observations, recovery, and passive resync do
+Targeted task wakes, Condition observations, recovery, and delivery resync do
 not need app-specific routes. They enqueue stable IDs into the same app
 controller. The queue never carries copied task specs.
 

@@ -44,18 +44,18 @@ describe("evaluator aftermath event contract", () => {
     });
   });
 
-  it("normalizes scoped owner labels to flat message targets", () => {
-    expect(ownerEventTarget("agent:may/runtime")).toBe("may");
-    expect(ownerEventTarget("may/runtime")).toBe("may");
+  it("routes May-owned background findings to a concrete app owner", () => {
+    expect(ownerEventTarget("agent:may/runtime")).toBe("tech-lead");
+    expect(ownerEventTarget("may/runtime", "aks-rp-e2e", "aks-explorer")).toBe("app-ops");
     expect(ownerEventTarget("agent:tech-lead")).toBe("tech-lead");
-    expect(ownerEventTarget("human:runtime-owner")).toBe("may");
+    expect(ownerEventTarget("human:runtime-owner")).toBe("tech-lead");
   });
 
-  it("routes internal app task reconciler owner labels to May", () => {
-    expect(ownerEventTarget("agent:app-task-reconciler")).toBe("may");
-    expect(ownerEventTarget("app-task-reconciler")).toBe("may");
-    expect(ownerEventTarget("agent:project-app-task-reconciler")).toBe("may");
-    expect(ownerEventTarget("project-app-task-reconciler/runtime")).toBe("may");
+  it("routes internal reconciler findings to the affected app owner", () => {
+    expect(ownerEventTarget("agent:app-task-reconciler")).toBe("tech-lead");
+    expect(ownerEventTarget("app-task-reconciler", "gym", "gym")).toBe("gym");
+    expect(ownerEventTarget("agent:project-app-task-reconciler", "aks-rp-e2e", "aks-explorer")).toBe("app-ops");
+    expect(ownerEventTarget("project-app-task-reconciler/runtime", "evaluation", "evaluator")).toBe("evaluator");
   });
 
   it("classifies reviewer runtime failure separately from source quality", () => {
@@ -250,14 +250,11 @@ describe("evaluator aftermath event contract", () => {
       },
     });
 
+    expect(task).toContain("May owns conversation, not background work");
+    expect(task).toContain("Route every finding to the accountable app owner");
+    expect(task).toContain("AKS -> aks-rp-e2e app owner");
     expect(task).toContain(
-      "route platform/runtime or task-reconciler/control-plane findings to may",
-    );
-    expect(task).toContain(
-      "route project-owner or evaluation.app ownership findings to tech-lead",
-    );
-    expect(task).toContain(
-      "never address messages to app-task-reconciler or project-app-task-reconciler",
+      "Never address project work to may, app-task-reconciler, or project-app-task-reconciler",
     );
   });
 });
