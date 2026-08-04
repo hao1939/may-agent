@@ -49,6 +49,13 @@ function emitSkip(ctx: HandlerContext, sessionId: string | null, reason: string,
   });
 }
 
+function hasUnsupportedModelConfigError(error: string | undefined | null): boolean {
+  if (!error) return false;
+  const e = error.toLowerCase();
+  return e.includes("requested model is not supported")
+    || (e.includes("model is not supported") && e.includes("model group"));
+}
+
 function sessionPayload(event: EventEnvelope): Record<string, unknown> {
   const raw = event.data;
   if (raw && typeof raw === "object" && !Array.isArray(raw)) {
@@ -360,6 +367,11 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       const errorClass = ctx.classifyError(error);
       if (errorClass === "infra") action = "requeue";
       else action = "nothing";
+    }
+
+    if (hasUnsupportedModelConfigError(error)) {
+      action = "escalate";
+      source = "unsupported-model-config";
     }
 
     ctx.sdk.log("info", `[recovery] decision=${action} source=${source} session=${sessionId} agent=${agent}`);

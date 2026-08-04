@@ -81,6 +81,37 @@ describe("session-recovery handler", () => {
     }));
   });
 
+  it("escalates unsupported model configuration failures instead of requeueing them", async () => {
+    const ctx = makeCtx(undefined);
+    const handler = create(ctx, {} as any);
+
+    await handler({
+      type: "session.end",
+      source: "runtime",
+      owner: "agent:scout",
+      timestamp: Date.now(),
+      data: {
+        sessionId: "s_unsupported",
+        agent: "scout",
+        status: "error",
+        outcome: "error",
+        error: "400 {\"error\":{\"message\":\"litellm.BadRequestError: Github_copilotException - The requested model is not supported.. Received Model Group=claude-opus-4-6\\nAvailable Model Group Fallbacks=None\"}}",
+        task: "explore github",
+      },
+    });
+
+    expect(ctx.sdk.runWorkflow).toHaveBeenCalledWith(
+      "session-recovery",
+      expect.stringContaining('"action": "escalate"'),
+      { source: "may" },
+    );
+    expect(ctx.sdk.runWorkflow).not.toHaveBeenCalledWith(
+      "session-recovery",
+      expect.stringContaining('"action": "requeue"'),
+      { source: "may" },
+    );
+  });
+
   it("treats canonical timer.tick as the stale-session reap path", async () => {
     const ctx = makeCtx("requeue");
     const db = {
