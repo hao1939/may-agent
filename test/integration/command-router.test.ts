@@ -621,6 +621,39 @@ describe("command router", () => {
     h.router.close();
   });
 
+  it("routes a project ownership gap to the platform owner instead of May", () => {
+    const projectRoot = mkdtempSync(join(tmpdir(), "router-owner-gap-"));
+    const projectPath = "projects/orphan";
+    mkdirp(join(projectRoot, projectPath));
+    mkdirp(join(projectRoot, "projects/may-agent.app"));
+    writeFileSync(
+      join(projectRoot, projectPath, "project.md"),
+      ["---", "id: orphan", "status: active", "---", "", "# Orphan", ""].join("\n"),
+      "utf-8",
+    );
+    writeFileSync(
+      join(projectRoot, "projects/may-agent.app/project.json"),
+      JSON.stringify({ id: "may-agent.app", owner: "tech-lead" }),
+      "utf-8",
+    );
+    const h = createHarness({}, projectRoot);
+
+    h.bus.emit({
+      type: "project.comment.created",
+      source: "test",
+      owner: "agent:may",
+      data: { projectPath, comment: "find the accountable owner", author: "hao" },
+    });
+
+    expect(h.emitted).toContainEqual(
+      expect.objectContaining({
+        type: "project.nudge",
+        owner: "agent:tech-lead",
+      }),
+    );
+    h.router.close();
+  });
+
   it("flips YAML frontmatter status -> active on comment", () => {
     const projectRoot = mkdtempSync(join(tmpdir(), "router-project-yaml-"));
     const projectPath = "projects/demo-yaml";
