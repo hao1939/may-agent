@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { basename, resolve } from "node:path";
 import { Database } from "bun:sqlite";
 import { daemonSocketPath, emitDaemonEvent } from "../packages/control/src/client.js";
 
@@ -31,6 +31,15 @@ export type ApprovalBacklogItem = {
   targetOwner: string;
 };
 
+export type OrphanedApprovalNotification = {
+  approvalId: string;
+  approvalKind: string;
+  agent: string;
+  projectId?: string;
+  taskId?: string;
+  sentAt: number;
+};
+
 export function collectApprovalBacklog(state: TaskState): ApprovalBacklogItem[] {
   const found = new Map<string, ApprovalBacklogItem>();
   for (const [taskId, resource] of Object.entries(state.resources ?? {})) {
@@ -57,6 +66,36 @@ export function collectApprovalBacklog(state: TaskState): ApprovalBacklogItem[] 
 
 function stringValue(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+export function collectActiveApprovalIds(states: TaskState[]): Set<string> {
+  const active = new Set<string>();
+  for (const state of states) {
+    for (const resource of Object.values(state.resources ?? {})) {
+      if (resource.status?.phase !== "waiting") continue;
+      for (const conditionId of resource.status.conditionIds ?? []) {
+        const condition = state.conditions?.[conditionId];
+        if (condition?.spec?.type !== "project.approval.submitted") continue;
+        const approvalId = stringValue(condition.spec.expected?.approvalId);
+        if (approvalId) active.add(approvalId);
+      }
+    }
+  }
+  return active;
+}
+
+export function collectOrphanedApprovalNotifications(
+  notifications: OrphanedApprovalNotification[],
+  activeApprovalIds: Set<string>,
+  resolvedApprovalIds: Set<string>,
+  olderThan: number,
+): OrphanedApprovalNotification[] {
+  return notifications
+    .filter(
+      (item) =>
+        item.sentAt < olderThan && !activeApprovalIds.has(item.approvalId) && !resolvedApprovalIds.has(item.approvalId),
+    )
+    .sort((left, right) => left.sentAt - right.sentAt || left.approvalId.localeCompare(right.approvalId));
 }
 
 function alreadyResolvedApprovalIds(dbPath: string): Set<string> {
@@ -86,31 +125,90 @@ function alreadyResolvedApprovalIds(dbPath: string): Set<string> {
   }
 }
 
+function deliveredApprovalNotifications(dbPath: string): OrphanedApprovalNotification[] {
+  const db = new Database(dbPath, { readonly: true });
+  try {
+    return db
+      .query(
+        `SELECT json_extract(data, '$.approvalId') AS approvalId,
+                coalesce(json_extract(data, '$.approvalKind'), 'approval') AS approvalKind,
+                agent,
+                project_id AS projectId,
+                json_extract(data, '$.taskId') AS taskId,
+                max(sent_at) AS sentAt
+           FROM notification_messages
+          WHERE event_type = 'message.created'
+            AND json_valid(data) = 1
+            AND json_extract(data, '$.approvalId') IS NOT NULL
+          GROUP BY approvalId, approvalKind, agent, projectId, taskId`,
+      )
+      .all() as OrphanedApprovalNotification[];
+  } finally {
+    db.close();
+  }
+}
+
+function readProjectTaskStates(appRoot: string): TaskState[] {
+  const projectsRoot = resolve(appRoot, "projects");
+  return readdirSync(projectsRoot, { withFileTypes: true }).flatMap((entry) => {
+    if (!entry.isDirectory() || !entry.name.endsWith(".app")) return [];
+    const statePath = resolve(projectsRoot, entry.name, ".state/tasks/state.json");
+    if (!existsSync(statePath)) return [];
+    try {
+      return [JSON.parse(readFileSync(statePath, "utf8")) as TaskState];
+    } catch {
+      return [];
+    }
+  });
+}
+
+function projectName(projectId: string | undefined): string | undefined {
+  if (!projectId) return undefined;
+  return basename(projectId).replace(/\.app$/, "");
+}
+
 async function main(): Promise<void> {
   const apply = process.argv.includes("--apply");
   const limitArgument = process.argv.find((value) => value.startsWith("--limit="));
   const limit = limitArgument ? Math.max(1, Number(limitArgument.slice("--limit=".length)) || 1) : Infinity;
   const appRoot = resolve(process.env.APP_ROOT ?? "/app");
   const stateDir = resolve(process.env.STATE_DIR ?? resolve(appRoot, ".state"));
+  const dbPath = resolve(stateDir, "may.db");
   const projectStatePath = resolve(
     process.env.PROJECT_TASK_STATE ?? resolve(appRoot, "projects/aks-rp-e2e.app/.state/tasks/state.json"),
   );
   const taskState = JSON.parse(readFileSync(projectStatePath, "utf8")) as TaskState;
-  const resolved = alreadyResolvedApprovalIds(resolve(stateDir, "may.db"));
+  const resolved = alreadyResolvedApprovalIds(dbPath);
   const allBacklog = collectApprovalBacklog(taskState).filter((item) => !resolved.has(item.approvalId));
+  const activeApprovalIds = collectActiveApprovalIds(readProjectTaskStates(appRoot));
+  const allOrphans = collectOrphanedApprovalNotifications(
+    deliveredApprovalNotifications(dbPath),
+    activeApprovalIds,
+    resolved,
+    Date.now() - 10 * 60_000,
+  );
   const backlog = allBacklog.slice(0, limit);
+  const orphans = allOrphans.slice(0, Math.max(0, limit - backlog.length));
 
   console.log(
     JSON.stringify(
-      { mode: apply ? "apply" : "dry-run", candidates: allBacklog.length, selected: backlog.length },
+      {
+        mode: apply ? "apply" : "dry-run",
+        rerouteCandidates: allBacklog.length,
+        orphanCandidates: allOrphans.length,
+        selected: backlog.length + orphans.length,
+      },
       null,
       2,
     ),
   );
   for (const item of backlog) {
-    console.log(`${item.taskId}\t${item.targetOwner}\t${item.approvalId}`);
+    console.log(`reroute\t${item.taskId}\t${item.targetOwner}\t${item.approvalId}`);
   }
-  if (!apply || backlog.length === 0) return;
+  for (const item of orphans) {
+    console.log(`close-orphan\t${item.taskId ?? "-"}\t${item.agent}\t${item.approvalId}`);
+  }
+  if (!apply || (backlog.length === 0 && orphans.length === 0)) return;
 
   const socket = daemonSocketPath(stateDir, {
     instance: process.env.DAEMON_INSTANCE ?? "background",
@@ -142,6 +240,37 @@ async function main(): Promise<void> {
           adjustments:
             "Handle current app-owned work directly. If a real external authority remains, identify the exact authority owner and decision surface; involve Hao only when that authority or preference is genuinely his.",
           idempotencyKey: `historical-human-wait-reroute:${item.approvalId}`,
+        },
+        { timeoutMs: 10_000 },
+      );
+      if (response.type !== "ok") {
+        throw new Error(response.message ?? response.type);
+      }
+      applied += 1;
+    } catch (error) {
+      failures.push({
+        approvalId: item.approvalId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+  for (const item of orphans) {
+    try {
+      const response = await emitDaemonEvent(
+        socket,
+        "project.approval.resolved",
+        {
+          source: "historical-approval-repair",
+          owner: `agent:${item.agent}`,
+          ...(projectName(item.projectId) ? { project: projectName(item.projectId) } : {}),
+          ...(item.projectId ? { projectId: item.projectId } : {}),
+          approvalKind: item.approvalKind,
+          approvalId: item.approvalId,
+          ...(item.taskId ? { taskId: item.taskId } : {}),
+          resolution: "orphaned",
+          reason:
+            "The delivered approval no longer has a live waiting task. Close the stale human card; the app must create a new durable task and exact approval if authority is still required.",
+          idempotencyKey: `historical-orphaned-approval:${item.approvalId}`,
         },
         { timeoutMs: 10_000 },
       );
