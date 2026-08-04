@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -10,7 +10,10 @@ import { closeDb, getDb } from "../lib/requests.js";
 import { checkEventTraceIntegrity } from "../lib/db/event-traces.js";
 import { storeNotificationMessage } from "../lib/db/notifications.js";
 
-function fixture() {
+function fixture(
+  bridgeDecision?: Record<string, unknown>,
+  beforeAttach?: (context: { root: string; bus: EventBus }) => void,
+) {
   const root = mkdtempSync(join(tmpdir(), "may-command-router-"));
   const bus = new EventBus();
   const writer = new DbWriter(root);
@@ -34,8 +37,18 @@ function fixture() {
       runs.push({ agent, text, opts });
       return `s_new_${runs.length}`;
     },
+    waitFor: async (sessionId: string) => ({
+      sessionId,
+      status: "done",
+      lastAssistantText: "bridge decision",
+      messages: [],
+      duration: "1ms",
+      outputDir: root,
+      structuredResult: bridgeDecision,
+    }),
     cancel: (sessionId: string) => cancelled.push(sessionId),
   };
+  beforeAttach?.({ root, bus });
   const router = attachCommandRouter({
     bus,
     manager: manager as any,
@@ -51,6 +64,224 @@ function fixture() {
 }
 
 describe("command router human intent contract", () => {
+  it("drains a valid open May inbox message when the runtime starts", async () => {
+    let sourceEventId = 0;
+    const { root, router, runs } = fixture(
+      {
+        disposition: "answer",
+        response: "The queued review is complete.",
+      },
+      ({ bus }) => {
+        bus.emit({
+          type: "message.created",
+          source: "human",
+          owner: "agent:may",
+          data: { from: "human", to: "may", content: "ordinary chat stays on the human path" },
+        } as any);
+        const original = bus.emit({
+          type: "message.created",
+          source: "agent:evaluator",
+          owner: "agent:may",
+          data: { from: "evaluator", to: "may", content: "Is the queued review complete?" },
+        } as any);
+        sourceEventId = Number((original as any)[Symbol.for("may-agent.eventRowId")]);
+      },
+    );
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(runs).toHaveLength(1);
+      expect(runs[0]?.opts).toMatchObject({ requestId: `message:${sourceEventId}` });
+      expect(
+        getDb(root)
+          .prepare(
+            `SELECT COUNT(*) AS count FROM events
+             WHERE event_type = 'may.bridge.started'
+               AND json_extract(data, '$.sourceEventId') = ?`,
+          )
+          .get(sourceEventId),
+      ).toEqual({ count: 1 });
+    } finally {
+      router.close();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("reattaches a persisted bridge decision after restart", async () => {
+    let sourceEventId = 0;
+    const { root, router, runs } = fixture(
+      {
+        disposition: "answer",
+        response: "The recovered decision closed the queued review.",
+      },
+      ({ root, bus }) => {
+        const original = bus.emit({
+          type: "message.created",
+          source: "agent:evaluator",
+          owner: "agent:may",
+          data: { from: "evaluator", to: "may", content: "Recover this decision after restart." },
+        } as any);
+        sourceEventId = Number((original as any)[Symbol.for("may-agent.eventRowId")]);
+        getDb(root).run(
+          `INSERT INTO sessions (sessionId, agent, task, status, kind, source, startedAt)
+           VALUES (?, 'may', 'persisted bridge decision', 'running', 'job', 'may-conversation-bridge', ?)`,
+          ["s_existing_bridge", Date.now()],
+        );
+        bus.emit({
+          type: "may.bridge.started",
+          source: "handler:may-conversation-bridge",
+          owner: "agent:may",
+          data: { sourceEventId, sessionId: "s_existing_bridge", attempt: 1 },
+        } as any);
+      },
+    );
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(runs).toHaveLength(0);
+      expect(
+        getDb(root).prepare("SELECT status FROM event_pair_runs WHERE open_event_id = ?").get(sourceEventId),
+      ).toEqual({ status: "closed" });
+    } finally {
+      router.close();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps May conversational and routes durable work to one app owner", async () => {
+    const { root, bus, router, runs } = fixture({
+      disposition: "route",
+      response: "I understood the runtime repair request and routed it to the AKS app owner.",
+      targetProject: "alpha-project",
+      instruction: "Repair the recovered-owner interruption and prove a clean terminal rerun.",
+    });
+    mkdirSync(join(root, "projects/alpha-project.app"), { recursive: true });
+    writeFileSync(join(root, "projects/alpha-project.app/app.ts"), "export default {};\n");
+    try {
+      const original = bus.emit({
+        type: "message.created",
+        source: "agent:evaluator",
+        owner: "agent:may",
+        data: {
+          from: "evaluator",
+          to: "may",
+          content: "Please repair the AKS recovered-owner interruption path.",
+          intent: "review-request",
+          priority: "P1",
+        },
+      } as any);
+      const sourceEventId = Number((original as any)[Symbol.for("may-agent.eventRowId")]);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(runs).toHaveLength(1);
+      expect(runs[0]).toMatchObject({
+        agent: "may",
+        opts: {
+          kind: "job",
+          source: "may-conversation-bridge",
+          requestId: `message:${sourceEventId}`,
+          requireFinish: true,
+          toolPolicy: "readonly",
+        },
+      });
+      expect(runs[0]?.text).toContain("MAY OWNS THE CONVERSATION; APPS OWN THE WORK");
+
+      const db = getDb(root);
+      const ownerRequest = db
+        .prepare(
+          `SELECT data FROM events
+           WHERE event_type = 'project.owner.requested'
+             AND json_extract(data, '$.inputEventId') = ?`,
+        )
+        .get(sourceEventId) as { data: string };
+      expect(JSON.parse(ownerRequest.data)).toMatchObject({
+        project: "alpha-project",
+        inputEventId: sourceEventId,
+        inputEventType: "message.created",
+        instruction: "Repair the recovered-owner interruption and prove a clean terminal rerun.",
+      });
+      expect(
+        db.prepare("SELECT status FROM event_pair_runs WHERE open_event_id = ?").get(sourceEventId),
+      ).toEqual({ status: "open" });
+      expect(
+        db
+          .prepare(
+            `SELECT COUNT(*) AS count FROM events
+             WHERE event_type = 'message.created'
+               AND json_extract(data, '$.bridgeAcknowledgementFor') = ?`,
+          )
+          .get(sourceEventId),
+      ).toEqual({ count: 1 });
+
+      bus.emit({
+        type: "message.resolved",
+        source: "project-app:alpha-project",
+        owner: "agent:app-ops",
+        data: {
+          openEventId: sourceEventId,
+          openEventType: "message.created",
+          outcome: "fulfilled",
+          summary: "The repair passed its terminal rerun.",
+          taskRefs: [],
+        },
+      } as any);
+
+      expect(
+        db
+          .prepare(
+            `SELECT COUNT(*) AS count FROM events
+             WHERE event_type = 'message.created'
+               AND json_extract(data, '$.bridgeCompletionFor') = ?`,
+          )
+          .get(sourceEventId),
+      ).toEqual({ count: 1 });
+      expect(
+        db.prepare("SELECT status FROM event_pair_runs WHERE open_event_id = ?").get(sourceEventId),
+      ).toEqual({ status: "closed" });
+    } finally {
+      router.close();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("lets May answer directly without creating background app work", async () => {
+    const { root, bus, router } = fixture({
+      disposition: "answer",
+      response: "The review is already complete; no app work remains.",
+    });
+    try {
+      const original = bus.emit({
+        type: "message.created",
+        source: "agent:evaluator",
+        owner: "agent:may",
+        data: { from: "evaluator", to: "may", content: "Is the review complete?" },
+      } as any);
+      const sourceEventId = Number((original as any)[Symbol.for("may-agent.eventRowId")]);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      const db = getDb(root);
+
+      expect(
+        db
+          .prepare(
+            `SELECT COUNT(*) AS count FROM events
+             WHERE event_type = 'project.owner.requested'
+               AND json_extract(data, '$.inputEventId') = ?`,
+          )
+          .get(sourceEventId),
+      ).toEqual({ count: 0 });
+      expect(
+        db.prepare("SELECT status FROM event_pair_runs WHERE open_event_id = ?").get(sourceEventId),
+      ).toEqual({ status: "closed" });
+    } finally {
+      router.close();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("returns an exact Telegram approval identity and artifact fingerprint", () => {
     const { root, bus, router } = fixture();
     const observed: Array<Record<string, unknown>> = [];
