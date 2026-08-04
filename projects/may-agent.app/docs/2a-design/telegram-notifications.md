@@ -861,85 +861,10 @@ dedupKey. If editing is unavailable or fails, send a collapsed follow-up.
 
 ## Message Lifecycle Reconciliation
 
-Strengthen the existing message path; do not create a second message task
-system or an approval-only controller. The source task, escalation, owner
-inbox item, or conversation remains the work authority. Message lifecycle is a
-derived projection over its existing events, delivery records, trace, and
-expected closure.
-
-Every inbound and outbound message has one stable semantic identity and is
-tracked toward one target: properly handled and closed as `resolved` with a
-typed outcome and closure evidence.
-
-```text
-source event
-  -> accepted by May, an owner, or a channel
-  -> admission disposition when proactive
-  -> delivery or durable non-deliver action
-  -> expected semantic closure
-  -> resolved { fulfilled | rejected | superseded | expired | failed }
-```
-
-Admission and transfer states are never terminal. `route` means another owner
-accepted responsibility; the message remains open through that owner's result
-and May's required verification. `clarify-producer` remains open until the
-producer supplies the missing facts and the candidate is reviewed again.
-`deliver` remains open until delivery-only meaning is proven or the requested
-human input is applied and verified. `handle` remains open until its claimed
-action passes the declared closure check. `reject` resolves only after the
-source request is durably rejected with the reason and no hidden work remains.
-
-Use existing context fields and conventions instead of per-message
-configuration:
-
-- A direct reply or informational digest completes on confirmed channel
-  delivery and records the resolved delivery-only outcome.
-- An inbound human request completes when May answers and fulfills it, or when
-  its long-running source task produces a verified result. Durable owner
-  acceptance plus a truthful tracking reply acknowledges the request but does
-  not close it.
-- An action request must link to its source task or escalation and declare the
-  expected closure event. Delivery alone does not complete it.
-- A non-deliver admission result completes only after its intended outcome is
-  verified. Owner or producer acceptance records progress and the next wake-up;
-  it never substitutes for final closure proof.
-- A proactive action request without live backing work returns to the producer
-  and never reaches the human. Informational messages do not invent a task.
-
-Before calling Telegram, reserve the stable message key. Confirm delivery with
-the returned Telegram message ids. A crash or partial multi-part send remains
-`delivery-uncertain`; recovery never blindly sends the same proactive message
-again. The existing event-pair orphan scan periodically reconciles uncertain,
-unfulfilled, expired, and source-less messages as a safety net. Normal progress
-is event-driven by admission, delivery, reply, task, owner-inbox, and closure
-events.
-
-When an open message makes no progress, resync wakes its accountable owner and
-May for a bounded check-in or steering action. It does not close the message
-merely because it was routed, acknowledged, retried, or old. Expiry and failure
-are resolved outcomes only when the message's declared policy permits them and
-the final reason and evidence are recorded.
-
-`may-agent.app` observes lifecycle breach metrics and owns repeated platform
-failures. It does not schedule or decide each message. Apps retain domain
-authority, May retains intention and attention judgment, and the shared runtime
-owns correlation, delivery bookkeeping, wake-up, and recovery.
-
-Approval notifications are one conventional specialization:
-
-- One approval id produces at most one delivered human message, including
-  across daemon restarts.
-- `project.approval.submitted` or `project.approval.resolved` closes that
-  approval. A task-level terminal decision also closes older regenerated
-  fingerprints for the same task generation.
-- A producer that later classifies a proposal as covered, runtime-only,
-  invalid, weak, or superseded emits `project.approval.resolved`; it never
-  leaves the old Telegram card looking open.
-- A delivered approval without a live waiting task is orphaned, not pending.
-  Close it after a short race window. If authority is still needed, the app
-  creates a new durable task and exact approval request.
-- Human inbox views derive openness from this durable task/approval truth, not
-  merely from the absence of a reply to one notification row.
+The shared open-to-resolved contract, app-owner reconciliation, periodic
+recovery, and approval specialization live in
+[message-lifecycle.md](message-lifecycle.md). Telegram remains a channel
+adapter; it never becomes the work authority.
 
 ## Status And Control Commands
 
@@ -961,22 +886,8 @@ spawn a general chat session unless the command asks for analysis.
 
 ## Convenience Features
 
-High-value refinements:
-
-- **Reply examples**: every actionable notification includes the exact replies
-  it understands.
-- **Human acknowledgements**: confirmations describe the outcome, not internal
-  event names.
-- **Project links**: include web links for task review, event trace, or feature
-  page when relevant.
-- **Digest mode**: grouped summary for repeated low-priority events.
-- **Stale reply detection**: avoid applying old approvals or steering to
-  terminal work.
-- **Context health metric**: track percentage of Telegram notifications with
-  `conversationId` and useful `originalIssue`.
-- **Reply-actionable metric**: track replies that reach May with conversation
-  context and produce a delivery/result confirmation without needing a
-  clarification turn.
+Channel refinements and their lifecycle constraints live in
+[message-lifecycle.md](message-lifecycle.md#channel-conveniences).
 
 ## Non-Goals
 

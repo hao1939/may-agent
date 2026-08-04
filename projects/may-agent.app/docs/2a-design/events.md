@@ -2,8 +2,8 @@
 
 **Design status:** Accepted.
 **Implementation status:** Implemented for canonical envelopes, delivery
-acceptance, owner inbox routing, typed follow-up review, pair tracking, trace
-closure, and bounded retention.
+acceptance, owner inbox routing, app-owner open-to-resolved follow-through,
+pair tracking, trace closure, and bounded retention.
 
 ## Purpose
 
@@ -150,19 +150,32 @@ consumer when the event represents actionable work. Explicit work candidates
 include messages, escalations, metric alerts, owner requests, feedback, and
 comments. An otherwise unknown owner-addressed request also remains visible
 rather than being silently discarded. Inbox acceptance means the item is
-visible to the owner. Owner review later emits a typed follow-up event and
-closes the inbox pair.
+visible to the owner; it is progress, never completion.
 
-Typical follow-ups include:
+An unhandled `message.created` whose `to` and `owner` both name an app owner
+wakes that app's stable owner task through `project.owner.requested`. The task
+trigger retains the original message event ID and content. A specialized app
+message selector keeps precedence, so infrastructure does not duplicate
+domain-specific handling.
 
-- `message.reviewed`;
+The owner task may answer directly or delegate through task children. Waiting,
+attention, task creation, task update, and owner acceptance emit progress while
+the inbox pair remains open. Only verified convergence with no live delegated
+work emits `message.resolved` with a closure link to the original message.
+The periodic event-pair pass re-wakes any open or orphaned owner message; age
+alone never closes unfinished owner work.
+
+Terminal follow-ups include:
+
+- `message.resolved`;
 - `project.owner.reviewed`;
 - a project/task/problem event;
 - `escalation.resolved` or `escalation.dismissed`;
 - an explicit evidence-backed no-op event.
 
-Stale inbox work becomes an orphaned owner-inbox pair. Event rows have no
-generic mutable review status; use delivery metadata and typed pair state.
+Stale inbox work becomes an orphaned owner-inbox pair. An orphan is a recovery
+signal, not a terminal state. Event rows have no generic mutable review status;
+use delivery metadata and typed pair state.
 
 ## Typed Response And Pair Tracking
 

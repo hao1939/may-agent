@@ -420,8 +420,9 @@ change generation.
 Triggers, timestamps, attempt summaries, Condition observations, and read
 projections never change task generation.
 
-An unresolved explicit owner input (`project.owner.requested` or
-`project.comment.created`) remains the primary persisted trigger until the
+An unresolved explicit owner input (`project.owner.requested`,
+`project.comment.created`, or an app-owner `message.created` carried by the
+owner request) remains the primary persisted trigger until the
 reconciler emits its correlated owner result. Routine watcher, metric, and
 pipeline events may make the same task dirty, but they must not replace that
 owner input payload before the owner has processed it. A later owner input may
@@ -436,10 +437,11 @@ Condition to become true or an explicit `overrideWait`; accepting an owner
 input and then suppressing its task trigger is invalid delivery.
 
 Passive resync schedules a task carrying an unresolved direct
-`project.comment.created` trigger before autonomous priority backlog. This is a
-delivery guarantee for explicit project direction, not a change to the task's
-declared priority or a code-side project decision. Once the owner emits the
-correlated result, ordinary task priority ordering applies again.
+`project.comment.created` or app-owner message trigger before autonomous
+priority backlog. This is a delivery guarantee for explicit direction, not a
+change to the task's declared priority or a code-side project decision. Once
+the owner emits the correlated terminal result, ordinary task priority ordering
+applies again.
 
 More generally, passive resync schedules runnable tasks with a persisted event
 trigger before untriggered desired work. The trigger is durable evidence that

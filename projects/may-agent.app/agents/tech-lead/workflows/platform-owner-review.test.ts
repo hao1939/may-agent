@@ -166,12 +166,14 @@ describe("platform-owner-review", () => {
     expect(observed.prompt).toContain(
       "Return task-tree changes only as typed actions in finish.",
     );
+    expect(observed.prompt).toContain(
+      "Routing or task creation is progress, not message completion.",
+    );
     expect(existsSync(join(appDir, ".state", "review-packet.json"))).toBe(true);
     expect(emitted).not.toContainEqual(
       expect.objectContaining({ type: "project.owner.reviewed" }),
     );
     expect(reviewed).toEqual([
-      { ids: [101], owner: "tech-lead" },
       { ids: [102], owner: "tech-lead" },
       { ids: [103], owner: "tech-lead" },
     ]);

@@ -67,6 +67,7 @@ archive.
 | ---------------------------------------------------------------- | ------------------------------------------------------- |
 | [human-control-surfaces.md](2a-design/human-control-surfaces.md) | Shared CLI, Telegram, Web, and console intent contract. |
 | [http-boundary.md](2a-design/http-boundary.md)                   | HTTP adapter boundary.                                  |
+| [message-lifecycle.md](2a-design/message-lifecycle.md)           | Open-to-resolved message ownership and recovery.        |
 | [telegram-notifications.md](2a-design/telegram-notifications.md) | Telegram delivery and interaction contract.             |
 | [webui.md](2a-design/webui.md)                                   | Web UI surfaces and steering.                           |
 | [may-console.md](2a-design/may-console.md)                       | Terminal REPL over the daemon socket.                   |

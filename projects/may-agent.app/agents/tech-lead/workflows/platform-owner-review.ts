@@ -147,17 +147,10 @@ function reviewInboxEvents(
 function acknowledgeReviewPacket(
   ctx: WorkflowContext,
   input: {
-    messageIds: number[];
     escalationIds: number[];
     signalEventIds: number[];
   },
 ): void {
-  try {
-    reviewInboxEvents(ctx, input.messageIds, ownerAgent);
-  } catch {
-    /* best-effort: a later review can acknowledge these events */
-  }
-
   try {
     if (input.escalationIds.length > 0) {
       reviewInboxEvents(ctx, input.escalationIds, ownerAgent);
@@ -315,7 +308,6 @@ function buildReviewPacket(
       owner_sessions: compactRows(ownerSessions, 10),
       active_owner_sessions: compactRows(activeOwnerSessions, 10),
     },
-    consumedMessageIds: inboxIds("message.created"),
     consumedEscalationIds: inboxIds("escalation.created"),
     consumedSignalEventIds: inboxIds(reviewedSignalTypes),
   };
@@ -419,22 +411,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const projectDir =
     ctx.projectDir ?? field(ctx.task, "project") ?? "/app/projects/may-agent";
 
-  // Retire stale owner-inbox message work older than 24h on each review cycle.
-  try {
-    const STALE_MESSAGE_AGE_MS = 24 * 60 * 60_000; // 24 hours
-    const expired = ctx.commands.expireStaleMessages(STALE_MESSAGE_AGE_MS);
-    if (expired > 0) {
-      ctx.emit({
-        type: "message.lifecycle",
-        action: "expire_stale",
-        expired,
-        olderThanMs: STALE_MESSAGE_AGE_MS,
-      });
-    }
-  } catch {
-    /* best-effort: don't block review if expiry fails */
-  }
-
   // Retire stale owner-inbox signal work older than 24h. These signals are
   // non-actionable historical noise once their review window passes.
   try {
@@ -457,7 +433,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   const {
     packet,
-    consumedMessageIds,
     consumedEscalationIds,
     consumedSignalEventIds,
   } = buildReviewPacket(ctx, appDir);
@@ -506,6 +481,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     "- If you edit files, run focused checks and cite them before finish.",
     "- The generic reconciler is the sole task-tree mutation authority. Never edit task-tree JSON, call task-tree mutation commands, or write task state through the database.",
     "- Return task-tree changes only as typed actions in finish. Existing-task actions require the exact revision shown in the tree.",
+    "- For an unfinished owner message, create required delegated work as a direct child of runtime/platform-owner-review and return waiting. Routing or task creation is progress, not message completion.",
+    "- Return converged for an owner message only when its intended result is verified and no required delegated child remains live.",
     "- Never mutate or create task ids beginning with runtime/; those standing responsibilities belong to the reconciler.",
     "- You may edit May-agent-owned code and docs when that is the smallest useful domain step. Cite the resulting files and checks as evidence.",
     "- Use converged after the current bounded actions are declared, and waiting only for a named external fact with an exact Condition that an observer can emit.",
@@ -532,10 +509,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   const ownerResult = result.structuredResult as unknown as OwnerResult;
-  // Acknowledgement is the commit point for the review packet. Keep every
-  // inbox row open when the owner session fails so recovery can replay it.
+  // Signals retain the legacy review acknowledgement. Owner messages stay
+  // open until the task reconciler verifies their intended result.
   acknowledgeReviewPacket(ctx, {
-    messageIds: consumedMessageIds,
     escalationIds: consumedEscalationIds,
     signalEventIds: consumedSignalEventIds,
   });
