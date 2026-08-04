@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { collectApprovalBacklog } from "./reconcile-human-approval-backlog.js";
+import {
+  collectActiveApprovalIds,
+  collectApprovalBacklog,
+  collectOrphanedApprovalNotifications,
+} from "./reconcile-human-approval-backlog.js";
 
 describe("historical human approval reconciliation", () => {
   test("collects each live approval once and ignores non-waiting history", () => {
@@ -47,5 +51,38 @@ describe("historical human approval reconciliation", () => {
         targetOwner: "app-ops",
       }),
     ]);
+  });
+
+  test("closes old delivered approvals only when no live wait or decision remains", () => {
+    const state = {
+      resources: {
+        live: {
+          status: { phase: "waiting", conditionIds: ["live-approval"] },
+        },
+      },
+      conditions: {
+        "live-approval": {
+          spec: {
+            type: "project.approval.submitted",
+            expected: { approvalId: "approval-live" },
+          },
+        },
+      },
+    };
+    const notifications = [
+      { approvalId: "approval-orphan", approvalKind: "review", agent: "gym", sentAt: 100 },
+      { approvalId: "approval-live", approvalKind: "review", agent: "gym", sentAt: 100 },
+      { approvalId: "approval-resolved", approvalKind: "review", agent: "gym", sentAt: 100 },
+      { approvalId: "approval-recent", approvalKind: "review", agent: "gym", sentAt: 900 },
+    ];
+
+    expect(
+      collectOrphanedApprovalNotifications(
+        notifications,
+        collectActiveApprovalIds([state]),
+        new Set(["approval-resolved"]),
+        500,
+      ),
+    ).toEqual([expect.objectContaining({ approvalId: "approval-orphan" })]);
   });
 });
