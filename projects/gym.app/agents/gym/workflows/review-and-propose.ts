@@ -470,6 +470,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     dispositionReason: "No semantic novelty decision was available.",
   };
 
+  const approval = reviewApproval({
+    requestKey,
+    taskId,
+    generation,
+    reviewPath,
+  });
+
   if (decision.disposition !== "human-review") {
     ctx.emit({
       type: "gym.review.filtered",
@@ -480,6 +487,19 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       decisionPath,
       disposition: decision.disposition,
       matchedCoverage: decision.matchedCoverage,
+      reason: decision.dispositionReason,
+    });
+    ctx.emit({
+      type: "project.approval.resolved",
+      project: "gym",
+      approvalKind: "review-proposal",
+      approvalId: approval.approvalId,
+      waitId: approval.waitId,
+      taskId,
+      taskGeneration: generation,
+      artifactFingerprint: approval.artifactFingerprint,
+      resolution: "superseded",
+      disposition: decision.disposition,
       reason: decision.dispositionReason,
     });
     const matched = decision.matchedCoverage.length
@@ -494,12 +514,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     });
   }
 
-  const approval = reviewApproval({
-    requestKey,
-    taskId,
-    generation,
-    reviewPath,
-  });
   const humanDecision = approvalDecision(details, approval, taskId, generation);
 
   if (humanDecision === "approve") {

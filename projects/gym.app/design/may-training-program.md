@@ -289,6 +289,12 @@ verified agent candidate or concrete benchmark/scorer fix
   -> the exact Condition wakes improve/may
 ```
 
+For incident-derived review proposals, Gym completes semantic novelty
+classification before sending the human message. Covered, runtime-only,
+invalid, weak, or superseded proposals converge without a human decision and
+emit `project.approval.resolved` so any older delivered fingerprint closes.
+The stable approval id is delivered at most once.
+
 The task returns `waiting` while Hao decides. Its Condition matches the exact
 approval id, task generation, and artifact fingerprint. A reply to an older
 Telegram message therefore cannot approve a newer candidate.

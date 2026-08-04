@@ -859,6 +859,19 @@ Telegram supports editing messages. When practical, store the message ID and
 edit the existing notification instead of sending a new one for the same
 dedupKey. If editing is unavailable or fails, send a collapsed follow-up.
 
+Approval notifications use a stricter convention:
+
+- One approval id produces at most one delivered human message, including
+  across daemon restarts.
+- `project.approval.submitted` or `project.approval.resolved` closes that
+  approval. A task-level terminal decision also closes older regenerated
+  fingerprints for the same task generation.
+- A producer that later classifies a proposal as covered, runtime-only,
+  invalid, weak, or superseded emits `project.approval.resolved`; it never
+  leaves the old Telegram card looking open.
+- Human inbox views derive openness from this durable task/approval truth, not
+  merely from the absence of a reply to one notification row.
+
 ## Status And Control Commands
 
 Natural language should remain primary. Slash commands are for fast mobile

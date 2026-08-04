@@ -111,6 +111,13 @@ test("semantic novelty gate files covered evidence without asking the human", as
         disposition: "covered",
         matchedCoverage: ["may-alignment/durable-submission-path"],
       }),
+      expect.objectContaining({
+        type: "project.approval.resolved",
+        taskId: "runtime/review-proposal/incident-42",
+        taskGeneration: 3,
+        resolution: "superseded",
+        disposition: "covered",
+      }),
     ]);
     expect(dispatched).toEqual([]);
     expect(
