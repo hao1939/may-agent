@@ -888,4 +888,91 @@ describe("Telegram outbound turn ownership", () => {
     expect(sent[0]!.text).toBe("Approve proposal Y?");
     outbound.close();
   });
+
+  test("suppresses an approval already resolved in durable task truth", async () => {
+    const bus = new EventBus();
+    const sent: string[] = [];
+    let reviews = 0;
+    const outbound = attachTelegramOutbound({
+      bus,
+      interfaceAgent: "may",
+      projectRoot: "/app",
+      pendingChatId: "human-chat",
+      getSessionId: () => "shared-chat",
+      sendToUser: (text) => sent.push(text),
+      isApprovalResolved: ({ taskId }) => taskId === "review/closed",
+      reviewProactive: async () => {
+        reviews += 1;
+        return {
+          status: "completed",
+          disposition: "deliver",
+          understoodIntent: "Ask for approval.",
+          reason: "Human authority.",
+          nextAction: "Wait.",
+          evidence: ["Test."],
+          deliveredMessage: "Approve?",
+        };
+      },
+    });
+
+    bus.emit({
+      type: "message.created",
+      source: "gym",
+      owner: "human:operator",
+      data: {
+        to: "human",
+        from: "gym",
+        content: "Approve stale proposal?",
+        approvalId: "old-fingerprint",
+        taskId: "review/closed",
+      },
+    } as any);
+    await outbound.drain();
+
+    expect(sent).toEqual([]);
+    expect(reviews).toBe(0);
+    outbound.close();
+  });
+
+  test("suppresses duplicate approval keys before and after delivery", async () => {
+    const bus = new EventBus();
+    const sent: string[] = [];
+    const outbound = attachTelegramOutbound({
+      bus,
+      interfaceAgent: "may",
+      projectRoot: "/app",
+      pendingChatId: "human-chat",
+      getSessionId: () => "shared-chat",
+      sendToUser: (text) => sent.push(text),
+      hasDeliveredNotificationKey: (key) => key === "already-delivered",
+      reviewProactive: async (candidate) => ({
+        status: "completed",
+        disposition: "deliver",
+        understoodIntent: "Ask once.",
+        reason: "Human authority.",
+        nextAction: "Wait.",
+        evidence: ["Test."],
+        deliveredMessage: candidate.content,
+      }),
+    });
+
+    for (const key of ["queued-once", "queued-once", "already-delivered"]) {
+      bus.emit({
+        type: "message.created",
+        source: "gym",
+        owner: "human:operator",
+        data: {
+          to: "human",
+          from: "gym",
+          content: `Approval ${key}`,
+          approvalId: key,
+          dedupKey: key,
+        },
+      } as any);
+    }
+    await outbound.drain();
+
+    expect(sent).toEqual(["Approval queued-once"]);
+    outbound.close();
+  });
 });

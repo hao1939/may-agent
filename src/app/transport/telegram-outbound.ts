@@ -32,6 +32,13 @@ export interface TelegramOutboundOptions {
   getSessionReplyContext?: (sessionId: string) => TelegramSessionReplyContext | null | undefined;
   sendToUser: (text: string, context?: TelegramOutboundContext) => void;
   reviewProactive?: (candidate: HumanAttentionCandidate) => Promise<HumanAttentionReview>;
+  hasDeliveredNotificationKey?: (key: string) => boolean;
+  isApprovalResolved?: (identity: {
+    approvalId?: string;
+    waitId?: string;
+    taskId?: string;
+    taskGeneration?: number;
+  }) => boolean;
 }
 
 export interface TelegramOutbound {
@@ -154,6 +161,7 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
   let proactiveAdmissionQueue = Promise.resolve();
   /** Track resolved approval decisions so stale approval prompts can be suppressed. */
   const resolvedApprovalKeys = new Set<string>();
+  const queuedNotificationKeys = new Set<string>();
   const maxRememberedApprovalResolutions = 1_024;
 
   function rememberApprovalResolution(key: string): void {
@@ -259,9 +267,25 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
         : typeof (d.approval as any)?.waitId === "string"
           ? (d.approval as any).waitId
           : undefined;
+    const taskId =
+      typeof d.taskId === "string"
+        ? d.taskId
+        : typeof (d.approval as any)?.taskId === "string"
+          ? (d.approval as any).taskId
+          : undefined;
+    const taskGeneration =
+      typeof d.taskGeneration === "number"
+        ? d.taskGeneration
+        : typeof (d.approval as any)?.taskGeneration === "number"
+          ? (d.approval as any).taskGeneration
+          : undefined;
     if (approvalId && resolvedApprovalKeys.has(approvalId)) return true;
     if (waitId && resolvedApprovalKeys.has(`wait:${waitId}`)) return true;
-    return false;
+    try {
+      return Boolean(opts.isApprovalResolved?.({ approvalId, waitId, taskId, taskGeneration }));
+    } catch {
+      return false;
+    }
   }
 
   function admitProactive(candidate: HumanAttentionCandidate, deliver: (reviewedText: string) => void): void {
@@ -299,7 +323,7 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
     const sessionId = typeof session.sessionId === "string" ? session.sessionId : undefined;
 
     // Track resolved approvals so stale approval prompts are suppressed.
-    if (event.type === "project.approval.submitted") {
+    if (event.type === "project.approval.submitted" || event.type === "project.approval.resolved") {
       const d = messageData(event);
       if (typeof d.approvalId === "string") rememberApprovalResolution(d.approvalId);
       if (typeof d.waitId === "string") rememberApprovalResolution(`wait:${d.waitId}`);
@@ -585,6 +609,50 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
           projectId: projectId ?? (typeof message.projectId === "string" ? message.projectId : undefined),
           data,
         };
+        const stableNotificationKey =
+          nonEmptyString(data.dedupKey) ??
+          nonEmptyString(data.approvalId) ??
+          nonEmptyString((data.approval as Record<string, unknown> | undefined)?.approvalId);
+        if (candidateApprovalResolved(candidate)) {
+          bus.emit({
+            type: "human.attention.reviewed",
+            source: "telegram-outbound",
+            owner: "agent:may",
+            data: {
+              sourceEventId,
+              mode: "enforce",
+              admitted: false,
+              delivered: false,
+              attempts: 0,
+              disposition: "handle",
+              reason: "approval-already-resolved",
+            },
+          } as any);
+          return;
+        }
+        if (
+          stableNotificationKey &&
+          (queuedNotificationKeys.has(stableNotificationKey) ||
+            opts.hasDeliveredNotificationKey?.(stableNotificationKey))
+        ) {
+          bus.emit({
+            type: "human.attention.reviewed",
+            source: "telegram-outbound",
+            owner: "agent:may",
+            data: {
+              sourceEventId,
+              mode: "enforce",
+              admitted: false,
+              delivered: false,
+              attempts: 0,
+              disposition: "handle",
+              reason: "duplicate-notification-key",
+              dedupKey: stableNotificationKey,
+            },
+          } as any);
+          return;
+        }
+        if (stableNotificationKey) queuedNotificationKeys.add(stableNotificationKey);
         admitProactive(candidate, (reviewedText) => {
           sendToUser(reviewedText, {
             eventType: "message.created",
