@@ -133,7 +133,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function triggerOverridesWait(trigger: Record<string, unknown> | undefined): boolean {
   if (!trigger) return false;
-  if (trigger.type === "project.comment.created" || trigger.type === "project.owner.requested") return true;
+  if (
+    trigger.type === "project.comment.created" ||
+    trigger.type === "project.owner.requested" ||
+    trigger.type === "message.created"
+  )
+    return true;
   const data = isRecord(trigger.data) ? trigger.data : {};
   return trigger.overrideWait === true || data.overrideWait === true;
 }
@@ -1163,9 +1168,12 @@ function isRunnableOnPassiveResync(tree: TaskTree, resource: ProjectAppTaskResou
 }
 
 function triggerHasDirectProjectComment(event: Record<string, unknown> | undefined): boolean {
-  if (event?.type === "project.comment.created") return true;
+  if (event?.type === "project.comment.created" || event?.type === "message.created") return true;
   return Array.isArray(event?.ownerIntentRefs)
-    ? event.ownerIntentRefs.some((value) => isRecord(value) && value.eventType === "project.comment.created")
+    ? event.ownerIntentRefs.some(
+        (value) =>
+          isRecord(value) && (value.eventType === "project.comment.created" || value.eventType === "message.created"),
+      )
     : false;
 }
 
@@ -2449,12 +2457,19 @@ function liveChildTaskIds(tree: TaskTree, task: TaskNode): string[] {
 
 function triggerCarriesOwnerIntent(event: Record<string, unknown> | undefined): boolean {
   if (!event) return false;
-  if (event.type === "project.comment.created" || event.type === "project.owner.requested") return true;
+  if (
+    event.type === "project.comment.created" ||
+    event.type === "project.owner.requested" ||
+    event.type === "message.created"
+  )
+    return true;
   return Array.isArray(event.ownerIntentRefs)
     ? event.ownerIntentRefs.some(
         (value) =>
           isRecord(value) &&
-          (value.eventType === "project.comment.created" || value.eventType === "project.owner.requested"),
+          (value.eventType === "project.comment.created" ||
+            value.eventType === "project.owner.requested" ||
+            value.eventType === "message.created"),
       )
     : false;
 }

@@ -476,6 +476,18 @@ export type SystemEvent =
       };
     }
   | {
+      type: "owner.inbox.accepted";
+      source: "event-bus" | "handler:event-pair-orphan-gc";
+      owner: string;
+      data: {
+        sourceEventId: number;
+        sourceEventType: string;
+        reason: "delivery" | "periodic-resync";
+        project?: string;
+        input?: Record<string, unknown>;
+      };
+    }
+  | {
       type: "cli.task.requested";
       source: string;
       owner: string;
@@ -1088,6 +1100,10 @@ const EVIDENCE_PROJECTION_EVENT_TYPES = new Set([
   "metric.feedback.routed",
   "metric.alert_judged",
   "project.knowledge.maintained",
+  "owner.inbox.accepted",
+  "project.owner.progressed",
+  "message.progressed",
+  "message.resolved",
 ]);
 
 function evidenceProjectionFallback(event: AgentEvent): DeliveryResult | undefined {
@@ -1125,6 +1141,7 @@ function isPairTrackedEvent(eventType: string): boolean {
     "cli.task.failed",
     "cli.task.orphaned",
     "message.reviewed",
+    "message.resolved",
     "message.expired",
     "project.feedback.reviewed",
     "owner.inbox.reviewed",
@@ -1144,6 +1161,7 @@ function hasPairCorrelationKey(event: AgentEvent): boolean {
   if (event.type.startsWith("project.task.")) return hasKey(data.taskId);
   if (
     eventType === "message.reviewed" ||
+    eventType === "message.resolved" ||
     eventType === "message.expired" ||
     eventType === "project.feedback.reviewed" ||
     eventType === "project.owner.reviewed" ||
