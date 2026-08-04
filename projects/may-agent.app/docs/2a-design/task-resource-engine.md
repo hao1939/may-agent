@@ -495,11 +495,12 @@ tracker matches the event and, in one state transaction:
 The worker later claims the current task spec and that exact trigger together.
 A queue hint alone is never treated as the observation.
 
-Events whose type ends in `.state` are level observations. After a task
-consumes one and establishes a new wait, the tracker rejects the older event
-for that new Condition. A watcher must publish the current state again when it
-changes or on its next bounded observation cycle. Immutable completion events
-such as `session.end` remain facts and do not use this freshness rule.
+Events whose type ends in `.state`, `.check`, `.pulse`, or `-pulse` are level
+observations. After a task consumes one and establishes a new wait, the tracker
+rejects the older event for that new Condition. A watcher must publish the
+current level again when it changes or on its next bounded observation cycle.
+Immutable completion events such as `session.end` remain facts and do not use
+this freshness rule.
 
 Semantic observations carry the provider's observation time as
 `data.observedAt` and, when the provider exposes one, a monotonic
