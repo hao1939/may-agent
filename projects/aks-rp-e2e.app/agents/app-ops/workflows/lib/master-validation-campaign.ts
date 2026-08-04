@@ -89,10 +89,7 @@ export function campaignFixFromPullRequest(
   const sourceCommit = text(pullRequest.lastMergeSourceCommit?.commitId);
   const targetCommit = text(pullRequest.lastMergeTargetCommit?.commitId);
   const title = text(pullRequest.title);
-  const conventionalMasterValidationFix =
-    sourceBranch.includes("master-validation") &&
-    /master[ -]validation/i.test(`${title}\n${description}`);
-  if (!taskId && !explicitlyIncluded && !conventionalMasterValidationFix) {
+  if (!taskId && !explicitlyIncluded) {
     return null;
   }
   if (!pullRequestId || !sourceBranch || !sourceCommit) return null;

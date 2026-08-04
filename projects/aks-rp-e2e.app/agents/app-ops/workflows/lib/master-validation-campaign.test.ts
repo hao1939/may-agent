@@ -96,7 +96,19 @@ describe("frozen master-validation campaign", () => {
         targetRefName: "refs/heads/main",
         lastMergeSourceCommit: { commitId: "soft123" },
       }),
-    ).toMatchObject({ pullRequestId: "16560089" });
+    ).toBeNull();
+    expect(
+      campaignFixFromPullRequest({
+        pullRequestId: 16560091,
+        status: "active",
+        title: "Keep master validation running past admission drift",
+        description:
+          "Master-Validation-Candidate: include\n\nFocused admission repair",
+        sourceRefName: "refs/heads/fix/master-validation-soft-admission",
+        targetRefName: "refs/heads/main",
+        lastMergeSourceCommit: { commitId: "soft123" },
+      }),
+    ).toMatchObject({ pullRequestId: "16560091" });
     const completed = {
       pullRequestId: 16560090,
       status: "completed",
