@@ -859,7 +859,56 @@ Telegram supports editing messages. When practical, store the message ID and
 edit the existing notification instead of sending a new one for the same
 dedupKey. If editing is unavailable or fails, send a collapsed follow-up.
 
-Approval notifications use a stricter convention:
+## Message Lifecycle Reconciliation
+
+Strengthen the existing message path; do not create a second message task
+system or an approval-only controller. The source task, escalation, owner
+inbox item, or conversation remains the work authority. Message lifecycle is a
+derived projection over its existing events, delivery records, trace, and
+expected closure.
+
+Every inbound and outbound message has one stable semantic identity and is
+tracked until its conventional terminal result:
+
+```text
+source event
+  -> accepted by May, an owner, or a channel
+  -> admission disposition when proactive
+  -> delivery or durable non-deliver action
+  -> expected semantic closure
+  -> fulfilled, expired, rejected, or superseded
+```
+
+Use existing context fields and conventions instead of per-message
+configuration:
+
+- A direct reply or informational digest completes on confirmed channel
+  delivery.
+- An inbound human request completes when May answers it, or when durable
+  owner work is accepted and the user receives the truthful tracking reply;
+  long-running work closes later through its source task.
+- An action request must link to its source task or escalation and declare the
+  expected closure event. Delivery alone does not complete it.
+- A non-deliver admission result completes only after its claimed action is
+  durably accepted. `route` and `clarify-producer` remain open until the owner
+  or producer accepts the work; `handle` requires the recorded closure proof.
+- A proactive action request without live backing work returns to the producer
+  and never reaches the human. Informational messages do not invent a task.
+
+Before calling Telegram, reserve the stable message key. Confirm delivery with
+the returned Telegram message ids. A crash or partial multi-part send remains
+`delivery-uncertain`; recovery never blindly sends the same proactive message
+again. The existing event-pair orphan scan periodically reconciles uncertain,
+unfulfilled, expired, and source-less messages as a safety net. Normal progress
+is event-driven by admission, delivery, reply, task, owner-inbox, and closure
+events.
+
+`may-agent.app` observes lifecycle breach metrics and owns repeated platform
+failures. It does not schedule or decide each message. Apps retain domain
+authority, May retains intention and attention judgment, and the shared runtime
+owns correlation, delivery bookkeeping, wake-up, and recovery.
+
+Approval notifications are one conventional specialization:
 
 - One approval id produces at most one delivered human message, including
   across daemon restarts.

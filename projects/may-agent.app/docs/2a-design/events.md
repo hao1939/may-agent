@@ -179,12 +179,26 @@ only where an exact event relation cannot yet be carried.
 
 Examples:
 
-| Opening                     | Closing                                         |
-| --------------------------- | ----------------------------------------------- |
-| `project.owner.requested`   | `project.owner.reviewed`                        |
-| `escalation.created`        | `escalation.resolved` or `escalation.dismissed` |
-| `cli.task.requested`        | `cli.task.completed`, `failed`, or `orphaned`   |
-| `runtime.restart.requested` | runtime restart result event                    |
+| Opening                     | Closing                                            |
+| --------------------------- | -------------------------------------------------- |
+| `project.owner.requested`   | `project.owner.reviewed`                           |
+| `escalation.created`        | `escalation.resolved` or `escalation.dismissed`    |
+| `cli.task.requested`        | `cli.task.completed`, `failed`, or `orphaned`      |
+| `runtime.restart.requested` | runtime restart result event                       |
+| outbound human message      | `channel.delivery.completed` or delivery failure   |
+| inbound human request       | direct response or durable owner-work acceptance   |
+
+Messages may carry two existing commitments: channel delivery and the source
+work's semantic result. Delivery-only replies and digests close after confirmed
+delivery. Action requests remain linked to the source task, escalation, or
+owner-inbox pair until their declared `expectedClosure` arrives. This is a
+derived message projection, not a new work authority or a task per message.
+
+A proactive admission result that suppresses delivery must still close or
+transfer the semantic commitment. The review record alone is evidence of May's
+judgment; it is not proof that `handle`, `route`, or `clarify-producer`
+finished. Pair tracking keeps the commitment open until the claimed action has
+durable acceptance or closure proof.
 
 Not every event is paired. `metric.breach` uses the metric-alert entity for its
 open/resolved lifecycle. An observation/result event with no promised later
