@@ -35,7 +35,9 @@ export function migrateSessionAftermathFrontier(
       ? [
           ...Object.keys(tree.resources ?? {}),
           ...Object.keys(tree.taskTriggers ?? {}),
-          ...Object.values(tree.attempts ?? {}).map((attempt) => attempt.taskId),
+          ...Object.values(tree.attempts ?? {}).map(
+            (attempt) => attempt.taskId,
+          ),
           ...Object.keys(tree.receipts ?? {}),
         ].filter((id) => id.startsWith(legacySessionTaskPrefix))
       : [],
@@ -73,7 +75,9 @@ export function migrateSessionAftermathFrontier(
     const resource = tree.resources?.[taskId];
     if (!resource) continue;
     if (!tree.groups?.[taskId]) {
-      throw new Error(`Cannot retire structural parent ${taskId}: group missing`);
+      throw new Error(
+        `Cannot retire structural parent ${taskId}: group missing`,
+      );
     }
     if (resource.status.currentAttemptId) {
       throw new Error(

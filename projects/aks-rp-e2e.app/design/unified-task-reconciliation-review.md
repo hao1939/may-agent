@@ -347,6 +347,43 @@ semantics tests prove the runtime mechanics. Together they check that:
 App-specific tests continue to prove domain policy. The shared suite proves the
 unified control-loop behavior.
 
+### Fresh conformance proof: 2026-08-04
+
+The final audit reran the common suite and every app's own normal check after
+the migration. Scout and Evaluation previously had test files that their
+`check` commands did not execute; their checks now include those existing test
+suites by convention.
+
+| Proof                              | Result                                                         |
+| ---------------------------------- | -------------------------------------------------------------- |
+| Shared cross-app conformance       | 3 tests pass: stable timer identity, stable semantic-event identity, and no scheduling from reconciliation results |
+| Scout app check                    | syntax, types, format, and 61 tests pass                       |
+| Gym app check                      | syntax, types, format, and 74 tests pass                       |
+| Evaluation app check               | syntax, types, format, and 83 tests pass                       |
+| May Agent app check                | syntax, types, format, and 25 tests pass                       |
+| AKS app check                      | syntax, types, format, 512 app tests, 2 workflow-input tests, and current bundle verification pass |
+
+The hosted event trace also proves current runtime use rather than only source
+shape:
+
+- Scout's `scout.digest` timer reconciled `daily-digest`, and a later
+  `credential.state` observation reconciled the same `explore-xhs` resource.
+- Gym's refill event reconciled `improve/may`; repeated improvement wakes reuse
+  that resource while its resource-local training checkpoint advances.
+- Evaluation's periodic `evaluation.aftermath.scan` reconciled
+  `runtime/aftermath-backfill`, while target review events reconciled stable
+  per-project audit resources.
+- May Agent's ops-health and daily-digest timers reconciled their two stable
+  runtime resources independently.
+- AKS's direct loop pulse reconciled the named standing loop, while pipeline
+  failure and completion observations reconciled the matching stable failure
+  or scenario resource without an app-generated refill tick.
+
+A read-only live-graph audit found no waiting resource in any app without at
+least one exact Condition, dependency, or live direct child. Attention remains
+visible owner work; it is not treated as successful convergence and does not
+justify restoring an app-local recovery scheduler.
+
 ## Success criteria
 
 AKS is aligned when:

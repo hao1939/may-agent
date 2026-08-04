@@ -8,6 +8,83 @@ import scoutApp from "../projects/scout-knowledge-lib.app/app.ts";
 
 const apps = [scoutApp, gymApp, evaluationApp, mayAgentApp, aksApp];
 
+const semanticWakeProbes = [
+  {
+    app: scoutApp,
+    first: {
+      type: "project.owner.requested",
+      project: "scout-knowledge-lib",
+      reason: "manual-library-review",
+    },
+    repeated: {
+      type: "project.owner.requested",
+      project: "scout-knowledge-lib",
+      reason: "repair-index",
+    },
+    taskId: "library-maintenance",
+  },
+  {
+    app: gymApp,
+    first: {
+      type: "gym.improvement.requested",
+      project: "gym",
+      params: { agent: "may", reason: "human-request" },
+    },
+    repeated: {
+      type: "gym.improvement.requested",
+      project: "gym",
+      params: { agent: "may", reason: "new-evidence" },
+    },
+    taskId: "improve/may",
+  },
+  {
+    app: evaluationApp,
+    first: {
+      type: "evaluation.project.review.requested",
+      project: "evaluation",
+      params: { targetProject: "gym.app", reason: "scheduled" },
+    },
+    repeated: {
+      type: "evaluation.project.review.requested",
+      project: "evaluation",
+      params: { targetProject: "gym.app", reason: "material-change" },
+    },
+    taskId: "runtime/project-audit/gym.app",
+  },
+  {
+    app: mayAgentApp,
+    first: {
+      type: "project.owner.requested",
+      project: "may-agent",
+      reason: "metric-signal",
+    },
+    repeated: {
+      type: "project.owner.requested",
+      project: "may-agent",
+      reason: "operator-request",
+    },
+    taskId: "runtime/platform-owner-review",
+  },
+  {
+    app: aksApp,
+    first: {
+      type: "pipeline.failure.observed",
+      project: "aks-rp-e2e",
+      specId: "spec.conformance.example",
+      failureFingerprint: "episode-a",
+      pipelineRunId: "101",
+    },
+    repeated: {
+      type: "pipeline.failure.observed",
+      project: "aks-rp-e2e",
+      specId: "spec.conformance.example",
+      failureFingerprint: "episode-b",
+      pipelineRunId: "202",
+    },
+    taskId: "domain/master-validation-failure/spec.conformance.example",
+  },
+];
+
 function selectorType(selector: unknown): string {
   if (typeof selector === "string") return selector;
   if (!selector || typeof selector !== "object") return "";
@@ -45,6 +122,23 @@ describe("unified task-app conformance", () => {
           }
         }
       }
+    }
+  });
+
+  it("reconciles repeated semantic events into stable resources", () => {
+    for (const probe of semanticWakeProbes) {
+      const first = probe.app.tasks?.resolve(withEventId(probe.first, 101));
+      const repeated = probe.app.tasks?.resolve(
+        withEventId(probe.repeated, 202),
+      );
+
+      expect(first?.id, `${probe.app.id} did not resolve the first wake`).toBe(
+        probe.taskId,
+      );
+      expect(
+        repeated?.id,
+        `${probe.app.id} created a new resource for a repeated semantic wake`,
+      ).toBe(probe.taskId);
     }
   });
 
