@@ -3855,6 +3855,56 @@ describe("project app task reconciler state", () => {
     ).toEqual([{ conditionId: condition.id, taskId: taskIntent.id }]);
   });
 
+  it("does not replay an old capacity pulse into a future-slot wait", () => {
+    const { config } = fixture();
+    const taskIntent = intent("maintain");
+    const condition = {
+      id: "capacity-after-slot-82677:task-holder-a",
+      type: "aks.master-validation.capacity-pulse",
+      subject: "project:demo",
+      expected: { field: "cycleSlot", notEquals: 82677 },
+    } as const;
+    const claim = declareAndClaimTask(config, {
+      intent: taskIntent,
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    deferProjectAppTask(config, claim, {
+      disposition: "waiting",
+      summary: "waiting for a future capacity slot",
+      conditions: [condition],
+    });
+    const establishedAt = Date.parse(
+      readTaskState(config).conditions?.[condition.id]?.status.observedAt ?? "",
+    );
+
+    expect(
+      trackProjectAppConditionEvent(config, {
+        type: condition.type,
+        project: "demo",
+        cycleSlot: 82676,
+        timestamp: establishedAt - 1,
+      }),
+    ).toEqual([]);
+    expect(
+      trackProjectAppConditionEvent(config, {
+        type: condition.type,
+        project: "demo",
+        cycleSlot: 82677,
+        timestamp: establishedAt + 1,
+      }),
+    ).toEqual([]);
+    expect(
+      trackProjectAppConditionEvent(config, {
+        type: condition.type,
+        project: "demo",
+        cycleSlot: 82678,
+        timestamp: establishedAt + 2,
+      }),
+    ).toEqual([{ conditionId: condition.id, taskId: taskIntent.id }]);
+  });
+
   it("advances Condition generation when its desired observation changes", () => {
     const { config } = fixture();
     const first = declareAndClaimTask(config, {

@@ -142,7 +142,9 @@ function isFreshLevelObservation(condition: ProjectAppCondition, event: Record<s
   const levelObservation =
     condition.spec.type === "aks.repo-ref.observed" ||
     condition.spec.type.endsWith(".state") ||
-    condition.spec.type.endsWith(".check");
+    condition.spec.type.endsWith(".check") ||
+    condition.spec.type.endsWith(".pulse") ||
+    condition.spec.type.endsWith("-pulse");
   if (!levelObservation) return true;
   const conditionEstablishedAt = timestampMillis(condition.status.observedAt);
   const eventObservedAt = timestampMillis(event.timestamp);
@@ -193,11 +195,10 @@ function matchesExpectedRecord(expected: Record<string, unknown>, event: Record<
 
 function matches(condition: ProjectAppCondition, event: Record<string, unknown>): boolean {
   if (condition.spec.type !== event.type) return false;
-  // A repo-ref event is a level observation, not an immutable historical fact.
-  // A newly declared `notEquals` wait must not be satisfied by an older commit
-  // observation replayed from the event journal. The workflow inspected the ref
-  // immediately before establishing this Condition; only an observation made at
-  // or after that point can prove that the ref subsequently changed.
+  // Level observations are not immutable historical facts. A newly declared
+  // wait must not be satisfied by an older state, check, or pulse replayed from
+  // the event journal. Only an observation made at or after the Condition was
+  // established can prove that the external level subsequently changed.
   if (!isFreshLevelObservation(condition, event)) return false;
   const subject = typedSubject(condition.spec.subject);
   if (!subject) return false;
