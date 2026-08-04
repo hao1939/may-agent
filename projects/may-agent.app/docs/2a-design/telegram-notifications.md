@@ -868,7 +868,8 @@ derived projection over its existing events, delivery records, trace, and
 expected closure.
 
 Every inbound and outbound message has one stable semantic identity and is
-tracked until its conventional terminal result:
+tracked toward one target: properly handled and closed as `resolved` with a
+typed outcome and closure evidence.
 
 ```text
 source event
@@ -876,22 +877,32 @@ source event
   -> admission disposition when proactive
   -> delivery or durable non-deliver action
   -> expected semantic closure
-  -> fulfilled, expired, rejected, or superseded
+  -> resolved { fulfilled | rejected | superseded | expired | failed }
 ```
+
+Admission and transfer states are never terminal. `route` means another owner
+accepted responsibility; the message remains open through that owner's result
+and May's required verification. `clarify-producer` remains open until the
+producer supplies the missing facts and the candidate is reviewed again.
+`deliver` remains open until delivery-only meaning is proven or the requested
+human input is applied and verified. `handle` remains open until its claimed
+action passes the declared closure check. `reject` resolves only after the
+source request is durably rejected with the reason and no hidden work remains.
 
 Use existing context fields and conventions instead of per-message
 configuration:
 
 - A direct reply or informational digest completes on confirmed channel
-  delivery.
-- An inbound human request completes when May answers it, or when durable
-  owner work is accepted and the user receives the truthful tracking reply;
-  long-running work closes later through its source task.
+  delivery and records the resolved delivery-only outcome.
+- An inbound human request completes when May answers and fulfills it, or when
+  its long-running source task produces a verified result. Durable owner
+  acceptance plus a truthful tracking reply acknowledges the request but does
+  not close it.
 - An action request must link to its source task or escalation and declare the
   expected closure event. Delivery alone does not complete it.
-- A non-deliver admission result completes only after its claimed action is
-  durably accepted. `route` and `clarify-producer` remain open until the owner
-  or producer accepts the work; `handle` requires the recorded closure proof.
+- A non-deliver admission result completes only after its intended outcome is
+  verified. Owner or producer acceptance records progress and the next wake-up;
+  it never substitutes for final closure proof.
 - A proactive action request without live backing work returns to the producer
   and never reaches the human. Informational messages do not invent a task.
 
@@ -902,6 +913,12 @@ again. The existing event-pair orphan scan periodically reconciles uncertain,
 unfulfilled, expired, and source-less messages as a safety net. Normal progress
 is event-driven by admission, delivery, reply, task, owner-inbox, and closure
 events.
+
+When an open message makes no progress, resync wakes its accountable owner and
+May for a bounded check-in or steering action. It does not close the message
+merely because it was routed, acknowledged, retried, or old. Expiry and failure
+are resolved outcomes only when the message's declared policy permits them and
+the final reason and evidence are recorded.
 
 `may-agent.app` observes lifecycle breach metrics and owns repeated platform
 failures. It does not schedule or decide each message. Apps retain domain
