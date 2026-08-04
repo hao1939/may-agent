@@ -2035,7 +2035,7 @@ describe("event delivery metadata", () => {
     }
   });
 
-  it("owner inbox review emits a follow-up event and closes the owner-inbox pair", () => {
+  it("owner inbox review records progress and keeps the message open", () => {
     const root = tempRoot();
     try {
       const bus = new EventBus();
@@ -2061,18 +2061,19 @@ describe("event delivery metadata", () => {
         .prepare(
           `SELECT id, event_type, data, delivery_status, delivery_route
          FROM events
-         WHERE event_type = 'message.reviewed'`,
+         WHERE event_type = 'message.progressed'`,
         )
         .get() as Record<string, unknown>;
       expect(followup).toMatchObject({
-        event_type: "message.reviewed",
+        event_type: "message.progressed",
         delivery_status: "accepted",
         delivery_route: "direct",
       });
       expect(JSON.parse(String(followup.data))).toMatchObject({
-        openEventId: id,
-        openEventType: "message.created",
+        sourceEventId: id,
+        sourceEventType: "message.created",
         reviewedBy: "dev",
+        disposition: "reviewed",
       });
 
       const trace = db.prepare("SELECT * FROM event_traces WHERE event_id = ?").get(followup.id);
@@ -2085,8 +2086,8 @@ describe("event delivery metadata", () => {
       expect(link).toMatchObject({
         from_event_id: followup.id,
         to_event_id: id,
-        type: "closure",
-        label: "message.reviewed",
+        type: "reference",
+        label: "message.progressed",
       });
 
       const pair = db
@@ -2096,15 +2097,15 @@ describe("event delivery metadata", () => {
          WHERE open_event_id = ?`,
         )
         .get(id) as Record<string, unknown>;
-      expect(pair.status).toBe("closed");
-      expect(query.heartbeatContext({ agent: "dev" }).inbox).toHaveLength(0);
+      expect(pair.status).toBe("open");
+      expect(query.heartbeatContext({ agent: "dev" }).inbox).toHaveLength(1);
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
     }
   });
 
-  it("retires stale inbox work through pair state without rewriting the event", () => {
+  it("does not retire unfinished messages because they are old", () => {
     const root = tempRoot();
     try {
       const bus = new EventBus();
@@ -2127,7 +2128,7 @@ describe("event delivery metadata", () => {
       db.prepare("UPDATE events SET timestamp = ? WHERE id = ?").run(Date.now() - 48 * 60 * 60_000, event.id);
 
       const commands = createCommandService({ getDb: () => db, emit: (event) => bus.emit(event as any) });
-      expect(commands.expireStaleMessages(24 * 60 * 60_000)).toBe(1);
+      expect(commands.expireStaleMessages(24 * 60 * 60_000)).toBe(0);
       expect(db.prepare("SELECT data FROM events WHERE id = ?").get(event.id)).toEqual({ data: event.data });
       expect(
         db
@@ -2138,16 +2139,9 @@ describe("event delivery metadata", () => {
           )
           .get(event.id),
       ).toMatchObject({
-        status: "closed",
+        status: "open",
       });
-      const expired = db.prepare("SELECT data FROM events WHERE event_type = 'message.expired'").get() as {
-        data: string;
-      };
-      expect(JSON.parse(expired.data)).toMatchObject({
-        openEventId: event.id,
-        openEventType: "message.created",
-        reason: "stale message inbox work retired",
-      });
+      expect(db.prepare("SELECT data FROM events WHERE event_type = 'message.expired'").get()).toBeNull();
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
