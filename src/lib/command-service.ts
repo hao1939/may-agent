@@ -1,9 +1,9 @@
 import type { SqliteDb } from "./db.js";
 
 export interface CommandAPI {
-  /** Emit review events for inbox-routed events. Returns the number emitted. */
+  /** Emit progress or terminal review events for inbox-routed events. Returns the number emitted. */
   reviewInboxEvents(eventIds: number[], reviewedBy?: string): number;
-  /** Retire stale message inbox work through typed expiry events. */
+  /** Compatibility no-op: message age alone never retires unfinished owner work. */
   expireStaleMessages(olderThanMs: number): number;
   /** Retire stale signal inbox work through typed expiry events. */
   expireStaleSignalEvents(olderThanMs: number): number;
@@ -41,22 +41,33 @@ function reviewInboxRows(
      WHERE json_extract(data, '$.openEventId') = ?
      LIMIT 1`,
   );
+  const existingMessageProgress = db.prepare(
+    `SELECT id
+     FROM events
+     WHERE event_type = 'message.progressed'
+       AND json_extract(data, '$.sourceEventId') = ?
+     LIMIT 1`,
+  );
   for (const row of rows) {
     if (!row?.id || existingFollowup.get(row.id)) continue;
-    const type = reviewedEventType(row.event_type);
+    const messageProgress = row.event_type === "message.created";
+    if (messageProgress && existingMessageProgress.get(row.id)) continue;
+    const type = messageProgress ? "message.progressed" : reviewedEventType(row.event_type);
     emit({
       type,
       source: `inbox:${agent}`,
       owner: row.owner ?? `agent:${agent}`,
       data: {
-        openEventId: row.id,
-        openEventType: row.event_type,
+        ...(messageProgress
+          ? { sourceEventId: row.id, sourceEventType: row.event_type }
+          : { openEventId: row.id, openEventType: row.event_type }),
         reviewedBy: agent,
+        ...(messageProgress ? { disposition: "reviewed" } : {}),
       },
       trace: {
         traceId: `event:${row.id}`,
         parentEventId: row.id,
-        links: [{ eventId: row.id, type: "closure", label: type }],
+        links: [{ eventId: row.id, type: messageProgress ? "reference" : "closure", label: type }],
       },
     });
     reviewed++;
@@ -103,14 +114,8 @@ export function createCommandService(opts: CommandServiceOptions): CommandAPI {
     reviewInboxEvents(eventIds, reviewedBy) {
       return reviewInboxRows(opts.getDb(), eventIds, reviewedBy, opts.emit);
     },
-    expireStaleMessages(olderThanMs) {
-      return retireStaleInboxPairs(
-        opts.getDb(),
-        ["message.created"],
-        Date.now() - olderThanMs,
-        "stale message inbox work retired",
-        opts.emit,
-      );
+    expireStaleMessages(_olderThanMs) {
+      return 0;
     },
     expireStaleSignalEvents(olderThanMs) {
       return retireStaleInboxPairs(

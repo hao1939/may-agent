@@ -1,9 +1,8 @@
 /**
  * Register the event-pair orphan GC as a synthetic cron entry.
  *
- * Periodically identifies stale orphan event pairs (older than 24h by default)
- * and emits synthetic close events via the event bus. The db-writer's
- * closePairForFollowup() processes these events and transitions pairs to 'closed'.
+ * Periodically reconciles open owner messages and retires stale orphan pairs
+ * that do not represent unfinished owner work.
  *
  * Contract: No direct DB writes for mutations. Read-only queries identify
  * candidates; all state changes flow through ctx.emit() / bus.emit().
@@ -30,7 +29,53 @@ export function registerEventPairOrphanGc(cron: Cron, persistDir: string, bus: E
     const db = getDb(persistDir);
     const cutoff = Date.now() - maxAgeMs;
 
-    // Read-only: find orphan pairs older than the configured age.
+    const ownerMessages = db
+      .prepare(
+        `SELECT p.open_event_id, e.event_type, e.owner, e.data
+         FROM event_pair_runs p
+         JOIN events e ON e.id = p.open_event_id
+         WHERE p.pair_name = 'owner_inbox'
+           AND p.status IN ('open', 'orphan')
+           AND e.event_type = 'message.created'
+         ORDER BY p.opened_at ASC
+         LIMIT ?`,
+      )
+      .all(batchSize) as Array<{
+      open_event_id: number;
+      event_type: string;
+      owner: string | null;
+      data: string | null;
+    }>;
+
+    for (const message of ownerMessages) {
+      let input: Record<string, unknown> = {};
+      try {
+        const parsed = JSON.parse(message.data ?? "{}");
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) input = parsed;
+      } catch {
+        /* keep malformed legacy content bounded to its durable event reference */
+      }
+      bus.emit({
+        type: "owner.inbox.accepted",
+        source: "handler:event-pair-orphan-gc",
+        owner: message.owner ?? "agent:may",
+        data: {
+          sourceEventId: message.open_event_id,
+          sourceEventType: message.event_type,
+          reason: "periodic-resync",
+          ...(typeof input.project === "string" ? { project: input.project } : {}),
+          input,
+        },
+        trace: {
+          traceId: `event:${message.open_event_id}`,
+          parentEventId: message.open_event_id,
+          links: [{ eventId: message.open_event_id, type: "reference", label: "owner.inbox.accepted" }],
+        },
+      } as any);
+    }
+
+    // Owner messages remain open until their intended result is verified.
+    // Other abandoned pair types retain the legacy bounded cleanup policy.
     const orphans = db
       .prepare(
         `SELECT open_event_id, pair_name, correlation_key
@@ -38,6 +83,10 @@ export function registerEventPairOrphanGc(cron: Cron, persistDir: string, bus: E
          WHERE status = 'orphan'
            AND closed_at IS NULL
            AND opened_at < ?
+           AND NOT (
+             pair_name = 'owner_inbox'
+             AND open_event_id IN (SELECT id FROM events WHERE event_type = 'message.created')
+           )
          ORDER BY opened_at ASC
          LIMIT ?`,
       )
@@ -52,7 +101,11 @@ export function registerEventPairOrphanGc(cron: Cron, persistDir: string, bus: E
         type: "event-pair.orphan-gc.pass",
         source: "handler:event-pair-orphan-gc",
         owner: "agent:may",
-        data: { closedCount: 0, message: "No stale orphans found" },
+        data: {
+          reconciledOwnerMessages: ownerMessages.length,
+          closedCount: 0,
+          message: "Owner messages reconciled; no stale non-owner orphans found",
+        },
       } as any);
       return;
     }
@@ -80,6 +133,7 @@ export function registerEventPairOrphanGc(cron: Cron, persistDir: string, bus: E
       source: "handler:event-pair-orphan-gc",
       owner: "agent:may",
       data: {
+        reconciledOwnerMessages: ownerMessages.length,
         closedCount: orphans.length,
         maxAgeMs,
         cutoffTimestamp: cutoff,

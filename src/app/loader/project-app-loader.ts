@@ -517,6 +517,24 @@ function ownerValue(event: Record<string, unknown>): string {
   return owner.startsWith("agent:") ? owner.slice("agent:".length) : owner;
 }
 
+function ownerMessageForApp(
+  event: Record<string, unknown>,
+  descriptor: ProjectAppDescriptor,
+): { eventId: number; input: Record<string, unknown>; periodic: boolean } | null {
+  const periodic = event.type === "owner.inbox.accepted" && event.sourceEventType === "message.created";
+  const direct = event.type === "message.created";
+  if (!periodic && !direct) return null;
+  if (ownerValue(event) !== descriptor.owner) return null;
+  const input = periodic && isRecord(event.input) ? event.input : isRecord(event.data) ? event.data : {};
+  const recipient = typeof input.to === "string" ? input.to.replace(/^agent:/, "").trim() : "";
+  if (recipient !== descriptor.owner) return null;
+  if (direct && shouldOfferToApp(descriptor.app, event)) return null;
+  const project = projectValue(event) || projectValue(input);
+  if (project && project !== descriptor.id && project !== `${descriptor.id}.app`) return null;
+  const eventId = Number(periodic ? event.sourceEventId : event.eventId);
+  return Number.isInteger(eventId) && eventId > 0 ? { eventId, input, periodic } : null;
+}
+
 function isMetricFeedbackEvent(event: Record<string, unknown>): boolean {
   return event.type === "metric.breach" || event.type === "metric.recovered" || event.type === "metric.stalled";
 }
@@ -1192,31 +1210,40 @@ function emitOwnerResultForTask(
       : actions.some((action) => action.kind === "create-task")
         ? "task-created"
         : "task-updated";
+  const terminal = taskDisposition === "converged" && taskRefs.length === 0;
   for (const intent of ownerIntentRefs(triggerRecord)) {
-    if (opts.persistDir) {
+    if (terminal && opts.persistDir) {
       const existing = getDb(opts.persistDir)
         .prepare(
           `SELECT id
            FROM events
-           WHERE event_type = 'project.owner.reviewed'
-             AND json_extract(data, '$.openEventId') = ?
+           WHERE json_extract(data, '$.openEventId') = ?
            LIMIT 1`,
         )
         .get(intent.eventId) as { id?: unknown } | undefined;
       if (Number(existing?.id) > 0) continue;
     }
+    const resultType = terminal
+      ? intent.eventType === "message.created"
+        ? "message.resolved"
+        : "project.owner.reviewed"
+      : intent.eventType === "message.created"
+        ? "message.progressed"
+        : "project.owner.progressed";
     opts.bus.emit({
-      type: "project.owner.reviewed",
+      type: resultType,
       source: `project-app:${descriptor.id}:task-reconciler`,
       owner: `agent:${descriptor.owner}`,
       target: { project: descriptor.id, taskId },
       data: {
-        openEventId: intent.eventId,
-        openEventType: intent.eventType,
+        ...(terminal
+          ? { openEventId: intent.eventId, openEventType: intent.eventType }
+          : { sourceEventId: intent.eventId, sourceEventType: intent.eventType }),
         project: descriptor.id,
         projectId: descriptor.id,
         disposition,
         taskDisposition,
+        ...(terminal && intent.eventType === "message.created" ? { outcome: "fulfilled" } : {}),
         summary,
         taskRefs,
       },
@@ -1226,7 +1253,13 @@ function emitOwnerResultForTask(
             ? trigger.trace.traceId
             : `event:${intent.eventId}`,
         parentEventId: Number(triggerRecord.eventId) || intent.eventId,
-        links: [{ eventId: intent.eventId, type: "closure", label: "project.owner.reviewed" }],
+        links: [
+          {
+            eventId: intent.eventId,
+            type: terminal ? "closure" : "reference",
+            label: resultType,
+          },
+        ],
       },
     } as unknown as AgentEvent);
   }
@@ -1238,8 +1271,10 @@ type OwnerIntentRef = {
   data?: Record<string, unknown>;
 };
 
-function isOwnerIntentType(value: unknown): value is "project.owner.requested" | "project.comment.created" {
-  return value === "project.owner.requested" || value === "project.comment.created";
+function isOwnerIntentType(
+  value: unknown,
+): value is "project.owner.requested" | "project.comment.created" | "message.created" {
+  return value === "project.owner.requested" || value === "project.comment.created" || value === "message.created";
 }
 
 function ownerIntentRefs(event: Record<string, unknown>): OwnerIntentRef[] {
@@ -2351,6 +2386,40 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
     for (const descriptor of appRouterDescriptorsByBus.get(opts.bus) ?? []) {
       if (descriptor.reconciliationPaused) continue;
       const taskController = appTaskControllersByBus.get(opts.bus)?.get(descriptor.id);
+      const ownerMessage = ownerMessageForApp(event, descriptor);
+      if (ownerMessage) {
+        const openEventId = ownerMessage.eventId;
+        const input = ownerMessage.input;
+        const content = typeof input.content === "string" ? input.content.trim() : "";
+        const ownerRequest = {
+          type: "project.owner.requested",
+          source: `project-app:${descriptor.id}:owner-inbox-reconciler`,
+          owner: `agent:${descriptor.owner}`,
+          target: { project: descriptor.id },
+          data: {
+            project: descriptor.id,
+            projectId: descriptor.id,
+            reason: "owner-message",
+            inputEventId: openEventId,
+            inputEventType: "message.created",
+            inputEventData: input,
+            ...(content ? { instruction: content } : {}),
+          },
+          trace: {
+            traceId:
+              isRecord(event.trace) && typeof event.trace.traceId === "string"
+                ? event.trace.traceId
+                : `event:${openEventId}`,
+            parentEventId: Number(event.eventId) || openEventId,
+            links: [{ eventId: openEventId, type: "reference", label: "project.owner.requested" }],
+          },
+        } as unknown as AgentEvent;
+        if (ownerMessage.periodic) {
+          opts.bus.emit(ownerRequest);
+          return projectAppTaskDelivery(descriptor, "owner-message", "owner inbox message resync accepted");
+        }
+        queueMicrotask(() => opts.bus.emit(ownerRequest));
+      }
       if (successfulOwner && taskController && descriptor.app.tasks) {
         const config = taskReconciliationConfig({
           appDir: descriptor.appDir,
