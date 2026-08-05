@@ -17,6 +17,12 @@ specific rendering layer. The browser uses xterm.js, the backend keeps a real
 terminal process alive through tmux, and the bridge carries terminal bytes
 between them.
 
+For the May profile, the Web Terminal hosts May Console. Bare text therefore
+always starts a bounded May turn. Watching a session changes output only;
+steering or cancelling requires a command that names the session. The browser
+does not implement a separate chat or selected-session model. See
+`may-console.md` for that interaction contract.
+
 ## Mental Model
 
 ```text
@@ -174,6 +180,7 @@ resource pressure.
 - Dashboard history responses must remain bounded and report truncation.
 - Unchanged static assets must support conditional `304` responses.
 - May Console, shell, Claude, Codex, and ops use the same code path.
+- May-profile quick actions do not create a sticky input target.
 
 Focused coverage lives in
 `projects/may-agent/packages/terminal/src/manager.test.ts`,
