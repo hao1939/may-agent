@@ -158,10 +158,13 @@ One bounded cycle:
     safety or authority boundary as attention.
 12. Emit a continuation wake when approved material remains.
 
-Candidate revisions for one hypothesis are sequential. A repeated artifact or
-the bounded iteration limit ends the burst as visible attention instead of
-spinning or claiming convergence. A durable continuation keeps the task pending;
-it is never surfaced as convergence.
+Candidate revisions for one hypothesis are sequential and cumulative. Each
+revision starts from the exact previous candidate, preserves unrelated earlier
+changes, and changes only the mechanism named by the failed review. It never
+rebuilds from production May. A repeated artifact or the bounded iteration
+limit ends the burst as visible attention instead of spinning or claiming
+convergence. A durable continuation keeps the task pending; it is never
+surfaced as convergence.
 
 ### Parallelism
 

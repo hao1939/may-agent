@@ -2637,10 +2637,16 @@ async function runCandidateIteration(
             ]
           : []),
         "Read prior generation results for this task when present; they are evidence about mechanisms that already failed even when this generation has no in-run revision yet.",
-        "When repeated valid trials prove model-selected skill loading is ignored, use the validated agent.json skillActivationRules mechanism for a narrow deterministic trigger instead of adding more prompt wording. Copy the full prepared agent.json into the overlay, change only skillActivationRules, and pair the rule with its named skill package.",
+        "When repeated valid trials prove model-selected skill loading is ignored, use the validated agent.json skillActivationRules mechanism for a narrow deterministic trigger instead of adding more prompt wording. For a first candidate, copy the full prepared agent.json into the overlay, change only skillActivationRules, and pair the rule with its named skill package. For a revision, edit the agent.json already present in the candidate overlay and preserve unrelated rules and skills from earlier iterations.",
         "Keep activation rules general, bounded, and tied to the real high-risk task class. Require an opposite control so a rule does not make May over-apply the skill.",
         "Before finishing, validate candidate agent.json with the May-agent config validator: each activation pattern must be valid and 1-512 characters, and every named skill must exist in the candidate catalog.",
         `Candidate overlay directory: ${candidateDir}`,
+        ...(plan.revision
+          ? [
+              "The candidate overlay already contains the exact previous failed candidate. Revise it in place and preserve every unrelated earlier candidate change.",
+              "Do not repopulate the overlay from production May or the prepared workspace May. Remove or replace a prior candidate rule or skill only when the failed review explicitly identifies that same mechanism for removal.",
+            ]
+          : []),
         "Read the baseline evidence, current agent preparation, and relevant design before editing.",
         "Write only under the candidate overlay. Do not edit production, Gym truth, labels, evidence, task state, or Git state.",
         "Do not run Gym scenarios, benchmarks, or comparisons. The workflow owns verification after it fingerprints the artifact.",

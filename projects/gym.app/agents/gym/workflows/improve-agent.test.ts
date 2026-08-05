@@ -2555,6 +2555,11 @@ describe("single agent-improvement loop", () => {
         const runDir = join(runsDir, `verify-${verifyCount}`);
         mkdirSync(runDir, { recursive: true });
         const candidatePath = join(input.agentsRoot!, ".lab", input.candidate);
+        if (verifyCount === 2) {
+          expect(
+            readFileSync(join(candidatePath, "AGENTS.md"), "utf8"),
+          ).toBe("# Candidate 1\n# Candidate 2\n");
+        }
         const passed = verifyCount > 1;
         const verified = manifest(`verify-${verifyCount}`, {
           "agent-case": passed
@@ -2626,10 +2631,19 @@ describe("single agent-improvement loop", () => {
           .find((line) => line.startsWith(marker))!
           .slice(marker.length);
         mkdirSync(candidateDir, { recursive: true });
-        writeFileSync(
-          join(candidateDir, "AGENTS.md"),
-          `# Candidate ${implementCount}\n`,
-        );
+        const candidateFile = join(candidateDir, "AGENTS.md");
+        if (implementCount === 1) {
+          writeFileSync(candidateFile, "# Candidate 1\n");
+        } else {
+          expect(readFileSync(candidateFile, "utf8")).toBe("# Candidate 1\n");
+          expect(prompt).toContain(
+            "candidate overlay already contains the exact previous failed candidate",
+          );
+          expect(prompt).toContain(
+            "Do not repopulate the overlay from production May",
+          );
+          writeFileSync(candidateFile, "# Candidate 1\n# Candidate 2\n");
+        }
         return {
           status: "done",
           structuredResult: {
