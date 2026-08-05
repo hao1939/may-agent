@@ -52,6 +52,17 @@ const CHAT_TOOL_DENYLIST = new Set([
 
 const READONLY_TOOL_ALLOWLIST = new Set(["finish", "query_db", "read", "scrape_webpage", "system_status"]);
 
+const DEPUTY_TOOL_ALLOWLIST = new Set([
+  "agents",
+  "finish",
+  "message",
+  "query_db",
+  "read",
+  "run_cli_agent",
+  "scrape_webpage",
+  "system_status",
+]);
+
 const SEQUENTIAL_TOOL_NAMES = new Set([
   "agents",
   "background_exec",
@@ -100,7 +111,7 @@ export type AgentPreparationOptions = {
   skill?: string;
   requireFinish?: boolean;
   outputSchema?: TSchema;
-  toolPolicy?: "full" | "readonly";
+  toolPolicy?: "full" | "readonly" | "deputy";
   /** Override the registered agent's filesystem tools for this execution only. */
   executionRoot?: string;
   promptTimestamp?: string;
@@ -213,6 +224,8 @@ function resolveTools(options: AgentPreparationOptions, requireFinish: boolean):
     : definition.tools;
   if (options.toolPolicy === "readonly") {
     tools = tools.filter((tool) => READONLY_TOOL_ALLOWLIST.has(tool.name));
+  } else if (options.toolPolicy === "deputy") {
+    tools = tools.filter((tool) => DEPUTY_TOOL_ALLOWLIST.has(tool.name));
   }
   if (!requireFinish) return applyToolExecutionPolicy(tools);
 

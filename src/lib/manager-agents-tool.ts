@@ -18,7 +18,7 @@ import type { EventTrace } from "../app/event-bus.js";
 
 export interface AgentsToolManagerDeps {
   agents: Map<string, RegisteredAgent>;
-  activeSessions: Map<string, { parentSessionId?: string; originSessionId?: string; workflowRunId?: string; projectId?: string; trace?: EventTrace }>;
+  activeSessions: Map<string, { parentSessionId?: string; originSessionId?: string; workflowRunId?: string; projectId?: string; requestId?: string; trace?: EventTrace }>;
   callAgent(
     agentName: string,
     task: string,
@@ -249,6 +249,30 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
     };
   };
 
+  const isBreakGlassCaller = (sessionId?: string): boolean => {
+    if (!sessionId) return false;
+    const active = manager.activeSessions.get(sessionId);
+    const persisted = manager.registry.getSession(sessionId);
+    const requestId = active?.requestId ?? persisted?.requestId;
+    return typeof requestId === "string" && requestId.startsWith("may-break-glass:");
+  };
+
+  const appBoundaryError = (caller: string | undefined, target: string, sessionId?: string): string | null => {
+    const targetDefinition = manager.agents.get(target)?.definition;
+    if (!targetDefinition?.appLocal) return null;
+    const callerDefinition = caller ? manager.agents.get(caller)?.definition : undefined;
+    if (
+      callerDefinition?.appLocal &&
+      callerDefinition.projectId &&
+      callerDefinition.projectId === targetDefinition.projectId
+    ) {
+      return null;
+    }
+    if (isBreakGlassCaller(sessionId)) return null;
+    const project = targetDefinition.projectId ?? "the owning project";
+    return `Agent "${target}" is app-local to "${project}". Send the desired outcome and proof to that app instead of selecting its internal agent. A linked May break-glass attempt may cross this boundary when the normal owner path cannot fulfill the human outcome.`;
+  };
+
   return {
     name: "agents",
     label: "Agents",
@@ -295,10 +319,12 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
                 }),
               );
             }
-            if (callDeny && callDeny.agents.includes(params.agent)) {
+            const parentSid = getCallerSessionId?.();
+            const boundaryError = appBoundaryError(callerAgentCall, params.agent, parentSid);
+            if (boundaryError) return textResult(JSON.stringify({ error: boundaryError }));
+            if (!isBreakGlassCaller(parentSid) && callDeny && callDeny.agents.includes(params.agent)) {
               return textResult(JSON.stringify({ error: `Cannot call "${params.agent}" directly. ${callDeny.hint}` }));
             }
-            const parentSid = getCallerSessionId?.();
             const lineage = getCallerLineage(parentSid);
 
             // Sync call: blocks until done
@@ -344,10 +370,12 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
                 }),
               );
             }
-            if (callDeny && callDeny.agents.includes(params.agent)) {
+            const parentSidRun = getCallerSessionId?.();
+            const boundaryError = appBoundaryError(callerAgentRun, params.agent, parentSidRun);
+            if (boundaryError) return textResult(JSON.stringify({ error: boundaryError }));
+            if (!isBreakGlassCaller(parentSidRun) && callDeny && callDeny.agents.includes(params.agent)) {
               return textResult(JSON.stringify({ error: `Cannot fork "${params.agent}" directly. ${callDeny.hint}` }));
             }
-            const parentSidRun = getCallerSessionId?.();
             const lineage = getCallerLineage(parentSidRun);
 
             // Emit message.created for traceability (v2 convergence)
@@ -389,6 +417,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               name: a.definition.name,
               description: a.definition.description,
               domain: a.definition.domain,
+              ...(a.definition.appLocal ? { project: a.definition.projectId } : {}),
             }));
             const sessions = manager.status().map((s) => ({
               sessionId: s.sessionId,

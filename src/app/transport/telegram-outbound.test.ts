@@ -224,7 +224,29 @@ describe("Telegram outbound turn ownership", () => {
       type: "message.created",
       source: "ops",
       owner: "human:operator",
-      data: { from: "ops", to: "human", content: "Unreviewed alert text" },
+      data: {
+        from: "ops",
+        to: "human",
+        content: "Unreviewed alert text",
+        approvalId: "approval-ops-1",
+        waitId: "wait-ops-1",
+        pathId: "ops/path-1",
+        packetPath: "evidence/archive/ops-approval-1.md",
+        requestedAction: "Approve or reroute the bounded operator ask.",
+        reason: "Need exact owner decision",
+        expectedResponse: {
+          type: "project.approval.submitted",
+          approvalId: "approval-ops-1",
+          waitId: "wait-ops-1",
+          pathId: "ops/path-1",
+        },
+        recovery: {
+          sourceEventId: 5011463,
+          previousReplayEventId: 5012077,
+          reason: "telegram-admission-review-failed",
+          style: "validated-fallback",
+        },
+      },
     } as any);
     await outbound.drain();
 
@@ -245,11 +267,37 @@ describe("Telegram outbound turn ownership", () => {
         project: "may-agent",
         reason: "telegram-admission-review-failed",
         params: expect.objectContaining({
+          instruction: expect.stringContaining("bounded durable evidence only"),
           candidateEventType: "message.created",
           candidateFrom: "ops",
           reviewReason: "review failure 2",
           attempts: 2,
           closureCondition: expect.stringContaining("later admission review"),
+          recoveryDisposition: expect.objectContaining({
+            allowedDispositions: ["handle", "route", "clarify-producer", "reject", "deliver"],
+            fallbackRule: expect.stringContaining("safest structured route or clarify-producer outcome"),
+          }),
+          approval: expect.objectContaining({
+            eventType: "project.approval.requested",
+            approvalId: "approval-ops-1",
+            waitId: "wait-ops-1",
+            pathId: "ops/path-1",
+            packetPath: "evidence/archive/ops-approval-1.md",
+            requestedAction: "Approve or reroute the bounded operator ask.",
+            reason: "Need exact owner decision",
+            expectedResponse: expect.objectContaining({
+              type: "project.approval.submitted",
+              approvalId: "approval-ops-1",
+              waitId: "wait-ops-1",
+              pathId: "ops/path-1",
+            }),
+          }),
+          recovery: expect.objectContaining({
+            sourceEventId: 5011463,
+            previousReplayEventId: 5012077,
+            reason: "telegram-admission-review-failed",
+            style: "validated-fallback",
+          }),
         }),
       }),
     ]);
