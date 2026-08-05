@@ -26,7 +26,10 @@ import {
   sendDaemonEvent,
   sendSocketCommand,
 } from "../../../packages/control/src/client.js";
-import { normalizeEventOwner } from "../../../packages/control/src/event-envelope.js";
+import {
+  buildCanonicalEventEnvelope,
+  normalizeEventOwner,
+} from "../../../packages/control/src/event-envelope.js";
 import { createTerminalManager } from "@may-agent/terminal";
 import {
   loadProjectReadModel,
@@ -67,6 +70,17 @@ export interface WebUIOptions {
 }
 
 type DaemonFrameResult = { ok: boolean; error?: string; eventId?: number };
+
+export function buildEventIngressFrame(
+  body: Record<string, unknown>,
+  owner: string,
+): Record<string, unknown> {
+  return buildCanonicalEventEnvelope(String(body.type ?? "").trim(), {
+    ...body,
+    source: "web-ui",
+    owner: normalizeEventOwner(owner),
+  });
+}
 
 export async function sendDaemonFrameWithRetry(
   socketPath: string,
@@ -3341,13 +3355,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
           typeof body.owner === "string" && body.owner.trim() ? body.owner.trim() : normalizeEventOwner(identity.owner);
       }
 
-      const trigger = await sendDaemonFrame({
-        ...body,
-        type,
-        source: "web-ui",
-        owner: normalizeEventOwner(owner),
-        data,
-      });
+      const trigger = await sendDaemonFrame(buildEventIngressFrame(body, owner));
       if (!trigger.ok) return json({ ok: false, triggered: false, error: trigger.error }, 503);
 
       return json(

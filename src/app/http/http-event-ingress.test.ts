@@ -1,8 +1,38 @@
 import { describe, expect, it } from "bun:test";
 
-import { sendDaemonFrameWithRetry } from "./server.js";
+import { buildEventIngressFrame, sendDaemonFrameWithRetry } from "./server.js";
 
 describe("HTTP event ingress acknowledgement recovery", () => {
+  it("persists top-level event contract fields inside canonical data", () => {
+    expect(
+      buildEventIngressFrame(
+        {
+          type: "project.approval.submitted",
+          approvalId: "approval-52",
+          taskId: "improve/may",
+          taskGeneration: 52,
+          artifactFingerprint: "sha256:artifact",
+          decision: "approve",
+          data: { projectId: "gym", projectPath: "/app/projects/gym.app/project.json" },
+        },
+        "gym",
+      ),
+    ).toEqual({
+      type: "project.approval.submitted",
+      source: "web-ui",
+      owner: "agent:gym",
+      data: {
+        projectId: "gym",
+        projectPath: "/app/projects/gym.app/project.json",
+        approvalId: "approval-52",
+        taskId: "improve/may",
+        taskGeneration: 52,
+        artifactFingerprint: "sha256:artifact",
+        decision: "approve",
+      },
+    });
+  });
+
   it("retries an unknown timeout with the same idempotency key", async () => {
     const frames: Record<string, unknown>[] = [];
     const timeouts: number[] = [];
