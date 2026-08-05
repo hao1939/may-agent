@@ -8,6 +8,7 @@ import {
   boundedChangedFileEvidence,
   boundedEvidence,
   campaignRepairPullRequestDescription,
+  campaignRepairReplayObservation,
   campaignRepairReady,
   changedFilesMayAffectSpec,
   currentRecoveryBaselineRunId,
@@ -48,6 +49,81 @@ function git(cwd: string, ...args: string[]): string {
 describe("master-validation failure workflow", () => {
   test("declares a main-based task worktree", () => {
     expect(workspace).toEqual({ kind: "task", baseBranch: "main" });
+  });
+
+  test("turns a frozen-campaign conflict wake into same-lineage repair context", () => {
+    expect(
+      campaignRepairReplayObservation(`
+## Trigger Event
+${JSON.stringify({
+  type: "project.task.tick",
+  data: {
+    reason: "repair-focused-patch-after-frozen-campaign-conflict",
+    requiredAction: "Rewrite the existing focused patch for frozen replay.",
+    pullRequestId: "16692093",
+    campaignSourceCommit: "campaign-head",
+    currentMainCommit: "main-head",
+    sourceCommit: "old-pr-head",
+    sourceEquivalentCommits: ["fix-a", "fix-b"],
+    conflictingPaths: ["features/example.test.ts"],
+  },
+})}
+`),
+    ).toEqual({
+      reason: "Rewrite the existing focused patch for frozen replay.",
+      pullRequestId: "16692093",
+      campaignSourceCommit: "campaign-head",
+      currentMainCommit: "main-head",
+      sourceEquivalentCommits: ["fix-a", "fix-b"],
+      conflictingPaths: ["features/example.test.ts"],
+      expectedRemoteCommit: "old-pr-head",
+    });
+  });
+
+  test("uses guarded history rewrite for an intentional replay-safe PR update", () => {
+    const root = mkdtempSync(
+      join(tmpdir(), "master-validation-publish-rewrite-"),
+    );
+    const remote = join(root, "remote.git");
+    const workspace = join(root, "workspace");
+    try {
+      mkdirSync(remote, { recursive: true });
+      git(remote, "init", "--bare");
+      git(root, "init", workspace);
+      git(workspace, "config", "user.name", "Repair Test");
+      git(workspace, "config", "user.email", "repair@example.test");
+      writeFileSync(join(workspace, "task.txt"), "old\n");
+      git(workspace, "add", "task.txt");
+      git(workspace, "commit", "-m", "old head");
+      const oldHead = git(workspace, "rev-parse", "HEAD");
+      git(workspace, "remote", "add", "origin", remote);
+      git(workspace, "push", "origin", "HEAD:refs/heads/task/repair");
+      git(workspace, "reset", "--hard", "HEAD~0");
+      writeFileSync(join(workspace, "task.txt"), "rewritten\n");
+      git(workspace, "commit", "-am", "rewritten head");
+      const rewrittenHead = git(workspace, "rev-parse", "HEAD");
+
+      const result = publishCampaignRepairBranch(
+        workspace,
+        "task/repair",
+        undefined,
+        { rewriteExpectedRemoteCommit: oldHead },
+      );
+      expect(result).toMatchObject({
+        state: "published",
+        sourceCommit: rewrittenHead,
+        evidence: [
+          `task-branch-replay-rewrite:task/repair:${oldHead}->${rewrittenHead}`,
+        ],
+      });
+      expect(
+        git(workspace, "ls-remote", "origin", "refs/heads/task/repair").split(
+          /\s+/,
+        )[0],
+      ).toBe(rewrittenHead);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   test("keeps a pipeline bootstrap issue on the moving campaign without waiting for merge", async () => {

@@ -36,6 +36,11 @@ const azCli =
 export type CampaignRepairContext = {
   conflictingPaths: string[];
   reason: string;
+  sourceEquivalentCommits: string[];
+  campaignSourceCommit: string;
+  currentMainCommit: string;
+  pullRequestId: string;
+  expectedRemoteCommit: string;
 };
 
 export type FailureInput = {
@@ -134,8 +139,20 @@ function parseCampaignRepairReplay(
   const parsed: CampaignRepairContext = {
     conflictingPaths: stringArray(replay.conflictingPaths),
     reason: text(replay.reason),
+    sourceEquivalentCommits: stringArray(replay.sourceEquivalentCommits),
+    campaignSourceCommit: text(replay.campaignSourceCommit),
+    currentMainCommit: text(replay.currentMainCommit),
+    pullRequestId: text(replay.pullRequestId),
+    expectedRemoteCommit: text(replay.expectedRemoteCommit),
   };
-  return parsed.reason || parsed.conflictingPaths.length ? parsed : null;
+  return parsed.reason ||
+    parsed.conflictingPaths.length ||
+    parsed.sourceEquivalentCommits.length ||
+    parsed.campaignSourceCommit ||
+    parsed.pullRequestId ||
+    parsed.expectedRemoteCommit
+    ? parsed
+    : null;
 }
 
 export function nestedWorkflowOutput(value: unknown): Record<string, unknown> {
@@ -801,6 +818,33 @@ function eventData(value: unknown): Record<string, unknown> {
   }
 }
 
+export function campaignRepairReplayObservation(
+  raw: string,
+): CampaignRepairContext | null {
+  const trigger = triggerEvent(raw);
+  if (!trigger) return null;
+  const data = eventData(trigger.data);
+  const value = (key: string) => trigger[key] ?? data[key];
+  const reason = text(value("reason"));
+  if (
+    reason !== "repair-focused-patch-after-frozen-campaign-conflict" &&
+    !text(value("campaignConflictEventId"))
+  ) {
+    return null;
+  }
+  return parseCampaignRepairReplay({
+    reason:
+      text(value("requiredAction")) ||
+      "Repair the existing focused patch after a frozen-campaign replay conflict.",
+    conflictingPaths: value("conflictingPaths"),
+    sourceEquivalentCommits: value("sourceEquivalentCommits"),
+    campaignSourceCommit: value("campaignSourceCommit"),
+    currentMainCommit: value("currentMainCommit"),
+    pullRequestId: value("pullRequestId"),
+    expectedRemoteCommit: value("sourceCommit"),
+  });
+}
+
 function matchingPassingRecoveryObservation(
   observation: Record<string, unknown>,
   input: FailureInput,
@@ -1352,6 +1396,7 @@ export function publishCampaignRepairBranch(
   workspaceDir: string,
   sourceBranch: string,
   runGit: typeof git = git,
+  options: { rewriteExpectedRemoteCommit?: string } = {},
 ):
   | { state: "published"; sourceCommit: string; evidence: string[] }
   | {
@@ -1369,6 +1414,42 @@ export function publishCampaignRepairBranch(
     } {
   let sourceCommit = runGit(workspaceDir, ["rev-parse", "HEAD"]).stdout;
   const evidence: string[] = [];
+  const rewriteExpectedRemoteCommit = text(
+    options.rewriteExpectedRemoteCommit,
+  );
+  if (rewriteExpectedRemoteCommit) {
+    const remoteRef = `refs/heads/${sourceBranch}`;
+    const push = runGit(
+      workspaceDir,
+      [
+        "push",
+        `--force-with-lease=${remoteRef}:${rewriteExpectedRemoteCommit}`,
+        "origin",
+        `${sourceCommit}:${remoteRef}`,
+      ],
+      true,
+    );
+    if (push.status === 0) {
+      return {
+        state: "published",
+        sourceCommit,
+        evidence: [
+          `task-branch-replay-rewrite:${sourceBranch}:${rewriteExpectedRemoteCommit}->${sourceCommit}`,
+        ],
+      };
+    }
+    return {
+      state: "failed",
+      sourceCommit,
+      error:
+        push.stderr ||
+        push.stdout ||
+        `guarded replay rewrite for ${sourceBranch} failed`,
+      evidence: [
+        `task-branch-replay-rewrite-rejected:${sourceBranch}:${rewriteExpectedRemoteCommit}`,
+      ],
+    };
+  }
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     const push = runGit(
       workspaceDir,
@@ -1438,6 +1519,11 @@ function prepareCampaignRepair(
   const published = publishCampaignRepairBranch(
     values.workspaceDir,
     values.sourceBranch,
+    git,
+    {
+      rewriteExpectedRemoteCommit:
+        input.campaignRepairReplay?.expectedRemoteCommit,
+    },
   );
   if (published.state === "conflicted") {
     const summary = `Publishing the focused master-validation repair branch for ${input.specId} hit a same-task branch-history conflict that needs bounded owner resolution before retry.`;
@@ -1514,6 +1600,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `workspace:${workspaceDir}`,
     ]);
   }
+  input.campaignRepairReplay =
+    campaignRepairReplayObservation(ctx.task) ?? input.campaignRepairReplay;
 
   if (input.progressiveObservation && !input.artifactPath) {
     const summary = `Observed an early progressive placeholder for ${input.specId} in aggregate run ${input.pipelineRunId}; wait for the later artifact-backed pipeline.failure.observed event before any classification, source edit, or PR action.`;
@@ -1709,7 +1797,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     // lifecycle on the parent before stale-main logic can put both resources
     // back to sleep. The child is absorbed after nested reconciliation has
     // produced integration evidence.
-    if (hasLegacyPublicationChild(ctx.task)) {
+    if (hasLegacyPublicationChild(ctx.task) && !input.campaignRepairReplay) {
       if (
         frozenBaseCommit &&
         campaignRepairReady({
@@ -1800,6 +1888,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       git(repoDir, ["merge-base", "--is-ancestor", headCommit, targetRef], true)
         .status === 0;
     if (
+      !input.campaignRepairReplay &&
       shouldReconcileTestFix({
         hasPullRequest: Boolean(existingPr),
         sourceIsInTarget,
@@ -1845,6 +1934,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       input.campaignRepairReplay?.reason || "",
       input.campaignRepairReplay?.conflictingPaths.length
         ? `Previous conflicting paths: ${input.campaignRepairReplay.conflictingPaths.join(", ")}.`
+        : "",
+      input.campaignRepairReplay?.sourceEquivalentCommits.length
+        ? `The complete same-spec source-equivalent repair already on current main came through commits: ${input.campaignRepairReplay.sourceEquivalentCommits.join(", ")}.`
+        : "",
+      input.campaignRepairReplay?.campaignSourceCommit
+        ? `The frozen campaign source is ${input.campaignRepairReplay.campaignSourceCommit}; current main is ${input.campaignRepairReplay.currentMainCommit || baseCommit}.`
+        : "",
+      input.campaignRepairReplay
+        ? `Update the existing task branch and draft PR ${input.campaignRepairReplay.pullRequestId || "for this task"}; do not create another PR. The campaign controller cherry-picks only the PR head commit. A practical replay-safe history is a preparatory commit that restores the frozen same-spec file shape followed by one head commit that reapplies the complete current implementation plus the guard: the final PR tree remains a small current-main diff, while the head commit remains applicable to the frozen snapshot.`
         : "",
       frozenBaseCommit
         ? `Work only in ${workspaceDir}, based on current ${targetRef}@${baseCommit}. Keep the PR mergeable to main; the campaign controller will replay only the focused patch onto frozen base ${frozenBaseCommit}.`
