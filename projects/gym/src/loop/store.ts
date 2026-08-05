@@ -67,6 +67,34 @@ export function benchmarkDir(benchmark: string): string {
   return join(gymRoot, "benchmarks", benchmark);
 }
 
+const SEMANTIC_SCENARIO_FILES = [
+  "semantic_criteria.md",
+  "semantic_controls.json",
+] as const;
+
+export function applyEvaluatorScenarioOverlay(input: {
+  sourceBenchmarkDir: string;
+  evaluatorOwner: string | null;
+  scenario: string;
+  destination: string;
+}): void {
+  if (!input.evaluatorOwner) return;
+  const overlay = join(
+    input.evaluatorOwner,
+    "scenarios",
+    safeName(input.scenario),
+  );
+  if (!existsSync(overlay)) return;
+  if (input.evaluatorOwner !== input.sourceBenchmarkDir) {
+    cpSync(overlay, input.destination, { recursive: true, force: true });
+    return;
+  }
+  for (const name of SEMANTIC_SCENARIO_FILES) {
+    const source = join(overlay, name);
+    if (existsSync(source)) copyFileSync(source, join(input.destination, name));
+  }
+}
+
 export function loadSuite(benchmark: string): {
   suite: BenchmarkSuite;
   path: string;
@@ -164,10 +192,6 @@ export function createRunManifest(input: {
   }
   const scenariosSnapshot = join(inputsDir, "scenarios");
   const evaluatorOwner = evaluatorSource ? dirname(evaluatorSource) : null;
-  const scenarioOverlayRoot =
-    evaluatorOwner && evaluatorOwner !== sourceBenchmarkDir
-      ? join(evaluatorOwner, "scenarios")
-      : null;
   for (const scenario of input.scenarios) {
     const source = join(gymRoot, "scenarios", scenario);
     if (!existsSync(source)) throw new Error(`Scenario not found: ${source}`);
@@ -175,12 +199,12 @@ export function createRunManifest(input: {
     cpSync(source, snapshot, {
       recursive: true,
     });
-    const overlay = scenarioOverlayRoot
-      ? join(scenarioOverlayRoot, safeName(scenario))
-      : null;
-    if (overlay && existsSync(overlay)) {
-      cpSync(overlay, snapshot, { recursive: true, force: true });
-    }
+    applyEvaluatorScenarioOverlay({
+      sourceBenchmarkDir,
+      evaluatorOwner,
+      scenario,
+      destination: snapshot,
+    });
   }
   const candidateSnapshot = input.candidatePath
     ? join(runDir, "candidate")

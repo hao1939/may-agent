@@ -440,6 +440,62 @@ describe("loop evaluation", () => {
       }
     }));
 
+  it("freezes semantic files owned by the benchmark's own evaluator", async () =>
+    withTempDirAsync(async (root) => {
+      const previousState = process.env["GYM_STATE_DIR"];
+      process.env["GYM_STATE_DIR"] = join(root, "state");
+      const scenario = "may-align-proof-before-adopt";
+      try {
+        const created = await runLoop(
+          {
+            phase: "test",
+            benchmark: "may-alignment",
+            scenarios: [scenario],
+            agent: "may",
+            candidate: "baseline",
+            trials: 1,
+          },
+          async (input) => {
+            const frozenScenario = join(input.scenariosDir, scenario);
+            expect(existsSync(join(frozenScenario, "semantic_criteria.md"))).toBe(
+              true,
+            );
+            expect(
+              existsSync(join(frozenScenario, "semantic_controls.json")),
+            ).toBe(true);
+            expect(readFileSync(join(frozenScenario, "task.md"), "utf8")).toBe(
+              readFileSync(
+                join(
+                  import.meta.dirname,
+                  "..",
+                  "scenarios",
+                  scenario,
+                  "task.md",
+                ),
+                "utf8",
+              ),
+            );
+            return {
+              stderr: "",
+              result: {
+                scenario: input.scenario,
+                agent: "may",
+                passed: true,
+                checks: [{ name: "decision", passed: true }],
+                agent_status: "success",
+              },
+            };
+          },
+        );
+        expect(() =>
+          assertFrozenInputs(created.runDir, created.manifest),
+        ).not.toThrow();
+      } finally {
+        if (previousState === undefined) delete process.env["GYM_STATE_DIR"];
+        else process.env["GYM_STATE_DIR"] = previousState;
+      }
+    }));
+
   it("preserves the exact candidate bytes beside a verification run", async () =>
     withTempDirAsync(async (root) => {
       const previousState = process.env["GYM_STATE_DIR"];

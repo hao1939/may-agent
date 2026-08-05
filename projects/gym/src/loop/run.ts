@@ -11,6 +11,7 @@ import { join, resolve } from "node:path";
 
 import { compareRuns, renderReport } from "./report";
 import {
+  applyEvaluatorScenarioOverlay,
   createRunManifest,
   fingerprintTree,
   gymRoot,
@@ -198,10 +199,6 @@ export function assertFrozenInputs(
   const evaluatorOwner = evaluatorSource
     ? resolve(evaluatorSource, "..")
     : null;
-  const scenarioOverlayRoot =
-    evaluatorOwner && evaluatorOwner !== sourceBenchmarkDir
-      ? join(evaluatorOwner, "scenarios")
-      : null;
   for (const scenario of baseline.scenarios) {
     const frozenCase = join(
       baselineDir,
@@ -209,18 +206,16 @@ export function assertFrozenInputs(
       safeName(scenario),
     );
     const currentCase = join(gymRoot, "scenarios", scenario);
-    const overlay = scenarioOverlayRoot
-      ? join(scenarioOverlayRoot, safeName(scenario))
-      : null;
-    if (!overlay || !existsSync(overlay)) {
-      assertSameFile(currentCase, frozenCase, scenario);
-      continue;
-    }
     const temporaryRoot = mkdtempSync(join(tmpdir(), "gym-input-check-"));
     const effectiveCase = join(temporaryRoot, safeName(scenario));
     try {
       cpSync(currentCase, effectiveCase, { recursive: true });
-      cpSync(overlay, effectiveCase, { recursive: true, force: true });
+      applyEvaluatorScenarioOverlay({
+        sourceBenchmarkDir,
+        evaluatorOwner,
+        scenario,
+        destination: effectiveCase,
+      });
       assertSameFile(effectiveCase, frozenCase, scenario);
     } finally {
       rmSync(temporaryRoot, { recursive: true, force: true });
