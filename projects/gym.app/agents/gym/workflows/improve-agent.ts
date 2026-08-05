@@ -180,6 +180,7 @@ interface CurriculumExperiment {
   input: Record<string, unknown>;
   scope: string;
   assessmentPath: string;
+  assessmentWasFresh: boolean;
   assessment: Assessment;
   problem?: AssessmentProblem;
 }
@@ -1550,6 +1551,14 @@ function existingResult(path: string): StoredResult | null {
   const value = record(JSON.parse(readFileSync(path, "utf8")));
   const summary = String(value.summary ?? "").trim();
   if (!summary) return null;
+  const approval = approvalFromStored(value);
+  const recoverableInterruption =
+    !approval &&
+    (/Workflow ["']improve-agent["'] timed out after \d+ms/i.test(summary) ||
+      summary.startsWith(
+        "Interrupted reconciliation improve/may belonged to a previous runtime",
+      ));
+  if (recoverableInterruption) return null;
   const safetyStop =
     value.stop_reason === "candidate-safety-limit" ||
     summary.startsWith("Gym reached the safety limit");
@@ -1562,7 +1571,6 @@ function existingResult(path: string): StoredResult | null {
   }
   const next = String(value.next ?? "") as CampaignNext;
   const legacyState = String(value.workflow_state ?? "");
-  const approval = approvalFromStored(value);
   const recognized =
     next === "done" ||
     next === "wait-for-approval" ||
@@ -3681,6 +3689,7 @@ async function prepareCurriculumExperiments(
         generation,
         scope,
       );
+      const assessmentWasFresh = !existsSync(assessmentPath);
       const prepared = await prepareAssessment(
         ctx,
         input,
@@ -3692,6 +3701,7 @@ async function prepareCurriculumExperiments(
         input,
         scope,
         assessmentPath,
+        assessmentWasFresh,
         assessment: prepared.assessment,
         ...(prepared.problem ? { problem: prepared.problem } : {}),
       };
@@ -4110,6 +4120,24 @@ export async function runImprovement(
     }
 
     const actionable = experiments.filter(experimentNeedsIntegration);
+    if (
+      actionable.length &&
+      experiments.some(({ assessmentWasFresh }) => assessmentWasFresh)
+    ) {
+      assertCampaignLease(lease);
+      writeJson(checkpointPath, checkpoint);
+      emitCurriculumContinuation(activeCtx, campaignId);
+      const summary = `Gym checkpointed ${experiments.length} fresh assessment${experiments.length === 1 ? "" : "s"}; integration will resume from that evidence on the next wake.`;
+      return ctx.done(summary, {
+        state: "converged",
+        summary,
+        evidence: boundedEvidence([
+          checkpointPath,
+          ...experiments.map(({ assessmentPath }) => assessmentPath),
+        ]),
+        actions: [],
+      });
+    }
     if (actionable.length) {
       const selected = await selectPriorityExperiment(
         activeCtx,

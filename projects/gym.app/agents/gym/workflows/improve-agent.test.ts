@@ -1144,9 +1144,10 @@ describe("single agent-improvement loop", () => {
       "learning",
       "training-drain.json",
     );
-    const exhausted = JSON.parse(
-      readFileSync(trainingPath, "utf8"),
-    ) as Record<string, unknown>;
+    const exhausted = JSON.parse(readFileSync(trainingPath, "utf8")) as Record<
+      string,
+      unknown
+    >;
     exhausted.evidence = Array.from(
       { length: 32 },
       (_, index) => `evidence-${index + 1}`,
@@ -1186,6 +1187,123 @@ describe("single agent-improvement loop", () => {
         { id: "track-three", state: "complete" },
       ],
     });
+  });
+
+  test("checkpoints a fresh actionable assessment before candidate integration", async () => {
+    const root = mkdtempSync(join(tmpdir(), "gym-assessment-stage-"));
+    roots.push(root);
+    const projectsRoot = join(root, "projects");
+    const gymRoot = join(projectsRoot, "gym");
+    const benchmark = "actionable-track";
+    const scenario = "actionable-case";
+    const learningRoot = join(gymRoot, "benchmarks", "may-learning");
+    const benchmarkRoot = join(gymRoot, "benchmarks", benchmark);
+    mkdirSync(learningRoot, { recursive: true });
+    mkdirSync(benchmarkRoot, { recursive: true });
+    mkdirSync(join(gymRoot, "scenarios", scenario), { recursive: true });
+    mkdirSync(join(root, "agents", "may"), { recursive: true });
+    writeFileSync(join(root, "agents", "may", "AGENTS.md"), "# May\n");
+    writeFileSync(
+      join(learningRoot, "autonomous-training.json"),
+      JSON.stringify({
+        schema_version: 1,
+        agent: "may",
+        tracks: [
+          { id: benchmark, benchmark, scenarios: [scenario], trials: 1 },
+        ],
+      }),
+    );
+    writeFileSync(
+      join(benchmarkRoot, "suite.json"),
+      JSON.stringify({ labels_file: "labels.json", scenarios: [scenario] }),
+    );
+    writeFileSync(
+      join(benchmarkRoot, "labels.json"),
+      JSON.stringify({
+        labels: {
+          [scenario]: {
+            status: "approved",
+            approved_by: "hao",
+            approved_at: "2026-08-01T00:00:00Z",
+          },
+        },
+      }),
+    );
+    writeFileSync(join(gymRoot, "scenarios", scenario, "prompt.md"), "case\n");
+
+    let runCount = 0;
+    let verifyCount = 0;
+    const loop: GymLoopApi = {
+      async run(options) {
+        runCount++;
+        const runId = `assessment-stage-${runCount}`;
+        const runDir = join(gymRoot, ".state", "benchmarks", runId);
+        mkdirSync(runDir, { recursive: true });
+        const value = manifest(runId, { [scenario]: ["fail"] });
+        value.benchmark = options.benchmark;
+        value.scenarios = [scenario];
+        writeFileSync(join(runDir, "manifest.json"), JSON.stringify(value));
+        return { runDir, manifest: value };
+      },
+      async verify() {
+        verifyCount++;
+        throw new Error("fresh assessment must return before integration");
+      },
+    };
+    const emitted: Record<string, unknown>[] = [];
+    const ctx = {
+      projectsRoot,
+      task: [
+        "## Reconciliation Task",
+        "```json",
+        JSON.stringify({
+          taskId: "improve/may",
+          generation: 1,
+          input: { agent: "may", curriculumDrain: true },
+        }),
+        "```",
+      ].join("\n"),
+      emit(event: Record<string, unknown>) {
+        emitted.push(event);
+      },
+      async runAgent() {
+        return {
+          status: "success",
+          sessionId: "classification-session",
+          structuredResult: {
+            findings: [
+              {
+                classification: "agent",
+                scenarios: [scenario],
+                failureFamily: "actionable-gap",
+                summary: "May chose the wrong next action.",
+                evidence: ["frozen-run"],
+              },
+            ],
+          },
+        };
+      },
+      done(summary: string, details: Record<string, unknown>) {
+        return { type: "done", summary, ...details };
+      },
+      blocked(reason: string) {
+        return { type: "blocked", reason };
+      },
+    } as unknown as WorkflowContext;
+
+    const result = (await runImprovement(ctx, loop)) as unknown as Record<
+      string,
+      unknown
+    >;
+    expect(result.summary).toContain("fresh assessment");
+    expect(runCount).toBe(1);
+    expect(verifyCount).toBe(0);
+    expect(emitted).toEqual([
+      expect.objectContaining({
+        type: "gym.improvement.requested",
+        params: expect.objectContaining({ reason: "curriculum-continue" }),
+      }),
+    ]);
   });
 
   test("stops a superseded attempt after its current Gym run", async () => {
@@ -2534,8 +2652,20 @@ describe("single agent-improvement loop", () => {
         },
       }),
     );
+    writeFileSync(
+      join(iterationDir, "..", "..", "result.json"),
+      JSON.stringify({
+        summary: 'Workflow "improve-agent" timed out after 7200000ms',
+        next: "ask-owner",
+        workflow_state: "converged",
+        approval: null,
+        conditions: [],
+        evidence: ["stale-timeout"],
+      }),
+    );
 
     let verifyCount = 0;
+    let reviewCount = 0;
     const loop: GymLoopApi = {
       async run() {
         throw new Error("release baseline should not run");
@@ -2566,6 +2696,7 @@ describe("single agent-improvement loop", () => {
       ].join("\n"),
       async runAgent(agent: string) {
         expect(agent).toBe("gym");
+        reviewCount++;
         return {
           status: "done",
           structuredResult: {
@@ -2591,8 +2722,12 @@ describe("single agent-improvement loop", () => {
       unknown
     >;
     expect(result.state).toBe("needs-owner");
+    expect(result.summary).toBe(
+      "Gym found a needs-human issue: The evidence is preference-sensitive.",
+    );
     expect(result).not.toHaveProperty("actions");
     expect(result).not.toHaveProperty("conditions");
+    expect(reviewCount).toBe(1);
     expect(verifyCount).toBe(0);
     expect(
       existsSync(

@@ -169,6 +169,13 @@ One reconcile may assess at most two independent learning tracks in parallel.
 Each has frozen inputs and its own evidence scope. The Gym owner then selects at
 most one result for integration.
 
+Fresh assessment and candidate integration are separate reconciliation stages.
+After an expensive assessment produces an actionable finding, Gym saves the
+assessment, emits one continuation wake, and returns. The next reconcile reuses
+that evidence before selecting and integrating a candidate. This keeps a slow
+assessment from consuming the time needed for verification and review, while a
+restart or timeout resumes from the same files instead of repeating model work.
+
 Candidate creation, revision, release verification, approval, application, and
 confirmation remain ordered. Gym never parallelizes two revisions of the same
 hypothesis and never sends more than one integrated candidate for approval.
