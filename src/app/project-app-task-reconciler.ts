@@ -131,6 +131,37 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
 
+function taskTriggerPriority(event: Record<string, unknown>, taskOwner: string): number {
+  const data = isRecord(event.data) ? event.data : {};
+  const params = isRecord(event.params) ? event.params : isRecord(data.params) ? data.params : {};
+  const source = String(event.source ?? data.source ?? "");
+  const type = String(event.type ?? "");
+  const reason = String(event.reason ?? data.reason ?? params.reason ?? "");
+  if (
+    triggerCarriesOwnerIntent(event) ||
+    type === "project.approval.submitted" ||
+    source === "human" ||
+    source === "web-ui" ||
+    source.startsWith("telegram") ||
+    reason.startsWith("retry-")
+  ) {
+    return 3;
+  }
+  if (source === `agent:${taskOwner}`) return 1;
+  return 2;
+}
+
+function preferredTaskTrigger(
+  previous: Record<string, unknown> | undefined,
+  incoming: Record<string, unknown>,
+  taskOwner: string,
+): Record<string, unknown> {
+  if (!previous) return incoming;
+  return taskTriggerPriority(incoming, taskOwner) >= taskTriggerPriority(previous, taskOwner)
+    ? incoming
+    : previous;
+}
+
 function triggerOverridesWait(trigger: Record<string, unknown> | undefined): boolean {
   if (!trigger) return false;
   if (
@@ -976,13 +1007,14 @@ export function observeProjectAppTaskIntent(
       !triggerOverridesWait(input.trigger);
     if (input.trigger && !suppressTrigger) {
       const previousTrigger = tree.taskTriggers?.[task.id];
+      const event = preferredTaskTrigger(previousTrigger?.event, input.trigger, owner);
       tree.taskTriggers = {
         ...(tree.taskTriggers ?? {}),
         [task.id]: {
           taskId: task.id,
           taskGeneration: generation,
           resourceVersion: (previousTrigger?.resourceVersion ?? 0) + 1,
-          event: input.trigger,
+          event: structuredClone(event),
           observedAt: now,
         },
       };
@@ -1114,13 +1146,14 @@ export function recordProjectAppTaskTrigger(
       return { kind: "waiting" };
     }
     const previous = tree.taskTriggers?.[taskId];
+    const next = preferredTaskTrigger(previous?.event, event, task.owner);
     tree.taskTriggers = {
       ...(tree.taskTriggers ?? {}),
       [taskId]: {
         taskId,
         taskGeneration: resource.metadata.generation,
         resourceVersion: (previous?.resourceVersion ?? 0) + 1,
-        event: structuredClone(event),
+        event: structuredClone(next),
         observedAt: new Date().toISOString(),
       },
     };
