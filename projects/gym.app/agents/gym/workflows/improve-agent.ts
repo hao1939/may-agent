@@ -4318,7 +4318,13 @@ export async function verify(
         existsSync(path)
       );
     });
-  const campaignPaths = citesTraining ? [] : [join(campaignDir, "result.json")];
+  // A cited result is the exact checkpoint produced by this reconciliation.
+  // Consult the generation-root result only for legacy outputs that did not
+  // cite a checkpoint; otherwise stale pre-track state can veto newer proof.
+  const campaignPaths =
+    citesTraining || declaredPaths.length
+      ? []
+      : [join(campaignDir, "result.json")];
   const tracksDir = join(campaignDir, "tracks");
   if (campaignSuffix && existsSync(tracksDir)) {
     campaignPaths.push(

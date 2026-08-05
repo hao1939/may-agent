@@ -542,6 +542,21 @@ describe("single agent-improvement loop", () => {
         track_state: "complete",
       }),
     );
+    const staleRootResultPath = join(
+      appDir,
+      ".state",
+      "candidates",
+      "improve-may",
+      "7",
+      "result.json",
+    );
+    writeFileSync(
+      staleRootResultPath,
+      JSON.stringify({
+        next: "ask-owner",
+        approval: { approvalId: "stale-root-approval" },
+      }),
+    );
     expect(
       await verify(
         { appDir, taskId: "improve/may", generation: 7 },
