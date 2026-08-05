@@ -718,6 +718,24 @@ describe("progressive master-validation observation", () => {
         ),
       }),
     ]);
+    const failures = failureObservationsFromArtifact({
+      root,
+      pipelineRunId: "174976032",
+      sourceBranch: "refs/heads/validation/master-validation-173853081",
+      sourceCommit: "3ffc651bdbaccc9ba08e47d2eb9671ede3aad2f4",
+      artifactName: "slice-07-test-results",
+    });
+    expect(failures).toEqual([
+      expect.objectContaining({
+        specId: "spec.traffic-api-proxy.upgrade-survival",
+        status: "error",
+        category: "insufficient_claim_coverage",
+        artifactPath: join(specRunnerDir, "result.json"),
+        reason: expect.stringContaining(
+          "Missing successful claim/audit assertions: assert.pre-upgrade.proxy-works, assert.upgrade.succeeded, assert.post-upgrade.proxy-works.",
+        ),
+      }),
+    ]);
 
     const projection = buildMasterValidationProgress({
       run: {

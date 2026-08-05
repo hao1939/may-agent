@@ -1658,16 +1658,21 @@ export function failureObservationsFromArtifact(input: {
       for (const value of result.specResults) {
         const spec = record(value);
         const specId = text(spec.specId ?? spec.spec_id);
-        const status = text(spec.status) || "unknown";
-        if (
-          !specId ||
-          ["pass", "passed", "skipped"].includes(status.toLowerCase())
-        )
+        if (!specId) continue;
+        const override = exactCoverageOverride({
+          root: input.root,
+          specId,
+          spec,
+        });
+        const status = override?.status ?? text(spec.status) ?? "unknown";
+        if (["pass", "passed", "skipped"].includes(status.toLowerCase()))
           continue;
-        const category = text(spec.category) || "unknown";
-        const reason = summarizedFailureReason(
-          text(spec.reason) || "No failure reason was recorded.",
-        );
+        const category = override?.category ?? text(spec.category) ?? "unknown";
+        const reason =
+          override?.reason ??
+          summarizedFailureReason(
+            text(spec.reason) || "No failure reason was recorded.",
+          );
         const fingerprint = createHash("sha256")
           .update(
             stableJson({
@@ -1687,7 +1692,7 @@ export function failureObservationsFromArtifact(input: {
           sourceBranch: input.sourceBranch,
           sourceCommit: input.sourceCommit,
           artifactName: input.artifactName,
-          artifactPath: path,
+          artifactPath: override?.artifactPath ?? path,
           sliceId,
           specId,
           status,
