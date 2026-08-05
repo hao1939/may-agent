@@ -1,9 +1,0 @@
-{
-  "name": "convention-verify-multi-edit-workflow",
-  "categories": ["convention-compliance"],
-  "tags": ["behavior", "workflow"],
-  "tier": "standard",
-  "timeout": 3,
-  "agent_type": "coder",
-  "workflow": true
-}
