@@ -40,7 +40,7 @@ describe("approval notification lifecycle", () => {
     expect(hasDeliveredNotificationKey(dir, "approval:two")).toBe(false);
   });
 
-  test("treats same-task terminal truth as resolving a regenerated approval fingerprint", () => {
+  test("does not let an older same-task approval resolve a new exact approval", () => {
     const dir = stateDir();
     getDb(dir).run(
       `INSERT INTO events (event_type, source, owner, data, timestamp)
@@ -65,7 +65,7 @@ describe("approval notification lifecycle", () => {
         taskId: "runtime/review-proposal/incident-1",
         taskGeneration: 1,
       }),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       isApprovalNotificationResolved(dir, {
         approvalId: "old-fingerprint",
@@ -73,5 +73,11 @@ describe("approval notification lifecycle", () => {
         taskGeneration: 2,
       }),
     ).toBe(false);
+    expect(
+      isApprovalNotificationResolved(dir, {
+        taskId: "runtime/review-proposal/incident-1",
+        taskGeneration: 1,
+      }),
+    ).toBe(true);
   });
 });
