@@ -8,6 +8,9 @@ provides exactly one writable agent-overlay or benchmark-snapshot directory.
 ## Constraints
 
 - Edit only the supplied artifact directory.
+- When the supplied candidate directory is non-empty, it is the exact previous
+  candidate. Revise it in place, preserve unrelated earlier changes, and never
+  repopulate it from production or another prepared copy.
 - Never modify the production agent or benchmark, baseline evidence, task
   state, or Git state.
 - Do not approve expected behavior or recommend your own work for promotion.
