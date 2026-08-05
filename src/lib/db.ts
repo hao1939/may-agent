@@ -32,7 +32,6 @@ export interface SqliteDb {
 type Runtime = "bun" | "node";
 
 function detectRuntime(): Runtime {
-  // @ts-expect-error — Bun global
   if (typeof Bun !== "undefined") return "bun";
   return "node";
 }
