@@ -962,6 +962,19 @@ export function qualifiesHeldBackRelease(
   );
 }
 
+export function isFrameworkOnlyComparisonFailure(
+  comparison: RunComparison,
+): boolean {
+  return (
+    comparison.gate === "fail" &&
+    comparison.labels_approved === true &&
+    comparison.same_framework_revision === false &&
+    comparison.no_invalid_runs === true &&
+    comparison.no_regressions === true &&
+    comparison.improved === true
+  );
+}
+
 function readJson<T>(path: string): T | null {
   if (!existsSync(path)) return null;
   return JSON.parse(readFileSync(path, "utf8")) as T;
@@ -2663,7 +2676,40 @@ async function runCandidateIteration(
     );
   }
 
-  const baselineManifest = readManifest(plan.baselineDir);
+  let baselineManifest = readManifest(plan.baselineDir);
+  let developmentBaselineDir = plan.baselineDir;
+  let developmentBaselineRunId = plan.baselineRunId;
+  const requestedVerificationRetry = readJson<Record<string, unknown>>(
+    join(iterationDir, "verification-retry.json"),
+  );
+  const freshBaselineCheckpointPath = join(
+    iterationDir,
+    "development-baseline-retry.json",
+  );
+  let freshBaseline = readJson<{
+    runDir: string;
+    manifest: LoopRunManifest;
+  }>(freshBaselineCheckpointPath);
+  if (
+    requestedVerificationRetry?.fresh_baseline_required === true &&
+    !freshBaseline
+  ) {
+    freshBaseline = await loop.run({
+      phase: "test",
+      benchmark: plan.benchmark,
+      scenarios: plan.focus.scenarios,
+      agent: plan.agent,
+      candidate: "baseline",
+      trials: baselineManifest.trials_per_scenario,
+      agentsRoot: workspaceAgentsRoot,
+    });
+    writeJson(freshBaselineCheckpointPath, freshBaseline);
+  }
+  if (freshBaseline) {
+    baselineManifest = freshBaseline.manifest;
+    developmentBaselineDir = freshBaseline.runDir;
+    developmentBaselineRunId = freshBaseline.manifest.run_id;
+  }
   const developmentCheckpointPath = join(
     iterationDir,
     "development-verification.json",
@@ -2671,7 +2717,7 @@ async function runCandidateIteration(
   let development = readJson<VerificationCheckpoint>(developmentCheckpointPath);
   if (!development) {
     development = await loop.verify({
-      baseline: plan.baselineRunId,
+      baseline: developmentBaselineRunId,
       candidate: candidateId,
       trials: baselineManifest.trials_per_scenario,
       agentsRoot: workspaceAgentsRoot,
@@ -2693,6 +2739,40 @@ async function runCandidateIteration(
 
   const gymRoot = join(ctx.projectsRoot, "gym");
   let comparison = development.comparison;
+  if (isFrameworkOnlyComparisonFailure(comparison) && !freshBaseline) {
+    freshBaseline = await loop.run({
+      phase: "test",
+      benchmark: plan.benchmark,
+      scenarios: plan.focus.scenarios,
+      agent: plan.agent,
+      candidate: "baseline",
+      trials: baselineManifest.trials_per_scenario,
+      agentsRoot: workspaceAgentsRoot,
+    });
+    writeJson(freshBaselineCheckpointPath, freshBaseline);
+    baselineManifest = freshBaseline.manifest;
+    developmentBaselineDir = freshBaseline.runDir;
+    development = await loop.verify({
+      baseline: freshBaseline.manifest.run_id,
+      candidate: candidateId,
+      trials: freshBaseline.manifest.trials_per_scenario,
+      agentsRoot: workspaceAgentsRoot,
+    });
+    writeJson(developmentCheckpointPath, development);
+    if (
+      development.manifest.proof.candidate_fingerprint !== candidateFingerprint
+    ) {
+      return saveAttentionResult(
+        ctx,
+        resultPath,
+        "Candidate fingerprint does not match same-framework verification",
+        [durableCandidate, development.runDir],
+        { task_id: taskId, generation, iteration },
+      );
+    }
+    recordVerificationMetrics(ctx, development);
+    comparison = development.comparison;
+  }
   let verificationPassed = comparison.gate === "pass";
   let verificationDir = development.runDir;
   let releaseBaselineDir: string | null = null;
@@ -2713,7 +2793,7 @@ async function runCandidateIteration(
         plan.agent,
         plan.releaseScenarios,
       )
-        ? { runDir: plan.baselineDir, manifest: baselineManifest }
+        ? { runDir: developmentBaselineDir, manifest: baselineManifest }
         : (recoverCompletedReleaseBaseline(
             gymRoot,
             plan.releaseBenchmark,
@@ -3090,9 +3170,12 @@ async function runCandidate(
     startIteration = recoveringRetry.iteration;
     retryCloseActions = adjudicationChildCloseActions(ctx, taskId);
   }
-  if (previous?.state === "needs-owner") {
+  if (previous?.state === "needs-owner" || previous?.state === "converged") {
     const stored = record(JSON.parse(readFileSync(resultPath, "utf8")));
-    if (requestedCandidateRetry(input, stored)) {
+    const retryableRuntimeReview =
+      previous.state === "needs-owner" ||
+      String(stored.recommendation ?? "") === "review-runtime";
+    if (retryableRuntimeReview && requestedCandidateRetry(input, stored)) {
       const iteration = Number(stored.iteration);
       const candidatePath = String(stored.candidate_path ?? "");
       const candidateFingerprint = String(stored.candidate_fingerprint ?? "");
@@ -3123,9 +3206,12 @@ async function runCandidate(
           stored.verification_run_dir ?? "",
         ),
         reason: String(input.reason),
+        fresh_baseline_required:
+          String(stored.recommendation ?? "") === "review-runtime",
         requested_at: new Date().toISOString(),
       });
       for (const file of [
+        "development-baseline-retry.json",
         "development-verification.json",
         "release-baseline.json",
         "release-verification.json",

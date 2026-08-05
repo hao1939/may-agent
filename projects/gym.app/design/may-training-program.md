@@ -213,7 +213,10 @@ not branches.
 Historical runs and decisions are append-only. A benchmark, label, scorer, or
 evaluator change requires a fresh baseline. Evidence produced by a different
 framework revision or artifact fingerprint may aid diagnosis but cannot
-authorize promotion.
+authorize promotion. When an otherwise valid comparison differs only by
+framework revision, Gym keeps the candidate frozen and performs one fresh
+same-revision baseline-and-candidate retry before classifying another failure;
+it does not revise May or ask Hao for this recoverable runtime mismatch.
 
 Metrics measure operation—valid-run rate, model/runtime cost proxies,
 classification time, accepted proposals, and prevented regressions. They wake

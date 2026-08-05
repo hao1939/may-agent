@@ -22,6 +22,7 @@ import {
   experimentNeedsIntegration,
   fingerprintTree,
   improvementInput,
+  isFrameworkOnlyComparisonFailure,
   learningPromptLines,
   loadCurriculumTargets,
   locateApprovalPacket,
@@ -1624,6 +1625,27 @@ describe("single agent-improvement loop", () => {
           gate: "fail",
           scenarios: [],
         },
+      }),
+    ).toBe(false);
+  });
+
+  test("recognizes a framework-only comparison failure as recoverable", () => {
+    const comparison = {
+      baseline_run_id: "baseline",
+      candidate_run_id: "candidate",
+      labels_approved: true,
+      same_framework_revision: false,
+      no_invalid_runs: true,
+      no_regressions: true,
+      improved: true,
+      gate: "fail" as const,
+      scenarios: [],
+    };
+    expect(isFrameworkOnlyComparisonFailure(comparison)).toBe(true);
+    expect(
+      isFrameworkOnlyComparisonFailure({
+        ...comparison,
+        no_regressions: false,
       }),
     ).toBe(false);
   });
