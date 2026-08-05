@@ -1153,14 +1153,14 @@ WHERE e.createdAt >= (unixepoch('now') * 1000 - 86400000)
     });
     expect(metric("agent.config-invalid-count-1h")).toMatchObject({
       current: 2,
-      owner: "may",
+      owner: "tech-lead",
       target: 0,
       threshold: 0,
       priority: "P0",
     });
     expect(metric("runtime.daemon-heartbeat-stale")).toMatchObject({
       current: 0,
-      owner: "may",
+      owner: "tech-lead",
       target: 0,
       threshold: 0,
       priority: "P0",
@@ -1169,70 +1169,70 @@ WHERE e.createdAt >= (unixepoch('now') * 1000 - 86400000)
       metric("runtime.project-app-schedule-orphan-count-1h"),
     ).toMatchObject({
       current: 1,
-      owner: "may",
+      owner: "tech-lead",
       target: 0,
-      threshold: 0,
+      threshold: 1,
       priority: "P1",
     });
     expect(metric("session.planner-timeout-rate-6h")).toMatchObject({
       current: 0.2,
-      owner: "may",
+      owner: "tech-lead",
       target: 0.05,
       threshold: 0.25,
       priority: "P1",
     });
     expect(metric("session.first-turn-error-count-1h")).toMatchObject({
       current: 1,
-      owner: "may",
+      owner: "tech-lead",
       target: 0,
       threshold: 20,
       priority: "P1",
     });
     expect(metric("session.empty-assistant-stop-count-1h")).toMatchObject({
       current: 1,
-      owner: "may",
+      owner: "tech-lead",
       target: 0,
       threshold: 2,
       priority: "P2",
     });
     expect(metric("message.delivery-failed-count-1h")).toMatchObject({
       current: 1,
-      owner: "may",
+      owner: "tech-lead",
       target: 0,
-      threshold: 0,
+      threshold: 2,
       priority: "P1",
     });
     expect(metric("escalation.pending-count")).toMatchObject({
       current: 2,
-      owner: "may",
+      owner: "tech-lead",
       target: 0,
       threshold: 3,
       priority: "P1",
     });
     expect(metric("guard.triggered-count-24h")).toMatchObject({
       current: 3,
-      owner: "may",
+      owner: "tech-lead",
       target: 0,
       threshold: 6500,
       priority: "P3",
     });
     expect(metric("guard.warned-count-24h")).toMatchObject({
       current: 1,
-      owner: "may",
+      owner: "tech-lead",
       target: 0,
       threshold: 6500,
       priority: "P3",
     });
     expect(metric("guard.blocked-count-15m")).toMatchObject({
       current: 1,
-      owner: "may",
+      owner: "tech-lead",
       target: 0,
       threshold: 15,
       priority: "P1",
     });
     expect(metric("guard.repeat-trigger-count-24h")).toMatchObject({
       current: 1,
-      owner: "may",
+      owner: "tech-lead",
       target: 0,
       threshold: 5,
       priority: "P2",
