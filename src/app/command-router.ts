@@ -36,12 +36,7 @@ export interface CommandRouter {
 }
 
 const mayBridgeDecisionSchema = Type.Object({
-  disposition: Type.Union([
-    Type.Literal("answer"),
-    Type.Literal("clarify"),
-    Type.Literal("reject"),
-    Type.Literal("route"),
-  ]),
+  disposition: Type.Union([Type.Literal("answer"), Type.Literal("clarify"), Type.Literal("reject"), Type.Literal("route")]),
   response: Type.String({ minLength: 1 }),
   targetProject: Type.Optional(Type.String({ minLength: 1 })),
   instruction: Type.Optional(Type.String({ minLength: 1 })),
@@ -169,15 +164,11 @@ function buildDeliveredHumanMessage(message: string, context: Record<string, unk
   const taskId = stringField(reply, "taskId");
   const eventType = stringField(issue, "eventType") ?? stringField(reply, "eventType");
   const escalationId = stringField(issue, "escalationId") ?? stringField(reply, "escalationId");
-  const project =
-    stringField(issue, "projectPath") ?? stringField(reply, "projectId") ?? stringField(issue, "targetProject");
+  const project = stringField(issue, "projectPath") ?? stringField(reply, "projectId") ?? stringField(issue, "targetProject");
   const sourceSessionId = stringField(issue, "sourceSessionId") ?? stringField(reply, "sessionId");
-  const reason =
-    stringField(issue, "reason") ?? stringField(notification, "reason") ?? stringField(notification, "summary");
+  const reason = stringField(issue, "reason") ?? stringField(notification, "reason") ?? stringField(notification, "summary");
   const requestedAction =
-    stringField(issue, "requestedAction") ??
-    stringField(notification, "requestedAction") ??
-    stringField(notification, "requestedHumanAction");
+    stringField(issue, "requestedAction") ?? stringField(notification, "requestedAction") ?? stringField(notification, "requestedHumanAction");
   const visibleNotification = stringField(notification, "text");
   const expectedClosure = stringList(reply.expectedClosure);
 
@@ -262,9 +253,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       /* best-effort owner lookup */
     }
     try {
-      const platform = JSON.parse(
-        readFileSync(join(options.projectRoot, "projects/may-agent.app/project.json"), "utf-8"),
-      ) as { owner?: unknown };
+      const platform = JSON.parse(readFileSync(join(options.projectRoot, "projects/may-agent.app/project.json"), "utf-8")) as { owner?: unknown };
       if (typeof platform.owner === "string" && platform.owner.trim()) return platform.owner.trim();
     } catch {
       /* the platform convention still has one concrete fallback */
@@ -276,9 +265,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     if (!isRecord(event)) return null;
     const data = eventData(event);
     const direct = event.type === "message.created";
-    const periodic =
-      event.type === "owner.inbox.accepted" &&
-      data.sourceEventType === "message.created";
+    const periodic = event.type === "owner.inbox.accepted" && data.sourceEventType === "message.created";
     if (!direct && !periodic) return null;
 
     const input = periodic && isRecord(data.input) ? data.input : data;
@@ -289,15 +276,9 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     if (["human", "operator", "telegram", "console", "socket"].includes(sender)) return null;
     if (["chat.start", "fork"].includes(String(input.intent ?? ""))) return null;
 
-    const sourceEventId = Number(
-      periodic
-        ? data.sourceEventId
-        : (event as Record<PropertyKey, unknown>)[EVENT_ROW_ID],
-    );
+    const sourceEventId = Number(periodic ? data.sourceEventId : (event as Record<PropertyKey, unknown>)[EVENT_ROW_ID]);
     if (!Number.isInteger(sourceEventId) || sourceEventId <= 0) return null;
-    const trace = isRecord(event.trace) && typeof event.trace.traceId === "string"
-      ? (event.trace as EventTrace)
-      : undefined;
+    const trace = isRecord(event.trace) && typeof event.trace.traceId === "string" ? (event.trace as EventTrace) : undefined;
     return { sourceEventId, input, trace };
   }
 
@@ -311,7 +292,10 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
 
   function normalizedAppId(value: unknown): string | null {
     if (typeof value !== "string" || !value.trim()) return null;
-    const id = value.trim().replace(/^projects\//, "").replace(/\.app$/, "");
+    const id = value
+      .trim()
+      .replace(/^projects\//, "")
+      .replace(/\.app$/, "");
     if (!/^[A-Za-z0-9._-]+$/.test(id)) return null;
     return existsSync(join(options.projectRoot, "projects", `${id}.app`, "app.ts")) ? id : null;
   }
@@ -356,12 +340,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     return Number.isInteger(id) && id > 0 ? id : null;
   }
 
-  function emitMayTurnFailure(input: {
-    sourceEventId: number | null;
-    sessionId?: string;
-    reason: string;
-    trace?: EventTrace;
-  }): void {
+  function emitMayTurnFailure(input: { sourceEventId: number | null; sessionId?: string; reason: string; trace?: EventTrace }): void {
     bus.emit({
       type: "may.turn.failed",
       source: "handler:may-turn",
@@ -437,7 +416,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
   }): void {
     const admitted = admitMayBreakGlassResult(input.result.structuredResult);
     if (input.result.status !== "done" || !admitted.ok) {
-      const reason = admitted.ok ? input.result.error ?? "Break-glass attempt failed" : admitted.error;
+      const reason = admitted.ok ? (input.result.error ?? "Break-glass attempt failed") : admitted.error;
       const blocked: MayBreakGlassResult = {
         disposition: "blocked",
         summary: "The break-glass attempt did not produce a valid verified result.",
@@ -578,14 +557,15 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       emitMayTurnFailure({
         sourceEventId: input.sourceEventId,
         sessionId: input.sessionId,
-        reason: admitted.ok ? input.result.error ?? "May turn failed" : admitted.error,
+        reason: admitted.ok ? (input.result.error ?? "May turn failed") : admitted.error,
         trace: input.trace,
       });
       return;
     }
     const decision = admitted.value;
+    let projectIntentEventId: number | null = null;
     if (decision.disposition === "route") {
-      const eventId = emitMayProjectIntent({
+      projectIntentEventId = emitMayProjectIntent({
         project: decision.project,
         outcome: decision.outcome,
         requiredProof: decision.requiredProof,
@@ -594,7 +574,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         sourceEventType: "human.input.received",
         trace: input.trace,
       });
-      if (!eventId) {
+      if (!projectIntentEventId) {
         emitMayTurnFailure({
           sourceEventId: input.sourceEventId,
           sessionId: input.sessionId,
@@ -623,6 +603,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         sourceEventId: input.sourceEventId ?? undefined,
         sessionId: input.sessionId,
         disposition: decision.disposition,
+        ...(decision.disposition === "route" ? { acceptance: "pending", projectIntentEventId: projectIntentEventId ?? undefined } : {}),
       },
       ...(input.trace ? { trace: input.trace } : {}),
     } as any);
@@ -684,6 +665,72 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       );
   }
 
+  function recoverOpenBreakGlassAttempts(): void {
+    if (!options.persistDir) return;
+    const db = getDb(options.persistDir);
+    const rows = db
+      .prepare(
+        `SELECT p.open_event_id, e.data
+         FROM event_pair_runs p
+         JOIN events e ON e.id = p.open_event_id
+         WHERE p.pair_name = 'may.break-glass'
+           AND p.status IN ('open', 'orphan')
+         ORDER BY p.open_event_id`,
+      )
+      .all() as Array<{ open_event_id?: unknown; data?: unknown }>;
+    for (const row of rows) {
+      let started: Record<string, unknown> = {};
+      try {
+        const parsed = typeof row.data === "string" ? JSON.parse(row.data) : row.data;
+        if (isRecord(parsed)) started = parsed;
+      } catch {
+        /* preserve recovery even when old evidence is incomplete */
+      }
+      const sessionId = nonEmptyString(started.sessionId);
+      if (!sessionId) continue;
+      const sourceEventId = integerField(started, "sourceEventId");
+      let originalMessage = "The original human request could not be reconstructed after the runtime restarted.";
+      let channel = "human";
+      let conversationId: string | undefined;
+      let channelMessageId: number | undefined;
+      if (sourceEventId) {
+        const sourceRow = db.prepare("SELECT source, data FROM events WHERE id = ?").get(sourceEventId) as { source?: unknown; data?: unknown } | undefined;
+        try {
+          const parsed = typeof sourceRow?.data === "string" ? JSON.parse(sourceRow.data) : sourceRow?.data;
+          if (isRecord(parsed)) {
+            originalMessage = nonEmptyString(parsed.text) ?? nonEmptyString(parsed.message) ?? originalMessage;
+            const conversation = isRecord(parsed.conversation) ? parsed.conversation : {};
+            conversationId = nonEmptyString(conversation.id) ?? nonEmptyString(parsed.conversationId) ?? undefined;
+            channelMessageId = integerField(conversation, "channelMessageId") ?? integerField(parsed, "channelMessageId") ?? undefined;
+            channel = nonEmptyString(conversation.channel) ?? nonEmptyString(parsed.channel) ?? nonEmptyString(sourceRow?.source) ?? channel;
+          }
+        } catch {
+          /* the failed event below still closes the privileged attempt */
+        }
+      }
+      const reason = "runtime-restarted";
+      bus.emit({
+        type: "may.break-glass.failed",
+        source: "handler:may-turn",
+        owner: "agent:may",
+        data: { sourceEventId: sourceEventId ?? undefined, sessionId, reason },
+      } as any);
+      requestBreakGlassReview({
+        originalMessage,
+        result: {
+          disposition: "blocked",
+          summary: "The runtime restarted before the break-glass attempt reached a verified result.",
+          evidence: [],
+          blocker: reason,
+        },
+        sourceEventId,
+        conversationId,
+        channelMessageId,
+        channel,
+      });
+    }
+  }
+
   function bridgeReplyTarget(input: Record<string, unknown>): string | null {
     const sender = ownerAgent(input.from);
     if (!sender || sender === "may") return null;
@@ -710,9 +757,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         content: content.trim(),
         intent: phase === "accepted" ? "status-update" : "result",
         priority: phase === "accepted" ? "P1" : "P2",
-        ...(phase === "accepted"
-          ? { bridgeAcknowledgementFor: sourceEventId }
-          : { bridgeCompletionFor: sourceEventId }),
+        ...(phase === "accepted" ? { bridgeAcknowledgementFor: sourceEventId } : { bridgeCompletionFor: sourceEventId }),
       },
       trace: bridgeTrace(sourceEventId, trace),
     } as any);
@@ -748,12 +793,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     } as any);
   }
 
-  function routeMayBridgeToApp(
-    sourceEventId: number,
-    input: Record<string, unknown>,
-    decision: MayBridgeDecision,
-    trace?: EventTrace,
-  ): boolean {
+  function routeMayBridgeToApp(sourceEventId: number, input: Record<string, unknown>, decision: MayBridgeDecision, trace?: EventTrace): boolean {
     const requestedProject = normalizedAppId(decision.targetProject);
     const fallbackProject = normalizedAppId("may-agent");
     const project = requestedProject ?? fallbackProject;
@@ -873,13 +913,8 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     }
   }
 
-  function completeMayBridge(
-    bridge: MayBridgeInput,
-    result: Awaited<ReturnType<SubagentManager["waitFor"]>>,
-  ): void {
-    const decision = isRecord(result.structuredResult)
-      ? (result.structuredResult as MayBridgeDecision)
-      : null;
+  function completeMayBridge(bridge: MayBridgeInput, result: Awaited<ReturnType<SubagentManager["waitFor"]>>): void {
+    const decision = isRecord(result.structuredResult) ? (result.structuredResult as MayBridgeDecision) : null;
     if (
       result.status !== "done" ||
       !decision ||
@@ -901,13 +936,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       return;
     }
 
-    const responseEventId = emitMayBridgeReply(
-      bridge.sourceEventId,
-      bridge.input,
-      decision.response,
-      "accepted",
-      bridge.trace,
-    );
+    const responseEventId = emitMayBridgeReply(bridge.sourceEventId, bridge.input, decision.response, "accepted", bridge.trace);
     if (decision.disposition === "route") {
       if (routeMayBridgeToApp(bridge.sourceEventId, bridge.input, decision, bridge.trace)) return;
       bus.emit({
@@ -1041,9 +1070,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     const sourceEventId = Number(data.openEventId);
     if (!Number.isInteger(sourceEventId) || sourceEventId <= 0) return;
     const db = getDb(options.persistDir);
-    const original = db
-      .prepare("SELECT data FROM events WHERE id = ? AND event_type = 'message.created'")
-      .get(sourceEventId) as { data?: unknown } | undefined;
+    const original = db.prepare("SELECT data FROM events WHERE id = ? AND event_type = 'message.created'").get(sourceEventId) as { data?: unknown } | undefined;
     if (!original) return;
     let input: Record<string, unknown> = {};
     try {
@@ -1064,21 +1091,10 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     if (existing) return;
     const outcome = String(data.outcome ?? data.disposition ?? "completed");
     const summary = String(data.summary ?? "The accountable app completed the request.").trim();
-    emitMayBridgeReply(
-      sourceEventId,
-      input,
-      `${outcome}: ${summary}`,
-      "completed",
-      isRecord(event.trace) ? (event.trace as EventTrace) : undefined,
-    );
+    emitMayBridgeReply(sourceEventId, input, `${outcome}: ${summary}`, "completed", isRecord(event.trace) ? (event.trace as EventTrace) : undefined);
   }
 
-  function appendProjectDiscussionEntry(
-    projectPath: unknown,
-    comment: unknown,
-    source?: string,
-    author?: string,
-  ): boolean {
+  function appendProjectDiscussionEntry(projectPath: unknown, comment: unknown, source?: string, author?: string): boolean {
     const normalized = normalizeProjectPath(projectPath);
     const trimmed = typeof comment === "string" ? comment.trim() : "";
     if (!normalized || !trimmed) {
@@ -1190,8 +1206,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     const escalationReply = isEscalationReplyContext(context);
     const approvalReply = approvalReplyContext(context);
     const explicitApprovalDecision = approvalReply ? parseExplicitApprovalDecision(message) : null;
-    const eventOwner =
-      typeof event === "object" && event && "owner" in event ? String((event as any).owner) : "agent:may";
+    const eventOwner = typeof event === "object" && event && "owner" in event ? String((event as any).owner) : "agent:may";
 
     if (approvalReply && explicitApprovalDecision) {
       const issue = objectField(approvalReply, "originalIssue");
@@ -1211,21 +1226,14 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         owner: normalizeEventOwner(approvalOwner),
         ...(responseTarget ? { target: responseTarget } : {}),
         data: {
-          approvalKind:
-            stringField(issue, "approvalKind") ??
-            stringField(approvalReply, "approvalKind") ??
-            "approval-packet-dispatch",
+          approvalKind: stringField(issue, "approvalKind") ?? stringField(approvalReply, "approvalKind") ?? "approval-packet-dispatch",
           approvalId: stringField(issue, "approvalId") ?? stringField(expectedResponse, "approvalId") ?? undefined,
           waitId: stringField(issue, "waitId") ?? stringField(expectedResponse, "waitId") ?? undefined,
           pathId: stringField(issue, "pathId") ?? stringField(expectedResponse, "pathId") ?? undefined,
           packetPath: stringField(issue, "packetPath") ?? undefined,
           taskId: stringField(issue, "taskId") ?? stringField(expectedResponse, "taskId") ?? undefined,
-          taskGeneration:
-            integerField(issue, "taskGeneration") ?? integerField(expectedResponse, "taskGeneration") ?? undefined,
-          artifactFingerprint:
-            stringField(issue, "artifactFingerprint") ??
-            stringField(expectedResponse, "artifactFingerprint") ??
-            undefined,
+          taskGeneration: integerField(issue, "taskGeneration") ?? integerField(expectedResponse, "taskGeneration") ?? undefined,
+          artifactFingerprint: stringField(issue, "artifactFingerprint") ?? stringField(expectedResponse, "artifactFingerprint") ?? undefined,
           projectPath: normalizedProjectPath ?? undefined,
           projectId: normalizedProjectPath ?? undefined,
           targetProject: stringField(issue, "targetProject") ?? undefined,
@@ -1270,12 +1278,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       return;
     }
     if (lower === "reload" || lower === "restart" || lower === "close") {
-      const type =
-        lower === "reload"
-          ? "runtime.reload.requested"
-          : lower === "restart"
-            ? "runtime.restart.requested"
-            : "runtime.shutdown.requested";
+      const type = lower === "reload" ? "runtime.reload.requested" : lower === "restart" ? "runtime.restart.requested" : "runtime.shutdown.requested";
       bus.emit({
         type,
         source,
@@ -1287,7 +1290,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     }
 
     const explicitSessionControl = context.explicitSessionControl === true;
-    if (targetSessionId && !mayBrokerReply && (source !== "telegram" || explicitSessionControl)) {
+    if (targetSessionId && !mayBrokerReply && explicitSessionControl) {
       bus.emit({
         type: "session.steer.requested",
         source,
@@ -1311,8 +1314,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
           message: deliveredMessage,
           channel: nonEmptyString(conversation.channel) ?? source,
           channelThreadId: nonEmptyString(conversation.channelThreadId) ?? undefined,
-          channelMessageId:
-            typeof conversation.channelMessageId === "number" ? conversation.channelMessageId : undefined,
+          channelMessageId: typeof conversation.channelMessageId === "number" ? conversation.channelMessageId : undefined,
           requestId: nonEmptyString(data.inputId) ?? undefined,
           conversationId: nonEmptyString(conversation.id) ?? undefined,
           forceNew: source === "telegram",
@@ -1336,20 +1338,6 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     }
 
     const agent = nonEmptyString(target.agent) ?? ownerAgent(eventOwner) ?? "may";
-    const boundChatSessionId = agent === "may" ? options.getChatSession()?.getSessionId?.() : null;
-    if (boundChatSessionId && context.forceNew !== true && source !== "telegram") {
-      bus.emit({
-        type: "session.steer.requested",
-        source,
-        owner: normalizeEventOwner(agent),
-        data: {
-          sessionId: boundChatSessionId,
-          message: deliveredMessage,
-          ...(Object.keys(context).length ? { context } : {}),
-        },
-      } as any);
-      return;
-    }
     bus.emit({
       type: "chat.start.requested",
       source,
@@ -1414,17 +1402,30 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     if (!message) return;
     const agent = nonEmptyString(data.agent) ?? "may";
     const source = eventSource(event, nonEmptyString(data.channel) ?? "human");
-    if (agent === "may" && data.structuredMayTurn === true) {
+    if (agent === "may" && data.structuredMayTurn !== true) {
+      bus.emit({
+        type: "human.input.received",
+        source,
+        owner: "agent:may",
+        data: {
+          actor: "human",
+          text: message,
+          conversation: {
+            id: nonEmptyString(data.conversationId) ?? undefined,
+            channel: nonEmptyString(data.channel) ?? source,
+            channelThreadId: nonEmptyString(data.channelThreadId) ?? undefined,
+            channelMessageId: integerField(data, "channelMessageId") ?? undefined,
+          },
+          target: { agent: "may" },
+          ...(isRecord(data.context) ? { context: data.context } : {}),
+        },
+      } as any);
+      return;
+    }
+    if (agent === "may") {
       startStructuredMayTurn(event, data, message, source);
       return;
     }
-    const forceNew = data.forceNew === true;
-    const chatSession = options.getChatSession();
-    if (chatSession && agent === "may" && !forceNew) {
-      chatSession.handleInput(message, source, childEventTrace(event));
-      return;
-    }
-
     bus.emit({
       type: "message.created",
       source,
@@ -1452,6 +1453,20 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
 
   function handleFork(event: any): void {
     if (!("agent" in event) || !("task" in event)) return;
+    if (event.agent === "may") {
+      bus.emit({
+        type: "human.input.received",
+        source: event.opts?.source || "socket",
+        owner: "agent:may",
+        data: {
+          actor: "human",
+          text: event.task,
+          conversation: { channel: event.opts?.source || "socket" },
+          target: { agent: "may" },
+        },
+      } as any);
+      return;
+    }
     bus.emit({
       type: "message.created",
       source: event.opts?.source || "socket",
@@ -1465,16 +1480,11 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         priority: "P0",
       },
     } as any);
-    const chatSession = options.getChatSession();
-    if (chatSession && event.agent === "may") {
-      chatSession.handleInput(event.task, "socket");
-    } else {
-      const sessionId = manager.run(event.agent, event.task, {
-        kind: (event.opts?.kind as "chat" | "job" | "call" | undefined) ?? "job",
-        requestId: event.opts?.requestId,
-      });
-      log("info", `[fork] Started ${event.agent} session: ${sessionId}`);
-    }
+    const sessionId = manager.run(event.agent, event.task, {
+      kind: (event.opts?.kind as "chat" | "job" | "call" | undefined) ?? "job",
+      requestId: event.opts?.requestId,
+    });
+    log("info", `[fork] Started ${event.agent} session: ${sessionId}`);
   }
 
   const unsubscribe = bus.subscribe((event) => {
@@ -1543,15 +1553,15 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     }
   });
 
-  queueMicrotask(() => startNextMayBridge());
+  queueMicrotask(() => {
+    recoverOpenBreakGlassAttempts();
+    startNextMayBridge();
+  });
 
   return { handleInput, close: unsubscribe };
 }
 
-function appendTelegramConversationView(
-  message: string,
-  view: TelegramConversationView,
-): string {
+function appendTelegramConversationView(message: string, view: TelegramConversationView): string {
   if (!view.focus && view.recentMessages.length === 0) return message;
   const lines = [message];
   if (view.focus) {
@@ -1569,9 +1579,7 @@ function appendTelegramConversationView(
   if (view.recentMessages.length) lines.push("", "Recent Telegram context (oldest to newest; system-provided)");
   for (const item of view.recentMessages) {
     const speaker = item.direction === "inbound" ? "Hao" : item.agent || "May";
-    const links = [item.traceId ? `trace=${item.traceId}` : "", item.taskId ? `task=${item.taskId}` : ""]
-      .filter(Boolean)
-      .join(" ");
+    const links = [item.traceId ? `trace=${item.traceId}` : "", item.taskId ? `task=${item.taskId}` : ""].filter(Boolean).join(" ");
     lines.push(`${speaker}${links ? ` [${links}]` : ""}: ${item.text.slice(0, 400)}`);
   }
   lines.push("");

@@ -402,6 +402,13 @@ const PAIR_CONTRACTS: readonly PairContract[] = [
     key: cliTaskKey,
   },
   {
+    name: "may.break-glass",
+    open: "may.break-glass.started",
+    closes: ["may.break-glass.completed", "may.break-glass.failed"],
+    timeoutMs: 60 * 60 * 1000,
+    key: sessionKey,
+  },
+  {
     name: "project.intent",
     open: "project.comment.created",
     closes: ["project.owner.reviewed"],
