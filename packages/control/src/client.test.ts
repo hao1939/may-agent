@@ -65,11 +65,16 @@ function echoThenAckEndpoint(): SocketEndpoint {
       write(chunk, _encoding, callback) {
         const frame = JSON.parse(String(chunk));
         queueMicrotask(() => {
-          stream.emit("data", Buffer.from(`${JSON.stringify(frame)}\n${JSON.stringify({
-            type: "ok",
-            command: frame.type,
-            eventId: 91,
-          })}\n`));
+          stream.emit(
+            "data",
+            Buffer.from(
+              `${JSON.stringify(frame)}\n${JSON.stringify({
+                type: "ok",
+                command: frame.type,
+                eventId: 91,
+              })}\n`,
+            ),
+          );
         });
         callback();
       },
@@ -81,8 +86,7 @@ function echoThenAckEndpoint(): SocketEndpoint {
 
 describe("daemonSocketPath", () => {
   it("uses the convention instance/interface-agent socket path", () => {
-    expect(daemonSocketPath("/state", { instance: "background", interfaceAgent: "may" }))
-      .toBe("/state/instances/background/may.sock");
+    expect(daemonSocketPath("/state", { instance: "background", interfaceAgent: "may" })).toBe("/state/instances/background/may.sock");
   });
 
   it("defaults to the default may daemon socket", () => {
@@ -92,8 +96,10 @@ describe("daemonSocketPath", () => {
 
 describe("sendDaemonEvent", () => {
   it("returns the daemon transport ack", async () => {
-    await expect(sendDaemonEvent(okEndpoint(), { type: "trigger.metrics-snapshot" }))
-      .resolves.toMatchObject({ type: "ok", command: "trigger.metrics-snapshot" });
+    await expect(sendDaemonEvent(okEndpoint(), { type: "trigger.metrics-snapshot" })).resolves.toMatchObject({
+      type: "ok",
+      command: "trigger.metrics-snapshot",
+    });
   });
 
   it("waits for the acknowledgement when the event broadcast arrives first", async () => {
@@ -108,8 +114,7 @@ describe("sendDaemonEvent", () => {
   });
 
   it("fails clearly when the socket cannot be connected", async () => {
-    await expect(sendDaemonEvent(failingEndpoint(), { type: "trigger.metrics-snapshot" }))
-      .rejects.toThrow("connection refused");
+    await expect(sendDaemonEvent(failingEndpoint(), { type: "trigger.metrics-snapshot" })).rejects.toThrow("connection refused");
   });
 
   it("rejects an unknown outcome when the socket closes after the write", async () => {
@@ -134,9 +139,10 @@ describe("sendDaemonEvent", () => {
         read() {},
         write(_chunk, _encoding, callback) {
           queueMicrotask(() => {
-            stream.emit("data", Buffer.from(
-              `${JSON.stringify({ type: "ok", command: "reload" })}\n${JSON.stringify({ type: "status", command: "status", activeAgents: [] })}\n`,
-            ));
+            stream.emit(
+              "data",
+              Buffer.from(`${JSON.stringify({ type: "ok", command: "reload" })}\n${JSON.stringify({ type: "status", command: "status", activeAgents: [] })}\n`),
+            );
           });
           callback();
         },
@@ -162,9 +168,10 @@ describe("waitForSocketEvent", () => {
           const frame = JSON.parse(String(chunk)) as Record<string, unknown>;
           writes.push(frame);
           queueMicrotask(() => {
-            stream.emit("data", Buffer.from(
-              `${JSON.stringify({ type: "ok", command: "subscribe" })}\n${JSON.stringify({ type: "session.end", data: { sessionId: "s_1" } })}\n`,
-            ));
+            stream.emit(
+              "data",
+              Buffer.from(`${JSON.stringify({ type: "ok", command: "subscribe" })}\n${JSON.stringify({ type: "session.end", data: { sessionId: "s_1" } })}\n`),
+            );
           });
           callback();
         },
@@ -184,12 +191,14 @@ describe("emitDaemonEvent", () => {
   it("wraps dot-named event payloads in a canonical envelope", async () => {
     const writes: string[] = [];
 
-    await expect(emitDaemonEvent(captureEndpoint(writes), "metric.breach", {
-      source: "metrics-snapshot",
-      owner: "dev",
-      metricId: "system.health",
-      message: "check",
-    })).resolves.toMatchObject({ type: "ok", command: "metric.breach" });
+    await expect(
+      emitDaemonEvent(captureEndpoint(writes), "metric.breach", {
+        source: "metrics-snapshot",
+        owner: "dev",
+        metricId: "system.health",
+        message: "check",
+      }),
+    ).resolves.toMatchObject({ type: "ok", command: "metric.breach" });
 
     expect(JSON.parse(writes[0] ?? "")).toEqual({
       type: "metric.breach",
@@ -205,16 +214,18 @@ describe("emitDaemonEvent", () => {
   it("preserves caller-built canonical envelopes", async () => {
     const writes: string[] = [];
 
-    await expect(emitDaemonEvent(captureEndpoint(writes), "message.created", {
-      source: "agent:dev",
-      owner: "human:operator",
-      urgency: "high",
-      data: {
-        from: "dev",
-        to: "human",
-        content: "Need approval",
-      },
-    })).resolves.toMatchObject({ type: "ok", command: "message.created" });
+    await expect(
+      emitDaemonEvent(captureEndpoint(writes), "message.created", {
+        source: "agent:dev",
+        owner: "human:operator",
+        urgency: "high",
+        data: {
+          from: "dev",
+          to: "human",
+          content: "Need approval",
+        },
+      }),
+    ).resolves.toMatchObject({ type: "ok", command: "message.created" });
 
     expect(JSON.parse(writes[0] ?? "")).toEqual({
       type: "message.created",
@@ -232,13 +243,15 @@ describe("emitDaemonEvent", () => {
   it("defaults envelope metadata without nesting an existing data payload", async () => {
     const writes: string[] = [];
 
-    await expect(emitDaemonEvent(captureEndpoint(writes), "project.status_changed", {
-      data: {
-        projectId: "p1",
-        from: "open",
-        to: "active",
-      },
-    })).resolves.toMatchObject({ type: "ok", command: "project.status_changed" });
+    await expect(
+      emitDaemonEvent(captureEndpoint(writes), "project.status_changed", {
+        data: {
+          projectId: "p1",
+          from: "open",
+          to: "active",
+        },
+      }),
+    ).resolves.toMatchObject({ type: "ok", command: "project.status_changed" });
 
     expect(JSON.parse(writes[0] ?? "")).toEqual({
       type: "project.status_changed",
@@ -255,9 +268,11 @@ describe("emitDaemonEvent", () => {
   it("keeps socket command shortcuts flat", async () => {
     const writes: string[] = [];
 
-    await expect(emitDaemonEvent(captureEndpoint(writes), "trigger.metrics-snapshot", {
-      source: "control",
-    })).resolves.toMatchObject({ type: "ok", command: "trigger.metrics-snapshot" });
+    await expect(
+      emitDaemonEvent(captureEndpoint(writes), "trigger.metrics-snapshot", {
+        source: "control",
+      }),
+    ).resolves.toMatchObject({ type: "ok", command: "trigger.metrics-snapshot" });
 
     expect(JSON.parse(writes[0] ?? "")).toEqual({
       type: "trigger.metrics-snapshot",
@@ -265,21 +280,45 @@ describe("emitDaemonEvent", () => {
     });
   });
 
-  it("sends human chat helpers as canonical chat.start.requested intents", async () => {
+  it("sends May input through the canonical human turn and keeps direct agent chat direct", async () => {
     const writes: string[] = [];
 
-    await expect(sendDaemonInput(captureEndpoint(writes), "hello May", "cli"))
-      .resolves.toMatchObject({ type: "ok", command: "chat.start.requested" });
-    await expect(sendAgentMessage(captureEndpoint(writes), "dev", "fix it", "cli"))
-      .resolves.toMatchObject({ type: "ok", command: "chat.start.requested" });
+    await expect(sendDaemonInput(captureEndpoint(writes), "hello May", "cli")).resolves.toMatchObject({
+      type: "ok",
+      command: "human.input.received",
+    });
+    await expect(sendAgentMessage(captureEndpoint(writes), "may", "review this", "cli")).resolves.toMatchObject({
+      type: "ok",
+      command: "human.input.received",
+    });
+    await expect(sendAgentMessage(captureEndpoint(writes), "dev", "fix it", "cli")).resolves.toMatchObject({
+      type: "ok",
+      command: "chat.start.requested",
+    });
 
     expect(JSON.parse(writes[0] ?? "")).toEqual({
-      type: "chat.start.requested",
+      type: "human.input.received",
       source: "cli",
       owner: "agent:may",
-      data: { agent: "may", message: "hello May", channel: "cli" },
+      data: {
+        actor: "human",
+        text: "hello May",
+        conversation: { channel: "cli" },
+        target: { agent: "may" },
+      },
     });
     expect(JSON.parse(writes[1] ?? "")).toEqual({
+      type: "human.input.received",
+      source: "cli",
+      owner: "agent:may",
+      data: {
+        actor: "human",
+        text: "review this",
+        conversation: { channel: "cli" },
+        target: { agent: "may" },
+      },
+    });
+    expect(JSON.parse(writes[2] ?? "")).toEqual({
       type: "chat.start.requested",
       source: "cli",
       owner: "agent:dev",

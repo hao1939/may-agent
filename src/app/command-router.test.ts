@@ -79,7 +79,7 @@ function fixture(
     restart: () => undefined,
     shutdown: () => undefined,
   });
-  return { root, bus, router, sent, runs, cancelled };
+  return { root, bus, router, manager, sent, runs, cancelled };
 }
 
 describe("command router human intent contract", () => {
@@ -159,9 +159,7 @@ describe("command router human intent contract", () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(runs).toHaveLength(0);
-      expect(
-        getDb(root).prepare("SELECT status FROM event_pair_runs WHERE open_event_id = ?").get(sourceEventId),
-      ).toEqual({ status: "closed" });
+      expect(getDb(root).prepare("SELECT status FROM event_pair_runs WHERE open_event_id = ?").get(sourceEventId)).toEqual({ status: "closed" });
     } finally {
       router.close();
       closeDb(root);
@@ -221,9 +219,9 @@ describe("command router human intent contract", () => {
         inputEventType: "message.created",
         instruction: "Repair the recovered-owner interruption and prove a clean terminal rerun.",
       });
-      expect(
-        db.prepare("SELECT status FROM event_pair_runs WHERE open_event_id = ?").get(sourceEventId),
-      ).toEqual({ status: "open" });
+      expect(db.prepare("SELECT status FROM event_pair_runs WHERE open_event_id = ?").get(sourceEventId)).toEqual({
+        status: "open",
+      });
       expect(
         db
           .prepare(
@@ -256,9 +254,9 @@ describe("command router human intent contract", () => {
           )
           .get(sourceEventId),
       ).toEqual({ count: 1 });
-      expect(
-        db.prepare("SELECT status FROM event_pair_runs WHERE open_event_id = ?").get(sourceEventId),
-      ).toEqual({ status: "closed" });
+      expect(db.prepare("SELECT status FROM event_pair_runs WHERE open_event_id = ?").get(sourceEventId)).toEqual({
+        status: "closed",
+      });
     } finally {
       router.close();
       closeDb(root);
@@ -291,9 +289,9 @@ describe("command router human intent contract", () => {
           )
           .get(sourceEventId),
       ).toEqual({ count: 0 });
-      expect(
-        db.prepare("SELECT status FROM event_pair_runs WHERE open_event_id = ?").get(sourceEventId),
-      ).toEqual({ status: "closed" });
+      expect(db.prepare("SELECT status FROM event_pair_runs WHERE open_event_id = ?").get(sourceEventId)).toEqual({
+        status: "closed",
+      });
     } finally {
       router.close();
       closeDb(root);
@@ -358,14 +356,19 @@ describe("command router human intent contract", () => {
     }
   });
 
-  it("propagates one human-rooted trace into an existing chat turn", () => {
+  it("propagates one human-rooted trace into an explicitly controlled chat turn", () => {
     const { root, bus, router, sent } = fixture();
     try {
       bus.emit({
         type: "human.input.received",
         source: "test",
         owner: "agent:may",
-        data: { actor: "human", text: "continue", target: { sessionId: "s_chat" } },
+        data: {
+          actor: "human",
+          text: "continue",
+          target: { sessionId: "s_chat" },
+          context: { explicitSessionControl: true },
+        },
       });
 
       expect(sent).toHaveLength(1);
@@ -391,6 +394,73 @@ describe("command router human intent contract", () => {
         trace_id: rows[0]!.trace_id,
         parent_event_id: expect.any(Number),
       });
+    } finally {
+      router.close();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("starts a fresh structured May turn for ordinary console input even when a session is targeted", async () => {
+    const { root, bus, router, sent, runs } = fixture(undefined, undefined, [{ disposition: "answer", response: "I reviewed the request." }]);
+    try {
+      bus.emit({
+        type: "human.input.received",
+        source: "console",
+        owner: "agent:may",
+        data: { actor: "human", text: "review this", target: { agent: "may", sessionId: "s_chat" } },
+      });
+
+      expect(sent).toEqual([]);
+      expect(runs).toHaveLength(1);
+      expect(runs[0]).toMatchObject({
+        agent: "may",
+        opts: { kind: "job", source: "console", toolPolicy: "deputy", requireFinish: true },
+      });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    } finally {
+      router.close();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("defaults a new May chat request to a structured deputy turn", async () => {
+    const { root, bus, router, runs } = fixture(undefined, undefined, [{ disposition: "answer", response: "The direct request is understood." }]);
+    try {
+      bus.emit({
+        type: "chat.start.requested",
+        source: "control",
+        owner: "agent:may",
+        data: { agent: "may", message: "review this direct request", channel: "control" },
+      } as any);
+
+      expect(runs).toHaveLength(1);
+      expect(runs[0]).toMatchObject({
+        agent: "may",
+        opts: { kind: "job", source: "control", toolPolicy: "deputy", requireFinish: true },
+      });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    } finally {
+      router.close();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("normalizes socket input and May forks to structured human turns", async () => {
+    const { root, bus, router, runs } = fixture(undefined, undefined, [
+      { disposition: "answer", response: "Socket input understood." },
+      { disposition: "answer", response: "Socket fork understood." },
+    ]);
+    try {
+      bus.emit({ type: "input", source: "socket", message: "from input" } as any);
+      bus.emit({ type: "fork", agent: "may", task: "from fork", opts: { source: "socket" } } as any);
+
+      expect(runs).toHaveLength(2);
+      expect(runs.map((run) => run.opts?.toolPolicy)).toEqual(["deputy", "deputy"]);
+      expect(runs.map((run) => run.text)).toEqual([expect.stringContaining("from input"), expect.stringContaining("from fork")]);
+      await new Promise((resolve) => setTimeout(resolve, 0));
     } finally {
       router.close();
       closeDb(root);
@@ -560,20 +630,16 @@ describe("command router human intent contract", () => {
   });
 
   it("turns a structured May route into one canonical app intent", async () => {
-    const { root, bus, router, runs } = fixture(
-      undefined,
-      undefined,
-      [
-        {
-          disposition: "route",
-          response: "I am routing this to Gym; you do not need to act.",
-          project: "gym",
-          outcome: "Train May on the boundary behavior.",
-          requiredProof: "The held-back Gym case passes.",
-          constraints: ["Keep the evaluator fixed."],
-        },
-      ],
-    );
+    const { root, bus, router, runs } = fixture(undefined, undefined, [
+      {
+        disposition: "route",
+        response: "I am routing this to Gym; you do not need to act.",
+        project: "gym",
+        outcome: "Train May on the boundary behavior.",
+        requiredProof: "The held-back Gym case passes.",
+        constraints: ["Keep the evaluator fixed."],
+      },
+    ]);
     mkdirSync(join(root, "projects/gym.app"), { recursive: true });
     writeFileSync(join(root, "projects/gym.app/app.ts"), "export default {};\n");
     writeFileSync(join(root, "projects/gym.app/project.json"), JSON.stringify({ owner: "gym" }));
@@ -593,15 +659,26 @@ describe("command router human intent contract", () => {
 
       expect(runs).toHaveLength(1);
       expect(runs[0]?.opts).toMatchObject({ kind: "job", toolPolicy: "deputy", requireFinish: true });
-      const row = getDb(root)
-        .prepare("SELECT owner, data FROM events WHERE event_type = 'project.comment.created' ORDER BY id DESC LIMIT 1")
-        .get() as { owner: string; data: string };
+      const row = getDb(root).prepare("SELECT owner, data FROM events WHERE event_type = 'project.comment.created' ORDER BY id DESC LIMIT 1").get() as {
+        owner: string;
+        data: string;
+        id?: number;
+      };
       expect(row.owner).toBe("agent:gym");
       expect(JSON.parse(row.data)).toMatchObject({
         projectId: "gym",
         projectPath: "projects/gym.app",
       });
       expect(JSON.parse(row.data).comment).toContain("The held-back Gym case passes.");
+      const intent = getDb(root).prepare("SELECT id FROM events WHERE event_type = 'project.comment.created' ORDER BY id DESC LIMIT 1").get() as { id: number };
+      const completion = getDb(root).prepare("SELECT data FROM events WHERE event_type = 'may.turn.completed' ORDER BY id DESC LIMIT 1").get() as {
+        data: string;
+      };
+      expect(JSON.parse(completion.data)).toMatchObject({
+        disposition: "route",
+        acceptance: "pending",
+        projectIntentEventId: intent.id,
+      });
     } finally {
       router.close();
       closeDb(root);
@@ -610,25 +687,21 @@ describe("command router human intent contract", () => {
   });
 
   it("runs break glass as one audited full-tool attempt and then requests review", async () => {
-    const { root, bus, router, runs } = fixture(
-      undefined,
-      undefined,
-      [
-        {
-          disposition: "break-glass",
-          response: "I am taking over the broken reply path; you do not need to act.",
-          reason: "The normal owner path failed after bounded recovery.",
-          scope: "Repair the reply correlation path only.",
-          terminalProof: "The original request receives the correct reply.",
-          stopCondition: "Stop after the targeted test and live proof pass.",
-        },
-        {
-          disposition: "closed",
-          summary: "The reply correlation path is repaired.",
-          evidence: ["The targeted correlation test passed."],
-        },
-      ],
-    );
+    const { root, bus, router, runs } = fixture(undefined, undefined, [
+      {
+        disposition: "break-glass",
+        response: "I am taking over the broken reply path; you do not need to act.",
+        reason: "The normal owner path failed after bounded recovery.",
+        scope: "Repair the reply correlation path only.",
+        terminalProof: "The original request receives the correct reply.",
+        stopCondition: "Stop after the targeted test and live proof pass.",
+      },
+      {
+        disposition: "closed",
+        summary: "The reply correlation path is repaired.",
+        evidence: ["The targeted correlation test passed."],
+      },
+    ]);
     try {
       bus.emit({
         type: "human.input.received",
@@ -659,6 +732,84 @@ describe("command router human intent contract", () => {
         .map((row) => row.event_type);
       expect(eventTypes).toEqual(["may.break-glass.started", "may.break-glass.completed"]);
     } finally {
+      router.close();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("closes an interrupted break-glass attempt after restart and requests one safe review", async () => {
+    let sourceEventId = 0;
+    const { root, bus, router, manager, runs } = fixture(
+      undefined,
+      ({ bus }) => {
+        const source = bus.emit({
+          type: "human.input.received",
+          source: "telegram",
+          owner: "agent:may",
+          data: {
+            actor: "human",
+            text: "repair the broken reply path",
+            conversation: { id: "telegram:chat:1:topic:0:agent:may", channel: "telegram", channelMessageId: 703 },
+            target: { agent: "may" },
+          },
+        } as any);
+        sourceEventId = Number((source as any)[Symbol.for("may-agent.eventRowId")]);
+        bus.emit({
+          type: "may.break-glass.started",
+          source: "handler:may-turn",
+          owner: "agent:may",
+          data: {
+            sourceEventId,
+            sourceSessionId: "s_source",
+            sessionId: "s_interrupted_privileged",
+            reason: "normal owner recovery failed",
+            scope: "reply path only",
+            terminalProof: "correct reply arrives",
+            stopCondition: "targeted proof passes",
+          },
+        } as any);
+      },
+      [{ disposition: "answer", response: "The privileged attempt stopped at restart; I am reviewing the blocker." }],
+    );
+    let restartedRouter: ReturnType<typeof attachCommandRouter> | undefined;
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(runs).toHaveLength(1);
+      expect(runs[0]).toMatchObject({
+        agent: "may",
+        opts: { source: "telegram", toolPolicy: "deputy", requireFinish: true, channelMessageId: 703 },
+      });
+      expect(runs[0]?.text).toContain("repair the broken reply path");
+      expect(runs[0]?.text).toContain("runtime-restarted");
+      expect(runs[0]?.text).toContain("Do not choose break-glass again");
+      const db = getDb(root);
+      expect(
+        db.prepare("SELECT status FROM event_pair_runs WHERE pair_name = 'may.break-glass' AND correlation_key = ?").get("s_interrupted_privileged"),
+      ).toEqual({ status: "closed" });
+      expect(
+        db
+          .prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'may.break-glass.failed' AND json_extract(data, '$.sourceEventId') = ?")
+          .get(sourceEventId),
+      ).toEqual({ count: 1 });
+
+      router.close();
+      restartedRouter = attachCommandRouter({
+        bus,
+        manager: manager as any,
+        getChatSession: () => undefined,
+        clearCancelLatch: () => undefined,
+        projectRoot: root,
+        persistDir: root,
+        reload: () => undefined,
+        restart: () => undefined,
+        shutdown: () => undefined,
+      });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(runs).toHaveLength(1);
+    } finally {
+      restartedRouter?.close();
       router.close();
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
@@ -696,7 +847,12 @@ describe("command router human intent contract", () => {
         type: "human.input.received",
         source: "test",
         owner: "agent:may",
-        data: { actor: "human", text: "do the work", target: { sessionId: "s_chat" } },
+        data: {
+          actor: "human",
+          text: "do the work",
+          target: { sessionId: "s_chat" },
+          context: { explicitSessionControl: true },
+        },
       });
       const intentTrace = sent[0]!.opts!.trace as { traceId: string; parentEventId: number };
       const start = {

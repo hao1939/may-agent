@@ -132,6 +132,7 @@ export const MAY_TURN_INSTRUCTIONS = [
   "Put the exact plain-language human reply in both finish summary and result.response.",
   "Choose answer, clarify, reject, route, or break-glass.",
   "Route normal durable work to one existing project app. State the outcome and proof; never choose its internal task, owner, workflow, session, or wake mechanism.",
+  "For route, tell the human that routing is in progress and app-owner acceptance is pending. Do not claim the owner accepted, started, or will finish the work.",
   "Choose break-glass only when Hao explicitly asked May to take over, the normal path is broken after bounded recovery, urgent harm would result from waiting, or no app owns a bounded outcome.",
   "Convenience, curiosity, healthy owner progress, one ordinary retry, or unclear human intent never justify break glass.",
   "Break glass never grants missing authority or bypasses security, credentials, approval, or irreversible-change constraints.",
