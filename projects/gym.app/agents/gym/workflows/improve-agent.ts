@@ -2043,6 +2043,8 @@ async function buildBenchmarkFix(
       `Writable benchmark snapshot: ${workspacePath}`,
       "Edit only that snapshot. Do not edit production, agent files, run evidence, task state, or Git state.",
       "Keep the change minimal. Preserve approved truth unless the proposal explicitly identifies truth that requires Hao's approval.",
+      "Use deterministic checks for objective structure and safety. Use calibrated semantic criteria with positive and negative controls for open-ended meaning.",
+      "Reject synonym lists, phrase normalization, and exact-word matching as fixes for open-ended meaning.",
       "Return every changed file and concrete validation evidence.",
     ].join("\n"),
     { schema: implementationSchema, timeoutMs: 1_800_000 },
