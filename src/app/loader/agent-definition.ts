@@ -46,6 +46,8 @@ export async function buildAgentDefinition(options: AgentDefinitionOptions): Pro
     knowledgeDir: existsSync(knowledgeDir) ? knowledgeDir : undefined,
     workspace: existsSync(workspace) ? workspace : undefined,
     projectRoot: options.projectRoot,
+    appLocal,
+    projectId: source.projectId,
     apiKey: options.model.apiKey,
     memoryLimit: config.memoryLimit,
     compaction: config.compaction,

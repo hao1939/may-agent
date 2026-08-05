@@ -13,6 +13,7 @@ import { storeNotificationMessage } from "../lib/db/notifications.js";
 function fixture(
   bridgeDecision?: Record<string, unknown>,
   beforeAttach?: (context: { root: string; bus: EventBus }) => void,
+  turnResults: Array<Record<string, unknown>> = [],
 ) {
   const root = mkdtempSync(join(tmpdir(), "may-command-router-"));
   const bus = new EventBus();
@@ -22,6 +23,7 @@ function fixture(
   const sent: Array<{ sessionId: string; text: string; opts?: Record<string, unknown> }> = [];
   const runs: Array<{ agent: string; text: string; opts?: Record<string, unknown> }> = [];
   const cancelled: string[] = [];
+  let turnResultIndex = 0;
   const manager = {
     status: () => [
       {
@@ -37,15 +39,32 @@ function fixture(
       runs.push({ agent, text, opts });
       return `s_new_${runs.length}`;
     },
-    waitFor: async (sessionId: string) => ({
-      sessionId,
-      status: "done",
-      lastAssistantText: "bridge decision",
-      messages: [],
-      duration: "1ms",
-      outputDir: root,
-      structuredResult: bridgeDecision,
-    }),
+    waitFor: (sessionId: string) => {
+      const run = runs[Number(sessionId.replace("s_new_", "")) - 1];
+      const requestId = String(run?.opts?.requestId ?? "");
+      if (requestId.startsWith("may-turn:") || requestId.startsWith("may-break-glass:")) {
+        const structuredResult = turnResults[turnResultIndex++];
+        if (!structuredResult) return new Promise(() => undefined);
+        return Promise.resolve({
+          sessionId,
+          status: "done",
+          lastAssistantText: "structured May result",
+          messages: [],
+          duration: "1ms",
+          outputDir: root,
+          structuredResult,
+        });
+      }
+      return Promise.resolve({
+        sessionId,
+        status: "done",
+        lastAssistantText: "bridge decision",
+        messages: [],
+        duration: "1ms",
+        outputDir: root,
+        structuredResult: bridgeDecision,
+      });
+    },
     cancel: (sessionId: string) => cancelled.push(sessionId),
   };
   beforeAttach?.({ root, bus });
@@ -451,11 +470,13 @@ describe("command router human intent contract", () => {
       expect(runs[0]).toMatchObject({
         agent: "may",
         opts: {
-          kind: "chat",
+          kind: "job",
           source: "telegram",
-          requestId: "telegram:501",
+          requestId: expect.stringMatching(/^may-turn:/),
           conversationId: "telegram:chat:123:topic:0:agent:may",
           channelMessageId: 501,
+          requireFinish: true,
+          toolPolicy: "deputy",
           trace: { traceId: expect.any(String), parentEventId: expect.any(Number) },
         },
       });
@@ -525,11 +546,118 @@ describe("command router human intent contract", () => {
       }
 
       expect(runs).toHaveLength(2);
-      expect(runs[0]?.opts?.requestId).toBe("telegram:601");
-      expect(runs[1]?.opts?.requestId).toBe("telegram:602");
+      expect(runs[0]?.opts?.requestId).toMatch(/^may-turn:/);
+      expect(runs[1]?.opts?.requestId).toMatch(/^may-turn:/);
+      expect(runs[0]?.opts?.requestId).not.toBe(runs[1]?.opts?.requestId);
       expect(runs[0]?.opts?.channelMessageId).toBe(601);
       expect(runs[1]?.opts?.channelMessageId).toBe(602);
       expect((runs[0]?.opts?.trace as any)?.traceId).not.toBe((runs[1]?.opts?.trace as any)?.traceId);
+    } finally {
+      router.close();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("turns a structured May route into one canonical app intent", async () => {
+    const { root, bus, router, runs } = fixture(
+      undefined,
+      undefined,
+      [
+        {
+          disposition: "route",
+          response: "I am routing this to Gym; you do not need to act.",
+          project: "gym",
+          outcome: "Train May on the boundary behavior.",
+          requiredProof: "The held-back Gym case passes.",
+          constraints: ["Keep the evaluator fixed."],
+        },
+      ],
+    );
+    mkdirSync(join(root, "projects/gym.app"), { recursive: true });
+    writeFileSync(join(root, "projects/gym.app/app.ts"), "export default {};\n");
+    writeFileSync(join(root, "projects/gym.app/project.json"), JSON.stringify({ owner: "gym" }));
+    try {
+      bus.emit({
+        type: "human.input.received",
+        source: "telegram",
+        owner: "agent:may",
+        data: {
+          actor: "human",
+          text: "train May on the boundary behavior",
+          conversation: { id: "telegram:chat:1:topic:0:agent:may", channel: "telegram", channelMessageId: 701 },
+          target: { agent: "may" },
+        },
+      });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(runs).toHaveLength(1);
+      expect(runs[0]?.opts).toMatchObject({ kind: "job", toolPolicy: "deputy", requireFinish: true });
+      const row = getDb(root)
+        .prepare("SELECT owner, data FROM events WHERE event_type = 'project.comment.created' ORDER BY id DESC LIMIT 1")
+        .get() as { owner: string; data: string };
+      expect(row.owner).toBe("agent:gym");
+      expect(JSON.parse(row.data)).toMatchObject({
+        projectId: "gym",
+        projectPath: "projects/gym.app",
+      });
+      expect(JSON.parse(row.data).comment).toContain("The held-back Gym case passes.");
+    } finally {
+      router.close();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("runs break glass as one audited full-tool attempt and then requests review", async () => {
+    const { root, bus, router, runs } = fixture(
+      undefined,
+      undefined,
+      [
+        {
+          disposition: "break-glass",
+          response: "I am taking over the broken reply path; you do not need to act.",
+          reason: "The normal owner path failed after bounded recovery.",
+          scope: "Repair the reply correlation path only.",
+          terminalProof: "The original request receives the correct reply.",
+          stopCondition: "Stop after the targeted test and live proof pass.",
+        },
+        {
+          disposition: "closed",
+          summary: "The reply correlation path is repaired.",
+          evidence: ["The targeted correlation test passed."],
+        },
+      ],
+    );
+    try {
+      bus.emit({
+        type: "human.input.received",
+        source: "telegram",
+        owner: "agent:may",
+        data: {
+          actor: "human",
+          text: "take over and repair the broken reply path",
+          conversation: { id: "telegram:chat:1:topic:0:agent:may", channel: "telegram", channelMessageId: 702 },
+          target: { agent: "may" },
+        },
+      });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(runs[0]?.opts).toMatchObject({ toolPolicy: "deputy" });
+      expect(runs[1]?.opts).toMatchObject({
+        kind: "job",
+        source: "may-break-glass",
+        toolPolicy: "full",
+        requireFinish: true,
+      });
+      expect(runs[1]?.text).toContain("Repair the reply correlation path only.");
+      expect(runs[2]?.opts).toMatchObject({ toolPolicy: "deputy" });
+      const eventTypes = getDb(root)
+        .prepare("SELECT event_type FROM events WHERE event_type LIKE 'may.break-glass.%' ORDER BY id")
+        .all()
+        .map((row) => row.event_type);
+      expect(eventTypes).toEqual(["may.break-glass.started", "may.break-glass.completed"]);
     } finally {
       router.close();
       closeDb(root);
