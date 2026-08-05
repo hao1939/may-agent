@@ -35,6 +35,7 @@ const ownerReviewReasons = new Set([
   "project-comment",
   "manual-library-review",
   "repair-index",
+  "owner-message",
 ]);
 
 export function resolveScoutTask(
@@ -129,6 +130,26 @@ async function routeScoutEvent(
 ): Promise<unknown> {
   if (event.type === "project.xhs_credential.check") {
     return observeXhsCredential(ctx);
+  }
+
+  if (event.type === "metric.breach") {
+    const details = eventDetails(event);
+    const owner = String(event.owner ?? details.owner ?? "");
+    const metricId = String(
+      details.metricId ?? details.metric_id ?? details.metric ?? "",
+    );
+    if (
+      owner !== "scout" &&
+      owner !== "agent:scout" &&
+      !metricId.startsWith("scout.")
+    ) {
+      return ctx.noop(`ignored non-Scout metric breach ${metricId || "<unknown>"}`);
+    }
+    return ctx.emit(
+      ownerRequested("library-health-signal", {
+        metric: details,
+      }),
+    );
   }
 
   return undefined;
@@ -265,7 +286,10 @@ export default defineProjectApp({
     resolve: resolveScoutTask,
   },
 
-  events: [{ type: "project.xhs_credential.check", project: projectId }],
+  events: [
+    { type: "project.xhs_credential.check", project: projectId },
+    { type: "metric.breach" },
+  ],
 
   actions: {
     "review-library": {

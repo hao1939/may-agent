@@ -1,86 +1,50 @@
-# System Operations Convergence Tracker
+# System Operations Convergence
 
-**Status:** Active tracker.
-**Design authority:** [Architecture](../2a-design/architecture.md),
+**Status:** Completed.
+**Design authority:** [Work model](../1-principles/work-model.md),
 [Metrics](../2a-design/metrics.md), [Events](../2a-design/events.md), and
 [Agent App Contract](../2a-design/agent-app.md).
 
-## Goal
+## Result
 
-Keep platform operational health under `may-agent.app` ownership while shared
-infrastructure remains mechanical:
+Platform operations belong to `may-agent.app`; domain operations belong to
+their domain apps. May owns the immediate conversation and no standing
+background schedules.
 
 ```text
 infrastructure observes, persists, routes, and recovers
-  -> may-agent.app owner judges platform meaning
-  -> finite repair work uses the normal task controller
+  -> owning app judges meaning and reconciles durable work
+  -> May reviews the result and closes the human conversation
 ```
 
-This tracker does not introduce a system-ops app, controller, task type, or
-parallel health lifecycle.
+Current ownership:
 
-## Current runtime
+| Responsibility | Owner |
+| --- | --- |
+| Runtime session cleanup and bounded recovery | `may-agent.app/session-recovery` |
+| Canonical escalation delivery | `may-agent.app/escalation` |
+| Platform health measurement | `may-agent.app/metrics-snapshot` |
+| Metric judgment and follow-through | The metric's owning app |
+| Reviewed May-session learning intake | `gym.app` |
+| Evaluator feedback projection | `evaluation.app` |
 
-The current global May handler set is intentionally small:
+The global metric reactor and file-based coaching queue were removed. Metric
+events now enter the owning app directly; its regular owner review is the
+Kubernetes-style recovery path. This avoids a second scheduler that calls app
+agents from outside their ownership boundary.
 
-| Handler                | Responsibility                                                |
-| ---------------------- | ------------------------------------------------------------- |
-| `metric-alert-reactor` | Deduplicate and route metric breaches                         |
-| `session-recovery`     | React to failed/interrupted sessions and stale immediate work |
-| `escalation`           | Route explicit cross-owner requests                           |
-| `metrics-snapshot`     | Measure and persist runtime health                            |
-| `coaching-consumer`    | Consume bounded evaluation/coaching signals                   |
-| `feedback-echo-sync`   | Project evaluator feedback into agent-facing context          |
+## Proof
 
-Project steward, creative-audit, closed-loop-steward, daily-alert-review, and
-eval-llm-scan control paths are retired. Project-specific schedules, watchers,
-event correlation, task state, and judgment live in their owning apps.
+The migration retained or added focused tests for escalation delivery, session
+recovery, metric ownership, app metric routing, Gym evaluation intake, and
+evaluation feedback projection. Each old May schedule was removed only after
+its replacement or obsolescence was established.
 
-`may-agent.app` owns platform review, operations health review, and the daily
-operations digest through tech-lead-owned workflows and app schedules.
+## Ongoing review
 
-## Remaining convergence
+Regular design-versus-implementation review should continue to check that:
 
-### 1. Coaching ownership
-
-Decide whether `coaching-consumer` remains a mechanical global observation or
-moves completely under Evaluation/Coach app ownership. Migration requires one
-accountable owner, no duplicate route, replay coverage, and removal of the old
-handler only after replacement proof.
-
-### 2. Feedback projection ownership
-
-Decide whether `feedback-echo-sync` remains shared mechanical projection or
-moves under Evaluation. Preserve agent-context delivery and idempotency without
-creating a second evaluation lifecycle.
-
-### 3. Operational evidence hygiene
-
-Keep volatile incidents, metric snapshots, and migration measurements in dated
-evidence. Stable design documents contain only current ownership and runtime
-contracts.
-
-### 4. App heartbeat overlap
-
-Audit app-local `*-heartbeat.ts` workflows against each app's schedules. Keep
-only one recurring owner cadence per responsibility. The loader may retain
-app-local heartbeat discovery as compatibility, but a platform/app schedule and
-an auto-generated heartbeat must not both review the same responsibility by
-accident.
-
-## Migration gate
-
-Before retiring either remaining handler, prove:
-
-1. the replacement signal and accountable owner;
-2. the exact event/task path that closes the loop;
-3. one replay or regression test for the original failure class;
-4. no duplicate live route after reload/restart; and
-5. current metrics and human readouts remain truthful.
-
-## Completion
-
-This tracker is complete when both remaining handlers have an explicit retained
-or migrated disposition, overlapping app heartbeat ownership has an explicit
-disposition, tests prove the selected paths, and the current handler inventory
-is documented only in runtime configuration and audit tools.
+- no May-owned schedule or background queue returns;
+- every operational signal has one app owner and a terminal disposition;
+- app schedules do not duplicate auto-generated heartbeats; and
+- mechanical observers remain separate from owner judgment.

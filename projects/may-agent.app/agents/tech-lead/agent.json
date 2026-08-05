@@ -2,8 +2,8 @@
   "name": "tech-lead",
   "description": "May-agent platform owner \u2014 keeps the app, runtime, SDK, UI, and project model coherent",
   "domain": "platform ownership, system simplification, runtime design, project app integrity",
-  "model": "claude-opus-4-6",
+  "model": "gpt-5.4",
   "heartbeat": false,
-  "tools": ["coding", "agents", "message", "workflow", "checkpoint", "finish"],
+  "tools": ["coding", "agents", "message", "workflow", "checkpoint", "cron", "finish"],
   "context_files": ["context.md", "last-eval.md"]
 }

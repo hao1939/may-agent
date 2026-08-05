@@ -62,12 +62,12 @@ describe("evaluation app metric routing", () => {
 });
 
 describe("evaluation app task reconciliation", () => {
-  test("collapses completed sessions into one compact aftermath frontier wake", async () => {
+  test("routes concrete session endings into explicit per-session aftermath work", async () => {
     const emitted: Array<Record<string, unknown>> = [];
     expect(
       resolveEvaluationTask({
         type: "evaluation.aftermath.scan",
-        params: { reason: "session-end" },
+        params: { reason: "session-end-backfill" },
       }),
     ).toMatchObject({
       id: "runtime/aftermath-backfill",
@@ -87,9 +87,27 @@ describe("evaluation app task reconciliation", () => {
     });
     expect(emitted).toEqual([
       {
+        type: "evaluation.session.requested",
+        project: "evaluation",
+        params: { sessionId: "s/eval:42", reason: "session-end" },
+      },
+    ]);
+  });
+
+  test("falls back to compact frontier scan only when session.end lacks a session id", async () => {
+    const emitted: Array<Record<string, unknown>> = [];
+
+    await routeEvaluationEvent(context(emitted), {
+      type: "session.end",
+      data: {
+        agent: "may",
+      },
+    });
+    expect(emitted).toEqual([
+      {
         type: "evaluation.aftermath.scan",
         project: "evaluation",
-        params: { reason: "session-end" },
+        params: { reason: "session-end-missing-session-id" },
       },
     ]);
   });
@@ -118,6 +136,19 @@ describe("evaluation app task reconciliation", () => {
       type: "evaluation.pipeline.check",
       project: "evaluation",
     });
+  });
+
+  test("keeps deterministic feedback projection outside the task graph", () => {
+    expect(
+      resolveEvaluationTask({ type: "evaluation.feedback.project" }),
+    ).toBeNull();
+    expect(app.events).toContainEqual({
+      type: "evaluation.feedback.project",
+      project: "evaluation",
+    });
+    expect(app.schedules).toContainEqual(
+      expect.objectContaining({ id: "evaluation-feedback-projection" }),
+    );
   });
 
   test("uses standing maintain tasks for recurring agent responsibilities", () => {
@@ -207,6 +238,23 @@ describe("evaluation app task reconciliation", () => {
     expect(task).toMatchObject({
       id: "runtime/owner-review",
       mode: "maintain",
+      workflow: "evaluator-heartbeat",
+    });
+  });
+
+  test("leaves ordinary owner messages to the shared lifecycle", () => {
+    expect(app.events).not.toContain("message.created");
+    expect(app.events).toContain("telegram.reply");
+    expect(
+      resolveEvaluationTask({
+        type: "project.owner.requested",
+        project: "evaluation",
+        reason: "owner-message",
+        inputEventId: 9002,
+        inputEventType: "message.created",
+      }),
+    ).toMatchObject({
+      id: "runtime/owner-review",
       workflow: "evaluator-heartbeat",
     });
   });

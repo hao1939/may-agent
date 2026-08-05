@@ -1,8 +1,8 @@
 # Metrics & Alerts
 
 **Design status:** Accepted.
-**Implementation status:** Partial; recording, evaluation, alerts, and the
-generic reactor are implemented. Project-app feedback remains selector-driven.
+**Implementation status:** Implemented. Recording and alert evaluation are
+mechanical; owner-targeted events wake declared app routes.
 
 ## Overview
 
@@ -23,16 +23,18 @@ Metrics do not directly drive work. The unified work model is:
   compact blocked/dependency context. The owner classifies blockers, creates or
   links local problem/unblock work, keeps true external waits precise, and
   escalates only when the blocker crosses an ownership boundary.
-- A project app consumes the event only through a declared event/task selector.
-  Otherwise the owner inbox and generic alert reactor keep it visible.
+- A project app consumes the event through a declared event/task selector.
+  Periodic app-owner review is the recovery path for a missed or unchanged
+  signal; no global agent calls another app's owner directly.
 - The agent **judges** what the signal means using goal, facts, history, and a causal theory, then acts, records evidence, or escalates.
-- Only **P0 (urgent) metrics may fork an agent directly**. Lower priorities use
-  normal app, owner-inbox, heartbeat, or delayed fallback review.
+- **P0 (urgent) metrics wake the owning app immediately.** Lower priorities use
+  the app's declared routing and normal owner-review cadence.
 
 This is intentional. Forking on every breach creates reactive churn. Metrics
 are observations that enter an ownership loop, not acceptance decisions.
 
-Built-in metrics are owned by `agents/may/handlers/metrics-snapshot.ts`; custom
+Built-in metrics are measured by
+`projects/may-agent.app/agents/tech-lead/handlers/metrics-snapshot.ts`; custom
 metrics can be added with `source_query` or `source_command`.
 
 ## Schema
@@ -91,7 +93,7 @@ metric IDs, formulas, targets, thresholds, priorities, and active/retired
 status:
 
 - built-in definitions: `ALL_METRICS` in
-  `agents/may/handlers/metrics-snapshot.ts`;
+  `projects/may-agent.app/agents/tech-lead/handlers/metrics-snapshot.ts`;
 - current runtime status and custom definitions: the `metrics` table; and
 - historical values: `metric_snapshots`.
 
@@ -149,8 +151,8 @@ metrics-snapshot handler
   -> alerts are represented in metric_alerts
   -> metric.breach routes to the resolved metric/project owner
   -> matching app selectors may translate it into project work
-  -> owner inbox and known auto-handlers preserve unclaimed signals
-  -> metric-alert-reactor is the generic fallback for unhandled alerts
+  -> each owning app reconciles the signal toward an owner disposition
+  -> the app's periodic owner review recovers missed or unchanged signals
 ```
 
 The metrics handler measures and records metrics only. Database retention,
@@ -169,12 +171,10 @@ semantic event. Metrics may alert on stale observation infrastructure, but task
 resync never treats metric age as Condition truth. Historical notes and weak
 signals do not make a project active by themselves.
 
-The usual path is owner/context-driven: agents see metric state and unresolved
-alerts, known owner auto-handlers can act first, and the generic alert reactor
-only handles the remaining cases. `metric-alert-reactor` forks an owner directly
-for P0 and runs fallback triage for still-open lower-priority alerts after the
-configured grace period. P3 gets a longer grace period and longer retriage
-cooldown, but it is not exempt from owner judgment.
+The usual path is app-owner driven. The metric event wakes the app; the app
+decides whether to create or repair work, calibrate the signal, accept an
+exception, or request human authority. Periodic owner review supplies the
+Kubernetes-style safety net without a second alert scheduler.
 
 Agents handling an alert must follow
 [metric-alerts.md](../2b-manual/metric-alerts.md): judge the alert, choose one
@@ -191,11 +191,11 @@ Owner convention:
 1. `metrics.owner` if set.
 2. `project:<id>` when the definition names a project but no explicit owner.
 3. Metric id prefix if it matches an agent name.
-4. `may` by default.
+4. the `may-agent.app` platform owner by default.
 
-System-wide `project.*` metrics with no `metrics.project` stay owned by `may`.
-An explicit owner wins and is responsible for preserving project context or
-handing the issue back when needed.
+System-wide metrics with no project stay owned by `may-agent.app`. An explicit
+owner wins and is responsible for preserving project context or handing the
+issue back when needed.
 
 Ownership routing is runtime behavior, not an agent triage operation. Agents
 should not manually reroute alerts by editing `metrics.owner`; if routing is
@@ -209,7 +209,8 @@ Project feedback:
 - The event carries `metricId`, current value, threshold, priority, direction,
   snapshot time, alert id, and any recent trend points available.
 - The project owner decides what the signal means. The runtime does not create
-  task-tree branches, mark tasks blocked, or page a human except for P0.
+  task-tree branches, mark tasks blocked, or page a human. The app owner decides
+  whether a real human decision exists.
 - `metric.recovered` follows the same project owner path so stale alert context
   can be closed or annotated instead of silently disappearing.
 - Prefer narrow `metricIds` selectors when only known metrics need app-specific
@@ -287,8 +288,8 @@ the metric is no longer useful. Owner judgment decides which.
 
 - **Definition authority:** built-ins in `ALL_METRICS`; custom/current runtime
   definitions and status in the `metrics` table.
-- **Snapshot handler:** `agents/may/handlers/metrics-snapshot.ts` — auto-registers, measures every 5min, emits `metric.breach` events when `breached && !openAlert`
-- **Alert reactor:** `agents/may/handlers/metric-alert-reactor.ts` — consumes `metric.breach` events. P0 forks the owner directly. P1/P2/P3 remain visible for heartbeat/project handling first, then get fallback owner triage if still open after their grace period.
+- **Snapshot handler:** `projects/may-agent.app/agents/tech-lead/handlers/metrics-snapshot.ts` — auto-registers, measures every 5min, and emits owner-targeted metric events.
+- **Alert handling:** each owning app declares its metric selectors and reconciles the signal; its periodic owner review is the recovery safety net.
 - **DB schema:** `projects/may-agent/src/lib/db/schema.ts`
 - **Retention**: snapshots kept 30 days, pruned after each measurement run
 - **Error isolation**: each metric measured independently — one failure doesn't block others
@@ -307,8 +308,7 @@ metric service records/evaluates
   -> matching app event/task selector, when declared
      -> deterministic app translation or owner task intent
      -> metric.feedback.routed receipt
-  -> otherwise owner inbox remains queryable
-  -> generic reactor handles urgent or still-open fallback
+  -> periodic app-owner review rechecks unresolved state
 ```
 
 An app is not selected merely because its owner name resembles the metric
@@ -316,10 +316,10 @@ prefix. It must declare a matching selector. Prefer a narrow project or
 `metricIds` selector; use a type-only selector only when the app intentionally
 owns every matching metric event.
 
-`metric.feedback.routed` proves that the app route accepted the signal. It
-does not prove owner judgment, remediation, metric recovery, or project/task
-completion. The generic reactor may still triage an alert that remains open
-after the configured grace period.
+`metric.feedback.routed` proves that the app route accepted the signal. It does
+not prove owner judgment, remediation, metric recovery, or project/task
+completion. The owning app continues reconciliation until it records a real
+disposition.
 
 The owner then chooses one evidence-backed disposition:
 

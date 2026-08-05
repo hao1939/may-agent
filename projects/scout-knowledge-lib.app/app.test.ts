@@ -74,6 +74,45 @@ describe("Scout task reconciliation", () => {
         reason: "manual-library-review",
       })?.workflow,
     ).toBe("knowledge-planner");
+    expect(
+      resolveScoutTask({
+        type: "project.owner.requested",
+        project: "scout-knowledge-lib",
+        reason: "owner-message",
+        inputEventId: 9001,
+        inputEventType: "message.created",
+      }),
+    ).toMatchObject({ id: "library-maintenance", workflow: "knowledge-planner" });
+  });
+
+  it("routes Scout metric breaches to the app owner", async () => {
+    const emitted: Array<Record<string, unknown>> = [];
+    await app.onEvent?.(
+      {
+        appPath: (path: string) => path,
+        emit: (event: Record<string, unknown>) => {
+          emitted.push(event);
+          return event;
+        },
+        noop: (reason: string) => ({ reason }),
+      },
+      {
+        type: "metric.breach",
+        owner: "agent:scout",
+        data: {
+          metricId: "scout.knowledge-practice-loaded",
+          current: 0,
+        },
+      },
+    );
+
+    expect(emitted).toEqual([
+      expect.objectContaining({
+        type: "project.owner.requested",
+        project: "scout-knowledge-lib",
+        reason: "library-health-signal",
+      }),
+    ]);
   });
 
   it("rejects infrastructure and unknown owner wakes", () => {
@@ -116,9 +155,7 @@ describe("Scout task reconciliation", () => {
       type: "project.xhs_credential.check",
       project: "scout-knowledge-lib",
     });
-    expect(app.events.some((event) => event.type === "metric.breach")).toBe(
-      false,
-    );
+    expect(app.events).toContainEqual({ type: "metric.breach" });
     expect(app.events.some((event) => event.type === "project.tick")).toBe(
       false,
     );

@@ -16,7 +16,7 @@ completion handling, and session-independent caller identity still have
 convergence gaps described below. A fresh May verification turn now wakes when
 a human-linked app task reaches `converged` or `attention`. Legacy socket frames
 remain compatibility ingress. The deployed runtime also gives an open Condition
-an optional bounded review checkpoint: passive resync wakes the same task
+an optional bounded review checkpoint: delivery resync wakes the same task
 owner, and a human-linked checkpoint result wakes one deduplicated fresh May
 review even when the task remains `waiting`.
 **Aligned with**: `events.md`, `sessions.md`, `runtime.md`, `may-console.md`, `webui.md`
@@ -258,6 +258,35 @@ Every long-running request has an event-driven completion wake. A review
 checkpoint is the backstop for missing movement, not a fixed human-update
 schedule. Healthy internal progress is silent.
 
+### Break glass
+
+May normally preserves the app boundary. May may take direct control when Hao
+explicitly asks May to handle the work, the accountable path is broken after a
+bounded recovery, urgent harm would result from waiting, or no app owns a
+bounded outcome. Faster execution, implementation curiosity, healthy owner
+progress, or unclear human intent are insufficient reasons.
+
+```text
+bounded May turn
+  -> may.break-glass.started with reason, scope, proof, and stop condition
+  -> one linked privileged May attempt
+  -> direct repair, agent/CLI use, or ownership-system recovery
+  -> verify the human outcome
+  -> may.break-glass.completed or may.break-glass.failed
+  -> fresh May review closes the request or restores app ownership
+```
+
+Break glass uses the original human trace and ordinary session and evidence
+records. It is not another request or task object. A missing terminal event is
+an execution-recovery problem. The shared runtime may retry or surface that
+attempt, but must not infer success.
+
+The attempt is temporary and bounded. It may use full tools and may cross an
+app-local agent boundary, but it does not bypass exact human authority,
+credential, security, or irreversible-change requirements. If work needs an
+ongoing schedule, repeated reconciliation, or durable domain wait, May repairs,
+selects, or creates the accountable app path and hands the work back.
+
 ### Human communication
 
 May uses at most the messages the situation needs:
@@ -269,6 +298,11 @@ May uses at most the messages the situation needs:
    need changes. Worker acceptance, retries, and "still working" are internal.
 3. One verified closeout, or one complete decision packet when human authority
    genuinely remains.
+
+A material break-glass takeover may replace the normal ownership
+acknowledgement with one short update stating why May is taking control, what
+outcome she is proving, and whether Hao needs to act. Internal commands and
+routine recovery remain silent.
 
 Say "I am routing it" while durable acceptance is pending. Say "the owner is
 handling it" only after acceptance. A promise such as "I will report the
@@ -315,31 +349,36 @@ send contradictory or duplicate messages.
 
 ## Canonical Human Intent Events
 
-### Start or create a chat session
+### Start a bounded conversation turn
 
-Use for a normal human turn in an agent conversation when the human is not
-explicitly steering one execution session.
+Free-form channel text first records the human boundary. Use this when the
+human is talking to May rather than explicitly controlling one execution
+session.
 
 ```json
 {
-  "type": "chat.start.requested",
+  "type": "human.input.received",
   "source": "may-console",
   "owner": "agent:may",
   "data": {
-    "agent": "may",
-    "message": "hello",
-    "channel": "may-console",
-    "channelThreadId": "local-terminal"
+    "actor": "human",
+    "text": "hello",
+    "conversation": {
+      "id": "may-console:local-terminal:agent:may",
+      "channel": "may-console",
+      "channelThreadId": "local-terminal"
+    },
+    "target": { "agent": "may" },
+    "context": { "forceNew": true }
   }
 }
 ```
 
-This starts a bounded turn in the logical channel/agent conversation. It does
-not require a brand-new conversation identity. Normal continuity comes from
-prepared conversation context, not from requiring one process-local session
-to survive. The daemon creates the bounded session and emits normal session
-lifecycle events. `forceNew` explicitly resets the logical conversation
-context.
+The input router derives `chat.start.requested` and starts a bounded turn in the
+logical channel/agent conversation. It does not create a new conversation
+identity. Continuity comes from prepared conversation context, not from one
+process-local session surviving. `forceNew` applies to the execution attempt,
+not the logical conversation.
 
 `session.steer.requested` remains appropriate when the human explicitly targets
 one active execution attempt. A normal new chat turn and an autonomous review
@@ -529,7 +568,7 @@ ergonomic. That local state is not authoritative.
 
 | Channel | Targeting rule |
 |---|---|
-| May Console | Prompt shows the selected target and status: May conversation, an explicit session, or disconnected. Bare text starts a May conversation turn with `chat.start.requested`; only an explicitly selected execution session uses `session.steer.requested`. |
+| May Console | Bare text always emits `human.input.received` for a bounded May turn. Watching never changes input routing. `/steer <sessionId> <message>` and `/cancel <sessionId>` are explicit session controls. |
 | CLI | Non-interactive commands must name the intent: `chat`, `steer`, `cancel`, `comment`, `emit`. Ambiguous commands fail locally. |
 | Telegram | Reply-to-message context is attached to `human.input.received`; command-router may steer an explicitly referenced active session or route to May with an enriched delivery message. A normal message starts a bounded May turn with `chat.start.requested`. |
 | Web | Visible UI context selects target. A session page steers that explicit session; an agent chat page starts a bounded turn in that agent conversation; buttons emit one explicit intent event. |
@@ -589,16 +628,15 @@ contract is in [telegram-notifications.md](telegram-notifications.md#outbound-hu
 - Unknown slash commands should show help or fail locally. They should not have
   the slash stripped and be sent as ordinary text.
 
-Useful commands:
+Useful May Console commands:
 
 ```text
 /status
 /sessions
-/use <sessionId>
-/steer <message>
-/cancel
+/watch may|all|<sessionId>
+/steer <sessionId> <message>
+/cancel <sessionId>
 /cancel all
-/new
 /reload
 /help
 ```

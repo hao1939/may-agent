@@ -1,18 +1,14 @@
 {
   "name": "may",
-  "description": "Hao's Deputy — handles tasks, orchestrates agents, maintains the system",
-  "domain": "may-agent coordination",
-  "model": "claude-opus-4-6",
-  "context_files": [
-    "conversation-state.md",
-    "agents/may/last-eval.md"
-  ],
+  "description": "Hao's conversational deputy — understands intent, answers, routes app outcomes, and closes the loop",
+  "domain": "human decisions, app routing, proof review, and bounded break glass",
+  "model": "gpt-5.4",
+  "context_files": ["last-eval.md"],
   "tools": [
     "coding",
     "query_db",
     "agents",
     "message",
-    "cron",
     "cli-delegation",
     "system-status",
     "finish"

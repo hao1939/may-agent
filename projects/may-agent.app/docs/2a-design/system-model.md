@@ -59,6 +59,32 @@ Owner-inbox acceptance means the signal is visible in the owner's durable pull
 queue. It does not mean the owner acted or the work completed. Owner review
 emits a typed follow-up event.
 
+### Responsibility boundary
+
+| Role | Owns | Does not normally own |
+| --- | --- | --- |
+| May | Human intent, conversation, decision framing, outcome supervision, and verified human closeout | App implementation, durable waits, polling, retries, schedules, or project task state |
+| Project app owner | Domain meaning, priority, task shape, execution method, waits, recovery, and terminal proof | Human-channel delivery or another app's internal work |
+| Shared runtime | Event delivery, persistence, bounded execution, queues, claims, recovery mechanics, and projections | Domain judgment, project truth, or human preference |
+| Human | Authority, private input, strategic direction, and consequential preferences | Routine owner execution or recovery |
+
+The default is strict: May states the desired outcome, relevant evidence,
+safety or approval bounds, priority, and required proof; the accountable app
+chooses how to achieve it. Runtime routing must not silently turn May into the
+fallback owner of arbitrary operational work. A known domain falls back to its
+app owner. An unknown platform or routing gap falls back to the `may-agent` app
+owner. May is the fallback only for human conversation and proposed human
+attention.
+
+May may deliberately cross this boundary in a bounded break-glass attempt when
+the normal ownership path cannot fulfill the human outcome. Break glass changes
+who executes; it never grants missing human authority or bypasses security,
+approval, or external-impact constraints. The triggering human trace records
+why the normal path is insufficient, the temporary scope, terminal proof, and
+stop or hand-back condition. The privileged attempt ends with verified closure,
+a precise blocker, or ownership restored to an app. It does not create a May
+task tree, standing schedule, or permanent project ownership.
+
 ## Execution Boundaries
 
 Choose the smallest controller that matches the work:
@@ -143,6 +169,13 @@ whether to answer, record a no-op, revise or wake durable work, or use an
 already-declared typed action. Free-form intent reaches owner judgment before
 domain work is selected; a typed action may map directly only because the app
 has already encoded and published that exact mapping.
+
+The one exception is an explicit break-glass attempt. During that attempt May
+may call an app-local agent, inspect or change implementation, operate a tool,
+or repair runtime ownership directly when that is necessary to fulfill the
+human outcome. The crossing is scoped to the linked attempt and is visible in
+its trace. Healthy app work, convenience, curiosity, or one ordinary retry are
+not reasons to cross the boundary.
 
 `project.owner.reviewed.taskRefs` names only durable domain work that remains
 after the owner turn. A direct answer, rejection, or no-op has no task refs and

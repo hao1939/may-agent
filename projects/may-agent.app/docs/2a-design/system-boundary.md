@@ -128,9 +128,8 @@ Metrics are signals:
 - "this may be an accepted exception."
 
 Metrics do not judge. The owner agent judges using goal, context, facts,
-history, and causal theory. P0 metrics can directly wake an owner. Lower
-priority metrics should be visible through heartbeat/project context unless a
-specific workflow subscribes to them.
+history, and causal theory. P0 metrics can immediately wake the owning app.
+Lower priority metrics follow that app's declared route and owner-review cadence.
 
 ## Guard Semantics
 
@@ -173,7 +172,7 @@ Examples:
 
 - `timer.tick` -> heartbeat workflow builds live context -> run owner.
 - `project.comment.created` -> project app/owner route builds project context -> run owner.
-- `metric.breach` P0 -> alert workflow builds alert context -> run owner.
+- `metric.breach` P0 -> owning app resolves a stable owner wake.
 - `metric.breach` P1/P2 -> persisted signal -> owner sees it in the next project-owner pass or standalone heartbeat.
 
 `runAgent` and `runWorkflow` should feel like the same operation:
@@ -280,9 +279,9 @@ durable commands or lifecycle events. Everything else state-changing should be
 an event frame:
 
 ```json
-{ "type": "project.comment.created", "source": "web-ui", "owner": "agent:may", "data": { "projectPath": "projects/x", "comment": "..." } }
+{ "type": "project.comment.created", "source": "web-ui", "owner": "agent:x-owner", "target": { "project": "x" }, "data": { "projectPath": "projects/x", "comment": "..." } }
 { "type": "input", "sessionId": "s_123", "message": "continue" }
-{ "type": "metric.threshold_changed", "source": "metrics", "owner": "agent:may", "data": { "metricId": "m", "to": 0.8 } }
+{ "type": "metric.threshold_changed", "source": "metrics", "owner": "agent:metric-owner", "data": { "metricId": "m", "to": 0.8 } }
 ```
 
 Socket `ok {eventId}` for an event means the semantic event was durably
@@ -581,7 +580,10 @@ Default convention:
 1. explicit event/metric owner,
 2. project owner,
 3. metric/event id prefix when it matches an agent,
-4. `agent:may` fallback.
+4. the `may-agent` app owner for an unknown platform or routing gap.
+
+`agent:may` is the fallback only for human conversation and proposed human
+attention. It is not the fallback owner for arbitrary system or domain work.
 
 Infra should not answer:
 

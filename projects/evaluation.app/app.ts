@@ -8,6 +8,7 @@ import {
   type ProjectAppTaskIntent,
 } from "@may-agent/sdk";
 import { observeEvaluationPipeline } from "./watchers/evaluation-pipeline.js";
+import { projectEvaluationFeedback } from "./watchers/feedback-projection.js";
 
 const projectId = "evaluation";
 const actionInputSchema = Type.Object({}, { additionalProperties: true });
@@ -200,9 +201,9 @@ export function resolveEvaluationTask(
         id: "runtime/aftermath-backfill",
         parentId: "pipeline-health",
         outcome:
-          "Keep the eligible terminal-session evaluation frontier current.",
+          "Keep the eligible terminal-session evaluation frontier current, prioritizing failed sessions and the recent 3h coverage window before stale done-session backlog.",
         acceptance: [
-          "The oldest eligible unevaluated session receives its normal aftermath evaluation.",
+          "The highest-priority eligible unevaluated session receives its normal aftermath evaluation: failed/interrupted sessions first, then done sessions inside the recent 3h coverage window, then older done-session backlog.",
           "If more eligible sessions remain, the workflow emits one compact continuation wake; otherwise it records that the frontier is current.",
         ],
         mode: "maintain",
@@ -298,10 +299,18 @@ export async function routeEvaluationEvent(
     if (agent === "evaluator" || agent === "judge") {
       return ctx.noop(`ignored ${agent} session aftermath`);
     }
+    const sessionId = eventSessionId(event);
+    if (sessionId) {
+      return ctx.emit({
+        type: "evaluation.session.requested",
+        project: projectId,
+        params: { sessionId, reason: "session-end" },
+      });
+    }
     return ctx.emit({
       type: "evaluation.aftermath.scan",
       project: projectId,
-      params: { reason: "session-end" },
+      params: { reason: "session-end-missing-session-id" },
     });
   }
 
@@ -311,6 +320,14 @@ export async function routeEvaluationEvent(
         "evaluation pipeline watcher requires the hosted read-only query capability",
       );
     return observeEvaluationPipeline({ ...ctx, query: ctx.query });
+  }
+
+  if (event.type === "evaluation.feedback.project") {
+    if (!ctx.query)
+      throw new Error(
+        "evaluation feedback projection requires the hosted read-only query capability",
+      );
+    return projectEvaluationFeedback({ ...ctx, query: ctx.query });
   }
 
   if (event.type === "evaluation.review_failed") {
@@ -323,7 +340,7 @@ export async function routeEvaluationEvent(
     );
   }
 
-  if (event.type === "message.created" || event.type === "telegram.reply") {
+  if (event.type === "telegram.reply") {
     if (!isEvaluatorOwnerMessage(event)) {
       return ctx.noop(`${event.type} not targeted to evaluation`);
     }
@@ -378,6 +395,17 @@ export default defineProjectApp({
       emits: [
         {
           type: "evaluation.pipeline.check",
+          project: projectId,
+        },
+      ],
+    },
+    {
+      id: "evaluation-feedback-projection",
+      enabled: true,
+      intervalMs: 3_600_000,
+      emits: [
+        {
+          type: "evaluation.feedback.project",
           project: projectId,
         },
       ],
@@ -461,8 +489,8 @@ export default defineProjectApp({
   events: [
     "session.end",
     { type: "evaluation.pipeline.check", project: projectId },
+    { type: "evaluation.feedback.project", project: projectId },
     "evaluation.review_failed",
-    "message.created",
     "telegram.reply",
     "metric.breach",
     "metric.recovered",

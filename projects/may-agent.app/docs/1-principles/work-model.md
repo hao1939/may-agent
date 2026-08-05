@@ -27,6 +27,12 @@ progress, waits, retries, and proof. A terminal app result wakes the bridge so
 May can carry the outcome back. Do not give May a task tree, scheduler, or
 polling responsibility.
 
+May may temporarily cross an ownership boundary through one explicit,
+trace-linked break-glass attempt when the normal path cannot fulfill the human
+outcome. The attempt is bounded by scope, terminal proof, and a stop or
+hand-back condition. It does not grant missing human authority and never
+becomes a standing May task, schedule, or project.
+
 ## Roles
 
 | Piece                    | Role                                                                   |

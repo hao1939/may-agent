@@ -1,7 +1,9 @@
 # Message Lifecycle
 
 **Design status:** Accepted.
-**Implementation status:** Implemented by the shared runtime.
+**Implementation status:** Implemented. Human turns use a structured bounded
+disposition, app-result follow-through is correlated, break glass is audited,
+and May owns no standing schedules.
 
 A task or approval owns the work. A message only carries information between
 people and agents. Do not create a second task system for messages.
@@ -14,6 +16,11 @@ May is Hao's immediate bridge to the agent system. May always responds to a
 message: answer it, clarify the intent, reject it with a reason, or route it to
 one accountable project app. May never becomes the background worker for that
 request.
+
+The bounded exception is break glass: when the normal ownership path cannot
+fulfill the human outcome, May may temporarily own one linked privileged
+attempt. That attempt has an explicit reason, scope, proof, and stop or
+hand-back condition. It never becomes a standing May queue or schedule.
 
 When work must continue after May's response, the runtime correlates the
 original message with `project.owner.requested`. The app's stable owner task
@@ -28,9 +35,11 @@ person or agent -> May understands and responds
                          May carries the result <-+
 ```
 
-May has no background schedule, polling loop, project task tree, or durable
-work queue. If no existing app clearly owns a request, May routes the ownership
-gap to the `may-agent` platform owner instead of silently accumulating work.
+May has no standing background schedule, polling loop, project task tree, or
+durable work queue. If no existing app clearly owns a request, May routes the
+ownership gap to the `may-agent` platform owner instead of silently
+accumulating work. A bounded break-glass worker remains linked to the original
+message and must close or hand back; it does not weaken this rule.
 
 Every message has one durable event ID and moves through three states:
 

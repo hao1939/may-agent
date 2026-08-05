@@ -83,7 +83,7 @@ Workflow-backed handler:
 ## Handler Structure
 
 ```typescript
-// agents/may/handlers/metric-alert-router.ts
+// projects/example.app/agents/owner/handlers/example-observer.ts
 import type {
   CronEntry,
   EventEnvelope,
@@ -129,10 +129,8 @@ locations for backward compatibility:
 V3 is canonical for new and migrated projects. Legacy paths remain for backward
 compatibility but should not be used in new projects (see `agent-app.md`).
 
-Project-wide platform behavior, such as reconciling all projects or routing
-canonical escalation events, remains owned by a global agent such as May. A
-project-local handler is for project-specific automation, not for changing shared
-infra policy.
+Platform-wide mechanical behavior belongs to `may-agent.app`; domain behavior
+belongs to its domain app. May owns no trigger definitions or standing jobs.
 
 Workflow-backed handlers follow the same ownership rule. The trigger entry owns
 the wake-up policy; the configured workflow owns the work.
@@ -143,10 +141,10 @@ who need to maintain, debug, or improve the loop:
 
 ```json
 {
-  "name": "metric-alert-reactor",
-  "handler": "metric-alert-reactor",
+  "name": "metrics-snapshot",
+  "handler": "metrics-snapshot",
   "context": [
-    "projects/system-operations/project.md",
+    "projects/may-agent.app/project.json",
     "projects/may-agent.app/docs/2a-design/metrics.md"
   ]
 }
@@ -197,7 +195,7 @@ deterministic measurement, not agent judgment. Target form after the query
 facade lands:
 
 ```typescript
-// agents/may/handlers/metrics-snapshot.ts
+// projects/may-agent.app/agents/tech-lead/handlers/metrics-snapshot.ts
 export const create: HandlerModule["create"] = (ctx, entry) => {
   return async () => {
     const count = ctx.sdk.query.sessions({
