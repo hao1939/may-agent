@@ -330,6 +330,71 @@ describe("V2 agents tool", () => {
     // Should NOT contain "is a tool" — it should get past the guard
     expect(result.error ?? "").not.toContain("is a tool");
   });
+
+  it("blocks an external caller from selecting an app-local agent", async () => {
+    manager.register({
+      name: "may",
+      description: "Deputy",
+      domain: "conversation",
+      model: mockModel(),
+      tools: [echoTool()],
+    });
+    manager.register({
+      name: "tech-lead",
+      description: "Platform owner",
+      domain: "platform",
+      model: mockModel(),
+      tools: [echoTool()],
+      appLocal: true,
+      projectId: "may-agent",
+    });
+    const tool = manager.createAgentsTool({ getCallerAgentName: () => "may" });
+    const result = await callTool(tool, { action: "call", agent: "tech-lead", task: "Patch the runtime" });
+    expect(result.error).toContain('app-local to "may-agent"');
+    expect(result.error).toContain("Send the desired outcome and proof to that app");
+  });
+
+  it("allows same-app cooperation and a linked May break-glass override", async () => {
+    manager.register({
+      name: "owner",
+      description: "Owner",
+      domain: "platform",
+      model: mockModel(),
+      tools: [echoTool()],
+      appLocal: true,
+      projectId: "may-agent",
+    });
+    manager.register({
+      name: "dev",
+      description: "Developer",
+      domain: "coding",
+      model: mockModel(),
+      tools: [echoTool()],
+      appLocal: true,
+      projectId: "may-agent",
+    });
+    manager.register({
+      name: "may",
+      description: "Deputy",
+      domain: "conversation",
+      model: mockModel(),
+      tools: [echoTool()],
+    });
+    (manager as any).callAgent = async () => ({ status: "done", summary: "ok", messages: [] });
+
+    const sameApp = manager.createAgentsTool({ getCallerAgentName: () => "owner" });
+    expect((await callTool(sameApp, { action: "call", agent: "dev", task: "Implement it" })).status).toBe("done");
+
+    (manager as any)._sessions.set("s_break_glass", { requestId: "may-break-glass:42" });
+    const breakGlass = manager.createAgentsTool({
+      getCallerAgentName: () => "may",
+      getCallerSessionId: () => "s_break_glass",
+      callDeny: { agents: ["dev"], hint: "Use the app normally" },
+    });
+    expect((await callTool(breakGlass, { action: "call", agent: "dev", task: "Repair the broken owner path" })).status).toBe(
+      "done",
+    );
+  });
 });
 
 describe("callAgent depth limit", () => {

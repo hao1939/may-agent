@@ -28,6 +28,10 @@ export interface SubagentDefinition {
   /** Directory containing agent knowledge files (INDEX.md, etc.). */
   knowledgeDir?: string;
 
+  /** App ownership metadata used to enforce external/app-local call boundaries. */
+  appLocal?: boolean;
+  projectId?: string;
+
   /** Project root / exec cwd. Injected into system prompt as a concrete runtime fact. */
   projectRoot?: string;
 

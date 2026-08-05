@@ -32,6 +32,8 @@ import {
   extractLastAssistantText,
   extractLastAssistantError,
   classifyTerminalAssistantFailure,
+  isRetryableEmptyAssistantFailure,
+  trimTerminalEmptyAssistantTurn,
   formatDuration,
   truncateForPrompt,
 } from "./manager-utils.js";
@@ -115,7 +117,7 @@ export interface RunOptions {
   /** Caller-defined schema for the required finish().result payload. */
   outputSchema?: TSchema;
   /** Restrict the supplied capabilities for this session. */
-  toolPolicy?: "full" | "readonly";
+  toolPolicy?: "full" | "readonly" | "deputy";
   /** Effective filesystem root supplied by an enclosing workflow/task. */
   executionRoot?: string;
 }
@@ -152,7 +154,7 @@ interface ActiveSession {
   loadedSkillHashes: Set<string>;
   requireFinish: boolean;
   outputSchema?: TSchema;
-  toolPolicy: "full" | "readonly";
+  toolPolicy: "full" | "readonly" | "deputy";
   executionRoot?: string;
 }
 
@@ -161,22 +163,14 @@ type DispatchDedupDb = {
   version?: number;
 };
 
-function isRetryableEmptyAssistantFailure(reason: string | undefined): boolean {
+function workflowFinishRecoveryPrompt(outputSchema?: TSchema): string {
   return (
-    reason === "Agent ended on an empty tool-use assistant turn" ||
-    reason === "Agent ended with an empty assistant turn"
+    "Your last turn ended with no visible answer. Do not repeat prior reads unless they are strictly needed. " +
+    "From the evidence already gathered, call finish() now with all required fields" +
+    (outputSchema
+      ? ", including the schema-validated result payload. If you are blocked, use finish() with a blocked/partial status and include the required result payload."
+      : ".")
   );
-}
-
-function trimTerminalEmptyAssistantTurn(messages: AgentMessage[]): boolean {
-  const last = messages[messages.length - 1] as any;
-  if (last?.role !== "assistant") return false;
-  const blocks = Array.isArray(last.content) ? last.content : [];
-  const hasText = blocks.some((block: any) => block?.type === "text" && String(block.text ?? "").trim());
-  const hasToolCall = blocks.some((block: any) => block?.type === "toolCall");
-  if (hasText || hasToolCall) return false;
-  messages.pop();
-  return true;
 }
 
 function isHeartbeatSession(meta: { source?: string; task?: string }): boolean {
@@ -358,7 +352,7 @@ export class SubagentManager {
       trace?: EventTrace;
       requireFinish?: boolean;
       outputSchema?: TSchema;
-      toolPolicy?: "full" | "readonly";
+      toolPolicy?: "full" | "readonly" | "deputy";
       executionRoot?: string;
     },
   ): void {
@@ -859,7 +853,7 @@ export class SubagentManager {
       skill?: string;
       requireFinish?: boolean;
       outputSchema?: TSchema;
-      toolPolicy?: "full" | "readonly";
+      toolPolicy?: "full" | "readonly" | "deputy";
       executionRoot?: string;
     },
   ): Promise<TaskResult & { messages: AgentMessage[] }> {
@@ -911,7 +905,7 @@ export class SubagentManager {
       skill?: string;
       requireFinish?: boolean;
       outputSchema?: TSchema;
-      toolPolicy?: "full" | "readonly";
+      toolPolicy?: "full" | "readonly" | "deputy";
       executionRoot?: string;
     },
   ): string {
@@ -1091,7 +1085,7 @@ export class SubagentManager {
       trace?: EventTrace;
       requireFinish?: boolean;
       outputSchema?: TSchema;
-      toolPolicy?: "full" | "readonly";
+      toolPolicy?: "full" | "readonly" | "deputy";
     },
   ): string {
     if (this._sessions.has(sessionId)) {
@@ -1672,7 +1666,11 @@ export class SubagentManager {
           const missingFinish = !extractFinishParams(initialMessages as any[]);
           const terminalError =
             extractLastAssistantError(initialMessages) ?? classifyTerminalAssistantFailure(initialMessages);
-          if (missingFinish && !terminalError) {
+          if (missingFinish && isRetryableEmptyAssistantFailure(terminalError)) {
+            this.trimAndPersistTerminalEmptyAssistant(session);
+            await agent.prompt(workflowFinishRecoveryPrompt(session.outputSchema));
+            await agent.waitForIdle();
+          } else if (missingFinish && !terminalError) {
             await agent.prompt(
               "This workflow step has not returned its structured result. Call finish() now with all required fields" +
                 (session.outputSchema ? ", including the schema-validated result payload." : "."),

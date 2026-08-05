@@ -204,6 +204,12 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
   }
 
   function routeFailedReview(candidate: HumanAttentionCandidate, review: HumanAttentionReview, attempts: number): void {
+    const data = candidate.data ?? {};
+    const approval = approvalConversationContext(data).originalIssue;
+    const recovery =
+      data.recovery && typeof data.recovery === "object" && !Array.isArray(data.recovery)
+        ? (data.recovery as Record<string, unknown>)
+        : undefined;
     bus.emit({
       type: "project.owner.requested",
       source: "telegram-outbound",
@@ -213,7 +219,7 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
         reason: "telegram-admission-review-failed",
         params: {
           instruction:
-            "Recover the held Telegram admission candidate from its durable audit. Retry or route it under the existing ownership convention. Keep raw candidate text internal and contact Hao only after a successful deliver disposition.",
+            "Recover the held Telegram admission candidate from bounded durable evidence only: the candidate payload, cited packet/artifact paths, current task-tree truth, and exact runtime lineage for this request. Retry or route it under the existing ownership convention, keep raw candidate text internal, avoid repository-wide search unless one exact cited file still needs inspection, and contact Hao only after a successful deliver disposition.",
           sourceEventId: candidate.sourceEventId,
           candidateEventType: candidate.eventType,
           candidateFrom: candidate.from,
@@ -222,6 +228,13 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
           attempts,
           closureCondition:
             "A later admission review records a terminal handle, route, clarify-producer, reject, or deliver disposition.",
+          recoveryDisposition: {
+            allowedDispositions: ["handle", "route", "clarify-producer", "reject", "deliver"],
+            fallbackRule:
+              "If the recovery cannot be completed from bounded evidence in one turn, return the safest structured route or clarify-producer outcome instead of aborting without a terminal disposition.",
+          },
+          approval,
+          recovery,
         },
       },
     } as any);
@@ -558,6 +571,7 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
           "requestedHumanAction",
           "requestedAction",
           "reason",
+          "recovery",
           "message",
           "expectedResponse",
           "projectPath",
@@ -734,7 +748,11 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
     const session = sessionData(event);
     if (session.parentSessionId) return false;
     if (session.agent !== opts.interfaceAgent) return false;
-    if (session.kind && session.kind !== "chat") return false;
+    const structuredMayTurn =
+      session.kind === "job" &&
+      typeof session.requestId === "string" &&
+      session.requestId.startsWith("may-turn:");
+    if (session.kind && session.kind !== "chat" && !structuredMayTurn) return false;
     // A daemon chat session can be reused by Telegram, CLI, Web, and tests.
     // Route a turn to Telegram only when Telegram started that turn. Treating
     // the daemon's current chat session as Telegram-owned leaks CLI/Gym smoke

@@ -8,6 +8,15 @@ import type { ChatSession } from "./chat-session.js";
 import { childEventTrace, EVENT_ROW_ID, type EventBus, type EventTrace } from "./event-bus.js";
 import { getTelegramConversationView, type TelegramConversationView } from "../lib/db/notifications.js";
 import { isRecord, normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
+import {
+  admitMayBreakGlassResult,
+  admitMayTurnDecision,
+  MAY_TURN_INSTRUCTIONS,
+  mayBreakGlassResultSchema,
+  mayTurnDecisionSchema,
+  type MayBreakGlassResult,
+  type MayTurnDecision,
+} from "./may-turn-contract.js";
 
 export interface CommandRouterOptions {
   bus: EventBus;
@@ -208,6 +217,12 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
   const activeMayBridges = new Set<number>();
   const maxConcurrentMayBridges = 2;
 
+  function eventRowId(event: unknown): number | null {
+    if (!isRecord(event)) return null;
+    const value = (event as Record<PropertyKey, unknown>)[EVENT_ROW_ID];
+    return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : null;
+  }
+
   function normalizeProjectPath(value: unknown): string | null {
     if (typeof value !== "string" || !value.trim()) return null;
     let path = value
@@ -299,6 +314,374 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     const id = value.trim().replace(/^projects\//, "").replace(/\.app$/, "");
     if (!/^[A-Za-z0-9._-]+$/.test(id)) return null;
     return existsSync(join(options.projectRoot, "projects", `${id}.app`, "app.ts")) ? id : null;
+  }
+
+  function emitMayProjectIntent(input: {
+    project: string;
+    outcome: string;
+    requiredProof: string;
+    constraints?: string[];
+    sourceEventId: number | null;
+    sourceEventType: string;
+    trace?: EventTrace;
+  }): number | null {
+    const requestedProject = normalizedAppId(input.project);
+    const project = requestedProject ?? normalizedAppId("may-agent");
+    if (!project) return null;
+    const projectPath = `projects/${project}.app`;
+    const comment = [
+      requestedProject ? input.outcome : `Resolve an ownership gap for requested app ${input.project}: ${input.outcome}`,
+      "",
+      `Required proof: ${input.requiredProof}`,
+      ...(input.constraints?.length ? ["Constraints:", ...input.constraints.map((item) => `- ${item}`)] : []),
+    ].join("\n");
+    const emitted = bus.emit({
+      type: "project.comment.created",
+      source: "agent:may",
+      owner: normalizeEventOwner(projectOwner(projectPath)),
+      target: { project },
+      data: {
+        project,
+        projectId: project,
+        projectPath,
+        comment,
+        author: "may",
+        inputEventId: input.sourceEventId ?? undefined,
+        inputEventType: input.sourceEventType,
+        requestedProject: requestedProject ? undefined : input.project,
+      },
+      ...(input.trace ? { trace: input.trace } : {}),
+    } as any);
+    const id = Number(emitted[EVENT_ROW_ID]);
+    return Number.isInteger(id) && id > 0 ? id : null;
+  }
+
+  function emitMayTurnFailure(input: {
+    sourceEventId: number | null;
+    sessionId?: string;
+    reason: string;
+    trace?: EventTrace;
+  }): void {
+    bus.emit({
+      type: "may.turn.failed",
+      source: "handler:may-turn",
+      owner: "agent:tech-lead",
+      target: { project: "may-agent" },
+      data: {
+        sourceEventId: input.sourceEventId ?? undefined,
+        sessionId: input.sessionId,
+        reason: input.reason,
+      },
+      ...(input.trace ? { trace: input.trace } : {}),
+    } as any);
+    emitMayProjectIntent({
+      project: "may-agent",
+      outcome: `Repair or disposition failed May turn${input.sourceEventId ? ` ${input.sourceEventId}` : ""}: ${input.reason}`,
+      requiredProof: "The original human message receives one correct disposition and linked response.",
+      sourceEventId: input.sourceEventId,
+      sourceEventType: "may.turn.failed",
+      trace: input.trace,
+    });
+  }
+
+  function requestBreakGlassReview(input: {
+    originalMessage: string;
+    result: MayBreakGlassResult;
+    sourceEventId: number | null;
+    conversationId?: string;
+    channelMessageId?: number;
+    channel?: string;
+    trace?: EventTrace;
+  }): void {
+    const evidence = input.result.evidence.length ? input.result.evidence.map((item) => `- ${item}`).join("\n") : "- none";
+    const blocker = input.result.disposition === "blocked" ? `\nBlocker: ${input.result.blocker}` : "";
+    bus.emit({
+      type: "chat.start.requested",
+      source: input.channel ?? "human",
+      owner: "agent:may",
+      data: {
+        agent: "may",
+        structuredMayTurn: true,
+        allowBreakGlass: false,
+        humanInputEventId: input.sourceEventId ?? undefined,
+        message: [
+          "Review one completed break-glass attempt and close or replan the original human request.",
+          "Do not start another break-glass attempt from this review.",
+          "",
+          "Original request",
+          input.originalMessage,
+          "",
+          `Break-glass disposition: ${input.result.disposition}`,
+          `Summary: ${input.result.summary}${blocker}`,
+          "Evidence:",
+          evidence,
+        ].join("\n"),
+        channel: input.channel ?? "human",
+        conversationId: input.conversationId,
+        channelMessageId: input.channelMessageId,
+        forceNew: true,
+      },
+      ...(input.trace ? { trace: input.trace } : {}),
+    } as any);
+  }
+
+  function completeBreakGlass(input: {
+    sourceEventId: number | null;
+    sessionId: string;
+    originalMessage: string;
+    conversationId?: string;
+    channelMessageId?: number;
+    channel?: string;
+    trace?: EventTrace;
+    result: Awaited<ReturnType<SubagentManager["waitFor"]>>;
+  }): void {
+    const admitted = admitMayBreakGlassResult(input.result.structuredResult);
+    if (input.result.status !== "done" || !admitted.ok) {
+      const reason = admitted.ok ? input.result.error ?? "Break-glass attempt failed" : admitted.error;
+      const blocked: MayBreakGlassResult = {
+        disposition: "blocked",
+        summary: "The break-glass attempt did not produce a valid verified result.",
+        evidence: [],
+        blocker: reason,
+      };
+      bus.emit({
+        type: "may.break-glass.failed",
+        source: "handler:may-turn",
+        owner: "agent:may",
+        data: { sourceEventId: input.sourceEventId ?? undefined, sessionId: input.sessionId, reason },
+        ...(input.trace ? { trace: input.trace } : {}),
+      } as any);
+      requestBreakGlassReview({ ...input, result: blocked });
+      return;
+    }
+
+    const result = admitted.value;
+    bus.emit({
+      type: "may.break-glass.completed",
+      source: "handler:may-turn",
+      owner: "agent:may",
+      data: {
+        sourceEventId: input.sourceEventId ?? undefined,
+        sessionId: input.sessionId,
+        ...result,
+      },
+      ...(input.trace ? { trace: input.trace } : {}),
+    } as any);
+    if (result.disposition === "hand-back") {
+      const eventId = emitMayProjectIntent({
+        project: result.project,
+        outcome: result.outcome,
+        requiredProof: result.requiredProof,
+        sourceEventId: input.sourceEventId,
+        sourceEventType: "may.break-glass.completed",
+        trace: input.trace,
+      });
+      if (!eventId) {
+        requestBreakGlassReview({
+          ...input,
+          result: {
+            disposition: "blocked",
+            summary: result.summary,
+            evidence: result.evidence,
+            blocker: `Could not hand work back to project ${result.project}`,
+          },
+        });
+      }
+      return;
+    }
+    requestBreakGlassReview({ ...input, result });
+  }
+
+  function startBreakGlass(input: {
+    decision: Extract<MayTurnDecision, { disposition: "break-glass" }>;
+    sourceEventId: number | null;
+    sourceSessionId: string;
+    originalMessage: string;
+    conversationId?: string;
+    channelMessageId?: number;
+    channel?: string;
+    trace?: EventTrace;
+  }): void {
+    const task = [
+      "Execute one bounded May break-glass attempt.",
+      "The normal ownership boundary is temporarily open only for the scope below.",
+      "Use any necessary available tool, but do not bypass missing human authority, security, credential, approval, or irreversible-change requirements.",
+      "Verify the outcome, then close it, hand durable work back to one app, or report the exact blocker.",
+      "Do not create a May-owned standing schedule, polling loop, or task tree.",
+      "Call finish() with the required structured result.",
+      "",
+      `Original human request: ${input.originalMessage}`,
+      `Reason normal ownership is insufficient: ${input.decision.reason}`,
+      `Temporary scope: ${input.decision.scope}`,
+      `Required terminal proof: ${input.decision.terminalProof}`,
+      `Stop or hand-back condition: ${input.decision.stopCondition}`,
+    ].join("\n");
+    const sessionId = manager.run("may", task, {
+      kind: "job",
+      source: "may-break-glass",
+      requestId: `may-break-glass:${input.sourceEventId ?? input.sourceSessionId}`,
+      conversationId: input.conversationId,
+      channelMessageId: input.channelMessageId,
+      trace: input.trace,
+      requireFinish: true,
+      outputSchema: mayBreakGlassResultSchema,
+      toolPolicy: "full",
+    });
+    bus.emit({
+      type: "may.break-glass.started",
+      source: "handler:may-turn",
+      owner: "agent:may",
+      data: {
+        sourceEventId: input.sourceEventId ?? undefined,
+        sourceSessionId: input.sourceSessionId,
+        sessionId,
+        reason: input.decision.reason,
+        scope: input.decision.scope,
+        terminalProof: input.decision.terminalProof,
+        stopCondition: input.decision.stopCondition,
+      },
+      ...(input.trace ? { trace: input.trace } : {}),
+    } as any);
+    void manager
+      .waitFor(sessionId)
+      .then((result) => completeBreakGlass({ ...input, sessionId, result }))
+      .catch((error) =>
+        completeBreakGlass({
+          ...input,
+          sessionId,
+          result: {
+            sessionId,
+            status: "error",
+            lastAssistantText: null,
+            messages: [],
+            duration: "0ms",
+            outputDir: "",
+            error: error instanceof Error ? error.message : String(error),
+          },
+        }),
+      );
+  }
+
+  function completeStructuredMayTurn(input: {
+    sourceEventId: number | null;
+    sessionId: string;
+    originalMessage: string;
+    conversationId?: string;
+    channelMessageId?: number;
+    channel?: string;
+    allowBreakGlass: boolean;
+    trace?: EventTrace;
+    result: Awaited<ReturnType<SubagentManager["waitFor"]>>;
+  }): void {
+    const admitted = admitMayTurnDecision(input.result.structuredResult);
+    if (input.result.status !== "done" || !admitted.ok) {
+      emitMayTurnFailure({
+        sourceEventId: input.sourceEventId,
+        sessionId: input.sessionId,
+        reason: admitted.ok ? input.result.error ?? "May turn failed" : admitted.error,
+        trace: input.trace,
+      });
+      return;
+    }
+    const decision = admitted.value;
+    if (decision.disposition === "route") {
+      const eventId = emitMayProjectIntent({
+        project: decision.project,
+        outcome: decision.outcome,
+        requiredProof: decision.requiredProof,
+        constraints: decision.constraints,
+        sourceEventId: input.sourceEventId,
+        sourceEventType: "human.input.received",
+        trace: input.trace,
+      });
+      if (!eventId) {
+        emitMayTurnFailure({
+          sourceEventId: input.sourceEventId,
+          sessionId: input.sessionId,
+          reason: `May selected route but no valid app route exists for ${decision.project}`,
+          trace: input.trace,
+        });
+        return;
+      }
+    } else if (decision.disposition === "break-glass") {
+      if (!input.allowBreakGlass) {
+        emitMayTurnFailure({
+          sourceEventId: input.sourceEventId,
+          sessionId: input.sessionId,
+          reason: "A break-glass review attempted to open another break-glass attempt",
+          trace: input.trace,
+        });
+        return;
+      }
+      startBreakGlass({ ...input, sourceSessionId: input.sessionId, decision });
+    }
+    bus.emit({
+      type: "may.turn.completed",
+      source: "handler:may-turn",
+      owner: "agent:may",
+      data: {
+        sourceEventId: input.sourceEventId ?? undefined,
+        sessionId: input.sessionId,
+        disposition: decision.disposition,
+      },
+      ...(input.trace ? { trace: input.trace } : {}),
+    } as any);
+  }
+
+  function startStructuredMayTurn(event: unknown, data: Record<string, unknown>, message: string, source: string): void {
+    const sourceEventId = integerField(data, "humanInputEventId") ?? eventRowId(event);
+    const allowBreakGlass = data.allowBreakGlass !== false;
+    const task = [
+      MAY_TURN_INSTRUCTIONS,
+      ...(allowBreakGlass ? [] : ["This is a review turn. Do not choose break-glass again."]),
+      "",
+      "Human turn",
+      message,
+    ].join("\n");
+    const conversationId = nonEmptyString(data.conversationId) ?? undefined;
+    const channelMessageId = typeof data.channelMessageId === "number" ? data.channelMessageId : undefined;
+    const trace = childEventTrace(event);
+    const sessionId = manager.run("may", task, {
+      kind: "job",
+      source,
+      requestId: `may-turn:${sourceEventId ?? Date.now()}`,
+      conversationId,
+      channelMessageId,
+      trace,
+      requireFinish: true,
+      outputSchema: mayTurnDecisionSchema,
+      toolPolicy: "deputy",
+    });
+    bus.emit({
+      type: "may.turn.started",
+      source: "handler:may-turn",
+      owner: "agent:may",
+      data: { sourceEventId: sourceEventId ?? undefined, sessionId },
+      ...(trace ? { trace } : {}),
+    } as any);
+    void manager
+      .waitFor(sessionId)
+      .then((result) =>
+        completeStructuredMayTurn({
+          sourceEventId,
+          sessionId,
+          originalMessage: message,
+          conversationId,
+          channelMessageId,
+          channel: nonEmptyString(data.channel) ?? source,
+          allowBreakGlass,
+          trace,
+          result,
+        }),
+      )
+      .catch((error) =>
+        emitMayTurnFailure({
+          sourceEventId,
+          sessionId,
+          reason: error instanceof Error ? error.message : String(error),
+          trace,
+        }),
+      );
   }
 
   function bridgeReplyTarget(input: Record<string, unknown>): string | null {
@@ -933,6 +1316,8 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
           requestId: nonEmptyString(data.inputId) ?? undefined,
           conversationId: nonEmptyString(conversation.id) ?? undefined,
           forceNew: source === "telegram",
+          structuredMayTurn: true,
+          humanInputEventId: eventRowId(event) ?? undefined,
           ...(Object.keys(context).length ? { context } : {}),
         },
       } as any);
@@ -978,6 +1363,8 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         conversationId: nonEmptyString(conversation.id) ?? undefined,
         requestId: nonEmptyString(data.inputId) ?? undefined,
         forceNew: context.forceNew === true || source === "telegram",
+        structuredMayTurn: agent === "may",
+        humanInputEventId: eventRowId(event) ?? undefined,
         ...(Object.keys(context).length ? { context } : {}),
       },
     } as any);
@@ -1027,6 +1414,10 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     if (!message) return;
     const agent = nonEmptyString(data.agent) ?? "may";
     const source = eventSource(event, nonEmptyString(data.channel) ?? "human");
+    if (agent === "may" && data.structuredMayTurn === true) {
+      startStructuredMayTurn(event, data, message, source);
+      return;
+    }
     const forceNew = data.forceNew === true;
     const chatSession = options.getChatSession();
     if (chatSession && agent === "may" && !forceNew) {

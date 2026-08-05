@@ -71,7 +71,7 @@ export interface PersistedSession {
   /** Serializable TypeBox/JSON schema for finish().result. */
   outputSchema?: TSchema;
   /** Per-session capability restriction applied by the runtime. */
-  toolPolicy?: "full" | "readonly";
+  toolPolicy?: "full" | "readonly" | "deputy";
   /** Effective filesystem root supplied by the enclosing workflow/task runtime. */
   executionRoot?: string;
 }
