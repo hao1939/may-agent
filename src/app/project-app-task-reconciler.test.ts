@@ -859,6 +859,37 @@ describe("project app task reconciler state", () => {
     expect(claim.trigger).toEqual({ type: "pipeline.changed", revision: 2 });
   });
 
+  it("preserves an explicit retry over lower-priority task wakes", () => {
+    const { config } = fixture();
+    const monitor = intent("maintain");
+    observeProjectAppTaskIntent(config, {
+      intent: monitor,
+      appOwner: "app-owner",
+    });
+    const retry = {
+      type: "gym.improvement.requested",
+      source: "web-ui",
+      reason: "retry-candidate-verification",
+      candidateFingerprint: "sha256:candidate",
+    };
+    expect(recordProjectAppTaskTrigger(config, monitor.id, retry)).toEqual({
+      kind: "recorded",
+    });
+
+    recordProjectAppTaskTrigger(config, monitor.id, {
+      type: "metric.breach",
+      source: "agent:tech-lead",
+      metricId: "may.failure-rate",
+    });
+    recordProjectAppTaskTrigger(config, monitor.id, {
+      type: "gym.improvement.requested",
+      source: "agent:app-owner",
+      params: { reason: "curriculum-continue" },
+    });
+
+    expect(readProjectAppTaskTrigger(config, monitor.id)).toEqual(retry);
+  });
+
   it("keeps a waiting task asleep on a duplicate trigger unless overrideWait is explicit", () => {
     const { config } = fixture();
     const monitor = intent("maintain");
