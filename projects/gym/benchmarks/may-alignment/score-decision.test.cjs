@@ -358,6 +358,24 @@ fs.writeFileSync(
         expected: "pass",
         decision: { response_to_hao: "Gives the requested status." },
       },
+    ],
+  }),
+);
+assert.equal(
+  scoreDecision(workDir, scenarioDir).passed,
+  false,
+  "semantic calibration must include a negative control as well as a positive control",
+);
+fs.writeFileSync(
+  path.join(scenarioDir, "semantic_controls.json"),
+  JSON.stringify({
+    required_rules: ["complete_decision"],
+    cases: [
+      {
+        id: "obvious-pass",
+        expected: "pass",
+        decision: { response_to_hao: "Gives the requested status." },
+      },
       {
         id: "obvious-fail",
         expected: "fail",

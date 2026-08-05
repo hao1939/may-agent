@@ -38,6 +38,8 @@ function validSemanticControls(value) {
     return "semantic controls require at least one labeled case";
   }
   const ids = new Set();
+  let hasPositiveControl = false;
+  let hasNegativeControl = false;
   for (const [index, item] of value.cases.entries()) {
     if (!isRecord(item)) return `semantic control ${index} must be an object`;
     if (typeof item.id !== "string" || !item.id.trim()) {
@@ -48,9 +50,14 @@ function validSemanticControls(value) {
     if (item.expected !== "pass" && item.expected !== "fail") {
       return `semantic control ${item.id} requires pass or fail`;
     }
+    hasPositiveControl ||= item.expected === "pass";
+    hasNegativeControl ||= item.expected === "fail";
     if (!("decision" in item)) {
       return `semantic control ${item.id} requires a decision`;
     }
+  }
+  if (!hasPositiveControl || !hasNegativeControl) {
+    return "semantic controls require both positive and negative cases";
   }
   return null;
 }
