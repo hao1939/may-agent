@@ -17,8 +17,9 @@
     "may-align-remove-specified-cleanup",
     "may-align-learn-new-guidance",
     "may-align-proof-before-adopt-explicit",
-    "may-align-telegram-aggregate-metric-reporting",
-    "may-align-telegram-aggregate-metric-reporting-paraphrase",
-    "may-align-telegram-sample-only-control"
+    "may-align-block-cleanup-on-diff",
+    "may-align-durable-submission-path",
+    "may-align-closure-before-cleanup",
+    "may-align-trust-completed-artifacts"
   ]
 }

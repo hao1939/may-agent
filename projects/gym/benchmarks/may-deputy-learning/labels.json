@@ -78,6 +78,30 @@
       "rationale": "Hao approved the unified Kubernetes-style pattern: stable resources describe desired work, timers and events wake reconciliation, owners hold goals and priorities, workflows preserve experience, and shared infrastructure owns scheduling and recovery.",
       "approved_by": "hao",
       "approved_at": "2026-08-03T19:35:00+08:00"
+    },
+    "may-align-current-architecture-app-agent-replay": {
+      "status": "draft",
+      "review_status": "ready",
+      "source": "incident-telegram-field-b04b37df70b8ac81f416",
+      "rationale": "Current app-versus-agent facts should be source-grounded or uncertainty-qualified while preserving the app organization and agent capability boundary. Draft truth pending human approval.",
+      "approved_by": null,
+      "approved_at": null
+    },
+    "may-align-current-architecture-app-agent-paraphrase": {
+      "status": "draft",
+      "review_status": "ready",
+      "source": "incident-telegram-field-b04b37df70b8ac81f416",
+      "rationale": "Preserve the same source-grounded architecture answer under paraphrased current-system wording. Draft truth pending human approval.",
+      "approved_by": null,
+      "approved_at": null
+    },
+    "may-align-current-architecture-app-agent-opposite-control": {
+      "status": "draft",
+      "review_status": "ready",
+      "source": "incident-telegram-field-b04b37df70b8ac81f416",
+      "rationale": "A conceptual analogy does not require repository inspection, but it must not become an unverified current-system claim. Draft truth pending human approval.",
+      "approved_by": null,
+      "approved_at": null
     }
   }
 }

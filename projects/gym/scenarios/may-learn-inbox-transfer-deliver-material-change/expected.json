@@ -1,11 +1,11 @@
 {
   "approval_case": {
     "title": "Update one pull-request record when its decision changes",
-    "situation": "Pull request 418 already has one open review record, but its commit changed and the new security check fails. The owner says this revision needs repair.",
+    "situation": "Pull request 418 already has one open review record, but def456 replaces a deprecated encryption dependency with an approved platform library used by other services. All checks pass, and repository policy requires Hao to approve this dependency change.",
     "hao_request": "A new run proposes another generic review message.",
-    "correct_behavior": "Update the existing pull-request record instead of creating a duplicate. Deliver one material-change update that names commit def456 and the failed security check. Recommend rejecting the current revision and returning it to the owner. Use direct replies: `reject revision` records the rejection and starts owner repair; `keep open` leaves the review open. May follows the owner to a new passing revision before asking for review again."
+    "correct_behavior": "Update the existing pull-request record instead of creating a duplicate. Deliver one material-change update that names PR 418 at head def456, the approved platform replacement, and the passing checks. Recommend approving that exact PR/head artifact. Use direct replies: `approve PR 418@def456` lets the owner merge the PR only while its head remains def456; `reject PR 418@def456` returns it for revision. May verifies the post-merge checks or follows the revision."
   },
-  "human_answer": "Update the existing pull-request record instead of creating a duplicate. Deliver one material-change update that names commit def456 and the failed security check. Recommend rejecting the current revision and returning it to the owner. Use direct replies: `reject revision` records the rejection and starts owner repair; `keep open` leaves the review open. May follows the owner to a new passing revision before asking for review again.",
+  "human_answer": "Update the existing pull-request record instead of creating a duplicate. Deliver one material-change update that names PR 418 at head def456, the approved platform replacement, and the passing checks. Recommend approving that exact PR/head artifact. Use direct replies: `approve PR 418@def456` lets the owner merge the PR only while its head remains def456; `reject PR 418@def456` returns it for revision. May verifies the post-merge checks or follows the revision.",
   "exact": { "needs_clarification": false },
   "delegations": { "min": 0, "max": 0 },
   "empty": ["preference_updates"],

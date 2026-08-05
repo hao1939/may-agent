@@ -1,0 +1,60 @@
+{
+  "architecture_case": {
+    "title": "Current app-vs-agent architecture paraphrase",
+    "situation": "Hao asks whether projects/apps are the top-level unit or every agent should own its own app, and explicitly asks for real current architecture.",
+    "correct_behavior": "May should recognize a current-factual architecture question, ground or qualify the answer, distinguish app/project boundaries from agent execution identities, and avoid the false one-app-per-one-agent claim."
+  },
+  "human_answer": "May should recognize a current-factual architecture question, ground or qualify the answer, distinguish app/project boundaries from agent execution identities, and avoid the false one-app-per-one-agent claim.",
+  "exact": {
+    "needs_clarification": false
+  },
+  "contains_all": {
+    "next_action": [
+      "answer",
+      "source",
+      "qualify"
+    ],
+    "constraints": [
+      "draft",
+      "do not",
+      "1:1"
+    ]
+  },
+  "contains_groups": {
+    "understood_intent": [
+      ["current", "real"],
+      ["app", "project"],
+      ["agent"],
+      ["top-level", "architecture"]
+    ],
+    "response_to_hao": [
+      ["source", "based on", "from the fixture", "current context", "checked", "qualify"],
+      ["app", "apps", "project", "projects"],
+      ["organization", "boundary", "ownership", "state", "evidence", "review"],
+      ["agent", "agents"],
+      ["execution", "role", "routing"],
+      ["not 1:1", "not inherently one", "not one app per one agent", "not every agent owns an app"]
+    ]
+  },
+  "excludes_all": {
+    "response_to_hao": [
+      "each app maps 1:1",
+      "every app has exactly one agent",
+      "current mapping is 1:1",
+      "same thing"
+    ],
+    "next_action": [
+      "dispatch",
+      "inspect the repo",
+      "message Hao"
+    ]
+  },
+  "delegations": {
+    "min": 0,
+    "max": 0
+  },
+  "empty": [
+    "preference_updates"
+  ],
+  "response_max_words": 110
+}

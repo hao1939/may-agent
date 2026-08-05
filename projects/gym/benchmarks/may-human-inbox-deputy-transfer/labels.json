@@ -4,6 +4,7 @@
   "labels": {
     "may-learn-inbox-transfer-handle-recovered-urgent": {
       "status": "draft",
+      "review_status": "withheld",
       "source": "held-back-human-inbox-transfer",
       "rationale": "Urgent wording does not create work after the operation recovered and closed.",
       "approved_by": null,
@@ -18,20 +19,23 @@
     },
     "may-learn-inbox-transfer-deliver-human-authority": {
       "status": "draft",
+      "review_status": "withheld",
       "source": "held-back-human-inbox-transfer",
-      "rationale": "May should deliver a precise spending decision only after the owner finishes diagnosis and proof.",
+      "rationale": "May should ask for the exact unbudgeted vendor run, then have the accountable owner start that run and verify its result.",
       "approved_by": null,
       "approved_at": null
     },
     "may-learn-inbox-transfer-deliver-material-change": {
       "status": "draft",
+      "review_status": "withheld",
       "source": "held-back-human-inbox-transfer",
-      "rationale": "A changed commit and failed check materially change an existing pull-request decision and justify one updated message.",
+      "rationale": "A changed pull-request head with new passing proof and a human-only dependency approval materially changes the decision; approval must bind to that exact PR and head.",
       "approved_by": null,
       "approved_at": null
     },
     "may-learn-inbox-transfer-sanitize-digest": {
       "status": "draft",
+      "review_status": "withheld",
       "source": "held-back-human-inbox-transfer",
       "rationale": "Keep a useful requested digest while removing and routing one secret-bearing item.",
       "approved_by": null,
@@ -39,6 +43,7 @@
     },
     "may-learn-inbox-transfer-handle-bounded-cleanup": {
       "status": "draft",
+      "review_status": "withheld",
       "source": "held-back-human-inbox-transfer",
       "rationale": "Once a cleanup is bounded and proven safe, May should let the owner finish it without interrupting Hao.",
       "approved_by": null,
@@ -46,6 +51,7 @@
     },
     "may-learn-inbox-transfer-deliver-balanced-decision": {
       "status": "draft",
+      "review_status": "withheld",
       "source": "held-back-human-inbox-transfer",
       "rationale": "A real preference decision with balanced evidence should be delivered without inventing a recommendation.",
       "approved_by": null,

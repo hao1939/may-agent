@@ -59,6 +59,12 @@ as safety boundaries rather than forbidden-action commitments.
 }
 ```
 
+`delegations` records only direct agent assignments. Routing durable work to a
+project app belongs in `next_action`, because the app—not May's decision
+artifact—owns the task, workflow, recovery, and completion loop. A
+decision-only case may still plan a direct agent assignment, but app routing
+must not be encoded as a fake agent delegation.
+
 ## Run
 
 From `/app`:

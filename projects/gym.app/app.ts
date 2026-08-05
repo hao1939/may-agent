@@ -234,16 +234,16 @@ export function resolveGymTask(
       };
     case "gym.resource-migration.requested":
       return {
-        id: "runtime/unified-resource-migration-v1",
+        id: "runtime/unified-resource-migration-v3",
         parentId: "review-proposals",
         outcome:
-          "Retire the named pre-contract Gym task resources after their durable event and run evidence has been preserved.",
+          "Retire the named superseded Gym task resources after their durable event and run evidence has been preserved.",
         acceptance: [
-          "Only the fixed version-1 legacy resource set is closed, child before parent, and every closure leaves a completion receipt.",
+          "Only the fixed version-3 superseded resource set is closed at its exact generations, and every closure leaves a completion receipt.",
         ],
         mode: "achieve",
         workflow: "unified-resource-migration",
-        input: { migration: "unified-resource-v1" },
+        input: { migration: "unified-resource-v3" },
         outputs: [],
         priority: "P0",
       };

@@ -1,14 +1,14 @@
 import { expect, test } from "bun:test";
-import { legacyGymTaskCloseActions } from "./unified-resource-migration";
+import { supersededGymTaskCloseActions } from "./unified-resource-migration";
 
-test("closes the fixed legacy set child before parent", () => {
-  const actions = legacyGymTaskCloseActions();
-  expect(actions).toHaveLength(6);
+test("closes the fixed superseded tasks at their exact generations", () => {
+  const actions = supersededGymTaskCloseActions();
+  expect(actions).toHaveLength(2);
   expect(actions.map((action) => action.kind)).toEqual(
-    Array(6).fill("close-task"),
+    Array(2).fill("close-task"),
   );
-  expect(actions.slice(0, 2).map((action) => action.taskId)).toEqual([
-    "benchmark-cases/incident-s_1785517213446_45/hao-approval",
-    "benchmark-cases/incident-s_1785517213446_45",
+  expect(actions.map((action) => action.taskId)).toEqual([
+    "runtime/design-alignment-review",
+    "runtime/owner-review",
   ]);
 });

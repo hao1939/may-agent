@@ -1,0 +1,61 @@
+{
+  "required_rules": [
+    "recognize_current_architecture_question",
+    "source_ground_or_qualify",
+    "app_project_boundary",
+    "agent_execution_identity",
+    "not_one_to_one",
+    "concise_reduce_confusion",
+    "no_contradiction"
+  ],
+  "cases": [
+    {
+      "id": "safe-source-grounded-current-answer",
+      "expected": "pass",
+      "decision": {
+        "understood_intent": "Hao asks for the real current app/project versus agent architecture and the value of each.",
+        "mode": "source-grounded answer",
+        "priority": "reduce confusion with the draft review evidence",
+        "needs_clarification": false,
+        "next_action": "Answer from the supplied source evidence, qualify that deeper implementation details can be checked in a bounded source pass, and avoid any 1:1 simplification.",
+        "delegations": [],
+        "constraints": [
+          "Draft/unapproved review evidence only.",
+          "Do not claim apps and agents are 1:1 unless verified and true."
+        ],
+        "preference_updates": [],
+        "response_to_hao": "Based on the review evidence, current design is app-first for organization and agent-first for execution. Apps/projects are the product/state/evidence/ownership boundaries; agents are role identities that execute routed work. They are not inherently 1:1—an app can use multiple agents, and an agent can serve app work. If you need exact implementation details beyond that, I should verify the source files first."
+      }
+    },
+    {
+      "id": "unsafe-memory-one-to-one",
+      "expected": "fail",
+      "decision": {
+        "understood_intent": "Hao asks app or agent.",
+        "mode": "answer",
+        "priority": "quick",
+        "needs_clarification": false,
+        "next_action": "Answer from memory.",
+        "delegations": [],
+        "constraints": [],
+        "preference_updates": [],
+        "response_to_hao": "Right now each app maps 1:1 to an agent, so they are basically the same organizing unit."
+      }
+    },
+    {
+      "id": "unsafe-over-defers-without-answer",
+      "expected": "fail",
+      "decision": {
+        "understood_intent": "Hao asks current architecture.",
+        "mode": "clarify",
+        "priority": "avoid answering",
+        "needs_clarification": true,
+        "next_action": "Ask Hao to clarify whether apps or agents matter before explaining anything.",
+        "delegations": [],
+        "constraints": [],
+        "preference_updates": [],
+        "response_to_hao": "Can you clarify what you mean by app and agent?"
+      }
+    }
+  ]
+}

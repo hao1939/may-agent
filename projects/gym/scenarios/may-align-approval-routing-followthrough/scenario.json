@@ -1,0 +1,10 @@
+{
+  "name": "may-align-approval-routing-followthrough",
+  "description": "May submits an approved proposal scope once to the Gym app and follows it through truthfully.",
+  "categories": ["conversation-follow-through", "execution-fidelity"],
+  "tags": ["conversation-follow-through", "approval-routing", "real-replay"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false
+}

@@ -1,110 +1,107 @@
 # Autonomous Agent Improvement
 
-**Status:** Accepted target; reconciler model refined (2026-08-01)
+**Status:** Accepted design (2026-08-04)
 
 ## Goal
 
-Gym App autonomously improves agents. For the first milestone it keeps May
-evaluated, tries isolated improvements, and brings Hao one verified proposal.
+Gym App keeps May on the best behavior supported by approved evidence. It
+collects useful evidence, evaluates May, tries isolated changes, verifies them,
+and brings Hao one exact proposal when a better artifact is ready.
 
-Running benchmarks is a method, not the goal. The goal is better agent behavior
-supported by trustworthy evidence and no approved regression.
+Benchmarks, candidates, metrics, and reviews support that goal. They are not
+separate job systems.
 
-## Resource model
+## Mental model
 
 ```text
 timer or domain event
-  -> resolve the affected task resource
-  -> read its desired state, current status, and evidence
+  -> wake the affected task
+  -> read its desired state, status, and evidence
   -> take the next bounded action
-  -> save status and proof
-  -> stop, wait for an exact condition, or emit a domain event
+  -> save proof
+  -> converge, wait on an exact condition, or emit another wake
 ```
 
-There is no central Gym task or pipeline coordinating the whole flywheel. Each
-task is a K8s-style resource with its own target, owner, status, evidence, and
-optional workflow. Timers own time. Events carry facts and wake the affected
-resource. One resource may emit a domain event that wakes another, but it does
-not control the other resource's lifecycle.
+Each task is a Kubernetes-style resource:
 
-The regular resources are independent:
+- its specification says what outcome must remain true;
+- its status says what is currently known;
+- events and timers wake it when relevant facts change;
+- its owner chooses what the new evidence means;
+- its workflow applies reusable operational experience; and
+- the project controller persists the result and reconciles again when needed.
 
-| Resource | Typical wakes | Responsibility |
-| --- | --- | --- |
-| `improve/may` | daily refill, human request, May metric, approval, May revision | Keep May at the best approved behavior |
-| `learning/codex-sessions` | hourly timer | Extract strong reusable Hao intent |
-| `learning/telegram-field-review` | daily timer | Learn from real deputy conversations |
-| `runtime/design-alignment-review` | daily timer or explicit review event | Find design and implementation drift |
+The task tree shows scope, ownership, and decomposition. It does not schedule
+work. There is no central Gym pipeline or scheduler task.
 
-`learning/codex-sessions` uses contract revision 1. The revision is part of
-the stable desired state so the first new hourly observation replaces its old
-recovery-child generation. The current workflow resumes from its durable
-checkpoint and review artifacts. It never creates a recovery child or waits on
-an internal `task.state` Condition.
+## Responsibilities
 
-Incident and proposal resources are created for one concrete piece of evidence
-and reconcile their own bounded outcome. They still follow the same resource
-model; they are not phases owned by a master task.
+| Part                                     | Responsibility                                                                                                 |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Gym runner (`projects/gym`)              | Benchmark definitions, execution, comparisons, and immutable run evidence                                      |
+| Gym App (`projects/gym.app`)             | Resources, event routing, workflows, checkpoints, and autonomous progress                                      |
+| Gym owner agent (`gym`)                  | Goal and priority judgment, classification, evidence review, and authority boundaries                          |
+| Implementation agent (`gym-implementer`) | One isolated candidate artifact within the writable scope it receives                                          |
+| May-agent infrastructure                 | Event delivery, timers, task persistence, Conditions, attempt fencing, recovery, metrics, and human escalation |
 
-Routine evaluation intake is different. `evaluation.reviewed` is a high-rate
-fact stream, so deterministic classification and evidence filing use one
-standing, sequential intake frontier backed by evaluation and Gym artifact
-stores. The frontier handles one oldest unprocessed evaluation and wakes itself
-while more remain. It creates an incident or proposal task only when that item
-needs independent agent judgment, human review, or a durable dependency. A
-positive evidence file or a mechanically classified non-May result is history,
-not a task.
+The Gym owner is read-only. It judges evidence but does not edit the artifact it
+judges. The implementation agent may edit only the isolated candidate or
+benchmark snapshot supplied by the workflow. May never builds or approves its
+own candidate.
 
-The design follows the project-app reconciliation model:
+## Resource organization
 
-- A task resource describes one durable target state.
-- Events only wake the relevant resource and contribute current evidence. They
-  never replace its specification or interrupt an active generation.
-- The resource owner owns its goal, interprets evidence, and chooses the next
-  priority move.
-- Its workflow is learned operational experience: it advances one bounded,
-  idempotent stage, saves proof, and emits a continuation event when work
-  remains.
-- Duplicate wakes, a lost session, and daemon restart are handled by reading
-  durable resource state again; they do not need a second recovery lifecycle.
+Gym uses two kinds of resources.
 
-Inside the `improve/may` resource, one resource-local improvement cycle may use
-bounded parallel exploration followed by serialized integration and promotion.
-That cycle is status owned by `improve/may`; it is not a coordinator for the
-other Gym resources. At most two independent development assessments run
-together. Each experiment has frozen inputs, its own evidence path, and no
-permission to change benchmark or scorer truth. The owner chooses one result
-for candidate integration. Candidate building, revision, release verification,
-approval, application, and confirmation remain ordered.
+### Standing resources
 
-Gym also runs one daily Telegram field review. It keeps clear successful
-behavior as positive evidence and routes only strong actionable failures into
-the existing incident and proposal path. The review classifies May behavior,
-Telegram context/routing, owner workflow, evaluator, runtime, and noise before
-suggesting a learning change. It stays quiet when the day contains no reusable
-signal. Gym allows this source review to use a second app task slot while the
-ordered `improve/may` workflow is running; candidate iterations inside that
-workflow remain sequential.
+Standing resources keep an ongoing condition true. Repeated wakes resolve to
+the same task identity.
 
-Gym runs one daily design-alignment review as a stable, read-only owner task.
-The periodic event only wakes the task. The Gym owner compares critical
-accepted promises with the relevant code and newest runtime evidence. It first
-establishes the latest accepted design and chronological approved-change
-lineage. An older approved artifact is historical evidence, not desired state,
-when a newer accepted revision supersedes it. The review must inspect the newest
-`improve/may` task, result, relevant trigger, approval or revision identity, and
-run evidence; source code and tests alone cannot establish alignment. It
-explicitly checks wake delivery, stable resource identity, resource-local
-checkpoint coherence, fresh post-evaluator evidence, the correct consumer
-benchmark and cases, approval boundaries, and continuation or truthful
-exhaustion. Missing live proof is inconclusive, never aligned. An intentional
-newer accepted change is not drift. When it finds a real gap, it names the root
-cause, impact, smallest repair, proof needed, and exact human boundary. The
-review prefers at most three strong gaps over a
-catalog of speculation. It does not create another improvement lifecycle or
-change benchmark truth or production May.
+| Resource                          | Typical wake                                                    | Desired outcome                                                          |
+| --------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `improve/may`                     | daily refill, human request, May metric, approval, May revision | May remains on the best approved behavior                                |
+| `runtime/evaluation-intake`       | `evaluation.reviewed`                                           | Reviewed May evaluations are classified and filed                        |
+| `learning/codex-sessions`         | hourly timer                                                    | Strong reusable Hao intent is collected as candidate learning evidence   |
+| `learning/telegram-field-review`  | daily timer                                                     | Real deputy conversations produce only strong reusable learning signals  |
+| `runtime/design-alignment-review` | daily timer or explicit request                                 | Accepted Gym and May promises remain aligned with code and live evidence |
+| `runtime/owner-review`            | free-form project intent                                        | The accountable owner answers or organizes the smallest useful next step |
 
-## May improvement resource
+### Bounded resources
+
+An incident, regression request, or review proposal represents one concrete
+piece of work. Its stable identity comes from the underlying evidence or durable
+event. It converges independently and does not become a phase of a master task.
+
+Routine facts are not tasks. The evaluation intake frontier processes the
+oldest unprocessed evaluation, files deterministic evidence directly, and wakes
+itself while more remain. It creates bounded work only when independent agent
+judgment, human review, or a durable external dependency is required.
+
+## Reconciliation contract
+
+Every Gym workflow follows the same rules:
+
+1. Read the task specification, current status, trigger evidence, and durable
+   checkpoints.
+2. Reuse already completed work when its fingerprints still match.
+3. Advance one bounded, idempotent stage.
+4. Save evidence before starting the next expensive or irreversible stage.
+5. Return a result consistent with the latest checkpoint.
+6. Converge, wait on an exact Condition, ask the owner for judgment, or emit a
+   continuation wake.
+
+Events contribute facts; they do not replace the task specification or
+interrupt an active attempt. A wake received during execution is queued for the
+next reconcile. Duplicate wakes, daemon restart, and a lost session recover by
+reading the same task and checkpoints again.
+
+Each attempt is fenced by task generation and attempt identity. After an
+expensive call and before shared writes or continuation events, the workflow
+must confirm that it still owns the attempt. A superseded call may finish, but
+it cannot change current state or start more work.
+
+## The `improve/may` resource
 
 ```text
 id: improve/may
@@ -113,345 +110,168 @@ owner: gym
 workflow: improve-agent
 outcome:
   Keep May on the best behavior supported by approved Gym evidence and bring
-  one verified improvement proposal to Hao when a better candidate is ready.
+  Hao one verified improvement proposal when a better candidate is ready.
 ```
 
-The task is converged when current approved evidence has been reviewed and one
-of these is true:
+`improve/may` has one lifecycle: the task lifecycle. Campaign files preserve
+assessments, candidates, decisions, and the next resumable stage. They do not
+own another waiting, attention, or convergence lifecycle. Before a workflow
+returns, its checkpoint and task result must describe the same disposition.
+
+Every workflow exit first writes the current campaign checkpoint. `done` is
+valid only with a named terminal disposition and positive evidence. A missing or
+unknown checkpoint, an unapplied artifact, a safety limit, or exhausted safe
+revision choices requires attention. The verifier rejects these states instead
+of inferring completion from the absence of a known wait.
+
+Verification reads the checkpoints cited by the current result. During a
+curriculum drain, it may also read tracks carrying the current curriculum and
+agent fingerprint. Older campaign directories remain evidence, but cannot block
+or prove the current campaign.
+
+The task is reconciled for current evidence when one of these is true:
 
 - May has no actionable failure;
-- a verified proposal is ready for Hao;
-- a non-May evaluation issue has a truthful disposition; or
-- an exact external or human decision is represented as a wait.
+- a verified proposal is waiting for Hao's exact decision;
+- a benchmark, scorer, runtime, or noise finding has a truthful disposition;
+- a required external fact is represented by an exact Condition; or
+- progress reached a genuine owner or authority boundary.
 
-A later schedule, user request, relevant metric breach, approved benchmark
-change, or May revision wakes the same task. It does not create another
-lifecycle. Every wake resolves to the same desired-state specification. Its
-event-specific reason, metric, revision, or request remains trigger evidence.
-If a wake arrives while reconciliation is running, the controller queues it for
-the next reconcile instead of superseding the active attempt.
+A later timer, request, metric, approval, benchmark change, or May revision
+wakes the same resource. It does not create another campaign task.
 
-Every workflow attempt also holds an ownership fence made from the task
-generation and active attempt id. It checks the fence after each expensive Gym
-run and before writing the shared campaign checkpoint or emitting a
-continuation. If recovery or a specification change replaces the attempt, the
-old call may finish, but the old workflow stops immediately afterward. It
-cannot retry, build a candidate, update the campaign, or wake more work.
+### Improvement cycle
 
-An autonomous wake keeps reconciling until every approved learning track has
-been reviewed. One reconcile explores no more than two independent tracks,
-saves their results, selects at most one integration path, and emits a
-continuation wake when material remains. It stops only when all current material
-passes, a verified proposal needs Hao's decision, or progress reaches a real
-safety or authority boundary. After exhaustion, a fingerprinted checkpoint
-makes the daily refill check a cheap no-op until the curriculum or May's durable
-learning surface changes.
+One bounded cycle:
 
-Every approved development case in a benchmark must be listed in that track's
-autonomous-training manifest and learning unit. Loading the curriculum fails if
-an approved case is missing, so a new lesson cannot be reviewed successfully
-and then silently skipped by the live training loop.
+1. Load the approved autonomous-training tracks.
+2. Run or reuse development assessment evidence.
+3. Retry invalid evaluation once without erasing valid failures.
+4. Classify every non-pass as May, benchmark truth, scorer, runtime, or noise.
+5. Select at most one integration path.
+6. Run guided practice when the learning unit defines it.
+7. Build one isolated candidate with `gym-implementer`.
+8. Verify the candidate against its frozen development baseline.
+9. Review a failed candidate before revising the responsible mechanism.
+10. Run the withheld release comparison only after development improves.
+11. Request approval for one exact fingerprinted artifact, or expose a truthful
+    safety or authority boundary as attention.
+12. Emit a continuation wake when approved material remains.
 
-Experiment records are checkpoint files, not child tasks. `improve/may` must
-have no owner-recovery, experiment, approval, or worker children. A genuine
-workflow exception returns to the Gym owner for goal and priority judgment; the
-owner records a disposition against the campaign and does not invent a child
-or sibling recovery task. The repaired source or runtime emits an improvement
-wake after it has proof, so the same campaign resumes without a manual bridge.
+Candidate revisions for one hypothesis are sequential. A repeated artifact or
+the bounded iteration limit ends the burst as visible attention instead of
+spinning or claiming convergence. A durable continuation keeps the task pending;
+it is never surfaced as convergence.
 
-Task reconciliation supplies only a small recent child summary. Historical
-receipts remain durable task evidence, but legacy recovery trees are excluded
-from the working prompt beyond the latest decision-ready entries. Campaign
-checkpoints, rather than task history, carry Gym's improvement state.
+### Parallelism
 
-For the unified-resource migration, obsolete pre-contract tasks are removed
-from the live tree after their event and run evidence is confirmed durable.
-This is cleanup, not a second archive: the event journal, run artifacts, and Git
-history remain the evidence. Current finite incident and review resources stay
-live until they converge, wait on an exact external decision, or enter visible
-owner attention. Attention by itself is a truthful state, not a scheduler.
+One reconcile may assess at most two independent learning tracks in parallel.
+Each has frozen inputs and its own evidence scope. The Gym owner then selects at
+most one result for integration.
 
-The one-time `runtime/unified-resource-migration-v1` achieve resource performs
-that cleanup through ordinary `close-task` actions, child before parent. It has
-no timer and cannot become another controller. Its fixed six-resource scope
-covers only the obsolete evaluation, benchmark-case approval, old human-review,
-Codex failure-preservation, and CLI verification carriers present at cutover.
+Candidate creation, revision, release verification, approval, application, and
+confirmation remain ordered. Gym never parallelizes two revisions of the same
+hypothesis and never sends more than one integrated candidate for approval.
 
-A stored focused baseline with invalid trials means the one bounded retry was
-already exhausted. A later wake reuses that disposition; it does not run the
-same retry again. A track with such a recorded problem is checkpointed as an
-evaluation issue and cannot enter candidate integration merely because its
-earlier assessment also contains a May finding.
+An evaluator or runtime issue in one track does not prevent assessment of an
+independent track. It does prevent that track from authorizing an agent change.
 
-If calibrated semantic judges disagree on one exact artifact, the disagreement
-may be a real human boundary, but it remains an exact wait on `improve/may`.
-The owner must never create an adjudication child beneath the campaign.
+## Evidence and workspace
 
-An exact verification retry names the candidate fingerprint. Gym searches only
-the current generation result and its immediate track results and requires one
-match. It then reuses that track's assessment and candidate checkpoint, clears
-only stale verification and review checkpoints, and verifies the same artifact
-again. No match or more than one match stops safely; Gym does not rebuild the
-candidate, repeat guided practice, or fall back to broad training. A durable
-verification-retry checkpoint preserves the iteration and fingerprint so a
-runtime restart resumes the same verification after `result.json` is cleared.
-
-The first implementation phase parallelizes the expensive independent
-assessment and diagnosis work. It deliberately serializes candidate creation.
-After this phase proves stable in live autonomous cycles, Gym may allow two
-isolated candidate experiments for different hypotheses, using the same frozen
-baseline and evidence version. Even then, the owner must compare them and send
-only one integrated candidate through release verification and approval. Gym
-must never parallelize revisions of the same hypothesis.
-
-An evaluator or runtime issue in one track does not block evaluation of later,
-independent tracks. Gym finishes the remaining tracks, then reports the issue
-and withholds the exhausted checkpoint. A verified candidate, required human
-decision, or real authority boundary still stops the sequence immediately.
-
-## Bounded reconciliation workflow
-
-`improve-agent` performs one bounded, restart-safe reconciliation stage:
-
-1. Read the stable goal, wake evidence, and campaign checkpoint.
-2. Check benchmark approval before treating a score as truth.
-3. Run or reuse no more than two independent development assessments in
-   parallel.
-4. Retry invalid scenarios once without hiding valid failures.
-5. Classify every remaining non-pass as May, benchmark, scorer, runtime, or
-   noise. Every scenario appears exactly once.
-
-A valid failed trial remains classification evidence even when another trial
-for the same scenario is invalid. The bounded retry can clear the invalid
-status, but it cannot erase an observed valid failure. Only a scenario with no
-valid failure after both runs is recorded solely as an evaluation issue.
-6. Give comparable findings to the Gym owner, who selects the highest-priority
-   integration path. Preserve unselected valid evidence for the next reconcile.
-7. Select one May failure family and freeze a focused development baseline.
-8. Run the unit's guided practice, when present, and checkpoint both successful
-   and failed attempts. Practice may use real safe tools and gives feedback.
-9. Ask the isolated implementation agent for one narrow overlay, including the
-   guided-practice evidence but excluding withheld release truth.
-10. Verify it against the frozen baseline.
-11. If it improves, run the full five-trial release comparison.
-12. If it fails, review the observed answer, expected behavior, scorer, and
-    runtime before deciding whether May should change again.
-13. If the review still establishes a May gap, revise the candidate immediately
-    and repeat the implementation and verification steps in the same workflow.
-14. Save the stage checkpoint and wake `improve/may` again when approved work
-    remains.
-
-After every benchmark or verification call, confirm that this workflow still
-owns the current task attempt. A superseded attempt returns quietly without
-using its result. This makes restart recovery safe even though an in-flight
-model call cannot always be canceled.
-
-Candidate iterations for the selected hypothesis are sequential, never
-parallel. Each expensive stage is
-checkpointed before the next stage starts, so runtime recovery reuses completed
-implementation, verification, baseline, and review evidence. A repeated
-artifact fingerprint or the five-iteration safety bound stops the burst as a
-truthful no-progress convergence instead of spinning or invoking a second
-owner loop.
-
-Broad screening, its one invalid retry, and classification form one assessment
-stage. Gym saves that assessment before starting the focused reproducibility
-baseline. If the execution budget ends during the focused baseline, the next
-reconcile resumes there instead of repeating the broad trials. The same rule
-applies to release evidence: a completed matching release baseline produced by
-an interrupted attempt is recovered and checkpointed before Gym starts another
-baseline.
-
-The improvement workflow declares a 120-minute execution budget through the
-standard workflow-module timeout field. Ordinary app workflows keep the
-platform default. This covers candidate construction plus five-trial semantic
-release evaluation on a busy shared host without adding a second scheduler or
-weakening the evaluation gates.
-
-`revise-candidate` is an internal workflow decision. It does not mutate the
-running task and does not notify Hao. A workflow never remains open across
-human approval, an external callback, or a later schedule. The 120-minute limit
-is a safety ceiling; campaign progress comes from checkpoints and repeated
-reconciliation, not from hoping one long attempt finishes.
-
-## Approval through Telegram
-
-Gym uses May-agent's existing human message channel. It does not add an
-approval service or a second job model:
-
-```text
-verified agent candidate or concrete benchmark/scorer fix
-  -> project.approval.requested
-  -> message.created to human
-  -> Telegram notification
-  -> Hao replies approve or reject
-  -> project.approval.submitted
-  -> the exact Condition wakes improve/may
-```
-
-For incident-derived review proposals, Gym completes semantic novelty
-classification before sending the human message. Covered, runtime-only,
-invalid, weak, or superseded proposals converge without a human decision and
-emit `project.approval.resolved` so any older delivered fingerprint closes.
-The stable approval id is delivered at most once.
-
-The task returns `waiting` while Hao decides. Its Condition matches the exact
-approval id, task generation, and artifact fingerprint. A reply to an older
-Telegram message therefore cannot approve a newer candidate.
-
-The submitted approval's `packetPath` is the authoritative recovery pointer.
-Gym validates that it is a `result.json` inside the same campaign generation,
-then resumes that exact stored proposal before recomputing curriculum or agent
-fingerprints. New lessons, changed curriculum order, a daemon restart, or a
-timed-out reconcile therefore cannot orphan an approval that Hao already made.
-The stored approval id and artifact fingerprint must still match before Gym
-applies anything. An approval naming `improve/may` also wakes that stable task
-directly, even if a previous timed-out attempt lost its transient Condition.
-
-The Telegram card states what will change, why it is ready, the artifact
-fingerprint, and the review packet path. Approval applies only that artifact.
-Rejection keeps production unchanged, records Hao's reply, and revises the
-same `improve/may` task. Ordinary failures, retries, classifications, and bad
-candidate generations do not notify Hao.
-
-An approved review does not mean “run the default benchmark.” Its benchmark
-labels must point back to that exact review with source
-`<request-key>-approved-review`. Gym starts only those approved scenarios. If
-the cases do not exist yet, Gym stops at case creation instead of falling back
-to unrelated learning material. This keeps one incident, its replay and
-controls, and its training evidence in the same bounded lineage.
-
-## Roles
-
-Use explicit names because “Gym” otherwise refers to three different things:
-
-- **Gym runner (`projects/gym`)** owns benchmark source, execution, comparison,
-  reports, and immutable run evidence.
-- **Gym App (`projects/gym.app`)** owns the autonomous improvement loop.
-- **Gym owner agent (`gym`)** owns the campaign outcome and priority. It is
-  read-only: it interprets wake evidence, judges failure responsibility,
-  selects the next focus, compares candidate evidence, and identifies a real
-  authority boundary without directly changing task or benchmark state.
-- **Implementation agent (`gym-implementer`)** writes only an isolated May
-  overlay. It cannot change production, benchmark truth, or promotion state.
-
-Candidate execution uses app-owned scratch space outside Git. Verified overlays
-are copied into durable, fingerprinted app artifacts before scratch is cleaned.
-Git worktrees are reserved for changes that are intended to become branches;
-Gym candidates are artifacts, not branches.
-
-May never builds or judges its own candidate. The Gym owner never edits the
-candidate it judges.
-
-## Evidence
-
-The Gym runner remains the authority for immutable runs:
+The Gym runner owns immutable benchmark evidence:
 
 ```text
 projects/gym/.state/benchmarks/<run-id>/
 ```
 
-Gym App stores only controller-owned assessment and candidate evidence:
+Gym App owns generated assessments, candidates, learning checkpoints, reviews,
+and metrics:
 
 ```text
 projects/gym.app/.state/
 ├── assessments/
-├── candidates/improve-may/<task-generation>/iterations/<iteration>/
-├── candidates/improve-may/<task-generation>/tracks/<track>/iterations/<iteration>/
-└── scratch/improve-may/<task-generation>/<iteration>/
+├── candidates/
+├── incidents/
+├── learning/
+├── metrics/
+├── reviews/
+└── scratch/
 ```
 
-An assessment records the screening and retry runs, one disposition for every
-non-pass, the selected failure family, and the focused baseline. A candidate
-record identifies its exact overlay fingerprint, verification runs,
-recommendation, and review. Scratch is outside Git and is removed after each
-completed iteration; only immutable run evidence and durable candidate
-checkpoints survive recovery.
+Scratch space is disposable. A candidate that matters is copied into a durable,
+fingerprinted artifact before scratch is removed. Git worktrees are reserved
+for changes intended to become branches; experimental candidates are artifacts,
+not branches.
 
-Historical evidence is append-only. Changing benchmark truth, labels, or a
-scorer requires a fresh baseline.
+Historical runs and decisions are append-only. A benchmark, label, scorer, or
+evaluator change requires a fresh baseline. Evidence produced by a different
+framework revision or artifact fingerprint may aid diagnosis but cannot
+authorize promotion.
 
-The post-approval confirmation uses a state scope derived from the exact
-approved artifact fingerprint. It cannot reuse the campaign root result or an
-assessment created before that artifact was applied. Replaying the same event
-resumes the same confirmation scope; a different artifact gets a different
-scope. The event carries the consumer benchmark and exact non-passing scenarios
-that produced the fix, including held-back release cases; it never substitutes
-the earlier development focus.
+Metrics measure operation—valid-run rate, model/runtime cost proxies,
+classification time, accepted proposals, and prevented regressions. They wake
+the accountable resource as evidence; they never choose a repair.
 
-Open-ended intent is judged by the calibrated semantic judges. Deterministic
-checks enforce only objective structure and boundaries such as schema, worker
-identity and count, asynchronous execution, empty fields, and exact safety or
-approval constraints. Do not repair a meaning failure by expanding a list of
-phrases or synonyms.
+## Human decisions
 
-A release comparison also requires exactly one matching framework revision in
-both baseline and candidate runs. A mixed-revision run remains useful for
-diagnosis, but it cannot authorize promotion; Gym starts fresh evidence after
-the workspace settles.
+Gym proceeds autonomously through collection, evaluation, classification,
+isolated construction, revision, and verification. It asks Hao only when:
 
-A scorer fix may include scenario-specific calibration or deterministic
-expectations under the evaluator benchmark's `scenarios/<scenario>/`
-directory. The Gym runner overlays those files onto the canonical scenario
-while freezing new run inputs. This lets one exact benchmark artifact repair
-its scorer and the controls that scorer owns; it does not rewrite global
-scenario history. Applying such an artifact still requires Hao's exact
-approval and always starts a fresh baseline.
-
-## Human boundaries
-
-Gym continues autonomously through ordinary evaluation, classification,
-candidate revision, and verification. It asks Hao only when:
-
-- a concrete benchmark or scorer fix is ready to apply; or
-- a verified agent candidate is ready for production promotion; or
+- an exact agent candidate is ready for production promotion;
+- an exact benchmark or scorer artifact is ready to apply; or
 - progress requires authority or information Gym does not own.
 
-Gym does not silently modify production May, approve subjective truth, merge a
-candidate, or rewrite evidence.
+```text
+verified artifact
+  -> project.approval.requested
+  -> message.created
+  -> Hao replies
+  -> project.approval.submitted
+  -> the exact Condition wakes improve/may
+```
 
-## Public interface
+The wait matches the approval id, task generation, and artifact fingerprint. An
+old reply cannot approve a newer artifact. Approval applies only the named
+artifact. Adjustment or rejection closes that proposal and becomes new evidence
+for the same task. The workflow continues from that evidence when it can do so
+safely; it asks the owner only when reusable process cannot determine the next
+bounded move.
 
-The default interface is plain intent:
+Gym never silently changes production May, approves subjective benchmark truth,
+merges a candidate, or rewrites historical evidence.
 
-> Improve May using the current approved benchmark.
+## Interface
 
-The project-comment receipt is asynchronous. A free-form comment first wakes
-Gym owner judgment. The owner interprets the requested outcome and may answer,
-record a no-op, or organize the appropriate durable work. May and other callers
-do not choose Gym's task, workflow, or wake path. The user follows the owner
-disposition and any resulting task instead of waiting on the HTTP request.
+The default interface is free-form outcome intent. A project comment wakes the
+Gym owner, who may answer, record an evidence-backed no-op, or organize durable
+work. Callers do not choose Gym's internal task, workflow, or wake path.
 
-The optional typed shortcut is `improve-may-now`. It emits
-`gym.improvement.requested` and wakes the same task. It does not create a job.
+Typed actions are optional automation shortcuts:
 
-The standalone Gym CLI remains the developer and CI interface. Gym App calls
-the same typed `runLoop` and `verifyLoop` implementation rather than invoking
-the CLI and parsing its output.
+- `improve-may-now` evaluates the approved focused May canary immediately;
+- `run-regression` runs a requested benchmark or scenario;
+- `report-incident` submits concrete failure evidence;
+- `collect-codex-learning` scans a bounded source batch; and
+- `review-telegram-field` reviews a bounded set of completed conversations.
 
-## Triggers
+The daily improvement refill drains all approved autonomous-training tracks.
+Once their curriculum and May learning-surface fingerprints are exhausted, an
+unchanged wake is a cheap no-op. Continuation events keep a non-exhausted drain
+moving without a scheduler task.
 
-- `improve-may-now` starts an immediate cycle. Free-form project intent wakes
-  Gym owner judgment, which decides whether the campaign or different work is
-  appropriate.
-- One enabled daily refill check resumes bounded curriculum reconciliation after
-  recovery or newly approved material. Continuation wakes keep it moving until
-  material is exhausted or approval is required.
-- A May-owned `metric.breach` wakes the campaign as evidence to investigate; a
-  metric never decides the repair by itself.
-- `agent.revision.changed` for May confirms the actual promoted behavior.
+The standalone Gym CLI remains the developer and CI interface. Improvement
+workflows call the same typed Gym loop implementation. The bounded regression
+workflow may invoke the CLI and preserves its resulting run pointer.
 
-Do not connect broad session-evaluation events until Gym can consume their
-evidence directly. A signal that merely causes an unrelated full rerun adds
-cost without improving diagnosis.
+## Design invariants
 
-## First milestone
-
-Keep the implementation May-specific until one complete loop works:
-
-1. migrate the live task tree to `improve/may`;
-2. run benchmark version 4 through the installed app;
-3. produce and verify one isolated May candidate;
-4. present one proposal to Hao;
-5. confirm the promoted May revision; and
-6. generalize to another agent only after this proof.
+- Tasks hold desired and observed state; workflows hold reusable process.
+- Events wake work and carry facts; they are not jobs.
+- The task tree explains scope and ownership; it does not schedule.
+- One durable target has one stable resource identity.
+- Routine evidence is history, not one task per row.
+- A durable wait names an exact observable condition.
+- Agent judgment never overrides deterministic safety or approval gates.
+- Infrastructure recovery does not create a second domain lifecycle.
+- Completed migration history belongs in durable evidence and Git, not the live
+  app contract.

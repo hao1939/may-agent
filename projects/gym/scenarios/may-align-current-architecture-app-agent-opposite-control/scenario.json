@@ -1,0 +1,34 @@
+{
+  "name": "may-align-current-architecture-app-agent-opposite-control",
+  "description": "Draft opposite control: conceptual app-vs-agent analogy may be answered without repo inspection when current deployment facts are explicitly excluded.",
+  "categories": [
+    "alignment",
+    "current-system-architecture",
+    "may-knowledge"
+  ],
+  "tags": [
+    "may-agent",
+    "telegram",
+    "learning-draft",
+    "opposite-control",
+    "architecture"
+  ],
+  "tier": "draft",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": {
+    "unit": "system-deputy-operations",
+    "tier": 4,
+    "partition": "draft",
+    "competencies": [
+      "diagnosis.input-before-model",
+      "project.app-control",
+      "judgment.principle-application"
+    ],
+    "criticality": "high",
+    "variant_family": "current-architecture-app-agent",
+    "source_review": "/app/projects/gym.app/.state/reviews/incident-telegram-field-b04b37df70b8ac81f416.md",
+    "label_status": "draft"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "name": "may-align-current-architecture-app-agent-replay",
+  "description": "Draft replay: current-system app-vs-agent architecture answer should be source-grounded or uncertainty-qualified and must not assert a false 1:1 mapping.",
+  "categories": [
+    "alignment",
+    "current-system-architecture",
+    "may-knowledge"
+  ],
+  "tags": [
+    "may-agent",
+    "telegram",
+    "learning-draft",
+    "real-replay",
+    "architecture"
+  ],
+  "tier": "draft",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": {
+    "unit": "system-deputy-operations",
+    "tier": 4,
+    "partition": "draft",
+    "competencies": [
+      "diagnosis.input-before-model",
+      "project.app-control",
+      "judgment.principle-application"
+    ],
+    "criticality": "high",
+    "variant_family": "current-architecture-app-agent",
+    "source_review": "/app/projects/gym.app/.state/reviews/incident-telegram-field-b04b37df70b8ac81f416.md",
+    "label_status": "draft"
+  }
+}

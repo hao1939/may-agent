@@ -1,0 +1,10 @@
+{
+  "name": "may-align-approval-routing-followthrough-control",
+  "description": "May answers plan-only when Hao explicitly forbids applying, delegating, or modifying anything yet.",
+  "categories": ["conversation-follow-through", "execution-fidelity"],
+  "tags": ["conversation-follow-through", "approval-routing", "control-pair", "real-replay"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false
+}

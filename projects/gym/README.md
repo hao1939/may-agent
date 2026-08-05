@@ -13,11 +13,11 @@ Any conforming agent or Agent App enters through an adapter. Infrastructure
 behavior is supplied as fixture context, fake capabilities, and steering when a
 scenario needs it; the evaluated agent receives no Gym-specific API.
 
-Do not create `gym.app` initially. A future `gym.app` is justified only if we
-need autonomous Gym operations such as scheduled regression runs, review-queue
-preparation, benchmark-health monitoring, or case proposals from real failures.
-It would be an optional operator over this project, never a dependency of the
-runner or an authority over labels and release decisions.
+[`../gym.app`](../gym.app) is the optional autonomous operator for this project.
+It schedules regression and learning work, prepares review proposals, monitors
+benchmark health, and proposes cases from real failures. Gym App is not a
+dependency of this runner and has no authority to approve labels or release
+decisions.
 
 ### Project layout
 
@@ -82,12 +82,20 @@ Or run the project package directly:
 cd projects/gym
 bun run scenario:list -- --tier smoke
 bun run scenario:run -- phantom-fix --agent coder
+bun run review:pending
 bun run check
 ```
 
 `check` runs only deterministic tests and structural review; it makes no model
 calls. `benchmark:may-alignment` makes model calls and must be invoked
 explicitly.
+
+A label has one simple review meaning: `draft` is pending a human truth
+decision; `approved` is executable benchmark truth. Only approved labels
+belong in executable suites and learning units. `review:pending` derives the
+review queue from versioned `benchmarks/*/labels.json` files. Rejected or
+absorbed drafts leave the runnable suites while their source review and useful
+evidence remain in Git; Gym does not maintain a second proposal-status store.
 
 The durable test → improve → verify workflow is documented in
 [`docs/test-improve-verify-loop.md`](docs/test-improve-verify-loop.md). It keeps

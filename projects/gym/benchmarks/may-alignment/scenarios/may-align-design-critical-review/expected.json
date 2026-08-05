@@ -1,5 +1,5 @@
 {
-  "human_answer": "Ask Arc to review the overall design and Tech Lead to review build and migration safety. Have them review it separately, combine what they find, review the result again, and test the migration on a small prototype before coding starts.",
+  "human_answer": "Ask Arc to review the overall design and Tech Lead to review build and migration safety independently. Combine what they find, resolve any material disagreement, and rehearse the highest-risk migration path before coding starts.",
   "exact": {
     "needs_clarification": false
   },
@@ -12,8 +12,8 @@
     "priority": [["architecture", "retention", "risk"]],
     "next_action": [
       ["synthesize", "combine", "integrate findings"],
-      ["second", "another", "follow-up"],
-      ["prototype", "migration rehearsal", "rehearsal"]
+      ["disagreement", "conflict", "resolve"],
+      ["prototype", "migration rehearsal", "rehearsal", "highest-risk path"]
     ],
     "constraints": [
       ["implementation", "coding", "deploy"],

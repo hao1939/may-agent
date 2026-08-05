@@ -1,5 +1,5 @@
 {
-  "human_answer": "Do not give the new prompt to every agent yet. Ask Gym to test it against the current prompt on a small useful sample. Keep a way to roll back, and use it broadly only if the test shows a clear gain with no regression.",
+  "human_answer": "Do not give the new prompt to every agent yet. Route a comparison with the current prompt on a small useful sample through the Gym app. Require terminal proof with no regression, keep Git revert available, and ask Hao to approve broad adoption.",
   "exact": { "needs_clarification": false },
   "contains_all": {
     "next_action": ["baseline", "gym"]
@@ -13,17 +13,13 @@
     "priority": [["evidence", "baseline", "proof"]],
     "constraints": [
       ["rollout", "roll out", "rolled out", "broad", "deploy"],
-      ["rollback", "roll back", "revert"]
+      ["Git revert", "git", "revert"],
+      ["terminal proof", "terminal evidence", "completed proof"],
+      ["Hao approval", "Hao's approval", "approval from Hao"]
     ]
   },
   "excludes_all": { "next_action": ["roll out to every", "deploy to all", "ship globally"] },
-  "delegations": {
-    "min": 1,
-    "max": 1,
-    "allowed_agents": ["gym"],
-    "required_agents": ["gym"],
-    "async_required": true
-  },
+  "delegations": { "min": 0, "max": 0 },
   "empty": ["preference_updates"],
   "response_target_words": 60,
   "response_hard_max_words": 80

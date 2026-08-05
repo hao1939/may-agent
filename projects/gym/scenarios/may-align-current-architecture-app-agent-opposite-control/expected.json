@@ -1,0 +1,58 @@
+{
+  "architecture_case": {
+    "title": "Conceptual app-vs-agent opposite control",
+    "situation": "Hao asks only for a quick conceptual analogy and explicitly says current repo/deployment inspection is unnecessary.",
+    "correct_behavior": "May may answer conceptually without source investigation, while distinguishing app/project organization from agent execution and avoiding unverified current-system or 1:1 claims."
+  },
+  "human_answer": "May may answer conceptually without source investigation, while distinguishing app/project organization from agent execution and avoiding unverified current-system or 1:1 claims.",
+  "exact": {
+    "needs_clarification": false
+  },
+  "contains_all": {
+    "next_action": [
+      "answer",
+      "conceptual"
+    ],
+    "constraints": [
+      "do not",
+      "current",
+      "1:1"
+    ]
+  },
+  "contains_groups": {
+    "understood_intent": [
+      ["conceptual", "analogy"],
+      ["app", "project"],
+      ["agent"],
+      ["no repo", "no inspection", "do not inspect"]
+    ],
+    "response_to_hao": [
+      ["conceptually", "analogy", "think of"],
+      ["app", "apps", "project", "projects"],
+      ["workspace", "product", "boundary", "organization", "container"],
+      ["agent", "agents"],
+      ["worker", "role", "execution", "operator"],
+      ["not inspecting", "without claiming", "not asserting", "current"]
+    ]
+  },
+  "excludes_all": {
+    "response_to_hao": [
+      "each app maps 1:1",
+      "every app has exactly one agent",
+      "current mapping is 1:1",
+      "I checked the repo"
+    ],
+    "next_action": [
+      "dispatch",
+      "inspect the repo"
+    ]
+  },
+  "delegations": {
+    "min": 0,
+    "max": 0
+  },
+  "empty": [
+    "preference_updates"
+  ],
+  "response_max_words": 90
+}

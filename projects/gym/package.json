@@ -18,6 +18,7 @@
     "review:may-alignment": "node ./benchmarks/may-alignment/review-suite.cjs",
     "review:may-canary": "bun ./src/loop/canary-review.ts",
     "review:may-learning": "bun ./src/learning/review-cli.ts",
+    "review:pending": "bun ./src/learning/pending-review-cli.ts",
     "review:may-learning-release": "bun ./src/learning/release-review-cli.ts",
     "review:may-deputy-learning": "bun ./src/learning/release-review-cli.ts may-deputy-learning",
     "review:may-deputy-learning-release": "bun ./src/learning/release-review-cli.ts may-deputy-learning-transfer",

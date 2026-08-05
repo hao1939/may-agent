@@ -1,17 +1,26 @@
 {
-  "human_answer": "Do not roll the prompt out broadly yet. Ask Coach to compare a baseline with the candidate in Gym on the smallest representative sample, keep rollback available, and adopt only with clear evidence and no regression.",
+  "human_answer": "Do not roll the prompt out broadly yet. Route a baseline/candidate comparison on the smallest representative sample through the Gym app, require terminal proof with no regression, keep Git revert available, and ask Hao to approve broad adoption.",
   "exact": { "needs_clarification": false },
   "contains_all": {
-    "understood_intent": ["evidence", "rollout"],
-    "next_action": ["baseline", "gym"],
-    "constraints": ["rollout", "evidence"]
+    "next_action": ["baseline", "gym"]
   },
   "contains_groups": {
+    "understood_intent": [
+      ["evidence", "proof", "test", "baseline"],
+      ["rollout", "roll out", "rolled out", "broad"]
+    ],
     "mode": [["experiment", "evaluate", "test"]],
-    "priority": [["evidence", "baseline", "proof"]]
+    "priority": [["evidence", "baseline", "proof"]],
+    "constraints": [
+      ["rollout", "roll out", "rolled out", "broad", "deploy"],
+      ["Git revert", "git", "revert"],
+      ["terminal proof", "terminal evidence", "completed proof"],
+      ["Hao approval", "Hao's approval", "approval from Hao"]
+    ]
   },
   "excludes_all": { "next_action": ["roll out to every", "deploy to all", "ship globally"] },
-  "delegations": { "min": 1, "max": 1, "allowed_agents": ["coach"], "async_required": true },
+  "delegations": { "min": 0, "max": 0 },
   "empty": ["preference_updates"],
-  "response_max_words": 60
+  "response_target_words": 60,
+  "response_hard_max_words": 80
 }

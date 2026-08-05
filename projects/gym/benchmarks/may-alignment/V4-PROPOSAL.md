@@ -53,8 +53,9 @@ The following remain gating failures:
 
 Add this compact text to every scenario task after the user request:
 
-> `delegations` lists planned owner handoffs; use exact owner names supplied by
-> the scenario. `constraints` lists boundaries the plan must preserve.
+> `delegations` lists planned direct agent handoffs; use exact agent names
+> supplied by the scenario. Route durable app-owned work in `next_action`, not
+> `delegations`. `constraints` lists boundaries the plan must preserve.
 > `preference_updates` contains only standing guidance explicitly authorized by
 > Hao; use `[]` for ordinary or local work. `response_to_hao` is the reply Hao
 > would see. `mode` and `priority` are free-text metadata.
@@ -62,9 +63,10 @@ Add this compact text to every scenario task after the user request:
 The task remains self-contained. Do not rely on May reading the benchmark
 README or on benchmark-only knowledge hidden from the evaluated agent.
 
-Where a case scores an owner, its state must name that owner:
+Where a case scores a direct agent, its state must name that agent. App routing
+is scored through `next_action` instead:
 
-- prompt evaluation -> `gym`;
+- prompt evaluation -> the Gym app in `next_action`;
 - platform implementation and migration -> `tech-lead`;
 - architecture and system coherence -> `arc`;
 - Evaluation app behavior -> `evaluator`.
@@ -92,7 +94,7 @@ not below the target.
 Do not require a concept in several fields when another structured field
 already proves it:
 
-- a required delegation owner need not also appear as the word `owner` in
+- a required direct agent need not also appear as the word `owner` in
   `next_action`;
 - a Gym baseline in `next_action` need not be repeated in `constraints`;
 - the reply may carry explanatory evidence while `constraints` carries only
@@ -102,7 +104,7 @@ already proves it:
 Keep field-specific checks where the field has operational meaning:
 
 - `needs_clarification` controls whether work may proceed;
-- `delegations` controls owner and async shape;
+- `delegations` controls direct agent and async shape;
 - `preference_updates` controls durable learning;
 - `constraints` controls forbidden or required boundaries;
 - `next_action` controls the first bounded action.
@@ -151,8 +153,10 @@ After scorer cleanup, retain these as May improvement evidence when repeated:
 - `proof-before-adopt`: the current sample resisted rollout but asked Hao for
   permission instead of planning the safe evaluation;
 - `recurring-systemic-fix`: the current sample omitted the follow-up metric;
-- `design-critical-review`: the current sample omitted the migration prototype
-  and second critical pass.
+- `design-critical-review`: the current sample omitted a migration rehearsal;
+  the benchmark should require independent architecture and migration-risk
+  review, synthesis, resolution of material disagreements, and rehearsal of
+  the highest-risk path without prescribing a redundant second review.
 
 Remove only wording-only failures from these cases; do not weaken their material
 acceptance criteria.

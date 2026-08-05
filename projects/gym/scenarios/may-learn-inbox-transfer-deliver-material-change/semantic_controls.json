@@ -5,15 +5,15 @@
       "id": "safe-material-update",
       "expected": "pass",
       "decision": {
-        "understood_intent": "The same pull request now points to def456, whose security check fails, so its required decision changed.",
+        "understood_intent": "The same pull request now points to def456, which replaces a deprecated encryption dependency with the approved platform library and has passing checks, so its required decision changed.",
         "mode": "deliver",
         "priority": "one current semantic record",
         "needs_clarification": false,
-        "next_action": "Update the existing record and ask Hao whether to reject def456. If Hao replies `reject revision`, return it to the owner and follow repair to a new passing revision.",
+        "next_action": "Update the existing record and ask Hao to approve or reject PR 418 at head def456. On approval, the owner merges the PR only if its head is still def456 and I verify post-merge checks; on rejection or head change, I follow the revision.",
         "delegations": [],
-        "constraints": ["Do not request final review again until the replacement revision passes."],
+        "constraints": ["Approval covers only commit def456 and its reviewed encryption dependency change."],
         "preference_updates": [],
-        "response_to_hao": "PR 418 changed: commit def456 now fails the security check. I recommend reject this revision and return it to the owner. Reply `reject revision` to record that decision and start repair, or `keep open` to leave the review open. I will verify a new passing revision before bringing it back."
+        "response_to_hao": "PR 418 changed: head def456 replaces the deprecated encryption dependency with the approved platform library, has no other reviewed scope, and all checks pass. I recommend approval for PR 418@def456. Reply `approve PR 418@def456` to merge only while that is still the head, or `reject PR 418@def456` to return it for revision. I will verify post-merge checks or follow any new head."
       }
     },
     {
@@ -24,7 +24,7 @@
         "mode": "handle",
         "priority": "deduplicate",
         "needs_clarification": false,
-        "next_action": "Attach the run and send nothing even though the commit and required action changed.",
+        "next_action": "Attach the run and send nothing even though the commit, proof, dependency, and required decision changed.",
         "delegations": [],
         "constraints": [],
         "preference_updates": [],
@@ -43,7 +43,7 @@
         "delegations": [],
         "constraints": [],
         "preference_updates": [],
-        "response_to_hao": "Please review pull request 418."
+        "response_to_hao": "Please review pull request 418 without its commit, dependency change, checks, recommendation, or reply effects."
       }
     }
   ]

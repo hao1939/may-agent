@@ -44,7 +44,7 @@ describe("May learning registry", () => {
         }),
         expect.objectContaining({
           id: "human-inbox-deputy",
-          version: 1,
+          version: 2,
           status: "pilot",
           ready_for_development: true,
           ready_for_release: false,

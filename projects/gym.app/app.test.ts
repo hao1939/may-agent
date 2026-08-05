@@ -7,7 +7,10 @@ describe("gym app manifest", () => {
   test("keeps May conversational while apps own standing operations", () => {
     const root = new URL("../../", import.meta.url);
     const mayConfig = JSON.parse(
-      readFileSync(new URL("../../agents/may/agent.json", import.meta.url), "utf8"),
+      readFileSync(
+        new URL("../../agents/may/agent.json", import.meta.url),
+        "utf8",
+      ),
     ) as { tools: string[] };
     const platformCron = JSON.parse(
       readFileSync(
@@ -17,13 +20,17 @@ describe("gym app manifest", () => {
     ) as Array<{ name: string; agent: string }>;
 
     expect(mayConfig.tools).not.toContain("cron");
-    expect(existsSync(new URL("../../agents/may/cron.json", import.meta.url))).toBe(false);
+    expect(
+      existsSync(new URL("../../agents/may/cron.json", import.meta.url)),
+    ).toBe(false);
     expect(platformCron.map((entry) => entry.name).sort()).toEqual([
       "escalation",
       "metrics-snapshot",
       "session-recovery",
     ]);
-    expect(platformCron.every((entry) => entry.agent === "tech-lead")).toBe(true);
+    expect(platformCron.every((entry) => entry.agent === "tech-lead")).toBe(
+      true,
+    );
     expect(root.pathname).toEndWith("/app/");
   });
   test("owns the autonomous benchmark loop without replacing Gym", () => {
@@ -221,17 +228,17 @@ describe("gym app manifest", () => {
     });
   });
 
-  test("represents legacy cleanup as one finite resource", () => {
+  test("represents superseded-state cleanup as one finite resource", () => {
     expect(
       resolveGymTask({
         type: "gym.resource-migration.requested",
         eventId: 97,
       }),
     ).toMatchObject({
-      id: "runtime/unified-resource-migration-v1",
+      id: "runtime/unified-resource-migration-v3",
       mode: "achieve",
       workflow: "unified-resource-migration",
-      input: { migration: "unified-resource-v1" },
+      input: { migration: "unified-resource-v3" },
       priority: "P0",
     });
   });

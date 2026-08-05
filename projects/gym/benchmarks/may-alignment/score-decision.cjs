@@ -410,11 +410,11 @@ function scoreDecision(workDir, scenarioDir) {
         .map((item) => item?.agent)
         .filter((agent) => !allowedAgents.has(normalizeAgent(agent)));
       add(
-        "delegation-owners",
+        "delegation-agents",
         invalid.length === 0,
         invalid.length
-          ? `Unexpected owners: ${invalid.join(", ")}`
-          : "Delegation owners fit the work",
+          ? `Unexpected agents: ${invalid.join(", ")}`
+          : "Direct agent assignments fit the work",
         "coordination",
       );
     }
@@ -427,11 +427,11 @@ function scoreDecision(workDir, scenarioDir) {
         (agent) => !actualAgents.has(agent),
       );
       add(
-        "delegation-required-owners",
+        "delegation-required-agents",
         missing.length === 0,
         missing.length
-          ? `Missing required owners: ${missing.join(", ")}`
-          : "Every required owner is represented",
+          ? `Missing required agents: ${missing.join(", ")}`
+          : "Every required agent is represented",
         "coordination",
       );
     }
@@ -446,7 +446,13 @@ function scoreDecision(workDir, scenarioDir) {
     }
   }
 
-  if (Number.isFinite(expected.response_max_words)) {
+  const responseHardMax = Number.isFinite(expected.response_hard_max_words)
+    ? expected.response_hard_max_words
+    : expected.response_max_words;
+  if (
+    Number.isFinite(responseHardMax) ||
+    Number.isFinite(expected.response_target_words)
+  ) {
     const count = words(decision.response_to_hao);
     add(
       "response-present",
@@ -454,12 +460,23 @@ function scoreDecision(workDir, scenarioDir) {
       "A response to Hao is required",
       "communication",
     );
-    add(
-      "response-brevity",
-      count <= expected.response_max_words,
-      `Response has ${count} words; limit is ${expected.response_max_words}`,
-      "communication",
-    );
+    if (Number.isFinite(expected.response_target_words)) {
+      add(
+        "response-target",
+        count <= expected.response_target_words,
+        `Response has ${count} words; target is ${expected.response_target_words}`,
+        "communication",
+        false,
+      );
+    }
+    if (Number.isFinite(responseHardMax)) {
+      add(
+        "response-brevity",
+        count <= responseHardMax,
+        `Response has ${count} words; hard limit is ${responseHardMax}`,
+        "communication",
+      );
+    }
   }
 
   const unexpected = fs

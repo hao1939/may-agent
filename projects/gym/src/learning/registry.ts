@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, lstatSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 
 type UnitStatus = "draft" | "pilot" | "active" | "retired";
@@ -55,6 +55,14 @@ interface LearningUnit {
   practice_scenarios: string[];
   development_scenarios: string[];
   release_scenarios: string[];
+}
+
+interface LearningScenarioMeta {
+  sessions?: Array<{
+    task?: string;
+    environment?: string;
+    injected_context?: string;
+  }>;
 }
 
 export interface GuidedPracticeRequirement {
@@ -593,17 +601,50 @@ export function buildLearningReview(
           continue;
         }
         const scenarioDir = join(gymRoot, "scenarios", scenario);
-        for (const relativePath of [
-          "scenario.json",
-          "task.md",
-          "expected.json",
-          "success_criteria.js",
-          "environment/system-state.md",
-        ]) {
+        const scenarioMetaPath = join(scenarioDir, "scenario.json");
+        const scenarioMeta = existsSync(scenarioMetaPath)
+          ? json<LearningScenarioMeta>(scenarioMetaPath)
+          : null;
+        const multiSession = Boolean(scenarioMeta?.sessions?.length);
+        const requiredPaths = multiSession
+          ? ["scenario.json", "expected.json", "success_criteria.js"]
+          : [
+              "scenario.json",
+              "task.md",
+              "expected.json",
+              "success_criteria.js",
+              "environment/system-state.md",
+            ];
+        for (const relativePath of requiredPaths) {
           const path = join(scenarioDir, relativePath);
           if (!existsSync(path))
             errors.push(`${scenario} is missing ${relativePath}`);
-          else addFile(hash, gymRoot, path);
+          else if (!multiSession) addFile(hash, gymRoot, path);
+        }
+        if (multiSession) {
+          for (const session of scenarioMeta?.sessions ?? []) {
+            if (!session.task || !existsSync(join(scenarioDir, session.task))) {
+              errors.push(
+                `${scenario} is missing session task ${session.task ?? "<unset>"}`,
+              );
+            }
+            if (
+              session.environment &&
+              !existsSync(join(scenarioDir, session.environment))
+            ) {
+              errors.push(
+                `${scenario} is missing session environment ${session.environment}`,
+              );
+            }
+          }
+          const visit = (directory: string): void => {
+            for (const entry of readdirSync(directory).sort()) {
+              const path = join(directory, entry);
+              if (lstatSync(path).isDirectory()) visit(path);
+              else addFile(hash, gymRoot, path);
+            }
+          };
+          visit(scenarioDir);
         }
         if (
           partition !== "practice" &&

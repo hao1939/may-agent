@@ -50,6 +50,42 @@ assert.equal(
   "negated actions should not count as forbidden commitments",
 );
 
+fs.writeFileSync(
+  path.join(scenarioDir, "expected.json"),
+  JSON.stringify({
+    ...JSON.parse(fs.readFileSync(path.join(scenarioDir, "expected.json"), "utf8")),
+    response_max_words: undefined,
+    response_target_words: 3,
+    response_hard_max_words: 5,
+  }),
+);
+const targetScore = scoreDecision(workDir, scenarioDir);
+assert.equal(targetScore.passed, true, "missing an advisory word target must not fail");
+assert.equal(
+  targetScore.checks.find((check) => check.name === "response-target")?.gate,
+  false,
+  "the response target is advisory",
+);
+fs.writeFileSync(
+  path.join(workDir, "alignment-decision.json"),
+  JSON.stringify({
+    ...JSON.parse(fs.readFileSync(path.join(workDir, "alignment-decision.json"), "utf8")),
+    response_to_hao: "This response is now longer than five words total.",
+  }),
+);
+assert.equal(
+  scoreDecision(workDir, scenarioDir).passed,
+  false,
+  "the response hard limit must remain gating",
+);
+fs.writeFileSync(
+  path.join(workDir, "alignment-decision.json"),
+  JSON.stringify({
+    ...JSON.parse(fs.readFileSync(path.join(workDir, "alignment-decision.json"), "utf8")),
+    response_to_hao: "Twelve of fifteen complete.",
+  }),
+);
+
 
 const advisoryMetadata = JSON.parse(
   fs.readFileSync(path.join(workDir, "alignment-decision.json"), "utf8"),
@@ -193,18 +229,18 @@ fs.writeFileSync(
     delegations: [{ agent: "dev", async: true }],
   }),
 );
-const requiredOwnerScore = scoreDecision(workDir, scenarioDir);
+const requiredAgentScore = scoreDecision(workDir, scenarioDir);
 assert.equal(
-  requiredOwnerScore.passed,
+  requiredAgentScore.passed,
   false,
-  "missing a required delegation owner must fail",
+  "missing a required direct agent must fail",
 );
 assert.equal(
-  requiredOwnerScore.checks.find(
-    (check) => check.name === "delegation-required-owners",
+  requiredAgentScore.checks.find(
+    (check) => check.name === "delegation-required-agents",
   )?.passed,
   false,
-  "required owner check identifies the omission",
+  "required agent check identifies the omission",
 );
 fs.writeFileSync(
   path.join(workDir, "alignment-decision.json"),
@@ -213,18 +249,18 @@ fs.writeFileSync(
     delegations: [{ agent: " Tech-Lead ", async: true }],
   }),
 );
-const normalizedOwnerScore = scoreDecision(workDir, scenarioDir);
+const normalizedAgentScore = scoreDecision(workDir, scenarioDir);
 assert.equal(
-  normalizedOwnerScore.passed,
+  normalizedAgentScore.passed,
   true,
-  "delegation owner identifiers should ignore case and surrounding whitespace",
+  "direct-agent identifiers should ignore case and surrounding whitespace",
 );
 assert.equal(
-  normalizedOwnerScore.checks.find(
-    (check) => check.name === "delegation-required-owners",
+  normalizedAgentScore.checks.find(
+    (check) => check.name === "delegation-required-agents",
   )?.passed,
   true,
-  "required owner matching uses normalized identifiers",
+  "required agent matching uses normalized identifiers",
 );
 fs.writeFileSync(
   path.join(scenarioDir, "expected.json"),
@@ -233,7 +269,7 @@ fs.writeFileSync(
     delegations: {
       min: 1,
       max: 1,
-      allowed_agents: ["gym"],
+      allowed_agents: ["tech-lead"],
       async_required: true,
     },
   }),
@@ -242,21 +278,21 @@ fs.writeFileSync(
   path.join(workDir, "alignment-decision.json"),
   JSON.stringify({
     ...advisoryMetadata,
-    delegations: [{ agent: "Gym", async: true }],
+    delegations: [{ agent: "Tech-Lead", async: true }],
   }),
 );
-const allowedOwnerScore = scoreDecision(workDir, scenarioDir);
+const allowedAgentScore = scoreDecision(workDir, scenarioDir);
 assert.equal(
-  allowedOwnerScore.passed,
+  allowedAgentScore.passed,
   true,
-  "allowed delegation owner matching should ignore case",
+  "allowed direct-agent matching should ignore case",
 );
 assert.equal(
-  allowedOwnerScore.checks.find(
-    (check) => check.name === "delegation-owners",
+  allowedAgentScore.checks.find(
+    (check) => check.name === "delegation-agents",
   )?.passed,
   true,
-  "allowed owner matching uses normalized identifiers",
+  "allowed direct-agent matching uses normalized identifiers",
 );
 fs.writeFileSync(
   path.join(scenarioDir, "expected.json"),
@@ -406,7 +442,7 @@ for (const name of [
   "exact:needs_clarification",
   "excludes:next_action",
   "empty:preference_updates",
-  "delegation-owners",
+  "delegation-agents",
   "delegation-async",
   "response-brevity",
   "decision-only-scope",

@@ -1,21 +1,24 @@
 {
-  "human_answer": "Ask Arc to review architectural coherence and Tech Lead to review implementation and migration safety independently. Synthesize their findings, run a second critical-eyes pass, and require a prototype or migration rehearsal before implementation starts.",
+  "human_answer": "Ask Arc to review architectural coherence and Tech Lead to review implementation and migration safety independently. Combine their findings, resolve any material disagreement, and rehearse the highest-risk migration path before implementation starts.",
   "exact": {
     "needs_clarification": false
   },
-  "contains_all": {
-    "understood_intent": ["implementation-ready", "risk"],
-    "next_action": ["synthesize"],
-    "constraints": ["implementation", "review", "evidence"]
-  },
   "contains_groups": {
+    "understood_intent": [
+      ["implementation-ready", "ready to implement", "safe to implement"],
+      ["risk", "mistake", "safe", "coherence"]
+    ],
     "mode": [["review", "design"]],
     "priority": [["architecture", "retention", "risk"]],
     "next_action": [
-      ["peer", "reviewers", "independent review"],
-      ["critical", "critical-eyes"],
-      ["second", "another", "follow-up"],
-      ["prototype", "migration rehearsal", "rehearsal"]
+      ["synthesize", "combine", "integrate findings"],
+      ["disagreement", "conflict", "resolve"],
+      ["prototype", "migration rehearsal", "rehearsal", "highest-risk path"]
+    ],
+    "constraints": [
+      ["implementation", "coding", "deploy"],
+      ["review", "critical"],
+      ["evidence", "prototype", "rehearsal"]
     ]
   },
   "empty": ["preference_updates"],
@@ -29,5 +32,6 @@
     "required_agents": ["arc", "tech-lead"],
     "async_required": true
   },
-  "response_max_words": 70
+  "response_target_words": 70,
+  "response_hard_max_words": 90
 }

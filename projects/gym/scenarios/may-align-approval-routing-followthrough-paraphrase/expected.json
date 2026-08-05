@@ -1,0 +1,35 @@
+{
+  "human_answer": "I understand: add the suite cases and reusable lesson, combine the overlapping documentation edits, and leave the scorer unchanged. I will route that exact scope once through the Gym app and track its durable receipt, owner result, validation proof, and completion wake. I will report routed work as progress until terminal proof or a precise blocker returns.",
+  "exact": {
+    "needs_clarification": false
+  },
+  "contains_all": {
+    "understood_intent": ["suite", "lesson", "combine", "documentation", "scorer"],
+    "next_action": ["Gym app", "durable", "receipt", "owner result", "validation", "wake"],
+    "constraints": ["progress", "completion", "terminal proof", "human approval", "preserve"]
+  },
+  "contains_groups": {
+    "mode": [["approval", "implementation", "follow-through"]],
+    "priority": [["follow-through", "durable"], ["terminal", "validation"]],
+    "next_action": [["track", "follow", "reconcile"]],
+    "response_to_hao": [
+      ["suite"],
+      ["lesson"],
+      ["combine", "overlap"],
+      ["leave", "defer", "scorer"],
+      ["Gym app"],
+      ["routed", "progress", "not complete"],
+      ["terminal proof", "validation", "precise blocker"]
+    ]
+  },
+  "excludes_all": {
+    "next_action": ["create a second task", "claim done", "call complete"],
+    "response_to_hao": ["work is done", "already complete", "I completed it"]
+  },
+  "delegations": {
+    "min": 0,
+    "max": 0
+  },
+  "empty": ["preference_updates"],
+  "response_max_words": 95
+}

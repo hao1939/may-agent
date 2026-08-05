@@ -11,6 +11,7 @@
     },
     "may-conversation-admit-long-running-reply": {
       "status": "draft",
+      "review_status": "withheld",
       "source": "direct-reply-structural-admission-poc",
       "rationale": "May should use the production route disposition, state that app-owner acceptance is pending, avoid promises, and leave internal task and wake choices to the app.",
       "approved_by": null,

@@ -75,7 +75,16 @@ for (const name of suite.scenarios) {
   add(`${name}:shadow-mode`, /decision-only benchmark/i.test(task) && /do not execute/i.test(task), "Task is explicitly non-executing");
   add(`${name}:state-depth`, (state.match(/^-/gm) ?? []).length >= 3, "State contains at least three decision-relevant facts");
   add(`${name}:common-scorer`, scorer.includes("score-decision.cjs"), "Uses the shared scorer");
-  add(`${name}:response-bound`, Number.isFinite(expected.response_max_words), "Defines a response-length bound");
+  const legacyResponseBound = Number.isFinite(expected.response_max_words);
+  const splitResponseBound =
+    Number.isFinite(expected.response_target_words) &&
+    Number.isFinite(expected.response_hard_max_words) &&
+    expected.response_hard_max_words >= expected.response_target_words;
+  add(
+    `${name}:response-bound`,
+    legacyResponseBound || splitResponseBound,
+    "Defines a valid response target and hard limit",
+  );
   add(`${name}:delegation-ground-truth`, expected.delegations && Number.isFinite(expected.delegations.min), "Defines delegation expectations");
   const expectedAgents = [
     ...(expected.delegations?.allowed_agents ?? []),
@@ -85,7 +94,7 @@ for (const name of suite.scenarios) {
   add(
     `${name}:delegation-agents-current`,
     missingAgents.length === 0,
-    missingAgents.length ? `Removed or unknown agents: ${missingAgents.join(", ")}` : "Allowed delegation owners exist in the current registry",
+    missingAgents.length ? `Removed or unknown agents: ${missingAgents.join(", ")}` : "Allowed direct agents exist in the current registry",
   );
   add(`${name}:canonical-answer`, Boolean(expected.human_answer?.trim()), "Provides a plain-language answer for human review");
 

@@ -8,8 +8,9 @@ Judge the complete decision by meaning, not wording.
    purchase requires Hao.
 3. `recommend_from_proof`: May recommends approval because the vendor run is
    the remaining compatibility proof.
-4. `bounded_options`: The packet states the exact artifact and cost and clearly
-   explains the effect of approval and rejection.
+4. `bounded_options`: The packet names artifact
+   `compat-release-2026.08-rc3`, the cost, and both reply effects. Approval
+   authorizes the accountable owner to start only that exact paid run.
 5. `follow_to_closure`: May will verify the terminal vendor report after an
    approval.
 6. `stay_at_deputy_altitude`: May asks for the authority decision without

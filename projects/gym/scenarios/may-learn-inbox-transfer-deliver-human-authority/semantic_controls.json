@@ -9,11 +9,11 @@
         "mode": "deliver",
         "priority": "one bounded authority decision",
         "needs_clarification": false,
-        "next_action": "Ask Hao to approve or reject $180 for the exact prepared artifact. On approval, the owner runs it and I verify the vendor report.",
+        "next_action": "Ask Hao to approve or reject the $180 run for compat-release-2026.08-rc3. On approval, the accountable compatibility-test owner starts that exact paid run and I verify its report.",
         "delegations": [],
         "constraints": ["Rejection leaves the release blocked and records compatibility as unproven."],
         "preference_updates": [],
-        "response_to_hao": "Decision needed: approve one $180 vendor compatibility run for the prepared release artifact? I recommend approve; internal proof passes and this is the remaining release check. Approve starts the owner run and I will verify its report. Reject keeps the release blocked with compatibility unproven. Reply approve or reject."
+        "response_to_hao": "Decision needed: approve one $180 vendor run for compat-release-2026.08-rc3? I recommend approve; internal proof passes and this is the remaining release check. Approval authorizes the compatibility-test owner to start that exact paid run, and I will verify its report. Reject keeps the release blocked with compatibility unproven. Reply approve or reject."
       }
     },
     {

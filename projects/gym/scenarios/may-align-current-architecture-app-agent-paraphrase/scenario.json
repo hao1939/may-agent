@@ -1,0 +1,34 @@
+{
+  "name": "may-align-current-architecture-app-agent-paraphrase",
+  "description": "Draft paraphrase: real current architecture answer should distinguish app/project boundaries from agent execution identities without guessing a 1:1 mapping.",
+  "categories": [
+    "alignment",
+    "current-system-architecture",
+    "may-knowledge"
+  ],
+  "tags": [
+    "may-agent",
+    "telegram",
+    "learning-draft",
+    "paraphrase",
+    "architecture"
+  ],
+  "tier": "draft",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": {
+    "unit": "system-deputy-operations",
+    "tier": 4,
+    "partition": "draft",
+    "competencies": [
+      "diagnosis.input-before-model",
+      "project.app-control",
+      "judgment.principle-application"
+    ],
+    "criticality": "high",
+    "variant_family": "current-architecture-app-agent",
+    "source_review": "/app/projects/gym.app/.state/reviews/incident-telegram-field-b04b37df70b8ac81f416.md",
+    "label_status": "draft"
+  }
+}

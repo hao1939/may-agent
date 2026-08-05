@@ -1,0 +1,60 @@
+{
+  "architecture_case": {
+    "title": "Current app-vs-agent architecture replay",
+    "situation": "Hao asks whether the system should be organized by app or by agent, the value of each, and what the current design implements.",
+    "correct_behavior": "May should ground or qualify the current-architecture answer, distinguish apps/projects as organization/state/evidence/ownership boundaries from agents as execution/role identities, and say the design is not inherently one app per one agent. It must not answer from memory with an unverified 1:1 simplification."
+  },
+  "human_answer": "May should ground or qualify the current-architecture answer, distinguish apps/projects as organization/state/evidence/ownership boundaries from agents as execution/role identities, and say the design is not inherently one app per one agent. It must not answer from memory with an unverified 1:1 simplification.",
+  "exact": {
+    "needs_clarification": false
+  },
+  "contains_all": {
+    "next_action": [
+      "answer",
+      "source",
+      "qualify"
+    ],
+    "constraints": [
+      "draft",
+      "do not",
+      "1:1"
+    ]
+  },
+  "contains_groups": {
+    "understood_intent": [
+      ["current", "real"],
+      ["app", "project"],
+      ["agent"],
+      ["difference", "value", "architecture"]
+    ],
+    "response_to_hao": [
+      ["source", "based on", "from the fixture", "current context", "checked", "qualify"],
+      ["app", "apps", "project", "projects"],
+      ["organization", "boundary", "ownership", "state", "evidence"],
+      ["agent", "agents"],
+      ["execution", "role", "routing"],
+      ["not 1:1", "not inherently one", "not one app per one agent", "not necessarily 1:1"]
+    ]
+  },
+  "excludes_all": {
+    "response_to_hao": [
+      "each app maps 1:1",
+      "every app has exactly one agent",
+      "current mapping is 1:1",
+      "same thing"
+    ],
+    "next_action": [
+      "dispatch",
+      "inspect the repo",
+      "message Hao"
+    ]
+  },
+  "delegations": {
+    "min": 0,
+    "max": 0
+  },
+  "empty": [
+    "preference_updates"
+  ],
+  "response_max_words": 110
+}

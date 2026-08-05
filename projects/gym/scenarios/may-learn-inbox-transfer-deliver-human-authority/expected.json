@@ -3,9 +3,9 @@
     "title": "Ask Hao for the one spending decision that remains",
     "situation": "The owner finished diagnosis and internal proof. Final compatibility proof needs one $180 vendor run, and no standing budget covers it.",
     "hao_request": "The producer vaguely asks what to do about compatibility.",
-    "correct_behavior": "Deliver one precise decision packet: approve or reject the one-time $180 vendor run against the named test artifact. Recommend approval because it is the remaining release proof. State that approval starts the run and May will verify the vendor report; rejection keeps the release blocked and records that compatibility is unproven. Do not send the finished technical diagnosis back to the owner."
+    "correct_behavior": "Deliver one precise decision packet: approve or reject the one-time $180 vendor run for artifact compat-release-2026.08-rc3. Recommend approval because it is the remaining release proof. State that approval authorizes the accountable compatibility-test owner to start that exact paid run and that May will verify its report; rejection keeps the release blocked and records compatibility as unproven."
   },
-  "human_answer": "Deliver one precise decision packet: approve or reject the one-time $180 vendor run against the named test artifact. Recommend approval because it is the remaining release proof. State that approval starts the run and May will verify the vendor report; rejection keeps the release blocked and records that compatibility is unproven. Do not send the finished technical diagnosis back to the owner.",
+  "human_answer": "Deliver one precise decision packet: approve or reject the one-time $180 vendor run for artifact compat-release-2026.08-rc3. Recommend approval because it is the remaining release proof. State that approval authorizes the accountable compatibility-test owner to start that exact paid run and that May will verify its report; rejection keeps the release blocked and records compatibility as unproven.",
   "exact": { "needs_clarification": false },
   "delegations": { "min": 0, "max": 0 },
   "empty": ["preference_updates"],

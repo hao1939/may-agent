@@ -5,6 +5,10 @@ Gym remains runnable from its CLI without this app. This app supplies a bounded
 autonomous improvement loop, reviewed-session learning intake, owner review,
 exact-artifact approval, and operating metrics.
 
+Start with [`design/may-training-program.md`](design/may-training-program.md)
+for the app contract. The learning content and truth boundaries are defined in
+[`design/may-deputy-learning-curriculum.md`](design/may-deputy-learning-curriculum.md).
+
 ## Autonomous resource model
 
 ```text
@@ -22,8 +26,9 @@ independently. Workflows are learned reconciliation procedures, not durable job
 state.
 
 The app does not approve ground truth, rewrite evidence, merge changes, or
-expose infrastructure APIs inside the evaluated May execution. It invokes the
-same standalone Gym CLI a developer or CI would use.
+expose infrastructure APIs inside the evaluated May execution. Improvement
+workflows call the same typed Gym loop used by the standalone project; bounded
+regression tasks may invoke its CLI and preserve the resulting run pointer.
 
 The daily improvement refill is enabled. It wakes the stable `improve/may`
 resource, which drains approved learning material until it is exhausted or an
@@ -72,6 +77,8 @@ repair when it finds a real gap.
 - `report-incident` — submit a May failure or human correction for intake.
 - `collect-codex-learning` — backfill or incrementally collect strong Hao
   intent signals without starting May improvement.
+- `review-telegram-field` — review a bounded set of completed May Telegram
+  conversations for strong reusable evidence.
 
 Generated incident packets, run pointers, candidate checkpoints, reviews, and
 operating metrics live under the ignored `projects/gym.app/.state/` directory.

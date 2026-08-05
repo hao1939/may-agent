@@ -5,4 +5,6 @@
 - It changes how every autonomous heartbeat chooses work.
 - The prompt change is committed in Git, so rollback is a simple Git revert.
 - A bad rollout could still create dozens of wasteful sessions before it is reverted.
+- The Gym app owns prompt comparison, durable evaluation evidence, and the
+  completion loop. Broad adoption still requires Hao's approval.
 - The Gym app owner is `gym`; `gym` or `coach` may own the asynchronous comparison and evaluation evidence.

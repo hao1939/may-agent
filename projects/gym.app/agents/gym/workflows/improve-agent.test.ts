@@ -32,6 +32,7 @@ import {
   runImprovement,
   runCurriculumSequence,
   scenarioVerdicts,
+  verify,
   verificationBenchmark,
   validateFindings,
   type Finding,
@@ -292,10 +293,10 @@ describe("single agent-improvement loop", () => {
       },
     };
 
-    const result = (await runImprovement(
-      ctx,
-      unusedLoop,
-    )) as unknown as Record<string, unknown>;
+    const result = (await runImprovement(ctx, unusedLoop)) as unknown as Record<
+      string,
+      unknown
+    >;
     expect(result.summary).toContain("Applied approved benchmark/scorer fix");
     expect(readFileSync(join(targetPath, "scorer.cjs"), "utf8")).toBe(
       "fixed\n",
@@ -309,6 +310,405 @@ describe("single agent-improvement loop", () => {
         scenarios: ["release-case"],
       }),
     ]);
+  });
+
+  test("turns a rejected benchmark proposal into a new exact proposal", async () => {
+    const root = mkdtempSync(join(tmpdir(), "gym-benchmark-revision-"));
+    roots.push(root);
+    const projectsRoot = join(root, "projects");
+    const stateDir = join(
+      projectsRoot,
+      "gym.app",
+      ".state",
+      "candidates",
+      "improve-may",
+      "7",
+      "tracks",
+      "benchmark-track",
+    );
+    const resultPath = join(stateDir, "result.json");
+    const assessmentPath = join(stateDir, "assessment.json");
+    const oldArtifact = join(stateDir, "benchmark-fix", "development-case");
+    const scenarioPath = join(
+      projectsRoot,
+      "gym",
+      "scenarios",
+      "development-case",
+    );
+    const verificationDir = join(root, "verification-7");
+    mkdirSync(oldArtifact, { recursive: true });
+    mkdirSync(scenarioPath, { recursive: true });
+    mkdirSync(verificationDir, { recursive: true });
+    writeFileSync(
+      join(oldArtifact, "expected.json"),
+      '{"rule":"old proposal"}\n',
+    );
+    writeFileSync(join(scenarioPath, "expected.json"), '{"rule":"current"}\n');
+    writeFileSync(
+      join(verificationDir, "manifest.json"),
+      JSON.stringify(
+        manifest("verification-7", { "development-case": ["fail"] }),
+      ),
+    );
+    writeFileSync(
+      assessmentPath,
+      JSON.stringify({
+        schema_version: 1,
+        agent: "may",
+        benchmark: "test-bench",
+        release_benchmark: "test-bench",
+        release_scenarios: ["development-case"],
+        screening_run_id: "verification-7",
+        screening_run_dir: verificationDir,
+        retry_run_id: null,
+        retry_run_dir: null,
+        findings: [],
+        focus: null,
+        baseline_run_id: "verification-7",
+        baseline_run_dir: verificationDir,
+        accepted_at: "2026-08-01T00:00:00Z",
+      }),
+    );
+    const artifactFingerprint = `sha256:${fingerprintTree(oldArtifact)}`;
+    const approvalId = "approval-rejected-7";
+    writeFileSync(
+      resultPath,
+      JSON.stringify({
+        summary: "Waiting for exact approval.",
+        next: "wait-for-approval",
+        assessment_path: assessmentPath,
+        baseline_run_id: "verification-7",
+        focus: {
+          classification: "benchmark",
+          scenarios: ["development-case"],
+          summary: "Repair benchmark meaning.",
+          evidence: ["old-evidence"],
+        },
+        artifact_path: oldArtifact,
+        artifact_target_path: scenarioPath,
+        verification_run_dir: verificationDir,
+        recommendation: "review-benchmark",
+        review: {
+          disposition: "review-benchmark",
+          summary: "Old lexical proposal",
+          proposedChange: "Expand literal words",
+          evidence: [],
+        },
+        approval: {
+          kind: "benchmark-fix",
+          approvalId,
+          waitId: `wait:${approvalId}`,
+          taskId: "improve/may",
+          taskGeneration: 7,
+          artifactFingerprint,
+          packetPath: resultPath,
+          requestedAction: "Approve?",
+          reason: "Old proposal",
+          condition: { id: approvalId, type: "project.approval.submitted" },
+        },
+        conditions: [],
+        evidence: [resultPath],
+      }),
+    );
+    const task = [
+      "## Reconciliation Task",
+      "```json",
+      JSON.stringify({ taskId: "improve/may", generation: 7, input: {} }),
+      "```",
+      "## Trigger Event",
+      "```json",
+      JSON.stringify({
+        type: "project.approval.submitted",
+        data: {
+          approvalId,
+          taskId: "improve/may",
+          taskGeneration: 7,
+          artifactFingerprint,
+          packetPath: resultPath,
+          decision: "decline",
+          message:
+            "Use calibrated semantic judging with positive and negative controls.",
+        },
+      }),
+      "```",
+    ].join("\n");
+    const emitted: Record<string, unknown>[] = [];
+    const dispatched: Array<{ type: string; data: Record<string, unknown> }> =
+      [];
+    const ctx = {
+      projectsRoot,
+      task,
+      async runAgent(_agent: string, prompt: string) {
+        const snapshot = prompt.match(/Writable benchmark snapshot: (.+)/)?.[1];
+        if (!snapshot) throw new Error("builder did not receive a snapshot");
+        writeFileSync(
+          join(snapshot, "expected.json"),
+          '{"rule":"semantic controls"}\n',
+        );
+        return {
+          status: "success",
+          sessionId: "builder-7",
+          structuredResult: {
+            summary: "Replaced the lexical rule with calibrated controls.",
+            changedFiles: ["expected.json"],
+            evidence: ["semantic-controls:test"],
+          },
+        };
+      },
+      emit(event: Record<string, unknown>) {
+        emitted.push(event);
+      },
+      dispatchEvent(type: string, data: Record<string, unknown>) {
+        dispatched.push({ type, data });
+      },
+      done(summary: string, details: Record<string, unknown>) {
+        return { type: "done", summary, ...details };
+      },
+      blocked(reason: string) {
+        return { type: "blocked", reason };
+      },
+    } as unknown as WorkflowContext;
+
+    const result = (await runImprovement(ctx, {
+      async run() {
+        throw new Error("decision handling must not start a new baseline");
+      },
+      async verify() {
+        throw new Error("decision handling must not verify before approval");
+      },
+    })) as unknown as Record<string, unknown>;
+
+    expect(result.state).toBe("waiting");
+    const current = JSON.parse(readFileSync(resultPath, "utf8"));
+    expect(current.next).toBe("wait-for-approval");
+    expect(current.workflow_state).toBeUndefined();
+    expect(current.approval.artifactFingerprint).not.toBe(artifactFingerprint);
+    expect(current.review.proposedChange).toContain("calibrated semantic");
+    const decisionDir = join(
+      stateDir,
+      "decisions",
+      artifactFingerprint.replace(/[^a-zA-Z0-9._-]+/g, "-"),
+    );
+    expect(existsSync(join(decisionDir, "decision.json"))).toBe(true);
+    expect(
+      readFileSync(join(decisionDir, "artifact", "expected.json"), "utf8"),
+    ).toContain("old proposal");
+    expect(
+      emitted.some(({ type }) => type === "project.approval.requested"),
+    ).toBe(true);
+    expect(dispatched).toHaveLength(1);
+  });
+
+  test("rejects convergence while a cited campaign checkpoint is unfinished", async () => {
+    const root = mkdtempSync(join(tmpdir(), "gym-campaign-verifier-"));
+    roots.push(root);
+    const appDir = join(root, "gym.app");
+    const resultPath = join(
+      appDir,
+      ".state",
+      "candidates",
+      "improve-may",
+      "7",
+      "tracks",
+      "target",
+      "result.json",
+    );
+    mkdirSync(dirname(resultPath), { recursive: true });
+    writeFileSync(
+      resultPath,
+      JSON.stringify({
+        next: "wait-for-approval",
+        approval: { approvalId: "approval-7" },
+      }),
+    );
+
+    const rejected = await verify(
+      { appDir, taskId: "improve/may", generation: 7 },
+      {
+        state: "converged",
+        evidence: [`${resultPath}: current campaign packet`],
+      },
+    );
+    expect(rejected.accepted).toBe(false);
+    expect(rejected.evidence).toEqual([resultPath]);
+
+    writeFileSync(
+      resultPath,
+      JSON.stringify({
+        next: "done",
+        approval: null,
+        completion_kind: "no-actionable-failure",
+        track_state: "complete",
+      }),
+    );
+    expect(
+      await verify(
+        { appDir, taskId: "improve/may", generation: 7 },
+        { state: "converged", evidence: [resultPath] },
+      ),
+    ).toMatchObject({ accepted: true });
+
+    writeFileSync(
+      resultPath,
+      JSON.stringify({ approval: { approvalId: "legacy-approval" } }),
+    );
+    expect(
+      await verify(
+        { appDir, taskId: "improve/may", generation: 7 },
+        { state: "converged", evidence: [resultPath] },
+      ),
+    ).toMatchObject({ accepted: false, evidence: [resultPath] });
+
+    writeFileSync(
+      resultPath,
+      JSON.stringify({
+        next: "done",
+        stop_reason: "candidate-safety-limit",
+        completion_kind: "no-actionable-failure",
+        track_state: "complete",
+      }),
+    );
+    expect(
+      await verify(
+        { appDir, taskId: "improve/may", generation: 7 },
+        { state: "converged", evidence: [resultPath] },
+      ),
+    ).toMatchObject({ accepted: false, evidence: [resultPath] });
+
+    const projectDir = join(root, "gym");
+    const learningDir = join(projectDir, "benchmarks", "may-learning");
+    const benchmarkDir = join(projectDir, "benchmarks", "current-benchmark");
+    const scenarioDir = join(projectDir, "scenarios", "current-case");
+    mkdirSync(learningDir, { recursive: true });
+    mkdirSync(benchmarkDir, { recursive: true });
+    mkdirSync(scenarioDir, { recursive: true });
+    writeFileSync(
+      join(learningDir, "autonomous-training.json"),
+      JSON.stringify({
+        schema_version: 1,
+        agent: "may",
+        tracks: [
+          {
+            id: "current-track",
+            benchmark: "current-benchmark",
+            scenarios: ["current-case"],
+            trials: 1,
+          },
+        ],
+      }),
+    );
+    writeFileSync(
+      join(benchmarkDir, "suite.json"),
+      JSON.stringify({
+        labels_file: "labels.json",
+        scenarios: ["current-case"],
+      }),
+    );
+    writeFileSync(
+      join(benchmarkDir, "labels.json"),
+      JSON.stringify({
+        labels: {
+          "current-case": { status: "approved", approved_by: "hao" },
+        },
+      }),
+    );
+    writeFileSync(join(scenarioDir, "prompt.md"), "current case\n");
+
+    const campaignId = `sha256:${"a".repeat(64)}`;
+    const currentResultPath = join(
+      appDir,
+      ".state",
+      "candidates",
+      "improve-may",
+      "7",
+      "tracks",
+      `current-track-${"a".repeat(16)}`,
+      "result.json",
+    );
+    const staleResultPath = join(
+      appDir,
+      ".state",
+      "candidates",
+      "improve-may",
+      "7",
+      "tracks",
+      `old-track-${"b".repeat(16)}`,
+      "result.json",
+    );
+    mkdirSync(dirname(currentResultPath), { recursive: true });
+    mkdirSync(dirname(staleResultPath), { recursive: true });
+    writeFileSync(
+      currentResultPath,
+      JSON.stringify({
+        next: "done",
+        completion_kind: "no-actionable-failure",
+        track_state: "complete",
+      }),
+    );
+    writeFileSync(
+      staleResultPath,
+      JSON.stringify({
+        next: "wait-for-approval",
+        approval: { approvalId: "old-campaign-approval" },
+      }),
+    );
+    writeFileSync(
+      join(appDir, ".state", "candidates", "improve-may", "7", "result.json"),
+      JSON.stringify({
+        next: "wait-for-approval",
+        approval: { approvalId: "old-root-approval" },
+      }),
+    );
+    const trainingPath = join(
+      appDir,
+      ".state",
+      "learning",
+      "training-drain.json",
+    );
+    mkdirSync(dirname(trainingPath), { recursive: true });
+    writeFileSync(
+      trainingPath,
+      JSON.stringify({
+        schema_version: 2,
+        agent: "may",
+        campaign_id: campaignId,
+        curriculum_fingerprint: `sha256:${"c".repeat(64)}`,
+        agent_fingerprint: `sha256:${"d".repeat(64)}`,
+        updated_at: "2026-08-05T00:00:00Z",
+        exhausted_at: "2026-08-05T00:00:00Z",
+        tracks: [
+          {
+            id: "current-track",
+            state: "complete",
+            summary: "current track passed",
+            evidence: [currentResultPath],
+          },
+        ],
+        evidence: [currentResultPath],
+      }),
+    );
+    expect(
+      await verify(
+        { appDir, projectDir, taskId: "improve/may", generation: 7 },
+        { state: "converged", evidence: [trainingPath] },
+      ),
+    ).toMatchObject({ accepted: true });
+  });
+
+  test("rejects convergence without positive campaign proof", async () => {
+    const root = mkdtempSync(join(tmpdir(), "gym-missing-proof-verifier-"));
+    roots.push(root);
+    expect(
+      await verify(
+        {
+          appDir: join(root, "gym.app"),
+          projectDir: join(root, "gym"),
+          taskId: "improve/may",
+          generation: 7,
+        },
+        { state: "converged", evidence: [] },
+      ),
+    ).toMatchObject({ accepted: false, evidence: [] });
   });
 
   test("locates one exact retry in the generation root or an immediate track", () => {
@@ -685,6 +1085,48 @@ describe("single agent-improvement loop", () => {
         params: expect.objectContaining({ reason: "curriculum-continue" }),
       }),
     ]);
+    const taskStatePath = join(
+      projectsRoot,
+      "gym.app",
+      ".state",
+      "tasks",
+      "state.json",
+    );
+    mkdirSync(dirname(taskStatePath), { recursive: true });
+    writeFileSync(
+      taskStatePath,
+      JSON.stringify({
+        taskTriggers: {
+          "improve/may": {
+            event: { type: "gym.improvement.requested" },
+          },
+        },
+      }),
+    );
+    expect(
+      await verify(
+        {
+          appDir: join(projectsRoot, "gym.app"),
+          projectDir: gymRoot,
+          taskId: "improve/may",
+          generation: 1,
+        },
+        first,
+      ),
+    ).toMatchObject({ accepted: true });
+    writeFileSync(taskStatePath, JSON.stringify({ taskTriggers: {} }));
+    expect(
+      await verify(
+        {
+          appDir: join(projectsRoot, "gym.app"),
+          projectDir: gymRoot,
+          taskId: "improve/may",
+          generation: 1,
+        },
+        first,
+      ),
+    ).toMatchObject({ accepted: false });
+    rmSync(taskStatePath, { force: true });
 
     (ctx as unknown as { task: string }).task = task("curriculum-continue");
     const second = (await runImprovement(ctx, loop)) as unknown as Record<
@@ -968,7 +1410,10 @@ describe("single agent-improvement loop", () => {
       },
     );
 
-    expect(prepared.problem).toContain("remained invalid");
+    expect(prepared.problem).toMatchObject({
+      kind: "invalid-run",
+      summary: expect.stringContaining("remained invalid"),
+    });
     expect(runCount).toBe(0);
     expect(
       experimentNeedsIntegration({
@@ -1056,11 +1501,7 @@ describe("single agent-improvement loop", () => {
       return runDir;
     };
 
-    store(
-      "before-candidate",
-      "2026-08-01T00:00:00Z",
-      "2026-08-01T00:10:00Z",
-    );
+    store("before-candidate", "2026-08-01T00:00:00Z", "2026-08-01T00:10:00Z");
     const recoveredDir = store(
       "completed-after-candidate",
       "2026-08-01T01:00:00Z",

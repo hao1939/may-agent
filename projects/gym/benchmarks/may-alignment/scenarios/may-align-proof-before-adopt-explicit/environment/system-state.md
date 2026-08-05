@@ -4,4 +4,5 @@
 - It has not been run in the gym and has no baseline comparison.
 - It changes how every autonomous heartbeat chooses work.
 - Rollback is possible but a bad rollout could create dozens of wasteful sessions.
-- The Gym app owner is `gym`; it owns prompt comparison and agent-evaluation evidence.
+- The Gym app owns prompt comparison, durable evaluation evidence, and the
+  completion loop. Broad adoption still requires Hao's approval.

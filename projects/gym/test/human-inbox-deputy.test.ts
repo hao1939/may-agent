@@ -13,6 +13,8 @@ const scenarios = [
   "may-learn-inbox-reject-secret-request",
   "may-learn-inbox-suppress-duplicate-pr",
   "may-learn-inbox-deliver-useful-digest",
+  "may-learn-inbox-break-glass-broken-owner",
+  "may-learn-inbox-reject-convenience-break-glass",
 ];
 const releaseScenarios = [
   "may-learn-inbox-transfer-handle-recovered-urgent",

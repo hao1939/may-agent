@@ -117,6 +117,16 @@ interface StoredResult {
   approval: ApprovalRequest | null;
 }
 
+type CampaignNext = "done" | "wait-for-approval" | "ask-owner";
+type TrackState = "complete" | "issue";
+type CompletionKind =
+  "no-actionable-failure" | "non-may-disposition" | "artifact-applied";
+
+interface AssessmentProblem {
+  kind: "missing-manifest" | "invalid-run" | "not-reproduced";
+  summary: string;
+}
+
 interface OperatingMetricsState {
   schema_version: 1;
   updated_at: string;
@@ -171,7 +181,7 @@ interface CurriculumExperiment {
   scope: string;
   assessmentPath: string;
   assessment: Assessment;
-  problem?: string;
+  problem?: AssessmentProblem;
 }
 
 type ApprovalKind = "agent-improvement" | "benchmark-fix";
@@ -336,7 +346,7 @@ function supersededCampaignResult(
   return ctx.done(summary, {
     state: "converged",
     summary,
-    evidence: [],
+    evidence: [`superseded:${taskId}@${generation}`],
     actions: [],
   });
 }
@@ -647,10 +657,7 @@ export function authoritativeAssessmentProblems(
 ): { failing: string[]; invalid: string[] } {
   const screened = scenarioVerdicts(screening);
   const retried = retry ? scenarioVerdicts(retry) : null;
-  const failing = new Set([
-    ...screened.fail,
-    ...(retried?.fail ?? []),
-  ]);
+  const failing = new Set([...screened.fail, ...(retried?.fail ?? [])]);
   const invalid = (retried?.invalid ?? screened.invalid).filter(
     (scenario) => !failing.has(scenario),
   );
@@ -1003,7 +1010,7 @@ async function completeFocusedBaseline(
   assessment: Assessment,
   loop: GymLoopApi,
   sourceRuns: Array<{ runDir: string; manifest: LoopRunManifest }> = [],
-): Promise<{ assessment: Assessment; problem?: string }> {
+): Promise<{ assessment: Assessment; problem?: AssessmentProblem }> {
   if (!assessment.focus) return { assessment };
   const storedBaseline = Boolean(assessment.baseline_run_dir);
   let baseline = assessment.baseline_run_dir
@@ -1021,7 +1028,10 @@ async function completeFocusedBaseline(
   if (baseline && !baseline.manifest) {
     return {
       assessment,
-      problem: "The stored development baseline is missing its manifest.",
+      problem: {
+        kind: "missing-manifest",
+        summary: "The stored development baseline is missing its manifest.",
+      },
     };
   }
   if (storedBaseline) {
@@ -1029,15 +1039,21 @@ async function completeFocusedBaseline(
     if (storedVerdicts.invalid.length) {
       return {
         assessment,
-        problem:
-          "The focused May failure remained invalid after one bounded retry.",
+        problem: {
+          kind: "invalid-run",
+          summary:
+            "The focused May failure remained invalid after one bounded retry.",
+        },
       };
     }
     if (!storedVerdicts.fail.length) {
       return {
         assessment,
-        problem:
-          "The focused May failure did not reproduce in the frozen development baseline.",
+        problem: {
+          kind: "not-reproduced",
+          summary:
+            "The focused May failure did not reproduce in the frozen development baseline.",
+        },
       };
     }
     return { assessment };
@@ -1074,15 +1090,21 @@ async function completeFocusedBaseline(
   if (baselineVerdicts.invalid.length) {
     return {
       assessment,
-      problem:
-        "The focused May failure remained invalid after one bounded retry.",
+      problem: {
+        kind: "invalid-run",
+        summary:
+          "The focused May failure remained invalid after one bounded retry.",
+      },
     };
   }
   if (!baselineVerdicts.fail.length) {
     return {
       assessment,
-      problem:
-        "The focused May failure did not reproduce in the frozen development baseline.",
+      problem: {
+        kind: "not-reproduced",
+        summary:
+          "The focused May failure did not reproduce in the frozen development baseline.",
+      },
     };
   }
   return { assessment };
@@ -1099,7 +1121,7 @@ export async function prepareAssessment(
   input: Record<string, unknown>,
   assessmentPath: string,
   loop: GymLoopApi,
-): Promise<{ assessment: Assessment; problem?: string }> {
+): Promise<{ assessment: Assessment; problem?: AssessmentProblem }> {
   if (existsSync(assessmentPath)) {
     const assessment = JSON.parse(
       readFileSync(assessmentPath, "utf8"),
@@ -1531,24 +1553,40 @@ function existingResult(path: string): StoredResult | null {
   const safetyStop =
     value.stop_reason === "candidate-safety-limit" ||
     summary.startsWith("Gym reached the safety limit");
-  if (
-    safetyStop &&
-    (value.workflow_state !== "converged" ||
-      value.stop_reason !== "candidate-safety-limit")
-  ) {
-    value.workflow_state = "converged";
+  if (safetyStop) {
     value.stop_reason = "candidate-safety-limit";
+    value.next = "ask-owner";
+    value.conditions = [];
+    value.approval = null;
+    writeJson(path, value);
+  }
+  const next = String(value.next ?? "") as CampaignNext;
+  const legacyState = String(value.workflow_state ?? "");
+  const approval = approvalFromStored(value);
+  const recognized =
+    next === "done" ||
+    next === "wait-for-approval" ||
+    next === "ask-owner" ||
+    legacyState === "converged" ||
+    legacyState === "waiting" ||
+    legacyState === "needs-owner" ||
+    Boolean(approval);
+  if (!recognized) {
+    value.next = "ask-owner";
+    value.conditions = [];
+    value.approval = null;
     writeJson(path, value);
   }
   return {
     summary,
-    state: safetyStop
-      ? "converged"
-      : value.workflow_state === "needs-owner"
+    state:
+      safetyStop || next === "ask-owner" || legacyState === "needs-owner"
         ? "needs-owner"
-        : value.workflow_state === "waiting"
+        : next === "wait-for-approval" || legacyState === "waiting" || approval
           ? "waiting"
-          : "converged",
+          : next === "done" || legacyState === "converged"
+            ? "converged"
+            : "needs-owner",
     evidence: boundedEvidence(
       Array.isArray(value.evidence)
         ? [path, ...value.evidence.map(String)]
@@ -1560,7 +1598,7 @@ function existingResult(path: string): StoredResult | null {
     conditions: Array.isArray(value.conditions)
       ? (value.conditions as ProjectAppConditionSpec[])
       : [],
-    approval: approvalFromStored(value),
+    approval,
   };
 }
 
@@ -1783,8 +1821,66 @@ function approvalResponse(
 function approvalDecision(
   task: string,
   request: ApprovalRequest,
+  stateDir?: string,
 ): { decision: "approve" | "adjust" | "decline"; message: string } | null {
-  return approvalResponse(triggerDetails(task), request);
+  const live = approvalResponse(triggerDetails(task), request);
+  if (live || !stateDir) return live;
+  const decisionKey = safeKey(request.artifactFingerprint, "artifact");
+  for (const path of [
+    join(stateDir, "decisions", decisionKey, "decision.json"),
+    join(stateDir, "approval-decision.json"),
+  ]) {
+    const stored = readJson<Record<string, unknown>>(path);
+    if (!stored) continue;
+    const response = approvalResponse(
+      {
+        type: "project.approval.submitted",
+        ...stored,
+      },
+      request,
+    );
+    if (response) return response;
+  }
+  return null;
+}
+
+function preserveApprovalDecision(
+  stateDir: string,
+  stored: Record<string, unknown>,
+  request: ApprovalRequest,
+  response: { decision: "approve" | "adjust" | "decline"; message: string },
+): { decisionPath: string; proposalPath: string; artifactPath: string | null } {
+  const decisionDir = join(
+    stateDir,
+    "decisions",
+    safeKey(request.artifactFingerprint, "artifact"),
+  );
+  mkdirSync(decisionDir, { recursive: true });
+  const proposalPath = join(decisionDir, "proposal.json");
+  const decisionPath = join(decisionDir, "decision.json");
+  let artifactPath: string | null = null;
+  const currentArtifact = String(stored.artifact_path ?? "");
+  if (currentArtifact && existsSync(currentArtifact)) {
+    artifactPath = join(decisionDir, "artifact");
+    if (!existsSync(artifactPath)) {
+      cpSync(currentArtifact, artifactPath, { recursive: true });
+    }
+  }
+  if (!existsSync(proposalPath)) {
+    writeJson(proposalPath, {
+      ...stored,
+      ...(artifactPath ? { artifact_path: artifactPath } : {}),
+      preserved_at: new Date().toISOString(),
+    });
+  }
+  writeJson(decisionPath, {
+    schema_version: 1,
+    ...response,
+    ...request,
+    proposalPath,
+    recorded_at: new Date().toISOString(),
+  });
+  return { decisionPath, proposalPath, artifactPath };
 }
 
 export function locateApprovalPacket(
@@ -2297,6 +2393,61 @@ function saveWorkflowResult(
   });
 }
 
+function saveAttentionResult(
+  ctx: WorkflowContext,
+  resultPath: string,
+  summary: string,
+  evidence: string[],
+  details: Record<string, unknown> = {},
+): WorkflowResult {
+  const bounded = boundedEvidence([resultPath, ...evidence]);
+  const previous = readJson<Record<string, unknown>>(resultPath) ?? {};
+  saveWorkflowResult(resultPath, {
+    ...previous,
+    ...details,
+    summary,
+    evidence: bounded,
+    completion_kind: null,
+    track_state: null,
+    next: "ask-owner",
+    conditions: [],
+    approval: null,
+  });
+  return ctx.done(summary, {
+    state: "needs-owner",
+    summary,
+    evidence: bounded,
+  });
+}
+
+function saveCompletedResult(
+  resultPath: string,
+  input: {
+    taskId: string;
+    generation: number;
+    summary: string;
+    evidence: string[];
+    completionKind: CompletionKind;
+    trackState: TrackState;
+    details?: Record<string, unknown>;
+  },
+): string[] {
+  const evidence = boundedEvidence([resultPath, ...input.evidence]);
+  saveWorkflowResult(resultPath, {
+    task_id: input.taskId,
+    generation: input.generation,
+    ...input.details,
+    summary: input.summary,
+    evidence,
+    completion_kind: input.completionKind,
+    track_state: input.trackState,
+    next: "done",
+    conditions: [],
+    approval: null,
+  });
+  return evidence;
+}
+
 function migrateLegacyRevision(candidateStateDir: string): void {
   const resultPath = join(candidateStateDir, "result.json");
   if (!existsSync(resultPath)) return;
@@ -2366,8 +2517,15 @@ async function runCandidateIteration(
 ): Promise<WorkflowResult | IterationRevision> {
   const productionAgentsRoot = join(dirname(ctx.projectsRoot), "agents");
   const sourceMay = join(productionAgentsRoot, plan.agent);
-  if (!existsSync(sourceMay))
-    return ctx.blocked(`Agent not found: ${sourceMay}`);
+  if (!existsSync(sourceMay)) {
+    return saveAttentionResult(
+      ctx,
+      resultPath,
+      `Agent not found: ${sourceMay}`,
+      [sourceMay],
+      { task_id: taskId, generation, iteration },
+    );
+  }
   const workspaceAgentsRoot = join(scratchRoot, "agents");
   const workspaceMay = join(workspaceAgentsRoot, plan.agent);
   const candidateId = `gym/${plan.agent}/g${generation}-i${iteration}`;
@@ -2439,11 +2597,13 @@ async function runCandidateIteration(
     const candidateProduced =
       existsSync(candidateDir) && readdirSync(candidateDir).length > 0;
     if (!candidateProduced) {
-      return ctx.done("Candidate implementation failed", {
-        state: "needs-owner",
-        summary: "Candidate implementation failed",
-        evidence: [result.sessionId, result.lastAssistantText ?? result.status],
-      });
+      return saveAttentionResult(
+        ctx,
+        resultPath,
+        "Candidate implementation failed",
+        [result.sessionId, result.lastAssistantText ?? result.status],
+        { task_id: taskId, generation, iteration },
+      );
     }
     const implementation = result.structuredResult ?? {
       summary:
@@ -2476,29 +2636,23 @@ async function runCandidateIteration(
   cpSync(durableCandidate, candidateDir, { recursive: true });
   const candidateFingerprint = candidateCheckpoint.candidateFingerprint;
   if (fingerprintTree(durableCandidate) !== candidateFingerprint) {
-    return ctx.done("Durable candidate changed after it was checkpointed", {
-      state: "needs-owner",
-      summary: "Durable candidate changed after it was checkpointed",
-      evidence: [candidateCheckpointPath, durableCandidate],
-    });
+    return saveAttentionResult(
+      ctx,
+      resultPath,
+      "Durable candidate changed after it was checkpointed",
+      [candidateCheckpointPath, durableCandidate],
+      { task_id: taskId, generation, iteration },
+    );
   }
   if (plan.revision?.previousCandidateFingerprint === candidateFingerprint) {
     const summary = `Candidate iteration ${iteration} made no artifact change; autonomous progress stopped.`;
-    saveWorkflowResult(resultPath, {
-      task_id: taskId,
-      generation,
-      workflow_state: "converged",
+    return saveAttentionResult(
+      ctx,
+      resultPath,
       summary,
-      evidence: [candidateCheckpointPath, durableCandidate],
-      conditions: [],
-      approval: null,
-    });
-    return ctx.done(summary, {
-      state: "converged",
-      summary,
-      evidence: [candidateCheckpointPath, durableCandidate],
-      actions: [],
-    });
+      [candidateCheckpointPath, durableCandidate],
+      { task_id: taskId, generation, iteration },
+    );
   }
 
   const baselineManifest = readManifest(plan.baselineDir);
@@ -2519,11 +2673,13 @@ async function runCandidateIteration(
   if (
     development.manifest.proof.candidate_fingerprint !== candidateFingerprint
   ) {
-    return ctx.done("Candidate fingerprint does not match verification", {
-      state: "needs-owner",
-      summary: "Candidate fingerprint does not match verification",
-      evidence: [durableCandidate, development.runDir],
-    });
+    return saveAttentionResult(
+      ctx,
+      resultPath,
+      "Candidate fingerprint does not match verification",
+      [durableCandidate, development.runDir],
+      { task_id: taskId, generation, iteration },
+    );
   }
   recordVerificationMetrics(ctx, development);
 
@@ -2550,22 +2706,22 @@ async function runCandidateIteration(
         plan.releaseScenarios,
       )
         ? { runDir: plan.baselineDir, manifest: baselineManifest }
-        : recoverCompletedReleaseBaseline(
-              gymRoot,
-              plan.releaseBenchmark,
-              plan.agent,
-              plan.releaseScenarios,
-              development.manifest.completed_at,
-            ) ??
-            (await loop.run({
-              phase: "test",
-              benchmark: plan.releaseBenchmark,
-              scenarios: plan.releaseScenarios,
-              agent: plan.agent,
-              candidate: "baseline",
-              trials: RELEASE_TRIALS,
-              agentsRoot: workspaceAgentsRoot,
-            }));
+        : (recoverCompletedReleaseBaseline(
+            gymRoot,
+            plan.releaseBenchmark,
+            plan.agent,
+            plan.releaseScenarios,
+            development.manifest.completed_at,
+          ) ??
+          (await loop.run({
+            phase: "test",
+            benchmark: plan.releaseBenchmark,
+            scenarios: plan.releaseScenarios,
+            agent: plan.agent,
+            candidate: "baseline",
+            trials: RELEASE_TRIALS,
+            agentsRoot: workspaceAgentsRoot,
+          })));
       writeJson(releaseBaselineCheckpointPath, releaseBaseline);
     }
     releaseBaselineDir = releaseBaseline.runDir;
@@ -2584,11 +2740,13 @@ async function runCandidateIteration(
       writeJson(releaseCheckpointPath, release);
     }
     if (release.manifest.proof.candidate_fingerprint !== candidateFingerprint) {
-      return ctx.done("Release fingerprint does not match candidate", {
-        state: "needs-owner",
-        summary: "Release fingerprint does not match candidate",
-        evidence: [durableCandidate, release.runDir],
-      });
+      return saveAttentionResult(
+        ctx,
+        resultPath,
+        "Release fingerprint does not match candidate",
+        [durableCandidate, release.runDir],
+        { task_id: taskId, generation, iteration },
+      );
     }
     recordVerificationMetrics(ctx, release);
     comparison = release.comparison;
@@ -2605,11 +2763,13 @@ async function runCandidateIteration(
     if (review) writeJson(reviewCheckpointPath, review);
   }
   if (!verificationPassed && !review) {
-    return ctx.done("Gym could not review the failed candidate", {
-      state: "needs-owner",
-      summary: "Gym could not review the failed candidate",
-      evidence: [durableCandidate, verificationDir],
-    });
+    return saveAttentionResult(
+      ctx,
+      resultPath,
+      "Gym could not review the failed candidate",
+      [durableCandidate, verificationDir],
+      { task_id: taskId, generation, iteration },
+    );
   }
 
   const expectsBenchmarkFix =
@@ -2643,11 +2803,13 @@ async function runCandidateIteration(
       )
     : null;
   if (expectsBenchmarkFix && !benchmarkFix) {
-    return ctx.done("Gym could not build an isolated benchmark/scorer fix", {
-      state: "needs-owner",
-      summary: "Gym could not build an isolated benchmark/scorer fix",
-      evidence: [resultPath, verificationDir, ...(review?.evidence ?? [])],
-    });
+    return saveAttentionResult(
+      ctx,
+      resultPath,
+      "Gym could not build an isolated benchmark/scorer fix",
+      [verificationDir, ...(review?.evidence ?? [])],
+      { task_id: taskId, generation, iteration },
+    );
   }
 
   const recommendation = verificationPassed ? "promote" : review!.disposition;
@@ -2731,7 +2893,18 @@ async function runCandidateIteration(
     review,
     summary,
     evidence,
-    workflow_state: workflowState,
+    ...(workflowState === "converged"
+      ? {
+          completion_kind: "non-may-disposition" satisfies CompletionKind,
+          track_state: "issue" satisfies TrackState,
+        }
+      : {}),
+    next:
+      workflowState === "waiting"
+        ? "wait-for-approval"
+        : workflowState === "needs-owner"
+          ? "ask-owner"
+          : "done",
     conditions: approval ? [approval.condition] : [],
     approval,
   });
@@ -2759,6 +2932,127 @@ async function runCandidateIteration(
     state: "waiting",
     summary,
     evidence: boundedEvidence(evidence),
+    actions: [],
+    conditions: [approval.condition],
+  });
+}
+
+async function prepareBenchmarkFixProposal(
+  ctx: WorkflowContext,
+  plan: CandidatePlan,
+  review: FailedReview,
+  stateDir: string,
+  taskId: string,
+  generation: number,
+  priorEvidence: string[] = [],
+): Promise<WorkflowResult> {
+  const resultPath = join(stateDir, "result.json");
+  const revisionKey = createHash("sha256")
+    .update(`${review.disposition}\n${review.proposedChange}`)
+    .digest("hex")
+    .slice(0, 16);
+  const scratchRoot = join(
+    ctx.projectsRoot,
+    "gym.app",
+    ".state",
+    "scratch",
+    safeKey(taskId, "improve-may"),
+    String(generation),
+    `benchmark-fix-${revisionKey}`,
+  );
+  let fix: Awaited<ReturnType<typeof buildBenchmarkFix>>;
+  try {
+    fix = await buildBenchmarkFix(
+      ctx,
+      plan,
+      review,
+      stateDir,
+      plan.baselineDir,
+      scratchRoot,
+    );
+  } finally {
+    rmSync(scratchRoot, { recursive: true, force: true });
+  }
+  if (!fix) {
+    const summary =
+      "Gym could not build a new benchmark/scorer proposal from the reviewed evidence.";
+    return saveAttentionResult(
+      ctx,
+      resultPath,
+      summary,
+      [
+        plan.assessmentPath,
+        plan.baselineDir,
+        ...priorEvidence,
+        ...review.evidence,
+      ],
+      {
+        task_id: taskId,
+        generation,
+        assessment_path: plan.assessmentPath,
+        baseline_run_id: plan.baselineRunId,
+        focus: plan.focus,
+        recommendation: review.disposition,
+        review,
+      },
+    );
+  }
+
+  const approval = buildApprovalRequest({
+    kind: "benchmark-fix",
+    taskId,
+    generation,
+    artifactFingerprint: fix.fingerprint,
+    packetPath: resultPath,
+    requestedAction:
+      "Approve this exact benchmark/scorer fix and a fresh baseline?",
+    reason: `${review.summary} ${fix.summary}`,
+  });
+  const summary = `Gym prepared an exact benchmark/scorer fix and is waiting for approval. ${fix.summary}`;
+  const evidence = boundedEvidence([
+    resultPath,
+    plan.assessmentPath,
+    plan.baselineDir,
+    fix.path,
+    `benchmark-fix-${fix.fingerprint}`,
+    ...priorEvidence,
+    ...plan.focus.evidence,
+    ...review.evidence,
+    ...fix.evidence,
+  ]);
+  saveWorkflowResult(resultPath, {
+    task_id: taskId,
+    generation,
+    assessment_path: plan.assessmentPath,
+    baseline_run_id: plan.baselineRunId,
+    focus: plan.focus,
+    artifact_path: fix.path,
+    artifact_target_path: fix.targetPath,
+    confirmation_benchmark: fix.confirmationBenchmark,
+    confirmation_scenarios: fix.confirmationScenarios,
+    verification_run_dir: plan.baselineDir,
+    recommendation: review.disposition,
+    review,
+    summary,
+    evidence,
+    next: "wait-for-approval",
+    conditions: [approval.condition],
+    approval,
+  });
+  ctx.emit({
+    type: "gym.improvement.reviewed",
+    project: "gym",
+    taskId,
+    agent: plan.agent,
+    artifactFingerprint: fix.fingerprint,
+    recommendation: review.disposition,
+    resultPath,
+  });
+  dispatchApproval(ctx, approval);
+  return ctx.done(summary, {
+    state: "waiting",
+    summary,
+    evidence,
     actions: [],
     conditions: [approval.condition],
   });
@@ -2801,11 +3095,13 @@ async function runCandidate(
         !existsSync(candidatePath) ||
         fingerprintTree(candidatePath) !== candidateFingerprint
       ) {
-        return ctx.done("Exact candidate retry evidence is incomplete", {
-          state: "needs-owner",
-          summary: "Exact candidate retry evidence is incomplete",
-          evidence: [resultPath, candidatePath].filter(Boolean),
-        });
+        return saveAttentionResult(
+          ctx,
+          resultPath,
+          "Exact candidate retry evidence is incomplete",
+          [candidatePath].filter(Boolean),
+          { task_id: taskId, generation },
+        );
       }
       const iterationDir = join(
         candidateStateDir,
@@ -2843,7 +3139,11 @@ async function runCandidate(
         evidence: previous.evidence,
       });
     }
-    const response = approvalDecision(ctx.task, previous.approval);
+    const response = approvalDecision(
+      ctx.task,
+      previous.approval,
+      candidateStateDir,
+    );
     if (!response) {
       return ctx.done(previous.summary, {
         state: "waiting",
@@ -2856,13 +3156,13 @@ async function runCandidate(
       });
     }
     const stored = record(JSON.parse(readFileSync(resultPath, "utf8")));
-    const decisionPath = join(candidateStateDir, "approval-decision.json");
-    writeJson(decisionPath, {
-      schema_version: 1,
-      ...response,
-      ...previous.approval,
-      recorded_at: new Date().toISOString(),
-    });
+    const preserved = preserveApprovalDecision(
+      candidateStateDir,
+      stored,
+      previous.approval,
+      response,
+    );
+    const { decisionPath } = preserved;
     if (response.decision === "approve") {
       const artifactPath = String(
         stored.artifact_path ?? stored.candidate_path ?? "",
@@ -2890,10 +3190,9 @@ async function runCandidate(
         }
       } catch (error) {
         const summary = error instanceof Error ? error.message : String(error);
-        return ctx.done(summary, {
-          state: "needs-owner",
-          summary,
-          evidence: [resultPath, artifactPath],
+        return saveAttentionResult(ctx, resultPath, summary, [artifactPath], {
+          task_id: taskId,
+          generation,
         });
       }
       recordOperatingMetrics(ctx, {
@@ -2930,7 +3229,7 @@ async function runCandidate(
           : `Applied approved benchmark/scorer fix ${previous.approval.artifactFingerprint}.`;
       writeJson(resultPath, {
         ...stored,
-        workflow_state: "converged",
+        next: "done",
         summary,
         evidence: boundedEvidence([
           ...(Array.isArray(stored.evidence)
@@ -2941,6 +3240,8 @@ async function runCandidate(
         ]),
         conditions: [],
         approval: null,
+        completion_kind: "artifact-applied" satisfies CompletionKind,
+        track_state: "complete" satisfies TrackState,
         applied_at: new Date().toISOString(),
       });
       return ctx.done(summary, {
@@ -2951,12 +3252,32 @@ async function runCandidate(
       });
     }
     if (previous.approval.kind !== "agent-improvement") {
-      const summary = `Hao ${response.decision === "decline" ? "rejected" : "adjusted"} the benchmark/scorer proposal. A new evaluation cycle is required.`;
-      return ctx.done(summary, {
-        state: "needs-owner",
-        summary,
-        evidence: [...previous.evidence, decisionPath],
-      });
+      const priorReview = record(stored.review);
+      const disposition =
+        priorReview.disposition === "review-benchmark" ||
+        priorReview.disposition === "review-scorer"
+          ? priorReview.disposition
+          : plan.focus.classification === "scorer"
+            ? "review-scorer"
+            : "review-benchmark";
+      return prepareBenchmarkFixProposal(
+        ctx,
+        plan,
+        {
+          disposition,
+          summary: `Hao ${response.decision === "decline" ? "rejected" : "adjusted"} the previous benchmark/scorer proposal: ${response.message}`,
+          proposedChange: response.message,
+          evidence: boundedEvidence([
+            decisionPath,
+            preserved.proposalPath,
+            ...(preserved.artifactPath ? [preserved.artifactPath] : []),
+          ]),
+        },
+        candidateStateDir,
+        taskId,
+        generation,
+        previous.evidence,
+      );
     }
     plan = {
       ...plan,
@@ -3052,21 +3373,10 @@ async function runCandidate(
     }
   }
   const summary = `Gym reached the safety limit of ${MAX_CANDIDATE_ITERATIONS} sequential candidate iterations without a verified proposal.`;
-  saveWorkflowResult(resultPath, {
+  return saveAttentionResult(ctx, resultPath, summary, accumulatedEvidence, {
     task_id: taskId,
     generation,
-    workflow_state: "converged",
     stop_reason: "candidate-safety-limit",
-    summary,
-    evidence: accumulatedEvidence,
-    conditions: [],
-    approval: null,
-  });
-  return ctx.done(summary, {
-    state: "converged",
-    summary,
-    evidence: boundedEvidence([resultPath, ...accumulatedEvidence]),
-    actions: [],
   });
 }
 
@@ -3120,103 +3430,14 @@ async function handleAssessmentBenchmarkFix(
       String(workflowInput.revisionProposal ?? "").trim() || finding.summary,
     evidence: finding.evidence,
   };
-  const scratchRoot = join(
-    ctx.projectsRoot,
-    "gym.app",
-    ".state",
-    "scratch",
-    safeKey(taskId, "improve-may"),
-    String(generation),
-    "assessment-fix",
-  );
-  let fix: Awaited<ReturnType<typeof buildBenchmarkFix>>;
-  try {
-    fix = await buildBenchmarkFix(
-      ctx,
-      plan,
-      review,
-      stateDir,
-      assessment.screening_run_dir,
-      scratchRoot,
-    );
-  } finally {
-    rmSync(scratchRoot, { recursive: true, force: true });
-  }
-  if (!fix) {
-    const summary = "Gym could not build an isolated benchmark/scorer fix";
-    return ctx.done(summary, {
-      state: "needs-owner",
-      summary,
-      evidence: [assessmentPath, assessment.screening_run_dir],
-    });
-  }
-  const approval = buildApprovalRequest({
-    kind: "benchmark-fix",
+  return prepareBenchmarkFixProposal(
+    ctx,
+    plan,
+    review,
+    stateDir,
     taskId,
     generation,
-    artifactFingerprint: fix.fingerprint,
-    packetPath: resultPath,
-    requestedAction:
-      "Approve this exact benchmark/scorer fix and a fresh baseline?",
-    reason: `${finding.summary} ${fix.summary}`,
-  });
-  const summary = `Gym prepared an exact benchmark/scorer fix and is waiting for approval. ${fix.summary}`;
-  const evidence = [
-    resultPath,
-    assessmentPath,
-    assessment.screening_run_dir,
-    fix.path,
-    `benchmark-fix-${fix.fingerprint}`,
-    ...finding.evidence,
-    ...fix.evidence,
-  ];
-  mkdirSync(stateDir, { recursive: true });
-  writeFileSync(
-    resultPath,
-    `${JSON.stringify(
-      {
-        schema_version: 1,
-        task_id: taskId,
-        generation,
-        assessment_path: assessmentPath,
-        baseline_run_id: assessment.screening_run_id,
-        focus: finding,
-        artifact_path: fix.path,
-        artifact_target_path: fix.targetPath,
-        confirmation_benchmark: fix.confirmationBenchmark,
-        confirmation_scenarios: fix.confirmationScenarios,
-        verification_run_dir: assessment.screening_run_dir,
-        recommendation: review.disposition,
-        review,
-        summary,
-        evidence,
-        workflow_state: "waiting",
-        actions: [],
-        conditions: [approval.condition],
-        approval,
-        completed_at: new Date().toISOString(),
-      },
-      null,
-      2,
-    )}\n`,
   );
-  ctx.emit({
-    type: "gym.improvement.reviewed",
-    project: "gym",
-    taskId,
-    agent: assessment.agent,
-    artifactFingerprint: fix.fingerprint,
-    recommendation: review.disposition,
-    resultPath,
-  });
-  dispatchApproval(ctx, approval);
-  return ctx.done(summary, {
-    state: "waiting",
-    summary,
-    evidence,
-    actions: [],
-    conditions: [approval.condition],
-  });
 }
 
 function improvementStatePaths(
@@ -3272,6 +3493,7 @@ async function runImprovementOnce(
     generation,
     scope,
   );
+  const resultPath = join(stateDir, "result.json");
 
   let plan = planFromInput(ctx, input);
   if (!plan) {
@@ -3284,10 +3506,33 @@ async function runImprovementOnce(
       );
       const assessment = prepared.assessment;
       if (prepared.problem) {
-        return ctx.done(prepared.problem, {
-          state: "converged",
-          summary: prepared.problem,
+        if (prepared.problem.kind === "missing-manifest") {
+          return saveAttentionResult(
+            ctx,
+            resultPath,
+            prepared.problem.summary,
+            [assessmentPath, assessment.screening_run_dir],
+            { task_id: taskId, generation },
+          );
+        }
+        const trackState: TrackState =
+          prepared.problem.kind === "not-reproduced" ? "complete" : "issue";
+        const evidence = saveCompletedResult(resultPath, {
+          taskId,
+          generation,
+          summary: prepared.problem.summary,
           evidence: [assessmentPath, assessment.screening_run_dir],
+          completionKind:
+            trackState === "complete"
+              ? "no-actionable-failure"
+              : "non-may-disposition",
+          trackState,
+          details: { assessment_path: assessmentPath },
+        });
+        return ctx.done(prepared.problem.summary, {
+          state: "converged",
+          summary: prepared.problem.summary,
+          evidence,
           actions: [],
         });
       }
@@ -3316,16 +3561,32 @@ async function runImprovementOnce(
         const summary = actionable.length
           ? "Gym found evaluation issues but no approved May behavior gap to change."
           : "May has no actionable failures in the current approved evaluation.";
+        const trackState: TrackState = actionable.length ? "issue" : "complete";
+        const evidence = saveCompletedResult(resultPath, {
+          taskId,
+          generation,
+          summary,
+          evidence: [assessmentPath, assessment.screening_run_dir],
+          completionKind: actionable.length
+            ? "non-may-disposition"
+            : "no-actionable-failure",
+          trackState,
+          details: { assessment_path: assessmentPath },
+        });
         return ctx.done(summary, {
           state: "converged",
           summary,
-          evidence: [assessmentPath, assessment.screening_run_dir],
+          evidence,
           actions: [],
         });
       }
       if (!assessment.baseline_run_id || !assessment.baseline_run_dir) {
-        return ctx.blocked(
+        return saveAttentionResult(
+          ctx,
+          resultPath,
           "Assessment has no reproducible development baseline",
+          [assessmentPath],
+          { task_id: taskId, generation },
         );
       }
       plan = {
@@ -3345,10 +3606,9 @@ async function runImprovementOnce(
       };
     } catch (error) {
       const summary = error instanceof Error ? error.message : String(error);
-      return ctx.done(summary, {
-        state: "needs-owner",
-        summary,
-        evidence: [assessmentPath],
+      return saveAttentionResult(ctx, resultPath, summary, [assessmentPath], {
+        task_id: taskId,
+        generation,
       });
     }
   }
@@ -3515,10 +3775,10 @@ function experimentPassiveResult(experiment: CurriculumExperiment): {
       : []),
   ]);
   if (experiment.problem) {
-    const didNotReproduce = experiment.problem.includes("did not reproduce");
     return {
-      state: didNotReproduce ? "complete" : "issue",
-      summary: experiment.problem,
+      state:
+        experiment.problem.kind === "not-reproduced" ? "complete" : "issue",
+      summary: experiment.problem.summary,
       evidence,
     };
   }
@@ -3593,7 +3853,9 @@ export function benchmarkFixConfirmationScope(
     };
   }
   if (String(input.approvalId ?? "").trim() === "") {
-    return { error: "Benchmark-fix confirmation requires the exact approval id" };
+    return {
+      error: "Benchmark-fix confirmation requires the exact approval id",
+    };
   }
   if (String(input.taskId ?? "") !== taskId) {
     return {
@@ -3638,6 +3900,10 @@ export async function runImprovement(
   if (!Number.isInteger(generation) || generation < 1) {
     return ctx.blocked("Improvement task has no valid generation");
   }
+  const campaignResultPath = join(
+    improvementStatePaths(ctx, taskId, generation).stateDir,
+    "result.json",
+  );
   const lease = createCampaignLease(ctx, taskId, generation);
   try {
     assertCampaignLease(lease);
@@ -3656,22 +3922,27 @@ export async function runImprovement(
     trigger,
   );
   if (approvalPacket && "error" in approvalPacket) {
-    return activeCtx.done(approvalPacket.error, {
-      state: "needs-owner",
-      summary: approvalPacket.error,
-      evidence: approvalPacket.evidence,
-    });
+    return saveAttentionResult(
+      activeCtx,
+      campaignResultPath,
+      approvalPacket.error,
+      approvalPacket.evidence,
+      { task_id: taskId, generation },
+    );
   }
   if (approvalPacket) {
     try {
       const plan = planFromApprovalPacket(activeCtx, approvalPacket.resultPath);
       if (!plan) {
-        const summary = "Exact approval packet cannot reconstruct its evaluation plan";
-        return activeCtx.done(summary, {
-          state: "needs-owner",
+        const summary =
+          "Exact approval packet cannot reconstruct its evaluation plan";
+        return saveAttentionResult(
+          activeCtx,
+          approvalPacket.resultPath,
           summary,
-          evidence: [approvalPacket.resultPath],
-        });
+          [approvalPacket.resultPath],
+          { task_id: taskId, generation },
+        );
       }
       return await runCandidate(
         activeCtx,
@@ -3687,11 +3958,13 @@ export async function runImprovement(
         return supersededCampaignResult(ctx, taskId, generation);
       }
       const summary = error instanceof Error ? error.message : String(error);
-      return activeCtx.done(summary, {
-        state: "needs-owner",
+      return saveAttentionResult(
+        activeCtx,
+        approvalPacket.resultPath,
         summary,
-        evidence: [approvalPacket.resultPath],
-      });
+        [approvalPacket.resultPath],
+        { task_id: taskId, generation },
+      );
     }
   }
   if (input.curriculumDrain !== true) {
@@ -3702,11 +3975,13 @@ export async function runImprovement(
         generation,
       );
       if (confirmation && "error" in confirmation) {
-        return activeCtx.done(confirmation.error, {
-          state: "needs-owner",
-          summary: confirmation.error,
-          evidence: [],
-        });
+        return saveAttentionResult(
+          activeCtx,
+          campaignResultPath,
+          confirmation.error,
+          [],
+          { task_id: taskId, generation },
+        );
       }
       const retry = locateCandidateRetry(
         activeCtx.projectsRoot,
@@ -3715,11 +3990,13 @@ export async function runImprovement(
         input,
       );
       if (retry?.error) {
-        return activeCtx.done(retry.error, {
-          state: "needs-owner",
-          summary: retry.error,
-          evidence: retry.evidence,
-        });
+        return saveAttentionResult(
+          activeCtx,
+          campaignResultPath,
+          retry.error,
+          retry.evidence,
+          { task_id: taskId, generation },
+        );
       }
       return await runImprovementOnce(
         activeCtx,
@@ -3733,7 +4010,11 @@ export async function runImprovement(
       if (error instanceof CampaignSupersededError) {
         return supersededCampaignResult(ctx, taskId, generation);
       }
-      throw error;
+      const summary = error instanceof Error ? error.message : String(error);
+      return saveAttentionResult(activeCtx, campaignResultPath, summary, [], {
+        task_id: taskId,
+        generation,
+      });
     }
   }
 
@@ -3850,13 +4131,28 @@ export async function runImprovement(
         writeJson(checkpointPath, checkpoint);
         return result;
       }
-      const complete =
-        outcome.summary.includes("no actionable failures") ||
-        outcome.summary.startsWith("Applied approved") ||
-        outcome.summary.includes("already passes");
+      const selectedResultPath = join(
+        improvementStatePaths(activeCtx, taskId, generation, selected.scope)
+          .stateDir,
+        "result.json",
+      );
+      const selectedCheckpoint =
+        readJson<Record<string, unknown>>(selectedResultPath);
+      const trackState = selectedCheckpoint?.track_state;
+      if (trackState !== "complete" && trackState !== "issue") {
+        assertCampaignLease(lease);
+        writeJson(checkpointPath, checkpoint);
+        return saveAttentionResult(
+          activeCtx,
+          selectedResultPath,
+          "Gym completed a track without a structured track disposition.",
+          [selected.assessmentPath, ...outcome.evidence],
+          { task_id: taskId, generation },
+        );
+      }
       checkpointTrack(checkpoint, {
         id: selected.target.id,
-        state: complete ? "complete" : "issue",
+        state: trackState,
         summary: outcome.summary,
         evidence: boundedEvidence([
           selected.assessmentPath,
@@ -3907,14 +4203,204 @@ export async function runImprovement(
       return supersededCampaignResult(ctx, taskId, generation);
     }
     const summary = error instanceof Error ? error.message : String(error);
-    return ctx.done(summary, {
-      state: "needs-owner",
-      summary,
-      evidence: [],
+    return saveAttentionResult(ctx, campaignResultPath, summary, [], {
+      task_id: taskId,
+      generation,
     });
   }
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   return runImprovement(ctx);
+}
+
+export async function verify(
+  context: unknown,
+  result: unknown,
+): Promise<{ accepted: boolean; summary: string; evidence: string[] }> {
+  const verification = record(context);
+  const output = record(result);
+  if (output.state !== "converged") {
+    return {
+      accepted: true,
+      summary: "Only converged Gym results require completion verification.",
+      evidence: [],
+    };
+  }
+  const taskId = String(verification.taskId ?? "");
+  const generation = Number(verification.generation);
+  const appDir = String(verification.appDir ?? "");
+  if (taskId !== "improve/may" || !Number.isInteger(generation) || !appDir) {
+    return {
+      accepted: true,
+      summary: "This result is outside the improve/may campaign.",
+      evidence: [],
+    };
+  }
+  const campaignDir = resolve(
+    appDir,
+    ".state",
+    "candidates",
+    safeKey(taskId, "improve-may"),
+    String(generation),
+  );
+  const outputEvidence = Array.isArray(output.evidence)
+    ? output.evidence.map(String)
+    : [];
+  const superseded = outputEvidence.some(
+    (entry) => entry === `superseded:${taskId}@${generation}`,
+  );
+  if (superseded) {
+    return {
+      accepted: true,
+      summary:
+        "The superseded attempt cannot update the current task generation.",
+      evidence: [`superseded:${taskId}@${generation}`],
+    };
+  }
+
+  const trainingPath = resolve(
+    appDir,
+    ".state",
+    "learning",
+    "training-drain.json",
+  );
+  const citesTraining = outputEvidence.some(
+    (entry) => entry === trainingPath || entry.startsWith(`${trainingPath}:`),
+  );
+  const training = citesTraining
+    ? readJson<TrainingDrainCheckpoint>(trainingPath)
+    : null;
+  const campaignSuffix =
+    training?.schema_version === 2 &&
+    /^sha256:[a-f0-9]{64}$/.test(training.campaign_id)
+      ? `-${training.campaign_id.slice("sha256:".length, "sha256:".length + 16)}`
+      : null;
+  const declaredPaths = outputEvidence
+    .map(String)
+    .flatMap((entry) => {
+      const match = entry.match(/^([^:\n]*result\.json)(?::|$)/);
+      return match?.[1] ? [resolve(match[1])] : [];
+    })
+    .filter((path) => {
+      const relativePath = relative(campaignDir, path);
+      return (
+        relativePath !== ".." &&
+        !relativePath.startsWith(`..${sep}`) &&
+        existsSync(path)
+      );
+    });
+  const campaignPaths = citesTraining ? [] : [join(campaignDir, "result.json")];
+  const tracksDir = join(campaignDir, "tracks");
+  if (campaignSuffix && existsSync(tracksDir)) {
+    campaignPaths.push(
+      ...readdirSync(tracksDir, { withFileTypes: true })
+        .filter(
+          (entry) => entry.isDirectory() && entry.name.endsWith(campaignSuffix),
+        )
+        .map((entry) => join(tracksDir, entry.name, "result.json")),
+    );
+  }
+  const checkpointPaths = [
+    ...new Set([...declaredPaths, ...campaignPaths.filter(existsSync)]),
+  ];
+  for (const path of checkpointPaths) {
+    const checkpoint = readJson<Record<string, unknown>>(path);
+    if (!checkpoint) continue;
+    const next = String(checkpoint.next ?? "");
+    const legacyState = String(checkpoint.workflow_state ?? "");
+    if (
+      next === "wait-for-approval" ||
+      next === "ask-owner" ||
+      legacyState === "waiting" ||
+      legacyState === "needs-owner" ||
+      checkpoint.approval != null
+    ) {
+      return {
+        accepted: false,
+        summary:
+          "The campaign checkpoint still requires a decision or owner action, so improve/may is not converged.",
+        evidence: [path],
+      };
+    }
+    if (checkpoint.stop_reason === "candidate-safety-limit") {
+      return {
+        accepted: false,
+        summary:
+          "The campaign reached its candidate safety limit without a verified proposal.",
+        evidence: [path],
+      };
+    }
+    if (next === "done") {
+      const completionKind = String(checkpoint.completion_kind ?? "");
+      const trackState = String(checkpoint.track_state ?? "");
+      if (
+        ![
+          "no-actionable-failure",
+          "non-may-disposition",
+          "artifact-applied",
+        ].includes(completionKind) ||
+        (trackState !== "complete" && trackState !== "issue")
+      ) {
+        return {
+          accepted: false,
+          summary:
+            "The campaign checkpoint says done without a structured terminal disposition.",
+          evidence: [path],
+        };
+      }
+      continue;
+    }
+    if (legacyState === "converged") continue;
+    return {
+      accepted: false,
+      summary:
+        "The campaign checkpoint has no recognized completion or wait disposition.",
+      evidence: [path],
+    };
+  }
+  if (training?.schema_version === 2) {
+    const projectDir = String(verification.projectDir ?? "");
+    const targets = projectDir ? loadCurriculumTargets(projectDir).targets : [];
+    const reviewed = new Set(training.tracks.map(({ id }) => id));
+    const remaining = targets.filter(({ id }) => !reviewed.has(id));
+    if (!remaining.length && targets.length > 0) {
+      return {
+        accepted: true,
+        summary: "Every current curriculum track has a recorded disposition.",
+        evidence: [trainingPath],
+      };
+    }
+    const taskState = readJson<Record<string, unknown>>(
+      resolve(appDir, ".state", "tasks", "state.json"),
+    );
+    const trigger = record(record(taskState?.taskTriggers)[taskId]);
+    if (record(trigger.event).type) {
+      return {
+        accepted: true,
+        summary:
+          "The bounded curriculum stage is complete and a durable wake keeps improve/may pending.",
+        evidence: [trainingPath],
+      };
+    }
+    return {
+      accepted: false,
+      summary: `The curriculum still has ${remaining.length || "unknown"} unreviewed track(s) and no durable continuation wake.`,
+      evidence: [trainingPath],
+    };
+  }
+  if (checkpointPaths.length) {
+    return {
+      accepted: true,
+      summary:
+        "The campaign checkpoints contain positive terminal dispositions.",
+      evidence: checkpointPaths,
+    };
+  }
+  return {
+    accepted: false,
+    summary:
+      "The workflow claimed convergence without a campaign or curriculum completion checkpoint.",
+    evidence: [],
+  };
 }

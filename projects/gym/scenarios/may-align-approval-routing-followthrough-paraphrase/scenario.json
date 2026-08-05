@@ -1,0 +1,10 @@
+{
+  "name": "may-align-approval-routing-followthrough-paraphrase",
+  "description": "May preserves durable proposal follow-through under paraphrased accepted and deferred scope.",
+  "categories": ["conversation-follow-through", "execution-fidelity"],
+  "tags": ["conversation-follow-through", "approval-routing", "paraphrase", "control-pair", "real-replay"],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false
+}
