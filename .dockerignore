@@ -18,7 +18,4 @@ bundle/
 
 # Large or host-specific data not copied by the Dockerfile
 pi-deps/
-litellm/github_copilot/
 test/
-design/
-docs/

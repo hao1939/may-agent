@@ -1,9 +1,0 @@
-{
-  "name": "convention-promise-report",
-  "categories": ["convention-compliance"],
-  "tags": ["behavior", "convention"],
-  "tier": "standard",
-  "timeout": 5,
-  "agent_type": "coder",
-  "workflow": false
-}

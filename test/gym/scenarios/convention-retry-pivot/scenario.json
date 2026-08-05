@@ -1,9 +1,0 @@
-{
-  "name": "convention-retry-pivot",
-  "categories": ["bug-fixing", "convention-compliance"],
-  "tags": ["ability", "behavior"],
-  "tier": "standard",
-  "timeout": 3,
-  "agent_type": "coder",
-  "workflow": false
-}

@@ -13,7 +13,7 @@
  *   # with batch/tag:
  *   bun scripts/gym-record.ts --result /path/to/result.json --batch <id> --tag "baseline"
  *
- * Design: docs/design/gym-snapshots.md
+ * Design: projects/may-agent.app/docs/2a-design/practice-learning-loop.md
  */
 
 import { Database } from "bun:sqlite";

@@ -9,7 +9,7 @@
  *   bun scripts/gym-stats.ts --regressions        # scenarios that went pass→fail
  *   bun scripts/gym-stats.ts --batches            # list batches
  *
- * Design: docs/design/gym-snapshots.md
+ * Design: projects/may-agent.app/docs/2a-design/practice-learning-loop.md
  */
 
 import { Database } from "bun:sqlite";

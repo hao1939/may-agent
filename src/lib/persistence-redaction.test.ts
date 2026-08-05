@@ -1,7 +1,7 @@
 import { describe, it, expect } from "bun:test";
 import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import { redactTranscriptSecrets, appendSessionMessage } from "../../src/lib/persistence.js";
+import { redactTranscriptSecrets, appendSessionMessage } from "./persistence.js";
 
 describe("redactTranscriptSecrets", () => {
   it("redacts Azure JWT tokens", () => {
