@@ -100,7 +100,7 @@ function makeProfiles(projectRoot: string): TerminalProfile[] {
     {
       id: "may",
       label: "May Console",
-      description: "Interactive console attached to the running May daemon.",
+      description: "Talk to May. Session watching and control stay explicit.",
       command: resolveMayConsoleCommand(root),
       cwd: root,
     },

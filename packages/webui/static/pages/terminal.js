@@ -101,11 +101,10 @@ function renderTerminalQuickbar() {
   }
   quickbar.classList.remove('hidden');
   quickbar.innerHTML = `
-    <button class="terminal-quick" onclick="sendTerminalCommand('/status')">Status</button>
     <button class="terminal-quick" onclick="sendTerminalCommand('/sessions')">Sessions</button>
-    <button class="terminal-quick" onclick="sendTerminalCommand('/watch chat')">Watch Chat</button>
-    <button class="terminal-quick" onclick="sendTerminalCommand('/watch current')">Watch Current</button>
-    <button class="terminal-quick" onclick="sendTerminalCommand('/may')">Use May</button>
+    <button class="terminal-quick" onclick="sendTerminalCommand('/watch may')">Watch May</button>
+    <button class="terminal-quick" onclick="sendTerminalCommand('/watch all')">Watch All</button>
+    <button class="terminal-quick" onclick="sendTerminalCommand('/debug')">Debug</button>
     <button class="terminal-quick" onclick="clearTerminalScreen()">Clear</button>
   `;
 }
