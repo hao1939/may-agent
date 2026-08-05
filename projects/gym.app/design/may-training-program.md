@@ -268,6 +268,9 @@ workflow may invoke the CLI and preserves its resulting run pointer.
 - Tasks hold desired and observed state; workflows hold reusable process.
 - Events wake work and carry facts; they are not jobs.
 - The task tree explains scope and ownership; it does not schedule.
+- Event-resolved `runtime/*` resources are reconciler-owned. Handler actions do
+  not create, update, close, or unblock them; a later event may reconcile that
+  same resource through the app resolver.
 - One durable target has one stable resource identity.
 - Routine evidence is history, not one task per row.
 - A durable wait names an exact observable condition.

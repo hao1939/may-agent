@@ -228,7 +228,7 @@ describe("gym app manifest", () => {
     });
   });
 
-  test("represents superseded-state cleanup as one finite resource", () => {
+  test("represents invalid migration recovery as one finite resource", () => {
     expect(
       resolveGymTask({
         type: "gym.resource-migration.requested",
@@ -240,6 +240,9 @@ describe("gym app manifest", () => {
       workflow: "unified-resource-migration",
       input: { migration: "unified-resource-v3" },
       priority: "P0",
+      acceptance: [
+        expect.stringContaining("No standing runtime resource is mutated"),
+      ],
     });
   });
 });

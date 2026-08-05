@@ -237,9 +237,9 @@ export function resolveGymTask(
         id: "runtime/unified-resource-migration-v3",
         parentId: "review-proposals",
         outcome:
-          "Retire the named superseded Gym task resources after their durable event and run evidence has been preserved.",
+          "Cancel the invalid resource-retirement attempt while preserving Gym's standing owner-review and design-alignment responsibilities.",
         acceptance: [
-          "Only the fixed version-3 superseded resource set is closed at its exact generations, and every closure leaves a completion receipt.",
+          "No standing runtime resource is mutated, and this one-time migration carrier records the correction before it converges.",
         ],
         mode: "achieve",
         workflow: "unified-resource-migration",
