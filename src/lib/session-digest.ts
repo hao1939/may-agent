@@ -9,7 +9,7 @@
  * - DIGEST (checkpoint, end, etc.): LLM synthesizes what happened from transcript delta
  * - CLASSIFY (recovery triggers): code-level decision on what to do next
  *
- * See docs/design/session-digest.md for full design rationale.
+ * See projects/may-agent.app/docs/2a-design/sessions.md for the contract.
  */
 
 import { getDb } from "./requests.js";

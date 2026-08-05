@@ -12,7 +12,7 @@
  * On restart, timer entries resume based on when they actually last ran — not from zero.
  * All trigger paths use the same per-entry capacity limit.
  *
- * Design: docs/design/cron-sqlite.md
+ * Design: projects/may-agent.app/docs/2a-design/cron.md
  */
 
 import { readFileSync, existsSync, watchFile, unwatchFile, type StatWatcher } from "node:fs";

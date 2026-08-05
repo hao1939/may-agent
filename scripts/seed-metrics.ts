@@ -8,7 +8,7 @@
  * Does NOT overwrite existing metrics — only inserts new ones.
  *
  * Initial metrics come from the approved design doc:
- *   shared/may-agent-docs/design/metrics-system.md
+ *   projects/may-agent.app/docs/2a-design/metrics.md
  *
  * Hao's decisions applied:
  *   - REMOVED: cost.daily (deferred)

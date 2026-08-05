@@ -4,7 +4,7 @@
  * Usage:
  *   bun src/app/may.ts --send bob --message "do the thing"
  *   bun src/app/may.ts --send bob --message-file /tmp/brief.txt
- *   bun src/app/may.ts --send bob --message "review this" --artifact docs/design/foo.md
+ *   bun src/app/may.ts --send bob --message "review this" --artifact projects/may-agent.app/docs/3-proposals/foo.md
  *
  * Delivery:
  *   1. Uses the convention daemon socket path:

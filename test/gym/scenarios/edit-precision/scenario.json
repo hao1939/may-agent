@@ -1,9 +1,0 @@
-{
-  "name": "edit-precision",
-  "categories": ["tool-usage", "regression"],
-  "tags": ["behavior", "edit-accuracy", "repetitive-structure"],
-  "tier": "standard",
-  "timeout": 5,
-  "agent_type": "coder",
-  "workflow": false
-}
