@@ -991,6 +991,23 @@ export function isBaselineInvalidOnlyComparisonFailure(
   );
 }
 
+export function isCandidateInvalidOnlyComparisonFailure(
+  checkpoint: VerificationCheckpoint,
+  baseline: LoopRunManifest,
+): boolean {
+  const { comparison, manifest } = checkpoint;
+  return (
+    manifest.trials.some((trial) => trial.machine_verdict === "invalid") &&
+    manifest.trials.every((trial) => trial.machine_verdict !== "fail") &&
+    baseline.trials.length > 0 &&
+    baseline.trials.every((trial) => trial.machine_verdict !== "invalid") &&
+    comparison.gate === "fail" &&
+    comparison.labels_approved === true &&
+    comparison.same_framework_revision === true &&
+    comparison.no_invalid_runs === false
+  );
+}
+
 function readJson<T>(path: string): T | null {
   if (!existsSync(path)) return null;
   return JSON.parse(readFileSync(path, "utf8")) as T;
@@ -2897,6 +2914,29 @@ async function runCandidateIteration(
       });
       writeJson(releaseCheckpointPath, release);
     }
+    const releaseRetryCheckpointPath = join(
+      iterationDir,
+      "release-verification-invalid-retry.json",
+    );
+    const storedReleaseRetry = readJson<VerificationCheckpoint>(
+      releaseRetryCheckpointPath,
+    );
+    if (storedReleaseRetry) {
+      release = storedReleaseRetry;
+    } else if (
+      isCandidateInvalidOnlyComparisonFailure(
+        release,
+        releaseBaseline.manifest,
+      )
+    ) {
+      release = await loop.verify({
+        baseline: releaseBaseline.manifest.run_id,
+        candidate: candidateId,
+        trials: releaseBaseline.manifest.trials_per_scenario,
+        agentsRoot: workspaceAgentsRoot,
+      });
+      writeJson(releaseRetryCheckpointPath, release);
+    }
     if (release.manifest.proof.candidate_fingerprint !== candidateFingerprint) {
       return saveAttentionResult(
         ctx,
@@ -3286,6 +3326,7 @@ async function runCandidate(
         "development-verification.json",
         "release-baseline.json",
         "release-verification.json",
+        "release-verification-invalid-retry.json",
         "failed-review.json",
       ]) {
         rmSync(join(iterationDir, file), { force: true });
