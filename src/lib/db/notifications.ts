@@ -107,15 +107,17 @@ export function hasDeliveredNotificationKey(persistDir: string, key: string): bo
 
 /**
  * Resolve inbox openness from durable control-plane truth, not from the
- * absence of a reply to one Telegram row. Task identity is intentionally a
- * fallback because a proposal may be regenerated with a new fingerprint
- * while the same task has already reached a terminal decision.
+ * absence of a reply to one Telegram row. Exact approval or wait identities
+ * take precedence. Task identity is only a fallback for legacy notifications
+ * that do not carry either stable identity; maintain tasks can legitimately
+ * request several independent approvals in the same generation.
  */
 export function isApprovalNotificationResolved(persistDir: string, identity: ApprovalNotificationIdentity): boolean {
   const approvalId = identity.approvalId?.trim();
   const waitId = identity.waitId?.trim();
   const taskId = identity.taskId?.trim();
   if (!approvalId && !waitId && !taskId) return false;
+  const fallbackTaskId = !approvalId && !waitId ? taskId : undefined;
   try {
     const row = getDb(persistDir)
       .prepare(
@@ -143,8 +145,8 @@ export function isApprovalNotificationResolved(persistDir: string, identity: App
         approvalId ?? null,
         waitId ?? null,
         waitId ?? null,
-        taskId ?? null,
-        taskId ?? null,
+        fallbackTaskId ?? null,
+        fallbackTaskId ?? null,
         identity.taskGeneration ?? null,
         identity.taskGeneration ?? null,
       );
