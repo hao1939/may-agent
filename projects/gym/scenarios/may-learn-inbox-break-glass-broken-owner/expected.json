@@ -1,0 +1,12 @@
+{
+  "human_answer": "Use one audited break-glass attempt because the normal owner path failed twice. Limit it to restoring Telegram reply correlation, prove it with one canary request and its correctly attached reply, then hand ongoing ownership back to may-agent.app.",
+  "exact": { "needs_clarification": false },
+  "contains_groups": {
+    "mode": [["break-glass", "break glass"]],
+    "next_action": [["canary"], ["reply"], ["hand back", "return"]],
+    "constraints": [["bounded", "one attempt"], ["may-agent.app"]]
+  },
+  "delegations": { "min": 0, "max": 0 },
+  "empty": ["preference_updates"],
+  "response_max_words": 90
+}

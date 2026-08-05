@@ -22,10 +22,6 @@
     {
       "path": "../may-agent.app/docs/2a-design/native-coding-workers.md",
       "section": "Event Contract"
-    },
-    {
-      "path": "../../agents/may/AGENTS.md",
-      "section": "CLI Workers"
     }
   ],
   "benchmark": "may-cli-worker-learning",

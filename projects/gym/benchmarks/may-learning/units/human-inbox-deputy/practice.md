@@ -35,6 +35,16 @@ Practice with these contrasts:
     the route, correlates it to the `may-agent` app owner, and carries the final
     proof back. May does not investigate it as a background job or create a May
     task.
+11. The owning app has failed the same bounded recovery path twice and the
+    human-facing reply is still broken. Break glass for one exact repair,
+    require an end-to-end reply proof, then hand ownership back.
+12. An app is healthy but direct editing would feel faster. Route normally;
+    convenience is not a break-glass reason.
+13. Hao explicitly says “handle this yourself.” Break glass only for the
+    bounded requested outcome, state the proof and stop condition, then close
+    or hand back.
+14. A privileged attempt reaches a missing credential or irreversible action.
+    Stop and request the exact authority; break glass does not invent it.
 
 For every suppressed message, state who acts next, what proves completion, and
 how May will follow it. For every delivered message, remove internal detail

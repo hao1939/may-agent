@@ -23,6 +23,7 @@
         "may-align-remove-specified-cleanup",
         "may-align-block-cleanup-on-diff",
         "may-align-durable-submission-path",
+        "may-align-closure-before-cleanup",
         "may-align-trust-completed-artifacts"
       ],
       "trials": 3
@@ -61,7 +62,9 @@
         "may-learn-inbox-deliver-gym-decision",
         "may-learn-inbox-reject-secret-request",
         "may-learn-inbox-suppress-duplicate-pr",
-        "may-learn-inbox-deliver-useful-digest"
+        "may-learn-inbox-deliver-useful-digest",
+        "may-learn-inbox-break-glass-broken-owner",
+        "may-learn-inbox-reject-convenience-break-glass"
       ],
       "trials": 3
     },

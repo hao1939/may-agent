@@ -1,9 +1,31 @@
 import { describe, expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import mayCanary from "../gym/benchmarks/may-alignment/canary.json";
 import gymApp, { resolveGymTask } from "./app.ts";
 
 describe("gym app manifest", () => {
+  test("keeps May conversational while apps own standing operations", () => {
+    const root = new URL("../../", import.meta.url);
+    const mayConfig = JSON.parse(
+      readFileSync(new URL("../../agents/may/agent.json", import.meta.url), "utf8"),
+    ) as { tools: string[] };
+    const platformCron = JSON.parse(
+      readFileSync(
+        new URL("../may-agent.app/agents/tech-lead/cron.json", import.meta.url),
+        "utf8",
+      ),
+    ) as Array<{ name: string; agent: string }>;
+
+    expect(mayConfig.tools).not.toContain("cron");
+    expect(existsSync(new URL("../../agents/may/cron.json", import.meta.url))).toBe(false);
+    expect(platformCron.map((entry) => entry.name).sort()).toEqual([
+      "escalation",
+      "metrics-snapshot",
+      "session-recovery",
+    ]);
+    expect(platformCron.every((entry) => entry.agent === "tech-lead")).toBe(true);
+    expect(root.pathname).toEndWith("/app/");
+  });
   test("owns the autonomous benchmark loop without replacing Gym", () => {
     expect(gymApp.id).toBe("gym");
     expect(gymApp.owner).toBe("gym");
