@@ -1137,6 +1137,22 @@ describe("single agent-improvement loop", () => {
     expect(second.summary).toContain("training material is exhausted");
     expect(runCount).toBe(3);
 
+    const trainingPath = join(
+      projectsRoot,
+      "gym.app",
+      ".state",
+      "learning",
+      "training-drain.json",
+    );
+    const exhausted = JSON.parse(
+      readFileSync(trainingPath, "utf8"),
+    ) as Record<string, unknown>;
+    exhausted.evidence = Array.from(
+      { length: 32 },
+      (_, index) => `evidence-${index + 1}`,
+    );
+    writeFileSync(trainingPath, JSON.stringify(exhausted));
+
     (ctx as unknown as { task: string }).task = task("curriculum-refill");
     const replay = (await runImprovement(ctx, loop)) as unknown as Record<
       string,
@@ -1145,6 +1161,8 @@ describe("single agent-improvement loop", () => {
     expect(replay.summary).toBe(
       "May already passes every approved learning track.",
     );
+    expect(replay.evidence).toHaveLength(32);
+    expect(replay.evidence).toContain(trainingPath);
     expect(runCount).toBe(3);
     expect(
       JSON.parse(

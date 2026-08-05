@@ -4052,7 +4052,7 @@ export async function runImprovement(
       return ctx.done(summary, {
         state: "converged",
         summary,
-        evidence: [checkpointPath, ...checkpoint.evidence],
+        evidence: boundedEvidence([checkpointPath, ...checkpoint.evidence]),
         actions: [],
       });
     }
@@ -4072,7 +4072,7 @@ export async function runImprovement(
         return ctx.done(summary, {
           state: "converged",
           summary,
-          evidence: [checkpointPath, ...checkpoint.evidence],
+          evidence: boundedEvidence([checkpointPath, ...checkpoint.evidence]),
           actions: [],
         });
       }
@@ -4083,7 +4083,7 @@ export async function runImprovement(
       return ctx.done(summary, {
         state: "converged",
         summary,
-        evidence: [checkpointPath, ...checkpoint.evidence],
+        evidence: boundedEvidence([checkpointPath, ...checkpoint.evidence]),
         actions: [],
       });
     }
@@ -4172,7 +4172,7 @@ export async function runImprovement(
       return ctx.done(summary, {
         state: "converged",
         summary,
-        evidence: [checkpointPath, ...checkpoint.evidence],
+        evidence: boundedEvidence([checkpointPath, ...checkpoint.evidence]),
         actions: [],
       });
     }
@@ -4183,7 +4183,7 @@ export async function runImprovement(
       return ctx.done(summary, {
         state: "converged",
         summary,
-        evidence: [checkpointPath, ...checkpoint.evidence],
+        evidence: boundedEvidence([checkpointPath, ...checkpoint.evidence]),
         actions: [],
       });
     }
@@ -4195,7 +4195,7 @@ export async function runImprovement(
     return ctx.done(summary, {
       state: "converged",
       summary,
-      evidence: [checkpointPath, ...checkpoint.evidence],
+      evidence: boundedEvidence([checkpointPath, ...checkpoint.evidence]),
       actions: [],
     });
   } catch (error) {
