@@ -31,7 +31,7 @@ archive.
 | Document                                                       | Purpose                                                  |
 | -------------------------------------------------------------- | -------------------------------------------------------- |
 | [agents.md](2a-design/agents.md)                               | Agent identity, cooperation, and app-local registration. |
-| [runtime.md](2a-design/runtime.md)                             | Model/tool execution and runtime internals.              |
+| [runtime.md](2a-design/runtime.md)                             | Model/tool boundary, direct execution, and runtime internals. |
 | [sessions.md](2a-design/sessions.md)                           | Durable execution lifecycle and persistence.             |
 | [workflows.md](2a-design/workflows.md)                         | Agent-owned reusable process and execution contract.     |
 | [skills.md](2a-design/skills.md)                               | Scoped reusable judgment guidance.                       |

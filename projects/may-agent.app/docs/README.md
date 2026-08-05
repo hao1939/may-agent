@@ -1,5 +1,10 @@
 # may-agent Documentation
 
+This directory is the single design and operating-documentation home for the
+May-agent platform, including the runtime in `projects/may-agent`. Runtime code
+repositories do not keep parallel design folders. When code changes a
+contract, update the corresponding document here in the same change.
+
 May-agent is easiest to understand as:
 
 ```text

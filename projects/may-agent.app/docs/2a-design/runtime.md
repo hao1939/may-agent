@@ -137,6 +137,55 @@ whole.
 normal session recovery/digest path. Any new session receives an explicit
 handoff task; the runtime does not silently continue the old context.
 
+### Agent Execution And Hosting Infrastructure
+
+Agent capability is smaller than the autonomous runtime:
+
+```text
+agent definition + prompt + context + tools
+                    -> model/tool run
+                    -> result and observations
+```
+
+The model/tool runner must not depend on sessions, files, SQLite, the event
+bus, projects, tasks, metrics, schedules, recovery, or a daemon. Hosting layers
+may wrap the same runner with those capabilities:
+
+```text
+event / human input / benchmark
+  -> prepare definition, context, and tools
+  -> shared model/tool runner
+  -> persist, publish, route, or score observations
+```
+
+There is one model/tool loop. Direct execution, Gym, durable sessions,
+workflows, and autonomous apps use it; do not add a `standalone` mode or a
+second lightweight runner.
+
+The source boundary is deliberately narrow:
+
+- `src/lib/agent-runner.ts` constructs and controls the Pi `Agent`. It imports
+  only the model runtime and exposes observations, steering, and cancellation.
+- `src/lib/agent-execution.ts` prepares the shared prompt, completion, guard,
+  and tool-call behavior used by hosted and direct runs.
+- `src/lib/manager.ts` adds durable session lifecycle, transcript handling,
+  resume, parent/child coordination, and hosted callbacks.
+- `src/app/direct-agent.ts` loads a definition and tools without creating an
+  event bus, SQLite projection, scheduler, task controller, or recovery loop.
+  It may write explicit run artifacts under the caller-provided output root.
+- Gym calls that direct adapter, so benchmarks exercise the production
+  preparation and model/tool path without starting autonomous infrastructure.
+
+Infrastructure prepares initial context before the run. New human direction,
+task mutations, changed priorities, or newly available evidence reach a live
+run through ordinary steering or supplied tools. The runner never queries May
+state to discover them.
+
+The import guard on `agent-runner.ts` prevents application events, SQLite,
+persistence, projects, metrics, and scheduling from entering the execution
+boundary. `src/lib` as a whole is hosted runtime infrastructure and is not
+promised to be dependency-free; this strict rule applies to the runner.
+
 ### Pi Runtime Boundary
 
 May passes an explicit Pi stream function into every run and forwards the May

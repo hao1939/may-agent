@@ -433,6 +433,26 @@ External callers provide workflow input; they do not replace the output schema
 at runtime. This keeps one workflow revision stable for persistence, resume,
 evaluation, and downstream consumers.
 
+The terminal-result rules are:
+
+1. `ctx.runAgent`, `ctx.runAgentSession`, session prompts created by a
+   workflow, and guard-injected agent steps require `finish()`.
+2. A missing or invalid schema payload cannot become `status: "done"`.
+3. The runtime sends at most one corrective prompt when a turn ends without a
+   valid finish; it never starts an unbounded completion retry loop.
+4. A rejected finish remains recoverable within the same turn. The step ends
+   only after semantic validation succeeds or the bounded correction fails.
+5. A deliberate failure may expose a validated structured payload; runtime
+   errors and interruptions do not invent one.
+6. Chat and direct non-workflow sessions retain their ordinary completion
+   contract.
+
+The finish envelope, optional validated result, and schema requirement are
+part of the durable step evidence. Resume must recreate the same contract. A
+legacy step without the required finish envelope or schema payload is not a
+successful reusable step. The workflow source owns schema identity; do not add
+a separate request or schema lifecycle object.
+
 ## Composing Skills Into Workflows
 
 A workflow may invoke an agent with a named skill when a step needs a reusable
