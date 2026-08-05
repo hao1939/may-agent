@@ -315,6 +315,68 @@ describe("frozen master-validation campaign", () => {
     }
   });
 
+  test("uses a self-contained replay head when its preparatory commit conflicts", () => {
+    const fixture = campaignFixture();
+    try {
+      writeFileSync(join(fixture.repoDir, "carrier.txt"), "frozen\n");
+      git(fixture.repoDir, "add", "carrier.txt");
+      git(fixture.repoDir, "commit", "--amend", "--no-edit");
+      const frozenCommit = git(fixture.repoDir, "rev-parse", "HEAD");
+      git(fixture.repoDir, "push", "--force", "origin", "main");
+
+      const targetCommit = commitFile(
+        fixture.repoDir,
+        "carrier.txt",
+        "modern\n",
+        "modernize carrier",
+      );
+      git(fixture.repoDir, "push", "origin", "main");
+      git(fixture.repoDir, "checkout", "-b", "fix/replay-safe");
+      commitFile(
+        fixture.repoDir,
+        "carrier.txt",
+        "frozen\n",
+        "prepare frozen carrier shape",
+      );
+      const sourceCommit = commitFile(
+        fixture.repoDir,
+        "carrier.txt",
+        "modern\nguard\n",
+        "apply complete carrier repair",
+      );
+      git(fixture.repoDir, "push", "-u", "origin", "fix/replay-safe");
+
+      const result = composeFrozenCampaign({
+        appDir: fixture.appDir,
+        repoDir: fixture.repoDir,
+        baselineRunId: "replay-safe",
+        baseCommit: frozenCommit,
+        fixes: [
+          {
+            pullRequestId: "20",
+            taskId: "domain/master-validation-failure/spec.example/replay-safe",
+            sourceBranch: "fix/replay-safe",
+            sourceCommit,
+            targetCommit,
+            title: "Replay-safe focused fix",
+          },
+        ],
+      });
+
+      git(fixture.repoDir, "fetch", "origin", result.receipt.branch);
+      expect(
+        git(
+          fixture.repoDir,
+          "show",
+          `origin/${result.receipt.branch}:carrier.txt`,
+        ),
+      ).toBe("modern\nguard");
+      expect(result.receipt.integratedFixes[0]?.patchIds).toHaveLength(1);
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
   test("binds an equivalent current-main PR to an already tested logical repair", () => {
     const fixture = campaignFixture();
     try {

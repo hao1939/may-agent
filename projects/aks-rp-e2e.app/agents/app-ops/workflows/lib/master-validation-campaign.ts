@@ -283,7 +283,9 @@ function samePatchSeries(left: CampaignFix, right: CampaignFix): boolean {
 function applyFix(
   checkout: string,
   prepared: { fix: CampaignFix; commits: string[] },
-): void {
+): { fix: CampaignFix; commits: string[] } {
+  const startingCommit = git(checkout, ["rev-parse", "HEAD"]).stdout;
+  let failure = "";
   for (const commit of prepared.commits) {
     const applied = git(
       checkout,
@@ -298,12 +300,72 @@ function applyFix(
       true,
     );
     if (applied.status !== 0) {
+      failure = applied.stderr || applied.stdout;
       git(checkout, ["cherry-pick", "--abort"], true);
-      throw new Error(
-        `Campaign focused-patch conflict for PR ${prepared.fix.pullRequestId} (${prepared.fix.sourceBranch}) at ${commit}: ${applied.stderr || applied.stdout}`,
-      );
+      git(checkout, ["reset", "--hard", startingCommit]);
+      break;
     }
   }
+  if (!failure) return prepared;
+
+  const replayCommit = prepared.commits.at(-1) ?? "";
+  if (prepared.commits.length > 1 && replayCommit === prepared.fix.sourceCommit) {
+    const replay = git(
+      checkout,
+      [
+        "-c",
+        "user.name=May Agent",
+        "-c",
+        "user.email=may-agent@localhost",
+        "cherry-pick",
+        replayCommit,
+      ],
+      true,
+    );
+    if (replay.status === 0 && replayedFilesMatchSource(checkout, replayCommit)) {
+      const retainedPatchIds = (prepared.fix.patchIds ?? []).slice(
+        0,
+        Math.max(
+          0,
+          (prepared.fix.patchIds?.length ?? 0) - prepared.commits.length,
+        ),
+      );
+      return {
+        fix: {
+          ...prepared.fix,
+          patchIds: [...retainedPatchIds, patchId(checkout, replayCommit)],
+        },
+        commits: [replayCommit],
+      };
+    }
+    git(checkout, ["cherry-pick", "--abort"], true);
+    git(checkout, ["reset", "--hard", startingCommit]);
+  }
+
+  throw new Error(
+    `Campaign focused-patch conflict for PR ${prepared.fix.pullRequestId} (${prepared.fix.sourceBranch}) at ${prepared.commits[0] ?? prepared.fix.sourceCommit}: ${failure}`,
+  );
+}
+
+function replayedFilesMatchSource(checkout: string, sourceCommit: string): boolean {
+  const paths = git(checkout, [
+    "diff-tree",
+    "--no-commit-id",
+    "--name-only",
+    "-r",
+    `${sourceCommit}^`,
+    sourceCommit,
+  ]).stdout
+    .split(/\r?\n/)
+    .map((path) => path.trim())
+    .filter(Boolean);
+  if (!paths.length) return false;
+  return paths.every((path) => {
+    const expected = git(checkout, ["rev-parse", `${sourceCommit}:${path}`], true);
+    const actual = git(checkout, ["rev-parse", `HEAD:${path}`], true);
+    return expected.status === actual.status &&
+      (expected.status !== 0 || expected.stdout === actual.stdout);
+  });
 }
 
 export function composeFrozenCampaign(input: {
@@ -429,10 +491,10 @@ export function composeFrozenCampaign(input: {
             ...(delta.fix.patchIds ?? []),
           ],
         };
-        applyFix(checkout, { ...delta, fix: updatedFix });
-        integrated[exactIndex] = updatedFix;
-        excludedCommits.push(updatedFix.sourceCommit);
-        changed ||= delta.commits.length > 0;
+        const applied = applyFix(checkout, { ...delta, fix: updatedFix });
+        integrated[exactIndex] = applied.fix;
+        excludedCommits.push(applied.fix.sourceCommit);
+        changed ||= applied.commits.length > 0;
         return;
       }
 
@@ -450,10 +512,10 @@ export function composeFrozenCampaign(input: {
       }
       if (replacementOnly) return;
 
-      applyFix(checkout, prepared);
-      integrated.push(prepared.fix);
-      excludedCommits.push(prepared.fix.sourceCommit);
-      changed ||= prepared.commits.length > 0;
+      const applied = applyFix(checkout, prepared);
+      integrated.push(applied.fix);
+      excludedCommits.push(applied.fix.sourceCommit);
+      changed ||= applied.commits.length > 0;
     };
 
     for (const fix of [...input.fixes].sort(
