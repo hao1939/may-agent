@@ -720,7 +720,7 @@ async function judgeScenario(
 }
 
 const SEMANTIC_JUDGE_AGENTS = [
-  "semantic-judge-claude",
+  "semantic-judge-gemini",
   "semantic-judge-openai",
 ] as const;
 const SEMANTIC_JUDGES_ROOT = join(
