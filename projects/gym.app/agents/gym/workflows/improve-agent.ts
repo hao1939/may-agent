@@ -3247,7 +3247,7 @@ async function runCandidate(
       return ctx.done(summary, {
         state: "converged",
         summary,
-        evidence: [...previous.evidence, decisionPath],
+        evidence: boundedEvidence([...previous.evidence, decisionPath]),
         actions: [],
       });
     }

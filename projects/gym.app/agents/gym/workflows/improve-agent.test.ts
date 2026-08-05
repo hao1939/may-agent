@@ -242,7 +242,7 @@ describe("single agent-improvement loop", () => {
           condition: { id: approvalId, type: "project.approval.submitted" },
         },
         conditions: [],
-        evidence: [],
+        evidence: Array.from({ length: 40 }, (_, index) => `evidence-${index}`),
       }),
     );
     const emitted: Record<string, unknown>[] = [];
@@ -298,6 +298,7 @@ describe("single agent-improvement loop", () => {
       unknown
     >;
     expect(result.summary).toContain("Applied approved benchmark/scorer fix");
+    expect((result.evidence as unknown[]).length).toBeLessThanOrEqual(32);
     expect(readFileSync(join(targetPath, "scorer.cjs"), "utf8")).toBe(
       "fixed\n",
     );
