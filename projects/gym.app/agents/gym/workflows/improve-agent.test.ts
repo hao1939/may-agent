@@ -22,6 +22,7 @@ import {
   experimentNeedsIntegration,
   fingerprintTree,
   improvementInput,
+  isBaselineInvalidOnlyComparisonFailure,
   isFrameworkOnlyComparisonFailure,
   learningPromptLines,
   loadCurriculumTargets,
@@ -1648,6 +1649,32 @@ describe("single agent-improvement loop", () => {
         no_regressions: false,
       }),
     ).toBe(false);
+  });
+
+  test("recognizes an invalid baseline as recoverable when every candidate trial passed", () => {
+    const candidate = manifest("candidate", {
+      "agent-case": ["pass", "pass", "pass"],
+    });
+    candidate.phase = "verify";
+    const checkpoint = {
+      runDir: "/candidate",
+      manifest: candidate,
+      comparison: {
+        baseline_run_id: "baseline",
+        candidate_run_id: "candidate",
+        labels_approved: true,
+        same_framework_revision: true,
+        no_invalid_runs: false,
+        no_regressions: true,
+        improved: true,
+        gate: "fail" as const,
+        scenarios: [],
+      },
+    };
+    expect(isBaselineInvalidOnlyComparisonFailure(checkpoint)).toBe(true);
+
+    candidate.trials[0]!.machine_verdict = "invalid";
+    expect(isBaselineInvalidOnlyComparisonFailure(checkpoint)).toBe(false);
   });
 
   test("recovers the newest completed matching release baseline after interruption", () => {

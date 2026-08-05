@@ -975,6 +975,22 @@ export function isFrameworkOnlyComparisonFailure(
   );
 }
 
+export function isBaselineInvalidOnlyComparisonFailure(
+  checkpoint: VerificationCheckpoint,
+): boolean {
+  const { comparison, manifest } = checkpoint;
+  return (
+    manifest.trials.length > 0 &&
+    manifest.trials.every((trial) => trial.machine_verdict === "pass") &&
+    comparison.gate === "fail" &&
+    comparison.labels_approved === true &&
+    comparison.same_framework_revision === true &&
+    comparison.no_invalid_runs === false &&
+    comparison.no_regressions === true &&
+    comparison.improved === true
+  );
+}
+
 function readJson<T>(path: string): T | null {
   if (!existsSync(path)) return null;
   return JSON.parse(readFileSync(path, "utf8")) as T;
@@ -2773,6 +2789,60 @@ async function runCandidateIteration(
     recordVerificationMetrics(ctx, development);
     comparison = development.comparison;
   }
+  const cleanBaselineCheckpointPath = join(
+    iterationDir,
+    "development-baseline-invalid-retry.json",
+  );
+  let cleanBaseline = readJson<{
+    runDir: string;
+    manifest: LoopRunManifest;
+  }>(cleanBaselineCheckpointPath);
+  if (
+    cleanBaseline &&
+    development.comparison.baseline_run_id === cleanBaseline.manifest.run_id
+  ) {
+    baselineManifest = cleanBaseline.manifest;
+    developmentBaselineDir = cleanBaseline.runDir;
+    developmentBaselineRunId = cleanBaseline.manifest.run_id;
+  }
+  if (
+    isBaselineInvalidOnlyComparisonFailure(development) &&
+    development.comparison.baseline_run_id !== cleanBaseline?.manifest.run_id
+  ) {
+    cleanBaseline ??= await loop.run({
+      phase: "test",
+      benchmark: plan.benchmark,
+      scenarios: plan.focus.scenarios,
+      agent: plan.agent,
+      candidate: "baseline",
+      trials: baselineManifest.trials_per_scenario,
+      agentsRoot: workspaceAgentsRoot,
+    });
+    writeJson(cleanBaselineCheckpointPath, cleanBaseline);
+    baselineManifest = cleanBaseline.manifest;
+    developmentBaselineDir = cleanBaseline.runDir;
+    developmentBaselineRunId = cleanBaseline.manifest.run_id;
+    development = await loop.verify({
+      baseline: developmentBaselineRunId,
+      candidate: candidateId,
+      trials: baselineManifest.trials_per_scenario,
+      agentsRoot: workspaceAgentsRoot,
+    });
+    writeJson(developmentCheckpointPath, development);
+    if (
+      development.manifest.proof.candidate_fingerprint !== candidateFingerprint
+    ) {
+      return saveAttentionResult(
+        ctx,
+        resultPath,
+        "Candidate fingerprint does not match clean-baseline verification",
+        [durableCandidate, development.runDir],
+        { task_id: taskId, generation, iteration },
+      );
+    }
+    recordVerificationMetrics(ctx, development);
+    comparison = development.comparison;
+  }
   let verificationPassed = comparison.gate === "pass";
   let verificationDir = development.runDir;
   let releaseBaselineDir: string | null = null;
@@ -3212,6 +3282,7 @@ async function runCandidate(
       });
       for (const file of [
         "development-baseline-retry.json",
+        "development-baseline-invalid-retry.json",
         "development-verification.json",
         "release-baseline.json",
         "release-verification.json",

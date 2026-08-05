@@ -216,7 +216,10 @@ framework revision or artifact fingerprint may aid diagnosis but cannot
 authorize promotion. When an otherwise valid comparison differs only by
 framework revision, Gym keeps the candidate frozen and performs one fresh
 same-revision baseline-and-candidate retry before classifying another failure;
-it does not revise May or ask Hao for this recoverable runtime mismatch.
+it does not revise May or ask Hao for this recoverable runtime mismatch. When
+every candidate trial passes but a transient invalid baseline trial alone
+blocks that same-revision comparison, Gym performs one additional clean-baseline
+retry. A second invalid comparison stops for runtime review instead of looping.
 
 Metrics measure operation—valid-run rate, model/runtime cost proxies,
 classification time, accepted proposals, and prevented regressions. They wake
