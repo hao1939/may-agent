@@ -1023,4 +1023,68 @@ describe("Telegram outbound turn ownership", () => {
     expect(sent).toEqual(["Approval queued-once"]);
     outbound.close();
   });
+
+  for (const disposition of ["handle", "route", "reject"] as const) {
+    test(`releases an undelivered notification key after a ${disposition} review`, async () => {
+      const bus = new EventBus();
+      const sent: string[] = [];
+      let reviews = 0;
+      const outbound = attachTelegramOutbound({
+        bus,
+        interfaceAgent: "may",
+        projectRoot: "/app",
+        pendingChatId: "human-chat",
+        getSessionId: () => "shared-chat",
+        sendToUser: (text) => sent.push(text),
+        reviewProactive: async (candidate) => {
+          reviews += 1;
+          if (reviews === 2) {
+            return {
+              status: "completed",
+              disposition: "deliver",
+              understoodIntent: "Ask after the underlying state changed.",
+              reason: "The exact decision is open now.",
+              nextAction: "Deliver the approval request.",
+              evidence: ["Test state changed."],
+              deliveredMessage: candidate.content,
+            };
+          }
+          return {
+            status: "completed",
+            disposition,
+            understoodIntent: "Do not deliver the first candidate.",
+            reason: "The first candidate is not ready for human attention.",
+            nextAction: "Finish this review without delivery.",
+            owner: disposition === "route" ? "gym" : undefined,
+            evidence: ["Test first review."],
+            actionTaken: "Recorded the first review outcome.",
+            closureCondition: "The first review is complete.",
+            reviewAgainWhen: disposition === "route" ? "When Gym changes the proposal state." : undefined,
+          };
+        },
+      });
+      const emit = (content: string) =>
+        bus.emit({
+          type: "message.created",
+          source: "gym",
+          owner: "human:operator",
+          data: {
+            to: "human",
+            from: "gym",
+            content,
+            approvalId: `retry-after-${disposition}`,
+            dedupKey: `retry-after-${disposition}`,
+          },
+        } as any);
+
+      emit("First candidate");
+      await outbound.drain();
+      emit("Candidate after state change");
+      await outbound.drain();
+
+      expect(reviews).toBe(2);
+      expect(sent).toEqual(["Candidate after state change"]);
+      outbound.close();
+    });
+  }
 });

@@ -301,7 +301,11 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
     }
   }
 
-  function admitProactive(candidate: HumanAttentionCandidate, deliver: (reviewedText: string) => void): void {
+  function admitProactive(
+    candidate: HumanAttentionCandidate,
+    deliver: (reviewedText: string) => void,
+    onSettled?: () => void,
+  ): void {
     proactiveAdmissionQueue = proactiveAdmissionQueue
       .catch(() => undefined)
       .then(async () => {
@@ -328,7 +332,8 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
         } catch (error) {
           reviewAudit(candidate, review, attempts, false, error instanceof Error ? error.message : String(error));
         }
-      });
+      })
+      .finally(onSettled);
   }
 
   const unsubBus = bus.subscribe((event: any) => {
@@ -667,24 +672,28 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
           return;
         }
         if (stableNotificationKey) queuedNotificationKeys.add(stableNotificationKey);
-        admitProactive(candidate, (reviewedText) => {
-          sendToUser(reviewedText, {
-            eventType: "message.created",
-            agent: String(message.from ?? ""),
-            sessionId: sourceSessionId ?? ("sessionId" in message ? String(message.sessionId) : undefined),
-            projectId,
-            summary: reviewedText.slice(0, 200),
-            data,
-            traceId,
-            parentEventId: typeof data.parentEventId === "number" ? data.parentEventId : undefined,
-            taskId: typeof data.taskId === "string" ? data.taskId : undefined,
-            replyToMessageId:
-              sourceReplyContext?.replyToMessageId ??
-              (!sourceSessionId && traceId ? replyToMessageIdForTrace(traceId) : undefined),
-            allowTraceReplyFallback: !sourceSessionId,
-            conversationId: sourceReplyContext?.conversationId,
-          });
-        });
+        admitProactive(
+          candidate,
+          (reviewedText) => {
+            sendToUser(reviewedText, {
+              eventType: "message.created",
+              agent: String(message.from ?? ""),
+              sessionId: sourceSessionId ?? ("sessionId" in message ? String(message.sessionId) : undefined),
+              projectId,
+              summary: reviewedText.slice(0, 200),
+              data,
+              traceId,
+              parentEventId: typeof data.parentEventId === "number" ? data.parentEventId : undefined,
+              taskId: typeof data.taskId === "string" ? data.taskId : undefined,
+              replyToMessageId:
+                sourceReplyContext?.replyToMessageId ??
+                (!sourceSessionId && traceId ? replyToMessageIdForTrace(traceId) : undefined),
+              allowTraceReplyFallback: !sourceSessionId,
+              conversationId: sourceReplyContext?.conversationId,
+            });
+          },
+          stableNotificationKey ? () => queuedNotificationKeys.delete(stableNotificationKey) : undefined,
+        );
       }
     }
   });
