@@ -1,7 +1,9 @@
 # May conversation follow-through POC
 
 This benchmark proves that Gym can evaluate conversation behavior, not only a
-written preference decision. It keeps production Telegram routing unchanged.
+written preference decision. Its direct-routing case uses the same structured
+May decision contract as production; its multi-turn cases exercise the durable
+conversation model in isolation.
 
 The POC has two independently scored layers:
 

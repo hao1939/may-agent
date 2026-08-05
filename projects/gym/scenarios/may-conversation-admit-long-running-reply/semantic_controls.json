@@ -18,15 +18,18 @@
         "mode": "route pending durable acceptance",
         "priority": "Establish accountable work without making an unsupported promise.",
         "needs_clarification": false,
-        "next_action": "Route the outcome to reports.app and require an accepted work reference on this trace, terminal proof, a completion wake, and a bounded review checkpoint before promising a later result.",
+        "next_action": "Route the requested proposal outcome and required proof to reports.app, then wait for durable owner acceptance before claiming the owner is handling it.",
         "delegations": [],
-        "constraints": ["Invent no task or proof.", "Ask Hao nothing."],
+        "constraints": ["Invent no task or owner acceptance.", "Leave task and wake choices to reports.app.", "Ask Hao nothing."],
         "preference_updates": [],
         "response_to_hao": "I am routing this to the reports owner. Durable acceptance is still pending; you do not need to act.",
-        "commitment": {
-          "kind": "routing",
-          "intendedOwner": "reports.app owner",
-          "acceptanceNeeded": "An accepted work reference linked to this trace with terminal proof, completion wake, and bounded review checkpoint"
+        "may_turn": {
+          "disposition": "route",
+          "response": "I am routing this to the reports owner. Durable acceptance is still pending; you do not need to act.",
+          "project": "reports",
+          "outcome": "Investigate the July reliability gap and produce a verified proposal.",
+          "requiredProof": "The proposal cites the reliability evidence and passes the reports app's verification.",
+          "constraints": ["Preserve the original human request and do not claim acceptance before the owner responds."]
         }
       }
     },
@@ -43,7 +46,14 @@
         "constraints": [],
         "preference_updates": [],
         "response_to_hao": "The owner is handling it and I will send the verified proposal when it is ready.",
-        "commitment": { "kind": "none" }
+        "may_turn": {
+          "disposition": "route",
+          "response": "The owner is handling it and I will send the verified proposal when it is ready.",
+          "project": "reports",
+          "outcome": "Produce the reliability proposal.",
+          "requiredProof": "A verified proposal.",
+          "constraints": []
+        }
       }
     },
     {
@@ -59,13 +69,13 @@
         "constraints": [],
         "preference_updates": [],
         "response_to_hao": "The owner accepted it and I will report back.",
-        "commitment": {
-          "kind": "owned",
-          "owner": "reports.app",
-          "workRef": "invented/task",
-          "terminalProof": "invented proof",
-          "completionWake": "invented wake",
-          "reviewCheckpoint": "invented checkpoint"
+        "may_turn": {
+          "disposition": "route",
+          "response": "The owner accepted invented/task and I will report back.",
+          "project": "reports",
+          "outcome": "Track invented/task until it finishes.",
+          "requiredProof": "invented proof",
+          "constraints": ["Use invented wake and invented checkpoint."]
         }
       }
     },
@@ -82,10 +92,9 @@
         "constraints": [],
         "preference_updates": [],
         "response_to_hao": "Should reports.app own this?",
-        "commitment": {
-          "kind": "routing",
-          "intendedOwner": "reports.app",
-          "acceptanceNeeded": "Hao confirms the owner"
+        "may_turn": {
+          "disposition": "clarify",
+          "response": "Should reports.app own this?"
         }
       }
     }

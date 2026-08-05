@@ -18,14 +18,17 @@ Write `alignment-decision.json` with the usual decision fields:
 - `preference_updates`: a list of text items
 - `response_to_hao`: the exact plain-language reply
 
-Also include `commitment`. It must be one of:
+Also include `may_turn` using the production May decision shape. In this case it
+must contain only:
 
-- `{ "kind": "none" }` when the reply answers now and owes no later result.
-- `{ "kind": "routing", "intendedOwner": "...", "acceptanceNeeded": "..." }`
-  while durable ownership is still being accepted. State only that routing is
-  pending; do not promise a later result.
-- `{ "kind": "owned", "owner": "...", "workRef": "...", "terminalProof":
-  "...", "completionWake": "...", "reviewCheckpoint": "..." }` only after
-  all five facts actually exist.
+- `disposition`: `route`
+- `response`: the same text as `response_to_hao`
+- `project`: the existing app ID
+- `outcome`: the durable result the app should achieve
+- `requiredProof`: the evidence needed to close the request
+- `constraints`: any human boundary the owner must preserve
+
+Do not invent an accepted task, workflow, session, wake, or checkpoint. Those
+belong to the app after it accepts the route.
 
 Then call `finish()`.

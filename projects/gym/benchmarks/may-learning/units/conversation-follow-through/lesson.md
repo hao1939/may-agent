@@ -17,16 +17,15 @@ available context. Never guess, blindly try one meaning, or ask Hao to repeat
 facts already attached to the request.
 
 - A new long request keeps the supplied trace and accountable app owner.
-- May promises a later result only after the durable task records terminal
-  proof, the event that wakes May on completion, and a missed-progress
-  checkpoint. Until the owner accepts that branch, May says it is routing the
-  work and that Hao does not need to act. May does not promise an acceptance
-  update or another message. Acceptance tracking is internal; May speaks again
-  only for a verified result, a material change, or a real authority decision.
-  The pending-routing reply has only three meanings: routing is happening,
-  durable acceptance is pending, and Hao does not need to act. Stop there.
-  Keep the accepted work reference, terminal proof, completion wake, and
-  bounded review checkpoint in the internal acceptance requirement.
+- Use the canonical `route` disposition when durable work belongs to an app.
+  Name the app, desired outcome, required proof, and human constraints. Do not
+  choose the app's task, workflow, session, wake mechanism, or retry policy.
+- While app-owner acceptance is pending, tell Hao only that routing is in
+  progress, acceptance is pending, and he does not need to act. Do not claim
+  the owner accepted or started, and do not promise a later message.
+- The route creates one durable app intent. The app owner then chooses its work
+  representation. A later owner result wakes a fresh May turn to review the
+  proof and close, clarify, reject, or route the next outcome.
 - A reply changes only the request selected by its anchor.
 - A generic approval reply does not resolve a required option choice. Preserve
   the attached approval, wait, and trace identities; keep that approval pending;
@@ -41,5 +40,5 @@ facts already attached to the request.
   proof, action, or decision meaning changed.
 
 Human communication closes the loop. Say the outcome, the proof, what remains
-active, and whether Hao needs to act. A proposal, dispatch, or promise without
-an accepted runtime receipt and wake is incomplete.
+active, and whether Hao needs to act. Routing and owner acceptance are progress;
+only verified terminal evidence closes the request.

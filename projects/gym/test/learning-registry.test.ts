@@ -52,7 +52,7 @@ describe("May learning registry", () => {
         }),
         expect.objectContaining({
           id: "conversation-follow-through",
-          version: 1,
+          version: 2,
           status: "active",
           ready_for_development: true,
           ready_for_release: false,

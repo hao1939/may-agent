@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "conversation-follow-through",
-  "version": 1,
+  "version": 2,
   "status": "active",
   "title": "Keep human requests owned, separate, and moving across fresh May turns",
   "lesson": "lesson.md",
@@ -15,7 +15,7 @@
     "communication.human-attention-judgment"
   ],
   "sources": [
-    { "path": "../may-agent.app/docs/2a-design/human-control-surfaces.md", "section": "Conversation and request threads" },
+    { "path": "../may-agent.app/docs/2a-design/message-lifecycle.md", "section": "The loud rule" },
     { "path": "../may-agent.app/docs/2a-design/system-model.md", "section": "Human Loop" },
     { "path": "../may-agent.app/docs/2a-design/telegram-notifications.md", "section": "Reply Context Model" }
   ],

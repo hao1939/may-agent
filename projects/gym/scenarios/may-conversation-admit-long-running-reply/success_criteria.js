@@ -13,27 +13,31 @@ try {
   );
 } catch {}
 
-const commitment = decision.commitment;
-const keys = commitment && typeof commitment === "object"
-  ? Object.keys(commitment).sort()
+const turn = decision.may_turn;
+const keys = turn && typeof turn === "object"
+  ? Object.keys(turn).sort()
   : [];
 const validRouting =
-  commitment?.kind === "routing" &&
-  typeof commitment.intendedOwner === "string" &&
-  commitment.intendedOwner.trim().length > 0 &&
-  typeof commitment.acceptanceNeeded === "string" &&
-  commitment.acceptanceNeeded.trim().length > 0 &&
-  JSON.stringify(keys) === JSON.stringify(["acceptanceNeeded", "intendedOwner", "kind"]);
+  turn?.disposition === "route" &&
+  turn?.project === "reports" &&
+  typeof turn.response === "string" &&
+  turn.response === decision.response_to_hao &&
+  typeof turn.outcome === "string" &&
+  turn.outcome.trim().length > 0 &&
+  typeof turn.requiredProof === "string" &&
+  turn.requiredProof.trim().length > 0 &&
+  Array.isArray(turn.constraints) &&
+  JSON.stringify(keys) === JSON.stringify(["constraints", "disposition", "outcome", "project", "requiredProof", "response"]);
 
 report.checks.push({
-  name: "direct-reply-contract",
+  name: "canonical-may-turn-contract",
   passed: validRouting,
   detail: validRouting
-    ? "Routing commitment names the intended owner and exact acceptance boundary"
-    : "Routing commitment must contain only kind, intendedOwner, and acceptanceNeeded",
+    ? "Route uses the production May decision shape"
+    : "may_turn must be one exact production route decision",
   category: "format",
   gate: true,
 });
 report.passed = report.passed && validRouting;
-report.summary = `${report.summary}; direct reply contract ${validRouting ? "passed" : "failed"}`;
+report.summary = `${report.summary}; canonical May turn ${validRouting ? "passed" : "failed"}`;
 console.log(JSON.stringify(report));

@@ -2,6 +2,12 @@
 
 Date: 2026-07-30
 
+**Current contract note (2026-08-05):** The POC's separate `commitment`
+envelope was never used by production and has been removed. The active release
+case now evaluates the canonical May `route` decision: response, project,
+outcome, required proof, and constraints. The July results below remain
+historical evidence, not current interface guidance.
+
 ## Decision
 
 **The bounded runtime path is proven and deployed. Continue bounded live

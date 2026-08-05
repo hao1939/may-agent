@@ -12,7 +12,7 @@
     "may-conversation-admit-long-running-reply": {
       "status": "draft",
       "source": "direct-reply-structural-admission-poc",
-      "rationale": "May should state that routing is pending and avoid promising a later result until durable ownership, proof, completion wake, and review checkpoint exist.",
+      "rationale": "May should use the production route disposition, state that app-owner acceptance is pending, avoid promises, and leave internal task and wake choices to the app.",
       "approved_by": null,
       "approved_at": null
     }

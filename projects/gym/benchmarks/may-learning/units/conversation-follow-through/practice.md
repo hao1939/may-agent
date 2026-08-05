@@ -13,11 +13,10 @@ reply target, and whether Hao needs to act.
    Record one review and send one closeout.
 5. In a new turn, Hao asks for Gym status by name. Report its durable current
    state and next closure condition, then say whether he needs to act.
-6. An owner says it started a long task but gives no completion wake or
-   missed-progress checkpoint. Keep the claim as “routing,” require those two
-   links on the existing task, tell Hao no action is needed, and make no
-   acceptance-update or later-result promise until the full closure chain is
-   recorded.
+6. Hao asks for a long report and May knows the accountable app, but the app
+   has not accepted it. Choose `route`, state the desired report and proof, say
+   acceptance is pending and Hao need not act, and let the app choose its task
+   and wake mechanism. Do not claim the owner started or promise a later reply.
 7. An attached approval packet requires option A or B, but Hao says only
    “batch approve these items.” Recover the exact packet, wait, and trace from
    the reply context. Ask for A or B before starting, then carry the chosen

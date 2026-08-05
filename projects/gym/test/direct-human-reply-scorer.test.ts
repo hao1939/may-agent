@@ -9,7 +9,7 @@ const scorer = resolve(
   "../scenarios/may-conversation-admit-long-running-reply/success_criteria.js",
 );
 
-function score(commitment: Record<string, unknown>) {
+function score(mayTurn: Record<string, unknown>) {
   const root = mkdtempSync(`${tmpdir()}/gym-direct-reply-`);
   roots.push(root);
   writeFileSync(
@@ -19,14 +19,13 @@ function score(commitment: Record<string, unknown>) {
       mode: "route pending durable acceptance",
       priority: "Establish accountable work without an unsupported promise.",
       needs_clarification: false,
-      next_action:
-        "Require an accepted work reference, terminal proof, completion wake, and review checkpoint.",
+      next_action: "Route the requested outcome and proof to reports.app.",
       delegations: [],
       constraints: ["Invent no state."],
       preference_updates: [],
       response_to_hao:
         "I am routing this to the reports owner. Durable acceptance is still pending; you do not need to act.",
-      commitment,
+      may_turn: mayTurn,
     }),
   );
   const run = Bun.spawnSync(["node", scorer, root], {
@@ -41,25 +40,28 @@ afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 
-describe("direct human reply scorer", () => {
-  it("accepts the routing envelope while durable ownership is pending", () => {
+describe("canonical May turn scorer", () => {
+  it("accepts the production route shape while durable ownership is pending", () => {
     const result = score({
-      kind: "routing",
-      intendedOwner: "reports.app owner",
-      acceptanceNeeded:
-        "Accepted work reference on this trace with proof, completion wake, and review checkpoint",
+      disposition: "route",
+      response:
+        "I am routing this to the reports owner. Durable acceptance is still pending; you do not need to act.",
+      project: "reports",
+      outcome: "Investigate the July reliability gap and produce a verified proposal.",
+      requiredProof: "The proposal cites the reliability evidence and passes reports verification.",
+      constraints: ["Do not claim owner acceptance before the owner responds."],
     });
     expect(result.passed).toBe(true);
     expect(result.checks).toContainEqual(
-      expect.objectContaining({ name: "direct-reply-contract", passed: true }),
+      expect.objectContaining({ name: "canonical-may-turn-contract", passed: true }),
     );
   });
 
-  it("rejects a missing routing boundary", () => {
-    const result = score({ kind: "none" });
+  it("rejects a non-route turn for the pending durable request", () => {
+    const result = score({ disposition: "answer", response: "The owner is handling it." });
     expect(result.passed).toBe(false);
     expect(result.checks).toContainEqual(
-      expect.objectContaining({ name: "direct-reply-contract", passed: false }),
+      expect.objectContaining({ name: "canonical-may-turn-contract", passed: false }),
     );
   });
 });
