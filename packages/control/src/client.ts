@@ -37,11 +37,7 @@ function daemonEventFrame(eventType: string, data: Record<string, unknown>): Rec
   return buildCanonicalEventEnvelope(eventType, data, { source: "control" });
 }
 
-export function sendSocketCommand(
-  socketPath: SocketEndpoint,
-  command: Record<string, unknown>,
-  opts?: { timeoutMs?: number },
-): Promise<SocketResponse> {
+export function sendSocketCommand(socketPath: SocketEndpoint, command: Record<string, unknown>, opts?: { timeoutMs?: number }): Promise<SocketResponse> {
   return new Promise((resolve, reject) => {
     const expectedCommand = typeof command.type === "string" ? command.type : null;
     let settled = false;
@@ -99,8 +95,7 @@ export function sendSocketCommand(
         try {
           const parsed = JSON.parse(trimmed) as SocketResponse;
           const isStatusReply = expectedCommand === "status" && parsed.type === "status";
-          const isReply = parsed.command === expectedCommand
-            && (parsed.type === "ok" || parsed.type === "error" || isStatusReply);
+          const isReply = parsed.command === expectedCommand && (parsed.type === "ok" || parsed.type === "error" || isStatusReply);
           if (isReply) {
             clearTimeout(timeout);
             client.destroy();
@@ -138,11 +133,7 @@ export interface SocketEvent {
   [key: string]: unknown;
 }
 
-export function waitForSocketEvent(
-  socketPath: SocketEndpoint,
-  eventType: string,
-  opts?: { sessionId?: string; timeoutMs?: number },
-): Promise<SocketEvent> {
+export function waitForSocketEvent(socketPath: SocketEndpoint, eventType: string, opts?: { sessionId?: string; timeoutMs?: number }): Promise<SocketEvent> {
   return new Promise((resolve, reject) => {
     let settled = false;
     const settle = (fn: () => void) => {
@@ -185,9 +176,7 @@ export function waitForSocketEvent(
             continue;
           }
           if (event.type === eventType) {
-            const data = event.data && typeof event.data === "object" && !Array.isArray(event.data)
-              ? event.data as Record<string, unknown>
-              : event;
+            const data = event.data && typeof event.data === "object" && !Array.isArray(event.data) ? (event.data as Record<string, unknown>) : event;
             if (opts?.sessionId && data.sessionId !== opts.sessionId) continue;
             clearTimeout(timeout);
             client.destroy();
@@ -221,30 +210,26 @@ export function emitDaemonEvent(
   return sendDaemonEvent(endpoint, daemonEventFrame(eventType, data), opts);
 }
 
-export function sendDaemonEvent(
-  endpoint: SocketEndpoint,
-  event: Record<string, unknown>,
-  opts?: { timeoutMs?: number },
-): Promise<SocketResponse> {
+export function sendDaemonEvent(endpoint: SocketEndpoint, event: Record<string, unknown>, opts?: { timeoutMs?: number }): Promise<SocketResponse> {
   return sendSocketCommand(endpoint, event, opts);
 }
 
-export function sendDaemonInput(
-  endpoint: SocketEndpoint,
-  message: string,
-  source = "control",
-  opts?: { timeoutMs?: number },
-): Promise<SocketResponse> {
-  return sendDaemonEvent(endpoint, {
-    type: "chat.start.requested",
-    source,
-    owner: "agent:may",
-    data: {
-      agent: "may",
-      message,
-      channel: source,
+export function sendDaemonInput(endpoint: SocketEndpoint, message: string, source = "control", opts?: { timeoutMs?: number }): Promise<SocketResponse> {
+  return sendDaemonEvent(
+    endpoint,
+    {
+      type: "human.input.received",
+      source,
+      owner: "agent:may",
+      data: {
+        actor: "human",
+        text: message,
+        conversation: { channel: source },
+        target: { agent: "may" },
+      },
     },
-  }, opts);
+    opts,
+  );
 }
 
 export function sendAgentMessage(
@@ -254,14 +239,19 @@ export function sendAgentMessage(
   source = "control",
   opts?: { timeoutMs?: number },
 ): Promise<SocketResponse> {
-  return sendDaemonEvent(endpoint, {
-    type: "chat.start.requested",
-    source,
-    owner: normalizeEventOwner(agent),
-    data: {
-      agent,
-      message,
-      channel: source,
+  if (agent === "may") return sendDaemonInput(endpoint, message, source, opts);
+  return sendDaemonEvent(
+    endpoint,
+    {
+      type: "chat.start.requested",
+      source,
+      owner: normalizeEventOwner(agent),
+      data: {
+        agent,
+        message,
+        channel: source,
+      },
     },
-  }, opts);
+    opts,
+  );
 }
