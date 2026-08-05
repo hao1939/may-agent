@@ -76,14 +76,9 @@ app owner. An unknown platform or routing gap falls back to the `may-agent` app
 owner. May is the fallback only for human conversation and proposed human
 attention.
 
-May may deliberately cross this boundary in a bounded break-glass attempt when
-the normal ownership path cannot fulfill the human outcome. Break glass changes
-who executes; it never grants missing human authority or bypasses security,
-approval, or external-impact constraints. The triggering human trace records
-why the normal path is insufficient, the temporary scope, terminal proof, and
-stop or hand-back condition. The privileged attempt ends with verified closure,
-a precise blocker, or ownership restored to an app. It does not create a May
-task tree, standing schedule, or permanent project ownership.
+May may cross this boundary only through one bounded, audited break-glass
+attempt. The canonical human-ingress, ownership, break-glass, and closure
+contract is [Message Lifecycle](message-lifecycle.md).
 
 ## Execution Boundaries
 

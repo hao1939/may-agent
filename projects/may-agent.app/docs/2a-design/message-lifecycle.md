@@ -41,6 +41,18 @@ ownership gap to the `may-agent` platform owner instead of silently
 accumulating work. A bounded break-glass worker remains linked to the original
 message and must close or hand back; it does not weaken this rule.
 
+All ordinary human input to May follows one path, regardless of Telegram,
+console, web, or control client:
+
+```text
+human.input.received -> fresh structured May turn -> one disposition
+```
+
+A new `chat.start.requested` for May uses the same structured turn by default.
+Only explicit `session.steer.requested` control may continue a particular
+execution session. Conversation continuity comes from durable context, not
+from silently reusing whichever May session is attached.
+
 Every message has one durable event ID and moves through three states:
 
 ```text
@@ -57,6 +69,9 @@ progress.
 - An inbound message to May receives an immediate bridge response. A direct
   answer resolves immediately; delegated work stays open through the
   correlated app-owner result and final bridge response.
+- A route acknowledgement says acceptance is pending and references the app
+  intent event. May says the owner accepted or started only after the durable
+  owner response proves it.
 - An outbound notification resolves when channel delivery is confirmed.
 - An outbound request must declare its exact `expectedResponse`. It resolves
   when a matching response is durably accepted.
@@ -89,6 +104,11 @@ The pass is a safety net, not a scheduler. It re-wakes unfinished owner work,
 closes delivered notifications, applies exact response matches, and resolves
 explicit expiry or bounded delivery failure. Age alone never completes a
 request.
+
+An open break-glass attempt never resumes privileged work after a runtime
+restart. Recovery records `may.break-glass.failed` with `runtime-restarted`,
+then starts one non-privileged May review. That review closes the request,
+states the blocker, or hands work to an app. Repeated recovery is idempotent.
 
 Apps provide normal message data and, for requests, one exact expected response.
 The shared runtime owns correlation, delivery evidence, terminal events, and

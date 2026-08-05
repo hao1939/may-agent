@@ -215,77 +215,11 @@ keep their existing meanings:
 
 ### Ownership and durable continuation
 
-May first finds the app that already owns the requested outcome. The app owner
-answers, rejects, reuses existing work, or creates/revises one durable task.
-May does not choose a foreign app merely to hold work, copy the task into
-`may-agent.app`, or keep unfinished work only in chat text.
-
-A bounded one-off outside an app may use an event-tracked asynchronous worker
-with May accountable for its result. If the work needs repeated recovery,
-waiting, scheduling, or domain state, it belongs in the responsible app.
-
-Before May tells Hao that work will continue, the durable branch must identify:
-
-- the original human trace;
-- the accountable app/owner and canonical task or async reference;
-- the expected owner result and terminal outcome proof; and
-- either the event that wakes May or an exact review checkpoint when no event
-  arrives.
-
-These are links and existing domain fields, not a new closure-contract entity.
-An accepted event, queued task, started worker, completed helper, or owner claim
-is progress only. It is not the terminal outcome unless the owning domain says
-so and the required evidence supports it.
-
-### May supervision
-
-The app owner executes. May supervises outcome and human closure. May wakes on:
-
-- owner progress, failure, attention, or terminal events;
-- a missed task Condition or review checkpoint;
-- a material change in scope, risk, authority, or proof;
-- a correction, status request, or reprioritization from Hao.
-
-At a check-in May reads the durable task and evidence, leaves healthy work
-alone, and steers only outcome, scope, priority, safety, or proof. May does not
-micromanage the owner's patch or commands. One missed checkpoint triggers
-owner review. Continued lack of evidence after a bounded recovery causes May
-to replan through the same task, ask the owner to change execution, route a
-runtime fault to its owner, or escalate the exact remaining authority blocker.
-It does not create duplicate recovery tasks or wait silently forever.
-
-Every long-running request has an event-driven completion wake. A review
-checkpoint is the backstop for missing movement, not a fixed human-update
-schedule. Healthy internal progress is silent.
-
-### Break glass
-
-May normally preserves the app boundary. May may take direct control when Hao
-explicitly asks May to handle the work, the accountable path is broken after a
-bounded recovery, urgent harm would result from waiting, or no app owns a
-bounded outcome. Faster execution, implementation curiosity, healthy owner
-progress, or unclear human intent are insufficient reasons.
-
-```text
-bounded May turn
-  -> may.break-glass.started with reason, scope, proof, and stop condition
-  -> one linked privileged May attempt
-  -> direct repair, agent/CLI use, or ownership-system recovery
-  -> verify the human outcome
-  -> may.break-glass.completed or may.break-glass.failed
-  -> fresh May review closes the request or restores app ownership
-```
-
-Break glass uses the original human trace and ordinary session and evidence
-records. It is not another request or task object. A missing terminal event is
-an execution-recovery problem. The shared runtime may retry or surface that
-attempt, but must not infer success.
-
-The attempt is temporary and bounded. It may use full tools and may cross an
-app-local agent boundary, but it does not bypass exact human authority,
-credential, security, or irreversible-change requirements. If work needs an
-ongoing schedule, repeated reconciliation, or durable domain wait, May repairs,
-selects, or creates the accountable app path and hands the work back.
+May owns the conversation; the accountable app owns durable continuation and
+proof. One bounded, audited break-glass attempt is the exception. The complete
+contract, including restart recovery and terminal closure, is
+[Message Lifecycle](message-lifecycle.md). This document only defines how that
+contract appears on human control surfaces.
 
 ### Human communication
 

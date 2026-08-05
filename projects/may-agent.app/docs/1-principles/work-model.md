@@ -20,18 +20,10 @@ The human boundary has one additional, strict convention:
 
 > **May owns the conversation. Apps own the work.**
 
-May understands and answers the current message. If durable work is needed,
-May selects the accountable app and the shared runtime attaches the original
-message to that app's owner request. The app—not May—owns background execution,
-progress, waits, retries, and proof. A terminal app result wakes the bridge so
-May can carry the outcome back. Do not give May a task tree, scheduler, or
-polling responsibility.
-
-May may temporarily cross an ownership boundary through one explicit,
-trace-linked break-glass attempt when the normal path cannot fulfill the human
-outcome. The attempt is bounded by scope, terminal proof, and a stop or
-hand-back condition. It does not grant missing human authority and never
-becomes a standing May task, schedule, or project.
+May handles one human turn; an accountable app owns durable execution and
+proof. One bounded, audited break-glass attempt is the exception. The complete
+ingress, routing, closure, and recovery contract is in
+[Message Lifecycle](../2a-design/message-lifecycle.md).
 
 ## Roles
 
