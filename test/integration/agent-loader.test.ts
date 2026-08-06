@@ -19,16 +19,17 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
 const AGENTS_ROOT = "/app/agents";
+const PROJECTS_ROOT = "/app/projects";
 
 const fakeModels = {
   "claude-opus-4-6": { id: "claude-opus-4-6", provider: "anthropic" },
   "claude-opus-4.7": { id: "claude-opus-4.7", provider: "github-copilot" },
+  "claude-opus-5": { id: "claude-opus-5", provider: "anthropic" },
   "claude-sonnet-4-20250514": { id: "claude-sonnet-4-20250514", provider: "anthropic" },
-  "gpt-5.2": { id: "gpt-5.2", provider: "openai" },
   "gpt-5.4": { id: "gpt-5.4", provider: "github-copilot" },
   "gpt-5.5": { id: "gpt-5.5", provider: "github-copilot" },
+  "gpt-5.6-sol": { id: "gpt-5.6-sol", provider: "github-copilot" },
   "gemini-3.1-pro-preview": { id: "gemini-3.1-pro-preview", provider: "github-copilot" },
-  "kimi-k2.5": { id: "kimi-k2.5", provider: "openai" },
 };
 
 describe("validateAgentConfig", () => {
@@ -111,6 +112,19 @@ describe("validateAgentConfig", () => {
 
       const errors = validateAgentConfig(config, fakeModels, AGENTS_ROOT);
       expect(errors, `agent "${config.name}" has validation errors`).toEqual([]);
+    }
+  });
+
+  it("validates all existing project-app agent.json files", () => {
+    const { readFileSync } = require("node:fs");
+
+    for (const agent of listProjectAgentDirectories(PROJECTS_ROOT)) {
+      const configPath = resolve(agent.dir, "agent.json");
+      const config = JSON.parse(readFileSync(configPath, "utf-8")) as AgentConfig;
+      if (config.disabled) continue;
+
+      const errors = validateAgentConfig(config, fakeModels, agent.agentsRoot);
+      expect(errors, `project agent "${config.name}" has validation errors`).toEqual([]);
     }
   });
 
