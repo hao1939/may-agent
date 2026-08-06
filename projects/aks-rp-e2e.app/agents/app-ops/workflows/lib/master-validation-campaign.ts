@@ -343,7 +343,7 @@ function applyFix(
   }
 
   throw new Error(
-    `Campaign focused-patch conflict for PR ${prepared.fix.pullRequestId} (${prepared.fix.sourceBranch}) at ${prepared.commits[0] ?? prepared.fix.sourceCommit}: ${failure}`,
+    `Campaign focused-patch conflict for PR ${prepared.fix.pullRequestId} (${prepared.fix.sourceBranch}) at ${prepared.commits[0] ?? prepared.fix.sourceCommit} from PR head ${prepared.fix.sourceCommit}: ${failure}`,
   );
 }
 

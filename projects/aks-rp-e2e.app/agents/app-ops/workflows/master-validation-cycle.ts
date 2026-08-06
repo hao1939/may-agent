@@ -161,15 +161,17 @@ export function campaignPatchConflict(message: string): {
   pullRequestId: string;
   taskId: string;
   sourceCommit: string;
+  pullRequestSourceCommit: string;
 } | null {
   const match = message.match(
-    /Campaign focused-patch conflict for PR (\d+) \(([^)]+)\) at ([0-9a-f]{7,40}):/i,
+    /Campaign focused-patch conflict for PR (\d+) \(([^)]+)\) at ([0-9a-f]{7,40})(?: from PR head ([0-9a-f]{7,40}))?:/i,
   );
   return match
     ? {
         pullRequestId: match[1],
         taskId: match[2],
         sourceCommit: match[3].toLowerCase(),
+        pullRequestSourceCommit: (match[4] || match[3]).toLowerCase(),
       }
     : null;
 }
@@ -179,6 +181,7 @@ export function campaignPatchConflictRepairWake(
     pullRequestId: string;
     taskId: string;
     sourceCommit: string;
+    pullRequestSourceCommit?: string;
   },
   campaign: CampaignReceipt,
   currentMainCommit: string,
@@ -195,8 +198,11 @@ export function campaignPatchConflictRepairWake(
     pullRequestId: conflict.pullRequestId,
     campaignSourceCommit: campaign.currentCommit,
     currentMainCommit,
-    sourceCommit: conflict.sourceCommit,
-    sourceEquivalentCommits: [conflict.sourceCommit],
+    sourceCommit: conflict.pullRequestSourceCommit || conflict.sourceCommit,
+    sourceEquivalentCommits: [
+      conflict.pullRequestSourceCommit || conflict.sourceCommit,
+    ],
+    conflictingCommit: conflict.sourceCommit,
     conflictingPaths: [],
   };
 }
@@ -207,6 +213,7 @@ function campaignPatchConflictWait(
     pullRequestId: string;
     taskId: string;
     sourceCommit: string;
+    pullRequestSourceCommit: string;
   },
   message: string,
   appDir: string,
@@ -228,13 +235,14 @@ function campaignPatchConflictWait(
     );
     repairWake = true;
   }
-  const summary = `Frozen campaign replay is waiting for focused PR ${conflict.pullRequestId} to change or close; its current patch at ${conflict.sourceCommit} conflicts with the frozen campaign snapshot.`;
+  const summary = `Frozen campaign replay is waiting for focused PR ${conflict.pullRequestId} to change or close; PR head ${conflict.pullRequestSourceCommit} contains conflicting commit ${conflict.sourceCommit} on the frozen campaign snapshot.`;
   return ctx.done(summary, {
     state: "waiting",
     summary,
     evidence: [
       `pull-request:${conflict.pullRequestId}`,
-      `source-commit:${conflict.sourceCommit}`,
+      `source-commit:${conflict.pullRequestSourceCommit}`,
+      `conflicting-commit:${conflict.sourceCommit}`,
       `campaign-replay-conflict:${message}`,
       `campaign-conflict-repair-wake:${repairWake ? conflict.taskId : "unavailable"}`,
     ],
@@ -250,10 +258,13 @@ function campaignPatchConflictWait(
         },
       },
       {
-        id: `master-validation-campaign-pr-${conflict.pullRequestId}-source-not-${conflict.sourceCommit}`,
+        id: `master-validation-campaign-pr-${conflict.pullRequestId}-source-not-${conflict.pullRequestSourceCommit}`,
         type: "pull-request.state",
         subject: `pull-request:${conflict.pullRequestId}`,
-        expected: { field: "sourceCommit", notEquals: conflict.sourceCommit },
+        expected: {
+          field: "sourceCommit",
+          notEquals: conflict.pullRequestSourceCommit,
+        },
       },
     ],
   });

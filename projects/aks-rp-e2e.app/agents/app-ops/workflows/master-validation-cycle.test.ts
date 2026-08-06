@@ -301,6 +301,8 @@ ${JSON.stringify({
       pullRequestId: "16679314",
       taskId: "domain/master-validation-failure/spec.example",
       sourceCommit: "b31a12c37eddb7d68efff1bbc58d6344dcff95f4",
+      pullRequestSourceCommit:
+        "b31a12c37eddb7d68efff1bbc58d6344dcff95f4",
     });
     expect(
       campaignPatchConflictRepairWake(
@@ -327,6 +329,17 @@ ${JSON.stringify({
       campaignSourceCommit: "campaign-head",
       currentMainCommit: "current-main",
       sourceCommit: "b31a12c37eddb7d68efff1bbc58d6344dcff95f4",
+    });
+    expect(
+      campaignPatchConflict(
+        "Campaign focused-patch conflict for PR 16679314 (domain/master-validation-failure/spec.example) at b31a12c37eddb7d68efff1bbc58d6344dcff95f4 from PR head c42b23d48feec8e79f0012ccd69e7455ed00a605: error: could not apply patch",
+      ),
+    ).toEqual({
+      pullRequestId: "16679314",
+      taskId: "domain/master-validation-failure/spec.example",
+      sourceCommit: "b31a12c37eddb7d68efff1bbc58d6344dcff95f4",
+      pullRequestSourceCommit:
+        "c42b23d48feec8e79f0012ccd69e7455ed00a605",
     });
     expect(campaignPatchConflict("Azure DevOps returned 503")).toBeNull();
   });
