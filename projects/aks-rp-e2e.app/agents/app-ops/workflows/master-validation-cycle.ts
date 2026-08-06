@@ -162,9 +162,10 @@ export function campaignPatchConflict(message: string): {
   taskId: string;
   sourceCommit: string;
   pullRequestSourceCommit: string;
+  composedPredecessors: string[];
 } | null {
   const match = message.match(
-    /Campaign focused-patch conflict for PR (\d+) \(([^)]+)\) at ([0-9a-f]{7,40})(?: from PR head ([0-9a-f]{7,40}))?:/i,
+    /Campaign focused-patch conflict for PR (\d+) \(([^)]+)\) at ([0-9a-f]{7,40})(?: from PR head ([0-9a-f]{7,40}))?(?: after composed predecessors ([0-9a-f,]+))?:/i,
   );
   return match
     ? {
@@ -172,6 +173,10 @@ export function campaignPatchConflict(message: string): {
         taskId: match[2],
         sourceCommit: match[3].toLowerCase(),
         pullRequestSourceCommit: (match[4] || match[3]).toLowerCase(),
+        composedPredecessors: (match[5] || "")
+          .split(",")
+          .map((commit) => commit.trim().toLowerCase())
+          .filter(Boolean),
       }
     : null;
 }
@@ -182,6 +187,7 @@ export function campaignPatchConflictRepairWake(
     taskId: string;
     sourceCommit: string;
     pullRequestSourceCommit?: string;
+    composedPredecessors?: string[];
   },
   campaign: CampaignReceipt,
   currentMainCommit: string,
@@ -203,6 +209,7 @@ export function campaignPatchConflictRepairWake(
       conflict.pullRequestSourceCommit || conflict.sourceCommit,
     ],
     conflictingCommit: conflict.sourceCommit,
+    campaignCompositionCommits: conflict.composedPredecessors ?? [],
     conflictingPaths: [],
   };
 }
@@ -214,6 +221,7 @@ function campaignPatchConflictWait(
     taskId: string;
     sourceCommit: string;
     pullRequestSourceCommit: string;
+    composedPredecessors: string[];
   },
   message: string,
   appDir: string,

@@ -301,8 +301,8 @@ ${JSON.stringify({
       pullRequestId: "16679314",
       taskId: "domain/master-validation-failure/spec.example",
       sourceCommit: "b31a12c37eddb7d68efff1bbc58d6344dcff95f4",
-      pullRequestSourceCommit:
-        "b31a12c37eddb7d68efff1bbc58d6344dcff95f4",
+      pullRequestSourceCommit: "b31a12c37eddb7d68efff1bbc58d6344dcff95f4",
+      composedPredecessors: [],
     });
     expect(
       campaignPatchConflictRepairWake(
@@ -329,6 +329,7 @@ ${JSON.stringify({
       campaignSourceCommit: "campaign-head",
       currentMainCommit: "current-main",
       sourceCommit: "b31a12c37eddb7d68efff1bbc58d6344dcff95f4",
+      campaignCompositionCommits: [],
     });
     expect(
       campaignPatchConflict(
@@ -338,8 +339,18 @@ ${JSON.stringify({
       pullRequestId: "16679314",
       taskId: "domain/master-validation-failure/spec.example",
       sourceCommit: "b31a12c37eddb7d68efff1bbc58d6344dcff95f4",
-      pullRequestSourceCommit:
-        "c42b23d48feec8e79f0012ccd69e7455ed00a605",
+      pullRequestSourceCommit: "c42b23d48feec8e79f0012ccd69e7455ed00a605",
+      composedPredecessors: [],
+    });
+    expect(
+      campaignPatchConflict(
+        "Campaign focused-patch conflict for PR 16679314 (domain/master-validation-failure/spec.example) at b31a12c37eddb7d68efff1bbc58d6344dcff95f4 from PR head c42b23d48feec8e79f0012ccd69e7455ed00a605 after composed predecessors a127f2da30731e9a697cc238d06d644224240215,c51bd3a26eda4dafe98ec68b57b24a414e900858: error: could not apply patch",
+      ),
+    ).toMatchObject({
+      composedPredecessors: [
+        "a127f2da30731e9a697cc238d06d644224240215",
+        "c51bd3a26eda4dafe98ec68b57b24a414e900858",
+      ],
     });
     expect(campaignPatchConflict("Azure DevOps returned 503")).toBeNull();
   });

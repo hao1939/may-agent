@@ -516,6 +516,72 @@ describe("frozen master-validation campaign", () => {
     }
   });
 
+  test("reports candidates composed before a later focused patch conflicts", () => {
+    const fixture = campaignFixture();
+    try {
+      writeFileSync(join(fixture.repoDir, "carrier.txt"), "frozen\n");
+      git(fixture.repoDir, "add", "carrier.txt");
+      git(fixture.repoDir, "commit", "--amend", "--no-edit");
+      const frozenCommit = git(fixture.repoDir, "rev-parse", "HEAD");
+      git(fixture.repoDir, "push", "--force", "origin", "main");
+
+      git(fixture.repoDir, "checkout", "-b", "fix/predecessor");
+      const predecessorCommit = commitFile(
+        fixture.repoDir,
+        "predecessor.txt",
+        "repair\n",
+        "independent predecessor repair",
+      );
+      git(fixture.repoDir, "push", "-u", "origin", "fix/predecessor");
+
+      git(fixture.repoDir, "checkout", "main");
+      const targetCommit = commitFile(
+        fixture.repoDir,
+        "carrier.txt",
+        "modern\n",
+        "modernize carrier",
+      );
+      git(fixture.repoDir, "push", "origin", "main");
+      git(fixture.repoDir, "checkout", "-b", "fix/conflicting-after-one");
+      const conflictingCommit = commitFile(
+        fixture.repoDir,
+        "carrier.txt",
+        "repair\n",
+        "focused conflicting repair",
+      );
+      git(fixture.repoDir, "push", "-u", "origin", "fix/conflicting-after-one");
+
+      expect(() =>
+        composeFrozenCampaign({
+          appDir: fixture.appDir,
+          repoDir: fixture.repoDir,
+          baselineRunId: "ordered-conflict",
+          baseCommit: frozenCommit,
+          fixes: [
+            {
+              pullRequestId: "22",
+              taskId:
+                "domain/master-validation-failure/spec.example/predecessor",
+              sourceBranch: "fix/predecessor",
+              sourceCommit: predecessorCommit,
+              title: "Independent predecessor repair",
+            },
+            {
+              pullRequestId: "23",
+              taskId: "domain/master-validation-failure/spec.example/conflict",
+              sourceBranch: "fix/conflicting-after-one",
+              sourceCommit: conflictingCommit,
+              targetCommit,
+              title: "Conflicting focused repair",
+            },
+          ],
+        }),
+      ).toThrow(`after composed predecessors ${predecessorCommit}`);
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
   test("binds an equivalent current-main PR to an already tested logical repair", () => {
     const fixture = campaignFixture();
     try {

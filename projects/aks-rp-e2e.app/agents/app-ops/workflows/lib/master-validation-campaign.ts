@@ -288,6 +288,7 @@ function samePatchSeries(left: CampaignFix, right: CampaignFix): boolean {
 function applyFix(
   checkout: string,
   prepared: { fix: CampaignFix; commits: string[] },
+  composedPredecessors: string[] = [],
 ): { fix: CampaignFix; commits: string[] } {
   const startingCommit = git(checkout, ["rev-parse", "HEAD"]).stdout;
   let failure = "";
@@ -354,7 +355,7 @@ function applyFix(
   }
 
   throw new Error(
-    `Campaign focused-patch conflict for PR ${prepared.fix.pullRequestId} (${prepared.fix.taskId}) at ${prepared.commits[0] ?? prepared.fix.sourceCommit} from PR head ${prepared.fix.sourceCommit}: ${failure}`,
+    `Campaign focused-patch conflict for PR ${prepared.fix.pullRequestId} (${prepared.fix.taskId}) at ${prepared.commits[0] ?? prepared.fix.sourceCommit} from PR head ${prepared.fix.sourceCommit}${composedPredecessors.length ? ` after composed predecessors ${composedPredecessors.join(",")}` : ""}: ${failure}`,
   );
 }
 
@@ -461,6 +462,7 @@ export function composeFrozenCampaign(input: {
     }
 
     const integrated: CampaignFix[] = [];
+    const composedThisRun: CampaignFix[] = [];
     let changed = false;
     const excludedCommits = [input.baseCommit];
     for (const fix of input.prior?.integratedFixes ?? []) {
@@ -511,8 +513,13 @@ export function composeFrozenCampaign(input: {
             ...(delta.fix.patchIds ?? []),
           ],
         };
-        const applied = applyFix(checkout, { ...delta, fix: updatedFix });
+        const applied = applyFix(
+          checkout,
+          { ...delta, fix: updatedFix },
+          composedThisRun.map((candidate) => candidate.sourceCommit),
+        );
         integrated[exactIndex] = applied.fix;
+        composedThisRun.push(applied.fix);
         excludedCommits.push(applied.fix.sourceCommit);
         changed ||= applied.commits.length > 0;
         return;
@@ -532,8 +539,13 @@ export function composeFrozenCampaign(input: {
       }
       if (replacementOnly) return;
 
-      const applied = applyFix(checkout, prepared);
+      const applied = applyFix(
+        checkout,
+        prepared,
+        composedThisRun.map((candidate) => candidate.sourceCommit),
+      );
       integrated.push(applied.fix);
+      composedThisRun.push(applied.fix);
       excludedCommits.push(applied.fix.sourceCommit);
       changed ||= applied.commits.length > 0;
     };

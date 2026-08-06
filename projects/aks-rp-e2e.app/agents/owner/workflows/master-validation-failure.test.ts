@@ -65,6 +65,7 @@ ${JSON.stringify({
     currentMainCommit: "main-head",
     sourceCommit: "old-pr-head",
     sourceEquivalentCommits: ["fix-a", "fix-b"],
+    campaignCompositionCommits: ["prior-fix-a", "prior-fix-b"],
     conflictingPaths: ["features/example.test.ts"],
   },
 })}
@@ -75,6 +76,7 @@ ${JSON.stringify({
       campaignSourceCommit: "campaign-head",
       currentMainCommit: "main-head",
       sourceEquivalentCommits: ["fix-a", "fix-b"],
+      campaignCompositionCommits: ["prior-fix-a", "prior-fix-b"],
       conflictingPaths: ["features/example.test.ts"],
       expectedRemoteCommit: "old-pr-head",
     });

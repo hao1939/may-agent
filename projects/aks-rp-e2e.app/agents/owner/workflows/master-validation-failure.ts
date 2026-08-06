@@ -35,6 +35,7 @@ const azCli =
 
 export type CampaignRepairContext = {
   conflictingPaths: string[];
+  campaignCompositionCommits: string[];
   reason: string;
   sourceEquivalentCommits: string[];
   campaignSourceCommit: string;
@@ -138,6 +139,7 @@ function parseCampaignRepairReplay(
   const replay = record(value);
   const parsed: CampaignRepairContext = {
     conflictingPaths: stringArray(replay.conflictingPaths),
+    campaignCompositionCommits: stringArray(replay.campaignCompositionCommits),
     reason: text(replay.reason),
     sourceEquivalentCommits: stringArray(replay.sourceEquivalentCommits),
     campaignSourceCommit: text(replay.campaignSourceCommit),
@@ -147,6 +149,7 @@ function parseCampaignRepairReplay(
   };
   return parsed.reason ||
     parsed.conflictingPaths.length ||
+    parsed.campaignCompositionCommits.length ||
     parsed.sourceEquivalentCommits.length ||
     parsed.campaignSourceCommit ||
     parsed.pullRequestId ||
@@ -837,6 +840,7 @@ export function campaignRepairReplayObservation(
       text(value("requiredAction")) ||
       "Repair the existing focused patch after a frozen-campaign replay conflict.",
     conflictingPaths: value("conflictingPaths"),
+    campaignCompositionCommits: value("campaignCompositionCommits"),
     sourceEquivalentCommits: value("sourceEquivalentCommits"),
     campaignSourceCommit: value("campaignSourceCommit"),
     currentMainCommit: value("currentMainCommit"),
@@ -1940,6 +1944,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         : "",
       input.campaignRepairReplay?.campaignSourceCommit
         ? `The frozen campaign source is ${input.campaignRepairReplay.campaignSourceCommit}; current main is ${input.campaignRepairReplay.currentMainCommit || baseCommit}.`
+        : "",
+      input.campaignRepairReplay?.campaignCompositionCommits.length
+        ? `Reproduce the actual ordered campaign by starting at that frozen campaign source and then applying these already selected candidate commits in order before the conflicting PR head: ${input.campaignRepairReplay.campaignCompositionCommits.join(", ")}.`
         : "",
       input.campaignRepairReplay
         ? `Update the existing task branch and draft PR ${input.campaignRepairReplay.pullRequestId || "for this task"}; do not create another PR. The campaign controller cherry-picks only the PR head commit. A practical replay-safe history is a preparatory commit that restores the frozen same-spec file shape followed by one head commit that reapplies the complete current implementation plus the guard: the final PR tree remains a small current-main diff, while the head commit remains applicable to the frozen snapshot.`
