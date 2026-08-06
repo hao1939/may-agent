@@ -165,6 +165,11 @@ main@M0
   task-tree issue ledger or workflow phase database is added.
 - A red campaign ignores newer main commits. Once it passes and all included
   PRs merge, one full run from latest main decides health.
+- If every effective focused PR has already merged out of band while the
+  campaign is red, canceled, or stale, stop rerunning that obsolete campaign
+  and queue latest `main` immediately. Superseded PR history does not block
+  this recovery; only the newest PR for each stable failure task is effective.
+  This is recovery after rollout, not permission to merge an unproven PR.
 - When a campaign first passes, the app sends one deduplicated human message
   listing the focused PRs proven together. Those PRs merge individually; the
   message never asks anyone to merge the campaign branch.
@@ -461,6 +466,9 @@ The design is working when:
 - a red campaign reruns after accumulated fix patches change and never waits only
   because those PRs are unmerged;
 - only a green campaign may wait for its focused PRs to merge;
+- if all effective focused PRs are already merged, a red or canceled campaign
+  yields immediately to exact latest-main verification instead of spending
+  another recovery cycle on obsolete pre-merge state;
 - each slice is ingested once only after a complete download;
 - each failure becomes one stable task before aggregate completion;
 - independent known failures can repair while the aggregate run continues;

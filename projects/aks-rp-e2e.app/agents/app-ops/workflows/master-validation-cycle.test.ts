@@ -9,6 +9,7 @@ import {
 import {
   activeMasterValidationRun,
   buildMasterValidationQueueArgs,
+  campaignIntegratedFixesMerged,
   campaignRecoveryDue,
   completedCycleState,
   fixVerificationTrigger,
@@ -262,6 +263,22 @@ ${JSON.stringify({
       campaignRecoveryDue(queuedAt, Date.parse("2026-07-25T06:00:00.000Z")),
     ).toBe(true);
     expect(campaignRecoveryDue("not-a-date")).toBe(false);
+  });
+
+  test("moves to current main when every campaign fix already merged", () => {
+    expect(
+      campaignIntegratedFixesMerged([
+        { state: "completed", mergeStatus: "succeeded" },
+        { state: "completed", mergeStatus: "succeeded" },
+      ]),
+    ).toBe(true);
+    expect(
+      campaignIntegratedFixesMerged([
+        { state: "completed", mergeStatus: "succeeded" },
+        { state: "active", mergeStatus: "succeeded" },
+      ]),
+    ).toBe(false);
+    expect(campaignIntegratedFixesMerged([])).toBe(false);
   });
 
   test("classifies transient Azure DevOps git failures for wait-based retry", () => {

@@ -576,7 +576,7 @@ function integratedPullRequestStates(
   repoDir: string,
   campaign: CampaignReceipt,
 ): Array<{ fix: CampaignFix; state: string; mergeStatus: string }> {
-  return campaign.integratedFixes.map((fix) => {
+  return latestCampaignFixes(campaign.integratedFixes).map((fix) => {
     const current = pullRequest(repoDir, fix.pullRequestId);
     return {
       fix,
@@ -584,6 +584,18 @@ function integratedPullRequestStates(
       mergeStatus: text(current.mergeStatus) || "unknown",
     };
   });
+}
+
+export function campaignIntegratedFixesMerged(
+  states: Array<{ state: string; mergeStatus: string }>,
+): boolean {
+  return (
+    states.length > 0 &&
+    states.every(
+      ({ state, mergeStatus }) =>
+        state === "completed" && mergeStatus === "succeeded",
+    )
+  );
 }
 
 function publishPullRequest(
@@ -982,6 +994,19 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           );
         }
         if (completedCycleState(result) !== "converged") {
+          const states = integratedPullRequestStates(repoDir, composed.receipt);
+          if (campaignIntegratedFixesMerged(states)) {
+            return queueCycle(
+              ctx,
+              repoDir,
+              payload,
+              sourceBranch,
+              resolveCurrentMain(repoDir),
+              scheduledPurpose,
+              composed.receipt,
+              prior.runId,
+            );
+          }
           if (campaignRecoveryDue(prior.queuedAt)) {
             return queueCycle(
               ctx,
