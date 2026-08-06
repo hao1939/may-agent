@@ -287,6 +287,10 @@ orphan Conditions and refuses to run with a current carrier attempt.
 - As soon as a focused fix patch is available, the standing workflow may replay
   it onto the frozen campaign and continue aggregate discovery without waiting
   for that PR to merge into `main`.
+- Campaign composition ignores empty bookkeeping commits when the same focused
+  PR still contains a source-bearing repair. It rejects the PR only when the
+  complete focused series changes no source. Empty history must not stop later
+  verified drafts from being reconciled.
 - A campaign failure does not require a separate targeted live run before its
   focused PR can join the campaign. The repair workflow runs scoped local
   checks, publishes a draft focused PR, and wakes the campaign immediately.

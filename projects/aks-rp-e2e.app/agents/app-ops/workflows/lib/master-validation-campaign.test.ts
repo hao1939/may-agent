@@ -315,6 +315,95 @@ describe("frozen master-validation campaign", () => {
     }
   });
 
+  test("ignores empty bookkeeping commits when the PR has a source-bearing repair", () => {
+    const fixture = campaignFixture();
+    try {
+      const targetCommit = commitFile(
+        fixture.repoDir,
+        "main-only.txt",
+        "new main context\n",
+        "newer main",
+      );
+      git(fixture.repoDir, "push", "origin", "main");
+      git(fixture.repoDir, "checkout", "-b", "fix/after-empty-bookkeeping");
+      git(fixture.repoDir, "commit", "--allow-empty", "-m", "prepare replay");
+      const sourceCommit = commitFile(
+        fixture.repoDir,
+        "focused.txt",
+        "repair\n",
+        "focused repair",
+      );
+      git(
+        fixture.repoDir,
+        "push",
+        "-u",
+        "origin",
+        "fix/after-empty-bookkeeping",
+      );
+
+      const result = composeFrozenCampaign({
+        appDir: fixture.appDir,
+        repoDir: fixture.repoDir,
+        baselineRunId: "empty-bookkeeping",
+        baseCommit: fixture.baseCommit,
+        fixes: [
+          {
+            pullRequestId: "21",
+            taskId: "domain/master-validation-failure/spec.example/empty",
+            sourceBranch: "fix/after-empty-bookkeeping",
+            sourceCommit,
+            targetCommit,
+            title: "Focused repair after bookkeeping",
+          },
+        ],
+      });
+
+      git(fixture.repoDir, "fetch", "origin", result.receipt.branch);
+      expect(
+        git(
+          fixture.repoDir,
+          "show",
+          `origin/${result.receipt.branch}:focused.txt`,
+        ),
+      ).toBe("repair");
+      expect(result.receipt.integratedFixes[0]?.patchIds).toHaveLength(1);
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  test("rejects a focused PR with no source-bearing commit", () => {
+    const fixture = campaignFixture();
+    try {
+      git(fixture.repoDir, "checkout", "-b", "fix/empty-only");
+      git(fixture.repoDir, "commit", "--allow-empty", "-m", "empty only");
+      const sourceCommit = git(fixture.repoDir, "rev-parse", "HEAD");
+      git(fixture.repoDir, "push", "-u", "origin", "fix/empty-only");
+
+      expect(() =>
+        composeFrozenCampaign({
+          appDir: fixture.appDir,
+          repoDir: fixture.repoDir,
+          baselineRunId: "empty-only",
+          baseCommit: fixture.baseCommit,
+          fixes: [
+            {
+              pullRequestId: "22",
+              taskId:
+                "domain/master-validation-failure/spec.example/empty-only",
+              sourceBranch: "fix/empty-only",
+              sourceCommit,
+              targetCommit: fixture.baseCommit,
+              title: "Empty focused PR",
+            },
+          ],
+        }),
+      ).toThrow("contains no source-bearing focused commit");
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
   test("uses a self-contained replay head when its preparatory commit conflicts", () => {
     const fixture = campaignFixture();
     try {
@@ -372,6 +461,56 @@ describe("frozen master-validation campaign", () => {
         ),
       ).toBe("modern\nguard");
       expect(result.receipt.integratedFixes[0]?.patchIds).toHaveLength(1);
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  test("reports the stable task id when a focused patch conflicts", () => {
+    const fixture = campaignFixture();
+    try {
+      writeFileSync(join(fixture.repoDir, "carrier.txt"), "frozen\n");
+      git(fixture.repoDir, "add", "carrier.txt");
+      git(fixture.repoDir, "commit", "--amend", "--no-edit");
+      const frozenCommit = git(fixture.repoDir, "rev-parse", "HEAD");
+      git(fixture.repoDir, "push", "--force", "origin", "main");
+
+      const targetCommit = commitFile(
+        fixture.repoDir,
+        "carrier.txt",
+        "modern\n",
+        "modernize carrier",
+      );
+      git(fixture.repoDir, "push", "origin", "main");
+      git(fixture.repoDir, "checkout", "-b", "fix/conflicting");
+      const sourceCommit = commitFile(
+        fixture.repoDir,
+        "carrier.txt",
+        "repair\n",
+        "focused repair",
+      );
+      git(fixture.repoDir, "push", "-u", "origin", "fix/conflicting");
+
+      expect(() =>
+        composeFrozenCampaign({
+          appDir: fixture.appDir,
+          repoDir: fixture.repoDir,
+          baselineRunId: "conflicting",
+          baseCommit: frozenCommit,
+          fixes: [
+            {
+              pullRequestId: "23",
+              taskId: "domain/master-validation-failure/spec.example/conflict",
+              sourceBranch: "fix/conflicting",
+              sourceCommit,
+              targetCommit,
+              title: "Conflicting focused repair",
+            },
+          ],
+        }),
+      ).toThrow(
+        "Campaign focused-patch conflict for PR 23 (domain/master-validation-failure/spec.example/conflict)",
+      );
     } finally {
       rmSync(fixture.root, { recursive: true, force: true });
     }

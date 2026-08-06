@@ -255,21 +255,26 @@ function prepareFix(
     true,
   );
   ensureCommit(checkout, fix.sourceCommit);
-  const commits = focusedCommits(
+  const focused = focusedCommits(
     checkout,
     fix,
     excludedCommits,
     rangeBaseCommit,
   );
-  const patchIds = commits.map((commit) => patchId(checkout, commit));
-  if (patchIds.some((id) => !id)) {
+  const sourceBearing = focused
+    .map((commit) => ({ commit, patchId: patchId(checkout, commit) }))
+    .filter((candidate) => Boolean(candidate.patchId));
+  if (!sourceBearing.length) {
     throw new Error(
-      `Campaign fix PR ${fix.pullRequestId} contains an empty focused commit; publish a source-bearing focused repair.`,
+      `Campaign fix PR ${fix.pullRequestId} contains no source-bearing focused commit; publish a source-bearing focused repair.`,
     );
   }
   return {
-    fix: { ...fix, patchIds },
-    commits,
+    fix: {
+      ...fix,
+      patchIds: sourceBearing.map((candidate) => candidate.patchId),
+    },
+    commits: sourceBearing.map((candidate) => candidate.commit),
   };
 }
 
@@ -309,7 +314,10 @@ function applyFix(
   if (!failure) return prepared;
 
   const replayCommit = prepared.commits.at(-1) ?? "";
-  if (prepared.commits.length > 1 && replayCommit === prepared.fix.sourceCommit) {
+  if (
+    prepared.commits.length > 1 &&
+    replayCommit === prepared.fix.sourceCommit
+  ) {
     const replay = git(
       checkout,
       [
@@ -322,7 +330,10 @@ function applyFix(
       ],
       true,
     );
-    if (replay.status === 0 && replayedFilesMatchSource(checkout, replayCommit)) {
+    if (
+      replay.status === 0 &&
+      replayedFilesMatchSource(checkout, replayCommit)
+    ) {
       const retainedPatchIds = (prepared.fix.patchIds ?? []).slice(
         0,
         Math.max(
@@ -343,11 +354,14 @@ function applyFix(
   }
 
   throw new Error(
-    `Campaign focused-patch conflict for PR ${prepared.fix.pullRequestId} (${prepared.fix.sourceBranch}) at ${prepared.commits[0] ?? prepared.fix.sourceCommit} from PR head ${prepared.fix.sourceCommit}: ${failure}`,
+    `Campaign focused-patch conflict for PR ${prepared.fix.pullRequestId} (${prepared.fix.taskId}) at ${prepared.commits[0] ?? prepared.fix.sourceCommit} from PR head ${prepared.fix.sourceCommit}: ${failure}`,
   );
 }
 
-function replayedFilesMatchSource(checkout: string, sourceCommit: string): boolean {
+function replayedFilesMatchSource(
+  checkout: string,
+  sourceCommit: string,
+): boolean {
   const paths = git(checkout, [
     "diff-tree",
     "--no-commit-id",
@@ -355,16 +369,22 @@ function replayedFilesMatchSource(checkout: string, sourceCommit: string): boole
     "-r",
     `${sourceCommit}^`,
     sourceCommit,
-  ]).stdout
-    .split(/\r?\n/)
+  ])
+    .stdout.split(/\r?\n/)
     .map((path) => path.trim())
     .filter(Boolean);
   if (!paths.length) return false;
   return paths.every((path) => {
-    const expected = git(checkout, ["rev-parse", `${sourceCommit}:${path}`], true);
+    const expected = git(
+      checkout,
+      ["rev-parse", `${sourceCommit}:${path}`],
+      true,
+    );
     const actual = git(checkout, ["rev-parse", `HEAD:${path}`], true);
-    return expected.status === actual.status &&
-      (expected.status !== 0 || expected.stdout === actual.stdout);
+    return (
+      expected.status === actual.status &&
+      (expected.status !== 0 || expected.stdout === actual.stdout)
+    );
   });
 }
 
