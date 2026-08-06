@@ -661,6 +661,36 @@ describe("project app task reconciler state", () => {
     expect(queue.take()).toBe("runtime/owner-review");
   });
 
+  it("keeps an unresolved human comment ahead of a later automated owner request", () => {
+    const { config } = fixture();
+    const ownerReview = { ...intent("maintain"), id: "runtime/owner-review", priority: "P1" as const };
+    const humanComment = {
+      type: "project.comment.created",
+      eventId: 5157130,
+      source: "human",
+      data: { comment: "Finish all 79 source lanes and all 82 mapped specs" },
+    };
+
+    observeProjectAppTaskIntent(config, {
+      intent: ownerReview,
+      appOwner: "app-owner",
+      trigger: humanComment,
+    });
+    recordProjectAppTaskTrigger(config, ownerReview.id, {
+      type: "project.owner.requested",
+      eventId: 5157466,
+      source: "agent:app-owner",
+      reason: "master-validation-product-issue",
+      data: { specId: "spec.network-isolated.byo-acr-outbound-none" },
+    });
+
+    expect(readProjectAppTaskTrigger(config, ownerReview.id)).toEqual(humanComment);
+    expect(projectAppTaskQueueEntries(config, [ownerReview.id])).toEqual([
+      { taskId: ownerReview.id, options: { front: true, priority: "P0" } },
+    ]);
+    expect(listRunnableProjectAppTaskIds(config)[0]).toBe(ownerReview.id);
+  });
+
   it("schedules untriggered P0 before triggered P2 (priority over trigger presence)", () => {
     const { config } = fixture();
     observeProjectAppTaskIntent(config, {

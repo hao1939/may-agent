@@ -137,6 +137,7 @@ function taskTriggerPriority(event: Record<string, unknown>, taskOwner: string):
   const source = String(event.source ?? data.source ?? "");
   const type = String(event.type ?? "");
   const reason = String(event.reason ?? data.reason ?? params.reason ?? "");
+  if (triggerHasDirectProjectComment(event)) return 4;
   if (
     triggerCarriesOwnerIntent(event) ||
     type === "project.approval.submitted" ||
@@ -157,6 +158,12 @@ function preferredTaskTrigger(
   taskOwner: string,
 ): Record<string, unknown> {
   if (!previous) return incoming;
+  // A direct human instruction is an unresolved commitment until the owner
+  // consumes it. Automated owner requests may wake the same inbox, but must
+  // not obscure the instruction that the owner still owes the human.
+  if (triggerHasDirectProjectComment(previous) && !triggerHasDirectProjectComment(incoming)) {
+    return previous;
+  }
   return taskTriggerPriority(incoming, taskOwner) >= taskTriggerPriority(previous, taskOwner)
     ? incoming
     : previous;
@@ -1146,7 +1153,7 @@ export function recordProjectAppTaskTrigger(
       return { kind: "waiting" };
     }
     const previous = tree.taskTriggers?.[taskId];
-    const next = preferredTaskTrigger(previous?.event, event, task.owner);
+    const next = preferredTaskTrigger(previous?.event, event, task.owner ?? resource.spec.owner ?? "");
     tree.taskTriggers = {
       ...(tree.taskTriggers ?? {}),
       [taskId]: {
