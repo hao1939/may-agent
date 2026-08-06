@@ -259,6 +259,89 @@ describe("frozen master-validation campaign", () => {
     }
   });
 
+  test("composes a successor when a retained PR head object is unavailable", () => {
+    const fixture = campaignFixture();
+    try {
+      git(
+        fixture.repoDir,
+        "checkout",
+        "-b",
+        "fix/retained",
+        fixture.baseCommit,
+      );
+      const retainedSourceCommit = commitFile(
+        fixture.repoDir,
+        "retained.txt",
+        "retained repair\n",
+        "retained focused repair",
+      );
+      git(fixture.repoDir, "push", "-u", "origin", "fix/retained");
+      const first = composeFrozenCampaign({
+        appDir: fixture.appDir,
+        repoDir: fixture.repoDir,
+        baselineRunId: "missing-retained-object",
+        baseCommit: fixture.baseCommit,
+        fixes: [
+          {
+            pullRequestId: "4",
+            taskId: "domain/master-validation-failure/spec.example/retained",
+            sourceBranch: "fix/retained",
+            sourceCommit: retainedSourceCommit,
+            title: "Retained focused repair",
+          },
+        ],
+      });
+
+      git(fixture.repoDir, "checkout", "main");
+      git(fixture.repoDir, "checkout", "-b", "fix/successor");
+      const successorSourceCommit = commitFile(
+        fixture.repoDir,
+        "successor.txt",
+        "successor repair\n",
+        "successor focused repair",
+      );
+      git(fixture.repoDir, "push", "-u", "origin", "fix/successor");
+      const prior = structuredClone(first.receipt);
+      prior.integratedFixes[0]!.sourceCommit = "0".repeat(40);
+
+      const successor = composeFrozenCampaign({
+        appDir: fixture.appDir,
+        repoDir: fixture.repoDir,
+        baselineRunId: "missing-retained-object",
+        baseCommit: fixture.baseCommit,
+        fixes: [
+          {
+            pullRequestId: "5",
+            taskId: "domain/master-validation-failure/spec.example/successor",
+            sourceBranch: "fix/successor",
+            sourceCommit: successorSourceCommit,
+            targetCommit: fixture.baseCommit,
+            title: "Successor focused repair",
+          },
+        ],
+        prior,
+      });
+
+      git(fixture.repoDir, "fetch", "origin", successor.receipt.branch);
+      expect(
+        git(
+          fixture.repoDir,
+          "show",
+          `origin/${successor.receipt.branch}:retained.txt`,
+        ),
+      ).toBe("retained repair");
+      expect(
+        git(
+          fixture.repoDir,
+          "show",
+          `origin/${successor.receipt.branch}:successor.txt`,
+        ),
+      ).toBe("successor repair");
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
   test("takes only the focused patch from a PR based on newer main", () => {
     const fixture = campaignFixture();
     try {

@@ -182,6 +182,13 @@ function ensureCommit(checkout: string, commit: string): void {
   git(checkout, ["fetch", "origin", commit]);
 }
 
+function hasCommit(checkout: string, commit: string): boolean {
+  return (
+    Boolean(commit) &&
+    git(checkout, ["cat-file", "-e", `${commit}^{commit}`], true).status === 0
+  );
+}
+
 function patchId(checkout: string, commit: string): string {
   const patch = git(checkout, ["show", "--pretty=format:", "--binary", commit]);
   const result = spawnSync("git", ["patch-id", "--stable"], {
@@ -215,7 +222,15 @@ function focusedCommits(
   const exclusions = [
     rangeBaseCommit || fix.targetCommit || inferredParent,
     ...excludedCommits,
-  ].filter(Boolean);
+  ]
+    .filter(Boolean)
+    // A retained campaign receipt may name an older PR head whose branch was
+    // deleted and whose object was pruned from this checkout. Its patch is
+    // already present on the durable campaign branch, so that unavailable
+    // object is not required to compute a new PR's focused range. If it is an
+    // ancestor of the fetched source head, fetching that head necessarily
+    // makes the object available and it remains an exclusion here.
+    .filter((commit) => hasCommit(checkout, commit));
   const commits = git(checkout, [
     "rev-list",
     "--reverse",
