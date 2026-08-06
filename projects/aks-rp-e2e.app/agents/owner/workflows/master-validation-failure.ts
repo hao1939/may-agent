@@ -15,6 +15,7 @@ import {
   reconcileRemoteTaskBranchHistory,
   reconcileSpecLive,
   sourceChangeMayAffectSpec,
+  type SpecLiveReconciliationOptions,
 } from "./spec-live-reconciliation.js";
 
 export const name = "master-validation-failure";
@@ -61,7 +62,7 @@ export type FailureInput = {
   campaignRepairReplay: CampaignRepairContext | null;
 };
 
-type PullRequest = {
+export type PullRequest = {
   pullRequestId?: unknown;
   status?: unknown;
   mergeStatus?: unknown;
@@ -364,6 +365,43 @@ function activeTaskPullRequests(
   );
 }
 
+function pullRequestNumber(value: PullRequest): number {
+  const parsed = Number(text(value.pullRequestId));
+  return Number.isFinite(parsed) ? parsed : -1;
+}
+
+export function canonicalTaskPullRequest(
+  pullRequests: PullRequest[],
+  options: {
+    preferredPullRequestId?: string;
+    preferredSourceBranch?: string;
+  } = {},
+): PullRequest | null {
+  const preferredPullRequestId = text(options.preferredPullRequestId);
+  const preferredSourceBranch = text(options.preferredSourceBranch).replace(
+    /^refs\/heads\//,
+    "",
+  );
+  const candidates = pullRequests
+    .filter((pullRequest) => text(pullRequest.status) === "active")
+    .sort((left, right) => pullRequestNumber(right) - pullRequestNumber(left));
+  return (
+    candidates.find(
+      (pullRequest) =>
+        preferredPullRequestId &&
+        text(pullRequest.pullRequestId) === preferredPullRequestId,
+    ) ??
+    candidates.find(
+      (pullRequest) =>
+        preferredSourceBranch &&
+        text(pullRequest.sourceRefName).replace(/^refs\/heads\//, "") ===
+          preferredSourceBranch,
+    ) ??
+    candidates[0] ??
+    null
+  );
+}
+
 function abandonPullRequest(repoDir: string, pullRequestId: string): boolean {
   const result = command(
     azCli,
@@ -391,13 +429,45 @@ function abandonPullRequest(repoDir: string, pullRequestId: string): boolean {
 function abandonSupersededTaskPullRequests(
   repoDir: string,
   taskId: string,
+  retainedPullRequestId = "",
 ): string[] {
-  return activeTaskPullRequests(repoDir, taskId).map((pullRequest) => {
-    const pullRequestId = text(pullRequest.pullRequestId);
-    return pullRequestId && abandonPullRequest(repoDir, pullRequestId)
-      ? `superseded-pull-request-abandoned:${pullRequestId}`
-      : `superseded-pull-request-abandon-failed:${pullRequestId || "unknown"}`;
-  });
+  return activeTaskPullRequests(repoDir, taskId)
+    .filter(
+      (pullRequest) =>
+        text(pullRequest.pullRequestId) !== text(retainedPullRequestId),
+    )
+    .map((pullRequest) => {
+      const pullRequestId = text(pullRequest.pullRequestId);
+      return pullRequestId && abandonPullRequest(repoDir, pullRequestId)
+        ? `superseded-pull-request-abandoned:${pullRequestId}`
+        : `superseded-pull-request-abandon-failed:${pullRequestId || "unknown"}`;
+    });
+}
+
+function refreshCampaignRepairPullRequest(
+  repoDir: string,
+  pullRequestId: string,
+  input: {
+    taskId: string;
+    specId: string;
+    failureRunId: string;
+    sourceCommit: string;
+    campaignBaseCommit: string;
+  },
+): PullRequest {
+  return record(
+    azJson(repoDir, [
+      "repos",
+      "pr",
+      "update",
+      "--id",
+      pullRequestId,
+      "--description",
+      campaignRepairPullRequestDescription(input),
+      "--draft",
+      "true",
+    ]),
+  ) as PullRequest;
 }
 
 export function productRecoveryWaitRequiresCurrentMain(
@@ -833,6 +903,38 @@ function eventData(value: unknown): Record<string, unknown> {
   } catch {
     return {};
   }
+}
+
+export function pullRequestReviewTrigger(
+  raw: string,
+  expectedPullRequestId = "",
+): {
+  pullRequestId: string;
+  unresolvedReviewCount: number;
+  reviewFingerprint: string;
+} | null {
+  const trigger = triggerEvent(raw);
+  if (!trigger) return null;
+  const data = eventData(trigger.data);
+  const value = (key: string) => trigger[key] ?? data[key];
+  const reason = text(value("reason"));
+  const pullRequestId = text(value("pullRequestId"));
+  const unresolvedReviewCount =
+    Number(value("unresolvedReviewCount") ?? 0) || 0;
+  const reviewFingerprint = text(value("reviewFingerprint"));
+  if (
+    reason !== "pull-request-review-changed" ||
+    !pullRequestId ||
+    unresolvedReviewCount <= 0 ||
+    (expectedPullRequestId && pullRequestId !== expectedPullRequestId)
+  ) {
+    return null;
+  }
+  return {
+    pullRequestId,
+    unresolvedReviewCount,
+    reviewFingerprint,
+  };
 }
 
 export function campaignRepairReplayObservation(
@@ -1402,12 +1504,26 @@ async function reconcileTestIssue(
   ctx: WorkflowContext,
   input: FailureInput,
 ): Promise<WorkflowResult> {
-  const result = await reconcileSpecLive(ctx, {
-    targetBranch: targetBranch,
-    existingRecoveryAfterRunId: input.pipelineRunId,
-    reusePriorIntegratedProof: true,
-  });
+  const result = await reconcileSpecLive(
+    ctx,
+    testIssueReconciliationOptions(input.pipelineRunId),
+  );
   return preserveVerificationAfterNestedReconciliation(ctx, input, result);
+}
+
+export function testIssueReconciliationOptions(
+  pipelineRunId: string,
+): SpecLiveReconciliationOptions {
+  return {
+    targetBranch: targetBranch,
+    existingRecoveryAfterRunId: pipelineRunId,
+    reusePriorIntegratedProof: true,
+    // sourceBranch/sourceCommit on this task describe the failed aggregate
+    // observation. They are not an unpublished source prerequisite for the
+    // nested live verifier; the dedicated task worktree already preserves any
+    // task-owned repair while current-main fixes remain directly testable.
+    inputSourceIsObservation: true,
+  };
 }
 
 export function publishCampaignRepairBranch(
@@ -1432,9 +1548,7 @@ export function publishCampaignRepairBranch(
     } {
   let sourceCommit = runGit(workspaceDir, ["rev-parse", "HEAD"]).stdout;
   const evidence: string[] = [];
-  const rewriteExpectedRemoteCommit = text(
-    options.rewriteExpectedRemoteCommit,
-  );
+  const rewriteExpectedRemoteCommit = text(options.rewriteExpectedRemoteCommit);
   if (rewriteExpectedRemoteCommit) {
     const remoteRef = `refs/heads/${sourceBranch}`;
     const push = runGit(
@@ -1534,13 +1648,37 @@ function prepareCampaignRepair(
     evidence: string[];
   },
 ): WorkflowResult {
+  const existingTaskPullRequests = activeTaskPullRequests(
+    values.repoDir,
+    input.taskId,
+  );
+  const canonicalPullRequest = canonicalTaskPullRequest(
+    existingTaskPullRequests,
+    {
+      preferredPullRequestId: input.campaignRepairReplay?.pullRequestId,
+      preferredSourceBranch: values.sourceBranch,
+    },
+  );
+  const canonicalPullRequestId = text(canonicalPullRequest?.pullRequestId);
+  const canonicalSourceBranch = text(
+    canonicalPullRequest?.sourceRefName,
+  ).replace(/^refs\/heads\//, "");
+  const canonicalSourceCommit = text(
+    canonicalPullRequest?.lastMergeSourceCommit?.commitId,
+  );
+  const workspaceSourceBranch = values.sourceBranch;
+  if (canonicalSourceBranch) values.sourceBranch = canonicalSourceBranch;
   const published = publishCampaignRepairBranch(
     values.workspaceDir,
     values.sourceBranch,
     git,
     {
       rewriteExpectedRemoteCommit:
-        input.campaignRepairReplay?.expectedRemoteCommit,
+        input.campaignRepairReplay?.expectedRemoteCommit ||
+        (canonicalSourceBranch &&
+        canonicalSourceBranch !== workspaceSourceBranch
+          ? canonicalSourceCommit
+          : ""),
     },
   );
   if (published.state === "conflicted") {
@@ -1572,10 +1710,22 @@ function prepareCampaignRepair(
       campaignBaseCommit: values.campaignBaseCommit,
     });
   }
-  const pullRequestId = text(pullRequest.pullRequestId);
+  let pullRequestId = text(pullRequest.pullRequestId);
   if (!pullRequestId) {
     throw new Error("Azure DevOps did not return a campaign repair PR id");
   }
+  pullRequest = refreshCampaignRepairPullRequest(
+    values.repoDir,
+    pullRequestId,
+    {
+      taskId: input.taskId,
+      specId: input.specId,
+      failureRunId: input.pipelineRunId,
+      sourceCommit: values.sourceCommit,
+      campaignBaseCommit: values.campaignBaseCommit,
+    },
+  );
+  pullRequestId = text(pullRequest.pullRequestId) || pullRequestId;
   ctx.dispatchEvent("project.task.tick", {
     target: {
       project: "aks-rp-e2e",
@@ -1589,7 +1739,7 @@ function prepareCampaignRepair(
     pullRequestId,
     sourceCommit: values.sourceCommit,
   });
-  const summary = `Prepared draft focused PR ${pullRequestId} for ${input.specId}; the frozen campaign can integrate it immediately, and the human will be notified only after verification publishes it as non-draft.`;
+  const summary = `${canonicalPullRequestId ? "Updated" : "Prepared"} draft focused PR ${pullRequestId} for ${input.specId}; the frozen campaign can integrate it immediately, and the human will be notified only after verification publishes it as non-draft.`;
   return waiting(
     ctx,
     summary,
@@ -1601,6 +1751,9 @@ function prepareCampaignRepair(
       `source-branch:${values.sourceBranch}`,
       `source-commit:${values.sourceCommit}`,
       `pull-request:${pullRequestId}`,
+      ...(canonicalPullRequestId
+        ? [`reused-task-pull-request:${canonicalPullRequestId}`]
+        : []),
       "verification-required:frozen-campaign-then-current-main",
     ],
     productRecoveryCondition(input, currentRecoveryBaselineRunId(ctx, input)),
@@ -1925,9 +2078,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       );
     }
     const existingPr = pullRequests(repoDir, sourceBranch)[0];
+    const existingPrId = text(existingPr?.pullRequestId);
+    const reviewTrigger = pullRequestReviewTrigger(ctx.task, existingPrId);
     const sourceIsInTarget =
       git(repoDir, ["merge-base", "--is-ancestor", headCommit, targetRef], true)
         .status === 0;
+    if (reviewTrigger) {
+      return reconcileTestIssue(ctx, input);
+    }
     if (
       !input.campaignRepairReplay &&
       shouldReconcileTestFix({

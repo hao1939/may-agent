@@ -138,6 +138,11 @@ main@M0
 - Each repository-owned issue still has one focused branch and PR targeting
   current `main`. The campaign replays only the commits between the PR's
   recorded target and source heads; it never merges the PR branch ancestry.
+- Stable failure-task identity also owns PR identity. A later repair attempt
+  updates that task's active branch and PR, refreshes its description, and
+  returns it to draft while the new head is unverified. It does not open a
+  second active PR for the same task. Additive repair commits remain on that
+  one branch so review and campaign history stay complete.
 - Before new repair work starts, a clean task workspace with no task-only
   commits is aligned to current `main`, keeping its focused PR reviewable and
   mergeable. A retained workspace with unmerged task work is preserved and
@@ -155,6 +160,10 @@ main@M0
 - The failed main run already tested the untouched base, so creating the branch
   does not queue a duplicate run. A fix changing the branch head queues the
   next campaign run immediately.
+- If a campaign run is already active when another focused head arrives, the
+  controller composes and persists the successor campaign head immediately but
+  does not overlap aggregate runs. The successor queues as soon as the active
+  run reaches a terminal state.
 - If no repository fix changes the head, a red campaign reruns that exact head
   every six hours. This is the recovery probe for product and environment
   failures; it does not merge newer `main`.
@@ -309,6 +318,9 @@ orphan Conditions and refuses to run with a current carrier attempt.
   approval and merge belong to the human/provider boundary. This exact
   verified-pass event explicitly wakes the standing cycle through its open
   aggregate-run wait; it does not wait for unrelated slices to finish.
+- Draft is temporary state, not archival state. Every focused PR eventually
+  becomes review-ready after exact proof or is explicitly abandoned when the
+  task rejects its candidate.
 - A resolved issue leaves the live graph through its ordinary completion
   receipt; reusable lessons belong in workflow/tests/domain evidence.
 
@@ -449,8 +461,13 @@ This replaces manual polling while keeping scheduling out of the task tree.
   Escalate only after the agent identifies a required action outside
   `aks-explorer` ownership; generic infrastructure routes the escalation but
   does not decide that one is needed.
-- PR conflict or changed source: invalidate the old proof, repair the same
-  branch, and run the new exact commit.
+- PR conflict or changed source: invalidate the old proof and wake the stable
+  failure task, identified by task ID rather than Git branch name. That task
+  repairs the same branch and runs the new exact commit.
+- A publication workflow has one explicit handoff: the bounded source agent
+  converges after it leaves a clean, verified commit in the task worktree;
+  the workflow alone pushes that commit, opens the PR, and installs the typed
+  PR wait. The source agent does not wait on workflow-owned publication.
 - Squash/rebase merge is normal: Azure must report the exact tested PR head and
   a resulting merged commit present in `main`. Do not require the PR head
   itself to remain in `main` ancestry. Integration is progress evidence; the

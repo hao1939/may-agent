@@ -1140,11 +1140,48 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     ];
     const active = activeMasterValidationRun(listed);
     if (active) {
+      const activeBranch = text(active.sourceBranch).replace(
+        /^refs\/heads\//,
+        "",
+      );
+      const activeCommit = text(active.sourceVersion);
+      const activeCampaign = readCampaignReceipt(appDir);
+      if (activeCampaign && activeBranch === activeCampaign.branch) {
+        const successor = composeFrozenCampaign({
+          appDir,
+          repoDir,
+          baselineRunId: activeCampaign.baselineRunId,
+          baseCommit: activeCampaign.baseCommit,
+          fixes: activeCampaignFixes(repoDir),
+          replacementFixes: completedCampaignReplacements(
+            repoDir,
+            activeCampaign,
+          ),
+          prior: activeCampaign,
+        }).receipt;
+        if (successor.currentCommit !== activeCommit) {
+          return waiting(
+            ctx,
+            text(active.id),
+            activeBranch,
+            activeCommit,
+            `Master validation run ${text(active.id)} continues on ${activeCommit}; prepared successor ${successor.currentCommit} with the latest focused fixes so the next run can start immediately after this one finishes.`,
+            [
+              ...fixPublicationEvidence,
+              `campaign-successor:${successor.branch}@${successor.currentCommit}`,
+              ...successor.integratedFixes.map(
+                (fix) =>
+                  `successor-fix-pull-request:${fix.pullRequestId}@${fix.sourceCommit}`,
+              ),
+            ],
+          );
+        }
+      }
       return waiting(
         ctx,
         text(active.id),
-        text(active.sourceBranch).replace(/^refs\/heads\//, "") || sourceBranch,
-        text(active.sourceVersion),
+        activeBranch || sourceBranch,
+        activeCommit,
         `Master validation run ${text(active.id)} is already active; no overlapping run was queued.`,
         fixPublicationEvidence,
       );

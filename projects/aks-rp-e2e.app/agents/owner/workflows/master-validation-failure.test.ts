@@ -7,6 +7,7 @@ import {
   alignCleanRepairWorkspace,
   boundedChangedFileEvidence,
   boundedEvidence,
+  canonicalTaskPullRequest,
   campaignRepairPullRequestDescription,
   campaignRepairPublicationRetryReady,
   campaignRepairReplayObservation,
@@ -28,12 +29,14 @@ import {
   priorStandaloneVerification,
   productRecoveryCondition,
   publishCampaignRepairBranch,
+  pullRequestReviewTrigger,
   requiresStandaloneVerification,
   runFailureInvestigation,
   shouldReconcileTestFix,
   standaloneRecoveryChild,
   standaloneRecoveryChildAction,
   standaloneRecoveryCompletionProblem,
+  testIssueReconciliationOptions,
   workspace,
 } from "./master-validation-failure.js";
 
@@ -50,6 +53,49 @@ function git(cwd: string, ...args: string[]): string {
 describe("master-validation failure workflow", () => {
   test("declares a main-based task worktree", () => {
     expect(workspace).toEqual({ kind: "task", baseBranch: "main" });
+  });
+
+  test("treats aggregate source identity as observation provenance during test repair", () => {
+    expect(testIssueReconciliationOptions("run-123")).toEqual({
+      targetBranch: "main",
+      existingRecoveryAfterRunId: "run-123",
+      reusePriorIntegratedProof: true,
+      inputSourceIsObservation: true,
+    });
+  });
+
+  test("detects targeted PR review-change wakes for the existing focused repair", () => {
+    expect(
+      pullRequestReviewTrigger(
+        `## Trigger Observation\n${JSON.stringify({
+          type: "project.task.tick",
+          data: {
+            reason: "pull-request-review-changed",
+            pullRequestId: "16692153",
+            unresolvedReviewCount: 2,
+            reviewFingerprint: "df13be91ae2f50be",
+          },
+        })}`,
+        "16692153",
+      ),
+    ).toEqual({
+      pullRequestId: "16692153",
+      unresolvedReviewCount: 2,
+      reviewFingerprint: "df13be91ae2f50be",
+    });
+    expect(
+      pullRequestReviewTrigger(
+        `## Trigger Observation\n${JSON.stringify({
+          type: "project.task.tick",
+          data: {
+            reason: "pull-request-review-changed",
+            pullRequestId: "16692153",
+            unresolvedReviewCount: 2,
+          },
+        })}`,
+        "16692154",
+      ),
+    ).toBeNull();
   });
 
   test("turns a frozen-campaign conflict wake into same-lineage repair context", () => {
@@ -430,6 +476,52 @@ ${JSON.stringify({
         campaignBaseCommit: "base123",
       }),
     ).toContain("Do not merge the campaign branch itself");
+  });
+
+  test("reuses one active PR for a stable failure task", () => {
+    const pullRequests = [
+      {
+        pullRequestId: 16707751,
+        status: "active",
+        sourceRefName: "refs/heads/task/first",
+      },
+      {
+        pullRequestId: 16711806,
+        status: "active",
+        sourceRefName: "refs/heads/task/replacement",
+      },
+      {
+        pullRequestId: 16712524,
+        status: "active",
+        sourceRefName: "refs/heads/task/current",
+      },
+    ];
+    expect(
+      canonicalTaskPullRequest(pullRequests, {
+        preferredSourceBranch: "task/current",
+      })?.pullRequestId,
+    ).toBe(16712524);
+    expect(
+      canonicalTaskPullRequest(pullRequests, {
+        preferredPullRequestId: "16707751",
+        preferredSourceBranch: "task/current",
+      })?.pullRequestId,
+    ).toBe(16707751);
+    expect(canonicalTaskPullRequest(pullRequests)?.pullRequestId).toBe(
+      16712524,
+    );
+  });
+
+  test("rejects completed PRs when choosing the stable task PR", () => {
+    expect(
+      canonicalTaskPullRequest([
+        {
+          pullRequestId: 9,
+          status: "completed",
+          sourceRefName: "refs/heads/task/completed",
+        },
+      ]),
+    ).toBeNull();
   });
 
   test("retries a test-issue classification once and blocks instead of falsely converging without a fix", async () => {
