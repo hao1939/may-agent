@@ -70,7 +70,7 @@ type PullRequest = {
   isDraft?: unknown;
 };
 
-type FixVerificationTrigger = {
+export type FixVerificationTrigger = {
   specId: string;
   pipelineRunId: string;
   sourceBranch: string;
@@ -155,6 +155,108 @@ export function campaignRecoveryDue(
 ): boolean {
   const queuedAtMs = Date.parse(queuedAt);
   return Number.isFinite(queuedAtMs) && nowMs - queuedAtMs >= cycleIntervalMs;
+}
+
+export function campaignPatchConflict(message: string): {
+  pullRequestId: string;
+  taskId: string;
+  sourceCommit: string;
+} | null {
+  const match = message.match(
+    /Campaign focused-patch conflict for PR (\d+) \(([^)]+)\) at ([0-9a-f]{7,40}):/i,
+  );
+  return match
+    ? {
+        pullRequestId: match[1],
+        taskId: match[2],
+        sourceCommit: match[3].toLowerCase(),
+      }
+    : null;
+}
+
+export function campaignPatchConflictRepairWake(
+  conflict: {
+    pullRequestId: string;
+    taskId: string;
+    sourceCommit: string;
+  },
+  campaign: CampaignReceipt,
+  currentMainCommit: string,
+): Record<string, unknown> {
+  return {
+    target: { project: "aks-rp-e2e", taskId: conflict.taskId },
+    project: "aks-rp-e2e",
+    taskId: conflict.taskId,
+    task_id: conflict.taskId,
+    reason: "repair-focused-patch-after-frozen-campaign-conflict",
+    overrideWait: true,
+    requiredAction:
+      "Repair the existing focused patch so it applies cleanly to the frozen campaign while preserving its tested intent; update the same PR branch and require exact verification.",
+    pullRequestId: conflict.pullRequestId,
+    campaignSourceCommit: campaign.currentCommit,
+    currentMainCommit,
+    sourceCommit: conflict.sourceCommit,
+    sourceEquivalentCommits: [conflict.sourceCommit],
+    conflictingPaths: [],
+  };
+}
+
+function campaignPatchConflictWait(
+  ctx: WorkflowContext,
+  conflict: {
+    pullRequestId: string;
+    taskId: string;
+    sourceCommit: string;
+  },
+  message: string,
+  appDir: string,
+  repoDir: string,
+): WorkflowResult {
+  const campaign = readCampaignReceipt(appDir);
+  let repairWake = false;
+  if (
+    campaign &&
+    conflict.taskId.startsWith("domain/master-validation-failure/")
+  ) {
+    ctx.dispatchEvent(
+      "project.task.tick",
+      campaignPatchConflictRepairWake(
+        conflict,
+        campaign,
+        resolveCurrentMain(repoDir),
+      ),
+    );
+    repairWake = true;
+  }
+  const summary = `Frozen campaign replay is waiting for focused PR ${conflict.pullRequestId} to change or close; its current patch at ${conflict.sourceCommit} conflicts with the frozen campaign snapshot.`;
+  return ctx.done(summary, {
+    state: "waiting",
+    summary,
+    evidence: [
+      `pull-request:${conflict.pullRequestId}`,
+      `source-commit:${conflict.sourceCommit}`,
+      `campaign-replay-conflict:${message}`,
+      `campaign-conflict-repair-wake:${repairWake ? conflict.taskId : "unavailable"}`,
+    ],
+    actions: [],
+    conditions: [
+      {
+        id: `master-validation-campaign-pr-${conflict.pullRequestId}-closed`,
+        type: "pull-request.state",
+        subject: `pull-request:${conflict.pullRequestId}`,
+        expected: {
+          field: "state",
+          anyOf: ["completed", "abandoned", "conflicted"],
+        },
+      },
+      {
+        id: `master-validation-campaign-pr-${conflict.pullRequestId}-source-not-${conflict.sourceCommit}`,
+        type: "pull-request.state",
+        subject: `pull-request:${conflict.pullRequestId}`,
+        expected: { field: "sourceCommit", notEquals: conflict.sourceCommit },
+      },
+    ],
+  });
 }
 
 export function buildMasterValidationQueueArgs(input: {
@@ -337,6 +439,93 @@ export function fixVerificationTrigger(
         pullRequestIds,
       }
     : null;
+}
+
+function eventData(event: Record<string, unknown>): Record<string, unknown> {
+  if (
+    event.data &&
+    typeof event.data === "object" &&
+    !Array.isArray(event.data)
+  ) {
+    return record(event.data);
+  }
+  const raw = text(event.data);
+  if (!raw) return {};
+  try {
+    return record(JSON.parse(raw));
+  } catch {
+    return {};
+  }
+}
+
+export function campaignPassVerificationTrigger(
+  campaign: CampaignReceipt | null,
+  event: Record<string, unknown>,
+): FixVerificationTrigger | null {
+  if (!campaign) return null;
+  const data = eventData(event);
+  const value = (key: string) => text(data[key] ?? event[key]);
+  const eventType = text(
+    event.type ?? event.event_type ?? data.type ?? data.event_type,
+  );
+  const specId = value("specId") || value("spec_id");
+  const sourceBranch = value("sourceBranch").replace(/^refs\/heads\//, "");
+  const sourceCommit = value("sourceCommit") || value("sourceVersion");
+  if (
+    eventType !== "pipeline.spec.observed" ||
+    !specId ||
+    value("status").toLowerCase() !== "pass" ||
+    sourceBranch !== campaign.branch ||
+    sourceCommit !== campaign.currentCommit
+  ) {
+    return null;
+  }
+  const stableTaskId = `domain/master-validation-failure/${specId}`;
+  const pullRequestIds = campaign.integratedFixes
+    .filter(
+      (fix) =>
+        fix.taskId === stableTaskId ||
+        fix.taskId.startsWith(`${stableTaskId}/`),
+    )
+    .map((fix) => fix.pullRequestId);
+  const pipelineRunId = value("pipelineRunId") || value("runId");
+  return pipelineRunId && pullRequestIds.length
+    ? {
+        specId,
+        pipelineRunId,
+        sourceBranch,
+        sourceCommit,
+        pullRequestIds,
+      }
+    : null;
+}
+
+function durableCampaignPassVerificationTriggers(
+  ctx: Pick<WorkflowContext, "query">,
+  campaign: CampaignReceipt | null,
+): FixVerificationTrigger[] {
+  if (!campaign) return [];
+  try {
+    const latestBySpec = new Map<string, FixVerificationTrigger>();
+    for (const event of ctx.query.events({
+      type: "pipeline.spec.observed",
+      projectId: "aks-rp-e2e",
+      limit: 500,
+    }).rows) {
+      const trigger = campaignPassVerificationTrigger(campaign, event);
+      if (!trigger) continue;
+      const prior = latestBySpec.get(trigger.specId);
+      if (
+        !prior ||
+        Number(trigger.pipelineRunId) > Number(prior.pipelineRunId)
+      ) {
+        latestBySpec.set(trigger.specId, trigger);
+      }
+    }
+    return [...latestBySpec.values()];
+  } catch {
+    return [];
+  }
 }
 
 function receiptPath(ctx: WorkflowContext): string {
@@ -901,11 +1090,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const appDir = ctx.appDir ?? "/app/projects/aks-rp-e2e.app";
   const payload = taskPayload(ctx.task);
   try {
-    const fixPublicationEvidence = publishVerifiedFixes(
-      ctx,
-      repoDir,
-      readCampaignReceipt(appDir),
-      fixVerificationTrigger(ctx.task),
+    const campaign = readCampaignReceipt(appDir);
+    const directVerification = fixVerificationTrigger(ctx.task);
+    const verificationTriggers = directVerification
+      ? [directVerification]
+      : durableCampaignPassVerificationTriggers(ctx, campaign);
+    const fixPublicationEvidence = verificationTriggers.flatMap((trigger) =>
+      publishVerifiedFixes(ctx, repoDir, campaign, trigger),
     );
     const listActive = (status: "inProgress" | "notStarted") =>
       azJson(
@@ -1195,6 +1386,16 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    const patchConflict = campaignPatchConflict(message);
+    if (patchConflict) {
+      return campaignPatchConflictWait(
+        ctx,
+        patchConflict,
+        message,
+        appDir,
+        repoDir,
+      );
+    }
     if (transientMasterValidationAccessFailure(message)) {
       const summary = `Master validation cycle hit a transient Azure DevOps access failure while queueing or observing its run: ${message}. Wait for the next master-validation reconcile pulse before retrying instead of sending repeated blind owner retries.`;
       return completeTransientAccessObservation(ctx, appDir, summary, message);

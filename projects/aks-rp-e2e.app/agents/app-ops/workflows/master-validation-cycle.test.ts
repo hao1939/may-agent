@@ -10,6 +10,8 @@ import {
   activeMasterValidationRun,
   buildMasterValidationQueueArgs,
   campaignIntegratedFixesMerged,
+  campaignPatchConflict,
+  campaignPatchConflictRepairWake,
   campaignRecoveryDue,
   completedCycleState,
   fixVerificationTrigger,
@@ -199,6 +201,13 @@ describe("master-validation cycle", () => {
           sourceCommit: "fix",
           title: "fix example",
         },
+        {
+          pullRequestId: "8",
+          taskId: "domain/master-validation-failure/spec.example",
+          sourceBranch: "task/example-stable",
+          sourceCommit: "stable-fix",
+          title: "stable fix example",
+        },
       ],
       updatedAt: "2026-07-25T00:00:00Z",
     };
@@ -212,7 +221,10 @@ describe("master-validation cycle", () => {
         sourceCommit: "candidate",
       },
     };
-    expect(verifiedCampaignFixPullRequestIds(campaign, event)).toEqual(["7"]);
+    expect(verifiedCampaignFixPullRequestIds(campaign, event)).toEqual([
+      "7",
+      "8",
+    ]);
     expect(
       verifiedCampaignFixPullRequestIds(campaign, {
         ...event,
@@ -279,6 +291,44 @@ ${JSON.stringify({
       ]),
     ).toBe(false);
     expect(campaignIntegratedFixesMerged([])).toBe(false);
+  });
+
+  test("routes a focused patch conflict back to its stable failure task", () => {
+    const conflict = campaignPatchConflict(
+      "Campaign focused-patch conflict for PR 16679314 (domain/master-validation-failure/spec.example) at b31a12c37eddb7d68efff1bbc58d6344dcff95f4: error: could not apply patch",
+    );
+    expect(conflict).toEqual({
+      pullRequestId: "16679314",
+      taskId: "domain/master-validation-failure/spec.example",
+      sourceCommit: "b31a12c37eddb7d68efff1bbc58d6344dcff95f4",
+    });
+    expect(
+      campaignPatchConflictRepairWake(
+        conflict!,
+        {
+          schemaVersion: "1",
+          baselineRunId: "175425349",
+          baseCommit: "base",
+          branch: "validation/master-validation-175425349",
+          currentCommit: "campaign-head",
+          integratedFixes: [],
+          updatedAt: "2026-08-06T10:00:00.000Z",
+        },
+        "current-main",
+      ),
+    ).toMatchObject({
+      target: {
+        project: "aks-rp-e2e",
+        taskId: "domain/master-validation-failure/spec.example",
+      },
+      reason: "repair-focused-patch-after-frozen-campaign-conflict",
+      overrideWait: true,
+      pullRequestId: "16679314",
+      campaignSourceCommit: "campaign-head",
+      currentMainCommit: "current-main",
+      sourceCommit: "b31a12c37eddb7d68efff1bbc58d6344dcff95f4",
+    });
+    expect(campaignPatchConflict("Azure DevOps returned 503")).toBeNull();
   });
 
   test("classifies transient Azure DevOps git failures for wait-based retry", () => {

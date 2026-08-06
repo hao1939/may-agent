@@ -17,16 +17,20 @@ import {
   authoritativeRunReference,
   inheritedAuthoritativeRunReference,
   artifactObservedClaimIds,
+  artifactProvesPreClaimCapacityBlock,
   artifactProvesCleanup,
   artifactProvesDeclaredClaims,
   artifactProvesSpecPass,
   artifactProvesTarget,
   artifactVitestTestCount,
   boundedWorkflowEvidence,
+  boundedSourceEquivalentToTarget,
   checkLiveDispatchAdmission,
   compactPlanPipelineParameters,
   collectTerminalRunEvidence,
+  queueRunPipelineParameters,
   completedPullRequestIntegration,
+  cherryPickScenarioReplayCommits,
   currentAdoSurfaceInstruction,
   decisionCorrectionPrompt,
   directVitestCompatibilityInstruction,
@@ -38,6 +42,7 @@ import {
   semanticInvalidationSourceState,
   discoverTaskRuns,
   proofProtectedScenarioPaths,
+  resolveLivePlanDispatch,
   targetAdvanceProofDecisionProblem,
   relevantKnowledgeModelUnchanged,
   shouldReplayScenarioBeforeRunReview,
@@ -50,6 +55,9 @@ import {
   liveDispatchTargetRefreshRequired,
   matchingTaskGenerationRuns,
   matchingTaskRuns,
+  masterValidationCapacityPulseCycleSlot,
+  masterValidationCapacityRetryDue,
+  masterValidationCapacityPulseWaitCondition,
   mergeAcceptedTargetAdvanceProof,
   parseTaskPayload,
   pipelineWaitCondition,
@@ -64,8 +72,12 @@ import {
   replayScenarioCandidateForDispatch,
   resolvePriorVerificationInput,
   scenarioReplayForceWithLeaseArg,
+  pullRequestReviewCountCondition,
+  pullRequestReviewFingerprintCondition,
+  pullRequestReviewTriggeredForJudgment,
   pullRequestSourceUpdateCondition,
   pullRequestWaitCondition,
+  pullRequestWaitConditions,
   resolveIntegrationTarget,
   resolveLiveExecutionTarget,
   runMatchesPriorVerification,
@@ -81,6 +93,7 @@ import {
   shouldReviewBeforeInitialLiveDispatch,
   scenarioNormalizationWaitProblem,
   sourceChangeMayAffectSpec,
+  summarizeSpecPullRequestReview,
   supersededQueuedTaskRuns,
   taskContextDir,
   taskScopedAgentCondition,
@@ -91,6 +104,7 @@ import {
   verify,
   verifySpecLiveProofFacts,
 } from "./spec-live-reconciliation.js";
+import { summarizePullRequestReview } from "../../../watchers/aks-pull-request.js";
 import {
   isRunnableScenarioNormalization,
   scenarioNormalizationSpecIds,
@@ -103,6 +117,58 @@ import {
 } from "./lib/scenario-quality-invariant.js";
 
 describe("spec-live-reconciliation workflow", () => {
+  test("uses the watcher review normalization and judges only the matching new fingerprint", () => {
+    const payload = {
+      value: [
+        {
+          id: 255471269,
+          status: "active",
+          threadContext: {
+            filePath:
+              "/features/node-ephemeral-os-disk/tests/node-ephemeral-disk-master-validation.test.ts",
+          },
+          comments: [
+            {
+              commentType: "text",
+              author: { displayName: "GitOps (Git LowPriv)" },
+              content:
+                "<p>PR Assistant PR Assistant PR Assistant</p><div>Please keep the assertion tied to the exact node-pool object.</div>",
+            },
+          ],
+        },
+      ],
+    };
+    const watcherReview = summarizePullRequestReview(payload);
+    const workflowReview = summarizeSpecPullRequestReview(payload);
+
+    expect(workflowReview).toEqual(watcherReview);
+    expect(workflowReview.threads[0]?.content).toBe(
+      "Please keep the assertion tied to the exact node-pool object.",
+    );
+
+    const task = [
+      "## Trigger Observation",
+      JSON.stringify({
+        reason: "pull-request-review-changed",
+        pullRequestId: "16706118",
+        reviewFingerprint: watcherReview.fingerprint,
+      }),
+    ].join("\n");
+    expect(
+      pullRequestReviewTriggeredForJudgment(task, "16706118", workflowReview),
+    ).toBe(true);
+    expect(
+      pullRequestReviewTriggeredForJudgment(task, "16705929", workflowReview),
+    ).toBe(false);
+    expect(
+      pullRequestReviewTriggeredForJudgment(
+        task.replace(watcherReview.fingerprint, "stale-fingerprint"),
+        "16706118",
+        workflowReview,
+      ),
+    ).toBe(false);
+  });
+
   test("keeps cited quality issues ahead of ADO dispatch and integration", () => {
     const root = mkdtempSync(join(tmpdir(), "scenario-quality-invariant-"));
     const scenarioTestPath =
@@ -293,10 +359,206 @@ describe("spec-live-reconciliation workflow", () => {
         "features/serverless/compact/staging.plan.json",
       ),
     ).toEqual(["plan_path=features/serverless/compact/staging.plan.json"]);
+    expect(
+      compactPlanPipelineParameters(
+        "ci/plans/master-validation-cross-feature-17selector-staging.plan.json",
+      ),
+    ).toEqual([
+      "plan_path=ci/plans/master-validation-cross-feature-17selector-staging.plan.json",
+    ]);
     expect(compactPlanPipelineParameters("")).toEqual([]);
     expect(() =>
       compactPlanPipelineParameters("runs/plans/untrusted.json"),
     ).toThrow("Invalid compact live plan path");
+  });
+
+  test("resolves the Cross-17 required checked-in plan into queue evidence when livePlanPath is absent", () => {
+    expect(
+      resolveLivePlanDispatch({
+        taskInput: {
+          specId:
+            "spec.managed-namespaces.lifecycle,spec.node-image.profile-upgrade-validation,spec.ossku-migration.ubuntu-to-azurelinux,spec.secure-tls-bootstrap.vnet-integration,spec.secure-tls-bootstrap.network-isolated,spec.network-cni.azure-overlay,spec.cloud-provider.ccm-lifecycle,spec.cloud-provider.multiple-slb,spec.storage-csi.encryption-at-host,spec.kms.v2-public-cluster-public-kv-lifecycle,spec.kms.v2plus-create-cmk-public-kv-lifecycle,spec.kms.v2plus-create-cmk-public-kv-vnet-integration,spec.kms.v2plus-create-cmk-custom-vnet,spec.kms.v2plus-pmk-migrate-cmk-public-kv-lifecycle,spec.private-cluster.apiserver-vnet-integration-create,spec.virtualmachines.mixed-sku-upgrade,spec.deployment-safeguards.basic-enable-disable",
+          postPlanPathRepairVerification: {
+            requiredPlanPath:
+              "ci/plans/master-validation-cross-feature-17selector-staging.plan.json",
+          },
+        },
+      }),
+    ).toEqual({
+      planPath:
+        "ci/plans/master-validation-cross-feature-17selector-staging.plan.json",
+      source: "postPlanPathRepairVerification.requiredPlanPath",
+      evidence: [
+        "live-plan-path:ci/plans/master-validation-cross-feature-17selector-staging.plan.json",
+        "live-plan-path-source:postPlanPathRepairVerification.requiredPlanPath",
+      ],
+    });
+  });
+
+  test("queues the checked-in 17-selector ci plan into actual ADO template parameters", () => {
+    const livePlanDispatch = resolveLivePlanDispatch({
+      taskInput: {
+        specId:
+          "spec.managed-namespaces.lifecycle,spec.node-image.profile-upgrade-validation,spec.ossku-migration.ubuntu-to-azurelinux,spec.secure-tls-bootstrap.vnet-integration,spec.secure-tls-bootstrap.network-isolated,spec.network-cni.azure-overlay,spec.cloud-provider.ccm-lifecycle,spec.cloud-provider.multiple-slb,spec.storage-csi.encryption-at-host,spec.kms.v2-public-cluster-public-kv-lifecycle,spec.kms.v2plus-create-cmk-public-kv-lifecycle,spec.kms.v2plus-create-cmk-public-kv-vnet-integration,spec.kms.v2plus-create-cmk-custom-vnet,spec.kms.v2plus-pmk-migrate-cmk-public-kv-lifecycle,spec.private-cluster.apiserver-vnet-integration-create,spec.virtualmachines.mixed-sku-upgrade,spec.deployment-safeguards.basic-enable-disable",
+        postPlanPathRepairVerification: {
+          requiredPlanPath:
+            "ci/plans/master-validation-cross-feature-17selector-staging.plan.json",
+        },
+      },
+    });
+    expect(livePlanDispatch.evidence).toContain(
+      "live-plan-path:ci/plans/master-validation-cross-feature-17selector-staging.plan.json",
+    );
+    expect(
+      queueRunPipelineParameters({
+        specId:
+          "spec.managed-namespaces.lifecycle,spec.node-image.profile-upgrade-validation,spec.ossku-migration.ubuntu-to-azurelinux,spec.secure-tls-bootstrap.vnet-integration,spec.secure-tls-bootstrap.network-isolated,spec.network-cni.azure-overlay,spec.cloud-provider.ccm-lifecycle,spec.cloud-provider.multiple-slb,spec.storage-csi.encryption-at-host,spec.kms.v2-public-cluster-public-kv-lifecycle,spec.kms.v2plus-create-cmk-public-kv-lifecycle,spec.kms.v2plus-create-cmk-public-kv-vnet-integration,spec.kms.v2plus-create-cmk-custom-vnet,spec.kms.v2plus-pmk-migrate-cmk-public-kv-lifecycle,spec.private-cluster.apiserver-vnet-integration-create,spec.virtualmachines.mixed-sku-upgrade,spec.deployment-safeguards.basic-enable-disable",
+        target: "staging",
+        standaloneBuildId: "",
+        planPath: livePlanDispatch.planPath,
+        metadata:
+          '{"taskId":"domain/implement-master-validation-cross-feature-18spec-journey-20260804","generation":8}',
+      }),
+    ).toEqual([
+      "specs=spec.managed-namespaces.lifecycle,spec.node-image.profile-upgrade-validation,spec.ossku-migration.ubuntu-to-azurelinux,spec.secure-tls-bootstrap.vnet-integration,spec.secure-tls-bootstrap.network-isolated,spec.network-cni.azure-overlay,spec.cloud-provider.ccm-lifecycle,spec.cloud-provider.multiple-slb,spec.storage-csi.encryption-at-host,spec.kms.v2-public-cluster-public-kv-lifecycle,spec.kms.v2plus-create-cmk-public-kv-lifecycle,spec.kms.v2plus-create-cmk-public-kv-vnet-integration,spec.kms.v2plus-create-cmk-custom-vnet,spec.kms.v2plus-pmk-migrate-cmk-public-kv-lifecycle,spec.private-cluster.apiserver-vnet-integration-create,spec.virtualmachines.mixed-sku-upgrade,spec.deployment-safeguards.basic-enable-disable",
+      "plan_path=ci/plans/master-validation-cross-feature-17selector-staging.plan.json",
+      "target=staging",
+      "slices=1",
+      "slice_max_parallel=1",
+      'metadata={"taskId":"domain/implement-master-validation-cross-feature-18spec-journey-20260804","generation":8}',
+    ]);
+  });
+
+  test("prefers an explicit livePlanPath over the repair-verification fallback", () => {
+    expect(
+      resolveLivePlanDispatch({
+        taskInput: {
+          livePlanPath: "features/serverless/compact/staging.plan.json",
+          postPlanPathRepairVerification: {
+            requiredPlanPath:
+              "ci/plans/master-validation-cross-feature-17selector-staging.plan.json",
+          },
+        },
+      }),
+    ).toEqual({
+      planPath: "features/serverless/compact/staging.plan.json",
+      source: "livePlanPath",
+      evidence: [
+        "live-plan-path:features/serverless/compact/staging.plan.json",
+        "live-plan-path-source:livePlanPath",
+      ],
+    });
+  });
+
+  test("passes the Cross-17 repair plan through reconcileSpecLive into queued evidence and ADO parameters", () => {
+    const childRoot = mkdtempSync(join(tmpdir(), "spec-live-plan-child-"));
+    const childScript = join(childRoot, "run.mjs");
+
+    try {
+      writeFileSync(
+        childScript,
+        [
+          'import { execFileSync } from "node:child_process";',
+          'import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";',
+          'import { tmpdir } from "node:os";',
+          'import { join } from "node:path";',
+          `const modulePath = ${JSON.stringify(join(import.meta.dir, "spec-live-reconciliation.ts"))};`,
+          'const root = mkdtempSync(join(tmpdir(), "spec-live-plan-boundary-"));',
+          'const run = (cwd, args) => execFileSync("git", args, { cwd, encoding: "utf8" }).trim();',
+          'const remote = join(root, "remote.git");',
+          'const seed = join(root, "seed");',
+          'const repoDir = join(root, "repo");',
+          'const workspaceDir = join(root, "workspace");',
+          'const appDir = join(root, "app");',
+          'const binDir = join(root, "bin");',
+          'const azLog = join(root, "az.log");',
+          'const bunLog = join(root, "bun.log");',
+          "mkdirSync(seed, { recursive: true });",
+          "mkdirSync(appDir, { recursive: true });",
+          "mkdirSync(binDir, { recursive: true });",
+          'writeFileSync(join(binDir, "bun"), "#!/usr/bin/env bash\\necho \\\"$@\\\" >> \\\"$FAKE_BUN_LOG\\\"\\nexit 0\\n", { mode: 0o755 });',
+          'writeFileSync(join(binDir, "az"), `#!/usr/bin/env node\nconst fs = require("node:fs");\nconst args = process.argv.slice(2);\nfs.appendFileSync(process.env.FAKE_AZ_LOG, JSON.stringify(args) + "\\\\n");\nif (args[0] === "pipelines" && args[1] === "run") {\n  const commitIndex = args.indexOf("--commit-id");\n  const parametersIndex = args.indexOf("--parameters");\n  const parameters = {};\n  if (parametersIndex >= 0) {\n    for (const entry of args.slice(parametersIndex + 1)) {\n      const split = entry.indexOf("=");\n      if (split > 0) parameters[entry.slice(0, split)] = entry.slice(split + 1);\n    }\n  }\n  process.stdout.write(JSON.stringify({ id: "175123999", state: "inProgress", sourceVersion: commitIndex >= 0 ? args[commitIndex + 1] : "", templateParameters: parameters }));\n} else {\n  process.stdout.write("[]");\n}\n`, { mode: 0o755 });',
+          "process.env.FAKE_AZ_LOG = azLog;",
+          "process.env.FAKE_BUN_LOG = bunLog;",
+          'process.env.PATH = `${binDir}:${process.env.PATH || ""}`;',
+          'process.env.AZURE_CLI_PATH = join(binDir, "az");',
+          "const { reconcileSpecLive } = await import(`file://${modulePath}`);",
+          'run(root, ["init", "--bare", remote]);',
+          'run(seed, ["init"]);',
+          'run(seed, ["config", "user.email", "test@example.com"]);',
+          'run(seed, ["config", "user.name", "Test"]);',
+          'writeFileSync(join(seed, "README.md"), "base\\n");',
+          'run(seed, ["add", "README.md"]);',
+          'run(seed, ["commit", "-m", "base"]);',
+          'run(seed, ["branch", "-M", "dev"]);',
+          'run(seed, ["remote", "add", "origin", remote]);',
+          'run(seed, ["push", "origin", "dev"]);',
+          'run(seed, ["checkout", "-b", "task/example"]);',
+          'writeFileSync(join(seed, "scenario.txt"), "task branch change\\n");',
+          'run(seed, ["add", "scenario.txt"]);',
+          'run(seed, ["commit", "-m", "task source"]);',
+          'run(seed, ["push", "origin", "task/example"]);',
+          'run(root, ["clone", remote, repoDir]);',
+          'run(repoDir, ["checkout", "dev"]);',
+          'run(root, ["clone", remote, workspaceDir]);',
+          'run(workspaceDir, ["checkout", "task/example"]);',
+          'run(workspaceDir, ["config", "user.email", "test@example.com"]);',
+          'run(workspaceDir, ["config", "user.name", "Test"]);',
+          'const sourceCommit = run(workspaceDir, ["rev-parse", "HEAD"]);',
+          'const task = ["## Reconciliation Task", JSON.stringify({ taskId: "domain/implement-master-validation-cross-feature-18spec-journey-20260804", generation: 8, input: { specId: "spec.managed-namespaces.lifecycle,spec.node-image.profile-upgrade-validation,spec.ossku-migration.ubuntu-to-azurelinux,spec.secure-tls-bootstrap.vnet-integration,spec.secure-tls-bootstrap.network-isolated,spec.network-cni.azure-overlay,spec.cloud-provider.ccm-lifecycle,spec.cloud-provider.multiple-slb,spec.storage-csi.encryption-at-host,spec.kms.v2-public-cluster-public-kv-lifecycle,spec.kms.v2plus-create-cmk-public-kv-lifecycle,spec.kms.v2plus-create-cmk-public-kv-vnet-integration,spec.kms.v2plus-create-cmk-custom-vnet,spec.kms.v2plus-pmk-migrate-cmk-public-kv-lifecycle,spec.private-cluster.apiserver-vnet-integration-create,spec.virtualmachines.mixed-sku-upgrade,spec.deployment-safeguards.basic-enable-disable", sourceBranch: "task/example", sourceCommit, target: "staging", postPlanPathRepairVerification: { requiredPlanPath: "ci/plans/master-validation-cross-feature-17selector-staging.plan.json" } }, children: { live: [], completed: [] } }, null, 2)].join("\\n");',
+          'const result = await reconcileSpecLive({ agent: "aks-explorer", task, appDir, projectDir: repoDir, workspaceDir, done: (_summary, output) => output, runAgent: async () => { throw new Error("runAgent should not be called"); } }, { reviewedScenarioPatch: true });',
+          'const azCommands = readFileSync(azLog, "utf8").trim().split(/\\n+/).filter(Boolean).map((line) => JSON.parse(line));',
+          'const bunCommands = readFileSync(bunLog, "utf8").trim().split(/\\n+/).filter(Boolean);',
+          "console.log(JSON.stringify({ result, azCommands, bunCommands }));",
+          "rmSync(root, { recursive: true, force: true });",
+        ].join("\n"),
+      );
+
+      const child = spawnSync("bun", [childScript], {
+        cwd: import.meta.dir,
+        encoding: "utf8",
+        env: {
+          ...process.env,
+        },
+      });
+
+      if (child.status !== 0) {
+        throw new Error(child.stderr || child.stdout || "child process failed");
+      }
+      const payload = JSON.parse(child.stdout.trim());
+      expect(payload.result.state).toBe("waiting");
+      expect(payload.result.summary).toContain(
+        "Queued exact live verification run 175123999",
+      );
+      expect(payload.result.evidence).toContain(
+        "live-plan-path:ci/plans/master-validation-cross-feature-17selector-staging.plan.json",
+      );
+      expect(payload.result.evidence).toContain(
+        "live-plan-path-source:postPlanPathRepairVerification.requiredPlanPath",
+      );
+      expect(payload.result.conditions).toEqual([
+        pipelineWaitCondition("175123999"),
+      ]);
+      expect(
+        payload.azCommands.some(
+          (args: string[]) =>
+            args[0] === "pipelines" &&
+            args[1] === "run" &&
+            args.includes(
+              "plan_path=ci/plans/master-validation-cross-feature-17selector-staging.plan.json",
+            ),
+        ),
+      ).toBe(true);
+      expect(
+        payload.bunCommands.some((entry: string) =>
+          entry.includes(
+            "runner/check-live-admission.ts --specs spec.cloud-provider.ccm-lifecycle",
+          ),
+        ),
+      ).toBe(true);
+    } finally {
+      rmSync(childRoot, { recursive: true, force: true });
+    }
   });
 
   test("requires direct carriers to validate on the ADO Vitest surface", () => {
@@ -544,11 +806,7 @@ describe("spec-live-reconciliation workflow", () => {
         false,
       );
       expect(
-        artifactProvesTarget(
-          standaloneAggregatePath,
-          "staging",
-          "174794632",
-        ),
+        artifactProvesTarget(standaloneAggregatePath, "staging", "174794632"),
       ).toBe(true);
       expect(
         artifactProvesTarget(standaloneAggregatePath, "dev", "174794632"),
@@ -1663,6 +1921,119 @@ describe("spec-live-reconciliation workflow", () => {
         },
       }),
     ).toContain("has no producer");
+
+    expect(
+      agentConditionProblem({
+        decision: "waiting",
+        summary: "wait for the next scheduled master-validation pulse",
+        evidence: ["comment:4954113"],
+        condition: {
+          id: "cpu-capacity-backoff-pulse",
+          type: "aks.master-validation.check",
+          subject: "project:aks-rp-e2e",
+          expected: { field: "project", equals: "aks-rp-e2e" },
+        },
+      }),
+    ).toContain("Wait on aks.master-validation.capacity-pulse");
+
+    expect(
+      agentConditionProblem({
+        decision: "waiting",
+        summary: "wait for the next due capacity pulse",
+        evidence: ["comment:4995919"],
+        condition: {
+          id: "cpu-capacity-backoff-pulse",
+          type: "aks.master-validation.capacity-pulse",
+          subject: "project:aks-rp-e2e",
+          expected: { field: "project", equals: "aks-rp-e2e" },
+        },
+      }),
+    ).toContain("baselineCycleSlot");
+
+    expect(
+      agentConditionProblem({
+        decision: "waiting",
+        summary: "wait for the next due capacity pulse",
+        evidence: ["comment:4995919"],
+        condition: {
+          id: "cpu-capacity-backoff-pulse",
+          type: "aks.master-validation.capacity-pulse",
+          subject: "project:aks-rp-e2e",
+          expected: { field: "cycleSlot", notEquals: 82677 },
+        },
+      }),
+    ).toBeNull();
+  });
+
+  test("recognizes only cleaned pre-claim AKS capacity artifacts", () => {
+    const root = mkdtempSync(join(tmpdir(), "spec-live-capacity-block-"));
+    const artifactPath = join(root, "result.json");
+    const writeArtifact = (assertions: unknown[], cleanupStatus = "complete") =>
+      writeFileSync(
+        artifactPath,
+        JSON.stringify({
+          specId: "spec.sample.capacity",
+          status: "error",
+          assertions,
+          cleanup: { attempted: true, status: cleanupStatus },
+        }),
+      );
+    try {
+      writeArtifact([
+        {
+          name: "setup.execution-blocked",
+          ok: false,
+          verdictImpact: "setup",
+          detail: 'HTTP 400 body.code="AKSCapacityHeavyUsage"',
+        },
+      ]);
+      expect(
+        artifactProvesPreClaimCapacityBlock(
+          artifactPath,
+          "spec.sample.capacity",
+        ),
+      ).toBe(true);
+
+      writeArtifact([
+        {
+          name: "setup.execution-blocked",
+          ok: false,
+          verdictImpact: "setup",
+          detail: "AKSCapacityHeavyUsage",
+        },
+        {
+          name: "assert.sample.claim",
+          ok: false,
+          verdictImpact: "claim",
+        },
+      ]);
+      expect(
+        artifactProvesPreClaimCapacityBlock(
+          artifactPath,
+          "spec.sample.capacity",
+        ),
+      ).toBe(false);
+
+      writeArtifact(
+        [
+          {
+            name: "setup.execution-blocked",
+            ok: false,
+            verdictImpact: "setup",
+            detail: "AKSCapacityHeavyUsage",
+          },
+        ],
+        "incomplete",
+      );
+      expect(
+        artifactProvesPreClaimCapacityBlock(
+          artifactPath,
+          "spec.sample.capacity",
+        ),
+      ).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   test("requires an explicit live-readiness judgment before dispatch", () => {
@@ -2244,6 +2615,33 @@ describe("spec-live-reconciliation workflow", () => {
     ).toBeNull();
   });
 
+  test("accepts a structured AzureLinux publication wait observed by the app watcher", () => {
+    expect(
+      agentConditionProblem({
+        decision: "waiting",
+        summary:
+          "Wait for a newer westus2 staging AzureLinux security patch publication.",
+        evidence: [
+          "pipeline-run:175244417",
+          "nodeImageVersion=AKSAzureLinux-V3gen2-202607.29.0",
+        ],
+        condition: {
+          id: "azurelinux-securitypatch-westus2-after-202607.29.0",
+          type: "aks.node-image-publication.state",
+          subject: "project:aks-rp-e2e",
+          expected: {
+            targetName: "staging",
+            location: "westus2",
+            imageFamily: "AKSAzureLinux",
+            channel: "SecurityPatch",
+            field: "publishedVersion",
+            notEquals: "AKSAzureLinux-V3gen2-202607.29.0",
+          },
+        },
+      }),
+    ).toBeNull();
+  });
+
   test("rejects a future main pass as proof for task-owned scenario normalization", () => {
     const futureMainPass = {
       decision: "waiting" as const,
@@ -2680,6 +3078,60 @@ describe("spec-live-reconciliation workflow", () => {
       subject: "pull-request:77",
       expected: { field: "sourceCommit", notEquals: "abc" },
     });
+    expect(pullRequestReviewCountCondition("77", 3)).toEqual({
+      id: "pull-request-77-unresolved-review-count-not-3",
+      type: "pull-request.state",
+      subject: "pull-request:77",
+      expected: { field: "unresolvedReviewCount", notEquals: 3 },
+    });
+    expect(
+      pullRequestReviewFingerprintCondition("77", "357da4ec3208387c"),
+    ).toEqual({
+      id: "pull-request-77-review-fingerprint-not-357da4ec3208387c",
+      type: "pull-request.state",
+      subject: "pull-request:77",
+      expected: {
+        field: "reviewFingerprint",
+        notEquals: "357da4ec3208387c",
+      },
+    });
+  });
+
+  test("keeps review-thread changes actionable on the existing PR wait path", () => {
+    expect(
+      pullRequestWaitConditions("16671253", "repair-commit", {
+        available: true,
+        unresolvedCount: 3,
+        fingerprint: "357da4ec3208387c",
+        threads: [
+          {
+            threadId: "255003419",
+            path: "/features/rp-cluster-lifecycle/tests/rp-cluster-lifecycle-nginx-large-header.test.ts",
+            author: "GitOps",
+            content: "Please keep the cleanup proof attached.",
+          },
+        ],
+      }),
+    ).toEqual([
+      pullRequestWaitCondition("16671253"),
+      pullRequestSourceUpdateCondition("16671253", "repair-commit"),
+      pullRequestReviewCountCondition("16671253", 3),
+      pullRequestReviewFingerprintCondition("16671253", "357da4ec3208387c"),
+    ]);
+  });
+
+  test("keeps unchanged merge-only PR state from creating duplicate review work", () => {
+    expect(
+      pullRequestWaitConditions("16671253", "repair-commit", {
+        available: true,
+        unresolvedCount: 0,
+        fingerprint: "",
+        threads: [],
+      }),
+    ).toEqual([
+      pullRequestWaitCondition("16671253"),
+      pullRequestSourceUpdateCondition("16671253", "repair-commit"),
+    ]);
   });
 
   test("registers adopted spec-live runs for watcher observation", () => {
@@ -2727,6 +3179,52 @@ describe("spec-live-reconciliation workflow", () => {
     expect(
       taskScopedAgentCondition("domain/example-b", 2, condition).id,
     ).not.toBe(first.id);
+  });
+
+  test("uses a holder-scoped future slot for capacity backoff", () => {
+    expect(masterValidationCapacityPulseCycleSlot(82677 * 21_600_000)).toBe(
+      82677,
+    );
+    const first = masterValidationCapacityPulseWaitCondition(
+      "domain/example-a",
+      2,
+      82677,
+    );
+    expect(first).toMatchObject({
+      id: expect.stringMatching(
+        /^master-validation-capacity-after-slot-82677:task-[a-f0-9]{12}$/,
+      ),
+      type: "aks.master-validation.capacity-pulse",
+      subject: "project:aks-rp-e2e",
+      expected: { field: "cycleSlot", notEquals: 82677 },
+    });
+    expect(
+      masterValidationCapacityPulseWaitCondition("domain/example-b", 2, 82677)
+        .id,
+    ).not.toBe(first.id);
+  });
+
+  test("retries a capacity-blocked run only after its terminal cycle slot", () => {
+    const slot = 82681;
+    const finishTime = new Date(slot * 21_600_000 + 10_000).toISOString();
+    expect(
+      masterValidationCapacityRetryDue(
+        { finishTime },
+        slot * 21_600_000 + 20_000,
+      ),
+    ).toBe(false);
+    expect(
+      masterValidationCapacityRetryDue(
+        { finishTime },
+        (slot + 1) * 21_600_000 + 1,
+      ),
+    ).toBe(true);
+    expect(
+      masterValidationCapacityRetryDue(
+        { finishTime: "" },
+        (slot + 1) * 21_600_000 + 1,
+      ),
+    ).toBe(false);
   });
 
   test("uses dev by convention and allows the master-validation workflow to target main", () => {
@@ -2954,6 +3452,83 @@ describe("spec-live-reconciliation workflow", () => {
     ).toEqual([]);
   });
 
+  test("skips a patch-equivalent historical commit and completes one clean replay lineage", () => {
+    const root = mkdtempSync(join(tmpdir(), "scenario-equivalent-replay-"));
+    const run = (args: string[], allowFailure = false) => {
+      const result = spawnSync("git", args, {
+        cwd: root,
+        encoding: "utf8",
+      });
+      if (!allowFailure && result.status !== 0) {
+        throw new Error(result.stderr || result.stdout);
+      }
+      return {
+        status: result.status ?? 1,
+        stdout: result.stdout.trim(),
+        stderr: result.stderr.trim(),
+      };
+    };
+
+    try {
+      run(["init"]);
+      run(["config", "user.email", "test@example.com"]);
+      run(["config", "user.name", "Test"]);
+      writeFileSync(
+        join(root, "scenario.ts"),
+        "export const state = 'before';\n",
+      );
+      run(["add", "scenario.ts"]);
+      run(["commit", "-m", "base"]);
+      const base = run(["rev-parse", "HEAD"]).stdout;
+
+      run(["checkout", "-b", "first"]);
+      writeFileSync(
+        join(root, "scenario.ts"),
+        "export const state = 'after';\n",
+      );
+      run(["add", "scenario.ts"]);
+      run(["commit", "-m", "first copy"]);
+      const first = run(["rev-parse", "HEAD"]).stdout;
+
+      run(["checkout", "-b", "second", base]);
+      writeFileSync(
+        join(root, "scenario.ts"),
+        "export const state = 'after';\n",
+      );
+      run(["add", "scenario.ts"]);
+      run(["commit", "-m", "equivalent copy"]);
+      const second = run(["rev-parse", "HEAD"]).stdout;
+
+      run(["checkout", "-b", "target", base]);
+      writeFileSync(join(root, "target.ts"), "export const target = true;\n");
+      run(["add", "target.ts"]);
+      run(["commit", "-m", "advance target"]);
+      const target = run(["rev-parse", "HEAD"]).stdout;
+
+      const replay = cherryPickScenarioReplayCommits(
+        root,
+        [first, second],
+        (cwd, args, allowFailure) => {
+          expect(cwd).toBe(root);
+          return run(args, allowFailure);
+        },
+      );
+
+      expect(replay.status).toBe(0);
+      expect(replay.skippedCommits).toEqual([second]);
+      expect(
+        run(["rev-parse", "--verify", "CHERRY_PICK_HEAD"], true).status,
+      ).not.toBe(0);
+      expect(run(["status", "--porcelain"]).stdout).toBe("");
+      expect(run(["rev-list", "--count", `${target}..HEAD`]).stdout).toBe("1");
+      expect(readFileSync(join(root, "scenario.ts"), "utf8")).toBe(
+        "export const state = 'after';\n",
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   test("ignores failed remote lease lookups for scenario replay pushes", () => {
     expect(
       remoteLeaseCommit({
@@ -3094,6 +3669,102 @@ describe("spec-live-reconciliation workflow", () => {
           boundedSourceFiles: ["../outside"],
         }).equivalent,
       ).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("treats the managed-namespaces replay commit as bounded-equivalent but rejects an ours-style publication head", () => {
+    const root = mkdtempSync(join(tmpdir(), "frozen-candidate-ours-merge-"));
+    const run = (args: string[]) =>
+      execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
+    try {
+      run(["init"]);
+      run(["config", "user.email", "test@example.com"]);
+      run(["config", "user.name", "Test"]);
+      mkdirSync(join(root, "features/managed-namespaces/lib"), {
+        recursive: true,
+      });
+      writeFileSync(
+        join(
+          root,
+          "features/managed-namespaces/lib/master-validation-managed-namespaces-live.ts",
+        ),
+        "export const staleWebhookAssertion = true;\n",
+      );
+      writeFileSync(join(root, "shared.txt"), "base\n");
+      run(["add", "."]);
+      run(["commit", "-m", "base"]);
+      const base = run(["rev-parse", "HEAD"]);
+
+      run(["checkout", "-b", "candidate/replay", base]);
+      writeFileSync(
+        join(
+          root,
+          "features/managed-namespaces/lib/master-validation-managed-namespaces-live.ts",
+        ),
+        "export const staleWebhookAssertion = false;\n",
+      );
+      run(["add", "."]);
+      run(["commit", "-m", "bounded replay repair"]);
+      const focusedReplay = run(["rev-parse", "HEAD"]);
+
+      run(["checkout", "-B", "main", base]);
+      writeFileSync(
+        join(
+          root,
+          "features/managed-namespaces/lib/master-validation-managed-namespaces-live.ts",
+        ),
+        "export const staleWebhookAssertion = false;\n",
+      );
+      for (let index = 0; index < 30; index += 1) {
+        const path = join(root, `bulk/file-${index}.txt`);
+        mkdirSync(join(root, "bulk"), { recursive: true });
+        writeFileSync(path, `main change ${index}\n`);
+      }
+      run(["add", "."]);
+      run(["commit", "-m", "main advances independently"]);
+      const currentMain = run(["rev-parse", "HEAD"]);
+
+      run(["checkout", "candidate/replay"]);
+      run([
+        "merge",
+        "-s",
+        "ours",
+        "main",
+        "-m",
+        "Merge origin/main into replay branch to resolve PR conflict",
+      ]);
+      const oursHead = run(["rev-parse", "HEAD"]);
+
+      expect(
+        boundedSourceEquivalentToTarget({
+          repoDir: root,
+          sourceCommit: focusedReplay,
+          targetCommit: currentMain,
+        }),
+      ).toEqual({
+        equivalent: true,
+        paths: [
+          "features/managed-namespaces/lib/master-validation-managed-namespaces-live.ts",
+        ],
+      });
+      expect(
+        boundedSourceEquivalentToTarget({
+          repoDir: root,
+          sourceCommit: oursHead,
+          targetCommit: currentMain,
+        }).equivalent,
+      ).toBe(false);
+      expect(
+        spawnSync(
+          "git",
+          ["diff", "--name-only", `${currentMain}..${oursHead}`],
+          { cwd: root, encoding: "utf8" },
+        )
+          .stdout.split(/\r?\n/)
+          .filter(Boolean).length,
+      ).toBeGreaterThan(10);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -3256,6 +3927,65 @@ describe("spec-live-reconciliation workflow", () => {
           cwd: root,
         }).status,
       ).not.toBe(0);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("selects a bounded scenario commit that changes only the feature-owned helper", () => {
+    const root = mkdtempSync(join(tmpdir(), "scenario-helper-replay-"));
+    const run = (args: string[]) =>
+      execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
+    const adapter =
+      "features/bootstrap-profile/tests/bootstrap-profile-byo-acr-lifecycle.test.ts";
+    const helper =
+      "features/bootstrap-profile/lib/bootstrap-profile-byo-acr-lifecycle.ts";
+
+    try {
+      run(["init"]);
+      run(["config", "user.email", "test@example.com"]);
+      run(["config", "user.name", "Test"]);
+      mkdirSync(join(root, "features/bootstrap-profile/tests"), {
+        recursive: true,
+      });
+      mkdirSync(join(root, "features/bootstrap-profile/lib"), {
+        recursive: true,
+      });
+      writeFileSync(join(root, adapter), "test('direct', () => {});\n");
+      writeFileSync(join(root, helper), "export const probe = 'before';\n");
+      run(["add", "."]);
+      run(["commit", "-m", "base"]);
+      const baseline = run(["rev-parse", "HEAD"]);
+      run(["branch", "-M", "dev"]);
+      run(["checkout", "-b", "task/helper-only"]);
+      writeFileSync(join(root, helper), "export const probe = 'after';\n");
+      run(["add", helper]);
+      run(["commit", "-m", "repair feature helper"]);
+      const testedSource = run(["rev-parse", "HEAD"]);
+
+      run(["checkout", "dev"]);
+      writeFileSync(join(root, "target.txt"), "advanced\n");
+      run(["add", "target.txt"]);
+      run(["commit", "-m", "advance target"]);
+      run(["checkout", "task/helper-only"]);
+
+      const result = replayScenarioNormalizationOntoTarget({
+        workspaceDir: root,
+        recordedBaseCommit: baseline,
+        sourceCommit: testedSource,
+        targetRef: "dev",
+        anchorPaths: [adapter],
+        featureIds: ["bootstrap-profile"],
+      });
+
+      if (result.state !== "replayed") throw new Error(JSON.stringify(result));
+      expect(result.selectedCommits).toHaveLength(1);
+      expect(result.changedPaths).toEqual([helper]);
+      expect(result.protectedPathsEquivalent).toBe(true);
+      expect(run(["show", `HEAD:${helper}`])).toBe(
+        "export const probe = 'after';",
+      );
+      expect(run(["show", "HEAD:target.txt"])).toBe("advanced");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

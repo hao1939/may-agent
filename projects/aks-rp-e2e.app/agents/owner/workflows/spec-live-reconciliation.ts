@@ -24,6 +24,10 @@ import {
 } from "@may-agent/sdk";
 import { appendTrackedPipelineRunId } from "../../../watchers/aks-pipeline.js";
 import {
+  summarizePullRequestReview as summarizeAksPullRequestReview,
+  type PullRequestReview,
+} from "../../../watchers/aks-pull-request.js";
+import {
   scenarioNormalizationInvariant,
   scenarioNormalizationSpecIds,
   specTerminalDispositionCheck,
@@ -50,6 +54,8 @@ const defaultTargetBranch = "dev";
 const defaultLiveTarget = "staging";
 const stagingSubscriptionId = "26fe00f8-9173-4872-9134-bb1d2e00343a";
 const stagingLocation = "westus2";
+export const masterValidationCapacityPulseProjectId = "aks-rp-e2e";
+export const masterValidationCapacityPulseIntervalMs = 21_600_000;
 export const terminalDispositionSourceRepairInstruction =
   "If exact evidence supports a reviewed terminal posture, keep that judgment in this domain workflow. When the spec still carries a stale ready/pass posture, update its structured status, specState, statusReason, and latest-live-result evidence from the exact facts, add any needed durable source memo, run scoped checks, commit the bounded change, and return decision=terminal-disposition with terminalDisposition={specId,status,specState}. For scenario normalization, changing the spec to blocked/environment-blocked because no unchanged live run is currently truthful is a terminal disposition for this source iteration, even when a separate approval or environment change may reopen product testing later. Keep source-layout normalization separate from product-contract adjudication: when the existing behavior, assertions, and disputed expectation can be preserved unchanged while moving a plain carrier into direct .test.ts or feature lib source, normalize and integrate that source with the truthful current terminal posture, and keep the approval or escalation as independent follow-up. Wait for external authority only when it must decide how the source itself is implemented, not merely how observed product behavior is judged. Do not return committed with liveReady=false merely to keep that truthful normalized source off dev; terminal here means the current source posture is complete and reviewable, not that the feature is abandoned forever. A terminal disposition is neither live readiness nor a wait: omit liveReady and condition entirely. Preserve the resolved live target in statusReason, nextAction, resumeCondition, and every active approval/wait/path identifier; never bind a staging disposition to a stale identifier for another subscription or region. Do not return needs-owner merely because recording the terminal product gap requires this source update. Compact package status, compact-plan eligibility, a sibling compact task, or an arbitrary origin/dev advance is context, not an external prerequisite for this same-spec normalization; do not wait on any of them. An exact external wait must name the actual unavailable capability or authority, its real producer, and the observable fact that lets this same source continue. Use needs-owner only when the evidence cannot support the domain judgment or a real external authority must decide it. The workflow will validate and integrate the committed terminal source without claiming a failed run as a pass.";
 export const acceptedLiveProofSourceInstruction =
@@ -122,6 +128,7 @@ type PipelineRun = {
   status?: unknown;
   state?: unknown;
   result?: unknown;
+  finishTime?: unknown;
   sourceBranch?: unknown;
   sourceVersion?: unknown;
   templateParameters?: unknown;
@@ -156,9 +163,7 @@ export function completedPullRequestIntegration(input: {
   | {
       status: "unproven";
       reason:
-        | "merge-not-succeeded"
-        | "source-mismatch"
-        | "merge-commit-missing";
+        "merge-not-succeeded" | "source-mismatch" | "merge-commit-missing";
     } {
   if (input.mergeStatus !== "succeeded") {
     return { status: "unproven", reason: "merge-not-succeeded" };
@@ -248,6 +253,7 @@ export type SpecLiveReconciliationOptions = {
   existingRecoveryAfterRunId?: string;
   reusePriorIntegratedProof?: boolean;
   reviewedScenarioPatch?: boolean;
+  inputSourceIsObservation?: boolean;
 };
 
 export type LiveExecutionTarget = {
@@ -483,6 +489,48 @@ export function novelScenarioReplayCommits(cherryOutput: string): string[] {
     .filter(Boolean);
 }
 
+export function cherryPickScenarioReplayCommits(
+  workspaceDir: string,
+  commits: string[],
+  runGit: GitCommand = git,
+): {
+  status: number;
+  stdout: string;
+  stderr: string;
+  skippedCommits: string[];
+} {
+  if (!commits.length) {
+    return { status: 0, stdout: "", stderr: "", skippedCommits: [] };
+  }
+
+  let result = runGit(workspaceDir, ["cherry-pick", ...commits], true);
+  const skippedCommits: string[] = [];
+  while (result.status !== 0 && skippedCommits.length < commits.length) {
+    const cherryPickHead = runGit(
+      workspaceDir,
+      ["rev-parse", "--verify", "CHERRY_PICK_HEAD"],
+      true,
+    );
+    const indexIsEmpty =
+      runGit(workspaceDir, ["diff", "--cached", "--quiet"], true).status === 0;
+    const worktreeIsEmpty =
+      runGit(workspaceDir, ["diff", "--quiet"], true).status === 0;
+    if (
+      cherryPickHead.status !== 0 ||
+      !cherryPickHead.stdout ||
+      !indexIsEmpty ||
+      !worktreeIsEmpty
+    ) {
+      break;
+    }
+
+    skippedCommits.push(cherryPickHead.stdout);
+    result = runGit(workspaceDir, ["cherry-pick", "--skip"], true);
+  }
+
+  return { ...result, skippedCommits };
+}
+
 export function remoteLeaseCommit(input: {
   status: number;
   stdout: string;
@@ -617,9 +665,12 @@ export function replayScenarioCandidateForDispatch(input: {
       evidence: [...evidence, `reset-error:${reset.stderr || reset.stdout}`],
     };
   }
-  const replay = taskCommits.length
-    ? git(workspaceDir, ["cherry-pick", ...taskCommits], true)
-    : { status: 0, stdout: "", stderr: "" };
+  const replay = cherryPickScenarioReplayCommits(workspaceDir, taskCommits);
+  if (replay.skippedCommits.length) {
+    evidence.push(
+      `dispatch-skipped-empty-equivalent-commits:${replay.skippedCommits.join(",")}`,
+    );
+  }
   if (replay.status !== 0) {
     return {
       state: "conflict",
@@ -783,6 +834,38 @@ export function frozenCandidateContentEquivalent(input: {
   };
 }
 
+export function boundedSourceEquivalentToTarget(input: {
+  repoDir: string;
+  sourceCommit: string;
+  targetCommit: string;
+}): { equivalent: boolean; paths: string[] } {
+  if (!input.repoDir || !input.sourceCommit || !input.targetCommit) {
+    return { equivalent: false, paths: [] };
+  }
+  const mergeBase = git(
+    input.repoDir,
+    ["merge-base", input.sourceCommit, input.targetCommit],
+    true,
+  );
+  if (mergeBase.status !== 0 || !mergeBase.stdout) {
+    return { equivalent: false, paths: [] };
+  }
+  const paths = changedPathsBetweenCommits(
+    input.repoDir,
+    mergeBase.stdout,
+    input.sourceCommit,
+  );
+  if (!paths.length) {
+    return { equivalent: false, paths };
+  }
+  return frozenCandidateContentEquivalent({
+    repoDir: input.repoDir,
+    sourceCommit: input.sourceCommit,
+    targetCommit: input.targetCommit,
+    boundedSourceFiles: paths,
+  });
+}
+
 type JsonObject = Record<string, unknown>;
 
 function jsonObjects(value: unknown): JsonObject[] {
@@ -847,7 +930,49 @@ export function relevantKnowledgeModelUnchanged(input: {
 }
 
 function mergeSafeScenarioAggregatePath(path: string): boolean {
-  return /^features\/[^/]+\/compact\/staging\.plan\.json$/.test(path);
+  return (
+    /^features\/[^/]+\/compact\/staging\.plan\.json$/.test(path) ||
+    /^ci\/plans\/[A-Za-z0-9._-]+\.json$/.test(path)
+  );
+}
+
+export function resolveLivePlanDispatch(input: {
+  taskInput?: Record<string, unknown>;
+}): {
+  planPath?: string;
+  source:
+    "livePlanPath" | "postPlanPathRepairVerification.requiredPlanPath" | null;
+  evidence: string[];
+} {
+  const taskInput = jsonRecord(input.taskInput);
+  const explicitLivePlanPath = nonEmptyString(taskInput.livePlanPath);
+  if (explicitLivePlanPath) {
+    return {
+      planPath: explicitLivePlanPath,
+      source: "livePlanPath",
+      evidence: [
+        `live-plan-path:${explicitLivePlanPath}`,
+        "live-plan-path-source:livePlanPath",
+      ],
+    };
+  }
+
+  const repairVerification = jsonRecord(
+    taskInput.postPlanPathRepairVerification,
+  );
+  const requiredPlanPath = nonEmptyString(repairVerification.requiredPlanPath);
+  if (requiredPlanPath) {
+    return {
+      planPath: requiredPlanPath,
+      source: "postPlanPathRepairVerification.requiredPlanPath",
+      evidence: [
+        `live-plan-path:${requiredPlanPath}`,
+        "live-plan-path-source:postPlanPathRepairVerification.requiredPlanPath",
+      ],
+    };
+  }
+
+  return { source: null, evidence: [] };
 }
 
 export function compactPlanPipelineParameters(planPath: string): string[] {
@@ -856,6 +981,26 @@ export function compactPlanPipelineParameters(planPath: string): string[] {
     throw new Error(`Invalid compact live plan path: ${planPath}`);
   }
   return [`plan_path=${planPath}`];
+}
+
+export function queueRunPipelineParameters(input: {
+  specId: string;
+  target: string;
+  standaloneBuildId: string;
+  planPath?: string;
+  metadata: string;
+}): string[] {
+  return [
+    `specs=${input.specId}`,
+    ...compactPlanPipelineParameters(input.planPath || ""),
+    `target=${input.target}`,
+    ...(input.standaloneBuildId
+      ? [`standalone_build_id=${input.standaloneBuildId}`]
+      : []),
+    "slices=1",
+    "slice_max_parallel=1",
+    `metadata=${input.metadata}`,
+  ];
 }
 
 function proofNeutralScenarioSourcePath(path: string): boolean {
@@ -886,9 +1031,7 @@ export function mergeAcceptedTargetAdvanceProof(input: {
   | {
       state: "reverify";
       reason:
-        | "merge-conflict"
-        | "protected-path-changed"
-        | "merge-commit-failed";
+        "merge-conflict" | "protected-path-changed" | "merge-commit-failed";
     } {
   const merge = git(
     input.workspaceDir,
@@ -1116,6 +1259,47 @@ export function artifactObservedClaimIds(
     .filter(Boolean)
     .filter((claimId, index, values) => values.indexOf(claimId) === index)
     .sort();
+}
+
+export function artifactProvesPreClaimCapacityBlock(
+  path: string,
+  specId: string,
+): boolean {
+  const artifact = readJsonRecord(path);
+  if (!artifact || nonEmptyString(artifact.specId) !== specId) return false;
+  if (
+    !["error", "fail", "failed", "blocked"].includes(
+      nonEmptyString(artifact.status).toLowerCase(),
+    )
+  ) {
+    return false;
+  }
+
+  const records = artifactRecordChain(artifact);
+  const assertions = records
+    .flatMap((record) =>
+      Array.isArray(record.assertions) ? record.assertions : [],
+    )
+    .map(jsonRecord);
+  const capacityFailure = assertions.some(
+    (assertion) =>
+      assertion.verdictImpact === "setup" &&
+      assertion.ok === false &&
+      /AKSCapacityHeavyUsage/i.test(nonEmptyString(assertion.detail)),
+  );
+  const observedClaim = assertions.some(
+    (assertion) => assertion.verdictImpact === "claim",
+  );
+  const cleanupComplete = records.some((record) => {
+    const cleanup = jsonRecord(record.cleanup);
+    return (
+      cleanup.attempted === true &&
+      ["complete", "pass", "passed"].includes(
+        nonEmptyString(cleanup.status).toLowerCase(),
+      )
+    );
+  });
+  return capacityFailure && !observedClaim && cleanupComplete;
 }
 
 export function artifactProvesDeclaredClaims(
@@ -1470,7 +1654,7 @@ export function existingRecoveryProblem(input: {
 }
 
 const conditionInstruction =
-  "A waiting Condition must describe an external observable fact, use a typed subject such as project:aks-rp-e2e, pipeline-run:<id>, or pull-request:<id>, and use one event type this app actually observes: pipeline-run.state, pipeline.spec.observed, pull-request.state, project.approval.submitted, or aks.repo-ref.observed. Use a direct child for required sub-work and dependsOn for task ordering; never turn project state, task state, or task ticks into Conditions. Expected values support exact field equality, or { field, equals|anyOf|notEquals }; do not invent event types, comparison operators, or put prose in subject. The observed fact must be able to advance this exact task and source lineage; reuse an existing approval wait when it already owns the external decision, and do not wait for a hypothetical pass on unrelated source.";
+  "A waiting Condition must describe an external observable fact, use a typed subject such as project:aks-rp-e2e, pipeline-run:<id>, or pull-request:<id>, and use one event type this app actually observes: pipeline-run.state, pipeline.spec.observed, pull-request.state, project.approval.submitted, aks.repo-ref.observed, aks.node-image-publication.state, or aks.master-validation.capacity-pulse. Use a direct child for required sub-work and dependsOn for task ordering; never turn project state, task state, or task ticks into Conditions. Expected values support exact field equality, or { field, equals|anyOf|notEquals }; do not invent event types, comparison operators, or put prose in subject. The observed fact must be able to advance this exact task and source lineage; reuse an existing approval wait when it already owns the external decision, do not wait on raw aks.master-validation.check, and do not wait for a hypothetical pass on unrelated source.";
 
 const observableConditionTypes = new Set([
   "pipeline-run.state",
@@ -1478,7 +1662,41 @@ const observableConditionTypes = new Set([
   "pull-request.state",
   "project.approval.submitted",
   "aks.repo-ref.observed",
+  "aks.node-image-publication.state",
+  "aks.master-validation.capacity-pulse",
 ]);
+
+export function masterValidationCapacityPulseConditionProblem(
+  condition: ProjectAppConditionSpec,
+): string | null {
+  if (condition.type === "aks.master-validation.check") {
+    return "Wait on aks.master-validation.capacity-pulse, not raw aks.master-validation.check";
+  }
+  if (condition.type !== "aks.master-validation.capacity-pulse") return null;
+  const subjectProject = condition.subject.startsWith("project:")
+    ? condition.subject.slice("project:".length)
+    : "";
+  if (!subjectProject) {
+    return "aks.master-validation.capacity-pulse must target one exact project:<projectId> subject";
+  }
+  if (
+    !condition.expected ||
+    typeof condition.expected !== "object" ||
+    Array.isArray(condition.expected)
+  ) {
+    return "aks.master-validation.capacity-pulse must match the exact project subject/project only";
+  }
+  const expected = condition.expected as Record<string, unknown>;
+  const exactFutureSlotMatch =
+    subjectProject === masterValidationCapacityPulseProjectId &&
+    Object.keys(expected).length === 2 &&
+    expected.field === "cycleSlot" &&
+    Number.isInteger(expected.notEquals) &&
+    Number(expected.notEquals) >= 0;
+  return exactFutureSlotMatch
+    ? null
+    : `aks.master-validation.capacity-pulse must target project:${masterValidationCapacityPulseProjectId} and wait for { field: "cycleSlot", notEquals: <baselineCycleSlot> }`;
+}
 
 export function agentConditionProblem(decision: AgentDecision): string | null {
   const requiresCondition =
@@ -1495,6 +1713,9 @@ export function agentConditionProblem(decision: AgentDecision): string | null {
   if (!isTypedProjectAppConditionSubject(condition.subject)) {
     return `Condition subject must be typed, not prose: ${condition.subject}`;
   }
+  const capacityPulseProblem =
+    masterValidationCapacityPulseConditionProblem(condition);
+  if (capacityPulseProblem) return capacityPulseProblem;
   if (!observableConditionTypes.has(condition.type)) {
     return `Condition type ${condition.type} has no producer in this app; reuse an observable pipeline, approval, task, or repo-ref condition`;
   }
@@ -1631,6 +1852,49 @@ export function parseTaskPayload(raw: string): TaskPayload | null {
   } catch {
     return null;
   }
+}
+
+function triggerObservation(raw: string): Record<string, unknown> | null {
+  for (const marker of ["## Trigger Observation", "## Trigger Event"]) {
+    const markerIndex = raw.indexOf(marker);
+    if (markerIndex < 0) continue;
+    const scoped = raw.slice(markerIndex);
+    const start = scoped.indexOf("{");
+    const object = start >= 0 ? matchingJsonObject(scoped, start) : null;
+    if (!object) continue;
+    try {
+      const parsed = JSON.parse(object);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
+    } catch {
+      // Try the next supported trigger marker.
+    }
+  }
+  return null;
+}
+
+export function pullRequestReviewTriggeredForJudgment(
+  raw: string,
+  pullRequestId: string,
+  review: PullRequestReview,
+): boolean {
+  const trigger = triggerObservation(raw);
+  if (!trigger || !review.available || review.unresolvedCount <= 0) {
+    return false;
+  }
+  const data =
+    trigger.data &&
+    typeof trigger.data === "object" &&
+    !Array.isArray(trigger.data)
+      ? (trigger.data as Record<string, unknown>)
+      : {};
+  const value = (key: string) => trigger[key] ?? data[key];
+  return (
+    nonEmptyString(value("reason")) === "pull-request-review-changed" &&
+    nonEmptyString(value("pullRequestId")) === pullRequestId &&
+    nonEmptyString(value("reviewFingerprint")) === review.fingerprint
+  );
 }
 
 function safePart(value: string): string {
@@ -2059,7 +2323,7 @@ export function replayScenarioNormalizationOntoTarget(
       "--no-merges",
       `${input.recordedBaseCommit}..${input.sourceCommit}`,
       "--",
-      ...anchors,
+      ...featureRoots,
     ],
     true,
   )
@@ -2070,8 +2334,13 @@ export function replayScenarioNormalizationOntoTarget(
     return {
       state: "invalid",
       sourceCommit: input.sourceCommit,
-      reason: "tested source has no task commit touching the scenario anchors",
-      evidence: [...evidence, ...anchors.map((path) => `anchor:${path}`)],
+      reason:
+        "tested source has no task commit touching the owning feature roots",
+      evidence: [
+        ...evidence,
+        ...anchors.map((path) => `anchor:${path}`),
+        ...featureRoots.map((path) => `feature-root:${path}`),
+      ],
     };
   }
 
@@ -2377,8 +2646,9 @@ export function resolvePriorVerificationInput(
 
 export function preparedSourceRequirement(
   input: Record<string, unknown> | undefined,
+  inputSourceIsObservation = false,
 ): PreparedSourceRequirement | null {
-  if (!input) return null;
+  if (!input || inputSourceIsObservation) return null;
   const sourceBranch = nonEmptyString(input.sourceBranch).replace(
     /^refs\/heads\//,
     "",
@@ -2653,15 +2923,19 @@ export function reconcilePreparedTaskSource(
   };
 }
 
-async function azJson(cwd: string, args: string[]): Promise<unknown> {
+async function azJson(
+  cwd: string,
+  args: string[],
+  options: { includeProject?: boolean } = {},
+): Promise<unknown> {
+  const includeProject = options.includeProject !== false;
   const result = await commandAsync(
     azCli,
     [
       ...args,
       "--organization",
       organization,
-      "--project",
-      adoProject,
+      ...(includeProject ? ["--project", adoProject] : []),
       "-o",
       "json",
     ],
@@ -2672,6 +2946,79 @@ async function azJson(cwd: string, args: string[]): Promise<unknown> {
   } catch {
     throw new Error(`Azure CLI returned invalid JSON for ${args.join(" ")}`);
   }
+}
+
+export function summarizeSpecPullRequestReview(
+  value: unknown,
+): PullRequestReview {
+  return summarizeAksPullRequestReview(value);
+}
+
+async function pullRequestReview(
+  cwd: string,
+  pullRequestId: string,
+): Promise<PullRequestReview> {
+  const review = await azJson(
+    cwd,
+    [
+      "devops",
+      "invoke",
+      "--area",
+      "git",
+      "--resource",
+      "pullRequestThreads",
+      "--route-parameters",
+      `project=${adoProject}`,
+      `repositoryId=${repository}`,
+      `pullRequestId=${pullRequestId}`,
+      "--api-version",
+      "7.1",
+    ],
+    { includeProject: false },
+  );
+  return summarizeSpecPullRequestReview(review);
+}
+
+function pullRequestReviewJudgmentProblem(
+  decision: AgentDecision,
+): string | null {
+  if (
+    !["committed", "accepted-pass", "needs-owner"].includes(decision.decision)
+  ) {
+    return "pull-request review judgment must return committed for a bounded source fix, accepted-pass when the feedback warrants no source change, or needs-owner for a concrete authority gap";
+  }
+  if (decision.liveReady !== undefined || decision.condition !== undefined) {
+    return "pull-request review judgment must omit liveReady and condition because the workflow owns exact re-verification and the PR wait";
+  }
+  return null;
+}
+
+function pullRequestReviewPrompt(input: {
+  ctx: WorkflowContext;
+  pullRequestId: string;
+  specId: string;
+  sourceCommit: string;
+  targetRef: string;
+  review: PullRequestReview;
+}): string {
+  const threads = input.review.threads
+    .map(
+      (thread) =>
+        `- thread ${thread.threadId}${thread.path ? ` (${thread.path})` : ""} by ${thread.author}: ${thread.content}`,
+    )
+    .join("\n");
+  return [
+    `Judge the newly observed review feedback on PR ${input.pullRequestId} for ${input.specId} at exact live-proven commit ${input.sourceCommit}.`,
+    `The PR targets ${input.targetRef}; review fingerprint ${input.review.fingerprint} contains ${input.review.unresolvedCount} unresolved thread(s).`,
+    "Inspect the cited source and task evidence. If the feedback identifies a truthful bounded defect, fix only that defect in this task worktree, run scoped local checks, commit one clean follow-up, and return decision=committed. The workflow will push the same branch and require fresh exact live verification.",
+    "If the feedback is already satisfied, inaccurate, or purely informational, leave source unchanged and return decision=accepted-pass with concrete evidence explaining why. The workflow will preserve the unresolved thread for explicit reviewer or human resolution; do not mark a thread resolved without proof.",
+    "Return decision=needs-owner only for a concrete authority gap that source inspection cannot resolve. Do not create a branch, worktree, PR, task, or ADO run; do not push, merge, comment on, or resolve the PR.",
+    "Review threads:",
+    threads ||
+      "- structured review text unavailable; inspect the PR and cited source directly",
+    "Task:",
+    input.ctx.task,
+  ].join("\n\n");
 }
 
 function artifactPart(value: string): string {
@@ -2974,6 +3321,40 @@ export function taskScopedAgentCondition(
   };
 }
 
+export function masterValidationCapacityPulseCycleSlot(
+  nowMs = Date.now(),
+): number {
+  return Math.floor(nowMs / masterValidationCapacityPulseIntervalMs);
+}
+
+export function masterValidationCapacityRetryDue(
+  run: Pick<PipelineRun, "finishTime">,
+  nowMs = Date.now(),
+): boolean {
+  const finishedAt = Date.parse(nonEmptyString(run.finishTime));
+  if (!Number.isFinite(finishedAt)) return false;
+  return (
+    masterValidationCapacityPulseCycleSlot(nowMs) >
+    masterValidationCapacityPulseCycleSlot(finishedAt)
+  );
+}
+
+export function masterValidationCapacityPulseWaitCondition(
+  taskId: string,
+  generation: number,
+  baselineCycleSlot: number,
+): ProjectAppConditionSpec {
+  if (!Number.isInteger(baselineCycleSlot) || baselineCycleSlot < 0) {
+    throw new Error("baselineCycleSlot must be a non-negative integer");
+  }
+  return taskScopedAgentCondition(taskId, generation, {
+    id: `master-validation-capacity-after-slot-${baselineCycleSlot}`,
+    type: "aks.master-validation.capacity-pulse",
+    subject: `project:${masterValidationCapacityPulseProjectId}`,
+    expected: { field: "cycleSlot", notEquals: baselineCycleSlot },
+  });
+}
+
 export function pullRequestWaitCondition(
   pullRequestId: string,
 ): ProjectAppConditionSpec {
@@ -2998,6 +3379,62 @@ export function pullRequestSourceUpdateCondition(
     subject: `pull-request:${pullRequestId}`,
     expected: { field: "sourceCommit", notEquals: testedSourceCommit },
   };
+}
+
+export function pullRequestReviewCountCondition(
+  pullRequestId: string,
+  unresolvedReviewCount: number,
+): ProjectAppConditionSpec {
+  return {
+    id: `pull-request-${pullRequestId}-unresolved-review-count-not-${unresolvedReviewCount}`,
+    type: "pull-request.state",
+    subject: `pull-request:${pullRequestId}`,
+    expected: {
+      field: "unresolvedReviewCount",
+      notEquals: unresolvedReviewCount,
+    },
+  };
+}
+
+export function pullRequestReviewFingerprintCondition(
+  pullRequestId: string,
+  reviewFingerprint: string,
+): ProjectAppConditionSpec {
+  return {
+    id: `pull-request-${pullRequestId}-review-fingerprint-not-${reviewFingerprint}`,
+    type: "pull-request.state",
+    subject: `pull-request:${pullRequestId}`,
+    expected: {
+      field: "reviewFingerprint",
+      notEquals: reviewFingerprint,
+    },
+  };
+}
+
+export function pullRequestWaitConditions(
+  pullRequestId: string,
+  testedSourceCommit: string,
+  review: PullRequestReview = {
+    available: false,
+    unresolvedCount: 0,
+    fingerprint: "",
+    threads: [],
+  },
+): ProjectAppConditionSpec[] {
+  const conditions = [
+    pullRequestWaitCondition(pullRequestId),
+    pullRequestSourceUpdateCondition(pullRequestId, testedSourceCommit),
+  ];
+  if (!review.available || review.unresolvedCount <= 0) return conditions;
+  conditions.push(
+    pullRequestReviewCountCondition(pullRequestId, review.unresolvedCount),
+  );
+  if (review.fingerprint) {
+    conditions.push(
+      pullRequestReviewFingerprintCondition(pullRequestId, review.fingerprint),
+    );
+  }
+  return conditions;
 }
 
 function currentRunPath(contextDir: string): string {
@@ -3190,15 +3627,13 @@ async function queueRun(
     "--commit-id",
     input.sourceCommit,
     "--parameters",
-    `specs=${input.specId}`,
-    ...compactPlanPipelineParameters(input.planPath || ""),
-    `target=${input.target}`,
-    ...(input.standaloneBuildId
-      ? [`standalone_build_id=${input.standaloneBuildId}`]
-      : []),
-    "slices=1",
-    "slice_max_parallel=1",
-    `metadata=${metadata}`,
+    ...queueRunPipelineParameters({
+      specId: input.specId,
+      target: input.target,
+      standaloneBuildId: input.standaloneBuildId,
+      planPath: input.planPath,
+      metadata,
+    }),
   ]);
   if (
     !value ||
@@ -3287,15 +3722,11 @@ async function abandonPullRequest(
   pullRequestId: string,
 ): Promise<boolean> {
   try {
-    await azJson(repoDir, [
-      "repos",
-      "pr",
-      "update",
-      "--id",
-      pullRequestId,
-      "--status",
-      "abandoned",
-    ]);
+    await azJson(
+      repoDir,
+      ["repos", "pr", "update", "--id", pullRequestId, "--status", "abandoned"],
+      { includeProject: false },
+    );
     return true;
   } catch {
     return false;
@@ -3527,30 +3958,26 @@ export async function reconcileSpecLive(
   const taskId = nonEmptyString(payload?.taskId);
   const generation = Number(payload?.generation ?? 1);
   const normalizationInput = payload?.input as
-    | ScenarioNormalizationInput
-    | undefined;
+    ScenarioNormalizationInput | undefined;
   const allowTerminalDisposition =
     options.allowTerminalDisposition ??
     payload?.input?.allowTerminalDisposition !== false;
   const selectedSpecIds = scenarioNormalizationSpecIds(normalizationInput);
   const specId = selectedSpecIds.join(",");
-  const requestedLivePlanPath = nonEmptyString(
-    normalizationInput?.livePlanPath,
-  );
+  const livePlanDispatch = resolveLivePlanDispatch({
+    taskInput: payload?.input,
+  });
   if (
-    requestedLivePlanPath &&
-    !mergeSafeScenarioAggregatePath(requestedLivePlanPath)
+    livePlanDispatch.planPath &&
+    !mergeSafeScenarioAggregatePath(livePlanDispatch.planPath)
   ) {
     return ownerResult(
       ctx,
-      "livePlanPath must name a feature compact staging plan.",
-      [
-        `task:${taskId || "missing"}`,
-        `live-plan-path:${requestedLivePlanPath}`,
-      ],
+      `${livePlanDispatch.source || "livePlanPath"} must name a feature compact staging plan.`,
+      [`task:${taskId || "missing"}`, ...livePlanDispatch.evidence],
     );
   }
-  const livePlanPath = requestedLivePlanPath || undefined;
+  const livePlanPath = livePlanDispatch.planPath;
   const expectedVitestTestCountRaw =
     normalizationInput?.expectedVitestTestCount;
   const expectedVitestTestCount = Number(expectedVitestTestCountRaw);
@@ -3584,7 +4011,10 @@ export async function reconcileSpecLive(
     priorVerificationInput.value?.authoritative === true;
   const acceptedSourceCommit =
     priorVerificationInput.value?.acceptedSourceCommit || "";
-  const requiredSource = preparedSourceRequirement(payload?.input);
+  const requiredSource = preparedSourceRequirement(
+    payload?.input,
+    options.inputSourceIsObservation === true,
+  );
   const authoritativeReference = resolvedAuthoritativeRunReference(
     payload,
     ctx.appDir ?? "/app/projects/aks-rp-e2e.app",
@@ -4338,7 +4768,10 @@ export async function reconcileSpecLive(
         integrationMode(targetBranch) === "direct" &&
         normalizationInput?.loopId === "scenario-normalization";
       let dispatchCommit = candidateCommit;
-      const dispatchEvidence: string[] = [...preparedSourceEvidence];
+      const dispatchEvidence: string[] = [
+        ...preparedSourceEvidence,
+        ...livePlanDispatch.evidence,
+      ];
 
       for (let targetAttempt = 1; targetAttempt <= 3; targetAttempt += 1) {
         if (!directScenarioNormalization) break;
@@ -5082,15 +5515,17 @@ export async function reconcileSpecLive(
           ),
         );
         git(workspaceDir, ["reset", "--hard", targetRef]);
-        const replay = taskCommits.length
-          ? git(workspaceDir, ["cherry-pick", ...taskCommits], true)
-          : { status: 0, stdout: "", stderr: "" };
+        const replay = cherryPickScenarioReplayCommits(
+          workspaceDir,
+          taskCommits,
+        );
         let replayEvidence = [
           `origin-dev-commit:${recordedTaskBase}`,
           `task-replay-base:${taskBase}`,
           `replay-target:${targetRef}@${baseCommit}`,
           `task-owned-commits:${taskCommits.join(",") || "none"}`,
           `discarded-first-parent-merges:${firstParentMerges.join(",") || "none"}`,
+          `skipped-empty-equivalent-commits:${replay.skippedCommits.join(",") || "none"}`,
         ];
         if (replay.status !== 0) {
           const decision = await askAgent(
@@ -5769,6 +6204,7 @@ export async function reconcileSpecLive(
           ...(standaloneBuildId
             ? [`standalone-build-id:${standaloneBuildId}`]
             : []),
+          ...livePlanDispatch.evidence,
           `pipeline-run:${runId}`,
           `pipeline-status:${runStatus}`,
         ],
@@ -5801,6 +6237,78 @@ export async function reconcileSpecLive(
         runId,
         latestRun,
       );
+      const terminalArtifactPaths = artifactJsonFiles(
+        collectedRunEvidence.artifactPaths,
+      );
+      const capacityArtifactPath = !allowTerminalDisposition
+        ? terminalArtifactPaths.find((path) =>
+            artifactProvesPreClaimCapacityBlock(path, specId),
+          )
+        : undefined;
+      if (capacityArtifactPath) {
+        if (masterValidationCapacityRetryDue(latestRun)) {
+          const retryCycleSlot = masterValidationCapacityPulseCycleSlot();
+          const dispatch = await prepareLiveDispatch(
+            sourceCommit,
+            `capacity retry in cycle slot ${retryCycleSlot} after run ${runId}`,
+          );
+          if (dispatch.state === "result") return dispatch.result;
+          sourceCommit = dispatch.sourceCommit;
+          const publication = await publishTaskBranch(
+            sourceCommit,
+            `capacity retry in cycle slot ${retryCycleSlot} after run ${runId}`,
+          );
+          if (publication.state === "result") return publication.result;
+          sourceCommit = publication.sourceCommit;
+          const queued = await queueFreshRun(sourceCommit, runId);
+          if (queued.state === "result") return queued.result;
+          sourceCommit = queued.sourceCommit;
+          latestRun = queued.run;
+          saveRunReceipt(contextDir, latestRun, sourceCommit);
+          const retryRunId = nonEmptyString(latestRun.id);
+          return waitingResult(
+            ctx,
+            `Queued capacity retry run ${retryRunId} for ${specId} in master-validation cycle slot ${retryCycleSlot}.`,
+            [
+              `task:${taskId}@${generation}`,
+              `spec:${specId}`,
+              `source-branch:${sourceBranch}`,
+              `source-commit:${sourceCommit}`,
+              `live-target:${liveTarget}`,
+              ...(standaloneBuildId
+                ? [`standalone-build-id:${standaloneBuildId}`]
+                : []),
+              `capacity-retry-of-run:${runId}`,
+              `capacity-retry-cycle-slot:${retryCycleSlot}`,
+              ...dispatch.evidence,
+              ...publication.evidence,
+              ...queued.evidence,
+              `pipeline-run:${retryRunId}`,
+            ],
+            pipelineWaitCondition(retryRunId),
+          );
+        }
+        const baselineCycleSlot = masterValidationCapacityPulseCycleSlot();
+        return waitingResult(
+          ctx,
+          `Run ${runId} reached Azure cluster-create capacity before any ${specId} claim; wait for the next master-validation capacity slot before reconsidering the same exact source.`,
+          [
+            `pipeline-run:${runId}`,
+            `spec:${specId}`,
+            `source-commit:${sourceCommit}`,
+            `artifact:${capacityArtifactPath}`,
+            "capacity-code:AKSCapacityHeavyUsage",
+            "claim-observations:0",
+            "cleanup:complete",
+            `capacity-baseline-cycle-slot:${baselineCycleSlot}`,
+          ],
+          masterValidationCapacityPulseWaitCondition(
+            taskId,
+            generation,
+            baselineCycleSlot,
+          ),
+        );
+      }
       let candidateInvariantSatisfied = true;
       if (normalizationInput?.loopId === "scenario-normalization") {
         try {
@@ -5837,7 +6345,7 @@ export async function reconcileSpecLive(
         standaloneBuildId,
         proof: candidateProof,
         run: latestRun,
-        artifactPaths: artifactJsonFiles(collectedRunEvidence.artifactPaths),
+        artifactPaths: terminalArtifactPaths,
         expectedClaimIdsBySpec: claimAssertionIdsBySpecAtCommit(
           repoDir,
           sourceCommit,
@@ -6601,24 +7109,64 @@ export async function reconcileSpecLive(
       });
     }
 
-    const branchHasChange = existingPr
-      ? true
-      : git(
+    const sourceIsInTarget =
+      git(
+        repoDir,
+        ["merge-base", "--is-ancestor", sourceCommit, targetRef],
+        true,
+      ).status === 0;
+    const boundedTargetEquivalent = sourceIsInTarget
+      ? { equivalent: false, paths: [] as string[] }
+      : boundedSourceEquivalentToTarget({
           repoDir,
-          ["merge-base", "--is-ancestor", sourceCommit, targetRef],
-          true,
-        ).status !== 0;
+          sourceCommit,
+          targetCommit: targetRef,
+        });
+    const branchHasChange =
+      !sourceIsInTarget && !boundedTargetEquivalent.equivalent;
     if (!branchHasChange) {
-      const summary = `${specId} passed exact live verification on current ${targetRef}@${sourceCommit}; no source publication is required.`;
+      const existingPrId = nonEmptyString(existingPr?.pullRequestId);
+      const abandonedExistingPr =
+        existingPrId && nonEmptyString(existingPr?.status) === "active"
+          ? await abandonPullRequest(repoDir, existingPrId)
+          : false;
+      if (boundedTargetEquivalent.equivalent) {
+        proof = {
+          ...proof,
+          targetRef,
+          mergedCommit: git(repoDir, ["rev-parse", targetRef]).stdout,
+          integrationMode: "bounded-content-equivalent",
+          integratedPaths: boundedTargetEquivalent.paths,
+        };
+        saveProof(contextDir, proof);
+      }
+      const summary = boundedTargetEquivalent.equivalent
+        ? `${specId} passed exact live verification on ${sourceCommit}; current ${targetRef} already carries the same bounded repair content, so no PR publication is required.`
+        : `${specId} passed exact live verification on current ${targetRef}@${sourceCommit}; no source publication is required.`;
       return ctx.done(summary, {
         state: "converged",
         summary,
         evidence: [
           ...proof.evidence,
+          ...(boundedTargetEquivalent.equivalent
+            ? [
+                "integration-mode:bounded-content-equivalent",
+                ...boundedTargetEquivalent.paths.map(
+                  (path) => `integrated-path:${path}`,
+                ),
+                `integrated-commit:${nonEmptyString(proof.mergedCommit)}`,
+              ]
+            : []),
           `proof:${proofPath(contextDir)}`,
           `pipeline-run:${runId}`,
           `source-commit:${sourceCommit}`,
           `target-ref:${targetRef}`,
+          ...(existingPrId
+            ? [
+                `obsolete-pull-request:${existingPrId}`,
+                `obsolete-pull-request-abandoned:${String(abandonedExistingPr)}`,
+              ]
+            : []),
         ],
         actions: [],
       });
@@ -6643,6 +7191,15 @@ export async function reconcileSpecLive(
     const mergeStatus = nonEmptyString(pr.mergeStatus) || "unknown";
     const prSourceCommit = nonEmptyString(pr.lastMergeSourceCommit?.commitId);
     const mergedCommit = nonEmptyString(pr.lastMergeCommit?.commitId);
+    const review =
+      prStatus === "active"
+        ? await pullRequestReview(repoDir, prId)
+        : {
+            available: true,
+            unresolvedCount: 0,
+            fingerprint: "",
+            threads: [],
+          };
 
     if (prStatus === "abandoned") {
       return ownerResult(
@@ -6653,6 +7210,23 @@ export async function reconcileSpecLive(
           `pull-request:${prId}`,
           `source-commit:${sourceCommit}`,
           "pull-request-status:abandoned",
+        ],
+      );
+    }
+    if (
+      prStatus === "active" &&
+      prSourceCommit &&
+      prSourceCommit !== sourceCommit
+    ) {
+      return ownerResult(
+        ctx,
+        `PR ${prId} currently points at ${prSourceCommit}, but the accepted live proof is for ${sourceCommit}; exact replacement proof is required before this PR can gate publication.`,
+        [
+          ...proof.evidence,
+          `pull-request:${prId}`,
+          `source-commit:${sourceCommit}`,
+          `pull-request-source-commit:${prSourceCommit}`,
+          `merge-status:${mergeStatus}`,
         ],
       );
     }
@@ -6797,9 +7371,97 @@ export async function reconcileSpecLive(
       );
     }
 
+    const waitingForReview = review.available && review.unresolvedCount > 0;
+    let reviewJudgmentEvidence: string[] = [];
+    if (
+      waitingForReview &&
+      pullRequestReviewTriggeredForJudgment(ctx.task, prId, review)
+    ) {
+      const reviewDecision = await askAgent(
+        ctx,
+        pullRequestReviewPrompt({
+          ctx,
+          pullRequestId: prId,
+          specId,
+          sourceCommit,
+          targetRef,
+          review,
+        }),
+        {
+          validateDecision: pullRequestReviewJudgmentProblem,
+          continueDomainWorkOnValidation: true,
+        },
+      );
+      reviewJudgmentEvidence = reviewDecision.evidence;
+      if (reviewDecision.decision === "needs-owner") {
+        return ownerResult(ctx, reviewDecision.summary, [
+          ...reviewDecision.evidence,
+          `pull-request:${prId}`,
+          `pull-request-review-fingerprint:${review.fingerprint}`,
+        ]);
+      }
+      const reviewedCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+      if (reviewDecision.decision === "committed") {
+        if (reviewedCommit === sourceCommit || cleanWorkspace(workspaceDir)) {
+          return ownerResult(
+            ctx,
+            `Review repair for PR ${prId} did not leave one new clean commit.`,
+            reviewDecision.evidence,
+          );
+        }
+        const dispatch = await prepareLiveDispatch(
+          reviewedCommit,
+          `replacement after review feedback on PR ${prId}`,
+        );
+        if (dispatch.state === "result") return dispatch.result;
+        let replacementCommit = dispatch.sourceCommit;
+        const publication = await publishTaskBranch(
+          replacementCommit,
+          `replacement after review feedback on PR ${prId}`,
+        );
+        if (publication.state === "result") return publication.result;
+        replacementCommit = publication.sourceCommit;
+        const queued = await queueFreshRun(replacementCommit);
+        if (queued.state === "result") return queued.result;
+        replacementCommit = queued.sourceCommit;
+        const replacement = queued.run;
+        saveRunReceipt(contextDir, replacement, replacementCommit);
+        const replacementId = nonEmptyString(replacement.id);
+        return waitingResult(
+          ctx,
+          `Applied bounded review feedback for PR ${prId} and queued replacement live run ${replacementId} at ${replacementCommit}.`,
+          [
+            ...reviewDecision.evidence,
+            ...dispatch.evidence,
+            ...publication.evidence,
+            ...queued.evidence,
+            `pull-request:${prId}`,
+            `pull-request-review-fingerprint:${review.fingerprint}`,
+            `replaces-run:${runId}`,
+            `source-commit:${replacementCommit}`,
+            `pipeline-run:${replacementId}`,
+          ],
+          pipelineWaitCondition(replacementId),
+        );
+      }
+      if (reviewedCommit !== sourceCommit || cleanWorkspace(workspaceDir)) {
+        return ownerResult(
+          ctx,
+          `No-change review judgment for PR ${prId} changed the task worktree; the stale wait was refused.`,
+          reviewDecision.evidence,
+        );
+      }
+      reviewJudgmentEvidence = [
+        ...reviewDecision.evidence,
+        `pull-request-review-judged:${review.fingerprint}`,
+        "pull-request-review-source-change:not-warranted",
+      ];
+    }
     return waitingResult(
       ctx,
-      `PR ${prId} is ${prStatus}/${mergeStatus}; keep the same spec task waiting for merge or a source/review change.`,
+      waitingForReview
+        ? `PR ${prId} is ${prStatus}/${mergeStatus} with ${review.unresolvedCount} unresolved review thread(s); keep the same spec task waiting for review resolution, merge, or a source change.`
+        : `PR ${prId} is ${prStatus}/${mergeStatus}; keep the same spec task waiting for merge or a source/review change.`,
       [
         ...proof.evidence,
         `proof:${proofPath(contextDir)}`,
@@ -6808,11 +7470,19 @@ export async function reconcileSpecLive(
         `source-commit:${sourceCommit}`,
         `pull-request-status:${prStatus}`,
         `merge-status:${mergeStatus}`,
+        `pull-request-review-available:${String(review.available)}`,
+        `pull-request-unresolved-review-count:${review.unresolvedCount}`,
+        ...(review.fingerprint
+          ? [`pull-request-review-fingerprint:${review.fingerprint}`]
+          : []),
+        ...(review.threads.length > 0
+          ? [
+              `pull-request-review-thread-ids:${review.threads.map((thread) => thread.threadId).join(",")}`,
+            ]
+          : []),
+        ...reviewJudgmentEvidence,
       ],
-      [
-        pullRequestWaitCondition(prId),
-        pullRequestSourceUpdateCondition(prId, sourceCommit),
-      ],
+      pullRequestWaitConditions(prId, sourceCommit, review),
     );
   } catch (error) {
     throw new Error(

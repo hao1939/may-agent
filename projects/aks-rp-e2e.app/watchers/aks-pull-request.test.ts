@@ -72,6 +72,12 @@ describe("AKS pull request watcher", () => {
             {
               id: 1,
               commentType: "text",
+              author: { displayName: "PR Assistant" },
+              content: "<span>bot preamble</span>",
+            },
+            {
+              id: 2,
+              commentType: "text",
               author: { displayName: "Reviewer" },
               content: "Please preserve terminal cleanup evidence.",
             },
@@ -107,6 +113,39 @@ describe("AKS pull request watcher", () => {
       reviewFingerprint: review.fingerprint,
       unresolvedReviewThreads: review.threads,
     });
+  });
+
+  test("keeps actionable AI review text after stripping a long HTML preamble", () => {
+    const longPreamble = `${"<span>PR Assistant</span>".repeat(180)}<p>Use the shared direct-node helper instead of duplicating cleanup logic.</p>`;
+    const review = summarizePullRequestReview({
+      value: [
+        {
+          id: 21,
+          status: "active",
+          threadContext: { filePath: "/feature.test.ts" },
+          comments: [
+            {
+              id: 1,
+              commentType: "text",
+              author: { displayName: "GitOps (Git LowPriv)" },
+              content: longPreamble,
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(review.threads).toEqual([
+      {
+        threadId: "21",
+        path: "/feature.test.ts",
+        author: "GitOps (Git LowPriv)",
+        content: expect.stringContaining(
+          "Use the shared direct-node helper instead of duplicating cleanup logic.",
+        ),
+      },
+    ]);
+    expect(review.threads[0]?.content).not.toContain("<span>");
   });
 
   test("does not report review success when thread discovery is unavailable", () => {
