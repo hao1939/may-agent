@@ -8,6 +8,7 @@ import {
   boundedChangedFileEvidence,
   boundedEvidence,
   campaignRepairPullRequestDescription,
+  campaignRepairPublicationRetryReady,
   campaignRepairReplayObservation,
   campaignRepairReady,
   changedFilesMayAffectSpec,
@@ -80,6 +81,33 @@ ${JSON.stringify({
       conflictingPaths: ["features/example.test.ts"],
       expectedRemoteCommit: "old-pr-head",
     });
+  });
+
+  test("reuses a clean task-owned repair after a guarded publication retry", () => {
+    expect(
+      campaignRepairPublicationRetryReady({
+        headCommit: "repaired-head",
+        repairBaseCommit: "current-main",
+        expectedRemoteCommit: "prior-pr-head",
+        workspaceClean: true,
+      }),
+    ).toBe(true);
+    expect(
+      campaignRepairPublicationRetryReady({
+        headCommit: "prior-pr-head",
+        repairBaseCommit: "current-main",
+        expectedRemoteCommit: "prior-pr-head",
+        workspaceClean: true,
+      }),
+    ).toBe(false);
+    expect(
+      campaignRepairPublicationRetryReady({
+        headCommit: "repaired-head",
+        repairBaseCommit: "current-main",
+        expectedRemoteCommit: "prior-pr-head",
+        workspaceClean: false,
+      }),
+    ).toBe(false);
   });
 
   test("uses guarded history rewrite for an intentional replay-safe PR update", () => {

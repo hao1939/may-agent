@@ -772,6 +772,20 @@ export function campaignRepairReady(input: {
   );
 }
 
+export function campaignRepairPublicationRetryReady(input: {
+  headCommit: string;
+  repairBaseCommit: string;
+  expectedRemoteCommit: string;
+  workspaceClean: boolean;
+}): boolean {
+  return Boolean(
+    input.workspaceClean &&
+    input.expectedRemoteCommit &&
+    input.headCommit !== input.expectedRemoteCommit &&
+    campaignRepairReady(input),
+  );
+}
+
 function triggerEvent(raw: string): Record<string, unknown> | null {
   for (const marker of ["## Trigger Observation", "## Trigger Event"]) {
     const startMarker = raw.indexOf(marker);
@@ -1795,6 +1809,29 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     }
     if (hasPreparedRepair(input)) {
       return reconcileTestIssue(ctx, input);
+    }
+    if (
+      input.campaignRepairReplay &&
+      frozenBaseCommit &&
+      campaignRepairPublicationRetryReady({
+        headCommit,
+        repairBaseCommit,
+        expectedRemoteCommit: input.campaignRepairReplay.expectedRemoteCommit,
+        workspaceClean: !git(workspaceDir, ["status", "--porcelain=v1"]).stdout,
+      })
+    ) {
+      return prepareCampaignRepair(ctx, input, {
+        repoDir,
+        workspaceDir,
+        sourceBranch,
+        sourceCommit: headCommit,
+        campaignBaseCommit: frozenBaseCommit,
+        evidence: [
+          "resumed-existing-campaign-repair-after-publication-retry",
+          `expected-remote-commit:${input.campaignRepairReplay.expectedRemoteCommit}`,
+          `repair-base:${repairBaseCommit}`,
+        ],
+      });
     }
     // Older owner turns split publication into a child and left the stable
     // failure parent with only fresh watcher input. Resume the finite source
