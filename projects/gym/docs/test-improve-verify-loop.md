@@ -92,6 +92,11 @@ selected scenario directories and benchmark evaluator. The runner executes
 those snapshots, not the live definitions. The command prints the durable run
 directory; the baseline is never mutated after creation.
 
+The run directory is also the recovery boundary. If an owning workflow times
+out while the runner is finishing, a later reconcile may reuse the completed
+run only when the full manifest and comparison exactly match the pending
+baseline, candidate fingerprint, scenarios, and trials.
+
 ## 2. Diagnose before improving
 
 Read `report.md`, then inspect failed or invalid trials under `cases/`. Classify
@@ -148,6 +153,18 @@ The verification gate requires:
 An unchanged perfect baseline therefore does not masquerade as an improvement.
 For release decisions, baseline and candidate should cover the full suite and
 use at least five trials.
+
+### Verification-only adjustments
+
+Sometimes a human rejects a benchmark or scorer proposal but keeps the exact
+candidate. If the requested change is only a better comparison, do not edit the
+benchmark and do not rebuild the candidate. Record the exact candidate
+fingerprint and benchmark, select every active scenario from `suite.json`, and
+require every selected label to be approved. Run a fresh five-trial baseline
+and candidate comparison. The candidate may proceed only when it matches the
+requested fingerprint, uses the same framework as the baseline, passes every
+trial, and has no invalid runs or regressions. Draft transfer labels cannot
+authorize promotion.
 
 ## 5. Adjudicate
 

@@ -4,6 +4,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -19,6 +20,7 @@ import {
   buildBenchmarkFixRetryEvent,
   buildApprovalRequest,
   dispatchApproval,
+  evaluationOnlyAdjustmentFromResponse,
   experimentNeedsIntegration,
   fingerprintTree,
   improvementInput,
@@ -501,6 +503,443 @@ describe("single agent-improvement loop", () => {
       emitted.some(({ type }) => type === "project.approval.requested"),
     ).toBe(true);
     expect(dispatched).toHaveLength(1);
+  });
+
+  test("runs an exact evaluation adjustment and recovers its completed verification", async () => {
+    const root = mkdtempSync(join(tmpdir(), "gym-evaluation-adjustment-"));
+    roots.push(root);
+    const projectsRoot = join(root, "projects");
+    const stateDir = join(
+      projectsRoot,
+      "gym.app",
+      ".state",
+      "candidates",
+      "improve-may",
+      "7",
+      "tracks",
+      "approved-suite",
+    );
+    const iterationDir = join(stateDir, "iterations", "1");
+    const candidatePath = join(iterationDir, "may");
+    const resultPath = join(stateDir, "result.json");
+    const assessmentPath = join(stateDir, "assessment.json");
+    const benchmark = "approved-development";
+    const scenarios = ["case-a", "case-b"];
+    const benchmarkDir = join(projectsRoot, "gym", "benchmarks", benchmark);
+    const protectedBenchmark = join(
+      projectsRoot,
+      "gym",
+      "benchmarks",
+      "draft-transfer",
+    );
+    const oldProposal = join(iterationDir, "benchmark-fix", "draft-transfer");
+    const sourceMay = join(root, "agents", "may");
+    for (const path of [
+      candidatePath,
+      benchmarkDir,
+      protectedBenchmark,
+      oldProposal,
+      sourceMay,
+    ]) {
+      mkdirSync(path, { recursive: true });
+    }
+    writeFileSync(join(candidatePath, "agent.json"), '{"candidate":true}\n');
+    writeFileSync(join(sourceMay, "agent.json"), '{"candidate":false}\n');
+    writeFileSync(join(protectedBenchmark, "suite.json"), '{"draft":true}\n');
+    writeFileSync(join(oldProposal, "suite.json"), '{"replacement":true}\n');
+    writeFileSync(
+      join(benchmarkDir, "suite.json"),
+      JSON.stringify({
+        name: benchmark,
+        version: 1,
+        scenarios,
+        labels_file: "labels.json",
+      }),
+    );
+    writeFileSync(
+      join(benchmarkDir, "labels.json"),
+      JSON.stringify({
+        labels: Object.fromEntries(
+          scenarios.map((scenario) => [
+            scenario,
+            {
+              status: "approved",
+              approved_by: "hao",
+              approved_at: "2026-08-06T00:00:00Z",
+            },
+          ]),
+        ),
+      }),
+    );
+    const candidateFingerprint = fingerprintTree(candidatePath);
+    writeFileSync(
+      join(iterationDir, "candidate.json"),
+      JSON.stringify({
+        candidateId: "gym/may/g7-i1",
+        candidatePath,
+        candidateFingerprint,
+        implementationSummary: "Exact candidate",
+        implementationEvidence: [],
+      }),
+    );
+    const baselineDir = join(root, "old-baseline");
+    mkdirSync(baselineDir, { recursive: true });
+    writeFileSync(
+      assessmentPath,
+      JSON.stringify({
+        schema_version: 1,
+        agent: "may",
+        benchmark,
+        release_benchmark: "draft-transfer",
+        release_scenarios: ["draft-case"],
+        screening_run_id: "old-baseline",
+        screening_run_dir: baselineDir,
+        retry_run_id: null,
+        retry_run_dir: null,
+        findings: [],
+        focus: null,
+        baseline_run_id: "old-baseline",
+        baseline_run_dir: baselineDir,
+        accepted_at: "2026-08-06T00:00:00Z",
+      }),
+    );
+    const oldArtifactFingerprint = `sha256:${fingerprintTree(oldProposal)}`;
+    const approvalId = "benchmark-adjustment-7";
+    writeFileSync(
+      resultPath,
+      JSON.stringify({
+        summary: "Waiting for benchmark proposal approval.",
+        next: "wait-for-approval",
+        assessment_path: assessmentPath,
+        baseline_run_id: "old-baseline",
+        focus: {
+          classification: "agent",
+          scenarios: ["case-a"],
+          failureFamily: "test-gap",
+          summary: "May missed the expected behavior.",
+          evidence: [],
+        },
+        iteration: 1,
+        candidate_id: "gym/may/g7-i1",
+        candidate_path: candidatePath,
+        candidate_fingerprint: candidateFingerprint,
+        artifact_path: oldProposal,
+        artifact_target_path: protectedBenchmark,
+        recommendation: "review-benchmark",
+        review: {
+          disposition: "review-benchmark",
+          summary: "Old proposal",
+          proposedChange: "Replace the transfer suite",
+          evidence: [],
+        },
+        approval: {
+          kind: "benchmark-fix",
+          approvalId,
+          waitId: `wait:${approvalId}`,
+          taskId: "improve/may",
+          taskGeneration: 7,
+          artifactFingerprint: oldArtifactFingerprint,
+          packetPath: resultPath,
+          requestedAction: "Approve?",
+          reason: "Old proposal",
+          condition: { id: approvalId, type: "project.approval.submitted" },
+        },
+        conditions: [],
+        evidence: [resultPath],
+      }),
+    );
+    const originalProposal = JSON.parse(readFileSync(resultPath, "utf8"));
+    const adjustmentMessage = `Keep draft-transfer unchanged. Verify exact candidate fingerprint ${candidateFingerprint} against the unchanged full approved ${benchmark} suite. Run a fresh same-framework baseline and candidate comparison. Require no invalid runs and no regressions.`;
+
+    const task = [
+      "## Reconciliation Task",
+      "```json",
+      JSON.stringify({ taskId: "improve/may", generation: 7, input: {} }),
+      "```",
+      "## Trigger Event",
+      "```json",
+      JSON.stringify({
+        type: "project.approval.submitted",
+        data: {
+          approvalId,
+          taskId: "improve/may",
+          taskGeneration: 7,
+          artifactFingerprint: oldArtifactFingerprint,
+          packetPath: resultPath,
+          decision: "adjust",
+          message: adjustmentMessage,
+        },
+      }),
+      "```",
+    ].join("\n");
+    const baselineRunDir = join(root, "fresh-baseline");
+    const verificationRunDir = join(
+      projectsRoot,
+      "gym",
+      ".state",
+      "benchmarks",
+      "fresh-verification",
+    );
+    let runCount = 0;
+    let verifyCount = 0;
+    const loop: GymLoopApi = {
+      async run(options: RunOptions) {
+        runCount++;
+        expect(options).toMatchObject({
+          phase: "test",
+          benchmark,
+          scenarios,
+          agent: "may",
+          candidate: "baseline",
+          trials: 5,
+        });
+        const value = manifest(
+          "fresh-baseline",
+          Object.fromEntries(scenarios.map((scenario) => [scenario, ["fail"]])),
+        );
+        value.benchmark = benchmark;
+        value.agent = "may";
+        value.trials_per_scenario = 5;
+        value.trials = scenarios.flatMap((scenario) =>
+          Array.from({ length: 5 }, (_, index) => ({
+            ...manifest("one", { [scenario]: ["fail"] }).trials[0]!,
+            scenario,
+            trial: index + 1,
+          })),
+        );
+        mkdirSync(baselineRunDir, { recursive: true });
+        return { runDir: baselineRunDir, manifest: value };
+      },
+      async verify(input) {
+        verifyCount++;
+        expect(input.baseline).toBe("fresh-baseline");
+        expect(input.trials).toBe(5);
+        const value = manifest(
+          "fresh-verification",
+          Object.fromEntries(scenarios.map((scenario) => [scenario, ["pass"]])),
+        );
+        value.phase = "verify";
+        value.baseline_run_id = "fresh-baseline";
+        value.benchmark = benchmark;
+        value.agent = "may";
+        value.candidate = input.candidate;
+        value.trials_per_scenario = 5;
+        value.started_at = "2026-07-21T00:02:00Z";
+        value.completed_at = "2026-07-21T00:03:00Z";
+        value.proof.candidate_fingerprint = candidateFingerprint;
+        value.trials = scenarios.flatMap((scenario) =>
+          Array.from({ length: 5 }, (_, index) => ({
+            ...manifest("one", { [scenario]: ["pass"] }).trials[0]!,
+            scenario,
+            trial: index + 1,
+          })),
+        );
+        const comparison = {
+          baseline_run_id: "fresh-baseline",
+          candidate_run_id: "fresh-verification",
+          labels_approved: true,
+          same_framework_revision: true,
+          no_invalid_runs: true,
+          no_regressions: true,
+          improved: true,
+          gate: "pass" as const,
+          scenarios: [],
+        };
+        mkdirSync(verificationRunDir, { recursive: true });
+        writeFileSync(
+          join(verificationRunDir, "manifest.json"),
+          JSON.stringify(value),
+        );
+        writeFileSync(
+          join(verificationRunDir, "comparison.json"),
+          JSON.stringify(comparison),
+        );
+        return { runDir: verificationRunDir, manifest: value, comparison };
+      },
+    };
+    let builderCalls = 0;
+    const ctx = {
+      projectsRoot,
+      task,
+      async runAgent() {
+        builderCalls++;
+        throw new Error("evaluation-only adjustment must not call an editor");
+      },
+      emit() {},
+      dispatchEvent() {},
+      done(summary: string, details: Record<string, unknown>) {
+        return { type: "done", summary, ...details };
+      },
+      blocked(reason: string) {
+        return { type: "blocked", reason };
+      },
+    } as unknown as WorkflowContext;
+
+    const result = (await runImprovement(ctx, loop)) as unknown as Record<
+      string,
+      unknown
+    >;
+    expect(result.state).toBe("waiting");
+    expect(runCount).toBe(1);
+    expect(verifyCount).toBe(1);
+    expect(builderCalls).toBe(0);
+    expect(readFileSync(join(protectedBenchmark, "suite.json"), "utf8")).toBe(
+      '{"draft":true}\n',
+    );
+    const saved = JSON.parse(readFileSync(resultPath, "utf8"));
+    expect(saved.recommendation).toBe("promote");
+    expect(saved.artifact_path).toBe(candidatePath);
+    expect(saved.approval).toMatchObject({
+      kind: "agent-improvement",
+      artifactFingerprint: `sha256:${candidateFingerprint}`,
+    });
+    expect(saved.evaluation_adjustment).toMatchObject({
+      kind: "verify-candidate",
+      benchmark,
+      scenarios: "active-suite",
+      freshBaseline: true,
+    });
+
+    const adjustmentsRoot = join(iterationDir, "adjustments");
+    const adjustmentDirs = readdirSync(adjustmentsRoot);
+    expect(adjustmentDirs).toHaveLength(1);
+    const verificationCheckpointPath = join(
+      adjustmentsRoot,
+      adjustmentDirs[0]!,
+      "verification.json",
+    );
+    rmSync(verificationCheckpointPath);
+    expect(existsSync(verificationCheckpointPath)).toBe(false);
+    const failedComparison = JSON.parse(
+      readFileSync(join(verificationRunDir, "comparison.json"), "utf8"),
+    );
+    failedComparison.no_invalid_runs = false;
+    failedComparison.no_regressions = false;
+    failedComparison.gate = "fail";
+    writeFileSync(
+      join(verificationRunDir, "comparison.json"),
+      JSON.stringify(failedComparison),
+    );
+
+    const decisionDir = join(
+      stateDir,
+      "decisions",
+      oldArtifactFingerprint.replace(":", "-"),
+    );
+    mkdirSync(decisionDir, { recursive: true });
+    writeFileSync(
+      join(decisionDir, "proposal.json"),
+      JSON.stringify(originalProposal),
+    );
+    writeFileSync(
+      join(decisionDir, "decision.json"),
+      JSON.stringify({
+        decision: "adjust",
+        message: adjustmentMessage,
+        ...originalProposal.approval,
+      }),
+    );
+    writeFileSync(
+      resultPath,
+      JSON.stringify({
+        ...originalProposal,
+        summary:
+          "Gym could not build a new benchmark/scorer proposal from the reviewed evidence.",
+        next: "ask-owner",
+        conditions: [],
+        approval: null,
+        review: {
+          disposition: "review-benchmark",
+          summary: `Hao adjusted the previous benchmark/scorer proposal: ${adjustmentMessage}`,
+          proposedChange: adjustmentMessage,
+          evidence: [
+            join(decisionDir, "decision.json"),
+            join(decisionDir, "proposal.json"),
+          ],
+        },
+      }),
+    );
+
+    const recoveryCtx = {
+      ...ctx,
+      task: [
+        "## Reconciliation Task",
+        "```json",
+        JSON.stringify({
+          taskId: "improve/may",
+          generation: 7,
+          input: { agent: "may", curriculumDrain: true },
+        }),
+        "```",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "gym.improvement.requested",
+          data: {
+            agent: "may",
+            curriculumDrain: true,
+            reason: "resume-preserved-evaluation-only-adjustment",
+          },
+        }),
+        "```",
+      ].join("\n"),
+    } as unknown as WorkflowContext;
+
+    writeFileSync(join(protectedBenchmark, "suite.json"), '{"changed":true}\n');
+    const drifted = (await runImprovement(
+      recoveryCtx,
+      loop,
+    )) as unknown as Record<string, unknown>;
+    expect(drifted.state).toBe("needs-owner");
+    expect(drifted.summary).toBe(
+      "Durable evaluation-only request no longer matches its protected inputs",
+    );
+    expect(runCount).toBe(1);
+    expect(verifyCount).toBe(1);
+    expect(existsSync(verificationCheckpointPath)).toBe(false);
+    writeFileSync(join(protectedBenchmark, "suite.json"), '{"draft":true}\n');
+
+    const recovered = (await runImprovement(
+      recoveryCtx,
+      loop,
+    )) as unknown as Record<string, unknown>;
+    expect(recovered.state).toBe("converged");
+    expect(runCount).toBe(1);
+    expect(verifyCount).toBe(1);
+    expect(builderCalls).toBe(0);
+    expect(existsSync(verificationCheckpointPath)).toBe(true);
+    expect(JSON.parse(readFileSync(resultPath, "utf8"))).toMatchObject({
+      recommendation: "verification-failed",
+      next: "done",
+      completion_kind: "non-may-disposition",
+      track_state: "issue",
+      approval: null,
+    });
+  });
+
+  test("recognizes only a complete evaluation-only adjustment", () => {
+    const fingerprint = "a".repeat(64);
+    const accepted = evaluationOnlyAdjustmentFromResponse({
+      decision: "adjust",
+      message: `Verify exact candidate fingerprint ${fingerprint} against the unchanged full approved may-test suite. Run a fresh same-framework baseline and candidate comparison. Require no invalid runs and no regressions.`,
+    });
+    expect(accepted).toMatchObject({
+      candidateFingerprint: fingerprint,
+      benchmark: "may-test",
+      scenarios: "active-suite",
+    });
+    expect(
+      evaluationOnlyAdjustmentFromResponse({
+        decision: "adjust",
+        message: `Verify exact candidate fingerprint ${fingerprint} against the unchanged full approved may-test suite.`,
+      }),
+    ).toBeNull();
+    expect(
+      evaluationOnlyAdjustmentFromResponse({
+        decision: "decline",
+        message: `Verify exact candidate fingerprint ${fingerprint} against the unchanged full approved may-test suite. Run a fresh same-framework baseline and candidate comparison. Require no invalid runs and no regressions.`,
+      }),
+    ).toBeNull();
   });
 
   test("rejects convergence while a cited campaign checkpoint is unfinished", async () => {
@@ -1701,14 +2140,14 @@ describe("single agent-improvement loop", () => {
         scenarios: [],
       },
     };
-    expect(
-      isCandidateInvalidOnlyComparisonFailure(checkpoint, baseline),
-    ).toBe(true);
+    expect(isCandidateInvalidOnlyComparisonFailure(checkpoint, baseline)).toBe(
+      true,
+    );
 
     candidate.trials[1]!.machine_verdict = "fail";
-    expect(
-      isCandidateInvalidOnlyComparisonFailure(checkpoint, baseline),
-    ).toBe(false);
+    expect(isCandidateInvalidOnlyComparisonFailure(checkpoint, baseline)).toBe(
+      false,
+    );
   });
 
   test("recovers the newest completed matching release baseline after interruption", () => {
@@ -2556,9 +2995,9 @@ describe("single agent-improvement loop", () => {
         mkdirSync(runDir, { recursive: true });
         const candidatePath = join(input.agentsRoot!, ".lab", input.candidate);
         if (verifyCount === 2) {
-          expect(
-            readFileSync(join(candidatePath, "AGENTS.md"), "utf8"),
-          ).toBe("# Candidate 1\n# Candidate 2\n");
+          expect(readFileSync(join(candidatePath, "AGENTS.md"), "utf8")).toBe(
+            "# Candidate 1\n# Candidate 2\n",
+          );
         }
         const passed = verifyCount > 1;
         const verified = manifest(`verify-${verifyCount}`, {

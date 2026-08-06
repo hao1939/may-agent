@@ -96,6 +96,11 @@ interrupt an active attempt. A wake received during execution is queued for the
 next reconcile. Duplicate wakes, daemon restart, and a lost session recover by
 reading the same task and checkpoints again.
 
+A benchmark process may finish after its parent workflow times out. On the next
+reconcile, Gym reuses that run only when it is complete and its baseline id,
+benchmark, agent, candidate id and fingerprint, scenario set, trial set, and
+comparison all match the pending stage exactly. Otherwise Gym starts a new run.
+
 Each attempt is fenced by task generation and attempt identity. After an
 expensive call and before shared writes or continuation events, the workflow
 must confirm that it still owns the attempt. A superseded call may finish, but
@@ -255,6 +260,25 @@ artifact. Adjustment or rejection closes that proposal and becomes new evidence
 for the same task. The workflow continues from that evidence when it can do so
 safely; it asks the owner only when reusable process cannot determine the next
 bounded move.
+
+An adjustment can change the artifact or change only how Gym verifies it. Gym
+edits a candidate, benchmark, or scorer only when the requested artifact
+changes. A verification-only adjustment names the exact candidate fingerprint
+and benchmark and selects the benchmark's full active suite. Gym then checks
+that every selected label is approved, runs a fresh baseline and candidate
+comparison with the same framework, and requires every candidate trial to pass
+with no invalid runs or regressions. It keeps the rejected benchmark proposal
+and its target unchanged. A passing comparison produces the normal exact
+candidate promotion request; a mismatch or failed gate stops with its evidence.
+That failed candidate is a completed track issue, not a human approval wait;
+the curriculum may continue on a later reconcile.
+
+The durable adjustment packet records this as `verify-candidate`, with the
+candidate fingerprint, benchmark, `active-suite` scope, and fresh-baseline
+requirement. Plain-language replies made before this packet existed are accepted
+only when all of those requirements are explicit; the extracted values still
+have to match the durable candidate, current suite, approved labels, task,
+generation, and approval.
 
 Gym never silently changes production May, approves subjective benchmark truth,
 merges a candidate, or rewrites historical evidence.

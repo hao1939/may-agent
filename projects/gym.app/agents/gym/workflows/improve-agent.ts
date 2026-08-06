@@ -200,6 +200,21 @@ interface ApprovalRequest {
   condition: ProjectAppConditionSpec;
 }
 
+interface EvaluationOnlyAdjustment {
+  schema_version: 1;
+  kind: "verify-candidate";
+  candidateFingerprint: string;
+  benchmark: string;
+  scenarios: "active-suite";
+  freshBaseline: true;
+}
+
+interface ApprovalResponse {
+  decision: "approve" | "adjust" | "decline";
+  message: string;
+  adjustment?: EvaluationOnlyAdjustment;
+}
+
 export interface GymLoopApi {
   run(
     options: RunOptions,
@@ -1845,10 +1860,83 @@ function appendTaskActions(
   return Object.assign(result, { actions });
 }
 
+function evaluationOnlyAdjustmentFromValue(
+  value: unknown,
+): EvaluationOnlyAdjustment | null {
+  const raw = record(value);
+  const candidateFingerprint = String(raw.candidateFingerprint ?? "").replace(
+    /^sha256:/,
+    "",
+  );
+  const benchmark = safeName(raw.benchmark, "");
+  if (
+    raw.schema_version !== 1 ||
+    raw.kind !== "verify-candidate" ||
+    !/^[a-f0-9]{64}$/.test(candidateFingerprint) ||
+    !benchmark ||
+    raw.scenarios !== "active-suite" ||
+    raw.freshBaseline !== true
+  ) {
+    return null;
+  }
+  return {
+    schema_version: 1,
+    kind: "verify-candidate",
+    candidateFingerprint,
+    benchmark,
+    scenarios: "active-suite",
+    freshBaseline: true,
+  };
+}
+
+/**
+ * Adjustments normally arrive with the structured contract above. This narrow
+ * parser keeps decisions made before that contract was introduced resumable.
+ * Every extracted value is independently checked against durable state before
+ * any evaluation starts.
+ */
+export function evaluationOnlyAdjustmentFromResponse(
+  response: ApprovalResponse,
+): EvaluationOnlyAdjustment | null {
+  if (response.decision !== "adjust") return null;
+  if (response.adjustment) {
+    return evaluationOnlyAdjustmentFromValue(response.adjustment);
+  }
+
+  const message = response.message.trim();
+  const candidate = message.match(
+    /\bverify exact candidate fingerprint\s+(?:sha256:)?([a-f0-9]{64})\b/i,
+  );
+  const benchmark = message.match(
+    /\bagainst the unchanged full approved\s+([a-z0-9][a-z0-9-]*)\s+suite\b/i,
+  );
+  if (
+    !candidate ||
+    !benchmark ||
+    !/\bfresh same-framework baseline and candidate comparison\b/i.test(
+      message,
+    ) ||
+    !/\bno invalid runs\b/i.test(message) ||
+    !/\bno regressions\b/i.test(message)
+  ) {
+    return null;
+  }
+  const benchmarkName = safeName(benchmark[1], "");
+  if (!benchmarkName) return null;
+  return {
+    schema_version: 1,
+    kind: "verify-candidate",
+    candidateFingerprint: candidate[1]!.toLowerCase(),
+    benchmark: benchmarkName,
+    scenarios: "active-suite",
+    freshBaseline: true,
+  };
+}
+
 function approvalResponse(
   trigger: Record<string, unknown> | null,
   request: ApprovalRequest,
-): { decision: "approve" | "adjust" | "decline"; message: string } | null {
+): ApprovalResponse | null {
   if (trigger?.type !== "project.approval.submitted") return null;
   if (
     trigger.approvalId !== request.approvalId ||
@@ -1866,17 +1954,20 @@ function approvalResponse(
   ) {
     return null;
   }
-  return {
+  const response: ApprovalResponse = {
     decision,
     message: String(trigger.message ?? decision),
   };
+  const adjustment = evaluationOnlyAdjustmentFromValue(trigger.adjustment);
+  if (decision === "adjust" && adjustment) response.adjustment = adjustment;
+  return response;
 }
 
 function approvalDecision(
   task: string,
   request: ApprovalRequest,
   stateDir?: string,
-): { decision: "approve" | "adjust" | "decline"; message: string } | null {
+): ApprovalResponse | null {
   const live = approvalResponse(triggerDetails(task), request);
   if (live || !stateDir) return live;
   const decisionKey = safeKey(request.artifactFingerprint, "artifact");
@@ -1902,7 +1993,7 @@ function preserveApprovalDecision(
   stateDir: string,
   stored: Record<string, unknown>,
   request: ApprovalRequest,
-  response: { decision: "approve" | "adjust" | "decline"; message: string },
+  response: ApprovalResponse,
 ): { decisionPath: string; proposalPath: string; artifactPath: string | null } {
   const decisionDir = join(
     stateDir,
@@ -1935,6 +2026,192 @@ function preserveApprovalDecision(
     recorded_at: new Date().toISOString(),
   });
   return { decisionPath, proposalPath, artifactPath };
+}
+
+function preservedEvaluationAdjustment(
+  stateDir: string,
+  trigger: Record<string, unknown> | null,
+): {
+  request: ApprovalRequest;
+  response: ApprovalResponse;
+  adjustment: EvaluationOnlyAdjustment;
+  decisionPath: string;
+  proposalPath: string;
+} | null {
+  if (trigger?.type !== "project.approval.submitted") return null;
+  const artifactFingerprint = String(trigger.artifactFingerprint ?? "");
+  if (!artifactFingerprint) return null;
+  const decisionDir = join(
+    stateDir,
+    "decisions",
+    safeKey(artifactFingerprint, "artifact"),
+  );
+  const decisionPath = join(decisionDir, "decision.json");
+  const proposalPath = join(decisionDir, "proposal.json");
+  const decision = readJson<Record<string, unknown>>(decisionPath);
+  const proposal = readJson<Record<string, unknown>>(proposalPath);
+  if (!decision || !proposal) return null;
+  const request = approvalFromStored(proposal);
+  if (!request || request.kind !== "benchmark-fix") return null;
+  const liveResponse = approvalResponse(trigger, request);
+  const storedResponse = approvalResponse(
+    { type: "project.approval.submitted", ...decision },
+    request,
+  );
+  if (
+    !liveResponse ||
+    !storedResponse ||
+    liveResponse.decision !== storedResponse.decision ||
+    liveResponse.message !== storedResponse.message
+  ) {
+    return null;
+  }
+  const adjustment = evaluationOnlyAdjustmentFromResponse(liveResponse);
+  if (!adjustment) return null;
+  return {
+    request,
+    response: liveResponse,
+    adjustment,
+    decisionPath,
+    proposalPath,
+  };
+}
+
+function recoverableStoredEvaluationAdjustment(
+  stateDir: string,
+  stored: Record<string, unknown>,
+  taskId: string,
+  generation: number,
+): {
+  request: ApprovalRequest;
+  adjustment: EvaluationOnlyAdjustment;
+  decisionPath: string;
+} | null {
+  if (stored.next !== "ask-owner" || stored.approval) return null;
+  const review = record(stored.review);
+  const proposedChange = String(review.proposedChange ?? "").trim();
+  const evidence = Array.isArray(review.evidence)
+    ? review.evidence.map(String)
+    : [];
+  if (!proposedChange) return null;
+  const candidates = evidence.flatMap((rawPath) => {
+    const decisionPath = resolve(rawPath);
+    const decisionRelative = relative(
+      join(stateDir, "decisions"),
+      decisionPath,
+    );
+    if (
+      decisionRelative === ".." ||
+      decisionRelative.startsWith(`..${sep}`) ||
+      !decisionPath.endsWith(`${sep}decision.json`)
+    ) {
+      return [];
+    }
+    const proposalPath = join(dirname(decisionPath), "proposal.json");
+    const decision = readJson<Record<string, unknown>>(decisionPath);
+    const proposal = readJson<Record<string, unknown>>(proposalPath);
+    if (!decision || !proposal) return [];
+    const request = approvalFromStored(proposal);
+    if (
+      !request ||
+      request.kind !== "benchmark-fix" ||
+      request.taskId !== taskId ||
+      request.taskGeneration !== generation ||
+      request.packetPath !== join(stateDir, "result.json")
+    ) {
+      return [];
+    }
+    const response = approvalResponse(
+      { type: "project.approval.submitted", ...decision },
+      request,
+    );
+    if (
+      !response ||
+      response.decision !== "adjust" ||
+      response.message !== proposedChange
+    ) {
+      return [];
+    }
+    const adjustment = evaluationOnlyAdjustmentFromResponse(response);
+    if (
+      !adjustment ||
+      String(stored.candidate_fingerprint ?? "").replace(/^sha256:/, "") !==
+        adjustment.candidateFingerprint
+    ) {
+      return [];
+    }
+    return [{ request, adjustment, decisionPath }];
+  });
+  return candidates.length === 1 ? candidates[0]! : null;
+}
+
+function locateStoredEvaluationAdjustment(
+  projectsRoot: string,
+  taskId: string,
+  generation: number,
+  input: Record<string, unknown>,
+):
+  | { stateDir: string; resultPath: string; evidence: string[] }
+  | { error: string; evidence: string[] }
+  | null {
+  if (
+    String(input.reason ?? "") !==
+    "resume-preserved-evaluation-only-adjustment"
+  ) {
+    return null;
+  }
+
+  const generationDir = join(
+    projectsRoot,
+    "gym.app",
+    ".state",
+    "candidates",
+    safeKey(taskId, "improve-may"),
+    String(generation),
+  );
+  const resultPaths = [join(generationDir, "result.json")];
+  const tracksDir = join(generationDir, "tracks");
+  if (existsSync(tracksDir)) {
+    resultPaths.push(
+      ...readdirSync(tracksDir, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => join(tracksDir, entry.name, "result.json")),
+    );
+  }
+
+  const matches = resultPaths.flatMap((resultPath) => {
+    const stored = readJson<Record<string, unknown>>(resultPath);
+    if (!stored) return [];
+    const recovery = recoverableStoredEvaluationAdjustment(
+      dirname(resultPath),
+      stored,
+      taskId,
+      generation,
+    );
+    return recovery
+      ? [{ stateDir: dirname(resultPath), resultPath, recovery }]
+      : [];
+  });
+  if (matches.length !== 1) {
+    return {
+      error:
+        matches.length === 0
+          ? "No preserved evaluation-only adjustment matches this campaign"
+          : "Multiple preserved evaluation-only adjustments match this campaign",
+      evidence: matches.length
+        ? matches.flatMap(({ resultPath, recovery }) => [
+            resultPath,
+            recovery.decisionPath,
+          ])
+        : resultPaths.filter(existsSync),
+    };
+  }
+  const match = matches[0]!;
+  return {
+    stateDir: match.stateDir,
+    resultPath: match.resultPath,
+    evidence: [match.resultPath, match.recovery.decisionPath],
+  };
 }
 
 export function locateApprovalPacket(
@@ -1985,7 +2262,8 @@ export function locateApprovalPacket(
     };
   }
   const approval = approvalFromStored(stored);
-  if (!approval || !approvalResponse(trigger, approval)) {
+  const preserved = preservedEvaluationAdjustment(dirname(resultPath), trigger);
+  if ((!approval || !approvalResponse(trigger, approval)) && !preserved) {
     return {
       error: "Approval does not match the exact stored packet",
       evidence: [resultPath],
@@ -2368,6 +2646,74 @@ export function recoverCompletedReleaseBaseline(
         return [];
       }
       return [{ runDir, manifest }];
+    })
+    .sort(
+      (left, right) =>
+        Date.parse(right.manifest.completed_at!) -
+        Date.parse(left.manifest.completed_at!),
+    );
+  return recovered[0] ?? null;
+}
+
+function hasCompleteTrialSet(
+  manifest: LoopRunManifest,
+  scenarios: string[],
+  trials: number,
+): boolean {
+  if (manifest.trials.length !== scenarios.length * trials) return false;
+  const expected = new Set(
+    scenarios.flatMap((scenario) =>
+      Array.from({ length: trials }, (_, index) => `${scenario}\n${index + 1}`),
+    ),
+  );
+  for (const trial of manifest.trials) {
+    if (!expected.delete(`${trial.scenario}\n${trial.trial}`)) return false;
+  }
+  return expected.size === 0;
+}
+
+export function recoverCompletedVerification(input: {
+  gymRoot: string;
+  baselineRunId: string;
+  benchmark: string;
+  agent: string;
+  candidate: string;
+  candidateFingerprint: string;
+  scenarios: string[];
+  trials: number;
+  notBefore: string | null;
+}): VerificationCheckpoint | null {
+  const runsRoot = join(input.gymRoot, ".state", "benchmarks");
+  if (!existsSync(runsRoot)) return null;
+  const minimumStartedAt = Date.parse(input.notBefore ?? "");
+  const recovered = readdirSync(runsRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .flatMap((entry) => {
+      const runDir = join(runsRoot, entry.name);
+      const manifest = readJson<LoopRunManifest>(join(runDir, "manifest.json"));
+      const comparison = readJson<RunComparison>(
+        join(runDir, "comparison.json"),
+      );
+      if (
+        !manifest?.completed_at ||
+        !comparison ||
+        manifest.phase !== "verify" ||
+        manifest.baseline_run_id !== input.baselineRunId ||
+        manifest.benchmark !== input.benchmark ||
+        manifest.agent !== input.agent ||
+        manifest.candidate !== input.candidate ||
+        manifest.proof.candidate_fingerprint !== input.candidateFingerprint ||
+        manifest.trials_per_scenario !== input.trials ||
+        !sameScenarios(manifest.scenarios, input.scenarios) ||
+        !hasCompleteTrialSet(manifest, input.scenarios, input.trials) ||
+        comparison.baseline_run_id !== input.baselineRunId ||
+        comparison.candidate_run_id !== manifest.run_id ||
+        (Number.isFinite(minimumStartedAt) &&
+          Date.parse(manifest.started_at) < minimumStartedAt)
+      ) {
+        return [];
+      }
+      return [{ runDir, manifest, comparison }];
     })
     .sort(
       (left, right) =>
@@ -2930,10 +3276,7 @@ async function runCandidateIteration(
     if (storedReleaseRetry) {
       release = storedReleaseRetry;
     } else if (
-      isCandidateInvalidOnlyComparisonFailure(
-        release,
-        releaseBaseline.manifest,
-      )
+      isCandidateInvalidOnlyComparisonFailure(release, releaseBaseline.manifest)
     ) {
       release = await loop.verify({
         baseline: releaseBaseline.manifest.run_id,
@@ -3141,6 +3484,407 @@ async function runCandidateIteration(
   });
 }
 
+async function runEvaluationOnlyAdjustment(
+  ctx: WorkflowContext,
+  loop: GymLoopApi,
+  plan: CandidatePlan,
+  adjustment: EvaluationOnlyAdjustment,
+  sourceApproval: ApprovalRequest,
+  stored: Record<string, unknown>,
+  stateDir: string,
+  taskId: string,
+  generation: number,
+  decisionPath: string,
+): Promise<WorkflowResult> {
+  const resultPath = join(stateDir, "result.json");
+  const iteration = Number(stored.iteration);
+  const candidatePath = resolve(String(stored.candidate_path ?? ""));
+  const storedFingerprint = String(stored.candidate_fingerprint ?? "").replace(
+    /^sha256:/,
+    "",
+  );
+  const candidateRelative = relative(stateDir, candidatePath);
+  const candidateCheckpointPath = join(
+    stateDir,
+    "iterations",
+    String(iteration),
+    "candidate.json",
+  );
+  const candidateCheckpoint = readJson<CandidateCheckpoint>(
+    candidateCheckpointPath,
+  );
+  if (
+    !Number.isInteger(iteration) ||
+    iteration < 1 ||
+    !candidatePath ||
+    candidateRelative === ".." ||
+    candidateRelative.startsWith(`..${sep}`) ||
+    !existsSync(candidatePath) ||
+    storedFingerprint !== adjustment.candidateFingerprint ||
+    candidateCheckpoint?.candidatePath !== candidatePath ||
+    candidateCheckpoint.candidateFingerprint !==
+      adjustment.candidateFingerprint ||
+    fingerprintTree(candidatePath) !== adjustment.candidateFingerprint
+  ) {
+    return saveAttentionResult(
+      ctx,
+      resultPath,
+      "Evaluation-only adjustment does not match the exact durable candidate",
+      [decisionPath, candidateCheckpointPath, candidatePath],
+      { task_id: taskId, generation, evaluation_adjustment: adjustment },
+    );
+  }
+
+  const gymRoot = join(ctx.projectsRoot, "gym");
+  let gate: ReturnType<typeof approvalGate>;
+  try {
+    gate = approvalGate(gymRoot, adjustment.benchmark, []);
+  } catch (error) {
+    return saveAttentionResult(
+      ctx,
+      resultPath,
+      error instanceof Error ? error.message : String(error),
+      [decisionPath],
+      { task_id: taskId, generation, evaluation_adjustment: adjustment },
+    );
+  }
+  if (gate.unapproved.length) {
+    return saveAttentionResult(
+      ctx,
+      resultPath,
+      `Evaluation-only adjustment includes unapproved truth: ${gate.unapproved.join(", ")}`,
+      [decisionPath, gate.labelsPath],
+      { task_id: taskId, generation, evaluation_adjustment: adjustment },
+    );
+  }
+
+  const protectedPath = String(stored.artifact_target_path ?? "").trim();
+  if (protectedPath && !existsSync(protectedPath)) {
+    return saveAttentionResult(
+      ctx,
+      resultPath,
+      "Benchmark kept by the adjustment is missing",
+      [decisionPath, protectedPath],
+      { task_id: taskId, generation, evaluation_adjustment: adjustment },
+    );
+  }
+  const protectedFingerprint = protectedPath
+    ? fingerprintTree(protectedPath)
+    : null;
+  const adjustmentKey = safeKey(
+    sourceApproval.artifactFingerprint,
+    "verification-adjustment",
+  );
+  const adjustmentDir = join(
+    stateDir,
+    "iterations",
+    String(iteration),
+    "adjustments",
+    adjustmentKey,
+  );
+  const requestPath = join(adjustmentDir, "request.json");
+  const baselinePath = join(adjustmentDir, "baseline.json");
+  const verificationPath = join(adjustmentDir, "verification.json");
+  mkdirSync(adjustmentDir, { recursive: true });
+  if (!existsSync(requestPath)) {
+    writeJson(requestPath, {
+      schema_version: 1,
+      task_id: taskId,
+      generation,
+      source_approval_id: sourceApproval.approvalId,
+      source_artifact_fingerprint: sourceApproval.artifactFingerprint,
+      decision_path: decisionPath,
+      adjustment,
+      candidate_path: candidatePath,
+      scenarios: gate.scenarios,
+      trials: RELEASE_TRIALS,
+      protected_path: protectedPath || null,
+      protected_fingerprint: protectedFingerprint,
+      requested_at: new Date().toISOString(),
+    });
+  }
+  const request = readJson<Record<string, unknown>>(requestPath);
+  const requestAdjustment = evaluationOnlyAdjustmentFromValue(
+    request?.adjustment,
+  );
+  const requestScenarios = Array.isArray(request?.scenarios)
+    ? request.scenarios.map(String)
+    : [];
+  if (
+    request?.schema_version !== 1 ||
+    request.task_id !== taskId ||
+    Number(request.generation) !== generation ||
+    request.source_approval_id !== sourceApproval.approvalId ||
+    request.source_artifact_fingerprint !==
+      sourceApproval.artifactFingerprint ||
+    request.decision_path !== decisionPath ||
+    request.candidate_path !== candidatePath ||
+    JSON.stringify(requestAdjustment) !== JSON.stringify(adjustment) ||
+    !sameScenarios(requestScenarios, gate.scenarios) ||
+    Number(request.trials) !== RELEASE_TRIALS ||
+    request.protected_path !== (protectedPath || null) ||
+    request.protected_fingerprint !== protectedFingerprint
+  ) {
+    return saveAttentionResult(
+      ctx,
+      resultPath,
+      "Durable evaluation-only request no longer matches its protected inputs",
+      [decisionPath, requestPath, candidatePath, protectedPath].filter(Boolean),
+      { task_id: taskId, generation, evaluation_adjustment: adjustment },
+    );
+  }
+
+  const productionAgentsRoot = join(dirname(ctx.projectsRoot), "agents");
+  const sourceMay = join(productionAgentsRoot, plan.agent);
+  if (!existsSync(sourceMay)) {
+    return saveAttentionResult(
+      ctx,
+      resultPath,
+      `Agent not found: ${sourceMay}`,
+      [decisionPath, sourceMay],
+      { task_id: taskId, generation, evaluation_adjustment: adjustment },
+    );
+  }
+  const scratchRoot = join(
+    ctx.projectsRoot,
+    "gym.app",
+    ".state",
+    "scratch",
+    safeKey(taskId, "improve-may"),
+    String(generation),
+    `evaluation-only-${adjustmentKey}`,
+  );
+  const workspaceAgentsRoot = join(scratchRoot, "agents");
+  const candidateId = `gym/${plan.agent}/g${generation}-i${iteration}-adjustment-${adjustmentKey}`;
+  const candidateDir = join(workspaceAgentsRoot, ".lab", candidateId);
+
+  try {
+    rmSync(scratchRoot, { recursive: true, force: true });
+    mkdirSync(workspaceAgentsRoot, { recursive: true });
+    cpSync(sourceMay, join(workspaceAgentsRoot, plan.agent), {
+      recursive: true,
+    });
+    mkdirSync(dirname(candidateDir), { recursive: true });
+    cpSync(candidatePath, candidateDir, { recursive: true });
+
+    let baseline = readJson<{
+      runDir: string;
+      manifest: LoopRunManifest;
+    }>(baselinePath);
+    if (!baseline) {
+      baseline = await loop.run({
+        phase: "test",
+        benchmark: adjustment.benchmark,
+        scenarios: gate.scenarios,
+        agent: plan.agent,
+        candidate: "baseline",
+        trials: RELEASE_TRIALS,
+        agentsRoot: workspaceAgentsRoot,
+      });
+      writeJson(baselinePath, baseline);
+    }
+    if (
+      baseline.manifest.phase !== "test" ||
+      baseline.manifest.candidate !== "baseline" ||
+      baseline.manifest.benchmark !== adjustment.benchmark ||
+      baseline.manifest.agent !== plan.agent ||
+      baseline.manifest.trials_per_scenario !== RELEASE_TRIALS ||
+      !sameScenarios(baseline.manifest.scenarios, gate.scenarios)
+    ) {
+      return saveAttentionResult(
+        ctx,
+        resultPath,
+        "Fresh baseline does not match the evaluation-only adjustment",
+        [requestPath, baselinePath, baseline.runDir],
+        { task_id: taskId, generation, evaluation_adjustment: adjustment },
+      );
+    }
+
+    let verification = readJson<VerificationCheckpoint>(verificationPath);
+    if (!verification) {
+      verification =
+        recoverCompletedVerification({
+          gymRoot,
+          baselineRunId: baseline.manifest.run_id,
+          benchmark: adjustment.benchmark,
+          agent: plan.agent,
+          candidate: candidateId,
+          candidateFingerprint: adjustment.candidateFingerprint,
+          scenarios: gate.scenarios,
+          trials: RELEASE_TRIALS,
+          notBefore: baseline.manifest.completed_at,
+        }) ??
+        (await loop.verify({
+          baseline: baseline.manifest.run_id,
+          candidate: candidateId,
+          trials: RELEASE_TRIALS,
+          agentsRoot: workspaceAgentsRoot,
+        }));
+      writeJson(verificationPath, verification);
+    }
+    recordVerificationMetrics(ctx, verification);
+    const candidateMatches =
+      Boolean(verification.manifest.completed_at) &&
+      verification.manifest.phase === "verify" &&
+      verification.manifest.baseline_run_id === baseline.manifest.run_id &&
+      verification.manifest.benchmark === adjustment.benchmark &&
+      verification.manifest.agent === plan.agent &&
+      verification.manifest.candidate === candidateId &&
+      verification.manifest.proof.candidate_fingerprint ===
+        adjustment.candidateFingerprint &&
+      verification.manifest.trials_per_scenario === RELEASE_TRIALS &&
+      sameScenarios(verification.manifest.scenarios, gate.scenarios) &&
+      hasCompleteTrialSet(
+        verification.manifest,
+        gate.scenarios,
+        RELEASE_TRIALS,
+      ) &&
+      verification.comparison.baseline_run_id === baseline.manifest.run_id &&
+      verification.comparison.candidate_run_id ===
+        verification.manifest.run_id;
+    const protectedUnchanged =
+      !protectedPath ||
+      (existsSync(protectedPath) &&
+        fingerprintTree(protectedPath) === protectedFingerprint);
+    if (!candidateMatches || !protectedUnchanged) {
+      return saveAttentionResult(
+        ctx,
+        resultPath,
+        !candidateMatches
+          ? "Candidate verification does not match the exact adjustment"
+          : "A benchmark that the adjustment kept unchanged was modified",
+        [
+          requestPath,
+          baselinePath,
+          verificationPath,
+          verification.runDir,
+          ...(protectedPath ? [protectedPath] : []),
+        ],
+        { task_id: taskId, generation, evaluation_adjustment: adjustment },
+      );
+    }
+
+    if (!qualifiesHeldBackRelease(verification)) {
+      const summary =
+        "The fresh approved-suite comparison did not pass every promotion gate";
+      const evidence = saveCompletedResult(resultPath, {
+        taskId,
+        generation,
+        summary,
+        evidence: [
+          decisionPath,
+          requestPath,
+          baselinePath,
+          verificationPath,
+          verification.runDir,
+          join(verification.runDir, "comparison.json"),
+        ],
+        completionKind: "non-may-disposition",
+        trackState: "issue",
+        details: {
+          ...stored,
+          task_id: taskId,
+          generation,
+          candidate_path: candidatePath,
+          candidate_fingerprint: adjustment.candidateFingerprint,
+          evaluation_adjustment: adjustment,
+          gate: verification.comparison.gate,
+          recommendation: "verification-failed",
+        },
+      });
+      return ctx.done(summary, {
+        state: "converged",
+        summary,
+        evidence,
+        actions: [],
+      });
+    }
+
+    const approval = buildApprovalRequest({
+      kind: "agent-improvement",
+      taskId,
+      generation,
+      artifactFingerprint: `sha256:${adjustment.candidateFingerprint}`,
+      packetPath: resultPath,
+      requestedAction:
+        "Approve this exact freshly verified May candidate for production promotion?",
+      reason:
+        "The exact candidate passed every active approved scenario against a fresh same-framework baseline, with no invalid runs or regressions.",
+    });
+    const summary =
+      "The exact May candidate passed the requested fresh approved-suite comparison and is waiting for promotion approval.";
+    const evidence = boundedEvidence([
+      resultPath,
+      decisionPath,
+      requestPath,
+      candidateCheckpointPath,
+      candidatePath,
+      `candidate-sha256:${adjustment.candidateFingerprint}`,
+      gate.labelsPath,
+      baselinePath,
+      baseline.runDir,
+      verificationPath,
+      verification.runDir,
+      join(verification.runDir, "comparison.json"),
+      ...(protectedPath ? [protectedPath] : []),
+    ]);
+    saveWorkflowResult(resultPath, {
+      ...stored,
+      task_id: taskId,
+      generation,
+      iteration,
+      candidate_id: candidateId,
+      candidate_path: candidatePath,
+      candidate_fingerprint: adjustment.candidateFingerprint,
+      artifact_path: candidatePath,
+      artifact_target_path: null,
+      confirmation_benchmark: null,
+      confirmation_scenarios: null,
+      development_verification_run_dir: verification.runDir,
+      release_baseline_run_dir: baseline.runDir,
+      verification_run_dir: verification.runDir,
+      evaluation_adjustment: adjustment,
+      gate: "pass",
+      recommendation: "promote",
+      review: null,
+      summary,
+      evidence,
+      next: "wait-for-approval",
+      conditions: [approval.condition],
+      approval,
+    });
+    ctx.emit({
+      type: "gym.improvement.reviewed",
+      project: "gym",
+      taskId,
+      agent: plan.agent,
+      candidateId,
+      candidateFingerprint: adjustment.candidateFingerprint,
+      verificationDir: verification.runDir,
+      recommendation: "promote",
+      resultPath,
+    });
+    dispatchApproval(ctx, approval);
+    return ctx.done(summary, {
+      state: "waiting",
+      summary,
+      evidence,
+      actions: [],
+      conditions: [approval.condition],
+    });
+  } catch (error) {
+    return saveAttentionResult(
+      ctx,
+      resultPath,
+      `Evaluation-only adjustment failed: ${error instanceof Error ? error.message : String(error)}`,
+      [decisionPath, requestPath, baselinePath, verificationPath],
+      { task_id: taskId, generation, evaluation_adjustment: adjustment },
+    );
+  } finally {
+    rmSync(scratchRoot, { recursive: true, force: true });
+  }
+}
+
 async function prepareBenchmarkFixProposal(
   ctx: WorkflowContext,
   plan: CandidatePlan,
@@ -3286,6 +4030,34 @@ async function runCandidate(
     startIteration = recoveringRetry.iteration;
     retryCloseActions = adjudicationChildCloseActions(ctx, taskId);
   }
+  if (previous && !previous.approval) {
+    const stored = record(JSON.parse(readFileSync(resultPath, "utf8")));
+    const recovery =
+      preservedEvaluationAdjustment(
+        candidateStateDir,
+        triggerDetails(ctx.task),
+      ) ??
+      recoverableStoredEvaluationAdjustment(
+        candidateStateDir,
+        stored,
+        taskId,
+        generation,
+      );
+    if (recovery) {
+      return runEvaluationOnlyAdjustment(
+        ctx,
+        loop,
+        plan,
+        recovery.adjustment,
+        recovery.request,
+        stored,
+        candidateStateDir,
+        taskId,
+        generation,
+        recovery.decisionPath,
+      );
+    }
+  }
   if (previous?.state === "needs-owner" || previous?.state === "converged") {
     const stored = record(JSON.parse(readFileSync(resultPath, "utf8")));
     const retryableRuntimeReview =
@@ -3375,6 +4147,24 @@ async function runCandidate(
       response,
     );
     const { decisionPath } = preserved;
+    const evaluationAdjustment =
+      previous.approval.kind === "benchmark-fix"
+        ? evaluationOnlyAdjustmentFromResponse(response)
+        : null;
+    if (evaluationAdjustment) {
+      return runEvaluationOnlyAdjustment(
+        ctx,
+        loop,
+        plan,
+        evaluationAdjustment,
+        previous.approval,
+        stored,
+        candidateStateDir,
+        taskId,
+        generation,
+        decisionPath,
+      );
+    }
     if (response.decision === "approve") {
       const artifactPath = String(
         stored.artifact_path ?? stored.candidate_path ?? "",
@@ -4177,6 +4967,59 @@ export async function runImprovement(
         approvalPacket.resultPath,
         summary,
         [approvalPacket.resultPath],
+        { task_id: taskId, generation },
+      );
+    }
+  }
+  const storedAdjustment = locateStoredEvaluationAdjustment(
+    activeCtx.projectsRoot,
+    taskId,
+    generation,
+    input,
+  );
+  if (storedAdjustment && "error" in storedAdjustment) {
+    return saveAttentionResult(
+      activeCtx,
+      campaignResultPath,
+      storedAdjustment.error,
+      storedAdjustment.evidence,
+      { task_id: taskId, generation },
+    );
+  }
+  if (storedAdjustment) {
+    try {
+      const plan = planFromApprovalPacket(
+        activeCtx,
+        storedAdjustment.resultPath,
+      );
+      if (!plan) {
+        return saveAttentionResult(
+          activeCtx,
+          storedAdjustment.resultPath,
+          "Preserved adjustment cannot reconstruct its evaluation plan",
+          storedAdjustment.evidence,
+          { task_id: taskId, generation },
+        );
+      }
+      return await runCandidate(
+        activeCtx,
+        activeLoop,
+        plan,
+        taskId,
+        generation,
+        storedAdjustment.stateDir,
+        input,
+      );
+    } catch (error) {
+      if (error instanceof CampaignSupersededError) {
+        return supersededCampaignResult(ctx, taskId, generation);
+      }
+      const summary = error instanceof Error ? error.message : String(error);
+      return saveAttentionResult(
+        activeCtx,
+        storedAdjustment.resultPath,
+        summary,
+        storedAdjustment.evidence,
         { task_id: taskId, generation },
       );
     }
