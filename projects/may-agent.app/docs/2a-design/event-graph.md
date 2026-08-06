@@ -686,7 +686,7 @@ compact attributes and references:
   "data": {
     "sessionId": "s_123",
     "turnIndex": 4,
-    "model": "gpt-5.5",
+    "model": "gpt-5.6-sol",
     "summary": "Interpreted human approval and emitted escalation.resolved.",
     "transcriptRef": ".state/sessions/s_123/session.jsonl#turn=4"
   }

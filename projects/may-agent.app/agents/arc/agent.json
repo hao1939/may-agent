@@ -2,7 +2,7 @@
   "name": "arc",
   "description": "System architect & knowledge synthesizer \u2014 discovers patterns, ensures coherence",
   "domain": "system architecture, knowledge synthesis, strategy",
-  "model": "claude-opus-4-6",
+  "model": "claude-opus-5",
   "heartbeat": false,
   "tools": [
     "coding",

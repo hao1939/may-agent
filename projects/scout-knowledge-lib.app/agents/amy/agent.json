@@ -3,7 +3,7 @@
   "memoryLimit": 3,
   "description": "\u5c0f\u7ea2\u4e66 (XHS) intelligence researcher \u2014 explores, reads, and analyzes Xiaohongshu content about AI agents, autonomous systems, and the Chinese AI community",
   "domain": "Xiaohongshu content research and analysis",
-  "model": "claude-opus-4-6",
+  "model": "claude-opus-5",
   "heartbeat": false,
   "tools": ["coding", "scrape", "finish"],
   "context_files": ["context.md", "last-eval.md"]

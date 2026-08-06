@@ -2,7 +2,7 @@
   "name": "may",
   "description": "Hao's conversational deputy — understands intent, answers, routes app outcomes, and closes the loop",
   "domain": "human decisions, app routing, proof review, and bounded break glass",
-  "model": "gpt-5.4",
+  "model": "gpt-5.6-sol",
   "context_files": ["last-eval.md"],
   "tools": [
     "coding",

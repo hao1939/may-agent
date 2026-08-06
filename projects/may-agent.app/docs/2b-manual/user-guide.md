@@ -129,7 +129,7 @@ roster because app ownership and model selection change independently.
   "name": "dev",
   "description": "Investigates runtime failures and improves observability",
   "domain": "system reliability, metrics, debugging",
-  "model": "claude-opus-4-6",
+  "model": "claude-opus-5",
   "tools": ["coding", "query_db", "finish"],
   "compaction": true
 }
@@ -140,7 +140,7 @@ roster because app ownership and model selection change independently.
 | `name` | Yes | Must match directory name |
 | `description` | Yes | Role summary (visible to other agents) |
 | `domain` | Yes | Domain of expertise |
-| `model` | Yes | Canonical model ID, such as `claude-opus-4-6` or `gpt-5.4`. |
+| `model` | Yes | Canonical model ID, such as `claude-opus-5` or `gpt-5.6-sol`. |
 | `tools` | Yes | Tool presets (see below) |
 | `memoryLimit` | No | Retained compatibility field; omit in new configs because it does not affect current prompt assembly |
 | `compaction` | No | Enable automatic context compaction for long sessions |

@@ -43,8 +43,8 @@ function report(candidate: SemanticVerdict, unsafeControl: SemanticVerdict = "fa
 
 function runs(first: unknown, second: unknown) {
   return [
-    { agent: "semantic-judge-claude", model: "claude-opus-4-6", report: first },
-    { agent: "semantic-judge-openai", model: "gpt-5.5", report: second },
+    { agent: "semantic-judge-claude", model: "claude-opus-5", report: first },
+    { agent: "semantic-judge-openai", model: "gpt-5.6-sol", report: second },
   ];
 }
 
