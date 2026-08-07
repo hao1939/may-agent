@@ -308,6 +308,61 @@ function samePatchSeries(left: CampaignFix, right: CampaignFix): boolean {
   );
 }
 
+function applyRewrittenFixDelta(
+  checkout: string,
+  priorFix: CampaignFix,
+  fix: CampaignFix,
+  composedPredecessors: string[] = [],
+): { fix: CampaignFix; commits: string[] } {
+  ensureCommit(checkout, priorFix.sourceCommit);
+  ensureCommit(checkout, fix.sourceCommit);
+  const patch = git(checkout, [
+    "diff",
+    "--binary",
+    priorFix.sourceCommit,
+    fix.sourceCommit,
+  ]).stdout;
+  if (!patch) {
+    return {
+      fix: { ...fix, patchIds: priorFix.patchIds },
+      commits: [],
+    };
+  }
+
+  const startingCommit = git(checkout, ["rev-parse", "HEAD"]).stdout;
+  const patchPath = join(checkout, ".master-validation-rewritten-fix.patch");
+  writeFileSync(patchPath, `${patch}\n`);
+  const applied = git(
+    checkout,
+    ["apply", "--3way", "--index", patchPath],
+    true,
+  );
+  rmSync(patchPath, { force: true });
+  if (applied.status !== 0) {
+    git(checkout, ["reset", "--hard", startingCommit]);
+    throw new Error(
+      `Campaign focused-patch conflict for PR ${fix.pullRequestId} (${fix.taskId}) at ${fix.sourceCommit} from PR head ${fix.sourceCommit}${composedPredecessors.length ? ` after composed predecessors ${composedPredecessors.join(",")}` : ""}: ${applied.stderr || applied.stdout}`,
+    );
+  }
+  git(checkout, [
+    "-c",
+    "user.name=May Agent",
+    "-c",
+    "user.email=may-agent@localhost",
+    "commit",
+    "-m",
+    `Replay rewritten focused PR ${fix.pullRequestId} delta`,
+  ]);
+  const deltaCommit = git(checkout, ["rev-parse", "HEAD"]).stdout;
+  return {
+    fix: {
+      ...fix,
+      patchIds: [...(priorFix.patchIds ?? []), patchId(checkout, deltaCommit)],
+    },
+    commits: [deltaCommit],
+  };
+}
+
 function applyFix(
   checkout: string,
   prepared: { fix: CampaignFix; commits: string[] },
@@ -418,6 +473,7 @@ export function composeFrozenCampaign(input: {
   baselineRunId: string;
   baseCommit: string;
   fixes: CampaignFix[];
+  preferredPullRequestIds?: string[];
   replacementFixes?: CampaignFix[];
   prior?: CampaignReceipt | null;
 }): { receipt: CampaignReceipt; changed: boolean } {
@@ -507,7 +563,20 @@ export function composeFrozenCampaign(input: {
           return;
         }
         ensureCommit(checkout, fix.sourceCommit);
-        if (
+        const replacement = prepareFix(
+          checkout,
+          fix,
+          excludedCommits.filter((commit) => commit !== priorFix.sourceCommit),
+        );
+        if (samePatchSeries(priorFix, replacement.fix)) {
+          integrated[exactIndex] = {
+            ...fix,
+            patchIds: priorFix.patchIds,
+          };
+          excludedCommits.push(fix.sourceCommit);
+          return;
+        }
+        const sourceHeadAppended =
           git(
             checkout,
             [
@@ -517,30 +586,46 @@ export function composeFrozenCampaign(input: {
               fix.sourceCommit,
             ],
             true,
-          ).status !== 0
-        ) {
-          throw new Error(
-            `Campaign fix PR ${fix.pullRequestId} rewrote its already integrated focused patch. Append a corrective commit or publish a new focused PR so the frozen campaign keeps auditable history.`,
-          );
-        }
-        const delta = prepareFix(
-          checkout,
-          fix,
-          excludedCommits.filter((commit) => commit !== priorFix.sourceCommit),
-          priorFix.sourceCommit,
+          ).status === 0;
+        const composedPredecessors = composedThisRun.map(
+          (candidate) => candidate.sourceCommit,
         );
-        const updatedFix = {
-          ...delta.fix,
-          patchIds: [
-            ...(priorFix.patchIds ?? []),
-            ...(delta.fix.patchIds ?? []),
-          ],
-        };
-        const applied = applyFix(
-          checkout,
-          { ...delta, fix: updatedFix },
-          composedThisRun.map((candidate) => candidate.sourceCommit),
-        );
+        const selfContainedReplayHead =
+          replacement.commits.length > 1 &&
+          replacement.commits.at(-1) === fix.sourceCommit;
+        const applied = sourceHeadAppended
+          ? (() => {
+              const delta = prepareFix(
+                checkout,
+                fix,
+                excludedCommits.filter(
+                  (commit) => commit !== priorFix.sourceCommit,
+                ),
+                priorFix.sourceCommit,
+              );
+              return applyFix(
+                checkout,
+                {
+                  ...delta,
+                  fix: {
+                    ...delta.fix,
+                    patchIds: [
+                      ...(priorFix.patchIds ?? []),
+                      ...(delta.fix.patchIds ?? []),
+                    ],
+                  },
+                },
+                composedPredecessors,
+              );
+            })()
+          : selfContainedReplayHead
+            ? applyFix(checkout, replacement, composedPredecessors)
+            : applyRewrittenFixDelta(
+                checkout,
+                priorFix,
+                fix,
+                composedPredecessors,
+              );
         integrated[exactIndex] = applied.fix;
         composedThisRun.push(applied.fix);
         excludedCommits.push(applied.fix.sourceCommit);
@@ -550,13 +635,13 @@ export function composeFrozenCampaign(input: {
 
       const prepared = prepareFix(checkout, fix, excludedCommits);
 
-      const equivalentIndex = integrated.findIndex(
-        (candidate) =>
-          candidate.taskId === prepared.fix.taskId &&
-          samePatchSeries(candidate, prepared.fix),
+      const equivalentIndex = integrated.findIndex((candidate) =>
+        samePatchSeries(candidate, prepared.fix),
       );
       if (equivalentIndex >= 0) {
-        integrated[equivalentIndex] = prepared.fix;
+        if (integrated[equivalentIndex].taskId === prepared.fix.taskId) {
+          integrated[equivalentIndex] = prepared.fix;
+        }
         excludedCommits.push(prepared.fix.sourceCommit);
         return;
       }
@@ -573,9 +658,24 @@ export function composeFrozenCampaign(input: {
       changed ||= applied.commits.length > 0;
     };
 
-    for (const fix of [...input.fixes].sort(
-      (left, right) => Number(left.pullRequestId) - Number(right.pullRequestId),
-    )) {
+    const preferredOrder = new Map(
+      (input.preferredPullRequestIds ?? []).map((pullRequestId, index) => [
+        pullRequestId,
+        index,
+      ]),
+    );
+    const compareFixOrder = (left: CampaignFix, right: CampaignFix): number => {
+      const leftPreferred = preferredOrder.get(left.pullRequestId);
+      const rightPreferred = preferredOrder.get(right.pullRequestId);
+      if (leftPreferred !== undefined && rightPreferred !== undefined) {
+        return leftPreferred - rightPreferred;
+      }
+      if (leftPreferred !== undefined) return -1;
+      if (rightPreferred !== undefined) return 1;
+      return Number(left.pullRequestId) - Number(right.pullRequestId);
+    };
+
+    for (const fix of [...input.fixes].sort(compareFixOrder)) {
       incorporate(fix, false);
     }
     for (const fix of [...(input.replacementFixes ?? [])].sort(

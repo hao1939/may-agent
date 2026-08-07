@@ -15,6 +15,7 @@ import {
   campaignPatchConflictRepairWake,
   campaignRecoveryDue,
   completedCycleState,
+  currentMainCampaignSuccessorInput,
   fixVerificationTrigger,
   latestCampaignFixes,
   registerMasterValidationRun,
@@ -294,13 +295,44 @@ ${JSON.stringify({
     expect(campaignIntegratedFixesMerged([])).toBe(false);
   });
 
-  test("restarts from current main when a frozen campaign baseline is stale", () => {
+  test("detects when a frozen campaign baseline is stale", () => {
     expect(
       campaignBaselineIsCurrent({ baseCommit: "frozen-main" }, "current-main"),
     ).toBe(false);
     expect(
       campaignBaselineIsCurrent({ baseCommit: "current-main" }, "current-main"),
     ).toBe(true);
+  });
+
+  test("carries isolated fixes onto a current-main successor without rediscovery", () => {
+    const priorFix = {
+      pullRequestId: "31",
+      taskId: "domain/master-validation-failure/spec.example",
+      sourceBranch: "task/spec-example",
+      sourceCommit: "old-head",
+      title: "Example repair",
+    };
+    const updatedFix = { ...priorFix, sourceCommit: "new-head" };
+    const successor = currentMainCampaignSuccessorInput(
+      {
+        schemaVersion: "1",
+        baselineRunId: "100",
+        baseCommit: "old-main",
+        branch: "validation/master-validation-100",
+        currentCommit: "old-candidate",
+        integratedFixes: [priorFix],
+        updatedAt: "2026-08-08T00:00:00.000Z",
+      },
+      "abcdef1234567890",
+      [updatedFix],
+    );
+
+    expect(successor).toEqual({
+      baselineRunId: "main-abcdef123456",
+      baseCommit: "abcdef1234567890",
+      fixes: [updatedFix],
+      preferredPullRequestIds: ["31"],
+    });
   });
 
   test("routes a focused patch conflict back to its stable failure task", () => {

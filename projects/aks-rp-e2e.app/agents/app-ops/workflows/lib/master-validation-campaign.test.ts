@@ -260,6 +260,304 @@ describe("frozen master-validation campaign", () => {
     }
   });
 
+  test("rebinds an equivalent force-rewritten head of the same focused PR", () => {
+    const fixture = campaignFixture();
+    try {
+      git(
+        fixture.repoDir,
+        "checkout",
+        "-b",
+        "fix/equivalent-rewrite",
+        fixture.baseCommit,
+      );
+      const firstSourceCommit = commitFile(
+        fixture.repoDir,
+        "focused.txt",
+        "repair\n",
+        "focused fix",
+      );
+      git(fixture.repoDir, "push", "-u", "origin", "fix/equivalent-rewrite");
+
+      const first = composeFrozenCampaign({
+        appDir: fixture.appDir,
+        repoDir: fixture.repoDir,
+        baselineRunId: "equivalent-rewrite",
+        baseCommit: fixture.baseCommit,
+        fixes: [
+          {
+            pullRequestId: "4",
+            taskId: "domain/master-validation-failure/spec.example/rewrite",
+            sourceBranch: "fix/equivalent-rewrite",
+            sourceCommit: firstSourceCommit,
+            title: "Focused fix",
+          },
+        ],
+      });
+
+      git(fixture.repoDir, "commit", "--amend", "-m", "equivalent focused fix");
+      const rewrittenSourceCommit = git(fixture.repoDir, "rev-parse", "HEAD");
+      expect(rewrittenSourceCommit).not.toBe(firstSourceCommit);
+      git(
+        fixture.repoDir,
+        "push",
+        "--force",
+        "origin",
+        "fix/equivalent-rewrite",
+      );
+
+      const rebound = composeFrozenCampaign({
+        appDir: fixture.appDir,
+        repoDir: fixture.repoDir,
+        baselineRunId: "equivalent-rewrite",
+        baseCommit: fixture.baseCommit,
+        fixes: [
+          {
+            pullRequestId: "4",
+            taskId: "domain/master-validation-failure/spec.example/rewrite",
+            sourceBranch: "fix/equivalent-rewrite",
+            sourceCommit: rewrittenSourceCommit,
+            title: "Focused fix",
+          },
+        ],
+        prior: first.receipt,
+      });
+
+      expect(rebound.changed).toBe(false);
+      expect(rebound.receipt.currentCommit).toBe(first.receipt.currentCommit);
+      expect(rebound.receipt.integratedFixes).toEqual([
+        expect.objectContaining({
+          pullRequestId: "4",
+          sourceCommit: rewrittenSourceCommit,
+          patchIds: first.receipt.integratedFixes[0]?.patchIds,
+        }),
+      ]);
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  test("preserves campaign history while applying a materially rewritten PR head as a delta", () => {
+    const fixture = campaignFixture();
+    try {
+      git(
+        fixture.repoDir,
+        "checkout",
+        "-b",
+        "fix/material-rewrite",
+        fixture.baseCommit,
+      );
+      const firstSourceCommit = commitFile(
+        fixture.repoDir,
+        "focused.txt",
+        "repair\n",
+        "focused fix",
+      );
+      git(fixture.repoDir, "push", "-u", "origin", "fix/material-rewrite");
+
+      const first = composeFrozenCampaign({
+        appDir: fixture.appDir,
+        repoDir: fixture.repoDir,
+        baselineRunId: "material-rewrite",
+        baseCommit: fixture.baseCommit,
+        fixes: [
+          {
+            pullRequestId: "5",
+            taskId:
+              "domain/master-validation-failure/spec.example/material-rewrite",
+            sourceBranch: "fix/material-rewrite",
+            sourceCommit: firstSourceCommit,
+            title: "Focused fix",
+          },
+        ],
+      });
+
+      git(fixture.repoDir, "reset", "--hard", fixture.baseCommit);
+      writeFileSync(join(fixture.repoDir, "focused.txt"), "repair\n");
+      writeFileSync(
+        join(fixture.repoDir, "verification.txt"),
+        "corrective proof\n",
+      );
+      git(fixture.repoDir, "add", "focused.txt", "verification.txt");
+      git(
+        fixture.repoDir,
+        "commit",
+        "-m",
+        "rewrite focused fix with correction",
+      );
+      const rewrittenSourceCommit = git(fixture.repoDir, "rev-parse", "HEAD");
+      git(fixture.repoDir, "push", "--force", "origin", "fix/material-rewrite");
+
+      const updated = composeFrozenCampaign({
+        appDir: fixture.appDir,
+        repoDir: fixture.repoDir,
+        baselineRunId: "material-rewrite",
+        baseCommit: fixture.baseCommit,
+        fixes: [
+          {
+            pullRequestId: "5",
+            taskId:
+              "domain/master-validation-failure/spec.example/material-rewrite",
+            sourceBranch: "fix/material-rewrite",
+            sourceCommit: rewrittenSourceCommit,
+            title: "Focused fix with correction",
+          },
+        ],
+        prior: first.receipt,
+      });
+
+      expect(updated.changed).toBe(true);
+      expect(updated.receipt.currentCommit).not.toBe(
+        first.receipt.currentCommit,
+      );
+      expect(updated.receipt.integratedFixes).toEqual([
+        expect.objectContaining({
+          pullRequestId: "5",
+          sourceCommit: rewrittenSourceCommit,
+          patchIds: expect.arrayContaining(
+            first.receipt.integratedFixes[0]?.patchIds ?? [],
+          ),
+        }),
+      ]);
+      git(
+        fixture.repoDir,
+        "fetch",
+        "origin",
+        `+refs/heads/${updated.receipt.branch}:refs/remotes/origin/${updated.receipt.branch}`,
+      );
+      const campaignRef = `origin/${updated.receipt.branch}`;
+      expect(git(fixture.repoDir, "show", `${campaignRef}:focused.txt`)).toBe(
+        "repair",
+      );
+      expect(
+        git(fixture.repoDir, "show", `${campaignRef}:verification.txt`),
+      ).toBe("corrective proof");
+      expect(
+        git(
+          fixture.repoDir,
+          "merge-base",
+          "--is-ancestor",
+          first.receipt.currentCommit,
+          updated.receipt.currentCommit,
+        ),
+      ).toBe("");
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  test("returns a conflicting rewritten test delta to its stable domain carrier", () => {
+    const fixture = campaignFixture();
+    try {
+      writeFileSync(
+        join(fixture.repoDir, "runner-conflict.test.ts"),
+        "test('base', () => 'base');\n",
+      );
+      git(fixture.repoDir, "add", "runner-conflict.test.ts");
+      git(fixture.repoDir, "commit", "--amend", "--no-edit");
+      const frozenCommit = git(fixture.repoDir, "rev-parse", "HEAD");
+      git(fixture.repoDir, "push", "--force", "origin", "main");
+
+      git(fixture.repoDir, "checkout", "-b", "fix/test-only-rewrite");
+      const firstSourceCommit = commitFile(
+        fixture.repoDir,
+        "focused.txt",
+        "repair\n",
+        "focused repair",
+      );
+      git(fixture.repoDir, "push", "-u", "origin", "fix/test-only-rewrite");
+
+      git(
+        fixture.repoDir,
+        "checkout",
+        "-b",
+        "fix/newer-campaign-test",
+        frozenCommit,
+      );
+      const predecessorCommit = commitFile(
+        fixture.repoDir,
+        "runner-conflict.test.ts",
+        "test('campaign', () => 'newer campaign coverage');\n",
+        "newer campaign test lineage",
+      );
+      git(fixture.repoDir, "push", "-u", "origin", "fix/newer-campaign-test");
+
+      const prior = composeFrozenCampaign({
+        appDir: fixture.appDir,
+        repoDir: fixture.repoDir,
+        baselineRunId: "test-only-rewrite",
+        baseCommit: frozenCommit,
+        fixes: [
+          {
+            pullRequestId: "5",
+            taskId:
+              "domain/master-validation-failure/spec.example/test-only-rewrite",
+            sourceBranch: "fix/test-only-rewrite",
+            sourceCommit: firstSourceCommit,
+            title: "Focused repair",
+          },
+          {
+            pullRequestId: "6",
+            taskId:
+              "domain/master-validation-failure/spec.example/newer-test-lineage",
+            sourceBranch: "fix/newer-campaign-test",
+            sourceCommit: predecessorCommit,
+            title: "Newer campaign test lineage",
+          },
+        ],
+      });
+
+      git(fixture.repoDir, "checkout", "fix/test-only-rewrite");
+      git(fixture.repoDir, "reset", "--hard", frozenCommit);
+      writeFileSync(join(fixture.repoDir, "focused.txt"), "repair\n");
+      writeFileSync(
+        join(fixture.repoDir, "runner-conflict.test.ts"),
+        "test('rewritten', () => 'rewritten PR coverage');\n",
+      );
+      git(fixture.repoDir, "add", "focused.txt", "runner-conflict.test.ts");
+      git(fixture.repoDir, "commit", "-m", "rewrite focused repair tests");
+      const rewrittenSourceCommit = git(fixture.repoDir, "rev-parse", "HEAD");
+      git(
+        fixture.repoDir,
+        "push",
+        "--force",
+        "origin",
+        "fix/test-only-rewrite",
+      );
+
+      expect(() =>
+        composeFrozenCampaign({
+          appDir: fixture.appDir,
+          repoDir: fixture.repoDir,
+          baselineRunId: "test-only-rewrite",
+          baseCommit: frozenCommit,
+          fixes: [
+            {
+              pullRequestId: "5",
+              taskId:
+                "domain/master-validation-failure/spec.example/test-only-rewrite",
+              sourceBranch: "fix/test-only-rewrite",
+              sourceCommit: rewrittenSourceCommit,
+              title: "Rewritten focused repair tests",
+            },
+            {
+              pullRequestId: "6",
+              taskId:
+                "domain/master-validation-failure/spec.example/newer-test-lineage",
+              sourceBranch: "fix/newer-campaign-test",
+              sourceCommit: predecessorCommit,
+              title: "Newer campaign test lineage",
+            },
+          ],
+          prior: prior.receipt,
+        }),
+      ).toThrow(
+        `Campaign focused-patch conflict for PR 5 (domain/master-validation-failure/spec.example/test-only-rewrite) at ${rewrittenSourceCommit}`,
+      );
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
   test("composes a successor when a retained PR head object is unavailable", () => {
     const fixture = campaignFixture();
     try {
@@ -483,6 +781,132 @@ describe("frozen master-validation campaign", () => {
           ],
         }),
       ).toThrow("contains no source-bearing focused commit");
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  test("uses a self-contained replay head for a force-rewritten PR after ordered predecessors", () => {
+    const fixture = campaignFixture();
+    try {
+      writeFileSync(join(fixture.repoDir, "carrier.txt"), "frozen\n");
+      git(fixture.repoDir, "add", "carrier.txt");
+      git(fixture.repoDir, "commit", "--amend", "--no-edit");
+      const frozenCommit = git(fixture.repoDir, "rev-parse", "HEAD");
+      git(fixture.repoDir, "push", "--force", "origin", "main");
+
+      const targetCommit = commitFile(
+        fixture.repoDir,
+        "carrier.txt",
+        "modern\n",
+        "modernize carrier",
+      );
+      git(fixture.repoDir, "push", "origin", "main");
+      git(fixture.repoDir, "checkout", "-b", "fix/rewritten-replay");
+      const firstSourceCommit = commitFile(
+        fixture.repoDir,
+        "focused.txt",
+        "repair\n",
+        "first focused repair",
+      );
+      git(fixture.repoDir, "push", "-u", "origin", "fix/rewritten-replay");
+
+      const prior = composeFrozenCampaign({
+        appDir: fixture.appDir,
+        repoDir: fixture.repoDir,
+        baselineRunId: "rewritten-replay",
+        baseCommit: frozenCommit,
+        fixes: [
+          {
+            pullRequestId: "20",
+            taskId:
+              "domain/master-validation-failure/spec.example/rewritten-replay",
+            sourceBranch: "fix/rewritten-replay",
+            sourceCommit: firstSourceCommit,
+            targetCommit,
+            title: "First focused repair",
+          },
+        ],
+      });
+
+      git(
+        fixture.repoDir,
+        "checkout",
+        "-b",
+        "fix/ordered-predecessor",
+        frozenCommit,
+      );
+      writeFileSync(join(fixture.repoDir, "carrier.txt"), "campaign\n");
+      writeFileSync(
+        join(fixture.repoDir, "predecessor.txt"),
+        "ordered predecessor\n",
+      );
+      git(fixture.repoDir, "add", "carrier.txt", "predecessor.txt");
+      git(fixture.repoDir, "commit", "-m", "ordered predecessor");
+      const predecessorCommit = git(fixture.repoDir, "rev-parse", "HEAD");
+      git(fixture.repoDir, "push", "-u", "origin", "fix/ordered-predecessor");
+
+      git(fixture.repoDir, "checkout", "fix/rewritten-replay");
+      git(fixture.repoDir, "reset", "--hard", targetCommit);
+      commitFile(
+        fixture.repoDir,
+        "carrier.txt",
+        "campaign\n",
+        "prepare campaign carrier shape",
+      );
+      writeFileSync(join(fixture.repoDir, "carrier.txt"), "campaign\nguard\n");
+      writeFileSync(join(fixture.repoDir, "focused.txt"), "repair\n");
+      git(fixture.repoDir, "add", "carrier.txt", "focused.txt");
+      git(fixture.repoDir, "commit", "-m", "apply complete focused repair");
+      const rewrittenSourceCommit = git(fixture.repoDir, "rev-parse", "HEAD");
+      git(fixture.repoDir, "push", "--force", "origin", "fix/rewritten-replay");
+
+      const result = composeFrozenCampaign({
+        appDir: fixture.appDir,
+        repoDir: fixture.repoDir,
+        baselineRunId: "rewritten-replay",
+        baseCommit: frozenCommit,
+        fixes: [
+          {
+            pullRequestId: "10",
+            taskId: "domain/master-validation-failure/spec.example/predecessor",
+            sourceBranch: "fix/ordered-predecessor",
+            sourceCommit: predecessorCommit,
+            targetCommit: frozenCommit,
+            title: "Ordered predecessor",
+          },
+          {
+            pullRequestId: "20",
+            taskId:
+              "domain/master-validation-failure/spec.example/rewritten-replay",
+            sourceBranch: "fix/rewritten-replay",
+            sourceCommit: rewrittenSourceCommit,
+            targetCommit,
+            title: "Replay-safe rewritten repair",
+          },
+        ],
+        prior: prior.receipt,
+      });
+
+      git(fixture.repoDir, "fetch", "origin", result.receipt.branch);
+      const campaignRef = `origin/${result.receipt.branch}`;
+      expect(git(fixture.repoDir, "show", `${campaignRef}:carrier.txt`)).toBe(
+        "campaign\nguard",
+      );
+      expect(git(fixture.repoDir, "show", `${campaignRef}:focused.txt`)).toBe(
+        "repair",
+      );
+      expect(
+        git(fixture.repoDir, "show", `${campaignRef}:predecessor.txt`),
+      ).toBe("ordered predecessor");
+      expect(result.receipt.integratedFixes).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            pullRequestId: "20",
+            sourceCommit: rewrittenSourceCommit,
+          }),
+        ]),
+      );
     } finally {
       rmSync(fixture.root, { recursive: true, force: true });
     }
@@ -738,6 +1162,141 @@ describe("frozen master-validation campaign", () => {
           patchIds: first.receipt.integratedFixes[0].patchIds,
         }),
       ]);
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  test("composes one canonical patch when different failure tasks publish equivalent repairs", () => {
+    const fixture = campaignFixture();
+    try {
+      git(
+        fixture.repoDir,
+        "checkout",
+        "-b",
+        "fix/equivalent-a",
+        fixture.baseCommit,
+      );
+      const firstCommit = commitFile(
+        fixture.repoDir,
+        "shared.txt",
+        "shared repair\n",
+        "first task repair",
+      );
+      git(fixture.repoDir, "push", "-u", "origin", "fix/equivalent-a");
+
+      git(
+        fixture.repoDir,
+        "checkout",
+        "-b",
+        "fix/equivalent-b",
+        fixture.baseCommit,
+      );
+      const secondCommit = commitFile(
+        fixture.repoDir,
+        "shared.txt",
+        "shared repair\n",
+        "second task repair",
+      );
+      git(fixture.repoDir, "push", "-u", "origin", "fix/equivalent-b");
+
+      const result = composeFrozenCampaign({
+        appDir: fixture.appDir,
+        repoDir: fixture.repoDir,
+        baselineRunId: "equivalent-cross-task",
+        baseCommit: fixture.baseCommit,
+        fixes: [
+          {
+            pullRequestId: "31",
+            taskId: "domain/master-validation-failure/spec.example/first",
+            sourceBranch: "fix/equivalent-a",
+            sourceCommit: firstCommit,
+            title: "First equivalent repair",
+          },
+          {
+            pullRequestId: "32",
+            taskId: "domain/master-validation-failure/spec.example/second",
+            sourceBranch: "fix/equivalent-b",
+            sourceCommit: secondCommit,
+            title: "Second equivalent repair",
+          },
+        ],
+      });
+
+      expect(result.changed).toBe(true);
+      expect(result.receipt.integratedFixes).toEqual([
+        expect.objectContaining({
+          pullRequestId: "31",
+          taskId: "domain/master-validation-failure/spec.example/first",
+          sourceCommit: firstCommit,
+        }),
+      ]);
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  test("keeps proven campaign fixes ahead of newly discovered lower-numbered PRs", () => {
+    const fixture = campaignFixture();
+    try {
+      git(
+        fixture.repoDir,
+        "checkout",
+        "-b",
+        "fix/new-lower",
+        fixture.baseCommit,
+      );
+      const newLowerCommit = commitFile(
+        fixture.repoDir,
+        "new-lower.txt",
+        "new lower-numbered repair\n",
+        "new lower-numbered repair",
+      );
+      git(fixture.repoDir, "push", "-u", "origin", "fix/new-lower");
+
+      git(fixture.repoDir, "checkout", "-b", "fix/proven", fixture.baseCommit);
+      const provenCommit = commitFile(
+        fixture.repoDir,
+        "proven.txt",
+        "proven repair\n",
+        "proven campaign repair",
+      );
+      git(fixture.repoDir, "push", "-u", "origin", "fix/proven");
+
+      const result = composeFrozenCampaign({
+        appDir: fixture.appDir,
+        repoDir: fixture.repoDir,
+        baselineRunId: "preferred-order",
+        baseCommit: fixture.baseCommit,
+        fixes: [
+          {
+            pullRequestId: "10",
+            taskId: "domain/master-validation-failure/spec.new",
+            sourceBranch: "fix/new-lower",
+            sourceCommit: newLowerCommit,
+            title: "New lower-numbered repair",
+          },
+          {
+            pullRequestId: "20",
+            taskId: "domain/master-validation-failure/spec.proven",
+            sourceBranch: "fix/proven",
+            sourceCommit: provenCommit,
+            title: "Proven campaign repair",
+          },
+        ],
+        preferredPullRequestIds: ["20"],
+      });
+
+      git(fixture.repoDir, "fetch", "origin", result.receipt.branch);
+      expect(
+        git(
+          fixture.repoDir,
+          "log",
+          "--reverse",
+          "--format=%s",
+          `${fixture.baseCommit}..origin/${result.receipt.branch}`,
+        ).split("\n"),
+      ).toEqual(["proven campaign repair", "new lower-numbered repair"]);
     } finally {
       rmSync(fixture.root, { recursive: true, force: true });
     }

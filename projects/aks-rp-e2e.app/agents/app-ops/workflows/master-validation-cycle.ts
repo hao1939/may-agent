@@ -692,7 +692,7 @@ export function latestCampaignFixes(fixes: CampaignFix[]): CampaignFix[] {
     const prior = latestByKey.get(key);
     if (
       !prior ||
-      comparePullRequestIds(prior.pullRequestId, fix.pullRequestId) < 0
+      comparePullRequestIds(prior.pullRequestId, fix.pullRequestId) <= 0
     ) {
       latestByKey.set(key, fix);
     }
@@ -700,6 +700,28 @@ export function latestCampaignFixes(fixes: CampaignFix[]): CampaignFix[] {
   return [...latestByKey.values()].sort((left, right) =>
     comparePullRequestIds(left.pullRequestId, right.pullRequestId),
   );
+}
+
+export function currentMainCampaignSuccessorInput(
+  campaign: CampaignReceipt,
+  currentMainCommit: string,
+  activeFixes: CampaignFix[],
+): {
+  baselineRunId: string;
+  baseCommit: string;
+  fixes: CampaignFix[];
+  preferredPullRequestIds: string[];
+} {
+  const baseCommit = currentMainCommit.trim();
+  if (!baseCommit) throw new Error("Current main commit is required");
+  return {
+    baselineRunId: `main-${baseCommit.slice(0, 12)}`,
+    baseCommit,
+    fixes: latestCampaignFixes([...campaign.integratedFixes, ...activeFixes]),
+    preferredPullRequestIds: campaign.integratedFixes.map(
+      (fix) => fix.pullRequestId,
+    ),
+  };
 }
 
 function activeCampaignFixes(
@@ -730,6 +752,25 @@ function activeCampaignFixes(
         }),
       )
     : [];
+}
+
+function composeCurrentMainCampaignSuccessor(
+  appDir: string,
+  repoDir: string,
+  campaign: CampaignReceipt,
+  currentMainCommit: string,
+) {
+  const successor = currentMainCampaignSuccessorInput(
+    campaign,
+    currentMainCommit,
+    activeCampaignFixes(repoDir, campaign.baseCommit),
+  );
+  return composeFrozenCampaign({
+    appDir,
+    repoDir,
+    ...successor,
+    prior: null,
+  });
 }
 
 function completedCampaignReplacements(
@@ -1161,16 +1202,27 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       if (activeCampaign && activeBranch === activeCampaign.branch) {
         const currentMainCommit = resolveCurrentMain(repoDir);
         if (!campaignBaselineIsCurrent(activeCampaign, currentMainCommit)) {
+          const successor = composeCurrentMainCampaignSuccessor(
+            appDir,
+            repoDir,
+            activeCampaign,
+            currentMainCommit,
+          ).receipt;
           return waiting(
             ctx,
             text(active.id),
             activeBranch,
             activeCommit,
-            `Master validation run ${text(active.id)} continues on frozen base ${activeCampaign.baseCommit}; main advanced to ${currentMainCommit}, so the next cycle will start from that exact current-main commit instead of composing more fixes onto the stale snapshot.`,
+            `Master validation run ${text(active.id)} continues on frozen base ${activeCampaign.baseCommit}; main advanced to ${currentMainCommit}, so prepared successor ${successor.currentCommit} carries the same isolated fixes onto that exact current-main base.`,
             [
               ...fixPublicationEvidence,
               `stale-campaign-base:${activeCampaign.baseCommit}`,
-              `next-current-main:${currentMainCommit}`,
+              `successor-current-main:${currentMainCommit}`,
+              `campaign-successor:${successor.branch}@${successor.currentCommit}`,
+              ...successor.integratedFixes.map(
+                (fix) =>
+                  `successor-fix-pull-request:${fix.pullRequestId}@${fix.sourceCommit}`,
+              ),
             ],
           );
         }
@@ -1248,6 +1300,24 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         }
         const currentMainCommit = resolveCurrentMain(repoDir);
         if (!campaignBaselineIsCurrent(campaign, currentMainCommit)) {
+          const successor = composeCurrentMainCampaignSuccessor(
+            appDir,
+            repoDir,
+            campaign,
+            currentMainCommit,
+          ).receipt;
+          if (successor.currentCommit !== successor.baseCommit) {
+            return queueCycle(
+              ctx,
+              repoDir,
+              payload,
+              successor.branch,
+              successor.currentCommit,
+              campaignPurpose,
+              successor,
+              prior.runId,
+            );
+          }
           return queueCycle(
             ctx,
             repoDir,

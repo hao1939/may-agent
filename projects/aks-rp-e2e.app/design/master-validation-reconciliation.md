@@ -37,10 +37,10 @@ failed aggregate
   -> freeze one campaign branch at the exact tested main commit
   -> replay only each focused PR patch onto that branch
   -> run -> observe -> fix -> replay another focused patch -> rerun
-  -> while that base is still current, keep repairing the frozen campaign
-  -> if main advances, let an active run finish, then validate exact current main
-  -> never rebase or merge newer main into the old campaign
-  -> current-base green campaign: wait for its focused PRs to merge
+  -> if main advances, let the active run finish without overlap
+  -> compose one new successor from exact new main plus the same isolated patches
+  -> never merge newer main into the old campaign branch
+  -> green current-main-based successor: wait for its focused PRs to merge
   -> verify current main once
 
 healthy aggregate completion
@@ -104,15 +104,13 @@ pass means healthy now, not finished forever: the maintain task remains live
 and queues another full run when the six-hour interval becomes due.
 
 Every result is compared with current `origin/main` before the next campaign
-action. A failed main run freezes its exact tested commit as one repair campaign
-only while that commit remains current. If `main` advances, the app lets an
-already-active aggregate run finish so runs do not overlap, then queues one full
-run from the exact current `main` commit. It stops composing or rerunning the
-stale campaign. If the new current-main run fails, that failed snapshot becomes
-the next frozen campaign. Only focused repairs explicitly rooted at that exact
-failed snapshot may enter it. Active PRs from an older campaign do not carry
-forward automatically; the new current-main run must expose the failure again
-or a new bootstrap repair must name the new base.
+action. A failed main run freezes its exact tested commit as one repair campaign.
+If `main` advances, the app lets an already-active aggregate run finish so runs
+do not overlap and prepares one successor from exact current `main` plus the same
+isolated patch set. It never merges newer main into the old campaign branch and
+never reruns that stale branch. Fixes already isolated by that campaign carry
+forward; unrelated older drafts still require a current observation before they
+can join.
 
 The six-hour interval is the healthy periodic cadence and slow recovery
 backstop. During repair, semantic pipeline, campaign-head, and focused-PR
@@ -159,11 +157,13 @@ main@M0
   repair after a rebase. An equivalent replacement PR is rebound to the repair
   already present in the campaign without replaying it or importing new base
   commits.
-- Replay every new focused patch onto the campaign in stable PR order, then
-  test the resulting exact branch head. A materially changed or additional
-  patch changes the campaign head and requires another run. A conflict returns
-  to the same repair task with exact evidence; it never causes the controller
-  to merge the whole source branch.
+- Replay already integrated focused patches in their recorded causal order
+  before newly discovered patches; order only new peers by PR number. This
+  keeps a later broad or overlapping repair from moving ahead of the canonical
+  patch the campaign already proved. Then test the resulting exact branch
+  head. A materially changed or additional patch changes the campaign head and
+  requires another run. A conflict returns to the same repair task with exact
+  evidence; it never causes the controller to merge the whole source branch.
 - The failed main run already tested the untouched base, so creating the branch
   does not queue a duplicate run. A fix changing the branch head queues the
   next campaign run immediately.
@@ -172,9 +172,10 @@ main@M0
   campaign head immediately but does not overlap aggregate runs. The successor
   queues as soon as the active run reaches a terminal state.
 - If `main` advances, do not compose another focused patch onto the stale
-  campaign. Let any already-active aggregate run finish, then queue one full
-  run from exact current `main`. A failure there creates the next campaign;
-  still-active focused repairs can then be replayed against that new snapshot.
+  campaign. Let any already-active aggregate run finish and prepare one new
+  successor from exact current `main` plus the same isolated patch set. This
+  tests known repairs against current code without first rediscovering each
+  known failure on plain main.
 - If no repository fix changes the head and its base is still current, a red
   campaign reruns that exact head every six hours. This is the recovery probe
   for product and environment failures; it does not merge newer `main`.
@@ -496,13 +497,14 @@ The design is working when:
 - a failed main run freezes one campaign at the tested commit while that commit
   remains current;
 - when `main` advances, an active stale-campaign run may finish but no further
-  patch is composed there, and the next aggregate run uses exact current main;
+  patch is composed there, and one successor uses exact current main plus the
+  preserved isolated patch set in its recorded causal order;
 - each focused test fix remains one PR to current main while its focused patch
   can be tested immediately on the frozen campaign without importing main;
 - a red campaign reruns after accumulated fix patches change and never waits only
   because those PRs are unmerged;
-- only a green campaign whose base is still current may wait for its focused
-  PRs to merge;
+- only a green campaign based on the main commit current when it was queued may
+  publish its focused PRs and wait for merge;
 - if all effective focused PRs are already merged, a red or canceled campaign
   yields immediately to exact latest-main verification instead of spending
   another recovery cycle on obsolete pre-merge state;
