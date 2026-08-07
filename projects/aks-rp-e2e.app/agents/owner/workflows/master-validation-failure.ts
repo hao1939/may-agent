@@ -646,6 +646,28 @@ function evidenceValue(evidence: string[], prefix: string): string {
   );
 }
 
+function receiptStandaloneBuildId(
+  receipt: Record<string, unknown>,
+  evidence: string[],
+): string {
+  const canonical = evidenceValue(evidence, "standalone-build-id:");
+  if (/^\d+$/.test(canonical)) return canonical;
+  const acceptance = Array.isArray(receipt.acceptance)
+    ? receipt.acceptance.map(text).filter(Boolean)
+    : [];
+  const corpus = [
+    text(receipt.outcome),
+    text(receipt.summary),
+    ...acceptance,
+    ...evidence,
+  ].join("\n");
+  return (
+    corpus.match(
+      /\bstandalone[_ -]build(?:[_ -]id)?\s*(?::|=)?\s*(\d+)\b/i,
+    )?.[1] ?? ""
+  );
+}
+
 export function priorStandaloneVerification(
   appDir: string,
   specId: string,
@@ -668,10 +690,7 @@ export function priorStandaloneVerification(
             text(receipt.summary),
             ...evidence,
           ].join("\n");
-          const standaloneBuildId = evidenceValue(
-            evidence,
-            "standalone-build-id:",
-          );
+          const standaloneBuildId = receiptStandaloneBuildId(receipt, evidence);
           const pipelineRunId = evidenceValue(evidence, "pipeline-run:");
           const sourceCommit = evidenceValue(evidence, "source-commit:");
           return {

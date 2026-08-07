@@ -838,6 +838,46 @@ ${JSON.stringify({
     }
   });
 
+  test("reuses an older standalone proof receipt written in plain language", () => {
+    const root = mkdtempSync(join(tmpdir(), "legacy-standalone-proof-"));
+    try {
+      mkdirSync(join(root, ".state", "tasks"), { recursive: true });
+      writeFileSync(
+        join(root, ".state", "tasks", "state.json"),
+        JSON.stringify({
+          receipts: {
+            "domain/prior-queuewatcher-proof": {
+              outcome:
+                "Verify spec.service-platform.queuewatcher on standalone build 175600006.",
+              acceptance: [
+                "Track exact run 175634889 with standalone_build_id=175600006.",
+              ],
+              summary:
+                "spec.service-platform.queuewatcher passed exact live verification on current origin/main.",
+              evidence: [
+                "pipeline-run:175634889",
+                "source-commit:9c2c111b04ef2b625b05e03bf4fae203008a268b",
+                "run 175634889 succeeded at target staging, standalone_build_id 175600006.",
+              ],
+              completedAt: "2026-08-07T17:01:45.337Z",
+            },
+          },
+        }),
+      );
+
+      expect(
+        priorStandaloneVerification(root, "spec.service-platform.queuewatcher"),
+      ).toMatchObject({
+        taskId: "domain/prior-queuewatcher-proof",
+        pipelineRunId: "175634889",
+        sourceCommit: "9c2c111b04ef2b625b05e03bf4fae203008a268b",
+        standaloneBuildId: "175600006",
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   test("does not reinterpret an ordinary environment failure as standalone routing", () => {
     const failure = parseFailureInput(`
 ## Reconciliation Task
