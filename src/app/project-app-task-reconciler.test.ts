@@ -191,6 +191,40 @@ describe("project app task reconciler state", () => {
     expect(tree.receipts?.[claim.taskId]).toBeUndefined();
   });
 
+  it("keeps a maintain task pending when a durable wake arrives during its attempt", () => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      handler: "workflow:worker",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+
+    expect(
+      recordProjectAppTaskTrigger(config, claim.taskId, {
+        type: "sample.continue",
+        reason: "bounded-stage-complete",
+      }),
+    ).toEqual({ kind: "recorded" });
+
+    expect(
+      completeProjectAppTask(config, claim, {
+        summary: "Checkpointed one bounded stage",
+        evidence: ["checkpoint:stage-1"],
+      }),
+    ).toMatchObject({
+      status: "applied",
+      dependentTaskIds: [claim.taskId],
+      taskContinues: true,
+    });
+    const tree = readTaskState(config);
+    expect(tree.resources?.[claim.taskId]?.status.phase).toBe("pending");
+    expect(tree.taskTriggers?.[claim.taskId]?.event).toMatchObject({
+      type: "sample.continue",
+    });
+    expect(tree.attempts?.[claim.attemptId]?.state).toBe("completed");
+  });
+
   it("rejects a no-op or mixed self-update", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
@@ -706,10 +740,7 @@ describe("project app task reconciler state", () => {
       },
     });
 
-    expect(listRunnableProjectAppTaskIds(config).slice(0, 2)).toEqual([
-      "work/new-p0",
-      "work/live-result-p2",
-    ]);
+    expect(listRunnableProjectAppTaskIds(config).slice(0, 2)).toEqual(["work/new-p0", "work/live-result-p2"]);
     expect(listRunnableProjectAppTaskQueueEntries(config).slice(0, 2)).toEqual([
       {
         taskId: "work/new-p0",
@@ -1051,9 +1082,7 @@ describe("project app task reconciler state", () => {
       handler: "workflow:known-workflow",
     });
     expect(ownerClaim).toMatchObject({ kind: "claimed", taskId: monitor.id, trigger: comment });
-    expect(readTaskState(config).resources[monitor.id].status.conditionIds).toEqual([
-      "older-external-run-finished",
-    ]);
+    expect(readTaskState(config).resources[monitor.id].status.conditionIds).toEqual(["older-external-run-finished"]);
   });
 
   it("invalidates an old attempt when desired state changes generation", () => {
@@ -2225,9 +2254,9 @@ describe("project app task reconciler state", () => {
     interruptedTree.attempts![currentAttemptId]!.runtimeId = "previous-runtime";
     saveTaskState(config, interruptedTree);
 
-    expect(
-      releaseInterruptedProjectAppTaskAttempt(config, parentIntent.id, "Process restarted"),
-    ).toMatchObject({ released: true });
+    expect(releaseInterruptedProjectAppTaskAttempt(config, parentIntent.id, "Process restarted")).toMatchObject({
+      released: true,
+    });
     expect(readProjectAppTaskTrigger(config, parentIntent.id)).toEqual(commentTrigger);
 
     const recoveredClaim = claimObservedProjectAppTask(config, {
@@ -2750,6 +2779,7 @@ describe("project app task reconciler state", () => {
       status: "applied",
       actionsApplied: ["created owner-created-task"],
       dependentTaskIds: ["owner-created-task"],
+      supersededSessionIds: [],
     });
     const tree = readTaskState(config);
     expect(tree.tasks["owner-created-task"]).toMatchObject({
@@ -2983,6 +3013,60 @@ describe("project app task reconciler state", () => {
     expect(readTaskState(config).resources?.["categorized-task"].metadata.generation).toBe(observed.generation + 1);
   });
 
+  it("returns sessions superseded by a dependent update-task action", () => {
+    const { config } = fixture();
+    const targetIntent: ProjectAppTaskIntent = {
+      id: "work/running-target",
+      parentId: "operations",
+      outcome: "Run the original target generation",
+      acceptance: ["The current target generation converges"],
+      mode: "achieve",
+      workflow: "known-workflow",
+    };
+    const target = declareAndClaimTask(config, {
+      intent: targetIntent,
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (target.kind !== "claimed") throw new Error("expected target claim");
+    expect(associateProjectAppTaskSession(config, target, "running-target-session")).toEqual({
+      status: "recorded",
+      taskId: targetIntent.id,
+    });
+
+    const carrier = declareAndClaimTask(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      handler: "owner:branch-owner",
+    });
+    if (carrier.kind !== "claimed") throw new Error("expected carrier claim");
+
+    expect(
+      completeProjectAppTask(config, carrier, {
+        summary: "Advanced the dependent target",
+        evidence: ["the dependent target needs revised execution intent"],
+        actions: [
+          {
+            kind: "update-task",
+            taskId: targetIntent.id,
+            expectedGeneration: target.generation,
+            outcome: "Run the revised target generation",
+          },
+        ],
+      }),
+    ).toMatchObject({
+      status: "applied",
+      actionsApplied: [`updated ${targetIntent.id}`],
+      supersededSessionIds: ["running-target-session"],
+    });
+
+    const targetResource = readTaskState(config).resources?.[targetIntent.id];
+    expect(targetResource).toMatchObject({
+      metadata: { generation: target.generation + 1 },
+      status: { phase: "pending" },
+    });
+  });
+
   it("rejects an invalid action batch without partially applying earlier actions", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
@@ -3159,9 +3243,7 @@ describe("project app task reconciler state", () => {
           },
         ],
       }),
-    ).toThrow(
-      "Handler update-task action cannot mutate completed task categorized-task; create a new linked task",
-    );
+    ).toThrow("Handler update-task action cannot mutate completed task categorized-task; create a new linked task");
 
     const tree = readTaskState(config);
     expect(tree.tasks["receipt-update-review"]?.state).toBe("active");
@@ -3594,9 +3676,7 @@ describe("project app task reconciler state", () => {
     expect(tree.tasks["work/child-a"]).toMatchObject({ parent_id: claim.taskId, state: "backlog" });
     expect(tree.tasks["work/child-b"]).toMatchObject({ parent_id: claim.taskId, state: "backlog" });
     expect(tree.conditions ?? {}).toEqual({});
-    expect(listRunnableProjectAppTaskIds(config)).toEqual(
-      expect.arrayContaining(["work/child-a", "work/child-b"]),
-    );
+    expect(listRunnableProjectAppTaskIds(config)).toEqual(expect.arrayContaining(["work/child-a", "work/child-b"]));
   });
 
   it("filters task Conditions by subject and expected state", () => {

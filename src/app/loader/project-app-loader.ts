@@ -10,7 +10,16 @@ import { importRuntimeModule } from "../../lib/runtime-import.js";
 import { inspectWorkflowDefinition, runWorkflowDirect, WorkflowHandlerUnavailable } from "../../lib/workflow-tool.js";
 import { getDb, updateSessionDb } from "../../lib/requests.js";
 import { createQueryService } from "../../lib/query-service.js";
-import { markSessionInactive, readSessionMeta, writeSessionMeta } from "../../lib/persistence.js";
+import {
+  appendSessionMessage,
+  markSessionInactive,
+  readSessionMeta,
+  readSessionMessages,
+  writeSessionMeta,
+} from "../../lib/persistence.js";
+import { extractFinishParams } from "../../lib/agent-result.js";
+import { STATE_CHANGING_TOOLS } from "../../lib/manager-utils.js";
+import { writeSessionResult } from "../../lib/artifacts.js";
 import {
   admitProjectAppTaskHandlerResult,
   admitProjectAppTaskVerificationResult,
@@ -50,6 +59,7 @@ import {
   associateProjectAppTaskSession,
   claimObservedProjectAppTask,
   completeProjectAppTask,
+  discardProjectAppTaskOwnerIntent,
   deferProjectAppTask,
   listHandlerExecutionFailedProjectAppTasks,
   listHandlerUnavailableProjectAppTasks,
@@ -63,6 +73,7 @@ import {
   projectAppTaskQueueEntries,
   readProjectAppTaskChildContext,
   readProjectAppTaskIntent,
+  readProjectAppTaskOwnerTrigger,
   readProjectAppTaskTrigger,
   recordProjectAppTaskTrigger,
   releaseHandlerExecutionFailedProjectAppTask,
@@ -168,10 +179,7 @@ type ProjectAppTaskSessionScope = {
   workflowRunId: string | null;
 };
 
-function readProjectAppTaskSessionScope(
-  persistDir: string | undefined,
-  sessionId: string,
-): ProjectAppTaskSessionScope {
+function readProjectAppTaskSessionScope(persistDir: string | undefined, sessionId: string): ProjectAppTaskSessionScope {
   if (!persistDir) {
     return {
       binding: null,
@@ -208,10 +216,33 @@ function taskRecoverySessionScopesMatch(
     );
   }
   return Boolean(
-    failed.workflowRunId &&
-      successfulSession.workflowRunId &&
-      failed.workflowRunId === successfulSession.workflowRunId,
+    failed.workflowRunId && successfulSession.workflowRunId && failed.workflowRunId === successfulSession.workflowRunId,
   );
+}
+
+function isProcessAlive(pid: number | undefined): boolean {
+  if (!pid) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function hasLiveProjectTaskSession(
+  opts: ProjectAppLoaderOptions,
+  sessionId: string,
+): boolean {
+  const cleanSessionId = sessionId.trim();
+  if (!cleanSessionId) return false;
+  if (opts.manager.hasActiveSession(cleanSessionId)) return true;
+  if (!opts.persistDir) return false;
+  const meta = readSessionMeta(opts.persistDir, cleanSessionId);
+  if (!meta || (meta.status !== "running" && meta.status !== "idle")) return false;
+
+  if (meta.detached && isProcessAlive(meta.pid)) return true;
+  return false;
 }
 
 function configuredAgentName(agentDir: string, fallback: string): string | null {
@@ -533,6 +564,33 @@ function ownerMessageForApp(
   if (project && project !== descriptor.id && project !== `${descriptor.id}.app`) return null;
   const eventId = Number(periodic ? event.sourceEventId : event.eventId);
   return Number.isInteger(eventId) && eventId > 0 ? { eventId, input, periodic } : null;
+}
+
+function closedOwnerInputEventId(
+  persistDir: string | undefined,
+  event: Record<string, unknown>,
+): number | null {
+  if (!persistDir || event.type !== "project.owner.requested") return null;
+  const inputEventId = Number(event.inputEventId);
+  if (!Number.isInteger(inputEventId) || inputEventId <= 0) return null;
+  const inputEventType =
+    typeof event.inputEventType === "string"
+      ? event.inputEventType
+      : "project.comment.created";
+  const terminalType =
+    inputEventType === "message.created"
+      ? "message.resolved"
+      : "project.owner.reviewed";
+  const existing = getDb(persistDir)
+    .prepare(
+      `SELECT id
+       FROM events
+       WHERE event_type = ?
+         AND json_extract(data, '$.openEventId') = ?
+       LIMIT 1`,
+    )
+    .get(terminalType, inputEventId) as { id?: unknown } | undefined;
+  return Number(existing?.id) > 0 ? inputEventId : null;
 }
 
 function isMetricFeedbackEvent(event: Record<string, unknown>): boolean {
@@ -909,29 +967,143 @@ async function runTaskCapability(input: {
   }
 }
 
-function interruptSupersededOwnerSession(opts: ProjectAppLoaderOptions, sessionId: string, reason: string): void {
+function recoverPendingToolResultsFromTranscript(
+  persistDir: string,
+  sessionId: string,
+): string[] {
+  const messages = readSessionMessages(persistDir, sessionId) as any[];
+  const last = messages[messages.length - 1] as any;
+  if (last?.role !== "assistant" || !Array.isArray(last.content)) return [];
+
+  const pendingToolCalls = last.content.filter((block: any) => {
+    if (block?.type !== "toolCall" || typeof block.id !== "string") return false;
+    if (block.name === "finish") return false;
+    return !messages.some((message) => message?.role === "toolResult" && message.toolCallId === block.id);
+  });
+  if (pendingToolCalls.length === 0) return [];
+
+  for (const call of pendingToolCalls) {
+    const toolName = typeof call.name === "string" ? call.name : "tool";
+    const repairText = STATE_CHANGING_TOOLS.has(toolName)
+      ? `Tool call result was not persisted before runtime recovery interrupted this orphaned session. ${toolName} may have completed and mutated state; inspect side effects before retrying.`
+      : "Tool call result was not persisted before runtime recovery interrupted this orphaned session.";
+    appendSessionMessage(persistDir, sessionId, {
+      role: "toolResult",
+      toolCallId: call.id,
+      toolName,
+      isError: true,
+      content: [{ type: "text", text: repairText }],
+      timestamp: Date.now(),
+    } as any);
+  }
+
+  return pendingToolCalls
+    .map((call: any) => (typeof call.name === "string" ? call.name : "tool"))
+    .filter((name: string, index: number, names: string[]) => names.indexOf(name) === index);
+}
+
+function extractReconciliationTaskId(taskPrompt: string | undefined): string | null {
+  if (!taskPrompt) return null;
+  const match = taskPrompt.match(/"taskId"\s*:\s*"([^"]+)"/);
+  return match?.[1]?.trim() || null;
+}
+
+function summarizeInterruptedOwnerRecovery(input: {
+  meta: { task?: string; source?: string };
+  sessionId: string;
+  reason: string;
+  repairedPendingTools: string[];
+  taskId?: string;
+}): { summary: string; taskId: string | null; evidence: string[] } {
+  const taskId = input.taskId?.trim()
+    ? input.taskId.trim()
+    : input.meta.source === "project-app-task-owner"
+      ? extractReconciliationTaskId(input.meta.task)
+      : null;
+  const summary = taskId
+    ? `Owner session for ${taskId} was interrupted by runtime recovery before finish() persisted; the original app task was requeued and should be decided by the replacement attempt, not this recovery wrapper.`
+    : "Owner session was interrupted by runtime recovery before finish() persisted; the original app task was requeued and should be decided by the replacement attempt, not this recovery wrapper.";
+  const evidence = [
+    ...(taskId ? [`task:${taskId}`] : []),
+    `session:${input.sessionId}`,
+    `artifact:sessions/${input.sessionId}/result.json`,
+    `transcript:sessions/${input.sessionId}/session.jsonl`,
+    `recovery-reason:${input.reason}`,
+    ...(input.repairedPendingTools.length > 0
+      ? [`recovered-pending-tools:${input.repairedPendingTools.join(",")}`]
+      : []),
+  ];
+  return { summary, taskId, evidence };
+}
+
+function interruptSupersededOwnerSession(
+  opts: ProjectAppLoaderOptions,
+  sessionId: string,
+  reason: string,
+  taskId?: string,
+): void {
   const cleanSessionId = sessionId.trim();
   if (!cleanSessionId) return;
   if (opts.manager.hasActiveSession(cleanSessionId)) {
     opts.manager.cancel(cleanSessionId);
     return;
   }
+  if (hasLiveProjectTaskSession(opts, cleanSessionId)) return;
 
   const meta = opts.persistDir ? readSessionMeta(opts.persistDir, cleanSessionId) : null;
   if (!meta || (meta.status !== "running" && meta.status !== "idle")) return;
+
+  const repairedPendingTools = opts.persistDir
+    ? recoverPendingToolResultsFromTranscript(opts.persistDir, cleanSessionId)
+    : [];
+  const recoveredFinish = opts.persistDir
+    ? extractFinishParams(readSessionMessages(opts.persistDir, cleanSessionId) as any[])
+    : null;
+  const interruptedRecovery = summarizeInterruptedOwnerRecovery({
+    meta,
+    sessionId: cleanSessionId,
+    reason,
+    repairedPendingTools,
+    taskId,
+  });
+  const persistedFinish = recoveredFinish;
+  const recoveredStatus: "done" | "error" | "interrupted" = recoveredFinish
+    ? recoveredFinish.status === "failure"
+      ? "error"
+      : "done"
+    : "interrupted";
+  const recoveredSummary = persistedFinish?.summary ?? interruptedRecovery.summary;
   const endedAt = Date.now();
+  const resultArtifact = writeSessionResult(opts.persistDir!, cleanSessionId, {
+    status: recoveredStatus,
+    outcome: recoveredStatus,
+    ...(recoveredStatus === "interrupted" ? { error: reason } : {}),
+    summary: recoveredSummary,
+    finishParams: persistedFinish ?? undefined,
+    ...(recoveredStatus === "interrupted"
+      ? {
+          recovery: {
+            disposition: "requeued",
+            summary: interruptedRecovery.summary,
+            evidence: interruptedRecovery.evidence,
+          },
+        }
+      : {}),
+    endedAt,
+  });
   writeSessionMeta(opts.persistDir!, cleanSessionId, {
     ...meta,
-    status: "interrupted",
+    status: recoveredStatus,
     endedAt,
-    error: reason,
+    ...(recoveredStatus === "interrupted" ? { error: reason } : {}),
   });
   updateSessionDb(opts.persistDir!, cleanSessionId, {
-    status: "interrupted",
+    status: recoveredStatus,
     endedAt,
-    error: reason,
-    outcome: reason,
+    ...(recoveredStatus === "interrupted" ? { error: reason } : {}),
+    outcome: recoveredSummary,
     lastActivityAt: endedAt,
+    resultArtifact,
   });
   markSessionInactive(opts.persistDir!, cleanSessionId);
   opts.bus.emit({
@@ -942,11 +1114,12 @@ function interruptSupersededOwnerSession(opts: ProjectAppLoaderOptions, sessionI
     data: {
       sessionId: cleanSessionId,
       agent: meta.agent,
-      outcome: "interrupted",
-      summary: reason,
-      error: reason,
+      outcome: recoveredStatus,
+      summary: recoveredSummary,
+      ...(persistedFinish ? { finishParams: persistedFinish } : {}),
+      ...(recoveredStatus === "interrupted" ? { error: reason } : {}),
       durationMs: Math.max(0, endedAt - meta.startedAt),
-      status: "interrupted",
+      status: recoveredStatus,
       task: meta.task,
       parentSessionId: meta.parentSessionId,
       workflowRunId: meta.workflowRunId,
@@ -954,6 +1127,8 @@ function interruptSupersededOwnerSession(opts: ProjectAppLoaderOptions, sessionI
       kind: meta.kind,
       requestId: meta.requestId,
       stepLabel: meta.stepLabel,
+      opCount: meta.opCount,
+      ...(repairedPendingTools.length > 0 ? { recoveredPendingTools: repairedPendingTools } : {}),
     },
   } as AgentEvent);
 }
@@ -967,6 +1142,18 @@ function interruptSupersededObservationSessions(
       opts,
       sessionId,
       `Task ${observation.taskId} advanced to generation ${observation.generation}; the previous reconciliation session is obsolete`,
+      observation.taskId,
+    );
+  }
+}
+
+function interruptSupersededActionSessions(opts: ProjectAppLoaderOptions, taskId: string, sessionIds: string[]): void {
+  for (const sessionId of sessionIds) {
+    interruptSupersededOwnerSession(
+      opts,
+      sessionId,
+      `Task ${taskId} applied a reconciliation action that superseded the session's task generation`,
+      taskId,
     );
   }
 }
@@ -1058,6 +1245,7 @@ async function runTaskOwner(input: {
     "Allowed actions:",
     '- create a task: { kind: "create-task", id, outcome, acceptance, parentId?, mode?, outputs?, priority?, owner?, workflow?, input?, dependsOn?, category? }',
     '  Defaults: parentId is the app root, mode is "achieve", outputs is [], and priority is "P2".',
+    '  Created task ids must not start with "runtime/"; that namespace is reserved for reconciler-owned event tasks.',
     '- update a task: { kind: "update-task", taskId, expectedGeneration, parentId?, outcome?, mode?, outputs?, acceptance?, priority?, owner?, workflow?, input?, dependsOn?, category? }',
     "  Set owner, workflow, or category to null to clear that explicit binding.",
     '- close a task: { kind: "close-task", taskId, expectedGeneration, summary }',
@@ -1198,12 +1386,25 @@ function emitOwnerResultForTask(
 ): void {
   if (trigger?.type !== "project.owner.requested" && trigger?.type !== "project.comment.created") return;
   const triggerRecord = trigger as unknown as Record<string, unknown>;
+  const config = taskReconciliationConfig({
+    appDir: descriptor.appDir,
+    projectDir: descriptor.projectDir,
+    owner: descriptor.owner,
+    maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
+  });
+  const liveChildIds = readProjectAppTaskChildContext(config, taskId).live.map(
+    (child) => child.taskId,
+  );
   const actionTaskIds = actions.flatMap((action) =>
     action.kind === "create-task" ? [action.id] : action.kind === "close-task" ? [] : [action.taskId],
   );
-  const taskRefs = [...new Set([...actionTaskIds, ...(taskDisposition === "converged" ? [] : [taskId])])].map(
-    (referencedTaskId) => ({ projectId: descriptor.id, taskId: referencedTaskId }),
-  );
+  const taskRefs = [
+    ...new Set([
+      ...actionTaskIds,
+      ...liveChildIds,
+      ...(taskDisposition === "converged" && liveChildIds.length === 0 ? [] : [taskId]),
+    ]),
+  ].map((referencedTaskId) => ({ projectId: descriptor.id, taskId: referencedTaskId }));
   const disposition =
     taskRefs.length === 0
       ? "answered"
@@ -1212,15 +1413,20 @@ function emitOwnerResultForTask(
         : "task-updated";
   const terminal = taskDisposition === "converged" && taskRefs.length === 0;
   for (const intent of ownerIntentRefs(triggerRecord)) {
-    if (terminal && opts.persistDir) {
+    if (opts.persistDir) {
+      const terminalType =
+        intent.eventType === "message.created"
+          ? "message.resolved"
+          : "project.owner.reviewed";
       const existing = getDb(opts.persistDir)
         .prepare(
           `SELECT id
            FROM events
-           WHERE json_extract(data, '$.openEventId') = ?
+           WHERE event_type = ?
+             AND json_extract(data, '$.openEventId') = ?
            LIMIT 1`,
         )
-        .get(intent.eventId) as { id?: unknown } | undefined;
+        .get(terminalType, intent.eventId) as { id?: unknown } | undefined;
       if (Number(existing?.id) > 0) continue;
     }
     const resultType = terminal
@@ -1262,6 +1468,9 @@ function emitOwnerResultForTask(
         ],
       },
     } as unknown as AgentEvent);
+    if (terminal) {
+      discardProjectAppTaskOwnerIntent(config, taskId, intent.eventId);
+    }
   }
 }
 
@@ -1309,7 +1518,7 @@ function taskTriggerWithOwnerIntents(
   taskId: string,
   event: Record<string, unknown>,
 ): Record<string, unknown> {
-  const previous = readProjectAppTaskTrigger(config, taskId);
+  const previous = readProjectAppTaskOwnerTrigger(config, taskId);
   const isOwnerIntent = isOwnerIntentType(event.type);
   const previousIsOwnerIntent = isOwnerIntentType(previous?.type);
   if (!isOwnerIntent) return previousIsOwnerIntent ? previous : event;
@@ -1479,6 +1688,7 @@ async function reconcileTask(input: {
       opts,
       sessionId,
       `Task ${primary.taskId} superseded an orphaned owner session while recovering the current generation`,
+      primary.taskId,
     );
   }
   const intent = primary.intent;
@@ -1580,6 +1790,15 @@ async function reconcileTask(input: {
       declaredOutputPaths,
       childContext,
       event,
+      ...(primary.handoff
+        ? {
+            fallbackReason: `${primary.handoff.reason}: ${primary.handoff.summary}${
+              primary.handoff.evidence.length
+                ? `\nHandoff evidence:\n${primary.handoff.evidence.map((entry) => `- ${entry}`).join("\n")}`
+                : ""
+            }`,
+          }
+        : {}),
     });
   } else {
     primaryResult = await runTaskOwner({
@@ -1617,6 +1836,16 @@ async function reconcileTask(input: {
   if (!primaryResult) throw new Error(`Task ${primary.taskId} produced no handler result`);
 
   const primaryHandlerResult = primaryResult.handlerResult;
+  if (
+    primaryHandlerResult.state === "converged" &&
+    primary.handoff?.reason === "needs-owner" &&
+    intent.workflow &&
+    !primaryResult.verifier
+  ) {
+    primaryHandlerResult.state = "error";
+    primaryHandlerResult.summary =
+      `Owner convergence was rejected because workflow ${intent.workflow} handed off without a verifier`;
+  }
   if (primaryResult.unavailable) {
     emitTaskReconciliationEvent(opts, descriptor, event, "project.task.handler.unavailable", intent.id, {
       generation: primary.generation,
@@ -1662,6 +1891,15 @@ async function reconcileTask(input: {
           actions: primaryHandlerResult.actions,
           acceptanceBasis,
         });
+        const appliedDisposition = apply.taskContinues
+          ? primaryHandlerResult.actions.some(
+              (action) =>
+                action.kind === "update-task" && action.taskId === primary.taskId,
+            )
+            ? "revised"
+            : "progress"
+          : "converged";
+        interruptSupersededActionSessions(opts, intent.id, apply.supersededSessionIds);
         const stale = apply.status === "stale" ? recoverStaleTaskResult(config, primary) : null;
         emitOwnerResultForTask(
           opts,
@@ -1669,14 +1907,14 @@ async function reconcileTask(input: {
           event,
           intent.id,
           primaryHandlerResult.summary,
-          apply.status === "applied" ? (apply.taskContinues ? "revised" : "converged") : "stale",
+          apply.status === "applied" ? appliedDisposition : "stale",
           primaryHandlerResult.actions,
         );
         emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
           generation: primary.generation,
           attemptId: primary.attemptId,
           handler: primary.handler,
-          disposition: apply.status === "applied" ? (apply.taskContinues ? "revised" : "converged") : "stale",
+          disposition: apply.status === "applied" ? appliedDisposition : "stale",
           outcome: intent.outcome,
           mode: intent.mode,
           owner: intent.owner ?? descriptor.owner,
@@ -1737,6 +1975,7 @@ async function reconcileTask(input: {
         actions: primaryHandlerResult.actions,
         conditions: primaryHandlerResult.conditions,
       });
+      interruptSupersededActionSessions(opts, intent.id, apply.supersededSessionIds);
       const stale = apply.status === "stale" ? recoverStaleTaskResult(config, primary) : null;
       emitOwnerResultForTask(
         opts,
@@ -2167,6 +2406,9 @@ function recoverInterruptedProjectAppTasks(
       maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
     });
     for (const recovery of recoverableProjectAppTaskAttempts(config)) {
+      if (recovery.sessionId && hasLiveProjectTaskSession(opts, recovery.sessionId)) {
+        continue;
+      }
       const released = releaseInterruptedProjectAppTaskAttempt(
         config,
         recovery.taskId,
@@ -2177,6 +2419,7 @@ function recoverInterruptedProjectAppTasks(
           opts,
           sessionId,
           `Recovered task ${recovery.taskId} interrupted an orphaned owner session from a previous runtime`,
+          recovery.taskId,
         );
       }
       if (released.released && controller && !descriptor.reconciliationPaused) {
@@ -2356,6 +2599,7 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
             association.status === "missing"
               ? `Task ${sessionBinding.taskId} no longer exists; the reconciliation session is obsolete`
               : `Task ${sessionBinding.taskId} generation ${sessionBinding.generation} was superseded before its reconciliation session started`,
+            sessionBinding.taskId,
           );
         }
       }
@@ -2386,6 +2630,17 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
     for (const descriptor of appRouterDescriptorsByBus.get(opts.bus) ?? []) {
       if (descriptor.reconciliationPaused) continue;
       const taskController = appTaskControllersByBus.get(opts.bus)?.get(descriptor.id);
+      const closedOwnerInput =
+        isProjectScopedForApp(event, descriptor.id)
+          ? closedOwnerInputEventId(opts.persistDir, event)
+          : null;
+      if (closedOwnerInput) {
+        return projectAppTaskDelivery(
+          descriptor,
+          "owner-message",
+          `owner input ${closedOwnerInput} is already resolved`,
+        );
+      }
       const ownerMessage = ownerMessageForApp(event, descriptor);
       if (ownerMessage) {
         const openEventId = ownerMessage.eventId;
@@ -2463,9 +2718,7 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
               handler: "owner-execution",
               reason: "owner-session-succeeded-after-handler-execution-failure",
               evidenceSessionId: successfulOwner.sessionId,
-              ...(successfulOwner.workflowRunId
-                ? { evidenceWorkflowRunId: successfulOwner.workflowRunId }
-                : {}),
+              ...(successfulOwner.workflowRunId ? { evidenceWorkflowRunId: successfulOwner.workflowRunId } : {}),
             },
           } as unknown as AgentEvent);
         }
