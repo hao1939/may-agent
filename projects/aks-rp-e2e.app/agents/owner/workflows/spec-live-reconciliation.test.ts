@@ -96,6 +96,7 @@ import {
   shouldReviewBeforeInitialLiveDispatch,
   scenarioNormalizationWaitProblem,
   sourceChangeMayAffectSpec,
+  standaloneRetryTargetProblem,
   summarizeSpecPullRequestReview,
   supersededQueuedTaskRuns,
   taskContextDir,
@@ -2943,6 +2944,27 @@ describe("spec-live-reconciliation workflow", () => {
     expect(
       invalidatedRunRequiresSourceChange(validRun, retrySourceCommit),
     ).toBe(true);
+  });
+
+  test("returns a pre-claim standalone failure to the owner instead of retrying an expired build", () => {
+    expect(
+      standaloneRetryTargetProblem({
+        standaloneBuildId: "174851380",
+        hasSameSpecArtifact: false,
+      }),
+    ).toContain("new task generation");
+    expect(
+      standaloneRetryTargetProblem({
+        standaloneBuildId: "174851380",
+        hasSameSpecArtifact: true,
+      }),
+    ).toBeNull();
+    expect(
+      standaloneRetryTargetProblem({
+        standaloneBuildId: "",
+        hasSameSpecArtifact: false,
+      }),
+    ).toBeNull();
   });
 
   test("finds same-task exact runs across branch lineages but preserves redispatch on material differences", () => {

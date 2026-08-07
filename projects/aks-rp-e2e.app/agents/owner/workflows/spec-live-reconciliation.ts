@@ -1334,6 +1334,14 @@ export function artifactProvesPreClaimCapacityBlock(
   return capacityFailure && !observedClaim && cleanupComplete;
 }
 
+export function standaloneRetryTargetProblem(input: {
+  standaloneBuildId: string;
+  hasSameSpecArtifact: boolean;
+}): string | null {
+  if (!input.standaloneBuildId || input.hasSameSpecArtifact) return null;
+  return `Unchanged retry on standalone_build_id=${input.standaloneBuildId} is refused because the terminal run produced no same-spec artifact. The exact standalone target may have expired; return this task to its owner so a current build can supersede it in a new task generation.`;
+}
+
 export function artifactProvesDeclaredClaims(
   path: string,
   specId: string,
@@ -6625,6 +6633,20 @@ export async function reconcileSpecLive(
         return applyTerminalDisposition(decision, runId);
       }
       if (decision.decision === "retry-transient") {
+        const standaloneTargetProblem = standaloneRetryTargetProblem({
+          standaloneBuildId,
+          hasSameSpecArtifact: terminalArtifactPaths.some(
+            (path) => nonEmptyString(readJsonRecord(path)?.specId) === specId,
+          ),
+        });
+        if (standaloneTargetProblem) {
+          return ownerResult(ctx, standaloneTargetProblem, [
+            ...decision.evidence,
+            `pipeline-run:${runId}`,
+            `standalone-build-id:${standaloneBuildId}`,
+            "same-spec-artifact:missing",
+          ]);
+        }
         if (failedRunsForCommit >= 2) {
           return ownerResult(
             ctx,
