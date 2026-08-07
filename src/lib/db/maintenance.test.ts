@@ -88,4 +88,33 @@ describe("bounded DB maintenance", () => {
       closeDb(persistDir);
     }
   });
+
+  it("leaves old message commitments for semantic lifecycle reconciliation", () => {
+    const persistDir = mkdtempSync(join(tmpdir(), "may-maintenance-messages-"));
+    const now = 10 * 86_400_000;
+    try {
+      const db = getDb(persistDir);
+      const event = db
+        .prepare(
+          `INSERT INTO events (event_type, source, owner, data, timestamp)
+           VALUES ('message.created', 'agent:scout', 'agent:scout', ?, ?)`,
+        )
+        .run(JSON.stringify({ from: "scout", to: "human", content: "Unfinished request" }), now - 5 * 86_400_000);
+      const openEventId = Number(event.lastInsertRowid);
+      db.prepare(
+        `INSERT INTO event_pair_runs
+         (pair_name, correlation_key, open_event_id, owner, status, opened_at, expected_close_at)
+         VALUES ('owner_inbox', ?, ?, 'agent:scout', 'orphan', ?, ?)`,
+      ).run(`event:${openEventId}`, openEventId, now - 5 * 86_400_000, now - 4 * 60 * 60_000);
+
+      const result = runDbMaintenancePass(persistDir, { now, batchSize: 100 });
+
+      expect(result.deleted.retiredOrphans).toBe(0);
+      expect(
+        db.prepare("SELECT status, closed_at FROM event_pair_runs WHERE open_event_id = ?").get(openEventId),
+      ).toEqual({ status: "orphan", closed_at: null });
+    } finally {
+      closeDb(persistDir);
+    }
+  });
 });

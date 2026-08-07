@@ -41,6 +41,7 @@ test("teaches decision packets and useful digests as different deliveries", asyn
   await reviewHumanAttention(
     reviewManager,
     {
+      sourceEventId: 5055708,
       eventType: "message.created",
       from: "ops",
       content: "Daily digest ready.",
@@ -56,6 +57,12 @@ test("teaches decision packets and useful digests as different deliveries", asyn
   expect(task).toContain("perform one bounded action before finishing");
   expect(task).toContain("A recovered proposal is handle");
   expect(task).toContain("Never contact Hao directly");
+  expect(task).toContain("Start from bounded durable evidence");
+  expect(task).toContain("Do not fall back to repository-wide search");
+  expect(task).toContain("Authoritative candidate sourceEventId: 5055708");
+  expect(task).toContain("Do not treat a prior human.attention.reviewed, channel.delivery.*, or message.resolved row as closure unless it matches the exact sourceEventId above");
+  expect(task).toContain("After you confirm the candidate payload, exact lineage, and exact prior-closure check, either decide or safe-route");
+  expect(task).toContain("do not abandon the review silently");
   expect(toolPolicy).toBe("full");
   const variants = (outputSchema as { anyOf?: Array<{ required?: string[] }> })?.anyOf ?? [];
   expect(variants).toHaveLength(3);

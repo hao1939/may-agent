@@ -95,7 +95,12 @@ export function runDbMaintenancePass(
          note = COALESCE(note, 'expected closing event did not arrive before timeout')
      WHERE rowid IN (
        SELECT rowid FROM event_pair_runs
-       WHERE status = 'open' AND expected_close_at < ?
+       WHERE status = 'open'
+         AND expected_close_at < ?
+         AND NOT (
+           pair_name = 'owner_inbox'
+           AND open_event_id IN (SELECT id FROM events WHERE event_type = 'message.created')
+         )
        ORDER BY expected_close_at LIMIT ?
      )`,
     [now, batchSize],
@@ -112,6 +117,10 @@ export function runDbMaintenancePass(
          WHERE status = 'orphan'
            AND closed_at IS NULL
            AND expected_close_at < ?
+           AND NOT (
+             pair_name = 'owner_inbox'
+             AND open_event_id IN (SELECT id FROM events WHERE event_type = 'message.created')
+           )
          ORDER BY expected_close_at LIMIT ?
        )`,
       [now, now - ORPHAN_ACTIONABLE_MS, batchSize],
@@ -124,7 +133,13 @@ export function runDbMaintenancePass(
     "event_pair_runs",
     `DELETE FROM event_pair_runs WHERE rowid IN (
        SELECT rowid FROM event_pair_runs
-       WHERE status IN ('closed', 'orphan') AND opened_at < ?
+       WHERE status IN ('closed', 'orphan')
+         AND opened_at < ?
+         AND NOT (
+           status = 'orphan'
+           AND pair_name = 'owner_inbox'
+           AND open_event_id IN (SELECT id FROM events WHERE event_type = 'message.created')
+         )
        ORDER BY opened_at LIMIT ?
      )`,
     [now - 3 * DAY_MS, PAIR_DELETION_BATCH_SIZE],

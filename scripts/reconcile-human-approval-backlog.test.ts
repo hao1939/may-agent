@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  approvalBelongsToProject,
   collectActiveApprovalIds,
   collectApprovalBacklog,
   collectOrphanedApprovalNotifications,
@@ -84,5 +85,26 @@ describe("historical human approval reconciliation", () => {
         500,
       ),
     ).toEqual([expect.objectContaining({ approvalId: "approval-orphan" })]);
+  });
+
+  test("can scope orphan cleanup to one project", () => {
+    expect(
+      approvalBelongsToProject(
+        {
+          approvalId: "gym:review-proposal:incident-1",
+          projectId: "/app/projects/gym.app",
+        },
+        "gym",
+      ),
+    ).toBe(true);
+    expect(
+      approvalBelongsToProject(
+        {
+          approvalId: "aks-rp-e2e:approval:cleanup",
+          projectId: "aks-rp-e2e",
+        },
+        "gym",
+      ),
+    ).toBe(false);
   });
 });
