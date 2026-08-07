@@ -192,6 +192,11 @@ export function campaignPatchConflictRepairWake(
   campaign: CampaignReceipt,
   currentMainCommit: string,
 ): Record<string, unknown> {
+  const composingCurrentMainSuccessor =
+    campaign.baseCommit !== currentMainCommit;
+  const compositionBaseCommit = composingCurrentMainSuccessor
+    ? currentMainCommit
+    : campaign.currentCommit;
   return {
     target: { project: "aks-rp-e2e", taskId: conflict.taskId },
     project: "aks-rp-e2e",
@@ -200,9 +205,13 @@ export function campaignPatchConflictRepairWake(
     reason: "repair-focused-patch-after-frozen-campaign-conflict",
     overrideWait: true,
     requiredAction:
-      "Repair the existing focused patch so it applies cleanly to the frozen campaign while preserving its tested intent; update the same PR branch and require exact verification.",
+      "Repair the existing focused patch so it applies cleanly after the listed predecessors on the exact campaign composition base while preserving its tested intent; update the same PR branch and require exact verification.",
     pullRequestId: conflict.pullRequestId,
-    campaignSourceCommit: campaign.currentCommit,
+    campaignSourceCommit: compositionBaseCommit,
+    campaignCompositionBaseCommit: compositionBaseCommit,
+    campaignCompositionKind: composingCurrentMainSuccessor
+      ? "current-main-successor"
+      : "frozen-campaign",
     currentMainCommit,
     sourceCommit: conflict.pullRequestSourceCommit || conflict.sourceCommit,
     sourceEquivalentCommits: [
@@ -229,21 +238,23 @@ function campaignPatchConflictWait(
 ): WorkflowResult {
   const campaign = readCampaignReceipt(appDir);
   let repairWake = false;
+  let compositionBaseCommit = "";
   if (
     campaign &&
     conflict.taskId.startsWith("domain/master-validation-failure/")
   ) {
+    const currentMainCommit = resolveCurrentMain(repoDir);
+    compositionBaseCommit =
+      campaign.baseCommit !== currentMainCommit
+        ? currentMainCommit
+        : campaign.currentCommit;
     ctx.dispatchEvent(
       "project.task.tick",
-      campaignPatchConflictRepairWake(
-        conflict,
-        campaign,
-        resolveCurrentMain(repoDir),
-      ),
+      campaignPatchConflictRepairWake(conflict, campaign, currentMainCommit),
     );
     repairWake = true;
   }
-  const summary = `Frozen campaign replay is waiting for focused PR ${conflict.pullRequestId} to change or close; PR head ${conflict.pullRequestSourceCommit} contains conflicting commit ${conflict.sourceCommit} on the frozen campaign snapshot.`;
+  const summary = `Campaign composition at ${compositionBaseCommit || "the retained base"} is waiting for focused PR ${conflict.pullRequestId} to change or close; PR head ${conflict.pullRequestSourceCommit} contains conflicting commit ${conflict.sourceCommit}.`;
   return ctx.done(summary, {
     state: "waiting",
     summary,

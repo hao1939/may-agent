@@ -2249,13 +2249,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         ? `The complete same-spec source-equivalent repair already on current main came through commits: ${input.campaignRepairReplay.sourceEquivalentCommits.join(", ")}.`
         : "",
       input.campaignRepairReplay?.campaignSourceCommit
-        ? `The frozen campaign source is ${input.campaignRepairReplay.campaignSourceCommit}; current main is ${input.campaignRepairReplay.currentMainCommit || baseCommit}.`
+        ? `The exact campaign composition base is ${input.campaignRepairReplay.campaignSourceCommit}; current main is ${input.campaignRepairReplay.currentMainCommit || baseCommit}.`
         : "",
       input.campaignRepairReplay?.campaignCompositionCommits.length
-        ? `Reproduce the actual ordered campaign by starting at that frozen campaign source and then applying these already selected candidate commits in order before the conflicting PR head: ${input.campaignRepairReplay.campaignCompositionCommits.join(", ")}.`
+        ? `Reproduce the actual ordered campaign by starting at that composition base and then applying these already selected candidate commits in order before the conflicting PR head: ${input.campaignRepairReplay.campaignCompositionCommits.join(", ")}.`
         : "",
       input.campaignRepairReplay
-        ? `Update the existing task branch and draft PR ${input.campaignRepairReplay.pullRequestId || "for this task"}; do not create another PR. The campaign controller cherry-picks only the PR head commit. A practical replay-safe history is a preparatory commit that restores the frozen same-spec file shape followed by one head commit that reapplies the complete current implementation plus the guard: the final PR tree remains a small current-main diff, while the head commit remains applicable to the frozen snapshot.`
+        ? `Update the existing task branch and draft PR ${input.campaignRepairReplay.pullRequestId || "for this task"}; do not create another PR. Shape the focused head or focused commit series so it applies after the listed predecessor commits on the exact campaign composition base, while the final PR remains a small mergeable diff against current main.`
         : "",
       frozenBaseCommit
         ? `Work only in ${workspaceDir}, based on current ${targetRef}@${baseCommit}. Keep the PR mergeable to main; the campaign controller will replay only the focused patch onto frozen base ${frozenBaseCommit}.`

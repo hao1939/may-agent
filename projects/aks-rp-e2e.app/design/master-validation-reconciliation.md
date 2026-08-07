@@ -164,6 +164,10 @@ main@M0
   head. A materially changed or additional patch changes the campaign head and
   requires another run. A conflict returns to the same repair task with exact
   evidence; it never causes the controller to merge the whole source branch.
+- Conflict evidence names the base actually being composed. That is the
+  retained campaign head for a frozen replay, or exact current `main` for a
+  successor. Repair is reproduced after the listed predecessor patches on that
+  base; an older frozen head must not be presented as the successor base.
 - The failed main run already tested the untouched base, so creating the branch
   does not queue a duplicate run. A fix changing the branch head queues the
   next campaign run immediately.

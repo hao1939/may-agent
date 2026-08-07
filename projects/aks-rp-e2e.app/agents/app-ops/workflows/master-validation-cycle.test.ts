@@ -352,7 +352,7 @@ ${JSON.stringify({
         {
           schemaVersion: "1",
           baselineRunId: "175425349",
-          baseCommit: "base",
+          baseCommit: "current-main",
           branch: "validation/master-validation-175425349",
           currentCommit: "campaign-head",
           integratedFixes: [],
@@ -372,6 +372,29 @@ ${JSON.stringify({
       currentMainCommit: "current-main",
       sourceCommit: "b31a12c37eddb7d68efff1bbc58d6344dcff95f4",
       campaignCompositionCommits: [],
+      campaignCompositionBaseCommit: "campaign-head",
+      campaignCompositionKind: "frozen-campaign",
+    });
+
+    expect(
+      campaignPatchConflictRepairWake(
+        conflict!,
+        {
+          schemaVersion: "1",
+          baselineRunId: "175425349",
+          baseCommit: "old-main",
+          branch: "validation/master-validation-175425349",
+          currentCommit: "frozen-candidate",
+          integratedFixes: [],
+          updatedAt: "2026-08-06T10:00:00.000Z",
+        },
+        "new-main",
+      ),
+    ).toMatchObject({
+      campaignSourceCommit: "new-main",
+      campaignCompositionBaseCommit: "new-main",
+      campaignCompositionKind: "current-main-successor",
+      currentMainCommit: "new-main",
     });
     expect(
       campaignPatchConflict(
