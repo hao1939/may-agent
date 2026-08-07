@@ -395,6 +395,123 @@ describe("workflow call empty final turn recovery", () => {
       },
     });
   });
+
+  it("lets a committed finish receipt win over a racing cancellation", async () => {
+    const { session, messages } = makeCallSession(async () => {
+      messages.push(
+        finishCall("finish-committed", {
+          status: "success",
+          summary: "Accepted exact pass proof.",
+          result: {
+            state: "converged",
+            summary: "Accepted exact pass proof.",
+            evidence: ["pipeline-run:175634889"],
+          },
+        }),
+      );
+      messages.push(finishResult("finish-committed", "✅ SUCCESS: Accepted exact pass proof."));
+      session.status = "interrupted";
+      session.lastError = "Cancelled";
+    });
+
+    const result = await (manager as any).executeSession(session);
+
+    expect(result.status).toBe("done");
+    expect(result.error).toBeUndefined();
+    expect(result.structuredResult).toEqual({
+      state: "converged",
+      summary: "Accepted exact pass proof.",
+      evidence: ["pipeline-run:175634889"],
+    });
+    const persisted = readSessionMeta(persistDir, result.sessionId);
+    expect(persisted?.status).toBe("done");
+    expect(persisted?.error).toBeUndefined();
+    const end = events.find(
+      (event) => event.type === "session.end" && (event as any).data?.sessionId === result.sessionId,
+    );
+    expect(end).toMatchObject({
+      type: "session.end",
+      data: {
+        status: "done",
+        finishParams: {
+          status: "success",
+          result: { state: "converged" },
+        },
+      },
+    });
+    expect((end as any).data.error).toBeUndefined();
+  });
+
+  it("classifies a committed failure receipt as error despite a racing cancellation", async () => {
+    const { session, messages } = makeCallSession(async () => {
+      messages.push(
+        finishCall("finish-failed", {
+          status: "failure",
+          summary: "Verified terminal failure.",
+          result: {
+            state: "converged",
+            summary: "Verified terminal failure.",
+            evidence: ["runtime-check:failed"],
+          },
+        }),
+      );
+      messages.push(finishResult("finish-failed", "❌ FAILURE: Verified terminal failure."));
+      session.status = "interrupted";
+      session.lastError = "Cancelled";
+    });
+
+    const result = await (manager as any).executeSession(session);
+
+    expect(result.status).toBe("error");
+    expect(result.error).toBeUndefined();
+    expect(result.structuredResult).toEqual({
+      state: "converged",
+      summary: "Verified terminal failure.",
+      evidence: ["runtime-check:failed"],
+    });
+    expect(readSessionMeta(persistDir, result.sessionId)).toMatchObject({ status: "error" });
+    const end = events.find(
+      (event) => event.type === "session.end" && (event as any).data?.sessionId === result.sessionId,
+    );
+    expect(end).toMatchObject({
+      type: "session.end",
+      data: {
+        status: "error",
+        finishParams: { status: "failure", result: { state: "converged" } },
+      },
+    });
+  });
+
+  it("keeps cancellation interrupted with its reason when no finish receipt committed", async () => {
+    const { session, messages } = makeCallSession(async () => {
+      messages.push({
+        role: "assistant",
+        stopReason: "stop",
+        content: [{ type: "text", text: "Stopping before finish." }],
+      } as any);
+      session.status = "interrupted";
+      session.lastError = "Cancelled by operator";
+    });
+    session.requireFinish = false;
+
+    const result = await (manager as any).executeSession(session);
+
+    expect(result.status).toBe("interrupted");
+    expect(result.error).toBe("Cancelled by operator");
+    expect(result.structuredResult).toBeUndefined();
+    expect(readSessionMeta(persistDir, result.sessionId)).toMatchObject({
+      status: "interrupted",
+      error: "Cancelled by operator",
+    });
+    const end = events.find(
+      (event) => event.type === "session.end" && (event as any).data?.sessionId === result.sessionId,
+    );
+    expect(end).toMatchObject({
+      type: "session.end",
+      data: { status: "interrupted", error: "Cancelled by operator" },
+    });
+    expect((end as any).data.finishParams).toBeNull();
+  });
 });
 
 describe("session.start metadata", () => {
