@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -19,6 +20,7 @@ import {
   fixVerificationTrigger,
   latestCampaignFixes,
   registerMasterValidationRun,
+  resolveCurrentMain,
   transientMasterValidationAccessFailure,
   verifiedFixNotificationContent,
 } from "./master-validation-cycle.js";
@@ -30,6 +32,41 @@ const parameters = {
 };
 
 describe("master-validation cycle", () => {
+  test("refreshes the remote-tracking main ref before resolving current main", () => {
+    const root = mkdtempSync(join(tmpdir(), "master-validation-current-main-"));
+    const remote = join(root, "remote.git");
+    const publisher = join(root, "publisher");
+    const consumer = join(root, "consumer");
+    const git = (cwd: string, ...args: string[]) =>
+      execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
+    try {
+      git(root, "init", "--bare", remote);
+      git(root, "init", "-b", "main", publisher);
+      git(publisher, "config", "user.name", "Validation Test");
+      git(publisher, "config", "user.email", "validation@example.test");
+      writeFileSync(join(publisher, "proof.txt"), "first\n");
+      git(publisher, "add", "proof.txt");
+      git(publisher, "commit", "-m", "first");
+      git(publisher, "remote", "add", "origin", remote);
+      git(publisher, "push", "-u", "origin", "main");
+      git(root, "clone", remote, consumer);
+      git(consumer, "checkout", "main");
+      const first = git(consumer, "rev-parse", "origin/main");
+
+      writeFileSync(join(publisher, "proof.txt"), "second\n");
+      git(publisher, "commit", "-am", "second");
+      git(publisher, "push", "origin", "main");
+      const second = git(publisher, "rev-parse", "HEAD");
+
+      expect(first).not.toBe(second);
+      expect(git(consumer, "rev-parse", "origin/main")).toBe(first);
+      expect(resolveCurrentMain(consumer)).toBe(second);
+      expect(git(consumer, "rev-parse", "origin/main")).toBe(second);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   test("queues the exact main commit with the fixed validation shape", () => {
     const args = buildMasterValidationQueueArgs({
       taskId: "master-validation-staging-cycle",

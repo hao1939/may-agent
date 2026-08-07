@@ -671,8 +671,16 @@ function completeTransientAccessObservation(
   });
 }
 
-function resolveCurrentMain(repoDir: string): string {
-  const fetched = command("git", ["fetch", "origin", sourceBranch], repoDir);
+export function resolveCurrentMain(repoDir: string): string {
+  const fetched = command(
+    "git",
+    [
+      "fetch",
+      "origin",
+      `+refs/heads/${sourceBranch}:refs/remotes/origin/${sourceBranch}`,
+    ],
+    repoDir,
+  );
   if (fetched.status !== 0) throw new Error(fetched.stderr || fetched.stdout);
   const resolved = command("git", ["rev-parse", sourceRef], repoDir);
   if (resolved.status !== 0 || !resolved.stdout) {
