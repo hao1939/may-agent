@@ -97,6 +97,53 @@ describe("Cron event dispatch", () => {
     }
   });
 
+  it("does not prune timed-out in-flight handlers just because wall time advanced", async () => {
+    const root = tempRoot();
+    const failures: any[] = [];
+    const originalNow = Date.now;
+    let now = 1_700_000_000_000;
+    Date.now = () => now;
+    const cron = new Cron(
+      join(root, "missing-cron.json"),
+      {} as any,
+      () => "s1",
+      undefined,
+      root,
+      undefined,
+      (event) => failures.push(event),
+    );
+    let release!: () => void;
+    let calls = 0;
+    try {
+      cron.registerHandler("slow-handler", async () => {
+        calls += 1;
+        await new Promise<void>((resolve) => { release = resolve; });
+      });
+      cron.addSyntheticEntry({
+        name: "slow-handler",
+        enabled: true,
+        handler: "slow-handler",
+        timeoutMs: 5,
+      });
+
+      expect(cron.triggerNow("slow-handler", { force: true })).toBe(true);
+      await new Promise((resolve) => setTimeout(resolve, 15));
+      expect(failures.filter((event) => event.type === "handler.failed")).toHaveLength(1);
+
+      now += 11 * 60_000;
+      expect(cron.triggerNow("slow-handler", { force: true })).toBe(false);
+      expect(calls).toBe(1);
+
+      release();
+      await tick();
+      expect((cron as any).inflightJobs.get("slow-handler") ?? []).toHaveLength(0);
+    } finally {
+      Date.now = originalNow;
+      cron.stop();
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("notifies only after three consecutive transient handler failures", async () => {
     const root = tempRoot();
     const notifications: string[] = [];

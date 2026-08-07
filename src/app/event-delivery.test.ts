@@ -1745,6 +1745,50 @@ describe("event delivery metadata", () => {
     }
   });
 
+  it("closes workflow event pairs when a workflow is interrupted", () => {
+    const root = tempRoot();
+    try {
+      const bus = new EventBus();
+      attachPersistence(bus, root);
+
+      bus.emit({
+        type: "workflow.started",
+        source: "workflow:test-workflow",
+        owner: "agent:tech-lead",
+        data: {
+          workflowRunId: "wr_interrupted_pair",
+          workflow: "test-workflow",
+          task: "Test interrupted workflow pair closure",
+        },
+      } as any);
+
+      bus.emit({
+        type: "workflow.interrupted",
+        source: "workflow:test-workflow",
+        owner: "agent:tech-lead",
+        data: {
+          workflowRunId: "wr_interrupted_pair",
+          workflow: "test-workflow",
+          reason: "simulated interruption",
+        },
+      } as any);
+
+      const db = getDb(root);
+      expect(
+        db
+          .prepare(
+            `SELECT status, close_event_id
+             FROM event_pair_runs
+             WHERE pair_name = 'workflow' AND correlation_key = 'wr_interrupted_pair'`,
+          )
+          .get(),
+      ).toMatchObject({ status: "closed" });
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("marks new unaccepted events unhandled after their ttl", async () => {
     const root = tempRoot();
     try {

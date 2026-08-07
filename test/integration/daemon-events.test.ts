@@ -3,8 +3,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "bun:test";
 import { EventBus } from "../../src/app/event-bus.js";
-import { attachDaemonEventSubscribers, createMetricMutationSubscriber } from "../../src/app/daemon-events.js";
-import { getDb } from "../../src/lib/requests.js";
+import {
+  attachDaemonEventSubscribers,
+  attachEventPersistence,
+  createMetricMutationSubscriber,
+} from "../../src/app/daemon-events.js";
+import { getDb, insertWorkflowRun } from "../../src/lib/requests.js";
 
 describe("daemon event subscribers", () => {
   it("projects metric mutations only from their durable canonical events", () => {
@@ -175,6 +179,167 @@ describe("daemon event subscribers", () => {
       expect(existsSync(join(persistDir, "escalations.jsonl"))).toBe(false);
     } finally {
       globalThis.setTimeout = originalSetTimeout;
+      rmSync(persistDir, { recursive: true, force: true });
+    }
+  });
+
+  it("closes stale handler pairs on daemon startup after a restart", () => {
+    const persistDir = mkdtempSync(join(tmpdir(), "daemon-events-handler-restart-"));
+    const seedBus = new EventBus();
+    attachEventPersistence({ bus: seedBus, persistDir });
+    seedBus.emit({
+      type: "handler.started",
+      source: "cron",
+      owner: "agent:may",
+      data: { handler: "metrics-snapshot", handlerRunId: "handler:metrics-snapshot:seed:1", agent: "may" },
+    } as any);
+    const openEventId = Number(
+      (
+        getDb(persistDir)
+          .prepare("SELECT id FROM events WHERE event_type = 'handler.started' ORDER BY id DESC LIMIT 1")
+          .get() as { id: number }
+      ).id,
+    );
+
+    const bus = new EventBus();
+    const events: any[] = [];
+    const manager = {
+      resumeSession: () => { throw new Error("test: resume not wired"); },
+      activeSessions: new Map<string, unknown>(),
+    };
+
+    try {
+      attachEventPersistence({ bus, persistDir });
+      bus.subscribe((event) => events.push(event));
+      attachDaemonEventSubscribers({
+        bus,
+        manager: manager as any,
+        persistDir,
+        projectRoot: persistDir,
+      });
+
+      const db = getDb(persistDir);
+      expect(db.prepare("SELECT status, close_event_id FROM event_pair_runs WHERE open_event_id = ?").get(openEventId)).toMatchObject({
+        status: "closed",
+        close_event_id: expect.any(Number),
+      });
+      expect(
+        db
+          .prepare(
+            `SELECT event_type, source, json_extract(data, '$.reason') AS reason, json_extract(data, '$.openEventId') AS openEventId
+             FROM events
+             WHERE event_type = 'event-pair.orphan-gc.close'
+               AND json_extract(data, '$.openEventId') = ?`,
+          )
+          .get(openEventId),
+      ).toEqual({
+        event_type: "event-pair.orphan-gc.close",
+        source: "runtime:restart-recovery",
+        reason: "runtime-restarted",
+        openEventId,
+      });
+      expect(
+        db.prepare("SELECT close_event_id FROM event_pair_runs WHERE open_event_id = ?").get(openEventId),
+      ).toEqual(
+        db.prepare("SELECT id AS close_event_id FROM events WHERE event_type = 'event-pair.orphan-gc.close' AND json_extract(data, '$.openEventId') = ?").get(openEventId),
+      );
+      expect(events).toContainEqual(
+        expect.objectContaining({ type: "info", message: "[handler-recovery] Closed 1 stale handler pair(s) after restart" }),
+      );
+    } finally {
+      rmSync(persistDir, { recursive: true, force: true });
+    }
+  });
+
+  it("closes stale workflow pairs on daemon startup after a restart", () => {
+    const persistDir = mkdtempSync(join(tmpdir(), "daemon-events-workflow-restart-"));
+    const seedBus = new EventBus();
+    attachEventPersistence({ bus: seedBus, persistDir });
+    seedBus.emit({
+      type: "workflow.started",
+      source: "workflow:platform-owner-review",
+      owner: "agent:tech-lead",
+      data: {
+        workflowRunId: "wr_restart_seed",
+        workflow: "platform-owner-review",
+        task: "seed workflow pair",
+        projectId: "may-agent",
+      },
+    } as any);
+    insertWorkflowRun(persistDir, {
+      runId: "wr_restart_seed",
+      workflow: "platform-owner-review",
+      task: "seed workflow pair",
+      parentSessionId: null,
+      parentWorkflowRunId: null,
+      projectId: "may-agent",
+      depth: 1,
+      status: "interrupted",
+      startedAt: Date.now() - 60_000,
+      endedAt: Date.now() - 1_000,
+      result_summary: null,
+      result_reason: "Process restarted",
+      resumedFromRunId: null,
+    });
+    const openEventId = Number(
+      (
+        getDb(persistDir)
+          .prepare("SELECT id FROM events WHERE event_type = 'workflow.started' ORDER BY id DESC LIMIT 1")
+          .get() as { id: number }
+      ).id,
+    );
+
+    const bus = new EventBus();
+    const events: any[] = [];
+    const manager = {
+      resumeSession: () => { throw new Error("test: resume not wired"); },
+      activeSessions: new Map<string, unknown>(),
+    };
+
+    try {
+      attachEventPersistence({ bus, persistDir });
+      bus.subscribe((event) => events.push(event));
+      attachDaemonEventSubscribers({
+        bus,
+        manager: manager as any,
+        persistDir,
+        projectRoot: persistDir,
+      });
+
+      const db = getDb(persistDir);
+      expect(
+        db.prepare("SELECT status, close_event_id FROM event_pair_runs WHERE open_event_id = ?").get(openEventId),
+      ).toMatchObject({
+        status: "closed",
+        close_event_id: expect.any(Number),
+      });
+      expect(
+        db
+          .prepare(
+            `SELECT event_type, source,
+                    json_extract(data, '$.reason') AS reason,
+                    json_extract(data, '$.pairName') AS pairName,
+                    json_extract(data, '$.correlationKey') AS correlationKey,
+                    json_extract(data, '$.workflow') AS workflow,
+                    json_extract(data, '$.openEventId') AS openEventId
+             FROM events
+             WHERE event_type = 'event-pair.orphan-gc.close'
+               AND json_extract(data, '$.openEventId') = ?`,
+          )
+          .get(openEventId),
+      ).toEqual({
+        event_type: "event-pair.orphan-gc.close",
+        source: "runtime:restart-recovery",
+        reason: "runtime-restarted",
+        pairName: "workflow",
+        correlationKey: "wr_restart_seed",
+        workflow: "platform-owner-review",
+        openEventId,
+      });
+      expect(events).toContainEqual(
+        expect.objectContaining({ type: "info", message: "[workflow-recovery] Closed 1 stale workflow pair(s) after restart" }),
+      );
+    } finally {
       rmSync(persistDir, { recursive: true, force: true });
     }
   });
