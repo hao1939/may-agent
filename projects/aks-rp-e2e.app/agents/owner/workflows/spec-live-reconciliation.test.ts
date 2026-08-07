@@ -28,6 +28,8 @@ import {
   checkLiveDispatchAdmission,
   compactPlanPipelineParameters,
   collectTerminalRunEvidence,
+  proofMetadataMatchesSource,
+  queueRunMetadata,
   queueRunPipelineParameters,
   completedPullRequestIntegration,
   cherryPickScenarioReplayCommits,
@@ -51,6 +53,7 @@ import {
   terminalLineageReplayDecisionProblem,
   existingRecoveryProblem,
   integrationMode,
+  invalidatedRunRequiresSourceChange,
   isNonFastForwardPushFailure,
   liveDispatchTargetRefreshRequired,
   matchingTaskGenerationRuns,
@@ -2860,6 +2863,86 @@ describe("spec-live-reconciliation workflow", () => {
     } finally {
       rmSync(appDir, { recursive: true, force: true });
     }
+  });
+
+  test("does not suppress a fresh Queuewatcher dispatch with stale reviewed-source lineage", () => {
+    const retrySourceCommit = "ecf26332c5a29b38f212e19ca2ac09a4bffbae59";
+    const staleReviewedSourceCommit =
+      "ecf26332c51b7381e4d9fb4db94ac2244c9621c5";
+    const taskId =
+      "domain/master-validation-route-verification/spec.service-platform.queuewatcher/672a87413d01";
+    const staleRun = {
+      id: 175620959,
+      sourceBranch:
+        "refs/heads/task/domain-master-validation-route-verification-spec.service-platform.queuew-f4db4724f5",
+      sourceVersion: retrySourceCommit,
+      templateParameters: {
+        specs: "spec.service-platform.queuewatcher",
+        target: "staging",
+        standalone_build_id: "175600006",
+        metadata: JSON.stringify({
+          taskId,
+          generation: "1",
+          reviewed_source_commit: staleReviewedSourceCommit,
+        }),
+      },
+    };
+    const exactFilter = {
+      taskId,
+      generation: 1,
+      specId: "spec.service-platform.queuewatcher",
+      sourceCommit: retrySourceCommit,
+      target: "staging",
+      standaloneBuildId: "175600006",
+    };
+
+    expect(
+      proofMetadataMatchesSource(
+        JSON.parse(staleRun.templateParameters.metadata),
+        retrySourceCommit,
+      ),
+    ).toBe(false);
+    expect(matchingTaskRuns([staleRun], exactFilter)).toEqual([]);
+    expect(matchingTaskGenerationRuns([staleRun], exactFilter)).toEqual([]);
+    expect(
+      invalidatedRunRequiresSourceChange(staleRun, retrySourceCommit),
+    ).toBe(false);
+
+    const metadata = queueRunMetadata({
+      ...exactFilter,
+      sourceBranch:
+        "task/domain-master-validation-route-verification-spec.service-platform.queuew-f4db4724f5",
+      retryOfRunId: "175620959",
+    });
+    expect(metadata).toMatchObject({
+      taskId,
+      generation: 1,
+      specId: "spec.service-platform.queuewatcher",
+      sourceCommit: retrySourceCommit,
+      reviewed_source_commit: retrySourceCommit,
+      target: "staging",
+      standaloneBuildId: "175600006",
+      standalone_build_id: "175600006",
+      retryOfRunId: "175620959",
+    });
+
+    const validRun = {
+      ...staleRun,
+      id: 175620960,
+      templateParameters: {
+        ...staleRun.templateParameters,
+        metadata: JSON.stringify(metadata),
+      },
+    };
+    expect(matchingTaskRuns([staleRun, validRun], exactFilter)).toEqual([
+      validRun,
+    ]);
+    expect(
+      matchingTaskGenerationRuns([staleRun, validRun], exactFilter),
+    ).toEqual([validRun]);
+    expect(
+      invalidatedRunRequiresSourceChange(validRun, retrySourceCommit),
+    ).toBe(true);
   });
 
   test("finds same-task exact runs across branch lineages but preserves redispatch on material differences", () => {

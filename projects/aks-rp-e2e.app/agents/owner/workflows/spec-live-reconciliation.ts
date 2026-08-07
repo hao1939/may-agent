@@ -139,6 +139,7 @@ type PullRequest = {
   pullRequestId?: unknown;
   status?: unknown;
   mergeStatus?: unknown;
+  isDraft?: unknown;
   sourceRefName?: unknown;
   targetRefName?: unknown;
   lastMergeSourceCommit?: { commitId?: unknown };
@@ -151,6 +152,7 @@ type SemanticInvalidationContext = {
   claimIds: string[];
   sourceCommit: string;
   sourcePaths: string[];
+  lineageInvalid: boolean;
 };
 
 export function completedPullRequestIntegration(input: {
@@ -260,6 +262,36 @@ export type LiveExecutionTarget = {
   target: string;
   standaloneBuildId: string;
 };
+
+export function mainPublicationAcceptanceProblem(input: {
+  canonicalProofMetadataValid: boolean;
+  publicationRequired: boolean;
+  pullRequestId?: string;
+  evidence: readonly string[];
+}): string | null {
+  if (!input.canonicalProofMetadataValid) {
+    return "canonical live-proof metadata does not identify the exact tested source";
+  }
+  if (!input.publicationRequired) return null;
+  const pullRequestId = nonEmptyString(input.pullRequestId);
+  if (!pullRequestId) return "focused pull request publication is missing";
+  if (!input.evidence.includes(`review-ready-pull-request:${pullRequestId}`)) {
+    return "focused pull request is not proven non-draft and review-ready";
+  }
+  if (
+    !input.evidence.some((item) => item.startsWith("review-ready-handoff:"))
+  ) {
+    return "actionable review-ready handoff is missing";
+  }
+  if (
+    !input.evidence.some((item) =>
+      item.startsWith("current-main-readback:origin/main@"),
+    )
+  ) {
+    return "explicit current origin/main readback is missing";
+  }
+  return null;
+}
 
 export function exactLiveTargetInstruction(
   target: string,
@@ -3153,6 +3185,24 @@ function metadataOf(run: PipelineRun): Record<string, unknown> {
   }
 }
 
+export function proofMetadataMatchesSource(
+  metadata: Record<string, unknown>,
+  sourceCommit: string,
+): boolean {
+  const declaredCommits = [
+    nonEmptyString(metadata.sourceCommit),
+    nonEmptyString(metadata.reviewed_source_commit),
+  ].filter(Boolean);
+  return declaredCommits.every((declared) => declared === sourceCommit);
+}
+
+export function invalidatedRunRequiresSourceChange(
+  run: PipelineRun,
+  sourceCommit: string,
+): boolean {
+  return proofMetadataMatchesSource(metadataOf(run), sourceCommit);
+}
+
 export function matchingTaskRuns(
   runs: PipelineRun[],
   input: {
@@ -3177,6 +3227,7 @@ export function matchingTaskRuns(
       const metadata = metadataOf(run);
       return (
         nonEmptyString(run.sourceVersion) === input.sourceCommit &&
+        proofMetadataMatchesSource(metadata, input.sourceCommit) &&
         nonEmptyString(parameters.specs) === input.specId &&
         nonEmptyString(parameters.target) === target &&
         nonEmptyString(parameters.standalone_build_id) === standaloneBuildId &&
@@ -3210,6 +3261,7 @@ export function matchingTaskGenerationRuns(
       const metadata = metadataOf(run);
       return (
         nonEmptyString(run.sourceVersion) === input.sourceCommit &&
+        proofMetadataMatchesSource(metadata, input.sourceCommit) &&
         nonEmptyString(parameters.specs) === input.specId &&
         nonEmptyString(parameters.target) === target &&
         nonEmptyString(parameters.standalone_build_id) === standaloneBuildId &&
@@ -3258,6 +3310,9 @@ export function supersededQueuedTaskRuns(
     .sort((left, right) => Number(left.id ?? 0) - Number(right.id ?? 0));
 }
 
+export type PriorVerificationRunDisposition =
+  "exact" | "invalidated-lineage-context" | "mismatch";
+
 export function runMatchesPriorVerification(
   run: PipelineRun,
   input: {
@@ -3267,6 +3322,7 @@ export function runMatchesPriorVerification(
     standaloneBuildId: string;
     sourceBranch?: string;
     sourceCommit?: string;
+    requireCanonicalLineage?: boolean;
   },
 ): boolean {
   const parameters =
@@ -3286,11 +3342,38 @@ export function runMatchesPriorVerification(
     nonEmptyString(parameters.target) === input.target &&
     nonEmptyString(parameters.standalone_build_id) ===
       input.standaloneBuildId &&
+    (input.requireCanonicalLineage === false ||
+      proofMetadataMatchesSource(
+        metadata,
+        nonEmptyString(run.sourceVersion),
+      )) &&
     (!input.taskId || nonEmptyString(metadata.taskId) === input.taskId) &&
     (!expectedBranch || nonEmptyString(run.sourceBranch) === expectedBranch) &&
     (!input.sourceCommit ||
       nonEmptyString(run.sourceVersion) === input.sourceCommit)
   );
+}
+
+export function priorVerificationRunDisposition(
+  run: PipelineRun,
+  input: Parameters<typeof runMatchesPriorVerification>[1],
+  invalidation: {
+    runId: string;
+    claimIds?: readonly string[];
+    lineageInvalid: boolean;
+  } | null,
+): PriorVerificationRunDisposition {
+  if (runMatchesPriorVerification(run, input)) return "exact";
+  if (
+    invalidation !== null &&
+    runMatchesPriorVerification(run, {
+      ...input,
+      requireCanonicalLineage: false,
+    })
+  ) {
+    return "invalidated-lineage-context";
+  }
+  return "mismatch";
 }
 
 export function pipelineWaitCondition(runId: string): ProjectAppConditionSpec {
@@ -3590,33 +3673,45 @@ function uniqueRuns(runs: PipelineRun[]): PipelineRun[] {
   });
 }
 
-async function queueRun(
-  repoDir: string,
-  input: {
-    taskId: string;
-    generation: number;
-    specId: string;
-    sourceBranch: string;
-    sourceCommit: string;
-    target: string;
-    standaloneBuildId: string;
-    planPath?: string;
-    retryOfRunId?: string;
-  },
-): Promise<PipelineRun> {
-  const metadata = JSON.stringify({
+type QueueRunInput = {
+  taskId: string;
+  generation: number;
+  specId: string;
+  sourceBranch: string;
+  sourceCommit: string;
+  target: string;
+  standaloneBuildId: string;
+  planPath?: string;
+  retryOfRunId?: string;
+};
+
+export function queueRunMetadata(
+  input: QueueRunInput,
+): Record<string, unknown> {
+  return {
     taskId: input.taskId,
     generation: input.generation,
     specId: input.specId,
     sourceBranch: input.sourceBranch,
     sourceCommit: input.sourceCommit,
+    reviewed_source_commit: input.sourceCommit,
     target: input.target,
     ...(input.standaloneBuildId
-      ? { standaloneBuildId: input.standaloneBuildId }
+      ? {
+          standaloneBuildId: input.standaloneBuildId,
+          standalone_build_id: input.standaloneBuildId,
+        }
       : {}),
     ...(input.planPath ? { planPath: input.planPath } : {}),
     ...(input.retryOfRunId ? { retryOfRunId: input.retryOfRunId } : {}),
-  });
+  };
+}
+
+async function queueRun(
+  repoDir: string,
+  input: QueueRunInput,
+): Promise<PipelineRun> {
+  const metadata = JSON.stringify(queueRunMetadata(input));
   const value = await azJson(repoDir, [
     "pipelines",
     "run",
@@ -3706,6 +3801,8 @@ async function createPullRequest(
     `test: reconcile ${input.specId}`,
     "--description",
     description,
+    "--draft",
+    "false",
   ]);
   if (
     !value ||
@@ -3715,6 +3812,74 @@ async function createPullRequest(
     throw new Error("Azure DevOps did not return a pull request id");
   }
   return value as PullRequest;
+}
+
+async function publishPullRequestReviewReady(
+  repoDir: string,
+  pullRequestId: string,
+): Promise<void> {
+  await azJson(
+    repoDir,
+    ["repos", "pr", "update", "--id", pullRequestId, "--draft", "false"],
+    { includeProject: false },
+  );
+}
+
+function reviewReadyHandoff(
+  ctx: WorkflowContext,
+  input: {
+    taskId: string;
+    specId: string;
+    pullRequestId: string;
+    runId: string;
+    sourceCommit: string;
+  },
+): string[] {
+  const appDir = ctx.appDir ?? "/app/projects/aks-rp-e2e.app";
+  const receipt = join(
+    appDir,
+    ".state",
+    "master-validation-route-review-ready",
+    `${createHash("sha256").update(`${input.taskId}:${input.pullRequestId}:${input.sourceCommit}`).digest("hex")}.json`,
+  );
+  if (existsSync(receipt)) {
+    return [
+      `review-ready-pull-request:${input.pullRequestId}`,
+      "review-ready-handoff:already-sent",
+      `review-ready-handoff-receipt:${receipt}`,
+    ];
+  }
+  ctx.dispatchEvent("message.created", {
+    target: { project: "aks-rp-e2e", human: true },
+    from: "aks-explorer",
+    to: "human:operator",
+    intent: "master-validation-route-review-ready",
+    priority: "P1",
+    project: "aks-rp-e2e",
+    taskId: input.taskId,
+    specId: input.specId,
+    pipelineRunId: input.runId,
+    pullRequestId: input.pullRequestId,
+    sourceCommit: input.sourceCommit,
+    content: [
+      `AKS master-validation route repair for ${input.specId} passed exact live run ${input.runId} at ${input.sourceCommit}.`,
+      `Focused PR ${input.pullRequestId} is published non-draft and review-ready.`,
+      "Repository approvals or policies may still remain; please satisfy them and merge this PR into main.",
+      "The app will keep the same task open and explicitly read current origin/main before accepting the repair.",
+    ].join("\n"),
+  });
+  mkdirSync(join(appDir, ".state", "master-validation-route-review-ready"), {
+    recursive: true,
+  });
+  writeFileSync(
+    receipt,
+    `${JSON.stringify({ version: 1, ...input, sentAt: new Date().toISOString() }, null, 2)}\n`,
+  );
+  return [
+    `review-ready-pull-request:${input.pullRequestId}`,
+    "review-ready-handoff:sent",
+    `review-ready-handoff-receipt:${receipt}`,
+  ];
 }
 
 async function abandonPullRequest(
@@ -4177,12 +4342,18 @@ export async function reconcileSpecLive(
         claimIds: invalidatedClaimIds,
         sourceCommit: invalidatedSourceCommit,
         sourcePaths: invalidatedSourcePaths,
+        lineageInvalid: !invalidatedRunRequiresSourceChange(
+          invalidatedRun,
+          invalidatedSourceCommit,
+        ),
       };
     }
     const semanticInvalidationProblem = (
       candidateCommit: string,
     ): string | null => {
-      if (!semanticInvalidation) return null;
+      if (!semanticInvalidation || semanticInvalidation.lineageInvalid) {
+        return null;
+      }
       const state = semanticInvalidationSourceState({
         repoDir,
         invalidatedCommit: semanticInvalidation.sourceCommit,
@@ -4198,7 +4369,9 @@ export async function reconcileSpecLive(
       ? [
           `Run ${semanticInvalidation.runId} is invalidated semantic evidence for claims ${semanticInvalidation.claimIds.join(", ")}.`,
           `Its exact source commit is ${semanticInvalidation.sourceCommit}. Relevant structured source paths: ${semanticInvalidation.sourcePaths.join(", ")}.`,
-          "Inspect the current source and repair or re-evaluate the product contract. The workflow will not dispatch identical relevant source again. Do not treat the earlier green provider result as acceptance evidence.",
+          semanticInvalidation.lineageInvalid
+            ? "The prior run's reviewed-source metadata does not match its provider source commit. Do not accept or deduplicate against that run; the unchanged exact source may be dispatched again with corrected canonical lineage metadata."
+            : "Inspect the current source and repair or re-evaluate the product contract. The workflow will not dispatch identical relevant source again. Do not treat the earlier green provider result as acceptance evidence.",
         ]
       : [];
     const semanticInvalidationDecisionProblem = (
@@ -4218,21 +4391,25 @@ export async function reconcileSpecLive(
     let authoritativeRetryRun: PipelineRun | null = null;
     if (priorVerificationRunId) {
       const priorRun = await getPipelineRun(repoDir, priorVerificationRunId);
-      if (
-        !priorRun ||
-        !runMatchesPriorVerification(priorRun, {
-          ...(authoritativePriorVerification ? { taskId } : {}),
-          specId,
-          target: liveTarget,
-          standaloneBuildId,
-          ...(preparedSourceBranch
-            ? { sourceBranch: preparedSourceBranch }
-            : {}),
-          ...(preparedSourceCommit
-            ? { sourceCommit: preparedSourceCommit }
-            : {}),
-        })
-      ) {
+      const priorRunDisposition = priorRun
+        ? priorVerificationRunDisposition(
+            priorRun,
+            {
+              ...(authoritativePriorVerification ? { taskId } : {}),
+              specId,
+              target: liveTarget,
+              standaloneBuildId,
+              ...(preparedSourceBranch
+                ? { sourceBranch: preparedSourceBranch }
+                : {}),
+              ...(preparedSourceCommit
+                ? { sourceCommit: preparedSourceCommit }
+                : {}),
+            },
+            semanticInvalidation,
+          )
+        : "mismatch";
+      if (!priorRun || priorRunDisposition === "mismatch") {
         return ownerResult(
           ctx,
           `Prior verification run ${priorVerificationRunId} does not match the task's exact spec, source, target, and standalone build context.`,
@@ -4267,7 +4444,9 @@ export async function reconcileSpecLive(
           pipelineWaitCondition(priorVerificationRunId),
         );
       }
-      if (authoritativePriorVerification) {
+      if (priorRunDisposition === "invalidated-lineage-context") {
+        priorVerificationSummary = `Task-designated retry run ${priorVerificationRunId} is terminal with provider result ${priorResult}, but its reviewed-source metadata is stale and its claims were explicitly invalidated. Retain it only as diagnosis context; do not accept or deduplicate it, and allow a fresh exact same-source dispatch with canonical lineage.`;
+      } else if (authoritativePriorVerification) {
         authoritativeRetryRun = priorRun;
         priorVerificationSummary = `Task-designated ${priorVerificationInput.value?.kind || "authoritative"} run ${priorVerificationRunId} is terminal with provider result ${priorResult}. Review this exact run as the current task proof; do not replace it merely because the task generation advanced.`;
       } else {
@@ -6382,6 +6561,11 @@ export async function reconcileSpecLive(
               ]
             : []),
           "Return accepted-pass only for exact same-spec live proof on this source commit.",
+          ...(integrationMode(targetBranch) === "pull-request"
+            ? [
+                `For this ${targetBranch}-publication task, accepted-pass is only the claim-level behavior verdict. It is not terminal task acceptance while canonical proof metadata is invalid or the tested repair is absent from current ${targetRef}. The workflow must continue the same task through a focused non-draft review-ready PR, one actionable human handoff, and explicit current-${targetBranch} readback after merge.`,
+              ]
+            : []),
           acceptedLiveProofSourceInstruction,
           "A source-only check or admission refusal is diagnostic evidence, not completion. Implement an observable live negative test when the API contract permits it; otherwise return an exact external wait or a genuine ownership-boundary decision.",
           ...(normalizationInput && allowTerminalDisposition
@@ -7200,6 +7384,7 @@ export async function reconcileSpecLive(
             fingerprint: "",
             threads: [],
           };
+    let reviewReadyEvidence: string[] = [];
 
     if (prStatus === "abandoned") {
       return ownerResult(
@@ -7231,6 +7416,13 @@ export async function reconcileSpecLive(
       );
     }
     if (prStatus === "completed") {
+      reviewReadyEvidence = reviewReadyHandoff(ctx, {
+        taskId,
+        specId,
+        pullRequestId: prId,
+        runId,
+        sourceCommit,
+      });
       const integration = completedPullRequestIntegration({
         mergeStatus,
         testedSourceCommit: sourceCommit,
@@ -7304,11 +7496,13 @@ export async function reconcileSpecLive(
         summary,
         evidence: [
           ...proof.evidence,
+          ...reviewReadyEvidence,
           `proof:${proofPath(contextDir)}`,
           `pipeline-run:${runId}`,
           `pull-request:${prId}`,
           `source-commit:${sourceCommit}`,
           `merged-commit:${integration.targetCommit}`,
+          `current-main-readback:${targetRef}@${git(repoDir, ["rev-parse", targetRef]).stdout}`,
           `target-ref:${targetRef}`,
         ],
         actions: [],
@@ -7371,6 +7565,14 @@ export async function reconcileSpecLive(
       );
     }
 
+    await publishPullRequestReviewReady(repoDir, prId);
+    reviewReadyEvidence = reviewReadyHandoff(ctx, {
+      taskId,
+      specId,
+      pullRequestId: prId,
+      runId,
+      sourceCommit,
+    });
     const waitingForReview = review.available && review.unresolvedCount > 0;
     let reviewJudgmentEvidence: string[] = [];
     if (
@@ -7464,6 +7666,7 @@ export async function reconcileSpecLive(
         : `PR ${prId} is ${prStatus}/${mergeStatus}; keep the same spec task waiting for merge or a source/review change.`,
       [
         ...proof.evidence,
+        ...reviewReadyEvidence,
         `proof:${proofPath(contextDir)}`,
         `pipeline-run:${runId}`,
         `pull-request:${prId}`,
@@ -7764,10 +7967,12 @@ function verifyTerminalDispositionResult(
   };
 }
 
-export async function verify(
+export async function verifySpecLiveResult(
   context: ProjectAppTaskVerificationContext,
   result: ProjectAppTaskHandlerResult,
+  targetBranch = defaultTargetBranch,
 ): Promise<ProjectAppTaskVerificationResult> {
+  const { targetRef } = resolveIntegrationTarget(targetBranch);
   if (result.state !== "converged") {
     return {
       accepted: false,
@@ -7838,12 +8043,12 @@ export async function verify(
     ? terminalRunContextDir(contextDir, proof.runId)
     : contextDir;
   const artifactPaths = proof ? collectedArtifactPaths(runContextDir) : [];
-  git(context.projectDir, ["fetch", "origin", defaultTargetBranch], true);
+  git(context.projectDir, ["fetch", "origin", targetBranch], true);
   const sourceAncestryReachable = Boolean(
     proof?.sourceCommit &&
     git(
       context.projectDir,
-      ["merge-base", "--is-ancestor", proof.sourceCommit, "origin/dev"],
+      ["merge-base", "--is-ancestor", proof.sourceCommit, targetRef],
       true,
     ).status === 0,
   );
@@ -7861,17 +8066,21 @@ export async function verify(
     : scenarioBoundedReplay
       ? proofIntegratedPaths
       : [];
+  const boundedPaths =
+    expectedBoundedPaths.length > 0
+      ? expectedBoundedPaths
+      : proofIntegratedPaths;
   const boundedContentEquivalent = Boolean(
-    (frozenCandidateRule || scenarioBoundedReplay) &&
     proof?.integrationMode === "bounded-content-equivalent" &&
-    expectedBoundedPaths.length > 0 &&
-    JSON.stringify(proofIntegratedPaths) ===
-      JSON.stringify(expectedBoundedPaths) &&
+    boundedPaths.length > 0 &&
+    (!(frozenCandidateRule || scenarioBoundedReplay) ||
+      JSON.stringify(proofIntegratedPaths) ===
+        JSON.stringify(expectedBoundedPaths)) &&
     frozenCandidateContentEquivalent({
       repoDir: context.projectDir,
       sourceCommit: proof.sourceCommit,
-      targetCommit: "origin/dev",
-      boundedSourceFiles: expectedBoundedPaths,
+      targetCommit: targetRef,
+      boundedSourceFiles: boundedPaths,
     }).equivalent,
   );
   const sourceReachable = sourceAncestryReachable || boundedContentEquivalent;
@@ -7879,7 +8088,7 @@ export async function verify(
     proof?.mergedCommit &&
     git(
       context.projectDir,
-      ["merge-base", "--is-ancestor", proof.mergedCommit, "origin/dev"],
+      ["merge-base", "--is-ancestor", proof.mergedCommit, targetRef],
       true,
     ).status === 0,
   );
@@ -7929,6 +8138,27 @@ export async function verify(
       : {}),
   });
   if (!verification.accepted || !proof) return verification;
+  const resultEvidence = resultEvidenceItems(result);
+  const mainPublicationProblem = mainPublicationAcceptanceProblem({
+    canonicalProofMetadataValid: verification.accepted,
+    publicationRequired:
+      integrationMode(targetBranch) === "pull-request" &&
+      Boolean(proof.pullRequestId),
+    pullRequestId: nonEmptyString(proof.pullRequestId),
+    evidence: resultEvidence,
+  });
+  if (mainPublicationProblem) {
+    return {
+      accepted: false,
+      summary: `Exact live behavior passed, but main-publication acceptance is incomplete: ${mainPublicationProblem}.`,
+      evidence: [
+        `pipeline-run:${proof.runId}`,
+        `source-commit:${proof.sourceCommit}`,
+        ...(proof.pullRequestId ? [`pull-request:${proof.pullRequestId}`] : []),
+        "verification-finding:incomplete-main-publication-acceptance",
+      ],
+    };
+  }
   return {
     ...verification,
     evidence: [
@@ -7948,4 +8178,11 @@ export async function verify(
       ),
     ],
   };
+}
+
+export async function verify(
+  context: ProjectAppTaskVerificationContext,
+  result: ProjectAppTaskHandlerResult,
+): Promise<ProjectAppTaskVerificationResult> {
+  return verifySpecLiveResult(context, result);
 }
