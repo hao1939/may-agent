@@ -23,11 +23,13 @@ export function classifyError(error: string | undefined | null): ErrorClass {
     e.includes("stream closed") ||
     e.includes("502") ||
     e.includes("503") ||
+    e.includes("429") ||
     e.includes("econnreset") ||
     e.includes("rate limit") ||
     e.includes("timeout") ||
     e.includes("connection") ||
     e.includes("network") ||
+    e.includes("no deployments available for selected model") ||
     (e.includes("model is not supported") && e.includes("model group")) ||
     (e.includes("bad request") && e.includes("model group"))
   ) {

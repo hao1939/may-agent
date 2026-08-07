@@ -275,6 +275,128 @@ describe("persistent chat empty response recovery", () => {
   });
 });
 
+describe("workflow call empty final turn recovery", () => {
+  let persistDir: string;
+  let manager: SubagentManager;
+  let bus: EventBus;
+  let events: AgentEvent[];
+
+  beforeEach(() => {
+    persistDir = mkdtempSync(join(tmpdir(), "may-call-empty-"));
+    bus = new EventBus();
+    events = [];
+    bus.subscribe((event) => events.push(event));
+    manager = new SubagentManager({ persistDir, bus });
+  });
+
+  afterEach(() => {
+    if (existsSync(persistDir)) {
+      rmSync(persistDir, { recursive: true, force: true });
+    }
+  });
+
+  function finishCall(id: string, args: Record<string, unknown>) {
+    return {
+      role: "assistant",
+      content: [{ type: "toolCall", id, name: "finish", arguments: args }],
+    } as any;
+  }
+
+  function finishResult(id: string, text: string, isError = false) {
+    return {
+      role: "toolResult",
+      toolCallId: id,
+      toolName: "finish",
+      content: [{ type: "text", text }],
+      isError,
+    } as any;
+  }
+
+  function makeCallSession(onPrompt: (promptText: string, messages: AgentMessage[]) => Promise<void>) {
+    const sessionId = "s_call_empty";
+    const messages: AgentMessage[] = [];
+    const prompts: string[] = [];
+    ensureSessionDir(persistDir, sessionId);
+    writeSessionMeta(persistDir, sessionId, {
+      agent: "tech-lead",
+      task: "review owner message",
+      status: "running",
+      startedAt: Date.now(),
+      kind: "call",
+      autoClose: "immediate",
+      requireFinish: true,
+    });
+
+    const fakeAgent = {
+      state: { messages },
+      prompt: async (promptText: string) => {
+        prompts.push(promptText);
+        await onPrompt(promptText, messages);
+      },
+      waitForIdle: async () => {},
+      subscribe: () => () => {},
+    };
+    const session = {
+      sessionId,
+      agent: fakeAgent,
+      agentName: "tech-lead",
+      task: "review owner message",
+      startedAt: Date.now(),
+      status: "running",
+      kind: "call",
+      autoClose: "immediate",
+      requireFinish: true,
+      toolCalls: 0,
+      turnCount: 1,
+    } as any;
+    return { sessionId, session, messages, prompts };
+  }
+
+  it("retries a workflow/call session after an empty final turn and recovers with finish()", async () => {
+    const { sessionId, session, messages, prompts } = makeCallSession(async (promptText, transcript) => {
+      if (promptText === "review owner message") {
+        transcript.push({ role: "user", content: [{ type: "text", text: promptText }] } as any);
+        transcript.push({ role: "assistant", stopReason: "toolUse", content: [] } as any);
+        return;
+      }
+      transcript.push(
+        finishCall("finish-1", {
+          status: "partial",
+          summary: "Escalated with explicit waiting state.",
+          next_steps: "Await runtime confirmation.",
+          result: {
+            state: "waiting",
+            summary: "Escalated empty-final-turn failure after one controller retry.",
+            evidence: ["retry prompt fired after empty final turn"],
+          },
+        }),
+      );
+      transcript.push(finishResult("finish-1", "✅ SUCCESS: Escalated with explicit waiting state."));
+    });
+
+    const result = await (manager as any).executeSession(session);
+
+    expect(result.status).toBe("done");
+    expect(result.structuredResult).toMatchObject({
+      state: "waiting",
+      summary: "Escalated empty-final-turn failure after one controller retry.",
+    });
+    expect(prompts).toHaveLength(2);
+    expect(prompts[1]).toContain("transient runtime/provider failure or no visible answer");
+    expect(messages.some((message: any) => message.role === "assistant" && Array.isArray(message.content) && message.content.length === 0)).toBe(false);
+
+    const end = events.find((event) => event.type === "session.end" && (event as any).data?.sessionId === sessionId);
+    expect(end).toMatchObject({
+      type: "session.end",
+      data: {
+        sessionId,
+        status: "done",
+        summary: "Escalated with explicit waiting state.",
+      },
+    });
+  });
+});
+
 describe("session.start metadata", () => {
   let persistDir: string;
 
