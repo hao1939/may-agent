@@ -252,15 +252,19 @@ function git(cwd: string, args: string[], allowFailure = false) {
   return command("git", args, cwd, allowFailure);
 }
 
-function azJson(cwd: string, args: string[]): unknown {
+function azJson(
+  cwd: string,
+  args: string[],
+  options: { includeProject?: boolean } = {},
+): unknown {
+  const includeProject = options.includeProject !== false;
   const result = command(
     azCli,
     [
       ...args,
       "--organization",
       organization,
-      "--project",
-      adoProject,
+      ...(includeProject ? ["--project", adoProject] : []),
       "-o",
       "json",
     ],
@@ -415,8 +419,6 @@ function abandonPullRequest(repoDir: string, pullRequestId: string): boolean {
       "abandoned",
       "--organization",
       organization,
-      "--project",
-      adoProject,
       "-o",
       "json",
     ],
@@ -456,17 +458,21 @@ function refreshCampaignRepairPullRequest(
   },
 ): PullRequest {
   return record(
-    azJson(repoDir, [
-      "repos",
-      "pr",
-      "update",
-      "--id",
-      pullRequestId,
-      "--description",
-      campaignRepairPullRequestDescription(input),
-      "--draft",
-      "true",
-    ]),
+    azJson(
+      repoDir,
+      [
+        "repos",
+        "pr",
+        "update",
+        "--id",
+        pullRequestId,
+        "--description",
+        campaignRepairPullRequestDescription(input),
+        "--draft",
+        "true",
+      ],
+      { includeProject: false },
+    ),
   ) as PullRequest;
 }
 

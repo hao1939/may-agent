@@ -9,6 +9,7 @@ import {
 import {
   activeMasterValidationRun,
   buildMasterValidationQueueArgs,
+  campaignBaselineIsCurrent,
   campaignIntegratedFixesMerged,
   campaignPatchConflict,
   campaignPatchConflictRepairWake,
@@ -291,6 +292,15 @@ ${JSON.stringify({
       ]),
     ).toBe(false);
     expect(campaignIntegratedFixesMerged([])).toBe(false);
+  });
+
+  test("restarts from current main when a frozen campaign baseline is stale", () => {
+    expect(
+      campaignBaselineIsCurrent({ baseCommit: "frozen-main" }, "current-main"),
+    ).toBe(false);
+    expect(
+      campaignBaselineIsCurrent({ baseCommit: "current-main" }, "current-main"),
+    ).toBe(true);
   });
 
   test("routes a focused patch conflict back to its stable failure task", () => {

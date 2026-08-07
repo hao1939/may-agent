@@ -806,6 +806,15 @@ export function campaignIntegratedFixesMerged(
   );
 }
 
+export function campaignBaselineIsCurrent(
+  campaign: Pick<CampaignReceipt, "baseCommit">,
+  currentMainCommit: string,
+): boolean {
+  return (
+    Boolean(currentMainCommit) && campaign.baseCommit === currentMainCommit
+  );
+}
+
 function publishPullRequest(
   repoDir: string,
   pullRequestId: string,
@@ -1147,6 +1156,21 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       const activeCommit = text(active.sourceVersion);
       const activeCampaign = readCampaignReceipt(appDir);
       if (activeCampaign && activeBranch === activeCampaign.branch) {
+        const currentMainCommit = resolveCurrentMain(repoDir);
+        if (!campaignBaselineIsCurrent(activeCampaign, currentMainCommit)) {
+          return waiting(
+            ctx,
+            text(active.id),
+            activeBranch,
+            activeCommit,
+            `Master validation run ${text(active.id)} continues on frozen base ${activeCampaign.baseCommit}; main advanced to ${currentMainCommit}, so the next cycle will start from that exact current-main commit instead of composing more fixes onto the stale snapshot.`,
+            [
+              ...fixPublicationEvidence,
+              `stale-campaign-base:${activeCampaign.baseCommit}`,
+              `next-current-main:${currentMainCommit}`,
+            ],
+          );
+        }
         const successor = composeFrozenCampaign({
           appDir,
           repoDir,
@@ -1217,6 +1241,19 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         if (!campaign) {
           throw new Error(
             `Campaign run ${prior.runId} has no durable campaign receipt`,
+          );
+        }
+        const currentMainCommit = resolveCurrentMain(repoDir);
+        if (!campaignBaselineIsCurrent(campaign, currentMainCommit)) {
+          return queueCycle(
+            ctx,
+            repoDir,
+            payload,
+            sourceBranch,
+            currentMainCommit,
+            scheduledPurpose,
+            null,
+            prior.runId,
           );
         }
         const composed = composeFrozenCampaign({

@@ -37,9 +37,11 @@ failed aggregate
   -> freeze one campaign branch at the exact tested main commit
   -> replay only each focused PR patch onto that branch
   -> run -> observe -> fix -> replay another focused patch -> rerun
-  -> do not rebase the red campaign when main advances
-  -> green campaign: wait for its focused PRs to merge
-  -> verify latest main once
+  -> while that base is still current, keep repairing the frozen campaign
+  -> if main advances, let an active run finish, then validate exact current main
+  -> never rebase or merge newer main into the old campaign
+  -> current-base green campaign: wait for its focused PRs to merge
+  -> verify current main once
 
 healthy aggregate completion
   -> passed at current main: record health and sleep until the next due cycle
@@ -101,12 +103,13 @@ and healthy-due backstop; it is not the normal campaign progress path. A full
 pass means healthy now, not finished forever: the maintain task remains live
 and queues another full run when the six-hour interval becomes due.
 
-Every passing main result is compared with current `origin/main` before it is
-accepted. If `main` advanced during a passing run, the app queues the latest
-commit immediately. A failed main run is different: its exact tested commit
-becomes the immutable base of one repair campaign. Later main advances are
-recorded but do not continuously move that red campaign. They coalesce into one
-latest-main verification after the campaign is green and its focused PRs merge.
+Every result is compared with current `origin/main` before the next campaign
+action. A failed main run freezes its exact tested commit as one repair campaign
+only while that commit remains current. If `main` advances, the app lets an
+already-active aggregate run finish so runs do not overlap, then queues one full
+run from the exact current `main` commit. It stops composing or rerunning the
+stale campaign. If the new current-main run fails, that failed snapshot becomes
+the next frozen campaign and the app replays still-active focused repairs there.
 
 The six-hour interval is the healthy periodic cadence and slow recovery
 backstop. During repair, semantic pipeline, campaign-head, and focused-PR
@@ -135,6 +138,7 @@ main@M0
 - There is at most one active campaign branch.
 - Its base is the exact commit tested by the failed main run.
 - That base never moves. Do not merge or rebase newer `main` into the campaign.
+  The campaign remains usable only while its base is current `main`.
 - Each repository-owned issue still has one focused branch and PR targeting
   current `main`. The campaign replays only the commits between the PR's
   recorded target and source heads; it never merges the PR branch ancestry.
@@ -160,20 +164,25 @@ main@M0
 - The failed main run already tested the untouched base, so creating the branch
   does not queue a duplicate run. A fix changing the branch head queues the
   next campaign run immediately.
-- If a campaign run is already active when another focused head arrives, the
-  controller composes and persists the successor campaign head immediately but
-  does not overlap aggregate runs. The successor queues as soon as the active
-  run reaches a terminal state.
-- If no repository fix changes the head, a red campaign reruns that exact head
-  every six hours. This is the recovery probe for product and environment
-  failures; it does not merge newer `main`.
+- If a campaign run is already active when another focused head arrives and its
+  base is still current, the controller composes and persists the successor
+  campaign head immediately but does not overlap aggregate runs. The successor
+  queues as soon as the active run reaches a terminal state.
+- If `main` advances, do not compose another focused patch onto the stale
+  campaign. Let any already-active aggregate run finish, then queue one full
+  run from exact current `main`. A failure there creates the next campaign;
+  still-active focused repairs can then be replayed against that new snapshot.
+- If no repository fix changes the head and its base is still current, a red
+  campaign reruns that exact head every six hours. This is the recovery probe
+  for product and environment failures; it does not merge newer `main`.
 - Published focused patch series are append-only during a campaign. A later
   repair adds a commit; it does not rewrite an already tested patch. The
   campaign receipt records patch identities as well as PR and task identity.
 - The branch history and compact app receipt are the durable composition. No
   task-tree issue ledger or workflow phase database is added.
-- A red campaign ignores newer main commits. Once it passes and all included
-  PRs merge, one full run from latest main decides health.
+- A red campaign stops accepting work when its base is no longer current. One
+  full run from exact current `main` then decides whether the system is healthy
+  or needs a new campaign.
 - If every effective focused PR has already merged out of band while the
   campaign is red, canceled, or stale, stop rerunning that obsolete campaign
   and queue latest `main` immediately. Superseded PR history does not block
@@ -287,10 +296,11 @@ orphan Conditions and refuses to run with a current carrier attempt.
 - A materially different failure fingerprint creates another recorded episode
   under the same spec task. Only genuinely independent desired outcomes use
   separate tasks.
-- A newer `main` commit does not defer repair inside the frozen campaign. Main
-  drift is reconciled once, after the campaign passes; any resulting failure
-  becomes the next exact snapshot campaign rather than invalidating work in
-  progress.
+- A newer `main` commit invalidates further composition onto the frozen
+  campaign. An already-active aggregate run may finish, but the next run must
+  use exact current `main`. Any failure there becomes the next exact snapshot
+  campaign, preserving active focused repairs without importing newer main into
+  the old branch.
 - Independent issue tasks may diagnose, run targeted proof, and prepare fixes
   concurrently within normal app capacity while the aggregate run continues.
 - As soon as a focused fix patch is available, the standing workflow may replay
@@ -480,13 +490,16 @@ The design is working when:
 - a due cycle survives reloads and never creates overlapping aggregate runs;
 - a healthy current-main pass still leads to another full run at the regular
   six-hour cadence;
-- a failed main run freezes one campaign at the tested commit and does not chase
-  later main commits while red;
+- a failed main run freezes one campaign at the tested commit while that commit
+  remains current;
+- when `main` advances, an active stale-campaign run may finish but no further
+  patch is composed there, and the next aggregate run uses exact current main;
 - each focused test fix remains one PR to current main while its focused patch
   can be tested immediately on the frozen campaign without importing main;
 - a red campaign reruns after accumulated fix patches change and never waits only
   because those PRs are unmerged;
-- only a green campaign may wait for its focused PRs to merge;
+- only a green campaign whose base is still current may wait for its focused
+  PRs to merge;
 - if all effective focused PRs are already merged, a red or canceled campaign
   yields immediately to exact latest-main verification instead of spending
   another recovery cycle on obsolete pre-merge state;
@@ -500,9 +513,8 @@ The design is working when:
   nor closes on exclusion alone: one current-main intended-target child must
   pass and integrate;
 - a product failure cannot converge without a later passing `main` observation;
-- a passing stale-main result triggers latest-main verification immediately,
-  while a failed snapshot finishes its frozen campaign before one coalesced
-  latest-main verification;
+- any stale-main result triggers one exact current-main verification after an
+  already-active aggregate run finishes;
 - a queue wait produces at most one overdue notification and never an
   automatic duplicate run;
 - only a full pass at current `main` converges the standing task.
