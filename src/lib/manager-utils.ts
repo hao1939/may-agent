@@ -73,6 +73,24 @@ export function classifyTerminalAssistantFailure(messages: AgentMessage[]): stri
   return undefined;
 }
 
+export function isRetryableEmptyAssistantFailure(reason: string | undefined): boolean {
+  return (
+    reason === "Agent ended on an empty tool-use assistant turn" ||
+    reason === "Agent ended with an empty assistant turn"
+  );
+}
+
+export function trimTerminalEmptyAssistantTurn(messages: AgentMessage[]): boolean {
+  const last = messages[messages.length - 1] as any;
+  if (last?.role !== "assistant") return false;
+  const blocks = Array.isArray(last.content) ? last.content : [];
+  const hasText = blocks.some((block: any) => block?.type === "text" && String(block.text ?? "").trim());
+  const hasToolCall = blocks.some((block: any) => block?.type === "toolCall");
+  if (hasText || hasToolCall) return false;
+  messages.pop();
+  return true;
+}
+
 /** Truncate text to maxLen chars for prompt injection. */
 export function truncateForPrompt(text: string, maxLen: number): string {
   const oneLine = text.replace(/\n+/g, " ").replace(/\s+/g, " ").trim();
