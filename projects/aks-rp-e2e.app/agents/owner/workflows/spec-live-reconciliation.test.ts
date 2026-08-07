@@ -924,6 +924,29 @@ describe("spec-live-reconciliation workflow", () => {
           generation: 2,
           specIds: ["spec.sample.live"],
           target: "staging",
+          standaloneBuildId: "",
+          proof: { ...proof, targetRef: "origin/main" },
+          run,
+          artifactPaths: [aggregatePath, specPath, vitestPath],
+          expectedClaimIdsBySpec: {
+            "spec.sample.live": ["assert.sample.behavior"],
+          },
+          sourceReachable: true,
+          integratedCommitReachable: true,
+          normalizationInvariantSatisfied: true,
+          expectedVitestTestCount: 1,
+          integrationTargetRef: "origin/main",
+        }),
+      ).toMatchObject({
+        accepted: true,
+        summary: expect.stringContaining("origin/main integration"),
+      });
+      expect(
+        verifySpecLiveProofFacts({
+          taskId: "domain/sample",
+          generation: 2,
+          specIds: ["spec.sample.live"],
+          target: "staging",
           standaloneBuildId: "174794632",
           proof: {
             ...proof,

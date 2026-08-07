@@ -1472,10 +1472,13 @@ export function verifySpecLiveProofFacts(input: {
   expectedVitestTestCount?: number;
   requireIntegration?: boolean;
   providerTaskIds?: string[];
+  integrationTargetRef?: string;
 }): ProjectAppTaskVerificationResult {
   const problems: string[] = [];
   const proof = input.proof;
   const requireIntegration = input.requireIntegration !== false;
+  const integrationTargetRef =
+    nonEmptyString(input.integrationTargetRef) || "origin/dev";
   const expectedSpecId = [...input.specIds].sort().join(",");
   const providerTaskIds = [
     input.taskId,
@@ -1500,8 +1503,8 @@ export function verifySpecLiveProofFacts(input: {
     if (proof.runResult !== "succeeded")
       problems.push("proof run result is not succeeded");
     if (requireIntegration) {
-      if (proof.targetRef !== "origin/dev")
-        problems.push("proof target ref is not origin/dev");
+      if (proof.targetRef !== integrationTargetRef)
+        problems.push(`proof target ref is not ${integrationTargetRef}`);
       if (!proof.mergedCommit) problems.push("proof has no integrated commit");
     }
   }
@@ -1619,10 +1622,12 @@ export function verifySpecLiveProofFacts(input: {
   }
   if (requireIntegration) {
     if (!input.sourceReachable)
-      problems.push("tested source is not reachable from current origin/dev");
+      problems.push(
+        `tested source is not reachable from current ${integrationTargetRef}`,
+      );
     if (!input.integratedCommitReachable) {
       problems.push(
-        "proof integrated commit is not reachable from current origin/dev",
+        `proof integrated commit is not reachable from current ${integrationTargetRef}`,
       );
     }
   }
@@ -1635,7 +1640,7 @@ export function verifySpecLiveProofFacts(input: {
     summary:
       problems.length === 0
         ? requireIntegration
-          ? "Verified exact ADO live proof, cleanup, and origin/dev integration."
+          ? `Verified exact ADO live proof, cleanup, and ${integrationTargetRef} integration.`
           : "Verified exact ADO live proof and cleanup before integration."
         : `Rejected spec live convergence: ${problems.join("; ")}.`,
     evidence:
@@ -8150,6 +8155,7 @@ export async function verifySpecLiveResult(
     sourceReachable,
     integratedCommitReachable,
     normalizationInvariantSatisfied,
+    integrationTargetRef: targetRef,
     providerTaskIds: authoritativeReference?.taskId
       ? [authoritativeReference.taskId]
       : [],
