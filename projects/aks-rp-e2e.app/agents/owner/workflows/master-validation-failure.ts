@@ -59,6 +59,9 @@ export type FailureInput = {
   status: string;
   progressiveObservation: boolean;
   carrierCommit: string;
+  standaloneBuildId: string;
+  priorStandalonePipelineRunId: string;
+  priorStandaloneSourceCommit: string;
   campaignRepairReplay: CampaignRepairContext | null;
 };
 
@@ -209,6 +212,13 @@ export function parseFailureInput(raw: string): FailureInput | null {
       status: text(input.status),
       progressiveObservation: input.progressiveObservation === true,
       carrierCommit: text(input.carrierCommit),
+      standaloneBuildId: text(input.standaloneBuildId),
+      priorStandalonePipelineRunId: text(
+        record(input.historicalDirectPass).pipelineRunId,
+      ),
+      priorStandaloneSourceCommit: text(
+        record(input.historicalDirectPass).sourceCommit,
+      ),
       campaignRepairReplay: parseCampaignRepairReplay(
         input.campaignRepairReplay,
       ),
@@ -547,9 +557,35 @@ export function currentRecoveryBaselineRunId(
 
 export function requiresStandaloneVerification(input: FailureInput): boolean {
   return (
-    input.category === "environment_blocker" &&
-    /standalone(?:\s+rp[- ]ingress)?\s+target\s+required/i.test(input.reason)
+    /^\d+$/.test(input.standaloneBuildId) ||
+    (input.category === "environment_blocker" &&
+      /standalone(?:\s+rp[- ]ingress)?\s+target\s+required/i.test(input.reason))
   );
+}
+
+export function requestedStandaloneVerification(
+  input: FailureInput,
+): StandaloneVerification | null {
+  if (!/^\d+$/.test(input.standaloneBuildId)) return null;
+  return {
+    taskId: input.taskId,
+    pipelineRunId: input.priorStandalonePipelineRunId,
+    sourceCommit: input.priorStandaloneSourceCommit,
+    standaloneBuildId: input.standaloneBuildId,
+    evidence: [
+      `standalone-build-id:${input.standaloneBuildId}`,
+      ...(input.priorStandalonePipelineRunId
+        ? [
+            `prior-standalone-pipeline-run:${input.priorStandalonePipelineRunId}`,
+          ]
+        : []),
+      ...(input.priorStandaloneSourceCommit
+        ? [
+            `prior-standalone-source-commit:${input.priorStandaloneSourceCommit}`,
+          ]
+        : []),
+    ],
+  };
 }
 
 function evidenceValue(evidence: string[], prefix: string): string {
@@ -1805,32 +1841,36 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   try {
-    const campaign = progressedCampaign(
-      input,
-      ctx.appDir ?? "/app/projects/aks-rp-e2e.app",
-    );
-    if (campaign) {
-      const summary = `Pipeline/bootstrap failure ${input.pipelineRunId} has a newer frozen-campaign commit ${campaign.currentCommit} in run ${campaign.runId}. Keep this stable issue open for final current-main proof; do not wait for merge before the campaign continues.`;
-      return waiting(
-        ctx,
-        summary,
-        [
-          `blocking-pipeline-run:${input.pipelineRunId}`,
-          `campaign-run:${campaign.runId}`,
-          `campaign-branch:${campaign.branch}`,
-          `campaign-commit:${campaign.currentCommit}`,
-        ],
-        pipelineMainRecoveryCondition(input, campaign.baselineRunId),
-        absorbLegacyRecoveryActions(ctx.task),
+    const standaloneRequested = requiresStandaloneVerification(input);
+    if (!standaloneRequested) {
+      const campaign = progressedCampaign(
+        input,
+        ctx.appDir ?? "/app/projects/aks-rp-e2e.app",
       );
+      if (campaign) {
+        const summary = `Pipeline/bootstrap failure ${input.pipelineRunId} has a newer frozen-campaign commit ${campaign.currentCommit} in run ${campaign.runId}. Keep this stable issue open for final current-main proof; do not wait for merge before the campaign continues.`;
+        return waiting(
+          ctx,
+          summary,
+          [
+            `blocking-pipeline-run:${input.pipelineRunId}`,
+            `campaign-run:${campaign.runId}`,
+            `campaign-branch:${campaign.branch}`,
+            `campaign-commit:${campaign.currentCommit}`,
+          ],
+          pipelineMainRecoveryCondition(input, campaign.baselineRunId),
+          absorbLegacyRecoveryActions(ctx.task),
+        );
+      }
     }
     git(repoDir, ["fetch", "origin", targetBranch]);
     const baseCommit = git(repoDir, ["rev-parse", targetRef]).stdout;
-    const priorStandalone = requiresStandaloneVerification(input)
-      ? priorStandaloneVerification(
+    const priorStandalone = standaloneRequested
+      ? (requestedStandaloneVerification(input) ??
+        priorStandaloneVerification(
           ctx.appDir ?? "/app/projects/aks-rp-e2e.app",
           input.specId,
-        )
+        ))
       : null;
     if (priorStandalone) {
       const completedChild = standaloneRecoveryChild(

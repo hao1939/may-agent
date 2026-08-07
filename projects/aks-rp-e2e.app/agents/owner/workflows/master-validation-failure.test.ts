@@ -30,6 +30,7 @@ import {
   productRecoveryCondition,
   publishCampaignRepairBranch,
   pullRequestReviewTrigger,
+  requestedStandaloneVerification,
   requiresStandaloneVerification,
   runFailureInvestigation,
   shouldReconcileTestFix,
@@ -828,6 +829,56 @@ ${JSON.stringify({
 })}
 `)!;
     expect(requiresStandaloneVerification(failure)).toBe(false);
+  });
+
+  test("honors an explicit standalone verification route regardless of failure category", () => {
+    const failure = parseFailureInput(`
+## Reconciliation Task
+${JSON.stringify({
+  taskId: "domain/master-validation-failure/spec.service-platform.queuewatcher",
+  input: {
+    specId: "spec.service-platform.queuewatcher",
+    pipelineRunId: "175603971",
+    failureFingerprint: "47691204caef239c08f2",
+    category: "test_not_implemented",
+    reason: "Aggregate execution omitted required producer inputs.",
+    standaloneBuildId: "174851380",
+    historicalDirectPass: {
+      pipelineRunId: "175414926",
+      sourceCommit: "7146aac36",
+    },
+  },
+})}
+`)!;
+
+    expect(requiresStandaloneVerification(failure)).toBe(true);
+    expect(requestedStandaloneVerification(failure)).toEqual({
+      taskId: failure.taskId,
+      pipelineRunId: "175414926",
+      sourceCommit: "7146aac36",
+      standaloneBuildId: "174851380",
+      evidence: [
+        "standalone-build-id:174851380",
+        "prior-standalone-pipeline-run:175414926",
+        "prior-standalone-source-commit:7146aac36",
+      ],
+    });
+    expect(
+      standaloneRecoveryChildAction({
+        failure,
+        currentMainCommit: "main123",
+        prior: requestedStandaloneVerification(failure)!,
+      }),
+    ).toMatchObject({
+      kind: "create-task",
+      parentId: failure.taskId,
+      workflow: "master-validation-route-verification",
+      input: {
+        specId: failure.specId,
+        standaloneBuildId: "174851380",
+        currentMainCommit: "main123",
+      },
+    });
   });
 
   test("only relevant main changes defer failure repair", () => {
