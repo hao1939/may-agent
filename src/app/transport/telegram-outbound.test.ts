@@ -258,8 +258,13 @@ describe("Telegram outbound turn ownership", () => {
         admitted: false,
         delivered: false,
         attempts: 2,
-        status: "failed",
-        reason: "review failure 2",
+        status: "completed",
+        disposition: "route",
+        owner: "tech-lead",
+        reason: expect.stringContaining("did not reach a supported terminal decision"),
+        actionTaken: expect.stringContaining("Recorded a safe recovery route"),
+        closureCondition: expect.stringContaining("terminal handle, route, clarify-producer, reject, or deliver disposition"),
+        reviewAgainWhen: expect.stringContaining("tech-lead recovery review"),
       }),
     ]);
     expect(ownerRequests).toEqual([
@@ -298,6 +303,58 @@ describe("Telegram outbound turn ownership", () => {
             reason: "telegram-admission-review-failed",
             style: "validated-fallback",
           }),
+        }),
+      }),
+    ]);
+    unsubscribe();
+    outbound.close();
+  });
+
+  test("fails closed after one aborted review without repeating the same admission attempt", async () => {
+    let attempts = 0;
+    const reviewed: Array<Record<string, unknown>> = [];
+    const ownerRequests: Array<Record<string, unknown>> = [];
+    const { bus, sent, outbound } = harness("shared-chat", async () => {
+      attempts += 1;
+      return { status: "failed", reason: "Request was aborted" };
+    });
+    const unsubscribe = bus.subscribe((event: any) => {
+      if (event.type === "human.attention.reviewed") reviewed.push(event.data);
+      if (event.type === "project.owner.requested") ownerRequests.push(event.data);
+    });
+
+    bus.emit({
+      type: "message.created",
+      source: "ops",
+      owner: "human:operator",
+      data: {
+        from: "ops",
+        to: "human",
+        content: "Abort-prone admission text",
+      },
+    } as any);
+    await outbound.drain();
+
+    expect(attempts).toBe(1);
+    expect(sent).toEqual([]);
+    expect(reviewed).toEqual([
+      expect.objectContaining({
+        mode: "enforce",
+        admitted: false,
+        delivered: false,
+        attempts: 1,
+        status: "completed",
+        disposition: "route",
+        owner: "tech-lead",
+      }),
+    ]);
+    expect(ownerRequests).toEqual([
+      expect.objectContaining({
+        project: "may-agent",
+        reason: "telegram-admission-review-failed",
+        params: expect.objectContaining({
+          reviewReason: "Request was aborted",
+          attempts: 1,
         }),
       }),
     ]);
@@ -940,6 +997,7 @@ describe("Telegram outbound turn ownership", () => {
   test("suppresses an approval already resolved in durable task truth", async () => {
     const bus = new EventBus();
     const sent: string[] = [];
+    const audits: Array<Record<string, unknown>> = [];
     let reviews = 0;
     const outbound = attachTelegramOutbound({
       bus,
@@ -962,6 +1020,9 @@ describe("Telegram outbound turn ownership", () => {
         };
       },
     });
+    const unsubscribe = bus.subscribe((event: any) => {
+      if (event.type === "human.attention.reviewed") audits.push(event.data);
+    });
 
     bus.emit({
       type: "message.created",
@@ -979,12 +1040,22 @@ describe("Telegram outbound turn ownership", () => {
 
     expect(sent).toEqual([]);
     expect(reviews).toBe(0);
+    expect(audits).toEqual([
+      expect.objectContaining({
+        status: "completed",
+        disposition: "handle",
+        actionTaken: expect.stringContaining("suppressed the stale prompt"),
+        closureCondition: expect.stringContaining("already has a terminal resolution"),
+      }),
+    ]);
+    unsubscribe();
     outbound.close();
   });
 
   test("suppresses duplicate approval keys before and after delivery", async () => {
     const bus = new EventBus();
     const sent: string[] = [];
+    const audits: Array<Record<string, unknown>> = [];
     const outbound = attachTelegramOutbound({
       bus,
       interfaceAgent: "may",
@@ -1002,6 +1073,9 @@ describe("Telegram outbound turn ownership", () => {
         evidence: ["Test."],
         deliveredMessage: candidate.content,
       }),
+    });
+    const unsubscribe = bus.subscribe((event: any) => {
+      if (event.type === "human.attention.reviewed") audits.push(event.data);
     });
 
     for (const key of ["queued-once", "queued-once", "already-delivered"]) {
@@ -1021,6 +1095,24 @@ describe("Telegram outbound turn ownership", () => {
     await outbound.drain();
 
     expect(sent).toEqual(["Approval queued-once"]);
+    expect(audits).toHaveLength(3);
+    expect(audits).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          status: "completed",
+          disposition: "deliver",
+          delivered: true,
+        }),
+        expect.objectContaining({
+          status: "completed",
+          disposition: "handle",
+          actionTaken: expect.stringContaining("suppressed the duplicate proposal"),
+          closureCondition: expect.stringContaining("existing notification lineage"),
+        }),
+      ]),
+    );
+    expect(audits.filter((audit) => audit.disposition === "handle")).toHaveLength(2);
+    unsubscribe();
     outbound.close();
   });
 

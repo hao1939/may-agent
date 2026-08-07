@@ -33,6 +33,8 @@ type StoredEvent = {
   data: Record<string, unknown>;
 };
 
+type MessageOutcome = "fulfilled" | "superseded" | "expired" | "failed";
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
@@ -186,7 +188,7 @@ function matchingResponse(db: ReturnType<typeof getDb>, message: OpenMessage): S
   );
 }
 
-function exactDeliveryEvent(db: ReturnType<typeof getDb>, message: OpenMessage): StoredEvent | null {
+function directDeliveryEvent(db: ReturnType<typeof getDb>, sourceEventId: number): StoredEvent | null {
   const exact = db
     .prepare(
       `SELECT id, event_type, timestamp, project_id, data
@@ -196,17 +198,21 @@ function exactDeliveryEvent(db: ReturnType<typeof getDb>, message: OpenMessage):
        ORDER BY id DESC
        LIMIT 1`,
     )
-    .get(message.openEventId) as Record<string, unknown> | undefined;
-  if (exact) {
-    return {
-      id: Number(exact.id),
-      eventType: String(exact.event_type),
-      timestamp: Number(exact.timestamp),
-      projectId: typeof exact.project_id === "string" ? exact.project_id : null,
-      data: parseRecord(exact.data),
-    };
-  }
+    .get(sourceEventId) as Record<string, unknown> | undefined;
+  return exact
+    ? {
+        id: Number(exact.id),
+        eventType: String(exact.event_type),
+        timestamp: Number(exact.timestamp),
+        projectId: typeof exact.project_id === "string" ? exact.project_id : null,
+        data: parseRecord(exact.data),
+      }
+    : null;
+}
 
+function exactDeliveryEvent(db: ReturnType<typeof getDb>, message: OpenMessage): StoredEvent | null {
+  const exact = directDeliveryEvent(db, message.openEventId);
+  if (exact) return exact;
 
   // An explicitly reviewed recovery may use a new carrier event while the
   // original message remains the semantic request. Treat delivery of that
@@ -285,6 +291,129 @@ function latestAdmissionFailure(db: ReturnType<typeof getDb>, message: OpenMessa
     : null;
 }
 
+function latestCompletedAdmissionReview(db: ReturnType<typeof getDb>, sourceEventId: number): StoredEvent | null {
+  const row = db
+    .prepare(
+      `SELECT id, event_type, timestamp, project_id, data
+       FROM events
+       WHERE event_type = 'human.attention.reviewed'
+         AND json_extract(data, '$.sourceEventId') = ?
+         AND json_extract(data, '$.status') = 'completed'
+       ORDER BY id DESC
+       LIMIT 1`,
+    )
+    .get(sourceEventId) as Record<string, unknown> | undefined;
+  return row
+    ? {
+        id: Number(row.id),
+        eventType: String(row.event_type),
+        timestamp: Number(row.timestamp),
+        projectId: typeof row.project_id === "string" ? row.project_id : null,
+        data: parseRecord(row.data),
+      }
+    : null;
+}
+
+function admissionDisposition(review: StoredEvent | null): string | null {
+  const value = review?.data.disposition;
+  return typeof value === "string" && value.trim() ? value : null;
+}
+
+function isDeliveredAdmission(review: StoredEvent | null): boolean {
+  return admissionDisposition(review) === "deliver" && review?.data.delivered === true;
+}
+
+function terminalAdmissionOutcome(review: StoredEvent | null): { outcome: MessageOutcome; summary: string } | null {
+  const disposition = admissionDisposition(review);
+  if (!disposition || review?.data.status !== "completed") return null;
+  switch (disposition) {
+    case "handle":
+      return {
+        outcome: "fulfilled",
+        summary: "Admission review handled the request without delivering a new human message.",
+      };
+    case "route":
+      return {
+        outcome: "superseded",
+        summary: "Admission review routed the request to the accountable owner without delivering it to the human inbox.",
+      };
+    case "clarify-producer":
+      return {
+        outcome: "superseded",
+        summary: "Admission review returned the request to the producer for bounded clarification instead of human delivery.",
+      };
+    case "reject":
+      return {
+        outcome: "failed",
+        summary: "Admission review rejected the request instead of delivering it to the human inbox.",
+      };
+    default:
+      return null;
+  }
+}
+
+function latestSupersedingRecoveryEvidence(db: ReturnType<typeof getDb>, message: OpenMessage): StoredEvent | null {
+  const row = db
+    .prepare(
+      `SELECT proof.id, proof.event_type, proof.timestamp, proof.project_id, proof.data
+       FROM events carrier
+       JOIN events proof
+         ON (
+           (
+             proof.event_type = 'human.attention.reviewed'
+             AND json_extract(proof.data, '$.sourceEventId') = carrier.id
+             AND json_extract(proof.data, '$.status') = 'completed'
+           )
+           OR (
+             proof.event_type IN ('channel.delivery.completed', 'channel.delivery.failed')
+             AND json_extract(proof.data, '$.sourceEventId') = carrier.id
+           )
+           OR (
+             proof.event_type = 'message.resolved'
+             AND json_extract(proof.data, '$.openEventId') = carrier.id
+             AND json_extract(proof.data, '$.openEventType') = 'message.created'
+           )
+         )
+       WHERE carrier.event_type = 'message.created'
+         AND carrier.id > ?
+         AND (
+           json_extract(carrier.data, '$.recovery.sourceEventId') = ?
+           OR json_extract(carrier.data, '$.recovery.previousReplayEventId') = ?
+         )
+       ORDER BY proof.id DESC
+       LIMIT 1`,
+    )
+    .get(message.openEventId, message.openEventId, message.openEventId) as Record<string, unknown> | undefined;
+  return row
+    ? {
+        id: Number(row.id),
+        eventType: String(row.event_type),
+        timestamp: Number(row.timestamp),
+        projectId: typeof row.project_id === "string" ? row.project_id : null,
+        data: parseRecord(row.data),
+      }
+    : null;
+}
+
+function recoveryPredecessorIds(db: ReturnType<typeof getDb>, carrierEventId: number): number[] {
+  const row = db
+    .prepare(
+      `SELECT data
+       FROM events
+       WHERE id = ?
+         AND event_type = 'message.created'
+       LIMIT 1`,
+    )
+    .get(carrierEventId) as Record<string, unknown> | undefined;
+  if (!row) return [];
+  const data = parseRecord(row.data);
+  const recovery = isRecord(data.recovery) ? data.recovery : {};
+  const ids = [Number(recovery.sourceEventId), Number(recovery.previousReplayEventId)].filter(
+    (value, index, all): value is number => Number.isInteger(value) && value > 0 && all.indexOf(value) === index,
+  );
+  return ids;
+}
+
 function messageProject(data: Record<string, unknown>): string | undefined {
   for (const value of [data.project, data.domainProjectId, data.projectId]) {
     if (typeof value === "string" && value.trim()) return value.replace(/^projects\//, "").replace(/\.app$/, "");
@@ -295,7 +424,7 @@ function messageProject(data: Record<string, unknown>): string | undefined {
 function resolveMessage(
   bus: EventBus,
   message: OpenMessage,
-  outcome: "fulfilled" | "superseded" | "expired" | "failed",
+  outcome: MessageOutcome,
   summary: string,
   evidenceEventId?: number,
 ): void {
@@ -356,16 +485,41 @@ function reconcileMessage(
   }
   if (!isHumanRecipient(message.data)) return "open";
 
+  const supersedingRecovery = latestSupersedingRecoveryEvidence(db, message);
+  if (supersedingRecovery) {
+    const deliveredRecovery =
+      supersedingRecovery.eventType === "channel.delivery.completed" || isDeliveredAdmission(supersedingRecovery);
+    const supersedingDisposition = admissionDisposition(supersedingRecovery);
+    resolveMessage(
+      bus,
+      message,
+      "superseded",
+      deliveredRecovery
+        ? "A later recovery carrier passed admission review or delivery and now owns the exact human-facing request."
+        : `A later recovery carrier reached terminal ${supersedingDisposition ?? supersedingRecovery.eventType} disposition, so this earlier carrier no longer owns the request.`,
+      supersedingRecovery.id,
+    );
+    return "resolved";
+  }
+
   const recoveredFrom = recoverySourceEventId(message.data);
   if (recoveredFrom && readOpenMessage(db, recoveredFrom)) {
-    const lineageDelivery = exactDeliveryEvent(db, readOpenMessage(db, recoveredFrom)!);
-    if (lineageDelivery?.eventType === "channel.delivery.completed") {
+    const originalDirectDelivery = directDeliveryEvent(db, recoveredFrom);
+    const originalReviewedDelivery = latestCompletedAdmissionReview(db, recoveredFrom);
+    if (
+      originalDirectDelivery?.eventType === "channel.delivery.completed" ||
+      isDeliveredAdmission(originalReviewedDelivery)
+    ) {
+      const lineageEvidence =
+        originalDirectDelivery?.eventType === "channel.delivery.completed"
+          ? originalDirectDelivery
+          : originalReviewedDelivery;
       resolveMessage(
         bus,
         message,
         "superseded",
-        `Delivery continued the original message ${recoveredFrom}; this recovery carrier no longer owns a separate request.`,
-        lineageDelivery.id,
+        `Delivery already continued the original message ${recoveredFrom}; this recovery carrier no longer owns a separate request.`,
+        lineageEvidence?.id,
       );
       return "resolved";
     }
@@ -377,6 +531,13 @@ function reconcileMessage(
     return "resolved";
   }
 
+  const completedReview = latestCompletedAdmissionReview(db, message.openEventId);
+  const terminalReview = terminalAdmissionOutcome(completedReview);
+  if (terminalReview) {
+    resolveMessage(bus, message, terminalReview.outcome, terminalReview.summary, completedReview?.id);
+    return "resolved";
+  }
+
   const expiresAt = explicitExpiry(message);
   if (expiresAt !== null && now >= expiresAt) {
     resolveMessage(bus, message, "expired", "The producer's explicit message deadline elapsed.");
@@ -384,7 +545,9 @@ function reconcileMessage(
   }
 
   const delivery = exactDeliveryEvent(db, message);
-  if (delivery?.eventType === "channel.delivery.completed") {
+  const reviewedDelivery = isDeliveredAdmission(completedReview) ? completedReview : null;
+  const delivered = delivery?.eventType === "channel.delivery.completed" ? delivery : reviewedDelivery;
+  if (delivered) {
     if (expectedResponse(message.data)) return "open";
     if (isRequest(message.data)) {
       resolveMessage(
@@ -392,11 +555,19 @@ function reconcileMessage(
         message,
         "failed",
         "The request was delivered without an exact expectedResponse, so its result cannot be correlated safely.",
-        delivery.id,
+        delivered.id,
       );
       return "resolved";
     }
-    resolveMessage(bus, message, "fulfilled", "Channel delivery was confirmed.", delivery.id);
+    resolveMessage(
+      bus,
+      message,
+      "fulfilled",
+      delivered.eventType === "human.attention.reviewed"
+        ? "Admission review delivered the message to the human inbox."
+        : "Channel delivery was confirmed.",
+      delivered.id,
+    );
     return "resolved";
   }
 
@@ -436,6 +607,10 @@ export function registerEventPairOrphanGc(cron: Cron, persistDir: string, bus: E
     ) {
       const message = readOpenMessage(db, directSourceId);
       if (message) reconcileMessage(db, bus, message, Date.now(), false);
+      for (const predecessorId of recoveryPredecessorIds(db, directSourceId)) {
+        const predecessor = readOpenMessage(db, predecessorId);
+        if (predecessor) reconcileMessage(db, bus, predecessor, Date.now(), false);
+      }
       return;
     }
 

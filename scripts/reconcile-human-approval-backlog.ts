@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { basename, resolve } from "node:path";
+import { basename, dirname, resolve } from "node:path";
 import { Database } from "bun:sqlite";
 import { daemonSocketPath, emitDaemonEvent } from "../packages/control/src/client.js";
 
@@ -98,6 +98,16 @@ export function collectOrphanedApprovalNotifications(
     .sort((left, right) => left.sentAt - right.sentAt || left.approvalId.localeCompare(right.approvalId));
 }
 
+export function approvalBelongsToProject(
+  item: Pick<OrphanedApprovalNotification, "approvalId" | "projectId">,
+  project: string,
+): boolean {
+  return (
+    projectName(item.projectId) === project ||
+    item.approvalId.startsWith(`${project}:`)
+  );
+}
+
 function alreadyResolvedApprovalIds(dbPath: string): Set<string> {
   const db = new Database(dbPath, { readonly: true });
   try {
@@ -169,6 +179,10 @@ function projectName(projectId: string | undefined): string | undefined {
 
 async function main(): Promise<void> {
   const apply = process.argv.includes("--apply");
+  const projectArgument = process.argv.find((value) =>
+    value.startsWith("--project="),
+  );
+  const selectedProject = projectArgument?.slice("--project=".length).trim();
   const limitArgument = process.argv.find((value) => value.startsWith("--limit="));
   const limit = limitArgument ? Math.max(1, Number(limitArgument.slice("--limit=".length)) || 1) : Infinity;
   const appRoot = resolve(process.env.APP_ROOT ?? "/app");
@@ -177,6 +191,9 @@ async function main(): Promise<void> {
   const projectStatePath = resolve(
     process.env.PROJECT_TASK_STATE ?? resolve(appRoot, "projects/alpha-project.app/.state/tasks/state.json"),
   );
+  const projectAppPath = dirname(dirname(dirname(projectStatePath)));
+  const stateProject = basename(projectAppPath).replace(/\.app$/, "");
+  const project = selectedProject || stateProject;
   const taskState = JSON.parse(readFileSync(projectStatePath, "utf8")) as TaskState;
   const resolved = alreadyResolvedApprovalIds(dbPath);
   const allBacklog = collectApprovalBacklog(taskState).filter((item) => !resolved.has(item.approvalId));
@@ -186,7 +203,7 @@ async function main(): Promise<void> {
     activeApprovalIds,
     resolved,
     Date.now() - 10 * 60_000,
-  );
+  ).filter((item) => approvalBelongsToProject(item, project));
   const backlog = allBacklog.slice(0, limit);
   const orphans = allOrphans.slice(0, Math.max(0, limit - backlog.length));
 
@@ -224,9 +241,9 @@ async function main(): Promise<void> {
         {
           source: "owner:human",
           owner: "agent:may",
-          project: "alpha-project",
-          projectId: "alpha-project",
-          projectPath: "projects/alpha-project.app",
+          project,
+          projectId: project,
+          projectPath: `projects/${basename(projectAppPath)}`,
           approvalKind: item.approvalKind,
           approvalId: item.approvalId,
           ...(item.waitId ? { waitId: item.waitId } : {}),
