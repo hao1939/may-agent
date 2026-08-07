@@ -1132,6 +1132,7 @@ function isPairTrackedEvent(eventType: string): boolean {
     "workflow.completed",
     "workflow.failed",
     "workflow.blocked",
+    "workflow.interrupted",
     "handler.started",
     "handler.completed",
     "handler.failed",

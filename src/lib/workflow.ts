@@ -15,6 +15,7 @@ export type WorkflowEvent =
   | { type: "workflow.step_completed"; step: string; sessionId?: string; result: TaskResult }
   | { type: "workflow.completed"; summary: string }
   | { type: "workflow.blocked"; reason: string }
+  | { type: "workflow.interrupted"; reason?: string }
   | {
       type: "workflow.resume_failed";
       source: string;

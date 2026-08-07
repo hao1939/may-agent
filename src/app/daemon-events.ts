@@ -58,6 +58,105 @@ export function attachEventPersistence(opts: { bus: EventBus; persistDir: string
   opts.bus.setDeliveryRecorder(dbWriter.recordDelivery);
 }
 
+const RESTART_HANDLER_RECOVERY_BATCH_SIZE = 500;
+const RESTART_WORKFLOW_RECOVERY_BATCH_SIZE = 500;
+
+export function closeRestartedHandlerPairs(opts: { bus: EventBus; persistDir: string }): number {
+  const db = getDb(opts.persistDir);
+  const rows = db
+    .prepare(
+      `SELECT p.open_event_id, p.correlation_key, p.owner, e.handler
+       FROM event_pair_runs p
+       JOIN events e ON e.id = p.open_event_id
+       WHERE p.pair_name = 'handler'
+         AND p.status IN ('open', 'orphan')
+         AND e.event_type = 'handler.started'
+       ORDER BY p.opened_at ASC
+       LIMIT ?`,
+    )
+    .all(RESTART_HANDLER_RECOVERY_BATCH_SIZE) as Array<{
+    open_event_id?: unknown;
+    correlation_key?: unknown;
+    owner?: unknown;
+    handler?: unknown;
+  }>;
+
+  for (const row of rows) {
+    const openEventId = Number(row.open_event_id);
+    if (!Number.isInteger(openEventId) || openEventId <= 0) continue;
+    const owner = typeof row.owner === "string" && row.owner.trim() ? row.owner : "agent:may";
+    const correlationKey =
+      typeof row.correlation_key === "string" && row.correlation_key.trim()
+        ? row.correlation_key
+        : typeof row.handler === "string" && row.handler.trim()
+          ? row.handler
+          : `event:${openEventId}`;
+    opts.bus.emit({
+      type: "event-pair.orphan-gc.close",
+      source: "runtime:restart-recovery",
+      owner,
+      data: {
+        openEventId,
+        pairName: "handler",
+        correlationKey,
+        reason: "runtime-restarted",
+        ...(typeof row.handler === "string" && row.handler.trim() ? { handler: row.handler } : {}),
+      },
+    } as any);
+  }
+
+  return rows.length;
+}
+
+export function closeRestartedWorkflowPairs(opts: { bus: EventBus; persistDir: string }): number {
+  const db = getDb(opts.persistDir);
+  const rows = db
+    .prepare(
+      `SELECT p.open_event_id, p.correlation_key, p.owner,
+              json_extract(e.data, '$.workflow') AS workflow
+       FROM event_pair_runs p
+       JOIN events e ON e.id = p.open_event_id
+       JOIN workflow_runs w ON w.runId = p.correlation_key
+       WHERE p.pair_name = 'workflow'
+         AND p.status IN ('open', 'orphan')
+         AND e.event_type = 'workflow.started'
+         AND w.status = 'interrupted'
+         AND w.result_reason = 'Process restarted'
+       ORDER BY p.opened_at ASC
+       LIMIT ?`,
+    )
+    .all(RESTART_WORKFLOW_RECOVERY_BATCH_SIZE) as Array<{
+    open_event_id?: unknown;
+    correlation_key?: unknown;
+    owner?: unknown;
+    workflow?: unknown;
+  }>;
+
+  for (const row of rows) {
+    const openEventId = Number(row.open_event_id);
+    if (!Number.isInteger(openEventId) || openEventId <= 0) continue;
+    const owner = typeof row.owner === "string" && row.owner.trim() ? row.owner : "agent:may";
+    const correlationKey =
+      typeof row.correlation_key === "string" && row.correlation_key.trim()
+        ? row.correlation_key
+        : `event:${openEventId}`;
+    opts.bus.emit({
+      type: "event-pair.orphan-gc.close",
+      source: "runtime:restart-recovery",
+      owner,
+      data: {
+        openEventId,
+        pairName: "workflow",
+        correlationKey,
+        reason: "runtime-restarted",
+        ...(typeof row.workflow === "string" && row.workflow.trim() ? { workflow: row.workflow } : {}),
+      },
+    } as any);
+  }
+
+  return rows.length;
+}
+
 /** Apply state changes only after their canonical event has been persisted. */
 export function createMetricMutationSubscriber(persistDir: string) {
   return (event: Parameters<EventBus["emit"]>[0]): void => {
@@ -110,6 +209,20 @@ export function attachDaemonEventSubscribers(opts: {
     bus.emit({
       type: "info",
       message: `[cli-task-runner] Marked ${orphanedCliTasks} stale CLI task(s) orphaned after restart`,
+    });
+  }
+  const restartedHandlerPairs = closeRestartedHandlerPairs({ bus, persistDir });
+  if (restartedHandlerPairs > 0) {
+    bus.emit({
+      type: "info",
+      message: `[handler-recovery] Closed ${restartedHandlerPairs} stale handler pair(s) after restart`,
+    });
+  }
+  const restartedWorkflowPairs = closeRestartedWorkflowPairs({ bus, persistDir });
+  if (restartedWorkflowPairs > 0) {
+    bus.emit({
+      type: "info",
+      message: `[workflow-recovery] Closed ${restartedWorkflowPairs} stale workflow pair(s) after restart`,
     });
   }
 
