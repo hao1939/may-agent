@@ -26,11 +26,13 @@ describe("classifyError", () => {
       "Stream closed unexpectedly",
       "HTTP 502 Bad Gateway",
       "HTTP 503 Service Unavailable",
+      "HTTP 429 Too Many Requests",
       "ECONNRESET while fetching",
       "Rate limit exceeded, retry after 30s",
       "Request timeout after 60s",
       "Connection refused to api.anthropic.com",
       "Network error: DNS resolution failed",
+      "No deployments available for selected model, Try again in 5 seconds",
       "The model is not supported in model group",
       "Bad request: invalid model group configuration",
     ];

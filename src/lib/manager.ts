@@ -38,6 +38,10 @@ import {
   truncateForPrompt,
 } from "./manager-utils.js";
 import {
+  shouldAttemptWorkflowFinishRecovery,
+  workflowFinishRecoveryPrompt,
+} from "./workflow-finish-recovery.js";
+import {
   ensureSessionDir,
   appendSessionMessage,
   sessionOutputDir,
@@ -162,16 +166,6 @@ type DispatchDedupDb = {
   records?: Record<string, { agent?: string; lastStatus?: string; taskPrefix?: string }>;
   version?: number;
 };
-
-function workflowFinishRecoveryPrompt(outputSchema?: TSchema): string {
-  return (
-    "Your last turn ended with no visible answer. Do not repeat prior reads unless they are strictly needed. " +
-    "From the evidence already gathered, call finish() now with all required fields" +
-    (outputSchema
-      ? ", including the schema-validated result payload. If you are blocked, use finish() with a blocked/partial status and include the required result payload."
-      : ".")
-  );
-}
 
 function isHeartbeatSession(meta: { source?: string; task?: string }): boolean {
   const source = meta.source ?? "";
@@ -1666,9 +1660,11 @@ export class SubagentManager {
           const missingFinish = !extractFinishParams(initialMessages as any[]);
           const terminalError =
             extractLastAssistantError(initialMessages) ?? classifyTerminalAssistantFailure(initialMessages);
-          if (missingFinish && isRetryableEmptyAssistantFailure(terminalError)) {
-            this.trimAndPersistTerminalEmptyAssistant(session);
-            await agent.prompt(workflowFinishRecoveryPrompt(session.outputSchema));
+          if (missingFinish && shouldAttemptWorkflowFinishRecovery(terminalError)) {
+            if (isRetryableEmptyAssistantFailure(terminalError)) {
+              this.trimAndPersistTerminalEmptyAssistant(session);
+            }
+            await agent.prompt(workflowFinishRecoveryPrompt(session.outputSchema, terminalError));
             await agent.waitForIdle();
           } else if (missingFinish && !terminalError) {
             await agent.prompt(
