@@ -1,8 +1,8 @@
-/** Neutral extraction of the last successfully executed finish() call. */
+/** A finish call is committed only when its matching tool result succeeded. */
 function finishToolCallSucceeded(messages: any[], toolCallId: string | undefined): boolean {
-  if (!toolCallId) return true;
+  if (!toolCallId) return false;
   const result = messages.find((message) => message?.role === "toolResult" && message.toolCallId === toolCallId);
-  if (!result) return true;
+  if (!result) return false;
   if (result.isError === true) return false;
   const content = Array.isArray(result.content) ? result.content : [];
   return !content.some(

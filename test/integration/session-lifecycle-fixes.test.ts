@@ -512,6 +512,93 @@ describe("workflow call empty final turn recovery", () => {
     });
     expect((end as any).data.finishParams).toBeNull();
   });
+
+  it("keeps cancellation interrupted when finish was emitted but never executed", async () => {
+    const { session, messages } = makeCallSession(async () => {
+      messages.push(
+        finishCall("finish-pending", {
+          status: "success",
+          summary: "This unexecuted result must not commit.",
+          result: {
+            state: "converged",
+            summary: "This unexecuted result must not commit.",
+            evidence: ["tool-call-only"],
+          },
+        }),
+      );
+      session.status = "interrupted";
+      session.lastError = "Cancelled before finish execution";
+    });
+
+    const result = await (manager as any).executeSession(session);
+
+    expect(result.status).toBe("interrupted");
+    expect(result.error).toBe("Cancelled before finish execution");
+    expect(result.finishResult).toBeNull();
+    expect(result.structuredResult).toBeUndefined();
+    expect(readSessionMeta(persistDir, result.sessionId)).toMatchObject({
+      status: "interrupted",
+      error: "Cancelled before finish execution",
+    });
+    const end = events.find(
+      (event) => event.type === "session.end" && (event as any).data?.sessionId === result.sessionId,
+    );
+    expect(end).toMatchObject({
+      type: "session.end",
+      data: {
+        status: "interrupted",
+        error: "Cancelled before finish execution",
+        finishParams: null,
+      },
+    });
+  });
+
+  it("keeps cancellation interrupted when finish execution was rejected", async () => {
+    const { session, messages } = makeCallSession(async () => {
+      messages.push(
+        finishCall("finish-rejected", {
+          status: "success",
+          summary: "This rejected result must not commit.",
+          result: {
+            state: "converged",
+            summary: "This rejected result must not commit.",
+            evidence: ["rejected-tool-result"],
+          },
+        }),
+      );
+      messages.push({
+        role: "toolResult",
+        toolCallId: "finish-rejected",
+        toolName: "finish",
+        content: [{ type: "text", text: "finish() error: schema validation failed" }],
+        isError: true,
+      } as any);
+      session.status = "interrupted";
+      session.lastError = "Cancelled after rejected finish";
+    });
+
+    const result = await (manager as any).executeSession(session);
+
+    expect(result.status).toBe("interrupted");
+    expect(result.error).toBe("Cancelled after rejected finish");
+    expect(result.finishResult).toBeNull();
+    expect(result.structuredResult).toBeUndefined();
+    expect(readSessionMeta(persistDir, result.sessionId)).toMatchObject({
+      status: "interrupted",
+      error: "Cancelled after rejected finish",
+    });
+    const end = events.find(
+      (event) => event.type === "session.end" && (event as any).data?.sessionId === result.sessionId,
+    );
+    expect(end).toMatchObject({
+      type: "session.end",
+      data: {
+        status: "interrupted",
+        error: "Cancelled after rejected finish",
+        finishParams: null,
+      },
+    });
+  });
 });
 
 describe("session.start metadata", () => {
