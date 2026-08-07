@@ -376,7 +376,12 @@ const PAIR_CONTRACTS: readonly PairContract[] = [
   {
     name: "workflow",
     open: "workflow.started",
-    closes: ["workflow.completed", "workflow.failed", "workflow.blocked"],
+    closes: [
+      "workflow.completed",
+      "workflow.failed",
+      "workflow.blocked",
+      "workflow.interrupted",
+    ],
     timeoutMs: DEFAULT_PAIR_TTL_MS,
     key: workflowKey,
   },

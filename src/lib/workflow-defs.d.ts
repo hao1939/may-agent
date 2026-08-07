@@ -66,7 +66,8 @@ type WorkflowEvent =
   | { type: "workflow.step_started"; step: string; sessionId?: string }
   | { type: "workflow.step_completed"; step: string; sessionId?: string; result: TaskResult }
   | { type: "workflow.completed"; summary: string }
-  | { type: "workflow.blocked"; reason: string };
+  | { type: "workflow.blocked"; reason: string }
+  | { type: "workflow.interrupted"; reason?: string };
 
 /** Workflow result — either done or locally blocked. */
 type WorkflowResult =

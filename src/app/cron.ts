@@ -856,17 +856,20 @@ export class Cron {
 
   // ── In-flight execution state ───────────────────────────────────────
 
-  /** Return active handler start times, pruning stale entries. */
+  /**
+   * Return currently in-flight handler start times.
+   *
+   * Do not age-prune these rows: the cron timeout path intentionally keeps a
+   * handler in flight until its promise actually settles so follow-up triggers
+   * cannot overlap lingering side effects. A fixed 10-minute prune window let
+   * long-running/timed-out handlers disappear from capacity checks and re-fire
+   * while they were still running.
+   *
+   * Process restarts already clear this in-memory map, so stale entries only
+   * exist while the current process still has a live handler promise.
+   */
   private activeInflightStarts(entryName: string): number[] {
-    const starts = this.inflightJobs.get(entryName) ?? [];
-    const cutoff = Date.now() - 10 * 60_000;
-    const active = starts.filter((start) => start >= cutoff);
-    if (active.length > 0) {
-      this.inflightJobs.set(entryName, active);
-    } else {
-      this.inflightJobs.delete(entryName);
-    }
-    return active;
+    return this.inflightJobs.get(entryName) ?? [];
   }
 
   private maxConcurrentTriggers(entry: CronEntry): number {
