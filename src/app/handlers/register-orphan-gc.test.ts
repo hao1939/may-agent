@@ -270,9 +270,266 @@ describe("event-pair-orphan-gc handler", () => {
 
       const db = getDb(root);
       expect(db.prepare("SELECT status FROM event_pair_runs WHERE open_event_id = ?").get(originalId)).toEqual({
-        status: "open",
+        status: "closed",
       });
       expect(db.prepare("SELECT status FROM event_pair_runs WHERE open_event_id = ?").get(recoveryId)).toEqual({
+        status: "open",
+      });
+      expect(
+        db
+          .prepare(
+            `SELECT json_extract(data, '$.outcome') AS outcome
+             FROM events
+             WHERE event_type = 'message.resolved'
+               AND json_extract(data, '$.openEventId') = ?`,
+          )
+          .get(originalId),
+      ).toEqual({ outcome: "superseded" });
+
+      bus.emit({
+        type: "project.approval.submitted",
+        source: "telegram",
+        owner: "agent:app-ops",
+        target: { project: "alpha-project" },
+        data: { project: "alpha-project", approvalId: "approval-recovery-1", decision: "approve" },
+      } as any);
+      expect(db.prepare("SELECT status FROM event_pair_runs WHERE open_event_id = ?").get(recoveryId)).toEqual({
+        status: "closed",
+      });
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("closes earlier recovery carriers when a later admission review successfully delivers the lineage", () => {
+    const root = mkdtempSync(join(tmpdir(), "message-reviewed-recovery-lineage-"));
+    try {
+      const bus = new EventBus();
+      const writer = new DbWriter(root);
+      bus.setPersistenceSubscriber(writer.handler);
+      bus.setDeliveryRecorder(writer.recordDelivery);
+      registerEventPairOrphanGc(createMockCron() as any, root, bus);
+      const expectedResponse = {
+        type: "project.approval.submitted",
+        target: { project: "alpha-project" },
+        approvalId: "approval-recovery-2",
+        acceptedDecisions: ["approve", "decline"],
+      };
+
+      const original = bus.emit({
+        type: "message.created",
+        source: "agent:app-ops",
+        owner: "agent:app-ops",
+        data: {
+          from: "app-ops",
+          to: "human:operator",
+          content: "Original approval request",
+          expectedResponse,
+        },
+      } as any);
+      const originalId = Number(original[EVENT_ROW_ID]);
+      const replay = bus.emit({
+        type: "message.created",
+        source: "agent:app-ops",
+        owner: "agent:app-ops",
+        data: {
+          from: "app-ops",
+          to: "human:operator",
+          content: "Direct replay of the same approval request",
+          expectedResponse,
+          recovery: { sourceEventId: originalId, reason: "retry" },
+        },
+      } as any);
+      const replayId = Number(replay[EVENT_ROW_ID]);
+      const recovery = bus.emit({
+        type: "message.created",
+        source: "telegram-admission-recovery",
+        owner: "agent:app-ops",
+        data: {
+          from: "app-ops",
+          to: "human:operator",
+          content: "Validated fallback for the same approval request",
+          expectedResponse,
+          recovery: { sourceEventId: originalId, previousReplayEventId: replayId, reason: "validated-fallback" },
+        },
+      } as any);
+      const recoveryId = Number(recovery[EVENT_ROW_ID]);
+      bus.emit({
+        type: "human.attention.reviewed",
+        source: "telegram-outbound",
+        owner: "agent:may",
+        data: {
+          sourceEventId: recoveryId,
+          status: "completed",
+          disposition: "deliver",
+          delivered: true,
+          understoodIntent: "Recover the approval lineage.",
+          reason: "Human authority is still required.",
+          nextAction: "Wait for the approval response.",
+          evidence: ["Validated recovery carrier delivered."],
+          deliveredMessage: "Please choose approve or decline.",
+        },
+      } as any);
+
+      const db = getDb(root);
+      for (const openEventId of [originalId, replayId]) {
+        expect(db.prepare("SELECT status FROM event_pair_runs WHERE open_event_id = ?").get(openEventId)).toEqual({
+          status: "closed",
+        });
+        expect(
+          db
+            .prepare(
+              `SELECT json_extract(data, '$.outcome') AS outcome
+               FROM events
+               WHERE event_type = 'message.resolved'
+                 AND json_extract(data, '$.openEventId') = ?`,
+            )
+            .get(openEventId),
+        ).toEqual({ outcome: "superseded" });
+      }
+      expect(db.prepare("SELECT status FROM event_pair_runs WHERE open_event_id = ?").get(recoveryId)).toEqual({
+        status: "open",
+      });
+
+      bus.emit({
+        type: "project.approval.submitted",
+        source: "telegram",
+        owner: "agent:app-ops",
+        target: { project: "alpha-project" },
+        data: { project: "alpha-project", approvalId: "approval-recovery-2", decision: "approve" },
+      } as any);
+      expect(db.prepare("SELECT status FROM event_pair_runs WHERE open_event_id = ?").get(recoveryId)).toEqual({
+        status: "closed",
+      });
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("closes an earlier recovery lineage from a later carrier's structured terminal disposition", async () => {
+    const root = mkdtempSync(join(tmpdir(), "message-structured-recovery-lineage-"));
+    try {
+      const cron = createMockCron();
+      const bus = new EventBus();
+      const writer = new DbWriter(root);
+      bus.setPersistenceSubscriber(writer.handler);
+      bus.setDeliveryRecorder(writer.recordDelivery);
+      registerEventPairOrphanGc(cron as any, root, bus);
+
+      const original = bus.emit({
+        type: "message.created",
+        source: "agent:app-ops",
+        owner: "agent:app-ops",
+        data: {
+          from: "app-ops",
+          to: "human:operator",
+          content: "Original request that later needed structured recovery.",
+          requestedAction: "Decide whether to keep the stale packet live.",
+        },
+      } as any);
+      const originalId = Number(original[EVENT_ROW_ID]);
+      const recovery = bus.emit({
+        type: "message.created",
+        source: "telegram-admission-recovery",
+        owner: "agent:app-ops",
+        data: {
+          from: "app-ops",
+          to: "human:operator",
+          content: "Validated fallback for the same request.",
+          requestedAction: "Route or clarify from bounded evidence.",
+          recovery: { sourceEventId: originalId, reason: "validated-fallback" },
+        },
+      } as any);
+      const recoveryId = Number(recovery[EVENT_ROW_ID]);
+      bus.emit({
+        type: "message.resolved",
+        source: "handler:message-lifecycle",
+        owner: "agent:app-ops",
+        data: {
+          openEventId: recoveryId,
+          openEventType: "message.created",
+          disposition: "superseded",
+          outcome: "superseded",
+          summary: "Recovery review routed the request to the accountable owner from bounded evidence.",
+          taskRefs: [],
+        },
+        trace: {
+          traceId: `event:${recoveryId}`,
+          parentEventId: recoveryId,
+          links: [{ eventId: recoveryId, type: "closure", label: "message.resolved" }],
+        },
+      } as any);
+
+      const runGc = cron.getHandler("event-pair-orphan-gc") as ((event: unknown, signal: AbortSignal) => Promise<void>) | undefined;
+      expect(runGc).toBeDefined();
+      await runGc?.({}, new AbortController().signal);
+
+      const db = getDb(root);
+      expect(db.prepare("SELECT status FROM event_pair_runs WHERE open_event_id = ?").get(originalId)).toEqual({
+        status: "closed",
+      });
+      expect(
+        db
+          .prepare(
+            `SELECT json_extract(data, '$.outcome') AS outcome
+             FROM events
+             WHERE event_type = 'message.resolved'
+               AND json_extract(data, '$.openEventId') = ?
+             ORDER BY id DESC
+             LIMIT 1`,
+          )
+          .get(originalId),
+      ).toEqual({ outcome: "superseded" });
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("treats a completed non-deliver admission disposition as terminal message resolution", () => {
+    const root = mkdtempSync(join(tmpdir(), "message-reviewed-route-"));
+    try {
+      const bus = new EventBus();
+      const writer = new DbWriter(root);
+      bus.setPersistenceSubscriber(writer.handler);
+      bus.setDeliveryRecorder(writer.recordDelivery);
+      registerEventPairOrphanGc(createMockCron() as any, root, bus);
+
+      const message = bus.emit({
+        type: "message.created",
+        source: "agent:ops",
+        owner: "agent:ops",
+        data: {
+          from: "ops",
+          to: "human:operator",
+          content: "Need Hao approval",
+          requestedAction: "Approve or reject",
+        },
+      } as any);
+      const openEventId = Number(message[EVENT_ROW_ID]);
+      bus.emit({
+        type: "human.attention.reviewed",
+        source: "telegram-outbound",
+        owner: "agent:may",
+        data: {
+          sourceEventId: openEventId,
+          status: "completed",
+          disposition: "route",
+          understoodIntent: "Route the request back to the owner.",
+          reason: "The owner can finish this before Hao is needed.",
+          nextAction: "Return the bounded gap to the owner.",
+          owner: "tech-lead",
+          reviewAgainWhen: "After the owner reruns the missing check.",
+          evidence: ["Bounded owner recovery is available."],
+          actionTaken: "Routed the recovery to the owner.",
+          closureCondition: "A later owner review records the missing proof.",
+        },
+      } as any);
+
+      const db = getDb(root);
+      expect(db.prepare("SELECT status FROM event_pair_runs WHERE open_event_id = ?").get(openEventId)).toEqual({
         status: "closed",
       });
       expect(
@@ -283,19 +540,8 @@ describe("event-pair-orphan-gc handler", () => {
              WHERE event_type = 'message.resolved'
                AND json_extract(data, '$.openEventId') = ?`,
           )
-          .get(recoveryId),
+          .get(openEventId),
       ).toEqual({ outcome: "superseded" });
-
-      bus.emit({
-        type: "project.approval.submitted",
-        source: "telegram",
-        owner: "agent:app-ops",
-        target: { project: "alpha-project" },
-        data: { project: "alpha-project", approvalId: "approval-recovery-1", decision: "approve" },
-      } as any);
-      expect(db.prepare("SELECT status FROM event_pair_runs WHERE open_event_id = ?").get(originalId)).toEqual({
-        status: "closed",
-      });
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });

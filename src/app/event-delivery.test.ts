@@ -1882,7 +1882,7 @@ describe("event delivery metadata", () => {
     }
   });
 
-  it("reports orphan owner-inbox pairs in delivery health", async () => {
+  it("keeps overdue messages open for semantic lifecycle reconciliation", async () => {
     const root = tempRoot();
     try {
       const bus = new EventBus();
@@ -1906,20 +1906,17 @@ describe("event delivery metadata", () => {
       const db = getDb(root);
       const query = createQueryService({ getDb: () => db });
       const health = query.eventDeliveryHealth({ limit: 10 });
-      expect(health.orphanPairs).toEqual([
-        expect.objectContaining({
-          pairName: "owner_inbox",
-          status: "orphan",
-          openEventType: "message.created",
-        }),
-      ]);
+      expect(health.orphanPairs).toEqual([]);
+      expect(
+        db.prepare("SELECT status FROM event_pair_runs WHERE pair_name = 'owner_inbox'").get(),
+      ).toMatchObject({ status: "open" });
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
     }
   });
 
-  it("late follow-up events close orphaned owner-inbox pairs", async () => {
+  it("late follow-up events close overdue owner-inbox messages", async () => {
     const root = tempRoot();
     try {
       const bus = new EventBus();
@@ -1954,7 +1951,7 @@ describe("event delivery metadata", () => {
             unknown
           >
         ).status,
-      ).toBe("orphan");
+      ).toBe("open");
 
       bus.emit({
         type: "message.reviewed",

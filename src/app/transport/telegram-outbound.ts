@@ -174,6 +174,54 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
     }
   }
 
+  function candidateIntent(candidate: HumanAttentionCandidate): string {
+    const projectPart = candidate.projectId ? ` for ${candidate.projectId}` : "";
+    return `${candidate.from} proposes sending Hao a proactive ${candidate.eventType} update${projectPart}.`;
+  }
+
+  function handledReview(candidate: HumanAttentionCandidate, input: {
+    reason: string;
+    nextAction: string;
+    actionTaken: string;
+    closureCondition: string;
+    evidence: string[];
+  }): HumanAttentionReview {
+    return {
+      status: "completed",
+      disposition: "handle",
+      understoodIntent: candidateIntent(candidate),
+      reason: input.reason,
+      nextAction: input.nextAction,
+      evidence: input.evidence,
+      actionTaken: input.actionTaken,
+      closureCondition: input.closureCondition,
+    };
+  }
+
+  function failedReviewFallback(candidate: HumanAttentionCandidate, review: HumanAttentionReview, attempts: number): HumanAttentionReview {
+    return {
+      status: "completed",
+      disposition: "route",
+      understoodIntent: candidateIntent(candidate),
+      reason:
+        "May's live admission review did not reach a supported terminal decision, so the candidate must stay internal while the platform owner recovers it from bounded durable evidence.",
+      nextAction:
+        "Route recovery to tech-lead under may-agent.app owner review and keep Telegram delivery blocked until a later terminal admission decision exists.",
+      owner: "tech-lead",
+      evidence: [
+        `sourceEventId ${candidate.sourceEventId ?? "unknown"} remained held after ${attempts} unsuccessful admission review attempt(s).`,
+        `Last review failure: ${review.reason}.`,
+        "The Telegram gate failed closed and did not deliver raw producer text to Hao.",
+      ],
+      actionTaken:
+        "Recorded a safe recovery route and woke tech-lead to recover the held candidate from bounded durable evidence instead of allowing an unsupported failed placeholder to stand.",
+      closureCondition:
+        "A later admission review or owner recovery records a terminal handle, route, clarify-producer, reject, or deliver disposition for this exact candidate lineage.",
+      reviewAgainWhen:
+        "When the tech-lead recovery review records the bounded recovery result or a later admission review completes.",
+    };
+  }
+
   function reviewAudit(
     candidate: HumanAttentionCandidate,
     review: HumanAttentionReview,
@@ -240,6 +288,19 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
     } as any);
   }
 
+  function shouldRetryReviewFailure(review: HumanAttentionReview): boolean {
+    if (review.status !== "failed") return false;
+    const reason = review.reason.trim().toLowerCase();
+    if (!reason) return true;
+    return ![
+      "request was aborted",
+      "timed out",
+      "timeout",
+      "no structured result",
+      "without calling finish",
+    ].some((needle) => reason.includes(needle));
+  }
+
   async function decideProactive(
     candidate: HumanAttentionCandidate,
   ): Promise<{ review: HumanAttentionReview; attempts: number }> {
@@ -261,6 +322,9 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
           status: "failed",
           reason: error instanceof Error ? error.message : String(error),
         };
+      }
+      if (!shouldRetryReviewFailure(lastFailure)) {
+        return { review: lastFailure, attempts };
       }
     }
     return { review: lastFailure, attempts: 2 };
@@ -314,7 +378,7 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
         if (closed) return;
         if (review.status !== "completed" || review.disposition !== "deliver" || !review.deliveredMessage) {
           if (review.status === "failed") {
-            reviewAudit(candidate, review, attempts, false);
+            reviewAudit(candidate, failedReviewFallback(candidate, review, attempts), attempts, false);
             routeFailedReview(candidate, review, attempts);
             return;
           }
@@ -633,20 +697,22 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
           nonEmptyString(data.approvalId) ??
           nonEmptyString((data.approval as Record<string, unknown> | undefined)?.approvalId);
         if (candidateApprovalResolved(candidate)) {
-          bus.emit({
-            type: "human.attention.reviewed",
-            source: "telegram-outbound",
-            owner: "agent:may",
-            data: {
-              sourceEventId,
-              mode: "enforce",
-              admitted: false,
-              delivered: false,
-              attempts: 0,
-              disposition: "handle",
-              reason: "approval-already-resolved",
-            },
-          } as any);
+          reviewAudit(
+            candidate,
+            handledReview(candidate, {
+              reason:
+                "The proposed human message is already superseded by an exact approval resolution, so delivering it would reopen settled work.",
+              nextAction:
+                "Keep the existing approval resolution as the terminal authority record and suppress this stale proactive prompt.",
+              actionTaken:
+                "Checked the approval identity against current runtime resolution state and suppressed the stale prompt before delivery.",
+              closureCondition:
+                "This candidate closes now as handled because the matching approval already has a terminal resolution and no new human decision remains.",
+              evidence: ["The candidate approval identity was already resolved in current runtime state before delivery."],
+            }),
+            0,
+            false,
+          );
           return;
         }
         if (
@@ -654,21 +720,22 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
           (queuedNotificationKeys.has(stableNotificationKey) ||
             opts.hasDeliveredNotificationKey?.(stableNotificationKey))
         ) {
-          bus.emit({
-            type: "human.attention.reviewed",
-            source: "telegram-outbound",
-            owner: "agent:may",
-            data: {
-              sourceEventId,
-              mode: "enforce",
-              admitted: false,
-              delivered: false,
-              attempts: 0,
-              disposition: "handle",
-              reason: "duplicate-notification-key",
-              dedupKey: stableNotificationKey,
-            },
-          } as any);
+          reviewAudit(
+            candidate,
+            handledReview(candidate, {
+              reason:
+                "The proposed human message is a semantic duplicate of a queued or already-delivered notification key, so sending it again would create duplicate human attention without changing the underlying decision.",
+              nextAction:
+                "Preserve the existing notification lineage for this key and suppress the duplicate proposal unless its decision meaning materially changes.",
+              actionTaken:
+                "Matched the candidate's stable notification key against queued/delivered state and suppressed the duplicate proposal.",
+              closureCondition:
+                "This candidate closes now as handled because the existing notification lineage for this key already owns the human-facing update.",
+              evidence: [`Matched stable notification key ${stableNotificationKey} against existing queued or delivered state.`],
+            }),
+            0,
+            false,
+          );
           return;
         }
         if (stableNotificationKey) queuedNotificationKeys.add(stableNotificationKey);

@@ -918,7 +918,11 @@ export class DbWriter {
          SET status = 'orphan',
              note = COALESCE(note, 'expected closing event did not arrive before timeout')
          WHERE status = 'open'
-           AND expected_close_at < ?`,
+           AND expected_close_at < ?
+           AND NOT (
+             pair_name = 'owner_inbox'
+             AND open_event_id IN (SELECT id FROM events WHERE event_type = 'message.created')
+           )`,
         [now],
       );
     } catch {
