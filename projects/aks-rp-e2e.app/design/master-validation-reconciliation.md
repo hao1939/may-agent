@@ -517,6 +517,11 @@ The design is working when:
 - a wrong-target failure neither waits for an impossible generic-staging pass
   nor closes on exclusion alone: one current-main intended-target child must
   pass and integrate;
+- a first aggregate exclusion derives wrong-target routing from the structured
+  admission row. A `missing-required-target-env` row whose signals require
+  `AKS_RP_E2E_STANDALONE_BUILD_VERSION` reuses the latest accepted standalone
+  proof coordinates to create that child; it does not need a prior prose
+  classification or another aggregate failure first;
 - a product failure cannot converge without a later passing `main` observation;
 - any stale-main result triggers one exact current-main verification after an
   already-active aggregate run finishes;

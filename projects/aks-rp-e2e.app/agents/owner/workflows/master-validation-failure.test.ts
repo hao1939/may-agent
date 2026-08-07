@@ -4,6 +4,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  admissionReportRequiresStandaloneVerification,
   alignCleanRepairWorkspace,
   boundedChangedFileEvidence,
   boundedEvidence,
@@ -20,6 +21,7 @@ import {
   inconclusiveWait,
   legacyRecoveryChildren,
   latestPassingRecoveryObservation,
+  masterValidationFocusedFixWake,
   nestedWorkflowOutput,
   observationAppliesToCurrentMain,
   parseFailureInput,
@@ -62,6 +64,28 @@ describe("master-validation failure workflow", () => {
       existingRecoveryAfterRunId: "run-123",
       reusePriorIntegratedProof: true,
       inputSourceIsObservation: true,
+    });
+  });
+
+  test("published focused fixes explicitly wake the campaign through its open run wait", () => {
+    expect(
+      masterValidationFocusedFixWake(
+        "16727776",
+        "462f7fd259930f0ffa54c1cd5ae73728f3a763c8",
+      ),
+    ).toEqual({
+      target: {
+        project: "aks-rp-e2e",
+        taskId: "master-validation-staging-cycle",
+      },
+      project: "aks-rp-e2e",
+      taskId: "master-validation-staging-cycle",
+      task_id: "master-validation-staging-cycle",
+      action: "master-validation-cycle",
+      reason: "master-validation-focused-fix-published",
+      pullRequestId: "16727776",
+      sourceCommit: "462f7fd259930f0ffa54c1cd5ae73728f3a763c8",
+      overrideWait: true,
     });
   });
 
@@ -829,6 +853,49 @@ ${JSON.stringify({
 })}
 `)!;
     expect(requiresStandaloneVerification(failure)).toBe(false);
+  });
+
+  test("routes a first aggregate exclusion from structured standalone target requirements", () => {
+    const root = mkdtempSync(join(tmpdir(), "standalone-admission-"));
+    try {
+      const artifactPath = join(root, "live-admission-report.json");
+      writeFileSync(
+        artifactPath,
+        JSON.stringify({
+          excluded: [
+            {
+              specId: "spec.service-platform.queuewatcher",
+              bucket: "missing-required-target-env",
+              signals: [
+                "missing-target-env=AKS_RP_E2E_STANDALONE_BUILD_VERSION",
+                "missing-target-env=AKS_RP_E2E_OVERLAY_RESOURCE_REGION",
+                "missing-target-env=AKS_RP_E2E_OVERLAY_RESOURCE_VERSION",
+              ],
+            },
+          ],
+        }),
+      );
+      const failure = parseFailureInput(`
+## Reconciliation Task
+${JSON.stringify({
+  taskId: "domain/master-validation-failure/spec.service-platform.queuewatcher",
+  input: {
+    specId: "spec.service-platform.queuewatcher",
+    pipelineRunId: "175662110",
+    failureFingerprint: "382877a960141511b056",
+    artifactPath,
+    category: "admission_exclusion",
+    status: "excluded",
+    reason: "Live target is missing required environment variables.",
+  },
+})}
+`)!;
+
+      expect(admissionReportRequiresStandaloneVerification(failure)).toBe(true);
+      expect(requiresStandaloneVerification(failure)).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   test("honors an explicit standalone verification route regardless of failure category", () => {

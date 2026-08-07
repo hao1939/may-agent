@@ -486,6 +486,26 @@ function refreshCampaignRepairPullRequest(
   ) as PullRequest;
 }
 
+export function masterValidationFocusedFixWake(
+  pullRequestId: string,
+  sourceCommit: string,
+): Record<string, unknown> {
+  return {
+    target: {
+      project: "aks-rp-e2e",
+      taskId: "master-validation-staging-cycle",
+    },
+    project: "aks-rp-e2e",
+    taskId: "master-validation-staging-cycle",
+    task_id: "master-validation-staging-cycle",
+    action: "master-validation-cycle",
+    reason: "master-validation-focused-fix-published",
+    pullRequestId,
+    sourceCommit,
+    overrideWait: true,
+  };
+}
+
 export function productRecoveryWaitRequiresCurrentMain(
   input: Pick<FailureInput, "category">,
 ): boolean {
@@ -558,9 +578,38 @@ export function currentRecoveryBaselineRunId(
 export function requiresStandaloneVerification(input: FailureInput): boolean {
   return (
     /^\d+$/.test(input.standaloneBuildId) ||
+    admissionReportRequiresStandaloneVerification(input) ||
     (input.category === "environment_blocker" &&
       /standalone(?:\s+rp[- ]ingress)?\s+target\s+required/i.test(input.reason))
   );
+}
+
+export function admissionReportRequiresStandaloneVerification(
+  input: FailureInput,
+): boolean {
+  if (
+    input.category !== "admission_exclusion" ||
+    input.status !== "excluded" ||
+    !input.artifactPath
+  ) {
+    return false;
+  }
+  try {
+    const report = record(JSON.parse(readFileSync(input.artifactPath, "utf8")));
+    const excluded = Array.isArray(report.excluded)
+      ? report.excluded.map(record)
+      : [];
+    const row = excluded.find(
+      (candidate) => text(candidate.specId) === input.specId,
+    );
+    if (text(row?.bucket) !== "missing-required-target-env") return false;
+    const signals = stringArray(row?.signals);
+    return signals.includes(
+      "missing-target-env=AKS_RP_E2E_STANDALONE_BUILD_VERSION",
+    );
+  } catch {
+    return false;
+  }
 }
 
 export function requestedStandaloneVerification(
@@ -1774,19 +1823,10 @@ function prepareCampaignRepair(
     },
   );
   pullRequestId = text(pullRequest.pullRequestId) || pullRequestId;
-  ctx.dispatchEvent("project.task.tick", {
-    target: {
-      project: "aks-rp-e2e",
-      taskId: "master-validation-staging-cycle",
-    },
-    project: "aks-rp-e2e",
-    taskId: "master-validation-staging-cycle",
-    task_id: "master-validation-staging-cycle",
-    action: "master-validation-cycle",
-    reason: "master-validation-focused-fix-published",
-    pullRequestId,
-    sourceCommit: values.sourceCommit,
-  });
+  ctx.dispatchEvent(
+    "project.task.tick",
+    masterValidationFocusedFixWake(pullRequestId, values.sourceCommit),
+  );
   const summary = `${canonicalPullRequestId ? "Updated" : "Prepared"} draft focused PR ${pullRequestId} for ${input.specId}; the frozen campaign can integrate it immediately, and the human will be notified only after verification publishes it as non-draft.`;
   return waiting(
     ctx,
