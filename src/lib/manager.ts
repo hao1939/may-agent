@@ -1706,17 +1706,29 @@ export class SubagentManager {
     if (!errorText && !finishParams && !assistantText) {
       errorText = "Agent ended without producing a response";
     }
+    // A successfully executed finish() call is the session's committed terminal
+    // receipt. Cancellation can race with the agent turn unwinding after the
+    // finish tool has returned; do not let that later control signal discard the
+    // structured result that the caller must reconcile exactly once. Without a
+    // committed receipt, retain the interruption reason as the terminal error.
+    if (finishParams && session.status === "interrupted") {
+      errorText = undefined;
+    } else if (!finishParams && session.status === "interrupted" && session.lastError) {
+      errorText = session.lastError;
+    }
     const status: "done" | "error" | "interrupted" =
-      session.status === "interrupted"
-        ? "interrupted"
-        : finishParams?.status === "failure"
-          ? "error"
-          : errorText
-            ? "error"
-            : // finish(blocked) and finish(partial) are deliberate terminal reports,
-              // not runtime interruptions. The structured finish status carries the
-              // blocked/partial meaning for workflows and evaluators.
-              "done";
+      finishParams?.status === "failure"
+        ? "error"
+        : finishParams
+          ? "done"
+          : session.status === "interrupted"
+            ? "interrupted"
+            : errorText
+              ? "error"
+              : // finish(blocked) and finish(partial) are deliberate terminal reports,
+                // not runtime interruptions. The structured finish status carries the
+                // blocked/partial meaning for workflows and evaluators.
+                "done";
     const lastText = finishParams?.summary ?? assistantText ?? "";
     const durationMs = Date.now() - startedAt;
     this._registry.updateSessionStatus(sessionId, status, errorText);
