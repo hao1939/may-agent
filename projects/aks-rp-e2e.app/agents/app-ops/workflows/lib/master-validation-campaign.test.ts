@@ -66,7 +66,7 @@ describe("frozen master-validation campaign", () => {
         status: "active",
         title: "Fix pipeline bootstrap",
         description:
-          "Task: domain/master-validation-failure/pipeline.master-validation.bootstrap/fp",
+          "Task: domain/master-validation-failure/pipeline.master-validation.bootstrap/fp\nFrozen campaign base: base123",
         sourceRefName: "refs/heads/fix/bootstrap",
         targetRefName: "refs/heads/main",
         lastMergeSourceCommit: { commitId: "abc123" },
@@ -75,6 +75,7 @@ describe("frozen master-validation campaign", () => {
       pullRequestId: "16560089",
       sourceBranch: "fix/bootstrap",
       sourceCommit: "abc123",
+      campaignBaseCommit: "base123",
     });
     expect(
       campaignFixFromPullRequest({

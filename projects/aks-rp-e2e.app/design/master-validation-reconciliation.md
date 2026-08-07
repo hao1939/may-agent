@@ -109,7 +109,10 @@ only while that commit remains current. If `main` advances, the app lets an
 already-active aggregate run finish so runs do not overlap, then queues one full
 run from the exact current `main` commit. It stops composing or rerunning the
 stale campaign. If the new current-main run fails, that failed snapshot becomes
-the next frozen campaign and the app replays still-active focused repairs there.
+the next frozen campaign. Only focused repairs explicitly rooted at that exact
+failed snapshot may enter it. Active PRs from an older campaign do not carry
+forward automatically; the new current-main run must expose the failure again
+or a new bootstrap repair must name the new base.
 
 The six-hour interval is the healthy periodic cadence and slow recovery
 backstop. During repair, semantic pipeline, campaign-head, and focused-PR

@@ -779,6 +779,17 @@ export function frozenCampaignBaseForFailure(
   input: FailureInput,
   appDir: string,
 ): string {
+  if (
+    input.specId === "pipeline.master-validation.bootstrap" &&
+    input.sourceBranch.replace(/^refs\/heads\//, "") === "main" &&
+    input.sourceCommit
+  ) {
+    // The failed exact-main run is the authority for a new bootstrap repair
+    // campaign. Do not route this synthetic aggregate failure through the
+    // catalog-spec live verifier merely because an older campaign receipt has
+    // not yet been replaced by the standing cycle.
+    return input.sourceCommit;
+  }
   try {
     const campaign = record(
       JSON.parse(
@@ -791,12 +802,7 @@ export function frozenCampaignBaseForFailure(
     const campaignBranch = text(campaign.branch);
     const observedBranch = input.sourceBranch.replace(/^refs\/heads\//, "");
     const baseCommit = text(campaign.baseCommit);
-    const exactBootstrapBaseline =
-      input.specId === "pipeline.master-validation.bootstrap" &&
-      text(campaign.baselineRunId) === input.pipelineRunId &&
-      baseCommit === input.sourceCommit;
-    return campaignBranch &&
-      (observedBranch === campaignBranch || exactBootstrapBaseline)
+    return campaignBranch && observedBranch === campaignBranch
       ? baseCommit
       : "";
   } catch {

@@ -16,6 +16,7 @@ export type CampaignFix = {
   taskId: string;
   sourceBranch: string;
   sourceCommit: string;
+  campaignBaseCommit?: string;
   targetCommit?: string;
   patchIds?: string[];
   title: string;
@@ -88,6 +89,12 @@ export function campaignFixFromPullRequest(
   const sourceBranch = branchName(pullRequest.sourceRefName);
   const sourceCommit = text(pullRequest.lastMergeSourceCommit?.commitId);
   const targetCommit = text(pullRequest.lastMergeTargetCommit?.commitId);
+  const campaignBaseCommit =
+    description
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .find((line) => line.startsWith("Frozen campaign base: "))
+      ?.slice("Frozen campaign base: ".length) ?? "";
   const title = text(pullRequest.title);
   if (!taskId && !explicitlyIncluded) {
     return null;
@@ -98,6 +105,7 @@ export function campaignFixFromPullRequest(
     taskId: taskId || `pull-request/${pullRequestId}`,
     sourceBranch,
     sourceCommit,
+    ...(campaignBaseCommit ? { campaignBaseCommit } : {}),
     ...(targetCommit ? { targetCommit } : {}),
     title,
   };

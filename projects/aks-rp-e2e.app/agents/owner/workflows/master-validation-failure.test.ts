@@ -452,6 +452,18 @@ ${JSON.stringify({
           appDir,
         ),
       ).toBe("frozen123");
+      expect(
+        frozenCampaignBaseForFailure(
+          {
+            ...input,
+            specId: "pipeline.master-validation.bootstrap",
+            pipelineRunId: "new-run",
+            sourceBranch: "refs/heads/main",
+            sourceCommit: "new-main",
+          },
+          appDir,
+        ),
+      ).toBe("new-main");
     } finally {
       rmSync(appDir, { recursive: true, force: true });
     }

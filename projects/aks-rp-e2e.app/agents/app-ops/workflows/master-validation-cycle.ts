@@ -702,7 +702,10 @@ export function latestCampaignFixes(fixes: CampaignFix[]): CampaignFix[] {
   );
 }
 
-function activeCampaignFixes(repoDir: string): CampaignFix[] {
+function activeCampaignFixes(
+  repoDir: string,
+  campaignBaseCommit: string,
+): CampaignFix[] {
   const value = azJson(
     [
       "repos",
@@ -723,7 +726,7 @@ function activeCampaignFixes(repoDir: string): CampaignFix[] {
     ? latestCampaignFixes(
         value.flatMap((pullRequest) => {
           const fix = campaignFixFromPullRequest(pullRequest as PullRequest);
-          return fix ? [fix] : [];
+          return fix?.campaignBaseCommit === campaignBaseCommit ? [fix] : [];
         }),
       )
     : [];
@@ -1176,7 +1179,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           repoDir,
           baselineRunId: activeCampaign.baselineRunId,
           baseCommit: activeCampaign.baseCommit,
-          fixes: activeCampaignFixes(repoDir),
+          fixes: activeCampaignFixes(repoDir, activeCampaign.baseCommit),
           replacementFixes: completedCampaignReplacements(
             repoDir,
             activeCampaign,
@@ -1261,7 +1264,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           repoDir,
           baselineRunId: campaign.baselineRunId,
           baseCommit: campaign.baseCommit,
-          fixes: activeCampaignFixes(repoDir),
+          fixes: activeCampaignFixes(repoDir, campaign.baseCommit),
           replacementFixes: completedCampaignReplacements(repoDir, campaign),
           prior: campaign,
         });
@@ -1432,7 +1435,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         repoDir,
         baselineRunId: prior.runId,
         baseCommit: prior.sourceCommit,
-        fixes: activeCampaignFixes(repoDir),
+        fixes: activeCampaignFixes(repoDir, prior.sourceCommit),
         replacementFixes: completedCampaignReplacements(
           repoDir,
           existingCampaign?.baselineRunId === prior.runId
