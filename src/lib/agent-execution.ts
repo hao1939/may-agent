@@ -35,7 +35,12 @@ import {
   classifyTerminalAssistantFailure,
   extractLastAssistantError,
   extractLastAssistantText,
+  isRetryableEmptyAssistantFailure,
 } from "./manager-utils.js";
+import {
+  shouldAttemptWorkflowFinishRecovery,
+  workflowFinishRecoveryPrompt,
+} from "./workflow-finish-recovery.js";
 import { runWithAgentSessionContext } from "./agent-session-context.js";
 
 const CHAT_TOOL_DENYLIST = new Set([
@@ -429,12 +434,20 @@ export async function executePreparedAgent(
     if (prepared.requireFinish) {
       const messages = agent.state.messages as AgentMessage[];
       const terminalError = extractLastAssistantError(messages) ?? classifyTerminalAssistantFailure(messages);
-      if (!extractFinishParams(messages as any[]) && !terminalError) {
-        await agent.prompt(
-          "This workflow step has not returned its structured result. Call finish() now with all required fields" +
-            (prepared.outputSchema ? ", including the schema-validated result payload." : "."),
-        );
-        await agent.waitForIdle();
+      if (!extractFinishParams(messages as any[])) {
+        if (shouldAttemptWorkflowFinishRecovery(terminalError)) {
+          if (isRetryableEmptyAssistantFailure(terminalError)) {
+            messages.pop();
+          }
+          await agent.prompt(workflowFinishRecoveryPrompt(prepared.outputSchema, terminalError));
+          await agent.waitForIdle();
+        } else if (!terminalError) {
+          await agent.prompt(
+            "This workflow step has not returned its structured result. Call finish() now with all required fields" +
+              (prepared.outputSchema ? ", including the schema-validated result payload." : "."),
+          );
+          await agent.waitForIdle();
+        }
       }
     }
   } catch (cause) {
