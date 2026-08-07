@@ -36,6 +36,7 @@ export type EventSelector =
       agents?: string[];
       lanes?: string[];
       verdicts?: string[];
+      intents?: string[];
     };
 
 function selectorRecord(value: unknown): Record<string, unknown> {
@@ -103,6 +104,10 @@ export function matchesEventSelector(selector: EventSelector, event: Record<stri
   if (selector.verdicts?.length) {
     const verdict = selectorValue(event, "reviewedVerdict", "verdict");
     if (typeof verdict !== "string" || !selector.verdicts.includes(verdict)) return false;
+  }
+  if (selector.intents?.length) {
+    const intent = selectorValue(event, "intent");
+    if (typeof intent !== "string" || !selector.intents.includes(intent)) return false;
   }
   return true;
 }
