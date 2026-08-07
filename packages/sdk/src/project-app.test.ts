@@ -108,4 +108,26 @@ describe("project-app event helpers", () => {
       }),
     ).toBe(false);
   });
+
+  it("matches specialized message intents without claiming ordinary owner messages", () => {
+    const selector = {
+      type: "message.created",
+      owner: "agent:app-ops",
+      intents: ["approval-decision"],
+    };
+    expect(
+      matchesEventSelector(selector, {
+        type: "message.created",
+        owner: "agent:app-ops",
+        data: { to: "app-ops", intent: "approval-decision" },
+      }),
+    ).toBe(true);
+    expect(
+      matchesEventSelector(selector, {
+        type: "message.created",
+        owner: "agent:app-ops",
+        data: { to: "app-ops", intent: "review-request" },
+      }),
+    ).toBe(false);
+  });
 });
