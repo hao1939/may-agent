@@ -58,7 +58,7 @@ describe("cron startup recovery", () => {
     try {
       expect(shouldResumeStartupSession("owner-session", session(appDir, "project-app-task-owner"))).toEqual({
         resume: false,
-        reason: "Task-bound project session recovery is owned by the app task reconciler",
+        reason: "Task-bound project session was not claimed by project-app recovery during startup",
       });
       expect(
         shouldResumeStartupSession(
@@ -67,7 +67,7 @@ describe("cron startup recovery", () => {
         ),
       ).toEqual({
         resume: false,
-        reason: "Task-bound project session recovery is owned by the app task reconciler",
+        reason: "Task-bound project session was not claimed by project-app recovery during startup",
       });
     } finally {
       rmSync(appDir, { recursive: true, force: true });
@@ -92,7 +92,7 @@ describe("cron startup recovery", () => {
       }
       expect(shouldResumeStartupSession("session-1", session(appDir, "project-app-task-owner"))).toEqual({
         resume: false,
-        reason: "Task-bound project session recovery is owned by the app task reconciler",
+        reason: "Task-bound project session was not claimed by project-app recovery during startup",
       });
     } finally {
       rmSync(appDir, { recursive: true, force: true });

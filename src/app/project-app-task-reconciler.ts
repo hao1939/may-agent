@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
-import { basename } from "node:path";
+import { existsSync } from "node:fs";
+import { basename, dirname, join } from "node:path";
 import {
   ensureTaskState,
   isTypedProjectAppConditionSubject,
@@ -24,6 +25,7 @@ import {
   type TaskTree,
   type TaskStateConfig,
 } from "@may-agent/sdk";
+import { readSessionMessages, readSessionMeta, sessionDir } from "../lib/persistence.js";
 import { applyProjectAppConditionEvent } from "./project-app-condition-tracker.js";
 
 export const PROJECT_APP_TASK_RECOVERY_OWNER = "project-app-task-reconciler";
@@ -44,7 +46,7 @@ export type ProjectAppTaskClaim = {
   declaredOutputPaths: string[];
   supersededSessionIds?: string[];
   handoff?: {
-    reason: "needs-owner";
+    reason: "needs-owner" | "recovered-session";
     summary: string;
     evidence: string[];
   };
@@ -111,6 +113,7 @@ export type ProjectAppTaskAttemptRecovery = {
   taskId: string;
   intent: ProjectAppTaskIntent;
   trigger?: Record<string, unknown>;
+  sessionId?: string;
 };
 
 export type ProjectAppTaskRecoveryAttention = {
@@ -311,6 +314,70 @@ function latestTaskAttempt(tree: TaskTree, taskId: string, generation?: number):
       (attempt) => attempt.taskId === taskId && (generation === undefined || attempt.taskGeneration === generation),
     )
     .sort((left, right) => right.startedAt.localeCompare(left.startedAt))[0];
+}
+
+function runtimePersistDirFromAppDir(appDir: string): string {
+  return join(dirname(dirname(appDir)), ".state");
+}
+
+function summarizeRecoveryTranscriptEntry(message: unknown): string | null {
+  if (!message || typeof message !== "object") return null;
+  const entry = message as Record<string, unknown>;
+  const role = typeof entry.role === "string" ? entry.role : "message";
+  const content = Array.isArray(entry.content)
+    ? entry.content
+        .map((part) => {
+          if (typeof part === "string") return part;
+          if (!part || typeof part !== "object") return "";
+          const text = (part as Record<string, unknown>).text;
+          return typeof text === "string" ? text : "";
+        })
+        .join(" ")
+    : typeof entry.content === "string"
+      ? entry.content
+      : "";
+  const normalized = content.replace(/\s+/g, " ").trim();
+  if (!normalized) return null;
+  const prefix =
+    role === "toolResult"
+      ? `tool:${typeof entry.toolName === "string" ? entry.toolName : "unknown"}`
+      : role;
+  return `${prefix} ${normalized}`.slice(0, 240);
+}
+
+function buildRecoveredSessionHandoff(
+  config: TaskStateConfig,
+  attempt: ProjectAppTaskAttempt | undefined,
+): ProjectAppTaskClaim["handoff"] | undefined {
+  if (!attempt?.sessionId || attempt.failureReason !== "previous-runtime-attempt-requeued") {
+    return undefined;
+  }
+  const persistDir = runtimePersistDirFromAppDir(config.appDir);
+  const metaPath = join(sessionDir(persistDir, attempt.sessionId), "meta.json");
+  const meta = readSessionMeta(persistDir, attempt.sessionId);
+  const resultPath = join(sessionDir(persistDir, attempt.sessionId), "result.json");
+  const transcriptPath = join(sessionDir(persistDir, attempt.sessionId), "session.jsonl");
+  const sessionLabel = attempt.handler.startsWith("owner:") ? "owner session" : `${attempt.handler} session`;
+  const evidence = [
+    `Recovered interrupted ${sessionLabel} metadata: ${metaPath}`,
+    `Recovered interrupted ${sessionLabel} artifact: ${resultPath}`,
+    `Recovered interrupted ${sessionLabel} transcript: ${transcriptPath}`,
+  ];
+  if (existsSync(transcriptPath)) {
+    for (const snippet of readSessionMessages(persistDir, attempt.sessionId)
+      .map(summarizeRecoveryTranscriptEntry)
+      .filter((entry): entry is string => Boolean(entry))
+      .slice(-3)) {
+      evidence.push(`Recovered transcript snippet: ${snippet}`);
+    }
+  }
+  return {
+    reason: "recovered-session",
+    summary:
+      meta?.error?.trim() ||
+      `Previous runtime ${sessionLabel} ${attempt.sessionId} was interrupted during recovery before a task decision was persisted`,
+    evidence,
+  };
 }
 
 function needsOwnerHandoff(tree: TaskTree, resource: ProjectAppTaskResource): boolean {
@@ -630,6 +697,7 @@ export function recoverableProjectAppTaskAttempts(config: TaskStateConfig): Proj
           taskId: resource.metadata.id,
           intent: resourceIntent(resource),
           ...(attempt.trigger ? { trigger: attempt.trigger } : {}),
+          ...(attempt.sessionId ? { sessionId: attempt.sessionId } : {}),
         },
       ];
     });
@@ -1130,6 +1198,71 @@ export function readProjectAppTaskTrigger(
     const resource = tree.resources?.[taskId];
     const attempt = resource ? currentResourceAttempt(tree, resource) : null;
     return attempt?.trigger;
+  });
+}
+
+/** Latest unresolved owner input for a stable task, including a parent waiting on children. */
+export function readProjectAppTaskOwnerTrigger(
+  config: TaskStateConfig,
+  taskId: string,
+): Record<string, unknown> | undefined {
+  return withTaskStateLock(config, () => {
+    const tree = readTaskState(config);
+    const pending = tree.taskTriggers?.[taskId]?.event;
+    if (triggerCarriesOwnerIntent(pending)) return pending;
+    const resource = tree.resources?.[taskId];
+    if (!resource) return undefined;
+    const current = currentResourceAttempt(tree, resource)?.trigger;
+    if (triggerCarriesOwnerIntent(current)) return current;
+    if (resource.status.phase !== "waiting" && resource.status.phase !== "attention") return undefined;
+    const latest = latestTaskAttempt(tree, taskId, resource.metadata.generation)?.trigger;
+    return triggerCarriesOwnerIntent(latest) ? latest : undefined;
+  });
+}
+
+function withoutOwnerIntent(
+  event: Record<string, unknown>,
+  eventId: number,
+): Record<string, unknown> | undefined {
+  const declared = Array.isArray(event.ownerIntentRefs) ? event.ownerIntentRefs : [];
+  if (declared.length > 0) {
+    const remaining = declared.filter(
+      (value) => !isRecord(value) || Number(value.eventId) !== eventId,
+    );
+    if (remaining.length === 0) return undefined;
+    const first = remaining.find(isRecord);
+    const data = first && isRecord(first.data) ? first.data : undefined;
+    return {
+      ...event,
+      ...(data ?? {}),
+      ...(data ? { data } : {}),
+      ownerIntentRefs: remaining,
+    };
+  }
+  const inputEventId = Number(event.inputEventId);
+  const directEventId = Number(event.eventId);
+  if (inputEventId === eventId || (isOwnerIntentEventType(event.type) && directEventId === eventId)) {
+    return undefined;
+  }
+  return event;
+}
+
+/** Remove a terminal owner input from a wake queued while its prior attempt was finishing. */
+export function discardProjectAppTaskOwnerIntent(
+  config: TaskStateConfig,
+  taskId: string,
+  eventId: number,
+): boolean {
+  return withTaskStateLock(config, () => {
+    const tree = readTaskState(config);
+    const pending = tree.taskTriggers?.[taskId];
+    if (!pending) return false;
+    const next = withoutOwnerIntent(pending.event, eventId);
+    if (next === pending.event) return false;
+    if (next) pending.event = next;
+    else delete tree.taskTriggers?.[taskId];
+    saveTaskState(config, tree);
+    return true;
   });
 }
 
@@ -1653,8 +1786,10 @@ export function claimObservedProjectAppTask(
           ? `owner:${owner}`
           : input.handler;
     const ownerHandoff = needsOwnerHandoff(tree, resource) && handler === `owner:${owner}`;
-    const handoffAttempt = ownerHandoff
-      ? latestTaskAttempt(tree, resource.metadata.id, resource.metadata.generation)
+    const latestAttempt = latestTaskAttempt(tree, resource.metadata.id, resource.metadata.generation);
+    const handoffAttempt = ownerHandoff ? latestAttempt : undefined;
+    const recoveredSessionHandoff = !ownerHandoff
+      ? buildRecoveredSessionHandoff(config, latestAttempt)
       : undefined;
     const previousAttempt = currentResourceAttempt(tree, resource);
     if (resource.status.phase === "running" && !previousAttempt) {
@@ -1850,13 +1985,16 @@ export function claimObservedProjectAppTask(
       ...(trigger ? { trigger: structuredClone(trigger) } : {}),
       declaredOutputPaths,
       ...(supersededSessionIds.size > 0 ? { supersededSessionIds: [...supersededSessionIds] } : {}),
-      ...(handoffAttempt && handoffAttempt.failureReason === "needs-owner"
+      ...((handoffAttempt && handoffAttempt.failureReason === "needs-owner") || recoveredSessionHandoff
         ? {
-            handoff: {
-              reason: "needs-owner",
-              summary: resource.status.summary ?? handoffAttempt.summary ?? handoffAttempt.failureReason,
-              evidence: [...(resource.status.evidence ?? [])],
-            },
+            handoff:
+              handoffAttempt && handoffAttempt.failureReason === "needs-owner"
+                ? {
+                    reason: "needs-owner",
+                    summary: resource.status.summary ?? handoffAttempt.summary ?? handoffAttempt.failureReason,
+                    evidence: [...(resource.status.evidence ?? [])],
+                  }
+                : recoveredSessionHandoff,
           }
         : {}),
     };
@@ -2304,10 +2442,11 @@ function applyTaskActions(
   evidence: string[],
   config: TaskStateConfig,
   acceptanceBasis: ProjectAppTaskAcceptanceBasis,
-): string[] {
+): { actionsApplied: string[]; supersededSessionIds: string[] } {
   validateTaskActions(tree, actions, config);
   const now = new Date().toISOString();
   const applied: string[] = [];
+  const supersededSessionIds = new Set<string>();
 
   for (const action of actions) {
     if (action.kind !== "create-task" && action.taskId === claim.taskId && action.kind !== "update-task") {
@@ -2381,6 +2520,10 @@ function applyTaskActions(
         const generation = executionChanged ? resource.metadata.generation + 1 : resource.metadata.generation;
         if (executionChanged) {
           if (resource.status.currentAttemptId) {
+            const supersededSessionId = tree.attempts?.[resource.status.currentAttemptId]?.sessionId;
+            if (action.taskId !== claim.taskId && supersededSessionId) {
+              supersededSessionIds.add(supersededSessionId);
+            }
             finishAttempt(
               tree,
               resource,
@@ -2426,6 +2569,8 @@ function applyTaskActions(
         const intent = resourceIntent(resource);
         unlinkTaskConditions(tree, task);
         if (resource.status.currentAttemptId) {
+          const supersededSessionId = tree.attempts?.[resource.status.currentAttemptId]?.sessionId;
+          if (supersededSessionId) supersededSessionIds.add(supersededSessionId);
           finishAttempt(tree, resource, "interrupted", action.summary.trim(), now);
         }
         const failureFingerprints = [
@@ -2488,28 +2633,28 @@ function applyTaskActions(
       }
     }
   }
-  return applied;
+  return { actionsApplied: applied, supersededSessionIds: [...supersededSessionIds] };
 }
 
 function liveChildTaskIds(tree: TaskTree, task: TaskNode): string[] {
   return (task.children ?? []).filter((childId) => Boolean(tree.tasks[childId]));
 }
 
+function isOwnerIntentEventType(value: unknown): boolean {
+  return (
+    value === "project.comment.created" ||
+    value === "project.owner.requested" ||
+    value === "message.created"
+  );
+}
+
 function triggerCarriesOwnerIntent(event: Record<string, unknown> | undefined): boolean {
   if (!event) return false;
-  if (
-    event.type === "project.comment.created" ||
-    event.type === "project.owner.requested" ||
-    event.type === "message.created"
-  )
-    return true;
+  if (isOwnerIntentEventType(event.type)) return true;
   return Array.isArray(event.ownerIntentRefs)
     ? event.ownerIntentRefs.some(
         (value) =>
-          isRecord(value) &&
-          (value.eventType === "project.comment.created" ||
-            value.eventType === "project.owner.requested" ||
-            value.eventType === "message.created"),
+          isRecord(value) && isOwnerIntentEventType(value.eventType),
       )
     : false;
 }
@@ -2530,13 +2675,13 @@ function recordExecutableParentTrigger(
   // A queued owner intent is a durable commitment. The parent is already
   // runnable, so a child transition must not replace that unresolved input.
   if (triggerCarriesOwnerIntent(previous?.event)) return parentTaskId;
-  tree.taskTriggers = {
-    ...(tree.taskTriggers ?? {}),
-    [parentTaskId]: {
-      taskId: parentTaskId,
-      taskGeneration: parent.metadata.generation,
-      resourceVersion: (previous?.resourceVersion ?? 0) + 1,
-      event: {
+  const latestOwnerTrigger =
+    parent.status.phase === "waiting" || parent.status.phase === "attention"
+      ? latestTaskAttempt(tree, parentTaskId, parent.metadata.generation)?.trigger
+      : undefined;
+  const event: Record<string, unknown> = triggerCarriesOwnerIntent(latestOwnerTrigger)
+    ? structuredClone(latestOwnerTrigger ?? {})
+    : {
         type: "project.task.child-transitioned",
         source: PROJECT_APP_TASK_RECOVERY_OWNER,
         target: { taskId: parentTaskId },
@@ -2545,7 +2690,14 @@ function recordExecutableParentTrigger(
         disposition,
         summary,
         evidence: [...(evidence ?? [])],
-      },
+      };
+  tree.taskTriggers = {
+    ...(tree.taskTriggers ?? {}),
+    [parentTaskId]: {
+      taskId: parentTaskId,
+      taskGeneration: parent.metadata.generation,
+      resourceVersion: (previous?.resourceVersion ?? 0) + 1,
+      event,
       observedAt: now,
     },
   };
@@ -2565,6 +2717,7 @@ export function completeProjectAppTask(
   status: "applied" | "stale";
   actionsApplied: string[];
   dependentTaskIds: string[];
+  supersededSessionIds: string[];
   taskContinues?: true;
 } {
   return withTaskStateLock(config, () => {
@@ -2575,6 +2728,7 @@ export function completeProjectAppTask(
         status: "stale",
         actionsApplied: [],
         dependentTaskIds: [],
+        supersededSessionIds: [],
       };
     }
     const { task, resource } = match;
@@ -2588,7 +2742,14 @@ export function completeProjectAppTask(
       throw new Error(`Handler self-update for ${claim.taskId} must be the only reconciliation action`);
     }
     const acceptanceBasis = input.acceptanceBasis ?? defaultTaskAcceptance(claim, input.evidence ?? []);
-    const actionsApplied = applyTaskActions(tree, claim, actions, input.evidence ?? [], config, acceptanceBasis);
+    const { actionsApplied, supersededSessionIds } = applyTaskActions(
+      tree,
+      claim,
+      actions,
+      input.evidence ?? [],
+      config,
+      acceptanceBasis,
+    );
     if (selfUpdates.length === 1) {
       const revised = tree.resources?.[claim.taskId];
       if (!revised || revised.metadata.generation <= claim.generation) {
@@ -2601,6 +2762,7 @@ export function completeProjectAppTask(
         status: "applied",
         actionsApplied,
         dependentTaskIds: [claim.taskId],
+        supersededSessionIds,
         taskContinues: true,
       };
     }
@@ -2640,7 +2802,7 @@ export function completeProjectAppTask(
     ];
     if (claim.mode === "maintain") {
       touchResource(resource, {
-        phase: "converged",
+        phase: pendingSelfTrigger ? "pending" : "converged",
         observedGeneration: claim.generation,
         currentAttemptId: undefined,
         summary: input.summary,
@@ -2693,6 +2855,10 @@ export function completeProjectAppTask(
       status: "applied",
       actionsApplied,
       dependentTaskIds,
+      supersededSessionIds,
+      ...(claim.mode === "maintain" && pendingSelfTrigger
+        ? { taskContinues: true as const }
+        : {}),
     };
   });
 }
@@ -2707,11 +2873,16 @@ export function deferProjectAppTask(
     actions?: ProjectAppTaskAction[];
     conditions?: ProjectAppConditionSpec[];
   },
-): { status: "applied" | "stale"; actionsApplied: string[]; reconcileTaskIds: string[] } {
+): {
+  status: "applied" | "stale";
+  actionsApplied: string[];
+  reconcileTaskIds: string[];
+  supersededSessionIds: string[];
+} {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
     const match = matchingTask(tree, claim);
-    if (!match) return { status: "stale", actionsApplied: [], reconcileTaskIds: [] };
+    if (!match) return { status: "stale", actionsApplied: [], reconcileTaskIds: [], supersededSessionIds: [] };
     const { task, resource } = match;
     const actions = input.actions ?? [];
     const conditions = boundedReviewConditions(claim, input.conditions);
@@ -2738,7 +2909,14 @@ export function deferProjectAppTask(
     });
     validateActionEvidence(claim.taskId, input.evidence, actions.length);
     const acceptanceBasis = defaultTaskAcceptance(claim, input.evidence ?? []);
-    const actionsApplied = applyTaskActions(tree, claim, actions, input.evidence ?? [], config, acceptanceBasis);
+    const { actionsApplied, supersededSessionIds } = applyTaskActions(
+      tree,
+      claim,
+      actions,
+      input.evidence ?? [],
+      config,
+      acceptanceBasis,
+    );
     if (!conditions?.length && liveChildTaskIds(tree, task).length === 0) {
       throw new Error(`Waiting task ${claim.taskId} requires an exact Condition or live direct child`);
     }
@@ -2785,7 +2963,7 @@ export function deferProjectAppTask(
           .map((candidate) => candidate.metadata.id),
       ]),
     ];
-    return { status: "applied", actionsApplied, reconcileTaskIds };
+    return { status: "applied", actionsApplied, reconcileTaskIds, supersededSessionIds };
   });
 }
 

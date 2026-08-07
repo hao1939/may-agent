@@ -41,7 +41,7 @@ export function shouldResumeStartupSession(
   if (session.recoveryOwner === PROJECT_APP_TASK_RECOVERY_OWNER || session.source === "project-app-task-owner") {
     return {
       resume: false,
-      reason: "Task-bound project session recovery is owned by the app task reconciler",
+      reason: "Task-bound project session was not claimed by project-app recovery during startup",
     };
   }
   if (!session.projectId) return { resume: true };

@@ -7,10 +7,13 @@ import { Cron } from "../cron";
 import { EVENT_ROW_ID, EventBus } from "../event-bus";
 import { closeDb, getDb, upsertSession } from "../../lib/requests";
 import { DbWriter } from "../../lib/db-writer";
-import { readSessionMeta, writeSessionMeta } from "../../lib/persistence";
+import { readSessionMeta, readSessionMessages, writeSessionMeta } from "../../lib/persistence";
 import { projectRuntimePaths } from "@may-agent/sdk";
 import { prepareProjectTaskWorkspace } from "../project-task-workspace";
 import {
+  associateProjectAppTaskSession,
+  claimObservedProjectAppTask,
+  observeProjectAppTaskIntent,
   releaseHandlerExecutionFailedProjectAppTask,
   taskReconciliationConfig,
 } from "../project-app-task-reconciler";
@@ -81,8 +84,10 @@ function writeApp(appDir: string, extra = "") {
             parentId: "operations",
             outcome: "Process " + event.itemId,
             acceptance: ["Work converges"],
-            mode: event.mode || "achieve",
-            ...(event.ownerOnly ? {} : { workflow: event.workflow || "worker" }),
+            mode: event.mode || (event.type === "project.owner.requested" ? "maintain" : "achieve"),
+            ...(event.ownerOnly || event.reason === "owner-message"
+              ? {}
+              : { workflow: event.workflow || "worker" }),
             ...(event.taskOwner ? { owner: event.taskOwner } : {}),
             ...(event.priority ? { priority: event.priority } : {}),
             input: { itemId, ...(event.revision ? { revision: event.revision } : {}) },
@@ -485,6 +490,103 @@ describe("project app loader", () => {
     }
   });
 
+  it("interrupts a running target session superseded by another task's update action", async () => {
+    const f = fixture();
+    const canceled: string[] = [];
+    try {
+      writeApp(f.appDir);
+      const bus = new EventBus();
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: {
+          hasAgent: () => true,
+          hasActiveSession: (sessionId: string) => sessionId === "running-target-session",
+          cancel: (sessionId: string) => canceled.push(sessionId),
+          async callAgent() {
+            return {
+              sessionId: "owner-update-session",
+              status: "done",
+              structuredResult: {
+                state: "waiting",
+                summary: "advanced the running target",
+                evidence: ["the target needs revised execution intent"],
+                actions: [
+                  {
+                    kind: "update-task",
+                    taskId: "work/running-target",
+                    expectedGeneration: 1,
+                    outcome: "Process the revised target generation",
+                  },
+                ],
+                conditions: [
+                  {
+                    id: "owner-update-review-ready",
+                    type: "sample.review.state",
+                    subject: "project:sample",
+                    expected: { state: "ready" },
+                  },
+                ],
+              },
+              lastAssistantText: "advanced the running target",
+              messages: [],
+              duration: "0s",
+              outputDir: "",
+            };
+          },
+        } as any,
+        bus,
+        agentCrons: new Map(),
+      });
+
+      const config = taskReconciliationConfig({
+        appDir: f.appDir,
+        projectDir: f.appDir,
+        owner: "sample-owner",
+        maxConcurrent: 2,
+      });
+      const observed = observeProjectAppTaskIntent(config, {
+        intent: {
+          id: "work/running-target",
+          parentId: "operations",
+          outcome: "Process the original target generation",
+          acceptance: ["The target converges"],
+          mode: "achieve",
+          workflow: "worker",
+          outputs: [],
+        },
+        appOwner: "sample-owner",
+      });
+      if (observed.kind !== "observed") throw new Error("expected target observation");
+      const claim = claimObservedProjectAppTask(config, {
+        taskId: observed.taskId,
+        appOwner: "sample-owner",
+        handler: "workflow:worker",
+        isOwnerRunnable: () => true,
+      });
+      if (claim.kind !== "claimed") throw new Error("expected target claim");
+      expect(associateProjectAppTaskSession(config, claim, "running-target-session")).toMatchObject({
+        status: "recorded",
+      });
+
+      bus.emit({
+        type: "sample.work",
+        project: "sample",
+        itemId: "owner-updates-target",
+        ownerOnly: true,
+      } as any);
+
+      await waitUntil(() => canceled.includes("running-target-session"));
+      expect(canceled).toEqual(["running-target-session"]);
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
   it("rechecks a failed task workspace on reload and requeues the same generation when it becomes recoverable", async () => {
     const f = fixture();
     const projectDir = join(f.projectsRoot, "sample");
@@ -518,6 +620,9 @@ describe("project app loader", () => {
          export async function execute(ctx) {
            writeFileSync(join(ctx.workspaceDir, "handled.txt"), "handled\\n");
            return ctx.done("workspace workflow ran", { state: "needs-owner", summary: "workspace workflow ran", evidence: ["handled.txt"], actions: [] });
+         }
+         export async function verify(_context, result) {
+           return { accepted: result.evidence.includes("owner proof"), summary: "owner proof required", evidence: ["owner proof"] };
          }`,
       );
       const bus = new EventBus();
@@ -2119,7 +2224,8 @@ describe("project app loader", () => {
         task: `## Reconciliation Task\n\`\`\`json\n${JSON.stringify(
           {
             appId: "sample",
-            taskId: "work/domain/reconcile-master-validation-api-proxy-cpu-overload-manager-admission-and-live-proof-20260801",
+            taskId:
+              "work/domain/reconcile-master-validation-api-proxy-cpu-overload-manager-admission-and-live-proof-20260801",
             generation: 1,
           },
           null,
@@ -2166,9 +2272,11 @@ describe("project app loader", () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       const current = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
-      expect(current.resources[
-        "work/domain/reconcile-master-validation-api-proxy-cpu-overload-manager-admission-and-live-proof-20260801"
-      ].status.phase).toBe("attention");
+      expect(
+        current.resources[
+          "work/domain/reconcile-master-validation-api-proxy-cpu-overload-manager-admission-and-live-proof-20260801"
+        ].status.phase,
+      ).toBe("attention");
       expect(ownerCalls).toHaveLength(1);
       expect(
         events.some(
@@ -2293,6 +2401,68 @@ describe("project app loader", () => {
     }
   });
 
+  it("rejects owner convergence after an unverified workflow handoff", async () => {
+    const f = fixture();
+    const ownerCalls: string[] = [];
+    try {
+      writeApp(f.appDir);
+      writeFileSync(
+        join(f.appDir, "agents", "owner", "workflows", "owner-needed.ts"),
+        `export const name = "owner-needed";
+         export const description = "request owner judgment without a verifier";
+         export async function execute(ctx) {
+           return ctx.done("owner judgment required", {
+             state: "needs-owner",
+             summary: "workflow needs owner judgment",
+             evidence: ["workflow exception"],
+           });
+         }`,
+      );
+      const bus = new EventBus();
+      const events: any[] = [];
+      bus.subscribe((event) => events.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: manager(ownerCalls),
+        bus,
+        agentCrons: new Map(),
+      });
+
+      bus.emit({
+        type: "sample.work",
+        project: "sample",
+        itemId: "owner-needed",
+        workflow: "owner-needed",
+      } as any);
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/owner-needed" &&
+            event.data?.disposition === "attention",
+        ),
+      );
+
+      expect(ownerCalls).toHaveLength(1);
+      const state = JSON.parse(
+        readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"),
+      );
+      expect(state.resources["work/owner-needed"].status).toMatchObject({
+        phase: "attention",
+        summary:
+          "Owner convergence was rejected because workflow owner-needed handed off without a verifier",
+      });
+      expect(state.receipts?.["work/owner-needed"]).toBeUndefined();
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
   it("runs a same-task owner handoff before unrelated queued backlog", async () => {
     const f = fixture();
     const ownerCalls: string[] = [];
@@ -2318,6 +2488,9 @@ describe("project app loader", () => {
              summary: "workflow needs owner judgment",
              evidence: ["workflow classified the exception"],
            });
+         }
+         export async function verify(_context, result) {
+           return { accepted: result.evidence.includes("owner proof"), summary: "owner proof required", evidence: ["owner proof"] };
          }`,
       );
       const bus = new EventBus();
@@ -3241,6 +3414,26 @@ describe("project app loader", () => {
         status: "interrupted",
         error: "Recovered task work/orphan-owner interrupted an orphaned owner session from a previous runtime",
       });
+      const result = JSON.parse(readFileSync(join(f.persistDir, "sessions", "owner-old", "result.json"), "utf8"));
+      expect(result).toMatchObject({
+        status: "interrupted",
+        error: "Recovered task work/orphan-owner interrupted an orphaned owner session from a previous runtime",
+        summary:
+          "Owner session for work/orphan-owner was interrupted by runtime recovery before finish() persisted; the original app task was requeued and should be decided by the replacement attempt, not this recovery wrapper.",
+        recovery: {
+          disposition: "requeued",
+          summary:
+            "Owner session for work/orphan-owner was interrupted by runtime recovery before finish() persisted; the original app task was requeued and should be decided by the replacement attempt, not this recovery wrapper.",
+          evidence: expect.arrayContaining([
+            "task:work/orphan-owner",
+            "session:owner-old",
+            "artifact:sessions/owner-old/result.json",
+            "transcript:sessions/owner-old/session.jsonl",
+            "recovery-reason:Recovered task work/orphan-owner interrupted an orphaned owner session from a previous runtime",
+          ]),
+        },
+      });
+      expect(result.finishParams).toBeUndefined();
       expect(events).toContainEqual(
         expect.objectContaining({
           type: "session.end",
@@ -3250,6 +3443,862 @@ describe("project app loader", () => {
           }),
         }),
       );
+      expect(
+        events.some(
+          (event) =>
+            event.type === "session.end" &&
+            event.data?.sessionId === "owner-old" &&
+            Object.prototype.hasOwnProperty.call(event.data ?? {}, "finishParams"),
+        ),
+      ).toBe(false);
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("persists a synthetic toolResult before interrupting an orphaned owner session with a pending commit", async () => {
+    const f = fixture();
+    try {
+      writeApp(f.appDir);
+      mkdirSync(join(f.appDir, ".state", "tasks"), { recursive: true });
+      writeFileSync(
+        join(f.appDir, ".state", "tasks", "state.json"),
+        JSON.stringify({
+          root_task_id: "root",
+          groups: {
+            root: {
+              id: "root",
+              parent_id: null,
+              state: "backlog",
+              owner: "sample-owner",
+              children: ["operations"],
+            },
+            operations: { id: "operations", parent_id: "root", state: "backlog", children: [] },
+          },
+          active_task_ids: ["work/orphan-owner-commit"],
+          active_task_id: "work/orphan-owner-commit",
+          resources: {
+            "work/orphan-owner-commit": {
+              metadata: { id: "work/orphan-owner-commit", generation: 1, resourceVersion: 1 },
+              spec: {
+                parentId: "operations",
+                outcome: "Process orphan owner commit session",
+                acceptance: ["Work converges"],
+                mode: "achieve",
+                workflow: "worker",
+                input: { itemId: "orphan-owner-commit" },
+              },
+              status: {
+                observedGeneration: 0,
+                phase: "running",
+                currentAttemptId: "r_orphan_owner_commit",
+                updatedAt: "2026-07-19T00:00:00.000Z",
+              },
+            },
+          },
+          attempts: {
+            r_orphan_owner_commit: {
+              metadata: { id: "r_orphan_owner_commit", resourceVersion: 1 },
+              taskId: "work/orphan-owner-commit",
+              taskGeneration: 1,
+              specHash: "old",
+              owner: "sample-owner",
+              handler: "owner:sample-owner",
+              runtimeId: "previous-runtime",
+              state: "running",
+              startedAt: "2026-07-19T00:00:00.000Z",
+              sessionId: "owner-pending-commit",
+            },
+          },
+        }),
+      );
+      writeSessionMeta(f.persistDir, "owner-pending-commit", {
+        agent: "sample-owner",
+        task: "Recover old owner session with pending commit",
+        status: "running",
+        startedAt: Date.now() - 60_000,
+        source: "project-app-task-owner",
+        projectId: "sample",
+        recoveryOwner: "project-app-task-reconciler",
+        kind: "call",
+      });
+      upsertSession(f.persistDir, {
+        sessionId: "owner-pending-commit",
+        agent: "sample-owner",
+        task: "Recover old owner session with pending commit",
+        status: "running",
+        source: "project-app-task-owner",
+        projectId: "sample",
+        startedAt: Date.now() - 60_000,
+      });
+      const transcriptDir = join(f.persistDir, "sessions", "owner-pending-commit");
+      mkdirSync(transcriptDir, { recursive: true });
+      writeFileSync(
+        join(transcriptDir, "session.jsonl"),
+        [
+          JSON.stringify({
+            role: "assistant",
+            content: [
+              {
+                type: "toolCall",
+                id: "commit_1",
+                name: "commit",
+                arguments: {
+                  message: "Normalize ssh public-key direct carriers",
+                },
+              },
+            ],
+            stopReason: "toolUse",
+            timestamp: Date.now() - 5_000,
+          }),
+        ].join("\n") + "\n",
+      );
+
+      const bus = new EventBus();
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: {
+          ...manager([]),
+          hasActiveSession: () => false,
+          cancel: () => {
+            throw new Error("startup recovery should reconcile the persisted session directly");
+          },
+        } as any,
+        bus,
+        agentCrons: new Map(),
+      });
+
+      const repairedMessages = readSessionMessages(f.persistDir, "owner-pending-commit") as any[];
+      const recoveredToolResult = repairedMessages.find(
+        (message) => message.role === "toolResult" && message.toolCallId === "commit_1",
+      );
+      expect(recoveredToolResult).toMatchObject({
+        role: "toolResult",
+        toolCallId: "commit_1",
+        toolName: "commit",
+        isError: true,
+      });
+      expect(JSON.stringify(recoveredToolResult?.content ?? [])).toContain(
+        "commit may have completed and mutated state; inspect side effects before retrying.",
+      );
+      expect(readSessionMeta(f.persistDir, "owner-pending-commit")).toMatchObject({
+        status: "interrupted",
+        error: "Recovered task work/orphan-owner-commit interrupted an orphaned owner session from a previous runtime",
+      });
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("recovers a transcripted finish() before interrupting an orphaned owner session", async () => {
+    const f = fixture();
+    try {
+      writeApp(f.appDir);
+      mkdirSync(join(f.appDir, ".state", "tasks"), { recursive: true });
+      writeFileSync(
+        join(f.appDir, ".state", "tasks", "state.json"),
+        JSON.stringify({
+          root_task_id: "root",
+          groups: {
+            root: {
+              id: "root",
+              parent_id: null,
+              state: "backlog",
+              owner: "sample-owner",
+              children: ["operations"],
+            },
+            operations: { id: "operations", parent_id: "root", state: "backlog", children: [] },
+          },
+          active_task_ids: ["work/orphan-finished-owner"],
+          active_task_id: "work/orphan-finished-owner",
+          resources: {
+            "work/orphan-finished-owner": {
+              metadata: { id: "work/orphan-finished-owner", generation: 1, resourceVersion: 1 },
+              spec: {
+                parentId: "operations",
+                outcome: "Recover orphan owner finish",
+                acceptance: ["Recovered finish persists"],
+                mode: "achieve",
+                workflow: "worker",
+                input: { itemId: "orphan-finished-owner" },
+              },
+              status: {
+                observedGeneration: 0,
+                phase: "running",
+                currentAttemptId: "r_orphan_finished_owner",
+                updatedAt: "2026-07-19T00:00:00.000Z",
+              },
+            },
+          },
+          attempts: {
+            r_orphan_finished_owner: {
+              metadata: { id: "r_orphan_finished_owner", resourceVersion: 1 },
+              taskId: "work/orphan-finished-owner",
+              taskGeneration: 1,
+              specHash: "old",
+              owner: "sample-owner",
+              handler: "owner:sample-owner",
+              runtimeId: "previous-runtime",
+              state: "running",
+              startedAt: "2026-07-19T00:00:00.000Z",
+              sessionId: "owner-finished",
+            },
+          },
+        }),
+      );
+      writeSessionMeta(f.persistDir, "owner-finished", {
+        agent: "sample-owner",
+        task: "Recover old owner session with finish",
+        status: "running",
+        startedAt: Date.now() - 60_000,
+        source: "project-app-task-owner",
+        projectId: "sample",
+        recoveryOwner: "project-app-task-reconciler",
+        kind: "call",
+      });
+      upsertSession(f.persistDir, {
+        sessionId: "owner-finished",
+        agent: "sample-owner",
+        task: "Recover old owner session with finish",
+        status: "running",
+        source: "project-app-task-owner",
+        projectId: "sample",
+        startedAt: Date.now() - 60_000,
+      });
+      const transcriptDir = join(f.persistDir, "sessions", "owner-finished");
+      mkdirSync(transcriptDir, { recursive: true });
+      writeFileSync(
+        join(transcriptDir, "session.jsonl"),
+        [
+          JSON.stringify({
+            role: "assistant",
+            content: [
+              {
+                type: "toolCall",
+                id: "finish_1",
+                name: "finish",
+                arguments: {
+                  status: "success",
+                  summary: "Recovered completion from transcript finish",
+                  result: {
+                    state: "converged",
+                    summary: "Recovered completion from transcript finish",
+                    evidence: ["transcript-finish"],
+                    actions: [],
+                  },
+                },
+              },
+            ],
+            timestamp: Date.now() - 5_000,
+          }),
+        ].join("\n") + "\n",
+      );
+
+      const bus = new EventBus();
+      const events: any[] = [];
+      bus.subscribe((event) => events.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: {
+          ...manager([]),
+          hasActiveSession: () => false,
+          cancel: () => {
+            throw new Error("startup recovery should reconcile the persisted session directly");
+          },
+        } as any,
+        bus,
+        agentCrons: new Map(),
+      });
+
+      await waitUntil(() => existsSync(join(f.persistDir, "sessions", "owner-finished", "result.json")));
+      expect(readSessionMeta(f.persistDir, "owner-finished")).toMatchObject({
+        status: "done",
+      });
+      const result = JSON.parse(readFileSync(join(f.persistDir, "sessions", "owner-finished", "result.json"), "utf8"));
+      expect(result).toMatchObject({
+        status: "done",
+        summary: "Recovered completion from transcript finish",
+        finishParams: {
+          status: "success",
+          summary: "Recovered completion from transcript finish",
+          result: {
+            state: "converged",
+            summary: "Recovered completion from transcript finish",
+            evidence: ["transcript-finish"],
+            actions: [],
+          },
+        },
+      });
+      expect(events).toContainEqual(
+        expect.objectContaining({
+          type: "session.end",
+          data: expect.objectContaining({
+            sessionId: "owner-finished",
+            status: "done",
+            summary: "Recovered completion from transcript finish",
+            finishParams: expect.objectContaining({
+              status: "success",
+              summary: "Recovered completion from transcript finish",
+            }),
+          }),
+        }),
+      );
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("does not release a previous-runtime owner attempt while its session is still active", async () => {
+    const f = fixture();
+    try {
+      writeApp(f.appDir);
+      mkdirSync(join(f.appDir, ".state", "tasks"), { recursive: true });
+      writeFileSync(
+        join(f.appDir, ".state", "tasks", "state.json"),
+        JSON.stringify({
+          root_task_id: "root",
+          groups: {
+            root: {
+              id: "root",
+              parent_id: null,
+              state: "backlog",
+              owner: "sample-owner",
+              children: ["operations"],
+            },
+            operations: { id: "operations", parent_id: "root", state: "backlog", children: [] },
+          },
+          active_task_ids: ["work/orphan-owner"],
+          active_task_id: "work/orphan-owner",
+          resources: {
+            "work/orphan-owner": {
+              metadata: { id: "work/orphan-owner", generation: 1, resourceVersion: 1 },
+              spec: {
+                parentId: "operations",
+                outcome: "Process orphan owner session",
+                acceptance: ["Work converges"],
+                mode: "achieve",
+                input: { itemId: "orphan-owner" },
+              },
+              status: {
+                observedGeneration: 0,
+                phase: "running",
+                currentAttemptId: "r_orphan_owner",
+                updatedAt: "2026-07-19T00:00:00.000Z",
+              },
+            },
+          },
+          attempts: {
+            r_orphan_owner: {
+              metadata: { id: "r_orphan_owner", resourceVersion: 1 },
+              taskId: "work/orphan-owner",
+              taskGeneration: 1,
+              specHash: "old",
+              owner: "sample-owner",
+              handler: "owner:sample-owner",
+              runtimeId: "previous-runtime",
+              state: "running",
+              startedAt: "2026-07-19T00:00:00.000Z",
+              sessionId: "owner-old",
+            },
+          },
+        }),
+      );
+      writeSessionMeta(f.persistDir, "owner-old", {
+        agent: "sample-owner",
+        task: "Recover old owner session",
+        status: "running",
+        startedAt: Date.now() - 60_000,
+        source: "project-app-task-owner",
+        projectId: "sample",
+        recoveryOwner: "project-app-task-reconciler",
+        kind: "call",
+      });
+      upsertSession(f.persistDir, {
+        sessionId: "owner-old",
+        agent: "sample-owner",
+        task: "Recover old owner session",
+        status: "running",
+        source: "project-app-task-owner",
+        projectId: "sample",
+        startedAt: Date.now() - 60_000,
+      });
+
+      const bus = new EventBus();
+      const events: any[] = [];
+      bus.subscribe((event) => events.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: {
+          ...manager([]),
+          hasActiveSession: (sessionId: string) => sessionId === "owner-old",
+          cancel: () => {
+            throw new Error("active recovered owner session should not be cancelled as orphaned");
+          },
+        } as any,
+        bus,
+        agentCrons: new Map(),
+      });
+
+      expect(readSessionMeta(f.persistDir, "owner-old")).toMatchObject({ status: "running" });
+      const state = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
+      expect(state.resources["work/orphan-owner"].status).toMatchObject({
+        phase: "running",
+        currentAttemptId: "r_orphan_owner",
+      });
+      expect(events.some((event) => event.type === "session.end" && event.data?.sessionId === "owner-old")).toBe(false);
+      expect(
+        events.some(
+          (event) => event.type === "project.task.reconcile.started" && event.data?.taskId === "work/orphan-owner",
+        ),
+      ).toBe(false);
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("does not mistake recent database activity for a live previous-runtime session", async () => {
+    const f = fixture();
+    try {
+      writeApp(f.appDir);
+      mkdirSync(join(f.appDir, ".state", "tasks"), { recursive: true });
+      writeFileSync(
+        join(f.appDir, ".state", "tasks", "state.json"),
+        JSON.stringify({
+          root_task_id: "root",
+          groups: {
+            root: {
+              id: "root",
+              parent_id: null,
+              state: "backlog",
+              owner: "sample-owner",
+              children: ["operations"],
+            },
+            operations: { id: "operations", parent_id: "root", state: "backlog", children: [] },
+          },
+          active_task_ids: ["work/orphan-owner"],
+          active_task_id: "work/orphan-owner",
+          resources: {
+            "work/orphan-owner": {
+              metadata: { id: "work/orphan-owner", generation: 1, resourceVersion: 1 },
+              spec: {
+                parentId: "operations",
+                outcome: "Process orphan owner session",
+                acceptance: ["Work converges"],
+                mode: "achieve",
+                input: { itemId: "orphan-owner" },
+              },
+              status: {
+                observedGeneration: 0,
+                phase: "running",
+                currentAttemptId: "r_orphan_owner",
+                updatedAt: "2026-07-19T00:00:00.000Z",
+              },
+            },
+          },
+          attempts: {
+            r_orphan_owner: {
+              metadata: { id: "r_orphan_owner", resourceVersion: 1 },
+              taskId: "work/orphan-owner",
+              taskGeneration: 1,
+              specHash: "old",
+              owner: "sample-owner",
+              handler: "owner:sample-owner",
+              runtimeId: "previous-runtime",
+              state: "running",
+              startedAt: "2026-07-19T00:00:00.000Z",
+              sessionId: "owner-old",
+            },
+          },
+        }),
+      );
+      writeSessionMeta(f.persistDir, "owner-old", {
+        agent: "sample-owner",
+        task: "Recover old owner session",
+        status: "running",
+        startedAt: Date.now() - 5_000,
+        source: "project-app-task-owner",
+        projectId: "sample",
+        recoveryOwner: "project-app-task-reconciler",
+        kind: "call",
+      });
+      upsertSession(f.persistDir, {
+        sessionId: "owner-old",
+        agent: "sample-owner",
+        task: "Recover old owner session",
+        status: "running",
+        source: "project-app-task-owner",
+        projectId: "sample",
+        startedAt: Date.now() - 5_000,
+        lastActivityAt: Date.now() - 1_500,
+      });
+
+      const bus = new EventBus();
+      const events: any[] = [];
+      bus.subscribe((event) => events.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: {
+          ...manager([]),
+          hasActiveSession: () => false,
+          cancel: () => {
+            throw new Error("an inactive previous-runtime session should not be cancelled through the live manager");
+          },
+        } as any,
+        bus,
+        agentCrons: new Map(),
+      });
+
+      expect(readSessionMeta(f.persistDir, "owner-old")).toMatchObject({ status: "interrupted" });
+      const state = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
+      expect(state.resources["work/orphan-owner"].status).toMatchObject({
+        phase: "running",
+      });
+      expect(events.some((event) => event.type === "session.end" && event.data?.sessionId === "owner-old")).toBe(true);
+      expect(
+        events.some(
+          (event) => event.type === "project.task.reconcile.started" && event.data?.taskId === "work/orphan-owner",
+        ),
+      ).toBe(true);
+      await waitUntil(() =>
+        events.some(
+          (event) => event.type === "project.task.reconciled" && event.data?.taskId === "work/orphan-owner",
+        ),
+      );
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("requeues interrupted previous-runtime owner work with recovered session evidence in the retry prompt", async () => {
+    const f = fixture();
+    try {
+      writeApp(f.appDir);
+      mkdirSync(join(f.appDir, ".state", "tasks"), { recursive: true });
+      writeFileSync(
+        join(f.appDir, ".state", "tasks", "state.json"),
+        JSON.stringify({
+          root_task_id: "root",
+          groups: {
+            root: {
+              id: "root",
+              parent_id: null,
+              state: "backlog",
+              owner: "sample-owner",
+              children: ["operations"],
+            },
+            operations: { id: "operations", parent_id: "root", state: "backlog", children: [] },
+          },
+          active_task_ids: ["work/orphan-owner"],
+          active_task_id: "work/orphan-owner",
+          resources: {
+            "work/orphan-owner": {
+              metadata: { id: "work/orphan-owner", generation: 1, resourceVersion: 1 },
+              spec: {
+                parentId: "operations",
+                outcome: "Process orphan owner session",
+                acceptance: ["Work converges"],
+                mode: "achieve",
+                input: { itemId: "orphan-owner" },
+              },
+              status: {
+                observedGeneration: 0,
+                phase: "running",
+                currentAttemptId: "r_orphan_owner",
+                updatedAt: "2026-07-19T00:00:00.000Z",
+              },
+            },
+          },
+          attempts: {
+            r_orphan_owner: {
+              metadata: { id: "r_orphan_owner", resourceVersion: 1 },
+              taskId: "work/orphan-owner",
+              taskGeneration: 1,
+              specHash: "old",
+              owner: "sample-owner",
+              handler: "owner:sample-owner",
+              runtimeId: "previous-runtime",
+              state: "running",
+              startedAt: "2026-07-19T00:00:00.000Z",
+              sessionId: "owner-old",
+            },
+          },
+        }),
+      );
+      writeSessionMeta(f.persistDir, "owner-old", {
+        agent: "sample-owner",
+        task: "Recover old owner session",
+        status: "running",
+        startedAt: Date.now() - 60_000,
+        source: "project-app-task-owner",
+        projectId: "sample",
+        recoveryOwner: "project-app-task-reconciler",
+        kind: "call",
+      });
+      upsertSession(f.persistDir, {
+        sessionId: "owner-old",
+        agent: "sample-owner",
+        task: "Recover old owner session",
+        status: "running",
+        source: "project-app-task-owner",
+        projectId: "sample",
+        startedAt: Date.now() - 60_000,
+      });
+      const transcriptDir = join(f.persistDir, "sessions", "owner-old");
+      mkdirSync(transcriptDir, { recursive: true });
+      writeFileSync(
+        join(transcriptDir, "session.jsonl"),
+        [
+          JSON.stringify({
+            role: "toolResult",
+            toolName: "bash",
+            content: [{ type: "text", text: "HEAD 813448ce ORIGIN_DEV 2ebef7c2 FF_ONLY_CHECK failed" }],
+            timestamp: Date.now() - 30_000,
+          }),
+          JSON.stringify({
+            role: "assistant",
+            content: [{ type: "text", text: "Current canonical checkout is diverged; remaining path is staging.summary.md" }],
+            timestamp: Date.now() - 20_000,
+          }),
+        ].join("\n") + "\n",
+      );
+
+      const ownerCalls: string[] = [];
+      const ownerOptions: Array<Record<string, unknown>> = [];
+      const bus = new EventBus();
+      const events: any[] = [];
+      bus.subscribe((event) => events.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: {
+          ...manager(ownerCalls, ownerOptions),
+          hasActiveSession: () => false,
+          cancel: () => {
+            throw new Error("startup recovery should reconcile the persisted session directly");
+          },
+        } as any,
+        bus,
+        agentCrons: new Map(),
+      });
+
+      await waitUntil(() => ownerCalls.length === 1);
+      await waitUntil(
+        () =>
+          events.some(
+            (event) =>
+              event.type === "project.task.reconciled" &&
+              event.data?.taskId === "work/orphan-owner" &&
+              event.data?.disposition === "converged",
+          ),
+      );
+      expect(ownerOptions[0]).toMatchObject({
+        projectId: "sample",
+        requireFinish: true,
+        source: "project-app-task-owner",
+      });
+      expect(ownerCalls[0]).toContain('"fallbackReason": "recovered-session:');
+      expect(ownerCalls[0]).toContain(`Recovered interrupted owner session metadata: ${join(f.persistDir, "sessions", "owner-old", "meta.json")}`);
+      expect(ownerCalls[0]).toContain(`Recovered interrupted owner session artifact: ${join(f.persistDir, "sessions", "owner-old", "result.json")}`);
+      expect(ownerCalls[0]).toContain(`Recovered interrupted owner session transcript: ${join(f.persistDir, "sessions", "owner-old", "session.jsonl")}`);
+      expect(ownerCalls[0]).toContain("Recovered transcript snippet: tool:bash HEAD 813448ce ORIGIN_DEV 2ebef7c2 FF_ONLY_CHECK failed");
+      expect(ownerCalls[0]).toContain(
+        "Recovered transcript snippet: assistant Current canonical checkout is diverged; remaining path is staging.summary.md",
+      );
+
+      const emptyProjectsRoot = join(f.root, "empty-projects");
+      mkdirSync(emptyProjectsRoot, { recursive: true });
+      await installProjectApps({
+        projectsRoot: emptyProjectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: manager([]),
+        bus,
+        agentCrons: new Map(),
+      });
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("requeues interrupted previous-runtime workflow work with recovered session evidence in the retry prompt", async () => {
+    const f = fixture();
+    try {
+      writeApp(f.appDir);
+      writeFileSync(
+        join(f.appDir, "agents", "owner", "workflows", "worker.ts"),
+        `export const name = "worker";
+         export const description = "sample worker";
+         export async function execute(ctx) {
+           if (!ctx.task.includes('"fallbackReason": "recovered-session:')) {
+             return ctx.done("done", { state: "converged", summary: "workflow missing recovered fallback", evidence: ["missing-recovered-fallback"], actions: [] });
+           }
+           if (!ctx.task.includes(${JSON.stringify(`Recovered interrupted workflow:worker session metadata: ${join(f.persistDir, "sessions", "workflow-old", "meta.json")}`)})) {
+             return ctx.done("done", { state: "converged", summary: "workflow missing recovered metadata evidence", evidence: ["missing-recovered-metadata"], actions: [] });
+           }
+           if (!ctx.task.includes(${JSON.stringify(`Recovered interrupted workflow:worker session artifact: ${join(f.persistDir, "sessions", "workflow-old", "result.json")}`)})) {
+             return ctx.done("done", { state: "converged", summary: "workflow missing recovered result evidence", evidence: ["missing-recovered-result"], actions: [] });
+           }
+           if (!ctx.task.includes(${JSON.stringify(`Recovered interrupted workflow:worker session transcript: ${join(f.persistDir, "sessions", "workflow-old", "session.jsonl")}`)})) {
+             return ctx.done("done", { state: "converged", summary: "workflow missing recovered transcript evidence", evidence: ["missing-recovered-transcript"], actions: [] });
+           }
+           if (!ctx.task.includes("Recovered transcript snippet: assistant Validation finding: previous exact-pass wait was unobservable")) {
+             return ctx.done("done", { state: "converged", summary: "workflow missing recovered transcript snippet", evidence: ["missing-recovered-snippet"], actions: [] });
+           }
+           return ctx.done("done", { state: "converged", summary: "workflow recovered retry prompt carried prior session evidence", evidence: ["workflow-recovered-fallback"], actions: [] });
+         }`,
+      );
+      mkdirSync(join(f.appDir, ".state", "tasks"), { recursive: true });
+      writeFileSync(
+        join(f.appDir, ".state", "tasks", "state.json"),
+        JSON.stringify({
+          root_task_id: "root",
+          groups: {
+            root: {
+              id: "root",
+              parent_id: null,
+              state: "backlog",
+              owner: "sample-owner",
+              children: ["operations"],
+            },
+            operations: { id: "operations", parent_id: "root", state: "backlog", children: [] },
+          },
+          active_task_ids: ["work/orphan-workflow"],
+          active_task_id: "work/orphan-workflow",
+          resources: {
+            "work/orphan-workflow": {
+              metadata: { id: "work/orphan-workflow", generation: 1, resourceVersion: 1 },
+              spec: {
+                parentId: "operations",
+                outcome: "Process orphan workflow session",
+                acceptance: ["Work converges"],
+                mode: "achieve",
+                workflow: "worker",
+                input: { itemId: "orphan-workflow" },
+              },
+              status: {
+                observedGeneration: 0,
+                phase: "running",
+                currentAttemptId: "r_orphan_workflow",
+                updatedAt: "2026-07-19T00:00:00.000Z",
+              },
+            },
+          },
+          attempts: {
+            r_orphan_workflow: {
+              metadata: { id: "r_orphan_workflow", resourceVersion: 1 },
+              taskId: "work/orphan-workflow",
+              taskGeneration: 1,
+              specHash: "old",
+              owner: "sample-owner",
+              handler: "workflow:worker",
+              runtimeId: "previous-runtime",
+              state: "running",
+              reason: "task-controller",
+              startedAt: "2026-07-19T00:00:00.000Z",
+              sessionId: "workflow-old",
+              trigger: {
+                type: "project.task.tick",
+                source: "project-app:sample:task-controller",
+                target: { project: "sample", taskId: "work/orphan-workflow" },
+                reason: "task-controller",
+              },
+            },
+          },
+        }),
+      );
+      writeSessionMeta(f.persistDir, "workflow-old", {
+        agent: "sample-owner",
+        task: "Recover old workflow session",
+        status: "running",
+        startedAt: Date.now() - 60_000,
+        source: "workflow:worker",
+        projectId: "sample",
+        recoveryOwner: "project-app-task-reconciler",
+        kind: "call",
+      });
+      upsertSession(f.persistDir, {
+        sessionId: "workflow-old",
+        agent: "sample-owner",
+        task: "Recover old workflow session",
+        status: "running",
+        source: "workflow:worker",
+        projectId: "sample",
+        startedAt: Date.now() - 60_000,
+      });
+      const workflowSessionDir = join(f.persistDir, "sessions", "workflow-old");
+      mkdirSync(workflowSessionDir, { recursive: true });
+      writeFileSync(
+        join(workflowSessionDir, "session.jsonl"),
+        [
+          JSON.stringify({
+            role: "assistant",
+            content: [{ type: "text", text: "Validation finding: previous exact-pass wait was unobservable" }],
+            timestamp: Date.now() - 30_000,
+          }),
+        ].join("\n") + "\n",
+      );
+
+      const bus = new EventBus();
+      const events: any[] = [];
+      bus.subscribe((event) => events.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: {
+          ...manager([]),
+          hasActiveSession: () => false,
+          cancel: () => {
+            throw new Error("startup recovery should reconcile the persisted workflow session directly");
+          },
+        } as any,
+        bus,
+        agentCrons: new Map(),
+      });
+
+      await waitUntil(
+        () =>
+          events.some(
+            (event) =>
+              event.type === "project.task.reconciled" &&
+              event.data?.taskId === "work/orphan-workflow" &&
+              event.data?.disposition === "converged",
+          ),
+      );
+      const state = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
+      expect(state.receipts["work/orphan-workflow"]).toMatchObject({
+        summary: "workflow recovered retry prompt carried prior session evidence",
+        evidence: ["workflow-recovered-fallback"],
+      });
     } finally {
       closeDb(f.persistDir);
       rmSync(f.root, { recursive: true, force: true });
@@ -3340,11 +4389,8 @@ describe("project app loader", () => {
       const wrongProject = bus.emit({ type: "sample.note", project: "other" } as any);
       const failed = bus.emit({ type: "sample.note", project: "sample", fail: true } as any);
       const handled = bus.emit({ type: "sample.note", project: "sample" } as any);
-      await waitUntil(
-        () =>
-          events.some(
-            (event) => event.type === "handler.failed" && event.data?.handler === "project-app-event-router",
-          ),
+      await waitUntil(() =>
+        events.some((event) => event.type === "handler.failed" && event.data?.handler === "project-app-event-router"),
       );
 
       const reviewedIds = events
@@ -3451,13 +4497,14 @@ describe("project app loader", () => {
       bus.setPersistenceSubscriber(writer.handler);
       bus.setDeliveryRecorder(writer.recordDelivery);
       bus.subscribe((event) => events.push(event));
+      const ownerCalls: string[] = [];
       await installProjectApps({
         projectsRoot: f.projectsRoot,
         projectRoot: f.root,
         persistDir: f.persistDir,
         agentsRoot: join(f.root, "agents"),
         sharedRoot: join(f.root, "shared"),
-        manager: manager([]),
+        manager: manager(ownerCalls),
         bus,
         agentCrons: new Map(),
       });
@@ -3488,6 +4535,8 @@ describe("project app loader", () => {
             event.data?.instruction === "Please review and finish the owner request",
         ),
       ).toBe(true);
+      expect(ownerCalls).toHaveLength(1);
+      expect(ownerCalls[0]).toContain("Please review and finish the owner request");
       expect(
         events.filter((event) => event.type === "message.resolved" && event.data?.openEventId === messageEventId),
       ).toHaveLength(1);
@@ -3505,6 +4554,241 @@ describe("project app loader", () => {
           links: [{ eventId: messageEventId, type: "closure", label: "message.resolved" }],
         },
       });
+      expect(
+        getDb(f.persistDir)
+          .prepare("SELECT status FROM event_pair_runs WHERE pair_name = 'owner_inbox' AND open_event_id = ?")
+          .get(messageEventId),
+      ).toMatchObject({ status: "closed" });
+
+      bus.emit({
+        type: "project.owner.requested",
+        project: "sample",
+        data: {
+          project: "sample",
+          reason: "owner-message",
+          inputEventId: messageEventId,
+          inputEventType: "message.created",
+          instruction: "stale replay must be ignored",
+        },
+      } as any);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(ownerCalls).toHaveLength(1);
+      expect(
+        events.filter(
+          (event) =>
+            event.type === "message.progressed" &&
+            event.data?.sourceEventId === messageEventId,
+        ),
+      ).toHaveLength(0);
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps a message open when a maintain owner incorrectly converges with live direct children", async () => {
+    const f = fixture();
+    try {
+      writeApp(f.appDir);
+      const bus = new EventBus();
+      const events: any[] = [];
+      const writer = new DbWriter(f.persistDir);
+      bus.setPersistenceSubscriber(writer.handler);
+      bus.setDeliveryRecorder(writer.recordDelivery);
+      bus.subscribe((event) => events.push(event));
+      let ownerCall = 0;
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: {
+          hasAgent: () => true,
+          async callAgent() {
+            ownerCall += 1;
+            return {
+              sessionId: `owner-live-child-${ownerCall}`,
+              status: "done",
+              structuredResult: {
+                state: "converged",
+                summary: ownerCall === 1 ? "Delegated required work." : "Incorrectly claimed completion.",
+                evidence: ["owner proof"],
+                actions:
+                  ownerCall === 1
+                    ? [
+                        {
+                          kind: "create-task",
+                          id: "work/delegated",
+                          parentId: "work/owner-review",
+                          outcome: "Complete delegated work",
+                          acceptance: ["Delegated work converges"],
+                          mode: "achieve",
+                          owner: "sample-owner",
+                          dependsOn: ["external-ready"],
+                        },
+                      ]
+                    : [],
+              },
+              lastAssistantText: "owner result",
+              messages: [],
+              duration: "0s",
+              outputDir: "",
+            };
+          },
+        } as any,
+        bus,
+        agentCrons: new Map(),
+      });
+
+      const first = bus.emit({
+        type: "message.created",
+        source: "agent:requester",
+        owner: "agent:sample-owner",
+        data: { from: "requester", to: "sample-owner", content: "delegate this", intent: "request" },
+      } as any) as any;
+      await waitUntil(() => ownerCall === 1);
+      const second = bus.emit({
+        type: "message.created",
+        source: "agent:requester",
+        owner: "agent:sample-owner",
+        data: { from: "requester", to: "sample-owner", content: "check completion", intent: "request" },
+      } as any) as any;
+      await waitUntil(() => ownerCall === 2);
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            (event.type === "message.progressed" &&
+              event.data?.sourceEventId === second[EVENT_ROW_ID]) ||
+            (event.type === "message.resolved" &&
+              event.data?.openEventId === second[EVENT_ROW_ID]),
+        ),
+      );
+
+      for (const messageEventId of [first[EVENT_ROW_ID], second[EVENT_ROW_ID]]) {
+        expect(
+          events.some(
+            (event) =>
+              event.type === "message.resolved" &&
+              event.data?.openEventId === messageEventId,
+          ),
+        ).toBe(false);
+        expect(
+          getDb(f.persistDir)
+            .prepare("SELECT status FROM event_pair_runs WHERE pair_name = 'owner_inbox' AND open_event_id = ?")
+            .get(messageEventId),
+        ).toMatchObject({ status: "open" });
+      }
+      expect(
+        events.find(
+          (event) =>
+            event.type === "message.progressed" &&
+            event.data?.sourceEventId === second[EVENT_ROW_ID],
+        )?.data?.taskRefs,
+      ).toEqual(
+        expect.arrayContaining([
+          { projectId: "sample", taskId: "work/delegated" },
+          { projectId: "sample", taskId: "work/owner-review" },
+        ]),
+      );
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("carries the same open message through child completion without waiting for periodic resync", async () => {
+    const f = fixture();
+    try {
+      writeApp(f.appDir);
+      const bus = new EventBus();
+      const events: any[] = [];
+      const writer = new DbWriter(f.persistDir);
+      bus.setPersistenceSubscriber(writer.handler);
+      bus.setDeliveryRecorder(writer.recordDelivery);
+      bus.subscribe((event) => events.push(event));
+      let ownerCall = 0;
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: {
+          hasAgent: () => true,
+          async callAgent() {
+            ownerCall += 1;
+            return {
+              sessionId: `owner-child-followup-${ownerCall}`,
+              status: "done",
+              structuredResult:
+                ownerCall === 1
+                  ? {
+                      state: "waiting",
+                      summary: "Waiting for the direct child.",
+                      evidence: ["delegation proof"],
+                      actions: [
+                        {
+                          kind: "create-task",
+                          id: "work/direct-child",
+                          parentId: "work/owner-review",
+                          outcome: "Finish the delegated action",
+                          acceptance: ["The delegated action is verified"],
+                          mode: "achieve",
+                          owner: "sample-owner",
+                          workflow: "worker",
+                        },
+                      ],
+                    }
+                  : {
+                      state: "converged",
+                      summary: "The direct child completed with proof.",
+                      evidence: ["child receipt verified"],
+                      actions: [],
+                    },
+              lastAssistantText: "owner result",
+              messages: [],
+              duration: "0s",
+              outputDir: "",
+            };
+          },
+        } as any,
+        bus,
+        agentCrons: new Map(),
+      });
+
+      const message = bus.emit({
+        type: "message.created",
+        source: "agent:requester",
+        owner: "agent:sample-owner",
+        data: { from: "requester", to: "sample-owner", content: "finish through a child", intent: "request" },
+      } as any) as any;
+      const messageEventId = message[EVENT_ROW_ID];
+
+      await waitUntil(
+        () =>
+          ownerCall === 2 &&
+          events.some(
+            (event) =>
+              event.type === "message.resolved" &&
+              event.data?.openEventId === messageEventId,
+          ),
+        3_000,
+      );
+      expect(
+        events.some(
+          (event) =>
+            event.type === "message.progressed" &&
+            event.data?.sourceEventId === messageEventId,
+        ),
+      ).toBe(true);
+      expect(
+        events.filter(
+          (event) =>
+            event.type === "message.resolved" &&
+            event.data?.openEventId === messageEventId,
+        ),
+      ).toHaveLength(1);
       expect(
         getDb(f.persistDir)
           .prepare("SELECT status FROM event_pair_runs WHERE pair_name = 'owner_inbox' AND open_event_id = ?")
