@@ -7341,16 +7341,23 @@ export async function reconcileSpecLive(
         existingPrId && nonEmptyString(existingPr?.status) === "active"
           ? await abandonPullRequest(repoDir, existingPrId)
           : false;
+      const currentTargetCommit = git(repoDir, ["rev-parse", targetRef]).stdout;
       if (boundedTargetEquivalent.equivalent) {
         proof = {
           ...proof,
           targetRef,
-          mergedCommit: git(repoDir, ["rev-parse", targetRef]).stdout,
+          mergedCommit: currentTargetCommit,
           integrationMode: "bounded-content-equivalent",
           integratedPaths: boundedTargetEquivalent.paths,
         };
-        saveProof(contextDir, proof);
+      } else {
+        proof = {
+          ...proof,
+          targetRef,
+          mergedCommit: currentTargetCommit,
+        };
       }
+      saveProof(contextDir, proof);
       const summary = boundedTargetEquivalent.equivalent
         ? `${specId} passed exact live verification on ${sourceCommit}; current ${targetRef} already carries the same bounded repair content, so no PR publication is required.`
         : `${specId} passed exact live verification on current ${targetRef}@${sourceCommit}; no source publication is required.`;
@@ -7365,12 +7372,12 @@ export async function reconcileSpecLive(
                 ...boundedTargetEquivalent.paths.map(
                   (path) => `integrated-path:${path}`,
                 ),
-                `integrated-commit:${nonEmptyString(proof.mergedCommit)}`,
               ]
             : []),
           `proof:${proofPath(contextDir)}`,
           `pipeline-run:${runId}`,
           `source-commit:${sourceCommit}`,
+          `integrated-commit:${currentTargetCommit}`,
           `target-ref:${targetRef}`,
           ...(existingPrId
             ? [
