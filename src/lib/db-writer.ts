@@ -19,6 +19,7 @@ import {
 import { getDb, upsertSession, updateSessionDb } from "./requests.js";
 import type { SqliteDb } from "./db.js";
 import { isCanonicalEventEnvelope, isRecord } from "../../packages/control/src/event-envelope.js";
+import { withSqliteBusyRetry } from "./db/busy-retry.js";
 import { persistEventClosure, persistEventTrace } from "./db/event-traces.js";
 import { describeText, writeContentAddressedJson, writeSessionResult, type ArtifactDescriptor } from "./artifacts.js";
 import { log } from "./log.js";
@@ -321,13 +322,15 @@ function normalizePersistedEscalationPayload(
   };
 }
 
+const RECONCILED_TERMINAL_SESSION_STATUSES = new Set(["done", "error", "interrupted"]);
+
 function isTerminalNoopEvent(eventType: unknown, data: Record<string, unknown> | null): boolean {
   if (eventType !== "session.end" || !data) return false;
   return (
     data.reconciled === true &&
     typeof data.sessionId === "string" &&
     typeof data.agent === "string" &&
-    data.status === "done"
+    RECONCILED_TERMINAL_SESSION_STATUSES.has(String(data.status))
   );
 }
 
@@ -568,26 +571,32 @@ export class DbWriter {
     const rowId = (event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID];
     if (typeof rowId !== "number" || !Number.isFinite(rowId)) return;
     try {
-      const now = Date.now();
-      this.db.exec("BEGIN IMMEDIATE");
-      if (result.route === "owner_inbox") this.openOwnerInboxPair(event, rowId, now);
-      this.db.run(
-        `UPDATE events
-         SET delivery_status = 'accepted',
-             accepted_by = ?,
-             accepted_at = ?,
-             delivery_route = ?,
-             delivery_note = ?
-         WHERE id = ?`,
-        [result.by, now, result.route ?? "direct", result.note ?? null, rowId],
-      );
-      this.db.exec("COMMIT");
+      withSqliteBusyRetry(`record delivery acceptance for event ${rowId}`, () => {
+        const now = Date.now();
+        try {
+          this.db.exec("BEGIN IMMEDIATE");
+          if (result.route === "owner_inbox") this.openOwnerInboxPair(event, rowId, now);
+          this.db.run(
+            `UPDATE events
+             SET delivery_status = 'accepted',
+                 accepted_by = ?,
+                 accepted_at = ?,
+                 delivery_route = ?,
+                 delivery_note = ?
+             WHERE id = ?`,
+            [result.by, now, result.route ?? "direct", result.note ?? null, rowId],
+          );
+          this.db.exec("COMMIT");
+        } catch (error) {
+          try {
+            this.db.exec("ROLLBACK");
+          } catch {
+            /* preserve the original failure */
+          }
+          throw error;
+        }
+      });
     } catch (error) {
-      try {
-        this.db.exec("ROLLBACK");
-      } catch {
-        /* preserve the original failure */
-      }
       log(
         "warn",
         `[event-delivery] failed to record acceptance for event ${rowId}: ${error instanceof Error ? error.message : String(error)}`,
