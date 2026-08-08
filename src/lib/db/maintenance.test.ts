@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { closeDb, getDb } from "./connection.js";
 import { runDbMaintenancePass } from "./maintenance.js";
+import { isApprovalNotificationResolved } from "./notifications.js";
 
 describe("bounded DB maintenance", () => {
   it("deletes at most one batch and preserves active sessions", () => {
@@ -113,6 +114,32 @@ describe("bounded DB maintenance", () => {
       expect(
         db.prepare("SELECT status, closed_at FROM event_pair_runs WHERE open_event_id = ?").get(openEventId),
       ).toEqual({ status: "orphan", closed_at: null });
+    } finally {
+      closeDb(persistDir);
+    }
+  });
+
+  it("retains handled approval identity after the general event window", () => {
+    const persistDir = mkdtempSync(join(tmpdir(), "may-maintenance-approval-"));
+    const now = 10 * 86_400_000;
+    try {
+      const db = getDb(persistDir);
+      db.run(
+        `INSERT INTO events (event_type, source, owner, data, timestamp)
+         VALUES ('project.approval.submitted', 'human', 'project:sample', ?, ?)`,
+        [JSON.stringify({ approvalId: "approval:handled", decision: "approve" }), now - 6 * 86_400_000],
+      );
+      db.run(
+        `INSERT INTO events (event_type, source, owner, data, timestamp)
+         VALUES ('old.detail', 'test', 'agent:may', '{}', ?)`,
+        [now - 6 * 86_400_000],
+      );
+
+      const result = runDbMaintenancePass(persistDir, { now, batchSize: 100 });
+
+      expect(result.deleted.events).toBe(1);
+      expect(db.prepare("SELECT 1 FROM events WHERE event_type = 'old.detail'").get()).toBeFalsy();
+      expect(isApprovalNotificationResolved(persistDir, { approvalId: "approval:handled" })).toBe(true);
     } finally {
       closeDb(persistDir);
     }
