@@ -3048,7 +3048,10 @@ describe("project app loader", () => {
             itemId: "startup-ready",
           }),
           Date.now(),
-          "sample",
+          // Some ingress paths index the project app path while the canonical
+          // event payload still carries the app id. Startup replay must accept
+          // that durable representation too.
+          "projects/sample.app",
         ],
       );
 
