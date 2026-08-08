@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   admissionReportRequiresStandaloneVerification,
+  advancedCampaignRepairPullRequest,
   alignCleanRepairWorkspace,
   boundedChangedFileEvidence,
   boundedEvidence,
@@ -29,12 +30,14 @@ import {
   priorProductClassification,
   preserveVerificationAfterNestedReconciliation,
   priorStandaloneVerification,
+  rejectedTaskPullRequest,
   productRecoveryCondition,
   publishCampaignRepairBranch,
   pullRequestReviewTrigger,
   requestedStandaloneVerification,
   requiresStandaloneVerification,
   runFailureInvestigation,
+  shouldDelegateStandaloneRecovery,
   shouldReconcileTestFix,
   standaloneRecoveryChild,
   standaloneRecoveryChildAction,
@@ -179,6 +182,41 @@ ${JSON.stringify({
         workspaceClean: false,
       }),
     ).toBe(false);
+  });
+
+  test("hands an already-advanced canonical PR back to campaign verification", () => {
+    const replay = {
+      reason: "Repair the frozen-campaign conflict.",
+      conflictingPaths: [],
+      campaignCompositionCommits: [],
+      sourceEquivalentCommits: [],
+      campaignSourceCommit: "campaign-head",
+      currentMainCommit: "main-head",
+      pullRequestId: "16712127",
+      expectedRemoteCommit: "stale-pr-head",
+    };
+    expect(
+      advancedCampaignRepairPullRequest(replay, {
+        pullRequestId: "16712127",
+        status: "active",
+        lastMergeSourceCommit: { commitId: "repaired-pr-head" },
+      }),
+    ).toEqual({
+      pullRequestId: "16712127",
+      sourceCommit: "repaired-pr-head",
+    });
+    expect(
+      advancedCampaignRepairPullRequest(replay, {
+        pullRequestId: "16712127",
+        lastMergeSourceCommit: { commitId: "stale-pr-head" },
+      }),
+    ).toBeNull();
+    expect(
+      advancedCampaignRepairPullRequest(replay, {
+        pullRequestId: "different-pr",
+        lastMergeSourceCommit: { commitId: "repaired-pr-head" },
+      }),
+    ).toBeNull();
   });
 
   test("uses guarded history rewrite for an intentional replay-safe PR update", () => {
@@ -561,6 +599,38 @@ ${JSON.stringify({
     ).toBeNull();
   });
 
+  test("preserves rejection for an unchanged focused repair commit", () => {
+    expect(
+      rejectedTaskPullRequest(
+        [
+          {
+            pullRequestId: 16730680,
+            status: "abandoned",
+            lastMergeSourceCommit: { commitId: "obsolete-head" },
+          },
+          {
+            pullRequestId: 16731759,
+            status: "abandoned",
+            lastMergeSourceCommit: { commitId: "same-obsolete-head" },
+          },
+        ],
+        "same-obsolete-head",
+      )?.pullRequestId,
+    ).toBe(16731759);
+    expect(
+      rejectedTaskPullRequest(
+        [
+          {
+            pullRequestId: 16731759,
+            status: "abandoned",
+            lastMergeSourceCommit: { commitId: "old-head" },
+          },
+        ],
+        "meaningfully-revised-head",
+      ),
+    ).toBeNull();
+  });
+
   test("retries a test-issue classification once and blocks instead of falsely converging without a fix", async () => {
     const root = mkdtempSync(join(tmpdir(), "master-validation-no-fix-"));
     try {
@@ -804,6 +874,54 @@ ${JSON.stringify({
       expect(
         standaloneRecoveryChild(raw, failure, "main123", "110", "live"),
       ).toMatchObject({ taskId: (action as { id: string }).id });
+      const laterAction = standaloneRecoveryChildAction({
+        failure,
+        currentMainCommit: "main456",
+        prior,
+      });
+      const duplicateRaw = `## Reconciliation Task\n${JSON.stringify({
+        children: {
+          live: [
+            {
+              taskId: (action as { id: string }).id,
+              generation: 1,
+              phase: "waiting",
+              evidence: ["pipeline-run:140", "pull-request:16730865"],
+            },
+            {
+              taskId: (laterAction as { id: string }).id,
+              generation: 1,
+              phase: "pending",
+              evidence: [],
+            },
+          ],
+        },
+      })}`;
+      expect(
+        standaloneRecoveryChild(
+          duplicateRaw,
+          failure,
+          "main456",
+          "110",
+          "live",
+        ),
+      ).toMatchObject({ taskId: (action as { id: string }).id });
+      expect(shouldDelegateStandaloneRecovery(failure)).toBe(true);
+      expect(
+        shouldDelegateStandaloneRecovery({
+          ...failure,
+          campaignRepairReplay: {
+            reason: "Repair the existing focused patch.",
+            conflictingPaths: [],
+            campaignCompositionCommits: [],
+            sourceEquivalentCommits: [],
+            campaignSourceCommit: "campaign-head",
+            currentMainCommit: "main456",
+            pullRequestId: "16712127",
+            expectedRemoteCommit: "stale-pr-head",
+          },
+        }),
+      ).toBe(false);
       expect(
         standaloneRecoveryCompletionProblem(
           {

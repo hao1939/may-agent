@@ -416,6 +416,21 @@ export function canonicalTaskPullRequest(
   );
 }
 
+export function rejectedTaskPullRequest(
+  pullRequests: PullRequest[],
+  sourceCommit: string,
+): PullRequest | null {
+  const exactSourceCommit = text(sourceCommit);
+  if (!exactSourceCommit) return null;
+  return (
+    pullRequests.find(
+      (pullRequest) =>
+        text(pullRequest.status) === "abandoned" &&
+        text(pullRequest.lastMergeSourceCommit?.commitId) === exactSourceCommit,
+    ) ?? null
+  );
+}
+
 function abandonPullRequest(repoDir: string, pullRequestId: string): boolean {
   const result = command(
     azCli,
@@ -584,6 +599,10 @@ export function requiresStandaloneVerification(input: FailureInput): boolean {
   );
 }
 
+export function shouldDelegateStandaloneRecovery(input: FailureInput): boolean {
+  return requiresStandaloneVerification(input) && !input.campaignRepairReplay;
+}
+
 export function admissionReportRequiresStandaloneVerification(
   input: FailureInput,
 ): boolean {
@@ -733,6 +752,10 @@ function standaloneRecoveryChildId(
   return `domain/master-validation-route-verification/${input.specId}/${revision}`;
 }
 
+function standaloneRecoveryChildPrefix(input: FailureInput): string {
+  return `domain/master-validation-route-verification/${input.specId}/`;
+}
+
 export function standaloneRecoveryChildAction(input: {
   failure: FailureInput;
   currentMainCommit: string;
@@ -790,11 +813,62 @@ export function standaloneRecoveryChild(
     currentMainCommit,
     standaloneBuildId,
   );
-  return (
-    childRecords(raw, kind).find(
-      (child) => text(child.taskId ?? child.id) === expectedId,
-    ) ?? null
+  const children = childRecords(raw, kind);
+  const exact = children.find(
+    (child) => text(child.taskId ?? child.id) === expectedId,
   );
+  if (kind === "completed") return exact ?? null;
+
+  // A route-verification task owns the continuing standalone route. Main
+  // advancing changes the proof target, not the identity of live work. Reuse
+  // the strongest existing child instead of creating one child per main SHA.
+  return (
+    children
+      .filter((child) =>
+        text(child.taskId ?? child.id).startsWith(
+          standaloneRecoveryChildPrefix(input),
+        ),
+      )
+      .sort((left, right) => {
+        const evidence = (child: Record<string, unknown>) =>
+          Array.isArray(child.evidence) ? child.evidence.length : 0;
+        const phase = (child: Record<string, unknown>) =>
+          ["waiting", "attention", "running", "active"].includes(
+            text(child.phase),
+          )
+            ? 1
+            : 0;
+        return (
+          phase(right) - phase(left) ||
+          evidence(right) - evidence(left) ||
+          text(left.taskId ?? left.id).localeCompare(
+            text(right.taskId ?? right.id),
+          )
+        );
+      })[0] ?? null
+  );
+}
+
+function redundantStandaloneRecoveryActions(
+  raw: string,
+  input: FailureInput,
+  retainedTaskId: string,
+): ProjectAppTaskAction[] {
+  return childRecords(raw, "live")
+    .filter((child) => {
+      const taskId = text(child.taskId ?? child.id);
+      return (
+        taskId !== retainedTaskId &&
+        taskId.startsWith(standaloneRecoveryChildPrefix(input)) &&
+        !["active", "running"].includes(text(child.phase))
+      );
+    })
+    .map((child) => ({
+      kind: "close-task" as const,
+      taskId: text(child.taskId ?? child.id),
+      expectedGeneration: Math.max(1, Number(child.generation ?? 1) || 1),
+      summary: `Superseded by the continuing standalone route task ${retainedTaskId}; main advancement changes proof input, not route ownership.`,
+    }));
 }
 
 export function standaloneRecoveryCompletionProblem(
@@ -970,6 +1044,21 @@ export function campaignRepairPublicationRetryReady(input: {
     input.headCommit !== input.expectedRemoteCommit &&
     campaignRepairReady(input),
   );
+}
+
+export function advancedCampaignRepairPullRequest(
+  replay: CampaignRepairContext | null,
+  pullRequest: PullRequest | null,
+): { pullRequestId: string; sourceCommit: string } | null {
+  if (!replay || !pullRequest) return null;
+  const pullRequestId = text(pullRequest.pullRequestId);
+  const sourceCommit = text(pullRequest.lastMergeSourceCommit?.commitId);
+  return pullRequestId &&
+    sourceCommit &&
+    pullRequestId === replay.pullRequestId &&
+    sourceCommit !== replay.expectedRemoteCommit
+    ? { pullRequestId, sourceCommit }
+    : null;
 }
 
 function triggerEvent(raw: string): Record<string, unknown> | null {
@@ -1764,6 +1853,33 @@ function prepareCampaignRepair(
     evidence: string[];
   },
 ): WorkflowResult {
+  const sourceBranchPullRequests = pullRequests(
+    values.repoDir,
+    values.sourceBranch,
+  );
+  const rejectedPullRequest = rejectedTaskPullRequest(
+    sourceBranchPullRequests,
+    values.sourceCommit,
+  );
+  if (rejectedPullRequest) {
+    const pullRequestId = text(rejectedPullRequest.pullRequestId);
+    const summary = `Rejected focused PR ${pullRequestId || "unknown"} already represents unchanged source commit ${values.sourceCommit} for ${input.specId}; preserve the rejection and wait for new source or later current-main proof instead of creating a duplicate PR.`;
+    return waiting(
+      ctx,
+      summary,
+      [
+        ...values.evidence,
+        `blocking-pipeline-run:${input.pipelineRunId}`,
+        `source-branch:${values.sourceBranch}`,
+        `source-commit:${values.sourceCommit}`,
+        ...(pullRequestId ? [`rejected-pull-request:${pullRequestId}`] : []),
+        "duplicate-repair-rejected",
+        "verification-required:later-current-main-spec-pass",
+      ],
+      productRecoveryCondition(input, currentRecoveryBaselineRunId(ctx, input)),
+      absorbLegacyRecoveryActions(ctx.task),
+    );
+  }
   const existingTaskPullRequests = activeTaskPullRequests(
     values.repoDir,
     input.taskId,
@@ -1924,7 +2040,50 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     }
     git(repoDir, ["fetch", "origin", targetBranch]);
     const baseCommit = git(repoDir, ["rev-parse", targetRef]).stdout;
-    const priorStandalone = standaloneRequested
+    const sourceBranch = git(workspaceDir, [
+      "symbolic-ref",
+      "--quiet",
+      "--short",
+      "HEAD",
+    ]).stdout;
+    const advancedRepair = input.campaignRepairReplay
+      ? advancedCampaignRepairPullRequest(
+          input.campaignRepairReplay,
+          canonicalTaskPullRequest(
+            activeTaskPullRequests(repoDir, input.taskId),
+            {
+              preferredPullRequestId: input.campaignRepairReplay.pullRequestId,
+              preferredSourceBranch: sourceBranch,
+            },
+          ),
+        )
+      : null;
+    if (advancedRepair) {
+      ctx.dispatchEvent(
+        "project.task.tick",
+        masterValidationFocusedFixWake(
+          advancedRepair.pullRequestId,
+          advancedRepair.sourceCommit,
+        ),
+      );
+      const summary = `Focused PR ${advancedRepair.pullRequestId} already advanced beyond the stale replay-conflict head for ${input.specId}; campaign verification will evaluate the current PR head without rewriting it.`;
+      return waiting(
+        ctx,
+        summary,
+        [
+          `pull-request:${advancedRepair.pullRequestId}`,
+          `stale-conflict-head:${input.campaignRepairReplay!.expectedRemoteCommit}`,
+          `current-pr-head:${advancedRepair.sourceCommit}`,
+          "verification-required:frozen-campaign-then-current-main",
+        ],
+        productRecoveryCondition(
+          input,
+          currentRecoveryBaselineRunId(ctx, input),
+        ),
+        absorbLegacyRecoveryActions(ctx.task),
+      );
+    }
+    const priorStandalone = shouldDelegateStandaloneRecovery(input)
       ? (requestedStandaloneVerification(input) ??
         priorStandaloneVerification(
           ctx.appDir ?? "/app/projects/aks-rp-e2e.app",
@@ -1994,15 +2153,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           `current-main-commit:${baseCommit}`,
           `verification-child:${childId}`,
         ],
-        liveChild ? [] : [action],
+        liveChild
+          ? redundantStandaloneRecoveryActions(ctx.task, input, childId)
+          : [action],
       );
     }
-    const sourceBranch = git(workspaceDir, [
-      "symbolic-ref",
-      "--quiet",
-      "--short",
-      "HEAD",
-    ]).stdout;
     const frozenBaseCommit = frozenCampaignBaseForFailure(
       input,
       ctx.appDir ?? "/app/projects/aks-rp-e2e.app",

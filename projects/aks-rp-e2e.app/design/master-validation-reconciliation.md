@@ -168,6 +168,10 @@ main@M0
   retained campaign head for a frozen replay, or exact current `main` for a
   successor. Repair is reproduced after the listed predecessor patches on that
   base; an older frozen head must not be presented as the successor base.
+- A campaign-conflict wake takes priority over ordinary failure routing. The
+  stable failure owner repairs or recognizes the already-advanced focused PR
+  before considering a standalone verification fallback; otherwise the
+  conflicting PR stays broken while unrelated route work is duplicated.
 - The failed main run already tested the untouched base, so creating the branch
   does not queue a duplicate run. A fix changing the branch head queues the
   next campaign run immediately.
@@ -375,6 +379,9 @@ same claim passes through its intended execution path. Usually that is the
 current-main aggregate. If generic staging cannot exercise the claim, a direct
 child runs the same spec from current main on the recorded standalone target;
 the parent closes only after that child has real pass and integration proof.
+That live child owns the standalone route across `main` advances. A new main
+commit changes the proof input, not the live child identity; the parent reuses
+the strongest existing child and closes redundant inactive route children.
 The aggregate plan must independently prove that the misrouted spec is no
 longer admitted. The aggregate standing task still remains open until a full
 current-main master-validation run passes. A PR, merge, exclusion,
