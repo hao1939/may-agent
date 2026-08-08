@@ -22,8 +22,9 @@ import {
   appendSessionMessage,
 } from "../../src/lib/persistence.js";
 import { EventBus, type AgentEvent } from "../../src/app/event-bus.js";
-import type { Model } from "@earendil-works/pi-ai";
-import type { AgentMessage } from "@earendil-works/pi-agent-core";
+import { Type, type Model } from "@earendil-works/pi-ai";
+import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
+import { RESPONSES_STREAM_TERMINAL_ERROR } from "../../src/lib/workflow-finish-recovery.js";
 
 function fakeModel(): Model<any> {
   return {
@@ -346,44 +347,64 @@ describe("workflow call empty final turn recovery", () => {
       kind: "call",
       autoClose: "immediate",
       requireFinish: true,
+      outputSchema: Type.Object({
+        state: Type.Union([Type.Literal("converged"), Type.Literal("waiting")]),
+        summary: Type.String(),
+        evidence: Type.Array(Type.String()),
+      }),
       toolCalls: 0,
       turnCount: 1,
     } as any;
     return { sessionId, session, messages, prompts };
   }
 
-  it("retries a workflow/call session after an empty final turn and recovers with finish()", async () => {
+  it("preserves tool evidence and recovers structured finish after the final prompt throws 429", async () => {
     const { sessionId, session, messages, prompts } = makeCallSession(async (promptText, transcript) => {
       if (promptText === "review owner message") {
         transcript.push({ role: "user", content: [{ type: "text", text: promptText }] } as any);
-        transcript.push({ role: "assistant", stopReason: "toolUse", content: [] } as any);
-        return;
+        transcript.push({
+          role: "assistant",
+          content: [{ type: "toolCall", id: "read-1", name: "read", arguments: { path: "proof.txt" } }],
+        } as any);
+        transcript.push({
+          role: "toolResult",
+          toolCallId: "read-1",
+          toolName: "read",
+          content: [{ type: "text", text: "29 tests passed; replay tree matched" }],
+          isError: false,
+        } as any);
+        throw new Error("OpenAI API error (429): No deployments available for selected model, Try again in 5 seconds.");
       }
       transcript.push(
         finishCall("finish-1", {
-          status: "partial",
-          summary: "Escalated with explicit waiting state.",
-          next_steps: "Await runtime confirmation.",
+          status: "success",
+          summary: "Recovered the verified workflow result.",
           result: {
-            state: "waiting",
-            summary: "Escalated empty-final-turn failure after one controller retry.",
-            evidence: ["retry prompt fired after empty final turn"],
+            state: "converged",
+            summary: "Recovered from transient final synthesis failure.",
+            evidence: ["29 tests passed; replay tree matched"],
           },
         }),
       );
-      transcript.push(finishResult("finish-1", "✅ SUCCESS: Escalated with explicit waiting state."));
+      transcript.push(finishResult("finish-1", "✅ SUCCESS: Recovered the verified workflow result."));
     });
 
     const result = await (manager as any).executeSession(session);
 
     expect(result.status).toBe("done");
-    expect(result.structuredResult).toMatchObject({
-      state: "waiting",
-      summary: "Escalated empty-final-turn failure after one controller retry.",
+    expect(result.finishResult).toMatchObject({ status: "success", summary: "Recovered the verified workflow result." });
+    expect(result.structuredResult).toEqual({
+      state: "converged",
+      summary: "Recovered from transient final synthesis failure.",
+      evidence: ["29 tests passed; replay tree matched"],
     });
     expect(prompts).toHaveLength(2);
     expect(prompts[1]).toContain("transient runtime/provider failure or no visible answer");
-    expect(messages.some((message: any) => message.role === "assistant" && Array.isArray(message.content) && message.content.length === 0)).toBe(false);
+    expect(prompts[1]).toContain("schema-validated result payload");
+    expect(messages).toContainEqual(expect.objectContaining({
+      role: "toolResult",
+      content: [{ type: "text", text: "29 tests passed; replay tree matched" }],
+    }));
 
     const end = events.find((event) => event.type === "session.end" && (event as any).data?.sessionId === sessionId);
     expect(end).toMatchObject({
@@ -391,9 +412,65 @@ describe("workflow call empty final turn recovery", () => {
       data: {
         sessionId,
         status: "done",
-        summary: "Escalated with explicit waiting state.",
+        summary: "Recovered the verified workflow result.",
+        finishParams: {
+          status: "success",
+          result: {
+            state: "converged",
+            evidence: ["29 tests passed; replay tree matched"],
+          },
+        },
       },
     });
+  });
+
+  it("recovers and publishes the exact captured-aborted finish shape once without a second model attempt", async () => {
+    const { sessionId, session, messages, prompts } = makeCallSession(async (promptText) => {
+      messages.push({ role: "user", content: [{ type: "text", text: promptText }] } as any);
+      messages.push({
+        ...finishCall("finish-aborted", {
+          status: "success",
+          summary: "Recovered captured receipt.",
+          result: {
+            state: "converged",
+            summary: "Validated exact Responses aborted finish.",
+            evidence: ["captured complete finish"],
+          },
+        }),
+        stopReason: "aborted",
+        errorMessage: RESPONSES_STREAM_TERMINAL_ERROR,
+      } as any);
+      throw new Error(RESPONSES_STREAM_TERMINAL_ERROR);
+    });
+    let executions = 0;
+    session.tools = [{
+      name: "finish",
+      label: "finish",
+      description: "finish",
+      parameters: Type.Object({
+        status: Type.Literal("success"),
+        summary: Type.String(),
+        result: Type.Object({
+          state: Type.Literal("converged"),
+          summary: Type.String(),
+          evidence: Type.Array(Type.String()),
+        }),
+      }),
+      execute: async () => {
+        executions++;
+        return { content: [{ type: "text", text: "SUCCESS" }], terminate: true };
+      },
+    } as AgentTool];
+
+    const result = await (manager as any).executeSession(session);
+
+    expect(result.status).toBe("done");
+    expect(result.error).toBeUndefined();
+    expect(result.structuredResult).toMatchObject({ state: "converged" });
+    expect(prompts).toHaveLength(1);
+    expect(executions).toBe(1);
+    expect(messages.filter((message: any) => message.role === "toolResult" && message.toolCallId === "finish-aborted")).toHaveLength(1);
+    expect(events.filter((event) => event.type === "session.end" && (event as any).data?.sessionId === sessionId)).toHaveLength(1);
   });
 
   it("lets a committed finish receipt win over a racing cancellation", async () => {
@@ -598,6 +675,34 @@ describe("workflow call empty final turn recovery", () => {
         finishParams: null,
       },
     });
+  });
+
+  it("does not loop when the bounded recovery also throws", async () => {
+    const { session, prompts } = makeCallSession(async () => {
+      if (prompts.length === 1) {
+        throw new Error("HTTP 429 Too Many Requests");
+      }
+      throw new Error("HTTP 503 recovery unavailable");
+    });
+
+    const result = await (manager as any).executeSession(session);
+
+    expect(prompts).toHaveLength(2);
+    expect(result.status).toBe("error");
+    expect(result.error).toContain("Initial workflow prompt failed: HTTP 429 Too Many Requests");
+    expect(result.error).toContain("bounded finish recovery failed: HTTP 503 recovery unavailable");
+  });
+
+  it("does not recover authentication failures", async () => {
+    const { session, prompts } = makeCallSession(async () => {
+      throw new Error("AuthenticationError: HTTP 401 Unauthorized");
+    });
+
+    const result = await (manager as any).executeSession(session);
+
+    expect(prompts).toHaveLength(1);
+    expect(result.status).toBe("error");
+    expect(result.error).toBe("AuthenticationError: HTTP 401 Unauthorized");
   });
 });
 

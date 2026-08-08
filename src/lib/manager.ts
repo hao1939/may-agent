@@ -38,7 +38,10 @@ import {
   truncateForPrompt,
 } from "./manager-utils.js";
 import {
+  boundedWorkflowFinishPrompt,
+  recoverCapturedWorkflowFinish,
   shouldAttemptWorkflowFinishRecovery,
+  shouldRequestBoundedWorkflowFinish,
   workflowFinishRecoveryPrompt,
 } from "./workflow-finish-recovery.js";
 import {
@@ -144,6 +147,7 @@ interface ActiveSession {
   timeoutTimer?: ReturnType<typeof setTimeout>;
   toolCalls: number;
   turnCount: number;
+  boundedFinishRequested?: boolean;
   requestId?: string;
   conversationId?: string;
   channelMessageId?: number;
@@ -158,6 +162,7 @@ interface ActiveSession {
   loadedSkillHashes: Set<string>;
   requireFinish: boolean;
   outputSchema?: TSchema;
+  tools?: AgentTool[];
   toolPolicy: "full" | "readonly" | "deputy";
   executionRoot?: string;
 }
@@ -238,6 +243,8 @@ export interface SubagentManagerOptions {
   maxCallDepth?: number;
   /** Maximum silence for job/call sessions. Set to 0 to disable. */
   noObservationTimeoutMs?: number;
+  /** Runtime construction seam used by focused lifecycle tests. */
+  agentRunFactory?: typeof createAgentRun;
 }
 
 const MAX_COMPLETED_RESULTS_IN_MEMORY = 16;
@@ -269,6 +276,7 @@ export class SubagentManager {
   private _registry: RegistryStore;
   private _maxCallDepth: number;
   private _noObservationTimeoutMs: number;
+  private _agentRunFactory: typeof createAgentRun;
   private _createdAt = Date.now();
   private _promptTimestamp = new Date().toISOString();
 
@@ -284,6 +292,7 @@ export class SubagentManager {
     this._registry = new RegistryStore(opts.persistDir);
     this._maxCallDepth = opts.maxCallDepth ?? 8;
     this._noObservationTimeoutMs = opts.noObservationTimeoutMs ?? DEFAULT_NO_OBSERVATION_TIMEOUT_MS;
+    this._agentRunFactory = opts.agentRunFactory ?? createAgentRun;
   }
 
   private rememberCompletedResult(result: TaskResult): void {
@@ -548,7 +557,7 @@ export class SubagentManager {
 
     // Create the same prepared model/tool loop used by direct callers. The
     // durable manager only adds persistence and system-event adapters around it.
-    const agent = createAgentRun(prepared.runner);
+    const agent = this._agentRunFactory(prepared.runner);
 
     // JSONL persistence
     agent.subscribe((event) => {
@@ -585,6 +594,7 @@ export class SubagentManager {
       loadedSkillHashes: new Set(activation ? [activation.contentHash] : []),
       requireFinish,
       outputSchema,
+      tools: prepared.tools,
       toolPolicy,
       executionRoot: opts?.executionRoot,
     };
@@ -642,7 +652,10 @@ export class SubagentManager {
     const timeoutMs = opts?.timeoutMs ?? def.timeoutMs;
     if (timeoutMs) {
       session.timeoutTimer = setTimeout(() => {
+        const reason = `Agent timed out after ${timeoutMs}ms`;
         log("warn", `[runtime] ${sessionId} timed out after ${timeoutMs}ms`);
+        session.status = "interrupted";
+        session.lastError = reason;
         agent.cancel();
       }, timeoutMs);
     }
@@ -1653,9 +1666,48 @@ export class SubagentManager {
         if (session.resumeMessages) {
           agent.state.messages = session.resumeMessages as any;
         }
-        await agent.prompt(session.promptTask ?? task);
-        await agent.waitForIdle();
-        if (session.requireFinish) {
+        let recoveredThrownFailure = false;
+        try {
+          await agent.prompt(session.promptTask ?? task);
+          await agent.waitForIdle();
+        } catch (initialCause) {
+          const initialError = initialCause instanceof Error ? initialCause.message : String(initialCause);
+          const messages = agent.state.messages as AgentMessage[];
+          const beforeRecovery = messages.length;
+          const captured = session.requireFinish
+            ? await recoverCapturedWorkflowFinish({
+                sessionId,
+                messages,
+                tools: session.tools ?? [],
+                reason: initialError,
+              })
+            : { disposition: "ineligible" as const };
+          for (const message of messages.slice(beforeRecovery)) {
+            appendSessionMessage(this._persistDir, sessionId, message);
+          }
+          if (captured.disposition === "recovered" || captured.disposition === "already-committed") {
+            recoveredThrownFailure = true;
+          } else if (
+            session.requireFinish &&
+            !extractFinishParams(messages as any[]) &&
+            shouldAttemptWorkflowFinishRecovery(initialError)
+          ) {
+            recoveredThrownFailure = true;
+            try {
+              await agent.prompt(workflowFinishRecoveryPrompt(session.outputSchema, captured.error ?? initialError));
+              await agent.waitForIdle();
+            } catch (recoveryCause) {
+              const recoveryError = recoveryCause instanceof Error ? recoveryCause.message : String(recoveryCause);
+              throw new Error(
+                `Initial workflow prompt failed: ${initialError}; bounded finish recovery failed: ${recoveryError}`,
+                { cause: recoveryCause },
+              );
+            }
+          } else {
+            throw initialCause;
+          }
+        }
+        if (session.requireFinish && !recoveredThrownFailure) {
           const initialMessages = agent.state.messages as AgentMessage[];
           const missingFinish = !extractFinishParams(initialMessages as any[]);
           const terminalError =
@@ -1676,7 +1728,11 @@ export class SubagentManager {
         }
       });
     } catch (err) {
-      errorText = err instanceof Error ? err.message : String(err);
+      errorText = session.status === "interrupted" && session.lastError
+        ? session.lastError
+        : err instanceof Error
+          ? err.message
+          : String(err);
       log("error", `[runtime] ${sessionId} failed: ${err}`);
     } finally {
       if (session.timeoutTimer) clearTimeout(session.timeoutTimer);
@@ -1689,7 +1745,7 @@ export class SubagentManager {
     const messages = agent.state.messages as AgentMessage[];
     const finishParams = extractFinishParams(messages as any[]);
     const assistantText = extractLastAssistantText(messages);
-    const assistantError = extractLastAssistantError(messages);
+    const assistantError = !finishParams ? extractLastAssistantError(messages) : undefined;
     const terminalAssistantFailure = !finishParams ? classifyTerminalAssistantFailure(messages) : undefined;
     if (!errorText && assistantError) {
       errorText = assistantError;
@@ -2153,6 +2209,13 @@ export class SubagentManager {
           break;
         case "tool_execution_start":
           session.toolCalls++;
+          if (shouldRequestBoundedWorkflowFinish(session.requireFinish, session.toolCalls, session.boundedFinishRequested === true)) {
+            session.boundedFinishRequested = true;
+            agent.steer({
+              role: "user",
+              content: [{ type: "text", text: boundedWorkflowFinishPrompt(session.outputSchema) }],
+            } as any);
+          }
           persistProgress();
           bus.emit({
             type: "tool_call",

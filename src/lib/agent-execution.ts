@@ -38,7 +38,10 @@ import {
   isRetryableEmptyAssistantFailure,
 } from "./manager-utils.js";
 import {
+  boundedWorkflowFinishPrompt,
+  recoverCapturedWorkflowFinish,
   shouldAttemptWorkflowFinishRecovery,
+  shouldRequestBoundedWorkflowFinish,
   workflowFinishRecoveryPrompt,
 } from "./workflow-finish-recovery.js";
 import { runWithAgentSessionContext } from "./agent-session-context.js";
@@ -96,6 +99,7 @@ const boundedStreamSimple: typeof streamSimple = (model, context, options) =>
 
 export type PreparedAgentExecution = {
   definition: SubagentDefinition;
+  sessionId: string;
   task: string;
   prompt: string;
   requireFinish: boolean;
@@ -387,6 +391,7 @@ export function prepareAgentExecution(options: AgentPreparationOptions): Prepare
 
   return {
     definition: options.definition,
+    sessionId: options.sessionId,
     task,
     prompt: activation?.prompt ?? task,
     requireFinish,
@@ -419,6 +424,20 @@ export async function executePreparedAgent(
   const agent = createAgentRun(prepared.runner);
   if (options.initialMessages) agent.state.messages = [...options.initialMessages] as any;
   const unsubscribe = options.onObservation ? agent.subscribe(options.onObservation) : undefined;
+  let boundedFinishRequested = false;
+  let toolCalls = 0;
+  const unsubscribeBoundedFinish = prepared.requireFinish
+    ? agent.subscribe((event) => {
+        if (event.type !== "tool_execution_start") return;
+        toolCalls++;
+        if (!shouldRequestBoundedWorkflowFinish(true, toolCalls, boundedFinishRequested)) return;
+        boundedFinishRequested = true;
+        agent.steer({
+          role: "user",
+          content: [{ type: "text", text: boundedWorkflowFinishPrompt(prepared.outputSchema) }],
+        } as any);
+      })
+    : undefined;
   let timedOut = false;
   let error: string | undefined;
   const timer = options.timeoutMs
@@ -429,9 +448,44 @@ export async function executePreparedAgent(
     : undefined;
 
   try {
-    await agent.prompt(prepared.prompt);
-    await agent.waitForIdle();
-    if (prepared.requireFinish) {
+    let recoveredThrownFailure = false;
+    try {
+      await agent.prompt(prepared.prompt);
+      await agent.waitForIdle();
+    } catch (initialCause) {
+      const initialError = initialCause instanceof Error ? initialCause.message : String(initialCause);
+      const messages = agent.state.messages as AgentMessage[];
+      const captured = prepared.requireFinish
+        ? await recoverCapturedWorkflowFinish({
+            sessionId: prepared.sessionId,
+            messages,
+            tools: prepared.tools,
+            reason: initialError,
+          })
+        : { disposition: "ineligible" as const };
+      if (captured.disposition === "recovered" || captured.disposition === "already-committed") {
+        recoveredThrownFailure = true;
+      } else if (
+        prepared.requireFinish &&
+        !extractFinishParams(messages as any[]) &&
+        shouldAttemptWorkflowFinishRecovery(initialError)
+      ) {
+        recoveredThrownFailure = true;
+        try {
+          await agent.prompt(workflowFinishRecoveryPrompt(prepared.outputSchema, captured.error ?? initialError));
+          await agent.waitForIdle();
+        } catch (recoveryCause) {
+          const recoveryError = recoveryCause instanceof Error ? recoveryCause.message : String(recoveryCause);
+          throw new Error(
+            `Initial workflow prompt failed: ${initialError}; bounded finish recovery failed: ${recoveryError}`,
+            { cause: recoveryCause },
+          );
+        }
+      } else {
+        throw initialCause;
+      }
+    }
+    if (prepared.requireFinish && !recoveredThrownFailure) {
       const messages = agent.state.messages as AgentMessage[];
       const terminalError = extractLastAssistantError(messages) ?? classifyTerminalAssistantFailure(messages);
       if (!extractFinishParams(messages as any[])) {
@@ -459,11 +513,12 @@ export async function executePreparedAgent(
   } finally {
     if (timer) clearTimeout(timer);
     if (typeof unsubscribe === "function") unsubscribe();
+    if (typeof unsubscribeBoundedFinish === "function") unsubscribeBoundedFinish();
   }
 
   const messages = agent.state.messages as AgentMessage[];
   const finishResult = extractFinishParams(messages as any[]) ?? undefined;
-  const assistantError = extractLastAssistantError(messages);
+  const assistantError = !finishResult ? extractLastAssistantError(messages) : undefined;
   const terminalFailure = !finishResult ? classifyTerminalAssistantFailure(messages) : undefined;
   error ??= assistantError ?? terminalFailure;
   if (!error && prepared.requireFinish && !finishResult) {
