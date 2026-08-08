@@ -3,7 +3,9 @@ import { mkdtempSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "./manager.js";
+import type { AgentTool } from "@earendil-works/pi-agent-core";
 import type { Model } from "@earendil-works/pi-ai";
+import { readSessionMeta } from "./persistence.js";
 
 function fakeModel(): Model<any> {
   return {
@@ -72,6 +74,73 @@ describe("SubagentManager timeout enforcement", () => {
     } catch {
       // Expected — fake model can't actually run
     }
+  });
+
+  it("propagates the configured call deadline through the blocking tool AbortSignal and persists interruption", async () => {
+    let observedSignal: AbortSignal | undefined;
+    const blockingTool: AgentTool = {
+      name: "blocking-read",
+      label: "Blocking read",
+      description: "Waits until the owner step is cancelled",
+      parameters: {},
+      execute: async (_id, _params, signal) => {
+        observedSignal = signal;
+        return await new Promise((resolve, reject) => {
+          signal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")), { once: true });
+        });
+      },
+    };
+    const manager = new SubagentManager({
+      persistDir,
+      agentRunFactory: (config: any) => {
+        const controller = new AbortController();
+        const listeners = new Set<(event: any) => void>();
+        const state = { messages: [], systemPrompt: config.initialState.systemPrompt } as any;
+        return {
+          state,
+          prompt: async () => {
+            const call = {
+              role: "assistant",
+              content: [{ type: "toolCall", id: "blocking_1", name: "blocking-read", arguments: {} }],
+              timestamp: Date.now(),
+            };
+            state.messages.push(call);
+            for (const listener of listeners) listener({ type: "message_end", message: call });
+            await config.initialState.tools[0].execute("blocking_1", {}, controller.signal);
+          },
+          waitForIdle: async () => undefined,
+          followUp: () => undefined,
+          continue: async () => undefined,
+          steer: () => undefined,
+          cancel: () => controller.abort(),
+          subscribe: (listener: (event: any) => void) => {
+            listeners.add(listener);
+            return () => listeners.delete(listener);
+          },
+        };
+      },
+    });
+    manager.register({
+      name: "owner-step",
+      description: "Owner step with a blocking tool",
+      domain: "test",
+      systemPrompt: "Use the blocking tool.",
+      model: fakeModel(),
+      tools: [blockingTool],
+      apiKey: "fake-key",
+    });
+
+    const result = await manager.callAgent("owner-step", "inspect evidence", { timeout: 25 });
+
+    expect(observedSignal).toBeDefined();
+    expect(observedSignal?.aborted).toBe(true);
+    expect(result.status).toBe("interrupted");
+    expect(result.error).toBe("Agent timed out after 25ms");
+    expect(readSessionMeta(persistDir, result.sessionId)).toMatchObject({
+      status: "interrupted",
+      error: "Agent timed out after 25ms",
+    });
+    expect(manager.hasActiveSession(result.sessionId)).toBe(false);
   });
 
   it("does not set a timeout when timeoutMs is not configured", () => {
