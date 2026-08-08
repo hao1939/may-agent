@@ -7,7 +7,7 @@ import { Cron } from "../cron";
 import { EVENT_ROW_ID, EventBus } from "../event-bus";
 import { closeDb, getDb, upsertSession } from "../../lib/requests";
 import { DbWriter } from "../../lib/db-writer";
-import { readSessionMeta, readSessionMessages, writeSessionMeta } from "../../lib/persistence";
+import { markSessionActive, readSessionMeta, readSessionMessages, writeSessionMeta } from "../../lib/persistence";
 import { projectRuntimePaths } from "@may-agent/sdk";
 import { prepareProjectTaskWorkspace } from "../project-task-workspace";
 import {
@@ -30,7 +30,7 @@ import {
 
 describe("project app host backpressure", () => {
   it("uses a safe convention while allowing one explicit override", () => {
-    expect(projectAppGlobalConcurrency(undefined)).toBe(2);
+    expect(projectAppGlobalConcurrency(null)).toBe(2);
     expect(projectAppGlobalConcurrency("3")).toBe(3);
     expect(projectAppGlobalConcurrency("0")).toBe(2);
     expect(projectAppGlobalConcurrency("invalid")).toBe(2);
@@ -403,6 +403,47 @@ describe("project app loader handler result normalization", () => {
         },
       ],
     });
+  });
+
+  it("runs app-local action preflight after normalization and before mutation", () => {
+    const validateAction = (action: { workflow?: string; input?: Record<string, unknown> }) =>
+      action.workflow === "spec-live-reconciliation" && action.input?.sourceBranch === "origin/dev"
+        ? "requires a dedicated task branch"
+        : null;
+    for (const action of [
+      {
+        kind: "create-task",
+        id: "domain/bad-create",
+        outcome: "Bad create",
+        acceptance: ["Never materializes."],
+        workflow: "spec-live-reconciliation",
+        input: { sourceBranch: "origin/dev" },
+      },
+      {
+        kind: "update-task",
+        taskId: "domain/bad-update",
+        expectedGeneration: 1,
+        workflow: "spec-live-reconciliation",
+        input: { sourceBranch: "origin/dev" },
+      },
+    ]) {
+      expect(
+        normalizeTaskHandlerResult(
+          {
+            state: "converged",
+            summary: "attempt invalid prepared source",
+            evidence: ["regression"],
+            actions: [action],
+          },
+          { type: "done", summary: "fallback", runId: "s_owner" },
+          { defaultParentId: "root", validateAction },
+        ),
+      ).toMatchObject({
+        state: "error",
+        summary: "Handler result was rejected: actions[0] requires a dedicated task branch",
+        actions: [],
+      });
+    }
   });
 });
 
@@ -3429,6 +3470,7 @@ describe("project app loader", () => {
             "session:owner-old",
             "artifact:sessions/owner-old/result.json",
             "transcript:sessions/owner-old/session.jsonl",
+            "checkpoint:absent:owner-old",
             "recovery-reason:Recovered task work/orphan-owner interrupted an orphaned owner session from a previous runtime",
           ]),
         },
@@ -3697,6 +3739,14 @@ describe("project app loader", () => {
             ],
             timestamp: Date.now() - 5_000,
           }),
+          JSON.stringify({
+            role: "toolResult",
+            toolCallId: "finish_1",
+            toolName: "finish",
+            content: [{ type: "text", text: "SUCCESS" }],
+            isError: false,
+            timestamp: Date.now() - 4_999,
+          }),
         ].join("\n") + "\n",
       );
 
@@ -3759,7 +3809,7 @@ describe("project app loader", () => {
     }
   });
 
-  it("does not release a previous-runtime owner attempt while its session is still active", async () => {
+  it("does not release a previous-runtime owner attempt with an in-flight live-process lease", async () => {
     const f = fixture();
     try {
       writeApp(f.appDir);
@@ -3833,6 +3883,15 @@ describe("project app loader", () => {
         projectId: "sample",
         startedAt: Date.now() - 60_000,
       });
+      markSessionActive(f.persistDir, "owner-old");
+      writeFileSync(
+        join(f.persistDir, "sessions", "owner-old", "session.jsonl"),
+        JSON.stringify({
+          role: "assistant",
+          content: [{ type: "toolCall", id: "read_in_flight", name: "read", arguments: { path: "evidence.json" } }],
+          timestamp: Date.now(),
+        }) + "\n",
+      );
 
       const bus = new EventBus();
       const events: any[] = [];
@@ -3845,7 +3904,7 @@ describe("project app loader", () => {
         sharedRoot: join(f.root, "shared"),
         manager: {
           ...manager([]),
-          hasActiveSession: (sessionId: string) => sessionId === "owner-old",
+          hasActiveSession: () => false,
           cancel: () => {
             throw new Error("active recovered owner session should not be cancelled as orphaned");
           },
@@ -3947,6 +4006,9 @@ describe("project app loader", () => {
         startedAt: Date.now() - 5_000,
         lastActivityAt: Date.now() - 1_500,
       });
+      // Timestamp-only markers were written before pid-aware ownership leases.
+      // They must remain recoverable rather than blocking forever after a crash.
+      writeFileSync(join(f.persistDir, "sessions", "owner-old", "[ACTIVE]"), new Date().toISOString());
 
       const bus = new EventBus();
       const events: any[] = [];
@@ -4077,10 +4139,26 @@ describe("project app loader", () => {
           }),
           JSON.stringify({
             role: "assistant",
-            content: [{ type: "text", text: "Current canonical checkout is diverged; remaining path is staging.summary.md" }],
+            content: [
+              { type: "text", text: "Current canonical checkout is diverged; remaining path is staging.summary.md" },
+              { type: "toolCall", id: "pending_read_1", name: "read", arguments: { path: "tree.json" } },
+            ],
             timestamp: Date.now() - 20_000,
           }),
         ].join("\n") + "\n",
+      );
+      const checkpointDir = join(f.persistDir, "checkpoints");
+      mkdirSync(checkpointDir, { recursive: true });
+      writeFileSync(
+        join(checkpointDir, "owner-old.jsonl"),
+        JSON.stringify({
+          sessionId: "owner-old",
+          agentName: "sample-owner",
+          step: 3,
+          timestamp: Date.now() - 25_000,
+          summary: "Verified branch ancestry; only approval disposition remains",
+          data: { next_steps: "Inspect staging.summary.md and finish" },
+        }) + "\n",
       );
 
       const ownerCalls: string[] = [];
@@ -4120,10 +4198,34 @@ describe("project app loader", () => {
         requireFinish: true,
         source: "project-app-task-owner",
       });
+      expect(ownerCalls[0]).toContain("Loss-prevention checkpoint discipline:");
+      expect(ownerCalls[0]).toContain("immediately after gathering the first acceptance-critical evidence");
+      expect(ownerCalls[0]).toContain("If no checkpoint was persisted, recovery records that absence explicitly");
       expect(ownerCalls[0]).toContain('"fallbackReason": "recovered-session:');
       expect(ownerCalls[0]).toContain(`Recovered interrupted owner session metadata: ${join(f.persistDir, "sessions", "owner-old", "meta.json")}`);
       expect(ownerCalls[0]).toContain(`Recovered interrupted owner session artifact: ${join(f.persistDir, "sessions", "owner-old", "result.json")}`);
       expect(ownerCalls[0]).toContain(`Recovered interrupted owner session transcript: ${join(f.persistDir, "sessions", "owner-old", "session.jsonl")}`);
+      expect(ownerCalls[0]).toContain(
+        `Recovered latest durable checkpoint: ${join(f.persistDir, "checkpoints", "owner-old.jsonl")} step=3 summary=Verified branch ancestry; only approval disposition remains`,
+      );
+      const recoveredMessages = readSessionMessages(f.persistDir, "owner-old") as any[];
+      expect(recoveredMessages).toContainEqual(
+        expect.objectContaining({
+          role: "toolResult",
+          toolCallId: "pending_read_1",
+          toolName: "read",
+          isError: true,
+        }),
+      );
+      const recoveredResult = JSON.parse(
+        readFileSync(join(f.persistDir, "sessions", "owner-old", "result.json"), "utf8"),
+      );
+      expect(recoveredResult.recovery.evidence).toEqual(
+        expect.arrayContaining([
+          "checkpoint:checkpoints/owner-old.jsonl#step-3:Verified branch ancestry; only approval disposition remains",
+          "recovered-pending-tools:read",
+        ]),
+      );
       expect(ownerCalls[0]).toContain("Recovered transcript snippet: tool:bash HEAD 813448ce ORIGIN_DEV 2ebef7c2 FF_ONLY_CHECK failed");
       expect(ownerCalls[0]).toContain(
         "Recovered transcript snippet: assistant Current canonical checkout is diverged; remaining path is staging.summary.md",

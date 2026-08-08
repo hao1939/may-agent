@@ -26,6 +26,7 @@ import {
   type TaskStateConfig,
 } from "@may-agent/sdk";
 import { readSessionMessages, readSessionMeta, sessionDir } from "../lib/persistence.js";
+import { readLatestCheckpoint } from "../lib/tools/checkpoint.js";
 import { applyProjectAppConditionEvent } from "./project-app-condition-tracker.js";
 
 export const PROJECT_APP_TASK_RECOVERY_OWNER = "project-app-task-reconciler";
@@ -358,10 +359,15 @@ function buildRecoveredSessionHandoff(
   const resultPath = join(sessionDir(persistDir, attempt.sessionId), "result.json");
   const transcriptPath = join(sessionDir(persistDir, attempt.sessionId), "session.jsonl");
   const sessionLabel = attempt.handler.startsWith("owner:") ? "owner session" : `${attempt.handler} session`;
+  const checkpointPath = join(persistDir, "checkpoints", `${attempt.sessionId}.jsonl`);
+  const checkpoint = readLatestCheckpoint(persistDir, attempt.sessionId);
   const evidence = [
     `Recovered interrupted ${sessionLabel} metadata: ${metaPath}`,
     `Recovered interrupted ${sessionLabel} artifact: ${resultPath}`,
     `Recovered interrupted ${sessionLabel} transcript: ${transcriptPath}`,
+    checkpoint
+      ? `Recovered latest durable checkpoint: ${checkpointPath} step=${checkpoint.step} summary=${checkpoint.summary}`
+      : `Recovered durable checkpoint: absent for session ${attempt.sessionId}`,
   ];
   if (existsSync(transcriptPath)) {
     for (const snippet of readSessionMessages(persistDir, attempt.sessionId)

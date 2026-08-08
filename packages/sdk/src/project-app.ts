@@ -333,6 +333,8 @@ export type ProjectAppTaskTrigger = {
 export type ProjectAppTasks = {
   accepts: EventSelector[];
   resolve(event: Record<string, unknown>): ProjectAppTaskIntent | null;
+  /** App-local mechanical admission after convention defaults and before task mutation. */
+  validateAction?(action: ProjectAppTaskAction): string | null;
   resyncIntervalMs?: number;
 };
 
