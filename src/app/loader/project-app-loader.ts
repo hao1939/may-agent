@@ -13,11 +13,13 @@ import { createQueryService } from "../../lib/query-service.js";
 import {
   appendSessionMessage,
   markSessionInactive,
+  readActiveSessionProcessId,
   readSessionMeta,
   readSessionMessages,
   writeSessionMeta,
 } from "../../lib/persistence.js";
 import { extractFinishParams } from "../../lib/agent-result.js";
+import { readLatestCheckpoint } from "../../lib/tools/checkpoint.js";
 import { STATE_CHANGING_TOOLS } from "../../lib/manager-utils.js";
 import { writeSessionResult } from "../../lib/artifacts.js";
 import {
@@ -242,6 +244,8 @@ function hasLiveProjectTaskSession(
   if (!meta || (meta.status !== "running" && meta.status !== "idle")) return false;
 
   if (meta.detached && isProcessAlive(meta.pid)) return true;
+  const leasePid = readActiveSessionProcessId(opts.persistDir, cleanSessionId);
+  if (leasePid && isProcessAlive(leasePid)) return true;
   return false;
 }
 
@@ -758,6 +762,7 @@ export function normalizeTaskHandlerResult(
     allowNeedsOwner?: boolean;
     defaultParentId?: string;
     rootParentAliases?: string[];
+    validateAction?: (action: ProjectAppTaskAction) => string | null;
   } = {},
 ): NormalizedTaskHandlerResult {
   if (output === undefined && fallback.type === "blocked") {
@@ -781,9 +786,23 @@ export function normalizeTaskHandlerResult(
       actions: [],
     };
   }
+  const actions = admission.result.actions ?? [];
+  if (options.validateAction) {
+    for (let index = 0; index < actions.length; index += 1) {
+      const problem = options.validateAction(actions[index]!);
+      if (problem) {
+        return {
+          state: "error",
+          summary: `Handler result was rejected: actions[${index}] ${problem}`,
+          evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
+          actions: [],
+        };
+      }
+    }
+  }
   return {
     ...admission.result,
-    actions: admission.result.actions ?? [],
+    actions,
   };
 }
 
@@ -898,6 +917,7 @@ async function runTaskCapability(input: {
         allowNeedsOwner: true,
         defaultParentId: input.defaultParentId,
         rootParentAliases: [input.descriptor.id, basename(input.descriptor.projectDir)],
+        validateAction: input.descriptor.app.tasks?.validateAction,
       },
     );
     opts.bus.emit({
@@ -1010,6 +1030,7 @@ function extractReconciliationTaskId(taskPrompt: string | undefined): string | n
 
 function summarizeInterruptedOwnerRecovery(input: {
   meta: { task?: string; source?: string };
+  persistDir: string;
   sessionId: string;
   reason: string;
   repairedPendingTools: string[];
@@ -1023,11 +1044,15 @@ function summarizeInterruptedOwnerRecovery(input: {
   const summary = taskId
     ? `Owner session for ${taskId} was interrupted by runtime recovery before finish() persisted; the original app task was requeued and should be decided by the replacement attempt, not this recovery wrapper.`
     : "Owner session was interrupted by runtime recovery before finish() persisted; the original app task was requeued and should be decided by the replacement attempt, not this recovery wrapper.";
+  const checkpoint = readLatestCheckpoint(input.persistDir, input.sessionId);
   const evidence = [
     ...(taskId ? [`task:${taskId}`] : []),
     `session:${input.sessionId}`,
     `artifact:sessions/${input.sessionId}/result.json`,
     `transcript:sessions/${input.sessionId}/session.jsonl`,
+    checkpoint
+      ? `checkpoint:checkpoints/${input.sessionId}.jsonl#step-${checkpoint.step}:${checkpoint.summary}`
+      : `checkpoint:absent:${input.sessionId}`,
     `recovery-reason:${input.reason}`,
     ...(input.repairedPendingTools.length > 0
       ? [`recovered-pending-tools:${input.repairedPendingTools.join(",")}`]
@@ -1053,14 +1078,18 @@ function interruptSupersededOwnerSession(
   const meta = opts.persistDir ? readSessionMeta(opts.persistDir, cleanSessionId) : null;
   if (!meta || (meta.status !== "running" && meta.status !== "idle")) return;
 
-  const repairedPendingTools = opts.persistDir
-    ? recoverPendingToolResultsFromTranscript(opts.persistDir, cleanSessionId)
-    : [];
+  // Capture a completed finish call before repairing genuinely pending tool
+  // calls: finish() may be the final transcript entry, and synthesizing an
+  // interruption result for it would hide the valid terminal decision.
   const recoveredFinish = opts.persistDir
     ? extractFinishParams(readSessionMessages(opts.persistDir, cleanSessionId) as any[])
     : null;
+  const repairedPendingTools = opts.persistDir
+    ? recoverPendingToolResultsFromTranscript(opts.persistDir, cleanSessionId)
+    : [];
   const interruptedRecovery = summarizeInterruptedOwnerRecovery({
     meta,
+    persistDir: opts.persistDir!,
     sessionId: cleanSessionId,
     reason,
     repairedPendingTools,
@@ -1225,6 +1254,8 @@ async function runTaskOwner(input: {
     "```",
     'You are already the resolved owner; do not return state "needs-owner". Decide converged or waiting. Waiting requires exact Conditions or live direct children.',
     "Valid states for this owner result are exactly: converged or waiting.",
+    "Loss-prevention checkpoint discipline: immediately after gathering the first acceptance-critical evidence, call checkpoint() once with a concise evidence summary, the next bounded step, and exact artifact/session paths a replacement owner needs. Refresh it only when those facts materially change, then call finish() as soon as the decision is supportable.",
+    "Startup recovery exposes the latest durable checkpoint to the replacement prompt. If no checkpoint was persisted, recovery records that absence explicitly; never infer a resumable decision from checkpoint absence.",
     'For mode "achieve", missing evidence is work to do, not by itself a reason to create another task. If the task asks to queue, run, publish, verify, inspect, or repair something, do that concrete work now and report the evidence. Return "converged" only when this task\'s own outcome and acceptance are satisfied or its contract explicitly accepts the evidenced terminal disposition.',
     "When different bounded work is required before this task can satisfy acceptance, create that work as a direct child with parentId equal to the current Reconciliation Task taskId and return waiting. A sibling successor does not complete the current task.",
     "Create a successor task only when this carrier cannot do the work because the target is stale, the task is too broad for one bounded attempt, or a real evidenced blocker requires different follow-up. If that successor is required for current acceptance, it is a direct child and the current task remains waiting.",
@@ -1337,6 +1368,7 @@ async function runTaskOwner(input: {
       allowNeedsOwner: false,
       defaultParentId: input.defaultParentId,
       rootParentAliases: [input.descriptor.id, basename(input.descriptor.projectDir)],
+      validateAction: input.descriptor.app.tasks?.validateAction,
     },
   );
   return {
