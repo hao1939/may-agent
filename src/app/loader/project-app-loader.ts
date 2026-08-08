@@ -2300,12 +2300,21 @@ function replayPersistedConditionEvents(
     .prepare(
       `SELECT event_type, source, timestamp, data
        FROM events
-       WHERE project_id = ?
+       WHERE (
+         project_id = ?
+         OR (
+           json_valid(data) = 1
+           AND (
+             json_extract(data, '$.project') = ?
+             OR json_extract(data, '$.target.project') = ?
+           )
+         )
+       )
          AND event_type IN (${placeholders})
        ORDER BY id DESC
        LIMIT 2000`,
     )
-    .all(descriptor.id, ...eventTypes) as Array<{
+    .all(descriptor.id, descriptor.id, descriptor.id, ...eventTypes) as Array<{
     event_type?: unknown;
     source?: unknown;
     timestamp?: unknown;
