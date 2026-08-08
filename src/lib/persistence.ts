@@ -327,7 +327,7 @@ function isPermissionError(err: unknown): err is NodeJS.ErrnoException {
 export function markSessionActive(persistDir: string, sessionId: string): void {
   ensureSessionDir(persistDir, sessionId);
   const markerPath = join(sessionDir(persistDir, sessionId), ACTIVE_MARKER);
-  const content = new Date().toISOString();
+  const content = JSON.stringify({ pid: process.pid, activatedAt: new Date().toISOString() });
   try {
     writeFileSync(markerPath, content, "utf-8");
   } catch (err) {
@@ -352,6 +352,19 @@ export function markSessionActive(persistDir: string, sessionId: string): void {
       writeFileSync(tmpPath, content, "utf-8");
       renameSync(tmpPath, markerPath);
     }
+  }
+}
+
+/** Return the process that currently owns a session lease, if the marker uses the pid-aware format. */
+export function readActiveSessionProcessId(persistDir: string, sessionId: string): number | null {
+  try {
+    const raw = readFileSync(join(sessionDir(persistDir, sessionId), ACTIVE_MARKER), "utf-8");
+    const parsed = JSON.parse(raw) as { pid?: unknown };
+    return Number.isInteger(parsed.pid) && Number(parsed.pid) > 0 ? Number(parsed.pid) : null;
+  } catch {
+    // Legacy timestamp-only markers remain discoverable for ordinary startup
+    // recovery, but cannot prove that a process still owns the session.
+    return null;
   }
 }
 
