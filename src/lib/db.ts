@@ -32,7 +32,7 @@ export interface SqliteDb {
 type Runtime = "bun" | "node";
 
 function detectRuntime(): Runtime {
-  if (typeof Bun !== "undefined") return "bun";
+  if (typeof (globalThis as { Bun?: unknown }).Bun !== "undefined") return "bun";
   return "node";
 }
 
