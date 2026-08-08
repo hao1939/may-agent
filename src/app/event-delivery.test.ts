@@ -39,6 +39,62 @@ function attachPersistence(bus: EventBus, root: string): void {
   bus.setDeliveryRecorder(writer.recordDelivery);
 }
 
+describe("delivery acceptance recording", () => {
+  it("retries transient SQLite contention instead of leaving an accepted event unhandled", () => {
+    const root = tempRoot();
+    try {
+      const writer = new DbWriter(root);
+      const event = {
+        type: "workflow.completed",
+        source: "workflow:test",
+        owner: "agent:test-owner",
+        data: { workflowRunId: "wr_test" },
+      } as any;
+      writer.handler(event);
+      const rowId = event[EVENT_ROW_ID];
+      const db = getDb(root);
+      let beginAttempts = 0;
+      const flakyDb = new Proxy(db as object, {
+        get(target, property) {
+          if (property === "exec") {
+            return (sql: string) => {
+              if (sql === "BEGIN IMMEDIATE" && beginAttempts++ === 0) {
+                throw new Error("database is locked");
+              }
+              return db.exec(sql);
+            };
+          }
+          const value = Reflect.get(target, property);
+          return typeof value === "function" ? value.bind(target) : value;
+        },
+      });
+      (writer as unknown as { db: typeof db }).db = flakyDb as typeof db;
+
+      writer.recordDelivery(event, {
+        by: "event-pair-tracker",
+        route: "direct",
+        note: "workflow pair closed",
+      });
+
+      expect(beginAttempts).toBe(2);
+      expect(
+        db
+          .prepare(
+            "SELECT delivery_status, accepted_by, delivery_route FROM events WHERE id = ?",
+          )
+          .get(rowId),
+      ).toMatchObject({
+        delivery_status: "accepted",
+        accepted_by: "event-pair-tracker",
+        delivery_route: "direct",
+      });
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
 describe("retry-safe event ingress", () => {
   it("returns the original receipt and delivers an idempotent intent once", () => {
     const root = tempRoot();
@@ -1831,30 +1887,33 @@ describe("event delivery metadata", () => {
     }
   });
 
-  it("accepts reconciled session.end lifecycle facts as terminal no-ops", async () => {
+  it("accepts reconciled terminal session.end lifecycle facts as terminal no-ops", async () => {
     const root = tempRoot();
     try {
       const bus = new EventBus();
       attachPersistence(bus, root);
       const db = getDb(root);
 
-      db.prepare(
+      const insert = db.prepare(
         `INSERT INTO events
          (event_type, source, owner, data, timestamp, ttl_ms)
          VALUES (?, ?, ?, ?, ?, ?)`,
-      ).run(
-        "session.end",
-        null,
-        null,
-        JSON.stringify({
-          sessionId: "s_123",
-          agent: "evaluator",
-          status: "done",
-          reconciled: true,
-        }),
-        Date.now(),
-        1,
       );
+      for (const status of ["done", "error", "interrupted"]) {
+        insert.run(
+          "session.end",
+          null,
+          null,
+          JSON.stringify({
+            sessionId: `s_${status}`,
+            agent: "evaluator",
+            status,
+            reconciled: true,
+          }),
+          Date.now(),
+          1,
+        );
+      }
 
       await new Promise((resolve) => setTimeout(resolve, 5));
       bus.emit({
@@ -1864,18 +1923,22 @@ describe("event delivery metadata", () => {
         data: { handler: "sample", agent: "may", durationMs: 5 },
       } as any);
 
-      const row = db
+      const rows = db
         .prepare(
           `SELECT delivery_status, accepted_by, delivery_route
          FROM events
-         WHERE event_type = 'session.end'`,
+         WHERE event_type = 'session.end'
+         ORDER BY id`,
         )
-        .get() as Record<string, unknown>;
-      expect(row).toMatchObject({
-        delivery_status: "accepted",
-        accepted_by: "terminal-noop",
-        delivery_route: "noop",
-      });
+        .all() as Record<string, unknown>[];
+      expect(rows).toHaveLength(3);
+      for (const row of rows) {
+        expect(row).toMatchObject({
+          delivery_status: "accepted",
+          accepted_by: "terminal-noop",
+          delivery_route: "noop",
+        });
+      }
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
