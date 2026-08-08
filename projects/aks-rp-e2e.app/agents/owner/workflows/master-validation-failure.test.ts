@@ -17,6 +17,8 @@ import {
   changedFilesMayAffectSpec,
   currentRecoveryBaselineRunId,
   execute,
+  failureInvestigationClassificationGuidance,
+  generatedSharedFixtureSetupDefect,
   frozenCampaignBaseForFailure,
   hasPreparedRepair,
   inconclusiveWait,
@@ -57,6 +59,29 @@ function git(cwd: string, ...args: string[]): string {
 }
 
 describe("master-validation failure workflow", () => {
+  test("treats invalid generated shared-fixture requests as test issues", () => {
+    expect(failureInvestigationClassificationGuidance).toContain(
+      "A shared-fixture setup failure is test_issue",
+    );
+    expect(failureInvestigationClassificationGuidance).toContain(
+      "Do not label an invalid generated setup request as a product issue",
+    );
+    expect(failureInvestigationClassificationGuidance).not.toContain(
+      "including shared cluster setup before feature assertions",
+    );
+    expect(
+      generatedSharedFixtureSetupDefect({
+        reason:
+          'Shared cluster setup failed: HTTP 400 {"code":"OnlySupportedOnUserAssignedMSICluster"}',
+      }),
+    ).toBe(true);
+    expect(
+      generatedSharedFixtureSetupDefect({
+        reason: "Managed cluster update remained stuck in Updating.",
+      }),
+    ).toBe(false);
+  });
+
   test("declares a main-based task worktree", () => {
     expect(workspace).toEqual({ kind: "task", baseBranch: "main" });
   });

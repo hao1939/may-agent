@@ -28,6 +28,21 @@ const adoProject = "CloudNativeCompute";
 const repository = "aks-e2e-spec-runner";
 const targetBranch = "main";
 const targetRef = "origin/main";
+export const failureInvestigationClassificationGuidance = [
+  "Classify the root cause as test_issue, prod_issue, or inconclusive.",
+  "Use prod_issue only when live evidence shows that a source-valid provider/product operation failed or remained stuck.",
+  "A shared-fixture setup failure is test_issue when the generated request violates a provider prerequisite, combines incompatible spec shapes, or otherwise fails before the intended source scenario can run. Do not label an invalid generated setup request as a product issue merely because Azure rejected it.",
+  "Use inconclusive only when the evidence cannot distinguish provider behavior from a repository-owned carrier, assertion, cleanup, planner, fixture, or orchestration defect.",
+].join("\n");
+
+export function generatedSharedFixtureSetupDefect(
+  input: Pick<FailureInput, "reason">,
+): boolean {
+  return (
+    /shared cluster setup failed/i.test(input.reason) &&
+    /OnlySupportedOnUserAssignedMSICluster/i.test(input.reason)
+  );
+}
 const azCli =
   process.env.AZURE_CLI_PATH ||
   (existsSync("/app/.state/.local/bin/az")
@@ -2282,6 +2297,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     const priorProduct = priorProductClassification(ctx.task);
     if (
       priorProduct &&
+      !generatedSharedFixtureSetupDefect(input) &&
       ["environment_blocker", "product_failure", "prod_issue"].includes(
         input.category,
       )
@@ -2415,8 +2431,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       frozenBaseCommit
         ? `Work only in ${workspaceDir}, based on current ${targetRef}@${baseCommit}. Keep the PR mergeable to main; the campaign controller will replay only the focused patch onto frozen base ${frozenBaseCommit}.`
         : `Work only in ${workspaceDir}, which is based on ${targetRef}@${baseCommit}.`,
-      "Classify the root cause as test_issue, prod_issue, or inconclusive.",
-      "Use prod_issue when live evidence identifies a provider/product operation that failed or remained stuck, including shared cluster setup before feature assertions; name that actual operation and do not imply a feature-specific regression. Use inconclusive only when the evidence cannot distinguish provider behavior from a repository-owned carrier, assertion, cleanup, or orchestration defect.",
+      failureInvestigationClassificationGuidance,
       "For test_issue, make the smallest source fix, run scoped local verification, commit it, and leave the worktree clean. Do not push or create a PR; the workflow owns publication.",
       "For prod_issue or inconclusive, do not modify source. Cite exact artifact/log evidence.",
       "Do not stop or wait for the aggregate pipeline; investigate this completed slice now.",
