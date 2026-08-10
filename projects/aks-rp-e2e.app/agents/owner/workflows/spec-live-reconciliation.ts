@@ -5,6 +5,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  renameSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -40,6 +41,7 @@ import {
   type ScenarioQualityInvariant,
 } from "./lib/scenario-quality-invariant.js";
 import { integrateDirectlyIntoDev } from "./lib/direct-dev-integration.js";
+import { assertIsolatedWriteDispatch } from "./lib/write-dispatch-guard.js";
 
 export const name = "spec-live-reconciliation";
 export const description =
@@ -72,6 +74,32 @@ export const transientRetryDiagnosisInstruction =
   "Do not trust a result's blocked/error category or environment/transient label as the diagnosis. A timeout, generic ARM failure, incomplete provisioning state, or successful cleanup alone does not prove that an unchanged retry is truthful. Before retry-transient, inspect the exact task source and failure-stage evidence for deterministic ordering, identity, authorization, configuration, and API-contract mistakes, and state affirmative evidence that excludes those causes. When the available evidence cannot distinguish a provider incident from a source defect, improve the carrier's failure diagnostics or return one exact observable wait; do not guess transient.";
 export const scenarioQualityRepairInstruction =
   "For a quality-normalization task, resolve every cited structural quality issue before requesting ADO. Read the current strict inventory and exact source yourself, repair the same carrier/spec in this task, and keep iterating until the cited issue codes are absent. Ground contract expectations in official Learn, Azure REST API specs, and checked-in design docs; treat mounted AKS RP or Go source as implementation evidence only, and never require a private/local filesystem path as carrier authority. A green ADO run proves execution only; it does not waive missing official grounding, migration-only scaffolding, target/mutation gates, or fixture/cleanup ownership.";
+export const earlyCheckpointInstruction =
+  "Before broad carrier research, run the narrowest task-specific gate and state its exact command/result. For a multi-spec repair, first make a compact per-spec gate matrix from the task-selected spec/carrier paths so one difficult row cannot consume the whole judgment. Immediately record the narrowed result, current HEAD, next bounded source move, and any work already performed in the durable task context; commit a clean source checkpoint as soon as one coherent repair exists. On resume, inspect the retained task worktree and checkpoint before repeating research. Inspect package.json scripts before choosing verification commands. Use repository-supported Bun-native forms such as `bun test <file>` or `bun run <script> -- <args>`; when `bunx` is unavailable, do not retry it or replace the scoped check with an unrelated command.";
+
+export const specLiveWorkflowDeadlineMs = 2_700_000;
+export const specLiveWorkflowMarginMs = 300_000;
+export const specLiveInitialAgentCallMs = 900_000;
+export const specLiveFollowupAgentCallMs = 600_000;
+export const specLiveMinimumAgentCallMs = 120_000;
+
+const workflowDeadlines = new WeakMap<object, number>();
+
+export function admittedAgentCallTimeoutMs(input: {
+  deadlineMs: number;
+  nowMs: number;
+  attempt: number;
+}): number | null {
+  const availableForCall =
+    input.deadlineMs - input.nowMs - specLiveWorkflowMarginMs;
+  const nominal =
+    input.attempt === 1
+      ? specLiveInitialAgentCallMs
+      : specLiveFollowupAgentCallMs;
+  const admitted = Math.min(nominal, availableForCall);
+  return admitted >= specLiveMinimumAgentCallMs ? admitted : null;
+}
+
 const azCli =
   process.env.AZURE_CLI_PATH ||
   (existsSync("/app/.state/.local/bin/az")
@@ -102,6 +130,12 @@ export const workflowContract: WorkflowIoContract = {
       "input.invalidatedRunId",
       "input.invalidatedClaimIds",
       "input.invalidatedSourcePaths",
+      "input.liveSpecIds",
+      "input.requireFreshBaseAtDispatch",
+      "input.baseRef",
+      "input.boundedChangedFiles",
+      "input.baselineCommit",
+      "input.priorRetainedWorkspace",
     ],
     description:
       "Use only for a finite spec verification/change lifecycle that may require source changes, exact live verification, and branch integration. target defaults to staging; standaloneBuildId selects an exact standalone RP build. allowTerminalDisposition defaults to true; set it to false when task acceptance requires an exact pass.",
@@ -241,6 +275,9 @@ type CollectedRunEvidence = {
   runPath: string;
   artifactListPath: string;
   artifactPaths: string[];
+  timelinePath: string | null;
+  terminalFailurePath: string | null;
+  failingTaskLogPath: string | null;
   errors: string[];
 };
 
@@ -416,8 +453,27 @@ export function exactPassNeedsOwnerProblem(
   const missingPrefixes = requiredEvidencePrefixes.filter(
     (prefix) => !decision.evidence.some((entry) => entry.startsWith(prefix)),
   );
-  if (missingPrefixes.length === 0) return null;
-  return `needs-owner cannot defer an exact-pass task without a precise external ownership boundary; keep internal source gaps in this workflow, use waiting for an observable external fact, or identify the unavailable capability with ${missingPrefixes.join(", ")} evidence`;
+  if (missingPrefixes.length > 0) {
+    return `needs-owner cannot defer an exact-pass task without a precise external ownership boundary; keep internal source gaps in this workflow, use waiting for an observable external fact, or identify the unavailable capability with ${missingPrefixes.join(", ")} evidence`;
+  }
+  const judgmentText = [decision.summary, ...decision.evidence]
+    .join("\n")
+    .toLowerCase();
+  const internalSourceGapIndicators = [
+    "bounded same-task source repair",
+    "current source still",
+    "direct carrier still",
+    "scenario library still",
+    "source gap",
+    "source defect",
+    "carrier defect",
+  ];
+  const internalSourceGap = internalSourceGapIndicators.find((indicator) =>
+    judgmentText.includes(indicator),
+  );
+  return internalSourceGap
+    ? `needs-owner cannot defer a confirmed internal source gap (${internalSourceGap}); keep the bounded repair in this workflow even when external-boundary evidence prefixes are present`
+    : null;
 }
 
 export function shouldReplayReviewedTerminalWriteback(input: {
@@ -603,6 +659,7 @@ export function replayScenarioCandidateForDispatch(input: {
   sourceBranch: string;
   candidateCommit: string;
   targetRef: string;
+  boundedChangedFiles?: unknown;
 }): ScenarioDispatchReplayResult {
   const { workspaceDir, sourceBranch, candidateCommit, targetRef } = input;
   if (!sourceBranch.startsWith("task/")) {
@@ -663,6 +720,135 @@ export function replayScenarioCandidateForDispatch(input: {
       taskCommits: [],
       evidence: [`dispatch-target-current:${targetRef}@${targetCommit}`],
       replayed: false,
+    };
+  }
+
+  const boundedChangedFiles = repoRelativePaths(input.boundedChangedFiles);
+  if (boundedChangedFiles.length) {
+    const evidence = [
+      `dispatch-replay-from:${candidateCommit}`,
+      `dispatch-replay-target:${targetRef}@${targetCommit}`,
+      `dispatch-bounded-paths:${boundedChangedFiles.join(",")}`,
+    ];
+    const boundedPatch = git(
+      workspaceDir,
+      [
+        "diff",
+        "--binary",
+        targetCommit,
+        candidateCommit,
+        "--",
+        ...boundedChangedFiles,
+      ],
+      true,
+    );
+    if (boundedPatch.status !== 0) {
+      return {
+        state: "error",
+        error: "dispatch replay could not isolate the task-bounded patch",
+        evidence: [
+          ...evidence,
+          `bounded-diff-error:${boundedPatch.stderr || boundedPatch.stdout}`,
+        ],
+      };
+    }
+    const reset = git(workspaceDir, ["reset", "--hard", targetCommit], true);
+    if (reset.status !== 0) {
+      return {
+        state: "error",
+        error: "dispatch replay could not reset to current target",
+        evidence: [...evidence, `reset-error:${reset.stderr || reset.stdout}`],
+      };
+    }
+    if (!boundedPatch.stdout) {
+      return {
+        state: "ready",
+        sourceCommit: targetCommit,
+        targetCommit,
+        expectedRemoteCommit,
+        taskCommits: [],
+        evidence: [
+          ...evidence,
+          "dispatch-bounded-delta:none",
+          `dispatch-replayed-source:${targetCommit}`,
+        ],
+        replayed: true,
+      };
+    }
+
+    const patchPath = join(
+      tmpdir(),
+      `spec-live-bounded-${createHash("sha256").update(boundedPatch.stdout).digest("hex")}.patch`,
+    );
+    try {
+      writeFileSync(patchPath, boundedPatch.stdout);
+      const apply = git(
+        workspaceDir,
+        ["apply", "--index", "--binary", patchPath],
+        true,
+      );
+      if (apply.status !== 0) {
+        git(workspaceDir, ["reset", "--hard", targetCommit], true);
+        return {
+          state: "conflict",
+          targetCommit,
+          expectedRemoteCommit,
+          taskCommits: [],
+          evidence,
+          error: apply.stderr || apply.stdout || "bounded patch apply failed",
+        };
+      }
+      const commit = git(
+        workspaceDir,
+        ["commit", "-m", "Replay bounded task changes onto fresh base"],
+        true,
+      );
+      if (commit.status !== 0) {
+        git(workspaceDir, ["reset", "--hard", targetCommit], true);
+        return {
+          state: "error",
+          error: "dispatch replay could not commit the bounded patch",
+          evidence: [
+            ...evidence,
+            `commit-error:${commit.stderr || commit.stdout}`,
+          ],
+        };
+      }
+    } finally {
+      rmSync(patchPath, { force: true });
+    }
+
+    const sourceCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+    const replayedPaths = changedPathsBetweenCommits(
+      workspaceDir,
+      targetCommit,
+      sourceCommit,
+    );
+    if (
+      cleanWorkspace(workspaceDir) ||
+      replayedPaths.some((path) => !boundedChangedFiles.includes(path))
+    ) {
+      return {
+        state: "error",
+        error: "dispatch replay produced source outside the task-bounded paths",
+        evidence: [
+          ...evidence,
+          `dispatch-replayed-paths:${replayedPaths.join(",") || "none"}`,
+        ],
+      };
+    }
+    return {
+      state: "ready",
+      sourceCommit,
+      targetCommit,
+      expectedRemoteCommit,
+      taskCommits: [],
+      evidence: [
+        ...evidence,
+        `dispatch-replayed-paths:${replayedPaths.join(",")}`,
+        `dispatch-replayed-source:${sourceCommit}`,
+      ],
+      replayed: true,
     };
   }
 
@@ -1854,6 +2040,100 @@ function nonEmptyString(value: unknown): string {
   return "";
 }
 
+export type LiveSpecIdSelection =
+  | {
+      accepted: true;
+      auditSpecIds: string[];
+      dispatchSpecIds: string[];
+      explicit: boolean;
+    }
+  | {
+      accepted: false;
+      auditSpecIds: string[];
+      dispatchSpecIds: [];
+      explicit: true;
+      problem: string;
+    };
+
+export function resolveLiveSpecIdSelection(
+  input: Record<string, unknown> | undefined,
+): LiveSpecIdSelection {
+  const fallbackSpecIds = scenarioNormalizationSpecIds(
+    input as ScenarioNormalizationInput | undefined,
+  );
+  if (!input || !Object.prototype.hasOwnProperty.call(input, "liveSpecIds")) {
+    return {
+      accepted: true,
+      auditSpecIds: fallbackSpecIds,
+      dispatchSpecIds: fallbackSpecIds,
+      explicit: false,
+    };
+  }
+
+  const auditSpecIds = Array.isArray(input.specIds)
+    ? input.specIds
+        .filter((value): value is string => typeof value === "string")
+        .map((value) => value.trim())
+        .filter(Boolean)
+    : [];
+  const rawLiveSpecIds = input.liveSpecIds;
+  if (!Array.isArray(rawLiveSpecIds)) {
+    return {
+      accepted: false,
+      auditSpecIds,
+      dispatchSpecIds: [],
+      explicit: true,
+      problem:
+        "input.liveSpecIds must be a nonempty array of exact spec ID strings",
+    };
+  }
+  if (rawLiveSpecIds.length === 0) {
+    return {
+      accepted: false,
+      auditSpecIds,
+      dispatchSpecIds: [],
+      explicit: true,
+      problem: "input.liveSpecIds must not be empty when present",
+    };
+  }
+
+  const dispatchSpecIds: string[] = [];
+  const seen = new Set<string>();
+  const auditScope = new Set(auditSpecIds);
+  for (const value of rawLiveSpecIds) {
+    if (typeof value !== "string" || !value.trim() || value !== value.trim()) {
+      return {
+        accepted: false,
+        auditSpecIds,
+        dispatchSpecIds: [],
+        explicit: true,
+        problem: "input.liveSpecIds contains a malformed spec ID",
+      };
+    }
+    if (seen.has(value)) {
+      continue;
+    }
+    if (!auditScope.has(value)) {
+      return {
+        accepted: false,
+        auditSpecIds,
+        dispatchSpecIds: [],
+        explicit: true,
+        problem: `input.liveSpecIds contains ID outside input.specIds: ${value}`,
+      };
+    }
+    seen.add(value);
+    dispatchSpecIds.push(value);
+  }
+
+  return {
+    accepted: true,
+    auditSpecIds,
+    dispatchSpecIds,
+    explicit: true,
+  };
+}
+
 export function pipelineRunState(run: PipelineRun): string {
   return nonEmptyString(run.status) || nonEmptyString(run.state) || "unknown";
 }
@@ -2090,6 +2370,365 @@ function git(
   allowFailure = false,
 ): { status: number; stdout: string; stderr: string } {
   return command("git", args, { cwd, allowFailure });
+}
+
+export type RetainedWorkspaceMaterialization = {
+  requested: boolean;
+  accepted: boolean;
+  changedPaths: string[];
+  evidence: string[];
+  problem?: string;
+};
+
+export function materializePriorRetainedWorkspace(input: {
+  workspaceDir: string;
+  priorRetainedWorkspace: unknown;
+  baselineCommit: unknown;
+}): RetainedWorkspaceMaterialization {
+  const retainedDir = nonEmptyString(input.priorRetainedWorkspace);
+  if (!retainedDir) {
+    return {
+      requested: false,
+      accepted: true,
+      changedPaths: [],
+      evidence: ["prior-retained-workspace:not-requested"],
+    };
+  }
+
+  const baselineCommit = nonEmptyString(input.baselineCommit);
+  const reject = (
+    problem: string,
+    evidence: string[] = [],
+  ): RetainedWorkspaceMaterialization => ({
+    requested: true,
+    accepted: false,
+    changedPaths: [],
+    evidence: [`prior-retained-workspace:${retainedDir}`, ...evidence],
+    problem,
+  });
+  if (!/^[0-9a-f]{40}$/i.test(baselineCommit)) {
+    return reject(
+      "priorRetainedWorkspace requires an exact 40-character baselineCommit",
+    );
+  }
+  if (!existsSync(retainedDir)) {
+    return reject("priorRetainedWorkspace does not exist");
+  }
+
+  const retainedInside = git(
+    retainedDir,
+    ["rev-parse", "--is-inside-work-tree"],
+    true,
+  );
+  const retainedTop = git(retainedDir, ["rev-parse", "--show-toplevel"], true);
+  if (
+    retainedInside.status !== 0 ||
+    retainedInside.stdout !== "true" ||
+    retainedTop.status !== 0 ||
+    resolve(retainedTop.stdout) !== resolve(retainedDir)
+  ) {
+    return reject("priorRetainedWorkspace is not a Git worktree root");
+  }
+
+  const retainedHead = git(retainedDir, ["rev-parse", "HEAD"], true);
+  if (retainedHead.status !== 0 || retainedHead.stdout !== baselineCommit) {
+    return reject("priorRetainedWorkspace HEAD does not match baselineCommit", [
+      `retained-head:${retainedHead.stdout || "unresolved"}`,
+      `baseline-commit:${baselineCommit}`,
+    ]);
+  }
+
+  const destinationInside = git(
+    input.workspaceDir,
+    ["rev-parse", "--is-inside-work-tree"],
+    true,
+  );
+  const destinationHead = git(input.workspaceDir, ["rev-parse", "HEAD"], true);
+  if (destinationInside.status !== 0 || destinationInside.stdout !== "true") {
+    return reject("isolated destination is not a Git worktree");
+  }
+  if (destinationHead.status !== 0 || !destinationHead.stdout) {
+    return reject("could not resolve isolated destination HEAD", [
+      `destination-head:${destinationHead.stdout || "unresolved"}`,
+      `baseline-commit:${baselineCommit}`,
+    ]);
+  }
+  const baselineIsAncestor =
+    git(
+      input.workspaceDir,
+      ["merge-base", "--is-ancestor", baselineCommit, destinationHead.stdout],
+      true,
+    ).status === 0;
+  if (!baselineIsAncestor) {
+    return reject(
+      "baselineCommit is not an ancestor of isolated destination HEAD",
+      [
+        `destination-head:${destinationHead.stdout}`,
+        `baseline-commit:${baselineCommit}`,
+        "retained-baseline-ancestry:not-ancestor",
+      ],
+    );
+  }
+  const destinationStatus = git(
+    input.workspaceDir,
+    ["status", "--porcelain"],
+    true,
+  );
+  if (destinationStatus.status !== 0 || destinationStatus.stdout) {
+    return reject("isolated destination is dirty; refusing to overwrite it", [
+      `destination-status:${destinationStatus.stdout || "unresolved"}`,
+    ]);
+  }
+
+  const readRawTrackedDiff = (cwd: string) => {
+    const result = spawnSync("git", ["diff", "--binary", "HEAD", "--"], {
+      cwd,
+      encoding: "utf8",
+      maxBuffer: 32 * 1024 * 1024,
+    });
+    return {
+      status: result.status ?? 1,
+      stdout: result.stdout ?? "",
+      stderr: (result.stderr || result.error?.message || "").trim(),
+    };
+  };
+  const retainedDiff = readRawTrackedDiff(retainedDir);
+  if (retainedDiff.status !== 0) {
+    return reject(
+      "could not read tracked changes from priorRetainedWorkspace",
+      [`retained-diff-error:${retainedDiff.stderr || "unknown"}`],
+    );
+  }
+  const changedPathsResult = git(
+    retainedDir,
+    ["diff", "--name-only", "HEAD", "--"],
+    true,
+  );
+  if (changedPathsResult.status !== 0) {
+    return reject(
+      "could not enumerate tracked changes from priorRetainedWorkspace",
+    );
+  }
+  const changedPaths = repoRelativePaths(
+    changedPathsResult.stdout.split(/\r?\n/),
+  );
+  if (retainedDiff.stdout) {
+    const apply = spawnSync(
+      "git",
+      ["apply", "--3way", "--index", "--binary", "-"],
+      {
+        cwd: input.workspaceDir,
+        encoding: "utf8",
+        input: retainedDiff.stdout,
+      },
+    );
+    if (apply.status !== 0) {
+      const applyError = (apply.stderr || apply.stdout || "failed").trim();
+      const restore = git(
+        input.workspaceDir,
+        ["reset", "--hard", destinationHead.stdout],
+        true,
+      );
+      const restoredHead = git(input.workspaceDir, ["rev-parse", "HEAD"], true);
+      const restoredStatus = git(
+        input.workspaceDir,
+        ["status", "--porcelain"],
+        true,
+      );
+      return reject(
+        "retained tracked diff conflicts with advanced destination lineage",
+        [
+          `destination-head:${destinationHead.stdout}`,
+          `baseline-commit:${baselineCommit}`,
+          "retained-baseline-ancestry:ancestor",
+          `git-apply-3way:${applyError}`,
+          `destination-restore:${
+            restore.status === 0 &&
+            restoredHead.stdout === destinationHead.stdout &&
+            !restoredStatus.stdout
+              ? "clean"
+              : `failed:${restore.stderr || restore.stdout || restoredStatus.stdout || restoredHead.stdout}`
+          }`,
+        ],
+      );
+    }
+  }
+
+  const destinationDiff = readRawTrackedDiff(input.workspaceDir);
+  const materializedPathsResult = git(
+    input.workspaceDir,
+    ["diff", "--name-only", "HEAD", "--"],
+    true,
+  );
+  const materializedPaths = repoRelativePaths(
+    materializedPathsResult.stdout.split(/\r?\n/),
+  );
+  const unmerged = git(input.workspaceDir, ["ls-files", "-u"], true);
+  const diffCheck = git(
+    input.workspaceDir,
+    ["diff", "--check", "HEAD", "--"],
+    true,
+  );
+  if (
+    destinationDiff.status !== 0 ||
+    materializedPathsResult.status !== 0 ||
+    unmerged.status !== 0 ||
+    unmerged.stdout ||
+    diffCheck.status !== 0 ||
+    JSON.stringify(materializedPaths) !== JSON.stringify(changedPaths)
+  ) {
+    git(input.workspaceDir, ["reset", "--hard", destinationHead.stdout], true);
+    return reject(
+      "three-way retained-diff materialization failed verification",
+      [
+        `destination-head:${destinationHead.stdout}`,
+        `materialized-paths:${materializedPaths.join(",") || "none"}`,
+        `expected-paths:${changedPaths.join(",") || "none"}`,
+        `unmerged-paths:${unmerged.stdout || "none"}`,
+        `diff-check:${diffCheck.stderr || diffCheck.stdout || "clean"}`,
+        "destination-restore:attempted",
+      ],
+    );
+  }
+  const diffHash = createHash("sha256")
+    .update(retainedDiff.stdout)
+    .digest("hex");
+  return {
+    requested: true,
+    accepted: true,
+    changedPaths,
+    evidence: [
+      `prior-retained-workspace:${retainedDir}`,
+      `retained-baseline:${baselineCommit}`,
+      `destination-initial-head:${destinationHead.stdout}`,
+      "retained-baseline-ancestry:ancestor",
+      `retained-tracked-paths:${changedPaths.join(",") || "none"}`,
+      `retained-diff-sha256:${diffHash}`,
+      "retained-diff-operation:git-apply-3way-index",
+      "retained-diff-materialized:exact",
+    ],
+  };
+}
+
+export type FreshBaseLineageAdmission = {
+  required: boolean;
+  accepted: boolean;
+  candidateCommit: string;
+  baseRef: string;
+  freshBaseCommit: string;
+  mergeBase: string;
+  behind: number;
+  ahead: number;
+  evidence: string[];
+};
+
+export function freshBaseLineageAdmission(input: {
+  workspaceDir: string;
+  candidateCommit: string;
+  requireFreshBaseAtDispatch: boolean;
+  baseRef: unknown;
+}): FreshBaseLineageAdmission {
+  const baseRef = nonEmptyString(input.baseRef);
+  const initial: FreshBaseLineageAdmission = {
+    required: input.requireFreshBaseAtDispatch,
+    accepted: !input.requireFreshBaseAtDispatch,
+    candidateCommit: input.candidateCommit,
+    baseRef,
+    freshBaseCommit: "",
+    mergeBase: "",
+    behind: 0,
+    ahead: 0,
+    evidence: [],
+  };
+  if (!input.requireFreshBaseAtDispatch) return initial;
+
+  const normalized = baseRef.replace(/^refs\/remotes\//, "");
+  const branch = normalized.startsWith("origin/")
+    ? normalized.slice("origin/".length)
+    : normalized.startsWith("refs/heads/")
+      ? normalized.slice("refs/heads/".length)
+      : !normalized.includes("/")
+        ? normalized
+        : "";
+  if (!baseRef || !branch) {
+    return {
+      ...initial,
+      evidence: [
+        `candidate-commit:${input.candidateCommit}`,
+        `fresh-base-ref:${baseRef || "missing"}`,
+        "fresh-base-lineage:refused-invalid-base-ref",
+        "push:not-attempted",
+        "pipeline-run:not-created",
+      ],
+    };
+  }
+
+  const fetch = git(
+    input.workspaceDir,
+    ["fetch", "--no-tags", "origin", branch],
+    true,
+  );
+  const authorityRef = `origin/${branch}`;
+  const resolved =
+    fetch.status === 0
+      ? git(input.workspaceDir, ["rev-parse", `${authorityRef}^{commit}`], true)
+      : { status: 1, stdout: "", stderr: fetch.stderr || fetch.stdout };
+  const freshBaseCommit = resolved.status === 0 ? resolved.stdout : "";
+  const mergeBaseResult = freshBaseCommit
+    ? git(
+        input.workspaceDir,
+        ["merge-base", freshBaseCommit, input.candidateCommit],
+        true,
+      )
+    : { status: 1, stdout: "", stderr: "" };
+  const mergeBase = mergeBaseResult.status === 0 ? mergeBaseResult.stdout : "";
+  const counts = freshBaseCommit
+    ? git(
+        input.workspaceDir,
+        [
+          "rev-list",
+          "--left-right",
+          "--count",
+          `${freshBaseCommit}...${input.candidateCommit}`,
+        ],
+        true,
+      )
+    : { status: 1, stdout: "", stderr: "" };
+  const [behind = 0, ahead = 0] =
+    counts.status === 0
+      ? counts.stdout.split(/\s+/).map((value) => Number(value) || 0)
+      : [];
+  const accepted =
+    Boolean(freshBaseCommit) &&
+    git(
+      input.workspaceDir,
+      ["merge-base", "--is-ancestor", freshBaseCommit, input.candidateCommit],
+      true,
+    ).status === 0;
+  const evidence = [
+    `candidate-commit:${input.candidateCommit}`,
+    `fresh-base-ref:${baseRef}`,
+    `fresh-base-commit:${freshBaseCommit || "unresolved"}`,
+    `merge-base:${mergeBase || "unresolved"}`,
+    `fresh-base-behind-ahead:${behind}/${ahead}`,
+    `fresh-base-lineage:${accepted ? "accepted" : "refused"}`,
+  ];
+  if (!accepted) {
+    evidence.push(
+      `fresh-base-fetch:${fetch.status === 0 ? "succeeded" : `failed:${fetch.stderr || fetch.stdout}`}`,
+      "push:not-attempted",
+      "pipeline-run:not-created",
+    );
+  }
+  return {
+    ...initial,
+    accepted,
+    freshBaseCommit,
+    mergeBase,
+    behind,
+    ahead,
+    evidence,
+  };
 }
 
 function jsonObjectAtCommit(
@@ -3086,6 +3725,10 @@ export async function collectTerminalRunEvidence(
     ) =>
       | { status: number; stdout: string; stderr: string }
       | Promise<{ status: number; stdout: string; stderr: string }>;
+    authenticatedAdoJson?: (
+      args: string[],
+      options?: { includeProject?: boolean },
+    ) => unknown | Promise<unknown>;
   } = {},
 ): CollectedRunEvidence {
   mkdirSync(runContextDir, { recursive: true });
@@ -3168,15 +3811,158 @@ export async function collectTerminalRunEvidence(
     }
   }
 
+  let timelinePath: string | null = null;
+  let terminalFailurePath: string | null = null;
+  let failingTaskLogPath: string | null = null;
+  if (artifactPaths.length === 0) {
+    const authenticatedAdoJson =
+      dependencies.authenticatedAdoJson ??
+      ((args: string[], options?: { includeProject?: boolean }) =>
+        azJson(repoDir, args, options));
+    try {
+      const timeline = await authenticatedAdoJson(
+        [
+          "devops",
+          "invoke",
+          "--area",
+          "build",
+          "--resource",
+          "timeline",
+          "--route-parameters",
+          `project=${adoProject}`,
+          `buildId=${runId}`,
+          "--api-version",
+          "7.1",
+        ],
+        { includeProject: false },
+      );
+      timelinePath = join(runContextDir, "ado-timeline.json");
+      writeFileSync(timelinePath, `${JSON.stringify(timeline, null, 2)}\n`);
+
+      const records =
+        timeline &&
+        typeof timeline === "object" &&
+        Array.isArray((timeline as { records?: unknown }).records)
+          ? (timeline as { records: unknown[] }).records.filter(
+              (record): record is Record<string, unknown> =>
+                Boolean(record) && typeof record === "object",
+            )
+          : [];
+      const failedRecords = records.filter(
+        (record) => nonEmptyString(record.result).toLowerCase() === "failed",
+      );
+      const failedTask =
+        failedRecords.find(
+          (record) => nonEmptyString(record.type).toLowerCase() === "task",
+        ) ?? failedRecords.find((record) => Boolean(record.log));
+      const byId = new Map(
+        records.map((record) => [nonEmptyString(record.id), record]),
+      );
+      let ancestor = failedTask;
+      let failedStage = failedRecords.find(
+        (record) => nonEmptyString(record.type).toLowerCase() === "stage",
+      );
+      while (!failedStage && ancestor) {
+        ancestor = byId.get(nonEmptyString(ancestor.parentId));
+        if (nonEmptyString(ancestor?.type).toLowerCase() === "stage") {
+          failedStage = ancestor;
+        }
+      }
+      const identity = (record: Record<string, unknown> | undefined) =>
+        record
+          ? {
+              id: nonEmptyString(record.id),
+              name: nonEmptyString(record.name),
+              type: nonEmptyString(record.type),
+              result: nonEmptyString(record.result),
+            }
+          : null;
+      const logId =
+        failedTask?.log && typeof failedTask.log === "object"
+          ? nonEmptyString((failedTask.log as { id?: unknown }).id)
+          : "";
+      const terminalFailure = {
+        runId,
+        runResult: nonEmptyString(run.result) || pipelineRunState(run),
+        stage: identity(failedStage),
+        task: identity(failedTask),
+        logId: logId || null,
+      };
+      terminalFailurePath = join(runContextDir, "ado-terminal-failure.json");
+      writeFileSync(
+        terminalFailurePath,
+        `${JSON.stringify(terminalFailure, null, 2)}\n`,
+      );
+
+      if (logId) {
+        const log = await authenticatedAdoJson(
+          [
+            "devops",
+            "invoke",
+            "--area",
+            "build",
+            "--resource",
+            "logs",
+            "--route-parameters",
+            `project=${adoProject}`,
+            `buildId=${runId}`,
+            `logId=${logId}`,
+            "--api-version",
+            "7.1",
+          ],
+          { includeProject: false },
+        );
+        const logValue =
+          log && typeof log === "object"
+            ? (log as { value?: unknown }).value
+            : undefined;
+        const logText =
+          typeof log === "string"
+            ? log
+            : typeof logValue === "string"
+              ? logValue
+              : Array.isArray(logValue)
+                ? logValue.map(String).join("\n")
+                : JSON.stringify(log, null, 2);
+        failingTaskLogPath = join(
+          runContextDir,
+          `ado-failing-task-${artifactPart(logId) || "log"}.log`,
+        );
+        writeFileSync(failingTaskLogPath, `${logText.replace(/\n?$/, "\n")}`);
+      }
+    } catch (error) {
+      errors.push(
+        `artifactless-terminal-evidence: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
   writeFileSync(
     join(runContextDir, "collection.json"),
     `${JSON.stringify(
-      { runId, runPath, artifactListPath, artifactPaths, errors },
+      {
+        runId,
+        runPath,
+        artifactListPath,
+        artifactPaths,
+        timelinePath,
+        terminalFailurePath,
+        failingTaskLogPath,
+        errors,
+      },
       null,
       2,
     )}\n`,
   );
-  return { runPath, artifactListPath, artifactPaths, errors };
+  return {
+    runPath,
+    artifactListPath,
+    artifactPaths,
+    timelinePath,
+    terminalFailurePath,
+    failingTaskLogPath,
+    errors,
+  };
 }
 
 function metadataOf(run: PipelineRun): Record<string, unknown> {
@@ -3537,6 +4323,86 @@ function currentRunPath(contextDir: string): string {
   return join(contextDir, "current-run.json");
 }
 
+export type TaskContextHandoff = {
+  version: 1;
+  taskId: string;
+  generation: number;
+  sourceCommit: string;
+  runId: string | null;
+  phase: string;
+  handoffPath: string;
+  judgmentPath: string;
+  previousHandoffPath?: string;
+  recordedAt: string;
+};
+
+export function currentTaskContextPath(contextDir: string): string {
+  return join(contextDir, "current-context.json");
+}
+
+export function writeTaskContextHandoff(
+  contextDir: string,
+  input: {
+    taskId: string;
+    generation: number;
+    sourceCommit: string;
+    runId?: string;
+    phase: string;
+    judgmentPrompt: string;
+    previousHandoffPath?: string;
+    recordedAt?: string;
+  },
+): TaskContextHandoff {
+  const sourceCommit = nonEmptyString(input.sourceCommit);
+  if (!/^[0-9a-f]{40}$/i.test(sourceCommit)) {
+    throw new Error(
+      `durable task context requires an exact source commit, got ${sourceCommit || "missing"}`,
+    );
+  }
+  const runId = nonEmptyString(input.runId) || null;
+  const phase = safePart(input.phase);
+  const relativePath = join(
+    "handoffs",
+    "sources",
+    sourceCommit,
+    "runs",
+    runId ? safePart(runId) : "no-run",
+    `${phase}.json`,
+  );
+  const handoffPath = join(contextDir, relativePath);
+  const judgmentPath = handoffPath.replace(/\.json$/, ".judgment.md");
+  const handoff: TaskContextHandoff = {
+    version: 1,
+    taskId: input.taskId,
+    generation: input.generation,
+    sourceCommit,
+    runId,
+    phase,
+    handoffPath,
+    judgmentPath,
+    ...(input.previousHandoffPath
+      ? { previousHandoffPath: input.previousHandoffPath }
+      : {}),
+    recordedAt: input.recordedAt ?? new Date().toISOString(),
+  };
+  mkdirSync(resolve(handoffPath, ".."), { recursive: true });
+  writeFileSync(judgmentPath, `${input.judgmentPrompt.trim()}\n`);
+  writeFileSync(handoffPath, `${JSON.stringify(handoff, null, 2)}\n`);
+
+  const currentPath = currentTaskContextPath(contextDir);
+  const temporaryPath = `${currentPath}.${process.pid}.${Date.now()}.tmp`;
+  writeFileSync(temporaryPath, `${JSON.stringify(handoff, null, 2)}\n`);
+  renameSync(temporaryPath, currentPath);
+  return handoff;
+}
+
+function durableTaskContextInstruction(
+  contextDir: string,
+  handoff: TaskContextHandoff,
+): string {
+  return `Durable task-context authority: read ${currentTaskContextPath(contextDir)} first and treat only the handoff it names as current for this judgment. This call's source/run-versioned handoff is ${handoff.handoffPath}, and its exact pending judgment is persisted at ${handoff.judgmentPath}.${handoff.previousHandoffPath ? ` It supersedes the provider-aborted handoff at ${handoff.previousHandoffPath}; read that handoff and its judgmentPath before resuming so completed work and a pending hard-validation correction survive the provider stream failure.` : ""} Prior handoffs under ${join(contextDir, "handoffs", "sources")} remain readable history but are stale authority and must not override the task-root current-context pointer. Record any resumable non-source findings against this exact source/run handoff; source edits remain in the retained task worktree.`;
+}
+
 function scenarioReplayPath(contextDir: string): string {
   return join(contextDir, "scenario-replay.json");
 }
@@ -3751,6 +4617,202 @@ async function queueRun(
     throw new Error("Azure DevOps did not return a pipeline run id");
   }
   return value as PipelineRun;
+}
+
+export type NoIntegrationDiagnosticContract = {
+  artifactPath: string;
+  maxReproductions: number;
+  reproductionConsumed: number;
+  sourceBranch: string;
+  sourceCommit: string;
+  specIds: string[];
+};
+
+export function noIntegrationDiagnosticContract(
+  input: Record<string, unknown> | undefined,
+): {
+  contract: NoIntegrationDiagnosticContract | null;
+  problem: string | null;
+} {
+  if (input?.allowIntegration !== false) {
+    return { contract: null, problem: null };
+  }
+  const sourceBranch = nonEmptyString(
+    input.preparedSourceBranch ?? input.sourceBranch,
+  ).replace(/^refs\/heads\//, "");
+  const sourceCommit = nonEmptyString(
+    input.preparedSourceCommit ?? input.sourceCommit,
+  );
+  const artifactPath = nonEmptyString(input.artifactPath);
+  const specIds = Array.isArray(input.specIds)
+    ? [...new Set(input.specIds.map(nonEmptyString).filter(Boolean))]
+    : [];
+  const maxReproductions = Number(input.maxReproductions);
+  const reproductionConsumed = Number(input.reproductionConsumed);
+  const problem = !sourceBranch.startsWith("task/")
+    ? "diagnostic prepared source must use a dedicated task branch"
+    : !/^[0-9a-f]{40}$/i.test(sourceCommit)
+      ? "diagnostic prepared source commit must be an exact 40-character Git commit"
+      : !artifactPath.startsWith("/")
+        ? "diagnostic artifactPath must be absolute"
+        : specIds.length < 2
+          ? "diagnostic aggregate dispatch requires at least two declared specIds"
+          : !Number.isInteger(maxReproductions) || maxReproductions !== 1
+            ? "diagnostic maxReproductions must be exactly 1"
+            : !Number.isInteger(reproductionConsumed) ||
+                reproductionConsumed < 0 ||
+                reproductionConsumed > maxReproductions
+              ? "diagnostic reproductionConsumed must be an integer between 0 and maxReproductions"
+              : null;
+  return problem
+    ? { contract: null, problem }
+    : {
+        contract: {
+          artifactPath,
+          maxReproductions,
+          reproductionConsumed,
+          sourceBranch,
+          sourceCommit,
+          specIds,
+        },
+        problem: null,
+      };
+}
+
+export function restoreExactDiagnosticSource(
+  workspaceDir: string,
+  contract: Pick<
+    NoIntegrationDiagnosticContract,
+    "sourceBranch" | "sourceCommit"
+  >,
+  runGit: GitCommand = git,
+): { accepted: boolean; evidence: string[]; problem?: string } {
+  const evidence = [
+    `diagnostic-source-branch:${contract.sourceBranch}`,
+    `diagnostic-source-commit:${contract.sourceCommit}`,
+  ];
+  const remoteRef = `refs/remotes/origin/${contract.sourceBranch}`;
+  const fetch = runGit(
+    workspaceDir,
+    ["fetch", "origin", `+refs/heads/${contract.sourceBranch}:${remoteRef}`],
+    true,
+  );
+  if (fetch.status !== 0) {
+    return {
+      accepted: false,
+      evidence,
+      problem: fetch.stderr || fetch.stdout || "diagnostic source fetch failed",
+    };
+  }
+  if (
+    runGit(
+      workspaceDir,
+      ["merge-base", "--is-ancestor", contract.sourceCommit, remoteRef],
+      true,
+    ).status !== 0
+  ) {
+    return {
+      accepted: false,
+      evidence: [...evidence, `diagnostic-source-remote:${remoteRef}`],
+      problem: "diagnostic source commit is not on its declared remote branch",
+    };
+  }
+  const reset = runGit(
+    workspaceDir,
+    ["reset", "--hard", contract.sourceCommit],
+    true,
+  );
+  const head = runGit(workspaceDir, ["rev-parse", "HEAD"], true);
+  if (
+    reset.status !== 0 ||
+    head.status !== 0 ||
+    head.stdout !== contract.sourceCommit
+  ) {
+    return {
+      accepted: false,
+      evidence,
+      problem:
+        reset.stderr || reset.stdout || "exact diagnostic source reset failed",
+    };
+  }
+  return {
+    accepted: true,
+    evidence: [...evidence, `diagnostic-source-restored-exact:${head.stdout}`],
+  };
+}
+
+export function diagnosticArtifactProblem(input: {
+  artifactPath: string;
+  sourceCommit: string;
+  runId: string;
+  specIds: string[];
+  resultPaths: string[];
+  cleanupPaths: string[];
+}): string | null {
+  let text = "";
+  try {
+    text = readFileSync(input.artifactPath, "utf8");
+  } catch {
+    return `diagnostic artifact is missing or unreadable: ${input.artifactPath}`;
+  }
+  const requiredValues = [
+    input.sourceCommit,
+    input.runId,
+    ...input.resultPaths,
+  ];
+  const missingValue = requiredValues.find((value) => !text.includes(value));
+  if (missingValue)
+    return `diagnostic artifact omits required value: ${missingValue}`;
+  if (input.resultPaths.length < input.specIds.length) {
+    return "diagnostic evidence does not contain one per-spec result path for every declared spec";
+  }
+  if (
+    !input.cleanupPaths.length ||
+    !input.cleanupPaths.some((path) => text.includes(path))
+  ) {
+    return "diagnostic artifact omits structural cleanup proof path";
+  }
+  const requiredLabels = [
+    "Tested commit:",
+    "Pipeline run ID:",
+    "Result path:",
+    "Cleanup proof:",
+    "Assertion mapping:",
+    "Lineage mapping:",
+    "Request fingerprint:",
+    "HTTP status:",
+    "ARM code:",
+    "Redacted ARM body:",
+    "Disposition:",
+  ];
+  const missingLabel = requiredLabels.find((label) => !text.includes(label));
+  if (missingLabel)
+    return `diagnostic artifact omits required field ${missingLabel}`;
+  if (!/Request fingerprint:\s*`?sha256:[0-9a-f]{64}`?/i.test(text)) {
+    return "diagnostic request fingerprint must be a deterministic sha256 value";
+  }
+  if (!/HTTP status:\s*`?[1-5][0-9]{2}`?/i.test(text)) {
+    return "diagnostic artifact must include a concrete HTTP status";
+  }
+  if (!/ARM code:\s*`?[^`\n]+`?/i.test(text)) {
+    return "diagnostic artifact must include an ARM error code";
+  }
+  if (!/Redacted ARM body:\s*.+/i.test(text)) {
+    return "diagnostic artifact must include a redacted ARM response body";
+  }
+  if (/Bearer\s+[A-Za-z0-9._-]{12,}|client_secret|access_token/i.test(text)) {
+    return "diagnostic artifact appears to contain an unredacted secret";
+  }
+  const dispositions = [
+    "request-shape repair",
+    "product/API rejection",
+    "retryable external failure",
+  ].filter((value) =>
+    new RegExp(`Disposition:\\s*${value.replace("/", "\\/")}`, "i").test(text),
+  );
+  return dispositions.length === 1
+    ? null
+    : "diagnostic artifact must contain exactly one supported disposition";
 }
 
 async function pullRequests(
@@ -3996,6 +5058,12 @@ export function decisionCorrectionPrompt(input: {
 
 export function taskWorktreeRecoveryDecisionProblem(
   decision: AgentDecision,
+  context: {
+    workspaceDirty?: boolean;
+    ownershipEstablished?: boolean;
+    authoritativeCheckpointPath?: string;
+    sourceCommit?: string;
+  } = {},
 ): string | null {
   if (
     !["committed", "test-current", "needs-owner"].includes(decision.decision)
@@ -4005,7 +5073,80 @@ export function taskWorktreeRecoveryDecisionProblem(
   if (decision.liveReady !== undefined || decision.condition !== undefined) {
     return "task worktree recovery only restores a clean source state; omit liveReady and condition because domain readiness and dispatch are evaluated after recovery";
   }
+  if (decision.decision !== "needs-owner") {
+    return context.workspaceDirty
+      ? "task worktree recovery cannot complete while the task worktree remains dirty; commit verified task work or remove only verified task-generated residue"
+      : null;
+  }
+  if (context.ownershipEstablished) {
+    return "needs-owner is invalid because task/worktree ownership is established; dirty technical repair remains in this workflow until committed or proven task-generated residue is removed";
+  }
+  const checkpointPath = nonEmptyString(context.authoritativeCheckpointPath);
+  const sourceCommit = nonEmptyString(context.sourceCommit);
+  const requiredEvidence = [
+    "ownership-ambiguity:",
+    checkpointPath ? `authoritative-checkpoint:${checkpointPath}` : "",
+    sourceCommit ? `authoritative-source-commit:${sourceCommit}` : "",
+  ].filter(Boolean);
+  const missing = requiredEvidence.filter((required) =>
+    required.endsWith(":")
+      ? !decision.evidence.some((entry) => entry.startsWith(required))
+      : !decision.evidence.includes(required),
+  );
+  if (
+    !checkpointPath ||
+    !/^[0-9a-f]{40}$/i.test(sourceCommit) ||
+    missing.length
+  ) {
+    return `needs-owner requires concrete ownership ambiguity plus the authoritative current source/run handoff checkpoint; missing ${[
+      ...(!checkpointPath ? ["authoritative checkpoint path"] : []),
+      ...(!/^[0-9a-f]{40}$/i.test(sourceCommit)
+        ? ["exact authoritative source commit"]
+        : []),
+      ...missing,
+    ].join(", ")}`;
+  }
   return null;
+}
+
+export function taskWorktreeRecoveryDeadlineDecision(input: {
+  phase: "judgment" | "correction/retry";
+  workspaceDirty: boolean;
+  ownershipEstablished: boolean;
+  sourceBranch: string;
+  checkpointPath: string;
+  sourceCommit: string;
+  beforeRecovery: string;
+}): AgentDecision {
+  if (!input.workspaceDirty) {
+    return {
+      decision:
+        input.sourceCommit === input.beforeRecovery
+          ? "test-current"
+          : "committed",
+      summary: `The ${input.phase} deadline boundary found recovery already clean and preserved its verified source state.`,
+      evidence: [
+        "completion-guard:forced",
+        "workspace:clean",
+        `source-commit:${input.sourceCommit}`,
+      ],
+    };
+  }
+  return {
+    decision: "needs-owner",
+    summary: input.ownershipEstablished
+      ? `The ${input.phase} deadline boundary refused to hand off dirty task-owned recovery.`
+      : `The ${input.phase} deadline boundary preserved a dirty worktree whose ownership is ambiguous.`,
+    evidence: [
+      "completion-guard:forced",
+      "workspace:dirty",
+      input.ownershipEstablished
+        ? "technical-failure:deadline-before-clean-recovery"
+        : `ownership-ambiguity:source branch ${input.sourceBranch} is not a dedicated task branch`,
+      `authoritative-checkpoint:${input.checkpointPath}`,
+      `authoritative-source-commit:${input.sourceCommit}`,
+    ],
+  };
 }
 
 export function terminalLineageReplayDecisionProblem(
@@ -4028,15 +5169,86 @@ export async function askAgent(
     scenarioNormalization?: boolean;
     continueDomainWorkOnValidation?: boolean;
     retryDelayMs?: number;
+    deadlineMs?: number;
+    nowMs?: () => number;
+    onAgentCallNotAdmitted?: (input: {
+      attempt: number;
+      phase: "judgment" | "correction/retry";
+    }) => AgentDecision;
+    durableContext?: {
+      contextDir: string;
+      taskId: string;
+      generation: number;
+      sourceCommit: () => string;
+      runId?: string;
+      phase: string;
+    };
   } = {},
 ): Promise<AgentDecision> {
+  const nowMs = options.nowMs ?? Date.now;
+  const deadlineMs =
+    options.deadlineMs ??
+    workflowDeadlines.get(ctx as object) ??
+    nowMs() + specLiveWorkflowDeadlineMs;
   let nextPrompt = `${prompt}\n\n${conditionInstruction}`;
   let lastProblem = "";
   const maxAttempts = options.continueDomainWorkOnValidation ? 3 : 2;
   let runtimeFailures = 0;
+  let previousHandoffPath = "";
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    let currentHandoff: TaskContextHandoff | null = null;
+    if (options.durableContext) {
+      const durable = options.durableContext;
+      currentHandoff = writeTaskContextHandoff(durable.contextDir, {
+        taskId: durable.taskId,
+        generation: durable.generation,
+        sourceCommit: durable.sourceCommit(),
+        ...(durable.runId ? { runId: durable.runId } : {}),
+        phase:
+          attempt === 1
+            ? durable.phase
+            : `${durable.phase}-correction-${attempt}`,
+        judgmentPrompt: nextPrompt,
+        ...(previousHandoffPath ? { previousHandoffPath } : {}),
+      });
+      nextPrompt = `${durableTaskContextInstruction(durable.contextDir, currentHandoff)}\n\n${nextPrompt}`;
+    }
+    const timeoutMs = admittedAgentCallTimeoutMs({
+      deadlineMs,
+      nowMs: nowMs(),
+      attempt,
+    });
+    if (timeoutMs === null) {
+      const phase = attempt === 1 ? "judgment" : "correction/retry";
+      const boundaryDecision = options.onAgentCallNotAdmitted?.({
+        attempt,
+        phase,
+      });
+      if (boundaryDecision) {
+        const boundaryProblem =
+          options.validateDecision?.(boundaryDecision) ??
+          agentConditionProblem(boundaryDecision) ??
+          (options.scenarioNormalization
+            ? scenarioNormalizationWaitProblem(boundaryDecision)
+            : null);
+        if (boundaryProblem) {
+          throw new Error(
+            `Agent ${phase} was not admitted and forced completion was rejected by the recovery validator: ${boundaryProblem}`,
+          );
+        }
+        return boundaryDecision;
+      }
+      throw new Error(
+        `Agent ${phase} was not admitted because less than ${specLiveMinimumAgentCallMs}ms execution time remains after preserving the ${specLiveWorkflowMarginMs}ms workflow validation/recovery margin`,
+      );
+    }
+    assertIsolatedWriteDispatch({
+      workspaceDir: ctx.workspaceDir,
+      projectDir: ctx.projectDir,
+      cwd: ctx.workspaceDir ?? ctx.projectDir,
+    });
     const result = await ctx.runAgent(ctx.agent, nextPrompt, {
-      timeoutMs: 1_800_000,
+      timeoutMs,
       schema: decisionSchema,
     });
     if (result.status === "error" || result.status === "interrupted") {
@@ -4045,12 +5257,23 @@ export async function askAgent(
       if (runtimeFailures < 2 && attempt < maxAttempts) {
         const retryDelayMs = options.retryDelayMs ?? 5_000;
         if (retryDelayMs > 0) await Bun.sleep(retryDelayMs);
-        nextPrompt = [
-          prompt,
-          "The immediately preceding agent invocation ended before producing a structured judgment.",
-          "Continue the same bounded task from the current task worktree and hot evidence. Inspect any work already left there before deciding or editing; do not treat the runtime interruption as a domain blocker or ownership boundary.",
-          conditionInstruction,
-        ].join("\n\n");
+        if (currentHandoff && options.durableContext) {
+          previousHandoffPath = currentHandoff.handoffPath;
+          nextPrompt = [
+            "Recover the provider-aborted structured judgment from durable task context; do not replay the prior full session from its opening prompt.",
+            `Read ${currentTaskContextPath(options.durableContext.contextDir)}, then read the predecessor handoff ${currentHandoff.handoffPath} and its judgmentPath ${currentHandoff.judgmentPath}.`,
+            "Inspect the retained task worktree before editing. Reuse completed source work and recorded findings, then finish only the pending bounded judgment. Preserve any pending hard-validation correction from the predecessor judgment instead of reverting to an earlier invalid result.",
+            "The provider abort is not a domain blocker or ownership boundary. Return the required structured judgment without repeating already-completed provider or source work.",
+            conditionInstruction,
+          ].join("\n\n");
+        } else {
+          nextPrompt = [
+            nextPrompt,
+            "The immediately preceding agent invocation ended before producing a structured judgment.",
+            "Resume the same bounded task's pending judgment from the current task worktree and hot evidence. Preserve any hard-validation correction above instead of reverting to the original invalid result; do not treat the runtime interruption as a domain blocker or ownership boundary.",
+            conditionInstruction,
+          ].join("\n\n");
+        }
         continue;
       }
       throw new Error(
@@ -4125,10 +5348,262 @@ export function boundedWorkflowEvidence(
   ];
 }
 
+async function reconcileNoIntegrationDiagnostic(
+  ctx: WorkflowContext,
+  payload: TaskPayload,
+  contract: NoIntegrationDiagnosticContract,
+  input: {
+    taskId: string;
+    generation: number;
+    repoDir: string;
+    workspaceDir: string;
+    target: string;
+    standaloneBuildId: string;
+  },
+): Promise<WorkflowResult> {
+  const {
+    taskId,
+    generation,
+    repoDir,
+    workspaceDir,
+    target,
+    standaloneBuildId,
+  } = input;
+  const aggregateSpecId = contract.specIds.join(",");
+  if (target !== defaultLiveTarget || standaloneBuildId) {
+    return ownerResult(
+      ctx,
+      "No-integration diagnostics are narrowly limited to the shared staging target.",
+      [
+        `live-target:${target}`,
+        `standalone-build-id:${standaloneBuildId || "none"}`,
+      ],
+    );
+  }
+  if (cleanWorkspace(workspaceDir)) {
+    return ownerResult(
+      ctx,
+      "No-integration diagnostic refused a dirty workflow-owned worktree.",
+      [`workspace:${workspaceDir}`],
+    );
+  }
+  const restored = restoreExactDiagnosticSource(workspaceDir, contract);
+  if (!restored.accepted) {
+    return ownerResult(
+      ctx,
+      `Could not restore the exact prepared diagnostic source: ${restored.problem}.`,
+      restored.evidence,
+    );
+  }
+  if (cleanWorkspace(workspaceDir)) {
+    return ownerResult(
+      ctx,
+      "Exact diagnostic source restoration left the workflow-owned worktree dirty.",
+      [...restored.evidence, `workspace:${workspaceDir}`],
+    );
+  }
+
+  const contextDir = taskContextDir(repoDir, taskId, generation);
+  mkdirSync(contextDir, { recursive: true });
+  const filter = {
+    taskId,
+    generation,
+    specId: aggregateSpecId,
+    sourceCommit: contract.sourceCommit,
+    target,
+    standaloneBuildId,
+  };
+  const runs = uniqueRuns([
+    ...matchingTaskGenerationRuns(await recentPipelineRuns(repoDir), filter),
+    ...matchingTaskRuns(
+      await taskRuns(repoDir, contextDir, contract.sourceBranch),
+      filter,
+    ),
+  ]);
+  let run = runs[0];
+  if (!run) {
+    if (contract.reproductionConsumed >= contract.maxReproductions) {
+      return ownerResult(
+        ctx,
+        "The single diagnostic reproduction budget is already consumed; no retry or replacement run was created.",
+        [
+          ...restored.evidence,
+          `reproduction-consumed:${contract.reproductionConsumed}`,
+          `max-reproductions:${contract.maxReproductions}`,
+          "pipeline-run:not-created",
+        ],
+      );
+    }
+    const admission = checkLiveDispatchAdmission(workspaceDir, aggregateSpecId);
+    if (!admission.accepted) {
+      return ownerResult(
+        ctx,
+        "The exact prepared diagnostic source failed hard live-dispatch admission; it was not rewritten or queued.",
+        [
+          ...restored.evidence,
+          ...admission.evidence,
+          "pipeline-run:not-created",
+        ],
+      );
+    }
+    run = await queueRun(repoDir, {
+      taskId,
+      generation,
+      specId: aggregateSpecId,
+      sourceBranch: contract.sourceBranch,
+      sourceCommit: contract.sourceCommit,
+      target,
+      standaloneBuildId,
+    });
+    const runId = nonEmptyString(run.id);
+    registerSpecLiveTrackedRun(
+      ctx.appDir ?? "/app/projects/aks-rp-e2e.app",
+      runId,
+    );
+    saveRunReceipt(contextDir, run, contract.sourceCommit);
+    return waitingResult(
+      ctx,
+      `Queued the one permitted aggregate staging diagnostic run ${runId} for ${aggregateSpecId}.`,
+      [
+        ...restored.evidence,
+        ...admission.evidence,
+        `pipeline-run:${runId}`,
+        "reproduction-consumed:1",
+        `max-reproductions:${contract.maxReproductions}`,
+        "integration:not-attempted",
+        "pull-request:not-created",
+      ],
+      pipelineWaitCondition(runId),
+    );
+  }
+
+  const runId = nonEmptyString(run.id);
+  const runStatus = pipelineRunState(run);
+  if (runStatus !== "completed") {
+    return waitingResult(
+      ctx,
+      `The sole diagnostic run ${runId} is ${runStatus}.`,
+      [
+        ...restored.evidence,
+        `pipeline-run:${runId}`,
+        `pipeline-status:${runStatus}`,
+        "reproduction-consumed:1",
+        "integration:not-attempted",
+      ],
+      pipelineWaitCondition(runId),
+    );
+  }
+
+  const runContextDir = terminalRunContextDir(contextDir, runId);
+  const collection = await collectTerminalRunEvidence(
+    repoDir,
+    runContextDir,
+    runId,
+    run,
+  );
+  const jsonPaths = artifactJsonFiles(collection.artifactPaths);
+  const resultPaths = contract.specIds.flatMap((specId) =>
+    jsonPaths
+      .filter((path) => nonEmptyString(readJsonRecord(path)?.specId) === specId)
+      .slice(0, 1),
+  );
+  const cleanupPaths = resultPaths.filter((path) => {
+    const specId = nonEmptyString(readJsonRecord(path)?.specId);
+    return Boolean(specId && artifactProvesCleanup(path, specId));
+  });
+  const evidence = [
+    ...restored.evidence,
+    `pipeline-run:${runId}`,
+    `pipeline-result:${nonEmptyString(run.result) || runStatus}`,
+    ...resultPaths.map((path) => `result-path:${path}`),
+    ...cleanupPaths.map((path) => `cleanup-proof:${path}`),
+    `artifact-path:${contract.artifactPath}`,
+    "reproduction-consumed:1",
+    "integration:not-attempted",
+    "pull-request:not-created",
+    "target-ref-advance:not-attempted",
+  ];
+  if (resultPaths.length !== contract.specIds.length || !cleanupPaths.length) {
+    return ownerResult(
+      ctx,
+      "The sole terminal diagnostic run lacks both declared per-spec results or structural cleanup evidence; no retry is permitted.",
+      [
+        ...evidence,
+        ...collection.errors.map((error) => `collection-error:${error}`),
+      ],
+    );
+  }
+
+  const beforeHead = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+  const decision = await askAgent(
+    ctx,
+    [
+      `Review the sole no-integration diagnostic run ${runId} for ${aggregateSpecId} at exact commit ${contract.sourceCommit}.`,
+      `Use only run-specific evidence under ${runContextDir}. Per-spec result paths: ${resultPaths.join(", ")}. Structural cleanup paths: ${cleanupPaths.join(", ")}.`,
+      `Write ${contract.artifactPath}, then read it back. Use these exact labels: Tested commit:, Pipeline run ID:, Result path: (one line per spec), Cleanup proof:, Assertion mapping:, Lineage mapping:, Request fingerprint: sha256:<64 lowercase hex>, HTTP status:, ARM code:, Redacted ARM body:, and Disposition:.`,
+      "The disposition must be exactly one of: request-shape repair, product/API rejection, or retryable external failure. Include only a deterministic request-shape fingerprint and secret-redacted ARM facts; never include credentials, authorization headers, tokens, or raw secrets.",
+      "Return decision=accepted-pass only when the diagnostic artifact is complete and read back. This accepts the diagnostic disposition, not the non-green product result. Do not edit source, commit, push, queue or retry ADO, create a PR, integrate into dev, or advance any target ref.",
+      "Task:",
+      ctx.task,
+    ].join("\n\n"),
+    {
+      validateDecision: (candidate) => {
+        if (candidate.decision !== "accepted-pass") {
+          return "the terminal no-integration diagnostic must publish and validate its artifact without retry or source mutation";
+        }
+        if (
+          git(workspaceDir, ["rev-parse", "HEAD"]).stdout !== beforeHead ||
+          cleanWorkspace(workspaceDir)
+        ) {
+          return "no-integration diagnostic review must not change the exact prepared source";
+        }
+        return diagnosticArtifactProblem({
+          artifactPath: contract.artifactPath,
+          sourceCommit: contract.sourceCommit,
+          runId,
+          specIds: contract.specIds,
+          resultPaths,
+          cleanupPaths,
+        });
+      },
+    },
+  );
+  const artifactProblem = diagnosticArtifactProblem({
+    artifactPath: contract.artifactPath,
+    sourceCommit: contract.sourceCommit,
+    runId,
+    specIds: contract.specIds,
+    resultPaths,
+    cleanupPaths,
+  });
+  if (decision.decision !== "accepted-pass" || artifactProblem) {
+    return ownerResult(ctx, artifactProblem || decision.summary, [
+      ...evidence,
+      ...decision.evidence,
+    ]);
+  }
+  return ctx.done(decision.summary, {
+    state: "converged",
+    summary: decision.summary,
+    evidence: [
+      ...evidence,
+      ...decision.evidence,
+      `diagnostic-artifact-readback:${contract.artifactPath}`,
+    ],
+    actions: [],
+  });
+}
+
 export async function reconcileSpecLive(
   ctx: WorkflowContext,
   options: SpecLiveReconciliationOptions = {},
 ): Promise<WorkflowResult> {
+  if (!workflowDeadlines.has(ctx as object)) {
+    workflowDeadlines.set(
+      ctx as object,
+      Date.now() + specLiveWorkflowDeadlineMs,
+    );
+  }
   const payload = parseTaskPayload(ctx.task);
   const { targetBranch, targetRef } = resolveIntegrationTarget(
     options.targetBranch,
@@ -4140,7 +5615,15 @@ export async function reconcileSpecLive(
   const allowTerminalDisposition =
     options.allowTerminalDisposition ??
     payload?.input?.allowTerminalDisposition !== false;
-  const selectedSpecIds = scenarioNormalizationSpecIds(normalizationInput);
+  const liveSpecIdSelection = resolveLiveSpecIdSelection(payload?.input);
+  if (!liveSpecIdSelection.accepted) {
+    return ownerResult(ctx, liveSpecIdSelection.problem, [
+      `task:${taskId || "missing"}`,
+      `audit-spec-ids:${liveSpecIdSelection.auditSpecIds.join(",") || "none"}`,
+      "live-spec-id-selection:rejected",
+    ]);
+  }
+  const selectedSpecIds = liveSpecIdSelection.dispatchSpecIds;
   const specId = selectedSpecIds.join(",");
   const livePlanDispatch = resolveLivePlanDispatch({
     taskInput: payload?.input,
@@ -4249,6 +5732,42 @@ export async function reconcileSpecLive(
         `prepared-source-commit:${otherwisePreparedSourceCommit}`,
       ],
     );
+  }
+
+  const retainedWorkspaceMaterialization = materializePriorRetainedWorkspace({
+    workspaceDir,
+    priorRetainedWorkspace: payload?.input?.priorRetainedWorkspace,
+    baselineCommit: payload?.input?.baselineCommit,
+  });
+  if (!retainedWorkspaceMaterialization.accepted) {
+    return ownerResult(
+      ctx,
+      `Could not materialize the prior retained workspace: ${retainedWorkspaceMaterialization.problem || "unknown error"}.`,
+      [
+        `task:${taskId}`,
+        `spec:${specId}`,
+        ...retainedWorkspaceMaterialization.evidence,
+      ],
+    );
+  }
+
+  const diagnostic = noIntegrationDiagnosticContract(payload?.input);
+  if (diagnostic.problem) {
+    return ownerResult(
+      ctx,
+      `Invalid no-integration diagnostic contract: ${diagnostic.problem}.`,
+      [`task:${taskId}`, `spec:${specId}`, "integration:not-attempted"],
+    );
+  }
+  if (diagnostic.contract) {
+    return reconcileNoIntegrationDiagnostic(ctx, payload, diagnostic.contract, {
+      taskId,
+      generation,
+      repoDir,
+      workspaceDir,
+      target: liveTarget,
+      standaloneBuildId,
+    });
   }
 
   const contextDir = taskContextDir(repoDir, taskId, generation);
@@ -4489,14 +6008,42 @@ export async function reconcileSpecLive(
           "If the changes are a valid bounded continuation, finish scoped checks, commit them, leave the worktree clean, and return decision=committed.",
           "If they are invalid or obsolete task-generated residue, remove only that residue, leave the worktree clean at its prior commit, and return decision=test-current.",
           "This recovery phase only restores a clean source state. Omit liveReady and condition; after recovery, this workflow separately evaluates whether the exact source is runnable and owns any ADO dispatch.",
-          "Do not push, queue ADO, create a PR, edit app task state, or discard work whose ownership cannot be established. Use needs-owner for that concrete ambiguity.",
+          "Do not push, queue ADO, create a PR, edit app task state, or discard work whose ownership cannot be established. A technical failure is not ownership ambiguity: when this dedicated task branch establishes ownership, keep repairing until the source is clean instead of returning needs-owner.",
+          `Only if ownership is genuinely ambiguous may you return needs-owner. In that case cite ownership-ambiguity:<exact fact>, authoritative-checkpoint:${currentTaskContextPath(contextDir)}, and authoritative-source-commit:<current HEAD>; the checkpoint pointer must identify the current source/run handoff so a replacement owner can resume safely.`,
           "Task:",
           ctx.task,
         ].join("\n\n"),
         {
           scenarioNormalization: Boolean(normalizationInput),
+          durableContext: {
+            contextDir,
+            taskId,
+            generation,
+            sourceCommit: () => git(workspaceDir, ["rev-parse", "HEAD"]).stdout,
+            phase: "worktree-recovery",
+          },
+          onAgentCallNotAdmitted: ({ phase }) => {
+            const currentCommit = git(workspaceDir, [
+              "rev-parse",
+              "HEAD",
+            ]).stdout;
+            return taskWorktreeRecoveryDeadlineDecision({
+              phase,
+              workspaceDirty: Boolean(cleanWorkspace(workspaceDir)),
+              ownershipEstablished: sourceBranch.startsWith("task/"),
+              sourceBranch,
+              checkpointPath: currentTaskContextPath(contextDir),
+              sourceCommit: currentCommit,
+              beforeRecovery,
+            });
+          },
           validateDecision: (candidate) =>
-            taskWorktreeRecoveryDecisionProblem(candidate),
+            taskWorktreeRecoveryDecisionProblem(candidate, {
+              workspaceDirty: Boolean(cleanWorkspace(workspaceDir)),
+              ownershipEstablished: sourceBranch.startsWith("task/"),
+              authoritativeCheckpointPath: currentTaskContextPath(contextDir),
+              sourceCommit: git(workspaceDir, ["rev-parse", "HEAD"]).stdout,
+            }),
         },
       );
       if (recovery.decision === "needs-owner") {
@@ -4640,6 +6187,32 @@ export async function reconcileSpecLive(
       : null;
     const currentQualityInvariant = (): ScenarioQualityInvariant =>
       scenarioQualityInvariant(workspaceDir, normalizationInput);
+    const requireFreshBaseAtDispatch =
+      payload?.input?.requireFreshBaseAtDispatch === true;
+    const dispatchBaseRef = payload?.input?.baseRef;
+    const boundedChangedFiles = payload?.input?.boundedChangedFiles;
+    const enforceFreshBaseLineage = (
+      candidateCommit: string,
+      operation: "publication" | "queue",
+    ): WorkflowResult | null => {
+      const admission = freshBaseLineageAdmission({
+        workspaceDir,
+        candidateCommit,
+        requireFreshBaseAtDispatch,
+        baseRef: dispatchBaseRef,
+      });
+      if (admission.accepted) return null;
+      return ownerResult(
+        ctx,
+        `Fresh-base lineage refused ${operation} for ${specId}; replay only this task's bounded changes onto the freshly fetched authority and resume the same task through ${name}.`,
+        [
+          `task:${taskId}@${generation}`,
+          `dispatch-operation:${operation}`,
+          ...admission.evidence,
+          `correction-route:same-task-workflow:${name}`,
+        ],
+      );
+    };
     if (
       priorProof &&
       priorProof.proof.targetRef === targetRef &&
@@ -4805,6 +6378,183 @@ export async function reconcileSpecLive(
       const evidence: string[] = [];
 
       for (let attempt = 1; attempt <= 3; attempt += 1) {
+        const freshBaseAdmission = freshBaseLineageAdmission({
+          workspaceDir,
+          candidateCommit: currentCommit,
+          requireFreshBaseAtDispatch,
+          baseRef: dispatchBaseRef,
+        });
+        if (!freshBaseAdmission.accepted && requireFreshBaseAtDispatch) {
+          evidence.push(
+            ...freshBaseAdmission.evidence.filter(
+              (item) =>
+                item !== "push:not-attempted" &&
+                item !== "pipeline-run:not-created",
+            ),
+          );
+          const normalizedBaseRef = freshBaseAdmission.baseRef.replace(
+            /^refs\/remotes\//,
+            "",
+          );
+          const replayTargetRef = normalizedBaseRef.startsWith("origin/")
+            ? normalizedBaseRef
+            : normalizedBaseRef.startsWith("refs/heads/")
+              ? `origin/${normalizedBaseRef.slice("refs/heads/".length)}`
+              : normalizedBaseRef && !normalizedBaseRef.includes("/")
+                ? `origin/${normalizedBaseRef}`
+                : "";
+          const replay = replayTargetRef
+            ? replayScenarioCandidateForDispatch({
+                workspaceDir,
+                sourceBranch,
+                candidateCommit: currentCommit,
+                targetRef: replayTargetRef,
+                boundedChangedFiles,
+              })
+            : {
+                state: "error" as const,
+                error: "dispatch replay could not resolve the fresh base ref",
+                evidence: [`fresh-base-ref:${freshBaseAdmission.baseRef}`],
+              };
+          evidence.push(...replay.evidence);
+          if (replay.state === "error") {
+            return {
+              state: "result",
+              result: ownerResult(
+                ctx,
+                `Could not replay ${specId} onto its fresh dispatch base before publication: ${replay.error}.`,
+                evidence,
+              ),
+            };
+          }
+
+          if (replay.state === "conflict") {
+            const decision = await askAgent(
+              ctx,
+              [
+                `${replayTargetRef}@${replay.targetCommit} advanced before publication for ${specId}.`,
+                `The workflow started replaying only these task-owned commits in ${workspaceDir}: ${replay.taskCommits.join(", ") || "none"}.`,
+                `Replay stopped with: ${replay.error}`,
+                "Resolve only this replay conflict, complete the cherry-pick, run scoped checks, commit the resolved source, leave the task worktree clean, and return decision=committed.",
+                "Do not weaken the fresh-base guard, merge stale branch history, push, queue ADO, create another task, or edit app state. The workflow will re-run admission and publish the replayed source.",
+                "Task:",
+                ctx.task,
+              ].join("\n\n"),
+              {
+                scenarioNormalization: Boolean(normalizationInput),
+                continueDomainWorkOnValidation: true,
+                validateDecision: (candidate) => {
+                  if (candidate.decision !== "committed") {
+                    return "fresh-base replay conflict must be resolved inside this same domain workflow";
+                  }
+                  if (cleanWorkspace(workspaceDir)) {
+                    return "fresh-base replay repair must leave the task worktree clean";
+                  }
+                  const head = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+                  if (
+                    git(
+                      workspaceDir,
+                      [
+                        "merge-base",
+                        "--is-ancestor",
+                        replay.targetCommit,
+                        head,
+                      ],
+                      true,
+                    ).status !== 0
+                  ) {
+                    return `fresh-base replay repair must descend from ${replayTargetRef}`;
+                  }
+                  return git(
+                    workspaceDir,
+                    ["rev-parse", "--verify", "CHERRY_PICK_HEAD"],
+                    true,
+                  ).status === 0
+                    ? "fresh-base replay repair must finish the cherry-pick"
+                    : null;
+                },
+              },
+            );
+            evidence.push(...decision.evidence);
+            currentCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+          } else {
+            currentCommit = replay.sourceCommit;
+          }
+
+          const dispatch = await prepareLiveDispatch(
+            currentCommit,
+            `replayed onto fresh dispatch base ${replayTargetRef}`,
+          );
+          if (dispatch.state === "result") return dispatch;
+          currentCommit = dispatch.sourceCommit;
+          evidence.push(...dispatch.evidence);
+
+          const postReplayAdmission = freshBaseLineageAdmission({
+            workspaceDir,
+            candidateCommit: currentCommit,
+            requireFreshBaseAtDispatch,
+            baseRef: dispatchBaseRef,
+          });
+          if (!postReplayAdmission.accepted) {
+            return {
+              state: "result",
+              result: ownerResult(
+                ctx,
+                `Fresh-base lineage refused publication for ${specId} after replay; resume the same task through ${name}.`,
+                [
+                  `task:${taskId}@${generation}`,
+                  "dispatch-operation:publication",
+                  ...postReplayAdmission.evidence,
+                  `correction-route:same-task-workflow:${name}`,
+                ],
+              ),
+            };
+          }
+          evidence.push(...postReplayAdmission.evidence);
+          const push = git(
+            workspaceDir,
+            [
+              "push",
+              scenarioReplayForceWithLeaseArg({
+                sourceBranch,
+                expectedRemoteCommit: replay.expectedRemoteCommit,
+              }),
+              "origin",
+              `HEAD:refs/heads/${sourceBranch}`,
+            ],
+            true,
+          );
+          if (push.status !== 0) {
+            return {
+              state: "result",
+              result: ownerResult(
+                ctx,
+                `Could not publish the fresh-base replay for ${specId} without replacing concurrent task-branch work.`,
+                [
+                  ...evidence,
+                  `source-branch:${sourceBranch}`,
+                  `source-commit:${currentCommit}`,
+                  `push-error:${push.stderr || push.stdout}`,
+                ],
+              ),
+            };
+          }
+          evidence.push(
+            `dispatch-replay-published:${sourceBranch}@${currentCommit}`,
+          );
+          return { state: "ready", sourceCommit: currentCommit, evidence };
+        }
+        if (!freshBaseAdmission.accepted) {
+          const lineageRefusal = enforceFreshBaseLineage(
+            currentCommit,
+            "publication",
+          );
+          if (lineageRefusal) {
+            return { state: "result", result: lineageRefusal };
+          }
+        } else if (requireFreshBaseAtDispatch) {
+          evidence.push(...freshBaseAdmission.evidence);
+        }
         const push = git(
           workspaceDir,
           ["push", "origin", `${currentCommit}:refs/heads/${sourceBranch}`],
@@ -5064,6 +6814,13 @@ export async function reconcileSpecLive(
           dispatchCommit = admission.sourceCommit;
           dispatchEvidence.push(...admission.evidence);
 
+          const lineageRefusal = enforceFreshBaseLineage(
+            dispatchCommit,
+            "publication",
+          );
+          if (lineageRefusal) {
+            return { state: "result", result: lineageRefusal };
+          }
           const push = git(
             workspaceDir,
             [
@@ -5131,6 +6888,10 @@ export async function reconcileSpecLive(
           );
         }
 
+        const lineageRefusal = enforceFreshBaseLineage(dispatchCommit, "queue");
+        if (lineageRefusal) {
+          return { state: "result", result: lineageRefusal };
+        }
         const run = await queueRun(repoDir, {
           taskId,
           generation,
@@ -5157,6 +6918,10 @@ export async function reconcileSpecLive(
       }
 
       if (!directScenarioNormalization) {
+        const lineageRefusal = enforceFreshBaseLineage(dispatchCommit, "queue");
+        if (lineageRefusal) {
+          return { state: "result", result: lineageRefusal };
+        }
         const run = await queueRun(repoDir, {
           taskId,
           generation,
@@ -5754,6 +7519,11 @@ export async function reconcileSpecLive(
             [...replayEvidence, `workspace:${workspaceDir}`],
           );
         }
+        const lineageRefusal = enforceFreshBaseLineage(
+          replayedCommit,
+          "publication",
+        );
+        if (lineageRefusal) return lineageRefusal;
         git(workspaceDir, [
           "push",
           scenarioReplayForceWithLeaseArg({
@@ -6076,6 +7846,7 @@ export async function reconcileSpecLive(
           : `Current task source ${sourceCommit} still matches integration authority.`,
         ...semanticInvalidationPrompt,
         "Treat the appended Trigger Event as hot evidence, not merely as a wake. If it reports an exact passing pipeline.spec.observed for this task branch at a different source commit, inspect that tested commit against current HEAD and current integration authority. Restore the exact tested commit only when doing so preserves every required same-task change; otherwise keep the newer source and require a fresh exact run. Equivalent file content alone is not exact source proof.",
+        earlyCheckpointInstruction,
         "Inspect the original task, current spec status, model, direct carrier, nearby good/bad examples, and prior evidence. Decide whether this exact source is genuinely ready for live execution.",
         "Before setting liveReady=true, compare every claim assertion ID declared by the exact spec with the IDs the execute-mode carrier will emit. A local check-mode pass is insufficient when it does not exercise that mapping; repair the mapping and add a scoped assertion-contract check when the mapping is programmatic.",
         scenarioQualityRepairInstruction,
@@ -6103,6 +7874,13 @@ export async function reconcileSpecLive(
       let decision = await askAgent(ctx, preparationPrompt, {
         scenarioNormalization: Boolean(normalizationInput),
         continueDomainWorkOnValidation: true,
+        durableContext: {
+          contextDir,
+          taskId,
+          generation,
+          sourceCommit: () => git(workspaceDir, ["rev-parse", "HEAD"]).stdout,
+          phase: "preparation",
+        },
         validateDecision: (candidate) =>
           preparationDecisionProblem(
             candidate,
@@ -6157,6 +7935,14 @@ export async function reconcileSpecLive(
           {
             scenarioNormalization: Boolean(normalizationInput),
             continueDomainWorkOnValidation: true,
+            durableContext: {
+              contextDir,
+              taskId,
+              generation,
+              sourceCommit: () =>
+                git(workspaceDir, ["rev-parse", "HEAD"]).stdout,
+              phase: "preparation-head-correction",
+            },
             validateDecision: (candidate) =>
               preparationDecisionProblem(
                 candidate,
@@ -6598,6 +8384,14 @@ export async function reconcileSpecLive(
         {
           scenarioNormalization: Boolean(normalizationInput),
           continueDomainWorkOnValidation: true,
+          durableContext: {
+            contextDir,
+            taskId,
+            generation,
+            sourceCommit: () => git(workspaceDir, ["rev-parse", "HEAD"]).stdout,
+            runId,
+            phase: "terminal-review",
+          },
           validateDecision: (candidate) =>
             terminalRunDecisionProblem(candidate, {
               requireSucceededProvider: Boolean(normalizationInput),

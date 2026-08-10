@@ -1,17 +1,20 @@
-import { describe, expect, test } from "bun:test";
+import { afterAll, describe, expect, test } from "bun:test";
 import { execFileSync, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   acceptedLiveProofSourceInstruction,
+  admittedAgentCallTimeoutMs,
   askAgent,
   agentConditionProblem,
   authoritativeRunReference,
@@ -34,22 +37,27 @@ import {
   completedPullRequestIntegration,
   cherryPickScenarioReplayCommits,
   currentAdoSurfaceInstruction,
+  currentTaskContextPath,
   decisionCorrectionPrompt,
   directVitestCompatibilityInstruction,
+  earlyCheckpointInstruction,
   exactPassNeedsOwnerProblem,
   directIntegrationAction,
   exactStrictInventoryInstruction,
   exactLiveTargetInstruction,
   frozenCandidateContentEquivalent,
+  freshBaseLineageAdmission,
   semanticInvalidationSourceState,
   discoverTaskRuns,
   proofProtectedScenarioPaths,
   resolveLivePlanDispatch,
+  resolveLiveSpecIdSelection,
   targetAdvanceProofDecisionProblem,
   relevantKnowledgeModelUnchanged,
   shouldReplayScenarioBeforeRunReview,
   shouldReplayReviewedTerminalWriteback,
   taskWorktreeRecoveryDecisionProblem,
+  taskWorktreeRecoveryDeadlineDecision,
   terminalLineageReplayDecisionProblem,
   existingRecoveryProblem,
   integrationMode,
@@ -61,7 +69,11 @@ import {
   masterValidationCapacityPulseCycleSlot,
   masterValidationCapacityRetryDue,
   masterValidationCapacityPulseWaitCondition,
+  materializePriorRetainedWorkspace,
   mergeAcceptedTargetAdvanceProof,
+  noIntegrationDiagnosticContract,
+  diagnosticArtifactProblem,
+  restoreExactDiagnosticSource,
   parseTaskPayload,
   pipelineWaitCondition,
   pipelineRunState,
@@ -73,6 +85,7 @@ import {
   reconcileRemoteTaskBranchHistory,
   remoteLeaseCommit,
   replayScenarioCandidateForDispatch,
+  reconcileSpecLive,
   resolvePriorVerificationInput,
   scenarioReplayForceWithLeaseArg,
   pullRequestReviewCountCondition,
@@ -120,7 +133,658 @@ import {
   type InventoryRowRecord,
 } from "./lib/scenario-quality-invariant.js";
 
+const isolatedAgentWorkspace = mkdtempSync(
+  join(tmpdir(), "spec-live-agent-dispatch-"),
+);
+const isolatedAgentProject = "/app/projects/aks-rp-e2e.app";
+
+function isolatedAgentContext<T extends object>(
+  ctx: T,
+): T & {
+  projectDir: string;
+  workspaceDir: string;
+} {
+  return {
+    ...ctx,
+    projectDir: isolatedAgentProject,
+    workspaceDir: isolatedAgentWorkspace,
+  };
+}
+
+function retainedWorkspaceFixture(): {
+  root: string;
+  retainedDir: string;
+  destinationDir: string;
+  baselineCommit: string;
+} {
+  const root = mkdtempSync(
+    join(tmpdir(), "retained-workspace-materialization-"),
+  );
+  const retainedDir = join(root, "retained");
+  const destinationDir = join(root, "destination");
+  mkdirSync(retainedDir, { recursive: true });
+  const runGit = (cwd: string, args: string[]) =>
+    execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
+  runGit(retainedDir, ["init"]);
+  runGit(retainedDir, ["config", "user.email", "test@example.com"]);
+  runGit(retainedDir, ["config", "user.name", "Test"]);
+  writeFileSync(join(retainedDir, "changed.txt"), "before\n");
+  writeFileSync(join(retainedDir, "deleted.txt"), "delete me\n");
+  runGit(retainedDir, ["add", "changed.txt", "deleted.txt"]);
+  runGit(retainedDir, ["commit", "-m", "baseline"]);
+  const baselineCommit = runGit(retainedDir, ["rev-parse", "HEAD"]);
+  runGit(root, ["clone", retainedDir, destinationDir]);
+  runGit(destinationDir, ["config", "user.email", "test@example.com"]);
+  runGit(destinationDir, ["config", "user.name", "Test"]);
+  return { root, retainedDir, destinationDir, baselineCommit };
+}
+
+afterAll(() => {
+  rmSync(isolatedAgentWorkspace, { recursive: true, force: true });
+});
+
 describe("spec-live-reconciliation workflow", () => {
+  test("accepts prepared-source aliases only for the exact one-reproduction no-integration contract", () => {
+    const sourceCommit = "a".repeat(40);
+    const accepted = noIntegrationDiagnosticContract({
+      allowIntegration: false,
+      preparedSourceBranch: "refs/heads/task/diagnostic",
+      preparedSourceCommit: sourceCommit,
+      artifactPath: "/tmp/diagnostic.md",
+      specIds: ["spec.sample.a", "spec.sample.b"],
+      maxReproductions: 1,
+      reproductionConsumed: 0,
+    });
+
+    expect(accepted.problem).toBeNull();
+    expect(accepted.contract).toEqual({
+      artifactPath: "/tmp/diagnostic.md",
+      maxReproductions: 1,
+      reproductionConsumed: 0,
+      sourceBranch: "task/diagnostic",
+      sourceCommit,
+      specIds: ["spec.sample.a", "spec.sample.b"],
+    });
+    expect(
+      noIntegrationDiagnosticContract({
+        allowIntegration: false,
+        preparedSourceBranch: "task/diagnostic",
+        preparedSourceCommit: sourceCommit,
+        artifactPath: "/tmp/diagnostic.md",
+        specIds: ["spec.sample.a", "spec.sample.b"],
+        maxReproductions: 2,
+        reproductionConsumed: 0,
+      }).problem,
+    ).toContain("exactly 1");
+    expect(
+      noIntegrationDiagnosticContract({
+        allowIntegration: false,
+        preparedSourceBranch: "task/diagnostic",
+        preparedSourceCommit: sourceCommit,
+        artifactPath: "/tmp/diagnostic.md",
+        specIds: ["spec.sample.a", "spec.sample.b"],
+        maxReproductions: 1,
+        reproductionConsumed: 2,
+      }).problem,
+    ).toContain("between 0 and maxReproductions");
+  });
+
+  test("restores the exact prepared diagnostic commit after proving its remote branch lineage", () => {
+    const sourceCommit = "b".repeat(40);
+    const calls: string[][] = [];
+    const restored = restoreExactDiagnosticSource(
+      "/tmp/diagnostic-worktree",
+      { sourceBranch: "task/diagnostic", sourceCommit },
+      (_cwd, args) => {
+        calls.push(args);
+        if (args[0] === "rev-parse") {
+          return { status: 0, stdout: sourceCommit, stderr: "" };
+        }
+        return { status: 0, stdout: "", stderr: "" };
+      },
+    );
+
+    expect(restored.accepted).toBe(true);
+    expect(calls).toEqual([
+      [
+        "fetch",
+        "origin",
+        "+refs/heads/task/diagnostic:refs/remotes/origin/task/diagnostic",
+      ],
+      [
+        "merge-base",
+        "--is-ancestor",
+        sourceCommit,
+        "refs/remotes/origin/task/diagnostic",
+      ],
+      ["reset", "--hard", sourceCommit],
+      ["rev-parse", "HEAD"],
+    ]);
+    expect(restored.evidence).toContain(
+      `diagnostic-source-restored-exact:${sourceCommit}`,
+    );
+  });
+
+  test("materializes the exact tracked dirty diff from a retained workspace", () => {
+    const fixture = retainedWorkspaceFixture();
+    try {
+      writeFileSync(join(fixture.retainedDir, "changed.txt"), "after\n");
+      rmSync(join(fixture.retainedDir, "deleted.txt"));
+      writeFileSync(
+        join(fixture.retainedDir, "untracked.txt"),
+        "do not transfer\n",
+      );
+
+      const result = materializePriorRetainedWorkspace({
+        workspaceDir: fixture.destinationDir,
+        priorRetainedWorkspace: fixture.retainedDir,
+        baselineCommit: fixture.baselineCommit,
+      });
+
+      expect(result.accepted).toBe(true);
+      expect(result.changedPaths.sort()).toEqual([
+        "changed.txt",
+        "deleted.txt",
+      ]);
+      expect(
+        readFileSync(join(fixture.destinationDir, "changed.txt"), "utf8"),
+      ).toBe("after\n");
+      expect(existsSync(join(fixture.destinationDir, "deleted.txt"))).toBe(
+        false,
+      );
+      expect(existsSync(join(fixture.destinationDir, "untracked.txt"))).toBe(
+        false,
+      );
+      expect(
+        execFileSync("git", ["diff", "--binary", "HEAD", "--"], {
+          cwd: fixture.destinationDir,
+          encoding: "utf8",
+        }),
+      ).toBe(
+        execFileSync("git", ["diff", "--binary", "HEAD", "--"], {
+          cwd: fixture.retainedDir,
+          encoding: "utf8",
+        }),
+      );
+      expect(result.evidence).toContain("retained-diff-materialized:exact");
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  test("rejects a retained workspace whose HEAD moved past the declared baseline", () => {
+    const fixture = retainedWorkspaceFixture();
+    try {
+      writeFileSync(join(fixture.retainedDir, "changed.txt"), "new commit\n");
+      execFileSync("git", ["add", "changed.txt"], { cwd: fixture.retainedDir });
+      execFileSync("git", ["commit", "-m", "advance retained head"], {
+        cwd: fixture.retainedDir,
+      });
+
+      const result = materializePriorRetainedWorkspace({
+        workspaceDir: fixture.destinationDir,
+        priorRetainedWorkspace: fixture.retainedDir,
+        baselineCommit: fixture.baselineCommit,
+      });
+
+      expect(result.accepted).toBe(false);
+      expect(result.problem).toContain(
+        "priorRetainedWorkspace HEAD does not match baselineCommit",
+      );
+      expect(result.evidence).toContain(
+        `baseline-commit:${fixture.baselineCommit}`,
+      );
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  test("rejects a destination HEAD outside the retained baseline lineage", () => {
+    const fixture = retainedWorkspaceFixture();
+    try {
+      writeFileSync(
+        join(fixture.retainedDir, "changed.txt"),
+        "retained change\n",
+      );
+      execFileSync("git", ["checkout", "--orphan", "unrelated"], {
+        cwd: fixture.destinationDir,
+      });
+      execFileSync("git", ["rm", "-rf", "."], {
+        cwd: fixture.destinationDir,
+      });
+      writeFileSync(
+        join(fixture.destinationDir, "unrelated.txt"),
+        "unrelated history\n",
+      );
+      execFileSync("git", ["add", "unrelated.txt"], {
+        cwd: fixture.destinationDir,
+      });
+      execFileSync("git", ["commit", "-m", "unrelated destination"], {
+        cwd: fixture.destinationDir,
+      });
+      const destinationHead = execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: fixture.destinationDir,
+        encoding: "utf8",
+      }).trim();
+
+      const result = materializePriorRetainedWorkspace({
+        workspaceDir: fixture.destinationDir,
+        priorRetainedWorkspace: fixture.retainedDir,
+        baselineCommit: fixture.baselineCommit,
+      });
+
+      expect(result.accepted).toBe(false);
+      expect(result.problem).toContain(
+        "baselineCommit is not an ancestor of isolated destination HEAD",
+      );
+      expect(result.evidence).toContain(`destination-head:${destinationHead}`);
+      expect(result.evidence).toContain(
+        "retained-baseline-ancestry:not-ancestor",
+      );
+      expect(
+        execFileSync("git", ["status", "--porcelain"], {
+          cwd: fixture.destinationDir,
+          encoding: "utf8",
+        }),
+      ).toBe("");
+      expect(
+        readFileSync(join(fixture.destinationDir, "unrelated.txt"), "utf8"),
+      ).toBe("unrelated history\n");
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  test("transfers a retained tracked patch onto an advanced destination HEAD", () => {
+    const fixture = retainedWorkspaceFixture();
+    try {
+      writeFileSync(
+        join(fixture.retainedDir, "changed.txt"),
+        "retained change\n",
+      );
+      writeFileSync(
+        join(fixture.destinationDir, "destination.txt"),
+        "advance\n",
+      );
+      execFileSync("git", ["add", "destination.txt"], {
+        cwd: fixture.destinationDir,
+      });
+      execFileSync("git", ["commit", "-m", "advance destination head"], {
+        cwd: fixture.destinationDir,
+      });
+      const destinationHead = execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: fixture.destinationDir,
+        encoding: "utf8",
+      }).trim();
+
+      const result = materializePriorRetainedWorkspace({
+        workspaceDir: fixture.destinationDir,
+        priorRetainedWorkspace: fixture.retainedDir,
+        baselineCommit: fixture.baselineCommit,
+      });
+
+      expect(result.accepted).toBe(true);
+      expect(destinationHead).not.toBe(fixture.baselineCommit);
+      expect(
+        readFileSync(join(fixture.destinationDir, "changed.txt"), "utf8"),
+      ).toBe("retained change\n");
+      expect(result.evidence).toContain(
+        `destination-initial-head:${destinationHead}`,
+      );
+      expect(result.evidence).toContain("retained-baseline-ancestry:ancestor");
+      expect(result.evidence).toContain(
+        "retained-diff-operation:git-apply-3way-index",
+      );
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  test("reproduces the LocalDNS bcbc79c retained patch transfer onto advanced 7f14b3b", () => {
+    const baselineCommit = "bcbc79cbc4b41a68bf9d94d836b5abe15cd1fdf1";
+    const advancedCommit = "7f14b3b558a001614ff04189cbb49a1e4119c1d7";
+    const sourceRepo = "/app/projects/aks-rp-e2e";
+    const trackedFile = "features/localdns/lib/localdns-os-arch-matrix.ts";
+    const root = mkdtempSync(join(tmpdir(), "localdns-retained-regression-"));
+    const retainedDir = join(root, "retained");
+    const destinationDir = join(root, "destination");
+    const runGit = (cwd: string, args: string[]) =>
+      execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
+    const sourceCommonDir = runGit(sourceRepo, [
+      "rev-parse",
+      "--path-format=absolute",
+      "--git-common-dir",
+    ]);
+    const initializeSparseCheckout = (directory: string, commit: string) => {
+      mkdirSync(directory, { recursive: true });
+      runGit(directory, ["init", "--quiet"]);
+      mkdirSync(join(directory, ".git", "objects", "info"), {
+        recursive: true,
+      });
+      mkdirSync(join(directory, ".git", "info"), { recursive: true });
+      writeFileSync(
+        join(directory, ".git", "objects", "info", "alternates"),
+        `${join(sourceCommonDir, "objects")}\n`,
+      );
+      runGit(directory, ["config", "core.sparseCheckout", "true"]);
+      writeFileSync(
+        join(directory, ".git", "info", "sparse-checkout"),
+        `${trackedFile}\n`,
+      );
+      runGit(directory, ["checkout", "--detach", commit]);
+    };
+    try {
+      initializeSparseCheckout(retainedDir, baselineCommit);
+      initializeSparseCheckout(destinationDir, advancedCommit);
+
+      const filePath = join(retainedDir, trackedFile);
+      let source = readFileSync(filePath, "utf8");
+      const replacements: Array<[string, string]> = [
+        [
+          'import { expectProjectResult, recordTestResult, type ProjectTestResult } from "../../../runner/vitest-runtime/index.ts";',
+          'import { resolvedTargetInputIssues, resolvedTargetInputs } from "../../../runner/scenario-lib/resolved-target.ts";\nimport { type ProjectTestResult } from "../../../runner/vitest-runtime/index.ts";',
+        ],
+        [
+          'const subscriptionId = process.env.AKS_RP_E2E_SUBSCRIPTION_ID || "26fe00f8-9173-4872-9134-bb1d2e00343a";\nconst location = process.env.AKS_RP_E2E_LOCATION || "eastus2";\nconst apiVersion = process.env.AKS_RP_E2E_API_VERSION || "2025-04-02-preview";',
+          "const resolvedTarget = resolvedTargetInputs();\nconst targetInputIssues = resolvedTargetInputIssues(resolvedTarget);\nconst subscriptionId = resolvedTarget.subscriptionId;\nconst location = resolvedTarget.location;\nconst apiVersion = resolvedTarget.apiVersion;",
+        ],
+        [
+          "const allowedVariantNames = new Set(osArchVariants.map((variant) => variant.name));",
+          'export const localDnsOsArchFipsContract = {\n  variantName: "fips",\n  specId: "spec.localdns.osarch-fips",\n  featurePathId: "path.localdns.fips",\n  poolRequirements: { osSKU: "AzureLinux", architecture: "x64", enableFIPS: true },\n  assertionIds: ["assert.fips.localdns-active", "assert.fips.dns-resolves"],\n} as const;\n\nconst allowedVariantNames = new Set(osArchVariants.map((variant) => variant.name));',
+        ],
+      ];
+      for (const [before, after] of replacements) {
+        expect(source).toContain(before);
+        source = source.replace(before, after);
+      }
+      writeFileSync(filePath, source);
+
+      const result = materializePriorRetainedWorkspace({
+        workspaceDir: destinationDir,
+        priorRetainedWorkspace: retainedDir,
+        baselineCommit,
+      });
+      const transferred = readFileSync(
+        join(destinationDir, trackedFile),
+        "utf8",
+      );
+
+      expect(result.accepted).toBe(true);
+      expect(result.changedPaths).toEqual([trackedFile]);
+      expect(result.evidence).toContain(`retained-baseline:${baselineCommit}`);
+      expect(result.evidence).toContain(
+        `destination-initial-head:${advancedCommit}`,
+      );
+      for (const required of [
+        "resolvedTargetInputs",
+        "resolvedTargetInputIssues",
+        "localDnsOsArchFipsContract",
+        "enableFIPS: true",
+        "assert.fips.localdns-active",
+        "assert.fips.dns-resolves",
+      ]) {
+        expect(transferred).toContain(required);
+      }
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("fails safely and restores the advanced destination when the retained patch conflicts", () => {
+    const fixture = retainedWorkspaceFixture();
+    try {
+      writeFileSync(
+        join(fixture.retainedDir, "changed.txt"),
+        "retained side\n",
+      );
+      writeFileSync(
+        join(fixture.destinationDir, "changed.txt"),
+        "destination side\n",
+      );
+      execFileSync("git", ["add", "changed.txt"], {
+        cwd: fixture.destinationDir,
+      });
+      execFileSync("git", ["commit", "-m", "conflicting destination advance"], {
+        cwd: fixture.destinationDir,
+      });
+      const destinationHead = execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: fixture.destinationDir,
+        encoding: "utf8",
+      }).trim();
+
+      const result = materializePriorRetainedWorkspace({
+        workspaceDir: fixture.destinationDir,
+        priorRetainedWorkspace: fixture.retainedDir,
+        baselineCommit: fixture.baselineCommit,
+      });
+
+      expect(result.accepted).toBe(false);
+      expect(result.problem).toContain(
+        "conflicts with advanced destination lineage",
+      );
+      expect(result.evidence).toContain("destination-restore:clean");
+      expect(
+        execFileSync("git", ["rev-parse", "HEAD"], {
+          cwd: fixture.destinationDir,
+          encoding: "utf8",
+        }).trim(),
+      ).toBe(destinationHead);
+      expect(
+        execFileSync("git", ["status", "--porcelain"], {
+          cwd: fixture.destinationDir,
+          encoding: "utf8",
+        }),
+      ).toBe("");
+      expect(
+        readFileSync(join(fixture.destinationDir, "changed.txt"), "utf8"),
+      ).toBe("destination side\n");
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  test("rejects a dirty destination without overwriting its changes", () => {
+    const fixture = retainedWorkspaceFixture();
+    try {
+      writeFileSync(
+        join(fixture.retainedDir, "changed.txt"),
+        "retained change\n",
+      );
+      writeFileSync(
+        join(fixture.destinationDir, "changed.txt"),
+        "destination change\n",
+      );
+
+      const result = materializePriorRetainedWorkspace({
+        workspaceDir: fixture.destinationDir,
+        priorRetainedWorkspace: fixture.retainedDir,
+        baselineCommit: fixture.baselineCommit,
+      });
+
+      expect(result.accepted).toBe(false);
+      expect(result.problem).toContain("isolated destination is dirty");
+      expect(
+        readFileSync(join(fixture.destinationDir, "changed.txt"), "utf8"),
+      ).toBe("destination change\n");
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  test("leaves the destination unchanged when no retained workspace is supplied", () => {
+    const fixture = retainedWorkspaceFixture();
+    try {
+      const beforeStatus = execFileSync("git", ["status", "--porcelain"], {
+        cwd: fixture.destinationDir,
+        encoding: "utf8",
+      });
+      const result = materializePriorRetainedWorkspace({
+        workspaceDir: fixture.destinationDir,
+        priorRetainedWorkspace: undefined,
+        baselineCommit: undefined,
+      });
+
+      expect(result).toEqual({
+        requested: false,
+        accepted: true,
+        changedPaths: [],
+        evidence: ["prior-retained-workspace:not-requested"],
+      });
+      expect(
+        execFileSync("git", ["status", "--porcelain"], {
+          cwd: fixture.destinationDir,
+          encoding: "utf8",
+        }),
+      ).toBe(beforeStatus);
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  test("prevents duplicate retained-diff materialization in the same run", () => {
+    const fixture = retainedWorkspaceFixture();
+    try {
+      writeFileSync(
+        join(fixture.retainedDir, "changed.txt"),
+        "materialize once\n",
+      );
+      const input = {
+        workspaceDir: fixture.destinationDir,
+        priorRetainedWorkspace: fixture.retainedDir,
+        baselineCommit: fixture.baselineCommit,
+      };
+
+      const first = materializePriorRetainedWorkspace(input);
+      const diffAfterFirst = execFileSync(
+        "git",
+        ["diff", "--binary", "HEAD", "--"],
+        { cwd: fixture.destinationDir, encoding: "utf8" },
+      );
+      const second = materializePriorRetainedWorkspace(input);
+      const diffAfterSecond = execFileSync(
+        "git",
+        ["diff", "--binary", "HEAD", "--"],
+        { cwd: fixture.destinationDir, encoding: "utf8" },
+      );
+
+      expect(first.accepted).toBe(true);
+      expect(second.accepted).toBe(false);
+      expect(second.problem).toContain("isolated destination is dirty");
+      expect(diffAfterSecond).toBe(diffAfterFirst);
+      expect(
+        readFileSync(join(fixture.destinationDir, "changed.txt"), "utf8"),
+      ).toBe("materialize once\n");
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  test("accepts a complete non-green diagnostic artifact without requiring a passing result", () => {
+    const root = mkdtempSync(join(tmpdir(), "no-integration-artifact-"));
+    try {
+      const artifactPath = join(root, "diagnostic.md");
+      const sourceCommit = "c".repeat(40);
+      const resultPaths = [join(root, "a.json"), join(root, "b.json")];
+      const cleanupPath = resultPaths[1];
+      writeFileSync(
+        artifactPath,
+        [
+          `Tested commit: ${sourceCommit}`,
+          "Pipeline run ID: 175125000",
+          `Result path: ${resultPaths[0]}`,
+          `Result path: ${resultPaths[1]}`,
+          `Cleanup proof: ${cleanupPath}`,
+          "Assertion mapping: aggregate request reached the expected failing assertion",
+          "Lineage mapping: exact prepared source",
+          `Request fingerprint: sha256:${"d".repeat(64)}`,
+          "HTTP status: 400",
+          "ARM code: InvalidParameter",
+          "Redacted ARM body: { message: redacted product rejection }",
+          "Disposition: product/API rejection",
+        ].join("\n"),
+      );
+
+      expect(
+        diagnosticArtifactProblem({
+          artifactPath,
+          sourceCommit,
+          runId: "175125000",
+          specIds: ["spec.sample.a", "spec.sample.b"],
+          resultPaths,
+          cleanupPaths: [cleanupPath],
+        }),
+      ).toBeNull();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("routes only allowIntegration=false into diagnostics and leaves the default reconciliation path unchanged", async () => {
+    const root = mkdtempSync(join(tmpdir(), "no-integration-routing-"));
+    try {
+      const repoDir = join(root, "repo");
+      const workspaceDir = join(root, "workspace");
+      for (const directory of [repoDir, workspaceDir]) {
+        mkdirSync(directory, { recursive: true });
+        execFileSync("git", ["init"], { cwd: directory });
+        execFileSync("git", ["config", "user.email", "test@example.com"], {
+          cwd: directory,
+        });
+        execFileSync("git", ["config", "user.name", "Test"], {
+          cwd: directory,
+        });
+        writeFileSync(join(directory, "README.md"), "base\n");
+        execFileSync("git", ["add", "README.md"], { cwd: directory });
+        execFileSync("git", ["commit", "-m", "base"], { cwd: directory });
+        execFileSync("git", ["branch", "-M", "dev"], { cwd: directory });
+        execFileSync("git", ["remote", "add", "origin", directory], {
+          cwd: directory,
+        });
+      }
+      const taskFor = (allowIntegration: boolean | undefined) =>
+        [
+          "## Reconciliation Task",
+          JSON.stringify({
+            taskId: "domain/no-integration-routing",
+            generation: 1,
+            input: {
+              specIds: ["spec.sample.a", "spec.sample.b"],
+              ...(allowIntegration === undefined ? {} : { allowIntegration }),
+              preparedSourceBranch: "not-a-task-branch",
+              preparedSourceCommit: "e".repeat(40),
+              artifactPath: "/tmp/diagnostic.md",
+              maxReproductions: 1,
+              reproductionConsumed: 0,
+            },
+            children: { live: [], completed: [] },
+          }),
+        ].join("\n");
+      const contextFor = (task: string) => ({
+        agent: "aks-explorer",
+        task,
+        projectDir: repoDir,
+        workspaceDir,
+        done: (_summary: string, output: unknown) => output,
+        runAgent: async () => {
+          throw new Error("runAgent should not be called");
+        },
+      });
+
+      const diagnostic = await reconcileSpecLive(contextFor(taskFor(false)));
+      expect(diagnostic.summary).toContain(
+        "Invalid no-integration diagnostic contract",
+      );
+      expect(diagnostic.evidence).toContain("integration:not-attempted");
+
+      const defaultContract = noIntegrationDiagnosticContract(
+        JSON.parse(taskFor(undefined).split("\n")[1]!).input,
+      );
+      expect(defaultContract).toEqual({ contract: null, problem: null });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   test("uses the watcher review normalization and judges only the matching new fingerprint", () => {
     const payload = {
       value: [
@@ -562,6 +1226,206 @@ describe("spec-live-reconciliation workflow", () => {
       ).toBe(true);
     } finally {
       rmSync(childRoot, { recursive: true, force: true });
+    }
+  });
+
+  test("replays divergent fresh-base candidates before exact publication and ADO admission", () => {
+    const childRoot = mkdtempSync(join(tmpdir(), "fresh-base-lineage-child-"));
+    const childScript = join(childRoot, "run.mjs");
+
+    try {
+      writeFileSync(
+        childScript,
+        [
+          'import { execFileSync } from "node:child_process";',
+          'import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";',
+          'import { tmpdir } from "node:os";',
+          'import { join } from "node:path";',
+          `const modulePath = ${JSON.stringify(join(import.meta.dir, "spec-live-reconciliation.ts"))};`,
+          "const roots = [];",
+          'const run = (cwd, args, allowFailure = false) => { try { return execFileSync("git", args, { cwd, encoding: "utf8" }).trim(); } catch (error) { if (allowFailure) return ""; throw error; } };',
+          'const succeeds = (cwd, args) => { try { execFileSync("git", args, { cwd, encoding: "utf8" }); return true; } catch { return false; } };',
+          "const execute = async (mode) => {",
+          "  const root = mkdtempSync(join(tmpdir(), `fresh-base-${mode}-`)); roots.push(root);",
+          '  const remote = join(root, "remote.git"); const seed = join(root, "seed"); const repoDir = join(root, "repo"); const appDir = join(root, "app"); const binDir = join(root, "bin"); const azLog = join(root, "az.log"); const bunLog = join(root, "bun.log"); const gitLog = join(root, "git.log");',
+          '  mkdirSync(seed, { recursive: true }); mkdirSync(appDir, { recursive: true }); mkdirSync(binDir, { recursive: true }); writeFileSync(azLog, ""); writeFileSync(bunLog, ""); writeFileSync(gitLog, "");',
+          '  writeFileSync(join(binDir, "bun"), "#!/usr/bin/env bash\\necho \\\"$@\\\" >> \\\"$FAKE_BUN_LOG\\\"\\nexit 0\\n", { mode: 0o755 });',
+          '  writeFileSync(join(binDir, "git"), "#!/usr/bin/env bash\\nif [[ \\\"$1\\\" == \\\"push\\\" ]]; then echo \\\"$@\\\" >> \\\"$FAKE_GIT_LOG\\\"; fi\\nexec /usr/bin/git \\\"$@\\\"\\n", { mode: 0o755 });',
+          '  writeFileSync(join(binDir, "az"), `#!/usr/bin/env node\nconst fs=require("node:fs"); const args=process.argv.slice(2); fs.appendFileSync(process.env.FAKE_AZ_LOG, JSON.stringify(args)+"\\\\n"); if(args[0]==="pipelines"&&args[1]==="run"){ const i=args.indexOf("--commit-id"); process.stdout.write(JSON.stringify({id:"175124000",state:"inProgress",sourceVersion:args[i+1]})); } else process.stdout.write("[]");\n`, { mode: 0o755 });',
+          '  process.env.FAKE_AZ_LOG=azLog; process.env.FAKE_BUN_LOG=bunLog; process.env.FAKE_GIT_LOG=gitLog; process.env.PATH=`${binDir}:${process.env.PATH||""}`; process.env.AZURE_CLI_PATH=join(binDir,"az");',
+          '  run(root,["init","--bare",remote]); run(seed,["init"]); run(seed,["config","user.email","test@example.com"]); run(seed,["config","user.name","Test"]); writeFileSync(join(seed,"README.md"),"base\\n"); run(seed,["add","README.md"]); run(seed,["commit","-m","base"]); run(seed,["branch","-M","dev"]); run(seed,["remote","add","origin",remote]); run(seed,["push","origin","dev"]);',
+          '  if(mode==="divergent"||mode==="bounded-no-delta"){ run(seed,["checkout","-b","task/example"]); const candidatePath=mode==="bounded-no-delta"?"unrelated.txt":"candidate.txt"; const candidateText=mode==="bounded-no-delta"?"must not replay\\n":"unsafe 7475562cc shape\\n"; writeFileSync(join(seed,candidatePath),candidateText); run(seed,["add",candidatePath]); run(seed,["commit","-m",mode==="bounded-no-delta"?"unrelated retained commit":"divergent candidate"]); var candidate=run(seed,["rev-parse","HEAD"]); run(seed,["push","origin","task/example"]); run(seed,["checkout","dev"]); writeFileSync(join(seed,"authority.txt"),"fresh authority\\n"); run(seed,["add","authority.txt"]); run(seed,["commit","-m","advance authority"]); run(seed,["push","origin","dev"]); run(seed,["checkout","task/example"]); } else if(mode==="conflict"){ run(seed,["checkout","-b","task/example"]); writeFileSync(join(seed,"README.md"),"candidate value\\n"); run(seed,["add","README.md"]); run(seed,["commit","-m","conflicting candidate"]); var candidate=run(seed,["rev-parse","HEAD"]); run(seed,["push","origin","task/example"]); run(seed,["checkout","dev"]); writeFileSync(join(seed,"README.md"),"authority value\\n"); run(seed,["add","README.md"]); run(seed,["commit","-m","conflicting authority"]); run(seed,["push","origin","dev"]); run(seed,["checkout","task/example"]); } else { writeFileSync(join(seed,"authority.txt"),"fresh authority\\n"); run(seed,["add","authority.txt"]); run(seed,["commit","-m","advance authority"]); run(seed,["push","origin","dev"]); run(seed,["checkout","-b","task/example"]); writeFileSync(join(seed,"candidate.txt"),"safe candidate\\n"); run(seed,["add","candidate.txt"]); run(seed,["commit","-m","descendant candidate"]); var candidate=run(seed,["rev-parse","HEAD"]); run(seed,["push","origin","task/example"]); }',
+          '  run(root,["clone",remote,repoDir]); run(repoDir,["checkout","dev"]); writeFileSync(gitLog, "");',
+          '  const { reconcileSpecLive } = await import(`file://${modulePath}`); const task=["## Reconciliation Task",JSON.stringify({taskId:`domain/fresh-base-${mode}`,generation:1,input:{specId:"spec.sample.fresh-base",sourceBranch:"task/example",sourceCommit:candidate,target:"staging",requireFreshBaseAtDispatch:true,baseRef:"origin/dev",...(mode==="bounded-no-delta"?{boundedChangedFiles:["README.md"]}:{})},children:{live:[],completed:[]}},null,2)].join("\\n");',
+          '  let repairCalls=0; let queuedBeforeRepair=false; let repairPrompt=""; const result=await reconcileSpecLive({agent:"aks-explorer",task,appDir,projectDir:repoDir,workspaceDir:seed,done:(_summary,output)=>output,runAgent:async(_agent,prompt)=>{ if(mode!=="conflict") throw new Error("runAgent should not be called"); repairCalls+=1; repairPrompt=prompt; queuedBeforeRepair=readFileSync(azLog,"utf8").trim().split(/\\n+/).filter(Boolean).map(JSON.parse).some((args)=>args[0]==="pipelines"&&args[1]==="run"); writeFileSync(join(seed,"README.md"),"authority value with candidate behavior\\n"); run(seed,["add","README.md"]); run(seed,["cherry-pick","--continue"]); return {status:"done",structuredResult:{decision:"committed",summary:"Resolved the bounded replay conflict.",evidence:["fresh-base-conflict:repaired"]}}; }},{reviewedScenarioPatch:true});',
+          '  const commands=readFileSync(azLog,"utf8").trim().split(/\\n+/).filter(Boolean).map(JSON.parse); const pushes=readFileSync(gitLog,"utf8").trim().split(/\\n+/).filter(Boolean); const remoteTask=run(seed,["ls-remote","origin","refs/heads/task/example"],true); const publishedCommit=remoteTask.split(/\\s+/)[0]||""; const authority=run(seed,["rev-parse","origin/dev"]); const replayHead=run(seed,["rev-parse","HEAD"]); const authorityIsAncestor=succeeds(seed,["merge-base","--is-ancestor",authority,replayHead]); const staleCandidateIsAncestor=succeeds(seed,["merge-base","--is-ancestor",candidate,replayHead]); const retainedCandidateChange=mode==="conflict"?readFileSync(join(seed,"README.md"),"utf8"):mode==="bounded-no-delta"?"":readFileSync(join(seed,"candidate.txt"),"utf8"); const unrelatedExists=existsSync(join(seed,"unrelated.txt")); const queuedSourceVersion=commands.find((args)=>args[0]==="pipelines"&&args[1]==="run")?.[commands.find((args)=>args[0]==="pipelines"&&args[1]==="run")?.indexOf("--commit-id")+1]||""; return {mode,result,commands,pushes,remoteTask,candidate,publishedCommit,authority,replayHead,authorityIsAncestor,staleCandidateIsAncestor,retainedCandidateChange,unrelatedExists,queuedSourceVersion,repairCalls,queuedBeforeRepair,repairPrompt};',
+          "};",
+          'const outputs=[await execute("divergent"),await execute("bounded-no-delta"),await execute("current"),await execute("conflict")]; console.log(JSON.stringify(outputs)); for(const root of roots) rmSync(root,{recursive:true,force:true});',
+        ].join("\n"),
+      );
+
+      const child = spawnSync("bun", [childScript], {
+        cwd: import.meta.dir,
+        encoding: "utf8",
+        env: { ...process.env },
+      });
+      if (child.status !== 0) {
+        throw new Error(child.stderr || child.stdout || "child process failed");
+      }
+      const [divergent, boundedNoDelta, current, conflict] = JSON.parse(
+        child.stdout.trim(),
+      );
+      expect(divergent.result.state).toBe("waiting");
+      expect(divergent.result.summary).toContain(
+        "Queued exact live verification run 175124000",
+      );
+      expect(divergent.authorityIsAncestor).toBe(true);
+      expect(divergent.staleCandidateIsAncestor).toBe(false);
+      expect(divergent.retainedCandidateChange).toBe(
+        "unsafe 7475562cc shape\n",
+      );
+      expect(divergent.publishedCommit).toBe(divergent.replayHead);
+      expect(divergent.queuedSourceVersion).toBe(divergent.replayHead);
+      expect(divergent.pushes).toHaveLength(1);
+      expect(divergent.pushes[0]).toContain("HEAD:refs/heads/task/example");
+      expect(divergent.result.evidence).toContain(
+        `dispatch-replay-from:${divergent.candidate}`,
+      );
+      expect(divergent.result.evidence).toContain(
+        `dispatch-replay-target:origin/dev@${divergent.authority}`,
+      );
+      expect(divergent.result.evidence).toContain(
+        `dispatch-replayed-source:${divergent.replayHead}`,
+      );
+      expect(divergent.result.evidence).toContain(
+        `dispatch-replay-published:task/example@${divergent.replayHead}`,
+      );
+      expect(divergent.result.evidence).toContain(
+        "fresh-base-lineage:accepted",
+      );
+
+      expect(boundedNoDelta.result.state).toBe("waiting");
+      expect(boundedNoDelta.authorityIsAncestor).toBe(true);
+      expect(boundedNoDelta.staleCandidateIsAncestor).toBe(false);
+      expect(boundedNoDelta.replayHead).toBe(boundedNoDelta.authority);
+      expect(boundedNoDelta.publishedCommit).toBe(boundedNoDelta.authority);
+      expect(boundedNoDelta.remoteTask).toContain(boundedNoDelta.authority);
+      expect(boundedNoDelta.unrelatedExists).toBe(false);
+      expect(boundedNoDelta.queuedSourceVersion).toBe(boundedNoDelta.authority);
+      expect(boundedNoDelta.pushes).toHaveLength(1);
+      expect(boundedNoDelta.pushes[0]).toContain("--force-with-lease=");
+      expect(boundedNoDelta.pushes[0]).toContain(
+        "HEAD:refs/heads/task/example",
+      );
+      expect(boundedNoDelta.result.evidence).toContain(
+        "dispatch-bounded-delta:none",
+      );
+      expect(boundedNoDelta.result.evidence).toContain(
+        `dispatch-replayed-source:${boundedNoDelta.authority}`,
+      );
+      expect(boundedNoDelta.result.evidence).toContain(
+        `dispatch-replay-published:task/example@${boundedNoDelta.authority}`,
+      );
+
+      expect(current.result.state).toBe("waiting");
+      expect(current.result.summary).toContain(
+        "Queued exact live verification run 175124000",
+      );
+      expect(current.authorityIsAncestor).toBe(true);
+      expect(current.replayHead).toBe(current.candidate);
+      expect(current.publishedCommit).toBe(current.candidate);
+      expect(current.queuedSourceVersion).toBe(current.candidate);
+      expect(current.remoteTask).toContain(current.candidate);
+      expect(current.pushes).toHaveLength(1);
+      expect(current.pushes[0]).toContain("refs/heads/task/example");
+      expect(current.result.evidence).toContain("fresh-base-lineage:accepted");
+      expect(
+        current.commands.some(
+          (args: string[]) => args[0] === "pipelines" && args[1] === "run",
+        ),
+      ).toBe(true);
+
+      expect(conflict.repairCalls).toBe(1);
+      expect(conflict.queuedBeforeRepair).toBe(false);
+      expect(conflict.repairPrompt).toContain(
+        "Resolve only this replay conflict, complete the cherry-pick",
+      );
+      expect(conflict.repairPrompt).toContain(
+        "Do not weaken the fresh-base guard",
+      );
+      expect(conflict.result.state).toBe("waiting");
+      expect(conflict.result.summary).toContain(
+        "Queued exact live verification run 175124000",
+      );
+      expect(conflict.authorityIsAncestor).toBe(true);
+      expect(conflict.staleCandidateIsAncestor).toBe(false);
+      expect(conflict.retainedCandidateChange).toBe(
+        "authority value with candidate behavior\n",
+      );
+      expect(conflict.publishedCommit).toBe(conflict.replayHead);
+      expect(conflict.queuedSourceVersion).toBe(conflict.replayHead);
+      expect(conflict.pushes).toHaveLength(1);
+      expect(conflict.pushes[0]).toContain("HEAD:refs/heads/task/example");
+      expect(conflict.result.evidence).toContain(
+        "fresh-base-conflict:repaired",
+      );
+      expect(conflict.result.evidence).toContain(
+        `dispatch-replay-from:${conflict.candidate}`,
+      );
+      expect(conflict.result.evidence).toContain(
+        `dispatch-replay-target:origin/dev@${conflict.authority}`,
+      );
+      expect(conflict.result.evidence).toContain(
+        `dispatch-replay-published:task/example@${conflict.replayHead}`,
+      );
+      expect(conflict.result.evidence).toContain("fresh-base-lineage:accepted");
+    } finally {
+      rmSync(childRoot, { recursive: true, force: true });
+    }
+  });
+
+  test("reports exact merge-base and behind/ahead facts for the unsafe lineage shape", () => {
+    const root = mkdtempSync(join(tmpdir(), "fresh-base-facts-"));
+    try {
+      execFileSync("git", ["init"], { cwd: root });
+      execFileSync("git", ["config", "user.email", "test@example.com"], {
+        cwd: root,
+      });
+      execFileSync("git", ["config", "user.name", "Test"], { cwd: root });
+      writeFileSync(join(root, "base.txt"), "base\n");
+      execFileSync("git", ["add", "base.txt"], { cwd: root });
+      execFileSync("git", ["commit", "-m", "base"], { cwd: root });
+      execFileSync("git", ["branch", "-M", "dev"], { cwd: root });
+      execFileSync("git", ["remote", "add", "origin", root], { cwd: root });
+      execFileSync("git", ["update-ref", "refs/remotes/origin/dev", "HEAD"], {
+        cwd: root,
+      });
+      execFileSync("git", ["checkout", "-b", "candidate"], { cwd: root });
+      writeFileSync(join(root, "candidate.txt"), "candidate\n");
+      execFileSync("git", ["add", "candidate.txt"], { cwd: root });
+      execFileSync("git", ["commit", "-m", "candidate"], { cwd: root });
+      const candidate = execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: root,
+        encoding: "utf8",
+      }).trim();
+      execFileSync("git", ["checkout", "dev"], { cwd: root });
+      writeFileSync(join(root, "authority.txt"), "authority\n");
+      execFileSync("git", ["add", "authority.txt"], { cwd: root });
+      execFileSync("git", ["commit", "-m", "authority"], { cwd: root });
+
+      const admission = freshBaseLineageAdmission({
+        workspaceDir: root,
+        candidateCommit: candidate,
+        requireFreshBaseAtDispatch: true,
+        baseRef: "origin/dev",
+      });
+      expect(admission.accepted).toBe(false);
+      expect(admission.mergeBase).not.toBe("");
+      expect(admission.behind).toBe(1);
+      expect(admission.ahead).toBe(1);
+      expect(admission.evidence).toContain("fresh-base-behind-ahead:1/1");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
     }
   });
 
@@ -1558,6 +2422,525 @@ describe("spec-live-reconciliation workflow", () => {
     }
   });
 
+  test("persists authenticated ADO timeline and failing task evidence for an artifactless terminal run", async () => {
+    const root = mkdtempSync(join(tmpdir(), "artifactless-terminal-evidence-"));
+    const calls: Array<{
+      args: string[];
+      includeProject: boolean | undefined;
+    }> = [];
+    const timeline = {
+      records: [
+        {
+          id: "stage-1",
+          name: "Run live specs",
+          type: "Stage",
+          result: "failed",
+        },
+        {
+          id: "job-1",
+          parentId: "stage-1",
+          name: "Execute",
+          type: "Job",
+          result: "failed",
+        },
+        {
+          id: "task-1",
+          parentId: "job-1",
+          name: "Run selected LocalDNS specs",
+          type: "Task",
+          result: "failed",
+          log: { id: "987" },
+        },
+      ],
+    };
+    try {
+      const result = await collectTerminalRunEvidence(
+        root,
+        root,
+        "42",
+        { id: 42, status: "completed", result: "failed" },
+        {
+          listArtifacts: () => [],
+          authenticatedAdoJson: (args, options) => {
+            calls.push({ args, includeProject: options?.includeProject });
+            return args.includes("timeline")
+              ? timeline
+              : {
+                  value: [
+                    "failing command",
+                    "fatal: LocalDNS assertion failed",
+                  ],
+                };
+          },
+        },
+      );
+
+      const timelinePath = join(root, "ado-timeline.json");
+      const terminalFailurePath = join(root, "ado-terminal-failure.json");
+      const failingTaskLogPath = join(root, "ado-failing-task-987.log");
+      expect(calls).toEqual([
+        {
+          args: [
+            "devops",
+            "invoke",
+            "--area",
+            "build",
+            "--resource",
+            "timeline",
+            "--route-parameters",
+            "project=CloudNativeCompute",
+            "buildId=42",
+            "--api-version",
+            "7.1",
+          ],
+          includeProject: false,
+        },
+        {
+          args: [
+            "devops",
+            "invoke",
+            "--area",
+            "build",
+            "--resource",
+            "logs",
+            "--route-parameters",
+            "project=CloudNativeCompute",
+            "buildId=42",
+            "logId=987",
+            "--api-version",
+            "7.1",
+          ],
+          includeProject: false,
+        },
+      ]);
+      expect(result).toMatchObject({
+        artifactPaths: [],
+        timelinePath,
+        terminalFailurePath,
+        failingTaskLogPath,
+        errors: [],
+      });
+      expect(JSON.parse(readFileSync(timelinePath, "utf8"))).toEqual(timeline);
+      expect(JSON.parse(readFileSync(terminalFailurePath, "utf8"))).toEqual({
+        runId: "42",
+        runResult: "failed",
+        stage: {
+          id: "stage-1",
+          name: "Run live specs",
+          type: "Stage",
+          result: "failed",
+        },
+        task: {
+          id: "task-1",
+          name: "Run selected LocalDNS specs",
+          type: "Task",
+          result: "failed",
+        },
+        logId: "987",
+      });
+      expect(readFileSync(failingTaskLogPath, "utf8")).toBe(
+        "failing command\nfatal: LocalDNS assertion failed\n",
+      );
+      expect(
+        JSON.parse(readFileSync(join(root, "collection.json"), "utf8")),
+      ).toMatchObject({
+        runId: "42",
+        timelinePath,
+        terminalFailurePath,
+        failingTaskLogPath,
+        errors: [],
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("rejects canonical and symlink-equivalent workspaces before spec-live agent dispatch", async () => {
+    const root = mkdtempSync(join(tmpdir(), "spec-live-write-dispatch-"));
+    const projectDir = join(root, "project");
+    const projectAlias = join(root, "project-alias");
+    mkdirSync(projectDir);
+    symlinkSync(projectDir, projectAlias);
+    let agentCalls = 0;
+    const contextFor = (workspaceDir: string) => ({
+      agent: "aks-explorer",
+      projectDir,
+      workspaceDir,
+      runAgent: async () => {
+        agentCalls += 1;
+        throw new Error("canonical checkout must never reach runAgent");
+      },
+    });
+
+    try {
+      await expect(
+        askAgent(contextFor(projectDir) as never, "Repair bounded source."),
+      ).rejects.toThrow("refused canonical workspace");
+      await expect(
+        askAgent(contextFor(projectAlias) as never, "Repair bounded source."),
+      ).rejects.toThrow("refused canonical workspace");
+      expect(agentCalls).toBe(0);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("reserves workflow margin instead of launching a correction after a long first judgment", async () => {
+    const calls: Array<{ timeoutMs: number }> = [];
+    const times = [0, 1_450_001];
+    const ctx = {
+      agent: "aks-explorer",
+      runAgent: async (
+        _agent: string,
+        _prompt: string,
+        options: { timeoutMs: number },
+      ) => {
+        calls.push(options);
+        return {
+          status: "done",
+          structuredResult: {
+            decision: "committed",
+            summary: "invalid first judgment after broad research",
+            evidence: ["source-commit:abc"],
+          },
+        };
+      },
+    };
+
+    await expect(
+      askAgent(
+        isolatedAgentContext(ctx) as never,
+        "Repair four network-cni carriers.",
+        {
+          deadlineMs: 1_800_000,
+          nowMs: () => times.shift() ?? 1_450_001,
+          continueDomainWorkOnValidation: true,
+          validateDecision: () => "liveReady is required",
+        },
+      ),
+    ).rejects.toThrow("correction/retry was not admitted");
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.timeoutMs).toBe(900_000);
+    expect(
+      admittedAgentCallTimeoutMs({
+        deadlineMs: 1_800_000,
+        nowMs: 1_450_001,
+        attempt: 2,
+      }),
+    ).toBeNull();
+  });
+
+  test("forces worktree recovery through the null-admission callback without permitting a dirty owner handoff", async () => {
+    const checkpointPath = join(isolatedAgentWorkspace, "current-context.json");
+    const sourceCommit = "d".repeat(40);
+    let calls = 0;
+    const ctx = isolatedAgentContext({
+      agent: "aks-explorer",
+      runAgent: async () => {
+        calls += 1;
+        throw new Error("deadline admission should prevent agent dispatch");
+      },
+    });
+    const forcedRecovery = (
+      workspaceDirty: boolean,
+      ownershipEstablished: boolean,
+    ) => ({
+      deadlineMs: 100_000,
+      nowMs: () => 100_000,
+      onAgentCallNotAdmitted: ({
+        phase,
+      }: {
+        attempt: number;
+        phase: "judgment" | "correction/retry";
+      }) =>
+        taskWorktreeRecoveryDeadlineDecision({
+          phase,
+          workspaceDirty,
+          ownershipEstablished,
+          sourceBranch: ownershipEstablished ? "task/example" : "dev",
+          checkpointPath,
+          sourceCommit,
+          beforeRecovery: sourceCommit,
+        }),
+      validateDecision: (
+        candidate: Parameters<typeof taskWorktreeRecoveryDecisionProblem>[0],
+      ) =>
+        taskWorktreeRecoveryDecisionProblem(candidate, {
+          workspaceDirty,
+          ownershipEstablished,
+          authoritativeCheckpointPath: checkpointPath,
+          sourceCommit,
+        }),
+    });
+
+    await expect(
+      askAgent(
+        ctx as never,
+        "Recover the established task worktree.",
+        forcedRecovery(true, true),
+      ),
+    ).rejects.toThrow("task/worktree ownership is established");
+
+    const ambiguous = await askAgent(
+      ctx as never,
+      "Preserve ambiguous retained source.",
+      forcedRecovery(true, false),
+    );
+    expect(ambiguous).toMatchObject({
+      decision: "needs-owner",
+      evidence: [
+        "completion-guard:forced",
+        "workspace:dirty",
+        expect.stringContaining("ownership-ambiguity:"),
+        `authoritative-checkpoint:${checkpointPath}`,
+        `authoritative-source-commit:${sourceCommit}`,
+      ],
+    });
+
+    const clean = await askAgent(
+      ctx as never,
+      "Accept already-clean retained source.",
+      forcedRecovery(false, true),
+    );
+    expect(clean).toMatchObject({
+      decision: "test-current",
+      evidence: [
+        "completion-guard:forced",
+        "workspace:clean",
+        `source-commit:${sourceCommit}`,
+      ],
+    });
+    expect(calls).toBe(0);
+  });
+
+  test("puts narrowed gates, durable checkpoints, and Bun-native commands before broad research", () => {
+    expect(earlyCheckpointInstruction).toStartWith(
+      "Before broad carrier research",
+    );
+    expect(earlyCheckpointInstruction).toContain("multi-spec repair");
+    expect(earlyCheckpointInstruction).toContain("durable task context");
+    expect(earlyCheckpointInstruction).toContain("retained task worktree");
+    expect(earlyCheckpointInstruction).toContain(
+      "Inspect package.json scripts",
+    );
+    expect(earlyCheckpointInstruction).toContain("bun test <file>");
+    expect(earlyCheckpointInstruction).toContain("bun run <script>");
+    expect(earlyCheckpointInstruction).toContain("when `bunx` is unavailable");
+  });
+
+  test("keeps only the successor source/run handoff authoritative while retaining the replaced source", async () => {
+    const contextDir = mkdtempSync(join(tmpdir(), "source-run-handoff-"));
+    const oldSource = "00601bbe8fdd9e1d1e96ec8135d91071e87d84b1";
+    const successorSource = "9aa0291ee95baf951a69cd60737e85e865822fc0";
+    const runId = "175768290";
+    const prompts: string[] = [];
+    const ctx = {
+      agent: "aks-explorer",
+      runAgent: async (_agent: string, prompt: string) => {
+        prompts.push(prompt);
+        return {
+          status: "done",
+          structuredResult: {
+            decision: "test-current",
+            summary: "durable context inspected",
+            evidence: ["context:inspected"],
+          },
+        };
+      },
+    };
+
+    try {
+      for (const [sourceCommit, phase] of [
+        [oldSource, "preparation"],
+        [successorSource, "replacement-correction"],
+        [successorSource, "terminal-review"],
+      ] as const) {
+        await askAgent(isolatedAgentContext(ctx) as never, `Judge ${phase}.`, {
+          durableContext: {
+            contextDir,
+            taskId: "domain/source-run-isolation",
+            generation: 1,
+            sourceCommit: () => sourceCommit,
+            runId,
+            phase,
+          },
+        });
+      }
+
+      const current = JSON.parse(
+        readFileSync(currentTaskContextPath(contextDir), "utf8"),
+      );
+      const durablePart = (value: string) =>
+        `${value}-${createHash("sha256").update(value).digest("hex").slice(0, 10)}`;
+      const durableRunId = durablePart(runId);
+      const durablePreparationPhase = durablePart("preparation");
+      const durableTerminalPhase = durablePart("terminal-review");
+      const oldHandoffPath = join(
+        contextDir,
+        "handoffs",
+        "sources",
+        oldSource,
+        "runs",
+        durableRunId,
+        `${durablePreparationPhase}.json`,
+      );
+      const successorHandoffPath = join(
+        contextDir,
+        "handoffs",
+        "sources",
+        successorSource,
+        "runs",
+        durableRunId,
+        `${durableTerminalPhase}.json`,
+      );
+
+      expect(current.sourceCommit).toBe(successorSource);
+      expect(current.runId).toBe(runId);
+      expect(current.phase).toBe(durableTerminalPhase);
+      expect(current.handoffPath).toBe(successorHandoffPath);
+      expect(
+        JSON.parse(readFileSync(oldHandoffPath, "utf8")).sourceCommit,
+      ).toBe(oldSource);
+      expect(
+        JSON.parse(readFileSync(successorHandoffPath, "utf8")).sourceCommit,
+      ).toBe(successorSource);
+      expect(prompts).toHaveLength(3);
+      expect(prompts[2]).toContain(currentTaskContextPath(contextDir));
+      expect(prompts[2]).toContain(successorHandoffPath);
+      expect(prompts[2]).toContain("only the handoff it names as current");
+      expect(prompts[2]).toContain("stale authority");
+    } finally {
+      rmSync(contextDir, { recursive: true, force: true });
+    }
+  });
+
+  test("recovers error and interrupted first calls through source-versioned context without replaying the full prompt", async () => {
+    for (const firstStatus of ["error", "interrupted"] as const) {
+      const contextDir = mkdtempSync(
+        join(tmpdir(), `provider-abort-${firstStatus}-`),
+      );
+      const beforeSource = "00601bbe8fdd9e1d1e96ec8135d91071e87d84b1";
+      const recoveredSource = "9aa0291ee95baf951a69cd60737e85e865822fc0";
+      const prompts: string[] = [];
+      let sourceCommit = beforeSource;
+      let call = 0;
+      const ctx = {
+        agent: "aks-explorer",
+        runAgent: async (_agent: string, prompt: string) => {
+          prompts.push(prompt);
+          call += 1;
+          if (call === 1) {
+            sourceCommit = recoveredSource;
+            return { status: firstStatus };
+          }
+          return {
+            status: "done",
+            structuredResult: {
+              decision: "committed",
+              summary: "recovered retained App Routing judgment",
+              evidence: [`source-commit:${recoveredSource}`, "target:staging"],
+              liveReady: true,
+            },
+          };
+        },
+      };
+      const originalPrompt =
+        "ORIGINAL-FULL-SESSION-SENTINEL inspect all three retained App Routing worktrees and repeat every prior command";
+
+      try {
+        const result = await askAgent(
+          isolatedAgentContext(ctx) as never,
+          originalPrompt,
+          {
+            retryDelayMs: 0,
+            durableContext: {
+              contextDir,
+              taskId:
+                "domain/reconcile-retained-app-routing-three-spec-journey-f99e7c70-20260808",
+              generation: 3,
+              sourceCommit: () => sourceCommit,
+              runId: "175768290",
+              phase: "terminal-review",
+            },
+          },
+        );
+
+        expect(result).toMatchObject({
+          decision: "committed",
+          liveReady: true,
+        });
+        expect(prompts).toHaveLength(2);
+        expect(prompts[0]).toContain(originalPrompt);
+        expect(prompts[1]).not.toContain(originalPrompt);
+        expect(prompts[1]).toContain(
+          "Recover the provider-aborted structured judgment from durable task context",
+        );
+        expect(prompts[1]).toContain("do not replay the prior full session");
+        expect(prompts[1]).toContain(currentTaskContextPath(contextDir));
+
+        const current = JSON.parse(
+          readFileSync(currentTaskContextPath(contextDir), "utf8"),
+        );
+        expect(current.sourceCommit).toBe(recoveredSource);
+        expect(current.runId).toBe("175768290");
+        expect(current.previousHandoffPath).toBeTruthy();
+        const predecessor = JSON.parse(
+          readFileSync(current.previousHandoffPath, "utf8"),
+        );
+        expect(predecessor.sourceCommit).toBe(beforeSource);
+        expect(readFileSync(predecessor.judgmentPath, "utf8")).toContain(
+          originalPrompt,
+        );
+        expect(readFileSync(current.judgmentPath, "utf8")).not.toContain(
+          originalPrompt,
+        );
+      } finally {
+        rmSync(contextDir, { recursive: true, force: true });
+      }
+    }
+  });
+
+  test("fails after repeated terminal-stream failures while retaining the durable recovery chain", async () => {
+    const contextDir = mkdtempSync(join(tmpdir(), "provider-abort-repeated-"));
+    const statuses = ["error", "interrupted"] as const;
+    const ctx = {
+      agent: "aks-explorer",
+      runAgent: async () => ({ status: statuses.shift() }),
+    };
+
+    try {
+      await expect(
+        askAgent(
+          isolatedAgentContext(ctx) as never,
+          "Judge exact staging run 175768290.",
+          {
+            retryDelayMs: 0,
+            durableContext: {
+              contextDir,
+              taskId:
+                "domain/reconcile-retained-app-routing-three-spec-journey-f99e7c70-20260808",
+              generation: 3,
+              sourceCommit: () => "913ee97e4e706711e863208f3c277025bf6bf1e3",
+              runId: "175768290",
+              phase: "terminal-review",
+            },
+          },
+        ),
+      ).rejects.toThrow("failed before structured judgment after two attempts");
+
+      const current = JSON.parse(
+        readFileSync(currentTaskContextPath(contextDir), "utf8"),
+      );
+      expect(current.previousHandoffPath).toBeTruthy();
+      expect(existsSync(current.handoffPath)).toBe(true);
+      expect(existsSync(current.judgmentPath)).toBe(true);
+      expect(existsSync(current.previousHandoffPath)).toBe(true);
+    } finally {
+      rmSync(contextDir, { recursive: true, force: true });
+    }
+  });
+
   test("retries an agent runtime failure inside the same workflow", async () => {
     const prompts: string[] = [];
     const decisions = [
@@ -1580,7 +2963,7 @@ describe("spec-live-reconciliation workflow", () => {
     };
 
     const result = await askAgent(
-      ctx as never,
+      isolatedAgentContext(ctx) as never,
       "Review terminal run 42 from the task worktree.",
       { retryDelayMs: 0 },
     );
@@ -1600,10 +2983,83 @@ describe("spec-live-reconciliation workflow", () => {
     };
 
     await expect(
-      askAgent(ctx as never, "Review terminal run 42.", {
+      askAgent(isolatedAgentContext(ctx) as never, "Review terminal run 42.", {
         retryDelayMs: 0,
       }),
     ).rejects.toThrow("failed before structured judgment after two attempts");
+  });
+
+  test("preserves an exact blocker correction across an interrupted correction session", async () => {
+    const prompts: string[] = [];
+    const decisions = [
+      {
+        status: "done",
+        structuredResult: {
+          decision: "needs-owner",
+          summary: "No newer AzureLinux security image is published.",
+          evidence: [
+            "pipeline-run:175244417",
+            "published-version:AKSAzureLinux-V3gen2-202607.29.0",
+          ],
+          liveReady: false,
+        },
+      },
+      { status: "interrupted" },
+      {
+        status: "done",
+        structuredResult: {
+          decision: "waiting",
+          summary: "Wait for a newer staging AzureLinux image publication.",
+          evidence: ["pipeline-run:175244417", "cleanup:complete"],
+          liveReady: false,
+          condition: {
+            id: "azurelinux-securitypatch-westus2-after-202607.29.0",
+            type: "aks.node-image-publication.state",
+            subject: "project:aks-rp-e2e",
+            expected: {
+              targetName: "staging",
+              location: "westus2",
+              field: "publishedVersion",
+              notEquals: "AKSAzureLinux-V3gen2-202607.29.0",
+            },
+          },
+        },
+      },
+    ];
+    const ctx = {
+      agent: "aks-explorer",
+      runAgent: async (_agent: string, prompt: string) => {
+        prompts.push(prompt);
+        return decisions.shift();
+      },
+    };
+
+    const result = await askAgent(
+      isolatedAgentContext(ctx) as never,
+      "Review terminal Azure DevOps run 175244417 from current evidence.",
+      {
+        continueDomainWorkOnValidation: true,
+        retryDelayMs: 0,
+        validateDecision: (candidate) =>
+          exactPassNeedsOwnerProblem(candidate, false),
+      },
+    );
+
+    expect(result).toMatchObject({
+      decision: "waiting",
+      condition: {
+        type: "aks.node-image-publication.state",
+        subject: "project:aks-rp-e2e",
+      },
+    });
+    expect(prompts).toHaveLength(3);
+    expect(prompts[2]).toContain(
+      "No newer AzureLinux security image is published.",
+    );
+    expect(prompts[2]).toContain("needs-owner cannot defer an exact-pass task");
+    expect(prompts[2]).toContain(
+      "Preserve any hard-validation correction above",
+    );
   });
 
   test("allows one additional bounded correction for fix-forward judgment", async () => {
@@ -1650,11 +3106,15 @@ describe("spec-live-reconciliation workflow", () => {
       },
     };
 
-    const result = await askAgent(ctx as never, "Normalize one scenario.", {
-      scenarioNormalization: true,
-      continueDomainWorkOnValidation: true,
-      retryDelayMs: 0,
-    });
+    const result = await askAgent(
+      isolatedAgentContext(ctx) as never,
+      "Normalize one scenario.",
+      {
+        scenarioNormalization: true,
+        continueDomainWorkOnValidation: true,
+        retryDelayMs: 0,
+      },
+    );
 
     expect(result.decision).toBe("needs-owner");
     expect(prompts).toHaveLength(3);
@@ -1696,7 +3156,7 @@ describe("spec-live-reconciliation workflow", () => {
     };
 
     const result = await askAgent(
-      ctx as never,
+      isolatedAgentContext(ctx) as never,
       "Repair spec.airlock.compliance-check from the current task worktree.",
       {
         scenarioNormalization: true,
@@ -1742,6 +3202,92 @@ describe("spec-live-reconciliation workflow", () => {
     ).toBe(false);
   });
 
+  test("uses exactly four LocalDNS liveSpecIds while retaining the five-spec audit scope and one superseded spec", () => {
+    const supersededSpecId = "spec.localdns.cni-matrix";
+    const auditSpecIds = [
+      supersededSpecId,
+      "spec.localdns.cni-kubenet",
+      "spec.localdns.cni-azure-nodesubnet",
+      "spec.localdns.cni-azure-overlay",
+      "spec.localdns.cni-azure-overlay-cilium",
+    ];
+    const liveSpecIds = [
+      "spec.localdns.cni-kubenet",
+      "spec.localdns.cni-azure-nodesubnet",
+      "spec.localdns.cni-azure-overlay",
+      "spec.localdns.cni-azure-overlay-cilium",
+    ];
+    const selection = resolveLiveSpecIdSelection({
+      specId: supersededSpecId,
+      specIds: auditSpecIds,
+      liveSpecIds,
+    });
+
+    expect(selection).toEqual({
+      accepted: true,
+      auditSpecIds,
+      dispatchSpecIds: liveSpecIds,
+      explicit: true,
+    });
+    expect(auditSpecIds).toHaveLength(5);
+    expect(selection.accepted && selection.dispatchSpecIds).toHaveLength(4);
+    expect(liveSpecIds).not.toContain(supersededSpecId);
+  });
+
+  test("preserves specIds and specId fallback when liveSpecIds is absent", () => {
+    expect(
+      resolveLiveSpecIdSelection({
+        specId: "spec.b",
+        specIds: ["spec.a", "spec.b"],
+      }),
+    ).toEqual({
+      accepted: true,
+      auditSpecIds: ["spec.a", "spec.b"],
+      dispatchSpecIds: ["spec.a", "spec.b"],
+      explicit: false,
+    });
+    expect(resolveLiveSpecIdSelection({ specId: "spec.only" })).toEqual({
+      accepted: true,
+      auditSpecIds: ["spec.only"],
+      dispatchSpecIds: ["spec.only"],
+      explicit: false,
+    });
+  });
+
+  test("deduplicates repeated valid liveSpecIds in first-occurrence order", () => {
+    expect(
+      resolveLiveSpecIdSelection({
+        specIds: ["spec.a", "spec.b"],
+        liveSpecIds: ["spec.b", "spec.a", "spec.b", "spec.a"],
+      }),
+    ).toEqual({
+      accepted: true,
+      auditSpecIds: ["spec.a", "spec.b"],
+      dispatchSpecIds: ["spec.b", "spec.a"],
+      explicit: true,
+    });
+  });
+
+  test("rejects malformed, empty, and out-of-scope liveSpecIds", () => {
+    const specIds = ["spec.a", "spec.b"];
+    const rejected = [
+      { specIds, liveSpecIds: "spec.a" },
+      { specIds, liveSpecIds: ["spec.a", " spec.b"] },
+      { specIds, liveSpecIds: [] },
+      { specIds, liveSpecIds: ["spec.a", "spec.outside"] },
+    ].map((input) => resolveLiveSpecIdSelection(input));
+
+    expect(rejected.every((result) => !result.accepted)).toBe(true);
+    expect(
+      rejected.map((result) => (result.accepted ? "" : result.problem)),
+    ).toEqual([
+      "input.liveSpecIds must be a nonempty array of exact spec ID strings",
+      "input.liveSpecIds contains a malformed spec ID",
+      "input.liveSpecIds must not be empty when present",
+      "input.liveSpecIds contains ID outside input.specIds: spec.outside",
+    ]);
+  });
+
   test("keeps full terminal context when a domain judgment needs correction", () => {
     const prompt = decisionCorrectionPrompt({
       originalPrompt:
@@ -1780,7 +3326,7 @@ describe("spec-live-reconciliation workflow", () => {
         summary: "ownership is ambiguous",
         evidence: ["workspace:dirty"],
       }),
-    ).toBeNull();
+    ).toContain("authoritative current source/run handoff checkpoint");
     expect(
       taskWorktreeRecoveryDecisionProblem({
         decision: "terminal-disposition",
@@ -1805,6 +3351,72 @@ describe("spec-live-reconciliation workflow", () => {
     ).toContain(
       "omit liveReady and condition because domain readiness and dispatch are evaluated after recovery",
     );
+  });
+
+  test("rejects dirty needs-owner recovery when task worktree ownership is established", () => {
+    expect(
+      taskWorktreeRecoveryDecisionProblem(
+        {
+          decision: "needs-owner",
+          summary: "the attempted repair still fails",
+          evidence: [
+            "workspace:dirty",
+            "technical-failure:generation-mismatch",
+          ],
+        },
+        {
+          workspaceDirty: true,
+          ownershipEstablished: true,
+          authoritativeCheckpointPath:
+            "/app/projects/aks-rp-e2e/workspace/tasks/domain-example-1/current-context.json",
+          sourceCommit: "a".repeat(40),
+        },
+      ),
+    ).toContain("task/worktree ownership is established");
+  });
+
+  test("accepts genuine ownership ambiguity only with the authoritative source/run checkpoint", () => {
+    const checkpoint =
+      "/app/projects/aks-rp-e2e/workspace/tasks/domain-example-1/current-context.json";
+    const sourceCommit = "b".repeat(40);
+    expect(
+      taskWorktreeRecoveryDecisionProblem(
+        {
+          decision: "needs-owner",
+          summary: "two retained sessions claim the same unstaged path",
+          evidence: [
+            "ownership-ambiguity:path features/example/spec.json has conflicting retained-session provenance",
+            `authoritative-checkpoint:${checkpoint}`,
+            `authoritative-source-commit:${sourceCommit}`,
+          ],
+        },
+        {
+          workspaceDirty: true,
+          ownershipEstablished: false,
+          authoritativeCheckpointPath: checkpoint,
+          sourceCommit,
+        },
+      ),
+    ).toBeNull();
+  });
+
+  test("rejects forced-completion recovery while task-generated residue is dirty", () => {
+    expect(
+      taskWorktreeRecoveryDecisionProblem(
+        {
+          decision: "test-current",
+          summary: "deadline reached after attempted residue removal",
+          evidence: ["completion-guard:forced", "workspace:dirty"],
+        },
+        {
+          workspaceDirty: true,
+          ownershipEstablished: true,
+          authoritativeCheckpointPath:
+            "/app/projects/aks-rp-e2e/workspace/tasks/domain-example-1/current-context.json",
+          sourceCommit: "c".repeat(40),
+        },
+      ),
+    ).toContain("cannot complete while the task worktree remains dirty");
   });
 
   test("keeps test-current inside terminal fix-forward instead of handing it to the owner", () => {
@@ -2129,6 +3741,44 @@ describe("spec-live-reconciliation workflow", () => {
     expect(exactPassNeedsOwnerProblem(decision, true)).toBeNull();
   });
 
+  test("keeps the generation-5 LocalDNS internal source gap in bounded workflow repair despite external-boundary prefixes", () => {
+    const decision = {
+      decision: "needs-owner" as const,
+      summary:
+        "Current source is not live-ready and requires the bounded same-task source repair; immediate completion was required before that repair could be made.",
+      evidence: [
+        "workflow-run:wr_1786342842990_6vcq",
+        "session:s_1786343019890_380",
+        "The direct carrier still imports execFile from node:child_process and calls Bun through runScenarioChild.",
+        "The scenario library still imports execFileSync from node:child_process and selects subscription, location, and API version through hard-coded fallbacks rather than resolvedTargetInputs().",
+        "external-capability:LocalDNS source repair",
+        "external-producer:app-ops",
+        "artifact:/app/.state/sessions/s_1786343019890_380/result.json",
+        "resume-condition:workflow source guard is relaxed",
+      ],
+    };
+
+    expect(exactPassNeedsOwnerProblem(decision, false)).toContain(
+      "confirmed internal source gap",
+    );
+  });
+
+  test("accepts needs-owner for a genuine exact-pass external ownership boundary", () => {
+    const decision = {
+      decision: "needs-owner" as const,
+      summary:
+        "The subscription policy authority must approve the unavailable staging capability.",
+      evidence: [
+        "external-capability:staging subscription policy exemption",
+        "external-producer:subscription policy owner",
+        "artifact:/app/projects/aks-rp-e2e/runs/policy-denial.json",
+        "resume-condition:policy exemption approval is published",
+      ],
+    };
+
+    expect(exactPassNeedsOwnerProblem(decision, false)).toBeNull();
+  });
+
   test("keeps terminal lineage replay source-only", () => {
     const replay = {
       decision: "committed" as const,
@@ -2249,6 +3899,114 @@ describe("spec-live-reconciliation workflow", () => {
           item.startsWith("terminal-disposition-spec-path:"),
         ),
       ).toHaveLength(2);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("validates only the reviewed Industry terminal subset while preserving ready selected specs", () => {
+    const root = mkdtempSync(join(tmpdir(), "industry-terminal-subset-"));
+    try {
+      const specsDir = join(root, "features", "industry", "specs");
+      mkdirSync(specsDir, { recursive: true });
+      const readySpecIds = Array.from(
+        { length: 16 },
+        (_, index) =>
+          `spec.industry.ready-${String(index + 1).padStart(2, "0")}`,
+      );
+      const terminalSpecIds = [
+        "spec.industry.terminal-a",
+        "spec.industry.terminal-b",
+      ];
+      for (const specId of readySpecIds) {
+        writeFileSync(
+          join(specsDir, `${specId}.json`),
+          JSON.stringify({ id: specId, status: "ready", specState: "ready" }),
+        );
+      }
+      for (const specId of terminalSpecIds) {
+        writeFileSync(
+          join(specsDir, `${specId}.json`),
+          JSON.stringify({
+            id: specId,
+            status: "blocked",
+            specState: "reviewed-exception",
+          }),
+        );
+      }
+      const selectedSpecIds = [...readySpecIds, ...terminalSpecIds];
+      const input = {
+        specIds: selectedSpecIds,
+        reviewedTerminalSpecIds: terminalSpecIds,
+      };
+      const accepted = specTerminalDispositionCheck(root, input, {
+        specId: terminalSpecIds.join(","),
+        status: "blocked",
+        specState: "reviewed-exception",
+      });
+
+      expect(accepted.accepted).toBe(true);
+      expect(
+        accepted.evidence.filter((item) =>
+          item.startsWith("terminal-disposition-spec-path:"),
+        ),
+      ).toHaveLength(2);
+      expect(accepted.evidence.join("\n")).not.toContain("ready-01");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("rejects invalid reviewed terminal subsets and mismatched dispositions", () => {
+    const root = mkdtempSync(join(tmpdir(), "terminal-subset-rejections-"));
+    try {
+      const specsDir = join(root, "features", "sample", "specs");
+      mkdirSync(specsDir, { recursive: true });
+      for (const specId of ["spec.sample.ready", "spec.sample.terminal"]) {
+        writeFileSync(
+          join(specsDir, `${specId}.json`),
+          JSON.stringify({
+            id: specId,
+            status: specId.endsWith("terminal") ? "blocked" : "ready",
+            specState: specId.endsWith("terminal")
+              ? "reviewed-exception"
+              : "ready",
+          }),
+        );
+      }
+      const disposition = {
+        specId: "spec.sample.terminal",
+        status: "blocked",
+        specState: "reviewed-exception",
+      };
+      const selected = ["spec.sample.ready", "spec.sample.terminal"];
+      const problemFor = (reviewedTerminalSpecIds: unknown) =>
+        specTerminalDispositionCheck(
+          root,
+          { specIds: selected, reviewedTerminalSpecIds },
+          disposition,
+        ).problem;
+
+      expect(problemFor([])).toContain("must not be empty");
+      expect(
+        problemFor(["spec.sample.terminal", "spec.sample.terminal"]),
+      ).toContain("duplicate");
+      expect(problemFor(["spec.sample.terminal", ""])).toContain(
+        "empty specIds",
+      );
+      expect(problemFor(["spec.sample.unknown"])).toContain(
+        "outside the exact selected set",
+      );
+      expect(
+        specTerminalDispositionCheck(
+          root,
+          {
+            specIds: selected,
+            reviewedTerminalSpecIds: ["spec.sample.terminal"],
+          },
+          { ...disposition, specId: selected.join(",") },
+        ).problem,
+      ).toContain("does not match the exact reviewed terminal subset");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
