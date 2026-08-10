@@ -362,6 +362,67 @@ describe("Telegram outbound turn ownership", () => {
     outbound.close();
   });
 
+  test("records a correlated safe fallback before a non-resolving review can block drain", async () => {
+    const bus = new EventBus();
+    const sent: Array<{ text: string }> = [];
+    const reviewed: Array<Record<string, unknown>> = [];
+    const ownerRequests: Array<Record<string, unknown>> = [];
+    const outbound = attachTelegramOutbound({
+      bus,
+      interfaceAgent: "may",
+      projectRoot: "/app",
+      pendingChatId: "human-chat",
+      getSessionId: () => "shared-chat",
+      sendToUser: (text) => sent.push({ text }),
+      reviewProactive: async () => await new Promise<HumanAttentionReview>(() => undefined),
+      proactiveReviewDeadlineMs: 10,
+    });
+    const unsubscribe = bus.subscribe((event: any) => {
+      if (event.type === "human.attention.reviewed") reviewed.push(event.data);
+      if (event.type === "project.owner.requested") ownerRequests.push(event.data);
+    });
+    const candidateEvent = {
+      type: "message.created",
+      source: "ops",
+      owner: "human:operator",
+      data: {
+        from: "ops",
+        to: "human",
+        content: "Deadline-pressured admission text",
+      },
+    } as any;
+    Object.defineProperty(candidateEvent, EVENT_ROW_ID, { value: 901 });
+
+    bus.emit(candidateEvent);
+    await outbound.drain();
+
+    expect(sent).toEqual([]);
+    expect(reviewed).toEqual([
+      expect.objectContaining({
+        sourceEventId: 901,
+        status: "completed",
+        disposition: "route",
+        admitted: false,
+        delivered: false,
+        attempts: 1,
+        reason: expect.stringContaining("did not reach a supported terminal decision"),
+      }),
+    ]);
+    expect(ownerRequests).toEqual([
+      expect.objectContaining({
+        project: "may-agent",
+        reason: "telegram-admission-review-failed",
+        params: expect.objectContaining({
+          sourceEventId: 901,
+          reviewReason: "Admission review exceeded the 10ms controller deadline",
+          attempts: 1,
+        }),
+      }),
+    ]);
+    unsubscribe();
+    outbound.close();
+  });
+
   test("keeps proactive deliveries in proposal order while reviews run", async () => {
     const { bus, sent, outbound } = harness("shared-chat", async (candidate) => {
       if (candidate.content === "first") await Bun.sleep(5);
