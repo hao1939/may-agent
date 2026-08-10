@@ -5043,6 +5043,7 @@ export function decisionCorrectionPrompt(input: {
       "Your immediately preceding structured result failed a hard invariant.",
       `Validation finding: ${input.problem}.`,
       "Continue this same bounded task from current hot evidence. Re-evaluate the prior judgment and perform any source diagnosis, repair, and local checks allowed by the original instructions when the finding proves they are necessary.",
+      "Source-first completion guard: when the invalid result or validation finding already diagnoses a bounded source repair and this is an isolated task worktree, perform that mutation and its narrow verification now, before any repeated broad investigation. Reuse the cited paths and hot evidence; spend at most four read-only investigation/tool operations before the first source mutation. Work remaining is not by itself a needs-owner boundary. If current evidence instead proves genuine ownership ambiguity or an external authority boundary, return that structured exceptional judgment without unsafe mutation.",
       "Do not queue provider work or create another task; the workflow still owns dispatch after a valid result.",
       `Invalid prior structured result:\n${JSON.stringify(input.decision, null, 2)}`,
     ].join("\n\n");
@@ -5290,6 +5291,9 @@ export async function askAgent(
       null;
     if (!problem) return decision;
     lastProblem = problem;
+    if (currentHandoff && options.durableContext) {
+      previousHandoffPath = currentHandoff.handoffPath;
+    }
     nextPrompt = decisionCorrectionPrompt({
       originalPrompt: prompt,
       decision,

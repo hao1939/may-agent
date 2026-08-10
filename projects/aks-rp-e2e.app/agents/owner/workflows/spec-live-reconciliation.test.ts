@@ -2714,6 +2714,113 @@ describe("spec-live-reconciliation workflow", () => {
     expect(calls).toBe(0);
   });
 
+  test("continues the s_1786385904954_217 dirty guard handoff in retained same-task context until clean commit", async () => {
+    const contextDir = mkdtempSync(join(tmpdir(), "localdns-dirty-guard-"));
+    const baselineCommit = "a".repeat(40);
+    const dirtyEditCommit = "b".repeat(40);
+    const cleanCommit = "c".repeat(40);
+    const prompts: string[] = [];
+    let sourceCommit = baselineCommit;
+    let workspaceDirty = false;
+    let call = 0;
+    const checkpointPath = currentTaskContextPath(contextDir);
+    const ctx = isolatedAgentContext({
+      agent: "aks-explorer",
+      runAgent: async (_agent: string, prompt: string) => {
+        prompts.push(prompt);
+        call += 1;
+        if (call === 1) {
+          workspaceDirty = true;
+          sourceCommit = dirtyEditCommit;
+          return {
+            status: "done",
+            structuredResult: {
+              decision: "needs-owner",
+              summary:
+                "Completion guard interrupted the bounded LocalDNS carrier edit.",
+              evidence: [
+                "completion-guard:forced",
+                "workspace:dirty",
+                `authoritative-checkpoint:${checkpointPath}`,
+                `authoritative-source-commit:${dirtyEditCommit}`,
+              ],
+            },
+          };
+        }
+        expect(workspaceDirty).toBe(true);
+        expect(prompt).toContain(checkpointPath);
+        expect(prompt).toContain(
+          "source edits remain in the retained task worktree",
+        );
+        workspaceDirty = false;
+        sourceCommit = cleanCommit;
+        return {
+          status: "done",
+          structuredResult: {
+            decision: "committed",
+            summary:
+              "Completed and committed the retained LocalDNS carrier repair.",
+            evidence: ["workspace:clean", `source-commit:${cleanCommit}`],
+          },
+        };
+      },
+    });
+
+    try {
+      const result = await askAgent(
+        ctx as never,
+        "Complete the bounded LocalDNS direct-carrier repair.",
+        {
+          continueDomainWorkOnValidation: true,
+          durableContext: {
+            contextDir,
+            taskId:
+              "spec/repair-live-localdns-osarch-fips-direct-carrier-recovery-20260810",
+            generation: 7,
+            sourceCommit: () => sourceCommit,
+            phase: "preparation",
+          },
+          validateDecision: (candidate) => {
+            if (candidate.decision === "needs-owner" && workspaceDirty) {
+              return "task-owned dirty technical repair must continue in the same workflow context";
+            }
+            if (candidate.decision !== "committed") {
+              return "retained repair must reach a clean commit checkpoint";
+            }
+            return workspaceDirty
+              ? "committed repair must leave the retained task worktree clean"
+              : null;
+          },
+        },
+      );
+
+      expect(result).toMatchObject({
+        decision: "committed",
+        evidence: ["workspace:clean", `source-commit:${cleanCommit}`],
+      });
+      expect(prompts).toHaveLength(2);
+      expect(prompts[1]).toContain(
+        "task-owned dirty technical repair must continue in the same workflow context",
+      );
+      const current = JSON.parse(readFileSync(checkpointPath, "utf8"));
+      expect(current.sourceCommit).toBe(dirtyEditCommit);
+      expect(current.previousHandoffPath).toBeTruthy();
+      const predecessor = JSON.parse(
+        readFileSync(current.previousHandoffPath, "utf8"),
+      );
+      expect(predecessor.sourceCommit).toBe(baselineCommit);
+      expect(readFileSync(predecessor.judgmentPath, "utf8")).toContain(
+        "Complete the bounded LocalDNS direct-carrier repair.",
+      );
+      expect(readFileSync(current.judgmentPath, "utf8")).toContain(
+        "task-owned dirty technical repair must continue in the same workflow context",
+      );
+      expect(workspaceDirty).toBe(false);
+    } finally {
+      rmSync(contextDir, { recursive: true, force: true });
+    }
+  });
+
   test("puts narrowed gates, durable checkpoints, and Bun-native commands before broad research", () => {
     expect(earlyCheckpointInstruction).toStartWith(
       "Before broad carrier research",
@@ -3203,19 +3310,19 @@ describe("spec-live-reconciliation workflow", () => {
   });
 
   test("uses exactly four LocalDNS liveSpecIds while retaining the five-spec audit scope and one superseded spec", () => {
-    const supersededSpecId = "spec.localdns.cni-matrix";
+    const supersededSpecId = "spec.localdns.network-policy-coexistence";
     const auditSpecIds = [
       supersededSpecId,
-      "spec.localdns.cni-kubenet",
-      "spec.localdns.cni-azure-nodesubnet",
-      "spec.localdns.cni-azure-overlay",
-      "spec.localdns.cni-azure-overlay-cilium",
+      "spec.localdns.netpol-azure-nodesubnet",
+      "spec.localdns.netpol-azure-overlay",
+      "spec.localdns.netpol-calico",
+      "spec.localdns.netpol-cilium",
     ];
     const liveSpecIds = [
-      "spec.localdns.cni-kubenet",
-      "spec.localdns.cni-azure-nodesubnet",
-      "spec.localdns.cni-azure-overlay",
-      "spec.localdns.cni-azure-overlay-cilium",
+      "spec.localdns.netpol-azure-nodesubnet",
+      "spec.localdns.netpol-azure-overlay",
+      "spec.localdns.netpol-calico",
+      "spec.localdns.netpol-cilium",
     ];
     const selection = resolveLiveSpecIdSelection({
       specId: supersededSpecId,
@@ -3760,6 +3867,65 @@ describe("spec-live-reconciliation workflow", () => {
 
     expect(exactPassNeedsOwnerProblem(decision, false)).toContain(
       "confirmed internal source gap",
+    );
+  });
+
+  test("prioritizes the diagnosed generation-6 LocalDNS mutation before the correction operation budget", async () => {
+    const prompts: string[] = [];
+    const decisions = [
+      {
+        status: "done",
+        structuredResult: {
+          decision: "needs-owner",
+          summary:
+            "The isolated worktree still needs the already-diagnosed LocalDNS FIPS repair, but work remains.",
+          evidence: [
+            "current source still imports execFile and uses hard-coded target fallbacks",
+            "bounded same-task source repair:features/localdns/lib/localdns-os-arch-matrix.ts",
+          ],
+        },
+      },
+      {
+        status: "done",
+        structuredResult: {
+          decision: "committed",
+          summary: "Applied and narrowly verified the LocalDNS FIPS repair.",
+          evidence: ["source-commit:def"],
+          liveReady: true,
+        },
+      },
+    ];
+    const result = await askAgent(
+      isolatedAgentContext({
+        agent: "aks-explorer",
+        runAgent: async (_agent: string, prompt: string) => {
+          prompts.push(prompt);
+          return decisions.shift();
+        },
+      }) as never,
+      "Repair generation 6 from the current isolated task worktree.",
+      {
+        continueDomainWorkOnValidation: true,
+        retryDelayMs: 0,
+        validateDecision: (candidate) =>
+          exactPassNeedsOwnerProblem(candidate, false),
+      },
+    );
+
+    expect(result.decision).toBe("committed");
+    expect(prompts).toHaveLength(2);
+    expect(prompts[1]).toContain("Source-first completion guard");
+    expect(prompts[1]).toContain(
+      "perform that mutation and its narrow verification now",
+    );
+    expect(prompts[1]).toContain(
+      "at most four read-only investigation/tool operations before the first source mutation",
+    );
+    expect(prompts[1]).toContain(
+      "Work remaining is not by itself a needs-owner boundary",
+    );
+    expect(prompts[1]).toContain(
+      "features/localdns/lib/localdns-os-arch-matrix.ts",
     );
   });
 
