@@ -32,6 +32,8 @@ export interface TelegramOutboundOptions {
   getSessionReplyContext?: (sessionId: string) => TelegramSessionReplyContext | null | undefined;
   sendToUser: (text: string, context?: TelegramOutboundContext) => void;
   reviewProactive?: (candidate: HumanAttentionCandidate) => Promise<HumanAttentionReview>;
+  /** Hard controller deadline; must expire before the review agent's outer 120s timeout. */
+  proactiveReviewDeadlineMs?: number;
   hasDeliveredNotificationKey?: (key: string) => boolean;
   isApprovalResolved?: (identity: {
     approvalId?: string;
@@ -330,6 +332,31 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
     return { review: lastFailure, attempts: 2 };
   }
 
+  async function decideProactiveWithinDeadline(
+    candidate: HumanAttentionCandidate,
+  ): Promise<{ review: HumanAttentionReview; attempts: number }> {
+    // Clamp overrides so the controller always has at least 30 seconds to persist
+    // its terminal fallback before the review agent's 120-second outer timeout.
+    const deadlineMs = Math.min(90_000, Math.max(1, opts.proactiveReviewDeadlineMs ?? 90_000));
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const deadline = new Promise<{ review: HumanAttentionReview; attempts: number }>((resolve) => {
+      timer = setTimeout(() => {
+        resolve({
+          review: {
+            status: "failed",
+            reason: `Admission review exceeded the ${deadlineMs}ms controller deadline`,
+          },
+          attempts: 1,
+        });
+      }, deadlineMs);
+    });
+    try {
+      return await Promise.race([decideProactive(candidate), deadline]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+
   function candidateApprovalResolved(candidate: HumanAttentionCandidate): boolean {
     const d = candidate.data ?? {};
     const approvalId =
@@ -374,7 +401,7 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
       .catch(() => undefined)
       .then(async () => {
         if (closed) return;
-        const { review, attempts } = await decideProactive(candidate);
+        const { review, attempts } = await decideProactiveWithinDeadline(candidate);
         if (closed) return;
         if (review.status !== "completed" || review.disposition !== "deliver" || !review.deliveredMessage) {
           if (review.status === "failed") {
