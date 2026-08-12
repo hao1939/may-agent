@@ -168,6 +168,30 @@ function toEventEnvelope(
   return envelope;
 }
 
+// ── Scheduling cadence ───────────────────────────────────────────────
+
+/**
+ * Reconstruct the next timer delay from durable last-fire state.
+ * Kept pure so restart behavior can be verified without waiting through
+ * production-sized hourly/daily intervals.
+ */
+export function computeCronResumeDelay(input: {
+  intervalMs: number;
+  lastFireTime: number | null;
+  now: number;
+  offsetMs?: number;
+  random?: () => number;
+}): number {
+  if (input.lastFireTime == null) {
+    if ((input.offsetMs ?? 0) > 0) return input.offsetMs!;
+    const jitterWindow = Math.min(input.intervalMs, 5 * 60_000);
+    return Math.floor((input.random ?? Math.random)() * jitterWindow);
+  }
+
+  const elapsed = input.now - input.lastFireTime;
+  return elapsed >= input.intervalMs ? 0 : input.intervalMs - elapsed;
+}
+
 // ── Cron class ────────────────────────────────────────────────────────
 
 export class Cron {
@@ -310,27 +334,29 @@ export class Cron {
         this.onError?.(`Cron config is not an array: ${this.configPath}`);
         return this.entries;
       }
-      loaded = parsed.filter((entry: CronEntry) => {
-        const hasEventSubscription = Array.isArray(entry.on) && entry.on.length > 0;
-        if (!entry.name || (!entry.intervalMs && !hasEventSubscription)) {
-          this.onError?.(`Invalid cron entry: ${JSON.stringify(entry)}`);
-          return false;
-        }
-        if (!entry.handler) {
-          this.onError?.(`Cron entry "${entry.name}" needs handler`);
-          return false;
-        }
-        const workflow = workflowHandler(entry.handler);
-        if (workflow && (!workflow.workflow || !workflow.task)) {
-          this.onError?.(`Cron entry "${entry.name}" workflow handler needs workflow and task`);
-          return false;
-        }
-        if (entry.intervalMs != null && entry.intervalMs < 10_000) {
-          this.onError?.(`Cron job "${entry.name}" intervalMs too low (${entry.intervalMs}ms < 10s minimum)`);
-          return false;
-        }
-        return true;
-      }).map(normalizeCronEntry);
+      loaded = parsed
+        .filter((entry: CronEntry) => {
+          const hasEventSubscription = Array.isArray(entry.on) && entry.on.length > 0;
+          if (!entry.name || (!entry.intervalMs && !hasEventSubscription)) {
+            this.onError?.(`Invalid cron entry: ${JSON.stringify(entry)}`);
+            return false;
+          }
+          if (!entry.handler) {
+            this.onError?.(`Cron entry "${entry.name}" needs handler`);
+            return false;
+          }
+          const workflow = workflowHandler(entry.handler);
+          if (workflow && (!workflow.workflow || !workflow.task)) {
+            this.onError?.(`Cron entry "${entry.name}" workflow handler needs workflow and task`);
+            return false;
+          }
+          if (entry.intervalMs != null && entry.intervalMs < 10_000) {
+            this.onError?.(`Cron job "${entry.name}" intervalMs too low (${entry.intervalMs}ms < 10s minimum)`);
+            return false;
+          }
+          return true;
+        })
+        .map(normalizeCronEntry);
     } catch (err) {
       this.onError?.(`Failed to parse cron config: ${err}`);
     }
@@ -817,9 +843,7 @@ export class Cron {
         const dropped = queue.length;
         queue.length = 0;
         this.queuedEventTriggers.delete(entryName);
-        this.onError?.(
-          `Cron "${entryName}" queue dropped (${dropped} events) after ${errorCount} consecutive errors`,
-        );
+        this.onError?.(`Cron "${entryName}" queue dropped (${dropped} events) after ${errorCount} consecutive errors`);
         return;
       }
 
@@ -1010,25 +1034,12 @@ export class Cron {
 
   /** Compute the initial delay for an entry based on when it last ran. */
   private computeResumeDelay(entry: CronEntry): number {
-    const intervalMs = entry.intervalMs ?? this.defaultCooldownMs;
-    const lastFire = this.getLastFireTime(entry.name);
-    if (lastFire == null) {
-      // Never ran — use offsetMs for deterministic staggering.
-      // If no offsetMs, fall back to random jitter.
-      const offset = entry.offsetMs ?? 0;
-      if (offset > 0) {
-        return offset;
-      }
-      const MAX_INITIAL_JITTER_MS = 5 * 60 * 1000; // 5 minutes
-      const jitterWindow = Math.min(intervalMs, MAX_INITIAL_JITTER_MS);
-      return Math.floor(Math.random() * jitterWindow);
-    }
-
-    const elapsed = Date.now() - lastFire;
-    if (elapsed >= intervalMs) {
-      return 0; // overdue
-    }
-    return intervalMs - elapsed;
+    return computeCronResumeDelay({
+      intervalMs: entry.intervalMs ?? this.defaultCooldownMs,
+      lastFireTime: this.getLastFireTime(entry.name),
+      now: Date.now(),
+      offsetMs: entry.offsetMs,
+    });
   }
 
   // ── Job with JS handler: run in-process ─────────────────────────────
@@ -1126,5 +1137,4 @@ export class Cron {
         this.drainQueuedEventTrigger(entry.name, { afterError: true });
       });
   }
-
 }

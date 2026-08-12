@@ -298,6 +298,17 @@ export type ProjectAppTaskResource = {
   };
 };
 
+export type ProjectAppTaskAttemptLease = {
+  /** Stable identity for one session-owned lease. */
+  id: string;
+  /** Monotonic compare-and-swap fence, incremented on every refresh. */
+  version: number;
+  lastActivityAt: string;
+  expiresAt: string;
+  runtimeId: string;
+  sessionId: string;
+};
+
 export type ProjectAppTaskAttempt = {
   metadata: {
     id: string;
@@ -318,6 +329,8 @@ export type ProjectAppTaskAttempt = {
   failureReason?: string;
   attentionNotifiedAt?: string;
   sessionId?: string;
+  /** Optional for conservative dual-read compatibility with pre-lease attempts. */
+  lease?: ProjectAppTaskAttemptLease;
   workspace?: ProjectAppTaskWorkspace;
 };
 

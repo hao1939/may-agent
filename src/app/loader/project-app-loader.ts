@@ -1,6 +1,20 @@
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
-import { basename, join, relative, resolve } from "node:path";
+import {
+  chmodSync,
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  readFileSync,
+  readlinkSync,
+  readdirSync,
+  rmSync,
+  rmdirSync,
+  symlinkSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
+import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import type { SubagentManager } from "../../lib/index.js";
 import type { CronEntry } from "../../lib/cron-tool.js";
 import type { EventEnvelope } from "../../lib/handler-context.js";
@@ -20,6 +34,7 @@ import {
 } from "../../lib/persistence.js";
 import { extractFinishParams } from "../../lib/agent-result.js";
 import { readLatestCheckpoint } from "../../lib/tools/checkpoint.js";
+import { drainPersistedSessionBashProcessGroups } from "../../lib/tools/bash.js";
 import { STATE_CHANGING_TOOLS } from "../../lib/manager-utils.js";
 import { writeSessionResult } from "../../lib/artifacts.js";
 import {
@@ -88,6 +103,8 @@ import {
   releaseStaleProjectAppTaskResult,
   recordProjectAppTaskAttemptSession,
   recordProjectAppTaskAttemptWorkspace,
+  refreshProjectAppTaskAttemptLeaseBySession,
+  claimFreshProjectAppTaskSessionForStartup,
   taskReconciliationConfig,
   PROJECT_APP_TASK_RECOVERY_OWNER,
   type ProjectAppTaskChildContext,
@@ -232,10 +249,7 @@ function isProcessAlive(pid: number | undefined): boolean {
   }
 }
 
-function hasLiveProjectTaskSession(
-  opts: ProjectAppLoaderOptions,
-  sessionId: string,
-): boolean {
+function hasLiveProjectTaskSession(opts: ProjectAppLoaderOptions, sessionId: string): boolean {
   const cleanSessionId = sessionId.trim();
   if (!cleanSessionId) return false;
   if (opts.manager.hasActiveSession(cleanSessionId)) return true;
@@ -570,21 +584,12 @@ function ownerMessageForApp(
   return Number.isInteger(eventId) && eventId > 0 ? { eventId, input, periodic } : null;
 }
 
-function closedOwnerInputEventId(
-  persistDir: string | undefined,
-  event: Record<string, unknown>,
-): number | null {
+function closedOwnerInputEventId(persistDir: string | undefined, event: Record<string, unknown>): number | null {
   if (!persistDir || event.type !== "project.owner.requested") return null;
   const inputEventId = Number(event.inputEventId);
   if (!Number.isInteger(inputEventId) || inputEventId <= 0) return null;
-  const inputEventType =
-    typeof event.inputEventType === "string"
-      ? event.inputEventType
-      : "project.comment.created";
-  const terminalType =
-    inputEventType === "message.created"
-      ? "message.resolved"
-      : "project.owner.reviewed";
+  const inputEventType = typeof event.inputEventType === "string" ? event.inputEventType : "project.comment.created";
+  const terminalType = inputEventType === "message.created" ? "message.resolved" : "project.owner.reviewed";
   const existing = getDb(persistDir)
     .prepare(
       `SELECT id
@@ -987,10 +992,7 @@ async function runTaskCapability(input: {
   }
 }
 
-function recoverPendingToolResultsFromTranscript(
-  persistDir: string,
-  sessionId: string,
-): string[] {
+function recoverPendingToolResultsFromTranscript(persistDir: string, sessionId: string): string[] {
   const messages = readSessionMessages(persistDir, sessionId) as any[];
   const last = messages[messages.length - 1] as any;
   if (last?.role !== "assistant" || !Array.isArray(last.content)) return [];
@@ -1077,6 +1079,10 @@ function interruptSupersededOwnerSession(
 
   const meta = opts.persistDir ? readSessionMeta(opts.persistDir, cleanSessionId) : null;
   if (!meta || (meta.status !== "running" && meta.status !== "idle")) return;
+
+  // Replacement ownership cannot begin while the superseded exact session's
+  // shell descendants remain live.
+  drainPersistedSessionBashProcessGroups(opts.persistDir!, cleanSessionId);
 
   // Capture a completed finish call before repairing genuinely pending tool
   // calls: finish() may be the final transcript entry, and synthesizing an
@@ -1185,6 +1191,205 @@ function interruptSupersededActionSessions(opts: ProjectAppLoaderOptions, taskId
       taskId,
     );
   }
+}
+
+type ResidueFileSnapshot =
+  | { exists: false }
+  | { exists: true; kind: "file"; data: Buffer; mode: number }
+  | { exists: true; kind: "symlink"; target: string };
+
+type CanonicalUntrackedResidueGuard = {
+  projectDir: string;
+  indexPath: string;
+  indexData: Buffer;
+  indexMode: number;
+  dirtyTracked: Map<string, ResidueFileSnapshot>;
+  untracked: Map<string, ResidueFileSnapshot>;
+};
+
+function gitPathSet(projectDir: string, args: string[]): Set<string> {
+  const output = execFileSync("git", ["-C", projectDir, ...args]);
+  return new Set(output.toString("utf8").split("\0").filter(Boolean));
+}
+
+function canonicalUntrackedFiles(projectDir: string): Set<string> {
+  return gitPathSet(projectDir, ["ls-files", "--others", "--exclude-standard", "--full-name", "-z"]);
+}
+
+function safeResiduePath(projectDir: string, relativePath: string): string {
+  const absolutePath = resolve(projectDir, relativePath);
+  const fromRoot = relative(projectDir, absolutePath);
+  if (!fromRoot || fromRoot.startsWith("..") || isAbsolute(fromRoot)) {
+    throw new Error(`Refusing to access unsafe owner residue path: ${relativePath}`);
+  }
+  return absolutePath;
+}
+
+function snapshotResidueFile(projectDir: string, relativePath: string): ResidueFileSnapshot {
+  const absolutePath = safeResiduePath(projectDir, relativePath);
+  if (!existsSync(absolutePath)) return { exists: false };
+  const stat = lstatSync(absolutePath);
+  if (stat.isSymbolicLink()) return { exists: true, kind: "symlink", target: readlinkSync(absolutePath) };
+  return { exists: true, kind: "file", data: readFileSync(absolutePath), mode: stat.mode };
+}
+
+function restoreResidueFile(projectDir: string, relativePath: string, snapshot: ResidueFileSnapshot): void {
+  const absolutePath = safeResiduePath(projectDir, relativePath);
+  if (existsSync(absolutePath)) rmSync(absolutePath, { recursive: true, force: true });
+  if (!snapshot.exists) return;
+  mkdirSync(dirname(absolutePath), { recursive: true });
+  if (snapshot.kind === "symlink") {
+    symlinkSync(snapshot.target, absolutePath);
+    return;
+  }
+  writeFileSync(absolutePath, snapshot.data);
+  chmodSync(absolutePath, snapshot.mode);
+}
+
+/**
+ * Direct owner attempts are conventionally read-only. When their default
+ * workspace is the canonical Git checkout, snapshot its index and residue so
+ * owner-created tracked or untracked writes can be rolled back without
+ * disturbing dirt that predated the attempt. Workflow task worktrees have a
+ * distinct workspaceDir and bypass this guard.
+ */
+export function beginCanonicalOwnerResidueGuard(
+  paths: ProjectAppExecutionPaths,
+): CanonicalUntrackedResidueGuard | null {
+  if (paths.workspaceDir !== paths.projectDir) return null;
+  try {
+    const topLevel = resolve(
+      execFileSync("git", ["-C", paths.projectDir, "rev-parse", "--show-toplevel"], { encoding: "utf8" }).trim(),
+    );
+    if (topLevel !== resolve(paths.projectDir)) return null;
+    const rawIndexPath = execFileSync("git", ["-C", paths.projectDir, "rev-parse", "--git-path", "index"], {
+      encoding: "utf8",
+    }).trim();
+    const indexPath = isAbsolute(rawIndexPath) ? rawIndexPath : resolve(paths.projectDir, rawIndexPath);
+    const dirtyTrackedPaths = gitPathSet(paths.projectDir, ["ls-files", "--modified", "--deleted", "-z"]);
+    const untrackedPaths = canonicalUntrackedFiles(paths.projectDir);
+    return {
+      projectDir: paths.projectDir,
+      indexPath,
+      indexData: readFileSync(indexPath),
+      indexMode: lstatSync(indexPath).mode,
+      dirtyTracked: new Map([...dirtyTrackedPaths].map((path) => [path, snapshotResidueFile(paths.projectDir, path)])),
+      untracked: new Map([...untrackedPaths].map((path) => [path, snapshotResidueFile(paths.projectDir, path)])),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export type DeployReceipt = {
+  version: 1;
+  correlation: string;
+  project: string;
+  taskId: string;
+  artifactSha: string;
+  phase: "requested" | "succeeded" | "failed" | "rolled_back";
+  requestedAt: string;
+  verification: string;
+  completedAt?: string;
+  loadedArtifactSha?: string;
+  health?: "healthy" | "unhealthy";
+  targetedWake?: boolean;
+  duplicateDeploy?: boolean;
+  failure?: string;
+};
+
+export function readDeployReceiptForTask(projectDir: string, taskId: string): DeployReceipt | null {
+  const receiptDir = join(projectDir, ".state", "deploy-receipts");
+  if (!existsSync(receiptDir)) return null;
+  const receipts: DeployReceipt[] = [];
+  for (const name of readdirSync(receiptDir)
+    .filter((entry) => entry.endsWith(".json"))
+    .sort()
+    .reverse()) {
+    try {
+      const receipt = JSON.parse(readFileSync(join(receiptDir, name), "utf8")) as Partial<DeployReceipt>;
+      if (
+        receipt.version === 1 &&
+        receipt.taskId === taskId &&
+        typeof receipt.correlation === "string" &&
+        typeof receipt.artifactSha === "string" &&
+        ["requested", "succeeded", "failed", "rolled_back"].includes(receipt.phase ?? "")
+      ) {
+        receipts.push(receipt as DeployReceipt);
+      }
+    } catch {
+      // A concurrent atomic rename or a legacy non-JSON artifact is not a receipt.
+    }
+  }
+  return receipts.sort((a, b) => b.requestedAt.localeCompare(a.requestedAt))[0] ?? null;
+}
+
+export function deployReceiptPrompt(projectDir: string, taskId: string): string[] {
+  const receipt = readDeployReceiptForTask(projectDir, taskId);
+  if (!receipt) {
+    return [
+      "## Restart-aware deploy receipt",
+      "No correlated deploy receipt exists for this task (legacy/absence branch). Do not blindly redeploy. Conservatively inspect the loaded artifact and runtime health; if deployment is still required, use a new correlation and deploy at most once.",
+    ];
+  }
+  const encoded = JSON.stringify(receipt, null, 2);
+  if (receipt.phase === "requested") {
+    return [
+      "## Restart-aware deploy receipt",
+      "A correlated deploy is already requested. Do not deploy again. Wait for the supervisor to settle it and perform only the receipt's remaining verification step after a targeted wake.",
+      "```json",
+      encoded,
+      "```",
+    ];
+  }
+  if (receipt.phase === "succeeded") {
+    return [
+      "## Restart-aware deploy receipt",
+      "The correlated deploy succeeded. Do not deploy again. Verify that loadedArtifactSha equals artifactSha, health is healthy, targetedWake is true, and duplicateDeploy is false; then complete owner reconciliation.",
+      "```json",
+      encoded,
+      "```",
+    ];
+  }
+  return [
+    "## Restart-aware deploy receipt",
+    `The correlated deploy ended in terminal phase ${receipt.phase}. Do not redeploy this correlation; surface the failure or rollback disposition explicitly.`,
+    "```json",
+    encoded,
+    "```",
+  ];
+}
+
+export function finishCanonicalOwnerResidueGuard(guard: CanonicalUntrackedResidueGuard | null): string[] {
+  if (!guard) return [];
+
+  if (!existsSync(guard.indexPath) || !readFileSync(guard.indexPath).equals(guard.indexData)) {
+    writeFileSync(guard.indexPath, guard.indexData);
+    chmodSync(guard.indexPath, guard.indexMode);
+  }
+  execFileSync("git", ["-C", guard.projectDir, "checkout-index", "--all", "--force"]);
+  for (const [relativePath, snapshot] of guard.dirtyTracked) {
+    restoreResidueFile(guard.projectDir, relativePath, snapshot);
+  }
+
+  const created = [...canonicalUntrackedFiles(guard.projectDir)].filter((path) => !guard.untracked.has(path));
+  for (const relativePath of created) {
+    const absolutePath = safeResiduePath(guard.projectDir, relativePath);
+    if (existsSync(absolutePath)) unlinkSync(absolutePath);
+    let parent = dirname(absolutePath);
+    while (parent !== guard.projectDir) {
+      try {
+        rmdirSync(parent);
+      } catch {
+        break;
+      }
+      parent = dirname(parent);
+    }
+  }
+  for (const [relativePath, snapshot] of guard.untracked) {
+    restoreResidueFile(guard.projectDir, relativePath, snapshot);
+  }
+  return created;
 }
 
 async function runTaskOwner(input: {
@@ -1308,6 +1513,10 @@ async function runTaskOwner(input: {
       2,
     ),
     "```",
+    ...(/deploy|restart/i.test(intent.outcome) ||
+    input.declaredOutputPaths.some((path) => path.includes("deploy-receipts"))
+      ? ["", ...deployReceiptPrompt(input.executionPaths.projectDir, claim.taskId)]
+      : []),
     ...(event ? ["", "## Trigger Observation", "```json", JSON.stringify(event, null, 2), "```"] : []),
   ].join("\n");
 
@@ -1321,7 +1530,7 @@ async function runTaskOwner(input: {
     toolPolicy: "full" as const,
     timeout: PROJECT_APP_TASK_OWNER_TIMEOUT_MS,
   };
-  const result =
+  const dispatchOwner = async () =>
     typeof opts.manager.run === "function" &&
     typeof opts.manager.waitFor === "function" &&
     typeof opts.manager.progress === "function"
@@ -1354,6 +1563,13 @@ async function runTaskOwner(input: {
           };
         })()
       : await opts.manager.callAgent(claim.owner, prompt, ownerOptions);
+  const residueGuard = beginCanonicalOwnerResidueGuard(input.executionPaths);
+  let result: Awaited<ReturnType<typeof dispatchOwner>>;
+  try {
+    result = await dispatchOwner();
+  } finally {
+    finishCanonicalOwnerResidueGuard(residueGuard);
+  }
   const done = result.status === "done";
   const handlerResult = normalizeTaskHandlerResult(
     done ? result.structuredResult : undefined,
@@ -1424,9 +1640,7 @@ function emitOwnerResultForTask(
     owner: descriptor.owner,
     maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
   });
-  const liveChildIds = readProjectAppTaskChildContext(config, taskId).live.map(
-    (child) => child.taskId,
-  );
+  const liveChildIds = readProjectAppTaskChildContext(config, taskId).live.map((child) => child.taskId);
   const actionTaskIds = actions.flatMap((action) =>
     action.kind === "create-task" ? [action.id] : action.kind === "close-task" ? [] : [action.taskId],
   );
@@ -1446,10 +1660,7 @@ function emitOwnerResultForTask(
   const terminal = taskDisposition === "converged" && taskRefs.length === 0;
   for (const intent of ownerIntentRefs(triggerRecord)) {
     if (opts.persistDir) {
-      const terminalType =
-        intent.eventType === "message.created"
-          ? "message.resolved"
-          : "project.owner.reviewed";
+      const terminalType = intent.eventType === "message.created" ? "message.resolved" : "project.owner.reviewed";
       const existing = getDb(opts.persistDir)
         .prepare(
           `SELECT id
@@ -1875,8 +2086,7 @@ async function reconcileTask(input: {
     !primaryResult.verifier
   ) {
     primaryHandlerResult.state = "error";
-    primaryHandlerResult.summary =
-      `Owner convergence was rejected because workflow ${intent.workflow} handed off without a verifier`;
+    primaryHandlerResult.summary = `Owner convergence was rejected because workflow ${intent.workflow} handed off without a verifier`;
   }
   if (primaryResult.unavailable) {
     emitTaskReconciliationEvent(opts, descriptor, event, "project.task.handler.unavailable", intent.id, {
@@ -1925,8 +2135,7 @@ async function reconcileTask(input: {
         });
         const appliedDisposition = apply.taskContinues
           ? primaryHandlerResult.actions.some(
-              (action) =>
-                action.kind === "update-task" && action.taskId === primary.taskId,
+              (action) => action.kind === "update-task" && action.taskId === primary.taskId,
             )
             ? "revised"
             : "progress"
@@ -2452,7 +2661,7 @@ function recoverInterruptedProjectAppTasks(
       }
       const released = releaseInterruptedProjectAppTaskAttempt(
         config,
-        recovery.taskId,
+        recovery,
         `Interrupted reconciliation ${recovery.taskId} belonged to a previous runtime`,
       );
       for (const sessionId of released.sessionIds) {
@@ -2520,6 +2729,20 @@ function recoverInterruptedProjectAppTasks(
       for (const attention of attentions) acknowledgeProjectAppTaskRecoveryAttention(config, attention.taskId);
     }
   }
+}
+
+/**
+ * Run the canonical project-app recovery path for the descriptors and task
+ * controllers already installed on this event bus. Startup calls this before
+ * generic stale-session resumption so task-owned sessions are reconciled by
+ * their durable task state first.
+ */
+export function recoverInstalledProjectAppTasks(opts: ProjectAppLoaderOptions): void {
+  recoverInterruptedProjectAppTasks(
+    opts,
+    appRouterDescriptorsByBus.get(opts.bus) ?? [],
+    appTaskControllersByBus.get(opts.bus) ?? new Map(),
+  );
 }
 
 async function requeueRepairedProjectAppTaskHandlers(
@@ -2615,6 +2838,29 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
   appRouterDescriptorsByBus.set(opts.bus, descriptors);
   opts.bus.subscribe((rawEvent): DeliveryResult | void => {
     const event = flattenEvent(rawEvent);
+    const progressSessionId =
+      (event.type === "tool_call" ||
+        event.type === "tool_result" ||
+        (event.type === "text" && typeof event.text === "string" && event.text.trim().length > 0)) &&
+      typeof event.sessionId === "string"
+        ? event.sessionId.trim()
+        : "";
+    if (progressSessionId) {
+      const observedAt = typeof event.timestamp === "number" ? event.timestamp : Date.now();
+      for (const descriptor of appRouterDescriptorsByBus.get(opts.bus) ?? []) {
+        if (!descriptor.app.tasks) continue;
+        refreshProjectAppTaskAttemptLeaseBySession(
+          taskReconciliationConfig({
+            appDir: descriptor.appDir,
+            projectDir: descriptor.projectDir,
+            owner: descriptor.owner,
+            maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
+          }),
+          progressSessionId,
+          observedAt,
+        );
+      }
+    }
     const startedSessionId =
       event.type === "session.start" && typeof event.sessionId === "string" ? event.sessionId.trim() : "";
     const sessionBinding = startedSessionId ? parseProjectAppTaskSessionBinding(event.task) : null;
@@ -2671,10 +2917,9 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
     for (const descriptor of appRouterDescriptorsByBus.get(opts.bus) ?? []) {
       if (descriptor.reconciliationPaused) continue;
       const taskController = appTaskControllersByBus.get(opts.bus)?.get(descriptor.id);
-      const closedOwnerInput =
-        isProjectScopedForApp(event, descriptor.id)
-          ? closedOwnerInputEventId(opts.persistDir, event)
-          : null;
+      const closedOwnerInput = isProjectScopedForApp(event, descriptor.id)
+        ? closedOwnerInputEventId(opts.persistDir, event)
+        : null;
       if (closedOwnerInput) {
         return projectAppTaskDelivery(
           descriptor,

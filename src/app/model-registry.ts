@@ -14,11 +14,24 @@ const ENDPOINT_CONTEXT_WINDOWS = {
   "gemini-3.1-pro-preview": 200_000,
 } as const;
 
-export type ModelRegistry = Record<string, ModelWithApiKey>;
+export type ModelWithFallback = ModelWithApiKey & {
+  /** Independent model route used when the primary provider credential is unavailable. */
+  fallbackModel?: ModelWithApiKey;
+};
+
+export type ModelRegistry = Record<string, ModelWithFallback>;
 
 export function createModelRegistry(env: NodeJS.ProcessEnv = process.env): ModelRegistry {
   const baseUrl = env.MODEL_BASE_URL || "http://localhost:4000";
   const apiKey = env.MODEL_API_KEY || "not-needed";
+  const claudeOpus5: ModelWithApiKey = {
+    ...getBuiltinModel("anthropic", "claude-opus-4-6"),
+    id: "claude-opus-5",
+    name: "Claude Opus 5",
+    contextWindow: ENDPOINT_CONTEXT_WINDOWS["claude-opus-5"],
+    baseUrl,
+    apiKey,
+  };
 
   return {
     "claude-opus-4-6": {
@@ -44,6 +57,7 @@ export function createModelRegistry(env: NodeJS.ProcessEnv = process.env): Model
       contextWindow: ENDPOINT_CONTEXT_WINDOWS["gpt-5.6-sol"],
       baseUrl,
       apiKey,
+      fallbackModel: claudeOpus5,
     },
     "claude-opus-4.7": {
       ...getBuiltinModel("github-copilot", "claude-opus-4.7"),
@@ -51,14 +65,7 @@ export function createModelRegistry(env: NodeJS.ProcessEnv = process.env): Model
       baseUrl,
       apiKey,
     },
-    "claude-opus-5": {
-      ...getBuiltinModel("anthropic", "claude-opus-4-6"),
-      id: "claude-opus-5",
-      name: "Claude Opus 5",
-      contextWindow: ENDPOINT_CONTEXT_WINDOWS["claude-opus-5"],
-      baseUrl,
-      apiKey,
-    },
+    "claude-opus-5": claudeOpus5,
     "gemini-3.1-pro-preview": {
       ...getBuiltinModel("github-copilot", "gemini-3.1-pro-preview"),
       contextWindow: ENDPOINT_CONTEXT_WINDOWS["gemini-3.1-pro-preview"],
