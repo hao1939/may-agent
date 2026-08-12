@@ -329,8 +329,9 @@ export function buildMasterValidationQueueArgs(input: {
     "--parameters",
     `feature_set=${featureSet}`,
     `target=${target}`,
-    "slices=12",
-    "slice_max_parallel=6",
+    "slices=9",
+    "slice_max_parallel=9",
+    "parallel=3",
     `metadata=${metadata}`,
   ];
 }

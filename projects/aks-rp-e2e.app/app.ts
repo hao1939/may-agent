@@ -1639,7 +1639,7 @@ export function resolveAksTask(
           outcome:
             "Preserve all 79 Go source lanes mapped to all 82 master-validation specs, pass every aggregate-runnable spec in one fresh exact-current-main staging run, and preserve an exact current-main standalone pass for every standalone-only spec.",
           acceptance: [
-            "Each due cycle queues pipeline 467665 with feature_set=master-validation, target=staging, slices=12, slice_max_parallel=6, branch main, and the exact resolved origin/main commit.",
+            "Each due cycle queues pipeline 467665 with feature_set=master-validation, target=staging, slices=9, slice_max_parallel=9, parallel=3, branch main, and the exact resolved origin/main commit.",
             "The source-to-spec inventory remains complete: all 79 goal Go source lanes are represented by all 82 mapped specs, with no lane or mapped spec silently dropped.",
             "Every aggregate-runnable spec passes in one fresh staging aggregate run from the exact current origin/main commit.",
             "Every standalone-only spec has a passing direct standalone run from the exact current origin/main commit; aggregate exclusion is routing evidence only and never counts as a pass.",

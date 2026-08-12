@@ -79,8 +79,9 @@ describe("master-validation cycle", () => {
     expect(args[args.indexOf("--commit-id") + 1]).toBe("abc123");
     expect(args).toContain("feature_set=master-validation");
     expect(args).toContain("target=staging");
-    expect(args).toContain("slices=12");
-    expect(args).toContain("slice_max_parallel=6");
+    expect(args).toContain("slices=9");
+    expect(args).toContain("slice_max_parallel=9");
+    expect(args).toContain("parallel=3");
   });
 
   test("queues a frozen campaign commit without pretending it is main", () => {

@@ -93,8 +93,16 @@ Every due cycle queues pipeline `467665` with these conventions:
 - exact resolved `origin/main` commit;
 - `feature_set=master-validation`;
 - `target=staging`;
-- `slices=12`;
-- `slice_max_parallel=6`.
+- `slices=9`;
+- `slice_max_parallel=9`;
+- `parallel=3` inside each slice.
+
+This shape is explicit rather than inherited from runner defaults. Compared
+with the previous single-slice full runs, observed full-run wall time fell from
+roughly 3 hours 15 minutes--3 hours 31 minutes to 2 hours 6 minutes--2 hours
+37 minutes. Azure capacity and the slowest slice still create variance, so the
+cycle treats this as a stable operating convention rather than a promise of a
+fixed duration.
 
 Only one matching run may be queued or running. A compact receipt preserves
 the run across process reloads. Pipeline completion, campaign-head change, and
