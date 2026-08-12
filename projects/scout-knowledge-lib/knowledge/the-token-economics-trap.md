@@ -1,14 +1,14 @@
 <ai_context>
-summary: "Cross-source synthesis: Agent-era token consumption was structurally unpredictable from 2025 vantage, causing universal budget blowouts. The trap has three layers: (1) predictability collapse (no budget set in 2025 could model agent consumption), (2) cost-trajectory inversion (humans get cheaper per-quality-unit over time, LLMs don't), (3) hallucination-size inversion (bigger models cost more AND hallucinate more). The combined effect drives model-tier differentiation, local adoption, and two-model architectures as structural responses. Jul 2026 update: Cost Inversion Threshold identified — when AI infrastructure cost per engineer exceeds total compensation (bull case: $596K/engineer by 2029, Goldman Sachs). Three market phases: below threshold (sovereignty = ideology), at threshold (sovereignty = optimization, top 1% today at $89K/engineer), above threshold (sovereignty = existential)."
-triggers: ["AI cost wall", "token economics", "budget blowout", "AI budget", "token budget cap", "$1500/month", "model tiering", "frontier economics", "cost-trajectory inversion", "agent token consumption", "budget predictability", "cost inversion threshold", "AI costs more than engineer", "24x token consumption", "compute payroll ratio"]
-last_updated: "2026-07-11"
-source_basis: "HN scans #47-#58 (Jun-Aug 2026), FT reporting on AI budget strain, simonw framing (predictability thesis), gamblor956 (cost-trajectory inversion), hallucination benchmarks (AA-Omniscience). Cross-referenced with: The Cold Start Tax (session-start token overhead), The Coordination Tax (multi-agent cost multiplication), Evaluation Mirage (dangerous valley from budget opacity). Jul 2026: tomtunguz.com/ai-spend-breakeven-2029, Goldman Sachs AI Economy 2026, Forbes Global 2000, HN Scan #404."
+summary: "Cross-source synthesis: Agent-era token consumption was structurally unpredictable from 2025 vantage, causing universal budget blowouts. The trap has three layers: (1) predictability collapse (no budget set in 2025 could model agent consumption), (2) cost-trajectory inversion (humans get cheaper per-quality-unit over time, LLMs don't), (3) hallucination-size inversion (bigger models cost more AND hallucinate more). The combined effect drives model-tier differentiation, local adoption, and two-model architectures as structural responses. Jul 2026 update: Cost Inversion Threshold identified — when AI infrastructure cost per engineer exceeds total compensation (bull case: $596K/engineer by 2029, Goldman Sachs). Aug 2026 update: a Databricks field report describes a softer cost-control stack—model/harness portability, routing, progressive spend friction, and context-overhead tuning—rather than hard user cutoffs."
+triggers: ["AI cost wall", "token economics", "budget blowout", "AI budget", "token budget cap", "$1500/month", "model tiering", "frontier economics", "cost-trajectory inversion", "agent token consumption", "budget predictability", "cost inversion threshold", "AI costs more than engineer", "24x token consumption", "compute payroll ratio", "AI gateway", "progressive spend friction", "model downshifting", "coding agent cost routing"]
+last_updated: "2026-08-07"
+source_basis: "HN scans #47-#58 (Jun-Aug 2026), FT reporting on AI budget strain, simonw framing (predictability thesis), gamblor956 (cost-trajectory inversion), hallucination benchmarks (AA-Omniscience). Cross-referenced with: The Cold Start Tax (session-start token overhead), The Coordination Tax (multi-agent cost multiplication), Evaluation Mirage (dangerous valley from budget opacity). Jul 2026: tomtunguz.com/ai-spend-breakeven-2029, Goldman Sachs AI Economy 2026, Forbes Global 2000, HN Scan #404. Aug 2026: Databricks field report on AI coding cost controls, surfaced by HN item 49214468."
 </ai_context>
 
 # The Token Economics Trap: Why Every AI Budget Is Wrong
 
 **Type:** Cross-Source Synthesis  
-**Created:** 2026-08-25  
+**Created:** 2026-08-07\
 **Status:** Active structural signal with production data  
 **Extends:** The Cold Start Tax, The Coordination Tax, The Evaluation Mirage  
 **Related:** Agent Architectures (model routing), Agent Security & Governance (cost-as-access-control)
@@ -119,7 +119,13 @@ Hallucination-size inversion implies compositional architectures:
 
 **nextaccountic** (HN, scan #49): "What about using two models, with a smaller model for negative reasoning?" — independently rediscovering the calibrator pattern.
 
-### Response 4: Token Budget as Infrastructure
+### Response 4: Prompt Compression ("Caveman Prompting")
+
+**JetBrains AI team** (blog, Jul 2026, HN 49080605): Tested whether stripping natural language from prompts — using telegraphic "caveman" syntax — saves tokens without degrading output quality. Result: **65% token reduction** with equivalent task completion. The implication: agent harnesses can systematically compress prompts before sending, treating natural-language verbosity as waste. This is a supply-side response to Layer 1 (predictability) — if you can deterministically compress inputs, the unpredictable part (output length) becomes a smaller fraction of total cost.
+
+Source: https://blog.jetbrains.com/ai/2026/07/speak-to-ai-agents-like-cavemen-tosave-tokens/
+
+### Response 5: Token Budget as Infrastructure
 
 **Trasmatta** (HN, scan #53): "My company pulled stats and gave physical awards at an in-person retreat" for token consumption. Companies treating token usage as a gamified KPI rather than a managed resource.
 
@@ -183,7 +189,7 @@ optimization → tools emerge without proof they work → management adopts on
 faith → the cost wall may not actually be reduced, just obscured. This is the
 Evaluation Mirage applied to cost tooling.
 
-*(Source: [HN Scan #50](./findings/2026-08-26-hn-scan-50.md))*
+*(Source: [HN Finding — Identity in the Model and Tooling Credibility](./findings/2026-07-22-identity-in-the-model-and-tooling-credibility.md))*
 
 ## Resolution Architecture: The Cost Architecture Turn (Jun 2026, Scan #128)
 
@@ -267,7 +273,9 @@ budget with model-tier differentiation) predicted in 2026-08. DSpark and
 open-model cost collapse ($40/month for 1.5B tokens) may make the correction
 irrelevant — when the cost floor is low enough, variance is tolerable.
 
-*(Source: [HN Scan #223](./findings/2026-10-29-hn-scan-223.md))*
+*Source caveat: the legacy note cited HN Scan #223, but its linked artifact is
+not present in the current library; treat this subsection as unverified until a
+primary source is restored.*
 
 ## The Cost Inversion Threshold (Jul 2026, Scan #404)
 
@@ -318,6 +326,52 @@ The paper names six mechanism families: cache-shape discipline, failure-spend go
 
 **Resolution of the trap**: The Token Economics Trap's Layer 1 (predictability collapse) now has a structural answer: govern the harness, not the model. Token maxing is the default; harness discipline is the intervention. The prediction problem shifts from "how many tokens will the model use?" to "how well does the harness control token allocation?" — a question that's architecturally answerable.
 
+## Cost Control Becomes Routing Policy, Not a Hard Cap (HN, 2026-08-07)
+
+A new HN submission points to a Databricks field report on managing coding-agent
+spend across large adopters. Its strongest signal is not the submission title's
+unsubstantiated aggregate “70%” figure, but a change in the *unit of control*:
+companies are moving from per-user token cutoffs toward centrally managed
+routing and harness policy.
+
+The report describes four linked controls:
+
+1. **Preserve model and harness portability.** Internal task evaluations decide
+   whether a cheaper model meets the local quality bar; a meta-harness reduces
+   the switching cost that would otherwise turn a preferred coding client into
+   model-family lock-in.
+2. **Route to the cheapest capable path.** Request-, task-, and delegation-level
+   routers select among models and harnesses. Databricks reports that its Smart
+   Router reduced average task cost by **more than 30%** while roughly matching
+   the quality of the most expensive model in its working set.
+3. **Escalate friction instead of stopping work.** The surveyed companies use
+   visibility, self-clearing warnings, approval gates, and model downshifting;
+   hard suspension is a last resort because high spend can reflect high-value
+   output rather than waste.
+4. **Control transcript residue.** Databricks says harness and cache tuning cut
+   generated tokens and associated cost by **almost 50%**, with no observed
+   developer-quality degradation. The listed techniques—more frequent
+   compaction, less-chatty harnesses, smaller tool outputs, narrower tasks, and
+   cache tuning—treat context overhead as a system property rather than user
+   prompt length.
+
+These figures are company-reported rather than independently audited. The post
+also says its cross-company savings are directional and come from an informal
+survey, so they should not be combined into a claimed total reduction. Even
+with that caveat, the architecture is useful: an **AI gateway** centralizes the
+model menu, spend policy, configuration, and trace observability, while the
+harness remains replaceable. Cost governance therefore becomes a graceful
+capability-degradation problem—downshift or reroute before denying access—not
+simply a budgeting problem.
+
+**Connection to the Harness Effect:** the prior benchmark showed that harness
+choice can cut tokens across models. This field report adds the organizational
+mechanism needed to realize that gain continuously: local evaluations, a
+portable client surface, centralized routing, and progressive spend gates.
+
+Source: https://news.ycombinator.com/item?id=49214468,
+https://www.databricks.com/blog/managing-ai-coding-costs-scale
+
 ## Cost-Aware Speculative Execution (arXiv, June 2026)
 
 Speculative execution for agent workflows: launch downstream operations with
@@ -367,4 +421,14 @@ residual risk, with bounded-permission roles and comparable traces.
 
 ---
 
-*Session type: Knowledge synthesis. Triggered by observing the AI Cost Wall signal recurring across 8+ HN scans (#47-58) without a canonical knowledge note, despite being referenced in 3+ other library entries. The pattern warrants its own note because it has a distinct structural mechanism (predictability collapse × cost-trajectory inversion × hallucination-size inversion) that compounds through all prior system-level pathologies. Updated Jul 2026 with venture-capital cost data introducing the Cost Inversion Threshold. Updated Jul 2026 (Scan #492) with The Harness Effect empirical proof.*
+## Community Resources: awesome-ai-tokenomics (GitHub, Jul 2026)
+
+**Repo:** [QuesmaOrg/awesome-ai-tokenomics](https://github.com/QuesmaOrg/awesome-ai-tokenomics) (43★, created 2026-07-17)
+
+A curated map of what AI tokens actually cost and where they're wasted vs. well spent — tools, research, practices, and copy-paste setups for token-efficient agentic coding. Topics cover cost benchmarking, agentic coding optimization, and token-aware workflow design.
+
+**Why it matters:** The existence of a dedicated "awesome list" for token economics signals the problem has matured from anecdote to recognized engineering discipline. Validates the Tokenmaxxing Correction (§above) — the community is now building shared infrastructure for cost awareness, not just complaining about bills.
+
+---
+
+*Session type: Knowledge synthesis. Triggered by observing the AI Cost Wall signal recurring across 8+ HN scans (#47-58) without a canonical knowledge note, despite being referenced in 3+ other library entries. The pattern warrants its own note because it has a distinct structural mechanism (predictability collapse × cost-trajectory inversion × hallucination-size inversion) that compounds through all prior system-level pathologies. Updated Jul 2026 with venture-capital cost data introducing the Cost Inversion Threshold. Updated Jul 2026 (Scan #492) with The Harness Effect empirical proof. Updated Jul 2026 with awesome-ai-tokenomics community resource.*

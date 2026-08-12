@@ -541,3 +541,52 @@ ML, but for behavioral evolution rather than model training.
 - **Connects to**: The Evaluation Mirage (evaluation metrics that conceal
   structured failures), APEX three-layer co-evolution (agent-runtime-hardening.md),
   False-Success Detection (agent-runtime-hardening.md).
+
+---
+
+## §23: Step-Level CUA Diagnostics — Desktop-Delta Bench (arXiv, July 2026)
+
+End-to-end benchmarks for computer-use agents (CUAs) measure final task success
+but cannot isolate *whether the model understood the transition its action
+caused*. Desktop-Delta Bench (DDB) [2607.26041] fills this gap with 2,013
+human-verified step-level instances from multi-app Linux trajectories (~15 apps,
+50 task domains). Two tasks: (1) 3-frame temporal ordering (463 instances, 105
+with cross-trajectory decoys), and (2) before/after action classification (1,550
+pairs across 5 action types). Evaluation of 8 model families shows ordering is
+unsaturated (best exact-match ~65%), and models systematically copy presented
+frame order — a diagnostic failure invisible to end-task metrics.
+
+**Implication**: CUA reliability requires verifying that the agent correctly
+reconstructs *what changed* after each action, not just whether the task
+eventually succeeded. DDB provides a missing diagnostic layer between GUI
+grounding and task success. For harness builders, this suggests step-level
+transition verification as a composable check that can be embedded in agentic
+loops (analogous to IRA's environment-state verification from §IRA).
+
+- **Source**: [2607.26041] Desktop-Delta Bench, arXiv July 2026. Categories: cs.AI, cs.CV.
+- **Connects to**: IRA environment-state verification, Messier cross-benchmark
+  corpus (function-calling saturated but CUA evaluation still underexplored),
+  agent-evaluation-research §evaluation-mirage.
+
+---
+
+## §24: Runtime Uncertainty Monitoring for Multi-Agent Systems (arXiv, July 2026)
+
+Multi-agent systems built on LLMs propagate uncertainty through inter-agent
+dependencies, but most frameworks ignore this. [2607.25877] proposes a Bayesian
+Network approach: token-level log-probabilities are length-normalized and
+calibrated into task-level confidence estimates, then composed through a BN that
+models agent dependency structure. Applied to actuarial risk modelling (a
+high-stakes domain), the framework reproduces baseline performance while
+surfacing runtime uncertainty propagation — making it possible to detect when
+cascading low-confidence outputs threaten downstream decisions.
+
+**Implication**: As multi-agent orchestration scales, uncertainty quantification
+becomes a safety-critical infrastructure concern. This BN-over-log-probs pattern
+is lightweight and composable — it does not require model internals beyond
+log-probabilities. Relevant to any multi-agent harness that needs runtime
+confidence monitoring without retraining.
+
+- **Source**: [2607.25877] Runtime Uncertainty Monitoring for LLM-Based MAS, arXiv July 2026. Categories: cs.AI.
+- **Connects to**: AgentToolMO trust state machine (cross-vendor trust propagation),
+  multi-agent-coordination.md, agent-runtime-hardening.md.

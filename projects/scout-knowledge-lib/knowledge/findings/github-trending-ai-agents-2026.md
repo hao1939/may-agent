@@ -1,8 +1,8 @@
 # GitHub Trending AI Agent Repos & Tools — June 2026
 
-**Source:** GitHub Search API (live queries, June 13, June 15, June 20, June 21, July 18, & July 22 2026)  
-**Last updated:** 2026-07-22  
-**Prior versions:** June 13 initial scan → June 15 delta → June 20 delta → June 21 delta → July 18 delta → July 22 delta (this update)
+**Source:** GitHub Search API (live queries, June 13, June 15, June 20, June 21, July 18, July 22, July 23, July 28, & Aug 2 2026)  
+**Last updated:** 2026-08-02  
+**Prior versions:** June 13 initial scan → June 15 delta → June 20 delta → June 21 delta → July 18 delta → July 22 delta → July 23 delta → July 28 delta → Aug 2 delta (this update)
 
 ---
 
@@ -22,7 +22,7 @@ The AI agent ecosystem on GitHub has undergone a **structural shift** since earl
 
 | Stars | Repo | Category | Language | Created |
 |-------|------|----------|----------|---------|
-| 227k | **obra/superpowers** | Skills framework | Shell | Oct 2025 |
+| 265k | **obra/superpowers** | Skills framework | Shell | Oct 2025 |
 | 215k | **affaan-m/ECC** | Agent harness (skills, memory, security) | JavaScript | Jan 2026 |
 | 193k | **NousResearch/hermes-agent** | Adaptive autonomous agent | Python | Jul 2025 |
 | 191k | **n8n-io/n8n** | Workflow automation + AI | TypeScript | — |
@@ -30,7 +30,7 @@ The AI agent ecosystem on GitHub has undergone a **structural shift** since earl
 | 149k | **langflow-ai/langflow** | Visual agent builder | Python | Feb 2023 |
 | 145k | **langgenius/dify** | Agentic workflow platform | TypeScript | Apr 2023 |
 | 140k | **x1xhlol/system-prompts-and-models-of-ai-tools** | System prompts from 30+ tools | N/A | Mar 2025 |
-| 139k | **langchain-ai/langchain** | Agent engineering platform | Python | Oct 2022 |
+| 143k | **langchain-ai/langchain** | Agent engineering platform | Python | Oct 2022 |
 | 131k | **anthropics/claude-code** | Terminal coding agent | TypeScript | — |
 | 115k | **Shubhamsaboo/awesome-llm-apps** | 100+ agent & RAG apps | Python | Apr 2024 |
 | 113k | **msitarzewski/agency-agents** | Multi-agent AI agency | Shell | Oct 2025 |
@@ -932,4 +932,96 @@ New domain-specific skills spotted this scan:
 
 ---
 
-*Data sourced from GitHub Search API, June 13, 15, 20, 21, July 18, & July 22, 2026. Star counts are approximate and change daily.*
+## 🆕 July 23 Delta: Ponytail Velocity Confirmation
+
+### Star Velocity Flash (July 22 → July 23)
+
+| Repo | Stars (Jul 22) | Stars (Jul 23) | Δ | Signal |
+|------|---------------|----------------|---|--------|
+| **DietrichGebert/ponytail** | 30k | **88k** | **+58k** | 🔥🔥🔥 Viral breakout — fastest single-day growth in tracked corpus |
+| **obra/superpowers** | 231k | 260k | +29k | Re-accelerating after plateau |
+| **NousResearch/hermes-agent** | 196k | 219k | +23k | Strong growth continues |
+| **sachitrafa/YourMemory** | 245 | 260 | +15 | Forgetting-curve repo: slow but steady |
+
+**Headline:** ponytail's 58k single-day gain (30k→88k) is unprecedented in the tracked corpus. The "architectural laziness" pattern — making agents optimize for NOT acting — has crossed from niche philosophy to viral mainstream adoption. The prior prediction ("crosses 50k by August") was exceeded in under 24 hours.
+
+**Interpretation:** This velocity confirms "Abstention Advantage" as the single strongest resonating design principle in the 2026 agent ecosystem. The pattern aligns with: Heartbeat Tax (KE-1968), Phantom Metabolism (KE-2001), and the Compilation Threshold — the cheapest token is the one never spent.
+
+**No new categories detected.** Repos created July 21–23 are all sub-200★ variations on established patterns (governance skills, MCP servers, cross-vendor loops). The ecosystem is absorbing rather than innovating this week.
+
+---
+
+---
+
+## 🆕 July 28 Delta: Ponytail Plateau & New Entrants
+
+### Star Velocity Flash (July 23 → July 28)
+
+| Repo | Stars (Jul 23) | Stars (Jul 28) | Δ | Signal |
+|------|---------------|----------------|---|--------|
+| **DietrichGebert/ponytail** | 88k | **90k** | +2k | Plateau after viral spike — absorption phase |
+| **obra/superpowers** | 260k | 262k | +2k | Steady organic growth |
+| **HKUDS/nanobot** | 38k | **46k** | +8k | Ultra-lightweight agent framework accelerating |
+| **heygen-com/hyperframes** | 27k | **38k** | +11k | Video-rendering-for-agents category growing fast |
+| **langchain-ai/langchain** | 139k | 143k | +4k | Steady |
+
+### New Notable Repos (Not Previously Tracked)
+
+| Stars | Repo | What It Does | Language | Created |
+|-------|------|-------------|----------|---------|
+| 12.5k | **XiaomiMiMo/MiMo-Code** | Model-agent co-evolution — the model and the harness train each other | TypeScript | Jun 2026 |
+| 5.3k | **elder-plinius/T3MP3ST** | Autonomous red-teaming platform; multi-agent offensive-security meta-harness | TypeScript | Jul 2026 |
+
+**Interpretation:**
+
+1. **ponytail's plateau** (88k→90k after the 58k single-day spike) confirms the standard viral absorption cycle. The "architectural laziness" meme has been absorbed; expect steady 100k+ drift rather than another spike.
+
+2. **MiMo-Code** (12.5k★, Xiaomi) introduces a genuinely new pattern: **model-agent co-evolution**, where the agent's harness and the underlying model improve each other in a feedback loop. This is distinct from fine-tuning (one-shot) or RLHF (human-in-loop) — it's continuous bilateral adaptation. If validated, this collapses the model/harness boundary that currently structures the entire ecosystem.
+
+3. **T3MP3ST** (5.3k★) is the first tracked repo to apply the meta-harness pattern specifically to **offensive security**. Multi-agent red-teaming was predicted as an emerging vertical; this is the first open-source instantiation with meaningful traction.
+
+4. **nanobot** (+8k) and **hyperframes** (+11k) are the velocity leaders this week, both in the "specialized lightweight tool" category rather than general frameworks — further evidence that the ecosystem is fragmenting into focused tools rather than converging on monolithic platforms.
+
+### Updated Prediction
+
+1. **MiMo-Code crosses 25k★ by September 2026.** Model-agent co-evolution is a powerful narrative backed by Xiaomi's brand and a genuine architectural novelty. The repo's growth trajectory (12.5k in 7 weeks) supports this.
+
+---
+
+---
+
+## Delta: August 2, 2026
+
+### Velocity Check (Jul 28 → Aug 2)
+
+| Repo | Stars (Jul 28) | Stars (Aug 2) | Δ | Signal |
+|------|----------------|---------------|---|--------|
+| **obra/superpowers** | 262k | **265k** | +3k | Steady organic growth continues |
+| **HKUDS/nanobot** | 46k | **47k** | +1k | Growth decelerating after viral spike |
+| **heygen-com/hyperframes** | 38k | **39k** | +1k | Stabilizing at high level |
+| **langchain-ai/langchain** | 143k | **143k** | ~0 | Plateau — mature project |
+| **crewAIInc/crewAI** | — | **56k** | — | First tracked; strong multi-agent orchestration position |
+| **openai/openai-agents-python** | — | **28k** | — | Official OpenAI lightweight agent framework |
+| **mastra-ai/mastra** | — | **27k** | — | TypeScript AI framework gaining ground |
+
+### New Notable Repos (Not Previously Tracked)
+
+| Stars | Repo | What It Does | Language | Created |
+|-------|------|-------------|----------|---------|
+| 56k | **crewAIInc/crewAI** | Role-playing multi-agent orchestration | Python | Oct 2023 |
+| 28k | **openai/openai-agents-python** | Lightweight multi-agent workflows (official OpenAI) | Python | Mar 2025 |
+| 27k | **mastra-ai/mastra** | TypeScript framework for AI apps & agents | TypeScript | Dec 2024 |
+
+**Interpretation:**
+
+1. **Velocity deceleration** across nanobot and hyperframes suggests their viral spikes have been absorbed. Both are settling into steady-state growth as established tools rather than novelties.
+
+2. **crewAI at 56k★** confirms multi-agent orchestration is now a mature category, not an experiment. The "role-playing" framing (agents as personas with defined roles) has proven sticky.
+
+3. **mastra-ai/mastra** (27k★) signals growing TypeScript-first demand for agent frameworks — the Python hegemony in agent tooling is being challenged by full-stack JS/TS developers who want native integration with Next.js/Vercel workflows.
+
+4. **openai/openai-agents-python** (28k★) is notable as OpenAI's official endorsement of lightweight multi-agent patterns rather than single-monolithic-agent approaches, validating the ecosystem's direction.
+
+---
+
+*Data sourced from GitHub Search API, June 13, 15, 20, 21, July 18, 22, 23, July 28, & Aug 2, 2026. Star counts are approximate and change daily.*

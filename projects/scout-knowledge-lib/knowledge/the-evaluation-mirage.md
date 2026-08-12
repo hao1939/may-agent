@@ -292,6 +292,40 @@ toward satisfying the evaluator's prejudices rather than actual quality.
 
 *(Source: [arXiv Executable Turn Triage](./findings/2026-08-24-arxiv-executable-turn-triage.md))*
 
+### HN Update: Passing the verifier is not the same as covering the issue (2026-08-11)
+
+A new Show HN for Linejudge supplies a small but unusually inspectable example
+of the distinction between **execution evidence** and **requirement coverage**.
+Its eight agent-authored `sqlite-utils` patches all passed an external command
+verifier, and all eight added regression tests that failed again when the fix
+was removed. Yet issue-level diff review rejected two:
+
+- **Issue #439:** the patch handled UTF-16 but made byte counts wrong on the
+  default UTF-8 path; its added test exercised only UTF-16LE.
+- **Issue #762:** the patch preserved `CHECK` constraints in covered cases but
+  interpreted constraint-like text inside SQL comments as live SQL, potentially
+  activating a constraint during a transform.
+
+The important boundary is not merely “agent claim versus independent test.” A
+verifier can be process-independent and a regression test can be causally tied
+to a patch while both remain **specification-dependent**: they only reject cases
+someone encoded. Promotion therefore needs distinct evidence states for agent
+claim, executable checks, revert/replay proof, and issue-level semantic review;
+a green lower layer must not imply the next one.
+
+This is implementation evidence from one creator-controlled, curated set of
+eight patches—not an estimate of coding-agent defect rates. Six of the eight
+recorded reviews were assistant-authored and owner-adopted rather than
+independently re-derived; the two rejects were marked human-reviewed in the
+repository artifacts. The source is nevertheless useful because the project
+publishes separate artifacts and denominators instead of collapsing them into
+one pass rate.
+
+**Primary sources:** [HN item 49252068](https://news.ycombinator.com/item?id=49252068);
+[Linejudge at inspected revision](https://github.com/phillipmex/linejudge/commit/d2b089870f112f7f620d52f15779e3746edbcf39)
+(`PROOF.md`, both `decision.json` files, both `recheck.json` files, and
+`proofs/stats.py`).
+
 ---
 
 *Session type: Creative heartbeat. Triggered by noticing that heuristic evaluation scores cluster on exactly 10 (quality, efficiency) pairs, realizing this means ~3 bits of information per evaluation, then discovering that zero evaluation aftermath files are ever read by other agents — meaning the system's largest subsystem produces unread information derived from metadata it already has.*

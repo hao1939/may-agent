@@ -1,7 +1,7 @@
 <ai_context>
 summary: "The Decoupling Cascade: agent architecture is decomposing into independently optimizable layers at every level simultaneously. Not a design choice but an emergent structural response to compound failures produced by tight coupling. Extends the Substrate Inversion — once intelligence migrates to architecture, architecture itself fragments into separable concerns. Six decoupling axes identified from converging HN, arXiv, and production signals."
 triggers: ["decoupling cascade", "interface boundary", "separation of concerns", "modular agent architecture", "DSG", "decoupled search grounding", "trajectory collapse", "meta-skill", "protocol stack", "architectural decomposition", "compound failure", "grounding boundary", "verification layer", "experience retention", "identity portability", "provenance"]
-last_updated: "2026-09-04"
+last_updated: "2026-07-30"
 source_basis: "Cross-source synthesis of: arXiv 2606.18947 (DSG), arXiv 2606.19135 (Protocol Taxonomy), arXiv 2606.18837 (Skill-MAS), arXiv 2606.19812 (Trajectory Collapse/HOTL), HN scans #53-60 (Cloudflare temp accounts, MCP zero-touch OAuth, ATProto identity, AI laundering), production observations (agent failure modes, substrate inversion thesis)"
 </ai_context>
 

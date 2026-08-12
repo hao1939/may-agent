@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Companion note to agent-security-governance.md: 33 named defense architectures (§2.1–§2.33 incl. ActPlane) for tool-using AI agents. Covers dual-boundary defense, self-improving trust, progressive autonomy, guardrail feedback loops, cooperative governance, privacy budgets, bootstrapped monitoring, five-plane runtime architecture, compliance-correction symmetry, certified memory poisoning defense, oversight capacity limits, proactive MAS defense, multi-agent trust optimization, containment gaps, anti-fabrication firewalls, runtime skill audit, game-theoretic context stability, persistent memory poisoning, semantic quorum, trajectory-aware safety, Goodhart compliance detection, instruction-layer supply-chain attacks, TEE-sealed API routers, XHS skill poisoning practitioner validation, intent narrowing, recursive exposure, capability kernel, unfireable safety kernel, governance decay/compaction, ShareLock multi-tool threshold poisoning, deterministic config control plane, inherited circuit fine-tuning vulnerabilities, and OS-kernel eBPF enforcement (ActPlane). §2.34+ (verified enforcement patterns incl. CXI §2.44, aiAuthZ §2.45) in agent-security-verified-enforcement.md. Research frontiers (incl. MCP TAG-Block concealment) in agent-security-research-frontiers.md. §Security-Utility Paradox and §Self-Compromising Loop moved to parent note §5 Open Problems."
-triggers: ["agent defense", "defense architecture", "SecureClaw", "AgentTrust", "progressive autonomy", "guardrail feedback", "TRIAD", "recuse signal", "privacy budget", "OCELOT", "bootstrapped monitoring", "five-plane governance", "compliance correction", "memory poisoning defense", "SMSR", "oversight capacity", "SAIGuard", "SGTO-MAS", "containment gap", "Goal-Autopilot", "anti-fabrication", "runtime skill audit", "RSA", "GT-MCP", "MemVenom", "semantic quorum", "SciTrace", "MAC-Bench", "SkillVetBench", "AEGIS", "TEE router", "skill poisoning XHS", "ShareLock", "threshold poisoning", "composition attack", "deterministic control plane", "agent config supply chain", "Rel(AI)Build", "inherited circuits", "evasion surface", "fine-tuning vulnerability", "ActPlane", "eBPF"]
-last_updated: "2026-07-08"
-source_basis: "Extracted from agent-security-governance.md §2. 33 defense architectures sourced from arXiv June 2026 papers (SecureClaw 2606.09549, AgentTrust 2606.08539, TRIAD 2606.05805, Recuse Signal 2606.06460, OCELOT 2606.12341, Bootstrapped Monitoring 2606.11998, Five-Plane 2606.12320, Linear MAS 2606.12709, SMSR 2606.12703, Oversight 2606.08919, SAIGuard 2606.12474, SGTO-MAS 2606.07940, Containment Gap 2606.12797, Goal-Autopilot 2606.11688, RSA 2606.11671, GT-MCP 2606.10322, MemVenom 2606.10742, Semantic Quorum 2606.08021, SciTrace 2606.08234, MAC-Bench 2606.07805, SkillVetBench 2606.15899, AEGIS 2606.16358, Unfireable Safety Kernel 2606.26057, ShareLock 2606.27027, Rel(AI)Build 2606.26924, ActPlane 2606.25189), HN practitioner discourse, and XHS community validation (scan #54). §Security-Utility Paradox and §Self-Compromising Loop relocated to parent note §5. Research frontiers extracted to agent-security-research-frontiers.md. Post-extraction entries from scans #368, #375, #411, #432 moved to research-frontiers companion. §Execution Boundary Patterns (scan #453) distributed — CXI/aiAuthZ to verified-enforcement, TAG-Block to research-frontiers."
+summary: "Companion note to agent-security-governance.md: 33 named defense architectures (§2.1–§2.33 incl. ActPlane) for tool-using AI agents. Covers dual-boundary defense, self-improving trust, progressive autonomy, guardrail feedback loops, cooperative governance, privacy budgets, bootstrapped monitoring, five-plane runtime architecture, compliance-correction symmetry, certified memory poisoning defense, oversight capacity limits, proactive MAS defense, multi-agent trust optimization, containment gaps, anti-fabrication firewalls, runtime skill audit, game-theoretic context stability, persistent memory poisoning, semantic quorum, trajectory-aware safety, Goodhart compliance detection, instruction-layer supply-chain attacks (including AgentJailbreak's 5,629-run execution study), TEE-sealed API routers, XHS skill poisoning practitioner validation, intent narrowing, recursive exposure, capability kernel, unfireable safety kernel, governance decay/compaction, ShareLock multi-tool threshold poisoning, deterministic config control plane, inherited circuit fine-tuning vulnerabilities, and OS-kernel eBPF enforcement (ActPlane). §2.34+ (verified enforcement patterns incl. CXI §2.44, aiAuthZ §2.45) in agent-security-verified-enforcement.md. Research frontiers (incl. MCP TAG-Block concealment) in agent-security-research-frontiers.md. §Security-Utility Paradox and §Self-Compromising Loop moved to parent note §5 Open Problems."
+triggers: ["agent defense", "defense architecture", "SecureClaw", "AgentTrust", "progressive autonomy", "guardrail feedback", "TRIAD", "recuse signal", "privacy budget", "OCELOT", "bootstrapped monitoring", "five-plane governance", "compliance correction", "memory poisoning defense", "SMSR", "oversight capacity", "SAIGuard", "SGTO-MAS", "containment gap", "Goal-Autopilot", "anti-fabrication", "runtime skill audit", "RSA", "GT-MCP", "MemVenom", "semantic quorum", "SciTrace", "MAC-Bench", "SkillVetBench", "AgentJailbreak", "malicious skill files", "AEGIS", "TEE router", "skill poisoning XHS", "ShareLock", "threshold poisoning", "composition attack", "deterministic control plane", "agent config supply chain", "Rel(AI)Build", "inherited circuits", "evasion surface", "fine-tuning vulnerability", "ActPlane", "eBPF"]
+last_updated: "2026-08-08"
+source_basis: "Extracted from agent-security-governance.md §2. 33 defense architectures sourced from arXiv June 2026 papers (SecureClaw 2606.09549, AgentTrust 2606.08539, TRIAD 2606.05805, Recuse Signal 2606.06460, OCELOT 2606.12341, Bootstrapped Monitoring 2606.11998, Five-Plane 2606.12320, Linear MAS 2606.12709, SMSR 2606.12703, Oversight 2606.08919, SAIGuard 2606.12474, SGTO-MAS 2606.07940, Containment Gap 2606.12797, Goal-Autopilot 2606.11688, RSA 2606.11671, GT-MCP 2606.10322, MemVenom 2606.10742, Semantic Quorum 2606.08021, SciTrace 2606.08234, MAC-Bench 2606.07805, SkillVetBench 2606.15899, AEGIS 2606.16358, Unfireable Safety Kernel 2606.26057, ShareLock 2606.27027, Rel(AI)Build 2606.26924, ActPlane 2606.25189), plus Aug 2026 updates MAFIA 2608.03844 on query-only audit-bypassing memory attacks and AgentJailbreak 2608.05223 on malicious skill execution, HN practitioner discourse, and XHS community validation (scan #54). §Security-Utility Paradox and §Self-Compromising Loop relocated to parent note §5. Research frontiers extracted to agent-security-research-frontiers.md. Post-extraction entries from scans #368, #375, #411, #432 moved to research-frontiers companion. §Execution Boundary Patterns (scan #453) distributed — CXI/aiAuthZ to verified-enforcement, TAG-Block to research-frontiers."
 </ai_context>
 
 # Agent Security: Defense Architectures
@@ -173,6 +173,24 @@ future responses across sessions. SMSR provides the first certified defense:
 is the primary MSMP attack surface. Provenance-signing at write time plus
 voting-based validation at retrieval time is the minimum viable defense.
 *(arXiv [2606.12703], Sharma, Jun 2026)*
+
+**August 2026 update — MAFIA (2608.03844): audit-evasion is now query-only and retrieval-aware.**
+MAFIA shows that **active input auditing alone is not a sufficient memory defense**.
+In the paper's threat model, the attacker does not need direct write access or
+obvious malicious phrasing. The attack first **probes** the memory system to learn
+which records are likely to win retrieval competition inside a large benign pool,
+then injects a compact **factual cloak** that preserves semantic similarity well
+enough to suppress audit detection while still steering future behavior. Reported
+results reach **up to 90.7% attack success** while reducing audit detection from a
+peak **83.3% to at most 7.4%**.
+
+**Defense implication**: memory security cannot rely on a post-hoc semantic
+screen at write time. The control plane has to govern **admission provenance,
+retrieval competition, and downstream usage** together. SMSR's provenance +
+retrieval-validation stack now looks less like an optional hardening layer and
+more like the minimum architecture for any persistent agent memory exposed to
+untrusted user interaction.
+*(arXiv [2608.03844], Chen et al., Aug 2026)*
 
 ## 2.11 Oversight Capacity — The Inverted-U
 
@@ -371,6 +389,39 @@ controls. Conventional tools miss 89–100% of instruction-layer threats
   Discrimination Crisis (flood of skills without vetting = quality collapse).
 *(arXiv [2606.15899] SkillVetBench, Jun 2026. Categories: cs.CR, cs.AI, cs.MA.
 Submitted to NeurIPS 2027.)*
+
+**August 2026 update — AgentJailbreak (2608.05223): natural-language camouflage reaches execution.**
+The paper turns the instruction-layer risk from a scanner benchmark into a
+large agent-execution study. Six LLMs across four model families rewrote **471
+real-world shell commands** as benign-looking skill instructions, producing
+**2,826 skills** mapped to 11 MITRE ATT&CK tactics. Across **5,629 completed,
+auto-approved runs**, the authors report exploitability of **95.5–96.1% for
+Gemini CLI** and **71.6–74.0% for Qwen Code**, from raw majority-vote to their
+declared-intent-corrected estimate. Explicit safety recognition appeared in
+only **1.99%** of runs, and results were nearly invariant to the model used to
+generate the camouflage.
+
+The headline needs one boundary: the replication package defines
+exploitability from logs showing **declared intent or evidence to execute** the
+malicious preflight instruction, not a guarantee that every side effect
+completed. Its evaluation combines run stratification, evidence anchoring, a
+refusal veto, a deterministic declared-intent override, and a three-judge
+panel; the paper reports **Cohen's κ = 0.85** against a blind human gold
+standard.
+
+- **Key implication**: skill review cannot stop at asking whether prose looks
+  suspicious. Ordinary maintenance language can preserve hazardous command
+  semantics across generating models, while auto-approval converts that
+  semantic ambiguity into authority. Treat every skill as untrusted code:
+  resolve it to an immutable revision, statically recover declared effects,
+  sandbox first execution, and keep effect authorization outside the agent.
+- **Connects to**: RSA / SkillDetonate (§2.16: observe runtime behavior),
+  Revision-Bound Workspace Admission (pin what was reviewed), and deterministic
+  tool admission (the runtime—not the skill—owns effect authority).
+- **Sources**: HN item https://news.ycombinator.com/item?id=49218275;
+  paper https://arxiv.org/abs/2608.05223; replication package
+  https://github.com/awsm-research/AgentJailbreak (repository revision
+  `1ebe92e81c4e95676384fd318ec2dcd791edc577`, inspected 2026-08-08).
 
 ## 2.23 AEGIS — TEE-Sealed API Routers Against Agent MITM (June 2026)
 

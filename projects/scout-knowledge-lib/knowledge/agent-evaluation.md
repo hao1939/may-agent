@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Canonical reference for agent evaluation patterns and testing tooling: live benchmarks, execution-trace verification, reviewer agents, operational metrics (MTBF, CPT, context efficiency), XHS community trends, June 2026 testing tooling landscape (promptfoo, RagaAI, Layer-Isolated methodology, CI containment tools), the Diagnostic Refinement wave (typed failure characterization via LegalHalluLens, EARS, Thermodynamic Signatures, Rift), Deployment Unit Turn (configuration-level evaluation), and the Observability Inversion (process discipline evaluation via RigorBench, small critics, structural code quality). Research-frontier patterns (§12–§35) extracted to companion note agent-evaluation-research.md."
-triggers: ["evaluation", "benchmark", "reviewer agent", "feedback", "Agent-Eval-Agent", "evaluator agent", "gym", "MTBF", "context efficiency", "trajectory", "testing tooling", "promptfoo", "agent testing", "CI agent", "layer-isolated", "diagnostic refinement", "typed hallucination", "LegalHalluLens", "EARS abstention", "Rift deception", "thermodynamic signatures", "process discipline", "process observability", "RigorBench", "small critic", "structural code quality", "Topos"]
-last_updated: "2026-07-14"
-source_basis: "Consolidated from agent-evaluation.md, agent-evaluation-trends.md, agent-evaluation-trends-updated.md, xhs-eval-synthesis-2024.md, and xhs_eval_trends_may2024.md. Testing tooling section added from findings/github-trending-ai-agents-2026.md, findings/2026-06-17-arxiv-ai-agent-triage.md, findings/hn-ai-agent-trends.md, findings/2026-06-14-arxiv-agent-triage.md, findings/2026-06-15-arxiv-agent-triage-batch7.md. Batch 6 sourcing: Multiagent Confidence Protocols, Intelligence Entropy evaluation dimension. Session-state sourcing (Jul 18): MemTrace knowledge-point evaluation. Diagnostic Refinement wave (Jun 20): LegalHalluLens, EARS, Thermodynamic Signatures, Rift. Observability Inversion (Jun 26): RigorBench, Steer Don't Solve, Topos. 2026-10-28: §12–§22 extracted to agent-evaluation-research.md companion note. 2026-07-14: §23–§31 (Surface Fidelity Crisis, Plausibility Gradient, Unobserved Margin, Composition Blindspot, Dual-Channel Divergence, Engagement Ordering, Reasoning Precedence, Memory-Induced Reasoning Drift, Human Gate) extracted to companion note — had been appended to parent instead of companion."
+summary: "Canonical reference for agent evaluation patterns and testing tooling: live benchmarks, execution-trace verification, reviewer agents, operational metrics (MTBF, CPT, context efficiency), XHS community trends, June 2026 testing tooling landscape (promptfoo, RagaAI, Layer-Isolated methodology, CI containment tools), benchmark-saturation responses from HN practitioners, benchmark-family/data-engine patterns, the Diagnostic Refinement wave (typed failure characterization via LegalHalluLens, EARS, Thermodynamic Signatures, Rift), Deployment Unit Turn (configuration-level evaluation), and the Observability Inversion (process discipline evaluation via RigorBench, small critics, structural code quality). Research-frontier patterns (§12–§35) extracted to companion note agent-evaluation-research.md."
+triggers: ["evaluation", "benchmark", "reviewer agent", "feedback", "Agent-Eval-Agent", "evaluator agent", "gym", "MTBF", "context efficiency", "trajectory", "testing tooling", "promptfoo", "agent testing", "CI agent", "layer-isolated", "diagnostic refinement", "typed hallucination", "LegalHalluLens", "EARS abstention", "Rift deception", "thermodynamic signatures", "process discipline", "process observability", "RigorBench", "small critic", "structural code quality", "Topos", "benchmark family", "data engine", "harness variance", "anytime-valid", "confidence sequence", "optional stopping", "SkillTV-Bench", "JudgeSkill", "skill-aware verification", "rollout selection"]
+last_updated: "2026-08-09"
+source_basis: "Consolidated from agent-evaluation.md, agent-evaluation-trends.md, agent-evaluation-trends-updated.md, xhs-eval-synthesis-2024.md, and xhs_eval_trends_may2024.md. Testing tooling section added from findings/github-trending-ai-agents-2026.md, findings/2026-06-17-arxiv-ai-agent-triage.md, findings/hn-ai-agent-trends.md, findings/2026-06-14-arxiv-agent-triage.md, findings/2026-06-15-arxiv-agent-triage-batch7.md. Batch 6 sourcing: Multiagent Confidence Protocols, Intelligence Entropy evaluation dimension. Session-state sourcing (Jul 18): MemTrace knowledge-point evaluation. Diagnostic Refinement wave (Jun 20): LegalHalluLens, EARS, Thermodynamic Signatures, Rift. Observability Inversion (Jun 26): RigorBench, Steer Don't Solve, Topos. GitHub update (2026-08-08): RealReplicaBench section rechecked at commit 42693bb and expanded to distinguish per-run answer concealment from corpus-level secrecy: all 107 task definitions and rubrics are public, and private expected-answer files are present in the repository even though the runner excludes them from the agent-visible task tree. GitHub update (2026-08-06): RealReplicaBench section refreshed from the current Accio-org/RealReplicaBench public repo (redirect from Accio-Lab), adding the evaluation-boundary nuance that published leaderboard scores come from Accio-managed evaluation endpoints while the repo exposes a bring-your-own-credentials path and still lacks immutable public raw result bundles. HN update (2026-08-04): HN 49170915 added as practitioner evidence that benchmark saturation is pushing teams toward open-ended multi-agent evaluation worlds. HN update (2026-08-05): HN 49169641 / Computer Anthology added as evidence that serious eval teams are turning benchmarks into continuously renewed benchmark families and that scaffold choice can move pass@1 by double-digit points. HN update (2026-08-05): Ask HN 49181014 added as practitioner evidence that teams now want harness-only benchmarks with model/reasoning provenance instead of pooled model scores. HN update (2026-08-07): HN 49200652 added as live evidence that an unversioned agentic leaderboard can change ordering during the discussion when graders and task versions change. arXiv update (2026-08-07): AV-AIVAT (2608.06362) added as evidence that costly interactive agent comparisons need anytime-valid stopping, variance reduction, and replayable stopping metadata. arXiv update (2026-08-09): SkillTV-Bench (2608.05573v1) added as evidence that task-time procedural skills must be compiled into evidence-seeking inspection plans and that false accepts can erase gains from larger rollout pools. Companion extraction note: §12–§22 and §23–§31 were moved to agent-evaluation-research.md after being appended to the parent."
 </ai_context>
 
 # Agent Evaluation Patterns
@@ -25,6 +25,271 @@ use, or error recovery. Evaluation is shifting toward:
    agents must maintain state over time, replacing single-turn pass/fail tests.
 3. **Environment-Based Testing:** Interactive environments (WebArena,
    SWE-bench) where the agent navigates a stateful system with real tool use.
+
+### Benchmark Saturation and Open-Ended Evaluation Worlds (HN, Aug 2026)
+A fresh HN discussion around **"When AI Benchmarks Plateau: A Systematic Study
+of Benchmark Saturation"** (HN 49170915, 68 points / 74 comments when checked)
+adds practitioner evidence for why evaluation is shifting beyond fixed test
+sets.
+
+- **gertlabs**: their team now prefers **multi-agent environments with open-
+  ended cooperative or competitive goals**, mostly structured as multiplayer
+  games. They report these evals "don't saturate, are resistant to
+  contamination, and can scale," and that the results line up with their
+  coding experience better than non-aggregator benchmarks while likely costing
+  less to run.
+- **stego-tech**: compares LLM benchmark drift to the PC-gaming era, where once
+  a benchmark becomes static it turns into a vendor-optimization target rather
+  than a faithful measure of general performance.
+- **tsunamifury**: argues model providers are still "benchmaxxing" on abstract
+  or low-utility tasks instead of the deployment properties practitioners
+  actually want: cheaper real-time performance, long-walk reliability under
+  changing goals, and quickly adaptable domain knowledge.
+
+The useful signal is not just that "benchmarks saturate"; it is that HN
+practitioners are converging on a replacement unit of measurement: **open-ended
+worlds whose value comes from contamination resistance, trajectory quality, and
+alignment with real coding work rather than from another slightly harder fixed
+question set**.
+
+*Source: https://news.ycombinator.com/item?id=49170915 (title, score/comment
+state, and practitioner comments by gertlabs, stego-tech, and tsunamifury,
+checked 2026-08-04).*
+
+### Live Leaderboard Volatility Requires Versioned Results (HN, Aug 2026)
+
+A high-engagement HN thread began from the claim that **Qwen3.8 Max ranked
+first on Artificial Analysis's Agentic Index** (HN 49200652, 474 points / 301
+comments in the search snapshot). During the discussion, the live leaderboard
+changed: commenter **d2p** recorded Qwen at 55.4 versus Opus Max at 55.3, then
+Qwen second at 58.4 versus Opus Max at 59.2. Artificial Analysis representative
+**Gcam** confirmed that an already planned methodology update changed the
+ordering.
+
+The linked primary methodology sources explain the mechanism rather than just
+the rank:
+
+- Intelligence Index v4.1.1 upgraded several LLM graders to GPT-5.6 Luna.
+- It also moved the banking component to **τ³-Banking v1.0.1**, including an
+  improved grader pipeline for trajectories that recover from unhappy paths.
+- The current overall index is a weighted composite across Agents (34%), Coding
+  (24%), Scientific Reasoning (24%), and General (18%); the Agentic Index itself
+  combines GDPval-AA v2 and τ³-Banking.
+
+This is not evidence that evolving methodology is wrong. It is evidence that a
+**live rank without an attached evaluation version is not a stable research
+claim**. A thread title can become false while the URL stays unchanged, and a
+model's apparent movement can come from grader or task revisions rather than a
+new model run. Durable agent leaderboards should therefore publish immutable
+snapshots containing the task-set version, grader model, harness, weighting,
+and result time, and should expose component scores rather than only a single
+rank.
+
+The discussion also identifies dimensions hidden by a scalar index:
+**d4rkp4ttern** argues that communication quality in code-agent use is missed,
+while **londons_explore** rejects a universal blend of speed, latency, price,
+and intelligence because weights depend on use case. **esafak** proposes the
+more useful presentation: show the Pareto frontier against cost and latency.
+Together these comments strengthen the case for a versioned result matrix, not
+one timeless winner.
+
+*Sources: https://news.ycombinator.com/item?id=49200652;
+https://artificialanalysis.ai/methodology/intelligence-benchmarking;
+https://artificialanalysis.ai/articles/artificial-analysis-intelligence-index-v4-1-1
+(HN item API, comments, official methodology, and v4.1.1 release note checked
+2026-08-07).*
+
+### Anytime-Valid Stopping for Costly Interactive Evals (arXiv, Aug 2026)
+
+**AV-AIVAT** turns a common informal practice—watching results and stopping when
+one agent looks better—into an explicit statistical and audit protocol for
+costly, noisy interactions. Ordinary fixed-sample confidence intervals do not
+retain nominal coverage when repeatedly inspected. The paper instead combines
+AIVAT's conditional mean-zero variance corrections with continuously monitored
+confidence sequences; an online value model may adapt, but it can learn only
+from prior games so the current game never influences its own correction.
+
+On 71,439 paired heads-up no-limit hold'em hands from 15 LLM-agent
+configurations, AIVAT reduced variance by a median **54.4×**. At 95% confidence
+and a ±1 big-blind target, the variance-adaptive asymptotic confidence sequence
+needed a median **74.17× fewer hands** for corrected than raw outcomes. That
+headline is a practical screen, not an exact finite-sample certificate: its
+reported finite-horizon exclusion rates were above the nominal 5% in parts of
+the study. Exact Empirical-Bernstein certification requires an independently
+justified almost-sure corrected-payoff bound; the authors establish one for
+Leduc hold'em, but the HUNL corrected-payoff bounds were data-dependent, making
+those EB runs descriptive. Under that range-sensitive construction the median
+stopping gain was only **1.365×**, because the declared bound creates a width
+floor that can dominate realized variance.
+
+The durable lesson extends beyond poker: **early stopping is part of the eval
+harness, not an analyst convenience**. A defensible sequential result should
+ship the ordered corrected outcome prefix, correction/value-model provenance,
+confidence-sequence implementation and parameters, confidence target,
+independent bound and its provenance when exact validity is claimed, stopping
+rule and index, censoring state, seeds, configuration IDs, and code/archive
+hash. This lets a third party replay the interval at the claimant's actual stop.
+It does not, by itself, prove that the correction generator was honest.
+
+Scope matters: the empirical evidence comes from one paired-metric platform,
+the 15 configurations are not necessarily 15 distinct base models, and the
+rolling-leaderboard simulation resamples individual centered hands without
+preserving temporal dependence or run-level clustering. Transfer to other
+interactive agent benchmarks therefore needs a verifiable correction law and a
+sampling model appropriate to that environment.
+
+*Source: https://arxiv.org/abs/2608.06362 (AV-AIVAT, v1; abstract, methods,
+experiments, release protocol, and research-scope appendix checked 2026-08-07).*
+
+### Benchmark Families and Harness Variance (HN, Aug 2026)
+A second HN signal sharpens the same theme from a different angle. The thread
+for **"Computer Anthology: A continuously evolving benchmark family for AI
+agents"** (HN 49169641, 27 points / 10 comments when checked) argues that the
+real unit of evaluation work is no longer a single benchmark release but a
+**continuously renewed benchmark family plus the machinery that keeps it
+credible**.
+
+The source article makes three durable claims:
+
+- **Benchmark as data engine, not static dataset.** Computer Anthology is
+  framed as a family of benchmarks across distinct computer skills, with a
+  reusable pipeline of agents, proprietary models, humans, and infrastructure
+  that can assemble successor sets as older ones saturate.
+- **Held-out tasks remain private while still measuring something.** The team
+  explicitly keeps tasks untrained-on and unreleased during their useful life,
+  then re-scores later model generations against the same hidden set to resist
+  contamination.
+- **Harness choice materially changes measured capability.** The published
+  results state that moving from Terminus-2 to a model's native scaffold gains
+  GPT-5.4 **+26.0 pass@1 points**, GPT-5.4 Mini **+17.8**, GPT-5.5 **+13.0**,
+  Claude Opus 4.8 **+8.2**, and GPT-5.6 Sol **+6.4** — while Claude Opus 5 is
+  reported to do **7.8 points better under Terminus-2 than under Claude Code**.
+  The evaluation unit is therefore the **model+harness pair**, not the model
+  alone.
+
+HN commenters mostly reacted to the methodology rather than the headline
+leaderboard, which is itself informative:
+
+- **Betaantunes11**: the benchmark-construction methodology was more
+  interesting than the score table.
+- **kmiens**: highlighted that a harness swap can move performance by roughly
+  as much as a model-version upgrade (their concrete read: GPT-5.5+Codex ≈
+  GPT-5.6+Terminus at lower cost).
+- **alinebindel**: called out the benchmark's self-critique, especially its
+  reported selection-bias analysis against its own task set.
+- **pedroaugusto-me**: emphasized the value of treating the benchmark as an
+  evolving system rather than a one-shot artifact.
+
+This adds a useful refinement to Scout's benchmark-saturation picture:
+**serious eval work is bifurcating into (1) open-ended worlds that resist
+saturation, and (2) benchmark families/data engines that can keep producing
+fresh held-out tasks while making scaffold effects explicit.**
+
+*Sources: https://news.ycombinator.com/item?id=49169641 and
+https://vetto.ai/companies/computer-anthology-terminal-tasks.html (article text
+captured via readable mirror during this run; HN comments by Betaantunes11,
+kmiens, alinebindel, and pedroaugusto-me checked 2026-08-05).*
+
+### Harness-Only Benchmarks and Inference Provenance Pressure (HN, Aug 2026)
+A small but unusually explicit Ask HN thread — **"Anyone interested in
+building a harness-only benchmark?"** (HN 49181014, 2 points / 5 comments when
+checked) — names a blind spot that broader benchmark-family discourse still
+usually leaves implicit.
+
+The story text proposes a **community-run leaderboard for harness
+performance**, measured on diverse real-world tasks and **grouped by
+underlying model and reasoning effort** rather than collapsed into a single
+score. That framing matters: it treats the harness as an evaluation target in
+its own right while still controlling for the model beneath it.
+
+The discussion then immediately shifts from score talk to benchmark
+infrastructure:
+
+- **theChris-in** volunteered to assemble a **replicable test suite** if
+  someone else handled infra.
+- **GodelNumbering** volunteered the infra side and argued that tasks should
+  come from **multiple sources and contributor backgrounds** to better capture
+  real-world usefulness.
+- In the deepest reply, **theChris-in** pointed out the hard part directly:
+  harness evaluation needs **"provenance for model inference"** and probably a
+  way to categorize results by model or parameter class, otherwise the
+  benchmark will silently slide back into being another model leaderboard.
+
+This is a useful practitioner refinement to the earlier **configuration
+leaderboard** thesis. HN users are not just acknowledging that model+harness
+pairs matter; they are now asking for a benchmark that tries to **separate the
+wrapper layer as the scored object** while explicitly tracking model class,
+inference provenance, and reasoning budget as covariates. In other words, the
+missing eval artifact is becoming legible: **a harness-only benchmark with a
+replicable task suite and provenance-aware result schema**.
+
+*Sources: https://news.ycombinator.com/item?id=49181014 and
+https://github.com/dirac-run/dirac (maintainer disclosure referenced in story
+text; HN comments by theChris-in and GodelNumbering checked 2026-08-05).*
+
+### Replica-Service Benchmarks and Reproducibility Contracts
+GitHub evidence from **RealReplicaBench** (current public repo:
+**Accio-org/RealReplicaBench**, checked 2026-08-06; earlier Accio-Lab URL now
+301-redirects there) pushes this pattern further than generic "stateful
+environment" language. The repo ships **107 tasks** spanning CLI, browser,
+file, and API/MCP workflows, split across **65 text-only, 20
+browser-text-capable, and 22 vision-required tasks**, but the more important
+design choice is the **replica contract**:
+
+- Agents only see `task.md` and the staged `workspace/`; graders, rubrics,
+  private seeds, service launchers, and mock source stay outside the visible
+  task tree.
+- Every task runs in a **fresh container** and preserves resolved
+  configuration, trajectory, verifier result, artifacts, logs, and container
+  metadata for audit.
+- Comparable runs pin **four concrete components**: task set, task
+  definitions, harness, and runtime image digest.
+- The repo states an explicit **evaluation boundary**: published leaderboard
+  scores were produced through Accio-managed evaluation endpoints with
+  `gemini-3.1-pro-preview` as judge, while the public repo exposes a
+  bring-your-own-credentials evaluation path.
+- The published leaderboard is therefore an **audited aggregate**, not full
+  standalone reproduction, because raw task-level result bundles still do not
+  have public immutable URLs or checksums.
+
+This suggests the next benchmark unit is not just "an environment" but a
+**reproducible replica service + pinned runtime + verifier bundle + declared
+evaluation boundary**. For long-horizon agents, benchmark credibility now
+depends on what is hidden from the agent, what is pinned for replay, which
+capability slice is being measured, and which parts of scoring still rely on a
+controlled evaluation service — not just on having a browser in the loop.
+
+A recheck at release v1.3.1 (commit `42693bb`) exposes another boundary that
+benchmark reports should name explicitly: **per-run concealment is not
+corpus-level secrecy**. The runner stages only `task.md` and `workspace/`, so an
+agent cannot directly inspect the grader during a conforming run. But the
+public Git tree contains all 107 `task.toml` files, all 107 rubrics, and
+`private/expected_answer.json` files such as the Alibaba publishing and Gmail
+RFQ tasks. This is valuable for verifier auditability, yet it means the suite is
+not held out from pretraining, retrieval, or a deliberately benchmark-aware
+agent. The README itself says a fixed task set decays as answers drift into
+training data and asks contributors for new replicas.
+
+The durable reporting contract therefore needs two separate fields:
+**runtime visibility** (what this attempt could access) and **corpus exposure**
+(what task, answer, rubric, and grader material was ever public before the
+attempt). Fresh containers and hidden mounts establish the first, not the
+second. Public-answer suites remain useful for regression and transparent
+mechanism testing, but contamination-resistant capability claims need a
+private successor set or a continuously renewed task family, with the public
+suite used as the reproducible development split.
+
+*Sources: https://github.com/Accio-org/RealReplicaBench and
+https://github.com/Accio-Lab/RealReplicaBench (redirect check); release v1.3.1
+README and repository tree at
+https://github.com/Accio-org/RealReplicaBench/commit/42693bbf09ecd915ffcdc693ad69e3a339b2c961,
+including
+https://github.com/Accio-org/RealReplicaBench/blob/42693bbf09ecd915ffcdc693ad69e3a339b2c961/datasets_domain_v1/browser/alibaba/bluetooth-earbuds-mixed-publish/rubric.json,
+https://github.com/Accio-org/RealReplicaBench/blob/42693bbf09ecd915ffcdc693ad69e3a339b2c961/datasets_domain_v1/browser/alibaba/bluetooth-earbuds-mixed-publish/private/expected_answer.json,
+https://github.com/Accio-org/RealReplicaBench/blob/42693bbf09ecd915ffcdc693ad69e3a339b2c961/datasets_domain_v1/api/gmail/supplier-rfq-triage/rubric.json,
+and
+https://github.com/Accio-org/RealReplicaBench/blob/42693bbf09ecd915ffcdc693ad69e3a339b2c961/datasets_domain_v1/api/gmail/supplier-rfq-triage/private/expected_answer.json
+(checked 2026-08-08).*
 
 ### Execution-Trace Verification
 Grading goes beyond the final answer. It requires recording execution traces,

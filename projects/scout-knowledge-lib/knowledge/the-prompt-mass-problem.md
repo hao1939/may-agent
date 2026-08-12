@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Cross-source synthesis: The system's largest cost isn't output or compute — it's the mass of repeated, identical prompt text delivered to sessions that immediately exit. 141MB of task text was delivered across 16K sessions in 3 days. 51.5% of all task-text bytes are evaluator aftermath sessions echoing the original session's full task. Dev burns 93% of its task-text on sessions that exit within 10 ops. The system has invented a novel inefficiency: it pays the full input cost of context-rich prompts even when the session's first act is to determine nothing needs doing. Prior syntheses (Impedance, Observability, Abstention) analyzed the output side and compute side of feedback loops. This note identifies the INPUT side — the prompt mass delivered per session — as a distinct cost center that grows with system maturity and is invisible to all existing metrics."
 triggers: ["prompt mass", "input cost", "task text", "context nesting", "evaluator echo", "template repetition", "cold start cost", "quick exit cost", "token budget", "prompt efficiency"]
-last_updated: "2026-07-17"
-source_basis: "Production data analysis: 3-day window, 16K sessions, 141MB task text. Evaluator aftermath: 7,208 sessions averaging 10,631 chars each = 73MB echoed task text. Dev quick-exit: 593 sessions × 11,835 chars = 6.7MB of 11K-char prompts read and immediately exited. Arc: 14,548 avg task chars, 8 distinct templates, 79.8 sessions per template. Cross-referenced with Impedance Principle (feedback loop amplification), Observability Trap (meta-observation cost), Abstention Advantage (quick-exit efficiency), PerspectiveGap arXiv 2606.08878 (orchestration prompt quality ≠ task quality), InquiTree arXiv 2606.09550 (context length degrades judgment)."
+last_updated: "2026-08-07"
+source_basis: "Production data analysis: 3-day window, 16K sessions, 141MB task text. Evaluator aftermath: 7,208 sessions averaging 10,631 chars each = 73MB echoed task text. Dev quick-exit: 593 sessions × 11,835 chars = 6.7MB of 11K-char prompts read and immediately exited. Arc: 14,548 avg task chars, 8 distinct templates, 79.8 sessions per template. Cross-referenced with Impedance Principle (feedback loop amplification), Observability Trap (meta-observation cost), Abstention Advantage (quick-exit efficiency), PerspectiveGap arXiv 2606.08878 (orchestration prompt quality ≠ task quality), InquiTree arXiv 2606.09550 (context length degrades judgment), and app.nz's deterministic 37-turn wire-cost harness (HN 49210901)."
 </ai_context>
 
 # The Prompt Mass Problem: Why Input Costs Dwarf Output Costs in Mature Agent Systems
@@ -172,6 +172,48 @@ Truly unique task content: ~15 MB ≈ 3.9M tokens (10.6%)
 
 **89% of task-text tokens are structural overhead: echoes, template
 repetition, or prompts delivered to sessions that immediately exit.**
+
+## HN Update — Measure Transcript Residue on the Wire (2026-08-07)
+
+A newly submitted engineering write-up makes this note's multiplication effect
+concrete at the agent-loop level. app.nz built a model-free harness that scripts
+the same 36 tool calls over 37 turns and weighs every request body sent to a
+fake gateway. Its baseline moved **4,157,949 bytes**—estimated by the authors as
+about **1,039,487 tokens**—even though the script touched only four small files.
+The mechanism is the same prompt-mass problem at a finer scale: a file read or
+command output introduced early is resent on every later stateless completion.
+
+The useful contribution is not the headline reduction alone, but the paired
+measurement design:
+
+- keep the tool-call sequence deterministic so byte-level regressions are
+  attributable without paying for model runs
+- budget fixed per-turn material such as system prompts and tool schemas, not
+  only conversation history
+- shorten schemas, use workspace-relative paths, clip pathological lines, and
+  replace byte-identical repeated results with references while the original
+  result remains present
+- trim stale tool output continuously to a working window and reduce to a
+  low-water mark; merely dropping just below a ceiling leaves every subsequent
+  turn paying near-ceiling cost
+
+Those changes reduced the fixed script to **2,067,926 bytes** (the authors'
+**516,981-token approximation**) and removed the baseline's summarization call.
+The harness also rejected an apparently sensible trim-at-the-ceiling change
+that instead increased wire bytes from 4,293,186 to 4,751,562 because it hovered
+near the limit and invalidated a deduplication cache.
+
+This is **cost evidence, not quality evidence**. The harness cannot observe
+whether pruning causes a real model to reread files or take more turns, and its
+token figures use bytes divided by four rather than provider billing counts.
+The accompanying short-task outcome check was 9/10 before and after, but those
+three-to-four-turn fixtures did not exercise the working window. The practical
+pattern is therefore a two-harness contract: deterministic, model-free wire
+accounting for fast cost iteration plus model-backed tasks for outcome and
+long-horizon regression checks.
+
+- Source: https://app.nz/blog/app-agent-token-efficiency-optimizations
+- HN: https://news.ycombinator.com/item?id=49210901
 
 ### The Maturation Trap
 

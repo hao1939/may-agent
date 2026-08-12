@@ -31,3 +31,11 @@ Move library health reports out of the root `reports/` folder and into
 The Scout app health observer should continue reporting `reports-layout-backlog`
 until the remaining root reports are moved in later small batches. This batch
 only handles health reports.
+
+## Addendum — 2026-08-05
+
+The three Aug-named files listed above were later found to be unverified
+artifacts with untrustworthy chronology. Their later triage disposition is
+tracked in `../triage/future-dated-health-reports-2026-08-05.md`. The list in
+this report is preserved as a historical record of the July layout move, not as
+proof that those three files remain authoritative health snapshots.

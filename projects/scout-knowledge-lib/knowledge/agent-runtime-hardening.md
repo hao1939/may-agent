@@ -1,25 +1,61 @@
 <ai_context>
-summary: "Companion note to agent-architectures.md: 14+ named runtime hardening patterns for agent effect containment, concurrency, compilation, stabilization, lifecycle adaptation, bounded recovery, typed safety, source-level evolution, process harness governance, and architecture evolution. Includes the Runtime Trust Gap five-layer vulnerability stack (Scan #276) and Harness Discipline papers (lifecycle adaptation, bounded recovery, typed holes, source-level rewriting)."
-triggers: ["runtime hardening", "semantic transactions", "Cordon", "CoAgent", "advisory concurrency", "readout bottleneck", "PreAct", "run compilation", "SkillWeaver", "skill routing", "ADE", "intelligence entropy", "harness evolution", "false-success detection", "process harness", "CUGA FLO", "architecture gradient", "NOVA", "verification cascade", "forbidden directions", "agentic BPM", "runtime trust gap", "thanatosis", "containment gap", "CLAWAUDIT", "AOHP", "User as Code", "executable memory", "Life-Harness", "lifecycle adaptation", "self-healing orchestrator", "bounded recovery", "LACUNA", "typed holes", "MOSS", "source-level rewriting"]
-last_updated: "2026-07-09"
-source_basis: "Extracted from agent-architectures.md §Runtime Hardening (2026-10-15) and §Process Harness (2026-10-31). Sources: Cordon [2606.17573], CoAgent [2606.15376], Looking Is Not Picking [2606.16364], PreAct [2606.17929], SkillWeaver [2606.18051], ADE [2606.18065], Harness Updating [2605.30621], False-Success Detection [2606.09863], CLAWAUDIT [2606.21071], OpenClaw [2606.15008], Plans Don't Persist [2606.22953], CUGA FLO [2606.27188], NOVA [2606.27243], Thanatosis [2606.14831], Containment Gap [2606.12797], AOHP [2606.23449], User as Code [2606.16707], APEX [2606.15363]. Originally sourced during Jul 22 runtime hardening triage + Jun 27 arXiv triage + Jul 1 Runtime Trust Gap scan #276. Harness Discipline batch integrated 2026-07-09: Life-Harness [2605.22166], Self-Healing Orchestrators [2606.01416], LACUNA [2605.28617], MOSS [2605.22794]. APEX integrated 2026-09-08 from Executable Turn triage."
+summary: "Companion note to agent-architectures.md: 16+ named runtime hardening patterns for agent effect containment, concurrency, compilation, stabilization, lifecycle adaptation, collaborative harness evolution, bounded recovery, typed safety, source-level evolution, reviewed runtime-state admission, process harness governance, architecture evolution, and evidence binding. Includes the Runtime Trust Gap five-layer vulnerability stack (Scan #276), Harness Discipline papers, Argus on verification-gated runtime self-evolution, a cross-source pattern for revision-bound admission when executable interfaces and skills enter persistent workspaces, practitioner implementations distinguishing simulation from compensation and giving local file edits typed commit semantics, evidence-carrying effect closure across physical actuation and multi-provider emergency stops, Brigade's distinction between audit-only execution receipts and scoreable subject-bound evidence, and Docker's concrete microVM trust-boundary defaults for unattended coding agents."
+triggers: ["runtime hardening", "semantic transactions", "Cordon", "agent_acid", "Patchloom", "structured file edits", "typed commit semantics", "tool surface versus sandbox", "compensation failure", "pure simulation", "session guardrail", "CoAgent", "advisory concurrency", "readout bottleneck", "PreAct", "run compilation", "SkillWeaver", "skill routing", "ADE", "intelligence entropy", "harness evolution", "false-success detection", "process harness", "CUGA FLO", "architecture gradient", "NOVA", "verification cascade", "forbidden directions", "agentic BPM", "runtime trust gap", "thanatosis", "containment gap", "CLAWAUDIT", "AOHP", "User as Code", "executable memory", "Life-Harness", "lifecycle adaptation", "EvolveNet", "collaborative harness evolution", "scope-typed aggregation", "self-healing orchestrator", "bounded recovery", "LACUNA", "typed holes", "MOSS", "source-level rewriting", "Argus", "reviewed runtime state", "verification-gated self-evolution", "persistent agent workspace", "programmatic tool calling", "revision-bound admission", "skill self-test", "evidence-carrying actuation", "kill switch", "effect closure", "still-dangerous set", "Brigade", "verification receipt", "subject binding", "scoreable evidence", "Docker Sandboxes", "microVM isolation", "shared skills trust boundary", "credential proxy"]
+last_updated: "2026-08-10"
+source_basis: "Extracted from agent-architectures.md §Runtime Hardening (2026-10-15) and §Process Harness (2026-10-31). Sources: Cordon [2606.17573], CoAgent [2606.15376], Looking Is Not Picking [2606.16364], PreAct [2606.17929], SkillWeaver [2606.18051], ADE [2606.18065], Harness Updating [2605.30621], False-Success Detection [2606.09863], CLAWAUDIT [2606.21071], OpenClaw [2606.15008], Plans Don't Persist [2606.22953], CUGA FLO [2606.27188], NOVA [2606.27243], Thanatosis [2606.14831], Containment Gap [2606.12797], AOHP [2606.23449], User as Code [2606.16707], APEX [2606.15363], Argus [2608.05144]. Originally sourced during Jul 22 runtime hardening triage + Jun 27 arXiv triage + Jul 1 Runtime Trust Gap scan #276. Harness Discipline batch integrated 2026-07-09: Life-Harness [2605.22166], Self-Healing Orchestrators [2606.01416], LACUNA [2605.28617], MOSS [2605.22794]. Argus and EvolveNet integrated 2026-08-06 from arXiv API queries. Revision-bound workspace admission synthesis added 2026-08-07 from arXiv 2608.06370, AWS AgentCore runtime instances, and eternityspring/shuohao-skills revision 594a0471a5862e267c2af58ce4e37a392b92ad72. Practitioner transaction-boundary update added 2026-08-08 from HN 49219014 and muhammadwaqasai/agent_acid revision c9a7509108db8262bb5937312fa93bf206f014fc. Evidence-carrying effect closure added 2026-08-08 from YINGLINGH/limioryn revision 0469e409180569b1387cde191224d6e8a3fed327 and Countersign packages revision 6ef7904e74aa3adf61c8416457c08961da050026 surfaced via HN 49220224. Local-file commit semantics added 2026-08-08 from HN 49224010 and patchloom/patchloom revision 220be477137c259262e7cd4b02d6948994787d6e. Verification-evidence binding added 2026-08-09 from escoffier-labs/brigade revision 0e8b83ae6ef779bb6be8701dd4cd534c064608f9 and its receipt schema, execution model, outcome-scoring documentation, and verification implementation. Docker sandbox boundary analysis added 2026-08-10 from HN 49239751 and Docker's product, security-model, default-posture, and credential documentation."
 </ai_context>
 
 # Agent Runtime Hardening
 
 **Companion note** to [Agent Architectures](./agent-architectures.md).
 
-This note catalogs 14+ named runtime hardening patterns addressing containment
-of agent effects, lifecycle adaptation, bounded recovery, typed safety, and
-source-level self-evolution. Includes the Runtime Trust Gap five-layer
-vulnerability stack.
+This note catalogs 15+ named runtime hardening patterns addressing containment
+of agent effects, lifecycle adaptation, bounded recovery, typed safety,
+source-level self-evolution, and reviewed runtime-state admission. Includes
+the Runtime Trust Gap five-layer vulnerability stack.
 
 **Cross-references:**
 - [Agent Architectures](./agent-architectures.md) — core patterns, harness engineering, state management
 - [Agent Security: Defense Architectures](./agent-security-defense-architectures.md) — security-specific defense patterns
 - [Agent Protocols: MCP, A2A](./agent-protocols-mcp-a2a.md) — protocol-layer containment
+- [Agent Runtime Effect Integrity](./agent-runtime-effect-integrity.md) — revision admission, effect closure, verification binding, and unattended-execution boundaries
 
 ---
+
+## Reviewed Runtime-State Admission — Argus (arXiv, August 2026)
+
+Argus frames long-horizon performance as a property of a **persistent,
+self-evolving runtime** rather than of online weight updates. Manager,
+Planner, Engineer, and Reviewer execute bounded missions over durable project
+state; stable user intent is kept separate from operational objectives,
+constraints, and verification criteria.
+
+The distinctive hardening move is **admission control over reusable runtime
+state**. Memories, skills, procedures, verifiers, routing decisions, and even
+rejected routes enter durable state only after **role-owned review** and,
+when available, **task-native verification**. The abstract also reports that
+Argus keeps model weights fixed and evolves through persistent runtime state
+and control policy instead.
+
+**Reported results from the abstract:**
+- **78% SWE-Bench Pro** versus **59% Direct Copilot**, at **1.41× aggregate tokens**
+- After verification-gated self-evolution, mature SWE-Bench waves use **21% fewer solve-input tokens** and **15% less active workflow time** per task than startup waves
+- **34 verifier recoveries** and **22 strict review-loop rescues**
+- **76.8% on AARRI-Bench** plus a **28.0-point gap** on mathematical data synthesis
+
+- **Key implication**: Argus sharpens a runtime-governance thesis already
+  emerging elsewhere in this note: durable state is valuable only if the
+  runtime is selective about what it is allowed to remember. This pushes
+  hardening one step beyond memory persistence toward **review-governed state
+  admission**. The inclusion of rejected routes is especially notable because
+  it turns falsified trajectories into durable negative knowledge, not just
+  discarded noise.
+- **Connects to**: Mnemosyne / Agentic Transaction Processing (deterministic
+  admission as a runtime primitive), Sibyl's trial-to-harness conversion
+  (experience must change future behavior to count), Harness Evolution Paradox
+  (benefit depends on what the runtime can reliably activate), and Process
+  Harness / CUGA FLO (operator-owned escalation points with bounded autonomy).
+- **Source**: [2608.05144] Argus, arXiv August 2026. Categories: cs.AI.
 
 ## Lifecycle Runtime Adaptation — Life-Harness (arXiv, May 2026)
 
@@ -44,6 +80,40 @@ the environment-side structure is model-independent.
   Cold Start Tax (reusable interventions reduce per-session reconstruction),
   Substrate Inversion (harness captures environment, not model intelligence).
 - **Source**: [2605.22166] Life-Harness, arXiv May 2026. Categories: cs.AI.
+
+## Collaborative Harness Evolution — EvolveNet (arXiv, August 2026)
+
+EvolveNet asks what happens when the most useful agent experience is
+**structurally siloed** across users, organizations, and environments, so raw
+execution traces cannot be pooled into one optimizer. Its answer is to move
+learning to the edge: a shared harness is broadcast to **data-local
+deployments**, each site evolves the harness on its own workload, and only the
+resulting **program adaptations** are composed back into the shared harness.
+
+The distinctive runtime move is the **aggregation boundary shift**. Instead of
+centralizing raw trajectories, EvolveNet centralizes reviewed adaptations.
+Because independently modified programs cannot be averaged like model weights,
+it introduces **scope-typed, evidence-guided program aggregation** to compose
+compatible local changes and resolve conflicts.
+
+**Reported result from the abstract:** the shared harness improves in **all
+five evaluated settings** — text-to-SQL, data-science coding, competitive
+programming, software engineering, and agentic workflows — with the **largest
+gains under heterogeneous workloads**. The abstract also says ablations trace
+those gains to **composition of adaptations from different agents**, not simply
+selecting the best single local variant.
+
+- **Key implication**: This extends harness evolution from a single-runtime
+  learning loop into a **federated hardening pattern**. Operational knowledge
+  can propagate across deployments without shipping the underlying user tasks,
+  transcripts, or credentials. That is important for real enterprise agent
+  fleets, where the best failure evidence often cannot be centralized.
+- **Connects to**: Life-Harness (failures yield reusable environment-side
+  structure), Harness Evolution Paradox (benefit depends on activation and
+  composition, not evolver size alone), MOSS (meaningful evolution often lands
+  in program changes, not prompt text), and Argus (runtime improvement depends
+  on governed admission of reusable artifacts).
+- **Source**: [2608.04968] EvolveNet, arXiv August 2026. Categories: cs.LG.
 
 ## Bounded Recovery — Self-Healing Orchestrators (arXiv, May 2026)
 
@@ -133,6 +203,87 @@ pattern prevents irreversible mutations from escaping before commit.
   Verified Concurrency Anomalies (sits at a new "L-1" layer: effect staging
   before state commitment).
 - **Source**: [2606.17573] Cordon, arXiv June 2026. Categories: cs.OS, cs.CR.
+
+### Practitioner implementation signal — `agent_acid` (HN, August 2026)
+
+A small Show HN project turns part of this model into executable Python. Each
+`ReversibleTool` declares `execute` and `compensate`; a transaction records
+completed steps and compensates them in reverse order after a tool exception or
+guardrail violation. Its more important addition is a **session-wide**
+`cumulative_max` guardrail: three individually permitted $400 charges can be
+rejected when their aggregate crosses a $1,000 plan boundary. This is concrete
+evidence that policy scope must match transaction scope rather than tool-call
+scope.
+
+The implementation also exposes the exact boundary between **simulation** and
+**compensation**. Its shadow engine is preventive only when a tool supplies a
+pure `simulate` function. Without one, the documented fallback executes the
+real action and immediately calls its compensator. Likewise, rollback catches
+compensation exceptions, logs them, and continues; the transaction has no
+first-class unresolved-compensation state. A charge/refund pair can restore a
+numeric test balance while still creating externally visible events, fees, or
+notifications.
+
+- **Key implication**: `simulate`, `execute`, and `compensate` are different
+  effect classes and should be typed and governed separately. Irreversible or
+  externally visible tools should not be admitted to a “dry run” unless they
+  provide side-effect-free simulation. A failed compensator must produce a
+  durable unresolved obligation for reconciliation, not merely a log line.
+- **Evidence boundary**: this is an early implementation signal, not adoption
+  evidence. At observation, HN item 49219014 had 1 point and no live comments;
+  the repository reported no stars or forks. The source tests demonstrate the
+  intended in-memory examples, not atomicity of real payment, email, or API
+  systems.
+- **HN**: https://news.ycombinator.com/item?id=49219014
+- **Repo**: https://github.com/muhammadwaqasai/agent_acid
+- **Inspected revision**: `c9a7509108db8262bb5937312fa93bf206f014fc`
+
+### Practitioner implementation signal — typed local-file commits (Patchloom, HN August 2026)
+
+Patchloom applies the transaction pattern to an agent's most common effect:
+editing repository files. Its useful contribution is not simply parser-backed
+JSON, YAML, TOML, Markdown, and AST operations. It gives mutation outcomes a
+machine-readable protocol: writes preview by default; apply requires an
+explicit mode; no-match, ambiguous match, conflict, validation failure,
+rollback, and incomplete rollback have different exit codes or `error_kind`
+values.
+
+The transaction path stages all operations before writing. A missing target can
+therefore fail with no files changed; a mid-commit write failure restores files
+already written from the backup session; and strict format or validation
+failure reverts the transaction. Importantly, `rollback_failed` remains a
+separate result rather than being flattened into generic failure. This is local
+file I/O, not external-effect atomicity, but it demonstrates the minimum commit
+semantics a coding-agent edit tool can enforce without relying on the model to
+interpret prose errors correctly.
+
+The implementation also exposes two boundaries that product descriptions often
+blur:
+
+1. **Smaller tool surface is not a capability sandbox.** The recommended MCP
+   `core` pack reduces schema load, but its `execute_plan` tool can still invoke
+   operations omitted as standalone tools. Surface reduction helps selection;
+   it does not reduce authority.
+2. **Working directory is not containment by itself.** MCP paths are confined
+   to the server workspace, while CLI paths remain unrestricted unless
+   `--contain` is enabled. The same edit engine therefore has different
+   authority according to its host boundary.
+
+- **Key implication**: coding runtimes should model edits as proposals with
+  explicit preview, commit, validation, and typed recovery states—not as a
+  boolean “write succeeded.” They must document tool discoverability and
+  executable capability separately, because hiding schemas does not revoke the
+  operations reachable through an aggregate plan tool.
+- **Evidence boundary**: this is implementation evidence, not demonstrated
+  reliability uplift. At inspection the HN item had 1 point and no comments.
+  The repository reports 4,100+ tests, but its published 11-task benchmark is
+  not a broad evaluation: MCP totaled 228.5 seconds versus 233.8 for native
+  tools, while native tools were faster on the transaction and six-file batch
+  rows. The safety semantics, rather than a large speed claim, are the durable
+  signal.
+- **HN**: https://news.ycombinator.com/item?id=49224010
+- **Repo**: https://github.com/patchloom/patchloom
+- **Inspected revision**: `220be477137c259262e7cd4b02d6948994787d6e`
 
 ## Agentic Transaction Processing — Deterministic Admission (Mnemosyne, arXiv June 2026)
 
@@ -532,3 +683,20 @@ restoration becomes a silent correctness bug, not just a latency issue.
 - **Connects to**: Three-Layer Co-Evolution / APEX (§above, runtime as evolved layer),
   the-token-economics-trap.md (checkpoint as cost optimization), agent-architectures.md
   (session state management).
+
+## Runtime Effect Integrity — Companion Catalog
+
+Four cross-source patterns that govern durable effects after execution authority
+has been granted now live in [Agent Runtime Effect Integrity](./agent-runtime-effect-integrity.md):
+
+- **Revision-bound workspace admission** binds executable revisions, verification,
+  workspace generations, and expanded effect traces.
+- **Evidence-carrying effect closure** keeps transport, acceptance, external
+  effect, and business-outcome claims distinct.
+- **Verification-evidence binding** distinguishes real command execution from
+  evidence bound to a named artifact, patch, producer, and verifier.
+- **Boundary-explicit unattended execution** inventories workspace, shared-state,
+  MCP, network, confinement, admission, and credential-use boundaries separately.
+
+The companion preserves the full source links, evidence qualifications, and
+implementation details extracted during the 2026-08-10 oversized-note review.

@@ -1,7 +1,7 @@
 <ai_context>
 summary: "The Oversight Inversion — production cost has collapsed faster than oversight cost, inverting the traditional bottleneck from 'can't build fast enough' to 'can't verify fast enough.' Now 50 layers deep with a thirty-five-point exit arc. Layer 50 (Trust Debt, #498): trust in AI follows an inverted temporal pattern — accepted first, contested second. GPT-5.6 ratio rising 0.61→0.74 over 5 scans (retroactive contestation). Progressive Crystallization (2607.07052) shows 91.2% deterministic within 30 days from un-audited patterns. GovMem proves 59.7% false-promotion rate. The Accountability Stack has 6 spatial layers but zero temporal layer — no infrastructure for retroactive re-evaluation. Trust debt compounds super-linearly through dependency chains, memory contamination, and crystallization lock-in. Running accuracy: ~96.2% (111/115)."
 triggers: ["oversight inversion", "oversight cost", "review bottleneck", "oversight budget", "production cost collapse", "developer supervision stress", "cognitive load", "verification cost", "oversight scaling", "rubber stamping", "reverse centaur", "accountability sink", "review capacity", "agent supervision", "temporal partitioning", "oversight-first design", "recursion barrier", "self-improvement limits", "meta-skill evolution", "domain-bounded improvement", "simulation confounder", "simulation awareness", "evaluation contamination", "observer effect", "boundary dissolution", "trust boundary", "FARMA", "ADI", "data injection", "PiSAs", "cross-user privacy", "UCM", "DualView", "latent horizon", "latent programming horizon", "repair budget bound", "error propagation", "residual stream probes", "code-test coupling", "self-blinding", "authority gap", "oracle authority", "source of authority", "test oracle", "specification-free oracle", "llm-as-a-judge", "authority-free repair", "correlated blindness", "correlated oracle", "shared substrate", "oracle correlation", "intent mutation", "privacy-preserving verification", "SecureCROWN", "granularity gap", "verification granularity", "resolution mismatch", "Vera safety testing", "AgentLTL", "trace verification", "verification horizon", "reward co-evolution", "agent step value", "delayed verification", "SEVA", "verification oscillation", "inverse golden ratio", "attribution error", "misattribution", "scaffolding evolution", "scaffold quality", "rating the pitch", "expectation framing", "workflow jailbreak", "refused in chat written in code", "surround determines outcome", "comprehension dividend", "comprehension investment", "foundations turn", "30papers", "comprehension outperforms consumption", "restraint premium", "ponytail", "YAGNI agent", "subtraction skill", "produce less", "write less code", "evaluation cost compression", "PACE proxy benchmark", "bilateral exit", "trilateral exit", "predicate gate", "HCRC", "Heaviside gate", "gated state transition", "verification-first execution", "false completion rate", "strategic buying agents", "regime selection", "ReOPD", "prefix trap", "composition surface", "CLI composition attack", "MOSAIC CCR", "command composition risk", "CoACT", "observation compression", "action preservation", "IDK filter", "uncertainty filter", "composition noise", "composition boundary", "architecture premium", "tooling architecture", "scaffold determines outcome", "frustration paradox", "pretraining curricula", "selective fine-tuning", "disentangled circuits", "curriculum architecture", "subtraction economy", "deletion economy", "code deletion service", "$10k deletion", "subtraction pricing", "OptiAgent", "multi-loop validation", "Cortex embodied", "32 canonical primitives", "HeRo watermarking", "selective disclosure", "verification access control", "knowledge erosion", "knowledge debt", "incidental learning", "skill atrophy", "developer deskilling", "resolve rate hides", "TraceProbe", "trajectory diagnostics", "observability-aware code", "diagnostic capacity", "AgentTether", "LogicHunter", "agentic oracle", "process evidence loss", "verification harness", "Aria formal verification", "Coq agent", "Lean agent", "harness soundness", "harness completeness", "constructive verification", "RuBench", "silent model substitution", "Danus fact graph", "verified fact memory", "zero expert intervention", "verification as construction", "AgentStalker", "donecheck", "proof-of-done", "co-evolution imperative", "harness co-evolution", "HASE", "harness-aware self-evolving", "VERITAS replication", "doubly-efficient interactive proofs", "single-prover verification", "fixed harness degradation", "co-evolving harness", "execution boundary", "approval surface", "execution surface", "approval fidelity gap", "MCP TAG block", "Unicode concealment", "CXI", "context-to-execution integrity", "triple-binding", "Balkanization execution security", "aiAuthZ", "off-host authorization", "execution fidelity", "TOCTOU agent", "tool metadata attack", "approval-execution gap", "honest policy author assumption", "doomed from start", "early abort probe cascade", "write contract", "shared state governance", "conflict preservation", "CRDT memory", "StateFuse", "PatchOptic", "projected reads", "verified patches", "local update global validity", "write verification", "OSS AI contribution", "maintenance asymmetry", "dispersion collapse", "attractor dynamics", "agent economy", "population convergence", "diversity collapse", "step function attractor", "bistable equilibrium", "multi-agent consensus failure", "noise-maintained dispersion", "mean-field failure", "agent trajectory lock", "doomed trajectory", "SkillReranker", "task decomposition reranking", "gap law", "submodular coalition", "wealth concentration", "architecturally uncorrelated agents", "claim verification surface", "typed claims", "faithfulness as construction", "Pitwall", "claim decomposition", "virtue tradeoff", "vividness hallucination tradeoff", "sparse context audit", "claimed vs attested", "commit signatures", "identity attestation", "trust tiers", "precision anchor", "VAORA", "reasoning action alignment", "dual reward grounding", "claim typing", "granularity condition", "variance signal", "distributional characterization", "stochastic operator", "agent as operator", "variance as signal", "CV monitoring", "structural defect masking", "task-level masking", "utility-aligned decomposition", "reasoning effort direction", "point estimate failure", "distributional governance", "maturity staging", "experimental design agentic", "monitoring before reliable", "variance-blind evaluation", "information condition", "admission boundary", "agentic transaction processing", "ATP", "Mnemosyne", "untrusted proposal", "deterministic admission", "constraint set", "append-only log", "evidence-preserving repair", "authority separation", "obligation containment", "certification collapse", "EU CRA", "cyber resilience act", "static certification", "continuous verification", "ghost certificate", "AcMAS", "activation-based detection", "rogue agents", "GhostWriter", "memory poisoning", "AM-Sentry", "memory governance", "write refusal", "GovMem", "false promotion", "write path governance", "evaluation refusal", "contestation escalation", "when not to write", "refusal as governance", "dependency-aware promotion", "skeptical executor", "level misdirection", "wrong unit of analysis", "evaluation level targeting", "institutional red-teaming", "deployment rules", "action-graded severity", "blind curator", "skill retirement", "false-pass bias", "silent wrong state", "deterministic gates", "pre-execution gates", "self-concealing evaluation", "level-targeting condition", "specification mismatch", "bug reports for agents", "agent specification", "human specification", "benchmark saturation", "workflow graph testing", "AgentEval", "boundary testing", "relative measurement", "adversarial psychometrics", "specification consumer assumption", "audit absence", "audit trail", "provenance", "agent provenance", "passive audit", "signed attestation", "Brain0", "STRACE", "causal extraction", "root cause", "textual dependency graph", "passive decision graph", "drift detection", "capability acceptance", "fragility discourse"]
-last_updated: "2026-11-11"
+last_updated: "2026-08-06"
 </ai_context>
 
 # The Oversight Inversion: When Verification Costs More Than Production
@@ -633,6 +633,8 @@ When a developer writes code, three knowledge byproducts emerge for free: (1) ex
 
 **HN confirmation**: "$10k/wk to delete AI-generated code" surges +211% to 137pts, pricing the remediation of an erosion the organization can't perform with its own depleted expertise. The deletion company exists because the developers who delegated the code creation no longer have the knowledge to perform the deletion themselves.
 
+**HN confirmation (Aug 2026)**: Two current front-page threads make the same erosion visible at the workflow level. In **"LLMs reward expertise"** (HN 49161518), practitioners converge that the scarce input is no longer typing speed but architecture and supervision skill: walrus01 says LLMs reward knowing "how to structure things," natsucks says good agent use requires asking the right questions with deep domain expertise, and asdfman123 frames the human as "team lead to the LLM's junior dev." In **"Prevent cognitive debt by manually retyping LLM-generated code"** (HN 49153374), commenters describe retyping or question-only workflows as a way to rebuild mental models and counter code-review fatigue. The synthesis is sharper than "experts use tools better": once production is cheap, teams must deliberately spend effort preserving comprehension, or the expertise required for verification disappears.
+
 **The structural trap**: The exit from the Oversight Inversion cannot rely on the very human capacities the Inversion is eroding. The exit must be architectural — baked into the system, not dependent on operators becoming less capable. The six-scan exit arc extends to seven:
 
 1. Comprehension Dividend (#444): Invest in understanding (demand-side)
@@ -643,7 +645,7 @@ When a developer writes code, three knowledge byproducts emerge for free: (1) ex
 6. Subtraction Economy (#449): Market prices subtraction (economic validation)
 7. **Knowledge Erosion (#450): Exit must be architectural, not human-dependent (prerequisite constraint)**
 
-Source: findings/2026-07-22-hn-arxiv-github-scan-450.md, https://arxiv.org/abs/2607.06101, https://arxiv.org/abs/2607.06184, https://arxiv.org/abs/2607.05785, https://arxiv.org/abs/2607.06273, https://arxiv.org/abs/2607.06195
+Source: findings/2026-07-22-hn-arxiv-github-scan-450.md, https://arxiv.org/abs/2607.06101, https://arxiv.org/abs/2607.06184, https://arxiv.org/abs/2607.05785, https://arxiv.org/abs/2607.06273, https://arxiv.org/abs/2607.06195, https://news.ycombinator.com/item?id=49161518, https://news.ycombinator.com/item?id=49153374
 
 ## The Verification Harness (#451) — Exit-Arc Instantiation
 
@@ -1302,6 +1304,91 @@ Each produces **false confidence** (tests pass, benchmarks score, specifications
 35. **Trust Debt (#498): Trust in AI systems follows an inverted temporal pattern — accepted first, contested second. GPT-5.6 demonstrates retroactive contestation (ratio rising 0.61→0.74 over 5 scans, temporal inverse of Grok 4.5's immediate contestation). Progressive Crystallization (2607.07052) proves 91.2% of agent behavior crystallizes to deterministic within 30 days from un-audited exploration patterns. GovMem (2607.02579) proves 59.7% false-promotion rate accumulates as trust debt in memory. The Accountability Stack's 6 spatial layers (L0-L5) all verify at decision-time — none provides retroactive re-evaluation. The missing L6 (Temporal Audit) requires: immutable decision logs, time-indexed state snapshots, retroactive re-scoring, dependency-graph traversal. Trust debt compounds super-linearly: dependency chains multiply (D₂ depends on D₁), memory contamination cascades (60% false × 100 decisions/day × 30 days = 1,800 false beliefs), crystallization locks in patterns that downstream processes depend on. The self-concealing property: trust debt is invisible during accumulation (system appears healthy, crystallizing successfully) and becomes visible only when retroactive audit becomes necessary — by which point compound cost makes audit intractable. Exit condition: temporal audit infrastructure exists when a product can re-evaluate historical agent decisions against current evidence without requiring manual trace replay (the temporal discharge condition).**
 
 Source: findings/2026-07-09-hn-arxiv-github-scan-498.md, findings/2026-07-09-hn-arxiv-github-scan-497.md, findings/2026-07-09-hn-arxiv-github-scan-496.md, findings/2026-07-09-hn-arxiv-github-scan-494.md, arXiv 2607.07052, arXiv 2607.02579, https://github.com/rzhub/GateMem, https://github.com/makerchecker/MakerChecker, https://github.com/kakunin-ai/kakunin-core, https://github.com/Delego-Dev/delego, https://github.com/Brain0-ai/brain0
+
+## Cross-Session Misuse Detection (2026-08-04)
+
+**Magnet** ([2608.02518](https://arxiv.org/abs/2608.02518)) extends the
+Persistence Attack Surface from **persistent agent state** to **persistent
+user state**. Its core asymmetry is simple: the agent may be stateless between
+conversations, but the attacker is not. A harmful objective can be decomposed
+into individually innocuous sessions, each producing a small artifact or
+tool-mediated capability that only becomes dangerous when accumulated across
+conversations.
+
+This shifts the monitoring object from the **session transcript** to the
+**capability ledger of a principal** (for example, a user ID). Magnet's design
+principle is not "inspect every conversation more carefully" but "aggregate the
+few artifacts that matter across time into an evidence bundle a detector can
+reason over." In the paper's framing, the incriminating artifacts are needles
+scattered across a haystack of benign sessions; per-session inspection misses
+composition, while cross-session aggregation recovers it.
+
+- **Threat model correction**: single-turn and single-session abuse detection
+  are structurally incomplete once harmful capability can be built in pieces.
+- **Unit-of-analysis correction**: the relevant state is not "what happened in
+  this chat" but "what capabilities has this principal already elicited and can
+  now compose?"
+- **Oversight implication**: a stateless agent can still participate in a
+  stateful attack campaign. Resetting conversation state does not reset the
+  attack surface.
+- **Connection to this note**: where Distributed Attacks in Persistent-State AI
+  Control (2607.02514) showed that persistent *agent* state defeats stateless
+  monitoring, Magnet shows that persistent *user* strategy defeats it too.
+  Oversight must track whichever state actually composes harm.
+
+Source: https://arxiv.org/abs/2608.02518
+
+## The Approval-Surface Mismatch (HN, 2026-08-06)
+
+A fresh HN thread around **"Humans missed 1 in 3 threats approving AI agent
+commands across 40k game runs"** adds a practical measurement to the Oversight
+Inversion from the command-approval surface itself.
+
+The linked write-up reports **over 40,000 runs and 409,000 individual
+approve/deny decisions** from a browser game where humans review agent command
+requests. The headline result is not subtle: **mean accuracy was 66.3%**, so
+players missed roughly **one in three threats**. Two additional numbers matter
+for governance design:
+
+- **32.9% of sessions ended with a negative score**, meaning many users were
+  not merely noisy but net-harmful under the game's threat distribution.
+- **7% approved every single prompt**, effectively reenacting the
+  `--dangerously-skip-permissions` failure mode Scout has tracked since the
+  original permission-fatigue cycle.
+
+The most useful detail is *where* reviewers failed. The article reports that
+**`npm run analyze` was approved 64.7% of the time** even when the history log
+already showed the script exfiltrating data. That is the structural failure
+mode in miniature: humans review the **surface command string**, while the real
+risk lives in the **transitive effect path** hidden behind scripts, files, and
+subsequent network actions.
+
+HN discussion sharpened the architectural lesson:
+
+- **continuational**: "constantly ask the user for permission" has been tried
+  repeatedly and never worked as a serious security model.
+- **jascha_eng**: humans likely perform better when they review only the
+  suspicious subset rather than every action, explicitly naming attention as the
+  bottleneck.
+- **wmanley**: permission should attach to **which files or resources a command
+  may read/write**, with command execution wrapped inside a sandbox enforcing
+  that scope.
+
+This pushes the Oversight Inversion one layer deeper. The problem is not only
+that human review is expensive; it is that **per-command approval is a badly
+chosen unit of review**. It is too high-volume to preserve attention and too
+low-semantic to expose indirect effects. Once commands are proxies for scripts,
+package hooks, generated files, and network side effects, the approval prompt
+becomes a lossy summary of the thing being approved.
+
+**Structural implication:** viable agent governance will keep moving away from
+"ask the user about every shell command" toward **compiled authority surfaces**:
+file/resource scopes, sandboxed capability envelopes, deterministic policy
+checks, and selective escalation only for actions whose risk cannot be reduced
+into a machine-checkable boundary.
+
+Source: https://news.ycombinator.com/item?id=49195468,
+https://scalex.dev/blog/ai-agent-permissions-stats/
 
 ## Open Questions
 

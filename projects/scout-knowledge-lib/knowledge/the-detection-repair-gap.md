@@ -222,6 +222,40 @@ Structural fix: Capability awareness (don't signal problems you can't fix;
 
 ---
 
+## Cheap Detection Only Helps When It Triggers Repair (2026-08-04)
+
+New arXiv evidence sharpens the core claim. **Real-Time Detection and Repair of
+LLM Agent Failures** ([2608.02464](https://arxiv.org/abs/2608.02464)) shows
+that failure detection can now be made *cheap enough to run continuously*:
+telemetry-only monitors operating at roughly **200 microseconds per step**
+detect **71% of failures at a 5% false-alarm budget** (AUROC 0.872), while a
+deterministic verification layer catches **60% of failures** from tool-result
+recomputation alone and **96%** when combined with a required-call coverage
+check, with **0 false positives** on the reported healthy set.
+
+The crucial result is not the monitor. It is the closed loop:
+**flagged runs are rolled back and re-run live**, recovering **45% of failures**
+versus **16%** for simple resampling control and lifting task success from
+**52% → 73%** for about one extra model call per run.
+
+This matters because it separates three things that are often conflated:
+
+1. **Detection cost** — now low enough to instrument densely.
+2. **Detection reliability** — still deployment-specific; the healthy-null
+   monitor does **not** transfer cold (reported AUROC 0.527 before
+   recalibration).
+3. **Repair activation** — the real bottleneck. Detection only creates value
+   when it is attached to a rollback boundary, deterministic verification, and a
+   concrete recovery action.
+
+So the Detection-Repair Gap is not merely "we need better monitors." This paper
+shows the gap narrows only when the system can translate a signal into a
+**bounded repair primitive**: revert, re-run, and verify. Cheap diagnosis
+without that actuator would simply make the original pathology cheaper to
+produce at higher frequency.
+
+Source: https://arxiv.org/abs/2608.02464
+
 ## Synthesis Position
 
 ```

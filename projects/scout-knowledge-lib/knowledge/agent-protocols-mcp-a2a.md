@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Canonical overview of the agent protocol landscape: MCP (agent→tool), A2A (agent→agent), AG-UI (agent→frontend). Covers what each standardizes, the SDK/ecosystem state, competing protocols, Chinese community sentiment, and research findings."
-triggers: ["MCP", "Model Context Protocol", "A2A", "AG-UI", "AHP", "Agent Host Protocol", "agent protocol", "agent-to-agent protocol", "tool connectivity protocol", "MCP陨落", "ID-JAG", "Zero-Touch OAuth", "protocol fatigue", "protocol absorption", "EMA enterprise managed auth", "auth isolation", "MCP moat", "agent-behind-MCP", "Cloudflare temporary accounts", "agent-native infrastructure", "accommodation wave", "auth.md", "ephemeral deploy"]
-last_updated: "2026-07-09"
-source_basis: "GitHub trending repos June 2026, XHS Chinese AI community May-June 2026, arXiv briefings June 2026, HN explorations June 2026 (incl. scan #33), arXiv 2606.30317 (MCP Architecture Patterns), scan #262. See ai_context sources section below."
+summary: "Canonical overview of the agent protocol landscape: MCP (agent→tool), A2A (agent→agent), AG-UI (agent→frontend), and practical ACP implementation evidence. Covers what each standardizes, the SDK/ecosystem state, competing protocols, Chinese community sentiment, research findings, and how real systems are splitting backend-shell protocols from runtime identity/control layers."
+triggers: ["MCP", "Model Context Protocol", "A2A", "AG-UI", "AHP", "Agent Host Protocol", "agent protocol", "agent-to-agent protocol", "tool connectivity protocol", "MCP陨落", "ID-JAG", "Zero-Touch OAuth", "protocol fatigue", "protocol absorption", "EMA enterprise managed auth", "auth isolation", "MCP moat", "agent-behind-MCP", "Cloudflare temporary accounts", "agent-native infrastructure", "accommodation wave", "auth.md", "ephemeral deploy", "stateless MCP", "requestState", "mcp-use v2", "ACP backend rail", "entwurf", "garden id"]
+last_updated: "2026-08-06"
+source_basis: "GitHub trending repos June 2026, XHS Chinese AI community May-June 2026, arXiv briefings June 2026, HN explorations June-Aug 2026 (incl. scan #33 and HN items 49131438 and 49198472), arXiv 2606.30317 (MCP Architecture Patterns), scan #262, Simon Willison's stateless MCP write-up (2026-07-31), Manufact's mcp-use v2 stateless-MCP rebuild write-up (2026-07-29), and the current GitHub repo junghan0611/entwurf checked 2026-08-06 for ACP/backend-rail implementation evidence. See ai_context sources section below."
 </ai_context>
 
 # Agent Protocols: MCP, A2A, and the Emerging Stack
@@ -14,6 +14,20 @@ was never described as a protocol.
 See also: [agent-architectures.md](./agent-architectures.md) for architecture
 patterns, [multi-agent-coordination.md](./multi-agent-coordination.md) for
 coordination topology.
+
+## Quick Map
+
+- [Protocol Taxonomy](#protocol-taxonomy)
+- [MCP Ecosystem (June 2026)](#mcp-ecosystem-june-2026)
+- [Chinese Community Perspective: The MCP Sentiment Arc](#chinese-community-perspective-the-mcp-sentiment-arc)
+- [Research Findings](#research-findings)
+- [MCP Protocol-Level Privacy Risks (Scan #259)](#mcp-protocol-level-privacy-risks-scan-259-jul-2026)
+- [MCP Architecture Patterns & Tool-Count Ceiling (Scan #262)](#mcp-architecture-patterns--tool-count-ceiling-scan-262-jul-2026)
+- [Governance Expressivity Gap — The Missing Layer (Scan #291)](#governance-expressivity-gap--the-missing-layer-scan-291-jul-2026)
+- [MCP 2026-07-28 Spec Release: Transport Goes Stateless](#8-mcp-2026-07-28-spec-release-transport-goes-stateless)
+- [HN Implementation Follow-Through: Stateless MCP Pushes State Up the Stack](#8a1-hn-implementation-follow-through-2026-08-06-stateless-mcp-pushes-state-up-the-stack)
+- [GitHub Implementation Follow-Through: ACP Becomes a Backend Shell While Runtime Identity Lives Elsewhere](#8a2-github-implementation-follow-through-2026-08-06-acp-becomes-a-backend-shell-while-runtime-identity-lives-elsewhere)
+- [MCP Protocol Debt — Quantitative Evidence](#8b-mcp-protocol-debt--quantitative-evidence-2026-07-12)
 
 ## Protocol Taxonomy
 
@@ -308,7 +322,7 @@ check: implementing with Microsoft Entra ID is "genuinely painful," indicating
 spec maturity ≠ implementation ease. Protocol fatigue minority grows (**brap**:
 "I thought we're over this collective delusion called MCP").
 
-- **Source**: [HN Scan #53](./findings/2026-08-29-hn-scan-53.md), Jun 2026.
+- **Source**: [HN Scan #53](./findings/2026-06-20-hn-scan-53.md), Jun 2026.
 
 - **Source**: [HN Scan #54](./findings/2026-06-20-hn-scan-54.md), Jun 2026.
 
@@ -424,7 +438,7 @@ For multi-agent systems, this means a DID-like layer is necessary for
 cross-platform agent coordination, but practical deployment will likely
 centralize around 1-2 directories initially.
 
-- **Source**: [HN Scan #54](./findings/2026-08-30-hn-scan-54.md), Jun 2026.
+- **Source**: [HN Scan #54](./findings/2026-06-20-hn-scan-54.md), Jun 2026.
 
 ### Agent-Native Infrastructure Accommodation (HN/Cloudflare, June 2026)
 
@@ -465,9 +479,9 @@ non-human consumers. The Accommodation Wave complements The Substrate Inversion:
 once the architecture (not the model) is the locus of capability, infrastructure
 must accommodate the *architecture* (agents) as the primary consumer.
 
-- **Source**: [HN Scan #56](./findings/2026-09-01-hn-scan-56.md), Sep 2026.
+- **Source**: [HN Scan #56](./findings/2026-06-20-hn-scan-56.md), Jun 2026.
 
-### Protocol Taxonomy Research — Federated Stack Thesis (arXiv, Sept 2026)
+### Protocol Taxonomy Research — Federated Stack Thesis (arXiv, Jun 2026)
 
 arXiv 2606.19135 provides the first systematic taxonomy of LLM agent
 communication protocols, classifying nine actively maintained protocols across
@@ -492,7 +506,7 @@ sentiment. Validates the thin-protocol design principle. Connects to The
 Decoupling Cascade (knowledge/the-decoupling-cascade.md) — protocol
 decomposition is one of six simultaneous decoupling axes in agent architecture.
 
-- **Source**: [arXiv 2606.19135](https://arxiv.org/abs/2606.19135), Sept 2026.
+- **Source**: [arXiv 2606.19135](https://arxiv.org/abs/2606.19135), Jun 2026.
 
 ### Web4 Agent Economy — Payment Layer Empirics (arXiv, Jun 2026)
 
@@ -518,7 +532,7 @@ MCP/A2A/AG-UI taxonomy leaves open — the protocol stack needs a fourth layer
 for economic exchange. This is the "missing payment primitive" that Stripe
 partnership and Cloudflare OAuth were approaching from the enterprise side.
 
-- **Source**: [arXiv 2606.25876](https://arxiv.org/abs/2606.25876), [findings/2026-10-02-hn-scan-161.md](./findings/2026-10-02-hn-scan-161.md)
+- **Source**: [arXiv 2606.25876](https://arxiv.org/abs/2606.25876), [HN Scan #161](./findings/2026-06-25-hn-scan-161.md)
 
 ### Governance Structures for Agent Protocols — Empirical Comparison (arXiv, Jun 2026)
 
@@ -680,7 +694,7 @@ only when use cases are popular enough to justify integration cost.
 
 - **Source**: [HN Scan #204](./findings/2026-06-28-hn-scan-204.md), Jun 2026. HN items: 48582679, 48691461, 48687650, 48672444, 48678841.
 
-## MCP Protocol-Level Privacy Risks (Scan #259, Nov 2026)
+## MCP Protocol-Level Privacy Risks (Scan #259, Jul 2026)
 
 **MCPPrivacyDetector** (2606.21338): First large-scale protocol-aware static analysis of MCP servers. 10,655 servers audited.
 
@@ -695,7 +709,7 @@ only when use cases are popular enough to justify integration cost.
 - **Connection**: Extends ToxicSkills (scan #166, 36% critical ClawHub issues), Implementation Blind Spot (scan #203), ShareLock threshold poisoning (scan #170)
 - **Source**: https://arxiv.org/abs/2606.21338
 
-## MCP Architecture Patterns & Tool-Count Ceiling (Scan #262, Nov 2026)
+## MCP Architecture Patterns & Tool-Count Ceiling (Scan #262, Jul 2026)
 
 **MCP Server Architecture Patterns for LLM-Integrated Applications** (2606.30317): First industry experience paper cataloguing recurring MCP server architectural patterns from 15 independently developed servers (5 production ANSYR voice AI platform + 10 public MCP registry).
 
@@ -764,7 +778,157 @@ feature within them."
 
 ---
 
-## §8. MCP Protocol Debt — Quantitative Evidence (2026-11-15)
+## §8. MCP 2026-07-28 Spec Release: Transport Goes Stateless
+
+**Finding**: The MCP 2026-07-28 specification officially moves the transport
+layer to stateless HTTP, deprecating persistent SSE connections. Tool calls
+are now explicitly request/response (no session affinity required), enabling
+serverless deployment of MCP servers. Lead maintainer confirms this unblocks
+"remote MCP servers into serverless hosts."
+
+**Community reaction** (HN, 17pts, 6 comments):
+- "Tool calls are stateless anyway — when an LLM asks get_my_todos then
+  add_todo it's just text going back into the context window."
+- Concern from users relying on SSE for multi-day workflow monitoring —
+  replacement mechanism unclear.
+- Questions about whether HTTP method/name headers are still needed vs plain
+  URL-based routing.
+
+**Architectural significance**: This validates the "MCP is a function-call
+envelope, not a session protocol" interpretation. Stateless transport:
+1. Eliminates connection management overhead for cloud-hosted tools
+2. Aligns with HTTP semantics (caching, load-balancing, CDN-friendliness)
+3. Breaks assumptions for long-running subscriptions (notifications, progress)
+
+**Connection**: Explains the extreme non-compliance found in §8b below —
+servers built for stateful SSE need architectural rework, not just a version
+bump.
+
+**Source**: https://blog.modelcontextprotocol.io/posts/2026-07-28/
+HN: https://news.ycombinator.com/item?id=49088058
+
+### §8a. HN Follow-Through (2026-08-05): Stateless MCP Narrows the Debate to Ops + Context
+
+**Finding**: Two weeks after the 2026-07-28 spec release, the live HN front-page
+reaction to Simon Willison's "Stateless MCP has recaptured my interest"
+(https://simonwillison.net/2026/Jul/31/stateless-mcp/, HN 49131438) shows a
+pragmatic shift: stateless MCP is no longer being defended as a novel protocol
+primitive, but as a **governable HTTP tool surface** that can use normal web
+infrastructure while remaining safer than giving agents raw shell+`curl`.
+
+**Primary source details**:
+- Simon's before/after example shows the transport collapsing from
+  initialize+session-ID flow to a single `POST /mcp` request for `tools/call`.
+- He explicitly argues this is "a better fit for building scalable web
+  applications" because servers no longer need to track session IDs or route a
+  session back to the same machine.
+- He also reverses his earlier skepticism: arbitrary shell/network access is
+  "fraught with risk," while MCP tools are easier to audit and control.
+
+**HN practitioner reaction** (front page, 112pts / 16 comments when checked):
+- Multiple commenters treat the change as operational normalization, not
+  conceptual novelty: "just another REST API endpoint," now compatible with
+  load balancers, API gateways, and progressive rollouts.
+- Implementers report the simplification is real: one commenter said a
+  scratch-built Python MCP server had previously failed to work reliably across
+  clients and welcomed the reduced complexity.
+- The remaining objections have moved up-stack: context bloat, poor
+  composability versus shell pipelines, and whether generic constrained HTTP
+  tools could capture most MCP value.
+
+**Architectural significance**: This materially updates the July "MCP is a
+deadend / CLI is the future" discourse. Stateless transport does not beat CLI
+on flexibility; instead it makes MCP viable precisely by conceding the lower
+layer. The protocol's differentiators narrow to:
+1. **Auth/governance boundary** — constrained tool surface instead of arbitrary
+   network execution
+2. **Operational fit** — standard web infra, serverless deployment, no session
+   affinity
+3. **Inspectable capability contracts** — typed tools remain easier to audit
+   than shell transcripts
+
+**Implication for agent builders**: The next competitive battleground is no
+longer transport semantics. It is whether MCP deployments can solve **context
+selection and response-shaping** well enough to avoid the bloat/composability
+criticisms that HN now treats as the main remaining weakness.
+
+**Source**: https://simonwillison.net/2026/Jul/31/stateless-mcp/
+HN: https://news.ycombinator.com/item?id=49131438
+
+### §8a.1. HN Implementation Follow-Through (2026-08-06): Stateless MCP Pushes State Up the Stack
+
+A smaller Show HN around **mcp-use v2** is still a useful protocol signal
+because it shows how downstream tooling is adapting now that the 2026-07-28 MCP
+revision removed protocol-level sessions.
+
+The linked post says the new spec:
+- removes both the `initialize` handshake and the `Mcp-Session-Id` session,
+- reframes application state as explicit contract data rather than hidden
+  transport state,
+- and adds related production-facing surface such as a formal extensions model,
+  Tasks, cache hints, trace context, stronger OAuth requirements, and a
+  deprecation policy.
+
+The most useful implementation evidence is that the team says they **did not
+patch the old framework**; they **rebuilt mcp-use v2 around a stateless request
+path** for modern HTTP runtimes. Their concrete examples move state and control
+into the application layer:
+- multi-step flows now return `input_required` plus opaque `requestState`,
+- the React `McpClientProvider` owns persistence, reconnects, OAuth state,
+  proxy fallback, notifications, and elicitation queues,
+- and the server layer adds direct v2 elicitation support plus
+  **verified/tamper-protected request state**.
+
+The post also reports non-trivial packaging/runtime changes versus v1:
+- **10,982** median ops/s vs **8,615**,
+- **68.1 ms** median cold launch vs **151.6 ms**,
+- **74.4 MiB** clean install vs **404.6 MiB**.
+
+That matters because it sharpens the architectural reading of stateless MCP.
+The simplification is not just "MCP becomes more REST-like." It is that MCP
+frameworks are being forced to make **state, auth, and recovery explicit
+app-layer responsibilities** instead of relying on transport-era session magic.
+In practice, the protocol is getting thinner while the surrounding client/runtime
+layer gets more opinionated about signed state handles, OAuth, and request
+replay.
+
+This is a useful complement to §8a above: Simon Willison's HN thread showed
+that practitioners increasingly value stateless MCP for standard web ops;
+mcp-use v2 shows the follow-through cost and opportunity for framework authors.
+Stateless MCP does not remove state management — it **relocates it**.
+
+**Source**: https://manufact.com/blog/mcp-use-v2
+HN: https://news.ycombinator.com/item?id=49198472
+
+### §8a.2. GitHub Implementation Follow-Through (2026-08-06): ACP Becomes a Backend Shell While Runtime Identity Lives Elsewhere
+
+**Finding**: The current GitHub repo **junghan0611/entwurf** is useful protocol evidence because it treats ACP as a **backend-shell adapter layer**, not as the whole agent runtime. Its docs explicitly assign ACP the backend process lifecycle, session isolation overlays, model enforcement, prompt/event mapping, and turn evidence — while explicitly keeping citizen registration, socket registry, peer protocol, memory DB, planner/orchestrator, and auth outside the ACP plugin boundary.
+
+**Primary source details**:
+- `AGENTS.md` says the ACP plugin owns backend lifecycle, isolated overlay, tool narrowing, ACP dialect handling, and turn evidence, but **"does not own"** citizen registration, socket registry, peer protocol, memory DB, planner/orchestrator, or auth.
+- The same file defines **one record axis** above transport: pi sessions, Claude Code mailbox sessions, and Antigravity native-push sessions all become addressable only after they have a record-backed **garden id**. A one-turn provider call without `--entwurf-control` is a real model turn but is **not addressable**.
+- `docs/acp-backend-rail.md` makes the layering explicit: the host pi session owns the record-backed citizen identity, while backend adapters only supply spawn/init/model/carrier/overlay/MCP projection behavior. It also documents backend asymmetry: Claude accepts wire `mcpServers`, but Cortex ignores that field so the adapter writes a private `cortex/mcp.json` instead.
+- `docs/external-mcp-host.md` shows the control implication: an external MCP host can read `entwurf_peers` and `entwurf_inbox_read`, but `entwurf_v2` sends are **refused by default** unless the caller has authoritative sender identity or explicitly opts into an anonymous non-replyable hatch. Delivery authority is therefore not granted by protocol connectivity alone.
+- `VERIFY.md` adds an important operational nuance: release acceptance checks continuity, socket liveness, replyability, and backend-specific carrier behavior separately. In other words, the implementation does not treat "ACP session exists" as sufficient proof that addressability, identity, or delivery guarantees are correct.
+
+**Architectural significance**: This sharpens the protocol split Scout has been tracking. In practice, ACP is being used as a **thin shell for talking to backend agent runtimes**, while the harder production properties — addressability, identity continuity, replyability, mailbox/native-push routing, and delivery authority — are being implemented in adjacent runtime layers.
+
+That matters because it updates the usual "protocol wars" framing. The live design question is no longer just which protocol wins. It is **which layers stay protocol-thin and which layers must become explicit runtime control planes**.
+
+**Implications for agent builders**:
+1. **Backend interoperability does not equal runtime identity.** A common ACP turn loop can normalize Claude/Cortex access without normalizing who is allowed to send, reply, resume, or claim a durable session identity.
+2. **Addressability is becoming a separate contract.** `entwurf` makes session addressability depend on a record-backed garden id, not on the existence of an ACP session or an MCP connection.
+3. **Protocol-level capability still needs runtime-side authority checks.** The repo's default refusal for unauthenticated external sends is concrete evidence that "tool reachable" is weaker than "delivery authorized."
+4. **The governance-gap thesis shows up in implementation form.** Earlier papers argued that current protocols lack higher-order governance expressivity. This repo shows the practical consequence: production builders are externalizing identity, routing authority, and delivery policy into a layer above the protocol.
+
+**Connection**: Complements §8a and §8a.1. Stateless MCP moved hidden server state up into the application/runtime layer; `entwurf` shows ACP doing something similar on the agent-shell side. Both trends point toward thinner protocols and thicker runtime control layers.
+
+**Source**: https://github.com/junghan0611/entwurf
+Supporting docs: https://raw.githubusercontent.com/junghan0611/entwurf/main/AGENTS.md, https://raw.githubusercontent.com/junghan0611/entwurf/main/VERIFY.md, https://raw.githubusercontent.com/junghan0611/entwurf/main/docs/acp-backend-rail.md, https://raw.githubusercontent.com/junghan0611/entwurf/main/docs/external-mcp-host.md
+
+---
+
+## §8b. MCP Protocol Debt — Quantitative Evidence (2026-07-12)
 
 **Finding**: Tool `mcp-spec-check` scanned 4,356 reachable MCP servers and
 found only 1 compliant with the upcoming 2026-07-28 spec revision (0.023%

@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Agent failure modes observed in production and community discourse: context overflow, tool misuse, infinite loops, scope-boundary confusion, status extraction bugs. Covers symptoms, causes, and mitigations."
-triggers: ["failure mode", "agent failure", "blocked", "context overflow", "tool hallucination", "infinite loop", "scope confusion", "false blocked", "status misclassification"]
-last_updated: "2026-06-22"
-source_basis: "Original: May 2024 community discourse synthesis. Updated 2026-06-22 with scope-boundary confusion pattern observed in aks-rp-e2e project. Updated 2026-06-22 with infrastructure root-cause resolution: workerResultFromSession() bug caused systematic status misclassification across three tasks."
+summary: "Agent failure modes observed in production and research: context overflow, tool misuse, infinite loops, status errors, error-lifecycle confusion, and retries that reproduce latent or semantic faults. Covers symptoms, causes, evidence limits, and mitigations."
+triggers: ["failure mode", "agent failure", "blocked", "context overflow", "tool hallucination", "infinite loop", "scope confusion", "false blocked", "status misclassification", "blind retry", "cascade radius", "OrchestraBench", "trusted state"]
+last_updated: "2026-08-09"
+source_basis: "Original: May 2024 community discourse synthesis. Updated 2026-06-22 with scope-boundary confusion and infrastructure status-misclassification evidence; 2026-08-07 with TrajDebug's error-lifecycle model; and 2026-08-09 with OrchestraBench's controlled retry, cascade, and trusted-state probes."
 </ai_context>
 
 # AI Agent Failure Modes & Solutions (Research Synthesis)
@@ -56,7 +56,7 @@ To build robust systems, architectures are shifting towards:
 *   **Hierarchical Checkers:** Having a fast, cheap model verify the output of a complex reasoning model before execution.
 *   **Explicit State Machines:** Combining LLM reasoning with deterministic state machines where transitions are rigidly controlled.
 
-## Recent Research: Trajectory Collapse (arXiv 2606.19812, Sept 2026)
+## Recent Research: Trajectory Collapse (arXiv 2606.19812, June 2026)
 
 Unlike single-turn failures, multi-step agentic workflows exhibit a class
 of failure termed **trajectory collapse**: an early misclassification silently
@@ -81,7 +81,7 @@ See also: [The Decoupling Cascade](./the-decoupling-cascade.md) — Axis 4
 
 Source: https://arxiv.org/abs/2606.19812
 
-## Recent Research: The Resilience Gap — Tool-Environment Unreliability (arXiv 2606.25819, Oct 2026)
+## Recent Research: The Resilience Gap — Tool-Environment Unreliability (arXiv 2606.25819, June 2026)
 
 ToolBench-X introduces a benchmark specifically targeting **recoverable reliability hazards** — tool failures that have a valid recovery path but require the agent to diagnose the hazard type and select an appropriate strategy.
 
@@ -122,3 +122,92 @@ Two papers converge on the same temporal pattern:
   - "Point of no return" detection — monitor for irreversible commitment signals
 
 Source: arXiv [2607.09510], [2607.07989], triage 2026-07-14.
+
+### 7. Error-Lifecycle Confusion (August 2026)
+
+**TrajDebug** reframes long-horizon debugging as lifecycle tracking rather than
+simply finding the first locally wrong step. In a pilot sample of 50 failed
+trajectories, the authors annotate 381 local errors (7.62 per trajectory), but
+only one critical error per trajectory. Of the 331 non-critical errors, 61.9%
+were later repaired, 31.4% persisted to the end, and 6.6% remained unrepaired
+but dormant. A debugger that treats every detected error as causal will
+therefore produce many plausible false leads.
+
+The proposed pipeline first requires a verbatim conflict between a wrong
+commitment and a task instruction, prior observation, environment response, or
+same-step claim. It then groups repeated manifestations by the violated
+reference object and classifies each error on two axes: resolved versus active,
+and terminal footprint versus no footprint. Only costly resolutions and active
+errors with an irreversible, semantic, or budget footprint advance to causal
+attribution.
+
+This extends **Early-Seeded, Late-Detected Failure** with an important
+qualification: the earliest error is not necessarily the earliest *decisive*
+error. Debugging and rollback systems should preserve enough trace evidence to
+answer three separate questions:
+
+1. What explicit evidence makes this step wrong?
+2. Was that wrong commitment later repaired?
+3. Did it still affect terminal state or consume the recovery budget?
+
+TrajErrBench contains 486 manually annotated failures: 400 from τ²-Bench and
+86 from SWE-Bench Pro, whose trajectories average 119.7 steps. The paper
+reports that converting diagnoses into targeted same-task guidance improves
+re-execution success by 10.80% on average; aggregating historical diagnoses
+into reusable failure memory improves held-out tasks by 5.70%. These are
+inference-time application results, not evidence that the method prevents
+failures prospectively.
+
+**Operational implication:** record error identity, violated reference,
+resolution evidence, terminal footprint, and repair cost as first-class trace
+fields. Alerting on raw error count confuses recovered mistakes and dormant
+inaccuracies with failure-responsible commitments.
+
+Source: https://arxiv.org/abs/2608.06346
+
+### 8. Blind Retry on Latent State (August 2026)
+
+**OrchestraBench** separates faults that can be replayed from faults that first
+need diagnosis and state repair. In controlled, prompt-level injections over a
+verifiable dependency chain, a Claude Sonnet 4.6 agent recovered tool-invocation
+errors completely (**1.00 final-task success**) and ambiguous delegation only
+partly (**0.30 [0.13, 0.47]**). Context pollution, conflicting sub-agent
+outputs, and premature action had **0.00** final-task success. Retrying while
+those latent or semantic faults remained in context reproduced the bad state and
+increased time to detection rather than repairing it.
+
+The paper's **cascade radius** metric counts downstream stages corrupted by one
+seeded fault. Pooled latent-mode radius grew from **0.93 at depth 3 to 4.67 at
+depth 7**, while tool-error radius stayed at zero. This makes depth a risk
+multiplier only for fault classes that survive the stage boundary; generic
+retry budgets do not address that distinction.
+
+A containment ablation is especially useful. When an LLM router received a
+trusted upstream value and permission to self-correct, latent recovery improved;
+removing that trusted-state hint collapsed recovery from **0.67 [0.46, 0.83]**
+to **0.08 [0.00, 0.21]**, near baseline. The gain therefore came mainly from an
+external reference state, not autonomous anomaly detection.
+
+**Operational implication:** retry policy should be selected by diagnosed fault
+class, not applied as a universal resilience mechanism:
+
+1. retry transient transport and tool-execution faults only when replay changes
+the relevant condition;
+2. stop and attribute conflicts, polluted context, and premature commitments
+before replay;
+3. preserve a trusted checkpoint or independently recomputable upstream value
+for repair; and
+4. measure both final success and cascade radius, because a failed recovery can
+silently corrupt additional stages.
+
+**Evidence limits:** These are controlled mechanism probes, not production
+reliability rates. The core chains use prompt-level injections into one Claude
+agent rather than independently running agents; the workflows are synthetic,
+and deterministic downstream arithmetic makes part of the depth scaling true by
+construction. The failure-tier ordering survived a loan-approval reframing and
+three Claude tiers, but broader models and real multi-agent workflows remain
+future work.
+
+Source: https://arxiv.org/abs/2608.05263v1  
+Source: https://arxiv.org/html/2608.05263v1  
+Source: https://export.arxiv.org/api/query?id_list=2608.05263

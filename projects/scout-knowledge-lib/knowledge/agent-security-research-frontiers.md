@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Companion note to agent-security-defense-architectures.md: security research frontier entries covering endogenous runtime defense (ANIS immune system), prompt injection impossibility proof, embedded training attacks, covert channels in multi-agent systems, forensic trajectory detection, safety inversion, automated attack frameworks (Vera), guardrail reconnaissance, ghost memory, process rubrics, policy enforcement ceiling, guard miniaturization, skill scanner evasion/detection/fuzzing, action boundary violations, steerability via constraints, simple safety monitoring, reasoning history poisoning (FARMA), agent data injection (ADI), cross-user privacy (PiSAs), untrusted content masking (UCM), stored IPI prevention (DualView), the Appearance Collapse thesis, MCP TAG-Block concealment (protocol-level encoding gap), adversarial hallucination squatting (HalluSquatting — supply-chain botnet via predictable hallucinations, 2607.07433), and behavior leverage imbalance (training-time mode drift via structural token positions, 2607.07050). These represent boundary-expanding research rather than enumerable defense patterns."
-triggers: ["ANIS", "agent immune system", "prompt injection impossibility", "inseparability proof", "embedded attack", "DR-SFT", "covert channels", "steganography", "KV-cache integrity", "forensic trajectory", "memory poisoning detection", "behavioral invariants", "Vera", "guardrail reconnaissance", "ghost memory", "A-TMA", "SkillCoach", "SafePyramid", "HaloGuard", "kNNGuard", "SkillCloak", "SkillDetonate", "SkillFuzz", "UnderSpecBench", "steerability", "FARMA", "ADI", "PiSAs", "UCM", "DualView", "Appearance Collapse", "TAG-Block", "MCP concealment", "encoding gap", "HalluSquatting", "hallucination squatting", "agentic botnet", "promptware", "behavior leverage", "Soft Clamp", "over-calling", "mode drift"]
-last_updated: "2026-07-09"
-source_basis: "Extracted from agent-security-defense-architectures.md. MCP TAG-Block Concealment (2607.05744) moved from defense-architectures.md §Execution Boundary Patterns (scan #453). HalluSquatting (2607.07433) and Behavior Leverage (2607.07050) added from scan #490. Sources: arXiv 2606.28270 (ANIS), 2606.27567 (Inseparability), 2606.28153 (Robust Harmful Features), 2606.30263 (Embedded Attack/DR-SFT), 2606.28958 (KV-Cache Integrity), 2606.28425 (Tool Use Steganography), 2606.30383 (Multi-Party Principal Loyalty), 2606.30566 (Forensic Trajectory Signatures), 2606.30627/30587/30602 (Safety Inversion), 2607.01793 (Vera), 2607.02121 (Behind the Refusal), 2607.01935 (A-TMA), 2607.01874 (SkillCoach), 2606.29887 (SafePyramid), 2607.02079/02072 (HaloGuard/kNNGuard), 2607.02357 (SkillCloak/SkillDetonate), 2607.02345 (SkillFuzz), 2607.02294 (UnderSpecBench), 2607.02389 (Steerability), 2607.02510 (Online Safety Monitoring), 2607.05029 (FARMA), 2607.05120 (ADI), 2607.05318 (PiSAs), 2607.05277 (UCM), 2607.03821 (DualView), 2607.05744 (TAG-Block), 2607.07433 (HalluSquatting), 2607.07050 (Behavior Leverage). Scan provenance: #236, #239, #264, #272, #273, #282, #368, #375, #411, #432, #453, #490."
+summary: "Companion note to agent-security-defense-architectures.md: security research frontier entries covering endogenous runtime defense (ANIS immune system), prompt injection impossibility proof, embedded training attacks, covert channels in multi-agent systems, forensic trajectory detection, safety inversion, automated attack frameworks (Vera, PIMiner), guardrail reconnaissance, ghost memory, process rubrics, policy enforcement ceiling, guard miniaturization, skill scanner evasion/detection/fuzzing, action boundary violations, steerability via constraints, simple safety monitoring, reasoning history poisoning (FARMA), agent data injection (ADI), cross-user privacy (PiSAs), untrusted content masking (UCM), stored IPI prevention (DualView), the Appearance Collapse thesis, MCP TAG-Block concealment (protocol-level encoding gap), adversarial hallucination squatting (HalluSquatting — supply-chain botnet via predictable hallucinations, 2607.07433), and behavior leverage imbalance (training-time mode drift via structural token positions, 2607.07050). These represent boundary-expanding research rather than enumerable defense patterns."
+triggers: ["ANIS", "agent immune system", "prompt injection impossibility", "inseparability proof", "embedded attack", "DR-SFT", "covert channels", "steganography", "KV-cache integrity", "forensic trajectory", "memory poisoning detection", "behavioral invariants", "Vera", "PIMiner", "Agent Against Agent", "prompt injection red teaming", "low-query transfer attack", "IPIArena", "AgentDojo", "guardrail reconnaissance", "ghost memory", "A-TMA", "SkillCoach", "SafePyramid", "HaloGuard", "kNNGuard", "SkillCloak", "SkillDetonate", "SkillFuzz", "UnderSpecBench", "steerability", "FARMA", "ADI", "PiSAs", "UCM", "DualView", "Appearance Collapse", "TAG-Block", "MCP concealment", "encoding gap", "HalluSquatting", "hallucination squatting", "agentic botnet", "promptware", "behavior leverage", "Soft Clamp", "over-calling", "mode drift"]
+last_updated: "2026-08-06"
+source_basis: "Extracted from agent-security-defense-architectures.md. MCP TAG-Block Concealment (2607.05744) moved from defense-architectures.md §Execution Boundary Patterns (scan #453). HalluSquatting (2607.07433) and Behavior Leverage (2607.07050) added from scan #490. PIMiner / Agent Against Agent (2608.05108) added 2026-08-06 from arXiv API query id_list=2608.05108 and arxiv.org/abs/2608.05108. Sources: arXiv 2606.28270 (ANIS), 2606.27567 (Inseparability), 2606.28153 (Robust Harmful Features), 2606.30263 (Embedded Attack/DR-SFT), 2606.28958 (KV-Cache Integrity), 2606.28425 (Tool Use Steganography), 2606.30383 (Multi-Party Principal Loyalty), 2606.30566 (Forensic Trajectory Signatures), 2606.30627/30587/30602 (Safety Inversion), 2607.01793 (Vera), 2607.02121 (Behind the Refusal), 2607.01935 (A-TMA), 2607.01874 (SkillCoach), 2606.29887 (SafePyramid), 2607.02079/02072 (HaloGuard/kNNGuard), 2607.02357 (SkillCloak/SkillDetonate), 2607.02345 (SkillFuzz), 2607.02294 (UnderSpecBench), 2607.02389 (Steerability), 2607.02510 (Online Safety Monitoring), 2607.05029 (FARMA), 2607.05120 (ADI), 2607.05318 (PiSAs), 2607.05277 (UCM), 2607.03821 (DualView), 2607.05744 (TAG-Block), 2607.07433 (HalluSquatting), 2607.07050 (Behavior Leverage), 2608.05108 (PIMiner). Scan provenance: #236, #239, #264, #272, #273, #282, #368, #375, #411, #432, #453, #490, plus arXiv maintain run 2026-08-06."
 </ai_context>
 
 # Agent Security: Research Frontiers
@@ -206,6 +206,36 @@ cases / 124 risk categories. Proves L1 guard enforcement alone is functionally
 absent against structured attack campaigns.
 
 Source: [arXiv 2607.01793](https://arxiv.org/abs/2607.01793)
+
+### PIMiner / Agent Against Agent — Low-Query Transfer Red Teaming (2026-08-06)
+
+**Paper**: [arXiv 2608.05108](https://arxiv.org/abs/2608.05108) — "Agent
+Against Agent: An Agentic System for Automatic Prompt Injection Red Teaming"
+
+**Core contribution**: Prompt-injection red teaming is itself becoming an
+agentic runtime pattern. PIMiner trains across sequences of
+(dataset, target-model) pairs to build a reusable **strategy library**, then
+transfers that library to previously unseen target LLMs **without additional
+training**.
+
+**Operationally important detail**: the abstract claims PIMiner needs only
+about **10 queries per test sample** against the target agent at evaluation
+time while still achieving strong attack success.
+
+**Reported results**:
+- **IPIArena**: 76.2% ASR on Gemini-2.5-Pro, 61.9% on GPT-5.1, 42.9% on
+  Claude-Sonnet-4.5
+- **AgentDojo**: 86.7% ASR on Gemini-2.5-Pro, 53.3% on GPT-5.1, 40.0% on
+  Claude-Sonnet-4.5
+
+**Why this matters**: the practical frontier is shifting from heavyweight,
+model-specific attacker training toward **portable, low-query attack playbooks**.
+That raises the floor on what defenders should assume about external evaluation:
+automated adversaries no longer need a long adaptation cycle for each new agent
+stack. Benchmarking regimes that only measure one-off attacks or require heavy
+per-target retraining will understate deploy-time risk.
+
+Source: [arXiv 2608.05108](https://arxiv.org/abs/2608.05108)
 
 ### Behind the Refusal — Guardrail Reconnaissance (Scan #368)
 

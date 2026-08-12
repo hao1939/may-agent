@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Cross-source synthesis: Every major agent failure mode documented in scans #98–#102 and concurrent arXiv papers reduces to a state-addressing error — the agent can't find the right state, acts on the wrong state, or can't distinguish which state is authoritative. Code navigation (Probe-and-Refine: +14.5pp from coverage, constant ~59% precision), memory governance (GateMem: wrong-principal access, deleted-state retrieval), policy adherence (LedgerAgent: stale-state grounding), subconscious steering (Role Confusion: can't distinguish addressing-text from content-text), and infrastructure damage (Codex SSD: unbounded writes to wrong location) are all isomorphic to classic pointer/reference bugs in systems programming. Agent systems are recapitulating the dereference crisis that produced Rust. Prediction: typed, scoped, lifetime-managed state references become the dominant agent infrastructure pattern within 12 months."
-triggers: ["dereference crisis", "state addressing", "stale state", "wrong state", "addressing error", "pointer analogy", "agent memory failure", "coverage vs precision", "navigation bottleneck", "state lifecycle", "reference management", "use-after-free agents", "dangling reference", "state scoping", "typed state"]
-last_updated: "2026-06-23"
-source_basis: "arXiv 2606.20512 (Probe-and-Refine: +14.5pp coverage, constant ~59% precision), arXiv 2606.18829 (GateMem: no method solves utility + access control + forgetting), arXiv 2606.20529 (LedgerAgent: structured state ledger), arXiv 2606.20510 (Probabilistic Verification: sound bounds under ambiguity), arXiv 2606.20560 (DiffusionGemma: opaque serial depth = addressing chain opacity), arXiv 2603.12277 (Role Confusion: style as mis-addressing), arXiv 2606.04056 (Affine-typed token budgets: Rust-style state ownership for agents), HN 48626930 (Codex SSD 254pts: infrastructure addressing failure), HN 48631888 (Prompt Injection 54pts: role-tag authority ≠ runtime identity), GitHub rzhub/GateMem 74★, wellwelwel/blue-spec 57★, SantanderAI/ralph 40★."
+summary: "Cross-source synthesis: Many agent failures reduce to a state-addressing error — the agent cannot find the right state, acts on the wrong state, or cannot distinguish which state is authoritative. Controlled evidence from ContextPollute-Bench shows that merely inserting plausible but non-authoritative history flips 32.1% of Qwen3-1.7B decisions that were correct with the original trajectory; a generic warning barely helps, while training against an explicit reliable-state view raises balanced tool-use accuracy from 47.2% to 87.0%. The bearing implementation adds a concrete runtime pattern: user-owned numbered authority anchors are re-injected at decision-writing moments, while per-chat task cores preserve transient state without cross-session aliasing. Together, the evidence supports typed, scoped, lifetime- and authority-managed state references as a core agent-runtime primitive."
+triggers: ["dereference crisis", "state addressing", "stale state", "wrong state", "authoritative state", "misleading history", "history-induced policy hijacking", "ContextPollute-Bench", "addressing error", "pointer analogy", "agent memory failure", "coverage vs precision", "navigation bottleneck", "state lifecycle", "reference management", "use-after-free agents", "dangling reference", "state scoping", "typed state"]
+last_updated: "2026-08-08"
+source_basis: "arXiv 2606.20512 (Probe-and-Refine: +14.5pp coverage, constant ~59% precision), arXiv 2606.18829 (GateMem: no method solves utility + access control + forgetting), arXiv 2606.20529 (LedgerAgent: structured state ledger), arXiv 2606.20510 (Probabilistic Verification: sound bounds under ambiguity), arXiv 2606.20560 (DiffusionGemma: opaque serial depth = addressing chain opacity), arXiv 2603.12277 (Role Confusion: style as mis-addressing), arXiv 2606.04056 (Affine-typed token budgets: Rust-style state ownership for agents), arXiv 2608.06057 (ContextPollute-Bench: controlled non-authoritative-history interventions and reliable-state distillation), HN 48626930 (Codex SSD 254pts: infrastructure addressing failure), HN 48631888 (Prompt Injection 54pts: role-tag authority ≠ runtime identity), GitHub rzhub/GateMem 74★, wellwelwel/blue-spec 57★, SantanderAI/ralph 40★, ReidenXerx/bearing at commit 8c2e026 (authority re-anchoring and per-chat compaction state)."
 </ai_context>
 
 # The Dereference Crisis: Why Agent Failures Are Pointer Bugs
@@ -166,6 +166,43 @@ The "ralph" pattern (SantanderAI/ralph, 40★) represents the current workaround
 - **12 months:** Typed stage — state ownership annotations that prevent addressing errors by construction (affine types, certificate-bound authority)
 
 The transition will follow the Compilation Gradient exactly: behavioral ("be careful with state") → structural (explicit ledgers) → compiled (ownership types that reject invalid references before execution).
+
+---
+
+## New evidence: history needs authority metadata, not just recency (2026-08-08)
+
+**Source:** *When History Lies: Evaluating and Improving Tool Use under Misleading Multi-Turn Histories* (arXiv 2608.06057v1)
+
+ContextPollute-Bench turns the stale-state claim into a controlled experiment. Each item has three synchronized views—an untouched trajectory, a trajectory with an inserted plausible but non-authoritative trace, and an Oracle State containing only reliable decision-relevant state—while holding the system policy, tools, latest request, and gold next action fixed. The benchmark derives airline and retail examples from APIGen-MT and applies eleven interventions across decision state, entity binding, and interface execution.
+
+The paper reports that on Qwen3-1.7B, **32.1% of decisions correct under Original history become wrong under Polluted history**. The conditional flip rate is higher for Answer decisions (40.5%) than Call decisions (29.4%). Literal-level analysis links the change to the inserted state: under polluted input, the base model copies the corrupted literal in 34.8% of same-tool/different-target cases, 20.9% of entity-interleaving cases, and 65.8% of format-drift cases.
+
+A prompt-only instruction to ignore failed or irrelevant history barely changes balanced tool-use accuracy, from **47.2% to 48.5%**. By contrast, Oracle-guided on-policy distillation—where a teacher sees reliable Oracle State while supervising student-generated prefixes under polluted history—reaches **87.0%** with a 1.7B teacher and **91.9%** with an 8B teacher. The deployment student does not receive Oracle State. Ablations support all three ingredients: an authoritative teacher representation, soft policy targets, and supervision on states the student itself visits.
+
+This strengthens the dereference thesis in one important way: **ordering and presence are not enough to identify authoritative state**. An append-only trace can contain structurally valid facts that no longer govern the current action. Runtimes should therefore carry provenance and validity as first-class state-reference metadata—for example, observation source, supersession relation, policy epoch, entity identity, and evidence status—and compile a decision-focused current-state view rather than asking the model to infer authority from transcript prose. Generic warnings are not a substitute for authority resolution.
+
+The evidence remains bounded: the benchmark measures controlled next-action decisions in two domains, with synthetic pollution and Oracle State generated by DeepSeek-V4-Flash and validated by the authors. It does not yet establish the same rates for naturally occurring production histories or end-to-end interactions, although independently regenerated Claude-Opus-4.7 evaluation contexts preserve the reported ordering between methods.
+
+Source: https://arxiv.org/abs/2608.06057v1
+Source: https://arxiv.org/html/2608.06057v1
+
+### Practitioner implementation signal: separate authority anchors from task state (2026-08-08)
+
+**Repo:** https://github.com/ReidenXerx/bearing  
+**Inspected commit:** `8c2e026173cda26049260e7a61ddaa84840590db`
+
+Bearing turns part of the authority-metadata recommendation into executable agent-runtime glue. Its tracked `.bearing/northstars.md` holds numbered, user-owned project claims; Claude hooks load these before other session context, periodically re-inject a clipped digest, and immediately re-anchor after the agent writes Markdown or text. The implementation therefore treats authority as a distinct control plane rather than another document competing for attention in transcript order. It also forbids silent agent edits: a suspected-bad anchor must be surfaced as a proposed user change.
+
+Transient task state gets a different address and lifetime. Before compaction, a `PostToolUse` hook estimates context pressure and asks the agent to persist goal, constraints, decisions, current state, file anchors, gotchas, and next steps. Recovery reads that task core before continuing. Crucially, current code uses one task-core path per chat, derived from the transcript/session key; repository-wide task state previously allowed concurrent chats to overwrite each other. This is a direct instance of the dereference thesis: durable memory without an ownership key creates an aliasing bug.
+
+The design also exposes an important substrate constraint. Claude's `PreCompact` hook cannot inject context or create an intervening agent turn, so bearing moves the write request earlier to `PostToolUse` and leaves `PreCompact` side-effect-only. On runtimes without equivalent hooks, the repository's own compatibility table says mid-session re-anchoring and compaction survival are unavailable or advisory. Authority metadata is therefore not enough by itself; the runtime needs a reliable ingress point before a decision or lossy rewrite.
+
+This is implementation evidence, not outcome validation. The repository was at version 1.0.8 with 3 GitHub stars when inspected, and it does not publish a controlled measure of semantic-drift reduction. Its local test suite did exercise the relevant invariants—context-pressure estimation, preservation across compaction, north-star parsing/counters, and isolation of two chats' task cores—but the full 125-test run in this environment ended with one unrelated MCP transport test failure after 124 passes. The value of the signal is the explicit authority/state separation and hook-boundary engineering, not a demonstrated accuracy gain.
+
+Source: https://github.com/ReidenXerx/bearing
+Source: https://github.com/ReidenXerx/bearing/blob/8c2e026173cda26049260e7a61ddaa84840590db/bundle/.claude/hooks/bearing-northstar-anchor.mjs
+Source: https://github.com/ReidenXerx/bearing/blob/8c2e026173cda26049260e7a61ddaa84840590db/bundle/.claude/hooks/bearing-context-pressure.mjs
+Source: https://github.com/ReidenXerx/bearing/blob/8c2e026173cda26049260e7a61ddaa84840590db/bundle/.claude/hooks/bearing-session.mjs
 
 ---
 

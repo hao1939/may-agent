@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Cross-source synthesis: The most valuable compiled governance is the decision NOT to act. Abstention competence — the capacity to identify and halt when preconditions aren't met — explains a 7× efficiency gap in our production data and connects formal research (arXiv abstention taxonomy), architectural patterns (Edict/Chancellery veto, Arbor checks-and-balances), and the Compilation Gradient into a single actionable principle. The cheapest compiler doesn't transform soft signals into hard enforcement; it transforms ambiguous situations into principled non-action."
 triggers: ["abstention", "quick exit", "heartbeat efficiency", "compliance bias", "when not to act", "specification gap", "verification gap", "authority gap", "veto power", "principled pause", "cooperative scheduling"]
-last_updated: "2026-07-17"
-source_basis: "Cross-source: arXiv 2606.02965 (Abstention Competence, three-gap taxonomy), arXiv 2606.13621 (Shield Synthesis defensibility verdicts), GitHub Edict 三省六部 (16k★, Chancellery veto), arXiv 2606.12563 (Arbor checks-and-balances), live production data (7-day: 1,230 heartbeats, 4 agents), KE-1968 (Heartbeat Tax), KE-1975 (OS Recapitulation, cooperative scheduling), KE-1958 (Oversight Inverted-U), KE-1984 (Phantom Feedback Loop), governance-compilation-gradient.md."
+last_updated: "2026-08-10"
+source_basis: "Cross-source: arXiv 2606.02965 (Abstention Competence, three-gap taxonomy), arXiv 2606.13621 (Shield Synthesis defensibility verdicts), GitHub Edict 三省六部 (16k★, Chancellery veto), arXiv 2606.12563 (Arbor checks-and-balances), HN 49246804 (Needle2 confidence-gated edge tool calling), live production data (7-day: 1,230 heartbeats, 4 agents), KE-1968 (Heartbeat Tax), KE-1975 (OS Recapitulation, cooperative scheduling), KE-1958 (Oversight Inverted-U), KE-1984 (Phantom Feedback Loop), governance-compilation-gradient.md."
 </ai_context>
 
 # The Abstention Advantage: Why the Most Powerful Compiled Governance Is the Decision Not to Act
@@ -250,6 +250,38 @@ for the evaluator.
    tuning.
 
 ---
+
+## HN field signal (2026-08-10): A confidence field is not yet abstention
+
+Needle2, a 14 MB model presented for local tool calling on phones and embedded
+devices, made abstention visible in its output schema but left the decisive
+control to integrators. In the HN thread, users entered unsupported or ambiguous
+text such as `HN`, `potato`, or “make it as dark as possible”; the demo emitted
+an unrelated door-lock or thermostat call while assigning confidence `0`.
+Commenters correctly noted that a caller could reject those outputs by threshold,
+but also asked for false-positive and calibration results across a test set—not
+just a score attached to one response.
+
+The maintainer said a confidence threshold around 60% worked in their experiments,
+while emphasizing that adopters must test on their own workload because no
+existing benchmark captures every deployment. That is a useful and unusually
+concrete boundary: **exposing uncertainty enables abstention, but does not compile
+it.** The runtime must still define and enforce a no-action region, measure
+unsupported-request false positives, calibrate the score on representative data,
+and decide when to escalate rather than act locally.
+
+For physical or ambient agents, the default should be stricter than a generic
+accuracy threshold. An implausible text answer can be discarded after the fact;
+a false-positive `lock_door` call has already crossed an actuation boundary.
+A deployable edge-action model therefore needs an explicit `no_tool` outcome,
+workload-specific risk/coverage curves, per-tool consequence policy, and a gate
+outside the model that prevents low-confidence calls from reaching devices.
+Confidence is evidence for a veto, not the veto itself.
+
+- **HN discussion:** https://news.ycombinator.com/item?id=49246804
+- **Relevant test reports:** https://news.ycombinator.com/item?id=49249736 and https://news.ycombinator.com/item?id=49250779
+- **Calibration exchange:** https://news.ycombinator.com/item?id=49250276
+- **Submitted URL:** https://cactuscompute.com/needle
 
 ## Cross-References
 

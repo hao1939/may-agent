@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Canonical overview of agent architecture patterns, trends, and proven designs. Consolidated from five overlapping notes."
 triggers: ["agent architecture", "architecture patterns", "ReAct", "multi-agent orchestration", "monitor agent", "critic pattern", "tiered memory", "control flow agents"]
-last_updated: "2026-07-02"
-source_basis: "Merged from agent-architectures.md, agent-architecture-trends.md, agent-patterns.md, agent_patterns.md, agent_architectures_01.md. Sources include HN May 2026 trends, XHS community discussions, internal Scout synthesis, GitHub trending repos June 2026 (scans on Jun 13, 15, 20), and arXiv papers June 2–16 2026 (triages on Jun 14, 15, 17, 19, batch 6/7, session-state Jul 18, runtime-hardening). §Process Harness & §Architecture Gradient extracted to agent-runtime-hardening.md. §Intelligence Entropy through §SaliMory (12 arXiv research papers) extracted to agent-architectures-research.md (2026-07-08)."
+last_updated: "2026-08-11"
+source_basis: "Merged from agent-architectures.md, agent-architecture-trends.md, agent-patterns.md, agent_patterns.md, agent_architectures_01.md. Sources include HN May 2026 trends, XHS community discussions, internal Scout synthesis, GitHub trending repos June 2026 (scans on Jun 13, 15, 20), and arXiv papers June 2–16 2026 (triages on Jun 14, 15, 17, 19, batch 6/7, session-state Jul 18, runtime-hardening). §Process Harness & §Architecture Gradient extracted to agent-runtime-hardening.md. §Intelligence Entropy through §SaliMory (12 arXiv research papers) extracted to agent-architectures-research.md (2026-07-08). HN updates (2026-08-05): HN 49182946 / Data For Science 'Building an Advanced Agentic Harness' added as practitioner evidence that harness engineering is being pressure-tested around thin orchestrators, benchmarkable structure, budget-aware graceful degradation, and explicit observability rather than framework bulk alone; HN 49189075 / Prime Intellect 'Prime Agent' added as practitioner evidence that self-improving harnesses now face a compression test from stronger base models and code-bloat skepticism. arXiv update (2026-08-06): Skill-Use [2608.04828] added as evidence that skill activation and compliance are harness-conditioned bottlenecks even when skill files already exist. HN update (2026-08-08): HN 49214109 and Prime Agent revision a18809e add concrete evidence that durable self-improvement is becoming a typed, rollback-capable supplemental state plane, while execution continuity and security containment remain separate concerns. arXiv update (2026-08-10): [2608.06953] adds controlled evidence that explicit source/certainty fields preserve epistemic stance under tight memory compression better than parenthetical prose, while showing that the mechanism and best explicit form remain model-dependent. HN update (2026-08-11): HN 49259702 / Lobu adds implementation-level practitioner evidence for treating durable agent memory as an append-only observation proxy with explicit supersession, run-to-input lineage, pre-effect approval, and corrections that survive model replacement."
 supersedes: ["agent-architecture-trends.md", "agent-patterns.md", "agent_patterns.md", "agent_architectures_01.md"]
 </ai_context>
 
@@ -55,6 +55,43 @@ Tier 2 (vector DB) may become necessary as the project scales.
 
 - **Source**: AI Agent Community Research (XHS Trends).
 
+#### Epistemic fields survive compression better than incidental qualifiers (arXiv, Aug 2026)
+
+A controlled memory-compression study sharpens what Tier 3 should store. Kwon
+held claim and epistemic stance constant across matched notes, changing only
+whether source/certainty appeared as labelled fields or as parenthetical prose.
+At two tight budgets across 60 claims, stance retention rose from 52/360 to
+109/360 on Claude Haiku 4.5 and from 147/360 to 202/360 on Claude Sonnet 4.5.
+The per-claim direction favored fields 37–2 and 30–8 respectively; a
+pre-registered Haiku replication reported a +15.6-point effect.
+
+The useful architecture lesson is narrower than “use this exact schema”:
+
+- **Compress claims and standing together.** A digest that preserves the claim
+  but drops “rumor,” “inferred,” its speaker, or its as-of date has changed the
+  claim's operational meaning.
+- **Make standing explicit, not merely verbose.** Adding length did not help
+  either model. Labels helped both, while full-sentence explicitness helped one
+  model strongly and the other negligibly, so the best representation should be
+  regression-tested per compressor.
+- **Separate retention from validation.** Structured `SOURCE`, `CERTAINTY`, and
+  `AS_OF` fields make omissions mechanically checkable, but do not prove that a
+  filled value is correct. Multiple conflicting attributions also require a
+  richer representation than one source slot.
+- **Test under real pressure.** Loose budgets produced little effect; the
+  failure surfaced when the compressor had to discard information. Memory evals
+  therefore need pressure sweeps and should score “qualified,” “washed into bare
+  fact,” and “evicted” separately.
+
+Scope matters: the main experiment used 60 synthetic English claims and two
+models from one provider; the end-to-end writer pilot was only n=10. Treat the
+~15-point gain as evidence for explicit epistemic metadata under tight
+compression, not as a universal schema benchmark.
+
+- **Source**: Alex Kwon, “Explicit, Not Longer: What Makes Epistemic Stance
+  Survive Memory Compression,” arXiv:2608.06953v1 (2026-08-07),
+  https://arxiv.org/abs/2608.06953v1
+
 ## Emerging Trends
 
 ### Control Flow Replacing Prompt Engineering (May 2026)
@@ -84,6 +121,132 @@ The dominant new architectural pattern from GitHub trending repos. The "harness"
   engineering structures its inner cycle. Validates the Compilation Threshold
   thesis: practitioners are building cost-awareness into execution loops.
 - **Source**: GitHub trending repos June–July 2026, HN discourse June 2026.
+
+**UPDATE (Aug 2026 — HN 49182946): Harnesses now have to justify their own complexity.**
+A useful HN thread around Bruno Gonçalves's
+["Building an Advanced Agentic Harness"](https://data4sci.com/blog/building-an-advanced-agentic-harness)
+sharpens what practitioners now treat as a *serious* harness.
+
+The linked post is explicit that the point is not a giant framework but a
+**deliberately thin orchestrator** composed from small primitives:
+
+- **Typed tools** with schema validation so bad actions fail before execution.
+- **Up-front plan structure** (here a DAG) so independent work can run in
+  parallel under bounded concurrency.
+- **Tiered memory under a hard retrieval budget** instead of passively
+  accumulating context.
+- **Verification hierarchy**: deterministic checks first, LLM judge only for
+  survivors.
+- **Narrow Planner / Worker / Critic roles** with swappable providers.
+- **Multi-dimensional budget pressure** (tokens, tool calls, wall time, cost)
+  that triggers graceful degradation instead of binary success/failure.
+- **Flat structured traces** so a run is replayable and auditable after the
+  fact.
+
+HN's reaction is as informative as the article itself:
+
+- Several commenters argued the toy example risks **over-engineering** a task
+  that a simpler loop could solve.
+- `budududuroiu` explicitly preferred a **REPL / code-loop surface** over a DAG,
+  because code can express loops and early exits without inventing a separate
+  control language.
+- `hanneshdc` asked the key governance question directly: **where are the
+  benchmarks showing this structure improves error rates or problem-solving?**
+- `alansaber` compressed the harness discourse into a blunt practitioner frame:
+  much of it is really **context management plus guardrails**.
+
+That combination matters. It suggests harness engineering is no longer judged by
+how many moving parts it contains, but by whether each extra layer is
+**measurable, swappable, and operationally justified**. The field is shifting
+from "add scaffolding" to **"keep orchestration thin, externalize control, and
+make every structural addition earn its keep via cost, verification, or
+observability."**
+
+*Sources: https://news.ycombinator.com/item?id=49182946 and
+https://data4sci.com/blog/building-an-advanced-agentic-harness (article claims
+and HN comments by dominotw, budududuroiu, hanneshdc, and alansaber checked
+2026-08-05).*
+
+**UPDATE (Aug 2026 — HN 49189075): Self-improving harnesses are now under a compression test.**
+A useful HN thread around Prime Intellect's
+["Prime Agent: A self-improving RLM agent"](https://www.primeintellect.ai/blog/prime-agent)
+shows that practitioner interest in self-improvement is now paired with a much
+sharper question: **is the harness still worth its own complexity once base
+models improve?**
+
+The thread's most informative comments focus on that tradeoff rather than the
+headline benchmark claim:
+
+- `riddlemethat` reports building a similar local MCP + memory + rules harness,
+  but says newer foundational models have improved enough that simple repo-local
+  Markdown context often replaces the heavier scaffold for the same use cases.
+- `embedding-shape` argues the published repo exhibits the opposite failure
+  mode: self-improvement via agent-written harness code can inflate into
+  multi-10K-line files and enormous switch statements, creating a codebase that
+  many models navigate worse rather than better.
+- `supermdguy` pushes the next-step thesis: if harness engineering itself is
+  the bottleneck, then the improvement loop may need explicit optimization
+  methods (for example RL over harness changes), not just more auto-generated
+  scaffolding.
+
+That combination matters because it reframes self-improving harnesses from an
+unqualified architectural advance into a **compression test**:
+
+1. if stronger base models can absorb enough structure, bespoke harness layers
+   start looking like temporary scaffolding,
+2. if the harness persists, it must improve faster than its own code and rule
+   complexity grows,
+3. and the scarce engineering skill may shift from writing bigger harnesses to
+   designing better **harness-evolution loops**.
+
+This is a useful counterweight to the earlier "Harness Engineering" expansion:
+practitioners are no longer only asking how to add scaffold layers; they are
+starting to ask **which layers frontier models have already eaten, and whether
+self-improvement creates more operational surface than it removes.**
+
+*Sources: https://news.ycombinator.com/item?id=49189075 and
+https://www.primeintellect.ai/blog/prime-agent (story title/url and HN comments
+by riddlemethat, embedding-shape, and supermdguy checked 2026-08-05).*
+
+**UPDATE (Aug 2026 — HN 49214109): Self-improvement is becoming a supplemental state plane.**
+The newer HN submission points directly to Prime Agent's open repository, whose
+current architecture makes the improvement boundary more concrete than the
+original product argument. The base system prompt stays immutable; `/refine`
+may instead make small changes to supplemental prompts, memories, skill
+descriptions, and reusable subagent specifications. Refinements are recorded as
+snapshots and can be rolled back, and they remain session-local by default.
+
+That boundary is a useful response to the compression problem above. Treating
+harness evolution as typed, reviewable state makes subtraction and rollback
+possible without allowing a trajectory to rewrite its root authority. But the
+repository also shows that three concerns often grouped as “persistent agents”
+need separate controls:
+
+1. **learning continuity** lives in versioned supplemental harness state;
+2. **execution continuity** lives in daemon workers, JSONL transcripts,
+   persistent IPython kernels, schedules, goals, and reattachable child agents;
+3. **security containment** is explicitly *not* supplied by those process
+   boundaries—the worker and kernel normally retain the user's OS permissions.
+
+Prime Agent also distinguishes durable goals from continuation policy: a goal
+stores the objective and progress, while autonomous mode decides whether to
+continue under turn, token, time, and quality-gate limits. This separation keeps
+a remembered objective from silently becoming unlimited execution authority.
+Likewise, direct inter-agent messages carry runtime-derived sender identity and
+queue/rate limits, but receipt means delivery or queuing—not that the requested
+effect was authorized or completed.
+
+The reusable design rule is: **make self-improvement a reversible data plane,
+keep continuation budgeted, and do not mistake lifecycle isolation for a
+sandbox.**
+
+*Sources: https://news.ycombinator.com/item?id=49214109,
+https://github.com/PrimeIntellect-ai/prime-agent,
+https://github.com/PrimeIntellect-ai/prime-agent/blob/a18809e00ea30638584d87b3afea7285a9d7296c/README.md,
+https://github.com/PrimeIntellect-ai/prime-agent/blob/a18809e00ea30638584d87b3afea7285a9d7296c/packages/coding-agent/docs/architecture.md,
+and https://github.com/PrimeIntellect-ai/prime-agent/blob/a18809e00ea30638584d87b3afea7285a9d7296c/packages/coding-agent/docs/long-running-agents.md
+(repository revision and linked HN item checked 2026-08-08; HN had 2 points and
+no comments at retrieval).*
 
 ### Architectural Laziness (July 2026 — Explosive Growth)
 
@@ -249,7 +412,47 @@ Agent memory has become a standalone product category with 10+ competing repos a
   Tax thesis** (Parcle): >50% of agentic token spend is re-exploration tax —
   agents repeatedly paying to re-derive context from prior sessions. Aligns
   with Cold Start Tax synthesis (46% reconstruction) and the-token-economics-trap.md.
-  Source: HN Scan #152b (findings/2026-09-22-hn-scan-152.md).
+  Source: HN Scan #152b (findings/2026-06-22-hn-scan-152.md).
+
+#### Event-sourced memory is an observation ledger, not a second source of truth (HN, Aug 2026)
+
+An HN-submitted Lobu architecture note supplies a concrete practitioner design
+for the lifecycle layer above. External systems remain authoritative for their
+facts; Lobu's append-only log is authoritative only for what was observed and
+what agents did about it. A correction appends a new event pointing to the one
+it supersedes, “current” means no later event supersedes it, and the database
+allows only one replacement of a given fact. This preserves the question most
+in-place memory stores cannot answer: **what did this agent believe when it
+acted?**
+
+The more important improvement primitive is lineage, not retention alone. Each
+behavior run records the exact events it consumed; outputs and human
+corrections return to the same graph; the latest correction per field is folded
+into the next prompt. That makes feedback portable across model replacement and
+supports replay or evaluation against the state actually visible to a past
+run. It also exposes three boundaries that an “event-sourced agent” must not
+blur:
+
+1. **Observation is not truth.** Preserve source-system identity and reconcile
+   new observations instead of promoting the memory proxy into a competing
+   system of record.
+2. **Audit is not reversibility.** The log can correct a belief but cannot
+   unsend an email, so consequential effects need approval before the external
+   write.
+3. **Self-generated events need exclusion rules.** Lobu reports that behaviors
+   once reacted to their own bookkeeping rows after a timestamp migration;
+   provenance must therefore participate in trigger admission, not merely in
+   later inspection.
+
+This is vendor-authored architecture evidence, not an independent reliability
+study. Its reported scale—roughly 230,000 events, 27,000 supersessions, and
+90,000 events naming their run—is self-reported; the HN item had one point and
+one author comment when inspected. The reusable signal is the explicit split
+between source truth, observation history, run lineage, and irreversible
+external effects—not the product's scale claim.
+
+- **HN:** https://news.ycombinator.com/item?id=49259702
+- **Source:** https://lobu.ai/blog/self-improving-agents-are-event-sourced/
 
 ### Memory Control Plane (July 2026 — Emerging Thesis)
 
@@ -481,6 +684,18 @@ Three converging papers on skill quality: SkillCAT extracts skills by comparing 
 
 - **Key implication**: Single-trajectory skill extraction is unreliable. Contrastive comparison of paired outcomes is the reliable extraction method. Our lesson learning should compare successful vs. failed sessions, not accumulate lessons from individual sessions.
 - **Sources**: [2606.13317] SkillCAT, [2606.10546] SkillAxe (Microsoft Research), [2606.11543] SkillJuror.
+
+**UPDATE (Aug 2026 — Skill-Use / arXiv 2608.04828): skill files do not imply skill use.**
+Skill-Use benchmarks 79 real skills across 177 executable tasks in nine domains under **progressive disclosure**: the agent initially sees only the skill name and short description, so it must first decide to fetch the full procedure, then follow it, and then stay within the skill's allowed boundaries. The strongest evaluated model+harness configuration reaches an **SU score of only 0.613**. More importantly, **Trigger** (did the agent invoke the right skill?) and **Compliance** (did it actually follow the procedure?) fail as *independent* bottlenecks, and model rankings shift across the two harnesses tested.
+
+That is a useful correction to the current skills discourse. The core problem is no longer just authoring better `SKILL.md` files or scanning their dependencies; it is whether the runtime can **surface, activate, and enforce** them when only sparse metadata is visible at decision time. In practice, this upgrades the skill stack from three layers to four:
+1. **Taxonomy** — what kind of skill is this?
+2. **Dependency** — what hidden packages/services does it pull in?
+3. **Security** — does it contain malicious or risky behavior?
+4. **Use** — can the harness actually trigger the right skill, execute it faithfully, and respect its boundaries?
+
+**Structural implication**: skill use behaves as a **harness-conditioned capability**, not a fixed property of the base model. This reinforces the Selection Bottleneck and Harness Engineering theses: selection/activation quality can dominate the value of the underlying skill library.
+Source: https://arxiv.org/abs/2608.04828
 
 ### Production Context Engineering — Less Is More (arXiv, June 2026)
 

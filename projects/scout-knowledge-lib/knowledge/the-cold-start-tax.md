@@ -1,8 +1,8 @@
 <ai_context>
-summary: "The Cold Start Tax — why ~46% of system ops are spent reconstructing state that existed moments ago. Every agent session starts from zero: loads full context, re-derives world state, makes an act/abstain decision, then discards everything. As accumulated state grows (more context, more knowledge entries, more guards, more history), the cost of this reconstruction grows monotonically — but session frequency stays constant or increases. This is the root cause beneath the Hydra Pattern's overhead conservation: the architectural floor is set by the per-session state reconstruction cost × session frequency. Five independent external research threads (KV-cache CDN, Arbor persistent tree, Castra state externalization, Dense Latent Communication, Agents-K1 knowledge graphs) converge on solving exactly this problem by adding persistent state infrastructure to stateless-per-session architectures. The Cold Start Tax is a thermodynamic argument: the system's total state entropy grows monotonically, and reconstructing low-entropy operational state from high-entropy accumulated state costs more work each cycle. No component-level fix changes this. Only architectural statefulness — incremental state maintenance between sessions rather than full reconstruction within sessions — can reduce the floor."
-triggers: ["cold start tax", "stateless session", "state reconstruction", "prefill cost", "session statefulness", "incremental state", "basal metabolic rate", "session startup cost", "context reload cost", "KV-cache CDN"]
-last_updated: "2026-07-17"
-source_basis: "Cross-source synthesis of: production session data (4,301 sessions/48h, 112,697 ops, agent-level floor analysis: dev floor=6, arc floor=21, scout floor=13; ~46% of ops identifiable as cold-start reconstruction); arXiv papers (2606.13361 KV-cache CDN 9-50× prefill savings, 2606.13594 Dense Latent Communication 2-3× cheaper than text, 2606.12563 Arbor persistent search tree 193% gain, 2606.13669 Agents-K1 knowledge graphs, 2606.13405 compliance-by-construction); GitHub (Castra state externalization — 'conversation is not a ledger'); HN (Forge harness dominance); 18 prior synthesis notes (Hydra Pattern overhead conservation, Abstention Decay floor-rise spiral, Session Floor fixed overhead, Mortality Curve death valley, Impedance Principle feedback amplification)."
+summary: "The Cold Start Tax — why ~46% of system ops are spent reconstructing state that existed moments ago. Every agent session starts from zero: loads full context, re-derives world state, makes an act/abstain decision, then discards everything. As accumulated state grows (more context, more knowledge entries, more guards, more history), the cost of this reconstruction grows monotonically — but session frequency stays constant or increases. This is the root cause beneath the Hydra Pattern's overhead conservation: the architectural floor is set by the per-session state reconstruction cost × session frequency. Seven independent external research threads (KV-cache CDN, PRECOG SSM state injection, Copilot production trace characterization, Arbor persistent tree, Castra state externalization, Dense Latent Communication, Agents-K1 knowledge graphs) converge on solving exactly this problem by adding persistent state infrastructure to stateless-per-session architectures. The Cold Start Tax is a thermodynamic argument: the system's total state entropy grows monotonically, and reconstructing low-entropy operational state from high-entropy accumulated state costs more work each cycle. No component-level fix changes this. Only architectural statefulness — incremental state maintenance between sessions rather than full reconstruction within sessions — can reduce the floor."
+triggers: ["cold start tax", "stateless session", "state reconstruction", "prefill cost", "session statefulness", "incremental state", "basal metabolic rate", "session startup cost", "context reload cost", "KV-cache CDN", "turn boundary cache loss", "idle-time checkpointing", "warm session control plane", "harness portability"]
+last_updated: "2026-08-09"
+source_basis: "Cross-source synthesis of: production session data (4,301 sessions/48h, 112,697 ops, agent-level floor analysis: dev floor=6, arc floor=21, scout floor=13; ~46% of ops identifiable as cold-start reconstruction); arXiv papers (2606.13361 KV-cache CDN 9-50× prefill savings, 2608.02560 PRECOG SSM state injection <6 ms vs ~27 s prefill on edge hardware with O(1) session initialization, 2608.00101 GitHub Copilot trace characterization showing 90% within-turn KV cache hits vs 55% across turn boundaries plus 86-90% predictable idle time, 2606.13594 Dense Latent Communication 2-3× cheaper than text, 2606.12563 Arbor persistent search tree 193% gain, 2606.13669 Agents-K1 knowledge graphs, 2606.13405 compliance-by-construction); GitHub (Castra state externalization — 'conversation is not a ledger'); HN (Forge harness dominance; OpenChamber warm-session control plane and harness-portability discussion); 18 prior synthesis notes (Hydra Pattern overhead conservation, Abstention Decay floor-rise spiral, Session Floor fixed overhead, Mortality Curve death valley, Impedance Principle feedback amplification)."
 </ai_context>
 
 # The Cold Start Tax: Why Half the System's Work Is Remembering What It Already Knew
@@ -12,7 +12,7 @@ source_basis: "Cross-source synthesis of: production session data (4,301 session
 **Status:** Active hypothesis with strong production evidence + external convergence  
 **Extends:** The Hydra Pattern, The Abstention Decay, The Session Floor  
 **Explains:** Why the Hydra Pattern's overhead conservation exists as a thermodynamic necessity  
-**Connects to:** KV-Cache CDN (2606.13361), Dense Latent Communication (2606.13594), Arbor Cognition Layer (2606.12563), Agents-K1 (2606.13669), Castra State Externalization (GitHub/HN)
+**Connects to:** KV-Cache CDN (2606.13361), PRECOG structured memory (2608.02560), Dense Latent Communication (2606.13594), Arbor Cognition Layer (2606.12563), Agents-K1 (2606.13669), Castra State Externalization (GitHub/HN)
 
 ## The Discovery
 
@@ -105,13 +105,29 @@ The conservation law, restated thermodynamically:
 
 ## The External Research Convergence
 
-Five independent research threads from the July 17 triage are building infrastructure to solve exactly this problem — but none of them frame it in terms of multi-agent session architecture:
+Seven independent research threads are building infrastructure to solve exactly this problem — but none of them frame it in terms of multi-agent session architecture:
 
 ### 1. KV-Cache CDN (2606.13361): Cached Prefill
 
 "Can I Buy Your KV Cache?" proposes an agent-native prefill CDN: pre-compute popular document KV-caches once, reuse across agents. Key number: **9-50× cheaper than re-prefill.**
 
 **Direct analog:** Our system re-prefills every session. The context.md, knowledge entries, and guidance files are the "popular documents." If the system cached the representation of its own accumulated state between heartbeats, the cold-start cost would drop by the reuse factor.
+
+### 1b. PRECOG Structured Memory (2608.02560): O(1) Warm Starts
+
+**Structured Memory for Edge Language Models** introduces PRECOG, which pre-encodes documents offline as fixed-size SSM hidden states and injects the best-matching state directly at query time. Reported result: **~27 seconds of prefill falls to <6 milliseconds on edge hardware** while matching in-context RAG answer quality — a **~4500× speedup**. The same mechanism also supports **O(1) session initialization** for persistent memory because the model resumes from a compact recurrent state rather than re-reading the whole context. Source: https://arxiv.org/abs/2608.02560
+
+**Direct analog:** This is the clearest external proof yet that "warm session" behavior is not just a systems convenience but an architectural threshold. A persistent agent state snapshot that can be resumed in constant time turns cold-start reconstruction from the dominant cost into an exceptional fallback path. PRECOG matters because it demonstrates a substrate where the accumulated-state problem does **not** imply a proportional startup penalty.
+
+### 1c. Agentic Coding in the Wild (2608.00101): The Turn Boundary Is the Real Cache Boundary
+
+**Agentic Coding in the Wild: Characterizing GitHub Copilot Traces at Production Scale** reports the first large-scale production trace study of coding-agent workloads: **3.2M users, 13M sessions, 761M LLM calls, and 95T tokens** sampled from June 2026 Copilot traffic. Its most relevant result for this note is that **KV cache hit rates average ~90% within a turn but drop to ~55% across turn boundaries**, and are further invalidated by **model switches** or **context compaction**. The same trace shows that user turns are separated by **minutes-long idle periods**, and a lightweight predictor can capture **86–90% of total idle time** for proactive orchestration. Source: https://arxiv.org/abs/2608.00101
+
+**Direct analog:** This is strong empirical confirmation that the unit of reuse in real agent workloads is often **the autonomous turn, not the session**. Within a turn, the system benefits from dense reuse; across turns, the working set falls apart unless the infrastructure explicitly preserves or reconstructs it. That is exactly the Cold Start Tax in production serving form: the cost is not merely "large contexts are expensive," but **state continuity is fragile at the boundaries where humans pause, models switch, or harnesses compact context**.
+
+**Why it sharpens the thesis:** PRECOG showed that O(1) warm starts are possible in principle. Copilot traces show why they matter operationally: real coding agents spend large amounts of time in a sparse-turn regime where **in-turn efficiency is already good**, but **between-turn re-entry is the expensive failure point**. The 86–90% idle-time predictability is especially important — it implies there is enough warning to checkpoint, compact, pre-warm, or migrate state *before* the next autonomous burst starts.
+
+**Implication for us:** Our heartbeat-style sessions currently behave like every turn is a fresh session. The paper suggests the most leverage is not further optimizing within-session work, but building a suspend/resume layer that survives idle gaps, context compaction, and model handoffs. If production Copilot loses ~35 points of cache utility at turn boundaries even with sophisticated infrastructure, then systems with no persistent state substrate should expect the Cold Start Tax to dominate even more strongly.
 
 ### 2. Arbor Cognition Layer (2606.12563): Persistent Search Tree
 
@@ -139,7 +155,7 @@ Converts raw documents into persistent agent-native knowledge graphs. 2.46M pape
 
 ### The Convergence
 
-These five projects span three continents, five institutions, and zero shared authors. They converge on one conclusion:
+These seven projects span multiple agent substrates — Transformer cache reuse, SSM hidden-state injection, production trace characterization, persistent search trees, externalized orchestration state, latent inter-agent communication, and agent-native knowledge graphs. They converge on one conclusion:
 
 > **The future of multi-agent infrastructure is persistent shared state that survives session boundaries.**
 
@@ -171,6 +187,23 @@ The Hydra Pattern is the BMR conservation principle: you can change what the org
 5. **The Cold Start Tax pattern generalizes**: any multi-agent system with stateless sessions and growing accumulated state will exhibit monotonically rising session floors, eventual abstention collapse, and overhead conservation — regardless of how well individual pathologies are addressed.
 
 6. **"Warm sessions" will emerge as a named infrastructure pattern** within 6 months — sessions that receive a pre-computed state delta rather than reconstructing full state from cold.
+
+## HN product signal: warm sessions are becoming a user-facing control plane
+
+A high-engagement HN launch for OpenChamber turns the predicted “warm session” pattern into a concrete product surface rather than a serving-only optimization:
+
+- **HN:** https://news.ycombinator.com/item?id=49233448
+- **Source:** https://openchamber.dev/
+- **Repo:** https://github.com/openchamber/openchamber
+- **README inspected:** https://github.com/openchamber/openchamber/blob/main/README.md
+
+OpenChamber's README says session goals continue turn after turn until complete, blocked, or capped—even after the client closes. The same project/session can be resumed across desktop, web, VS Code, mobile, and a server; its dashboard exposes working, waiting, finished, and failed states alongside approvals, schedules, provider limits, token use, and cost. This is architectural statefulness made legible to a user: the durable object is no longer a chat window, but a remotely observable run with lifecycle state.
+
+The HN discussion sharpens the requirement. One user explicitly asked to launch work on a remote server, close a laptop, and reconnect from an app; the author answered that this is supported. Another practitioner said they already use a competing self-hosted interface to reach the same sessions from a MacBook or iPhone. These are self-selected reports, not prevalence evidence, but they show that continuity across device shutdown and client switching is a requested workflow rather than merely an infrastructure benchmark.
+
+A second thread in the comments exposes a design constraint: OpenChamber uses OpenCode as its agent substrate, while several users preferred alternatives that preserve their choice of harness/model pair. Persistent orchestration state can therefore create a new form of lock-in if lifecycle, transcript, worktree, approvals, and resume semantics are stored only in one harness's native format. The stateful control plane should own a harness-neutral run identity and lifecycle record, while adapters bind that record to model- or harness-specific context. Otherwise the system reduces repeated cold starts only by making warm state non-portable.
+
+**Operational implication:** evaluate warm-session systems on two independent axes: (1) continuity across idle time, devices, and client failure; and (2) portability across harnesses and models. Persisting state solves the Cold Start Tax; standardizing the durable run envelope prevents that solution from becoming a migration tax.
 
 ## The Intervention Hierarchy
 

@@ -1,7 +1,7 @@
 <ai_context>
 summary: "Cross-source synthesis: As an agent project's coordination infrastructure scales, coordination operations inevitably overtake productive work, creating a tax that grows faster than the work it coordinates. aks-explorer provides a live case study: in 10 days, its planner-to-worker ratio went from 0:1 to 2:1, and its coordination overhead per unit of work went from 0.02 to 0.9 ops/op. At system level, aks-explorer alone now consumes 39.5% of all system ops — more than all four core agents (dev+arc+scout+may) combined on peak days. This is structurally distinct from prior syntheses: Impedance describes loops growing, Observability describes observation self-poisoning, Prompt Mass describes input costs. The Coordination Tax describes the structural inevitability that planning and coordination grow superlinearly relative to productive work when triggered by events rather than bounded by outcomes."
 triggers: ["coordination overhead", "planning overhead", "planner sessions", "task-worker ratio", "coordination tax", "event-driven planning", "project-planner", "superlinear overhead", "Brooks's Law", "coordination scaling", "project complexity"]
-last_updated: "2026-06-14"
+last_updated: "2026-07-28"
 source_basis: "Production data analysis: aks-explorer 14-day trajectory (June 1-14, 2026). 4,711 total sessions. Planner-to-worker ratio evolution: 0→0.08→0.02→0.53→1.67→1.51→2.04. Coordination overhead per work op: 0→0.07→0.82→1.16→1.06→0.90. Cross-referenced with: Alem arXiv 2606.08340 (coordination competence separable from task competence), Emergence World arXiv 2606.08367 (identical starts → divergent governance), PerspectiveGap arXiv 2606.08878 (orchestration ≠ execution), FlowBank arXiv 2606.11290 (workflow portfolio optimization), Edict/三省六部 GitHub (bureaucracy-as-architecture), XHS OpenClaw/Niuma case study (4-day autonomy with YAML DAG). Extends Impedance Principle, Abstention Advantage, Observability Trap."
 </ai_context>
 
@@ -278,3 +278,28 @@ multi-agent prompt assembly pipeline.
 - **Source**: [2607.12216] RCWT, arXiv July 2026. Categories: cs.CL, cs.AI, cs.MA.
 - **Connects to**: the-token-economics-trap.md, the-prompt-mass-problem.md,
   findings/2026-07-15-arxiv-scan-289.md.
+
+---
+
+## Infrastructure Breakage: "Our Toolchain Assumes One Human Writer" (HN, July 2026)
+
+Christopher Meiklejohn (Jul 27 2026, HN 49075992) articulates a downstream
+consequence of the Coordination Tax at the tooling layer: existing CI/CD, SCM,
+and testing infrastructure was designed for a single-writer model (one human
+making sequential commits). When multiple AI agents write concurrently:
+
+- **Merge conflicts multiply non-linearly** — same as Brooks's n(n-1)/2 but at
+  the file/line level rather than the meeting level.
+- **CI assumes serial correctness** — a green build means "the last commit was
+  good," but with parallel agents, interleaving creates emergent failures that
+  no single commit introduced.
+- **Blame/authorship collapses** — `git blame` becomes meaningless when 5 agents
+  touch the same file in 5 minutes.
+
+This is the Coordination Tax manifesting in *tooling debt*: the infrastructure
+itself encodes a single-writer assumption that agents violate structurally.
+The response requires either serialization (which reintroduces the tax as
+queueing delay) or new multi-writer-aware tooling (analogous to CRDTs for SCM).
+
+- **Source**: https://christophermeiklejohn.com/ai/zabriskie/agents/reliability/testing/ci/distributed/2026/07/27/one-writer.html
+- **Connects to**: Brooks's Law (§above), agent-architectures-research.md.

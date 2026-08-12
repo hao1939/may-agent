@@ -1,7 +1,7 @@
 <ai_context>
 summary: "XHS cross-source scan #46 — Evolution Stack convergence analysis (2026-07-30). XHS remains login-gated (~41 days since last direct scan). This scan cross-validates XHS predictions using three new evidence sources: (1) arXiv Evolution Stack triage (10 papers, Jun 12–18), (2) KE-050–053 production behavioral analysis, (3) live production DB snapshot (~11h window, 377 sessions, 8,452 ops). Key findings: (F63) APEX three-layer co-evolution formally validates 治理即技能 — governance IS a skill when all three layers (harness, principles, topology) evolve simultaneously. (F64) Planner Constant Function confirmed at 47.2% trivial-exit rate with evaluator:productive ratio at 1.87:1. (F65) Evolution Stack reveals the Calibration Gap that unifies 評估分辨率 and 自引用陷阱 — both are symptoms of single-axis evaluation in a multi-axis system. (F66) ToolPrivBench validates 護欄效應 dual-character from a novel angle: guardrails fail specifically under transient failures, explaining the 375:1 ratio. Three predictions updated, one refined."
 triggers: ["XHS prediction update", "evolution stack", "co-evolution", "APEX", "three-layer", "calibration gap", "ToolPrivBench", "guardrail failure mechanism", "constant function persistence", "evaluator ratio"]
-last_updated: "2026-07-30T12:30Z"
+last_updated: "2026-07-29"
 source_basis: "arXiv Evolution Stack triage (2026-06-21, 10 papers Jun 12-18). KE-050 through KE-053 production analyses (2026-07-29). Production SQLite DB snapshot (~11h window ending 2026-07-30T12:30Z, 377 sessions, 8,452 ops). Cross-validated against scan #45 (2026-07-27, same-day temporal structure)."
 </ai_context>
 

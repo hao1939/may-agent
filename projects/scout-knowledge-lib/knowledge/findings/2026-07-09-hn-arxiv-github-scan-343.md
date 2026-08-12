@@ -1,5 +1,5 @@
 <ai_context>
-HN/arXiv/GitHub scan #343 (2026-07-09). Theme: The Governance Sidecar Crystallization — runtime enforcement infrastructure is crossing from concept to product category. A cluster of ~100★ repos (OpenFirma 100★, Doberman-Core 111★, Orloj 105★) independently converge on the sidecar pattern: governance as a separate process/layer that intercepts and gates every agent action, rather than modifying the agent itself. GateMem (132★, +78% from 74★ in mid-June) proves memory governance remains unsolved but benchmarkable. Meanwhile, "short leash" discourse (65pts/63c) continues maximum polarization, and Dressage (263★, NEW) introduces sandboxed RL as a leash-length discovery mechanism. The leash-building:verification gap from #341 (2,023:1) may be narrowing as sidecar repos grow, but remains structurally extreme. Virginia ban at 486pts confirms governance-as-infrastructure trajectory. arXiv rate-limited this session. Extends Containment Failure Census (#342), Leash-Length Calibration (#341), Governance Materiality Threshold (#337), Lifecycle Awakening (#332).
+HN/arXiv/GitHub scan #343 (2026-07-09), with an OpenFirma implementation follow-up on 2026-08-08. Theme: The Governance Sidecar Crystallization — runtime enforcement infrastructure is crossing from concept to product category. A cluster of ~100★ repos (OpenFirma 100★, Doberman-Core 111★, Orloj 105★) independently converge on the sidecar pattern: governance as a separate process/layer that intercepts and gates agent actions, rather than modifying the agent itself. The August follow-up sharpens the boundary: OpenFirma's covered path now has capability validation, Cedar policy, fail-closed errors, and sandbox integration, but interception completeness depends on the deployment backend; its own security material excludes raw sockets, local effects, MCP stdio, generic gRPC, and native database protocols from the sidecar alone. GateMem (132★, +78% from 74★ in mid-June) proves memory governance remains unsolved but benchmarkable. Meanwhile, "short leash" discourse (65pts/63c) continues maximum polarization, and Dressage (263★, NEW) introduces sandboxed RL as a leash-length discovery mechanism. The leash-building:verification gap from #341 (2,023:1) may be narrowing as sidecar repos grow, but remains structurally extreme. Virginia ban at 486pts confirms governance-as-infrastructure trajectory. arXiv rate-limited this session. Extends Containment Failure Census (#342), Leash-Length Calibration (#341), Governance Materiality Threshold (#337), Lifecycle Awakening (#332).
 </ai_context>
 
 # The Governance Sidecar Crystallization (Scan #343)
@@ -256,4 +256,27 @@ Every gap eliminated by the sidecar pattern maps to a failure mode documented in
 
 ---
 
-**Scan #343 filed.** The Governance Sidecar Crystallization extends the trajectory: Governance as specification (#337) → Governance as inspection (#340) → Governance as leash (#341) → Governance as containment (#342) → **Governance as sidecar (#343)** — a separate process that intercepts, gates, and audits every agent action. The pattern was independently discovered by three teams. The product category doesn't have a name yet, but it has 316★ and growing.
+## Implementation Follow-up — Interception Completeness Is a Deployment Property (2026-08-08)
+
+OpenFirma has progressed from the category signal observed in July into a concrete, layered reference implementation. At repository revision [`51b8227`](https://github.com/Firma-AI/openfirma/tree/51b8227ccfdaf46f03fc2c0070bcdbfb6bf25293), its covered request path normalizes HTTP calls into canonical action classes, validates PASETO v4 capability tokens, evaluates Cedar policy locally, injects credentials only after `ALLOW`, and emits signed audit events. The code converts normalization, token, scope, stale-policy, and configuration errors into `DENY`; protected requests without a deterministic mapping become `UNCLASSIFIED_INTENT`. This is materially stronger than an in-model guardrail because neither a persuasive prompt nor context compaction changes the decision procedure.
+
+The repository also documents the limit that the earlier category-level account blurred. The sidecar by itself is an L7 boundary, not process containment: direct TCP/UDP, unproxied loopback, local file or shell effects, MCP over `stdio`, generic gRPC, and native database protocols are outside its coverage. Structural interception therefore requires the sidecar **plus** a backend that removes alternate egress paths. The current backend matrix calls Linux `bwrap` the structural fast path, while default macOS and Windows modes remain proxy-only compatibility paths; stronger parity still needs platform-specific evidence.
+
+This yields a sharper design rule than “put policy in a sidecar”:
+
+> **A deterministic policy decision is only as strong as the proof that every relevant effect must cross its enforcement point.**
+
+For runtime claims, report two properties separately:
+
+1. **Decision soundness** — what happens to traffic that reaches the gate (classification, capability scope, policy, failure behavior, audit).
+2. **Mediation completeness** — which effect channels cannot route around the gate on this exact deployment backend.
+
+A system can be fail-closed inside its proxy while remaining fail-open at the machine boundary. Security evidence should therefore identify the backend and enumerate uncovered modalities rather than inheriting “every call” from the logical architecture.
+
+**Primary repo:** https://github.com/Firma-AI/openfirma  
+**Inspected revision:** `51b8227ccfdaf46f03fc2c0070bcdbfb6bf25293`  
+**Implementation evidence:** [mapping fail-closed contract](https://github.com/Firma-AI/openfirma/blob/51b8227ccfdaf46f03fc2c0070bcdbfb6bf25293/crates/firma-sidecar/src/normalizer/mapping.rs), [error-to-DENY boundary](https://github.com/Firma-AI/openfirma/blob/51b8227ccfdaf46f03fc2c0070bcdbfb6bf25293/crates/firma-sidecar/src/enforcement/error.rs), [security coverage statement](https://github.com/Firma-AI/openfirma/blob/51b8227ccfdaf46f03fc2c0070bcdbfb6bf25293/SECURITY.md), [backend matrix](https://github.com/Firma-AI/openfirma/blob/51b8227ccfdaf46f03fc2c0070bcdbfb6bf25293/docs/adr/FIR-60-sandbox-backend-selection-for-firma-run.md)
+
+---
+
+**Scan #343 filed.** The Governance Sidecar Crystallization extends the trajectory: Governance as specification (#337) → Governance as inspection (#340) → Governance as leash (#341) → Governance as containment (#342) → **Governance as sidecar (#343)** — a separate process that intercepts, gates, and audits agent actions on the paths it mediates. The pattern was independently discovered by three teams. The product category doesn't have a name yet, but it has 316★ and growing.

@@ -1,7 +1,7 @@
 <ai_context>
 summary: "The Comprehension Cliff discourse arc — complete lifecycle from HN micro-signal to peer-reviewed science to national policy action. Tracks AI-generated output overwhelming human review capacity."
 triggers: "comprehension cliff, reviews expensive, skill atrophy, code review, AI verification bottleneck"
-last_updated: "2026-09-12"
+last_updated: "2026-07-30"
 source_basis: "HN scans #11–#53 (Jun–Aug 2026). Nature controlled trial (Anthropic, 52 engineers). VentureBeat coverage. arXiv 2606.20512 (Probe-and-Refine guidance tuning)."
 parent_note: "hn-agent-operational-memory.md"
 extraction_reason: "Extracted from parent note (1,303→~907 lines) as thematic companion. The Comprehension Cliff is a complete discourse arc with its own evidence chain, distinct from the parent's operational memory / infrastructure themes."
@@ -377,7 +377,7 @@ The Nature article surges from 61pts/44c (scan #49) to **222pts/283c** (scan
 | **Alarmed** | "Senior engineers are degrading" | iLoveOncall (FAANG), mellosouls ("unprecedented") |
 | **Grieving** (NEW) | "We're ruining the best career" | u8 (craft-identity loss as existential) |
 
-*(Source: [2026-08-26-hn-scan-50.md](./findings/2026-08-26-hn-scan-50.md))*
+*(Source: [2026-07-22-identity-in-the-model-and-tooling-credibility.md](./findings/2026-07-22-identity-in-the-model-and-tooling-credibility.md))*
 
 The Comprehension Cliff discourse lifecycle is now complete:
 1. Comment observation (scans #10-11)
@@ -410,7 +410,7 @@ practice** — analogous to how musicians practice without sheet music.
 The discourse lifecycle adds a 7th stage:
 7. **National policy action** (Norway ban, scan #53)
 
-*(Source: [2026-08-29-hn-scan-53.md](./findings/2026-08-29-hn-scan-53.md))*
+*(Source: [2026-06-20-hn-scan-53.md](./findings/2026-06-20-hn-scan-53.md))*
 
 ### Previous: Tripartite Community Response (scan #23)
 

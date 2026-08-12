@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Companion note to agent-security-defense-architectures.md: 12 verified/formal enforcement patterns (§2.33–§2.45) for AI agent security. These share a common principle — safety enforcement that does not depend on model cooperation. Covers out-of-band deterministic enforcement, institutional attestation, policy autoformalization, trust-by-construction, multi-layer verification oracles, per-datum trust scoring, runtime trace enforcement, knowledge-boundary defense, physical-world attestation, context-to-execution integrity (CXI), and off-host identity-bound authorization (aiAuthZ)."
-triggers: ["verified enforcement", "out-of-band defense", "Progent", "CaMeL", "FIDES", "institutional attestation", "Cedar policy", "autoformalization", "Kiko protocol", "trust-by-construction", "VIGIL trace enforcement", "knowledge-based PR", "KPR", "hardware-gated agent", "deceptive fixes", "TerraProbe", "Robust-TO", "per-datum trust", "CXI", "context-to-execution integrity", "aiAuthZ", "identity-bound authorization"]
-last_updated: "2026-07-08"
-source_basis: "Extracted from agent-security-defense-architectures.md §2.33–§2.42. §2.44–§2.45 (CXI, aiAuthZ) moved from defense-architectures.md §Execution Boundary Patterns (scan #453). 12 defense patterns sourced from arXiv June–July 2026 papers (2606.26479 Progent, 2606.26298 Institutional Attestation, 2606.26649 Cedar Pipeline, 2606.26590 TerraProbe, 2606.26156 Kiko, 2606.26904 Robust-TO, 2606.26524 VIGIL, 2606.26721 KPR, 2606.27231 Quantum Hardware Agent, 2607.06000 CXI, 2607.05518 aiAuthZ). Scans #176–#183, #453."
+summary: "Companion note to agent-security-defense-architectures.md: verified/formal enforcement patterns for AI agent security. These share a common principle — safety enforcement that does not depend on model cooperation. Covers out-of-band deterministic enforcement, institutional attestation, policy autoformalization, trust-by-construction, multi-layer verification oracles, per-datum trust scoring, runtime trace enforcement, knowledge-boundary defense, physical-world attestation, context-to-execution integrity (CXI), off-host identity-bound authorization (aiAuthZ), and hardware-confined signing with pre-committed effect authority."
+triggers: ["verified enforcement", "out-of-band defense", "Progent", "CaMeL", "FIDES", "institutional attestation", "Cedar policy", "autoformalization", "Kiko protocol", "trust-by-construction", "VIGIL trace enforcement", "knowledge-based PR", "KPR", "hardware-gated agent", "deceptive fixes", "TerraProbe", "Robust-TO", "per-datum trust", "CXI", "context-to-execution integrity", "aiAuthZ", "identity-bound authorization", "hardware keystore", "PKCS#11", "signing authority", "payload commitment"]
+last_updated: "2026-08-09"
+source_basis: "Extracted from agent-security-defense-architectures.md §2.33–§2.42. §2.44–§2.45 (CXI, aiAuthZ) moved from defense-architectures.md §Execution Boundary Patterns (scan #453). Patterns sourced from arXiv June–August 2026 papers, including 2606.26479 Progent, 2606.26298 Institutional Attestation, 2606.26649 Cedar Pipeline, 2606.26590 TerraProbe, 2606.26156 Kiko, 2606.26904 Robust-TO, 2606.26524 VIGIL, 2606.26721 KPR, 2606.27231 Quantum Hardware Agent, 2607.06000 CXI, 2607.05518 aiAuthZ, and 2608.06130 hardware-confined signing. Scans #176–#183, #453; maintained with current source checks."
 </ai_context>
 
 # Agent Security: Verified Enforcement Patterns
@@ -405,3 +405,47 @@ identity binding and cryptographic audit trail.
 binding provides the missing principal attribution layer.
 
 *(arXiv [2607.05518](https://arxiv.org/abs/2607.05518), Jul 2026. Scan #453)*
+
+## Hardware confinement does not confer signing authority (August 2026)
+
+**Source:** https://arxiv.org/abs/2608.06130v1
+
+Hardware-backed keys close one attack class: when a key is generated inside an
+HSM, TPM, or smart card and exposed only through an opaque PKCS#11 handle, a
+prompt-injected agent cannot read the raw private key from disk or process
+memory. But confinement alone does **not** stop the agent from asking the
+hardware to sign an attacker-chosen payload. The paper's stronger pattern
+therefore separates three properties:
+
+1. **Key non-extractability:** the private key never enters host memory.
+2. **Session and capability bounds:** signed session tokens bind the original
+   user intent, tool allowlist, quota, expiry, and replay nonce.
+3. **Exact-effect authority:** before external content is read, a trusted
+   operator plane commits the SHA-256 hash of the document that may be signed;
+   a later hash mismatch is rejected deterministically.
+
+Across 192 injection trials on three injection-following models, the naive
+baseline had 19.3% attack success and the full stack had 0 observed successes
+(Wilson 95% upper bound 2.0%). Attribution matters: document substitution was
+blocked by the pre-committed hash, while key exfiltration was blocked by the
+hardware boundary. The result does not establish the semantic judge's
+standalone efficacy, and the benign evaluation contained only four tasks.
+
+The autonomy boundary is explicit. If the target document cannot be named in
+advance (for example, “process my inbox and sign anything that needs signing”),
+there is no deterministic payload anchor. The production recommendation is to
+require human approval regardless of the semantic judge's verdict. This turns
+open-ended signing into escalation rather than pretending that key confinement
+makes it safe.
+
+**Operational caveats:** the prototype excludes compromised kernels, physical
+HSM attacks, and timing side channels; its taint bit does not survive a
+write-file/read-file laundering path; and operator escalations are not
+rate-limited. Deployments with writable scratch space need filesystem-level
+taint propagation, while approval queues need fatigue controls. The measured
+secure path is also aimed at low-frequency, high-value signing: roughly 1.1 s
+with SoftHSM and 1.4 s with the tested TPM, not per-request JWT/HMAC loops.
+
+**Connection to CXI (§2.44):** a hardware root protects the credential, while a
+pre-committed effect manifest protects its use. Credential custody and action
+authorization are independent boundaries; both must be proven.

@@ -52,6 +52,18 @@ Writing code *yourself* remains valuable not for the code produced, but for the 
 - **Reverse Centaur**: Risk emerges when the factory inverts — when humans become the accountability sink for factory outputs they don't understand
 - **Delegation Surface**: Every factory boundary is a delegation surface requiring trust infrastructure
 
+## The Counter-Evidence: "Harness Engineering Is Not Enough"
+
+Dex (HumanLayer) published "Why Software Factories Fail" (July 2026) arguing that no amount of harness/loop engineering can compensate for fundamental model-training limitations. Key data points:
+
+- **Faros AI report**: Since widespread AI coding tool adoption (Jan–Feb 2026), PR review comments up 25%, comment length up 22.7%, PRs merged without review up 31.3%. Incidents per PR up **242.7%**, monthly incidents up 57.9%, bugs per developer up **54%**.
+- **StrongDM's "lights-off" factory** went quiet after sparse weather-report updates between Feb–June 2026 — no public success narrative emerged.
+- Core thesis: benchmark-acing models still produce "mountains of slop" because RLVR training incentivizes benchmark-specific solutions, not real codebase maintenance. This is a **model training issue**, not a harness configuration issue.
+
+**Implication for the Factory Inversion**: The factory metaphor holds, but the "Phase 3" transition may be premature. Current models may not be reliable enough for fully autonomous production without human-in-the-loop review. The factory needs a quality *floor* that models can't yet provide, making the human "quality inspector" role more load-bearing than optimists assume.
+
+Source: https://github.com/humanlayer/advanced-context-engineering-for-coding-agents/blob/main/wsff.md (HN 49023019, 62pts, 2026-07-23)
+
 ## The Backlash Signal
 
 "Stop Telling Me to Ask an LLM" (175pts/104c) and "I Hate Coding Agents. Skill Issue?" represent developers experiencing the factory inversion as identity loss. The backlash is not anti-technology — it's anti-displacement of professional craft identity. This is the emotional substrate of the phase transition.
