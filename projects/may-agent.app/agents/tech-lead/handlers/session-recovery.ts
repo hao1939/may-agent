@@ -18,6 +18,7 @@ import { join } from "node:path";
 import type { EventEnvelope, HandlerContext, HandlerModule } from "@may-agent/sdk";
 import type { CronEntry } from "@may-agent/sdk";
 
+const APP_PROJECT_ID = "may-agent";
 const MAX_RECOVERY_ATTEMPTS = 2;
 const STALE_AUTOCLOSE_MS = 30 * 60_000;
 const STALE_IDLE_AUTOCLOSE_MS = 45 * 60_000; // sessions idle >45min with autoClose:"immediate"
@@ -125,6 +126,134 @@ function hasAssistantLine(persistDir: string, sessionId: string): boolean {
   } catch {
     return false;
   }
+}
+
+function parseCandidateFromReviewTask(task: string | undefined): Record<string, unknown> | null {
+  if (!task) return null;
+  const marker = "Candidate:\n";
+  const index = task.lastIndexOf(marker);
+  if (index < 0) return null;
+  const jsonText = task.slice(index + marker.length).trim();
+  if (!jsonText) return null;
+  try {
+    const parsed = JSON.parse(jsonText);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function hasCompletedAdmissionReview(ctx: HandlerContext, sourceEventId: number): boolean {
+  if (typeof ctx.sdk.getDb !== "function") return false;
+  try {
+    const db = ctx.sdk.getDb();
+    const row = db.prepare(
+      `SELECT id
+       FROM events
+       WHERE event_type = 'human.attention.reviewed'
+         AND json_extract(data, '$.sourceEventId') = ?
+         AND json_extract(data, '$.status') = 'completed'
+       ORDER BY id DESC
+       LIMIT 1`,
+    ).get(sourceEventId) as { id?: number } | undefined;
+    return typeof row?.id === "number";
+  } catch {
+    return false;
+  }
+}
+
+function recoverFailedTelegramAdmission(
+  ctx: HandlerContext,
+  input: { sessionId: string; error: string; task?: string },
+): boolean {
+  const rootDir = ctx.sdk.paths?.root ?? process.cwd();
+  const persistDir = ctx.sdk.paths?.persist ?? join(rootDir, ".state");
+  const meta = parseMeta(persistDir, input.sessionId);
+  const source = typeof meta?.source === "string" ? meta.source : "";
+  if (source !== "telegram-human-attention-review") return false;
+
+  const reviewTask = typeof meta?.task === "string" && meta.task.trim()
+    ? meta.task
+    : input.task;
+  const candidate = parseCandidateFromReviewTask(reviewTask);
+  const sourceEventId = Number(candidate?.sourceEventId);
+  if (!Number.isInteger(sourceEventId) || sourceEventId <= 0) return false;
+  if (hasCompletedAdmissionReview(ctx, sourceEventId)) return true;
+
+  const eventType = typeof candidate?.eventType === "string" ? candidate.eventType : "message.created";
+  const from = typeof candidate?.from === "string" ? candidate.from : "unknown";
+  const content = typeof candidate?.content === "string" ? candidate.content : "";
+  const projectId = typeof candidate?.projectId === "string" ? candidate.projectId : undefined;
+
+  ctx.sdk.emit("human.attention.reviewed", {
+    sourceEventId,
+    mode: "enforce",
+    admitted: false,
+    delivered: false,
+    attempts: null,
+    candidate: {
+      eventType,
+      from,
+      content,
+      projectId,
+    },
+    status: "completed",
+    disposition: "route",
+    understoodIntent:
+      "Recover the held Telegram admission candidate without delivering it to Hao until a later explicit deliver decision exists.",
+    reason:
+      "Session recovery found that the live Telegram admission review aborted before emitting a supported terminal disposition, so the candidate must stay internal while the platform owner completes bounded recovery.",
+    nextAction:
+      "Route bounded recovery to tech-lead under may-agent.app owner review and keep Telegram delivery blocked for this lineage.",
+    owner: "tech-lead",
+    evidence: [
+      `Admission review session ${input.sessionId} ended without a terminal result: ${input.error.slice(0, 400)}.`,
+      `The held candidate references exact sourceEventId ${sourceEventId} from ${from}.`,
+      "No completed human.attention.reviewed closure for this exact sourceEventId existed when session recovery inspected the lineage.",
+    ],
+    actionTaken:
+      "Session recovery recorded a safe route disposition for the held candidate lineage instead of skipping it as an unclassified failure.",
+    closureCondition:
+      "A later owner recovery or admission review records the bounded outcome for this exact sourceEventId, and no Telegram delivery occurs unless a later deliver disposition is issued.",
+    reviewAgainWhen:
+      "When tech-lead completes the may-agent.app telegram admission recovery review for this exact sourceEventId.",
+    recovery: {
+      failedSessionId: input.sessionId,
+      reason: "telegram-admission-review-failed",
+      decisionSource: "session-recovery",
+    },
+  });
+
+  ctx.sdk.emit("project.owner.requested", {
+    project: "may-agent",
+    reason: "telegram-admission-review-failed",
+    params: {
+      instruction:
+        "Recover the held Telegram admission candidate from bounded durable evidence only: the candidate payload, cited packet/artifact paths, current task-tree truth, and exact runtime lineage for this request. Retry or route it under the existing ownership convention, keep raw candidate text internal, avoid repository-wide search unless one exact cited file still needs inspection, and contact Hao only after a successful deliver disposition.",
+      sourceEventId,
+      candidateEventType: eventType,
+      candidateFrom: from,
+      candidateProjectId: projectId,
+      reviewReason: input.error,
+      attempts: 1,
+      closureCondition:
+        "A later admission review records a terminal handle, route, clarify-producer, reject, or deliver disposition.",
+      recoveryDisposition: {
+        allowedDispositions: ["handle", "route", "clarify-producer", "reject", "deliver"],
+        fallbackRule:
+          "If the recovery cannot be completed from bounded evidence in one turn, return the safest structured route or clarify-producer outcome instead of aborting without a terminal disposition.",
+      },
+      recovery: {
+        failedSessionId: input.sessionId,
+        reason: "telegram-admission-review-failed",
+        style: "session-recovery-fallback",
+      },
+    },
+  });
+  ctx.sdk.log("info", `[recovery] recorded telegram admission fallback for sourceEventId=${sourceEventId} session=${input.sessionId}`);
+  return true;
 }
 
 function isSafeAutocloseSession(ctx: HandlerContext, row: RunningSessionRow, now: number): boolean {
@@ -393,11 +522,13 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
             attempt: attempts + 1,
             maxAttempts: MAX_RECOVERY_ATTEMPTS,
             event,
-          }), { source: "may" });
+          }), {
+            projectId: APP_PROJECT_ID,
+          });
           ctx.sdk.emit("handler.workflow_dispatched", {
             handler: "session-recovery",
             workflow: "session-recovery",
-            source: "may",
+            source: ctx.agentName,
             workflowRunId: result.runId ?? null,
             status: result.status,
             sessionId,
@@ -442,11 +573,13 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         action,
         source,
         event,
-      }), { source: "may" });
+      }), {
+        projectId: APP_PROJECT_ID,
+      });
       ctx.sdk.emit("handler.workflow_dispatched", {
         handler: "session-recovery",
         workflow: "session-recovery",
-        source: "may",
+        source: ctx.agentName,
         workflowRunId: result.runId ?? null,
         status: result.status,
         sessionId,
@@ -454,7 +587,12 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         action,
       });
     } else {
-      emitSkip(ctx, sessionId, `classifier chose ${action}`, { agent, decisionSource: source });
+      const recoveredTelegramAdmission = action === "nothing"
+        && agent === "may"
+        && recoverFailedTelegramAdmission(ctx, { sessionId, error, task });
+      if (!recoveredTelegramAdmission) {
+        emitSkip(ctx, sessionId, `classifier chose ${action}`, { agent, decisionSource: source });
+      }
     }
   };
 };

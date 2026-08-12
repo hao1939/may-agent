@@ -12,6 +12,24 @@ const projectId = "may-agent";
 const projectOwnerAgent = "tech-lead";
 const actionInputSchema = Type.Object({}, { additionalProperties: true });
 
+const DAY_MS = 86_400_000;
+
+/** Stable task resource every owner review (scheduled or reactive) routes to. */
+export const OWNER_REVIEW_TASK_ID = "runtime/platform-owner-review";
+
+/** Total owner sessions available per day. */
+export const OWNER_SESSIONS_PER_DAY = 6;
+
+/** Owner sessions/day reserved for reactive event-owner reviews. */
+export const RESERVED_REACTIVE_SESSIONS_PER_DAY = 2;
+
+export const PLATFORM_REVIEW_INTERVAL_MS = 28_800_000; // 8h
+export const OWNER_HEARTBEAT_INTERVAL_MS = 86_400_000; // 24h
+
+/** Owner sessions/day booked in advance by schedules. */
+export const SCHEDULED_OWNER_SESSIONS_PER_DAY =
+  DAY_MS / PLATFORM_REVIEW_INTERVAL_MS + DAY_MS / OWNER_HEARTBEAT_INTERVAL_MS;
+
 function ownerRequested(reason: string, params: unknown = {}): ProjectAppEvent {
   return {
     type: "project.owner.requested",
@@ -88,7 +106,7 @@ export function resolveMayAgentTask(
   }
 }
 
-async function routePlatformEvent(
+export async function routePlatformEvent(
   ctx: ProjectAppContext,
   event: Record<string, unknown>,
 ): Promise<unknown> {
@@ -123,7 +141,7 @@ async function routePlatformEvent(
 
     // metric.recovered is informational — the problem resolved itself.
     // Don't spend session budget on a wake; the next scheduled project.tick
-    // (4h interval) naturally captures the recovered state.
+    // (8h interval) naturally captures the recovered state.
     // Without this guard, breach→review→recover→review loops consume the
     // entire 6-sessions/day budget for no actionable work.
     if (event.type === "metric.recovered") {
@@ -132,87 +150,23 @@ async function routePlatformEvent(
       );
     }
 
-    // Deferred metrics: breaches for these metric IDs do NOT trigger immediate
-    // owner wakes. They are captured in the next scheduled project.tick (4h).
+    // Deferred metrics: breaches for these IDs do NOT trigger an immediate
+    // owner wake; they are captured by the scheduled project.tick (8h).
     //
-    // Two categories:
-    // 1. Health-observation metrics that measure the RESULT of owner reviews
-    //    (e.g. "are there active tasks?"). They create circular dependencies:
-    //      no active task → breach → owner wake → review → recover → breach
-    // 2. Known-root-cause metrics where the fix is delegated and repeated
-    //    owner wakes are wasteful until the implementation lands.
+    // Retention rule (platform-local invariant only): a metric may be deferred
+    // only when an owner wake is structurally self-defeating, i.e. the metric
+    // measures the result or the act of the platform owner review itself.
+    // Cross-project incident narratives (e.g. another app's burst failures)
+    // are NOT a valid reason to defer here — those are excluded by the
+    // metric-owner filter above, or must be re-owned to the owning app.
     const DEFERRED_METRICS = new Set([
-      // Category 1: health-observation oscillation
+      // Measures the RESULT of owner reviews: no active finding -> breach ->
+      // owner wake -> review -> recover -> breach. Circular by construction.
       "project.health.finding-count",
       "project.owner-incomplete-count",
       "project.owner-judgment-needed-count",
-      // Category 2: guard noise — root cause is aks-rp-e2e beforeToolCall
-      // churn (98% of triggers). Fix delegated to dev as KE-2000 Spec 3
-      // (guard noise scoping). Remove these once the scoping fix lands.
-      "guard.triggered-count-24h",
-      "guard.warned-count-24h",
-      // Category 3: (removed — measurement query fixed to not require owner
-      // match on handler.completed events, since handler name already correlates)
-      // Category 4: escalation pending count measures a human-action
-      // backlog. All pending escalations require human-provided artifacts
-      // (external files, clean git baselines) that the owner cannot self-service.
-      // Waking the owner repeatedly to re-inspect escalations it already
-      // triaged is wasteful. The scheduled project.tick (4h) surfaces the
-      // count for awareness; the human gets notified via the daily ops digest.
-      "escalation.pending-count",
-      // Category 5: stale-active-count spikes transiently after daemon
-      // restarts (all metrics appear stale until the first snapshot run).
-      // Self-resolves within one measurement cycle (~5min). Not actionable.
-      "metric.stale-active-count",
-      // Category 6: first-turn-error-count measures provider errors across
-      // ALL agents. ~80% of triggers are aks-rp-e2e planner burst failures
-      // (opCount=0 instant errors during planner workflow restarts). Not
-      // platform-actionable — aks-rp-e2e.app owns its planner reliability.
-      // Kept in scheduled review (4h) for trend awareness.
-      "session.first-turn-error-count-1h",
-      // Category 7: heartbeat-coverage measures agents with heartbeat
-      // sessions in 2h. Drops transiently when auto-heartbeat timers miss
-      // a cycle (timer drift, provider errors, cron queue depth). The owner
-      // review cannot restart cron timers — it self-corrects on the next
-      // timer fire. Repeated breaches burn session budget with no actionable
-      // fix. Captured in scheduled project.tick (4h) for trend awareness.
-      "handler.heartbeat-coverage",
-      // Category 8: DB size oscillates near threshold (2500MB) because
-      // event ingestion (~3MB/5min) outpaces hourly retention (~8-10MB drop).
-      // The owner cannot resolve this in a single session — it requires
-      // retention window reduction or threshold adjustment (human decisions).
-      // Waking on each breach creates breach→review→recover oscillation.
-      // Captured in scheduled project.tick (4h) for trend awareness;
-      // human notified via daily ops digest if sustained above threshold.
-      "infra.persist.db-size-mb",
-      // Category 9: agent config-invalid fires transiently during hot-reload
-      // races (e.g. schedule timer fire coincides with project-app-loader
-      // re-evaluating agents). The 1h window means events age out naturally.
-      // The binary includes cli-delegation in VALID_TOOL_PRESETS; false
-      // positives come from timing, not a code defect. Self-resolves.
-      "agent.config-invalid-count-1h",
-      // Category 10: provider-error-count measures provider errors at any
-      // turn across ALL agents. Same class as first-turn-error-count: ~100%
-      // of triggers are aks-rp-e2e planner/worker burst failures (opCount=0
-      // instant errors during workflow restarts). Not platform-actionable —
-      // aks-rp-e2e.app owns its session reliability. The platform cannot fix
-      // upstream provider errors. Kept in scheduled review (4h) for trend.
-      "session.provider-error-count-1h",
-      // Category 11: event pair orphan count measures open event_pair_runs
-      // rows past their expected_close_at. ~95% are project.task pairs from
-      // aks-rp-e2e bulk task dispatch (100+ tasks assigned per planning
-      // cycle with 4h TTL). These pairs orphan when tasks take longer than
-      // expected — a normal aks-rp-e2e operational pattern, not a platform
-      // defect. The platform owner cannot control task completion timing.
-      // Breaches correlate with planning cycle size, not platform failures.
-      // Captured in scheduled project.tick (6h) for trend awareness.
-      "event.pair-orphan-count",
-      // Category 12: zombie and stale-running session counts include the
-      // platform-owner-review session itself (runs 5-30min). The owner
-      // cannot fix its own running session from within — the metric
-      // self-resolves when the session completes. Waking for this creates
-      // a circular dependency: breach → owner wake → session runs →
-      // counted as zombie → breach. Captured in scheduled review.
+      // Counts running sessions, which includes the owner-review session that
+      // a wake would start: breach -> wake -> session -> counted -> breach.
       "capability.zombie-session-count",
       "runtime.stale-running-session-count",
     ]);
@@ -255,8 +209,27 @@ export default defineProjectApp({
     localPath: "../may-agent",
   },
 
+  // Owner session budget policy (project-local, no global handlers):
+  //
+  //   sessionsPerDay = 6
+  //   scheduled owner sessions/day = platform-review (8h -> 3) +
+  //                                  owner-heartbeat (24h -> 1) = 4
+  //   reactive headroom/day        = 6 - 4 = 2
+  //
+  // The reserved headroom exists so reactive owner wakes — project comments
+  // (project.comment.created), platform-owned metric breach/stall signals, and
+  // other abnormal runtime events — can still reach the owner on the day they
+  // happen. Previously the schedules booked 4 + 2 = 6/day, i.e. 100% of the
+  // budget, so any reactive signal competed with an already-full calendar.
+  // All of these paths (scheduled and reactive) converge on the stable
+  // runtime/platform-owner-review task resource, so headroom is spent on the
+  // same owner review contract rather than a parallel mechanism.
+  //
+  // Invariant checked by app.test.ts: SCHEDULED_OWNER_SESSIONS_PER_DAY <
+  // budget.sessionsPerDay, with at least RESERVED_REACTIVE_SESSIONS_PER_DAY
+  // left over.
   budget: {
-    sessionsPerDay: 6,
+    sessionsPerDay: OWNER_SESSIONS_PER_DAY,
     tokensPerDay: 300_000,
     maxConcurrent: 2,
   },
@@ -265,7 +238,7 @@ export default defineProjectApp({
     {
       id: "platform-review",
       enabled: true,
-      intervalMs: 21_600_000, // 6h — budget-aware: 4/day from this + 2/day from heartbeat = 6/day
+      intervalMs: PLATFORM_REVIEW_INTERVAL_MS, // 8h -> 3 owner sessions/day
       emits: [
         {
           type: "project.tick",
@@ -277,7 +250,7 @@ export default defineProjectApp({
     {
       id: "owner-heartbeat",
       enabled: true,
-      intervalMs: 43_200_000, // 12h — budget-aware: platform-review (6h, 4/day) + heartbeat (12h, 2/day) = 6/day matching sessionsPerDay budget
+      intervalMs: OWNER_HEARTBEAT_INTERVAL_MS, // 24h -> 1 owner session/day
       emits: [
         ownerRequested("owner-heartbeat", {
           instruction:

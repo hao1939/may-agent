@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import {
   projectAppTaskOwnerResultSchema,
   resolveTaskTreePath,
@@ -27,6 +27,11 @@ type OwnerResult = Exclude<
   { state: "needs-owner" }
 >;
 
+type OwnerAuthFailure = {
+  provider: string;
+  detail: string;
+};
+
 export const name = "platform-owner-review";
 export const description =
   "May-agent.app local owner workflow. Builds a platform review packet, then wakes tech-lead to judge and advance the platform project.";
@@ -37,6 +42,12 @@ const ownerEventOwner = `agent:${ownerAgent}`;
 // the platform agent (agent:may). Both land in the may-agent.app owner inbox
 // via routing, so lifecycle drain must cover both to prevent accumulation.
 const platformOwnerAliases = new Set([ownerEventOwner, "agent:may"]);
+const platformMetricOwners = new Set([
+  ownerAgent,
+  ownerEventOwner,
+  "may",
+  "agent:may",
+]);
 const reviewedSignalTypes = new Set([
   "metric.breach",
   "metric.recovered",
@@ -56,6 +67,173 @@ function field(task: string, name: string): string | undefined {
 
 function triggerBlock(task: string): string {
   return task.match(/## Trigger Event[\s\S]*$/)?.[0] ?? "";
+}
+
+function triggerEventId(task: string): number | null {
+  const block = triggerBlock(task)
+    .replace(/^## Trigger Event\s*/m, "")
+    .replace(/^```json\s*/m, "")
+    .replace(/\s*```\s*$/m, "")
+    .trim();
+  try {
+    const parsed = JSON.parse(block) as Record<string, unknown>;
+    const value = parsed.eventId;
+    return typeof value === "number" && Number.isInteger(value) ? value : null;
+  } catch {
+    const match = task.match(/"eventId"\s*:\s*(\d+)/);
+    if (!match) return null;
+    const value = Number(match[1]);
+    return Number.isInteger(value) ? value : null;
+  }
+}
+
+type OwnerReviewArtifactStatus =
+  | "pending"
+  | "blocked"
+  | "waiting"
+  | "converged";
+
+type OwnerReviewArtifact = {
+  generated_at: string;
+  updated_at: string;
+  trigger_event_id: number | null;
+  status: OwnerReviewArtifactStatus;
+  packet_path: string;
+  task_tree_path: string;
+  owner_prompt_artifact_path: string;
+  trigger_excerpt: string;
+  owner_worklog?: {
+    required_before_speculative_edits: boolean;
+    prompt: string;
+    current_hypothesis: string | null;
+    next_step: string | null;
+    updated_at: string | null;
+  };
+  owner_session?: {
+    session_id: string | null;
+    status: string;
+    summary: string | null;
+  };
+  owner_result?: OwnerResult;
+  interim_note?: string;
+};
+
+export function buildOwnerReviewArtifactPath(
+  appDir: string,
+  task: string,
+  now = Date.now(),
+): string {
+  const eventId = triggerEventId(task);
+  const fileName = eventId ? `event-${eventId}.json` : `review-${now}.json`;
+  return join(appDir, ".state", "owner-review-artifacts", fileName);
+}
+
+export function writeOwnerReviewArtifact(
+  path: string,
+  artifact: OwnerReviewArtifact,
+): void {
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, `${JSON.stringify(artifact, null, 2)}\n`, "utf-8");
+}
+
+function preservedOwnerProgress(
+  path: string,
+): Pick<OwnerReviewArtifact, "owner_worklog" | "interim_note"> {
+  const current = parseJsonFile(path);
+  const ownerWorklog = asRecord(current.owner_worklog);
+  return {
+    owner_worklog:
+      Object.keys(ownerWorklog).length > 0
+        ? (ownerWorklog as OwnerReviewArtifact["owner_worklog"])
+        : undefined,
+    interim_note:
+      typeof current.interim_note === "string"
+        ? current.interim_note
+        : undefined,
+  };
+}
+
+export function buildOwnerPrompt(input: {
+  appDir: string;
+  projectDir: string;
+  packetPath: string;
+  packetSummary: string;
+  taskTreePath: string;
+  trigger: string;
+  reviewArtifactPath: string;
+}): string {
+  const {
+    appDir,
+    projectDir,
+    packetPath,
+    packetSummary,
+    taskTreePath,
+    trigger,
+    reviewArtifactPath,
+  } = input;
+  return [
+    "You are the May-agent platform project owner.",
+    "",
+    `App/control plane: ${appDir}`,
+    `Domain workspace: ${projectDir}`,
+    "",
+    "Current trigger:",
+    trigger || "(no trigger event was provided)",
+    "",
+    "Trigger priority:",
+    "- When project.owner.requested carries an explicit instruction, treat that instruction as the primary bounded owner request.",
+    "- Use the health packet as context; do not silently replace the requested review with an unrelated alert review.",
+    "- If the instruction cannot be completed safely, return the exact conflict or blocker and the smallest supported task action.",
+    "",
+    "Admission-review terminal decision gate:",
+    "- For a held admission candidate, gather only three anchors: the exact candidate payload, its exact runtime lineage, and any exact prior terminal closure.",
+    "- Resolve each anchor by exact event ID, cited artifact path, or exact task/resource ID. Do not read whole state files, discover schemas, or load broad reference documents when an exact lookup is available.",
+    "- As soon as all three anchors are known, stop investigating. Immediately checkpoint the supported disposition, then return the safest terminal handle, route, clarify-producer, reject, or deliver result and call finish.",
+    "- Reserve the final quarter of the session budget for the terminal decision and finish. If an anchor remains unavailable at that checkpoint, choose the safest supported route or clarify-producer disposition instead of starting another lookup.",
+    "",
+    "The full system-review packet is at:",
+    `  ${packetPath}`,
+    "",
+    "Durable owner-review artifact:",
+    `  ${reviewArtifactPath}`,
+    "",
+    "Read the review packet for complete data. Here is the signal summary:",
+    "",
+    packetSummary,
+    "",
+    "Required owner judgment:",
+    "- If the packet shows real abnormal signals, fix the smallest root cause, propose typed task actions, or record the exact blocker.",
+    "- If project.json and the runtime project row disagree, treat that as a platform read-model/sync issue unless another session already fixed it.",
+    "- Prefer project-local app workflow/design fixes over adding behavior to global May handlers.",
+    "- Do not claim the platform is healthy or waiting from a narrow post-restart check while open alerts, recent failures, stale state, or evaluator findings remain.",
+    "- NEVER write to the runtime DB (may.db) directly via bash/bun:sqlite. All state changes must go through ctx.emit() or the event system. Direct DB inserts violate runtime safety and will be flagged by the evaluator.",
+    "- For cross-project durable task-state mutations, route through the target project app owner. Use break-glass/direct mutation only with an explicit audited note that names failure of the target app route itself; failed calls to May-agent internal agents or other unrelated boundaries are not sufficient proof.",
+    "- Start from bounded durable evidence: the packet, cited artifact paths, current task-tree truth, and exact runtime records for the named lineage or alert. Do not fall back to repository-wide search unless one exact cited file path still needs inspection.",
+    "- If you edit files, run focused checks and cite them before finish.",
+    "- The generic reconciler is the sole task-tree mutation authority. Never edit task-tree JSON, call task-tree mutation commands, or write task state through the database.",
+    "- Return task-tree changes only as typed actions in finish. Existing-task actions require the exact revision shown in the tree.",
+    "- For an unfinished owner message, create required delegated work as a direct child of runtime/platform-owner-review and return waiting. Routing or task creation is progress, not message completion.",
+    "- Return converged for an owner message only when its intended result is verified and no required delegated child remains live.",
+    "- Never mutate or create task ids beginning with runtime/; those standing responsibilities belong to the reconciler.",
+    "- You may edit May-agent-owned code and docs when that is the smallest useful domain step. Cite the resulting files and checks as evidence.",
+    "- Use converged after the current bounded actions are declared, and waiting only for a named external fact with an exact Condition that an observer can emit.",
+    "- Every waiting Condition subject must be typed (for example event:5011463, session:s_123, pull-request:77); bare numeric ids or free-text subjects are rejected by the task-handler contract.",
+    "- An evidence-backed no-op is valid; return an empty actions array and explain why existing work already covers the signal.",
+    "",
+    "Loss-prevention discipline for this owner review:",
+    "- As soon as you confirm the primary trigger evidence and your first gap/no-op hypothesis, immediately call checkpoint() with that proof, the likely next step, and any files or session ids a successor would need.",
+    `- Immediately after that checkpoint, update ${reviewArtifactPath} with a 1-3 sentence interim note before any speculative edit, broad repo search, or secondary investigation.`,
+    "- Do that checkpoint before broader repo searches or secondary investigation; if a later interruption occurs, the checkpoint must still support a recoverable waiting/converged decision.",
+    `- If you collect a stable interim decision before final finish, update ${reviewArtifactPath} again with the latest durable note so recovery can resume from evidence instead of re-deriving it.`,
+    "- If a preferred tool is unavailable, pivot immediately to an available equivalent (for example grep instead of rg) instead of spending more turns probing the environment.",
+    "",
+    "Start with these files:",
+    `- ${packetPath}`,
+    `- ${appDir}/project.json`,
+    `- ${taskTreePath}`,
+    `- ${appDir}/app.ts`,
+    `- ${appDir}/agents/tech-lead/workflows/platform-owner-review.ts`,
+  ].join("\n");
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -230,6 +408,46 @@ function queryRows(
   }
 }
 
+function metricOwner(alert: Record<string, unknown>): string | null {
+  const explicitOwner = alert.explicitOwner ?? alert.explicit_owner;
+  if (typeof explicitOwner === "string" && explicitOwner.trim() !== "") {
+    return explicitOwner;
+  }
+  const projectOwner = alert.projectOwner ?? alert.project_owner;
+  return typeof projectOwner === "string" && projectOwner.trim() !== ""
+    ? projectOwner
+    : null;
+}
+
+function isPlatformOpenAlert(alert: Record<string, unknown>): boolean {
+  const owner = metricOwner(alert);
+  return owner !== null && platformMetricOwners.has(owner);
+}
+
+function enrichAlerts(
+  openAlerts: Array<Record<string, unknown>>,
+  heartbeatAlerts: Array<Record<string, unknown>>,
+): Array<Record<string, unknown>> {
+  const byMetricId = new Map<string, Record<string, unknown>>();
+  for (const alert of heartbeatAlerts) {
+    const metricId = alert.metricId ?? alert.metric_id;
+    if (typeof metricId === "string" && metricId.trim() !== "") {
+      byMetricId.set(metricId, alert);
+    }
+  }
+  return openAlerts.map((alert) => {
+    const metricId = alert.metric_id ?? alert.metricId;
+    if (typeof metricId !== "string" || metricId.trim() === "") return alert;
+    const enriched = byMetricId.get(metricId);
+    if (!enriched) return alert;
+    return {
+      ...alert,
+      explicit_owner: enriched.explicitOwner ?? enriched.explicit_owner ?? null,
+      project_owner: enriched.projectOwner ?? enriched.project_owner ?? null,
+    };
+  });
+}
+
 function buildReviewPacket(
   ctx: WorkflowContext,
   appDir: string,
@@ -245,6 +463,24 @@ function buildReviewPacket(
   );
   const openAlerts = queryRows(ctx, () =>
     ctx.query.alerts({ resolved: false, limit: 20 }),
+  );
+  const heartbeatAlerts = (() => {
+    try {
+      return ctx.query.heartbeatContext({
+        agent: ownerAgent,
+        metricLimit: 1,
+        metricSnapshotLimit: 1,
+        alertLimit: 50,
+        inboxLimit: 1,
+      }).alerts as Array<Record<string, unknown>>;
+    } catch {
+      return [];
+    }
+  })();
+  const openAlertsWithOwners = enrichAlerts(openAlerts, heartbeatAlerts);
+  const platformOpenAlerts = openAlertsWithOwners.filter(isPlatformOpenAlert);
+  const otherOpenAlerts = openAlertsWithOwners.filter(
+    (alert) => !isPlatformOpenAlert(alert),
   );
   const ownerSessions = queryRows(ctx, () =>
     ctx.query.sessions({
@@ -303,13 +539,81 @@ function buildReviewPacket(
           row.status !== projectJson.status || row.owner !== projectJson.owner,
       ),
       task_tree: taskTreePacket(appDir),
-      open_alerts: openAlerts,
+      open_alerts: openAlertsWithOwners,
+      platform_open_alerts: platformOpenAlerts,
+      other_open_alerts: otherOpenAlerts,
       recent_abnormal_events: abnormalEvents,
       owner_sessions: compactRows(ownerSessions, 10),
       active_owner_sessions: compactRows(activeOwnerSessions, 10),
     },
+    consumedMessageIds: [],
     consumedEscalationIds: inboxIds("escalation.created"),
     consumedSignalEventIds: inboxIds(reviewedSignalTypes),
+  };
+}
+
+function classifyOwnerAuthFailure(
+  error: string | null | undefined,
+): OwnerAuthFailure | null {
+  if (!error) return null;
+  const trimmed = error.trim();
+  const genericAuth =
+    /(AuthenticationError|auth(?:entication)? failed|unauthorized|token expired|oauth)/i;
+  if (!genericAuth.test(trimmed)) return null;
+  if (/Github_copilotException|github-copilot|copilot/i.test(trimmed)) {
+    return { provider: "github-copilot", detail: trimmed };
+  }
+  return { provider: "llm-provider", detail: trimmed };
+}
+
+export function normalizeOwnerResult(ownerResult: OwnerResult): OwnerResult {
+  const createsRequiredChild = ownerResult.actions?.some(
+    (action) => action.kind === "create-task",
+  );
+  if (ownerResult.state !== "converged" || !createsRequiredChild) {
+    return ownerResult;
+  }
+
+  // A newly required child is live work by definition. Preserve the proposal,
+  // but fail closed to waiting so reconciliation can admit the child instead
+  // of rejecting the contradictory converged decision.
+  return {
+    ...ownerResult,
+    state: "waiting",
+    evidence: [
+      ...ownerResult.evidence,
+      "owner-result-normalized: create-task actions require waiting until delegated work converges",
+    ],
+  };
+}
+
+function authFailureOwnerResult(input: {
+  provider: string;
+  detail: string;
+  sessionId: string | null;
+  reviewArtifactPath: string;
+}): OwnerResult {
+  const providerLabel =
+    input.provider === "github-copilot" ? "GitHub Copilot" : input.provider;
+  return {
+    state: "waiting",
+    summary: `Platform owner review could not complete because the ${ownerAgent} session hit a ${providerLabel} authentication failure; refresh the credential and rerun the owner review.`,
+    evidence: [
+      `owner-session:${input.sessionId ?? "unknown"}`,
+      `provider-auth:${input.detail}`,
+      `artifact:${input.reviewArtifactPath}`,
+    ],
+    actions: [],
+    conditions: [
+      {
+        id: "owner-provider-auth-restored",
+        type: "external.fact",
+        subject: `credential:${input.provider}`,
+        expected: { status: "valid", agent: ownerAgent },
+        owner: "human",
+        reviewAfterMs: 300_000,
+      },
+    ],
   };
 }
 
@@ -332,20 +636,20 @@ function buildPacketSummary(packet: Record<string, unknown>): string {
       .join(", ");
     lines.push(`Task tree: ${tree.total} tasks (${countStr})`);
     const runnable = Array.isArray(tree.runnable) ? tree.runnable : [];
-    const active = Array.isArray(tree.active) ? tree.active : [];
-    const review = Array.isArray(tree.review) ? tree.review : [];
-    const blocked = Array.isArray(tree.blocked) ? tree.blocked : [];
-    if (active.length)
+    const running = Array.isArray(tree.running) ? tree.running : [];
+    const attention = Array.isArray(tree.attention) ? tree.attention : [];
+    const waiting = Array.isArray(tree.waiting) ? tree.waiting : [];
+    if (running.length)
       lines.push(
-        `  Active: ${active.map((t: { id?: string }) => t.id).join(", ")}`,
+        `  Running: ${running.map((t: { id?: string }) => t.id).join(", ")}`,
       );
-    if (review.length)
+    if (attention.length)
       lines.push(
-        `  Review: ${review.map((t: { id?: string }) => t.id).join(", ")}`,
+        `  Attention: ${attention.map((t: { id?: string }) => t.id).join(", ")}`,
       );
-    if (blocked.length)
+    if (waiting.length)
       lines.push(
-        `  Blocked: ${blocked.map((t: { id?: string }) => t.id).join(", ")}`,
+        `  Waiting: ${waiting.map((t: { id?: string }) => t.id).join(", ")}`,
       );
     if (runnable.length)
       lines.push(
@@ -354,16 +658,28 @@ function buildPacketSummary(packet: Record<string, unknown>): string {
   }
 
   // Open alerts
-  const alerts = Array.isArray(packet.open_alerts)
-    ? (packet.open_alerts as Array<Record<string, unknown>>)
+  const platformAlerts = Array.isArray(packet.platform_open_alerts)
+    ? (packet.platform_open_alerts as Array<Record<string, unknown>>)
     : [];
-  if (alerts.length) {
-    lines.push(`Open alerts (${alerts.length}):`);
-    for (const a of alerts) {
+  const otherAlerts = Array.isArray(packet.other_open_alerts)
+    ? (packet.other_open_alerts as Array<Record<string, unknown>>)
+    : Array.isArray(packet.open_alerts)
+      ? (packet.open_alerts as Array<Record<string, unknown>>)
+      : [];
+  if (platformAlerts.length) {
+    lines.push(`Platform-owned open alerts (${platformAlerts.length}):`);
+    for (const a of platformAlerts) {
       lines.push(`  #${a.id} ${a.metric_id}: ${a.message}`);
     }
   } else {
-    lines.push("Open alerts: 0");
+    lines.push("Platform-owned open alerts: 0");
+  }
+  if (otherAlerts.length) {
+    lines.push(`Other open alerts in packet context (${otherAlerts.length}):`);
+    for (const a of otherAlerts) {
+      const owner = metricOwner(a) ?? "unknown";
+      lines.push(`  #${a.id} ${a.metric_id}: ${a.message} [owner=${owner}]`);
+    }
   }
 
   // Abnormal events summary
@@ -431,11 +747,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     /* best-effort: don't block review if signal expiry fails */
   }
 
-  const {
-    packet,
-    consumedEscalationIds,
-    consumedSignalEventIds,
-  } = buildReviewPacket(ctx, appDir);
+  const { packet, consumedEscalationIds, consumedSignalEventIds } =
+    buildReviewPacket(ctx, appDir);
   const packetJson = JSON.stringify(packet, null, 2);
 
   // Write packet to file instead of embedding inline.
@@ -450,65 +763,112 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const packetSummary = buildPacketSummary(packet);
   const taskTreePath = resolveTaskTreePath(appDir);
   const trigger = triggerBlock(ctx.task);
+  const reviewArtifactPath = buildOwnerReviewArtifactPath(appDir, ctx.task);
+  const reviewArtifactBase = {
+    generated_at: new Date().toISOString(),
+    trigger_event_id: triggerEventId(ctx.task),
+    packet_path: packetPath,
+    task_tree_path: taskTreePath,
+    owner_prompt_artifact_path: reviewArtifactPath,
+    trigger_excerpt: trigger,
+    owner_worklog: {
+      required_before_speculative_edits: true,
+      prompt:
+        "After the first evidence checkpoint, write a 1-3 sentence interim note here before any speculative edit, broad repo search, or secondary investigation.",
+      current_hypothesis: null,
+      next_step: null,
+      updated_at: null,
+    },
+  };
+  writeOwnerReviewArtifact(reviewArtifactPath, {
+    ...reviewArtifactBase,
+    updated_at: new Date().toISOString(),
+    status: "pending",
+  });
 
-  const prompt = [
-    "You are the May-agent platform project owner.",
-    "",
-    `App/control plane: ${appDir}`,
-    `Domain workspace: ${projectDir}`,
-    "",
-    "Current trigger:",
-    trigger || "(no trigger event was provided)",
-    "",
-    "Trigger priority:",
-    "- When project.owner.requested carries an explicit instruction, treat that instruction as the primary bounded owner request.",
-    "- Use the health packet as context; do not silently replace the requested review with an unrelated alert review.",
-    "- If the instruction cannot be completed safely, return the exact conflict or blocker and the smallest supported task action.",
-    "",
-    "The full system-review packet is at:",
-    `  ${packetPath}`,
-    "",
-    "Read that file for complete data. Here is the signal summary:",
-    "",
+  const prompt = buildOwnerPrompt({
+    appDir,
+    projectDir,
+    packetPath,
     packetSummary,
-    "",
-    "Required owner judgment:",
-    "- If the packet shows real abnormal signals, fix the smallest root cause, propose typed task actions, or record the exact blocker.",
-    "- If project.json and the runtime project row disagree, treat that as a platform read-model/sync issue unless another session already fixed it.",
-    "- Prefer project-local app workflow/design fixes over adding behavior to global May handlers.",
-    "- Do not claim the platform is healthy or waiting from a narrow post-restart check while open alerts, recent failures, stale state, or evaluator findings remain.",
-    "- NEVER write to the runtime DB (may.db) directly via bash/bun:sqlite. All state changes must go through ctx.emit() or the event system. Direct DB inserts violate runtime safety and will be flagged by the evaluator.",
-    "- If you edit files, run focused checks and cite them before finish.",
-    "- The generic reconciler is the sole task-tree mutation authority. Never edit task-tree JSON, call task-tree mutation commands, or write task state through the database.",
-    "- Return task-tree changes only as typed actions in finish. Existing-task actions require the exact revision shown in the tree.",
-    "- For an unfinished owner message, create required delegated work as a direct child of runtime/platform-owner-review and return waiting. Routing or task creation is progress, not message completion.",
-    "- Return converged for an owner message only when its intended result is verified and no required delegated child remains live.",
-    "- Never mutate or create task ids beginning with runtime/; those standing responsibilities belong to the reconciler.",
-    "- You may edit May-agent-owned code and docs when that is the smallest useful domain step. Cite the resulting files and checks as evidence.",
-    "- Use converged after the current bounded actions are declared, and waiting only for a named external fact with an exact Condition that an observer can emit.",
-    "- An evidence-backed no-op is valid; return an empty actions array and explain why existing work already covers the signal.",
-    "",
-    "Start with these files:",
-    `- ${packetPath}`,
-    `- ${appDir}/project.json`,
-    `- ${taskTreePath}`,
-    `- ${appDir}/app.ts`,
-    `- ${appDir}/workflows/platform-owner-review.ts`,
-  ].join("\n");
+    taskTreePath,
+    trigger,
+    reviewArtifactPath,
+  });
 
   const result = await ctx.runAgent(ownerAgent, prompt, {
     timeoutMs: 1_800_000,
     schema: projectAppTaskOwnerResultSchema,
   });
   if (result.status === "error" || result.status === "interrupted") {
+    const authFailure = classifyOwnerAuthFailure(
+      result.error ?? result.lastAssistantText,
+    );
+    if (authFailure) {
+      const ownerResult = authFailureOwnerResult({
+        provider: authFailure.provider,
+        detail: authFailure.detail,
+        sessionId: result.sessionId ?? null,
+        reviewArtifactPath: reviewArtifactPath,
+      });
+      writeOwnerReviewArtifact(reviewArtifactPath, {
+        ...reviewArtifactBase,
+        ...preservedOwnerProgress(reviewArtifactPath),
+        updated_at: new Date().toISOString(),
+        status: "waiting",
+        owner_session: {
+          session_id: result.sessionId ?? null,
+          status: result.status,
+          summary: result.lastAssistantText ?? result.error ?? null,
+        },
+        owner_result: ownerResult,
+        interim_note: `Owner session ${result.sessionId ?? "(unknown)"} failed closed on provider auth for ${authFailure.provider}. Review artifact preserved a waiting owner result so the app can request credential refresh instead of leaving a generic blocked owner review.`,
+      });
+      try {
+        ctx.notify(
+          `⚠️ may-agent platform owner review is waiting on ${authFailure.provider} credential refresh for ${ownerAgent}. Artifact: ${reviewArtifactPath}`,
+        );
+      } catch {
+        /* best-effort: preserve waiting result even if notification fails */
+      }
+      return ctx.done(ownerResult.summary, ownerResult);
+    }
+    writeOwnerReviewArtifact(reviewArtifactPath, {
+      ...reviewArtifactBase,
+      ...preservedOwnerProgress(reviewArtifactPath),
+      updated_at: new Date().toISOString(),
+      status: "blocked",
+      owner_session: {
+        session_id: result.sessionId ?? null,
+        status: result.status,
+        summary: result.lastAssistantText ?? null,
+      },
+    });
     return ctx.blocked("Platform owner review session failed", {
       sessionId: result.sessionId,
       status: result.status,
       summary: result.lastAssistantText,
+      artifactPath: reviewArtifactPath,
     });
   }
 
-  const ownerResult = result.structuredResult as unknown as OwnerResult;
+  const ownerResult = normalizeOwnerResult(
+    result.structuredResult as unknown as OwnerResult,
+  );
+  const artifactStatus: OwnerReviewArtifactStatus =
+    ownerResult.state === "waiting" ? "waiting" : "converged";
+  writeOwnerReviewArtifact(reviewArtifactPath, {
+    ...reviewArtifactBase,
+    ...preservedOwnerProgress(reviewArtifactPath),
+    updated_at: new Date().toISOString(),
+    status: artifactStatus,
+    owner_session: {
+      session_id: result.sessionId ?? null,
+      status: result.status,
+      summary: result.lastAssistantText ?? ownerResult.summary,
+    },
+    owner_result: ownerResult,
+  });
   // Signals retain the legacy review acknowledgement. Owner messages stay
   // open until the task reconciler verifies their intended result.
   acknowledgeReviewPacket(ctx, {

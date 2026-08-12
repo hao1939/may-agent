@@ -1,10 +1,13 @@
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { describe, expect, it, vi } from "vitest";
 import { create } from "./session-recovery.js";
 
 function makeCtx(action?: string | null) {
   const runWorkflow = vi.fn(async () => ({ status: "done" as const, summary: "ok", runId: "wr_recovery" }));
   return {
-    agentName: "may",
+    agentName: "tech-lead",
     sdk: {
       runAgent: vi.fn(() => { throw new Error("session-recovery handler should dispatch a workflow, not run agents directly"); }),
       runWorkflow,
@@ -42,11 +45,12 @@ describe("session-recovery handler", () => {
     expect(ctx.sdk.runWorkflow).toHaveBeenCalledWith(
       "session-recovery",
       expect.stringContaining('"action": "requeue"'),
-      { source: "may" },
+      { projectId: "may-agent" },
     );
     expect(ctx.sdk.emit).toHaveBeenCalledWith("handler.workflow_dispatched", expect.objectContaining({
       handler: "session-recovery",
       workflow: "session-recovery",
+      source: "tech-lead",
       workflowRunId: "wr_recovery",
       sessionId: "s_failed",
       agent: "dev",
@@ -81,6 +85,92 @@ describe("session-recovery handler", () => {
     }));
   });
 
+  it("records a terminal recovery route for aborted telegram admission reviews instead of skipping them", async () => {
+    const persist = mkdtempSync(join(tmpdir(), "tech-lead-session-recovery-"));
+    const sessionDir = join(persist, "sessions", "s_telegram_failed");
+    mkdirSync(sessionDir, { recursive: true });
+    writeFileSync(join(sessionDir, "meta.json"), JSON.stringify({
+      sessionId: "s_telegram_failed",
+      agent: "may",
+      source: "telegram-human-attention-review",
+      task: [
+        "Review one proposed proactive Telegram message as Hao's deputy.",
+        "Candidate:",
+        JSON.stringify({
+          sourceEventId: 5085126,
+          eventType: "message.created",
+          from: "tech-lead",
+          content: "Daily ops digest.",
+          projectId: "projects/may-agent.app",
+        }, null, 2),
+      ].join("\n"),
+    }), "utf8");
+
+    const runWorkflow = vi.fn(async () => ({ status: "done" as const, summary: "ok", runId: "wr_recovery" }));
+    const emit = vi.fn();
+    const ctx = {
+      agentName: "may",
+      sdk: {
+        runAgent: vi.fn(() => { throw new Error("session-recovery handler should dispatch a workflow, not run agents directly"); }),
+        runWorkflow,
+        emit,
+        log: vi.fn(),
+        escalate: vi.fn(),
+        paths: { root: persist, persist },
+        getDb: vi.fn(() => ({
+          prepare: vi.fn(() => ({
+            all: vi.fn(() => []),
+            get: vi.fn(() => undefined),
+          })),
+        })),
+      },
+      getLastDigest: vi.fn(() => ({ action: "nothing" })),
+      classifyError: vi.fn(() => "logic"),
+      upsertDigest: vi.fn(async () => null),
+    } as any;
+    const handler = create(ctx, {} as any);
+
+    await handler({
+      type: "session.end",
+      source: "runtime",
+      owner: "agent:may",
+      timestamp: Date.now(),
+      data: {
+        sessionId: "s_telegram_failed",
+        agent: "may",
+        status: "error",
+        outcome: "error",
+        error: "Request was aborted.",
+      },
+    });
+
+    expect(runWorkflow).not.toHaveBeenCalled();
+    expect(emit).toHaveBeenCalledWith("human.attention.reviewed", expect.objectContaining({
+      sourceEventId: 5085126,
+      status: "completed",
+      disposition: "route",
+      owner: "tech-lead",
+      recovery: expect.objectContaining({
+        failedSessionId: "s_telegram_failed",
+        reason: "telegram-admission-review-failed",
+      }),
+    }));
+    expect(emit).toHaveBeenCalledWith("project.owner.requested", expect.objectContaining({
+      project: "may-agent",
+      reason: "telegram-admission-review-failed",
+      params: expect.objectContaining({
+        sourceEventId: 5085126,
+        candidateEventType: "message.created",
+        candidateFrom: "tech-lead",
+        candidateProjectId: "projects/may-agent.app",
+      }),
+    }));
+    expect(emit).not.toHaveBeenCalledWith("handler.skipped", expect.objectContaining({
+      sessionId: "s_telegram_failed",
+      reason: "classifier chose nothing",
+    }));
+  });
+
   it("escalates unsupported model configuration failures instead of requeueing them", async () => {
     const ctx = makeCtx(undefined);
     const handler = create(ctx, {} as any);
@@ -103,12 +193,12 @@ describe("session-recovery handler", () => {
     expect(ctx.sdk.runWorkflow).toHaveBeenCalledWith(
       "session-recovery",
       expect.stringContaining('"action": "escalate"'),
-      { source: "may" },
+      { projectId: "may-agent" },
     );
     expect(ctx.sdk.runWorkflow).not.toHaveBeenCalledWith(
       "session-recovery",
       expect.stringContaining('"action": "requeue"'),
-      { source: "may" },
+      { projectId: "may-agent" },
     );
   });
 

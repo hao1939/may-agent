@@ -356,6 +356,97 @@ describe("ops-health-review", () => {
     });
   });
 
+  it("suppresses expected session-recovery escalation carriers", async () => {
+    const { appDir, db, emitted, ctx, close } = setup();
+    const twoHoursAgo = Date.now() - 2 * 60 * 60_000;
+    db.run(
+      `INSERT INTO workflow_runs
+       (runId, workflow, task, parentSessionId, projectId, depth, status, startedAt, endedAt, result_reason)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "wr_recovery_escalate",
+        "session-recovery",
+        "Handle failed session",
+        "s_parent",
+        "may-agent",
+        0,
+        "blocked",
+        twoHoursAgo - 1_000,
+        twoHoursAgo,
+        'Digest classifier recommended escalation for failed session s_test: 400 {"error":{"message":"litellm.BadRequestError: Github_copilotException - The requested model is not supported.. Received Model Group=claude-opus-4-6"}}',
+      ],
+    );
+
+    const result = await execute(ctx);
+    close();
+
+    expect(result).toEqual({
+      type: "done",
+      summary: "Ops health observer recorded packet with no owner wake.",
+    });
+    expect(emitted.map((event) => event.type)).toEqual([
+      "project.ops_health.observed",
+    ]);
+    expect(
+      packetLines(appDir)[0].observations.stale_blocked_workflow_runs,
+    ).toEqual([]);
+  });
+
+  it("suppresses superseded platform-owner-review failures once a later success exists", async () => {
+    const { appDir, db, emitted, ctx, close } = setup();
+    const now = Date.now();
+    const twoHoursAgo = now - 2 * 60 * 60_000;
+    const ninetyMinutesAgo = now - 90 * 60_000;
+    db.run(
+      `INSERT INTO workflow_runs
+       (runId, workflow, task, parentSessionId, projectId, depth, status, startedAt, endedAt, result_reason)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "wr_owner_blocked",
+        "platform-owner-review",
+        "Review platform health",
+        "s_parent",
+        "may-agent",
+        0,
+        "blocked",
+        twoHoursAgo - 1_000,
+        twoHoursAgo,
+        "Platform owner review session failed",
+      ],
+    );
+    db.run(
+      `INSERT INTO workflow_runs
+       (runId, workflow, task, parentSessionId, projectId, depth, status, startedAt, endedAt, result_summary)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "wr_owner_done",
+        "platform-owner-review",
+        "Review platform health",
+        "s_parent",
+        "may-agent",
+        0,
+        "done",
+        ninetyMinutesAgo - 1_000,
+        ninetyMinutesAgo,
+        "Later owner review succeeded",
+      ],
+    );
+
+    const result = await execute(ctx);
+    close();
+
+    expect(result).toEqual({
+      type: "done",
+      summary: "Ops health observer recorded packet with no owner wake.",
+    });
+    expect(emitted.map((event) => event.type)).toEqual([
+      "project.ops_health.observed",
+    ]);
+    expect(
+      packetLines(appDir)[0].observations.stale_blocked_workflow_runs,
+    ).toEqual([]);
+  });
+
   it("wakes the owner for repeated runtime symptoms", async () => {
     const { db, emitted, ctx, close } = setup();
     const now = Date.now();
@@ -387,6 +478,56 @@ describe("ops-health-review", () => {
         ]),
       },
     });
+  });
+
+  it("wakes the owner for a single platform-owned handler timeout", async () => {
+    const { appDir, db, emitted, ctx, close } = setup();
+    const timestamp = Date.now() - 2 * 60_000;
+    db.run(
+      "INSERT INTO events (event_type, source, owner, data, timestamp, delivery_status, accepted_by, accepted_at) VALUES (?, ?, ?, ?, ?, 'accepted', 'event-pair-tracker', ?)",
+      [
+        "handler.failed",
+        "cron",
+        "agent:may",
+        JSON.stringify({
+          handler: "metric-alert-reactor",
+          error: 'Handler "metric-alert-reactor" timed out after 300s',
+          durationMs: 872890,
+        }),
+        timestamp,
+        timestamp + 10,
+      ],
+    );
+
+    const result = await execute(ctx);
+    close();
+
+    expect(result).toEqual({
+      type: "done",
+      summary: "Ops health observer recorded 1 changed signal family/families; owner wake emitted.",
+    });
+    expect(emitted.map((event) => event.type)).toEqual([
+      "project.ops_health.observed",
+      "project.owner.requested",
+    ]);
+    expect(emitted[1]).toMatchObject({
+      type: "project.owner.requested",
+      params: {
+        signalCount: 1,
+        signals: [
+          expect.objectContaining({
+            kind: "handler-timeout",
+            severity: "P1",
+          }),
+        ],
+      },
+    });
+    expect(packetLines(appDir)[0].signals).toEqual([
+      expect.objectContaining({
+        kind: "handler-timeout",
+        severity: "P1",
+      }),
+    ]);
   });
 
   it("filters out project-agent escalations from stale-escalation signal", async () => {
@@ -545,14 +686,21 @@ describe("ops-health-review", () => {
     });
   });
 
-  it("does NOT wake the owner when session.end is unhandled (false-positive suppression)", async () => {
+  it("does NOT wake the owner for unaccepted session lifecycle telemetry", async () => {
     const { db, emitted, ctx, close } = setup();
     const now = Date.now();
     db.run(
       `INSERT INTO events
        (event_type, owner, source, data, timestamp, delivery_status, delivery_note)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?)`,
       [
+        "session.start",
+        "agent:tech-lead",
+        "test",
+        JSON.stringify({ sessionId: "s_unaccepted", agent: "tech-lead" }),
+        now - 5 * 60_000,
+        "pending",
+        null,
         "session.end",
         "agent:tech-lead",
         "test",
@@ -570,8 +718,8 @@ describe("ops-health-review", () => {
     await execute(ctx);
     close();
 
-    // session.end events are naturally unhandled lifecycle events.
-    // They should appear in delivery health observations but NOT generate signals.
+    // Lifecycle events are observed in-process and remain visible in delivery
+    // health, but no routed handler is expected to accept them.
     expect(emitted.map((event) => event.type)).toEqual([
       "project.ops_health.observed",
     ]);

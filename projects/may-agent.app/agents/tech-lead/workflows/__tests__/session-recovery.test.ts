@@ -33,18 +33,27 @@ describe("session-recovery workflow", () => {
       runAgent,
       emit,
       done: (summary: string) => ({ type: "done", summary }),
-      blocked: (reason: string, context?: unknown) => ({ type: "blocked", reason, context }),
+      blocked: (reason: string, context?: unknown) => ({
+        type: "blocked",
+        reason,
+        context,
+      }),
     } as any;
 
     const result = await execute(ctx);
 
     expect(result).toMatchObject({ type: "done" });
-    expect(runAgent).toHaveBeenCalledWith("dev", expect.stringContaining("## Original Task\nfix the bug"));
-    expect(emit).toHaveBeenCalledWith(expect.objectContaining({
-      type: "session.recovery_attempted",
-      sessionId: "s_failed",
-      newSessionId: "s_recovery",
-      status: "done",
-    }));
+    expect(runAgent).toHaveBeenCalledWith(
+      "dev",
+      expect.stringContaining("## Original Task\nfix the bug"),
+    );
+    expect(emit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "session.recovery_attempted",
+        sessionId: "s_failed",
+        newSessionId: "s_recovery",
+        status: "done",
+      }),
+    );
   });
 });

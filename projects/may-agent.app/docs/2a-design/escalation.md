@@ -103,13 +103,19 @@ evidence. Do not ask the receiver to rediscover what decision is needed.
 `escalation.created` follows normal event routing:
 
 1. persist the event and trace;
-2. deliver to a matching owner/human route;
+2. deliver to a matching agent/project owner; route a human-owned escalation
+   through May's human-attention review before channel delivery;
 3. otherwise accept into the queryable owner inbox;
 4. surface malformed, unowned, duplicate, or overdue escalation work;
 5. record delivery separately from resolution.
 
 Delivery acceptance means the escalation reached a responsible route. It does
 not mean the blocker was resolved.
+
+Naming `human:<role>` expresses the remaining authority boundary. It does not
+grant the producer direct access to Telegram. May may handle, route, reject, or
+enrich the escalation before deciding whether human attention is useful. See
+[telegram-notifications.md](telegram-notifications.md#outbound-human-inbox-deputy).
 
 ## Human Reply
 

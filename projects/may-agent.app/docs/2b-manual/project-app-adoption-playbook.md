@@ -90,7 +90,7 @@ an agent, inspect the external source, or mutate task storage.
 
 The runtime supplies one controller and one deduplicating queue for the app.
 The queue carries task IDs only. Targeted wakes for an existing task,
-Condition observations, recovery, and passive resync enter that same
+Condition observations, recovery, and delivery resync enter that same
 controller without another app route.
 
 `maxConcurrent` is enforced by the task controller. The daily session and

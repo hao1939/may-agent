@@ -7,15 +7,16 @@
  * after each attempt. The workflow only succeeds when the verification
  * command returns exit code 0.
  *
- * Input format (task string):
- *   The task MUST contain a `verifyCommand:` field on its own line.
- *   Everything else is the coding task.
+ * Input contracts (task string):
+ *   1. Reconciliation input: a fenced JSON object under the exact
+ *      `## Reconciliation Task` heading. Its `outcome` string MUST contain a
+ *      physical `verifyCommand:` line after JSON decoding and MAY contain a
+ *      `maxAttempts:` line. The coder receives only the sanitized reconciliation
+ *      object; wrapper/trigger text outside that fence is never task metadata.
+ *   2. Legacy raw input: a physical top-level `verifyCommand:` line and optional
+ *      `maxAttempts:` line. Everything else is the coding task.
  *
- *   Example:
- *     Write a function that returns 42 and export it from lib.ts.
- *     verifyCommand: bun run typecheck && node -e "assert(require('./lib').answer() === 42)"
- *
- * Max attempts: 3 (configurable via maxAttempts: N in the task).
+ * Max attempts defaults to 3.
  */
 
 import { execSync } from "node:child_process";
@@ -30,40 +31,85 @@ export const description: string =
 
 // ── Input parsing ──────────────────────────────────────────────────────
 
-interface ParsedInput {
+export interface ParsedInput {
   task: string;
   verifyCommand: string;
   maxAttempts: number;
 }
 
-function parseInput(raw: string): ParsedInput {
-  // Extract verifyCommand
-  const verifyMatch = raw.match(/^verifyCommand:\s*(.+)$/m);
-  if (!verifyMatch) {
+interface ReconciliationEnvelope {
+  outcome: string;
+  [key: string]: unknown;
+}
+
+function parseTaskAndMetadata(taskWithMetadata: string): ParsedInput {
+  const verifyMatch = taskWithMetadata.match(/^verifyCommand:\s*(.*)$/m);
+  const verifyCommand = verifyMatch?.[1].trim() ?? "";
+  if (!verifyCommand) {
     throw new Error(
-      "Task must include a 'verifyCommand: <command>' line. " +
+      "Task must include a non-empty 'verifyCommand: <command>' line. " +
         "This is the shell command that must exit 0 for the task to pass.",
     );
   }
-  const verifyCommand = verifyMatch[1].trim();
 
-  // Extract optional maxAttempts
-  const attemptsMatch = raw.match(/^maxAttempts:\s*(\d+)$/m);
+  const attemptsMatch = taskWithMetadata.match(/^maxAttempts:\s*([1-9]\d*)$/m);
   const maxAttempts = attemptsMatch ? parseInt(attemptsMatch[1], 10) : 3;
-
-  // The task is everything except the verifyCommand and maxAttempts lines
-  const task = raw
-    .replace(/^verifyCommand:\s*.+$/m, "")
-    .replace(/^maxAttempts:\s*\d+$/m, "")
+  const task = taskWithMetadata
+    .replace(/^verifyCommand:\s*.*$/m, "")
+    .replace(/^maxAttempts:\s*[1-9]\d*$/m, "")
     .trim();
 
   if (!task) {
     throw new Error(
-      "No coding task found in the input (only found verifyCommand).",
+      "No coding task found in the input (only found verification metadata).",
     );
   }
 
   return { task, verifyCommand, maxAttempts };
+}
+
+export function parseInput(raw: string): ParsedInput {
+  const reconciliationHeading = /^## Reconciliation Task\s*$/m;
+  if (!reconciliationHeading.test(raw)) {
+    return parseTaskAndMetadata(raw);
+  }
+
+  const envelopeMatch = raw.match(
+    /^## Reconciliation Task\s*\r?\n```json\s*\r?\n([\s\S]*?)\r?\n```\s*$/m,
+  );
+  if (!envelopeMatch) {
+    throw new Error("Malformed structured '## Reconciliation Task' envelope.");
+  }
+
+  let envelope: ReconciliationEnvelope;
+  try {
+    envelope = JSON.parse(envelopeMatch[1]) as ReconciliationEnvelope;
+  } catch {
+    throw new Error("Reconciliation Task envelope must contain valid JSON.");
+  }
+  if (
+    !envelope ||
+    typeof envelope !== "object" ||
+    typeof envelope.outcome !== "string"
+  ) {
+    throw new Error(
+      "Reconciliation Task envelope must contain a string 'outcome'.",
+    );
+  }
+
+  // JSON decoding turns escaped newlines in outcome into physical metadata lines.
+  // Only that field is inspected, so trigger/wrapper text can never become a command.
+  const parsedOutcome = parseTaskAndMetadata(envelope.outcome);
+  const sanitizedEnvelope = { ...envelope, outcome: parsedOutcome.task };
+
+  return {
+    task:
+      "## Reconciliation Task\n```json\n" +
+      JSON.stringify(sanitizedEnvelope, null, 2) +
+      "\n```",
+    verifyCommand: parsedOutcome.verifyCommand,
+    maxAttempts: parsedOutcome.maxAttempts,
+  };
 }
 
 // ── Verification runner ────────────────────────────────────────────────

@@ -29,7 +29,7 @@ Condition observation
   -> atomically persist Condition status and task trigger
   -> enqueue stable task ID
 
-passive resync
+delivery resync
   -> enqueue runnable task IDs only
 
 worker
@@ -39,9 +39,9 @@ worker
 ```
 
 The queue carries task IDs, never copied specs. A stale queue reader therefore
-cannot restore older desired state. Resync repairs delivery; it does not invent
-a trigger, rewrite a spec, poll a domain source, or schedule work from the tree
-projection.
+cannot restore older desired state. Delivery resync repairs missed task work;
+it does not invent a trigger, rewrite a spec, poll a domain source, or schedule
+work from the tree projection.
 
 The compact rule is:
 
@@ -86,7 +86,7 @@ independently assigned, reviewed, depended on, or explicitly requested. This
 keeps task state from becoming a second event archive.
 
 An unresolved trigger that arrives during a current attempt remains durable,
-but passive resync must not enqueue that key again until the current attempt
+but delivery resync must not enqueue that key again until the current attempt
 ends. The completion path then replays the trigger. This preserves the wake
 without creating an active-attempt reconciliation loop.
 
@@ -401,6 +401,19 @@ any later converged owner-handoff result. The owner may make an exceptional
 judgment, but cannot bypass hard workflow invariants such as exact live proof,
 source integration, or artifact presence.
 
+A workflow that can return `needs-owner` must verify any later owner claim of
+`converged`. Without that verifier, the owner may clarify the task, record an
+exact wait, or leave visible attention, but cannot turn the workflow exception
+into unverified completion.
+
+Verification is positive: it proves the named postcondition. A verifier rejects
+a missing, unknown, unfinished, or safety-stop checkpoint. Merely finding no
+known wait is not completion proof.
+
+Runtime admission checks shape and mechanical safety. It must never translate a
+failed call, invalid result, missing required artifact, or unfinished outcome
+into `converged`. Apps must not add wrappers that perform that translation.
+
 ## Generation and resource version
 
 Each mutated resource advances its own `resourceVersion`. A task's
@@ -436,14 +449,14 @@ preserving, replacing, or closing that wait. Routine events still require the
 Condition to become true or an explicit `overrideWait`; accepting an owner
 input and then suppressing its task trigger is invalid delivery.
 
-Passive resync schedules a task carrying an unresolved direct
+Delivery resync schedules a task carrying an unresolved direct
 `project.comment.created` or app-owner message trigger before autonomous
 priority backlog. This is a delivery guarantee for explicit direction, not a
 change to the task's declared priority or a code-side project decision. Once
 the owner emits the correlated terminal result, ordinary task priority ordering
 applies again.
 
-More generally, passive resync schedules runnable tasks with a persisted event
+More generally, delivery resync schedules runnable tasks with a persisted event
 trigger before untriggered desired work. The trigger is durable evidence that
 an existing reconciliation has new facts to consume, such as a terminal
 pipeline observation; restart must not demote that continuation behind newly
@@ -466,7 +479,7 @@ A Condition describes one exact external observation:
 
 `reviewAfterMs` is optional. It is a supervision backstop, not a claim that the
 Condition became true and not a human-update timer. Values must be whole
-milliseconds and at least 60 seconds. At the first passive resync after the
+milliseconds and at least 60 seconds. At the first delivery resync after the
 open Condition reaches that age, the controller claims the same task for the
 same owner with trigger `project.task.condition-review.missed`. It creates no
 timer job, scheduler, task, or request record.
@@ -535,7 +548,7 @@ idempotency key derived from its task, generation, attempt, and event identity.
 The dispatcher may publish an event more than once across a crash. Event
 ingress returns the existing receipt for the same key. After the receipt is
 recorded in task state, the pending intent can be removed. Changed dependent
-task keys may be enqueued after the state commit because passive resync can
+task keys may be enqueued after the state commit because delivery resync can
 reconstruct those in-memory hints.
 
 Pending events are derived by infrastructure from the admitted transition; they
@@ -582,9 +595,18 @@ Tool policy and process isolation still constrain actual writes.
 writes a compact receipt, removes the task from the live graph, and enqueues
 dependents.
 
-`maintain` is standing desired state. It remains live after convergence and may
-be woken by a later event or resync. Loops are ordinary maintain tasks. Focus
+`maintain` is standing desired state. It remains live after convergence and is
+woken when observed facts may have changed. Each maintain task must be covered
+by a domain event or watcher and, when that signal is not reliable enough, a
+scheduled check. Delivery resync wakes only work already known to be runnable;
+it is not the task's domain observer. Loops are ordinary maintain tasks. Focus
 plans and bounded work are normally achieve tasks.
+
+An event recorded for the same maintain task during its current attempt takes
+precedence over that attempt's completion. The attempt is recorded, but the
+resource returns to `pending`, the same task ID is requeued, and result surfaces
+report continued progress rather than convergence. This is the ordinary durable
+loop for bounded work; it is not another scheduler.
 
 ## Parents, dependencies, and completion
 
@@ -617,7 +639,7 @@ Related tasks elsewhere in the graph may be useful evidence, but they do not
 keep this parent waiting or occupy its child frontier.
 
 The child transition and parent trigger commit in the same task-state
-transaction. The in-memory queue hint follows that commit and passive resync
+transaction. The in-memory queue hint follows that commit and delivery resync
 can reconstruct it. When several children change together, key deduplication
 collapses their wakes and the parent rereads all current children and receipts.
 

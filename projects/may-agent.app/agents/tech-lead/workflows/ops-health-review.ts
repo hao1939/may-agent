@@ -137,6 +137,79 @@ function rowArray(value: unknown): Row[] {
     : [];
 }
 
+const TERMINAL_PIPELINE_RUN_STATUSES = new Set([
+  "completed",
+  "failed",
+  "succeeded",
+  "cancelled",
+  "canceled",
+  "timed_out",
+  "timeout",
+  "error",
+]);
+
+function isTerminalPipelineRunState(row: Row): boolean {
+  if (stringValue(row.eventType ?? row.event_type) !== "pipeline-run.state") {
+    return false;
+  }
+  const data = parseEventData(row);
+  const status = stringValue(data.status).toLowerCase();
+  const result = stringValue(data.result).toLowerCase();
+  return TERMINAL_PIPELINE_RUN_STATUSES.has(status) || result.length > 0;
+}
+
+function hasAcceptedEquivalentPipelineRunLineage(
+  ctx: WorkflowContext,
+  row: Row,
+): boolean {
+  if (!isTerminalPipelineRunState(row)) return false;
+  const eventId = numberValue(row.id);
+  if (eventId <= 0) return false;
+  return (
+    queryCount(
+      ctx,
+      `WITH target AS (
+         SELECT id,
+                CAST(COALESCE(json_extract(data, '$.projectId'), '') AS TEXT) AS project_id,
+                CAST(COALESCE(json_extract(data, '$.taskId'), '') AS TEXT) AS task_id,
+                CAST(COALESCE(json_extract(data, '$.pipelineRunId'), json_extract(data, '$.runId'), '') AS TEXT) AS pipeline_run_id,
+                LOWER(CAST(COALESCE(json_extract(data, '$.status'), '') AS TEXT)) AS status,
+                LOWER(CAST(COALESCE(json_extract(data, '$.result'), '') AS TEXT)) AS result
+           FROM events
+          WHERE id = ?
+       )
+       SELECT COUNT(*) AS count
+         FROM target
+         JOIN events accepted ON accepted.id <> target.id
+        WHERE accepted.delivery_status = 'accepted'
+          AND accepted.event_type IN (
+            'project.test_run.completed',
+            'pipeline.completed',
+            'pipeline-run.state'
+          )
+          AND CAST(COALESCE(json_extract(accepted.data, '$.pipelineRunId'), json_extract(accepted.data, '$.runId'), '') AS TEXT) = target.pipeline_run_id
+          AND (target.project_id = ''
+               OR CAST(COALESCE(json_extract(accepted.data, '$.projectId'), '') AS TEXT) = target.project_id)
+          AND (accepted.event_type = 'pipeline.completed'
+               OR target.task_id = ''
+               OR CAST(COALESCE(json_extract(accepted.data, '$.taskId'), '') AS TEXT) = target.task_id)
+          AND LOWER(CAST(COALESCE(json_extract(accepted.data, '$.status'), '') AS TEXT)) = target.status
+          AND LOWER(CAST(COALESCE(json_extract(accepted.data, '$.result'), '') AS TEXT)) = target.result`,
+      [eventId],
+    ) > 0
+  );
+}
+
+function shouldSuppressEventDeliverySignal(
+  ctx: WorkflowContext,
+  row: Row,
+): boolean {
+  const eventType = stringValue(row.eventType ?? row.event_type);
+  return eventType === "session.start" || eventType === "session.end"
+    ? true
+    : hasAcceptedEquivalentPipelineRunLineage(ctx, row);
+}
+
 function groupEventSymptoms(rows: Row[]): Row[] {
   const byKey = new Map<string, { count: number; latest: Row }>();
   for (const row of rows) {
@@ -332,6 +405,77 @@ function writeSignalState(appDir: string, state: SignalState): void {
   renameSync(temporaryPath, path);
 }
 
+function isExpectedBlockedWorkflowGroup(row: Row): boolean {
+  const workflow = stringValue(row.workflow);
+  const reason = stringValue(row.reason);
+  return (
+    workflow === "session-recovery" &&
+    reason.startsWith(
+      "Digest classifier recommended escalation for failed session ",
+    )
+  );
+}
+
+function hasLaterSuccessfulWorkflowRun(
+  ctx: WorkflowContext,
+  workflow: string,
+  after: number,
+  projectId?: string | null,
+): boolean {
+  if (!workflow || after <= 0) return false;
+  const scopeSql =
+    projectId === null
+      ? "AND projectId IS NULL"
+      : typeof projectId === "string" && projectId.trim()
+        ? "AND projectId = ?"
+        : "";
+  const params: unknown[] = [workflow, after];
+  if (scopeSql === "AND projectId = ?") params.push(projectId);
+  return (
+    queryCount(
+      ctx,
+      `SELECT COUNT(*) AS count
+         FROM workflow_runs
+        WHERE workflow = ?
+          AND status = 'done'
+          AND COALESCE(endedAt, startedAt) > ?
+          ${scopeSql}`,
+      params,
+    ) > 0
+  );
+}
+
+function actionableBlockedWorkflowGroups(
+  ctx: WorkflowContext,
+  rows: Row[],
+): Row[] {
+  return rows.filter((row) => {
+    if (isExpectedBlockedWorkflowGroup(row)) return false;
+
+    const workflow = stringValue(row.workflow);
+    const reason = stringValue(row.reason);
+    const newestAt = numberValue(row.newestAt);
+
+    if (
+      workflow === "platform-owner-review" &&
+      reason === "Platform owner review session failed" &&
+      hasLaterSuccessfulWorkflowRun(ctx, workflow, newestAt, "may-agent")
+    ) {
+      return false;
+    }
+
+    if (
+      workflow === "metric-alert-triage" &&
+      reason.startsWith("Owner triage session failed for ") &&
+      hasLaterSuccessfulWorkflowRun(ctx, workflow, newestAt, null)
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+}
+
 // Metrics that are intentionally deferred to scheduled project.tick reviews.
 // These should NOT generate ops-health wake signals because:
 // 1. Health-observation metrics oscillate and create breach→review→recover loops
@@ -492,34 +636,42 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
   // Additionally exclude:
   // - "missing original task" session-recovery blocks: the task text is
   //   permanently lost and no owner action can fix them.
+  // - "Digest classifier recommended escalation ..." session-recovery blocks:
+  //   these are expected escalation carriers, not platform failures.
+  // - superseded standing-workflow failures (for example platform-owner-review
+  //   or metric-alert-triage) once a later successful run proves the loop has
+  //   already recovered.
   // - "Secret leak detected" guard blocks: these require human investigation
   //   of the secret source (e.g. Telegram bot token in metric context).
   //   The platform owner cannot resolve them in an automated review session.
   //   They are surfaced in the daily ops digest for human attention.
-  const staleBlockedWorkflowRuns = queryRows(ctx, () =>
-    ctx.query.sql(
-      `SELECT workflow,
-              status,
-              COALESCE(result_reason, result_summary, '') AS reason,
-              COUNT(*) AS count,
-              MIN(COALESCE(endedAt, startedAt)) AS oldestAt,
-              MAX(COALESCE(endedAt, startedAt)) AS newestAt
-         FROM workflow_runs
-        WHERE status IN ('blocked', 'escalated')
-          AND COALESCE(endedAt, startedAt) < ?
-          AND COALESCE(endedAt, startedAt) >= ?
-          AND COALESCE(result_reason, result_summary, '') NOT LIKE '%missing original task%'
-          AND COALESCE(result_reason, result_summary, '') NOT LIKE '%Secret leak detected%'
-          AND COALESCE(result_reason, result_summary, '') NOT LIKE '%session.failed-triage-rate%'
-          AND (projectId = 'may-agent'
-               OR (projectId IS NULL
-                   AND COALESCE(result_reason, result_summary, '') NOT LIKE '%aks-rp-e2e%'
-                   AND COALESCE(result_reason, result_summary, '') NOT LIKE '%scout-knowledge%'
-                   AND COALESCE(result_reason, result_summary, '') NOT LIKE '%evaluation.%'))
-        GROUP BY workflow, status, COALESCE(result_reason, result_summary, '')
-        ORDER BY count DESC, newestAt DESC`,
-      [staleEscalationCutoff, chronicallyStaleFloor],
-      { limit: 20 },
+  const staleBlockedWorkflowRuns = actionableBlockedWorkflowGroups(
+    ctx,
+    queryRows(ctx, () =>
+      ctx.query.sql(
+        `SELECT workflow,
+                status,
+                COALESCE(result_reason, result_summary, '') AS reason,
+                COUNT(*) AS count,
+                MIN(COALESCE(endedAt, startedAt)) AS oldestAt,
+                MAX(COALESCE(endedAt, startedAt)) AS newestAt
+           FROM workflow_runs
+          WHERE status IN ('blocked', 'escalated')
+            AND COALESCE(endedAt, startedAt) < ?
+            AND COALESCE(endedAt, startedAt) >= ?
+            AND COALESCE(result_reason, result_summary, '') NOT LIKE '%missing original task%'
+            AND COALESCE(result_reason, result_summary, '') NOT LIKE '%Secret leak detected%'
+            AND COALESCE(result_reason, result_summary, '') NOT LIKE '%session.failed-triage-rate%'
+            AND (projectId = 'may-agent'
+                 OR (projectId IS NULL
+                     AND COALESCE(result_reason, result_summary, '') NOT LIKE '%aks-rp-e2e%'
+                     AND COALESCE(result_reason, result_summary, '') NOT LIKE '%scout-knowledge%'
+                     AND COALESCE(result_reason, result_summary, '') NOT LIKE '%evaluation.%'))
+          GROUP BY workflow, status, COALESCE(result_reason, result_summary, '')
+          ORDER BY count DESC, newestAt DESC`,
+        [staleEscalationCutoff, chronicallyStaleFloor],
+        { limit: 20 },
+      ),
     ),
   );
 
@@ -573,6 +725,13 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
     // Events with no owner or platform-owned events are platform-actionable.
     return !eventOwner || platformOwnerSet.has(eventOwner);
   });
+  const platformHandlerTimeouts = platformOwnedAbnormalEvents.filter((row) => {
+    if (stringValue(row.event_type ?? row.eventType) !== "handler.failed") {
+      return false;
+    }
+    const data = parseEventData(row);
+    return /timed out after\s+\d+s/i.test(stringValue(data.error));
+  });
   const platformRepeatedSymptoms = groupEventSymptoms(
     platformOwnedAbnormalEvents,
   ).filter((row) => numberValue(row.count) >= 3);
@@ -624,6 +783,14 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
       evidence: compactRows(staleBlockedWorkflowRuns, 8),
     });
   }
+  if (platformHandlerTimeouts.length > 0) {
+    signals.push({
+      kind: "handler-timeout",
+      severity: "P1",
+      reason: `${platformHandlerTimeouts.length} platform-owned handler timeout event(s) in the last hour.`,
+      evidence: compactRows(platformHandlerTimeouts, 8),
+    });
+  }
   if (platformRepeatedSymptoms.length > 0) {
     signals.push({
       kind: "repeated-runtime-symptom",
@@ -632,15 +799,18 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
       evidence: compactRows(platformRepeatedSymptoms, 8),
     });
   }
-  // session.end events are naturally unhandled — they are informational
-  // lifecycle events emitted by the SDK when a session completes. No handler
-  // is expected to accept them. Exclude from signal generation to avoid
-  // false-positive P1 event-delivery-unaccepted wakes.
+  // session.start/session.end events are informational lifecycle telemetry.
+  // In-process subscribers observe them, but no routed handler is expected to
+  // accept them, so pending/unhandled delivery state is not an ops gap. Also
+  // suppress terminal pipeline-run.state rows
+  // when an accepted equivalent lineage already exists (for example the owning
+  // project already accepted project.test_run.completed or a later equivalent
+  // pipeline-run.state), so ops-health does not page on already-applied work.
   const actionableUnhandled = unhandledEvents.filter(
-    (row) => stringValue(row.eventType ?? row.event_type) !== "session.end",
+    (row) => !shouldSuppressEventDeliverySignal(ctx, row),
   );
   const actionableOverdue = overduePendingEvents.filter(
-    (row) => stringValue(row.eventType ?? row.event_type) !== "session.end",
+    (row) => !shouldSuppressEventDeliverySignal(ctx, row),
   );
   if (actionableUnhandled.length > 0 || actionableOverdue.length > 0) {
     signals.push({
