@@ -55,4 +55,39 @@ for path in "${STATE_DIR}" "${STATE_DIR}/chrome-profile" "${AGENTS_ROOT}" "${PRO
     chown mayagent:mayagent "$path" 2>/dev/null || true
   fi
 done
+
+# Install Herdr's official hooks after the agent setup scripts have updated
+# their config files. The hooks record native conversation IDs so Herdr can
+# resume Codex, Claude, and Pi panes after its server (or container) restarts.
+if [ "$(id -u)" = "0" ] && id mayagent >/dev/null 2>&1; then
+  # Repair only integration-owned paths from older images that installed
+  # hooks as root. Do not recursively walk agent directories: they can contain
+  # large persisted conversation histories.
+  for path in \
+    "${HOME}/.codex" \
+    "${HOME}/.codex/config.toml" \
+    "${HOME}/.codex/hooks.json" \
+    "${HOME}/.codex/herdr-agent-state.sh" \
+    "${HOME}/.claude" \
+    "${HOME}/.claude/settings.json" \
+    "${HOME}/.claude/hooks" \
+    "${HOME}/.claude/hooks/herdr-agent-state.sh" \
+    "${PI_CODING_AGENT_DIR}" \
+    "${PI_CODING_AGENT_DIR}/extensions" \
+    "${PI_CODING_AGENT_DIR}/extensions/herdr-agent-state.ts"; do
+    [ ! -e "${path}" ] || chown mayagent:mayagent "${path}"
+  done
+  runuser -u mayagent -- env \
+    HOME="${HOME}" \
+    XDG_CONFIG_HOME="${HOME}/herdr/config" \
+    XDG_STATE_HOME="${HOME}/herdr/state" \
+    XDG_RUNTIME_DIR="${HOME}/herdr/runtime" \
+    PI_CODING_AGENT_DIR="${PI_CODING_AGENT_DIR}" \
+    /usr/local/bin/setup-herdr-integrations.sh
+else
+  XDG_CONFIG_HOME="${HOME}/herdr/config" \
+  XDG_STATE_HOME="${HOME}/herdr/state" \
+  XDG_RUNTIME_DIR="${HOME}/herdr/runtime" \
+    /usr/local/bin/setup-herdr-integrations.sh
+fi
 exec supervisord -c /etc/supervisord.conf
