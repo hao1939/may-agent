@@ -17,6 +17,18 @@ case "${codex_base_url}" in
 esac
 
 mkdir -p "${codex_home}"
+preserved_hook_state=""
+if [ -f "${codex_home}/config.toml" ]; then
+  # Codex records approval for each exact hook definition under hooks.state.
+  # Keep those Codex-owned hashes when refreshing our managed settings so a
+  # container restart does not turn an unchanged hook back into a new hook.
+  preserved_hook_state="$(awk '
+    /^\[hooks\.state(\]|\.)/ { preserving = 1 }
+    /^\[/ && !/^\[hooks\.state(\]|\.)/ { preserving = 0 }
+    preserving { print }
+  ' "${codex_home}/config.toml")"
+fi
+
 cat > "${codex_home}/config.toml" <<EOF
 model_provider = "model_endpoint"
 model = "${codex_model}"
@@ -35,6 +47,9 @@ wire_api = "responses"
 [projects."${PROJECT_ROOT}"]
 trust_level = "trusted"
 EOF
+if [ -n "${preserved_hook_state}" ]; then
+  printf '\n%s\n' "${preserved_hook_state}" >> "${codex_home}/config.toml"
+fi
 
 if command -v codex >/dev/null 2>&1; then
   codex_current_version="$(codex --version 2>/dev/null | awk '{print $2}')"

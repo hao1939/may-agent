@@ -1,8 +1,16 @@
-import { describe, expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { afterEach, describe, expect, test } from "bun:test";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { spawnSync } from "node:child_process";
 
 const repoRoot = resolve(import.meta.dirname, "../..");
+const setupScript = resolve(repoRoot, "container/setup-codex-config.sh");
+const tempDirs: string[] = [];
+
+afterEach(() => {
+  for (const dir of tempDirs.splice(0)) rmSync(dir, { recursive: true, force: true });
+});
 
 describe("Codex startup configuration", () => {
   test("defaults Codex to GPT-5.6 Sol with high reasoning", () => {
@@ -28,5 +36,45 @@ describe("Codex startup configuration", () => {
 
     expect(source).toContain('approval_policy = "never"');
     expect(source).toContain('sandbox_mode = "danger-full-access"');
+  });
+
+  test("preserves trusted hook hashes while refreshing managed settings", () => {
+    const home = mkdtempSync(join(tmpdir(), "may-codex-config-"));
+    tempDirs.push(home);
+    const configPath = join(home, "config.toml");
+    const trustedHookState = [
+      "[hooks.state]",
+      "",
+      '[hooks.state.\"/app/.state/.codex/hooks.json:session_start:0:0\"]',
+      'trusted_hash = "sha256:trusted-definition"',
+    ].join("\n");
+    writeFileSync(configPath, [
+      'model = "old-model"',
+      "",
+      trustedHookState,
+      "",
+      "[mcp_servers.unrelated]",
+      'command = "do-not-copy"',
+      "",
+    ].join("\n"));
+
+    for (let run = 0; run < 2; run += 1) {
+      const result = spawnSync("bash", [setupScript], {
+        env: {
+          ...process.env,
+          CODEX_HOME: home,
+          CODEX_MODEL: "new-model",
+          PROJECT_ROOT: "/app",
+        },
+        encoding: "utf8",
+      });
+      expect(result.status).toBe(0);
+    }
+
+    const config = readFileSync(configPath, "utf8");
+    expect(config).toContain('model = "new-model"');
+    expect(config.match(/\[hooks\.state\]/g)).toHaveLength(1);
+    expect(config).toContain(trustedHookState);
+    expect(config).not.toContain("mcp_servers.unrelated");
   });
 });
