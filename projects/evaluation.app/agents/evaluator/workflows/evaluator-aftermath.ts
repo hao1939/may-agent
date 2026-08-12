@@ -44,6 +44,7 @@ type SessionEvalTrailParams = {
   transcriptSource: string;
   heuristic: HeuristicVerdict;
   route: EvaluationRoute;
+  finishResult?: Record<string, unknown>;
   createdAt?: number;
   source?: string;
 };
@@ -891,15 +892,108 @@ export function shouldRefreshEvaluation(
   return evaluationHeuristicVersion(evaluation) < HEURISTIC_VERSION;
 }
 
+function isConcreteSessionId(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    /^s_[A-Za-z0-9][A-Za-z0-9._-]*$/.test(value.trim())
+  );
+}
+
+function concreteSessionId(value: unknown): string | undefined {
+  return isConcreteSessionId(value) ? value.trim() : undefined;
+}
+
+function objectValue(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function sessionIdFromRecord(value: unknown): string | undefined {
+  const record = objectValue(value);
+  const direct = concreteSessionId(record.sessionId ?? record.session_id);
+  if (direct) return direct;
+
+  const session = objectValue(record.session);
+  const nestedSession = concreteSessionId(
+    session.sessionId ?? session.session_id,
+  );
+  if (nestedSession) return nestedSession;
+
+  const target = objectValue(record.target);
+  const targetSession = concreteSessionId(
+    target.sessionId ?? target.session_id,
+  );
+  if (targetSession) return targetSession;
+
+  return undefined;
+}
+
 export function getSessionIdFromTrigger(trigger: any): string | undefined {
-  const data = trigger?.data ?? trigger?.params ?? trigger ?? {};
-  const direct = data.sessionId;
-  const nested = data.session?.sessionId;
-  return typeof direct === "string"
-    ? direct
-    : typeof nested === "string"
-      ? nested
-      : undefined;
+  // Runtime events can reach workflows in several equivalent envelope shapes:
+  // - event.params.sessionId (SDK ProjectAppEvent)
+  // - event.data.params.sessionId (persisted eventDetails copy)
+  // - event.data.sessionId / event.data.session.sessionId (older callers)
+  // Accept only concrete May session ids so a vague trigger cannot accidentally
+  // run aftermath against a backlog candidate.
+  return (
+    sessionIdFromRecord(trigger) ??
+    sessionIdFromRecord(trigger?.params) ??
+    sessionIdFromRecord(trigger?.data) ??
+    sessionIdFromRecord(objectValue(trigger?.data).params)
+  );
+}
+
+export function extractReconciliationTask(task: string): any {
+  const headerPattern = "## Reconciliation Task";
+  const lineAnchoredIdx = task.lastIndexOf("\n" + headerPattern);
+  const headerIdx =
+    lineAnchoredIdx !== -1
+      ? lineAnchoredIdx + 1
+      : task.startsWith(headerPattern)
+        ? 0
+        : -1;
+  if (headerIdx === -1) return null;
+
+  const afterHeader = task.slice(headerIdx + headerPattern.length);
+  const jsonFenceStart = afterHeader.indexOf("```json");
+  if (jsonFenceStart === -1) return null;
+
+  const jsonStart = jsonFenceStart + 7;
+  const remaining = afterHeader.slice(jsonStart);
+  const closingFence = remaining.indexOf("```");
+  if (closingFence === -1) return null;
+
+  try {
+    return JSON.parse(remaining.slice(0, closingFence).trim());
+  } catch {
+    return null;
+  }
+}
+
+function sessionIdFromRuntimeTaskId(taskId: unknown): string | undefined {
+  if (typeof taskId !== "string") return undefined;
+  const match = taskId.match(
+    /^runtime\/session-aftermath\/(s_[A-Za-z0-9][A-Za-z0-9._-]*)$/,
+  );
+  return match ? concreteSessionId(match[1]) : undefined;
+}
+
+export function getSessionIdFromReconciliationTask(
+  packet: any,
+): string | undefined {
+  return (
+    sessionIdFromRecord(packet?.input) ??
+    sessionIdFromRecord(packet?.data) ??
+    sessionIdFromRuntimeTaskId(packet?.taskId)
+  );
+}
+
+function reconciliationTaskRequiresSessionId(packet: any): boolean {
+  return (
+    typeof packet?.taskId === "string" &&
+    packet.taskId.startsWith("runtime/session-aftermath/")
+  );
 }
 
 function getTriggerType(trigger: any): string {
@@ -1451,15 +1545,22 @@ function projectOwnerTarget(projectId: unknown, agent: unknown): string | null {
   if (project === "scout-knowledge-lib") return "scout";
   if (project === "may-agent") return "tech-lead";
 
-  const agentName = String(agent ?? "").replace(/^agent:/, "").split("/")[0];
-  if (["aks-explorer", "app-ops", "owner"].includes(agentName)) return "app-ops";
+  const agentName = String(agent ?? "")
+    .replace(/^agent:/, "")
+    .split("/")[0];
+  if (["aks-explorer", "app-ops", "owner"].includes(agentName))
+    return "app-ops";
   if (agentName === "gym") return "gym";
   if (agentName === "evaluator" || agentName === "judge") return "evaluator";
   if (["scout", "amy", "amy-kimi"].includes(agentName)) return "scout";
   return null;
 }
 
-export function ownerEventTarget(owner: unknown, projectId?: unknown, agent?: unknown): string {
+export function ownerEventTarget(
+  owner: unknown,
+  projectId?: unknown,
+  agent?: unknown,
+): string {
   const text = String(owner ?? "").trim();
   const target = text.startsWith("agent:")
     ? text.slice("agent:".length)
@@ -1512,7 +1613,11 @@ export function learningFeedbackEventPayload(params: {
   return {
     type: "learning.feedback",
     source: "evaluator-aftermath",
-    owner: ownerEventTarget(params.finding.owner, params.projectId, params.agent),
+    owner: ownerEventTarget(
+      params.finding.owner,
+      params.projectId,
+      params.agent,
+    ),
     kind: "owner_finding",
     needsHuman: findingNeedsHuman(params.finding.owner),
     sessionId: params.sessionId,
@@ -1523,6 +1628,28 @@ export function learningFeedbackEventPayload(params: {
     summary: learningFeedbackSummary(params.finding),
     finding: params.finding,
   };
+}
+
+function noChangeProdIssueDisposition(
+  params: SessionEvalTrailParams,
+): boolean {
+  const result = params.finishResult;
+  if (!result || result.classification !== "prod_issue") return false;
+  if (!Array.isArray(result.changedFiles) || result.changedFiles.length !== 0)
+    return false;
+  if (!Array.isArray(result.evidence) || result.evidence.length === 0)
+    return false;
+
+  const contract = params.transcript
+    .split("\n")
+    .filter((line) => /prod_issue|source|patch|modif/i.test(line))
+    .join(" ");
+  return (
+    /prod_issue/i.test(contract) &&
+    /(?:do not|must not|no)\s+(?:modify|modification|source change|source patch|patch)/i.test(
+      contract,
+    )
+  );
 }
 
 function buildRepairDecision(
@@ -1589,9 +1716,26 @@ function buildRepairDecision(
       "The session looks useful enough to mine for reusable learning after review.";
   }
 
+  const noChangeProdIssue = noChangeProdIssueDisposition(params);
+  if (noChangeProdIssue && action === "repair_execution") {
+    action = "none";
+    reason =
+      "repair_execution is not applicable and resolved: the evidence-backed prod_issue disposition explicitly requires no source patch.";
+  }
+
   return {
     action,
     reason,
+    repairExecution: noChangeProdIssue
+      ? {
+          status: "resolved",
+          resolution: "not_applicable",
+          classification: "prod_issue",
+          sourcePatchRequired: false,
+        }
+      : {
+          status: action === "repair_execution" ? "required" : "not_requested",
+        },
     targetBreakdown,
     ownerChoosesAction: true,
     ownerFindings,
@@ -2357,19 +2501,26 @@ function converged(
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  const trigger = extractTrigger(String(ctx.task ?? ""));
-  const continueSweep = !triggerRequiresSessionId(trigger);
+  const taskText = String(ctx.task ?? "");
+  const trigger = extractTrigger(taskText);
+  const reconciliationTask = extractReconciliationTask(taskText);
   const triggerSessionId = getSessionIdFromTrigger(trigger);
+  const taskSessionId = getSessionIdFromReconciliationTask(reconciliationTask);
   const triggerType = getTriggerType(trigger);
   const mode = getModeFromTrigger(trigger);
+  const requiresConcreteSessionId =
+    triggerRequiresSessionId(trigger) ||
+    reconciliationTaskRequiresSessionId(reconciliationTask);
+  const continueSweep = !requiresConcreteSessionId;
   const sessionId =
     triggerSessionId ??
-    (triggerRequiresSessionId(trigger) || mode !== "completed"
+    taskSessionId ??
+    (requiresConcreteSessionId || mode !== "completed"
       ? undefined
       : backfillCandidateSessionId(ctx));
 
   if (!sessionId) {
-    if (!triggerRequiresSessionId(trigger)) {
+    if (!requiresConcreteSessionId) {
       return converged(
         ctx,
         `No eligible aftermath backfill candidate found for ${triggerType || "unspecified trigger"}.`,
@@ -2377,6 +2528,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     }
     return ctx.blocked("evaluator-aftermath requires a sessionId", {
       trigger,
+      reconciliationTask,
     });
   }
 

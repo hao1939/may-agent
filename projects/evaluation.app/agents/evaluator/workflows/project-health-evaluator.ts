@@ -294,6 +294,7 @@ function escalationSummary(escalations: Record<string, unknown>): string {
     `- exact waits: blocked-exact-wait=${String(usage.blockedExactWaitLeaves ?? "unknown")}`,
     `- open sample: ${compactList(escalations.openSample, 5)}`,
     `- stale sample: ${compactList(escalations.staleOpenSample, 5)}`,
+    `- canonical approval delivery: ${compactList(escalations.approvalDelivery, 5)}`,
     `- recent approval asks: ${compactList(escalations.recentApprovalDispatches, 5)}`,
     `- warnings: ${asArray(escalations.warnings).map(String).join("; ") || "none"}`,
   ].join("\n");
@@ -550,6 +551,38 @@ function escalationKey(row: Record<string, unknown>): string {
       "dedupKey",
       "dedupeKey",
     ]) || String(row.id ?? "")
+  );
+}
+
+function sourceEventId(row: Record<string, unknown>): string {
+  return stringFromRecord(parseRowData(row), ["sourceEventId", "source_event_id"]);
+}
+
+function isApprovalRequestMessage(row: Record<string, unknown>): boolean {
+  if (row.event_type !== "message.created") return false;
+  const data = parseRowData(row);
+  return (
+    String(data.intent ?? "").toLowerCase() === "approval-request" ||
+    /\[approval-request\]|approval ID|approve or decline/i.test(
+      String(data.content ?? data.message ?? ""),
+    )
+  );
+}
+
+function approvalRequestIdentity(row: Record<string, unknown>): string {
+  const data = parseRowData(row);
+  const explicit = stringFromRecord(data, [
+    "approvalId",
+    "approval_id",
+    "dedupKey",
+    "dedupeKey",
+  ]);
+  if (explicit) return explicit;
+  const text = String(data.content ?? data.message ?? "");
+  return (
+    text.match(/approval ID\s+[`'\"]?([^`'\"\s).]+)/i)?.[1] ??
+    text.match(/approve or decline\s+[`'\"]([^`'\"]+)[`'\"]/i)?.[1] ??
+    `event:${String(row.id ?? "unknown")}`
   );
 }
 
@@ -1169,9 +1202,24 @@ export function escalationPacket(
             'escalation.resume_failed',
             'project.approval.requested',
             'project.approval.submitted',
-            'message.created'
+            'message.created',
+            'human.attention.reviewed',
+            'channel.delivery.completed'
           )
         ORDER BY e.timestamp DESC, e.id DESC`,
+        [since],
+        { limit: 1000 },
+      ).rows,
+  );
+  const notificationRowsRaw = safeQuery(
+    "approval-notification-messages",
+    () =>
+      ctx.query.sql(
+        `SELECT telegram_msg_id, event_type, agent, session_id, project_id,
+                data, sent_at
+           FROM notification_messages
+          WHERE sent_at >= ?
+          ORDER BY sent_at DESC, telegram_msg_id DESC`,
         [since],
         { limit: 1000 },
       ).rows,
@@ -1204,11 +1252,67 @@ export function escalationPacket(
     (row) => Number(row.timestamp ?? 0) < staleCutoff,
   );
   const approvalRequests = eventRows.filter(
-    (row) => row.event_type === "project.approval.requested",
+    (row) =>
+      row.event_type === "project.approval.requested" ||
+      isApprovalRequestMessage(row),
   );
   const approvalSubmissions = eventRows.filter(
     (row) => row.event_type === "project.approval.submitted",
   );
+  const approvalRequestIds = new Set(
+    approvalRequests.map((row) => String(row.id ?? "")).filter(Boolean),
+  );
+  const attentionReviews = allEventRows.filter(
+    (row) =>
+      row.event_type === "human.attention.reviewed" &&
+      approvalRequestIds.has(sourceEventId(row)),
+  );
+  const channelDeliveries = allEventRows.filter(
+    (row) =>
+      row.event_type === "channel.delivery.completed" &&
+      approvalRequestIds.has(sourceEventId(row)),
+  );
+  const notificationRows = asArray(notificationRowsRaw)
+    .map(objectRecord)
+    .filter((row) => approvalRequestIds.has(sourceEventId(row)));
+  const approvalDelivery = approvalRequests.map((request) => {
+    const requestEventId = String(request.id ?? "");
+    const review = attentionReviews.find(
+      (row) => sourceEventId(row) === requestEventId,
+    );
+    const reviewData = parseRowData(review ?? {});
+    const channel = channelDeliveries.find(
+      (row) => sourceEventId(row) === requestEventId,
+    );
+    const notification = notificationRows.find(
+      (row) => sourceEventId(row) === requestEventId,
+    );
+    const admitted = reviewData.admitted === true;
+    const reviewedDelivered = reviewData.delivered === true;
+    const channelDelivered = Boolean(channel);
+    const notificationDelivered = Boolean(notification);
+    const delivered =
+      reviewedDelivered || channelDelivered || notificationDelivered;
+    return {
+      requestEventId: Number(request.id ?? 0),
+      approvalId: approvalRequestIdentity(request),
+      admitted,
+      reviewedDelivered,
+      attentionReviewEventId: review?.id ?? null,
+      channelDelivered,
+      channelDeliveryEventId: channel?.id ?? null,
+      notificationDelivered,
+      notificationMessageId: notification?.telegram_msg_id ?? null,
+      delivered,
+      decided: approvalSubmissions.length > 0,
+      state:
+        delivered && approvalSubmissions.length === 0
+          ? "delivered-and-undecided"
+          : delivered
+            ? "delivered-and-decided"
+            : "undelivered",
+    };
+  });
   const humanMessages = eventRows.filter((row) => {
     if (row.event_type !== "message.created") return false;
     return /human|operator|approval|escalat/i.test(JSON.stringify(row));
@@ -1265,6 +1369,15 @@ export function escalationPacket(
       resumeFailures: resumeFailures.length,
       approvalRequests: approvalRequests.length,
       approvalSubmissions: approvalSubmissions.length,
+      deliveredApprovalRequests: approvalDelivery.filter(
+        (row) => row.delivered,
+      ).length,
+      deliveredUndecidedApprovalRequests: approvalDelivery.filter(
+        (row) => row.state === "delivered-and-undecided",
+      ).length,
+      undeliveredApprovalRequests: approvalDelivery.filter(
+        (row) => row.state === "undelivered",
+      ).length,
       humanMessages: humanMessages.length,
       approvalDispatchByResult: countBy(approvalDispatches, (row) =>
         typeof row.result === "string" ? row.result : "unknown",
@@ -1280,6 +1393,7 @@ export function escalationPacket(
     closedSample: closed
       .slice(0, 20)
       .map((row) => compactEscalationRow(row, "closed")),
+    approvalDelivery,
     recentApprovalDispatches: approvalDispatches
       .slice(-20)
       .reverse()
@@ -1468,6 +1582,26 @@ export function projectHealthInputFingerprint(
       closed: escalationCounts.closed,
       approvalRequests: escalationCounts.approvalRequests,
       approvalSubmissions: escalationCounts.approvalSubmissions,
+      deliveredApprovalRequests:
+        escalationCounts.deliveredApprovalRequests,
+      deliveredUndecidedApprovalRequests:
+        escalationCounts.deliveredUndecidedApprovalRequests,
+      undeliveredApprovalRequests:
+        escalationCounts.undeliveredApprovalRequests,
+      approvalDelivery: asArray(escalations.approvalDelivery).map((item) => {
+        const delivery = objectRecord(item);
+        return {
+          requestEventId: delivery.requestEventId,
+          approvalId: delivery.approvalId,
+          admitted: delivery.admitted,
+          delivered: delivery.delivered,
+          decided: delivery.decided,
+          state: delivery.state,
+          attentionReviewEventId: delivery.attentionReviewEventId,
+          channelDeliveryEventId: delivery.channelDeliveryEventId,
+          notificationMessageId: delivery.notificationMessageId,
+        };
+      }),
       warnings: escalations.warnings,
     },
     focus: {
@@ -1730,6 +1864,25 @@ function fallbackJudgment(
     };
   }
 
+  if (review > 0) {
+    return {
+      verdict: "concern",
+      mainConcern: `${review} attention resource(s) remain unresolved in the sampled task tree.`,
+      affectedArtifacts: asArray(taskTree?.review)
+        .map((item) => String(objectRecord(item).id ?? ""))
+        .filter(Boolean),
+      recommendedChange:
+        "Reconcile the attention resources through the target owner's normal task path and verify that the later task-tree sample no longer reports them.",
+      verification: [
+        "A later project-health facts pair reports zero unresolved attention resources, or records an evidence-backed terminal disposition for each one.",
+      ],
+      requestedHumanAction: "watch",
+      notify: false,
+      dedupeKey: `${target.targetProject}:attention-resources`,
+      message: `${target.targetProject} still has ${review} attention resource(s); the target owner should reconcile them without creating evaluation-owned remediation.`,
+    };
+  }
+
   return {
     verdict: blocked > 0 ? "watch" : "ok",
     mainConcern:
@@ -1797,17 +1950,27 @@ export function normalizeJudgment(
 
 export function reconcileJudgmentWithFacts(
   target: Pick<TargetConfig, "targetProject">,
-  _packet: Record<string, unknown>,
+  packet: Record<string, unknown>,
   judgment: Judgment,
 ): Judgment {
-  const requestedAction = judgment.requestedHumanAction.toLowerCase();
-  if (requestedAction !== "assign-owner") return judgment;
+  const evidenceFloor = fallbackJudgment(packet, {
+    ...target,
+    targetAppDir: "",
+    reason: "evidence-floor",
+  });
+  const evidenceBackedJudgment =
+    severity(evidenceFloor.verdict) > severity(judgment.verdict)
+      ? evidenceFloor
+      : judgment;
+  const requestedAction =
+    evidenceBackedJudgment.requestedHumanAction.toLowerCase();
+  if (requestedAction !== "assign-owner") return evidenceBackedJudgment;
 
   return {
-    ...judgment,
+    ...evidenceBackedJudgment,
     verdict:
-      severity(judgment.verdict) > severity("watch")
-        ? judgment.verdict
+      severity(evidenceBackedJudgment.verdict) > severity("watch")
+        ? evidenceBackedJudgment.verdict
         : "watch",
     mainConcern:
       "The target app already declares its accountable owner. Route this finding through that owner instead of asking Hao to assign ownership again.",
@@ -1893,7 +2056,7 @@ function numberFromRecord(record: unknown, key: string): number {
   return typeof value === "number" ? value : 0;
 }
 
-function stableDedupeKey(
+export function stableDedupeKey(
   target: TargetConfig,
   packet: Record<string, unknown>,
   judgment: Judgment,
@@ -2007,13 +2170,39 @@ function isActionableHumanRequest(request: string | undefined): boolean {
   return ACTIONABLE_HUMAN_REQUESTS.has(String(request ?? "").toLowerCase());
 }
 
+function alreadyDeliveredUndecidedApproval(
+  judgment: Judgment,
+  packet: Record<string, unknown> | undefined,
+): boolean {
+  const escalations = objectRecord(packet?.escalations);
+  const deliveries = asArray(escalations.approvalDelivery).map(objectRecord);
+  const approvalDecision = /approval|approve|decline/i.test(
+    JSON.stringify({
+      mainConcern: judgment.mainConcern,
+      message: judgment.message,
+      dedupeKey: judgment.dedupeKey,
+      requestedHumanAction: judgment.requestedHumanAction,
+    }),
+  );
+  return (
+    approvalDecision &&
+    deliveries.some(
+      (delivery) =>
+        delivery.state === "delivered-and-undecided" &&
+        delivery.delivered === true,
+    )
+  );
+}
+
 export function shouldNotify(
   judgment: Judgment,
   previous: ProjectHealthState,
+  packet?: Record<string, unknown>,
 ): boolean {
   const actionableHumanRequest = isActionableHumanRequest(
     judgment.requestedHumanAction,
   );
+  if (alreadyDeliveredUndecidedApproval(judgment, packet)) return false;
   if (!actionableHumanRequest) return false;
   if (!NOTIFY_VERDICTS.has(judgment.verdict)) return false;
   if (!judgment.notify) return false;
@@ -2091,28 +2280,28 @@ function humanActionDetail(
   return `Review the report and take the requested action for ${target.targetProject}: ${judgment.requestedHumanAction}.`;
 }
 
-function writeReport(
-  target: TargetConfig,
+export function projectHealthPublication(
+  target: Pick<TargetConfig, "targetProject">,
   packet: Record<string, unknown>,
   judgment: Judgment,
-  evaluatorText: string,
-): { absolutePath: string; relativePath: string } {
-  const reportDir = join(
-    EVALUATION_APP_DIR,
-    "reports/project-health",
-    target.targetProject,
-  );
-  mkdirSync(reportDir, { recursive: true });
-  const id = timestampId();
-  const absoluteFactsPath = join(reportDir, `${id}.facts.json`);
-  const factsRelativePath = relative(EVALUATION_APP_DIR, absoluteFactsPath);
-  writeFileSync(
-    absoluteFactsPath,
-    `${JSON.stringify(packet, null, 2)}\n`,
-    "utf-8",
-  );
-  const absolutePath = join(reportDir, `${id}.md`);
-  const relativePath = relative(EVALUATION_APP_DIR, absolutePath);
+  _evaluatorText: string,
+  factsRelativePath: string,
+): { facts: Record<string, unknown>; report: string } {
+  const canonicalJudgment = {
+    verdict: judgment.verdict,
+    mainConcern: judgment.mainConcern,
+    affectedArtifacts: judgment.affectedArtifacts ?? [],
+    recommendedChange: judgment.recommendedChange ?? "",
+    verification: judgment.verification ?? [],
+    requestedHumanAction: judgment.requestedHumanAction,
+    notify: judgment.notify,
+    dedupeKey: judgment.dedupeKey,
+    message: judgment.message,
+    evaluatorWantedNotify: judgment.evaluatorWantedNotify ?? false,
+    notificationReason: judgment.notificationReason ?? "not recorded",
+    humanActionDetail: judgment.humanActionDetail ?? "",
+  };
+  const publishedFacts = { ...packet, canonicalJudgment };
   const content = `# Project Health Review
 
 Project: ${target.targetProject}
@@ -2147,9 +2336,51 @@ ${humanFactSummary(packet, factsRelativePath)}
 
 ## Evaluator Judgment
 
-${truncate(evaluatorText.trim(), 8_000)}
+Verdict: ${judgment.verdict}
+Main concern: ${judgment.mainConcern}
+Recommended change: ${judgment.recommendedChange ?? "Not identified"}
+Verification:
+${(judgment.verification ?? []).map((item) => `- ${item}`).join("\n") || "- Not identified"}
+
+## Structured Verdict
+
+\`\`\`json
+${JSON.stringify(canonicalJudgment, null, 2)}
+\`\`\`
 `;
-  writeFileSync(absolutePath, content, "utf-8");
+  return { facts: publishedFacts, report: content };
+}
+
+function writeReport(
+  target: TargetConfig,
+  packet: Record<string, unknown>,
+  judgment: Judgment,
+  evaluatorText: string,
+): { absolutePath: string; relativePath: string } {
+  const reportDir = join(
+    EVALUATION_APP_DIR,
+    "reports/project-health",
+    target.targetProject,
+  );
+  mkdirSync(reportDir, { recursive: true });
+  const id = timestampId();
+  const absoluteFactsPath = join(reportDir, `${id}.facts.json`);
+  const factsRelativePath = relative(EVALUATION_APP_DIR, absoluteFactsPath);
+  const publication = projectHealthPublication(
+    target,
+    packet,
+    judgment,
+    evaluatorText,
+    factsRelativePath,
+  );
+  writeFileSync(
+    absoluteFactsPath,
+    `${JSON.stringify(publication.facts, null, 2)}\n`,
+    "utf-8",
+  );
+  const absolutePath = join(reportDir, `${id}.md`);
+  const relativePath = relative(EVALUATION_APP_DIR, absolutePath);
+  writeFileSync(absolutePath, publication.report, "utf-8");
   pruneProjectHealthReports(reportDir);
   return { absolutePath, relativePath };
 }
@@ -2176,6 +2407,41 @@ export function pruneProjectHealthReports(
   }
 }
 
+export function projectHealthStateUpdate(
+  previous: ProjectHealthState,
+  target: Pick<
+    TargetConfig,
+    "targetProject" | "targetAppDir" | "targetDomainDir"
+  >,
+  judgment: Judgment,
+  reportPath: string,
+  inputFingerprint: string,
+  feedbackEmitted: boolean,
+  now = new Date().toISOString(),
+): ProjectHealthState & Record<string, unknown> {
+  return {
+    ...previous,
+    targetProject: target.targetProject,
+    targetAppDir: target.targetAppDir,
+    targetDomainDir: target.targetDomainDir ?? null,
+    lastReviewedAt: now,
+    lastReportPath: reportPath,
+    lastVerdict: judgment.verdict,
+    lastDedupeKey: judgment.dedupeKey,
+    lastRequestedHumanAction: judgment.requestedHumanAction,
+    lastNotify: judgment.notify,
+    lastInputFingerprint: inputFingerprint,
+    lastCheckedAt: now,
+    ...(feedbackEmitted
+      ? {
+          lastFeedbackAt: now,
+          lastFeedbackDedupeKey: judgment.dedupeKey,
+          lastFeedbackVerdict: judgment.verdict,
+        }
+      : {}),
+  };
+}
+
 function writeState(
   target: TargetConfig,
   judgment: Judgment,
@@ -2189,27 +2455,14 @@ function writeState(
   writeFileSync(
     join(stateDir, `${target.targetProject}.json`),
     `${JSON.stringify(
-      {
-        ...previous,
-        targetProject: target.targetProject,
-        targetAppDir: target.targetAppDir,
-        targetDomainDir: target.targetDomainDir ?? null,
-        lastReviewedAt: new Date().toISOString(),
-        lastReportPath: reportPath,
-        lastVerdict: judgment.verdict,
-        lastDedupeKey: judgment.dedupeKey,
-        lastRequestedHumanAction: judgment.requestedHumanAction,
-        lastNotify: judgment.notify,
-        lastInputFingerprint: inputFingerprint,
-        lastCheckedAt: new Date().toISOString(),
-        ...(feedbackEmitted
-          ? {
-              lastFeedbackAt: new Date().toISOString(),
-              lastFeedbackDedupeKey: judgment.dedupeKey,
-              lastFeedbackVerdict: judgment.verdict,
-            }
-          : {}),
-      },
+      projectHealthStateUpdate(
+        previous,
+        target,
+        judgment,
+        reportPath,
+        inputFingerprint,
+        feedbackEmitted,
+      ),
       null,
       2,
     )}\n`,
@@ -2392,7 +2645,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   );
   judgment.dedupeKey = stableDedupeKey(target, packet, judgment);
   const evaluatorWantedNotify = judgment.notify;
-  const finalNotify = shouldNotify(judgment, previous);
+  const finalNotify = shouldNotify(judgment, previous, packet);
   judgment.evaluatorWantedNotify = evaluatorWantedNotify;
   judgment.notify = finalNotify;
   judgment.notificationReason = notificationReason(

@@ -35,7 +35,7 @@ after their result is absorbed.
 
 | Task key                              | Mode       | Handler                      | Convergence                                                                                    |
 | ------------------------------------- | ---------- | ---------------------------- | ---------------------------------------------------------------------------------------------- |
-| `runtime/aftermath-backfill`          | `maintain` | `evaluator-aftermath`        | The oldest eligible missing evaluation is recorded; the same task continues while more remain. |
+| `runtime/aftermath-backfill`          | `maintain` | `evaluator-aftermath`        | The highest-priority eligible missing evaluation is recorded (failed/interrupted first, then done sessions inside the recent 3h coverage window, then older done backlog); the same task continues while more remain. |
 | `runtime/session-aftermath/<session>` | `achieve`  | `evaluator-aftermath`        | An explicitly requested session has a durable evaluation or structured skip.                   |
 | `runtime/deep-eval/<session>`         | `achieve`  | `evaluator-deep-eval`        | The requested session has one workflow-traced deep judgment.                                   |
 | `runtime/pipeline-monitor`            | `maintain` | `evaluator-pipeline-monitor` | The current snapshot is recorded and unchanged state creates no owner wake.                    |

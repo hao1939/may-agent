@@ -339,13 +339,17 @@ and app code is not a second planner. Known evaluation processes are explicit
 workflows. The evaluator owner judges novel or ambiguous evaluator-local work.
 Both return the shared structured result and neither mutates the tree directly.
 
-`session.end` is a high-rate observation, not one desired outcome per event.
-It is reduced to a compact `evaluation.aftermath.scan` wake for one standing
-aftermath frontier task. The sessions and evaluations tables are the durable
-source of truth. Each reconciliation evaluates the oldest eligible missing
-session and emits one compact continuation wake while more work remains. This
-keeps progress sequential and restart-safe without turning the task tree into
-a session queue or copying large session payloads into task state.
+`session.end` is a high-rate observation, but it does carry one exact session
+identity. Evaluation now routes concrete `session.end` events into
+`evaluation.session.requested` so the reconciler can run bounded
+`runtime/session-aftermath/<session>` work with normal task-level concurrency.
+The standing `evaluation.aftermath.scan` wake remains the restart-safe fallback
+for missed, delayed, or backlog sessions older than the grace window. The
+sessions and evaluations tables remain the durable source of truth, and the
+scan path still emits one compact continuation wake while more uncovered work
+remains. This protects the recent coverage frontier without copying large
+session payloads into task state or turning the standing backfill task into a
+large queue blob.
 
 ### Evaluation Task Schema
 
@@ -396,15 +400,16 @@ not consume evaluator sessions merely to repeat unchanged child state.
 
 ### Runtime Tasks
 
-| Event                                      | Task                                  | Mode       | Observable postcondition                                                                                        |
-| ------------------------------------------ | ------------------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------- |
-| `session.end`, `evaluation.aftermath.scan` | `runtime/aftermath-backfill`          | `maintain` | The oldest eligible missing evaluation is recorded; one compact continuation wake is emitted while more remain. |
-| `evaluation.session.requested`             | `runtime/session-aftermath/<session>` | `achieve`  | The explicitly requested session has a durable evaluation or structured skip.                                   |
-| `evaluation.deep.requested`                | `runtime/deep-eval/<session>`         | `achieve`  | The exact session has one workflow-traced deep judgment.                                                        |
-| `evaluation.pipeline.check`                | `runtime/pipeline-monitor`            | `maintain` | Snapshot persisted; only changed anomaly state wakes the owner.                                                 |
-| `evaluation.deep.scan`                     | `runtime/deep-eval-scan`              | `maintain` | One candidate reviewed or no candidate currently exists.                                                        |
-| `evaluation.project.review.requested`      | `runtime/project-audit/<target>`      | `maintain` | Target fingerprint is current and any due report and feedback are persisted.                                    |
-| `evaluation.tick`                          | `runtime/owner-review`                | `maintain` | Revision-checked actions are atomically applied, or a justified no-op is recorded.                              |
+| Event                                 | Task                                  | Mode       | Observable postcondition                                                                                               |
+| ------------------------------------- | ------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `session.end`                         | `runtime/session-aftermath/<session>` | `achieve`  | The concrete ended session has a durable evaluation or structured skip without waiting for the periodic backfill scan. |
+| `evaluation.aftermath.scan`           | `runtime/aftermath-backfill`          | `maintain` | The oldest grace-eligible missing evaluation is recorded; one compact continuation wake is emitted while more remain.  |
+| `evaluation.session.requested`        | `runtime/session-aftermath/<session>` | `achieve`  | The explicitly requested session has a durable evaluation or structured skip.                                          |
+| `evaluation.deep.requested`           | `runtime/deep-eval/<session>`         | `achieve`  | The exact session has one workflow-traced deep judgment.                                                               |
+| `evaluation.pipeline.check`           | `runtime/pipeline-monitor`            | `maintain` | Snapshot persisted; only changed anomaly state wakes the owner.                                                        |
+| `evaluation.deep.scan`                | `runtime/deep-eval-scan`              | `maintain` | One candidate reviewed or no candidate currently exists.                                                               |
+| `evaluation.project.review.requested` | `runtime/project-audit/<target>`      | `maintain` | Target fingerprint is current and any due report and feedback are persisted.                                           |
+| `evaluation.tick`                     | `runtime/owner-review`                | `maintain` | Revision-checked actions are atomically applied, or a justified no-op is recorded.                                     |
 
 An `achieve` task leaves the live graph after outcome absorption and keeps a
 bounded completion reference for deduplication. A converged `maintain` task

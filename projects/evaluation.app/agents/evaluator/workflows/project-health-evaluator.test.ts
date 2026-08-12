@@ -7,8 +7,11 @@ import {
   projectHealthInputFingerprint,
   normalizeJudgment,
   projectHealthJudgmentFromResult,
+  projectHealthPublication,
+  projectHealthStateUpdate,
   pruneProjectHealthReports,
   reconcileJudgmentWithFacts,
+  stableDedupeKey,
   scheduledProjectReviewDecision,
   shouldFeedbackTargetOwner,
   shouldNotify,
@@ -156,6 +159,80 @@ describe("project health correction contract", () => {
     expect(source.text).toContain("s_1784760004824_308");
     expect(source.text).toContain("Agent ended with an empty assistant turn");
     expect(source.text).toContain("deterministic fact-packet fallback");
+  });
+
+  test("publishes one canonical concern when structured ok contradicts surrounding concern prose", () => {
+    const packet = {
+      taskTree: {
+        counts: { leafByPhase: { attention: 2 } },
+        review: [{ id: "attention-one" }, { id: "attention-two" }],
+      },
+    };
+    const evaluatorText = `The sampled facts remain at concern because attention resources are unresolved.\n\n\`\`\`json\n${JSON.stringify({
+      verdict: "ok",
+      mainConcern: "No major process concern detected.",
+      requestedHumanAction: "none",
+      notify: false,
+      dedupeKey: "evaluation.app:raw-ok",
+      message: "No action.",
+    })}\n\`\`\``;
+    const source = projectHealthJudgmentFromResult({
+      status: "done",
+      lastAssistantText: evaluatorText,
+    });
+    const normalized = normalizeJudgment(source.raw, {
+      verdict: "concern",
+      mainConcern: "fallback",
+      requestedHumanAction: "watch",
+      notify: false,
+      dedupeKey: "evaluation.app:fallback",
+      message: "fallback",
+    });
+    const canonical = reconcileJudgmentWithFacts(
+      { targetProject: "evaluation.app" },
+      packet,
+      normalized,
+    );
+    canonical.dedupeKey = stableDedupeKey(
+      {
+        targetProject: "evaluation.app",
+        targetAppDir: "/app/projects/evaluation.app",
+        reason: "test",
+      },
+      packet,
+      canonical,
+    );
+    const publication = projectHealthPublication(
+      { targetProject: "evaluation.app" },
+      packet,
+      canonical,
+      evaluatorText,
+      "reports/project-health/evaluation.app/new.facts.json",
+    );
+
+    expect(canonical).toMatchObject({
+      verdict: "concern",
+      mainConcern:
+        "2 attention resource(s) remain unresolved in the sampled task tree.",
+      dedupeKey: "evaluation.app:attention-resources",
+    });
+    expect(publication.facts.canonicalJudgment).toMatchObject({
+      verdict: "concern",
+      mainConcern: canonical.mainConcern,
+      dedupeKey: canonical.dedupeKey,
+      verification: canonical.verification,
+    });
+    expect(publication.report).toContain("Verdict: concern");
+    expect(publication.report).toContain(`Main concern: ${canonical.mainConcern}`);
+    expect(publication.report).toContain(
+      JSON.stringify(
+        (publication.facts as { canonicalJudgment: unknown }).canonicalJudgment,
+        null,
+        2,
+      ),
+    );
+    expect(publication.report).not.toContain('"verdict":"ok"');
+    expect(publication.report).not.toContain("No major process concern detected.");
   });
 });
 
@@ -755,6 +832,105 @@ describe("project health evaluator review gating", () => {
 });
 
 describe("project health human notification gating", () => {
+  test("suppresses a duplicate approval prompt when canonical delivery is still undecided", async () => {
+    const appDir = await makeAppDirWithTree({ tasks: {} });
+    const eventRows = [
+      {
+        id: 5438280,
+        event_type: "message.created",
+        source: "agent:may",
+        owner: "human:operator",
+        timestamp: 1786348367746,
+        data: JSON.stringify({
+          from: "may",
+          to: "human",
+          intent: "approval-request",
+          content:
+            "Approve or decline approval ID `may-agent:supervisor-model-credential-restore:20260810:g1`.",
+        }),
+      },
+      {
+        id: 5438377,
+        event_type: "human.attention.reviewed",
+        source: "telegram-outbound",
+        owner: "agent:may",
+        timestamp: 1786348443958,
+        data: JSON.stringify({
+          sourceEventId: 5438280,
+          admitted: true,
+          delivered: true,
+        }),
+      },
+      {
+        id: 5438382,
+        event_type: "channel.delivery.completed",
+        source: "telegram",
+        owner: "agent:may",
+        timestamp: 1786348445382,
+        data: JSON.stringify({
+          sourceEventId: 5438280,
+          externalMessageId: 46354,
+        }),
+      },
+    ];
+    const notificationRows = [
+      {
+        telegram_msg_id: 46354,
+        event_type: "message.created",
+        agent: "may",
+        project_id: "projects/may-agent",
+        sent_at: 1786348445378,
+        data: JSON.stringify({ sourceEventId: 5438280 }),
+      },
+    ];
+    const packet = escalationPacket(
+      {
+        query: {
+          sql: (sql: string) => ({
+            rows: sql.includes("FROM notification_messages")
+              ? notificationRows
+              : eventRows,
+          }),
+        },
+      } as never,
+      {
+        targetProject: "may-agent.app",
+        targetAppDir: appDir,
+        targetDomainDir: appDir,
+        reason: "test",
+      },
+    );
+
+    expect(packet.counts).toMatchObject({
+      deliveredUndecidedApprovalRequests: 1,
+      undeliveredApprovalRequests: 0,
+    });
+    expect(packet.approvalDelivery).toEqual([
+      expect.objectContaining({
+        requestEventId: 5438280,
+        attentionReviewEventId: 5438377,
+        channelDeliveryEventId: 5438382,
+        notificationMessageId: 46354,
+        state: "delivered-and-undecided",
+      }),
+    ]);
+    expect(
+      shouldNotify(
+        {
+          verdict: "blocked-on-human",
+          mainConcern:
+            "Approval delivery for the supervisor credential restore is unverified.",
+          requestedHumanAction: "decide",
+          notify: true,
+          dedupeKey: "may-agent.app:approval-delivery-telemetry-mismatch:g1",
+          message: "Approve or decline the credential restore.",
+        },
+        {},
+        { escalations: packet },
+      ),
+    ).toBe(false);
+  });
+
   test("suppresses watch-only project-health messages even for observed duplicate regression samples", () => {
     const duplicateWatchSamples = [
       {
@@ -967,6 +1143,81 @@ describe("project health owner feedback gating", () => {
         now: Date.parse("2026-07-14T10:01:00.000Z"),
       }),
     ).toBe(true);
+  });
+
+  test("gates owner feedback after canonical verdict and preserves the stable receipt across raw verdict changes", () => {
+    const packet = {
+      taskTree: {
+        counts: { leafByPhase: { attention: 2 } },
+        review: [{ id: "attention-one" }, { id: "attention-two" }],
+      },
+    };
+    const target = {
+      targetProject: "evaluation.app",
+      targetAppDir: "/app/projects/evaluation.app",
+      targetDomainDir: "/app/projects/evaluation.app",
+      reason: "test",
+    };
+    const canonicalFromRawOk = reconcileJudgmentWithFacts(target, packet, {
+      ...judgment,
+      verdict: "ok",
+      requestedHumanAction: "none",
+      dedupeKey: "evaluation.app:raw-ok",
+    });
+    canonicalFromRawOk.dedupeKey = stableDedupeKey(
+      target,
+      packet,
+      canonicalFromRawOk,
+    );
+    const canonicalFromRawWatch = reconcileJudgmentWithFacts(target, packet, {
+      ...judgment,
+      verdict: "watch",
+      dedupeKey: "evaluation.app:raw-watch",
+    });
+    canonicalFromRawWatch.dedupeKey = stableDedupeKey(
+      target,
+      packet,
+      canonicalFromRawWatch,
+    );
+    const previous = {
+      lastFeedbackAt: "2026-08-10T20:00:00.000Z",
+      lastFeedbackDedupeKey: "evaluation.app:attention-resources",
+      lastFeedbackVerdict: "concern",
+      lastRequestedHumanAction: "watch",
+    };
+
+    expect(canonicalFromRawOk).toMatchObject({
+      verdict: "concern",
+      dedupeKey: "evaluation.app:attention-resources",
+      requestedHumanAction: "watch",
+    });
+    expect(canonicalFromRawWatch).toMatchObject({
+      verdict: "concern",
+      dedupeKey: canonicalFromRawOk.dedupeKey,
+      requestedHumanAction: "watch",
+    });
+    expect(
+      shouldFeedbackTargetOwner(canonicalFromRawWatch, previous, {
+        now: Date.parse("2026-08-10T20:30:00.000Z"),
+      }),
+    ).toBe(false);
+
+    const state = projectHealthStateUpdate(
+      previous,
+      target,
+      canonicalFromRawWatch,
+      "reports/project-health/evaluation.app/new.md",
+      "new-fingerprint",
+      false,
+      "2026-08-10T20:30:00.000Z",
+    );
+    expect(state).toMatchObject({
+      lastVerdict: "concern",
+      lastDedupeKey: canonicalFromRawOk.dedupeKey,
+      lastFeedbackAt: previous.lastFeedbackAt,
+      lastFeedbackDedupeKey: previous.lastFeedbackDedupeKey,
+      lastFeedbackVerdict: previous.lastFeedbackVerdict,
+    });
   });
 });
 

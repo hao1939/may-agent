@@ -5,6 +5,9 @@ import {
   buildReviewTask,
   classifyEvaluationLane,
   classifyVerdict,
+  execute,
+  extractReconciliationTask,
+  getSessionIdFromReconciliationTask,
   getSessionIdFromTrigger,
   ownerEventTarget,
   reviewFailureDetails,
@@ -22,6 +25,140 @@ describe("evaluator aftermath event contract", () => {
         params: { sessionId: "s_explicit" },
       }),
     ).toBe("s_explicit");
+  });
+
+  it("accepts sessionId from persisted event data.params", () => {
+    expect(
+      getSessionIdFromTrigger({
+        type: "evaluation.session.requested",
+        data: { params: { sessionId: "s_1785911968384_468" } },
+      }),
+    ).toBe("s_1785911968384_468");
+  });
+
+  it("derives a concrete sessionId from runtime session-aftermath reconciliation input or task id", () => {
+    const task = [
+      "## Reconciliation Task",
+      "```json",
+      JSON.stringify({
+        taskId: "runtime/session-aftermath/s_1785911968384_468",
+        input: {},
+      }),
+      "```",
+    ].join("\n");
+
+    expect(
+      getSessionIdFromReconciliationTask(extractReconciliationTask(task)),
+    ).toBe("s_1785911968384_468");
+    expect(
+      getSessionIdFromReconciliationTask({
+        taskId: "runtime/session-aftermath/not-a-concrete-session",
+        input: {},
+      }),
+    ).toBeUndefined();
+  });
+
+  it("runs a runtime session-aftermath task when only the concrete task id carries the sessionId", async () => {
+    const queried: string[] = [];
+    const result = await execute({
+      task: [
+        "Reconcile task through workflow evaluator-aftermath",
+        "",
+        "## Reconciliation Task",
+        "```json",
+        JSON.stringify({
+          taskId: "runtime/session-aftermath/s_1785911968384_468",
+          input: {},
+        }),
+        "```",
+      ].join("\n"),
+      query: {
+        evaluatorAftermathContext({ sessionId }: { sessionId: string }) {
+          queried.push(sessionId);
+          return {
+            session: {
+              sessionId,
+              agent: "evaluator",
+              status: "done",
+              startedAt: Date.now(),
+            },
+            evaluation: null,
+          };
+        },
+      },
+      done(summary: string, output?: unknown) {
+        return { status: "done", summary, result: output };
+      },
+      blocked(summary: string, output?: unknown) {
+        return { status: "blocked", summary, result: output };
+      },
+    } as any);
+
+    expect(queried).toEqual(["s_1785911968384_468"]);
+    expect(result.status).toBe("done");
+    expect(result.summary).toContain("s_1785911968384_468");
+  });
+
+  it("blocks invalid runtime session-aftermath task ids instead of backfilling another session", async () => {
+    let backfillQueried = false;
+    const result = await execute({
+      task: [
+        "## Reconciliation Task",
+        "```json",
+        JSON.stringify({
+          taskId: "runtime/session-aftermath/not-a-concrete-session",
+          input: {},
+        }),
+        "```",
+      ].join("\n"),
+      query: {
+        sql() {
+          backfillQueried = true;
+          return { rows: [{ sessionId: "s_wrong_backfill" }] };
+        },
+      },
+      done(summary: string, output?: unknown) {
+        return { status: "done", summary, result: output };
+      },
+      blocked(summary: string, output?: unknown) {
+        return { status: "blocked", summary, result: output };
+      },
+    } as any);
+
+    expect(backfillQueried).toBe(false);
+    expect(result.status).toBe("blocked");
+    expect(result.summary).toBe("evaluator-aftermath requires a sessionId");
+  });
+
+  it("blocks explicit session triggers with a missing or invalid concrete sessionId", async () => {
+    let backfillQueried = false;
+    const result = await execute({
+      task: [
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "evaluation.session.requested",
+          params: { sessionId: "not-a-concrete-session" },
+        }),
+        "```",
+      ].join("\n"),
+      query: {
+        sql() {
+          backfillQueried = true;
+          return { rows: [{ sessionId: "s_wrong_backfill" }] };
+        },
+      },
+      done(summary: string, output?: unknown) {
+        return { status: "done", summary, result: output };
+      },
+      blocked(summary: string, output?: unknown) {
+        return { status: "blocked", summary, result: output };
+      },
+    } as any);
+
+    expect(backfillQueried).toBe(false);
+    expect(result.status).toBe("blocked");
+    expect(result.summary).toBe("evaluator-aftermath requires a sessionId");
   });
 
   it("requires session id only for concrete session events", () => {
@@ -46,7 +183,9 @@ describe("evaluator aftermath event contract", () => {
 
   it("routes May-owned background findings to a concrete app owner", () => {
     expect(ownerEventTarget("agent:may/runtime")).toBe("tech-lead");
-    expect(ownerEventTarget("may/runtime", "aks-rp-e2e", "aks-explorer")).toBe("app-ops");
+    expect(ownerEventTarget("may/runtime", "aks-rp-e2e", "aks-explorer")).toBe(
+      "app-ops",
+    );
     expect(ownerEventTarget("agent:tech-lead")).toBe("tech-lead");
     expect(ownerEventTarget("human:runtime-owner")).toBe("tech-lead");
   });
@@ -54,8 +193,20 @@ describe("evaluator aftermath event contract", () => {
   it("routes internal reconciler findings to the affected app owner", () => {
     expect(ownerEventTarget("agent:app-task-reconciler")).toBe("tech-lead");
     expect(ownerEventTarget("app-task-reconciler", "gym", "gym")).toBe("gym");
-    expect(ownerEventTarget("agent:project-app-task-reconciler", "aks-rp-e2e", "aks-explorer")).toBe("app-ops");
-    expect(ownerEventTarget("project-app-task-reconciler/runtime", "evaluation", "evaluator")).toBe("evaluator");
+    expect(
+      ownerEventTarget(
+        "agent:project-app-task-reconciler",
+        "aks-rp-e2e",
+        "aks-explorer",
+      ),
+    ).toBe("app-ops");
+    expect(
+      ownerEventTarget(
+        "project-app-task-reconciler/runtime",
+        "evaluation",
+        "evaluator",
+      ),
+    ).toBe("evaluator");
   });
 
   it("classifies reviewer runtime failure separately from source quality", () => {
