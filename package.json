@@ -37,9 +37,6 @@
     "@earendil-works/pi-agent-core": "0.81.1",
     "@earendil-works/pi-ai": "0.81.1",
     "@may-agent/sdk": "workspace:*",
-    "@may-agent/terminal": "workspace:*",
-    "@xterm/addon-fit": "^0.11.0",
-    "@xterm/xterm": "^6.0.0",
     "better-sqlite3": "^12.11.1",
     "diff": "^9.0.0",
     "typebox": "1.1.38"
@@ -66,7 +63,6 @@
   },
   "license": "MIT",
   "trustedDependencies": [
-    "node-pty",
     "protobufjs"
   ]
 }

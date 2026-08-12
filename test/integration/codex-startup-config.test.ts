@@ -22,4 +22,11 @@ describe("Codex startup configuration", () => {
     expect(source).not.toContain("CODEX_BASE_URL");
     expect(source).not.toMatch(/^update_on_startup\s*=/m);
   });
+
+  test("persists unrestricted execution for plain and resumed Codex sessions", () => {
+    const source = readFileSync(resolve(repoRoot, "container/setup-codex-config.sh"), "utf8");
+
+    expect(source).toContain('approval_policy = "never"');
+    expect(source).toContain('sandbox_mode = "danger-full-access"');
+  });
 });

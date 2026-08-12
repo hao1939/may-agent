@@ -30,7 +30,6 @@ import {
   buildCanonicalEventEnvelope,
   normalizeEventOwner,
 } from "../../../packages/control/src/event-envelope.js";
-import { createTerminalManager } from "@may-agent/terminal";
 import {
   loadProjectReadModel,
   projectRuntimePaths,
@@ -436,8 +435,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   const PROJECTS_ROOT = process.env.PROJECTS_ROOT || resolve(PROJECT_ROOT, "projects");
   const DAEMON_INSTANCE = process.env.DAEMON_INSTANCE || process.env.INSTANCE || "default";
   const DAEMON_AGENT = process.env.DAEMON_AGENT || process.env.AGENT || "may";
-  const terminalManager = createTerminalManager({ projectRoot: PROJECT_ROOT });
-  let terminalClientSeq = 0;
 
   function _db(): SqliteDb {
     return openStateDb(join(STATE_DIR, "may.db"));
@@ -3428,46 +3425,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     });
   }
 
-  function terminalError(err: unknown): Response {
-    const message = err instanceof Error ? err.message : String(err);
-    const status = /MAY_WEB_TERMINAL=1/.test(message) ? 403 : 400;
-    return json({ error: message }, status);
-  }
-
-  async function handleTerminals(): Promise<Response> {
-    return json(terminalManager.getStatus());
-  }
-
-  async function handleTerminalStart(req: Request): Promise<Response> {
-    try {
-      const body = (await req.json().catch(() => ({}))) as { profileId?: string; cols?: number; rows?: number };
-      const profileId = body.profileId || "shell";
-      await terminalManager.ensureSession(profileId, body.cols, body.rows);
-      return json({ ok: true, terminalId: profileId });
-    } catch (err) {
-      return terminalError(err);
-    }
-  }
-
-  async function handleTerminalResize(req: Request, terminalId: string): Promise<Response> {
-    try {
-      const body = (await req.json().catch(() => ({}))) as { cols?: number; rows?: number };
-      terminalManager.resize(terminalId, Number(body.cols), Number(body.rows));
-      return json({ ok: true, terminalId });
-    } catch (err) {
-      return terminalError(err);
-    }
-  }
-
-  function handleTerminalRestart(terminalId: string): Response {
-    try {
-      terminalManager.restart(terminalId);
-      return json({ ok: true, terminalId });
-    } catch (err) {
-      return terminalError(err);
-    }
-  }
-
   // ── Steering verbs (POST → daemon event socket) ───────────────────
   //
   // The web process does not own the bus or manager. It sends event frames to
@@ -4036,33 +3993,12 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     hostname: "0.0.0.0",
     fetch(req, server) {
       const url = new URL(req.url);
-      const terminalWsMatch = url.pathname.match(/^\/api\/terminals\/([^/]+)\/ws$/);
-      if (terminalWsMatch) {
-        const cols = Number(url.searchParams.get("cols") || "");
-        const rows = Number(url.searchParams.get("rows") || "");
-        const terminalClientId = `terminal-${++terminalClientSeq}`;
-        if (
-          server.upgrade(req, {
-            data: {
-              kind: "terminal",
-              terminalId: decodeURIComponent(terminalWsMatch[1]),
-              terminalClientId,
-              cols,
-              rows,
-            },
-          })
-        )
-          return undefined;
-        return new Response("WebSocket upgrade failed", { status: 400 });
-      }
       if (url.pathname === "/ws") {
         if (server.upgrade(req, { data: { kind: "events" } })) return undefined;
         return new Response("WebSocket upgrade failed", { status: 400 });
       }
       if (url.pathname === "/api/liveness") return handleLiveness(url);
       if (url.pathname === "/api/stats") return handleStats();
-      if (url.pathname === "/api/terminals" && req.method === "GET") return handleTerminals();
-      if (url.pathname === "/api/terminals" && req.method === "POST") return handleTerminalStart(req);
       if (url.pathname === "/api/agents") return handleAgents();
       if (url.pathname === "/api/agents/activity") return handleAgentActivity();
       if (url.pathname === "/api/agents/timeline") return handleAgentTimeline(url);
@@ -4142,10 +4078,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         if (sessionEvalCommentMatch) return handleSessionEvalComment(req, sessionEvalCommentMatch[1]);
         const sessionMessageMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/message$/);
         if (sessionMessageMatch) return handleSessionMessage(req, sessionMessageMatch[1]);
-        const terminalResizeMatch = url.pathname.match(/^\/api\/terminals\/([^/]+)\/resize$/);
-        if (terminalResizeMatch) return handleTerminalResize(req, decodeURIComponent(terminalResizeMatch[1]));
-        const terminalRestartMatch = url.pathname.match(/^\/api\/terminals\/([^/]+)\/restart$/);
-        if (terminalRestartMatch) return handleTerminalRestart(decodeURIComponent(terminalRestartMatch[1]));
         const heartbeatNowMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/heartbeat-now$/);
         if (heartbeatNowMatch) return handleAgentHeartbeatNow(req, heartbeatNowMatch[1]);
         const agentMessageMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/message$/);
@@ -4165,70 +4097,13 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     },
     websocket: {
       open(ws: any) {
-        if (ws.data?.kind === "terminal") {
-          terminalManager
-            .attach(ws.data.terminalId, ws, ws.data.cols, ws.data.rows, ws.data.terminalClientId)
-            .catch((err) => {
-              try {
-                ws.send(JSON.stringify({ type: "error", message: err instanceof Error ? err.message : String(err) }));
-                ws.close();
-              } catch {}
-            });
-          return;
-        }
         proxyWebSocket(ws);
       },
       message(ws: any, msg: any) {
-        if (ws.data?.kind === "terminal") {
-          try {
-            const frame = JSON.parse(String(msg)) as {
-              type?: string;
-              data?: string;
-              cols?: number;
-              rows?: number;
-              direction?: "up" | "down";
-              lines?: number;
-            };
-            if (frame.type === "input")
-              terminalManager.input(ws.data.terminalId, frame.data ?? "", ws.data.terminalClientId);
-            else if (frame.type === "scroll")
-              terminalManager.scroll(
-                ws.data.terminalId,
-                frame.direction === "down" ? "down" : "up",
-                Number(frame.lines) || 1,
-                ws.data.terminalClientId,
-              );
-            else if (frame.type === "history-exit")
-              terminalManager.historyExit(ws.data.terminalId, ws.data.terminalClientId);
-            else if (frame.type === "focus")
-              terminalManager.activate(
-                ws.data.terminalId,
-                ws.data.terminalClientId,
-                Number(frame.cols),
-                Number(frame.rows),
-              );
-            else if (frame.type === "resize")
-              terminalManager.resize(
-                ws.data.terminalId,
-                Number(frame.cols),
-                Number(frame.rows),
-                ws.data.terminalClientId,
-              );
-          } catch (err) {
-            try {
-              ws.send(JSON.stringify({ type: "error", message: err instanceof Error ? err.message : String(err) }));
-            } catch {}
-          }
-          return;
-        }
         const unix = wsToUnix.get(ws);
         if (unix && typeof msg === "string" && msg.trim()) unix.write(msg.trim() + "\n");
       },
       close(ws: any) {
-        if (ws.data?.kind === "terminal") {
-          terminalManager.detach(ws.data.terminalId, ws, ws.data.terminalClientId);
-          return;
-        }
         const unix = wsToUnix.get(ws);
         if (unix) {
           unix.destroy();
