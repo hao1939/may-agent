@@ -8,9 +8,7 @@ import "./sdk-resolver-plugin.js";
 
 import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import {
-  createIdentityWriter,
-} from "./daemon.js";
+import { createIdentityWriter } from "./daemon.js";
 import { runEmitMode } from "./modes/emit.js";
 import { parseWebPort, runWebOnlyMode } from "./modes/web.js";
 import { createModelRegistry } from "./model-registry.js";
@@ -18,6 +16,31 @@ import { parseAppArgs } from "./app-args.js";
 import { runAppRuntime } from "./app-runtime.js";
 import { resolveRuntimeRoots } from "./path-roots.js";
 import { runMaintenanceMode } from "./modes/maintenance.js";
+
+// Keep informational CLI modes ahead of runtime-root resolution, identity
+// creation, and app startup. In particular, --help must remain read-only: app
+// startup performs stale handler/workflow recovery and may mutate persisted state.
+if (process.argv.includes("--help") || process.argv.includes("-h")) {
+  console.log(`Usage: may-agent [options]
+
+Options:
+  -h, --help                 Show this help and exit
+  -v, --version              Show version and git SHA
+  --agent <name>             Select the interface agent
+  --task <text>              Run an initial task
+  --task-file <path>         Read the initial task from a file
+  --oneshot                  Run one task and exit
+  --console, --chat          Enable the console interface
+  --telegram                 Enable the Telegram interface
+  --cron                     Enable scheduled jobs
+  --socket                   Enable the daemon socket
+  --web                      Enable the web interface (alone: web-only mode)
+  --status                   Print runtime status
+  --send                     Send a message
+  --emit <event-type>        Emit an event through the running daemon
+  --maintenance-once         Run one maintenance pass and exit`);
+  process.exit(0);
+}
 
 // ── --version / -v: print version + git SHA and exit immediately ────────
 if (process.argv.includes("--version") || process.argv.includes("-v")) {
@@ -59,11 +82,7 @@ try {
   process.exit(1);
 }
 
-const {
-  emitMode: EMIT_MODE,
-  interfaceAgent,
-  webOnlyMode: WEB_ONLY_MODE,
-} = appArgs;
+const { emitMode: EMIT_MODE, interfaceAgent, webOnlyMode: WEB_ONLY_MODE } = appArgs;
 
 if (EMIT_MODE) {
   // ── Operator emit mode: send one event to the running daemon and exit ─

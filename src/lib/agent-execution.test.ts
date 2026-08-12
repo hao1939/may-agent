@@ -1,10 +1,21 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
-import { Type } from "@earendil-works/pi-ai";
+import {
+  createAssistantMessageEventStream,
+  Type,
+  type AssistantMessage,
+  type Context,
+  type Model,
+  type StreamFunction,
+} from "@earendil-works/pi-ai";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { prepareAgentExecution } from "./agent-execution.js";
+import {
+  GITHUB_COPILOT_IDE_TOKEN_EXPIRED,
+  prepareAgentExecution,
+  withGithubCopilotIdeTokenRecovery,
+} from "./agent-execution.js";
 import { currentAgentSessionId } from "./agent-session-context.js";
 import { createFinishTool } from "./tools/lifecycle.js";
 
@@ -23,6 +34,120 @@ function tool(name: string): AgentTool {
     execute: async () => ({ content: [{ type: "text", text: "ok" }] }),
   };
 }
+
+const fallbackTestModel = {
+  api: "anthropic-messages",
+  provider: "anthropic",
+  id: "claude-opus-5",
+} as Model<any>;
+
+const streamTestModel = {
+  api: "openai-responses",
+  provider: "github-copilot",
+  id: "gpt-5.6-sol",
+  fallbackModel: fallbackTestModel,
+} as Model<any> & { fallbackModel: Model<any> };
+
+function assistantMessage(
+  stopReason: "stop" | "error",
+  errorMessage?: string,
+  model: Model<any> = streamTestModel,
+): AssistantMessage {
+  return {
+    role: "assistant",
+    content: [],
+    api: model.api,
+    provider: model.provider,
+    model: model.id,
+    usage: {
+      input: 0,
+      output: 0,
+      cacheRead: 0,
+      cacheWrite: 0,
+      totalTokens: 0,
+      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+    },
+    stopReason,
+    errorMessage,
+    timestamp: 1,
+  };
+}
+
+function terminalStream(message: AssistantMessage) {
+  const stream = createAssistantMessageEventStream();
+  if (message.stopReason === "error") {
+    stream.push({ type: "error", reason: "error", error: message });
+  } else {
+    stream.push({ type: "done", reason: "stop", message });
+  }
+  return stream;
+}
+
+async function resultWithoutHang(stream: ReturnType<typeof createAssistantMessageEventStream>) {
+  return Promise.race([
+    stream.result(),
+    Bun.sleep(100).then(() => {
+      throw new Error("recovery stream did not terminate");
+    }),
+  ]);
+}
+
+describe("GitHub Copilot IDE token recovery", () => {
+  test("switches the bounded Copilot auth envelope once to the declared independent fallback", async () => {
+    const context: Context = { messages: [{ role: "user", content: "keep me", timestamp: 1 }] };
+    const originalMessages = context.messages;
+    const options = { apiKey: "opaque-test-key" };
+    const calls: Array<{ model: Model<any>; context: Context; options: unknown }> = [];
+    const boundedEnvelope = `OpenAI API error (401): {"message":"litellm.AuthenticationError: AuthenticationError: ${GITHUB_COPILOT_IDE_TOKEN_EXPIRED}\\n. Received Model Group=gpt-5.6-sol\\nAvailable Model Group Fallbacks=None","type":null,"param":null,"code":"401"}`;
+    const provider: StreamFunction = (model, receivedContext, receivedOptions) => {
+      calls.push({ model, context: receivedContext, options: receivedOptions });
+      return model === streamTestModel
+        ? terminalStream(assistantMessage("error", boundedEnvelope, model))
+        : terminalStream(assistantMessage("stop", undefined, model));
+    };
+
+    const result = await resultWithoutHang(
+      withGithubCopilotIdeTokenRecovery(provider)(streamTestModel, context, options),
+    );
+
+    expect(result.stopReason).toBe("stop");
+    expect(result.provider).toBe("anthropic");
+    expect(result.model).toBe("claude-opus-5");
+    expect(result.errorMessage).toBeUndefined();
+    expect(result.errorMessage ?? "").not.toContain("Available Model Group Fallbacks=None");
+    expect(calls).toHaveLength(2);
+    expect(calls[0]?.model).toBe(streamTestModel);
+    expect(calls[1]?.model).toBe(fallbackTestModel);
+    expect(calls[0]?.context).toBe(context);
+    expect(calls[1]?.context).toBe(context);
+    expect(calls[0]?.options).toBe(options);
+    expect(calls[1]?.options).toBe(options);
+    expect(context.messages).toBe(originalMessages);
+    expect(context.messages).toHaveLength(1);
+  });
+
+  test("does not silently reroute generic auth or non-auth provider failures", async () => {
+    for (const errorMessage of [
+      "OpenAI API error (401): permission denied",
+      "OpenAI API error (403): account disabled",
+      "OpenAI API error (500): upstream unavailable",
+    ]) {
+      const calls: Model<any>[] = [];
+      const provider: StreamFunction = (model) => {
+        calls.push(model);
+        return terminalStream(assistantMessage("error", errorMessage, model));
+      };
+
+      const result = await resultWithoutHang(
+        withGithubCopilotIdeTokenRecovery(provider)(streamTestModel, { messages: [] }),
+      );
+
+      expect(calls).toEqual([streamTestModel]);
+      expect(result.stopReason).toBe("error");
+      expect(result.errorMessage).toBe(errorMessage);
+    }
+  });
+});
 
 describe("shared agent execution preparation", () => {
   test("has no autonomous-infrastructure imports", () => {
@@ -81,6 +206,90 @@ describe("shared agent execution preparation", () => {
     expect(prepared.systemPrompt).toContain("shared rules\n\nsample identity");
     expect(prepared.systemPrompt).toContain("Available tools: read, finish");
     expect(prepared.systemPrompt).toContain("Current time: 2026-07-19T00:00:00.000Z");
+  });
+
+  test("synthesizes exactly one checkpoint for explicit full non-persistent preparation", () => {
+    let checkpointCreations = 0;
+    const prepared = prepareAgentExecution({
+      definition: {
+        name: "sample",
+        description: "sample",
+        domain: "tests",
+        systemPrompt: "identity",
+        model: { contextWindow: 10_000 } as any,
+        tools: [tool("read")],
+      },
+      projectRoot: "/tmp",
+      sessionId: "full-checkpoint-1",
+      task: "do bounded work",
+      toolPolicy: "full",
+      createCheckpoint: () => {
+        checkpointCreations += 1;
+        return tool("checkpoint");
+      },
+    });
+
+    expect(checkpointCreations).toBe(1);
+    expect(prepared.tools.map((candidate) => candidate.name)).toEqual(["read", "checkpoint"]);
+    expect(prepared.tools.filter((candidate) => candidate.name === "checkpoint")).toHaveLength(1);
+    expect(prepared.tools.find((candidate) => candidate.name === "checkpoint")?.executionMode).toBe("sequential");
+  });
+
+  test("preserves one existing checkpoint without synthesizing a duplicate", () => {
+    let checkpointCreations = 0;
+    const existingCheckpoint = tool("checkpoint");
+    const prepared = prepareAgentExecution({
+      definition: {
+        name: "sample",
+        description: "sample",
+        domain: "tests",
+        systemPrompt: "identity",
+        model: { contextWindow: 10_000 } as any,
+        tools: [tool("read"), existingCheckpoint],
+      },
+      projectRoot: "/tmp",
+      sessionId: "existing-checkpoint-1",
+      task: "continue bounded work",
+      toolPolicy: "full",
+      createCheckpoint: () => {
+        checkpointCreations += 1;
+        return tool("checkpoint");
+      },
+    });
+
+    expect(checkpointCreations).toBe(0);
+    expect(prepared.tools.filter((candidate) => candidate.name === "checkpoint")).toHaveLength(1);
+  });
+
+  test("does not broaden checkpoint access outside explicit full non-persistent preparation", () => {
+    for (const scenario of [
+      { sessionId: "readonly-checkpoint", toolPolicy: "readonly" as const },
+      { sessionId: "deputy-checkpoint", toolPolicy: "deputy" as const },
+      { sessionId: "persistent-checkpoint", toolPolicy: "full" as const, persistentChat: true },
+      { sessionId: "default-direct-checkpoint" },
+    ]) {
+      let checkpointCreations = 0;
+      const prepared = prepareAgentExecution({
+        definition: {
+          name: "sample",
+          description: "sample",
+          domain: "tests",
+          systemPrompt: "identity",
+          model: { contextWindow: 10_000 } as any,
+          tools: [tool("read")],
+        },
+        projectRoot: "/tmp",
+        task: "inspect without checkpoint synthesis",
+        createCheckpoint: () => {
+          checkpointCreations += 1;
+          return tool("checkpoint");
+        },
+        ...scenario,
+      });
+
+      expect(checkpointCreations).toBe(0);
+      expect(prepared.tools.some((candidate) => candidate.name === "checkpoint")).toBe(false);
+    }
   });
 
   test("binds shared tools to the exact concurrent agent session", async () => {

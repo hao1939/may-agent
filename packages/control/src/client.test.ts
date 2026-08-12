@@ -3,11 +3,13 @@ import { describe, expect, it } from "bun:test";
 import {
   daemonSocketPath,
   emitDaemonEvent,
+  emitDaemonEventWithRetry,
   sendAgentMessage,
   sendDaemonEvent,
   sendDaemonInput,
   sendSocketCommand,
   waitForSocketEvent,
+  SocketCommandError,
   type SocketEndpoint,
 } from "./client.js";
 
@@ -86,7 +88,9 @@ function echoThenAckEndpoint(): SocketEndpoint {
 
 describe("daemonSocketPath", () => {
   it("uses the convention instance/interface-agent socket path", () => {
-    expect(daemonSocketPath("/state", { instance: "background", interfaceAgent: "may" })).toBe("/state/instances/background/may.sock");
+    expect(daemonSocketPath("/state", { instance: "background", interfaceAgent: "may" })).toBe(
+      "/state/instances/background/may.sock",
+    );
   });
 
   it("defaults to the default may daemon socket", () => {
@@ -113,11 +117,17 @@ describe("sendDaemonEvent", () => {
     ).resolves.toEqual({ type: "ok", command: "project.comment.created", eventId: 91 });
   });
 
-  it("fails clearly when the socket cannot be connected", async () => {
-    await expect(sendDaemonEvent(failingEndpoint(), { type: "trigger.metrics-snapshot" })).rejects.toThrow("connection refused");
+  it("types a connection failure as pre-send", async () => {
+    const error = await sendDaemonEvent(failingEndpoint(), { type: "trigger.metrics-snapshot" }).catch(
+      (caught: unknown) => caught,
+    );
+
+    expect(error).toBeInstanceOf(SocketCommandError);
+    expect((error as SocketCommandError).kind).toBe("pre-send");
+    expect((error as Error).message).toContain("connection refused");
   });
 
-  it("rejects an unknown outcome when the socket closes after the write", async () => {
+  it("types a socket close after the write as post-send unknown", async () => {
     const endpoint: SocketEndpoint = () => {
       const stream = new Duplex({
         read() {},
@@ -130,7 +140,10 @@ describe("sendDaemonEvent", () => {
       return stream;
     };
 
-    await expect(sendSocketCommand(endpoint, { type: "status" })).rejects.toThrow("outcome unknown");
+    const error = await sendSocketCommand(endpoint, { type: "status" }).catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(SocketCommandError);
+    expect((error as SocketCommandError).kind).toBe("post-send-unknown");
+    expect((error as Error).message).toContain("outcome unknown");
   });
 
   it("ignores an acknowledgement for a different command", async () => {
@@ -141,7 +154,9 @@ describe("sendDaemonEvent", () => {
           queueMicrotask(() => {
             stream.emit(
               "data",
-              Buffer.from(`${JSON.stringify({ type: "ok", command: "reload" })}\n${JSON.stringify({ type: "status", command: "status", activeAgents: [] })}\n`),
+              Buffer.from(
+                `${JSON.stringify({ type: "ok", command: "reload" })}\n${JSON.stringify({ type: "status", command: "status", activeAgents: [] })}\n`,
+              ),
             );
           });
           callback();
@@ -158,6 +173,76 @@ describe("sendDaemonEvent", () => {
   });
 });
 
+describe("emitDaemonEventWithRetry", () => {
+  it("reuses one idempotency key after timeout-after-send and returns the original event id", async () => {
+    const writes: Array<Record<string, unknown>> = [];
+    let attempts = 0;
+    const endpoint: SocketEndpoint = () => {
+      attempts += 1;
+      const attempt = attempts;
+      const stream = new Duplex({
+        read() {},
+        write(chunk, _encoding, callback) {
+          const frame = JSON.parse(String(chunk)) as Record<string, unknown>;
+          writes.push(frame);
+          callback();
+          if (attempt > 1) {
+            queueMicrotask(() =>
+              stream.emit("data", Buffer.from(`${JSON.stringify({ type: "ok", command: frame.type, eventId: 91 })}\n`)),
+            );
+          }
+        },
+      });
+      queueMicrotask(() => stream.emit("connect"));
+      return stream;
+    };
+
+    await expect(
+      emitDaemonEventWithRetry(
+        endpoint,
+        "metric.breach",
+        { metricId: "system.health" },
+        { maxAttempts: 2, timeoutMs: 5 },
+      ),
+    ).resolves.toEqual({ type: "ok", command: "metric.breach", eventId: 91 });
+
+    expect(writes).toHaveLength(2);
+    const firstData = writes[0]?.data as Record<string, unknown>;
+    const secondData = writes[1]?.data as Record<string, unknown>;
+    expect(firstData.idempotencyKey).toBeString();
+    expect(secondData.idempotencyKey).toBe(firstData.idempotencyKey);
+  });
+
+  it("does not retry a definitive daemon rejection", async () => {
+    let attempts = 0;
+    const endpoint: SocketEndpoint = () => {
+      attempts += 1;
+      const stream = new Duplex({
+        read() {},
+        write(chunk, _encoding, callback) {
+          const frame = JSON.parse(String(chunk)) as Record<string, unknown>;
+          callback();
+          queueMicrotask(() => {
+            stream.emit(
+              "data",
+              Buffer.from(`${JSON.stringify({ type: "error", command: frame.type, message: "rejected" })}\n`),
+            );
+          });
+        },
+      });
+      queueMicrotask(() => stream.emit("connect"));
+      return stream;
+    };
+
+    const error = await emitDaemonEventWithRetry(endpoint, "metric.breach", {}, { maxAttempts: 3 }).catch(
+      (caught: unknown) => caught,
+    );
+    expect(error).toBeInstanceOf(SocketCommandError);
+    expect((error as SocketCommandError).kind).toBe("definitive");
+    expect(attempts).toBe(1);
+  });
+});
+
 describe("waitForSocketEvent", () => {
   it("subscribes before accepting a matching event", async () => {
     const writes: Array<Record<string, unknown>> = [];
@@ -170,7 +255,9 @@ describe("waitForSocketEvent", () => {
           queueMicrotask(() => {
             stream.emit(
               "data",
-              Buffer.from(`${JSON.stringify({ type: "ok", command: "subscribe" })}\n${JSON.stringify({ type: "session.end", data: { sessionId: "s_1" } })}\n`),
+              Buffer.from(
+                `${JSON.stringify({ type: "ok", command: "subscribe" })}\n${JSON.stringify({ type: "session.end", data: { sessionId: "s_1" } })}\n`,
+              ),
             );
           });
           callback();

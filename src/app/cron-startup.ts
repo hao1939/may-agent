@@ -7,6 +7,7 @@ import type { SubagentManager } from "../lib/index.js";
 import { log } from "../lib/log.js";
 import type { PersistedSession } from "../lib/persistence.js";
 import { PROJECT_APP_TASK_RECOVERY_OWNER } from "./project-app-task-reconciler.js";
+import { recoverInstalledProjectAppTasks } from "./loader/project-app-loader.js";
 
 export interface CronRuntimeOptions {
   manager: SubagentManager;
@@ -73,6 +74,7 @@ export function shouldResumeStartupChatSession(
 export async function startCronRuntime(options: CronRuntimeOptions): Promise<void> {
   const { manager, bus, loaderOpts, chatMode, chatSession } = options;
 
+  recoverInstalledProjectAppTasks({ ...loaderOpts, agentCrons: getAgentCrons() });
   const { resumed, interrupted } = manager.resumeStaleSessions({
     kinds: ["job", "call"],
     shouldResume: shouldResumeStartupSession,

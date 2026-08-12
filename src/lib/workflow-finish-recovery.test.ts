@@ -3,6 +3,7 @@ import type { AgentTool } from "@earendil-works/pi-agent-core";
 import { Type } from "@earendil-works/pi-ai";
 import {
   RESPONSES_STREAM_TERMINAL_ERROR,
+  WORKFLOW_BOUNDED_FINISH_DEFAULT_WINDOW_MS,
   WORKFLOW_BOUNDED_FINISH_TOOL_CALL_THRESHOLD,
   boundedWorkflowFinishPrompt,
   recoverCapturedWorkflowFinish,
@@ -42,29 +43,30 @@ describe("workflow finish recovery", () => {
   });
 
   it("mentions transient failure and schema payload in the corrective prompt", () => {
-    const prompt = workflowFinishRecoveryPrompt(
-      Type.Object({ state: Type.String() }),
-      RESPONSES_STREAM_TERMINAL_ERROR,
-    );
+    const prompt = workflowFinishRecoveryPrompt(Type.Object({ state: Type.String() }), RESPONSES_STREAM_TERMINAL_ERROR);
     expect(prompt).toContain("transient runtime/provider failure");
     expect(prompt).toContain("Do not repeat prior reads");
     expect(prompt).toContain("schema-validated result payload");
   });
 
   it("recovers the captured aborted finish through schema and semantic execution", async () => {
-    const messages = [abortedFinish({
-      status: "success",
-      summary: "Evidence complete",
-      result: { state: "converged" },
-    })];
+    const messages = [
+      abortedFinish({
+        status: "success",
+        summary: "Evidence complete",
+        result: { state: "converged" },
+      }),
+    ];
     let executions = 0;
     const recovery = await recoverCapturedWorkflowFinish({
       sessionId: "s_shape_1786168096120",
       messages,
-      tools: [finishTool(async () => {
-        executions++;
-        return { content: [{ type: "text", text: "SUCCESS" }], terminate: true };
-      })],
+      tools: [
+        finishTool(async () => {
+          executions++;
+          return { content: [{ type: "text", text: "SUCCESS" }], terminate: true };
+        }),
+      ],
       reason: RESPONSES_STREAM_TERMINAL_ERROR,
     });
 
@@ -83,10 +85,12 @@ describe("workflow finish recovery", () => {
     const recovery = await recoverCapturedWorkflowFinish({
       sessionId: "s-invalid",
       messages,
-      tools: [finishTool(async () => {
-        executions++;
-        return { content: [{ type: "text", text: "must not execute" }] };
-      })],
+      tools: [
+        finishTool(async () => {
+          executions++;
+          return { content: [{ type: "text", text: "must not execute" }] };
+        }),
+      ],
       reason: RESPONSES_STREAM_TERMINAL_ERROR,
     });
 
@@ -97,17 +101,21 @@ describe("workflow finish recovery", () => {
   });
 
   it("preserves semantic rejection from the normal finish execute path", async () => {
-    const messages = [abortedFinish({
-      status: "success",
-      summary: "Looks valid",
-      result: { state: "converged" },
-    })];
+    const messages = [
+      abortedFinish({
+        status: "success",
+        summary: "Looks valid",
+        result: { state: "converged" },
+      }),
+    ];
     const recovery = await recoverCapturedWorkflowFinish({
       sessionId: "s-semantic",
       messages,
-      tools: [finishTool(async () => ({
-        content: [{ type: "text", text: "finish() error: evidence is not honest" }],
-      }))],
+      tools: [
+        finishTool(async () => ({
+          content: [{ type: "text", text: "finish() error: evidence is not honest" }],
+        })),
+      ],
       reason: RESPONSES_STREAM_TERMINAL_ERROR,
     });
 
@@ -116,11 +124,16 @@ describe("workflow finish recovery", () => {
   });
 
   it("executes and appends a captured receipt at most once across concurrent and repeated recovery", async () => {
-    const messages = [abortedFinish({
-      status: "success",
-      summary: "Once",
-      result: { state: "converged" },
-    }, "finish-stable")];
+    const messages = [
+      abortedFinish(
+        {
+          status: "success",
+          summary: "Once",
+          result: { state: "converged" },
+        },
+        "finish-stable",
+      ),
+    ];
     let executions = 0;
     const tool = finishTool(async () => {
       executions++;
@@ -156,9 +169,47 @@ describe("workflow finish recovery", () => {
   });
 
   it("requests compact schema-honest completion before extreme tool growth exactly once", () => {
-    expect(shouldRequestBoundedWorkflowFinish(true, WORKFLOW_BOUNDED_FINISH_TOOL_CALL_THRESHOLD - 1, false)).toBe(false);
+    expect(shouldRequestBoundedWorkflowFinish(true, WORKFLOW_BOUNDED_FINISH_TOOL_CALL_THRESHOLD - 1, false)).toBe(
+      false,
+    );
     expect(shouldRequestBoundedWorkflowFinish(true, WORKFLOW_BOUNDED_FINISH_TOOL_CALL_THRESHOLD, false)).toBe(true);
-    expect(shouldRequestBoundedWorkflowFinish(true, WORKFLOW_BOUNDED_FINISH_TOOL_CALL_THRESHOLD + 10, true)).toBe(false);
-    expect(boundedWorkflowFinishPrompt(Type.Object({ state: Type.String() }))).toContain("schema-validated result field");
+    expect(shouldRequestBoundedWorkflowFinish(true, WORKFLOW_BOUNDED_FINISH_TOOL_CALL_THRESHOLD + 10, true)).toBe(
+      false,
+    );
+    expect(boundedWorkflowFinishPrompt(Type.Object({ state: Type.String() }))).toContain(
+      "schema-validated result field",
+    );
+  });
+
+  it("does not force a 900000ms execution solely at 24 calls early in its admitted window", () => {
+    expect(
+      shouldRequestBoundedWorkflowFinish(true, WORKFLOW_BOUNDED_FINISH_TOOL_CALL_THRESHOLD, false, {
+        admittedTimeoutMs: 900_000,
+        elapsedMs: 120_000,
+      }),
+    ).toBe(false);
+    expect(
+      shouldRequestBoundedWorkflowFinish(true, WORKFLOW_BOUNDED_FINISH_TOOL_CALL_THRESHOLD, false, {
+        admittedTimeoutMs: 900_000,
+        elapsedMs: 600_000,
+      }),
+    ).toBe(true);
+  });
+
+  it("retains the 24-call guard for absent, default, and smaller admitted windows", () => {
+    const atThreshold = WORKFLOW_BOUNDED_FINISH_TOOL_CALL_THRESHOLD;
+    expect(shouldRequestBoundedWorkflowFinish(true, atThreshold, false)).toBe(true);
+    expect(
+      shouldRequestBoundedWorkflowFinish(true, atThreshold, false, {
+        admittedTimeoutMs: WORKFLOW_BOUNDED_FINISH_DEFAULT_WINDOW_MS,
+        elapsedMs: 1,
+      }),
+    ).toBe(true);
+    expect(
+      shouldRequestBoundedWorkflowFinish(true, atThreshold, false, {
+        admittedTimeoutMs: 60_000,
+        elapsedMs: 1,
+      }),
+    ).toBe(true);
   });
 });

@@ -1,4 +1,5 @@
 import { connect, Socket, type NetConnectOpts } from "node:net";
+import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import type { Duplex } from "node:stream";
 import { isSocketCommandType } from "./protocol.js";
@@ -12,6 +13,25 @@ export interface SocketResponse {
 }
 
 export type SocketEndpoint = string | NetConnectOpts | (() => Duplex);
+
+export type SocketFailureKind = "pre-send" | "definitive" | "post-send-unknown";
+
+export class SocketCommandError extends Error {
+  constructor(
+    message: string,
+    readonly kind: SocketFailureKind,
+    options?: { cause?: unknown },
+  ) {
+    super(message, options);
+    this.name = "SocketCommandError";
+  }
+}
+
+function commandError(error: unknown, kind: SocketFailureKind): SocketCommandError {
+  if (error instanceof SocketCommandError) return error;
+  const message = error instanceof Error ? error.message : String(error);
+  return new SocketCommandError(message, kind, { cause: error });
+}
 
 export function connectSocketEndpoint(endpoint: SocketEndpoint): Socket | Duplex {
   if (typeof endpoint === "function") return endpoint();
@@ -37,10 +57,15 @@ function daemonEventFrame(eventType: string, data: Record<string, unknown>): Rec
   return buildCanonicalEventEnvelope(eventType, data, { source: "control" });
 }
 
-export function sendSocketCommand(socketPath: SocketEndpoint, command: Record<string, unknown>, opts?: { timeoutMs?: number }): Promise<SocketResponse> {
+export function sendSocketCommand(
+  socketPath: SocketEndpoint,
+  command: Record<string, unknown>,
+  opts?: { timeoutMs?: number },
+): Promise<SocketResponse> {
   return new Promise((resolve, reject) => {
     const expectedCommand = typeof command.type === "string" ? command.type : null;
     let settled = false;
+    let sent = false;
     const settle = (fn: () => void) => {
       if (!settled) {
         settled = true;
@@ -52,37 +77,44 @@ export function sendSocketCommand(socketPath: SocketEndpoint, command: Record<st
 
     const onError = (err: Error) => {
       clearTimeout(timeout);
-      settle(() => reject(err));
+      settle(() => reject(commandError(err, sent ? "post-send-unknown" : "pre-send")));
     };
 
     let client: Socket | Duplex;
-    if (typeof socketPath === "function") {
-      client = socketPath();
-      client.on("error", onError);
-    } else {
-      // Create socket and attach error handler BEFORE connecting
-      // to prevent Bun's test runner from catching ENOENT as uncaught
-      const sock = new Socket();
-      sock.on("error", onError);
-      if (typeof socketPath === "string") {
-        sock.connect(socketPath);
+    try {
+      if (typeof socketPath === "function") {
+        client = socketPath();
+        client.on("error", onError);
       } else {
-        sock.connect(socketPath);
+        // Create socket and attach error handler BEFORE connecting
+        // to prevent Bun's test runner from catching ENOENT as uncaught
+        const sock = new Socket();
+        sock.on("error", onError);
+        if (typeof socketPath === "string") sock.connect(socketPath);
+        else sock.connect(socketPath);
+        client = sock;
       }
-      client = sock;
+    } catch (error) {
+      reject(commandError(error, "pre-send"));
+      return;
     }
 
     timeout = setTimeout(() => {
       client.destroy();
-      settle(() => reject(new Error("Socket timeout")));
+      settle(() => reject(commandError(new Error("Socket timeout"), sent ? "post-send-unknown" : "pre-send")));
     }, timeoutMs);
 
-    let sent = false;
     let buffer = "";
 
     client.on("connect", () => {
-      client.write(JSON.stringify(command) + "\n");
-      sent = true;
+      try {
+        client.write(JSON.stringify(command) + "\n", (error?: Error | null) => {
+          if (error) onError(error);
+        });
+        sent = true;
+      } catch (error) {
+        settle(() => reject(commandError(error, "pre-send")));
+      }
     });
 
     client.on("data", (data) => {
@@ -95,12 +127,13 @@ export function sendSocketCommand(socketPath: SocketEndpoint, command: Record<st
         try {
           const parsed = JSON.parse(trimmed) as SocketResponse;
           const isStatusReply = expectedCommand === "status" && parsed.type === "status";
-          const isReply = parsed.command === expectedCommand && (parsed.type === "ok" || parsed.type === "error" || isStatusReply);
+          const isReply =
+            parsed.command === expectedCommand && (parsed.type === "ok" || parsed.type === "error" || isStatusReply);
           if (isReply) {
             clearTimeout(timeout);
             client.destroy();
             if (parsed.type === "error") {
-              settle(() => reject(new Error(parsed.message ?? "Socket command failed")));
+              settle(() => reject(commandError(new Error(parsed.message ?? "Socket command failed"), "definitive")));
             } else {
               settle(() => resolve(parsed));
             }
@@ -116,9 +149,18 @@ export function sendSocketCommand(socketPath: SocketEndpoint, command: Record<st
     client.on("close", () => {
       clearTimeout(timeout);
       if (sent) {
-        settle(() => reject(new Error(`Socket closed before acknowledgement for ${expectedCommand ?? "unknown command"}; outcome unknown`)));
+        settle(() =>
+          reject(
+            commandError(
+              new Error(
+                `Socket closed before acknowledgement for ${expectedCommand ?? "unknown command"}; outcome unknown`,
+              ),
+              "post-send-unknown",
+            ),
+          ),
+        );
       } else {
-        settle(() => reject(new Error("Socket closed before command sent")));
+        settle(() => reject(commandError(new Error("Socket closed before command sent"), "pre-send")));
       }
     });
   });
@@ -133,7 +175,11 @@ export interface SocketEvent {
   [key: string]: unknown;
 }
 
-export function waitForSocketEvent(socketPath: SocketEndpoint, eventType: string, opts?: { sessionId?: string; timeoutMs?: number }): Promise<SocketEvent> {
+export function waitForSocketEvent(
+  socketPath: SocketEndpoint,
+  eventType: string,
+  opts?: { sessionId?: string; timeoutMs?: number },
+): Promise<SocketEvent> {
   return new Promise((resolve, reject) => {
     let settled = false;
     const settle = (fn: () => void) => {
@@ -176,7 +222,10 @@ export function waitForSocketEvent(socketPath: SocketEndpoint, eventType: string
             continue;
           }
           if (event.type === eventType) {
-            const data = event.data && typeof event.data === "object" && !Array.isArray(event.data) ? (event.data as Record<string, unknown>) : event;
+            const data =
+              event.data && typeof event.data === "object" && !Array.isArray(event.data)
+                ? (event.data as Record<string, unknown>)
+                : event;
             if (opts?.sessionId && data.sessionId !== opts.sessionId) continue;
             clearTimeout(timeout);
             client.destroy();
@@ -210,11 +259,59 @@ export function emitDaemonEvent(
   return sendDaemonEvent(endpoint, daemonEventFrame(eventType, data), opts);
 }
 
-export function sendDaemonEvent(endpoint: SocketEndpoint, event: Record<string, unknown>, opts?: { timeoutMs?: number }): Promise<SocketResponse> {
+export interface EmitDaemonEventRetryOptions {
+  timeoutMs?: number;
+  maxAttempts?: number;
+  retryDelayMs?: number;
+  idempotencyKey?: string;
+}
+
+/**
+ * Emit an operator event with one identity across all transport retries.
+ * Only pre-send and post-send-unknown failures are retryable; a daemon error is definitive.
+ */
+export async function emitDaemonEventWithRetry(
+  endpoint: SocketEndpoint,
+  eventType: string,
+  data: Record<string, unknown> = {},
+  opts: EmitDaemonEventRetryOptions = {},
+): Promise<SocketResponse> {
+  const existingKey = typeof data.idempotencyKey === "string" ? data.idempotencyKey.trim() : "";
+  const idempotencyKey = opts.idempotencyKey?.trim() || existingKey || `control-${randomUUID()}`;
+  const durableData = { ...data, idempotencyKey };
+  const maxAttempts = Math.max(1, opts.maxAttempts ?? 2);
+
+  let lastError: SocketCommandError | undefined;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await emitDaemonEvent(endpoint, eventType, durableData, { timeoutMs: opts.timeoutMs });
+    } catch (error) {
+      const typed = commandError(error, "post-send-unknown");
+      lastError = typed;
+      if (typed.kind === "definitive" || attempt === maxAttempts) throw typed;
+      if (opts.retryDelayMs) {
+        await new Promise((resolve) => setTimeout(resolve, opts.retryDelayMs));
+      }
+    }
+  }
+
+  throw lastError ?? new SocketCommandError("Event acknowledgement unresolved", "post-send-unknown");
+}
+
+export function sendDaemonEvent(
+  endpoint: SocketEndpoint,
+  event: Record<string, unknown>,
+  opts?: { timeoutMs?: number },
+): Promise<SocketResponse> {
   return sendSocketCommand(endpoint, event, opts);
 }
 
-export function sendDaemonInput(endpoint: SocketEndpoint, message: string, source = "control", opts?: { timeoutMs?: number }): Promise<SocketResponse> {
+export function sendDaemonInput(
+  endpoint: SocketEndpoint,
+  message: string,
+  source = "control",
+  opts?: { timeoutMs?: number },
+): Promise<SocketResponse> {
   return sendDaemonEvent(
     endpoint,
     {

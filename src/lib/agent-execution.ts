@@ -3,7 +3,13 @@ import type {
   AgentTool,
   BeforeToolCallContext as PiBeforeToolCallContext,
 } from "@earendil-works/pi-agent-core";
-import type { TSchema } from "@earendil-works/pi-ai";
+import {
+  createAssistantMessageEventStream,
+  type AssistantMessage,
+  type AssistantMessageEvent,
+  type StreamFunction,
+  type TSchema,
+} from "@earendil-works/pi-ai";
 import { streamSimple } from "@earendil-works/pi-ai/compat";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -86,8 +92,84 @@ const SEQUENTIAL_TOOL_NAMES = new Set([
 ]);
 
 export const DEFAULT_MODEL_REQUEST_TIMEOUT_MS = 300_000;
+export const GITHUB_COPILOT_IDE_TOKEN_EXPIRED =
+  "Github_copilotException - IDE token expired: unauthorized: token expired";
 
-const boundedStreamSimple: typeof streamSimple = (model, context, options) =>
+const GITHUB_COPILOT_IDE_TOKEN_EXPIRED_PATTERN =
+  /Github_copilotException\s*-\s*IDE token expired:\s*unauthorized:\s*token expired/i;
+
+type ModelWithDeclaredFallback = Parameters<StreamFunction>[0] & {
+  fallbackModel?: Parameters<StreamFunction>[0];
+};
+
+export function isGithubCopilotIdeTokenExpired(message: AssistantMessage): boolean {
+  return (
+    message.stopReason === "error" &&
+    typeof message.errorMessage === "string" &&
+    GITHUB_COPILOT_IDE_TOKEN_EXPIRED_PATTERN.test(message.errorMessage)
+  );
+}
+
+function streamFailureMessage(model: Parameters<StreamFunction>[0], error: unknown): AssistantMessage {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  return {
+    role: "assistant",
+    content: [],
+    api: model.api,
+    provider: model.provider,
+    model: model.id,
+    usage: {
+      input: 0,
+      output: 0,
+      cacheRead: 0,
+      cacheWrite: 0,
+      totalTokens: 0,
+      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+    },
+    stopReason: "error",
+    errorMessage,
+    timestamp: Date.now(),
+  };
+}
+
+/**
+ * Switch once to a model's independent fallback when GitHub Copilot immediately
+ * reports its IDE credential expired. The caller's context and options objects are
+ * reused unchanged, preserving transcript/session ownership across the provider hop.
+ */
+export function withGithubCopilotIdeTokenRecovery(stream: StreamFunction): StreamFunction {
+  return (model, context, options) => {
+    const recovered = createAssistantMessageEventStream();
+    void (async () => {
+      const primary = model as ModelWithDeclaredFallback;
+      const response = stream(primary, context, options);
+      let firstEvent = true;
+      for await (const event of response) {
+        if (
+          firstEvent &&
+          event.type === "error" &&
+          primary.provider === "github-copilot" &&
+          primary.fallbackModel &&
+          isGithubCopilotIdeTokenExpired(event.error)
+        ) {
+          const fallbackResponse = stream(primary.fallbackModel, context, options);
+          for await (const fallbackEvent of fallbackResponse) {
+            recovered.push(fallbackEvent as AssistantMessageEvent);
+          }
+          return;
+        }
+        firstEvent = false;
+        recovered.push(event as AssistantMessageEvent);
+      }
+    })().catch((error) => {
+      const failure = streamFailureMessage(model, error);
+      recovered.push({ type: "error", reason: "error", error: failure });
+    });
+    return recovered;
+  };
+}
+
+const boundedStreamSimple: typeof streamSimple = withGithubCopilotIdeTokenRecovery((model, context, options) =>
   streamSimple(model, context, {
     ...options,
     signal: options?.signal
@@ -95,7 +177,8 @@ const boundedStreamSimple: typeof streamSimple = (model, context, options) =>
       : AbortSignal.timeout(DEFAULT_MODEL_REQUEST_TIMEOUT_MS),
     timeoutMs: options?.timeoutMs ?? DEFAULT_MODEL_REQUEST_TIMEOUT_MS,
     maxRetries: options?.maxRetries ?? 1,
-  });
+  }),
+);
 
 export type PreparedAgentExecution = {
   definition: SubagentDefinition;
@@ -126,6 +209,10 @@ export type AgentPreparationOptions = {
   promptTimestamp?: string;
   chatContext?: string;
   createFinish?: () => AgentTool;
+  /** Create a durable checkpoint capability scoped to this exact execution. */
+  createCheckpoint?: () => AgentTool;
+  /** Exact durable owner for local bash setsid process groups. */
+  bashProcessGroupOwner?: { persistDir: string; sessionId: string };
   onGuard?: (observation: { context: PiBeforeToolCallContext; guard: string; block: boolean; reason: string }) => void;
   onCompact?: (info: CompactionInfo, messages: AgentMessage[]) => void;
   onNotice?: (message: string) => void;
@@ -133,23 +220,24 @@ export type AgentPreparationOptions = {
 
 function definitionForExecution(options: AgentPreparationOptions): SubagentDefinition {
   const root = options.executionRoot;
-  if (!root) return options.definition;
+  if (!root && !options.bashProcessGroupOwner) return options.definition;
+  const executionRoot = root ?? options.definition.projectRoot ?? options.projectRoot;
   const agentName = options.definition.name;
   const tools = options.definition.tools.map((tool) => {
     switch (tool.name) {
       case "read":
-        return createReadTool(root);
+        return root ? createReadTool(executionRoot) : tool;
       case "bash":
-        return createBashTool(root);
+        return createBashTool(executionRoot, { processGroupOwner: options.bashProcessGroupOwner });
       case "edit":
-        return createEditTool(root, { agentName, projectRoot: root });
+        return root ? createEditTool(executionRoot, { agentName, projectRoot: executionRoot }) : tool;
       case "write":
-        return createWriteTool(root, { agentName, projectRoot: root });
+        return root ? createWriteTool(executionRoot, { agentName, projectRoot: executionRoot }) : tool;
       default:
         return tool;
     }
   });
-  return { ...options.definition, projectRoot: root, tools };
+  return { ...options.definition, ...(root ? { projectRoot: executionRoot } : {}), tools };
 }
 
 export type DirectAgentExecutionResult = {
@@ -231,6 +319,10 @@ function resolveTools(options: AgentPreparationOptions, requireFinish: boolean):
   let tools = options.persistentChat
     ? definition.tools.filter((tool) => !CHAT_TOOL_DENYLIST.has(tool.name))
     : definition.tools;
+  if (options.toolPolicy === "full" && !options.persistentChat && !tools.some((tool) => tool.name === "checkpoint")) {
+    const checkpoint = options.createCheckpoint?.();
+    if (checkpoint) tools = [...tools, checkpoint];
+  }
   if (options.toolPolicy === "readonly") {
     tools = tools.filter((tool) => READONLY_TOOL_ALLOWLIST.has(tool.name));
   } else if (options.toolPolicy === "deputy") {
@@ -430,7 +522,13 @@ export async function executePreparedAgent(
     ? agent.subscribe((event) => {
         if (event.type !== "tool_execution_start") return;
         toolCalls++;
-        if (!shouldRequestBoundedWorkflowFinish(true, toolCalls, boundedFinishRequested)) return;
+        if (
+          !shouldRequestBoundedWorkflowFinish(true, toolCalls, boundedFinishRequested, {
+            admittedTimeoutMs: options.timeoutMs,
+            elapsedMs: Date.now() - startedAt,
+          })
+        )
+          return;
         boundedFinishRequested = true;
         agent.steer({
           role: "user",

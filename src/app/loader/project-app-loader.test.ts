@@ -1,5 +1,5 @@
 import { describe, expect, it, spyOn } from "bun:test";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -7,17 +7,29 @@ import { Cron } from "../cron";
 import { EVENT_ROW_ID, EventBus } from "../event-bus";
 import { closeDb, getDb, upsertSession } from "../../lib/requests";
 import { DbWriter } from "../../lib/db-writer";
-import { markSessionActive, readSessionMeta, readSessionMessages, writeSessionMeta } from "../../lib/persistence";
-import { projectRuntimePaths } from "@may-agent/sdk";
+import {
+  addSessionBashProcessGroup,
+  markSessionActive,
+  readSessionBashProcessGroups,
+  readSessionMeta,
+  readSessionMessages,
+  writeSessionMeta,
+} from "../../lib/persistence";
+import { projectAppExecutionPaths, projectRuntimePaths, readTaskState, saveTaskState } from "@may-agent/sdk";
 import { prepareProjectTaskWorkspace } from "../project-task-workspace";
+import { prepareAgentExecution } from "../../lib/agent-execution";
+import { createCheckpointTool } from "../../lib/tools/checkpoint";
 import {
   associateProjectAppTaskSession,
   claimObservedProjectAppTask,
+  completeProjectAppTask,
   observeProjectAppTaskIntent,
   releaseHandlerExecutionFailedProjectAppTask,
   taskReconciliationConfig,
 } from "../project-app-task-reconciler";
 import {
+  beginCanonicalOwnerResidueGuard,
+  finishCanonicalOwnerResidueGuard,
   inferProjectAppOwner,
   installProjectApps,
   invokeLoadedProjectAppAction,
@@ -448,6 +460,74 @@ describe("project app loader handler result normalization", () => {
 });
 
 describe("project app loader", () => {
+  it("restores exact canonical tracked and untracked residue after a failed owner attempt", () => {
+    const f = fixture();
+    const projectDir = join(f.projectsRoot, "sample");
+    try {
+      execFileSync("git", ["init", "-b", "dev", projectDir]);
+      execFileSync("git", ["-C", projectDir, "config", "user.email", "test@example.com"]);
+      execFileSync("git", ["-C", projectDir, "config", "user.name", "Test"]);
+      writeFileSync(join(projectDir, "tracked.txt"), "base tracked\n");
+      writeFileSync(join(projectDir, "staged.txt"), "base staged\n");
+      writeFileSync(join(projectDir, "deleted.txt"), "base deleted\n");
+      execFileSync("git", ["-C", projectDir, "add", "."]);
+      execFileSync("git", ["-C", projectDir, "commit", "-m", "base"]);
+
+      writeFileSync(join(projectDir, "tracked.txt"), "pre-existing unstaged dirt\n");
+      writeFileSync(join(projectDir, "staged.txt"), "pre-existing staged dirt\n");
+      execFileSync("git", ["-C", projectDir, "add", "staged.txt"]);
+      writeFileSync(join(projectDir, "pre-existing.tmp"), "pre-existing untracked dirt\n");
+      const statusBefore = execFileSync("git", ["-C", projectDir, "status", "--short"], { encoding: "utf8" });
+
+      const canonicalPaths = projectAppExecutionPaths(f.appDir, projectDir);
+      const guard = beginCanonicalOwnerResidueGuard(canonicalPaths);
+      let attemptedError: Error | undefined;
+      let cleaned: string[] = [];
+      try {
+        writeFileSync(join(projectDir, "tracked.txt"), "owner changed tracked\n");
+        writeFileSync(join(projectDir, "staged.txt"), "owner changed staged\n");
+        rmSync(join(projectDir, "deleted.txt"));
+        rmSync(join(projectDir, "pre-existing.tmp"));
+        mkdirSync(join(projectDir, "runner"), { recursive: true });
+        writeFileSync(join(projectDir, "runner", "tmp-proof.ts"), "attempt-created file\n");
+        execFileSync("git", ["-C", projectDir, "add", "tracked.txt", "staged.txt", "deleted.txt"]);
+        throw new Error("owner dispatch failed");
+      } catch (error) {
+        attemptedError = error as Error;
+      } finally {
+        cleaned = finishCanonicalOwnerResidueGuard(guard);
+      }
+
+      expect(attemptedError?.message).toBe("owner dispatch failed");
+      expect(cleaned).toEqual(["runner/tmp-proof.ts"]);
+      expect(readFileSync(join(projectDir, "tracked.txt"), "utf8")).toBe("pre-existing unstaged dirt\n");
+      expect(readFileSync(join(projectDir, "staged.txt"), "utf8")).toBe("pre-existing staged dirt\n");
+      expect(readFileSync(join(projectDir, "deleted.txt"), "utf8")).toBe("base deleted\n");
+      expect(readFileSync(join(projectDir, "pre-existing.tmp"), "utf8")).toBe("pre-existing untracked dirt\n");
+      expect(existsSync(join(projectDir, "runner", "tmp-proof.ts"))).toBe(false);
+      expect(execFileSync("git", ["-C", projectDir, "status", "--short"], { encoding: "utf8" })).toBe(statusBefore);
+    } finally {
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("bypasses canonical residue restoration for a distinct workflow worktree", () => {
+    const f = fixture();
+    const projectDir = join(f.projectsRoot, "sample");
+    const worktreeDir = join(f.root, "worktrees", "sample", "task");
+    try {
+      execFileSync("git", ["init", "-b", "dev", projectDir]);
+      mkdirSync(worktreeDir, { recursive: true });
+      const worktreePaths = { ...projectAppExecutionPaths(f.appDir, projectDir), workspaceDir: worktreeDir };
+      expect(beginCanonicalOwnerResidueGuard(worktreePaths)).toBeNull();
+      writeFileSync(join(worktreeDir, "workflow-output.txt"), "writable\n");
+      expect(finishCanonicalOwnerResidueGuard(null)).toEqual([]);
+      expect(readFileSync(join(worktreeDir, "workflow-output.txt"), "utf8")).toBe("writable\n");
+    } finally {
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
   it("reads task bindings from reconciliation prompts only", () => {
     expect(
       parseProjectAppTaskSessionBinding(`Nested workflow step
@@ -2489,13 +2569,10 @@ describe("project app loader", () => {
       );
 
       expect(ownerCalls).toHaveLength(1);
-      const state = JSON.parse(
-        readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"),
-      );
+      const state = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
       expect(state.resources["work/owner-needed"].status).toMatchObject({
         phase: "attention",
-        summary:
-          "Owner convergence was rejected because workflow owner-needed handed off without a verifier",
+        summary: "Owner convergence was rejected because workflow owner-needed handed off without a verifier",
       });
       expect(state.receipts?.["work/owner-needed"]).toBeUndefined();
     } finally {
@@ -3248,6 +3325,111 @@ describe("project app loader", () => {
       expect(intervalSpy.mock.calls.some((call) => call[1] === 60_000)).toBe(true);
     } finally {
       intervalSpy.mockRestore();
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("retires a matching completed receipt on startup without launching a handler", async () => {
+    const f = fixture();
+    const ownerCalls: string[] = [];
+    try {
+      writeApp(f.appDir);
+      const config = taskReconciliationConfig({
+        appDir: f.appDir,
+        projectDir: f.appDir,
+        owner: "sample-owner",
+        maxConcurrent: 2,
+      });
+      const taskIntent = {
+        id: "work/completed-startup",
+        parentId: "operations",
+        outcome: "Process completed-startup",
+        acceptance: ["Work converges"],
+        mode: "achieve" as const,
+        workflow: "worker",
+        input: { itemId: "completed-startup" },
+        outputs: [],
+      };
+      const observed = observeProjectAppTaskIntent(config, { intent: taskIntent, appOwner: "sample-owner" });
+      if (observed.kind !== "observed") throw new Error("expected observed task");
+      const completedClaim = claimObservedProjectAppTask(config, {
+        taskId: taskIntent.id,
+        generation: observed.generation,
+        appOwner: "sample-owner",
+        handler: "workflow:worker",
+      });
+      if (completedClaim.kind !== "claimed") throw new Error("expected claimed task");
+      const completedResource = readTaskState(config).resources?.[taskIntent.id];
+      if (!completedResource) throw new Error("expected running resource");
+      const completedSpec = structuredClone(completedResource.spec);
+      completeProjectAppTask(config, completedClaim, { summary: "already complete" });
+
+      const stale = readTaskState(config);
+      const receipt = stale.receipts?.[taskIntent.id];
+      if (!receipt) throw new Error("expected completion receipt");
+      stale.resources = {
+        ...(stale.resources ?? {}),
+        [taskIntent.id]: {
+          metadata: { id: taskIntent.id, generation: receipt.metadata.generation, resourceVersion: 2 },
+          spec: completedSpec,
+          status: {
+            observedGeneration: receipt.metadata.generation,
+            phase: "running",
+            currentAttemptId: "r_completed_startup_duplicate",
+            updatedAt: "2026-07-20T00:00:00.000Z",
+            conditionIds: [],
+          },
+        },
+      };
+      stale.tasks[taskIntent.id] = {
+        id: taskIntent.id,
+        parent_id: taskIntent.parentId,
+        children: [],
+        state: "active",
+      };
+      stale.tasks.operations.children = [...new Set([...(stale.tasks.operations.children ?? []), taskIntent.id])];
+      stale.attempts.r_completed_startup_duplicate = {
+        metadata: { id: "r_completed_startup_duplicate", resourceVersion: 1 },
+        taskId: taskIntent.id,
+        taskGeneration: receipt.metadata.generation,
+        specHash: receipt.specHash,
+        owner: receipt.owner,
+        handler: receipt.handler,
+        runtimeId: "previous-runtime",
+        sessionId: "session-completed-startup-duplicate",
+        state: "running",
+        startedAt: "2026-07-20T00:00:00.000Z",
+      };
+      saveTaskState(config, stale);
+
+      const bus = new EventBus();
+      const events: any[] = [];
+      bus.subscribe((event) => events.push(event));
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: manager(ownerCalls),
+        bus,
+        agentCrons: new Map(),
+      });
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      const retired = readTaskState(config);
+      expect(retired.receipts?.[taskIntent.id]).toMatchObject({ summary: "already complete" });
+      expect(retired.resources?.[taskIntent.id]).toBeUndefined();
+      expect(retired.tasks[taskIntent.id]).toBeUndefined();
+      expect(retired.attempts.r_completed_startup_duplicate).toMatchObject({
+        state: "interrupted",
+        failureReason: "matching-completion-receipt",
+        sessionId: "session-completed-startup-duplicate",
+      });
+      expect(events.some((event) => event.type === "project.task.reconcile.started")).toBe(false);
+      expect(ownerCalls).toEqual([]);
+    } finally {
       closeDb(f.persistDir);
       rmSync(f.root, { recursive: true, force: true });
     }
@@ -4045,9 +4227,7 @@ describe("project app loader", () => {
         ),
       ).toBe(true);
       await waitUntil(() =>
-        events.some(
-          (event) => event.type === "project.task.reconciled" && event.data?.taskId === "work/orphan-owner",
-        ),
+        events.some((event) => event.type === "project.task.reconciled" && event.data?.taskId === "work/orphan-owner"),
       );
     } finally {
       closeDb(f.persistDir);
@@ -4057,6 +4237,8 @@ describe("project app loader", () => {
 
   it("requeues interrupted previous-runtime owner work with recovered session evidence in the retry prompt", async () => {
     const f = fixture();
+    let stalePgid: number | undefined;
+    let externalReaper: ReturnType<typeof spawn> | undefined;
     try {
       writeApp(f.appDir);
       mkdirSync(join(f.appDir, ".state", "tasks"), { recursive: true });
@@ -4164,8 +4346,45 @@ describe("project app loader", () => {
         }) + "\n",
       );
 
+      const staleMutation = join(f.root, "stale-owner-mutation");
+      const stalePgidPath = join(f.root, "stale-owner-pgid");
+      const staleCommand = `trap '' TERM; sleep 0.6; printf stale > ${JSON.stringify(staleMutation)}; sleep 30`;
+      externalReaper = spawn(
+        "/usr/bin/python3",
+        [
+          "-c",
+          [
+            "import os, sys",
+            "pid = os.fork()",
+            "if pid == 0:",
+            "    os.setsid()",
+            "    with open(sys.argv[2], 'w') as pgid_file:",
+            "        pgid_file.write(f'{os.getpid()}\\n')",
+            "    os.execl('/bin/bash', 'bash', '-c', sys.argv[1])",
+            "os.waitpid(pid, 0)",
+          ].join("\n"),
+          staleCommand,
+          stalePgidPath,
+        ],
+        { stdio: "ignore" },
+      );
+      const externalReaperExit = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve) => {
+        externalReaper!.once("exit", (code, signal) => resolve({ code, signal }));
+      });
+      await waitUntil(() => existsSync(stalePgidPath));
+      stalePgid = Number(readFileSync(stalePgidPath, "utf8").trim());
+      expect(stalePgid).toBeGreaterThan(0);
+      expect(
+        Number(execFileSync("ps", ["-o", "pgid=", "-p", String(externalReaper.pid)], { encoding: "utf8" }).trim()),
+      ).not.toBe(stalePgid);
+      addSessionBashProcessGroup(f.persistDir, "owner-old", stalePgid);
+      expect(readSessionBashProcessGroups(f.persistDir, "owner-old")).toEqual([stalePgid]);
+
       const ownerCalls: string[] = [];
       const ownerOptions: Array<Record<string, unknown>> = [];
+      let preReplacementState:
+        { alive: boolean; pgids: number[]; mutated: boolean; sessionStatus?: string } | undefined;
+      const replacementSessionId = "owner-replacement";
       const bus = new EventBus();
       const events: any[] = [];
       bus.subscribe((event) => events.push(event));
@@ -4181,20 +4400,80 @@ describe("project app loader", () => {
           cancel: () => {
             throw new Error("startup recovery should reconcile the persisted session directly");
           },
+          async callAgent(agent: string, task: string, options: Record<string, unknown>) {
+            let alive = true;
+            try {
+              process.kill(-stalePgid!, 0);
+            } catch {
+              alive = false;
+            }
+            preReplacementState = {
+              alive,
+              pgids: readSessionBashProcessGroups(f.persistDir, "owner-old"),
+              mutated: existsSync(staleMutation),
+              sessionStatus: readSessionMeta(f.persistDir, "owner-old")?.status,
+            };
+            ownerCalls.push(task);
+            ownerOptions.push(options);
+            const prepared = prepareAgentExecution({
+              definition: {
+                name: agent,
+                description: "replacement owner",
+                domain: "tests",
+                systemPrompt: "replacement owner identity",
+                model: { contextWindow: 10_000 } as any,
+                tools: [],
+              },
+              projectRoot: f.root,
+              sessionId: replacementSessionId,
+              task,
+              toolPolicy: options.toolPolicy as "full",
+              createCheckpoint: () =>
+                createCheckpointTool({
+                  sessionId: replacementSessionId,
+                  agentName: agent,
+                  persistDir: f.persistDir,
+                }),
+            });
+            const checkpoint = prepared.tools.find((tool) => tool.name === "checkpoint");
+            expect(prepared.tools.filter((tool) => tool.name === "checkpoint")).toHaveLength(1);
+            if (!checkpoint) throw new Error("replacement owner is missing checkpoint capability");
+            await checkpoint.execute("replacement_checkpoint", {
+              summary: "Replacement owner verified recovered evidence",
+              data: {
+                prior_session: "owner-old",
+                next_steps: "finish replacement reconciliation",
+              },
+            });
+            return {
+              sessionId: replacementSessionId,
+              status: "done",
+              structuredResult: {
+                state: "converged",
+                summary: "replacement owner done",
+                evidence: ["replacement checkpoint persisted"],
+                actions: [],
+              },
+              lastAssistantText: "replacement owner done",
+              messages: [],
+              duration: "0s",
+              outputDir: "",
+            };
+          },
         } as any,
         bus,
         agentCrons: new Map(),
       });
 
       await waitUntil(() => ownerCalls.length === 1);
-      await waitUntil(
-        () =>
-          events.some(
-            (event) =>
-              event.type === "project.task.reconciled" &&
-              event.data?.taskId === "work/orphan-owner" &&
-              event.data?.disposition === "converged",
-          ),
+      expect(preReplacementState).toEqual({ alive: false, pgids: [], mutated: false, sessionStatus: "interrupted" });
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/orphan-owner" &&
+            event.data?.disposition === "converged",
+        ),
       );
       expect(ownerOptions[0]).toMatchObject({
         projectId: "sample",
@@ -4205,9 +4484,15 @@ describe("project app loader", () => {
       expect(ownerCalls[0]).toContain("immediately after gathering the first acceptance-critical evidence");
       expect(ownerCalls[0]).toContain("If no checkpoint was persisted, recovery records that absence explicitly");
       expect(ownerCalls[0]).toContain('"fallbackReason": "recovered-session:');
-      expect(ownerCalls[0]).toContain(`Recovered interrupted owner session metadata: ${join(f.persistDir, "sessions", "owner-old", "meta.json")}`);
-      expect(ownerCalls[0]).toContain(`Recovered interrupted owner session artifact: ${join(f.persistDir, "sessions", "owner-old", "result.json")}`);
-      expect(ownerCalls[0]).toContain(`Recovered interrupted owner session transcript: ${join(f.persistDir, "sessions", "owner-old", "session.jsonl")}`);
+      expect(ownerCalls[0]).toContain(
+        `Recovered interrupted owner session metadata: ${join(f.persistDir, "sessions", "owner-old", "meta.json")}`,
+      );
+      expect(ownerCalls[0]).toContain(
+        `Recovered interrupted owner session artifact: ${join(f.persistDir, "sessions", "owner-old", "result.json")}`,
+      );
+      expect(ownerCalls[0]).toContain(
+        `Recovered interrupted owner session transcript: ${join(f.persistDir, "sessions", "owner-old", "session.jsonl")}`,
+      );
       expect(ownerCalls[0]).toContain(
         `Recovered latest durable checkpoint: ${join(f.persistDir, "checkpoints", "owner-old.jsonl")} step=3 summary=Verified branch ancestry; only approval disposition remains`,
       );
@@ -4229,10 +4514,74 @@ describe("project app loader", () => {
           "recovered-pending-tools:read",
         ]),
       );
-      expect(ownerCalls[0]).toContain("Recovered transcript snippet: tool:bash HEAD 813448ce ORIGIN_DEV 2ebef7c2 FF_ONLY_CHECK failed");
+      expect(ownerCalls[0]).toContain(
+        "Recovered transcript snippet: tool:bash HEAD 813448ce ORIGIN_DEV 2ebef7c2 FF_ONLY_CHECK failed",
+      );
       expect(ownerCalls[0]).toContain(
         "Recovered transcript snippet: assistant Current canonical checkout is diverged; remaining path is staging.summary.md",
       );
+      const priorCheckpoints = readFileSync(join(f.persistDir, "checkpoints", "owner-old.jsonl"), "utf8")
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line));
+      const replacementCheckpoints = readFileSync(
+        join(f.persistDir, "checkpoints", `${replacementSessionId}.jsonl`),
+        "utf8",
+      )
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line));
+      expect(priorCheckpoints).toHaveLength(1);
+      expect(priorCheckpoints[0]).toMatchObject({
+        sessionId: "owner-old",
+        step: 3,
+        summary: "Verified branch ancestry; only approval disposition remains",
+      });
+      expect(replacementCheckpoints).toEqual([
+        expect.objectContaining({
+          sessionId: replacementSessionId,
+          agentName: "sample-owner",
+          step: 1,
+          summary: "Replacement owner verified recovered evidence",
+          data: {
+            prior_session: "owner-old",
+            next_steps: "finish replacement reconciliation",
+          },
+        }),
+      ]);
+      expect(
+        JSON.parse(readFileSync(join(f.persistDir, "checkpoints", "latest", "sample-owner.json"), "utf8")),
+      ).toMatchObject({
+        sessionId: replacementSessionId,
+        summary: "Replacement owner verified recovered evidence",
+      });
+
+      const completionReceiptBeforeDelay = JSON.stringify(
+        readTaskState(
+          taskReconciliationConfig({
+            appDir: f.appDir,
+            projectDir: f.appDir,
+            owner: "sample-owner",
+            maxConcurrent: 2,
+          }),
+        ).receipts?.["work/orphan-owner"],
+      );
+      expect(completionReceiptBeforeDelay).not.toBeUndefined();
+      expect(await externalReaperExit).toEqual({ code: 0, signal: null });
+      await Bun.sleep(700);
+      expect(existsSync(staleMutation)).toBe(false);
+      expect(
+        JSON.stringify(
+          readTaskState(
+            taskReconciliationConfig({
+              appDir: f.appDir,
+              projectDir: f.appDir,
+              owner: "sample-owner",
+              maxConcurrent: 2,
+            }),
+          ).receipts?.["work/orphan-owner"],
+        ),
+      ).toBe(completionReceiptBeforeDelay);
 
       const emptyProjectsRoot = join(f.root, "empty-projects");
       mkdirSync(emptyProjectsRoot, { recursive: true });
@@ -4247,6 +4596,14 @@ describe("project app loader", () => {
         agentCrons: new Map(),
       });
     } finally {
+      if (stalePgid) {
+        try {
+          process.kill(-stalePgid, "SIGKILL");
+        } catch {
+          // Startup recovery already drained the stale group.
+        }
+      }
+      if (externalReaper?.exitCode === null) externalReaper.kill("SIGKILL");
       closeDb(f.persistDir);
       rmSync(f.root, { recursive: true, force: true });
     }
@@ -4390,14 +4747,13 @@ describe("project app loader", () => {
         agentCrons: new Map(),
       });
 
-      await waitUntil(
-        () =>
-          events.some(
-            (event) =>
-              event.type === "project.task.reconciled" &&
-              event.data?.taskId === "work/orphan-workflow" &&
-              event.data?.disposition === "converged",
-          ),
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/orphan-workflow" &&
+            event.data?.disposition === "converged",
+        ),
       );
       const state = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
       expect(state.receipts["work/orphan-workflow"]).toMatchObject({
@@ -4679,11 +5035,7 @@ describe("project app loader", () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
       expect(ownerCalls).toHaveLength(1);
       expect(
-        events.filter(
-          (event) =>
-            event.type === "message.progressed" &&
-            event.data?.sourceEventId === messageEventId,
-        ),
+        events.filter((event) => event.type === "message.progressed" && event.data?.sourceEventId === messageEventId),
       ).toHaveLength(0);
     } finally {
       closeDb(f.persistDir);
@@ -4763,20 +5115,14 @@ describe("project app loader", () => {
       await waitUntil(() =>
         events.some(
           (event) =>
-            (event.type === "message.progressed" &&
-              event.data?.sourceEventId === second[EVENT_ROW_ID]) ||
-            (event.type === "message.resolved" &&
-              event.data?.openEventId === second[EVENT_ROW_ID]),
+            (event.type === "message.progressed" && event.data?.sourceEventId === second[EVENT_ROW_ID]) ||
+            (event.type === "message.resolved" && event.data?.openEventId === second[EVENT_ROW_ID]),
         ),
       );
 
       for (const messageEventId of [first[EVENT_ROW_ID], second[EVENT_ROW_ID]]) {
         expect(
-          events.some(
-            (event) =>
-              event.type === "message.resolved" &&
-              event.data?.openEventId === messageEventId,
-          ),
+          events.some((event) => event.type === "message.resolved" && event.data?.openEventId === messageEventId),
         ).toBe(false);
         expect(
           getDb(f.persistDir)
@@ -4786,9 +5132,7 @@ describe("project app loader", () => {
       }
       expect(
         events.find(
-          (event) =>
-            event.type === "message.progressed" &&
-            event.data?.sourceEventId === second[EVENT_ROW_ID],
+          (event) => event.type === "message.progressed" && event.data?.sourceEventId === second[EVENT_ROW_ID],
         )?.data?.taskRefs,
       ).toEqual(
         expect.arrayContaining([
@@ -4873,26 +5217,14 @@ describe("project app loader", () => {
       await waitUntil(
         () =>
           ownerCall === 2 &&
-          events.some(
-            (event) =>
-              event.type === "message.resolved" &&
-              event.data?.openEventId === messageEventId,
-          ),
+          events.some((event) => event.type === "message.resolved" && event.data?.openEventId === messageEventId),
         3_000,
       );
       expect(
-        events.some(
-          (event) =>
-            event.type === "message.progressed" &&
-            event.data?.sourceEventId === messageEventId,
-        ),
+        events.some((event) => event.type === "message.progressed" && event.data?.sourceEventId === messageEventId),
       ).toBe(true);
       expect(
-        events.filter(
-          (event) =>
-            event.type === "message.resolved" &&
-            event.data?.openEventId === messageEventId,
-        ),
+        events.filter((event) => event.type === "message.resolved" && event.data?.openEventId === messageEventId),
       ).toHaveLength(1);
       expect(
         getDb(f.persistDir)
@@ -4959,7 +5291,9 @@ describe("project app loader", () => {
       const request = bus.emit({ type: "project.owner.requested", project: "sample", ownerOnly: true } as any);
       const requestEventId = (request as any)[EVENT_ROW_ID];
       await waitUntil(() =>
-        events.some((event) => event.type === "project.owner.progressed" && event.data?.sourceEventId === requestEventId),
+        events.some(
+          (event) => event.type === "project.owner.progressed" && event.data?.sourceEventId === requestEventId,
+        ),
       );
 
       const ownerResult = events.find(
