@@ -29,7 +29,9 @@ describe("Herdr web terminal", () => {
     expect(source).toContain("[program:terminal-herdr]");
     expect(source).toContain("[program:terminal-ttyd]");
     expect(source.match(/--session may-terminal2/g)).toHaveLength(2);
+    expect(source.match(/\/usr\/local\/bin\/may-herdr/g)).toHaveLength(2);
     expect(source).toContain("--base-path /terminal");
+    expect(source).not.toContain("XDG_CONFIG_HOME");
     expect(source).not.toContain("MAY_TERMINAL_BRIDGE");
   });
 

@@ -84,6 +84,7 @@ RUN set -eux; \
     echo "${ttyd_sha}  /usr/local/bin/ttyd" | sha256sum -c -; \
     chmod 755 /usr/local/bin/herdr /usr/local/bin/ttyd; \
     herdr --version; \
+    herdr --default-config | grep -q '^# resume_agents_on_restore = true$'; \
     ttyd --version
 
 # Derive a custom ttyd index from the checksum-pinned binary. It is patched
@@ -185,8 +186,9 @@ RUN mkdir -p /app/.state/runtime-logs && chown -R mayagent:mayagent /app/.state/
 
 # Copy entrypoints and helpers
 COPY container/entrypoint.sh container/start-chrome.sh container/setup-claude-config.sh container/setup-codex-config.sh container/setup-pi-config.sh container/setup-herdr-integrations.sh container/may-agent-supervisor-restart.sh /usr/local/bin/
+COPY container/may-herdr.sh /usr/local/bin/may-herdr
 COPY packages/terminal/bin/may-console.cjs /usr/local/bin/may-console
-RUN chmod 755 /usr/local/bin/may-agent /usr/local/bin/entrypoint.sh /usr/local/bin/start-chrome.sh /usr/local/bin/setup-claude-config.sh /usr/local/bin/setup-codex-config.sh /usr/local/bin/setup-pi-config.sh /usr/local/bin/setup-herdr-integrations.sh /usr/local/bin/may-agent-supervisor-restart.sh /usr/local/bin/may-console && \
+RUN chmod 755 /usr/local/bin/may-agent /usr/local/bin/entrypoint.sh /usr/local/bin/start-chrome.sh /usr/local/bin/setup-claude-config.sh /usr/local/bin/setup-codex-config.sh /usr/local/bin/setup-pi-config.sh /usr/local/bin/setup-herdr-integrations.sh /usr/local/bin/may-herdr /usr/local/bin/may-agent-supervisor-restart.sh /usr/local/bin/may-console && \
     ln -sf /usr/local/bin/may-agent-supervisor-restart.sh /usr/local/bin/may-agent-supervisor-restart
 
 # Virtual display
@@ -196,6 +198,7 @@ ENV DISPLAY=:99
 # $HOME/.config/google-chrome/Crash Reports — without it Chrome
 # SIGTRAPs immediately when running as a non-root user.
 ENV HOME=/app/.state
+ENV SHELL=/bin/bash
 
 ENV NODE_ENV=production
 ENV PROJECT_ROOT=/app

@@ -12,17 +12,13 @@ afterEach(() => {
   for (const dir of tempDirs.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 
-function runSetup(existingConfig = "onboarding = false\n") {
+function runSetup() {
   const home = mkdtempSync(join(tmpdir(), "may-herdr-integration-"));
   tempDirs.push(home);
   const binDir = join(home, "bin");
-  const configHome = join(home, "herdr-config");
-  const configPath = join(configHome, "herdr", "config.toml");
   const callsPath = join(home, "herdr-calls.log");
   const herdrStub = join(binDir, "herdr-stub");
   mkdirSync(binDir, { recursive: true });
-  mkdirSync(join(configHome, "herdr"), { recursive: true });
-  writeFileSync(configPath, existingConfig);
   writeFileSync(herdrStub, "#!/bin/sh\nprintf '%s\\n' \"$*\" >> \"$HERDR_CALLS_PATH\"\n");
   chmodSync(herdrStub, 0o755);
 
@@ -30,9 +26,6 @@ function runSetup(existingConfig = "onboarding = false\n") {
     env: {
       ...process.env,
       HOME: home,
-      XDG_CONFIG_HOME: configHome,
-      XDG_STATE_HOME: join(home, "herdr-state"),
-      XDG_RUNTIME_DIR: join(home, "herdr-runtime"),
       PI_CODING_AGENT_DIR: join(home, ".pi/agent"),
       HERDR_BIN: herdrStub,
       HERDR_CALLS_PATH: callsPath,
@@ -40,12 +33,12 @@ function runSetup(existingConfig = "onboarding = false\n") {
     encoding: "utf8",
   });
 
-  return { result, configPath, callsPath };
+  return { result, callsPath };
 }
 
 describe("Herdr integration startup configuration", () => {
-  test("installs all supported terminal agents and enables native session restoration", () => {
-    const { result, configPath, callsPath } = runSetup();
+  test("installs all supported terminal agent integrations", () => {
+    const { result, callsPath } = runSetup();
 
     expect(result.status).toBe(0);
     expect(readFileSync(callsPath, "utf8").trim().split("\n")).toEqual([
@@ -53,36 +46,6 @@ describe("Herdr integration startup configuration", () => {
       "integration install claude",
       "integration install pi",
     ]);
-    expect(readFileSync(configPath, "utf8")).toBe([
-      "onboarding = false",
-      "",
-      "[terminal]",
-      'default_shell = "/bin/bash"',
-      "",
-      "[session]",
-      "resume_agents_on_restore = true",
-      "",
-    ].join("\n"));
-  });
-
-  test("updates the restore policy without duplicating its section or changing other settings", () => {
-    const existing = [
-      "onboarding = false",
-      "",
-      "[session]",
-      "resume_agents_on_restore = false",
-      "",
-      "[ui]",
-      "mouse_capture = true",
-      "",
-    ].join("\n");
-    const first = runSetup(existing);
-
-    expect(first.result.status).toBe(0);
-    const updated = readFileSync(first.configPath, "utf8");
-    expect(updated).toContain("[session]\nresume_agents_on_restore = true");
-    expect(updated).toContain("[ui]\nmouse_capture = true");
-    expect(updated).toContain('[terminal]\ndefault_shell = "/bin/bash"');
   });
 
   test("runs after agent config setup in the container entrypoint", () => {
@@ -93,8 +56,14 @@ describe("Herdr integration startup configuration", () => {
     expect(integrationOffset).toBeGreaterThan(entrypoint.indexOf("source /usr/local/bin/setup-claude-config.sh"));
     expect(integrationOffset).toBeGreaterThan(entrypoint.indexOf("source /usr/local/bin/setup-pi-config.sh"));
     expect(entrypoint).toContain("runuser -u mayagent");
-    expect(entrypoint).toContain('"${PI_CODING_AGENT_DIR}/extensions/herdr-agent-state.ts"');
-    expect(entrypoint).not.toContain('chown -R mayagent:mayagent "${HOME}/.codex"');
-    expect(entrypoint).not.toContain('chown -R mayagent:mayagent "${HOME}/.claude"');
+    expect(entrypoint).not.toContain("herdr-agent-state");
+  });
+
+  test("uses Bash and asserts the pinned Herdr restoration default in the image", () => {
+    const dockerfile = readFileSync(resolve(repoRoot, "container/Dockerfile"), "utf8");
+
+    expect(dockerfile).toContain("ENV SHELL=/bin/bash");
+    expect(dockerfile).toContain("COPY container/may-herdr.sh /usr/local/bin/may-herdr");
+    expect(dockerfile).toContain("herdr --default-config | grep -q '^# resume_agents_on_restore = true$'");
   });
 });
