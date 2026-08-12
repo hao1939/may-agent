@@ -34,8 +34,15 @@ export GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes
 # Add host node bin to PATH for CLI coding agents (claude, codex, gemini)
 for d in /home/example-user/.nvm/versions/node/*/bin; do [ -d "$d" ] && export PATH="$d:$PATH" && break; done
 
-# Configure Codex CLI to use the shared model endpoint.
+# Keep plain Claude launches unrestricted inside the container sandbox.
+source /usr/local/bin/setup-claude-config.sh
+
+# Configure Codex CLI to use the shared model endpoint without approval or
+# sandbox prompts. This also applies when Herdr restores `codex resume`.
 source /usr/local/bin/setup-codex-config.sh
+
+# Configure Pi Coding Agent with both OpenAI Responses and Anthropic Messages.
+source /usr/local/bin/setup-pi-config.sh
 
 # Ensure mount roots are writable by mayagent (uid 1000) without walking the
 # whole state tree on every boot. Recursive chown makes restarts scale with

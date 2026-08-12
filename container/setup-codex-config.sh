@@ -23,6 +23,8 @@ model = "${codex_model}"
 model_reasoning_effort = "${codex_reasoning_effort}"
 personality = "pragmatic"
 check_for_update_on_startup = false
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
 
 [model_providers.model_endpoint]
 name = "Configured model endpoint"
