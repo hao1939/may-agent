@@ -91,6 +91,16 @@ Every Gym workflow follows the same rules:
 6. Converge, wait on an exact Condition, ask the owner for judgment, or emit a
    continuation wake.
 
+Project-app task-owner prompts have a strict finalization contract. Once the
+current evidence supports `converged` or `waiting`, the owner must call
+`finish()` exactly once as the final action. It must not end with prose, empty
+text, or any non-tool final answer. The `finish()` payload includes
+`result.state` exactly as `converged` or `waiting`, cites evidence, and includes
+`actions: []` when no task-tree mutation is needed. It includes `conditions`
+only for exact observable waits. When the Reconciliation Task payload embeds
+live direct children, the owner cites that embedded child state instead of
+probing or guessing task-resource storage paths.
+
 Events contribute facts; they do not replace the task specification or
 interrupt an active attempt. A wake received during execution is queued for the
 next reconcile. Duplicate wakes, daemon restart, and a lost session recover by
