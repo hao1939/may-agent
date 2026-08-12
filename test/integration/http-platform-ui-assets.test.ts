@@ -61,7 +61,17 @@ describe("F8 regression: top-level platform UI assets (chromeless)", () => {
   });
 
   test("serves the platform index for real app routes", async () => {
-    for (const path of ["/events", "/events/123", "/agents/may", "/projects", "/projects/aks-rp-e2e.app", "/projects/aks-rp-e2e.app/tasks", "/projects/aks-rp-e2e.app/functions"]) {
+    for (const path of [
+      "/events",
+      "/events/123",
+      "/agents/may",
+      "/terminal",
+      "/terminal/",
+      "/projects",
+      "/projects/aks-rp-e2e.app",
+      "/projects/aks-rp-e2e.app/tasks",
+      "/projects/aks-rp-e2e.app/functions",
+    ]) {
       const res = get(path);
       expect(res.status).toBe(200);
       expect(await res.text()).toContain(`<script src="app.js"></script>`);
