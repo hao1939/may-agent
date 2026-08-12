@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { execFileSync, spawnSync } from "node:child_process";
-import { afterAll } from "bun:test"; import { createHash } from "node:crypto";
+import { afterAll } from "bun:test";
+import { createHash } from "node:crypto";
 import {
   existsSync,
   mkdirSync,
@@ -31,7 +32,8 @@ import {
   checkLiveDispatchAdmission,
   compactPlanPipelineParameters,
   collectTerminalRunEvidence,
-  proofMetadataMatchesSource, queueRunMetadata,
+  proofMetadataMatchesSource,
+  queueRunMetadata,
   queueRunPipelineParameters,
   completedPullRequestIntegration,
   cherryPickScenarioReplayCommits,
@@ -68,7 +70,8 @@ import {
   masterValidationCapacityPulseCycleSlot,
   masterValidationCapacityRetryDue,
   masterValidationCapacityPulseWaitCondition,
-  materializePriorRetainedWorkspace, mergeAcceptedTargetAdvanceProof,
+  materializePriorRetainedWorkspace,
+  mergeAcceptedTargetAdvanceProof,
   noIntegrationDiagnosticContract,
   diagnosticArtifactProblem,
   restoreExactDiagnosticSource,
@@ -783,8 +786,63 @@ describe("spec-live-reconciliation workflow", () => {
     }
   });
 
-  const runNoIntegrationLifecycle = (mode: "consumed" | "terminal" | "omitted") => {     const childRoot = mkdtempSync(join(tmpdir(), `no-integration-${mode}-`));     const childScript = join(childRoot, "run.mjs");     try {       writeFileSync(childScript, ` import { execFileSync } from "node:child_process"; import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"; import { tmpdir } from "node:os"; import { join } from "node:path"; const mode=${JSON.stringify(mode)}; const root=mkdtempSync(join(tmpdir(),"no-integration-life-")); const remote=join(root,"remote.git"); const seed=join(root,"seed"); const repoDir=join(root,"repo"); const workspaceDir=join(root,"workspace"); const appDir=join(root,"app"); const binDir=join(root,"bin"); const azLog=join(root,"az.log"); const artifactPath=join(root,"diagnostic.md"); const run=(cwd,args)=>execFileSync("git",args,{cwd,encoding:"utf8"}).trim(); mkdirSync(seed,{recursive:true}); mkdirSync(appDir,{recursive:true}); mkdirSync(binDir,{recursive:true}); writeFileSync(azLog,""); run(root,["init","--bare",remote]); run(seed,["init"]); run(seed,["config","user.email","test@example.com"]); run(seed,["config","user.name","Test"]); writeFileSync(join(seed,"README.md"),"base\\\\n"); run(seed,["add","README.md"]); run(seed,["commit","-m","base"]); run(seed,["branch","-M","dev"]); run(seed,["remote","add","origin",remote]); run(seed,["push","origin","dev"]); run(seed,["checkout","-b","task/diagnostic"]); writeFileSync(join(seed,"diagnostic.txt"),"prepared\\\\n"); run(seed,["add","diagnostic.txt"]); run(seed,["commit","-m","prepared diagnostic"]); const sourceCommit=run(seed,["rev-parse","HEAD"]); run(seed,["push","origin","task/diagnostic"]); run(root,["clone",remote,repoDir]); run(repoDir,["checkout","dev"]); run(root,["clone",remote,workspaceDir]); run(workspaceDir,["checkout","task/diagnostic"]); run(workspaceDir,["config","user.email","test@example.com"]); run(workspaceDir,["config","user.name","Test"]); writeFileSync(join(binDir,"az"),\`#!/usr/bin/env node
-const fs=require("node:fs"); const path=require("node:path"); const args=process.argv.slice(2); const mode=process.env.NO_INTEGRATION_MODE; const commit=process.env.DIAGNOSTIC_COMMIT; fs.appendFileSync(process.env.FAKE_AZ_LOG,JSON.stringify(args)+"\\\\n"); const metadata={taskId:"domain/no-integration-life",generation:1,sourceCommit:commit,reviewed_source_commit:commit}; const run={id:"175125000",state:"completed",status:"completed",result:"failed",sourceVersion:commit,templateParameters:{specs:"spec.sample.a,spec.sample.b",target:"staging",standalone_build_id:"",metadata:JSON.stringify(metadata)}}; if(mode==="terminal"&&args[0]==="pipelines"&&args[1]==="runs"&&args[2]!=="artifact"&&args.includes("list")) process.stdout.write(JSON.stringify([run])); else if(mode==="terminal"&&args[0]==="pipelines"&&args[1]==="runs"&&args.includes("artifact")&&args.includes("list")) process.stdout.write(JSON.stringify([{name:"diagnostic"}])); else if(mode==="terminal"&&args[0]==="pipelines"&&args[1]==="runs"&&args.includes("artifact")&&args.includes("download")){const out=args[args.indexOf("--path")+1]; fs.mkdirSync(out,{recursive:true}); for(const id of ["spec.sample.a","spec.sample.b"]) fs.writeFileSync(path.join(out,id+".json"),JSON.stringify({specId:id,status:"pass",cleanup:{attempted:true,status:"pass"}})); process.stdout.write("{}");} else process.stdout.write("[]"); \`,{mode:0o755}); process.env.NO_INTEGRATION_MODE=mode; process.env.DIAGNOSTIC_COMMIT=sourceCommit; process.env.FAKE_AZ_LOG=azLog; process.env.AZURE_CLI_PATH=join(binDir,"az"); const {reconcileSpecLive}=await import(${JSON.stringify(`file://${join(import.meta.dir, "spec-live-reconciliation.ts")}`)}); const input={ specIds:["spec.sample.a","spec.sample.b"], preparedSourceBranch:"task/diagnostic", preparedSourceCommit:sourceCommit,artifactPath,maxReproductions:1,reproductionConsumed:mode==="consumed"?1:0,...(mode==="omitted"?{}:{allowIntegration:false})}; const task=["## Reconciliation Task",JSON.stringify({taskId:"domain/no-integration-life",generation:1,input,children:{live:[],completed:[]}})].join("\\\\n"); let agentCalls=0; const beforeHead=run(workspaceDir,["rev-parse","HEAD"]); const result=await reconcileSpecLive({agent:"aks-explorer",task,appDir,projectDir:repoDir,workspaceDir,done:(_summary,output)=>output,runAgent:async(_agent,prompt)=>{agentCalls++; if(mode==="terminal"){const match=prompt.match(/Per-spec result paths: (.+)\\. Structural cleanup paths: (.+)\\./); const paths=match[1].split(", "); writeFileSync(artifactPath,[\`Tested commit: \${sourceCommit}\`,"Pipeline run ID: 175125000",...paths.map(p=>\`Result path: \${p}\`),\`Cleanup proof: \${match[2].split(", ")[0]}\`,"Assertion mapping: expected failure","Lineage mapping: exact prepared source",\`Request fingerprint: sha256:\${"d".repeat(64)}\`,"HTTP status: 400","ARM code: InvalidParameter","Redacted ARM body: redacted","Disposition: product/API rejection"].join("\\\\n")); return {status:"done",structuredResult:{decision:"accepted-pass",summary:"Published complete non-green diagnostic.",evidence:["diagnostic:complete"]}};} return {status:"done",structuredResult:{decision:"needs-owner",summary:"Default reconciliation path entered.",evidence:["default-path:entered"]}};} }); const commands=readFileSync(azLog,"utf8").trim().split(/\\n+/).filter(Boolean).map(JSON.parse); console.log(JSON.stringify({result,commands,agentCalls,beforeHead,afterHead:run(workspaceDir,["rev-parse","HEAD"])})); rmSync(root,{recursive:true,force:true}); `);       const child = spawnSync("bun", [childScript], { cwd: import.meta.dir, encoding: "utf8", env: { ...process.env } });       if (child.status !== 0) throw new Error(child.stderr || child.stdout);       return JSON.parse(child.stdout.trim());     } finally {       rmSync(childRoot, { recursive: true, force: true });     }   };    test("does not queue when the no-integration reproduction budget is consumed", () => {     const output = runNoIntegrationLifecycle("consumed");     expect(output.commands.some((args: string[]) => args[0] === "pipelines" && args[1] === "run")).toBe(false);     expect(output.result.evidence).toEqual(expect.arrayContaining(["pipeline-run:not-created", "reproduction-consumed:1", "max-reproductions:1"]));   });    test("accepts a complete non-green terminal diagnostic without integration", () => {     const output = runNoIntegrationLifecycle("terminal");     expect(output.afterHead).toBe(output.beforeHead);     expect(output.result.evidence).toEqual(expect.arrayContaining(["integration:not-attempted", "pull-request:not-created", "target-ref-advance:not-attempted"]));     expect(output.result.state).toBe("converged");   });    test("does not enter diagnostic reconciliation when allowIntegration is omitted", () => {     const output = runNoIntegrationLifecycle("omitted");     expect(output.agentCalls).toBeGreaterThan(0);     expect(output.result.summary).toContain("Default reconciliation path entered");     expect(output.result.evidence).not.toContain("pipeline-run:not-created");   }); 
+  const runNoIntegrationLifecycle = (
+    mode: "consumed" | "terminal" | "omitted",
+  ) => {
+    const childRoot = mkdtempSync(join(tmpdir(), `no-integration-${mode}-`));
+    const childScript = join(childRoot, "run.mjs");
+    try {
+      writeFileSync(
+        childScript,
+        ` import { execFileSync } from "node:child_process"; import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"; import { tmpdir } from "node:os"; import { join } from "node:path"; const mode=${JSON.stringify(mode)}; const root=mkdtempSync(join(tmpdir(),"no-integration-life-")); const remote=join(root,"remote.git"); const seed=join(root,"seed"); const repoDir=join(root,"repo"); const workspaceDir=join(root,"workspace"); const appDir=join(root,"app"); const binDir=join(root,"bin"); const azLog=join(root,"az.log"); const artifactPath=join(root,"diagnostic.md"); const run=(cwd,args)=>execFileSync("git",args,{cwd,encoding:"utf8"}).trim(); mkdirSync(seed,{recursive:true}); mkdirSync(appDir,{recursive:true}); mkdirSync(binDir,{recursive:true}); writeFileSync(azLog,""); run(root,["init","--bare",remote]); run(seed,["init"]); run(seed,["config","user.email","test@example.com"]); run(seed,["config","user.name","Test"]); writeFileSync(join(seed,"README.md"),"base\\\\n"); run(seed,["add","README.md"]); run(seed,["commit","-m","base"]); run(seed,["branch","-M","dev"]); run(seed,["remote","add","origin",remote]); run(seed,["push","origin","dev"]); run(seed,["checkout","-b","task/diagnostic"]); writeFileSync(join(seed,"diagnostic.txt"),"prepared\\\\n"); run(seed,["add","diagnostic.txt"]); run(seed,["commit","-m","prepared diagnostic"]); const sourceCommit=run(seed,["rev-parse","HEAD"]); run(seed,["push","origin","task/diagnostic"]); run(root,["clone",remote,repoDir]); run(repoDir,["checkout","dev"]); run(root,["clone",remote,workspaceDir]); run(workspaceDir,["checkout","task/diagnostic"]); run(workspaceDir,["config","user.email","test@example.com"]); run(workspaceDir,["config","user.name","Test"]); writeFileSync(join(binDir,"az"),\`#!/usr/bin/env node
+const fs=require("node:fs"); const path=require("node:path"); const args=process.argv.slice(2); const mode=process.env.NO_INTEGRATION_MODE; const commit=process.env.DIAGNOSTIC_COMMIT; fs.appendFileSync(process.env.FAKE_AZ_LOG,JSON.stringify(args)+"\\\\n"); const metadata={taskId:"domain/no-integration-life",generation:1,sourceCommit:commit,reviewed_source_commit:commit}; const run={id:"175125000",state:"completed",status:"completed",result:"failed",sourceVersion:commit,templateParameters:{specs:"spec.sample.a,spec.sample.b",target:"staging",standalone_build_id:"",metadata:JSON.stringify(metadata)}}; if(mode==="terminal"&&args[0]==="pipelines"&&args[1]==="runs"&&args[2]!=="artifact"&&args.includes("list")) process.stdout.write(JSON.stringify([run])); else if(mode==="terminal"&&args[0]==="pipelines"&&args[1]==="runs"&&args.includes("artifact")&&args.includes("list")) process.stdout.write(JSON.stringify([{name:"diagnostic"}])); else if(mode==="terminal"&&args[0]==="pipelines"&&args[1]==="runs"&&args.includes("artifact")&&args.includes("download")){const out=args[args.indexOf("--path")+1]; fs.mkdirSync(out,{recursive:true}); for(const id of ["spec.sample.a","spec.sample.b"]) fs.writeFileSync(path.join(out,id+".json"),JSON.stringify({specId:id,status:"pass",cleanup:{attempted:true,status:"pass"}})); process.stdout.write("{}");} else process.stdout.write("[]"); \`,{mode:0o755}); process.env.NO_INTEGRATION_MODE=mode; process.env.DIAGNOSTIC_COMMIT=sourceCommit; process.env.FAKE_AZ_LOG=azLog; process.env.AZURE_CLI_PATH=join(binDir,"az"); const {reconcileSpecLive}=await import(${JSON.stringify(`file://${join(import.meta.dir, "spec-live-reconciliation.ts")}`)}); const input={ specIds:["spec.sample.a","spec.sample.b"], preparedSourceBranch:"task/diagnostic", preparedSourceCommit:sourceCommit,artifactPath,maxReproductions:1,reproductionConsumed:mode==="consumed"?1:0,...(mode==="omitted"?{}:{allowIntegration:false})}; const task=["## Reconciliation Task",JSON.stringify({taskId:"domain/no-integration-life",generation:1,input,children:{live:[],completed:[]}})].join("\\\\n"); let agentCalls=0; const beforeHead=run(workspaceDir,["rev-parse","HEAD"]); const result=await reconcileSpecLive({agent:"aks-explorer",task,appDir,projectDir:repoDir,workspaceDir,done:(_summary,output)=>output,runAgent:async(_agent,prompt)=>{agentCalls++; if(mode==="terminal"){const match=prompt.match(/Per-spec result paths: (.+)\\. Structural cleanup paths: (.+)\\./); const paths=match[1].split(", "); writeFileSync(artifactPath,[\`Tested commit: \${sourceCommit}\`,"Pipeline run ID: 175125000",...paths.map(p=>\`Result path: \${p}\`),\`Cleanup proof: \${match[2].split(", ")[0]}\`,"Assertion mapping: expected failure","Lineage mapping: exact prepared source",\`Request fingerprint: sha256:\${"d".repeat(64)}\`,"HTTP status: 400","ARM code: InvalidParameter","Redacted ARM body: redacted","Disposition: product/API rejection"].join("\\\\n")); return {status:"done",structuredResult:{decision:"accepted-pass",summary:"Published complete non-green diagnostic.",evidence:["diagnostic:complete"]}};} return {status:"done",structuredResult:{decision:"needs-owner",summary:"Default reconciliation path entered.",evidence:["default-path:entered"]}};} }); const commands=readFileSync(azLog,"utf8").trim().split(/\\n+/).filter(Boolean).map(JSON.parse); console.log(JSON.stringify({result,commands,agentCalls,beforeHead,afterHead:run(workspaceDir,["rev-parse","HEAD"])})); rmSync(root,{recursive:true,force:true}); `,
+      );
+      const child = spawnSync("bun", [childScript], {
+        cwd: import.meta.dir,
+        encoding: "utf8",
+        env: { ...process.env },
+      });
+      if (child.status !== 0) throw new Error(child.stderr || child.stdout);
+      return JSON.parse(child.stdout.trim());
+    } finally {
+      rmSync(childRoot, { recursive: true, force: true });
+    }
+  };
+  test("does not queue when the no-integration reproduction budget is consumed", () => {
+    const output = runNoIntegrationLifecycle("consumed");
+    expect(
+      output.commands.some(
+        (args: string[]) => args[0] === "pipelines" && args[1] === "run",
+      ),
+    ).toBe(false);
+    expect(output.result.evidence).toEqual(
+      expect.arrayContaining([
+        "pipeline-run:not-created",
+        "reproduction-consumed:1",
+        "max-reproductions:1",
+      ]),
+    );
+  });
+  test("accepts a complete non-green terminal diagnostic without integration", () => {
+    const output = runNoIntegrationLifecycle("terminal");
+    expect(output.afterHead).toBe(output.beforeHead);
+    expect(output.result.evidence).toEqual(
+      expect.arrayContaining([
+        "integration:not-attempted",
+        "pull-request:not-created",
+        "target-ref-advance:not-attempted",
+      ]),
+    );
+    expect(output.result.state).toBe("converged");
+  });
+  test("does not enter diagnostic reconciliation when allowIntegration is omitted", () => {
+    const output = runNoIntegrationLifecycle("omitted");
+    expect(output.agentCalls).toBeGreaterThan(0);
+    expect(output.result.summary).toContain(
+      "Default reconciliation path entered",
+    );
+    expect(output.result.evidence).not.toContain("pipeline-run:not-created");
+  });
   test("uses the watcher review normalization and judges only the matching new fingerprint", () => {
     const payload = {
       value: [

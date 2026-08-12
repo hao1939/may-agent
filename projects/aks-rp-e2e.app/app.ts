@@ -2419,10 +2419,7 @@ export function verifiedCampaignFixPullRequestIds(
     "",
   );
   const sourceCommit = stringDetail(details, "sourceCommit", "sourceVersion");
-  if (
-    !specId ||
-    status !== "pass"
-  ) {
+  if (!specId || status !== "pass") {
     return [];
   }
   const stableTaskId = `domain/master-validation-failure/${specId}`;
