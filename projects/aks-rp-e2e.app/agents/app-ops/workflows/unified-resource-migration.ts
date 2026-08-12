@@ -41,6 +41,8 @@ type StateSnapshot = {
       spec?: {
         mode?: string;
         parentId?: string;
+        owner?: string;
+        category?: string;
         outcome?: string;
         acceptance?: string[];
       };
@@ -50,6 +52,41 @@ type StateSnapshot = {
   conditions?: Record<string, { spec?: { type?: string } }>;
   receipts?: Record<string, unknown>;
 };
+
+const ownerReviewTaskId = "runtime/owner-review";
+
+export function ownerReviewChildReleaseActions(
+  state: StateSnapshot,
+): ProjectAppTaskAction[] {
+  return Object.entries(state.resources ?? {})
+    .sort(([left], [right]) => left.localeCompare(right))
+    .flatMap(([taskId, resource]): ProjectAppTaskAction[] => {
+      const generation = resource.metadata?.generation;
+      if (
+        resource.spec?.parentId !== ownerReviewTaskId ||
+        !["achieve", "maintain"].includes(resource.spec.mode ?? "") ||
+        !["pending", "waiting", "attention"].includes(
+          resource.status?.phase ?? "",
+        ) ||
+        !Number.isInteger(generation)
+      ) {
+        return [];
+      }
+      const appOwned =
+        resource.spec.owner === "app-ops" ||
+        resource.spec.category === "ops" ||
+        resource.spec.category === "app-operations";
+      return [
+        {
+          kind: "update-task",
+          taskId,
+          expectedGeneration: generation as number,
+          parentId: appOwned ? "group/app-operations" : "group/domain-work",
+        },
+      ];
+    })
+    .slice(0, 16);
+}
 
 export function projectStateHolderCloseActions(
   state: StateSnapshot,
@@ -177,16 +214,18 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const projectStateActions = projectStateHolderCloseActions(state);
   const producerlessActions = producerlessWaitCloseActions(state);
   const completedIdentityActions = completedIdentityRepairActions(state);
+  const ownerReviewChildActions = ownerReviewChildReleaseActions(state);
   const actions = [
     ...projectStateActions,
     ...producerlessActions,
     ...completedIdentityActions,
+    ...ownerReviewChildActions,
   ];
-  const summary = `Reconciled legacy resources: ${projectStateActions.length} project-state holder(s), ${producerlessActions.length} producerless wait(s), and ${completedIdentityActions.length} completed-identity repair(s).`;
+  const summary = `Reconciled legacy resources: ${projectStateActions.length} project-state holder(s), ${producerlessActions.length} producerless wait(s), ${completedIdentityActions.length} completed-identity repair(s), and ${ownerReviewChildActions.length} owner-review child release(s).`;
   return ctx.done(summary, {
     state: "converged",
     summary,
-    evidence: ["migration:resource-liveness-v2"],
+    evidence: ["migration:resource-liveness-v3"],
     actions,
   });
 }

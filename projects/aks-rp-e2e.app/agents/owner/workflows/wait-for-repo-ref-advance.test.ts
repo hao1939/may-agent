@@ -7,6 +7,7 @@ import {
   execute,
   parseReconciliationTaskPayload,
   repoRefWaitExternalProducer,
+  verify,
 } from "./wait-for-repo-ref-advance.js";
 
 function git(cwd: string, command: string): string {
@@ -391,6 +392,83 @@ describe("wait-for-repo-ref-advance workflow", () => {
       expect(
         (result as { output: { summary: string } }).output.summary,
       ).toContain(`advanced from baseline ${baselineCommit}`);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("verifies converged owner work once the watched ref has advanced", async () => {
+    const root = mkdtempSync(join(tmpdir(), "wait-for-repo-ref-verify-"));
+    const remote = join(root, "remote.git");
+    const seed = join(root, "seed");
+    const repo = join(root, "repo");
+    try {
+      git(root, `git init --bare ${remote}`);
+      git(root, `git init ${seed}`);
+      git(seed, "git config user.email watcher@example.com");
+      git(seed, "git config user.name Repo Watcher");
+      writeFileSync(join(seed, "README.md"), "one\n", "utf8");
+      git(seed, "git add README.md");
+      git(seed, "git commit -m first");
+      git(seed, `git remote add origin ${remote}`);
+      git(seed, "git branch -M dev");
+      git(seed, "git push -u origin dev");
+      git(root, `git clone ${remote} ${repo}`);
+      git(repo, "git fetch origin dev");
+      const baselineCommit = git(repo, "git rev-parse --verify origin/dev");
+
+      writeFileSync(join(seed, "README.md"), "two\n", "utf8");
+      git(seed, "git add README.md");
+      git(seed, "git commit -m second");
+      git(seed, "git push origin dev");
+      git(repo, "git fetch origin dev");
+      const currentCommit = git(repo, "git rev-parse --verify origin/dev");
+
+      const verified = await verify(
+        {
+          appId: "aks-rp-e2e",
+          taskId: "domain/example",
+          generation: 1,
+          appDir: repo,
+          projectDir: repo,
+          workspaceDir: repo,
+          intent: {
+            id: "domain/example",
+            parentId: "group/domain-work",
+            outcome: "Recheck after origin/dev advances.",
+            acceptance: [],
+            mode: "achieve",
+            owner: "aks-explorer",
+            workflow: "wait-for-repo-ref-advance",
+            input: {
+              baseRef: "origin/dev",
+              resumeBaselineCommit: baselineCommit,
+            },
+          },
+        },
+        {
+          state: "converged",
+          summary: "Owner rechecked after origin/dev advanced.",
+          evidence: [
+            "repo-ref:origin/dev",
+            `resume-baseline:${baselineCommit}`,
+            `current-commit:${currentCommit}`,
+          ],
+          actions: [],
+        },
+      );
+
+      expect(verified).toMatchObject({
+        accepted: true,
+        summary: expect.stringContaining(
+          "Verified repo-ref wait handoff after origin/dev advanced beyond",
+        ),
+        evidence: expect.arrayContaining([
+          "repo-ref:origin/dev",
+          `resume-baseline:${baselineCommit}`,
+          `current-commit:${currentCommit}`,
+        ]),
+      });
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

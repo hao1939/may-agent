@@ -59,10 +59,12 @@ state:
   this fallback never guesses which individual spec has started;
 - only the first fail/error observation for one run and spec emits
   `pipeline.test.nonpassing`; the event carries validation correlation without
-  targeting the sleeping validation task. If the same source already has a
-  stable failure carrier, the app reuses it. Otherwise it wakes owner review
-  for awareness only; classification, source changes, and retries wait for the
-  later artifact-backed event, which creates the durable failure work;
+  targeting the sleeping validation task. It wakes owner review for awareness
+  only. Even when the same spec and source already have a failure carrier, the
+  app never copies that older run's reason, fingerprint, or artifact into the
+  new observation. Classification, source changes, and retries wait for the
+  current run's later artifact-backed event, which creates or revises the
+  durable failure work;
 - the AKS domain page and `master-validation:status` read the same projection;
   neither reads task state or raw session logs; and
 - ARM polling now exposes an optional bounded progress callback and safe

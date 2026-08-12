@@ -441,26 +441,15 @@ export function exactPassNeedsOwnerProblem(
   decision: AgentDecision,
   allowTerminalDisposition = true,
 ): string | null {
-  if (allowTerminalDisposition || decision.decision !== "needs-owner") {
+  if (decision.decision !== "needs-owner") {
     return null;
-  }
-  const requiredEvidencePrefixes = [
-    "external-capability:",
-    "external-producer:",
-    "artifact:",
-    "resume-condition:",
-  ];
-  const missingPrefixes = requiredEvidencePrefixes.filter(
-    (prefix) => !decision.evidence.some((entry) => entry.startsWith(prefix)),
-  );
-  if (missingPrefixes.length > 0) {
-    return `needs-owner cannot defer an exact-pass task without a precise external ownership boundary; keep internal source gaps in this workflow, use waiting for an observable external fact, or identify the unavailable capability with ${missingPrefixes.join(", ")} evidence`;
   }
   const judgmentText = [decision.summary, ...decision.evidence]
     .join("\n")
     .toLowerCase();
   const internalSourceGapIndicators = [
     "bounded same-task source repair",
+    "same-task source repair",
     "current source still",
     "direct carrier still",
     "scenario library still",
@@ -471,8 +460,21 @@ export function exactPassNeedsOwnerProblem(
   const internalSourceGap = internalSourceGapIndicators.find((indicator) =>
     judgmentText.includes(indicator),
   );
-  return internalSourceGap
-    ? `needs-owner cannot defer a confirmed internal source gap (${internalSourceGap}); keep the bounded repair in this workflow even when external-boundary evidence prefixes are present`
+  if (internalSourceGap) {
+    return `needs-owner cannot defer a confirmed internal source gap (${internalSourceGap}); keep the bounded repair in this workflow even when terminal disposition is available`;
+  }
+  if (allowTerminalDisposition) return null;
+  const requiredEvidencePrefixes = [
+    "external-capability:",
+    "external-producer:",
+    "artifact:",
+    "resume-condition:",
+  ];
+  const missingPrefixes = requiredEvidencePrefixes.filter(
+    (prefix) => !decision.evidence.some((entry) => entry.startsWith(prefix)),
+  );
+  return missingPrefixes.length > 0
+    ? `needs-owner cannot defer an exact-pass task without a precise external ownership boundary; keep internal source gaps in this workflow, use waiting for an observable external fact, or identify the unavailable capability with ${missingPrefixes.join(", ")} evidence`
     : null;
 }
 
@@ -1642,6 +1644,44 @@ function exactSpecIds(value: unknown): string[] {
     .sort();
 }
 
+export function canonicalAggregateSpecId(specIds: string[]): string {
+  return [...specIds].sort().join(",");
+}
+
+export function candidateReviewedRunProof(input: {
+  taskId: string;
+  generation: number;
+  providerGeneration: number;
+  specIds: string[];
+  target: string;
+  standaloneBuildId: string;
+  sourceBranch: string;
+  sourceCommit: string;
+  runId: string;
+  runResult: string;
+  reviewedAt?: string;
+}): ReviewedRunProof {
+  return {
+    version: 1,
+    taskId: input.taskId,
+    generation: input.generation,
+    providerGeneration: input.providerGeneration,
+    specId: canonicalAggregateSpecId(input.specIds),
+    target: input.target,
+    ...(input.standaloneBuildId
+      ? { standaloneBuildId: input.standaloneBuildId }
+      : {}),
+    sourceBranch: input.sourceBranch,
+    sourceCommit: input.sourceCommit,
+    runId: input.runId,
+    runResult: input.runResult,
+    verdict: "pass",
+    summary: "candidate terminal run proof",
+    evidence: [],
+    reviewedAt: input.reviewedAt ?? new Date().toISOString(),
+  };
+}
+
 export function verifySpecLiveProofFacts(input: {
   taskId: string;
   generation: number;
@@ -1665,7 +1705,7 @@ export function verifySpecLiveProofFacts(input: {
   const requireIntegration = input.requireIntegration !== false;
   const integrationTargetRef =
     nonEmptyString(input.integrationTargetRef) || "origin/dev";
-  const expectedSpecId = [...input.specIds].sort().join(",");
+  const expectedSpecId = canonicalAggregateSpecId(input.specIds);
   const providerTaskIds = [
     input.taskId,
     ...(input.providerTaskIds ?? []),
@@ -5628,7 +5668,7 @@ export async function reconcileSpecLive(
     ]);
   }
   const selectedSpecIds = liveSpecIdSelection.dispatchSpecIds;
-  const specId = selectedSpecIds.join(",");
+  const specId = canonicalAggregateSpecId(selectedSpecIds);
   const livePlanDispatch = resolveLivePlanDispatch({
     taskInput: payload?.input,
   });
@@ -8302,23 +8342,18 @@ export async function reconcileSpecLive(
           candidateInvariantSatisfied = false;
         }
       }
-      const candidateProof: ReviewedRunProof = {
-        version: 1,
+      const candidateProof = candidateReviewedRunProof({
         taskId,
         generation,
         providerGeneration,
-        specId,
+        specIds: selectedSpecIds,
         target: liveTarget,
-        ...(standaloneBuildId ? { standaloneBuildId } : {}),
+        standaloneBuildId,
         sourceBranch: proofSourceBranch,
         sourceCommit,
         runId,
         runResult,
-        verdict: "pass",
-        summary: "candidate terminal run proof",
-        evidence: [],
-        reviewedAt: new Date().toISOString(),
-      };
+      });
       const preIntegrationVerification = verifySpecLiveProofFacts({
         taskId,
         generation,

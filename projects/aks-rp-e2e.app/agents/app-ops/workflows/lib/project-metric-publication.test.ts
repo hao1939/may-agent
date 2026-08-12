@@ -1,8 +1,21 @@
-import { describe, expect, it } from "bun:test";
+import { afterEach, describe, expect, it } from "bun:test";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
-import { projectMetricDefinitions } from "./project-metric-publication.ts";
+import {
+  projectMetricDefinitions,
+  sampleProjectMetricOutputs,
+} from "./project-metric-publication.ts";
 
 const appDir = "/app/projects/aks-rp-e2e.app";
+const tempDirs: string[] = [];
+
+afterEach(() => {
+  for (const dir of tempDirs.splice(0)) {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
 
 describe("projectMetricDefinitions", () => {
   it("reactivates current project metrics and closes the retired reviewer metric", () => {
@@ -55,6 +68,44 @@ describe("projectMetricDefinitions", () => {
       sourceCommand:
         "bun /app/projects/aks-rp-e2e.app/scripts/project-metrics.ts aks-rp-e2e.spec.total-count --json",
       status: "active",
+    });
+  });
+
+  it("samples through the canonical app and project paths instead of the bundled module path", () => {
+    const fakeAppDir = mkdtempSync(join(tmpdir(), "aks-project-metrics-"));
+    tempDirs.push(fakeAppDir);
+    const fakeProjectDir = join(fakeAppDir, "domain-workspace");
+    mkdirSync(join(fakeAppDir, "scripts"), { recursive: true });
+    writeFileSync(
+      join(fakeAppDir, "scripts", "project-metrics.ts"),
+      [
+        "const ids = process.argv.slice(process.argv.indexOf('--batch-json') + 1);",
+        "const output = Object.fromEntries(ids.map((id) => [id, {",
+        "  value: process.env.AKS_RP_E2E_APP_DIR === process.cwd() && process.env.PROJECT_DIR?.endsWith('domain-workspace') ? 1 : -1,",
+        "  measuredAt: 123,",
+        "  treePath: `${process.env.AKS_RP_E2E_APP_DIR}/.state/tasks/tree.json`,",
+        "}]));",
+        "console.log(JSON.stringify(output));",
+      ].join("\n"),
+    );
+
+    expect(
+      sampleProjectMetricOutputs({
+        appDir: fakeAppDir,
+        projectDir: fakeProjectDir,
+        metricIds: ["metric.one", "metric.two"],
+      }),
+    ).toEqual({
+      "metric.one": {
+        value: 1,
+        measuredAt: 123,
+        treePath: `${fakeAppDir}/.state/tasks/tree.json`,
+      },
+      "metric.two": {
+        value: 1,
+        measuredAt: 123,
+        treePath: `${fakeAppDir}/.state/tasks/tree.json`,
+      },
     });
   });
 });

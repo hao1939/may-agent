@@ -29,6 +29,7 @@ type PipelineWatcherState = {
 type PipelineResult = {
   runId?: unknown;
   planId?: unknown;
+  target?: unknown;
   status?: unknown;
   counts?: unknown;
   specResults?: unknown;
@@ -143,6 +144,27 @@ export type PipelineSpecObservation = {
   category: string;
   reason: string;
 };
+
+export type NodeImagePublicationObservation = {
+  project: string;
+  pipelineRunId: string;
+  sourceBranch: string;
+  sourceCommit: string;
+  artifactName: string;
+  artifactPath: string;
+  sliceId: string;
+  specId: string;
+  targetName: string;
+  location: string;
+  subscriptionId: string;
+  imageFamily: string;
+  channel: string;
+  publishedVersion: string;
+  currentNodeImageVersion: string;
+  publishedVersions: string[];
+};
+
+export const nodeImagePublicationEventType = "aks.node-image-publication.state";
 
 export type MasterValidationProgress = {
   schemaVersion: "1";
@@ -1789,6 +1811,174 @@ function exactCoverageOverride(input: {
   }
 }
 
+function assertionNamed(
+  assertions: Record<string, unknown>[],
+  name: string,
+): Record<string, unknown> | null {
+  return assertions.find((entry) => text(entry.name) === name) ?? null;
+}
+
+function detailVersion(detail: string, label: string): string {
+  const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = detail.match(new RegExp(`${escaped}(?:=|:\\s*)([^,\\s]+)`));
+  return match?.[1]?.trim() ?? "";
+}
+
+function availableVersions(detail: string): string[] {
+  const match = detail.match(
+    /Available versions queried:\s*(.*?)(?:\.\s*Skipping|$)/i,
+  );
+  if (!match) return [];
+  const raw = match[1]?.trim() ?? "";
+  if (!raw || raw === "(none)") return [];
+  return raw
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
+function highestPublishedVersion(versions: string[]): string {
+  return (
+    [...versions]
+      .sort((left, right) =>
+        left.localeCompare(right, undefined, {
+          numeric: true,
+          sensitivity: "base",
+        }),
+      )
+      .at(-1) ?? ""
+  );
+}
+
+function nodeImagePublicationObservationFromSpec(input: {
+  root: string;
+  pipelineRunId: string;
+  sourceBranch: string;
+  sourceCommit: string;
+  artifactName: string;
+  sliceId: string;
+  result: PipelineResult;
+  spec: Record<string, unknown>;
+}): NodeImagePublicationObservation | null {
+  const specId = text(input.spec.specId ?? input.spec.spec_id);
+  if (!specId) return null;
+  const testArtifactRef = stringArray(input.spec.artifactRefs).find((entry) =>
+    /\/tests\/.*\.json$/.test(entry),
+  );
+  if (!testArtifactRef) return null;
+  const artifactPath = join(input.root, testArtifactRef);
+  if (!existsSync(artifactPath)) return null;
+  try {
+    const detail = record(JSON.parse(readFileSync(artifactPath, "utf8")));
+    const assertions = Array.isArray(detail.assertions)
+      ? detail.assertions.map(record)
+      : [];
+    const clusterCreated = assertionNamed(assertions, "setup.cluster-created");
+    const availability = assertionNamed(
+      assertions,
+      "assert.patch-availability",
+    );
+    const snapshot = assertionNamed(
+      assertions,
+      "snapshot.image-family-azurelinux",
+    );
+    const currentNodeImageVersion =
+      detailVersion(text(snapshot?.detail), "nodeImageVersion") ||
+      detailVersion(text(availability?.detail), "Current:");
+    if (!currentNodeImageVersion) return null;
+
+    const raw = record(detail.raw);
+    const config = record(record(raw.raw).config);
+    const imageFamily =
+      text(config.imageFamily) ||
+      currentNodeImageVersion.split("-")[0]?.trim() ||
+      "";
+    const channel =
+      text(clusterCreated?.detail).match(
+        /nodeOSUpgradeChannel=([^,\s]+)/,
+      )?.[1] ?? "";
+    const publishedVersions = availableVersions(
+      text(availability?.detail),
+    ).filter((version) => version.startsWith(imageFamily));
+    const publishedVersion =
+      highestPublishedVersion(publishedVersions) || currentNodeImageVersion;
+    const target = record(input.result.target);
+    const targetName = text(target.environment) || text(target.name);
+    const location = text(target.location) || text(config.location);
+    const subscriptionId =
+      text(target.subscriptionId) || text(config.subscriptionId);
+    if (
+      !targetName ||
+      !location ||
+      !subscriptionId ||
+      !imageFamily ||
+      !channel ||
+      !publishedVersion
+    ) {
+      return null;
+    }
+    return {
+      project: "aks-rp-e2e",
+      pipelineRunId: input.pipelineRunId,
+      sourceBranch: input.sourceBranch,
+      sourceCommit: input.sourceCommit,
+      artifactName: input.artifactName,
+      artifactPath,
+      sliceId: input.sliceId,
+      specId,
+      targetName,
+      location,
+      subscriptionId,
+      imageFamily,
+      channel,
+      publishedVersion,
+      currentNodeImageVersion,
+      publishedVersions,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function nodeImagePublicationObservationsFromArtifact(input: {
+  root: string;
+  pipelineRunId: string;
+  sourceBranch: string;
+  sourceCommit: string;
+  artifactName: string;
+}): NodeImagePublicationObservation[] {
+  const sliceId =
+    input.artifactName.match(/^slice-(\d+)-test-results$/)?.[1] ?? "unknown";
+  const observations: NodeImagePublicationObservation[] = [];
+  const seen = new Set<string>();
+  for (const path of resultFiles(input.root)) {
+    try {
+      const result = JSON.parse(readFileSync(path, "utf8")) as PipelineResult;
+      if (!Array.isArray(result.specResults)) continue;
+      for (const value of result.specResults) {
+        const spec = record(value);
+        const specId = text(spec.specId ?? spec.spec_id);
+        if (!specId || seen.has(specId)) continue;
+        seen.add(specId);
+        const observation = nodeImagePublicationObservationFromSpec({
+          root: input.root,
+          pipelineRunId: input.pipelineRunId,
+          sourceBranch: input.sourceBranch,
+          sourceCommit: input.sourceCommit,
+          artifactName: input.artifactName,
+          sliceId,
+          result,
+          spec,
+        });
+        if (observation) observations.push(observation);
+      }
+    } catch {
+      // Ignore incomplete or non-result JSON while an artifact is being published.
+    }
+  }
+  return observations;
+}
+
 export function specObservationsFromArtifact(input: {
   root: string;
   pipelineRunId: string;
@@ -1844,6 +2034,19 @@ export function pipelineSpecEvent(
   const data = { ...observation };
   return {
     type: "pipeline.spec.observed",
+    source: "aks-pipeline-watcher",
+    target: { project: "aks-rp-e2e" },
+    ...data,
+    data,
+  };
+}
+
+export function nodeImagePublicationEvent(
+  observation: NodeImagePublicationObservation,
+): ProjectAppEvent {
+  const data = { ...observation };
+  return {
+    type: nodeImagePublicationEventType,
     source: "aks-pipeline-watcher",
     target: { project: "aks-rp-e2e" },
     ...data,
@@ -2313,6 +2516,15 @@ export async function observeAksPipelines(
         artifactName,
       })) {
         ctx.emit(pipelineSpecEvent(observation));
+      }
+      for (const observation of nodeImagePublicationObservationsFromArtifact({
+        root,
+        pipelineRunId: observed.runId,
+        sourceBranch: observed.sourceBranch ?? "",
+        sourceCommit: observed.sourceVersion ?? "",
+        artifactName,
+      })) {
+        ctx.emit(nodeImagePublicationEvent(observation));
       }
       if (shouldEmitMasterValidationFailure(observed)) {
         for (const failure of failureObservationsFromArtifact({

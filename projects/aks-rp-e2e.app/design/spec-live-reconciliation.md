@@ -62,6 +62,18 @@ derives the next step from the task branch, exact-run metadata, PR state, and
   run
 - Source artifacts: only committed files on the task branch
 
+Task-action admission runs the AKS app's mechanical preflight after generic
+action normalization and before the controller mutates task resources. A
+`create-task` or `update-task` action that explicitly binds this workflow may
+omit both `input.sourceBranch` and `input.sourceCommit`, which asks the workflow
+to create task-owned source from current `origin/dev`. If either field is
+present, both are required; the branch must normalize to `task/...` and the
+commit must be an exact 40-character Git commit. This is deliberately earlier
+than the workflow's fetch/ancestry verification and does not weaken that later
+verification. The shared controller previously had no app-policy callback at
+this boundary; `tasks.validateAction` closes that controller-level gap for
+materialized result actions rather than relying on a later workflow failure.
+
 The resolved live target is part of the task's intent, not a repair choice.
 Once a reconciliation starts, repair, retry, wait, escalation, and successor
 work preserve that exact target and standalone build selection. An agent must
@@ -316,8 +328,16 @@ unrelated merge.
   the accountable-owner path. Two runtime failures still end the workflow. For
   an otherwise active fix-forward judgment, the workflow permits up to three
   structured judgments so the agent can correct both a missing readiness field
-  and a second invalid wait shape without falling into slower recovery. Code
-  never supplies the domain verdict. A terminal-run
+  and a second invalid wait shape without falling into slower recovery. The
+  enclosing iteration has a 45-minute deadline, but no call receives that whole
+  budget: initial judgments are capped at 15 minutes, follow-up corrections and
+  runtime retries at 10 minutes, and admission preserves a 5-minute validation
+  and recovery margin. A call is not launched unless at least 2 minutes remain
+  after that margin. Before broad research, the prompt requires the narrowest
+  task gate, a per-spec matrix for multi-spec work, and an early durable
+  worktree/context checkpoint; it also directs workers to inspect package
+  scripts and use Bun-native checks rather than retrying unavailable `bunx`.
+  Code never supplies the domain verdict. A terminal-run
   `test-current` judgment is invalid because that exact source has already run;
   the workflow feeds the full terminal evidence back to the same agent for a
   corrected verdict or fix-forward move.
@@ -416,12 +436,20 @@ unrelated merge.
   behalf of this workflow. Any resulting in-scope repair returns through this
   same workflow so its dispatch and exact-proof invariants still apply.
 - An interrupted dirty task worktree is given back to the owner agent to finish,
-  validate, and commit or to remove only proven task-generated residue. Ambiguous
-  ownership requires owner review; it is never silently discarded. This recovery
-  step reports only `committed`, `test-current`, or `needs-owner`. A premature
-  domain verdict such as `terminal-disposition` is corrected in the same agent
-  invocation loop, then evaluated by the normal domain path so integration and
-  terminal-disposition evidence cannot be bypassed.
+  validate, and commit or to remove only proven task-generated residue. A
+  dedicated task branch establishes ownership, so a technical failure on that
+  branch cannot be relabeled `needs-owner`; recovery keeps correcting the same
+  judgment until the worktree is clean. Genuine ownership ambiguity requires
+  exact ambiguity evidence plus the task-root `current-context.json` pointer and
+  its exact source commit, so the retained source/run handoff is authoritative
+  for a replacement owner. Deadline or forced-completion handling applies the
+  same validator: it accepts a clean verified commit, clean removal of proven
+  task residue, or that concrete ambiguity checkpoint, never dirty technical
+  failure. This recovery step reports only `committed`, `test-current`, or
+  `needs-owner`. A premature domain verdict such as `terminal-disposition` is
+  corrected in the same agent invocation loop, then evaluated by the normal
+  domain path so integration and terminal-disposition evidence cannot be
+  bypassed.
 - A stale task commit may have been rebased or patch-equivalently integrated
   into `dev`, so commit ancestry alone is not authoritative. When `git cherry`
   reports no novel task patches, the workflow resets the dedicated task branch
@@ -515,10 +543,21 @@ unrelated merge.
 
 The task context retains one compact proof containing the task generation,
 spec, live target/build, source branch and commit, accepted run, and
-artifact-backed verdict. For `dev`, convergence requires that exact tested
-source commit in the integration branch ancestry. For `main`, Azure must report
-that the PR used the exact tested source head and produced a completed target
-commit that is present in the target branch ancestry.
+artifact-backed verdict. Agent handoffs use a separate single-authority
+convention: before preparation, worktree recovery, structured-result
+correction/replacement, and terminal review, the workflow writes a retained
+handoff beneath `handoffs/sources/<sourceCommit>/runs/<runId|no-run>/` and then
+atomically regenerates the task-root `current-context.json` pointer. Every agent
+instruction reads that pointer first and treats only the handoff it names as
+current authority. Handoffs for replaced source commits or earlier runs remain
+readable diagnosis and recovery history, but they are stale authority and may
+never override the pointer. This prevents a resumed correction or terminal
+review from reviving conclusions associated with a superseded source/run pair.
+
+For `dev`, convergence requires that exact tested source commit in the
+integration branch ancestry. For `main`, Azure must report that the PR used the
+exact tested source head and produced a completed target commit that is present
+in the target branch ancestry.
 
 The workflow verifier enforces this proof after every converged result,
 including convergence returned through accountable-owner fallback. It checks

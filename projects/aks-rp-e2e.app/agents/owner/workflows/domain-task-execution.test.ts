@@ -1,17 +1,33 @@
-import { describe, expect, it } from "bun:test";
-import { execFileSync } from "node:child_process";
+import { afterAll, describe, expect, it } from "bun:test";
+import { execFileSync, spawnSync } from "node:child_process";
 import {
   chmodSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { WorkflowContext } from "@may-agent/sdk";
-import { execute, reconciliationTaskId } from "./domain-task-execution.js";
+import {
+  assertIsolatedWriteDispatch,
+  execute,
+  reconciliationTaskId,
+  verify,
+} from "./domain-task-execution.js";
+
+const contextRoot = mkdtempSync(join(tmpdir(), "domain-task-context-"));
+const contextProjectDir = join(contextRoot, "project");
+const contextWorkspaceDir = join(contextRoot, "workspace");
+mkdirSync(contextProjectDir);
+mkdirSync(contextWorkspaceDir);
+
+afterAll(() => {
+  rmSync(contextRoot, { recursive: true, force: true });
+});
 
 function git(cwd: string, ...args: string[]): string {
   return execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
@@ -48,8 +64,8 @@ function context(overrides: Partial<WorkflowContext> = {}): WorkflowContext {
   return {
     task: "bounded task",
     agent: "aks-explorer",
-    projectDir: "/repo",
-    workspaceDir: "/worktrees/task-1",
+    projectDir: contextProjectDir,
+    workspaceDir: contextWorkspaceDir,
     runAgent: (async () => ({
       status: "done",
       sessionId: "session-1",
@@ -84,12 +100,573 @@ describe("domain task execution", () => {
     ).toBe("domain/example");
   });
 
-  it("requires infrastructure to supply an isolated task worktree", async () => {
-    const result = await execute(context({ workspaceDir: "/repo" }));
+  it("guards canonical and symlink-equivalent project paths while accepting an isolated workspace", () => {
+    const root = mkdtempSync(join(tmpdir(), "write-dispatch-guard-"));
+    const projectDir = join(root, "project");
+    const workspaceDir = join(root, "workspace");
+    const projectAlias = join(root, "project-alias");
+    mkdirSync(projectDir);
+    mkdirSync(workspaceDir);
+    symlinkSync(projectDir, projectAlias);
+    try {
+      expect(() =>
+        assertIsolatedWriteDispatch({
+          workspaceDir: projectDir,
+          projectDir,
+          cwd: projectDir,
+        }),
+      ).toThrow("refused canonical workspace");
+      expect(() =>
+        assertIsolatedWriteDispatch({
+          workspaceDir: projectAlias,
+          projectDir,
+          cwd: projectAlias,
+        }),
+      ).toThrow("refused canonical workspace");
+      expect(() =>
+        assertIsolatedWriteDispatch({
+          workspaceDir,
+          projectDir,
+          cwd: workspaceDir,
+        }),
+      ).not.toThrow();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects the canonical project before the initial owner dispatch", async () => {
+    let agentCalls = 0;
+    const result = await execute(
+      context({
+        workspaceDir: contextProjectDir,
+        runAgent: (async () => {
+          agentCalls += 1;
+          throw new Error("canonical checkout must never reach runAgent");
+        }) as WorkflowContext["runAgent"],
+      }),
+    );
+
+    expect(agentCalls).toBe(0);
     expect(result).toMatchObject({
       type: "blocked",
       reason: expect.stringContaining("prepared task worktree"),
     });
+  });
+
+  it("adopts canonical cleanRetainedWorktree plus cleanRetainedHead authority and records observed lineage", async () => {
+    const fixture = repositoryFixture();
+    const generatedWorkspace = join(fixture.root, "generated-retained");
+    let dispatchedPrompt = "";
+    try {
+      git(
+        fixture.repoDir,
+        "worktree",
+        "add",
+        "-b",
+        "task/generated-retained",
+        generatedWorkspace,
+        "dev",
+      );
+      const retainedHead = git(fixture.workspaceDir, "rev-parse", "HEAD");
+
+      const result = await execute(
+        context({
+          projectDir: fixture.repoDir,
+          workspaceDir: generatedWorkspace,
+          task: `## Reconciliation Task\n\`\`\`json\n${JSON.stringify({
+            taskId: "domain/retained-lineage",
+            input: {
+              cleanRetainedWorktree: fixture.workspaceDir,
+              cleanRetainedHead: retainedHead,
+            },
+          })}\n\`\`\``,
+          runAgent: (async (_agent: string, prompt: string) => {
+            dispatchedPrompt = prompt;
+            return {
+              status: "done",
+              sessionId: "session-retained-lineage",
+              lastAssistantText: "waiting",
+              messages: [],
+              duration: "1s",
+              outputDir: "/tmp",
+              finishResult: { status: "success", summary: "waiting" },
+              structuredResult: {
+                state: "waiting",
+                summary: "retained lineage accepted for bounded continuation",
+                evidence: ["owner-disposition:waiting"],
+                actions: [],
+                conditions: [
+                  {
+                    id: "pipeline-run-retained-lineage-completed",
+                    type: "pipeline-run.state",
+                    subject: "pipeline-run:retained-lineage",
+                    expected: { field: "state", equals: "completed" },
+                  },
+                ],
+              },
+            };
+          }) as WorkflowContext["runAgent"],
+        }),
+      );
+
+      expect(dispatchedPrompt).toContain(
+        `Your task-owned Git worktree is ${fixture.workspaceDir}`,
+      );
+      expect(result).toMatchObject({
+        type: "done",
+        output: {
+          state: "waiting",
+          evidence: expect.arrayContaining([
+            `recovery-owner-evidence:clean-retained-worktree:${fixture.workspaceDir}`,
+            `recovery-owner-evidence:clean-retained-head:${retainedHead}`,
+            "recovery-owner-evidence:clean-retained-status:clean",
+            "recovery-owner-evidence:clean-retained-operation:none",
+            "material-success-candidate:none",
+          ]),
+        },
+      });
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects stale same-task clean-retained reuse with expected and observed lineage before dispatch", async () => {
+    const fixture = repositoryFixture();
+    let agentCalls = 0;
+    try {
+      const staleHead = git(fixture.workspaceDir, "rev-parse", "HEAD^");
+      const observedHead = git(fixture.workspaceDir, "rev-parse", "HEAD");
+      const result = await execute(
+        context({
+          projectDir: fixture.repoDir,
+          workspaceDir: fixture.workspaceDir,
+          task: `## Reconciliation Task\n\`\`\`json\n${JSON.stringify({
+            taskId: "domain/retained-lineage",
+            input: {
+              cleanRetainedWorktree: fixture.workspaceDir,
+              cleanRetainedHead: staleHead,
+            },
+          })}\n\`\`\``,
+          runAgent: (async () => {
+            agentCalls += 1;
+            throw new Error("stale retained lineage must not reach the owner");
+          }) as WorkflowContext["runAgent"],
+        }),
+      );
+
+      expect(agentCalls).toBe(0);
+      expect(result).toMatchObject({
+        type: "blocked",
+        reason: expect.stringContaining("lineage validation failed"),
+        context: {
+          taskId: "domain/retained-lineage",
+          expectedWorkspace: fixture.workspaceDir,
+          observedWorkspace: fixture.workspaceDir,
+          expectedHead: staleHead,
+          observedHead,
+          observedStatus: "clean",
+          observedOperation: null,
+          disposition: "rejected-before-agent-dispatch",
+        },
+      });
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects a preserved active-rebase workspace mismatch before agent dispatch", async () => {
+    const fixture = repositoryFixture();
+    const generatedWorkspace = join(fixture.root, "generated");
+    let agentCalls = 0;
+    try {
+      writeFileSync(join(fixture.workspaceDir, "base.txt"), "task change\n");
+      git(fixture.workspaceDir, "add", "base.txt");
+      git(fixture.workspaceDir, "commit", "-m", "task-side conflict");
+      writeFileSync(join(fixture.repoDir, "base.txt"), "dev change\n");
+      git(fixture.repoDir, "add", "base.txt");
+      git(fixture.repoDir, "commit", "-m", "dev-side conflict");
+      expect(
+        spawnSync("git", ["rebase", "dev"], {
+          cwd: fixture.workspaceDir,
+          encoding: "utf8",
+        }).status,
+      ).not.toBe(0);
+      expect(
+        existsSync(
+          git(fixture.workspaceDir, "rev-parse", "--git-path", "rebase-merge"),
+        ),
+      ).toBe(true);
+      git(
+        fixture.repoDir,
+        "worktree",
+        "add",
+        "-b",
+        "task/generated",
+        generatedWorkspace,
+        "dev",
+      );
+
+      const result = await execute(
+        context({
+          projectDir: fixture.repoDir,
+          workspaceDir: generatedWorkspace,
+          task: `## Reconciliation Task\n\`\`\`json\n${JSON.stringify({
+            taskId: "domain/queuewatcher-integration",
+            input: {
+              workspaceDir: fixture.workspaceDir,
+              recoveryState: "active-rebase",
+            },
+          })}\n\`\`\``,
+          runAgent: (async () => {
+            agentCalls += 1;
+            throw new Error("agent must not run with contradictory workspaces");
+          }) as WorkflowContext["runAgent"],
+        }),
+      );
+
+      expect(agentCalls).toBe(0);
+      expect(result).toMatchObject({
+        type: "blocked",
+        reason: expect.stringContaining("differs from the prepared"),
+        context: {
+          taskId: "domain/queuewatcher-integration",
+          suppliedWorkspaceDir: generatedWorkspace,
+          requestedWorkspaceDir: fixture.workspaceDir,
+          disposition: expect.stringContaining(
+            "rejected-before-agent-dispatch",
+          ),
+        },
+      });
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  it("adopts an explicitly declared dirty merge worktree before agent dispatch without mutating it", async () => {
+    const fixture = repositoryFixture();
+    const generatedWorkspace = join(fixture.root, "generated");
+    let dispatchedWorkspace = "";
+    try {
+      writeFileSync(join(fixture.workspaceDir, "base.txt"), "task change\n");
+      git(fixture.workspaceDir, "add", "base.txt");
+      git(fixture.workspaceDir, "commit", "-m", "task-side conflict");
+      writeFileSync(join(fixture.repoDir, "base.txt"), "dev change\n");
+      git(fixture.repoDir, "add", "base.txt");
+      git(fixture.repoDir, "commit", "-m", "dev-side conflict");
+      expect(
+        spawnSync("git", ["merge", "dev"], {
+          cwd: fixture.workspaceDir,
+          encoding: "utf8",
+        }).status,
+      ).not.toBe(0);
+      git(
+        fixture.repoDir,
+        "worktree",
+        "add",
+        "-b",
+        "task/generated-adoption",
+        generatedWorkspace,
+        "dev",
+      );
+
+      const branchBefore = git(
+        fixture.workspaceDir,
+        "symbolic-ref",
+        "--quiet",
+        "--short",
+        "HEAD",
+      );
+      const headBefore = git(fixture.workspaceDir, "rev-parse", "HEAD");
+      const mergeHeadBefore = git(
+        fixture.workspaceDir,
+        "rev-parse",
+        "MERGE_HEAD",
+      );
+      const statusBefore = git(
+        fixture.workspaceDir,
+        "status",
+        "--porcelain=v1",
+        "--untracked-files=all",
+      );
+
+      const result = await execute(
+        context({
+          projectDir: fixture.repoDir,
+          workspaceDir: generatedWorkspace,
+          task: `## Reconciliation Task\n\`\`\`json\n${JSON.stringify({
+            taskId: "domain/adopt-preserved-merge",
+            input: {
+              preservedWorkspaceAdoption: {
+                workspaceDir: fixture.workspaceDir,
+                expectedBranch: branchBefore,
+                expectedHead: headBefore,
+                expectedDirty: true,
+                expectedOperation: "merge",
+              },
+            },
+          })}\n\`\`\``,
+          runAgent: (async (_agent: string, prompt: string) => {
+            dispatchedWorkspace = prompt;
+            return {
+              status: "done",
+              sessionId: "session-adoption",
+              lastAssistantText: "waiting",
+              messages: [],
+              duration: "1s",
+              outputDir: "/tmp",
+              finishResult: { status: "success", summary: "waiting" },
+              structuredResult: {
+                state: "waiting",
+                summary: "preserved merge remains ready for bounded recovery",
+                evidence: ["preserved-operation:merge"],
+                actions: [],
+                conditions: [
+                  {
+                    id: "pipeline-run-adoption-fixture-completed",
+                    type: "pipeline-run.state",
+                    subject: "pipeline-run:adoption-fixture",
+                    expected: { field: "state", equals: "completed" },
+                  },
+                ],
+              },
+            };
+          }) as WorkflowContext["runAgent"],
+        }),
+      );
+
+      expect(dispatchedWorkspace).toContain(
+        `Your task-owned Git worktree is ${fixture.workspaceDir}`,
+      );
+      expect(dispatchedWorkspace).not.toContain(
+        `Your task-owned Git worktree is ${generatedWorkspace}`,
+      );
+      expect(result).toMatchObject({
+        type: "done",
+        output: {
+          state: "waiting",
+          summary: expect.stringContaining(
+            "preserved merge remains ready for bounded recovery",
+          ),
+          evidence: expect.arrayContaining([
+            "recovery-owner-evidence:preserved-operation:merge",
+            "material-success-candidate:none",
+          ]),
+        },
+      });
+      expect(
+        git(fixture.workspaceDir, "symbolic-ref", "--quiet", "--short", "HEAD"),
+      ).toBe(branchBefore);
+      expect(git(fixture.workspaceDir, "rev-parse", "HEAD")).toBe(headBefore);
+      expect(git(fixture.workspaceDir, "rev-parse", "MERGE_HEAD")).toBe(
+        mergeHeadBefore,
+      );
+      expect(
+        git(
+          fixture.workspaceDir,
+          "status",
+          "--porcelain=v1",
+          "--untracked-files=all",
+        ),
+      ).toBe(statusBefore);
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  it("adopts an explicitly declared clean operation-free worktree before dispatch without mutating it", async () => {
+    const fixture = repositoryFixture();
+    const generatedWorkspace = join(fixture.root, "generated-clean");
+    let dispatchedPrompt = "";
+    try {
+      git(
+        fixture.repoDir,
+        "worktree",
+        "add",
+        "-b",
+        "task/generated-clean-adoption",
+        generatedWorkspace,
+        "dev",
+      );
+      const branchBefore = git(
+        fixture.workspaceDir,
+        "symbolic-ref",
+        "--quiet",
+        "--short",
+        "HEAD",
+      );
+      const headBefore = git(fixture.workspaceDir, "rev-parse", "HEAD");
+      const statusBefore = git(
+        fixture.workspaceDir,
+        "status",
+        "--porcelain=v1",
+        "--untracked-files=all",
+      );
+
+      const result = await execute(
+        context({
+          projectDir: fixture.repoDir,
+          workspaceDir: generatedWorkspace,
+          task: `## Reconciliation Task\n\`\`\`json\n${JSON.stringify({
+            taskId: "domain/adopt-preserved-clean",
+            input: {
+              preservedWorkspaceAdoption: {
+                workspaceDir: fixture.workspaceDir,
+                expectedBranch: branchBefore,
+                expectedHead: headBefore,
+                expectedDirty: false,
+                expectedOperation: "none",
+              },
+            },
+          })}\n\`\`\``,
+          runAgent: (async (_agent: string, prompt: string) => {
+            dispatchedPrompt = prompt;
+            return {
+              status: "done",
+              sessionId: "session-clean-adoption",
+              lastAssistantText: "waiting",
+              messages: [],
+              duration: "1s",
+              outputDir: "/tmp",
+              finishResult: { status: "success", summary: "waiting" },
+              structuredResult: {
+                state: "waiting",
+                summary: "clean preserved workspace dispatched",
+                evidence: ["preserved-operation:none"],
+                actions: [],
+                conditions: [
+                  {
+                    id: "pipeline-run-clean-adoption-fixture-completed",
+                    type: "pipeline-run.state",
+                    subject: "pipeline-run:clean-adoption-fixture",
+                    expected: { field: "state", equals: "completed" },
+                  },
+                ],
+              },
+            };
+          }) as WorkflowContext["runAgent"],
+        }),
+      );
+
+      expect(dispatchedPrompt).toContain(
+        `Your task-owned Git worktree is ${fixture.workspaceDir}`,
+      );
+      expect(dispatchedPrompt).not.toContain(
+        `Your task-owned Git worktree is ${generatedWorkspace}`,
+      );
+      expect(result).toMatchObject({
+        type: "done",
+        output: {
+          state: "waiting",
+          summary: expect.stringContaining(
+            "clean preserved workspace dispatched",
+          ),
+          evidence: expect.arrayContaining([
+            "recovery-owner-evidence:preserved-operation:none",
+            "material-success-candidate:none",
+          ]),
+        },
+      });
+      expect(
+        git(fixture.workspaceDir, "symbolic-ref", "--quiet", "--short", "HEAD"),
+      ).toBe(branchBefore);
+      expect(git(fixture.workspaceDir, "rev-parse", "HEAD")).toBe(headBefore);
+      expect(
+        git(
+          fixture.workspaceDir,
+          "status",
+          "--porcelain=v1",
+          "--untracked-files=all",
+        ),
+      ).toBe(statusBefore);
+      expect(statusBefore).toBe("");
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects dirty, operation, and noncanonical workspace declaration mismatches before dispatch", async () => {
+    const fixture = repositoryFixture();
+    const generatedWorkspace = join(fixture.root, "generated-mismatch");
+    const workspaceAlias = join(fixture.root, "workspace-alias");
+    let agentCalls = 0;
+    try {
+      git(
+        fixture.repoDir,
+        "worktree",
+        "add",
+        "-b",
+        "task/generated-mismatch",
+        generatedWorkspace,
+        "dev",
+      );
+      symlinkSync(fixture.workspaceDir, workspaceAlias);
+      const expectedBranch = git(
+        fixture.workspaceDir,
+        "symbolic-ref",
+        "--quiet",
+        "--short",
+        "HEAD",
+      );
+      const expectedHead = git(fixture.workspaceDir, "rev-parse", "HEAD");
+      const run = (adoption: Record<string, unknown>) =>
+        execute(
+          context({
+            projectDir: fixture.repoDir,
+            workspaceDir: generatedWorkspace,
+            task: `## Reconciliation Task\n\`\`\`json\n${JSON.stringify({
+              taskId: "domain/reject-preserved-mismatch",
+              input: { preservedWorkspaceAdoption: adoption },
+            })}\n\`\`\``,
+            runAgent: (async () => {
+              agentCalls += 1;
+              throw new Error("agent must not run after adoption mismatch");
+            }) as WorkflowContext["runAgent"],
+          }),
+        );
+
+      const dirtyMismatch = await run({
+        workspaceDir: fixture.workspaceDir,
+        expectedBranch,
+        expectedHead,
+        expectedDirty: true,
+      });
+      const operationMismatch = await run({
+        workspaceDir: fixture.workspaceDir,
+        expectedBranch,
+        expectedHead,
+        expectedOperation: "merge",
+      });
+      const workspaceMismatch = await run({
+        workspaceDir: workspaceAlias,
+        expectedBranch,
+        expectedHead,
+        expectedDirty: false,
+        expectedOperation: "none",
+      });
+
+      expect(agentCalls).toBe(0);
+      expect(dirtyMismatch).toMatchObject({
+        type: "blocked",
+        reason: expect.stringContaining("validation failed"),
+        context: { expectedDirty: true, observedDirty: false },
+      });
+      expect(operationMismatch).toMatchObject({
+        type: "blocked",
+        reason: expect.stringContaining("validation failed"),
+        context: { expectedOperation: "merge", observedOperation: null },
+      });
+      expect(workspaceMismatch).toMatchObject({
+        type: "blocked",
+        reason: expect.stringContaining("validation failed"),
+        context: {
+          declaredWorkspaceDir: workspaceAlias,
+          realWorkspaceDir: fixture.workspaceDir,
+        },
+      });
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
   });
 
   it("runs the owner capability in the supplied worktree and returns its typed result", async () => {
@@ -136,6 +713,12 @@ describe("domain task execution", () => {
         output: {
           state: "converged",
           summary: expect.stringContaining("directly into dev"),
+          evidence: expect.arrayContaining([
+            `task-worktree:${fixture.workspaceDir}`,
+            "task-branch:task/example",
+            "task-status:clean",
+            "task-changed-files:turn-change.txt",
+          ]),
         },
       });
       expect(
@@ -147,6 +730,145 @@ describe("domain task execution", () => {
           "origin/dev",
         ),
       ).toBe("");
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects accepted source that exists only in a sibling worktree", async () => {
+    const fixture = repositoryFixture();
+    try {
+      writeFileSync(join(fixture.repoDir, "sibling-only.txt"), "sibling\n");
+      git(fixture.repoDir, "add", "sibling-only.txt");
+      git(fixture.repoDir, "commit", "-m", "sibling-only accepted source");
+      const acceptedCommit = git(fixture.repoDir, "rev-parse", "HEAD");
+
+      const result = await execute(
+        context({
+          projectDir: fixture.repoDir,
+          workspaceDir: fixture.workspaceDir,
+          task: `## Reconciliation Task\n\`\`\`json\n${JSON.stringify({
+            taskId: "domain/wrong-worktree-proof",
+            input: { acceptedCommit },
+          })}\n\`\`\``,
+        }),
+      );
+
+      expect(result).toMatchObject({
+        type: "done",
+        output: {
+          state: "needs-owner",
+          summary: expect.stringContaining(
+            "not reachable from final task HEAD",
+          ),
+          evidence: expect.arrayContaining([
+            `task-worktree:${fixture.workspaceDir}`,
+            "task-branch:task/example",
+            "task-status:clean",
+            `unreachable-accepted-source-commit:${acceptedCommit}`,
+          ]),
+        },
+      });
+      expect(git(fixture.workspaceDir, "rev-parse", "HEAD")).not.toBe(
+        acceptedCommit,
+      );
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  it("replays a named accepted pre-existing commit instead of converging unchanged", async () => {
+    const fixture = repositoryFixture();
+    const acceptedCommit = git(fixture.workspaceDir, "rev-parse", "HEAD");
+    let agentCalls = 0;
+    try {
+      writeFileSync(join(fixture.repoDir, "dev-after-acceptance.txt"), "dev\n");
+      git(fixture.repoDir, "add", "dev-after-acceptance.txt");
+      git(fixture.repoDir, "commit", "-m", "advance dev after acceptance");
+      git(fixture.repoDir, "push", "origin", "dev");
+      const replayBase = git(fixture.repoDir, "rev-parse", "origin/dev");
+
+      const result = await execute(
+        context({
+          projectDir: fixture.repoDir,
+          workspaceDir: fixture.workspaceDir,
+          task: `## Reconciliation Task\n\`\`\`json\n${JSON.stringify({
+            taskId: "domain/replay-accepted-source",
+            input: {
+              acceptedCommit,
+              replayRequirement:
+                "Replay the accepted commit onto freshly fetched origin/dev.",
+            },
+          })}\n\`\`\``,
+          runAgent: (async (_agent: string, prompt: string) => {
+            agentCalls += 1;
+            if (agentCalls === 2) {
+              expect(prompt).toContain(
+                `retained source ${acceptedCommit} cannot be isolated`,
+              );
+              expect(prompt).toContain(`origin/dev@${replayBase}`);
+              git(fixture.workspaceDir, "reset", "--hard", "origin/dev");
+              git(fixture.workspaceDir, "cherry-pick", acceptedCommit);
+            }
+            return {
+              status: "done",
+              sessionId: `session-${agentCalls}`,
+              lastAssistantText: "done",
+              messages: [],
+              duration: "1s",
+              outputDir: "/tmp",
+              finishResult: { status: "success", summary: "done" },
+              structuredResult: {
+                state: "converged",
+                summary:
+                  agentCalls === 1
+                    ? "accepted source is ready"
+                    : "accepted source replayed",
+                evidence: [`agent-call:${agentCalls}`],
+                actions: [],
+              },
+            };
+          }) as WorkflowContext["runAgent"],
+        }),
+      );
+
+      expect(agentCalls).toBe(2);
+      expect(result).toMatchObject({
+        type: "done",
+        output: {
+          state: "converged",
+          summary: expect.stringContaining("directly into dev"),
+          evidence: expect.not.arrayContaining([
+            "integration:no-task-owned-commit",
+          ]),
+        },
+      });
+      git(fixture.repoDir, "fetch", "origin", "dev");
+      expect(
+        spawnSync(
+          "git",
+          ["merge-base", "--is-ancestor", replayBase, "origin/dev"],
+          { cwd: fixture.repoDir },
+        ).status,
+      ).toBe(0);
+      expect(
+        git(
+          fixture.repoDir,
+          "rev-list",
+          "--count",
+          `${replayBase}..origin/dev`,
+        ),
+      ).toBe("1");
+      expect(
+        spawnSync(
+          "git",
+          ["merge-base", "--is-ancestor", acceptedCommit, "origin/dev"],
+          { cwd: fixture.repoDir },
+        ).status,
+      ).not.toBe(0);
+      expect(git(fixture.repoDir, "show", "origin/dev:change.txt")).toBe(
+        "change",
+      );
     } finally {
       rmSync(fixture.root, { recursive: true, force: true });
     }
@@ -406,8 +1128,7 @@ exit 0
             queuedPipelineRunId: "174756648",
             queuedSourceBranch:
               "refs/heads/task/domain-reconcile-image-integrity-contract-unpaired-adapter-origin-dev-c8-0bbf416f08",
-            queuedSourceCommit:
-              "cab25239d9c5d1994bcc303cd831b69773d42e70",
+            queuedSourceCommit: "cab25239d9c5d1994bcc303cd831b69773d42e70",
           },
           children: { live: [], completed: [] },
         })}\n\`\`\``,
@@ -452,8 +1173,10 @@ exit 0
             expected: { field: "state", anyOf: ["completed"] },
           },
         ],
+        summary: expect.stringContaining("Recovery-only non-converged result"),
         evidence: expect.arrayContaining([
-          "pipeline-wait-recovered:174756648",
+          "recovery-owner-evidence:pipeline-wait-recovered:174756648",
+          "material-success-candidate:none",
         ]),
       },
     });
@@ -685,12 +1408,274 @@ exit 0
       type: "done",
       output: {
         state: "waiting",
-        summary:
-          "the existing repo-ref wait child still truthfully carries the frontier",
+        summary: expect.stringContaining(
+          "Recovery-only non-converged result",
+        ),
+        evidence: expect.arrayContaining([
+          "recovery-owner-evidence:existing holder already captures the same frontier",
+          "material-success-candidate:none",
+        ]),
         actions: [],
         conditions: [],
       },
     });
+  });
+
+  it("rejects merge-only ancestry as material success", async () => {
+    const fixture = repositoryFixture();
+    try {
+      const result = await execute(
+        context({
+          projectDir: fixture.repoDir,
+          workspaceDir: fixture.workspaceDir,
+          runAgent: (async () => {
+            writeFileSync(join(fixture.repoDir, "dev-only.txt"), "dev\n");
+            git(fixture.repoDir, "add", "dev-only.txt");
+            git(fixture.repoDir, "commit", "-m", "advance dev only");
+            git(fixture.workspaceDir, "merge", "dev", "--no-edit");
+            return {
+              status: "done",
+              sessionId: "session-merge-only",
+              lastAssistantText: "converged",
+              messages: [],
+              duration: "1s",
+              outputDir: "/tmp",
+              finishResult: { status: "success", summary: "converged" },
+              structuredResult: {
+                state: "converged",
+                summary: "merged dev ancestry",
+                evidence: ["owner-claim:material-success"],
+                actions: [],
+              },
+            };
+          }) as WorkflowContext["runAgent"],
+        }),
+      );
+
+      expect(result).toMatchObject({
+        type: "done",
+        output: {
+          state: "needs-owner",
+          summary: expect.stringContaining("merge-only ancestry"),
+          evidence: expect.arrayContaining([
+            "task-changed-files:dev-only.txt",
+            "material-success-candidate:none",
+          ]),
+        },
+      });
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects dirty generated artifacts as material success and preserves recovery evidence", async () => {
+    const fixture = repositoryFixture();
+    try {
+      const result = await execute(
+        context({
+          projectDir: fixture.repoDir,
+          workspaceDir: fixture.workspaceDir,
+          runAgent: (async () => {
+            writeFileSync(join(fixture.workspaceDir, "generated.tmp"), "dirty\n");
+            return {
+              status: "done",
+              sessionId: "session-dirty-generated",
+              lastAssistantText: "converged",
+              messages: [],
+              duration: "1s",
+              outputDir: "/tmp",
+              finishResult: { status: "success", summary: "converged" },
+              structuredResult: {
+                state: "converged",
+                summary: "generated output is ready",
+                evidence: ["owner-claim:material-success"],
+                actions: [],
+              },
+            };
+          }) as WorkflowContext["runAgent"],
+        }),
+      );
+
+      expect(result).toMatchObject({
+        type: "done",
+        output: {
+          state: "needs-owner",
+          summary: expect.stringContaining("Recovery-only non-converged result"),
+          evidence: expect.arrayContaining([
+            "recovery-status:dirty",
+            "recovery-status-porcelain:?? generated.tmp",
+            "material-success-candidate:none",
+          ]),
+        },
+      });
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects zero accepted patches as material success", async () => {
+    const fixture = repositoryFixture();
+    try {
+      const result = await execute(
+        context({
+          projectDir: fixture.repoDir,
+          workspaceDir: fixture.workspaceDir,
+          runAgent: (async () => ({
+            status: "done",
+            sessionId: "session-zero-patches",
+            lastAssistantText: "converged",
+            messages: [],
+            duration: "1s",
+            outputDir: "/tmp",
+            finishResult: { status: "success", summary: "converged" },
+            structuredResult: {
+              state: "converged",
+              summary: "no patch was necessary",
+              evidence: ["owner-claim:material-success"],
+              actions: [],
+            },
+          })) as WorkflowContext["runAgent"],
+        }),
+      );
+
+      expect(result).toMatchObject({
+        type: "done",
+        output: {
+          state: "needs-owner",
+          summary: "Final task branch contains zero accepted source patches",
+          evidence: expect.arrayContaining([
+            "task-source-commits:none",
+            "task-changed-files:none",
+            "material-success-candidate:none",
+          ]),
+        },
+      });
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  it("accepts a valid integrated clean task-owned commit in verify()", async () => {
+    const fixture = repositoryFixture();
+    try {
+      const sourceCommit = git(fixture.workspaceDir, "rev-parse", "HEAD");
+      git(fixture.workspaceDir, "push", "origin", "HEAD:dev");
+
+      const verification = await verify(
+        {
+          projectDir: fixture.repoDir,
+          workspaceDir: fixture.workspaceDir,
+          taskId: "domain/verify-integrated-source",
+          generation: 1,
+          intent: { input: {} },
+        } as any,
+        {
+          state: "converged",
+          summary: "clean task-owned source integrated",
+          evidence: [
+            `task-worktree:${fixture.workspaceDir}`,
+            `task-source-commits:${sourceCommit}`,
+            `source-commit:${sourceCommit}`,
+            `integrated-commit:${sourceCommit}`,
+          ],
+          actions: [],
+        },
+      );
+
+      expect(verification).toMatchObject({
+        accepted: true,
+        summary: expect.stringContaining(
+          `Accepted clean task-owned source ${sourceCommit}`,
+        ),
+        evidence: expect.arrayContaining([
+          `verification-accepted-source-commit:${sourceCommit}`,
+          `verification-origin-dev:${sourceCommit}`,
+          "verification-status:clean",
+        ]),
+      });
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects a mixed-SKU-shaped no-edit/no-commit convergence with a deterministic verifier finding", async () => {
+    const evidence = [
+      "mixed-sku-review:Standard_D4s_v5,Standard_D8s_v5",
+      "scenario-carrier:no-edit-required",
+      "integration:no-task-owned-commit",
+    ];
+
+    const verification = await verify(
+      {
+        projectDir: "/tmp/not-used-for-no-commit-rejection",
+        workspaceDir: "/tmp/not-used-for-no-commit-rejection",
+        taskId: "domain/mixed-sku-no-edit",
+        generation: 1,
+        intent: { input: { skuShape: "mixed" } },
+      } as any,
+      {
+        state: "converged",
+        summary: "mixed-SKU carrier already matched",
+        evidence,
+        actions: [],
+      },
+    );
+
+    expect(verification).toEqual({
+      accepted: false,
+      summary:
+        "Domain task convergence rejected: the result explicitly records that no task-owned commit was created",
+      evidence: [...evidence, "verification-finding:no-task-owned-commit"],
+    });
+  });
+
+  it("accepts waiting and needs-owner handler results unchanged by verify()", async () => {
+    const dispositions = [
+      {
+        state: "waiting" as const,
+        summary: "exact pipeline fact is pending",
+        evidence: ["pipeline-run:123"],
+        actions: [],
+        conditions: [
+          {
+            id: "pipeline-run-123-completed",
+            type: "pipeline-run.state",
+            subject: "pipeline-run:123",
+            expected: { field: "state", equals: "completed" },
+          },
+        ],
+      },
+      {
+        state: "needs-owner" as const,
+        summary: "bounded source judgment is required",
+        evidence: ["material-success-candidate:none"],
+        actions: [],
+      },
+    ];
+
+    for (const disposition of dispositions) {
+      const verification = await verify(
+        {
+          projectDir: "/tmp/not-used-for-nonconverged-disposition",
+          workspaceDir: "/tmp/not-used-for-nonconverged-disposition",
+          taskId: `domain/${disposition.state}`,
+          generation: 1,
+          intent: { input: {} },
+        } as any,
+        disposition,
+      );
+
+      expect(verification).toEqual({
+        accepted: true,
+        summary: `Domain task ${disposition.state} disposition does not claim source convergence.`,
+        evidence: disposition.evidence,
+      });
+      expect(disposition.summary).toBe(
+        disposition.state === "waiting"
+          ? "exact pipeline fact is pending"
+          : "bounded source judgment is required",
+      );
+    }
   });
 
   it("lets the agent converge after correcting a stale follow-through wait shape", async () => {
@@ -758,8 +1743,13 @@ exit 0
       expect(result).toMatchObject({
         type: "done",
         output: {
-          state: "converged",
-          summary: expect.stringContaining("dev remained at"),
+          state: "needs-owner",
+          summary: "Final task branch contains zero accepted source patches",
+          evidence: expect.arrayContaining([
+            "task-source-commits:none",
+            "task-changed-files:none",
+            "material-success-candidate:none",
+          ]),
         },
       });
     } finally {

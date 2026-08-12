@@ -2,6 +2,9 @@ import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import type {
   ProjectAppConditionSpec,
+  ProjectAppTaskHandlerResult,
+  ProjectAppTaskVerificationContext,
+  ProjectAppTaskVerificationResult,
   WorkflowContext,
   WorkflowIoContract,
   WorkflowResult,
@@ -285,6 +288,111 @@ export function decideRepoRefAdvanceGate(input: RepoAdvanceGateInput): {
     state: "needs-owner",
     summary: `${input.repoRef} advanced from baseline ${input.baselineCommit} to ${input.currentCommit}${scope}${publication}. Hand the task back to the owner to perform the bounded same-spec recheck instead of preserving a synthetic wait.`,
     evidence,
+  };
+}
+
+function verificationSummaryContains(
+  result: ProjectAppTaskHandlerResult,
+  expected: string,
+): boolean {
+  return [result.summary, ...result.evidence].some((entry) => entry.includes(expected));
+}
+
+export async function verify(
+  context: ProjectAppTaskVerificationContext,
+  result: ProjectAppTaskHandlerResult,
+): Promise<ProjectAppTaskVerificationResult> {
+  if (result.state !== "converged") {
+    return {
+      accepted: false,
+      summary:
+        "Repo-ref wait owner handoff may converge only from a converged handler result.",
+      evidence: [`handler-state:${result.state}`],
+    };
+  }
+
+  const workflowInput = context.intent.input ?? {};
+  const repoRef = nonEmptyString(workflowInput.baseRef) || "origin/dev";
+  const baselineCommit = nonEmptyString(workflowInput.resumeBaselineCommit);
+  if (!baselineCommit) {
+    return {
+      accepted: false,
+      summary:
+        "Repo-ref wait verifier requires input.resumeBaselineCommit on the handed-off task.",
+      evidence: ["verification-finding:missing-resume-baseline"],
+    };
+  }
+
+  const fetched = fetchRepoRef(context.projectDir, repoRef);
+  if (fetched.status !== 0) {
+    return {
+      accepted: false,
+      summary:
+        `Repo-ref wait verifier could not refresh ${repoRef}: ${fetched.stderr.trim() || `git fetch exited ${fetched.status}`}`,
+      evidence: [
+        `repo-ref:${repoRef}`,
+        `resume-baseline:${baselineCommit}`,
+        `project-dir:${context.projectDir}`,
+      ],
+    };
+  }
+
+  const current = runGit(context.projectDir, ["rev-parse", "--verify", repoRef]);
+  if (current.status !== 0) {
+    return {
+      accepted: false,
+      summary:
+        `Repo-ref wait verifier could not resolve ${repoRef}: ${current.stderr.trim() || `git rev-parse exited ${current.status}`}`,
+      evidence: [
+        `repo-ref:${repoRef}`,
+        `resume-baseline:${baselineCommit}`,
+        `project-dir:${context.projectDir}`,
+      ],
+    };
+  }
+
+  const currentCommit = current.stdout.trim();
+  if (!currentCommit || currentCommit === baselineCommit) {
+    return {
+      accepted: false,
+      summary:
+        `Repo-ref wait verifier still sees ${repoRef} at baseline ${baselineCommit}; the owner handoff cannot converge yet.`,
+      evidence: [
+        `repo-ref:${repoRef}`,
+        `resume-baseline:${baselineCommit}`,
+        `current-commit:${currentCommit || "missing"}`,
+      ],
+    };
+  }
+
+  const hasProof =
+    verificationSummaryContains(result, repoRef) &&
+    (verificationSummaryContains(result, baselineCommit) ||
+      verificationSummaryContains(result, currentCommit) ||
+      result.actions.length > 0);
+  if (!hasProof) {
+    return {
+      accepted: false,
+      summary:
+        `Repo-ref wait verifier needs bounded recheck proof for ${repoRef} after baseline ${baselineCommit} advanced.`,
+      evidence: [
+        `repo-ref:${repoRef}`,
+        `resume-baseline:${baselineCommit}`,
+        `current-commit:${currentCommit}`,
+      ],
+    };
+  }
+
+  return {
+    accepted: true,
+    summary:
+      `Verified repo-ref wait handoff after ${repoRef} advanced beyond ${baselineCommit}.`,
+    evidence: [
+      `repo-ref:${repoRef}`,
+      `resume-baseline:${baselineCommit}`,
+      `current-commit:${currentCommit}`,
+      "deterministic:owner-handoff-postcondition",
+    ],
   };
 }
 

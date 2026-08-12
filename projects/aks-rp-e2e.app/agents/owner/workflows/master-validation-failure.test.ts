@@ -33,6 +33,7 @@ import {
   preserveVerificationAfterNestedReconciliation,
   priorStandaloneVerification,
   rejectedTaskPullRequest,
+  productIssueDisposition,
   productRecoveryCondition,
   publishCampaignRepairBranch,
   pullRequestReviewTrigger,
@@ -45,6 +46,7 @@ import {
   standaloneRecoveryChildAction,
   standaloneRecoveryCompletionProblem,
   testIssueReconciliationOptions,
+  unpublishedTaskRepairReady,
   workspace,
 } from "./master-validation-failure.js";
 
@@ -59,6 +61,30 @@ function git(cwd: string, ...args: string[]): string {
 }
 
 describe("master-validation failure workflow", () => {
+  test("resumes a clean task-owned repair without legacy child state", () => {
+    expect(
+      unpublishedTaskRepairReady({
+        headCommit: "repair-head",
+        repairBaseCommit: "current-main",
+        workspaceClean: true,
+      }),
+    ).toBe(true);
+    expect(
+      unpublishedTaskRepairReady({
+        headCommit: "repair-head",
+        repairBaseCommit: "current-main",
+        workspaceClean: false,
+      }),
+    ).toBe(false);
+    expect(
+      unpublishedTaskRepairReady({
+        headCommit: "current-main",
+        repairBaseCommit: "current-main",
+        workspaceClean: true,
+      }),
+    ).toBe(false);
+  });
+
   test("treats invalid generated shared-fixture requests as test issues", () => {
     expect(failureInvestigationClassificationGuidance).toContain(
       "A shared-fixture setup failure is test_issue",
@@ -1949,6 +1975,157 @@ ${JSON.stringify({
     } finally {
       rmSync(appDir, { recursive: true, force: true });
     }
+  });
+
+  test("returns a schema-valid product-issue wait for workflow-run wr_1786261835418_s9lm while preserving no-repair and handoff evidence", async () => {
+    const root = mkdtempSync(
+      join(tmpdir(), "master-validation-product-route-"),
+    );
+    const remote = join(root, "remote.git");
+    const repoDir = join(root, "repo");
+    const workspaceDir = join(root, "workspace");
+    const appDir = join(root, "app");
+    try {
+      mkdirSync(remote, { recursive: true });
+      git(remote, "init", "--bare");
+      mkdirSync(repoDir, { recursive: true });
+      git(repoDir, "init");
+      git(repoDir, "config", "user.name", "Product Route Test");
+      git(repoDir, "config", "user.email", "route@example.test");
+      writeFileSync(join(repoDir, "README.md"), "base\n");
+      git(repoDir, "add", "README.md");
+      git(repoDir, "commit", "-m", "base");
+      git(repoDir, "branch", "-M", "main");
+      git(repoDir, "remote", "add", "origin", remote);
+      git(repoDir, "push", "-u", "origin", "main");
+      git(remote, "symbolic-ref", "HEAD", "refs/heads/main");
+      git(root, "clone", remote, workspaceDir);
+      git(workspaceDir, "checkout", "-b", "task/product-route");
+      mkdirSync(appDir, { recursive: true });
+
+      const sourceCommit = git(repoDir, "rev-parse", "HEAD");
+      const taskId =
+        "domain/master-validation-failure/spec.virtualmachines.mixed-sku-upgrade/fp";
+      const dispatched: Array<{ type: string; data: Record<string, unknown> }> =
+        [];
+      const ctx = {
+        appDir,
+        projectDir: repoDir,
+        workspaceDir,
+        task: `## Reconciliation Task\n${JSON.stringify({
+          taskId,
+          generation: 1,
+          input: {
+            specId: "spec.virtualmachines.mixed-sku-upgrade",
+            pipelineRunId: "175759451",
+            failureFingerprint: "mixed-sku-stuck-upgrading",
+            artifactPath: "/evidence/run-175759451/result.json",
+            sourceBranch: "refs/heads/main",
+            sourceCommit,
+            reason:
+              "Accepted mixed-SKU upgrade remained stuck in Upgrading for 40 polls.",
+            category: "prod_issue",
+            status: "fail",
+            requestedServiceOwner: "human:AKS/CRP VM-upgrade service owner",
+          },
+          children: { live: [], completed: [] },
+        })}`,
+        query: {
+          events: () => ({
+            rows: [],
+            rowCount: 0,
+            limit: 500,
+            truncated: false,
+          }),
+        },
+        dispatchEvent: (type: string, data: Record<string, unknown>) => {
+          dispatched.push({ type, data });
+        },
+        done: (summary: string, output: Record<string, unknown>) => ({
+          type: "done",
+          summary,
+          output,
+        }),
+      } as never;
+
+      const first = await execute(ctx);
+      const second = await execute(ctx);
+      expect(first).toMatchObject({
+        type: "done",
+        output: {
+          state: "waiting",
+          evidence: expect.arrayContaining([
+            "source-change-disposition:not_applicable:prod_issue_requires_no_source_change",
+            "source-change-resolved:true",
+            "source-change-file-count:0",
+            "service-owner-handoff:sent:human:AKS/CRP VM-upgrade service owner",
+          ]),
+          conditions: [
+            {
+              type: "pipeline.spec.observed",
+              expected: {
+                specId: "spec.virtualmachines.mixed-sku-upgrade",
+                status: "pass",
+                sourceBranch: "refs/heads/main",
+                pipelineRunId: { gt: "175759451" },
+              },
+            },
+          ],
+        },
+      });
+      expect(
+        Object.keys(
+          (first as { output: Record<string, unknown> }).output,
+        ).sort(),
+      ).toEqual(["actions", "conditions", "evidence", "state", "summary"]);
+      expect(second).toMatchObject({
+        type: "done",
+        output: {
+          evidence: expect.arrayContaining([
+            "source-change-disposition:not_applicable:prod_issue_requires_no_source_change",
+            "source-change-resolved:true",
+            "source-change-file-count:0",
+            "service-owner-handoff:already_sent:human:AKS/CRP VM-upgrade service owner",
+          ]),
+        },
+      });
+      expect(
+        Object.keys(
+          (second as { output: Record<string, unknown> }).output,
+        ).sort(),
+      ).toEqual(["actions", "conditions", "evidence", "state", "summary"]);
+      expect(dispatched).toHaveLength(1);
+      expect(dispatched[0]).toMatchObject({
+        type: "message.created",
+        data: {
+          to: "human:AKS/CRP VM-upgrade service owner",
+          specId: "spec.virtualmachines.mixed-sku-upgrade",
+          pipelineRunId: "175759451",
+          serviceOwner: "human:AKS/CRP VM-upgrade service owner",
+        },
+      });
+      expect(git(workspaceDir, "status", "--porcelain=v1")).toBe("");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("builds bounded no-source-change and service-owner handoff evidence", () => {
+    expect(
+      productIssueDisposition({
+        status: "sent",
+        recipient: "human:service-owner",
+        dedupeKey: "product:spec:fp:human:service-owner",
+        receiptPath: "/tmp/receipt.json",
+      }),
+    ).toEqual([
+      "source-change-disposition:not_applicable:prod_issue_requires_no_source_change",
+      "source-change-resolved:true",
+      "source-change-file-count:0",
+      "service-owner-handoff:sent:human:service-owner",
+      "service-owner-handoff-dedupe-key:product:spec:fp:human:service-owner",
+      "service-owner-handoff-receipt:/tmp/receipt.json",
+    ]);
   });
 
   test("resumes deterministic live reconciliation for a novel fix or existing PR", () => {

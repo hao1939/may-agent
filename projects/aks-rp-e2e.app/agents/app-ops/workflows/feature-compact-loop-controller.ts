@@ -23,6 +23,7 @@ import { publishProjectMetrics } from "./lib/project-metric-publication.ts";
 import {
   field,
   frontierLimit,
+  parseReconciliationTaskPayload,
   parseTriggerEvent,
   resolveAppDir,
   triggerString,
@@ -285,6 +286,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     const publishedProject = publishProjectMetrics({
       metrics: ctx.metrics,
       appDir,
+      projectDir,
       measuredBy: "workflow:feature-compact-loop-controller",
     });
     if (publishedFocus.length || publishedProject.length) {
@@ -304,6 +306,20 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     triggerString(trigger, "task_id") ||
     "aks-feature-compact-loop";
   const frontierTarget = Math.min(12, frontierLimit(ctx.task, 3));
+  const reconciliationTask = parseReconciliationTaskPayload(ctx.task);
+  const structuredInput =
+    reconciliationTask?.input &&
+    typeof reconciliationTask.input === "object" &&
+    !Array.isArray(reconciliationTask.input)
+      ? (reconciliationTask.input as Record<string, unknown>)
+      : null;
+  const structuredRefillEnabled = structuredInput?.refillEnabled;
+  const refillEnabled =
+    typeof structuredRefillEnabled === "boolean"
+      ? structuredRefillEnabled
+      : typeof structuredRefillEnabled === "string"
+        ? structuredRefillEnabled.trim().toLowerCase() !== "false"
+        : field(ctx.task, "refillEnabled") !== "false";
   const statePath = defaultFeatureCompactLoopStatePath(appDir);
   const { state } = loadFeatureCompactLoopState({
     appDir,
@@ -380,7 +396,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     })),
     frontierTarget,
   );
-  const actionBudget = accounting.available;
+  const actionBudget = refillEnabled ? accounting.available : 0;
   const actions: ProjectAppTaskAction[] = remaining
     .filter(([featureKey]) => {
       const representation = representedByFeature.get(featureKey);
@@ -418,6 +434,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
             : `Reconcile feature compact package ${featureKey} to live-proven done, an exact wait, or a reviewed terminal disposition.`,
         mode: "achieve",
         owner: "aks-explorer",
+        workflow: "feature-compact-reconciliation",
         input: {
           featureKey,
           capabilityId: item.capabilityId,
@@ -435,18 +452,20 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         outputs: [statePath, `../aks-rp-e2e/features/${featureKey}/compact/`],
         acceptance: repairsLegacyProof
           ? [
-              "Inspect the existing compact result, cited evidence, and current .state/tasks/tree.json before changing the ledger.",
+              "Inspect the existing compact result and cited evidence before changing the ledger.",
+              "Before declaring that no exact wait exists or clearing taskId/frontierTaskIds, query every cited holder with the app's canonical helper (`cd ../aks-rp-e2e.app && bun run task-tree show <task-id> --json`) and inspect its returned resource status plus condition objects. A failed ad hoc JSON parse is unknown, never evidence that a task or Condition is absent.",
               "If the cited evidence names an existing source branch, commit, dispatch metadata file, or task worktree, inspect that exact branch/worktree in place; do not copy its delta into the shared canonical dev checkout just to review it.",
-              "Treat any taskId, frontierTaskIds, waitingFor.taskId, or waitingFor.representedTaskIds that are absent from the current .state/tasks/tree.json as stale history; do not return an action that references a missing task id.",
+              "Treat any taskId, frontierTaskIds, waitingFor.taskId, or waitingFor.representedTaskIds that the canonical task-tree helper proves absent as stale history; do not return an action that references a missing task id.",
               "If current evidence proves the accepted live result, fill the missing structured proof fields and preserve done.",
               "Otherwise move the item to the exact truthful pending, blocked, or reviewed terminal state without launching an unchanged rerun.",
               "If review shows an executable compact plan, spec, carrier, or runner source must change, rebind the same task to spec-live-reconciliation with the complete feature specIds, livePlanPath, fixed target, and any prepared sourceBranch/sourceCommit instead of editing or publishing from the shared canonical checkout. Use domain-task-execution only for a truly source-only patch that requires no live behavior proof.",
             ]
           : repairsRepresentation
             ? [
-                "Inspect the current feature-compact row, feature packet, compact artifacts, cited evidence, and current .state/tasks/tree.json before changing anything.",
+                "Inspect the current feature-compact row, feature packet, compact artifacts, and cited evidence before changing anything.",
+                "Before declaring that no exact wait exists or clearing taskId/frontierTaskIds, query every cited holder with the app's canonical helper (`cd ../aks-rp-e2e.app && bun run task-tree show <task-id> --json`) and inspect its returned resource status plus condition objects. A failed ad hoc JSON parse is unknown, never evidence that a task or Condition is absent.",
                 "If the cited evidence names an existing source branch, commit, dispatch metadata file, or task worktree, inspect that exact branch/worktree in place; do not copy its delta into the shared canonical dev checkout just to review it.",
-                "Treat any taskId, frontierTaskIds, waitingFor.taskId, or waitingFor.representedTaskIds that are absent from the current .state/tasks/tree.json as stale history; do not return an action that references a missing task id.",
+                "Treat any taskId, frontierTaskIds, waitingFor.taskId, or waitingFor.representedTaskIds that the canonical task-tree helper proves absent as stale history; do not return an action that references a missing task id.",
                 "Before creating a replacement holder, check .state/tasks/state.json receipts as well as the live tree. A completed task ID is immutable; use one new deterministic holder ID and repoint the feature row instead of attempting to recreate a completed ID.",
                 "If the current exact wait/frontier is still truthful, recreate or repoint exactly one live holder task and update the feature-compact row to that holder instead of reopening a broad unchanged compact rerun.",
                 "If the prior exact wait/frontier is stale, replace it with the smallest truthful current pending task, exact wait, reviewed terminal disposition, or done state using current evidence.",
@@ -456,7 +475,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
               ]
             : [
                 ...learnedCompactVerificationAcceptance,
-                "Treat any taskId, frontierTaskIds, waitingFor.taskId, or waitingFor.representedTaskIds that are absent from the current .state/tasks/tree.json as stale history; do not return an action that references a missing task id.",
+                "Treat any taskId, frontierTaskIds, waitingFor.taskId, or waitingFor.representedTaskIds that the canonical task-tree helper proves absent as stale history; do not return an action that references a missing task id.",
                 "Regenerate the feature-owned compact plan after each planner, spec, carrier, or cleanup repair; do not preserve stale cluster counts or split reasons.",
                 "Keep repairing the smallest artificial split until every remaining split names a real immutable-property or logical-history conflict, then run the complete generated check suite before live dispatch.",
                 "The feature-owned package covers its complete declared spec set.",
@@ -466,7 +485,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         priority: "P1",
       } satisfies ProjectAppTaskAction;
     });
-  const summary = `Feature compact loop ${loopTaskId} has ${remaining.length} nonterminal feature(s): declared ${actions.length} bounded task action(s), observed ${accounting.actionableTaskIds.length} actionable, ${accounting.waitingTaskIds.length} waiting, ${accounting.attentionTaskIds.length} attention, and ${accounting.terminalTaskIds.length} stale terminal representation(s).`;
+  const summary = `Feature compact loop ${loopTaskId} has ${remaining.length} nonterminal feature(s): ${refillEnabled ? "refill enabled" : "refill paused for the selector-first master-validation campaign"}; declared ${actions.length} bounded task action(s), observed ${accounting.actionableTaskIds.length} actionable, ${accounting.waitingTaskIds.length} waiting, ${accounting.attentionTaskIds.length} attention, and ${accounting.terminalTaskIds.length} stale terminal representation(s).`;
   if (
     actions.length > 0 ||
     accounting.actionableTaskIds.length > 0 ||

@@ -176,6 +176,71 @@ describe("frozen master-validation campaign", () => {
     }
   });
 
+  test("accepts a completed fix already present in a current-main successor", () => {
+    const fixture = campaignFixture();
+    try {
+      git(fixture.repoDir, "checkout", "-b", "fix/already-merged");
+      const sourceCommit = commitFile(
+        fixture.repoDir,
+        "focused.txt",
+        "repair\n",
+        "focused repair",
+      );
+      git(fixture.repoDir, "push", "-u", "origin", "fix/already-merged");
+
+      git(fixture.repoDir, "checkout", "main");
+      git(fixture.repoDir, "cherry-pick", "--no-commit", sourceCommit);
+      git(fixture.repoDir, "commit", "-m", "merge focused repair");
+      git(
+        fixture.repoDir,
+        "commit",
+        "--allow-empty",
+        "-m",
+        "current main successor",
+      );
+      const currentMain = git(fixture.repoDir, "rev-parse", "HEAD");
+      git(fixture.repoDir, "push", "origin", "main");
+
+      const result = composeFrozenCampaign({
+        appDir: fixture.appDir,
+        repoDir: fixture.repoDir,
+        baselineRunId: "already-merged",
+        baseCommit: currentMain,
+        fixes: [
+          {
+            pullRequestId: "2",
+            taskId:
+              "domain/master-validation-failure/spec.example/already-merged",
+            sourceBranch: "fix/already-merged",
+            sourceCommit,
+            targetCommit: fixture.baseCommit,
+            title: "Already merged focused repair",
+          },
+        ],
+      });
+
+      expect(result.receipt.currentCommit).toBe(currentMain);
+      expect(result.receipt.integratedFixes).toEqual([
+        expect.objectContaining({
+          pullRequestId: "2",
+          sourceCommit,
+        }),
+      ]);
+      git(fixture.repoDir, "fetch", "origin", result.receipt.branch);
+      expect(
+        git(
+          fixture.repoDir,
+          "diff",
+          "--quiet",
+          currentMain,
+          `origin/${result.receipt.branch}`,
+        ),
+      ).toBe("");
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
   test("composes an appended focused PR head into the same frozen campaign", () => {
     const fixture = campaignFixture();
     try {

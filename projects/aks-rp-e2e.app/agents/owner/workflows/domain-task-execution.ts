@@ -1,7 +1,10 @@
 import { spawnSync } from "node:child_process";
+import { existsSync, realpathSync } from "node:fs";
 import {
   projectAppTaskHandlerResultSchema,
   type ProjectAppTaskHandlerResult,
+  type ProjectAppTaskVerificationContext,
+  type ProjectAppTaskVerificationResult,
   type WorkflowContext,
   type WorkflowResult,
 } from "@may-agent/sdk";
@@ -15,11 +18,44 @@ import {
   pipelineWaitCondition,
   reconcileSpecLive,
 } from "./spec-live-reconciliation.js";
-
 export const name = "domain-task-execution";
 export const description =
   "Execute one bounded AKS domain patch in its task worktree and integrate accepted changes directly into dev.";
 export const workspace = "task";
+
+export function assertIsolatedWriteDispatch(input: {
+  workspaceDir?: string | null;
+  projectDir: string;
+  cwd: string;
+}): void {
+  if (!input.workspaceDir || !existsSync(input.workspaceDir)) {
+    throw new Error(
+      `Write-producing agent dispatch requires an existing task workspace: ${input.workspaceDir ?? "missing"}`,
+    );
+  }
+
+  const workspace = realpathSync(input.workspaceDir);
+  const project = realpathSync(input.projectDir);
+  const cwd = realpathSync(input.cwd);
+  if (workspace === project) {
+    throw new Error(
+      `Write-producing agent dispatch refused canonical workspace ${workspace}`,
+    );
+  }
+  if (cwd === project) {
+    throw new Error(
+      `Write-producing agent dispatch refused canonical execution cwd ${cwd}`,
+    );
+  }
+}
+
+function guardWriteDispatch(ctx: WorkflowContext): void {
+  assertIsolatedWriteDispatch({
+    workspaceDir: ctx.workspaceDir,
+    projectDir: ctx.projectDir,
+    cwd: ctx.workspaceDir ?? ctx.projectDir,
+  });
+}
 
 function gitValue(cwd: string, ...args: string[]): string {
   const result = spawnSync("git", args, {
@@ -123,6 +159,323 @@ function queuedPipelineRunId(raw: string): string | null {
   );
 }
 
+function requiredAcceptedSourceCommit(raw: string): string | null {
+  const input = reconciliationTaskPayload(raw)?.input;
+  if (!input || typeof input !== "object") return null;
+  const values = input as Record<string, unknown>;
+  const commit = stringValue(
+    values.acceptedCommit ?? values.acceptedRecoveryCommit,
+  );
+  return commit && /^[0-9a-f]{40}$/i.test(commit) ? commit : null;
+}
+
+function taskInput(raw: string): Record<string, unknown> | null {
+  const input = reconciliationTaskPayload(raw)?.input;
+  return input && typeof input === "object"
+    ? (input as Record<string, unknown>)
+    : null;
+}
+
+function requestedWorkspaceDir(raw: string): string | null {
+  return stringValue(taskInput(raw)?.workspaceDir);
+}
+
+type CleanRetainedAuthority = {
+  workspaceDir: string;
+  head: string;
+};
+
+function cleanRetainedAuthority(raw: string):
+  | { declared: false }
+  | { declared: true; value: CleanRetainedAuthority | null } {
+  const input = taskInput(raw);
+  const workspaceDir = stringValue(input?.cleanRetainedWorktree);
+  const head = stringValue(input?.cleanRetainedHead);
+  if (!workspaceDir && !head) return { declared: false };
+  if (!workspaceDir || !head || !/^[0-9a-f]{40}$/i.test(head)) {
+    return { declared: true, value: null };
+  }
+  return { declared: true, value: { workspaceDir, head } };
+}
+
+type PreservedWorkspaceAdoption = {
+  workspaceDir: string;
+  expectedBranch: string;
+  expectedHead: string;
+  expectedDirty?: boolean;
+  expectedOperation?: "none" | "merge" | "rebase" | "cherry-pick" | "revert";
+};
+
+function preservedWorkspaceAdoption(raw: string): unknown {
+  return taskInput(raw)?.preservedWorkspaceAdoption;
+}
+
+function canonicalPath(path: string): string {
+  const canonical = realpathSync(path);
+  if (canonical !== path) {
+    throw new Error(`workspace path is not canonical: declared=${path} canonical=${canonical}`);
+  }
+  return canonical;
+}
+
+function activeGitOperation(cwd: string): string | null {
+  const paths: Array<[string, string]> = [
+    ["merge", "MERGE_HEAD"],
+    ["rebase", "rebase-merge"],
+    ["rebase", "rebase-apply"],
+    ["cherry-pick", "CHERRY_PICK_HEAD"],
+    ["revert", "REVERT_HEAD"],
+  ];
+  for (const [operation, gitPath] of paths) {
+    const resolved = optionalGitValue(cwd, "rev-parse", "--git-path", gitPath);
+    if (resolved && existsSync(resolved)) return operation;
+  }
+  return null;
+}
+
+function recoveryOnlyResult(
+  workspaceDir: string,
+  ownerResult: ProjectAppTaskHandlerResult,
+): ProjectAppTaskHandlerResult {
+  const workspace = (() => {
+    try {
+      return realpathSync(workspaceDir);
+    } catch {
+      return workspaceDir;
+    }
+  })();
+  const head = optionalGitValue(workspaceDir, "rev-parse", "HEAD") ?? "unreadable";
+  const branch =
+    optionalGitValue(
+      workspaceDir,
+      "symbolic-ref",
+      "--quiet",
+      "--short",
+      "HEAD",
+    ) ?? "detached-or-unreadable";
+  const status = (() => {
+    try {
+      return workspaceChanges(workspaceDir);
+    } catch {
+      return "unreadable";
+    }
+  })();
+  const operation = (() => {
+    try {
+      return activeGitOperation(workspaceDir) ?? "none";
+    } catch {
+      return "unreadable";
+    }
+  })();
+  return {
+    ...ownerResult,
+    summary: `Recovery-only non-converged result: ${ownerResult.summary}`,
+    evidence: [
+      `recovery-worktree:${workspace}`,
+      `recovery-head:${head}`,
+      `recovery-branch:${branch}`,
+      `recovery-status:${status ? "dirty" : "clean"}`,
+      `recovery-status-porcelain:${status || "none"}`,
+      `recovery-operation:${operation}`,
+      ...(ownerResult.evidence ?? []).map(
+        (item) => `recovery-owner-evidence:${item}`,
+      ),
+      "material-success-candidate:none",
+    ],
+  };
+}
+
+type TaskBranchGate =
+  | { ok: true; evidence: string[] }
+  | { ok: false; summary: string; evidence: string[] };
+
+function patchId(cwd: string, commit: string): string | null {
+  const shown = spawnSync(
+    "git",
+    ["show", "--pretty=format:", "--binary", commit],
+    {
+      cwd,
+      encoding: "utf8",
+      timeout: 120_000,
+    },
+  );
+  if (shown.status !== 0) return null;
+  const hashed = spawnSync("git", ["patch-id", "--stable"], {
+    cwd,
+    encoding: "utf8",
+    input: shown.stdout,
+    timeout: 120_000,
+  });
+  if (hashed.status !== 0) return null;
+  return (hashed.stdout ?? "").trim().split(/\s+/)[0] || null;
+}
+
+function taskBranchGate(input: {
+  workspaceDir: string;
+  expectedWorkspace: string;
+  expectedBranch: string;
+  baselineCommit: string;
+  acceptedCommit: string | null;
+  allowAcceptedTransplant?: boolean;
+}): TaskBranchGate {
+  const workspace = realpathSync(input.workspaceDir);
+  const repositoryRoot = realpathSync(
+    gitValue(input.workspaceDir, "rev-parse", "--show-toplevel"),
+  );
+  const branch = gitValue(
+    input.workspaceDir,
+    "symbolic-ref",
+    "--quiet",
+    "--short",
+    "HEAD",
+  );
+  const head = gitValue(input.workspaceDir, "rev-parse", "HEAD");
+  const status = workspaceChanges(input.workspaceDir);
+  const sourceCommits = gitValue(
+    input.workspaceDir,
+    "rev-list",
+    "--first-parent",
+    "--reverse",
+    `${input.baselineCommit}..${head}`,
+  )
+    .split("\n")
+    .filter(Boolean);
+  const changedFiles = gitValue(
+    input.workspaceDir,
+    "diff",
+    "--name-only",
+    input.baselineCommit,
+    head,
+  )
+    .split("\n")
+    .filter(Boolean)
+    .sort();
+  const mergeCommits = new Set(
+    optionalGitValue(
+      input.workspaceDir,
+      "rev-list",
+      "--merges",
+      `${input.baselineCommit}..${head}`,
+    )
+      ?.split("\n")
+      .filter(Boolean) ?? [],
+  );
+  const materialCommits = sourceCommits.filter(
+    (commit) => !mergeCommits.has(commit),
+  );
+  const evidence = [
+    `task-worktree:${workspace}`,
+    `task-branch:${branch}`,
+    `task-head:${head}`,
+    `task-status:${status ? "dirty" : "clean"}`,
+    `task-source-commits:${sourceCommits.join(",") || "none"}`,
+    `task-changed-files:${changedFiles.join(",") || "none"}`,
+  ];
+
+  if (workspace !== input.expectedWorkspace || repositoryRoot !== workspace) {
+    return {
+      ok: false,
+      summary:
+        "Final source proof was collected outside the supplied task worktree",
+      evidence: [
+        ...evidence,
+        `expected-task-worktree:${input.expectedWorkspace}`,
+        `repository-root:${repositoryRoot}`,
+      ],
+    };
+  }
+  if (branch !== input.expectedBranch) {
+    return {
+      ok: false,
+      summary: "Final source proof was collected from the wrong task branch",
+      evidence: [...evidence, `expected-task-branch:${input.expectedBranch}`],
+    };
+  }
+  if (status) {
+    return {
+      ok: false,
+      summary: "Final task branch is not clean",
+      evidence: [...evidence, "material-success-candidate:none"],
+    };
+  }
+  if (sourceCommits.length === 0 && !input.acceptedCommit) {
+    return {
+      ok: false,
+      summary: "Final task branch contains zero accepted source patches",
+      evidence: [...evidence, "material-success-candidate:none"],
+    };
+  }
+  if (sourceCommits.length > 0 && materialCommits.length === 0) {
+    return {
+      ok: false,
+      summary: "Final task branch contains merge-only ancestry without an accepted source patch",
+      evidence: [
+        ...evidence,
+        `task-merge-commits:${[...mergeCommits].join(",")}`,
+        "material-success-candidate:none",
+      ],
+    };
+  }
+  if (sourceCommits.length > 0 && changedFiles.length === 0) {
+    return {
+      ok: false,
+      summary: "Final task branch contains no material changed files",
+      evidence: [...evidence, "material-success-candidate:none"],
+    };
+  }
+  for (const commit of sourceCommits) {
+    if (
+      spawnSync("git", ["merge-base", "--is-ancestor", commit, head], {
+        cwd: input.workspaceDir,
+      }).status !== 0
+    ) {
+      return {
+        ok: false,
+        summary: "A task-owned source commit is not reachable from final HEAD",
+        evidence: [...evidence, `unreachable-task-source-commit:${commit}`],
+      };
+    }
+  }
+
+  if (input.acceptedCommit) {
+    const acceptedReachable =
+      spawnSync(
+        "git",
+        ["merge-base", "--is-ancestor", input.acceptedCommit, head],
+        { cwd: input.workspaceDir },
+      ).status === 0;
+    if (!acceptedReachable) {
+      const transplantCommit =
+        input.allowAcceptedTransplant && sourceCommits.length === 1
+          ? sourceCommits[0]
+          : null;
+      const acceptedPatch = patchId(input.workspaceDir, input.acceptedCommit);
+      const transplantPatch = transplantCommit
+        ? patchId(input.workspaceDir, transplantCommit)
+        : null;
+      if (!acceptedPatch || acceptedPatch !== transplantPatch) {
+        return {
+          ok: false,
+          summary:
+            "The accepted source commit is not reachable from final task HEAD and no exact current-lineage transplant was verified",
+          evidence: [
+            ...evidence,
+            `unreachable-accepted-source-commit:${input.acceptedCommit}`,
+          ],
+        };
+      }
+      evidence.push(
+        `accepted-source-transplant:${input.acceptedCommit}->${transplantCommit}`,
+        `accepted-source-patch-id:${acceptedPatch}`,
+      );
+    } else {
+      evidence.push(`reachable-accepted-source-commit:${input.acceptedCommit}`);
+    }
+  }
+
+  return { ok: true, evidence };
+}
+
 function pipelineRunIdFromEvidence(
   result: ProjectAppTaskHandlerResult,
 ): string | null {
@@ -147,10 +500,7 @@ function exactPipelineWaitCoverage(
   return {
     ...result,
     conditions: [pipelineWaitCondition(runId)],
-    evidence: [
-      ...(result.evidence ?? []),
-      `pipeline-wait-recovered:${runId}`,
-    ],
+    evidence: [...(result.evidence ?? []), `pipeline-wait-recovered:${runId}`],
   };
 }
 
@@ -182,6 +532,7 @@ async function correctSelfTargetingActions(input: {
     "Previous result:",
     JSON.stringify(input.result, null, 2),
   ].join("\n\n");
+  guardWriteDispatch(input.ctx);
   const correction = input.ctx.runAgentSession
     ? await input.ctx.runAgentSession(
         input.ctx.agent,
@@ -273,6 +624,7 @@ async function correctConvergedWithLiveChild(input: {
       "Previous result:",
       JSON.stringify(ownerResult, null, 2),
     ].join("\n\n");
+    guardWriteDispatch(input.ctx);
     const correction = input.ctx.runAgentSession
       ? await input.ctx.runAgentSession(input.ctx.agent, prompt, sessionId, {
           timeoutMs: 600_000,
@@ -353,7 +705,10 @@ async function correctWaitingCoverage(input: {
     );
     if (!problem) return ownerResult;
 
-    const exactPipelineWait = exactPipelineWaitCoverage(input.ctx.task, ownerResult);
+    const exactPipelineWait = exactPipelineWaitCoverage(
+      input.ctx.task,
+      ownerResult,
+    );
     if (exactPipelineWait) return exactPipelineWait;
 
     const prompt = [
@@ -365,6 +720,7 @@ async function correctWaitingCoverage(input: {
       "Previous result:",
       JSON.stringify(ownerResult, null, 2),
     ].join("\n\n");
+    guardWriteDispatch(input.ctx);
     const correction = input.ctx.runAgentSession
       ? await input.ctx.runAgentSession(input.ctx.agent, prompt, sessionId, {
           timeoutMs: 600_000,
@@ -447,6 +803,7 @@ async function completeScenarioNormalization(input: {
       "Task:",
       input.ctx.task,
     ].join("\n\n");
+    guardWriteDispatch(input.ctx);
     const correction = input.ctx.runAgentSession
       ? await input.ctx.runAgentSession(input.ctx.agent, prompt, sessionId, {
           timeoutMs: 1_800_000,
@@ -496,8 +853,422 @@ async function completeScenarioNormalization(input: {
   };
 }
 
+function exactEvidenceValue(
+  result: ProjectAppTaskHandlerResult,
+  prefix: string,
+): string | null {
+  const values = result.evidence
+    .filter((item) => item.startsWith(prefix))
+    .map((item) => item.slice(prefix.length).trim())
+    .filter(Boolean);
+  return values.length === 1 ? values[0] : null;
+}
+
+function verificationRejected(
+  result: ProjectAppTaskHandlerResult,
+  summary: string,
+  finding: string,
+  evidence: string[] = [],
+): ProjectAppTaskVerificationResult {
+  return {
+    accepted: false,
+    summary: `Domain task convergence rejected: ${summary}`,
+    evidence: [
+      ...result.evidence,
+      `verification-finding:${finding}`,
+      ...evidence,
+    ],
+  };
+}
+
+export async function verify(
+  context: ProjectAppTaskVerificationContext,
+  result: ProjectAppTaskHandlerResult,
+): Promise<ProjectAppTaskVerificationResult> {
+  if (result.state !== "converged") {
+    return {
+      accepted: true,
+      summary: `Domain task ${result.state} disposition does not claim source convergence.`,
+      evidence: [...result.evidence],
+    };
+  }
+
+  if (result.evidence.includes("integration:no-task-owned-commit")) {
+    return verificationRejected(
+      result,
+      "the result explicitly records that no task-owned commit was created",
+      "no-task-owned-commit",
+    );
+  }
+
+  let workspace: string;
+  let projectDir: string;
+  let repositoryRoot: string;
+  try {
+    workspace = realpathSync(context.workspaceDir);
+    projectDir = realpathSync(context.projectDir);
+    repositoryRoot = realpathSync(
+      gitValue(workspace, "rev-parse", "--show-toplevel"),
+    );
+  } catch (error) {
+    return verificationRejected(
+      result,
+      "the task worktree cannot be resolved",
+      "unreadable-task-worktree",
+      [error instanceof Error ? error.message : String(error)],
+    );
+  }
+
+  const claimedWorkspace = exactEvidenceValue(result, "task-worktree:");
+  if (
+    workspace === projectDir ||
+    repositoryRoot !== workspace ||
+    !claimedWorkspace ||
+    claimedWorkspace !== workspace
+  ) {
+    return verificationRejected(
+      result,
+      "source proof does not identify the supplied isolated task worktree",
+      "wrong-task-worktree",
+      [
+        `verification-worktree:${workspace}`,
+        `verification-repository-root:${repositoryRoot}`,
+        `verification-claimed-worktree:${claimedWorkspace ?? "missing"}`,
+      ],
+    );
+  }
+
+  let status: string;
+  try {
+    status = workspaceChanges(workspace);
+  } catch (error) {
+    return verificationRejected(
+      result,
+      "the task worktree status cannot be read",
+      "unreadable-task-worktree-status",
+      [error instanceof Error ? error.message : String(error)],
+    );
+  }
+  if (status) {
+    return verificationRejected(
+      result,
+      "the task worktree is dirty",
+      "dirty-task-worktree",
+      [`verification-status-porcelain:${status}`],
+    );
+  }
+
+  const acceptedCommit = exactEvidenceValue(result, "source-commit:");
+  if (!acceptedCommit || !/^[0-9a-f]{40}$/i.test(acceptedCommit)) {
+    return verificationRejected(
+      result,
+      "one exact accepted source commit is required",
+      "missing-accepted-source-commit",
+    );
+  }
+
+  const ownedCommits = exactEvidenceValue(result, "task-source-commits:")
+    ?.split(",")
+    .map((commit) => commit.trim())
+    .filter(Boolean);
+  if (!ownedCommits?.includes(acceptedCommit)) {
+    return verificationRejected(
+      result,
+      "the accepted source commit is not recorded as task-owned",
+      "accepted-commit-not-task-owned",
+      [`accepted-source-commit:${acceptedCommit}`],
+    );
+  }
+
+  const commitExists = spawnSync(
+    "git",
+    ["cat-file", "-e", `${acceptedCommit}^{commit}`],
+    { cwd: workspace, encoding: "utf8", timeout: 120_000 },
+  );
+  const commitFiles = optionalGitValue(
+    workspace,
+    "diff-tree",
+    "--no-commit-id",
+    "--name-only",
+    "-r",
+    acceptedCommit,
+  );
+  if (commitExists.status !== 0 || !commitFiles) {
+    return verificationRejected(
+      result,
+      "the accepted source commit is missing or contains no source change",
+      "missing-or-empty-accepted-source-commit",
+      [`accepted-source-commit:${acceptedCommit}`],
+    );
+  }
+
+  const fetch = spawnSync("git", ["fetch", "origin", "dev"], {
+    cwd: projectDir,
+    encoding: "utf8",
+    timeout: 120_000,
+  });
+  if (fetch.status !== 0) {
+    return verificationRejected(
+      result,
+      "origin/dev could not be freshly fetched",
+      "origin-dev-fetch-failed",
+      [fetch.stderr?.trim() || fetch.stdout?.trim() || "git fetch failed"],
+    );
+  }
+
+  const originDev = optionalGitValue(projectDir, "rev-parse", "origin/dev");
+  const integratedCommit = exactEvidenceValue(result, "integrated-commit:");
+  if (!originDev || !integratedCommit || !/^[0-9a-f]{40}$/i.test(integratedCommit)) {
+    return verificationRejected(
+      result,
+      "exact integrated origin/dev proof is missing",
+      "missing-integrated-commit",
+      [`fetched-origin-dev:${originDev ?? "unresolved"}`],
+    );
+  }
+
+  const sourceIntegrated = spawnSync(
+    "git",
+    ["merge-base", "--is-ancestor", acceptedCommit, "origin/dev"],
+    { cwd: projectDir, encoding: "utf8", timeout: 120_000 },
+  );
+  const integrationObserved = spawnSync(
+    "git",
+    ["merge-base", "--is-ancestor", integratedCommit, "origin/dev"],
+    { cwd: projectDir, encoding: "utf8", timeout: 120_000 },
+  );
+  if (sourceIntegrated.status !== 0 || integrationObserved.status !== 0) {
+    return verificationRejected(
+      result,
+      "the accepted and integrated commits are not ancestors of freshly fetched origin/dev",
+      "unintegrated-source-commit",
+      [
+        `accepted-source-commit:${acceptedCommit}`,
+        `claimed-integrated-commit:${integratedCommit}`,
+        `fetched-origin-dev:${originDev}`,
+      ],
+    );
+  }
+
+  return {
+    accepted: true,
+    summary: `Accepted clean task-owned source ${acceptedCommit} integrated into freshly fetched origin/dev@${originDev}.`,
+    evidence: [
+      ...result.evidence,
+      `verification-worktree:${workspace}`,
+      "verification-status:clean",
+      `verification-accepted-source-commit:${acceptedCommit}`,
+      `verification-origin-dev:${originDev}`,
+    ],
+  };
+}
+
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  if (!ctx.workspaceDir || ctx.workspaceDir === ctx.projectDir) {
+  const currentTaskId = reconciliationTaskId(ctx.task);
+  const retainedAuthority = cleanRetainedAuthority(ctx.task);
+  const adoptionRaw = preservedWorkspaceAdoption(ctx.task);
+  let adoptedWorkspace: PreservedWorkspaceAdoption | null = null;
+  let authorityEvidence: string[] = [];
+
+  if (retainedAuthority.declared) {
+    if (!retainedAuthority.value) {
+      return ctx.blocked(
+        "Clean-retained workspace authority is incomplete before agent dispatch",
+        {
+          taskId: currentTaskId,
+          required:
+            "canonical cleanRetainedWorktree plus a 40-character cleanRetainedHead",
+          cleanRetainedWorktree: taskInput(ctx.task)?.cleanRetainedWorktree ?? null,
+          cleanRetainedHead: taskInput(ctx.task)?.cleanRetainedHead ?? null,
+        },
+      );
+    }
+    if (adoptionRaw !== undefined) {
+      return ctx.blocked(
+        "Clean-retained authority cannot be combined with preserved-workspace adoption",
+        { taskId: currentTaskId },
+      );
+    }
+
+    const expectedWorkspace = retainedAuthority.value.workspaceDir;
+    const expectedHead = retainedAuthority.value.head;
+    try {
+      const observedWorkspace = canonicalPath(expectedWorkspace);
+      const repositoryRoot = canonicalPath(
+        gitValue(observedWorkspace, "rev-parse", "--show-toplevel"),
+      );
+      const observedHead = gitValue(observedWorkspace, "rev-parse", "HEAD");
+      const observedBranch = gitValue(
+        observedWorkspace,
+        "symbolic-ref",
+        "--quiet",
+        "--short",
+        "HEAD",
+      );
+      const observedStatus = workspaceChanges(observedWorkspace);
+      const observedOperation = activeGitOperation(observedWorkspace);
+      if (
+        repositoryRoot !== observedWorkspace ||
+        observedHead !== expectedHead ||
+        observedStatus ||
+        observedOperation
+      ) {
+        return ctx.blocked(
+          "Clean-retained workspace lineage validation failed before agent dispatch",
+          {
+            taskId: currentTaskId,
+            expectedWorkspace,
+            observedWorkspace,
+            repositoryRoot,
+            expectedHead,
+            observedHead,
+            observedBranch,
+            observedStatus: observedStatus || "clean",
+            observedOperation,
+            disposition: "rejected-before-agent-dispatch",
+          },
+        );
+      }
+      ctx = { ...ctx, workspaceDir: observedWorkspace };
+      authorityEvidence = [
+        `clean-retained-worktree:${observedWorkspace}`,
+        `clean-retained-head:${observedHead}`,
+        `clean-retained-branch:${observedBranch}`,
+        "clean-retained-status:clean",
+        "clean-retained-operation:none",
+      ];
+    } catch (error) {
+      return ctx.blocked(
+        "Clean-retained workspace lineage could not be validated before agent dispatch",
+        {
+          taskId: currentTaskId,
+          expectedWorkspace,
+          expectedHead,
+          observedWorkspace: ctx.workspaceDir ?? null,
+          error: error instanceof Error ? error.message : String(error),
+          disposition: "rejected-before-agent-dispatch",
+        },
+      );
+    }
+  }
+
+  if (adoptionRaw !== undefined) {
+    const candidate =
+      adoptionRaw &&
+      typeof adoptionRaw === "object" &&
+      !Array.isArray(adoptionRaw)
+        ? (adoptionRaw as Record<string, unknown>)
+        : null;
+    const workspaceDir = stringValue(candidate?.workspaceDir);
+    const expectedBranch = stringValue(candidate?.expectedBranch);
+    const expectedHead = stringValue(candidate?.expectedHead);
+    const expectedDirty = candidate?.expectedDirty;
+    const expectedOperation = candidate?.expectedOperation;
+    const validOperation =
+      expectedOperation === undefined ||
+      ["none", "merge", "rebase", "cherry-pick", "revert"].includes(
+        String(expectedOperation),
+      );
+    const declaresCleanOperationFreeState =
+      expectedDirty === false && expectedOperation === "none";
+    const declaresRecoverableState =
+      declaresCleanOperationFreeState ||
+      expectedDirty === true ||
+      (typeof expectedOperation === "string" && expectedOperation !== "none");
+
+    if (
+      !workspaceDir ||
+      !expectedBranch ||
+      !expectedHead ||
+      !/^[0-9a-f]{40}$/i.test(expectedHead) ||
+      (expectedDirty !== undefined && typeof expectedDirty !== "boolean") ||
+      !validOperation ||
+      !declaresRecoverableState ||
+      (expectedDirty === false && expectedOperation !== "none") ||
+      (expectedOperation === "none" && expectedDirty !== false)
+    ) {
+      return ctx.blocked(
+        "Preserved-worktree adoption contract is invalid before agent dispatch",
+        {
+          taskId: currentTaskId,
+          required:
+            "workspaceDir, expectedBranch, 40-character expectedHead, and either expectedDirty:true/an active expectedOperation or the exact clean pair expectedDirty:false with expectedOperation:none",
+        },
+      );
+    }
+
+    try {
+      const workspace = realpathSync(workspaceDir);
+      const repositoryRoot = realpathSync(
+        gitValue(workspace, "rev-parse", "--show-toplevel"),
+      );
+      const branch = gitValue(
+        workspace,
+        "symbolic-ref",
+        "--quiet",
+        "--short",
+        "HEAD",
+      );
+      const head = gitValue(workspace, "rev-parse", "HEAD");
+      const dirty = Boolean(workspaceChanges(workspace));
+      const operation = activeGitOperation(workspace);
+      const declaredOperation =
+        expectedOperation === "none" ? null : expectedOperation;
+      if (
+        workspace !== workspaceDir ||
+        repositoryRoot !== workspace ||
+        branch !== expectedBranch ||
+        head !== expectedHead ||
+        (typeof expectedDirty === "boolean" && dirty !== expectedDirty) ||
+        (typeof expectedOperation === "string" &&
+          operation !== declaredOperation)
+      ) {
+        return ctx.blocked(
+          "Preserved-worktree adoption validation failed before agent dispatch",
+          {
+            taskId: currentTaskId,
+            declaredWorkspaceDir: workspaceDir,
+            realWorkspaceDir: workspace,
+            repositoryRoot,
+            expectedBranch,
+            observedBranch: branch,
+            expectedDirty: expectedDirty ?? null,
+            observedDirty: dirty,
+            expectedOperation: expectedOperation ?? null,
+            observedOperation: operation,
+          },
+        );
+      }
+      adoptedWorkspace = {
+        workspaceDir,
+        expectedBranch,
+        expectedHead,
+        ...(typeof expectedDirty === "boolean" ? { expectedDirty } : {}),
+        ...(typeof expectedOperation === "string"
+          ? {
+              expectedOperation:
+                expectedOperation as PreservedWorkspaceAdoption["expectedOperation"],
+            }
+          : {}),
+      };
+      ctx = { ...ctx, workspaceDir };
+    } catch (error) {
+      return ctx.blocked(
+        "Preserved-worktree adoption could not be validated before agent dispatch",
+        {
+          taskId: currentTaskId,
+          declaredWorkspaceDir: workspaceDir,
+          error: error instanceof Error ? error.message : String(error),
+        },
+      );
+    }
+  }
+
+  if (
+    !ctx.workspaceDir ||
+    ctx.workspaceDir === ctx.projectDir ||
+    realpathSync(ctx.workspaceDir) === realpathSync(ctx.projectDir)
+  ) {
     return ctx.blocked(
       "Domain task execution requires a prepared task worktree",
       {
@@ -507,7 +1278,38 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     );
   }
 
-  const currentTaskId = reconciliationTaskId(ctx.task);
+  const taskRequestedWorkspace = requestedWorkspaceDir(ctx.task);
+  if (taskRequestedWorkspace && !adoptedWorkspace) {
+    let suppliedWorkspace: string;
+    let requestedWorkspace: string;
+    try {
+      suppliedWorkspace = realpathSync(ctx.workspaceDir);
+      requestedWorkspace = realpathSync(taskRequestedWorkspace);
+    } catch (error) {
+      return ctx.blocked(
+        "Domain task workspace authority could not be validated before agent dispatch",
+        {
+          taskId: currentTaskId,
+          suppliedWorkspaceDir: ctx.workspaceDir,
+          requestedWorkspaceDir: taskRequestedWorkspace,
+          error: error instanceof Error ? error.message : String(error),
+        },
+      );
+    }
+    if (suppliedWorkspace !== requestedWorkspace) {
+      return ctx.blocked(
+        "Domain task requested a preserved workspace that differs from the prepared execution worktree",
+        {
+          taskId: currentTaskId,
+          suppliedWorkspaceDir: suppliedWorkspace,
+          requestedWorkspaceDir: requestedWorkspace,
+          disposition:
+            "rejected-before-agent-dispatch; explicit preservedWorkspaceAdoption contract required",
+        },
+      );
+    }
+  }
+
   const taskPayload = reconciliationTaskPayload(ctx.task);
   const hasExistingLiveChild = reconciliationTaskHasLiveChildren(ctx.task);
   const normalizationInput = taskPayload?.input;
@@ -517,6 +1319,20 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const attemptBaseCommit = optionalGitValue(
     ctx.workspaceDir,
     "rev-parse",
+    "HEAD",
+  );
+  let expectedWorkspace = ctx.workspaceDir;
+  try {
+    expectedWorkspace = realpathSync(ctx.workspaceDir);
+  } catch {
+    // Non-converged owner results do not need Git proof; the final gate below
+    // rejects an unreadable workspace before any source can be accepted.
+  }
+  const expectedBranch = optionalGitValue(
+    ctx.workspaceDir,
+    "symbolic-ref",
+    "--quiet",
+    "--short",
     "HEAD",
   );
   const prompt = [
@@ -537,6 +1353,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     ctx.task,
   ].join("\n");
 
+  guardWriteDispatch(ctx);
   const result = await ctx.runAgent(ctx.agent, prompt, {
     timeoutMs: 1_800_000,
     schema: projectAppTaskHandlerResultSchema,
@@ -555,7 +1372,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     currentTaskId,
     phase: "domain execution",
     sessionId: result.sessionId,
-    result: result.structuredResult as ProjectAppTaskHandlerResult,
+    result: {
+      ...(result.structuredResult as ProjectAppTaskHandlerResult),
+      evidence: [
+        ...authorityEvidence,
+        ...((result.structuredResult as ProjectAppTaskHandlerResult).evidence ?? []),
+      ],
+    },
   });
   ownerResult = await correctConvergedWithLiveChild({
     ctx,
@@ -597,37 +1420,58 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     result: ownerResult,
   });
   if (ownerResult.state !== "converged") {
-    return ctx.done(ownerResult.summary, ownerResult);
+    const recovery = recoveryOnlyResult(ctx.workspaceDir, ownerResult);
+    return ctx.done(recovery.summary, recovery);
   }
 
-  if (!attemptBaseCommit) {
-    return ctx.done("Domain task workspace has no readable attempt baseline", {
+  if (!attemptBaseCommit || !expectedBranch) {
+    const recovery = recoveryOnlyResult(ctx.workspaceDir, {
       state: "needs-owner",
-      summary: "Domain task workspace has no readable attempt baseline",
+      summary:
+        "Domain task workspace has no readable attempt baseline or task branch",
       evidence: [
         ...(ownerResult.evidence ?? []),
         `workspace:${ctx.workspaceDir}`,
       ],
     });
+    return ctx.done(recovery.summary, recovery);
   }
 
   const workspaceDir = ctx.workspaceDir;
   const repoDir = ctx.projectDir ?? "/app/projects/aks-rp-e2e";
+  const recoveryDone = (result: ProjectAppTaskHandlerResult): WorkflowResult => {
+    const recovery = recoveryOnlyResult(workspaceDir, result);
+    return ctx.done(recovery.summary, recovery);
+  };
   if (workspaceChanges(workspaceDir)) {
-    return ctx.done("Domain task left uncommitted workspace changes", {
+    return recoveryDone({
       state: "needs-owner",
       summary: "Domain task left uncommitted workspace changes",
       evidence: [`workspace:${workspaceDir}`],
     });
   }
 
-  const sourceBranch = gitValue(
+  const requiredAcceptedCommit = requiredAcceptedSourceCommit(ctx.task);
+  let finalGate = taskBranchGate({
     workspaceDir,
-    "symbolic-ref",
-    "--quiet",
-    "--short",
-    "HEAD",
-  );
+    expectedWorkspace,
+    expectedBranch,
+    baselineCommit: attemptBaseCommit,
+    acceptedCommit: requiredAcceptedCommit,
+  });
+  if (!finalGate.ok) {
+    return ctx.done(finalGate.summary, {
+      state: "needs-owner",
+      summary: finalGate.summary,
+      evidence: [...(ownerResult.evidence ?? []), ...finalGate.evidence],
+    });
+  }
+  ownerResult = {
+    ...ownerResult,
+    evidence: [...(ownerResult.evidence ?? []), ...finalGate.evidence],
+  };
+
+  const sourceBranch = expectedBranch;
   let sourceCommit = gitValue(workspaceDir, "rev-parse", "HEAD");
   let integration = integrateDirectlyIntoDev({
     repoDir,
@@ -636,6 +1480,56 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     sourceCommit,
     taskBaseCommit: attemptBaseCommit,
   });
+
+  if (integration.state === "unchanged" && requiredAcceptedCommit) {
+    gitValue(repoDir, "fetch", "origin", "dev");
+    gitValue(workspaceDir, "fetch", "origin", "dev");
+    const targetCommit = gitValue(repoDir, "rev-parse", "origin/dev");
+    const acceptedExists = spawnSync(
+      "git",
+      ["cat-file", "-e", `${requiredAcceptedCommit}^{commit}`],
+      { cwd: workspaceDir, encoding: "utf8" },
+    );
+    const acceptedInTarget = spawnSync(
+      "git",
+      ["merge-base", "--is-ancestor", requiredAcceptedCommit, "origin/dev"],
+      { cwd: workspaceDir, encoding: "utf8" },
+    );
+    if (acceptedExists.status !== 0) {
+      return ctx.done("Named accepted source commit is unavailable", {
+        state: "needs-owner",
+        summary: "Named accepted source commit is unavailable for replay",
+        evidence: [
+          ...(ownerResult.evidence ?? []),
+          `accepted-commit:${requiredAcceptedCommit}`,
+          `workspace:${workspaceDir}`,
+        ],
+      });
+    }
+    if (acceptedInTarget.status !== 0) {
+      if (sourceCommit !== requiredAcceptedCommit) {
+        return ctx.done("Named accepted source is not the retained task head", {
+          state: "needs-owner",
+          summary:
+            "Named accepted source is absent from origin/dev but is not the retained task head",
+          evidence: [
+            ...(ownerResult.evidence ?? []),
+            `accepted-commit:${requiredAcceptedCommit}`,
+            `source-commit:${sourceCommit}`,
+            `target-commit:${targetCommit}`,
+          ],
+        });
+      }
+      integration = {
+        state: "requires-replay",
+        reason: "source-outside-attempt-baseline",
+        sourceCommit: requiredAcceptedCommit,
+        taskBaseCommit: targetCommit,
+        targetRef: "origin/dev",
+        mergeCommits: [],
+      };
+    }
+  }
 
   if (
     integration.state === "conflict" ||
@@ -665,6 +1559,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
               : []),
             `Replay only this task's owned change onto ${integration.targetRef}@${replayBaseCommit}; do not merge stale branch history wholesale.`,
           ];
+    guardWriteDispatch(ctx);
     const conflictResult = await ctx.runAgent(
       ctx.agent,
       [
@@ -756,6 +1651,25 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         ],
       });
     }
+    finalGate = taskBranchGate({
+      workspaceDir,
+      expectedWorkspace,
+      expectedBranch,
+      baselineCommit: replayBaseCommit,
+      acceptedCommit: requiredAcceptedCommit,
+      allowAcceptedTransplant: true,
+    });
+    if (!finalGate.ok) {
+      return ctx.done(finalGate.summary, {
+        state: "needs-owner",
+        summary: finalGate.summary,
+        evidence: [...(ownerResult.evidence ?? []), ...finalGate.evidence],
+      });
+    }
+    ownerResult = {
+      ...ownerResult,
+      evidence: [...(ownerResult.evidence ?? []), ...finalGate.evidence],
+    };
     integration = integrateDirectlyIntoDev({
       repoDir,
       workspaceDir,

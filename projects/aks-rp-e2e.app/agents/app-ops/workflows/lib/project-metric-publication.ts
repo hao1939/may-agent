@@ -1,8 +1,7 @@
+import { spawnSync } from "node:child_process";
+import { join } from "node:path";
 import type { MetricDefinition, MetricService } from "@may-agent/sdk";
-import {
-  metricSampleOutputsFor,
-  type MetricSampleOutput,
-} from "../../../../scripts/project-metrics.ts";
+import type { MetricSampleOutput } from "../../../../scripts/project-metrics.ts";
 
 type ProjectMetricDefinition = {
   id: string;
@@ -507,6 +506,47 @@ function noteText(note: unknown): string | undefined {
   return typeof note === "string" ? note : JSON.stringify(note);
 }
 
+export function sampleProjectMetricOutputs(input: {
+  appDir: string;
+  projectDir: string;
+  metricIds: string[];
+}): Record<string, MetricSampleOutput> {
+  const result = spawnSync(
+    "bun",
+    [
+      join(input.appDir, "scripts", "project-metrics.ts"),
+      "--batch-json",
+      ...input.metricIds,
+    ],
+    {
+      cwd: input.appDir,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        AKS_RP_E2E_APP_DIR: input.appDir,
+        PROJECT_DIR: input.projectDir,
+      },
+      timeout: 120_000,
+    },
+  );
+  if (result.error) throw result.error;
+  if (result.status !== 0) {
+    throw new Error(
+      `Project metric sampler exited ${result.status}: ${String(result.stderr).trim()}`,
+    );
+  }
+  const parsed = JSON.parse(String(result.stdout)) as Record<
+    string,
+    MetricSampleOutput
+  >;
+  for (const metricId of input.metricIds) {
+    if (typeof parsed[metricId]?.value !== "number") {
+      throw new Error(`Project metric sampler omitted ${metricId}`);
+    }
+  }
+  return parsed;
+}
+
 export function projectMetricDefinitions(appDir: string): MetricDefinition[] {
   return projectMetricDefinitionsBase.map((definition) => ({
     id: definition.id,
@@ -532,6 +572,7 @@ export function projectMetricDefinitions(appDir: string): MetricDefinition[] {
 export function publishProjectMetrics(input: {
   metrics?: Pick<MetricService, "defineMany" | "record" | "evaluate"> | null;
   appDir: string;
+  projectDir: string;
   measuredBy?: string;
 }): Array<{ id: string; value: number; measuredAt: number }> {
   if (!input.metrics) return [];
@@ -541,9 +582,11 @@ export function publishProjectMetrics(input: {
   const activeDefinitions = definitions.filter(
     (definition) => definition.status === "active",
   );
-  const samples = metricSampleOutputsFor(
-    activeDefinitions.map((definition) => definition.id),
-  );
+  const samples = sampleProjectMetricOutputs({
+    appDir: input.appDir,
+    projectDir: input.projectDir,
+    metricIds: activeDefinitions.map((definition) => definition.id),
+  });
 
   const published: Array<{ id: string; value: number; measuredAt: number }> =
     [];

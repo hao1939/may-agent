@@ -6,6 +6,7 @@ import {
   learnedScenarioNormalizationAcceptance,
   learnedSpecVerificationAcceptance,
   loopFrontierAccounting,
+  masterValidationCompactTaskId,
   repositorySkillMaintenanceTaskId,
   scenarioNormalizationTaskId,
   specLoopTaskId,
@@ -19,6 +20,27 @@ describe("AKS standing-loop convention", () => {
     });
     expect(standingLoopIntent(featureCompactLoopTaskId).input).toEqual({
       frontierLimit: 3,
+      refillEnabled: false,
+    });
+    expect(standingLoopIntent(masterValidationCompactTaskId).input).toEqual({
+      frontierLimit: 3,
+      selectorPath: "ci/feature-sets/master-validation.txt",
+      target: "staging",
+      baselineClusterCreates: 80,
+      maximumClusterCreates: 16,
+      minimumSavingsRate: 0.8,
+      safeguardGetBeforeEachSpec: true,
+      maximumLiveCompactRuns: 3,
+      measuredIntegratedPlan: {
+        sourceCommit: "3e8f43ace9e6b20b53b6b74e720e81da3b85c659",
+        clustersNeeded: 74,
+        clustersSaved: 6,
+      },
+      measuredCrossFeatureCandidate: {
+        clustersNeeded: 63,
+        clustersSaved: 17,
+        note: "Read-only buildPlan evidence with featureJourney=true; validate again from current origin/dev before using it as a live plan.",
+      },
     });
     expect(standingLoopIntent(scenarioNormalizationTaskId).input).toEqual({
       frontierLimit: 5,
@@ -40,6 +62,28 @@ describe("AKS standing-loop convention", () => {
       safeEvaluationOnly: true,
       skillPath: "skills/aks-rp-e2e",
     });
+  });
+
+  test("defines selector-first master-validation compaction as the active compact goal", () => {
+    const definition = standingLoopIntent(masterValidationCompactTaskId);
+    const acceptance = definition.acceptance.join("\n");
+
+    expect(definition).toMatchObject({
+      id: masterValidationCompactTaskId,
+      parentId: "group/feature-compact",
+      mode: "maintain",
+      owner: "aks-explorer",
+      priority: "P0",
+    });
+    expect(definition.workflow).toBeUndefined();
+    expect(definition.outcome).toContain("at most 16");
+    expect(acceptance).toContain("one natural cross-feature journey");
+    expect(acceptance).toContain("immutable-property conflict");
+    expect(acceptance).toContain("safeguard GET before every spec");
+    expect(acceptance).toContain("marginal master-validation clusters saved");
+    expect(acceptance).toContain("at most three actionable direct children");
+    expect(acceptance).toContain("at most three compact Azure DevOps runs");
+    expect(acceptance).toContain("saves at least 64 creates");
   });
 
   test("keeps repository skill quality as one safe maintain task", () => {

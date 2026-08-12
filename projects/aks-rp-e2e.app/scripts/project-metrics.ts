@@ -723,6 +723,7 @@ function loopUnrepresentedRecordDetails(): {
   records: Record<string, unknown>[];
 } {
   const tree = loadTaskTree();
+  const projectionTree = readTaskTreeProjection(runtimeTaskTreeConfig());
   let value = 0;
   let authorityObservationCount = 0;
   const taskIds: string[] = [];
@@ -778,7 +779,7 @@ function loopUnrepresentedRecordDetails(): {
   const specLoopTaskId = specLoopState.loopTaskId || "aks-spec-verification-loop";
   if (!authorityTaskIds.has(specLoopTaskId)) {
     const fallback = specLoopRepresentationAuthority({
-      tree,
+      tree: projectionTree,
       state: specLoopState,
     });
     if (fallback.authorityObserved) {
@@ -2041,6 +2042,25 @@ function exactSpecLoopOwnerTaskId(input: {
   ]);
   const isRepresenting = (task: TaskNode | undefined): task is TaskNode =>
     !!task && representingStates.has(taskState(task));
+  const exactDirectProjectedHolderTaskId = (): string | null => {
+    const loopTaskId = input.state.loopTaskId || "aks-spec-verification-loop";
+    const representingProjectionPhases = new Set([
+      "pending",
+      "running",
+      "waiting",
+    ]);
+    for (const [taskId, task] of Object.entries(input.tree.tasks ?? {})) {
+      const taskInput = recordValue(task.input) ?? recordValue(task.inputs);
+      if (
+        task.parent_id === loopTaskId &&
+        representingProjectionPhases.has(projectionPhase(task)) &&
+        stringRecordField(taskInput, ["specId", "spec_id"]) === input.specId
+      ) {
+        return taskId;
+      }
+    }
+    return null;
+  };
 
   const candidateSpecTaskId =
     typeof spec?.taskId === "string" && spec.taskId.trim()
@@ -2119,7 +2139,7 @@ function exactSpecLoopOwnerTaskId(input: {
     }
   }
 
-  return null;
+  return exactDirectProjectedHolderTaskId();
 }
 
 export function specLoopRepresentationAuthority(input: {

@@ -19,26 +19,32 @@
       "mirrorAndPublication": "git@github.com:hao1939/aks-rp-e2e.git"
     }
   },
-  "goal": "Drive current-source AKS RP e2e quality normalization to completion: every active scenario carrier is standalone, officially grounded, mutation-safe, fixture- and cleanup-owned, and backed by accepted staging proof before direct origin/dev integration or an exact external blocker.",
+  "goal": "Maintain reproducible, knowledge-model-derived, normalized, live-proven staging compact plans for every runnable feature and the exact current master-validation inventory, targeting at least 80% fewer physical AKS births and a successful master-validation wall time of at most 60 minutes without weakening test semantics.",
   "strategy": [
-    "Let the existing scenario-normalization task and aks-explorer directly own quality-normalization selection, repair, staging proof, and origin/dev integration.",
-    "Ground every normalized carrier in official Learn or Azure REST API contracts plus checked-in design evidence, using implementation source only as supporting evidence.",
-    "Keep a bounded three-to-five-leaf normalization frontier moving while preserving exact pipeline, capability, approval, and environment waits.",
-    "Use bounded controllers to declare current work; use the canonical task projection to observe live state.",
-    "Have May and app-ops monitor throughput and integrity, repair orchestration or runtime failures, and return domain judgment to the app rather than performing AKS normalization work themselves."
+    "Derive compatibility, ordering, splits, terminal routes, and normalization findings from the knowledge model and checked-in specs; feature names and missing labels are not semantic boundaries.",
+    "Preserve verdict semantics, canonical create shape, starting state, operations, safeguard GETs, and cleanup ownership; shared tests must not create or delete their carrier.",
+    "Optimize physical AKS births and successful critical-path wall time, counting nested creates, recreates, and retries separately from logical planner groups.",
+    "Keep every execution carrier at or below 15 specs, and retain explicit reviewed reasons for zero-saving features and every non-sharing decision.",
+    "Prioritize normalization and planner repairs by safe physical births and critical-path minutes saved, then require exact-source staging ADO evidence before integration into origin/dev."
   ],
   "planning": {
     "horizon": "12-24h",
-    "focus": "Drive the existing scenario-normalization resource against clean current origin/dev while May monitors execution, repairs control-plane issues, and prevents the bounded quality frontier from stalling.",
+    "focus": "Make the full default feature portfolio and exact current master-validation selector truthful, bounded, executable compact plans; close the highest-value normalization and runtime blockers until live staging reaches the target or proves the safe Pareto frontier.",
     "successCriteria": [
-      "scenario-normalization remains the single quality-frontier owner and keeps three to five useful domain leaves represented whenever eligible work exists.",
-      "Every active scenario carrier has current-source structural review, official contract grounding, explicit target and mutation gates, fixture and cleanup ownership, and accepted staging proof.",
-      "A row leaves the frontier only after its tested change is integrated into origin/dev or an exact typed external blocker or escalation is durably represented.",
-      "The clean-origin/dev strict inventory and required full repository check pass, and every current quality row is covered without stale terminal residue.",
-      "May and app-ops repair task integrity, delivery, authentication, watcher, and controller faults without taking ownership of AKS domain implementation."
+      "Every runnable feature has a complete default staging compact plan; any zero-saving feature has an exact reviewed semantic or readiness reason.",
+      "The exact checked-in master-validation selector is planned as one cross-feature portfolio before immutable, logical-history, readiness, and 15-spec policy boundaries are applied.",
+      "Both default and master plans save at least 80% of physical AKS births, with nested creates, recreates, and retries included in baseline and planned counts.",
+      "Every selected spec preserves starting state, operations, verdicts, safeguard reads, canonical create shape, and cleanup; shared tests neither create nor delete their carrier.",
+      "Every compatibility, order, split, terminal, and normalization decision cites the knowledge model, spec contract, or explicit execution policy, and unknowns remain visible normalization findings.",
+      "Deterministic repository checks and a no-new-model-errors ratchet protect compact-used planner and runner surfaces; every model object selected by either compact inventory validates even while unrelated historical debt remains visible.",
+      "Generated evidence records exact source, model, vocabulary, spec, target, and planner-contract fingerprints plus planned-versus-actual births and runtime; live execution rejects a missing or stale fingerprint with a regeneration command.",
+      "A successful exact-source staging master-validation ADO run completes in at most 60 minutes and every accepted journey has per-spec and cleanup proof integrated into origin/dev.",
+      "If the two numeric targets are infeasible, the delivered result is the measured safe Pareto optimum with the remaining product, quota, or semantic constraints explicit; tests are not weakened to claim success."
     ],
     "evidence": [
-      "design/task-graph-integrity-and-simplification-proposal.md"
+      "../aks-rp-e2e/design/compact-fixture-planning.md",
+      "../aks-rp-e2e/design/cluster-axis-vocabulary-normalization.md",
+      "../aks-rp-e2e/design/master-validation-compact-frontier.md"
     ]
   }
 }

@@ -77,6 +77,7 @@ export type FailureInput = {
   standaloneBuildId: string;
   priorStandalonePipelineRunId: string;
   priorStandaloneSourceCommit: string;
+  requestedServiceOwner: string;
   campaignRepairReplay: CampaignRepairContext | null;
 };
 
@@ -234,6 +235,7 @@ export function parseFailureInput(raw: string): FailureInput | null {
       priorStandaloneSourceCommit: text(
         record(input.historicalDirectPass).sourceCommit,
       ),
+      requestedServiceOwner: text(input.requestedServiceOwner),
       campaignRepairReplay: parseCampaignRepairReplay(
         input.campaignRepairReplay,
       ),
@@ -1047,6 +1049,14 @@ export function campaignRepairReady(input: {
   );
 }
 
+export function unpublishedTaskRepairReady(input: {
+  headCommit: string;
+  repairBaseCommit: string;
+  workspaceClean: boolean;
+}): boolean {
+  return input.workspaceClean && campaignRepairReady(input);
+}
+
 export function campaignRepairPublicationRetryReady(input: {
   headCommit: string;
   repairBaseCommit: string;
@@ -1600,43 +1610,38 @@ function notificationPath(ctx: WorkflowContext, key: string): string {
   );
 }
 
-function routeFinding(
+export type FindingDelivery = {
+  status: "sent" | "already_sent";
+  recipient: string;
+  dedupeKey: string;
+  receiptPath: string;
+};
+
+export function routeFinding(
   ctx: WorkflowContext,
   input: FailureInput,
   kind: "product" | "test-pr",
   content: string,
   extra: Record<string, unknown> = {},
-): boolean {
-  const key = `${kind}:${input.specId}:${input.failureFingerprint}`;
+): FindingDelivery {
+  const recipient =
+    kind === "product"
+      ? input.requestedServiceOwner || "human:operator"
+      : "human:operator";
+  const key = `${kind}:${input.specId}:${input.failureFingerprint}:${recipient}`;
   const path = notificationPath(ctx, key);
-  if (existsSync(path)) return false;
-  if (kind === "product") {
-    ctx.dispatchEvent("project.owner.requested", {
-      target: { project: "aks-rp-e2e" },
-      project: "aks-rp-e2e",
-      reason: "master-validation-product-issue",
-      params: {
-        taskId: input.taskId,
-        specId: input.specId,
-        pipelineRunId: input.pipelineRunId,
-        failureFingerprint: input.failureFingerprint,
-        finding: content,
-        ...extra,
-        instruction:
-          "Own this product/provider failure inside the AKS app. Preserve the exact recovery wait, treat frozen-campaign same-spec passes only as supporting evidence, close the stable task only after a later current-main same-spec pass, and escalate to a human only if a real authority decision remains after owner investigation.",
-      },
-    });
-    mkdirSync(dirname(path), { recursive: true });
-    writeFileSync(
-      path,
-      `${JSON.stringify({ key, routedTo: "project-owner", sentAt: new Date().toISOString(), ...extra }, null, 2)}\n`,
-    );
-    return true;
+  if (existsSync(path)) {
+    return {
+      status: "already_sent",
+      recipient,
+      dedupeKey: key,
+      receiptPath: path,
+    };
   }
   ctx.dispatchEvent("message.created", {
     target: { project: "aks-rp-e2e", human: true },
     from: "aks-explorer",
-    to: "human:operator",
+    to: recipient,
     content,
     priority: kind === "product" ? "P1" : "P2",
     intent:
@@ -1648,14 +1653,27 @@ function routeFinding(
     specId: input.specId,
     pipelineRunId: input.pipelineRunId,
     failureFingerprint: input.failureFingerprint,
+    dedupeKey: key,
+    ...(kind === "product" ? { serviceOwner: recipient } : {}),
     ...extra,
   });
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(
     path,
-    `${JSON.stringify({ key, sentAt: new Date().toISOString(), ...extra }, null, 2)}\n`,
+    `${JSON.stringify({ key, routedTo: recipient, sentAt: new Date().toISOString(), ...extra }, null, 2)}\n`,
   );
-  return true;
+  return { status: "sent", recipient, dedupeKey: key, receiptPath: path };
+}
+
+export function productIssueDisposition(delivery: FindingDelivery): string[] {
+  return [
+    "source-change-disposition:not_applicable:prod_issue_requires_no_source_change",
+    "source-change-resolved:true",
+    "source-change-file-count:0",
+    `service-owner-handoff:${delivery.status}:${delivery.recipient}`,
+    `service-owner-handoff-dedupe-key:${delivery.dedupeKey}`,
+    `service-owner-handoff-receipt:${delivery.receiptPath}`,
+  ];
 }
 
 export function preserveVerificationAfterNestedReconciliation(
@@ -1977,7 +1995,7 @@ function prepareCampaignRepair(
     "project.task.tick",
     masterValidationFocusedFixWake(pullRequestId, values.sourceCommit),
   );
-  const summary = `${canonicalPullRequestId ? "Updated" : "Prepared"} draft focused PR ${pullRequestId} for ${input.specId}; the frozen campaign can integrate it immediately, and the human will be notified only after verification publishes it as non-draft.`;
+  const summary = `${canonicalPullRequestId ? "Updated" : "Prepared"} draft focused PR ${pullRequestId} for ${input.specId}; the frozen campaign can integrate it immediately, but the human will be notified only after the exact PR head passes live verification and the app publishes it as non-draft.`;
   return waiting(
     ctx,
     summary,
@@ -2245,6 +2263,26 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       return reconcileTestIssue(ctx, input);
     }
     if (
+      frozenBaseCommit &&
+      unpublishedTaskRepairReady({
+        headCommit,
+        repairBaseCommit,
+        workspaceClean: !git(workspaceDir, ["status", "--porcelain=v1"]).stdout,
+      })
+    ) {
+      return prepareCampaignRepair(ctx, input, {
+        repoDir,
+        workspaceDir,
+        sourceBranch,
+        sourceCommit: headCommit,
+        campaignBaseCommit: frozenBaseCommit,
+        evidence: [
+          "resumed-clean-task-worktree-repair",
+          `repair-base:${repairBaseCommit}`,
+        ],
+      });
+    }
+    if (
       input.campaignRepairReplay &&
       frozenBaseCommit &&
       campaignRepairPublicationRetryReady({
@@ -2302,7 +2340,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         input.category,
       )
     ) {
-      routeFinding(
+      const delivery = routeFinding(
         ctx,
         input,
         "product",
@@ -2322,6 +2360,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           `artifact:${input.artifactPath}`,
           "classification:prod_issue",
           ...priorProduct.evidence,
+          ...productIssueDisposition(delivery),
         ],
         productRecoveryCondition(
           input,
@@ -2332,7 +2371,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       );
     }
     if (["product_failure", "prod_issue"].includes(input.category)) {
-      routeFinding(
+      const delivery = routeFinding(
         ctx,
         input,
         "product",
@@ -2350,6 +2389,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           `pipeline-run:${input.pipelineRunId}`,
           `source-commit:${input.sourceCommit}`,
           `artifact:${input.artifactPath}`,
+          ...productIssueDisposition(delivery),
         ],
         productRecoveryCondition(
           input,
@@ -2453,7 +2493,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           `unexpected-commit:${nextCommit}`,
         ]);
       }
-      routeFinding(
+      const delivery = routeFinding(
         ctx,
         input,
         "product",
@@ -2468,7 +2508,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       return waiting(
         ctx,
         summary,
-        decision.evidence,
+        [...decision.evidence, ...productIssueDisposition(delivery)],
         productRecoveryCondition(
           input,
           currentRecoveryBaselineRunId(ctx, input),

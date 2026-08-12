@@ -504,9 +504,7 @@ export function campaignPassVerificationTrigger(
   if (
     eventType !== "pipeline.spec.observed" ||
     !specId ||
-    value("status").toLowerCase() !== "pass" ||
-    sourceBranch !== campaign.branch ||
-    sourceCommit !== campaign.currentCommit
+    value("status").toLowerCase() !== "pass"
   ) {
     return null;
   }
@@ -514,8 +512,10 @@ export function campaignPassVerificationTrigger(
   const pullRequestIds = campaign.integratedFixes
     .filter(
       (fix) =>
-        fix.taskId === stableTaskId ||
-        fix.taskId.startsWith(`${stableTaskId}/`),
+        (fix.taskId === stableTaskId ||
+          fix.taskId.startsWith(`${stableTaskId}/`)) &&
+        fix.sourceBranch.replace(/^refs\/heads\//, "") === sourceBranch &&
+        fix.sourceCommit === sourceCommit,
     )
     .map((fix) => fix.pullRequestId);
   const pipelineRunId = value("pipelineRunId") || value("runId");
@@ -736,7 +736,7 @@ export function currentMainCampaignSuccessorInput(
   return {
     baselineRunId: `main-${baseCommit.slice(0, 12)}`,
     baseCommit,
-    fixes: latestCampaignFixes([...campaign.integratedFixes, ...activeFixes]),
+    fixes: latestCampaignFixes(activeFixes),
     preferredPullRequestIds: campaign.integratedFixes.map(
       (fix) => fix.pullRequestId,
     ),
@@ -853,6 +853,7 @@ function integratedPullRequestStates(
       fix,
       state: text(current.status) || "unknown",
       mergeStatus: text(current.mergeStatus) || "unknown",
+      isDraft: current.isDraft === true,
     };
   });
 }
@@ -921,20 +922,29 @@ function publishVerifiedFixes(
   campaign: CampaignReceipt | null,
   trigger: FixVerificationTrigger | null,
 ): string[] {
-  if (
-    !campaign ||
-    !trigger ||
-    trigger.sourceBranch !== campaign.branch ||
-    trigger.sourceCommit !== campaign.currentCommit
-  ) {
+  if (!campaign || !trigger) {
     return [];
   }
-  const included = new Set(
-    campaign.integratedFixes.map((fix) => fix.pullRequestId),
+  const exactVerified = new Set(
+    campaign.integratedFixes
+      .filter(
+        (fix) =>
+          fix.sourceBranch.replace(/^refs\/heads\//, "") ===
+            trigger.sourceBranch.replace(/^refs\/heads\//, "") &&
+          fix.sourceCommit === trigger.sourceCommit,
+      )
+      .map((fix) => fix.pullRequestId),
   );
-  const pullRequestIds = [...new Set(trigger.pullRequestIds)].filter((id) =>
-    included.has(id),
-  );
+  const pullRequestIds = [...new Set(trigger.pullRequestIds)]
+    .filter((id) => exactVerified.has(id))
+    .filter((id) => {
+      const current = pullRequest(repoDir, id);
+      return (
+        text(current.sourceRefName).replace(/^refs\/heads\//, "") ===
+          trigger.sourceBranch.replace(/^refs\/heads\//, "") &&
+        text(current.lastMergeSourceCommit?.commitId) === trigger.sourceCommit
+      );
+    });
   const publications = pullRequestIds.map((id) => ({
     pullRequestId: id,
     ...publishPullRequest(repoDir, id),
@@ -1428,11 +1438,23 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           });
         }
         const open = states.filter(({ state }) => state === "active");
-        if (open.length) {
-          const publicationEvidence = open.map(
-            ({ fix }) =>
-              publishPullRequest(repoDir, fix.pullRequestId).evidence,
+        const unverifiedDrafts = open.filter(({ isDraft }) => isDraft);
+        if (unverifiedDrafts.length) {
+          return completeCampaignObservation(
+            ctx,
+            composed.receipt,
+            `Campaign run ${prior.runId} passed integration, but ${unverifiedDrafts.length} focused PR(s) remain draft until their exact current heads pass live verification.`,
+            [
+              `pipeline-run:${prior.runId}`,
+              "campaign-result:passed",
+              ...unverifiedDrafts.map(
+                ({ fix }) =>
+                  `exact-pr-head-verification-required:${fix.pullRequestId}@${fix.sourceCommit}`,
+              ),
+            ],
           );
+        }
+        if (open.length) {
           notifyCampaignReady(
             ctx,
             composed.receipt,
@@ -1449,7 +1471,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
               ...open.map(
                 ({ fix }) => `awaiting-pull-request:${fix.pullRequestId}`,
               ),
-              ...publicationEvidence,
             ],
           );
         }

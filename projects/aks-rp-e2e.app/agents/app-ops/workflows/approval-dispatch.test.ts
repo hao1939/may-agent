@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { execute } from "./approval-dispatch.ts";
+import { execute, verify } from "./approval-dispatch.ts";
 
 async function makeWorkspace() {
   const root = await mkdtemp(join(tmpdir(), "aks-approval-dispatch-"));
@@ -744,5 +744,144 @@ describe("approval-dispatch workflow", () => {
     expect(runs).toContain('"result":"message.created"');
     expect(runs).not.toContain('"result":"duplicate-suppressed"');
     db.close();
+  });
+
+  test("verifies converged dispatch work from trusted message.created proof", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const packetPath = "evidence/archive/network-cni-approval-packet.md";
+    const pathId = "path.network-cni-azure-overlay-dual-stack-migration";
+    const lineage = approvalLineage(pathId, packetPath);
+    await writeFile(
+      join(projectDir, packetPath),
+      "# exact packet\n\nPlease approve the bounded replay.\n",
+      "utf8",
+    );
+    await writeFile(
+      join(appDir, ".state", "approval-dispatch-runs.jsonl"),
+      `${JSON.stringify({
+        ts: new Date().toISOString(),
+        workflow: "approval-dispatch",
+        result: "message.created",
+        correlationKey: lineage.correlationKey,
+        packetAbsolutePath: join(projectDir, packetPath),
+        approvalId: lineage.approvalId,
+        waitId: lineage.waitId,
+        pathId,
+      })}\n`,
+      "utf8",
+    );
+
+    const verified = await verify(
+      {
+        appId: "aks-rp-e2e",
+        taskId: pathId,
+        generation: 1,
+        appDir,
+        projectDir,
+        workspaceDir: projectDir,
+        intent: {
+          id: pathId,
+          parentId: "group/app-operations",
+          outcome: "Dispatch one exact approval packet.",
+          acceptance: [],
+          mode: "achieve",
+          owner: "app-ops",
+          workflow: "approval-dispatch",
+          input: {
+            approvalId: lineage.approvalId,
+            waitId: lineage.waitId,
+            pathId,
+            packetPath,
+            authority: "human",
+            target: "human:operator",
+          },
+        },
+      },
+      {
+        state: "converged",
+        summary: "Approval dispatch emitted message.created.",
+        evidence: [`approval-dispatch:${lineage.correlationKey}`],
+        actions: [],
+      },
+    );
+
+    expect(verified).toEqual({
+      accepted: true,
+      summary:
+        `Verified approval-dispatch handoff for ${pathId} from durable message.created proof.`,
+      evidence: [
+        `approval-dispatch:${lineage.correlationKey}`,
+        "ledger-result:message.created",
+        "deterministic:owner-handoff-postcondition",
+      ],
+    });
+  });
+
+  test("verifies converged dispatch work from exact project.approval.requested/message.created proof", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const packetPath =
+      "evidence/archive/ops-request-master-validation-api-proxy-chaos-rp-proxy-kubeconfig-capability-20260806-packet.md";
+    const pathId =
+      "path.traffic-api-proxy.chaos-rp-proxy-kubeconfig-capability-20260806";
+    const lineage = approvalLineage(pathId, packetPath);
+    await writeFile(
+      join(projectDir, packetPath),
+      "# exact packet\n\nRoute the exact chaos kubeconfig capability ask.\n",
+      "utf8",
+    );
+
+    const verified = await verify(
+      {
+        appId: "aks-rp-e2e",
+        taskId:
+          "ops/request-approval-master-validation-api-proxy-chaos-rp-proxy-kubeconfig-capability-20260806",
+        generation: 1,
+        appDir,
+        projectDir,
+        workspaceDir: projectDir,
+        intent: {
+          id: "ops/request-approval-master-validation-api-proxy-chaos-rp-proxy-kubeconfig-capability-20260806",
+          parentId: "domain/master-validation-failure/spec.traffic-api-proxy.chaos",
+          outcome: "Deliver one exact approval-dispatch request.",
+          acceptance: [],
+          mode: "achieve",
+          owner: "app-ops",
+          workflow: "approval-dispatch",
+          input: {
+            packetPath,
+            pathId,
+            approvalId: lineage.approvalId,
+            waitId: lineage.waitId,
+            authority: "human",
+            target: "human:operator",
+          },
+        },
+      },
+      {
+        state: "converged",
+        summary:
+          "Controller-visible proof exists for this exact lineage: project.approval.requested id 5144207 and message.created id 5145219 were emitted.",
+        evidence: [
+          packetPath,
+          pathId,
+          lineage.approvalId,
+          lineage.waitId,
+          "project.approval.requested id 5144207",
+          "message.created id 5145219",
+        ],
+        actions: [],
+      },
+    );
+
+    expect(verified).toEqual({
+      accepted: true,
+      summary:
+        `Verified approval-dispatch handoff for ${pathId} from exact owner-returned event proof.`,
+      evidence: [
+        `approval-dispatch:${lineage.correlationKey}`,
+        "event-proof:project.approval.requested+message.created",
+        "deterministic:owner-handoff-postcondition",
+      ],
+    });
   });
 });

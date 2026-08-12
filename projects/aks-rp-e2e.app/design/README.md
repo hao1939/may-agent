@@ -138,6 +138,13 @@ advance. Reusing a generic "origin/dev changed" Condition across baselines or
 across unrelated same-baseline holders creates stale-true waits or rejected
 rebinds and must not be used.
 
+A master-validation capacity wait follows the same rule. The finite task
+records the current six-hour `cycleSlot`, waits for
+`aks.master-validation.capacity-pulse` with `cycleSlot != baseline`, and gives
+the Condition a task-scoped identity. Capacity pulses are fresh level
+observations: an older journal pulse or a duplicate pulse from the baseline
+slot cannot wake a newly established wait; the next slot wakes it once.
+
 For strict scenario-test inventory, the cleanliness standard is row coverage:
 zero missing adapters, or every current missing adapter represented by exact
 actionable work, exact accepted wait, reviewed terminal disposition, or

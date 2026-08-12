@@ -103,7 +103,9 @@ function historicalTaskIds(taskState: TaskState): string[] {
 }
 
 function represented(graph: Graph, taskId: string | null | undefined): boolean {
-  return Boolean(taskId && graph.tasks?.[taskId]);
+  if (!taskId || !graph.tasks?.[taskId]) return false;
+  const phase = representedTaskState(graph, taskId);
+  return phase !== "attention" && phase !== "review";
 }
 
 function representedTaskState(graph: Graph, taskId: string): string {
@@ -163,10 +165,11 @@ function representedTaskIdsForSpec(
   }
   for (const [taskId, task] of Object.entries(graph.tasks ?? {})) {
     if (
-      (task.input?.loopId === specLoopTaskId &&
+      represented(graph, taskId) &&
+      ((task.input?.loopId === specLoopTaskId &&
         task.input?.workKey === specId) ||
-      (task.input?.loopTaskId === specLoopTaskId &&
-        task.input?.specId === specId)
+        (task.input?.loopTaskId === specLoopTaskId &&
+          task.input?.specId === specId))
     ) {
       representedTaskIds.add(taskId);
     }
@@ -309,17 +312,17 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const representedTaskIds = [
     ...new Set([...representedBySpec.values()].flatMap((taskIds) => taskIds)),
   ];
+  const effectiveFrontierLimit = Math.min(12, frontierLimit(ctx.task, 5));
   const accounting = loopFrontierAccounting(
     representedTaskIds.map((taskId) => ({
       taskId,
       phase: representedTaskState(graph, taskId),
     })),
-    Math.min(12, frontierLimit(ctx.task, 5)),
+    effectiveFrontierLimit,
   );
   const actionBudget = accounting.available;
-  const actions: ProjectAppTaskAction[] = remaining
+  const candidateActions: ProjectAppTaskAction[] = remaining
     .filter(([specId]) => (representedBySpec.get(specId) ?? []).length === 0)
-    .slice(0, actionBudget)
     .map(([specId, spec]) => {
       if (hasStructuredDisposition(spec)) {
         const taskId = ensureFreshTaskId(
@@ -380,6 +383,30 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         priority: "P1",
       };
     });
+
+  // Declare every holderless row so the controller can see complete coverage,
+  // but keep only the available frontier slots immediately actionable. Each
+  // overflow leaf extends one dependency lane, so completing a gate releases
+  // at most one replacement instead of waking the entire overflow at once.
+  const dependencyTails = [...accounting.actionableTaskIds];
+  let immediateSlots = actionBudget;
+  let nextDependencyLane = 0;
+  const actions: ProjectAppTaskAction[] = candidateActions.map((action) => {
+    if (action.kind !== "create-task") return action;
+    if (immediateSlots > 0) {
+      immediateSlots -= 1;
+      dependencyTails.push(action.id);
+      return action;
+    }
+    const lane = nextDependencyLane % dependencyTails.length;
+    nextDependencyLane += 1;
+    const dependencyId = dependencyTails[lane];
+    dependencyTails[lane] = action.id;
+    return {
+      ...action,
+      dependsOn: [dependencyId],
+    };
+  });
   const summary = `Spec loop ${loopTaskId} has ${remaining.length} nonterminal spec(s): declared ${actions.length} bounded task action(s), observed ${accounting.actionableTaskIds.length} actionable, ${accounting.waitingTaskIds.length} waiting, ${accounting.attentionTaskIds.length} attention, and ${accounting.terminalTaskIds.length} stale terminal representation(s).`;
   const resultState =
     actions.length > 0 ||

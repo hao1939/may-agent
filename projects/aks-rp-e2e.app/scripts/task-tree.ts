@@ -74,6 +74,17 @@ function cleanTaskView(tree: TaskTree, taskId: string): JsonObject {
     null) as JsonObject | null;
   const receipt = ((tree.receipts?.[taskId] as any) ??
     null) as JsonObject | null;
+  const conditionIds = [
+    ...new Set([
+      ...((task?.condition_ids as string[] | undefined) ?? []),
+      ...(((resource as any)?.status?.conditionIds as string[] | undefined) ??
+        []),
+    ]),
+  ];
+  const conditions = conditionIds.map((conditionId) => ({
+    id: conditionId,
+    condition: ((tree.conditions as any)?.[conditionId] ?? null) as unknown,
+  }));
   return {
     id: taskId,
     phase: taskPhase(tree, taskId),
@@ -81,6 +92,7 @@ function cleanTaskView(tree: TaskTree, taskId: string): JsonObject {
     task,
     resource,
     receipt,
+    conditions,
   };
 }
 

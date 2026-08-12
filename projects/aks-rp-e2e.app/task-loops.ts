@@ -2,6 +2,7 @@ import type { ProjectAppTaskIntent } from "@may-agent/sdk";
 
 export const specLoopTaskId = "aks-spec-verification-loop";
 export const featureCompactLoopTaskId = "aks-feature-compact-loop";
+export const masterValidationCompactTaskId = "master-validation-compact";
 export const scenarioNormalizationTaskId = "scenario-normalization";
 export const legacyBranchReconciliationTaskId = "legacy-branch-reconciliation";
 export const repositorySkillMaintenanceTaskId = "repository-skill-maintenance";
@@ -9,6 +10,7 @@ export const repositorySkillMaintenanceTaskId = "repository-skill-maintenance";
 export type StandingLoopId =
   | typeof specLoopTaskId
   | typeof featureCompactLoopTaskId
+  | typeof masterValidationCompactTaskId
   | typeof scenarioNormalizationTaskId
   | typeof legacyBranchReconciliationTaskId
   | typeof repositorySkillMaintenanceTaskId;
@@ -18,7 +20,7 @@ type StandingLoopDefinition = {
   action: string;
   parentId: string;
   owner: string;
-  workflow: string;
+  workflow?: string;
   frontierLimit: number;
   input?: Record<string, unknown>;
   outcome: string;
@@ -46,6 +48,7 @@ export const learnedSpecVerificationAcceptance = [
 
 export const learnedCompactVerificationAcceptance = [
   "Start from the feature packet, declared spec list, current single-spec evidence, and prior compact artifacts before deciding the next move.",
+  "Before declaring that no exact wait exists or clearing taskId/frontierTaskIds, query every cited holder with the app's canonical helper (`cd ../aks-rp-e2e.app && bun run task-tree show <task-id> --json`) and inspect its returned resource status plus condition objects. A failed ad hoc JSON parse is unknown, never evidence that a task or Condition is absent.",
   "Use single-spec learning as input: compact should reuse known-good carriers and represent broken or blocked specs exactly instead of hiding them inside a larger package.",
   "Every feature-owned spec must be covered by the compact package, excluded with a source-grounded reason, or represented by an exact wait or reviewed terminal disposition.",
   "An unbound compact owner task is shared/read-only. When current evidence cites an existing source branch, commit, dispatch metadata, or task worktree, inspect and verify that exact branch/worktree in place; do not copy its delta into the shared canonical dev checkout just to review it.",
@@ -60,6 +63,7 @@ export const learnedCompactVerificationAcceptance = [
   "Before dispatching compact ADO, verify the branch/commit ADO will run and push intended domain changes first.",
   "A live ADO result must be ingested per spec branch; preserve passing branches from a nonpassing aggregate and create focused work only for failing or inconclusive branches.",
   "For ADO waits, return structured backend, run id, result/artifact path when known, and one exact typed wait condition; do not describe the wait only in prose.",
+  "Validate the disposition against the post-action graph: if proposed close actions remove the sole live child, return converged only after this task's ledger/output acceptance is satisfied; otherwise preserve a real live child or exact typed Condition. Never return waiting with neither after the proposed mutations.",
   "Classify compact ADO state precisely: queued/notStarted means exact wait; terminal with no artifacts means inspect timeline/logs/preflight; terminal with artifacts means review per-branch result and cleanup proof.",
   "Do not rerun a whole unchanged package when selectionBlocker, metadata eligibility, or route-shape facts say a smaller repair is needed first.",
   "When a compact aggregate fails, isolate the smallest failing branch or reduced route group, learn from sibling pass evidence, repair that surface, then rerun the compact package only after the repair changes the package.",
@@ -108,15 +112,60 @@ export const standingLoopDefinitions: Record<
     owner: "app-ops",
     workflow: "feature-compact-loop-controller",
     frontierLimit: 3,
+    input: {
+      refillEnabled: false,
+    },
     outcome:
-      "Keep every current feature spec set covered by one minimum-transition feature journey and schema-valid passing live proof, or by one exact wait, reviewed terminal decision, or actionable compact repair leaf.",
+      "Preserve current feature-compact work and exact waits without refilling broad feature-first work while the master-validation compact campaign is the active project goal.",
     acceptance: [
       "The ledger contains every current feature and its owned-spec fingerprint.",
       ...learnedCompactVerificationAcceptance,
       "Every incomplete feature has exactly one feature-loop representation.",
-      "While eligible work exists, at most three actionable compact leaves are represented; waits and attention do not consume that frontier.",
+      "Do not declare new broad feature-first leaves while frontierLimit is zero; existing actionable work may finish and exact waits remain represented.",
     ],
     priority: "P1",
+  },
+  [masterValidationCompactTaskId]: {
+    id: masterValidationCompactTaskId,
+    action: "master-validation-compact",
+    parentId: "group/feature-compact",
+    owner: "aks-explorer",
+    frontierLimit: 3,
+    input: {
+      selectorPath: "ci/feature-sets/master-validation.txt",
+      target: "staging",
+      baselineClusterCreates: 80,
+      maximumClusterCreates: 16,
+      minimumSavingsRate: 0.8,
+      safeguardGetBeforeEachSpec: true,
+      maximumLiveCompactRuns: 3,
+      measuredIntegratedPlan: {
+        sourceCommit: "3e8f43ace9e6b20b53b6b74e720e81da3b85c659",
+        clustersNeeded: 74,
+        clustersSaved: 6,
+      },
+      measuredCrossFeatureCandidate: {
+        clustersNeeded: 63,
+        clustersSaved: 17,
+        note: "Read-only buildPlan evidence with featureJourney=true; validate again from current origin/dev before using it as a live plan.",
+      },
+    },
+    outcome:
+      "Drive the exact staging master-validation selector set from 80 baseline cluster creates to at most 16 through one cross-feature journey, normalized lifecycle participation, minimum-transition ordering, exact staging proof, and tested origin/dev integration.",
+    acceptance: [
+      "Treat ci/feature-sets/master-validation.txt as the exact campaign scope and verify its current selector count and identities from clean current origin/dev before every planning wave.",
+      "Plan the selector set as one natural cross-feature journey before physical bucketing; feature namespace, scenario name, shape-key name, create calls, and delete calls are not split reasons.",
+      "Partition only for a named immutable-property conflict or an unrecoverable logical-history conflict, and report the exact conflicting property or unreachable state for every split.",
+      "Order compatible specs to reuse retained state and minimize transitions in this order: reuse, test-local resources, mutable update, disruptive update, then cluster recreation only when unavoidable.",
+      "Preserve one safeguard GET before every spec to confirm the retained cluster exists and provisioningState is Succeeded.",
+      "Measure baseline cluster creates, planned cluster creates, clusters saved, and savings rate after every planner or carrier change; prioritize bounded children by marginal master-validation clusters saved per repair.",
+      "Keep at most three actionable direct children, each with exact selector ids, current plan evidence, one dedicated task worktree, and the workflow needed for source change plus exact live proof; do not duplicate existing feature or spec work.",
+      "Prioritize high-yield exact master selectors, including traffic-api-proxy, node-pool-config, traffic-azure-service-mesh, and RP lifecycle families, but let current measured compatibility and blocker evidence decide the next child.",
+      "Keep at most three compact Azure DevOps runs queued or in progress; additional source lanes remain local until a live slot opens.",
+      "A child converges only after exact staging per-spec and cleanup proof is accepted and tested source is integrated into origin/dev, or one exact typed external Condition preserves the next wake fact.",
+      "The campaign converges only when the current 80-spec staging plan requires at most 16 cluster creates, saves at least 64 creates, and every journey has accepted staging proof on integrated source.",
+    ],
+    priority: "P0",
   },
   [scenarioNormalizationTaskId]: {
     id: scenarioNormalizationTaskId,
@@ -226,7 +275,7 @@ export function standingLoopIntent(
     acceptance: definition.acceptance,
     mode: "maintain",
     owner: definition.owner,
-    workflow: definition.workflow,
+    ...(definition.workflow ? { workflow: definition.workflow } : {}),
     input: {
       frontierLimit: definition.frontierLimit,
       ...(definition.input ?? {}),

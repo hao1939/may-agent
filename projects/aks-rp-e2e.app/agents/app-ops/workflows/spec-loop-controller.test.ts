@@ -321,7 +321,14 @@ describe("spec loop reconciliation workflow", () => {
     const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
 
     expect(result.output.state).toBe("converged");
-    expect(result.output.actions).toHaveLength(4);
+    expect(result.output.actions).toHaveLength(5);
+    expect(result.output.actions.slice(0, 4)).toSatisfy(
+      (actions: Array<Record<string, unknown>>) =>
+        actions.every((action) => action.dependsOn === undefined),
+    );
+    expect(result.output.actions[4].dependsOn).toEqual([
+      "spec/verify-spec-one",
+    ]);
   });
 
   test("keeps refilling when an exact wait covers another spec", async () => {
@@ -389,10 +396,88 @@ describe("spec loop reconciliation workflow", () => {
     const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
 
     expect(result.output.state).toBe("converged");
-    expect(result.output.actions).toHaveLength(4);
+    expect(result.output.actions).toHaveLength(9);
+    expect(
+      result.output.actions.filter(
+        (action: Record<string, unknown>) => action.dependsOn === undefined,
+      ),
+    ).toHaveLength(4);
+    expect(
+      result.output.actions.filter(
+        (action: Record<string, unknown>) => action.dependsOn !== undefined,
+      ),
+    ).toHaveLength(5);
   });
 
-  test("surfaces an attention-only frontier to the owner", async () => {
+  test("represents every holderless row while dependency-gating overflow at a full frontier", async () => {
+    const representedSpecs = ["one", "two", "three", "four", "five"];
+    const specs = Object.fromEntries(
+      [...representedSpecs, "six", "seven", "reviewed"].map((name) => [
+        `spec.${name}`,
+        {
+          status: "pending",
+          taskId: null,
+          attempts: name === "reviewed" ? 1 : 0,
+          lastRunId: name === "reviewed" ? "42" : null,
+          lastResultPath: name === "reviewed" ? "result.json" : null,
+          lastPrUrl: null,
+          updatedAt: "2026-07-19T00:00:00Z",
+          ...(name === "reviewed"
+            ? {
+                review: {
+                  classification: "reviewed_nonlive_source_grounded_wait",
+                  reviewedAt: "2026-07-19T00:00:00Z",
+                },
+                successorDisposition: "reviewed_nonlive_source_grounded_wait",
+                successorEvidencePath: "evidence/archive/spec-reviewed.md",
+                resumeCondition: "Resume after the execution posture changes.",
+                terminalDisposition: false,
+              }
+            : {}),
+        },
+      ]),
+    );
+    const tasks = Object.fromEntries(
+      representedSpecs.map((name) => [
+        `holder-${name}`,
+        {
+          id: `holder-${name}`,
+          item_type: "task",
+          phase: "running",
+          input: {
+            loopId: "aks-spec-verification-loop",
+            workKey: `spec.${name}`,
+          },
+        },
+      ]),
+    );
+    const ws = await workspace({ specs, tasks });
+
+    const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
+
+    expect(result.output.state).toBe("converged");
+    expect(result.output.actions).toHaveLength(3);
+    expect(result.output.actions.map((action: any) => action.input.specId)).toEqual([
+      "spec.reviewed",
+      "spec.seven",
+      "spec.six",
+    ]);
+    expect(result.output.actions).toSatisfy((actions: Array<any>) =>
+      actions.every(
+        (action) =>
+          action.parentId === "aks-spec-verification-loop" &&
+          action.owner === "aks-explorer" &&
+          action.dependsOn?.length === 1 &&
+          action.dependsOn[0].startsWith("holder-"),
+      ),
+    );
+    expect(result.output.actions[0].workflow).toBe("domain-task-execution");
+    expect(result.output.actions.slice(1)).toSatisfy((actions: Array<any>) =>
+      actions.every((action) => action.workflow === "spec-live-reconciliation"),
+    );
+  });
+
+  test("replaces an attention-only holder with bounded runnable work", async () => {
     const ws = await workspace({
       specs: {
         "spec.example": {
@@ -415,17 +500,24 @@ describe("spec loop reconciliation workflow", () => {
       },
     });
     const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
-    expect(result).toMatchObject({
-      output: {
-        state: "needs-owner",
-      },
+    expect(result.output).toMatchObject({
+      state: "converged",
+      actions: [
+        {
+          kind: "create-task",
+          parentId: "aks-spec-verification-loop",
+          owner: "aks-explorer",
+          workflow: "spec-live-reconciliation",
+          input: { specId: "spec.example" },
+        },
+      ],
     });
-    expect(result.output).not.toHaveProperty("actions");
-    expect(result.output.summary).toContain("1 attention");
+    expect(result.output.actions).toHaveLength(1);
+    expect(result.output.actions[0].dependsOn).toBeUndefined();
     expect(result.output.conditions).toBeUndefined();
   });
 
-  test("surfaces an unknown deterministic representation to the owner", async () => {
+  test("replaces an unknown deterministic review holder with bounded runnable work", async () => {
     const ws = await workspace({
       specs: {
         "spec.kms.v2plus-pmk-migrate-cmk-private-kv-lifecycle": {
@@ -448,13 +540,22 @@ describe("spec loop reconciliation workflow", () => {
       },
     });
     const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
-    expect(result).toMatchObject({
-      output: {
-        state: "needs-owner",
-      },
+    expect(result.output).toMatchObject({
+      state: "converged",
+      actions: [
+        {
+          kind: "create-task",
+          parentId: "aks-spec-verification-loop",
+          owner: "aks-explorer",
+          workflow: "spec-live-reconciliation",
+          input: {
+            specId: "spec.kms.v2plus-pmk-migrate-cmk-private-kv-lifecycle",
+          },
+        },
+      ],
     });
-    expect(result.output).not.toHaveProperty("actions");
-    expect(result.output.summary).toContain("1 attention");
+    expect(result.output.actions).toHaveLength(1);
+    expect(result.output.actions[0].dependsOn).toBeUndefined();
   });
 
   test("treats holder-backed live tasks as representation when ledger taskId is stale or null", async () => {
@@ -822,7 +923,7 @@ describe("spec loop reconciliation workflow", () => {
     expect(persisted.specs["spec.reviewed"]?.terminalDisposition).toBe(true);
   });
 
-  test("treats existing old-shape disposition repair tasks as represented", async () => {
+  test("replaces an old-shape attention disposition repair with bounded repair work", async () => {
     const ws = await workspace({
       specs: {
         "spec.network-acns.retina-enterprise-k8s-upgrade": {
@@ -861,8 +962,21 @@ describe("spec loop reconciliation workflow", () => {
 
     const result = (await execute(context(ws.appDir, ws.projectDir))) as any;
 
-    expect(result.output.state).toBe("needs-owner");
-    expect(result.output).not.toHaveProperty("actions");
-    expect(result.output.summary).toContain("1 attention");
+    expect(result.output).toMatchObject({
+      state: "converged",
+      actions: [
+        {
+          kind: "create-task",
+          parentId: "aks-spec-verification-loop",
+          owner: "aks-explorer",
+          workflow: "domain-task-execution",
+          input: {
+            specId: "spec.network-acns.retina-enterprise-k8s-upgrade",
+          },
+        },
+      ],
+    });
+    expect(result.output.actions).toHaveLength(1);
+    expect(result.output.actions[0].dependsOn).toBeUndefined();
   });
 });

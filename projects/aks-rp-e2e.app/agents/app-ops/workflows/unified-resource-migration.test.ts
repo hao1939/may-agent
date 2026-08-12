@@ -2,9 +2,70 @@ import { expect, test } from "bun:test";
 
 import {
   completedIdentityRepairActions,
+  ownerReviewChildReleaseActions,
   producerlessWaitCloseActions,
   projectStateHolderCloseActions,
 } from "./unified-resource-migration";
+
+test("moves finite owner-review children to stable project groups", () => {
+  expect(
+    ownerReviewChildReleaseActions({
+      resources: {
+        "ops/waiting-child": {
+          metadata: { generation: 3 },
+          spec: {
+            mode: "achieve",
+            parentId: "runtime/owner-review",
+            owner: "app-ops",
+            category: "ops",
+          },
+          status: { phase: "waiting", conditionIds: [] },
+        },
+        "domain/pending-child": {
+          metadata: { generation: 2 },
+          spec: {
+            mode: "achieve",
+            parentId: "runtime/owner-review",
+            owner: "aks-explorer",
+            category: "domain",
+          },
+          status: { phase: "pending", conditionIds: [] },
+        },
+        "ops/running-child": {
+          metadata: { generation: 1 },
+          spec: {
+            mode: "achieve",
+            parentId: "runtime/owner-review",
+            owner: "app-ops",
+          },
+          status: { phase: "running", conditionIds: [] },
+        },
+        "ops/unrelated": {
+          metadata: { generation: 1 },
+          spec: {
+            mode: "achieve",
+            parentId: "group/app-operations",
+            owner: "app-ops",
+          },
+          status: { phase: "waiting", conditionIds: [] },
+        },
+      },
+    }),
+  ).toEqual([
+    {
+      kind: "update-task",
+      taskId: "domain/pending-child",
+      expectedGeneration: 2,
+      parentId: "group/domain-work",
+    },
+    {
+      kind: "update-task",
+      taskId: "ops/waiting-child",
+      expectedGeneration: 3,
+      parentId: "group/app-operations",
+    },
+  ]);
+});
 
 test("closes only a named childless legacy project-state holder", () => {
   const condition = (type: string) => ({ spec: { type } });

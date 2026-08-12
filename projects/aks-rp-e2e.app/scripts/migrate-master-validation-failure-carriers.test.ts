@@ -224,4 +224,45 @@ describe("master-validation failure carrier migration", () => {
       `Carrier ${id} still has a current attempt`,
     );
   });
+
+  it("does not revise an already canonical dependency", () => {
+    const specId = "spec.example";
+    const canonicalId = masterValidationFailureTaskId(specId);
+    const tree: TaskTree = {
+      tasks: {},
+      resources: {
+        [canonicalId]: carrier(
+          canonicalId,
+          specId,
+          "current-fingerprint",
+          "2026-08-04T00:00:00.000Z",
+          "condition",
+        ),
+        dependent: {
+          metadata: { id: "dependent", generation: 1, resourceVersion: 7 },
+          spec: {
+            parentId: "group/domain-work",
+            outcome: "Wait for the current spec issue",
+            acceptance: ["done"],
+            mode: "achieve",
+            owner: "app-ops",
+            outputs: [],
+            dependsOn: [canonicalId],
+            priority: "P1",
+          },
+          status: {
+            observedGeneration: 0,
+            phase: "pending",
+            updatedAt: "2026-08-04T00:00:00.000Z",
+          },
+        },
+      },
+    };
+
+    const stats = migrateMasterValidationFailureCarriers(tree);
+
+    expect(stats.dependenciesRetargeted).toBe(0);
+    expect(tree.resources?.dependent?.metadata.resourceVersion).toBe(7);
+    expect(tree.resources?.dependent?.spec.dependsOn).toEqual([canonicalId]);
+  });
 });

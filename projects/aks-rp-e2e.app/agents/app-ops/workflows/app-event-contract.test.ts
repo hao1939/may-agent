@@ -11,7 +11,12 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
+import type { TaskTree } from "@may-agent/sdk";
+import { applyProjectAppConditionEvent } from "../../../../may-agent/src/app/project-app-condition-tracker.ts";
 import app, {
+  masterValidationCapacityPulseEventType,
+  masterValidationCapacityPulseIdempotencyKey,
+  masterValidationCycleSlot,
   masterValidationScheduleGate,
   malformedApprovalWaitContract,
   resolveAksTask,
@@ -28,6 +33,7 @@ type EventSelector =
       project?: string;
       owner?: string;
       actions?: string[];
+      intents?: string[];
     };
 
 type ProjectAction = {
@@ -354,10 +360,93 @@ describe("app event contract", () => {
               "evidence/archive/ops-request-tmp-origin-dev-42642b6c-residue-cleanup-approval-20260801-packet.md",
           },
         },
+        {
+          type: "message.resolved",
+          source: "aks-rp-e2e-app",
+          owner: "agent:app-ops",
+          target: { project: projectId },
+          data: {
+            openEventId: 4844998,
+            openEventType: "message.created",
+            project: projectId,
+            projectId,
+            disposition: "answered",
+            outcome: "fulfilled",
+            summary: `Applied the approve decision to approval ${approvalId}.`,
+            taskRefs: [{ projectId, taskId: waitingTaskId }],
+          },
+          trace: {
+            traceId: "event:4844998",
+            parentEventId: 4844998,
+            links: [
+              {
+                eventId: 4844998,
+                type: "closure",
+                label: "message.resolved",
+              },
+            ],
+          },
+        },
       ]);
     } finally {
       rmSync(appDir, { recursive: true, force: true });
     }
+  });
+
+  test("claims only approval decisions and leaves ordinary owner messages to the shared lifecycle", () => {
+    const messageSelectors = app.events.filter(
+      (selector) =>
+        typeof selector !== "string" && selector.type === "message.created",
+    );
+    expect(messageSelectors).toEqual([
+      {
+        type: "message.created",
+        owner: "agent:app-ops",
+        intents: ["approval-decision"],
+      },
+    ]);
+  });
+
+  test("sends an unclear approval decision to ordinary owner review with the original message identity", async () => {
+    const emitted: Record<string, unknown>[] = [];
+    const result = await routeAksEvent(
+      {
+        appPath: () => "/missing-approval-state",
+        emit: (value: Record<string, unknown>) => emitted.push(value),
+      } as never,
+      {
+        type: "message.created",
+        source: "agent:may",
+        owner: "agent:app-ops",
+        eventId: 4845001,
+        data: {
+          from: "may",
+          to: "app-ops",
+          intent: "approval-decision",
+          content: "Approve this one.",
+        },
+      },
+    );
+
+    expect(result).toEqual({
+      approvalDecisionProjected: false,
+      ownerReviewRequested: true,
+      reason: "approval-decision-needs-clarification",
+    });
+    expect(emitted).toEqual([
+      expect.objectContaining({
+        type: "project.owner.requested",
+        owner: "agent:app-ops",
+        target: { project: projectId },
+        data: expect.objectContaining({
+          reason: "owner-message",
+          inputEventId: 4845001,
+          inputEventType: "message.created",
+          instruction: "Approve this one.",
+        }),
+        trace: expect.objectContaining({ parentEventId: 4845001 }),
+      }),
+    ]);
   });
 
   test("refreshes owner-visible readout when the controller promotes a runnable task into the live active frontier", async () => {
@@ -900,12 +989,12 @@ describe("app event contract", () => {
         target: { project: projectId },
       }),
     ).toMatchObject({
-      id: "runtime/unified-resource-migration-resource-liveness-v2",
+      id: "runtime/unified-resource-migration-resource-liveness-v3",
       parentId: "group/app-operations",
       mode: "achieve",
       owner: "app-ops",
       workflow: "unified-resource-migration",
-      input: { migration: "resource-liveness-v2" },
+      input: { migration: "resource-liveness-v3" },
     });
   });
 
@@ -1948,6 +2037,130 @@ describe("app event contract", () => {
     } finally {
       rmSync(appDir, { recursive: true, force: true });
     }
+  });
+
+  test("accepts structured AzureLinux publication events and wakes only after a new published version", async () => {
+    expect(
+      app.events?.some(
+        (selector) =>
+          typeof selector === "object" &&
+          selector.type === "aks.node-image-publication.state",
+      ),
+    ).toBe(true);
+
+    const emitted: Record<string, unknown>[] = [];
+    const result = await routeAksEvent(
+      {
+        appPath: (path = ".") => resolve("/tmp", path),
+        emit: (value: Record<string, unknown>) => emitted.push(value),
+      } as never,
+      {
+        type: "aks.node-image-publication.state",
+        target: { project: projectId },
+        data: {
+          project: projectId,
+          targetName: "staging",
+          location: "westus2",
+          imageFamily: "AKSAzureLinux",
+          channel: "SecurityPatch",
+          publishedVersion: "AKSAzureLinux-V3gen2-202607.29.0",
+        },
+      },
+    );
+    expect(result).toEqual({
+      nodeImagePublicationObserved: true,
+      targetName: "staging",
+      location: "westus2",
+      imageFamily: "AKSAzureLinux",
+      channel: "SecurityPatch",
+      publishedVersion: "AKSAzureLinux-V3gen2-202607.29.0",
+      conditionTracking: "shared-runtime",
+    });
+    expect(emitted).toEqual([]);
+
+    const tree: TaskTree = {
+      version: 2,
+      project: projectId,
+      tasks: {},
+      resources: {
+        "domain/spec.ccp-security-patch.azurelinux-prod-mtc": {
+          metadata: {
+            id: "domain/spec.ccp-security-patch.azurelinux-prod-mtc",
+            generation: 1,
+            resourceVersion: 1,
+          },
+          spec: {
+            parentId: "group/domain",
+            outcome:
+              "Wait for a newer westus2 AzureLinux security patch publication.",
+            acceptance: [],
+            mode: "achieve",
+          },
+          status: {
+            observedGeneration: 1,
+            phase: "waiting",
+            conditionIds: ["azurelinux-publication-after-202607.29.0"],
+            updatedAt: "2026-08-05T12:20:00.000Z",
+          },
+        },
+      },
+      conditions: {
+        "azurelinux-publication-after-202607.29.0": {
+          metadata: {
+            id: "azurelinux-publication-after-202607.29.0",
+            generation: 1,
+            resourceVersion: 1,
+          },
+          spec: {
+            type: "aks.node-image-publication.state",
+            subject: "project:aks-rp-e2e",
+            expected: {
+              targetName: "staging",
+              location: "westus2",
+              imageFamily: "AKSAzureLinux",
+              channel: "SecurityPatch",
+              field: "publishedVersion",
+              notEquals: "AKSAzureLinux-V3gen2-202607.29.0",
+            },
+          },
+          status: {
+            observedGeneration: 1,
+            state: "unknown",
+            observedAt: "2026-08-05T12:20:00.000Z",
+          },
+        },
+      },
+    };
+
+    expect(
+      applyProjectAppConditionEvent(tree, {
+        type: "aks.node-image-publication.state",
+        project: projectId,
+        targetName: "staging",
+        location: "westus2",
+        imageFamily: "AKSAzureLinux",
+        channel: "SecurityPatch",
+        publishedVersion: "AKSAzureLinux-V3gen2-202607.29.0",
+        timestamp: Date.parse("2026-08-05T12:21:00.000Z"),
+      }),
+    ).toEqual([]);
+    expect(
+      applyProjectAppConditionEvent(tree, {
+        type: "aks.node-image-publication.state",
+        project: projectId,
+        targetName: "staging",
+        location: "westus2",
+        imageFamily: "AKSAzureLinux",
+        channel: "SecurityPatch",
+        publishedVersion: "AKSAzureLinux-V3gen2-202608.01.0",
+        timestamp: Date.parse("2026-08-05T12:22:00.000Z"),
+      }),
+    ).toMatchObject([
+      {
+        taskId: "domain/spec.ccp-security-patch.azurelinux-prod-mtc",
+        conditionId: "azurelinux-publication-after-202607.29.0",
+      },
+    ]);
   });
 
   test("reports malformed approval-return waits without scheduling from reconciliation results", async () => {
@@ -3027,6 +3240,7 @@ describe("app event contract", () => {
       id: "runtime/owner-review",
       mode: "maintain",
       owner: "app-ops",
+      priority: "P1",
     });
     expect(ownerA?.acceptance?.join("\n")).toContain(
       "scenario-normalization is the sole frontier and live-capacity owner",
@@ -3038,6 +3252,25 @@ describe("app event contract", () => {
     expect(ownerA?.workflow).toBeUndefined();
     expect(ownerA?.input).toBeUndefined();
     expect(ownerB?.input).toBeUndefined();
+
+    expect(
+      resolveAksTask({
+        type: "project.comment.created",
+        target: { project: projectId },
+        data: { author: "hao", comment: "continue the current goal" },
+      }),
+    ).toMatchObject({ id: "runtime/owner-review", priority: "P0" });
+    expect(
+      resolveAksTask({
+        type: "project.owner.requested",
+        target: { project: projectId },
+        data: {
+          project: projectId,
+          reason: "owner-message",
+          inputEventType: "message.created",
+        },
+      }),
+    ).toMatchObject({ id: "runtime/owner-review", priority: "P0" });
 
     const earlyFailure = {
       type: "pipeline.test.nonpassing",
@@ -3134,7 +3367,7 @@ describe("app event contract", () => {
         pipelineRunId: "174796530",
         specId: "spec.managed-namespaces.lifecycle",
         summary: expect.stringContaining(
-          "leave classification and source-changing work to the later pipeline.failure.observed artifact event",
+          "wait for this run's pipeline.failure.observed event",
         ),
       }),
     });
@@ -3144,9 +3377,7 @@ describe("app event contract", () => {
       owner: "app-ops",
     });
 
-    const appDir = mkdtempSync(
-      join(tmpdir(), "master-validation-progressive-reuse-"),
-    );
+    const appDir = mkdtempSync(join(tmpdir(), "master-validation-no-reuse-"));
     try {
       writeJson(resolve(appDir, ".state/tasks/state.json"), {
         resources: {
@@ -3182,111 +3413,41 @@ describe("app event contract", () => {
               },
               status: { phase: "waiting" },
             },
-          "domain/master-validation-failure/spec.managed-namespaces.lifecycle/63cb03e81dc5a71f4fb8":
-            {
-              metadata: { generation: 3, resourceVersion: 57 },
-              spec: {
-                parentId: "group/domain-work",
-                outcome:
-                  "Classify and resolve the progressively observed master-validation failure or temporary admission exclusion for spec.managed-namespaces.lifecycle without waiting for the aggregate pipeline to finish.",
-                acceptance: [
-                  "Keep the older managed-namespaces carrier current.",
-                ],
-                mode: "achieve",
-                owner: "aks-explorer",
-                workflow: "master-validation-failure",
-                input: {
-                  pipelineRunId: "174541834",
-                  sourceBranch:
-                    "refs/heads/validation/master-validation-173301999",
-                  sourceCommit: "e6fc6f662ec8debb0ee6d8bd7df0b5f7c4913c9c",
-                  specId: "spec.managed-namespaces.lifecycle",
-                  status: "fail",
-                  category: "product_failure",
-                  reason: "older artifact-backed managed-namespaces failure",
-                  failureFingerprint: "63cb03e81dc5a71f4fb8",
-                },
-                priority: "P0",
-                category: "domain",
-              },
-              status: { phase: "waiting" },
-            },
         },
       });
 
-      const unrelatedOwnerReview = {
-        type: "project.comment.created",
-        target: { project: projectId },
-        data: { project: projectId, comment: "unrelated owner review" },
-      };
-      expect(resolveAksTask(unrelatedOwnerReview)).toMatchObject({
-        id: "runtime/owner-review",
-        mode: "maintain",
-        owner: "app-ops",
-      });
-
-      const reusedFailures: Record<string, unknown>[] = [];
+      const progressiveEvents: Record<string, unknown>[] = [];
       await expect(
         routeAksEvent(
           {
             appPath: (path = ".") => resolve(appDir, path),
             emit: (value: Record<string, unknown>) =>
-              reusedFailures.push(value),
+              progressiveEvents.push(value),
           } as never,
           progressiveFailure,
         ),
       ).resolves.toMatchObject({
-        masterValidationFailureRouted: true,
-        pipelineRunId: "174796530",
-        specId: "spec.managed-namespaces.lifecycle",
-        failureFingerprint: "c17abe6e8a69376e9e6f",
-        stableTaskId:
-          "domain/master-validation-failure/spec.managed-namespaces.lifecycle",
+        masterValidationFailureRouted: false,
+        ownerReviewRequested: true,
+        reason: "master-validation-progressive-awaiting-artifact",
       });
-      expect(reusedFailures).toEqual([
+      expect(progressiveEvents).toEqual([
         expect.objectContaining({
-          type: "pipeline.failure.observed",
+          type: "project.owner.requested",
           source: "aks-rp-e2e-app",
           target: { project: projectId },
-          failureFingerprint: "c17abe6e8a69376e9e6f",
-          stableTaskId:
-            "domain/master-validation-failure/spec.managed-namespaces.lifecycle",
           data: expect.objectContaining({
             pipelineRunId: "174796530",
             specId: "spec.managed-namespaces.lifecycle",
-            category: "product_failure",
-            reason: "one or more public kube validations failed",
-            artifactName: "slice-05-test-results",
-            artifactPath:
-              "/artifacts/174826569/slice-05-test-results/result.json",
-            progressiveObservation: true,
+            reason: "master-validation-progressive-nonpassing",
           }),
         }),
       ]);
-      expect(resolveAksTask(reusedFailures[0])).toMatchObject({
-        id: "domain/master-validation-failure/spec.managed-namespaces.lifecycle",
-        parentId: "group/domain-work",
-        owner: "aks-explorer",
-        workflow: "master-validation-failure",
-        input: expect.objectContaining({
-          validationTaskId: "master-validation-staging-cycle",
-          pipelineRunId: "174796530",
-          specId: "spec.managed-namespaces.lifecycle",
-          failureFingerprint: "c17abe6e8a69376e9e6f",
-          progressiveObservation: true,
-        }),
-      });
-      expect(
-        resolveAksTask({
-          ...reusedFailures[0],
-          failureFingerprint: "different-episode",
-          data: {
-            ...(reusedFailures[0] as { data: Record<string, unknown> }).data,
-            failureFingerprint: "different-episode",
-          },
-        })?.id,
-      ).toBe(
-        "domain/master-validation-failure/spec.managed-namespaces.lifecycle",
+      expect(JSON.stringify(progressiveEvents)).not.toContain(
+        "/artifacts/174826569/",
+      );
+      expect(JSON.stringify(progressiveEvents)).not.toContain(
+        "one or more public kube validations failed",
       );
     } finally {
       rmSync(appDir, { recursive: true, force: true });
@@ -3315,6 +3476,23 @@ describe("app event contract", () => {
       parentId: "group/feature-compact",
       owner: "app-ops",
       workflow: "feature-compact-loop-controller",
+    });
+    expect(
+      resolveAksTask({
+        type: "project.task.tick",
+        action: "master-validation-compact",
+        target: { project: projectId, taskId: "master-validation-compact" },
+      }),
+    ).toMatchObject({
+      id: "master-validation-compact",
+      parentId: "group/feature-compact",
+      owner: "aks-explorer",
+      mode: "maintain",
+      priority: "P0",
+      input: {
+        selectorPath: "ci/feature-sets/master-validation.txt",
+        maximumClusterCreates: 16,
+      },
     });
     expect(
       resolveAksTask({
@@ -3426,6 +3604,11 @@ describe("app event contract", () => {
           action: "feature-compact-loop",
           target: { project: projectId, taskId: "aks-feature-compact-loop" },
         }),
+        expect.objectContaining({
+          type: "project.task.tick",
+          action: "master-validation-compact",
+          target: { project: projectId, taskId: "master-validation-compact" },
+        }),
       ]),
     );
   });
@@ -3532,7 +3715,7 @@ describe("app event contract", () => {
     }
   });
 
-  test("an active frozen campaign reconciles on the six-hour recovery pulse", async () => {
+  test("an active frozen campaign emits exactly one semantic capacity pulse from the raw check", async () => {
     const appDir = mkdtempSync(
       join(tmpdir(), "master-validation-campaign-gate-"),
     );
@@ -3566,17 +3749,72 @@ describe("app event contract", () => {
           target: { project: projectId },
         },
       );
-      expect(emitted).toHaveLength(1);
-      expect(emitted[0]).toMatchObject({
-        type: "project.task.tick",
-        data: { reason: "master-validation-campaign-reconcile" },
-      });
+      expect(emitted).toEqual([
+        expect.objectContaining({
+          type: masterValidationCapacityPulseEventType,
+          target: { project: projectId },
+          data: expect.objectContaining({
+            project: projectId,
+            gateReason: "campaign-active",
+            cycleSlot: expect.any(Number),
+            idempotencyKey: expect.stringMatching(
+              /^aks-master-validation-capacity-pulse:aks-rp-e2e:\d+$/,
+            ),
+          }),
+        }),
+      ]);
     } finally {
       rmSync(appDir, { recursive: true, force: true });
     }
   });
 
-  test("an exact campaign spec pass overrides the aggregate wait to publish its PR immediately", async () => {
+  test("a semantic capacity pulse wakes the master-validation cycle exactly once", async () => {
+    const appDir = mkdtempSync(
+      join(tmpdir(), "master-validation-capacity-pulse-"),
+    );
+    try {
+      const emitted: Record<string, unknown>[] = [];
+      const result = await routeAksEvent(
+        {
+          appPath: (path = ".") => resolve(appDir, path),
+          emit: (value: Record<string, unknown>) => emitted.push(value),
+        } as never,
+        {
+          type: masterValidationCapacityPulseEventType,
+          target: { project: projectId },
+          data: {
+            project: projectId,
+            gateReason: "campaign-active",
+            cycleSlot: 82676,
+          },
+        },
+      );
+      expect(result).toEqual({
+        masterValidationCapacityPulseObserved: true,
+        masterValidationCycleWake: true,
+        reason: "campaign-active",
+        cycleSlot: 82676,
+      });
+      expect(emitted).toEqual([
+        expect.objectContaining({
+          type: "project.task.tick",
+          action: "master-validation-cycle",
+          target: {
+            project: projectId,
+            taskId: "master-validation-staging-cycle",
+          },
+          data: expect.objectContaining({
+            reason: "master-validation-campaign-reconcile",
+            cycleSlot: 82676,
+          }),
+        }),
+      ]);
+    } finally {
+      rmSync(appDir, { recursive: true, force: true });
+    }
+  });
+
+  test("an exact focused PR-head pass overrides the aggregate wait to publish its PR immediately", async () => {
     const appDir = mkdtempSync(join(tmpdir(), "master-validation-fix-ready-"));
     try {
       mkdirSync(resolve(appDir, ".state"), { recursive: true });
@@ -3614,8 +3852,8 @@ describe("app event contract", () => {
             specId: "spec.node-ephemeral-disk.master-validation",
             status: "pass",
             pipelineRunId: "173761466",
-            sourceBranch: "refs/heads/validation/master-validation-173646937",
-            sourceCommit: "candidate123",
+            sourceBranch: "refs/heads/task/node-ephemeral",
+            sourceCommit: "fix123",
           },
         },
       );
@@ -3644,7 +3882,7 @@ describe("app event contract", () => {
     }
   });
 
-  test("master validation gate emits a targeted wake after the receipt interval elapses", async () => {
+  test("master validation gate emits one semantic capacity pulse after the receipt interval elapses", async () => {
     const appDir = mkdtempSync(join(tmpdir(), "master-validation-gate-due-"));
     const queuedAt = new Date(
       Date.now() - (6 * 60 * 60_000 + 5 * 60_000),
@@ -3674,27 +3912,173 @@ describe("app event contract", () => {
 
       expect(result).toEqual({
         masterValidationWake: true,
+        capacityPulseEmitted: true,
         reason: "interval-elapsed",
         queuedAt,
         runId: "173596985",
+        cycleSlot: expect.any(Number),
       });
       expect(emitted).toEqual([
         expect.objectContaining({
-          type: "project.task.tick",
-          action: "master-validation-cycle",
-          target: {
-            project: projectId,
-            taskId: "master-validation-staging-cycle",
-          },
+          type: masterValidationCapacityPulseEventType,
+          target: { project: projectId },
           data: expect.objectContaining({
-            reason: "scheduled-six-hour-master-validation",
+            project: projectId,
+            gateReason: "interval-elapsed",
             cycleSlot: expect.any(Number),
+            idempotencyKey: expect.stringMatching(
+              /^aks-master-validation-capacity-pulse:aks-rp-e2e:\d+$/,
+            ),
+            queuedAt,
+            runId: "173596985",
+            sourceCommit: "b6ed0123763895f4584db2e3337145998e44b009",
           }),
         }),
       ]);
     } finally {
       rmSync(appDir, { recursive: true, force: true });
     }
+  });
+
+  test("two due raw checks in the same slot emit the same dedupable semantic pulse payload, and the next slot changes it", async () => {
+    const appDir = mkdtempSync(
+      join(tmpdir(), "master-validation-gate-dedupe-"),
+    );
+    const realNow = Date.now;
+    const baseNow = 82676 * 21_600_000 + 1234;
+    const queuedAt = new Date(
+      baseNow - (6 * 60 * 60_000 + 5 * 60_000),
+    ).toISOString();
+    try {
+      mkdirSync(resolve(appDir, ".state"), { recursive: true });
+      writeFileSync(
+        resolve(appDir, ".state/master-validation-cycle.json"),
+        JSON.stringify({
+          runId: "173596985",
+          sourceCommit: "b6ed0123763895f4584db2e3337145998e44b009",
+          queuedAt,
+        }),
+      );
+
+      Date.now = () => baseNow;
+      const firstEmitted: Record<string, unknown>[] = [];
+      const secondEmitted: Record<string, unknown>[] = [];
+      const nextSlotEmitted: Record<string, unknown>[] = [];
+
+      await routeAksEvent(
+        {
+          appPath: (path = ".") => resolve(appDir, path),
+          emit: (value: Record<string, unknown>) => firstEmitted.push(value),
+        } as never,
+        {
+          type: "aks.master-validation.check",
+          target: { project: projectId },
+        },
+      );
+
+      await routeAksEvent(
+        {
+          appPath: (path = ".") => resolve(appDir, path),
+          emit: (value: Record<string, unknown>) => secondEmitted.push(value),
+        } as never,
+        {
+          type: "aks.master-validation.check",
+          target: { project: projectId },
+        },
+      );
+
+      Date.now = () => baseNow + 21_600_000;
+      await routeAksEvent(
+        {
+          appPath: (path = ".") => resolve(appDir, path),
+          emit: (value: Record<string, unknown>) => nextSlotEmitted.push(value),
+        } as never,
+        {
+          type: "aks.master-validation.check",
+          target: { project: projectId },
+        },
+      );
+
+      expect(firstEmitted).toHaveLength(1);
+      expect(secondEmitted).toHaveLength(1);
+      expect(nextSlotEmitted).toHaveLength(1);
+
+      const firstData = firstEmitted[0]?.data as Record<string, unknown>;
+      const secondData = secondEmitted[0]?.data as Record<string, unknown>;
+      const nextSlotData = nextSlotEmitted[0]?.data as Record<string, unknown>;
+
+      expect(firstData).toEqual(secondData);
+      expect(firstData).toMatchObject({
+        project: projectId,
+        gateReason: "interval-elapsed",
+        cycleSlot: masterValidationCycleSlot(baseNow),
+        idempotencyKey: masterValidationCapacityPulseIdempotencyKey(
+          masterValidationCycleSlot(baseNow),
+        ),
+        queuedAt,
+        runId: "173596985",
+        sourceCommit: "b6ed0123763895f4584db2e3337145998e44b009",
+      });
+      expect(nextSlotData).toMatchObject({
+        project: projectId,
+        gateReason: "interval-elapsed",
+        cycleSlot: masterValidationCycleSlot(baseNow + 21_600_000),
+        idempotencyKey: masterValidationCapacityPulseIdempotencyKey(
+          masterValidationCycleSlot(baseNow + 21_600_000),
+        ),
+      });
+      expect(nextSlotData).not.toEqual(firstData);
+    } finally {
+      Date.now = realNow;
+      rmSync(appDir, { recursive: true, force: true });
+    }
+  });
+
+  test("semantic master-validation capacity pulses wake the cycle once without re-emitting themselves", async () => {
+    const emitted: Record<string, unknown>[] = [];
+    const result = await routeAksEvent(
+      {
+        emit: (value: Record<string, unknown>) => emitted.push(value),
+      } as never,
+      {
+        type: masterValidationCapacityPulseEventType,
+        target: { project: projectId },
+        data: {
+          project: projectId,
+          gateReason: "interval-elapsed",
+          cycleSlot: 123,
+        },
+      },
+    );
+
+    expect(
+      eventIsHandled({
+        type: masterValidationCapacityPulseEventType,
+        target: { project: projectId },
+      }),
+    ).toBe(true);
+    expect(result).toEqual({
+      masterValidationCapacityPulseObserved: true,
+      masterValidationCycleWake: true,
+      reason: "interval-elapsed",
+      cycleSlot: 123,
+    });
+    expect(emitted).toEqual([
+      expect.objectContaining({
+        type: "project.task.tick",
+        action: "master-validation-cycle",
+        target: {
+          project: projectId,
+          taskId: "master-validation-staging-cycle",
+        },
+        data: {
+          project: projectId,
+          taskId: "master-validation-staging-cycle",
+          reason: "scheduled-six-hour-master-validation",
+          cycleSlot: 123,
+        },
+      }),
+    ]);
   });
 
   test("manual actions emit explicit target events", () => {
@@ -3742,6 +4126,14 @@ describe("app event contract", () => {
       type: "project.task.tick",
       action: "feature-compact-loop",
       target: { project: projectId, taskId: "loop-c" },
+    });
+
+    expect(
+      actionEvent("pulse-master-validation-compact", { taskId: "loop-m" }),
+    ).toMatchObject({
+      type: "project.task.tick",
+      action: "master-validation-compact",
+      target: { project: projectId, taskId: "loop-m" },
     });
 
     expect(actionEvent("pulse-scenario-frontier")).toMatchObject({
@@ -4048,6 +4440,519 @@ describe("app event contract", () => {
         type: "project.task.tick",
         target: { project: projectId, taskId: "scenario-normalization" },
       });
+    } finally {
+      rmSync(appDir, { recursive: true, force: true });
+    }
+  });
+
+  test("routes active PR review changes to the existing master-validation carrier and suppresses repeated fingerprints", async () => {
+    const appDir = mkdtempSync(join(tmpdir(), "pr-review-change-route-"));
+    const taskId =
+      "domain/master-validation-failure/spec.rp-cluster-lifecycle.delete-node-resource-group-reconcile";
+    const reviewEvent = {
+      type: "pull-request.state",
+      target: { project: projectId },
+      eventId: 5085818,
+      data: {
+        pullRequestId: "16692153",
+        state: "active",
+        unresolvedReviewCount: 2,
+        reviewFingerprint: "df13be91ae2f50be",
+        unresolvedReviewThreads: [
+          {
+            threadId: "255297856",
+            path: "runner/scenario-lib/aks-run-command.ts",
+            author: "Reviewer One",
+            content: "Sensitive Data Handling",
+          },
+          {
+            threadId: "255297859",
+            path: "runner/scenario-lib/aks-run-command.test.ts",
+            author: "Reviewer Two",
+            content: "Resource Management",
+          },
+        ],
+      },
+    };
+
+    try {
+      writeJson(resolve(appDir, ".state/tasks/state.json"), {
+        version: 2,
+        project: projectId,
+        resources: {
+          [taskId]: {
+            metadata: { id: taskId, generation: 4, resourceVersion: 27 },
+            spec: {
+              owner: "aks-explorer",
+              workflow: "master-validation-failure",
+              input: {
+                specId:
+                  "spec.rp-cluster-lifecycle.delete-node-resource-group-reconcile",
+                sourceCommit: "c23744c1c547f8a166ee23a74b1c19b7c4277cb1",
+              },
+            },
+            status: {
+              phase: "waiting",
+              evidence: [
+                "pull-request:16692153",
+                "pull-request-review-fingerprint:prior-review-fingerprint",
+              ],
+            },
+          },
+        },
+      });
+
+      const emitted: Record<string, unknown>[] = [];
+      const result = await routeAksEvent(
+        {
+          appPath: (path = ".") => resolve(appDir, path),
+          emit: (value: Record<string, unknown>) => emitted.push(value),
+        } as never,
+        reviewEvent,
+      );
+
+      expect(result).toEqual({
+        pullRequestObserved: true,
+        pullRequestId: "16692153",
+        state: "active",
+        unresolvedReviewCount: 2,
+        masterValidationFailureWake: true,
+        taskId,
+        reviewFingerprint: "df13be91ae2f50be",
+      });
+      expect(emitted).toEqual([
+        expect.objectContaining({
+          type: "project.task.tick",
+          source: "aks-rp-e2e-app",
+          target: { project: projectId, taskId },
+          action: "master-validation-failure",
+          overrideWait: true,
+          data: {
+            project: projectId,
+            taskId,
+            task_id: taskId,
+            reason: "pull-request-review-changed",
+            overrideWait: true,
+            pullRequestId: "16692153",
+            unresolvedReviewCount: 2,
+            reviewFingerprint: "df13be91ae2f50be",
+            pullRequestStateEventId: 5085818,
+            unresolvedReviewThreads: [
+              {
+                threadId: "255297856",
+                path: "runner/scenario-lib/aks-run-command.ts",
+                author: "Reviewer One",
+                content: "Sensitive Data Handling",
+              },
+              {
+                threadId: "255297859",
+                path: "runner/scenario-lib/aks-run-command.test.ts",
+                author: "Reviewer Two",
+                content: "Resource Management",
+              },
+            ],
+            summary: expect.stringContaining("255297856,255297859"),
+          },
+        }),
+      ]);
+
+      writeJson(resolve(appDir, ".state/tasks/state.json"), {
+        version: 2,
+        project: projectId,
+        resources: {
+          [taskId]: {
+            metadata: { id: taskId, generation: 5, resourceVersion: 28 },
+            spec: {
+              owner: "aks-explorer",
+              workflow: "master-validation-failure",
+              input: {
+                specId:
+                  "spec.rp-cluster-lifecycle.delete-node-resource-group-reconcile",
+                sourceCommit: "c23744c1c547f8a166ee23a74b1c19b7c4277cb1",
+              },
+            },
+            status: {
+              phase: "waiting",
+              evidence: [
+                "pull-request:16692153",
+                "pull-request-review-fingerprint:df13be91ae2f50be",
+              ],
+            },
+          },
+        },
+      });
+
+      const repeatedEmitted: Record<string, unknown>[] = [];
+      const repeated = await routeAksEvent(
+        {
+          appPath: (path = ".") => resolve(appDir, path),
+          emit: (value: Record<string, unknown>) => repeatedEmitted.push(value),
+        } as never,
+        reviewEvent,
+      );
+
+      expect(repeated).toEqual({
+        pullRequestObserved: true,
+        pullRequestId: "16692153",
+        state: "active",
+        unresolvedReviewCount: 2,
+        masterValidationFailureWake: false,
+        taskId,
+        reviewFingerprint: "df13be91ae2f50be",
+      });
+      expect(repeatedEmitted).toEqual([]);
+    } finally {
+      rmSync(appDir, { recursive: true, force: true });
+    }
+  });
+
+  test("routes PR review changes to the standalone route-verification carrier", async () => {
+    const appDir = mkdtempSync(join(tmpdir(), "route-proof-pr-review-route-"));
+    const taskId =
+      "domain/master-validation-route-verification/spec.service-platform.queuewatcher/b89108cb16c9";
+
+    try {
+      writeJson(resolve(appDir, ".state/tasks/state.json"), {
+        version: 2,
+        project: projectId,
+        resources: {
+          [taskId]: {
+            metadata: { id: taskId, generation: 1, resourceVersion: 20 },
+            spec: {
+              owner: "aks-explorer",
+              workflow: "master-validation-route-verification",
+              input: { specId: "spec.service-platform.queuewatcher" },
+            },
+            status: {
+              phase: "waiting",
+              evidence: [
+                "pull-request:16730865",
+                "pull-request-review-fingerprint:prior-review",
+                "pull-request-unresolved-review-count:0",
+              ],
+            },
+          },
+        },
+      });
+
+      const emitted: Record<string, unknown>[] = [];
+      const result = await routeAksEvent(
+        {
+          appPath: (path = ".") => resolve(appDir, path),
+          emit: (value: Record<string, unknown>) => emitted.push(value),
+        } as never,
+        {
+          type: "pull-request.state",
+          target: { project: projectId },
+          eventId: 5278509,
+          data: {
+            pullRequestId: "16730865",
+            state: "active",
+            unresolvedReviewCount: 2,
+            reviewFingerprint: "ecb147cc40a69592",
+            unresolvedReviewThreads: [
+              { threadId: "255816679", content: "Protect cluster cleanup." },
+              {
+                threadId: "255816685",
+                content: "Protect resource-group cleanup.",
+              },
+            ],
+          },
+        },
+      );
+
+      expect(result).toMatchObject({
+        masterValidationFailureWake: true,
+        taskId,
+        reviewFingerprint: "ecb147cc40a69592",
+      });
+      expect(emitted).toEqual([
+        expect.objectContaining({
+          type: "project.task.tick",
+          target: { project: projectId, taskId },
+          action: "master-validation-route-verification",
+          data: expect.objectContaining({
+            reason: "pull-request-review-changed",
+            pullRequestId: "16730865",
+            unresolvedReviewCount: 2,
+            pullRequestStateEventId: 5278509,
+          }),
+        }),
+      ]);
+    } finally {
+      rmSync(appDir, { recursive: true, force: true });
+    }
+  });
+
+  test("wakes the active master-validation campaign for a changed focused PR head only until it is integrated", async () => {
+    const appDir = mkdtempSync(join(tmpdir(), "campaign-pr-head-route-"));
+    const taskId =
+      "domain/master-validation-failure/spec.service-platform.queuewatcher";
+    const pullRequestId = "16712127";
+    const sourceCommit = "5c995c8fd3542cce4128dad84cd845a96076725a";
+    const campaignBase = "5f4c00f34fb32cacc2d70f188599a3599d1a64fa";
+    const campaign = {
+      schemaVersion: "1",
+      baselineRunId: "175600111",
+      baseCommit: campaignBase,
+      branch: "validation/master-validation-175600111",
+      currentCommit: "97efc154a4eabb7b49adba8fc3884301a10f84f5",
+      integratedFixes: [],
+      updatedAt: "2026-08-07T07:21:39.115Z",
+    };
+    const pullRequestEvent = {
+      type: "pull-request.state",
+      target: { project: projectId },
+      data: {
+        pullRequestId,
+        state: "active",
+        sourceCommit,
+        unresolvedReviewCount: 0,
+      },
+    };
+
+    try {
+      writeJson(resolve(appDir, ".state/tasks/state.json"), {
+        version: 2,
+        project: projectId,
+        resources: {
+          [taskId]: {
+            metadata: { id: taskId, generation: 4, resourceVersion: 31 },
+            spec: {
+              owner: "aks-explorer",
+              workflow: "master-validation-failure",
+              input: { specId: "spec.service-platform.queuewatcher" },
+            },
+            status: {
+              phase: "waiting",
+              evidence: [
+                `pull-request:${pullRequestId}`,
+                `campaign-base:${campaignBase}`,
+                `source-commit:${sourceCommit}`,
+              ],
+            },
+          },
+        },
+      });
+      writeJson(
+        resolve(appDir, ".state/master-validation-campaign.json"),
+        campaign,
+      );
+
+      const emitted: Record<string, unknown>[] = [];
+      const result = await routeAksEvent(
+        {
+          appPath: (path = ".") => resolve(appDir, path),
+          emit: (value: Record<string, unknown>) => emitted.push(value),
+        } as never,
+        pullRequestEvent,
+      );
+
+      expect(result).toEqual({
+        pullRequestObserved: true,
+        pullRequestId,
+        state: "active",
+        unresolvedReviewCount: 0,
+        masterValidationFailureWake: false,
+        masterValidationCycleWake: true,
+        taskId,
+        reviewFingerprint: null,
+      });
+      expect(emitted).toEqual([
+        {
+          type: "project.task.tick",
+          source: "aks-rp-e2e-app",
+          target: {
+            project: projectId,
+            taskId: "master-validation-staging-cycle",
+          },
+          action: "master-validation-cycle",
+          overrideWait: true,
+          data: {
+            project: projectId,
+            taskId: "master-validation-staging-cycle",
+            task_id: "master-validation-staging-cycle",
+            reason: "master-validation-focused-pr-changed",
+            overrideWait: true,
+            pullRequestId,
+            sourceCommit,
+            repairTaskId: taskId,
+          },
+        },
+      ]);
+
+      writeJson(resolve(appDir, ".state/master-validation-campaign.json"), {
+        ...campaign,
+        integratedFixes: [
+          {
+            pullRequestId,
+            taskId,
+            sourceBranch: "task/queuewatcher",
+            sourceCommit,
+            campaignBaseCommit: campaignBase,
+            targetCommit: campaignBase,
+            title: "Fix Queuewatcher admission",
+            patchIds: ["patch-id"],
+          },
+        ],
+      });
+      const repeatedEmitted: Record<string, unknown>[] = [];
+      const repeated = await routeAksEvent(
+        {
+          appPath: (path = ".") => resolve(appDir, path),
+          emit: (value: Record<string, unknown>) => repeatedEmitted.push(value),
+        } as never,
+        pullRequestEvent,
+      );
+      expect(repeated).toEqual({
+        pullRequestObserved: true,
+        pullRequestId,
+        state: "active",
+        unresolvedReviewCount: 0,
+        masterValidationFailureWake: false,
+        taskId,
+        reviewFingerprint: null,
+      });
+      expect(repeatedEmitted).toEqual([]);
+    } finally {
+      rmSync(appDir, { recursive: true, force: true });
+    }
+  });
+
+  test("routes active PR review changes to an existing non-spec publication carrier and suppresses repeated fingerprints", async () => {
+    const appDir = mkdtempSync(
+      join(tmpdir(), "pr-review-change-publication-route-"),
+    );
+    const taskId =
+      "domain/publish-master-validation-current-main-direct-node-proof-repair-8a462485-20260804";
+    const reviewEvent = {
+      type: "pull-request.state",
+      target: { project: projectId },
+      eventId: 5099625,
+      data: {
+        pullRequestId: "16693575",
+        state: "active",
+        unresolvedReviewCount: 1,
+        reviewFingerprint: "ee3dd77a3da02bc8",
+        unresolvedReviewThreads: [
+          {
+            threadId: "255301000",
+            path: "/features/node-pool-config/tests/node-pool-config-ephemeral-disk.test.ts",
+            author: "GitOps (Git LowPriv)",
+            content:
+              "Use the shared direct-node helper instead of duplicating cleanup logic.",
+          },
+        ],
+      },
+    };
+
+    try {
+      writeJson(resolve(appDir, ".state/tasks/state.json"), {
+        version: 2,
+        project: projectId,
+        resources: {
+          [taskId]: {
+            metadata: { id: taskId, generation: 1, resourceVersion: 20 },
+            spec: {
+              owner: "aks-explorer",
+              workflow: "non-spec-main-publication",
+              input: {
+                targetBranch: "main",
+                allowedChangedFiles: [
+                  "features/node-pool-config/lib/node-pool-config-custom-ca.ts",
+                ],
+              },
+            },
+            status: {
+              phase: "waiting",
+              evidence: [
+                "pull-request:16693575",
+                "pull-request-review-fingerprint:prior-review-fingerprint",
+                "pull-request-unresolved-review-count:1",
+              ],
+            },
+          },
+        },
+      });
+
+      const emitted: Record<string, unknown>[] = [];
+      const result = await routeAksEvent(
+        {
+          appPath: (path = ".") => resolve(appDir, path),
+          emit: (value: Record<string, unknown>) => emitted.push(value),
+        } as never,
+        reviewEvent,
+      );
+
+      expect(result).toEqual({
+        pullRequestObserved: true,
+        pullRequestId: "16693575",
+        state: "active",
+        unresolvedReviewCount: 1,
+        masterValidationFailureWake: true,
+        taskId,
+        reviewFingerprint: "ee3dd77a3da02bc8",
+      });
+      expect(emitted).toEqual([
+        expect.objectContaining({
+          type: "project.task.tick",
+          source: "aks-rp-e2e-app",
+          target: { project: projectId, taskId },
+          action: "non-spec-main-publication",
+          overrideWait: true,
+          data: expect.objectContaining({
+            reason: "pull-request-review-changed",
+            pullRequestId: "16693575",
+            pullRequestStateEventId: 5099625,
+            reviewFingerprint: "ee3dd77a3da02bc8",
+          }),
+        }),
+      ]);
+
+      writeJson(resolve(appDir, ".state/tasks/state.json"), {
+        version: 2,
+        project: projectId,
+        resources: {
+          [taskId]: {
+            metadata: { id: taskId, generation: 1, resourceVersion: 21 },
+            spec: {
+              owner: "aks-explorer",
+              workflow: "non-spec-main-publication",
+              input: {
+                targetBranch: "main",
+              },
+            },
+            status: {
+              phase: "waiting",
+              evidence: [
+                "pull-request:16693575",
+                "pull-request-review-fingerprint:ee3dd77a3da02bc8",
+                "pull-request-unresolved-review-count:1",
+              ],
+            },
+          },
+        },
+      });
+
+      const repeatedEmitted: Record<string, unknown>[] = [];
+      const repeated = await routeAksEvent(
+        {
+          appPath: (path = ".") => resolve(appDir, path),
+          emit: (value: Record<string, unknown>) => repeatedEmitted.push(value),
+        } as never,
+        reviewEvent,
+      );
+
+      expect(repeated).toEqual({
+        pullRequestObserved: true,
+        pullRequestId: "16693575",
+        state: "active",
+        unresolvedReviewCount: 1,
+        masterValidationFailureWake: false,
+        taskId,
+        reviewFingerprint: "ee3dd77a3da02bc8",
+      });
+      expect(repeatedEmitted).toEqual([]);
     } finally {
       rmSync(appDir, { recursive: true, force: true });
     }

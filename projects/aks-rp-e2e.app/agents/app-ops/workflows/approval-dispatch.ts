@@ -2,6 +2,9 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import {
   resolveTaskTreePath,
+  type ProjectAppTaskHandlerResult,
+  type ProjectAppTaskVerificationContext,
+  type ProjectAppTaskVerificationResult,
   type WorkflowContext,
   type WorkflowResult,
 } from "@may-agent/sdk";
@@ -203,10 +206,35 @@ function latestTrustedDispatchLedgerRow(input: {
   return null;
 }
 
+function approvalDispatchCorrelationKeyFromIntent(
+  input: Record<string, unknown> | undefined,
+): string {
+  const approvalId = stringValue(input?.approvalId);
+  if (approvalId.startsWith("aks-rp-e2e:approval:")) return approvalId;
+
+  const pathId = stringValue(input?.pathId) || stringValue(input?.path_id);
+  const packetPath =
+    stringValue(input?.packetPath) || stringValue(input?.packet_path);
+  if (!pathId || !packetPath) return "";
+
+  return `aks-rp-e2e:approval:${stableIdPart(pathId)}:${stableIdPart(packetPath)}`;
+}
+
 function booleanFlag(value: unknown): boolean | null {
   if (value === true || value === 1 || value === "1") return true;
   if (value === false || value === 0 || value === "0") return false;
   return null;
+}
+
+type QueryDatabase = {
+  prepare(sql: string): {
+    get(...params: unknown[]): unknown;
+  };
+};
+
+function isQueryDatabase(value: unknown): value is QueryDatabase {
+  const candidate = recordValue(value);
+  return typeof candidate?.prepare === "function";
 }
 
 function priorHumanDispatchRemainsDuplicateProof(
@@ -223,7 +251,7 @@ function priorHumanDispatchRemainsDuplicateProof(
 } {
   try {
     const db = ctx.getDb?.();
-    if (!db || typeof db.prepare !== "function") {
+    if (!isQueryDatabase(db)) {
       return {
         suppress: true,
         reason:
@@ -343,6 +371,165 @@ function priorHumanDispatchRemainsDuplicateProof(
         "runtime-db-query-failed; preserve duplicate suppression rather than guessing delivery failure",
     };
   }
+}
+
+function approvalDispatchVerificationInput(
+  context: ProjectAppTaskVerificationContext,
+): {
+  pathId: string;
+  packetPath: string;
+  approvalId: string;
+  waitId: string;
+  correlationKey: string;
+  requiresHumanDecision: boolean;
+} | null {
+  const taskInput = recordValue(context.intent.input);
+  const pathId = stringValue(taskInput?.pathId) || stringValue(taskInput?.path_id);
+  const packetPath =
+    stringValue(taskInput?.packetPath) || stringValue(taskInput?.packet_path);
+  if (!pathId || !packetPath) return null;
+
+  const absolutePacketPath = packetAbsolutePath({
+    appDir: context.appDir,
+    projectDir: context.projectDir,
+    packetPath,
+  });
+  if (!absolutePacketPath) return null;
+
+  const repoPacketPath = packetRepoPath({
+    appDir: context.appDir,
+    projectDir: context.projectDir,
+    absolutePath: absolutePacketPath,
+  });
+  const correlationKey = `aks-rp-e2e:approval:${stableIdPart(pathId)}:${stableIdPart(repoPacketPath)}`;
+  const approvalId =
+    stringValue(taskInput?.approvalId) ||
+    stringValue(taskInput?.approval_id) ||
+    correlationKey;
+  const waitId =
+    stringValue(taskInput?.waitId) ||
+    stringValue(taskInput?.wait_id) ||
+    `wait:${correlationKey}`;
+  const authority = stringValue(taskInput?.authority).toLowerCase();
+  const target = stringValue(taskInput?.target).toLowerCase();
+  const requiresHumanDecision =
+    taskInput?.requiresHumanDecision === true ||
+    taskInput?.requires_human_decision === true ||
+    authority === "human" ||
+    target === "human" ||
+    target === "human:operator";
+
+  return {
+    pathId,
+    packetPath: repoPacketPath,
+    approvalId,
+    waitId,
+    correlationKey,
+    requiresHumanDecision,
+  };
+}
+
+function approvalDispatchTextProof(
+  verification: NonNullable<ReturnType<typeof approvalDispatchVerificationInput>>,
+  result: ProjectAppTaskHandlerResult,
+): boolean {
+  const combined = [result.summary, ...result.evidence].join("\n");
+  const required = [
+    verification.pathId,
+    verification.packetPath,
+    verification.approvalId,
+    verification.waitId,
+    "project.approval.requested",
+  ];
+  if (!required.every((value) => combined.includes(value))) return false;
+  if (verification.requiresHumanDecision) {
+    return combined.includes("message.created");
+  }
+  return combined.includes("project.owner.requested");
+}
+
+export async function verify(
+  context: ProjectAppTaskVerificationContext,
+  result: ProjectAppTaskHandlerResult,
+): Promise<ProjectAppTaskVerificationResult> {
+  if (result.state !== "converged") {
+    return {
+      accepted: false,
+      summary:
+        "Approval dispatch owner handoff may converge only from a converged handler result.",
+      evidence: [`handler-state:${result.state}`],
+    };
+  }
+
+  const verification = approvalDispatchVerificationInput(context);
+  if (!verification) {
+    return {
+      accepted: false,
+      summary:
+        "Approval dispatch verifier requires packetPath and pathId in the task input.",
+      evidence: ["verification-finding:missing-approval-lineage"],
+    };
+  }
+
+  const trustedLedger = latestTrustedDispatchLedgerRow({
+    appDir: context.appDir,
+    correlationKey: verification.correlationKey,
+  });
+  if (trustedLedger) {
+    const expectedLedgerResult = verification.requiresHumanDecision
+      ? "message.created"
+      : "project.owner.requested";
+    if (String(trustedLedger.result ?? "") !== expectedLedgerResult) {
+      return {
+        accepted: false,
+        summary:
+          `Approval dispatch verifier found ${String(trustedLedger.result ?? "unknown")} for ${verification.pathId}, but expected ${expectedLedgerResult}.`,
+        evidence: [
+          `approval-dispatch:${verification.correlationKey}`,
+          `ledger-result:${String(trustedLedger.result ?? "unknown")}`,
+          `expected-ledger-result:${expectedLedgerResult}`,
+        ],
+      };
+    }
+
+    return {
+      accepted: true,
+      summary:
+        `Verified approval-dispatch handoff for ${verification.pathId} from durable ${expectedLedgerResult} proof.`,
+      evidence: [
+        `approval-dispatch:${verification.correlationKey}`,
+        `ledger-result:${expectedLedgerResult}`,
+        "deterministic:owner-handoff-postcondition",
+      ],
+    };
+  }
+
+  if (approvalDispatchTextProof(verification, result)) {
+    return {
+      accepted: true,
+      summary:
+        `Verified approval-dispatch handoff for ${verification.pathId} from exact owner-returned event proof.`,
+      evidence: [
+        `approval-dispatch:${verification.correlationKey}`,
+        verification.requiresHumanDecision
+          ? "event-proof:project.approval.requested+message.created"
+          : "event-proof:project.approval.requested+project.owner.requested",
+        "deterministic:owner-handoff-postcondition",
+      ],
+    };
+  }
+
+  return {
+    accepted: false,
+    summary:
+      `Approval dispatch verifier could not confirm current send proof for ${verification.pathId}.`,
+    evidence: [
+      `approval-dispatch:${verification.correlationKey}`,
+      `expected-packet:${verification.packetPath}`,
+      `expected-approval:${verification.approvalId}`,
+      `expected-wait:${verification.waitId}`,
+    ],
+  };
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {

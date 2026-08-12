@@ -520,6 +520,55 @@ describe("specLoopRepresentationAuthority", () => {
       waitingTaskIds,
     });
   });
+
+  it("excludes projected attention from holder authority while preserving exact waiting holders", () => {
+    const loopTaskId = "aks-spec-verification-loop";
+    const machinesSpecId = "spec.localdns.topology-machines";
+    const networkIsolatedSpecId = "spec.localdns.topology-network-isolated";
+    const machinesHolderId =
+      "spec/verify-spec-localdns-topology-machines-79d198900f";
+    const networkIsolatedHolderId =
+      "spec/verify-spec-localdns-topology-network-isolated-79d198900f";
+    const tree = {
+      tasks: {
+        [loopTaskId]: {
+          id: loopTaskId,
+          children: [machinesHolderId, networkIsolatedHolderId],
+          phase: "converged",
+        },
+        [machinesHolderId]: {
+          id: machinesHolderId,
+          parent_id: loopTaskId,
+          children: [],
+          phase: "waiting",
+          input: { loopId: loopTaskId, specId: machinesSpecId },
+        },
+        [networkIsolatedHolderId]: {
+          id: networkIsolatedHolderId,
+          parent_id: loopTaskId,
+          children: [],
+          phase: "attention",
+          input: { loopId: loopTaskId, specId: networkIsolatedSpecId },
+        },
+      },
+    };
+    const state = {
+      loopTaskId,
+      specs: {
+        [machinesSpecId]: { status: "pending", taskId: machinesHolderId },
+        [networkIsolatedSpecId]: { status: "pending", taskId: null },
+      },
+    };
+
+    expect(specLoopRepresentationAuthority({ tree, state })).toEqual({
+      authorityObserved: true,
+      nonTerminalSpecCount: 2,
+      unrepresentedNonTerminalCount: 1,
+      representedSpecIds: [machinesSpecId],
+      unrepresentedSpecIds: [networkIsolatedSpecId],
+      waitingTaskIds: [machinesHolderId],
+    });
+  });
 });
 
 describe("representedWaitCoveredFrontierDisposition", () => {

@@ -225,7 +225,7 @@ describe("master-validation cycle", () => {
     ]);
   });
 
-  test("publishes only fixes proven by an exact campaign spec pass", () => {
+  test("publishes only a fix proven at the exact focused PR head", () => {
     const campaign = {
       schemaVersion: "1" as const,
       baselineRunId: "100",
@@ -260,16 +260,17 @@ describe("master-validation cycle", () => {
         sourceCommit: "candidate",
       },
     };
-    expect(verifiedCampaignFixPullRequestIds(campaign, event)).toEqual([
-      "7",
-      "8",
-    ]);
+    expect(verifiedCampaignFixPullRequestIds(campaign, event)).toEqual([]);
     expect(
       verifiedCampaignFixPullRequestIds(campaign, {
         ...event,
-        data: { ...event.data, sourceCommit: "older-candidate" },
+        data: {
+          ...event.data,
+          sourceBranch: "refs/heads/task/example",
+          sourceCommit: "fix",
+        },
       }),
-    ).toEqual([]);
+    ).toEqual(["7"]);
     expect(
       fixVerificationTrigger(`
 ## Trigger Event
@@ -279,8 +280,8 @@ ${JSON.stringify({
     reason: "master-validation-fix-verified",
     specId: "spec.example",
     pipelineRunId: "101",
-    sourceBranch: "validation/master-validation-100",
-    sourceCommit: "candidate",
+    sourceBranch: "task/example",
+    sourceCommit: "fix",
     pullRequestIds: ["7"],
   },
 })}
@@ -288,8 +289,8 @@ ${JSON.stringify({
     ).toEqual({
       specId: "spec.example",
       pipelineRunId: "101",
-      sourceBranch: "validation/master-validation-100",
-      sourceCommit: "candidate",
+      sourceBranch: "task/example",
+      sourceCommit: "fix",
       pullRequestIds: ["7"],
     });
   });
@@ -368,6 +369,36 @@ ${JSON.stringify({
       baselineRunId: "main-abcdef123456",
       baseCommit: "abcdef1234567890",
       fixes: [updatedFix],
+      preferredPullRequestIds: ["31"],
+    });
+  });
+
+  test("drops a campaign fix from a current-main successor after its PR closes", () => {
+    const mergedFix = {
+      pullRequestId: "31",
+      taskId: "domain/master-validation-failure/spec.example",
+      sourceBranch: "task/spec-example",
+      sourceCommit: "merged-head",
+      title: "Example repair",
+    };
+    const successor = currentMainCampaignSuccessorInput(
+      {
+        schemaVersion: "1",
+        baselineRunId: "100",
+        baseCommit: "old-main",
+        branch: "validation/master-validation-100",
+        currentCommit: "old-candidate",
+        integratedFixes: [mergedFix],
+        updatedAt: "2026-08-08T00:00:00.000Z",
+      },
+      "abcdef1234567890",
+      [],
+    );
+
+    expect(successor).toEqual({
+      baselineRunId: "main-abcdef123456",
+      baseCommit: "abcdef1234567890",
+      fixes: [],
       preferredPullRequestIds: ["31"],
     });
   });

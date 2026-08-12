@@ -4,6 +4,7 @@ import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join } from "node:path";
 import { execute } from "./feature-compact-loop-controller";
+import { verify as verifyFeatureCompactConvergence } from "../../owner/workflows/feature-compact-reconciliation";
 
 async function workspace(
   item: Record<string, unknown>,
@@ -129,6 +130,133 @@ describe("feature compact reconciliation workflow", () => {
     const ws = await workspace(item("done"));
     expect(await execute(context(ws.appDir, ws.projectDir))).toMatchObject({
       output: { state: "converged", actions: [] },
+    });
+  });
+
+  test("rejects owner convergence when the sole holder disappears but the feature row remains stale and nonterminal", async () => {
+    const ws = await workspace({
+      ...item("pending"),
+      taskId: null,
+      frontierTaskIds: null,
+      inputFingerprint: "feature-input-v1:stale",
+    });
+
+    const verification = await verifyFeatureCompactConvergence(
+      {
+        appId: "aks-rp-e2e",
+        taskId: "compact/compact-feature-networking-observed-shape",
+        generation: 1,
+        appDir: ws.appDir,
+        projectDir: ws.projectDir,
+        workspaceDir: ws.projectDir,
+        intent: {
+          id: "compact/compact-feature-networking-observed-shape",
+          parentId: "aks-feature-compact-loop",
+          outcome: "Reconcile networking compact proof.",
+          acceptance: ["The compact loop state is updated before convergence."],
+          mode: "achieve",
+          owner: "aks-explorer",
+          workflow: "feature-compact-reconciliation",
+          input: { featureKey: "networking" },
+        },
+      },
+      {
+        state: "converged",
+        summary: "Owner accepted proof but omitted ledger projection.",
+        evidence: ["pipeline-run:test-proof"],
+        actions: [],
+      },
+    );
+
+    expect(verification).toMatchObject({
+      accepted: false,
+      summary: expect.stringContaining("status=pending"),
+    });
+  });
+
+  test("admits owner convergence when the current terminal row retains durable proof and no holder residue", async () => {
+    const ws = await workspace(item("done"));
+    await execute(context(ws.appDir, ws.projectDir));
+
+    const verification = await verifyFeatureCompactConvergence(
+      {
+        appId: "aks-rp-e2e",
+        taskId: "compact/compact-feature-networking-current-proof",
+        generation: 1,
+        appDir: ws.appDir,
+        projectDir: ws.projectDir,
+        workspaceDir: ws.projectDir,
+        intent: {
+          id: "compact/compact-feature-networking-current-proof",
+          parentId: "aks-feature-compact-loop",
+          outcome: "Reconcile networking compact proof.",
+          acceptance: ["The compact loop state is updated before convergence."],
+          mode: "achieve",
+          owner: "aks-explorer",
+          workflow: "feature-compact-reconciliation",
+          input: { featureKey: "networking" },
+        },
+      },
+      {
+        state: "converged",
+        summary: "Current durable proof is projected.",
+        evidence: ["pipeline-run:test-proof"],
+        actions: [],
+      },
+    );
+
+    expect(verification).toMatchObject({
+      accepted: true,
+      summary: expect.stringContaining("current, terminal"),
+    });
+  });
+
+  test("admits owner convergence when a relative durable result exists only under app state", async () => {
+    const current = item("done");
+    const ws = await workspace(current, false, {
+      materializeResultPath: false,
+    });
+    const appResultPath = join(ws.appDir, current.lastResultPath as string);
+    await mkdir(dirname(appResultPath), { recursive: true });
+    await writeFile(
+      appResultPath,
+      JSON.stringify({ status: "passed", runId: "app-state-proof" }),
+    );
+    await execute(context(ws.appDir, ws.projectDir));
+
+    const verification = await verifyFeatureCompactConvergence(
+      {
+        appId: "aks-rp-e2e",
+        taskId: "compact/compact-feature-networking-app-state-proof",
+        generation: 1,
+        appDir: ws.appDir,
+        projectDir: ws.projectDir,
+        workspaceDir: ws.projectDir,
+        intent: {
+          id: "compact/compact-feature-networking-app-state-proof",
+          parentId: "aks-feature-compact-loop",
+          outcome: "Reconcile networking compact proof.",
+          acceptance: ["The compact loop state is updated before convergence."],
+          mode: "achieve",
+          owner: "aks-explorer",
+          workflow: "feature-compact-reconciliation",
+          input: { featureKey: "networking" },
+        },
+      },
+      {
+        state: "converged",
+        summary: "Current app-owned durable proof is projected.",
+        evidence: ["pipeline-run:app-state-proof"],
+        actions: [],
+      },
+    );
+
+    expect(verification).toMatchObject({
+      accepted: true,
+      summary: expect.stringContaining("current, terminal"),
+      evidence: expect.arrayContaining([
+        `feature-compact-result:${appResultPath}`,
+      ]),
     });
   });
 
@@ -922,6 +1050,7 @@ describe("feature compact reconciliation workflow", () => {
             kind: "create-task",
             parentId: "aks-feature-compact-loop",
             owner: "aks-explorer",
+            workflow: "feature-compact-reconciliation",
             input: { featureKey: "networking" },
           },
         ],
@@ -943,6 +1072,9 @@ describe("feature compact reconciliation workflow", () => {
     expect(action.outcome).not.toContain("pending");
     const acceptance = action.acceptance.join("\n");
     expect(acceptance).toContain("feature packet");
+    expect(acceptance).toContain("bun run task-tree show <task-id> --json");
+    expect(acceptance).toContain("failed ad hoc JSON parse is unknown");
+    expect(acceptance).toContain("resource status plus condition objects");
     expect(acceptance).toContain("reuse known-good carriers");
     expect(acceptance).toContain("Every feature-owned spec");
     expect(acceptance).toContain("shared/read-only");
@@ -970,6 +1102,34 @@ describe("feature compact reconciliation workflow", () => {
     expect(acceptance).toContain("smallest failing branch");
     expect(acceptance).toContain(
       "do not return an action that references a missing task id",
+    );
+  });
+
+  test("preserves current feature state from serialized structured task input without refilling while the master campaign is active", async () => {
+    const ws = await workspace(item("pending"));
+    const ctx = context(ws.appDir, ws.projectDir);
+    ctx.task = `${ctx.task}\n## Reconciliation Task\n\`\`\`json\n${JSON.stringify(
+      {
+        appId: "aks-rp-e2e",
+        taskId: "aks-feature-compact-loop",
+        generation: 17,
+        input: { frontierLimit: 3, refillEnabled: false },
+      },
+    )}\n\`\`\``;
+
+    const result = (await execute(ctx)) as any;
+
+    expect(result).toMatchObject({
+      output: {
+        state: "needs-owner",
+      },
+    });
+    expect(result.output.actions ?? []).toHaveLength(0);
+    expect(result.output.summary).toContain(
+      "refill paused for the selector-first master-validation campaign",
+    );
+    expect(result.output.summary).toContain(
+      "declared 0 bounded task action(s)",
     );
   });
 
@@ -1168,6 +1328,9 @@ describe("feature compact reconciliation workflow", () => {
     expect(acceptance).toContain(
       "recreate or repoint exactly one live holder task",
     );
+    expect(acceptance).toContain("bun run task-tree show <task-id> --json");
+    expect(acceptance).toContain("failed ad hoc JSON parse is unknown");
+    expect(acceptance).toContain("resource status plus condition objects");
     expect(acceptance).toContain("exact branch/worktree in place");
     expect(acceptance).toContain("shared canonical dev checkout");
     expect(acceptance).toContain(

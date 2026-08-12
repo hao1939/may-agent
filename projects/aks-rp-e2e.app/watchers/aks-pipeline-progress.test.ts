@@ -8,6 +8,8 @@ import {
   failureObservationsFromArtifact,
   isTaskOwnedSpecRun,
   newPipelineTestNonpassingEvents,
+  nodeImagePublicationEvent,
+  nodeImagePublicationObservationsFromArtifact,
   planDirectoryReady,
   pipelineFailureEvent,
   pipelineSpecEvent,
@@ -633,6 +635,103 @@ describe("progressive master-validation observation", () => {
       status: "pass",
       sourceBranch: "refs/heads/main",
       artifactPath: expect.stringContaining("result.json"),
+    });
+  });
+
+  test("projects AzureLinux security-patch publication state as structured fields", () => {
+    const root = mkdtempSync(join(tmpdir(), "aks-azurelinux-publication-"));
+    roots.push(root);
+    const runId = "test_20260805063245452_g6w9d7_409894";
+    const resultDir = join(root, "runs", "test-results", runId);
+    const testsDir = join(resultDir, "tests");
+    mkdirSync(testsDir, { recursive: true });
+    writeFileSync(
+      join(resultDir, "result.json"),
+      JSON.stringify({
+        target: {
+          name: "staging",
+          environment: "staging",
+          subscriptionId: "26fe00f8-9173-4872-9134-bb1d2e00343a",
+          location: "westus2",
+        },
+        status: "nonpassing",
+        specResults: [
+          {
+            specId: "spec.ccp-security-patch.azurelinux-prod-mtc",
+            status: "blocked",
+            category: "environment_blocker",
+            reason: "No newer security patch image available.",
+            artifactRefs: [
+              `runs/test-results/${runId}/tests/ccp-security-patch-azurelinux-prod-mtc.json`,
+            ],
+          },
+        ],
+      }),
+    );
+    writeFileSync(
+      join(testsDir, "ccp-security-patch-azurelinux-prod-mtc.json"),
+      JSON.stringify({
+        specId: "spec.ccp-security-patch.azurelinux-prod-mtc",
+        assertions: [
+          {
+            name: "setup.cluster-created",
+            detail:
+              "Cluster created with nodeOSUpgradeChannel=SecurityPatch, osSKU=AzureLinux.",
+          },
+          {
+            name: "snapshot.image-family-azurelinux",
+            detail:
+              "nodeImageVersion=AKSAzureLinux-V3gen2-202607.29.0, expected AKSAzureLinux* prefix",
+          },
+          {
+            name: "assert.patch-availability",
+            detail:
+              "No newer security patch image available for AzureLinux. Current: AKSAzureLinux-V3gen2-202607.29.0. Available versions queried: (none). Skipping 60-min poll — environment-dependent, not a product defect.",
+          },
+        ],
+        raw: {
+          raw: {
+            config: {
+              subscriptionId: "26fe00f8-9173-4872-9134-bb1d2e00343a",
+              location: "westus2",
+              imageFamily: "AKSAzureLinux",
+            },
+          },
+        },
+      }),
+    );
+
+    const observations = nodeImagePublicationObservationsFromArtifact({
+      root,
+      pipelineRunId: "175244417",
+      sourceBranch: "refs/heads/dev",
+      sourceCommit: "fc6f20092ee567d9fa74601174a29e027f9fbcdc",
+      artifactName: "slice-01-test-results",
+    });
+    expect(observations).toEqual([
+      expect.objectContaining({
+        project: "aks-rp-e2e",
+        pipelineRunId: "175244417",
+        specId: "spec.ccp-security-patch.azurelinux-prod-mtc",
+        targetName: "staging",
+        location: "westus2",
+        subscriptionId: "26fe00f8-9173-4872-9134-bb1d2e00343a",
+        imageFamily: "AKSAzureLinux",
+        channel: "SecurityPatch",
+        publishedVersion: "AKSAzureLinux-V3gen2-202607.29.0",
+        currentNodeImageVersion: "AKSAzureLinux-V3gen2-202607.29.0",
+        publishedVersions: [],
+      }),
+    ]);
+    expect(nodeImagePublicationEvent(observations[0])).toMatchObject({
+      type: "aks.node-image-publication.state",
+      data: {
+        targetName: "staging",
+        location: "westus2",
+        imageFamily: "AKSAzureLinux",
+        channel: "SecurityPatch",
+        publishedVersion: "AKSAzureLinux-V3gen2-202607.29.0",
+      },
     });
   });
 

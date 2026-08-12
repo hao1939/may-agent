@@ -120,8 +120,10 @@ decisions.
     create the source task unbound and depend on a later owner/recovery turn to
     repair its routing.
 16. Treat a draft repair PR as internal verification state, not a human
-    handoff. After exact campaign proof makes the fix ready, publish it as
-    non-draft, call it review-ready rather than merge-ready, send one retry-safe
+    handoff. Publish it only after a successful run names the exact branch and
+    commit still at that PR head. A combined campaign commit does not satisfy
+    this gate, and every new commit requires fresh verification. Then call it
+    review-ready rather than merge-ready and send one retry-safe
     actionable notification, and wait for the human to satisfy repository
     policies and merge it into `main`. Never merge a focused repair PR on the
     human's behalf.

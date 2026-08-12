@@ -184,14 +184,24 @@ export function migrateMasterValidationFailureCarriers(
 
     const oldIds = new Set(carriers.map((carrier) => carrier.id));
     for (const resource of Object.values(tree.resources ?? {})) {
-      if (!resource.spec.dependsOn?.some((id) => oldIds.has(id))) continue;
-      resource.spec.dependsOn = [
+      const currentDependencies = resource.spec.dependsOn ?? [];
+      if (!currentDependencies.some((id) => oldIds.has(id))) continue;
+      const retargetedDependencies = [
         ...new Set(
-          resource.spec.dependsOn.map((id) =>
+          currentDependencies.map((id) =>
             oldIds.has(id) ? canonicalId : id,
           ),
         ),
       ];
+      if (
+        retargetedDependencies.length === currentDependencies.length &&
+        retargetedDependencies.every(
+          (dependency, index) => dependency === currentDependencies[index],
+        )
+      ) {
+        continue;
+      }
+      resource.spec.dependsOn = retargetedDependencies;
       resource.metadata.resourceVersion += 1;
       stats.dependenciesRetargeted += 1;
     }

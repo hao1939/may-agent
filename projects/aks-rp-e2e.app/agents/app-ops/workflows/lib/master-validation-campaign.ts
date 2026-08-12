@@ -369,6 +369,7 @@ function applyFix(
   composedPredecessors: string[] = [],
 ): { fix: CampaignFix; commits: string[] } {
   const startingCommit = git(checkout, ["rev-parse", "HEAD"]).stdout;
+  const appliedCommits: string[] = [];
   let failure = "";
   for (const commit of prepared.commits) {
     const applied = git(
@@ -383,14 +384,29 @@ function applyFix(
       ],
       true,
     );
-    if (applied.status !== 0) {
-      failure = applied.stderr || applied.stdout;
-      git(checkout, ["cherry-pick", "--abort"], true);
-      git(checkout, ["reset", "--hard", startingCommit]);
-      break;
+    if (applied.status === 0) {
+      appliedCommits.push(commit);
+      continue;
     }
+
+    const output = applied.stderr || applied.stdout;
+    const emptyPick =
+      prepared.commits.length === 1 &&
+      /(?:cherry-pick|previous cherry-pick) is now empty|nothing to commit/i.test(
+        output,
+      ) &&
+      git(checkout, ["status", "--porcelain"]).stdout === "";
+    if (emptyPick) {
+      const skipped = git(checkout, ["cherry-pick", "--skip"], true);
+      if (skipped.status === 0) continue;
+    }
+
+    failure = output;
+    git(checkout, ["cherry-pick", "--abort"], true);
+    git(checkout, ["reset", "--hard", startingCommit]);
+    break;
   }
-  if (!failure) return prepared;
+  if (!failure) return { fix: prepared.fix, commits: appliedCommits };
 
   const replayCommit = prepared.commits.at(-1) ?? "";
   if (

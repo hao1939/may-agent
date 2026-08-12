@@ -37,6 +37,19 @@ The app remains free to decide:
 
 The framework decides only task mechanics. There is no second AKS scheduler.
 
+### Owner review is an inbox, not a work parent
+
+`runtime/owner-review` must remain immediately runnable for a new human or
+project-owner message. Finite follow-up work belongs under
+`group/app-operations` or `group/domain-work`; it must not become a direct
+child of the standing owner-review resource. Otherwise one long external wait
+can block every later owner instruction even though the event was accepted and
+durably attached to the task.
+
+The resource-liveness migration moves any non-running legacy child to its
+stable project group. Future owner-review results follow the same grouping
+convention.
+
 ## What already works
 
 The shared runtime already provides the difficult mechanics:

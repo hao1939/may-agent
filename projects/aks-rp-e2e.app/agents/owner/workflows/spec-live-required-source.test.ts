@@ -28,6 +28,15 @@ describe("spec live prepared source", () => {
     expect(
       preparedSourceRequirement({ sourceCommit: "a".repeat(40) }),
     ).toBeNull();
+    expect(
+      preparedSourceRequirement(
+        {
+          sourceBranch: "refs/heads/validation/frozen-run",
+          sourceCommit: "b".repeat(40),
+        },
+        true,
+      ),
+    ).toBeNull();
     expect(preparedSourceRequirement(undefined)).toBeNull();
   });
 

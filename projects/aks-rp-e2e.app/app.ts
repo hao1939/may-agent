@@ -10,6 +10,7 @@ import {
   type EventSelector,
   type ProjectAppContext,
   type ProjectAppEvent,
+  type ProjectAppTaskAction,
   type ProjectAppTaskIntent,
 } from "@may-agent/sdk";
 import { observeAksPipelines } from "./watchers/aks-pipeline.js";
@@ -20,6 +21,7 @@ import { observeWorkspaceIntegrityChanges } from "./watchers/workspace-integrity
 import {
   featureCompactLoopTaskId,
   legacyBranchReconciliationTaskId,
+  masterValidationCompactTaskId,
   repositorySkillMaintenanceTaskId,
   scenarioNormalizationTaskId,
   specLoopTaskId,
@@ -42,6 +44,43 @@ const appControllerMaxConcurrent =
 const scenarioTestFrontierTaskId = scenarioNormalizationTaskId;
 export const masterValidationCycleTaskId = "master-validation-staging-cycle";
 const scenarioTestFrontierMinLeaves = 3;
+
+/**
+ * Reject malformed explicit prepared-source handoffs before task mutation.
+ * Omitting both fields delegates task-branch creation from current origin/dev to
+ * spec-live-reconciliation; explicit source identifies a dedicated task branch.
+ */
+export function validateAksTaskAction(
+  action: ProjectAppTaskAction,
+): string | null {
+  if (
+    (action.kind !== "create-task" && action.kind !== "update-task") ||
+    action.workflow !== "spec-live-reconciliation"
+  ) {
+    return null;
+  }
+  const input = action.input;
+  if (!input) return null;
+  const hasBranch = Object.prototype.hasOwnProperty.call(input, "sourceBranch");
+  const hasCommit = Object.prototype.hasOwnProperty.call(input, "sourceCommit");
+  if (!hasBranch && !hasCommit) return null;
+
+  const sourceBranch =
+    typeof input.sourceBranch === "string" ? input.sourceBranch.trim() : "";
+  const sourceCommit =
+    typeof input.sourceCommit === "string" ? input.sourceCommit.trim() : "";
+  if (!sourceBranch || !sourceCommit) {
+    return "binding workflow spec-live-reconciliation requires input.sourceBranch and input.sourceCommit together, or omission of both";
+  }
+  const normalizedBranch = sourceBranch.replace(/^refs\/heads\//, "");
+  if (!normalizedBranch.startsWith("task/")) {
+    return "binding workflow spec-live-reconciliation requires explicit input.sourceBranch to be a dedicated task/ branch";
+  }
+  if (!/^[0-9a-f]{40}$/i.test(sourceCommit)) {
+    return "binding workflow spec-live-reconciliation requires input.sourceCommit to be an exact 40-character Git commit";
+  }
+  return null;
+}
 const actionInputSchema = Type.Object({}, { additionalProperties: true });
 const targetedTaskActionInputSchema = Type.Object(
   { taskId: Type.Optional(Type.String({ minLength: 1 })) },
@@ -105,9 +144,34 @@ function masterValidationFailureTaskId(specId: string): string {
 const projectTarget = { project: projectId };
 const masterValidationCycleIntervalMs = 21_600_000;
 const masterValidationCycleWakeSkewMs = 60_000;
+export const masterValidationCapacityPulseEventType =
+  "aks.master-validation.capacity-pulse";
 
 export function masterValidationCycleSlot(nowMs = Date.now()): number {
   return Math.floor(nowMs / masterValidationCycleIntervalMs);
+}
+
+export function masterValidationCapacityPulseIdempotencyKey(
+  cycleSlot: number,
+  project = projectId,
+): string {
+  return `aks-master-validation-capacity-pulse:${project}:${cycleSlot}`;
+}
+
+function masterValidationCapacityPulseData(
+  gate: ReturnType<typeof masterValidationScheduleGate>,
+  nowMs = Date.now(),
+): Record<string, unknown> {
+  const cycleSlot = masterValidationCycleSlot(nowMs);
+  return {
+    project: projectId,
+    gateReason: gate.reason,
+    cycleSlot,
+    idempotencyKey: masterValidationCapacityPulseIdempotencyKey(cycleSlot),
+    ...(gate.queuedAt ? { queuedAt: gate.queuedAt } : {}),
+    ...(gate.runId ? { runId: gate.runId } : {}),
+    ...(gate.sourceCommit ? { sourceCommit: gate.sourceCommit } : {}),
+  };
 }
 
 const ownerVisibleRefreshEventTypes = new Set([
@@ -419,9 +483,11 @@ function stringList(value: unknown): string[] {
 
 type MasterValidationFailureCarrier = {
   taskId: string;
+  workflow: string;
   input: Record<string, unknown>;
   generation: number;
   resourceVersion: number;
+  evidence: string[];
 };
 
 function numericMetadata(value: unknown): number {
@@ -455,45 +521,86 @@ function selectNewestCarrier(
   return null;
 }
 
-function existingMasterValidationFailureCarrier(
+function masterValidationFailureCarriers(
   taskState: TaskStateSnapshot | null,
-  specId: string,
-  sourceCommit?: string,
-): MasterValidationFailureCarrier | null {
+): MasterValidationFailureCarrier[] {
   const resources = taskState?.resources ?? {};
-  const matches = Object.entries(resources).flatMap(([taskId, resource]) => {
+  return Object.entries(resources).flatMap(([taskId, resource]) => {
     const spec = isRecord(resource?.spec) ? resource.spec : null;
     if (!spec) return [];
-    if (stringDetail(spec, "workflow") !== "master-validation-failure") {
+    const workflow = stringDetail(spec, "workflow");
+    if (workflow !== "master-validation-failure") {
       return [];
     }
     const input = isRecord(spec.input) ? spec.input : null;
-    if (!input || stringDetail(input, "specId") !== specId) return [];
+    if (!input) return [];
     const phase = stringDetail(resource?.status ?? {}, "phase").toLowerCase();
     if (["done", "closed", "converged"].includes(phase)) return [];
     return [
       {
         taskId,
+        workflow,
         input,
         generation: numericMetadata(resource?.metadata?.generation),
         resourceVersion: numericMetadata(resource?.metadata?.resourceVersion),
+        evidence: stringList(resource?.status?.evidence),
       },
     ];
   });
+}
 
-  const normalizedSourceCommit = sourceCommit?.trim() ?? "";
-  if (normalizedSourceCommit) {
-    const sameSource = matches.filter(
-      (carrier) =>
-        stringDetail(carrier.input, "sourceCommit", "sourceVersion") ===
-        normalizedSourceCommit,
-    );
-    const selectedSameSource = selectNewestCarrier(sameSource);
-    if (selectedSameSource) return selectedSameSource;
-    if (sameSource.length > 0) return null;
-  }
+function pullRequestReviewWakeCarriers(
+  taskState: TaskStateSnapshot | null,
+): MasterValidationFailureCarrier[] {
+  const resources = taskState?.resources ?? {};
+  return Object.entries(resources).flatMap(([taskId, resource]) => {
+    const spec = isRecord(resource?.spec) ? resource.spec : null;
+    if (!spec) return [];
+    const workflow = stringDetail(spec, "workflow");
+    if (
+      workflow !== "master-validation-failure" &&
+      workflow !== "master-validation-route-verification" &&
+      workflow !== "non-spec-main-publication"
+    ) {
+      return [];
+    }
+    const input = isRecord(spec.input) ? spec.input : null;
+    if (!input) return [];
+    const phase = stringDetail(resource?.status ?? {}, "phase").toLowerCase();
+    if (["done", "closed", "converged"].includes(phase)) return [];
+    return [
+      {
+        taskId,
+        workflow,
+        input,
+        generation: numericMetadata(resource?.metadata?.generation),
+        resourceVersion: numericMetadata(resource?.metadata?.resourceVersion),
+        evidence: stringList(resource?.status?.evidence),
+      },
+    ];
+  });
+}
 
-  return matches.length === 1 ? matches[0] : null;
+function existingMasterValidationFailureCarrierForPullRequest(
+  taskState: TaskStateSnapshot | null,
+  pullRequestId: string,
+): MasterValidationFailureCarrier | null {
+  if (!pullRequestId) return null;
+  const matches = masterValidationFailureCarriers(taskState).filter((carrier) =>
+    carrier.evidence.includes(`pull-request:${pullRequestId}`),
+  );
+  return selectNewestCarrier(matches);
+}
+
+function existingPullRequestReviewWakeCarrierForPullRequest(
+  taskState: TaskStateSnapshot | null,
+  pullRequestId: string,
+): MasterValidationFailureCarrier | null {
+  if (!pullRequestId) return null;
+  const matches = pullRequestReviewWakeCarriers(taskState).filter((carrier) =>
+    carrier.evidence.includes(`pull-request:${pullRequestId}`),
+  );
+  return selectNewestCarrier(matches);
 }
 
 type LiveTaskReadiness = {
@@ -1036,6 +1143,19 @@ const ownerReviewEventTypes = new Set([
   "learning.feedback",
 ]);
 
+function ownerReviewPriority(event: AppTaskEvent): "P0" | "P1" {
+  const details = eventDetails(event);
+  const reason = stringDetail(details, "reason");
+  const inputEventType = stringDetail(details, "inputEventType");
+  return event.type === "project.comment.created" ||
+    event.type === "project.approval.submitted" ||
+    reason === "owner-message" ||
+    reason === "human-goal-follow-through" ||
+    inputEventType === "message.created"
+    ? "P0"
+    : "P1";
+}
+
 const aksTaskSelectors: EventSelector[] = [
   { type: "project.task.tick", target: projectTarget },
   { type: "aks.resource-migration.requested", target: projectTarget },
@@ -1115,21 +1235,22 @@ export function resolveAksTask(
 
   if (event.type === "aks.resource-migration.requested") {
     return {
-      id: "runtime/unified-resource-migration-resource-liveness-v2",
+      id: "runtime/unified-resource-migration-resource-liveness-v3",
       parentId: "group/app-operations",
       outcome:
-        "Retire fixed producerless waits and repair completed task identity reuse left by the unified-resource migration.",
+        "Retire fixed producerless waits, repair completed task identity reuse, and keep the standing owner-review inbox free of unrelated child waits.",
       acceptance: [
         "Only named childless maintain holders still waiting on a project.state Condition are closed, and every closure leaves a receipt.",
         "Only the five named waiting repair tasks with no Condition and no live child are removed.",
         "A representation repair that targeted a completed task ID is revised in place to choose a new deterministic holder identity.",
+        "Finite work created by owner review is moved to the matching stable project group so unrelated child waits cannot block later owner messages.",
         "The feature compact loop remains the standing owner and is woken through normal parent or scheduled reconciliation.",
         "Any holder that gained child work or no longer matches the legacy contract remains live for owner judgment; expectedGeneration rejects a concurrent revision at apply time.",
       ],
       mode: "achieve",
       owner: "app-ops",
       workflow: "unified-resource-migration",
-      input: { migration: "resource-liveness-v2" },
+      input: { migration: "resource-liveness-v3" },
       priority: "P0",
       category: "ops",
     };
@@ -1479,13 +1600,14 @@ export function resolveAksTask(
         "Keep the AKS project reviewed by its accountable owner and organize the smallest useful next step from current evidence.",
       acceptance: [
         "The owner performs one useful project step or returns an evidence-backed no-op with typed follow-up actions.",
+        "Any finite follow-up created by owner review must be a sibling under group/app-operations or group/domain-work; runtime/owner-review is an inbox and never waits on unrelated child work.",
         "A progressive master-validation nonpassing event without an artifact-backed stable failure carrier is progress evidence only: inspect or report it, but do not classify it, change source, or queue a retry before pipeline.failure.observed supplies the terminal artifact.",
         "Do not create domain/normalize-plain-scenario-carrier-* tasks from owner review. scenario-normalization is the sole frontier and live-capacity owner for that work.",
         "When scenario inventory is red or normalization capacity appears free, wake the existing scenario-normalization task with current evidence and let its workflow select any new leaves.",
       ],
       mode: "maintain",
       owner: "app-ops",
-      priority: "P1",
+      priority: ownerReviewPriority(event),
     };
   }
 
@@ -1501,6 +1623,12 @@ export function resolveAksTask(
       ) {
         return standingLoopIntent(featureCompactLoopTaskId);
       }
+      if (
+        action === "master-validation-compact" ||
+        taskId === masterValidationCompactTaskId
+      ) {
+        return standingLoopIntent(masterValidationCompactTaskId);
+      }
       if (taskId === scenarioTestFrontierTaskId) {
         return standingLoopIntent(scenarioNormalizationTaskId);
       }
@@ -1509,16 +1637,20 @@ export function resolveAksTask(
           id: masterValidationCycleTaskId,
           parentId: "group/domain-work",
           outcome:
-            "Continuously validate the complete master-validation set from current main; repair one failed current snapshot at a time and roll forward to exact current main whenever main advances.",
+            "Preserve all 79 Go source lanes mapped to all 82 master-validation specs, pass every aggregate-runnable spec in one fresh exact-current-main staging run, and preserve an exact current-main standalone pass for every standalone-only spec.",
           acceptance: [
             "Each due cycle queues pipeline 467665 with feature_set=master-validation, target=staging, slices=12, slice_max_parallel=6, branch main, and the exact resolved origin/main commit.",
+            "The source-to-spec inventory remains complete: all 79 goal Go source lanes are represented by all 82 mapped specs, with no lane or mapped spec silently dropped.",
+            "Every aggregate-runnable spec passes in one fresh staging aggregate run from the exact current origin/main commit.",
+            "Every standalone-only spec has a passing direct standalone run from the exact current origin/main commit; aggregate exclusion is routing evidence only and never counts as a pass.",
             "Only one aggregate master-validation cycle is active at a time.",
             "Completed slice artifacts are observed while the aggregate run is still active and each nonpassing spec has one current sibling known-issue task; changed failure fingerprints remain episode history on that task.",
-            "A failed main run forks one campaign branch from that exact commit; while the base remains current, focused issue patches replay onto it in stable order and its focused PRs remain based on current main.",
-            "A current-base failed campaign reruns immediately when its accumulated focused patches change and every six hours when unchanged, so repository fixes and deployed product recovery are both observed without importing newer main.",
-            "When main advances, an already-active aggregate may finish, but the stale campaign accepts no more patches or reruns; the next aggregate run uses exact current main, and a failure there starts the next frozen campaign.",
+            "A failed main run forks one campaign branch from that exact commit; focused issue patches replay onto it in stable order and its focused PRs continue targeting main.",
+            "A failed campaign reruns immediately when its accumulated focused patches change and every six hours when unchanged, so repository fixes and deployed product recovery are both observed.",
+            "When main advances, an already-active aggregate may finish without overlap; meanwhile one successor carries the same isolated patch set onto the exact new main base, avoiding rediscovery of known failures while preserving one ordered campaign.",
             "A focused-patch replay conflict waits on the exact pull-request state or source-head change; it does not hand the standing cycle to an owner or create campaign-repair scheduling work.",
-            "Only a green campaign whose base remains current may wait for its focused PRs to merge, and only a passing full run from exact current main verifies the standing task green.",
+            "Keep only draft PRs that still carry a required, unmerged repair: abandon a draft when exact current-main proof makes it unnecessary or a newer same-task PR supersedes it, and never publish an unverified draft for human review.",
+            "Publish a focused PR only after its affected spec passes from the exact branch and commit still at that PR head; a green combined campaign is integration evidence but cannot publish an individually unverified draft. Any later commit requires fresh exact-head proof. The standing task is green only when the later fresh exact-current-main aggregate passes every aggregate-runnable spec and exact-current-main standalone proof passes every standalone-only spec.",
           ],
           mode: "maintain",
           owner: "app-ops",
@@ -1675,63 +1807,6 @@ export function resolveAksTask(
   }
 }
 
-function masterValidationProgressiveFailureProjection(
-  details: Record<string, unknown>,
-  carrier: MasterValidationFailureCarrier,
-): Record<string, unknown> | null {
-  const specId = stringDetail(details, "specId", "spec_id");
-  const validationTaskId = stringDetail(
-    details,
-    "validationTaskId",
-    "validation_task_id",
-    "taskId",
-    "task_id",
-  );
-  if (!specId || !validationTaskId) return null;
-
-  const carrierInput = carrier.input;
-  const observedCategory = stringDetail(details, "category");
-  const failureFingerprint = stringDetail(
-    carrierInput,
-    "failureFingerprint",
-    "fingerprint",
-  );
-  if (!failureFingerprint) return null;
-
-  return {
-    project: projectId,
-    validationTaskId,
-    pipelineRunId: stringDetail(details, "pipelineRunId", "runId"),
-    sourceBranch:
-      stringDetail(details, "sourceBranch") ||
-      stringDetail(carrierInput, "sourceBranch"),
-    sourceCommit:
-      stringDetail(details, "sourceCommit", "sourceVersion") ||
-      stringDetail(carrierInput, "sourceCommit", "sourceVersion"),
-    specId,
-    sliceId:
-      stringDetail(details, "sliceId") || stringDetail(carrierInput, "sliceId"),
-    status:
-      stringDetail(details, "status") || stringDetail(carrierInput, "status"),
-    category:
-      observedCategory && observedCategory !== "unknown"
-        ? observedCategory
-        : stringDetail(carrierInput, "category") || observedCategory,
-    reason: stringDetail(carrierInput, "artifactPath")
-      ? stringDetail(carrierInput, "reason") || stringDetail(details, "reason")
-      : stringDetail(details, "reason") || stringDetail(carrierInput, "reason"),
-    phase: stringDetail(details, "phase"),
-    phaseDetail: stringDetail(details, "phaseDetail"),
-    testRunId: stringDetail(details, "testRunId"),
-    artifactName: stringDetail(carrierInput, "artifactName"),
-    artifactPath: stringDetail(carrierInput, "artifactPath"),
-    fingerprint: failureFingerprint,
-    failureFingerprint,
-    stableTaskId: masterValidationFailureTaskId(specId),
-    progressiveObservation: true,
-  };
-}
-
 export async function routeAksEvent(
   ctx: ProjectAppContext,
   event: Record<string, unknown>,
@@ -1771,9 +1846,85 @@ export async function routeAksEvent(
         target: { project: projectedApprovalDecision.project },
         data,
       });
+      const sourceMessageEventId = Number(event.eventId);
+      if (Number.isInteger(sourceMessageEventId) && sourceMessageEventId > 0) {
+        ctx.emit({
+          type: "message.resolved",
+          source: "aks-rp-e2e-app",
+          owner: "agent:app-ops",
+          target: { project: projectedApprovalDecision.project },
+          data: {
+            openEventId: sourceMessageEventId,
+            openEventType: "message.created",
+            project: projectedApprovalDecision.project,
+            projectId: projectedApprovalDecision.project,
+            disposition: "answered",
+            outcome: "fulfilled",
+            summary: `Applied the ${projectedApprovalDecision.decision} decision to approval ${projectedApprovalDecision.approvalId}.`,
+            taskRefs: projectedApprovalDecision.taskIds.map((taskId) => ({
+              projectId: projectedApprovalDecision.project,
+              taskId,
+            })),
+          },
+          trace: {
+            traceId:
+              isRecord(event.trace) && typeof event.trace.traceId === "string"
+                ? event.trace.traceId
+                : `event:${sourceMessageEventId}`,
+            parentEventId: sourceMessageEventId,
+            links: [
+              {
+                eventId: sourceMessageEventId,
+                type: "closure",
+                label: "message.resolved",
+              },
+            ],
+          },
+        });
+      }
       return {
         approvalDecisionProjected: true,
         projectedApprovalDecision,
+      };
+    }
+
+    const sourceMessageEventId = Number(event.eventId);
+    if (Number.isInteger(sourceMessageEventId) && sourceMessageEventId > 0) {
+      const details = eventDetails(event);
+      const content = stringDetail(details, "content", "message", "text");
+      ctx.emit({
+        type: "project.owner.requested",
+        source: "aks-rp-e2e-app",
+        owner: "agent:app-ops",
+        target: { project: projectId },
+        data: {
+          project: projectId,
+          projectId,
+          reason: "owner-message",
+          inputEventId: sourceMessageEventId,
+          inputEventType: "message.created",
+          inputEventData: isRecord(event.data) ? event.data : details,
+          ...(content ? { instruction: content } : {}),
+        },
+        trace: {
+          traceId:
+            isRecord(event.trace) && typeof event.trace.traceId === "string"
+              ? event.trace.traceId
+              : `event:${sourceMessageEventId}`,
+          parentEventId: sourceMessageEventId,
+          links: [
+            {
+              eventId: sourceMessageEventId,
+              type: "reference",
+              label: "project.owner.requested",
+            },
+          ],
+        },
+      });
+      return {
+        approvalDecisionProjected: false,
+        ownerReviewRequested: true,
+        reason: "approval-decision-needs-clarification",
       };
     }
   }
@@ -1809,63 +1960,28 @@ export async function routeAksEvent(
       };
     }
 
-    const carrier =
-      typeof ctx.appPath === "function"
-        ? existingMasterValidationFailureCarrier(
-            readTaskStateSnapshot(ctx.appPath(".")),
-            stringDetail(details, "specId", "spec_id"),
-            stringDetail(details, "sourceCommit", "sourceVersion"),
-          )
-        : null;
-    if (!carrier) {
-      ctx.emit({
-        type: "project.owner.requested",
-        source: "aks-rp-e2e-app",
-        target: { project: projectId },
-        data: {
-          project: projectId,
-          reason: "master-validation-progressive-nonpassing",
-          validationTaskId,
-          pipelineRunId: stringDetail(details, "pipelineRunId", "runId"),
-          sourceBranch: stringDetail(details, "sourceBranch"),
-          sourceCommit: stringDetail(details, "sourceCommit", "sourceVersion"),
-          specId: stringDetail(details, "specId", "spec_id"),
-          status: stringDetail(details, "status"),
-          category: stringDetail(details, "category"),
-          summary:
-            "A progressive master-validation verdict became nonpassing before an artifact-backed stable failure carrier was available. Review current provider progress, but leave classification and source-changing work to the later pipeline.failure.observed artifact event.",
-        },
-      });
-      return {
-        masterValidationFailureRouted: false,
-        ownerReviewRequested: true,
-        reason: "master-validation-progressive-awaiting-artifact",
-      };
-    }
-    const failure = masterValidationProgressiveFailureProjection(
-      details,
-      carrier,
-    );
-    if (!failure) {
-      return {
-        masterValidationFailureRouted: false,
-        reason: "missing-master-validation-nonpassing-details",
-      };
-    }
-
     ctx.emit({
-      type: "pipeline.failure.observed",
+      type: "project.owner.requested",
       source: "aks-rp-e2e-app",
       target: { project: projectId },
-      ...failure,
-      data: failure,
+      data: {
+        project: projectId,
+        reason: "master-validation-progressive-nonpassing",
+        validationTaskId,
+        pipelineRunId: stringDetail(details, "pipelineRunId", "runId"),
+        sourceBranch: stringDetail(details, "sourceBranch"),
+        sourceCommit: stringDetail(details, "sourceCommit", "sourceVersion"),
+        specId: stringDetail(details, "specId", "spec_id"),
+        status: stringDetail(details, "status"),
+        category: stringDetail(details, "category"),
+        summary:
+          "A live master-validation verdict became nonpassing before the current run published its artifact. Review current progress only; wait for this run's pipeline.failure.observed event before classification, source changes, or retries.",
+      },
     });
     return {
-      masterValidationFailureRouted: true,
-      pipelineRunId: failure.pipelineRunId,
-      specId: failure.specId,
-      failureFingerprint: failure.failureFingerprint,
-      stableTaskId: failure.stableTaskId,
+      masterValidationFailureRouted: false,
+      ownerReviewRequested: true,
+      reason: "master-validation-progressive-awaiting-artifact",
     };
   }
 
@@ -1942,16 +2058,13 @@ export async function routeAksEvent(
     };
   }
   if (event.type === "aks.pipeline.check") return observeAksPipelines(ctx);
-  if (event.type === "aks.master-validation.check") {
-    const gate = masterValidationScheduleGate(ctx.appPath("."));
-    if (!gate.due) {
-      return {
-        masterValidationWake: false,
-        reason: gate.reason,
-        queuedAt: gate.queuedAt ?? null,
-        runId: gate.runId ?? null,
-      };
-    }
+  if (event.type === masterValidationCapacityPulseEventType) {
+    const details = eventDetails(event);
+    const reason =
+      stringDetail(details, "gateReason", "reason") ||
+      "capacity-pulse-observed";
+    const cycleSlot =
+      typeof details.cycleSlot === "number" ? details.cycleSlot : null;
     ctx.emit({
       type: "project.task.tick",
       source: "aks-rp-e2e-app",
@@ -1964,17 +2077,44 @@ export async function routeAksEvent(
         project: projectId,
         taskId: masterValidationCycleTaskId,
         reason:
-          gate.reason === "campaign-active"
+          reason === "campaign-active"
             ? "master-validation-campaign-reconcile"
             : "scheduled-six-hour-master-validation",
-        cycleSlot: masterValidationCycleSlot(),
+        ...(cycleSlot !== null ? { cycleSlot } : {}),
       },
     });
     return {
+      masterValidationCapacityPulseObserved: true,
+      masterValidationCycleWake: true,
+      reason,
+      cycleSlot,
+    };
+  }
+  if (event.type === "aks.master-validation.check") {
+    const gate = masterValidationScheduleGate(ctx.appPath("."));
+    if (!gate.due) {
+      return {
+        masterValidationWake: false,
+        reason: gate.reason,
+        queuedAt: gate.queuedAt ?? null,
+        runId: gate.runId ?? null,
+      };
+    }
+    const pulseData = masterValidationCapacityPulseData(gate);
+    const cycleSlot = Number(pulseData.cycleSlot);
+    ctx.emit({
+      type: masterValidationCapacityPulseEventType,
+      source: "aks-rp-e2e-app",
+      target: projectTarget,
+      data: pulseData,
+    });
+    return {
       masterValidationWake: true,
+      capacityPulseEmitted: true,
       reason: gate.reason,
       queuedAt: gate.queuedAt ?? null,
       runId: gate.runId ?? null,
+      cycleSlot,
     };
   }
   if (event.type === "pipeline.queue.overdue") {
@@ -2016,6 +2156,149 @@ export async function routeAksEvent(
       eventType: event.type,
       taskId: taskId || null,
       conditionScheduling: "shared-runtime",
+    };
+  }
+  if (event.type === "aks.node-image-publication.state") {
+    const details = eventDetails(event);
+    return {
+      nodeImagePublicationObserved: true,
+      targetName: stringDetail(details, "targetName"),
+      location: stringDetail(details, "location"),
+      imageFamily: stringDetail(details, "imageFamily"),
+      channel: stringDetail(details, "channel"),
+      publishedVersion: stringDetail(details, "publishedVersion"),
+      conditionTracking: "shared-runtime",
+    };
+  }
+  if (event.type === "pull-request.state") {
+    const details = eventDetails(event);
+    const pullRequestId = stringDetail(details, "pullRequestId");
+    const state = stringDetail(details, "state");
+    const sourceCommit = stringDetail(details, "sourceCommit");
+    const unresolvedReviewCount =
+      numberDetail(details.unresolvedReviewCount) ?? 0;
+    const reviewFingerprint = stringDetail(details, "reviewFingerprint");
+    const unresolvedReviewThreads = Array.isArray(
+      details.unresolvedReviewThreads,
+    )
+      ? details.unresolvedReviewThreads
+      : [];
+    const carrier =
+      typeof ctx.appPath === "function" && pullRequestId
+        ? existingPullRequestReviewWakeCarrierForPullRequest(
+            readTaskStateSnapshot(ctx.appPath(".")),
+            pullRequestId,
+          )
+        : null;
+    const campaignCarrier =
+      typeof ctx.appPath === "function" && pullRequestId
+        ? existingMasterValidationFailureCarrierForPullRequest(
+            readTaskStateSnapshot(ctx.appPath(".")),
+            pullRequestId,
+          )
+        : null;
+    const campaign =
+      typeof ctx.appPath === "function"
+        ? readCampaignReceipt(ctx.appPath("."))
+        : null;
+    const belongsToCurrentCampaign = Boolean(
+      campaignCarrier &&
+      campaign &&
+      campaignCarrier.evidence.includes(`campaign-base:${campaign.baseCommit}`),
+    );
+    const campaignAlreadyHasHead = Boolean(
+      campaign &&
+      campaign.integratedFixes.some(
+        (fix) =>
+          fix.pullRequestId === pullRequestId &&
+          fix.sourceCommit === sourceCommit,
+      ),
+    );
+    const shouldWakeCampaign = Boolean(
+      state === "active" &&
+      sourceCommit &&
+      belongsToCurrentCampaign &&
+      !campaignAlreadyHasHead,
+    );
+    if (shouldWakeCampaign && campaignCarrier) {
+      ctx.emit({
+        type: "project.task.tick",
+        source: "aks-rp-e2e-app",
+        target: { project: projectId, taskId: masterValidationCycleTaskId },
+        action: "master-validation-cycle",
+        overrideWait: true,
+        data: {
+          project: projectId,
+          taskId: masterValidationCycleTaskId,
+          task_id: masterValidationCycleTaskId,
+          reason: "master-validation-focused-pr-changed",
+          overrideWait: true,
+          pullRequestId,
+          sourceCommit,
+          repairTaskId: campaignCarrier.taskId,
+        },
+      });
+    }
+    const priorFingerprint = carrier
+      ? taskStatusEvidenceValue(
+          carrier.evidence,
+          "pull-request-review-fingerprint",
+        ) || ""
+      : "";
+    const priorReviewCount = Number(
+      carrier
+        ? taskStatusEvidenceValue(
+            carrier.evidence,
+            "pull-request-unresolved-review-count",
+          )
+        : 0,
+    );
+    const reviewChanged = reviewFingerprint
+      ? reviewFingerprint !== priorFingerprint
+      : unresolvedReviewCount !== priorReviewCount;
+    const shouldWakeCarrier =
+      Boolean(carrier) &&
+      state === "active" &&
+      unresolvedReviewCount > 0 &&
+      reviewChanged;
+    if (shouldWakeCarrier && carrier) {
+      const threadIds = unresolvedReviewThreads
+        .flatMap((thread) =>
+          isRecord(thread) ? [stringDetail(thread, "threadId")] : [],
+        )
+        .filter(Boolean);
+      ctx.emit({
+        type: "project.task.tick",
+        source: "aks-rp-e2e-app",
+        target: { project: projectId, taskId: carrier.taskId },
+        action: carrier.workflow || "master-validation-failure",
+        overrideWait: true,
+        data: {
+          project: projectId,
+          taskId: carrier.taskId,
+          task_id: carrier.taskId,
+          reason: "pull-request-review-changed",
+          overrideWait: true,
+          pullRequestId,
+          unresolvedReviewCount,
+          reviewFingerprint,
+          unresolvedReviewThreads,
+          ...(Number.isInteger(Number(event.eventId))
+            ? { pullRequestStateEventId: Number(event.eventId) }
+            : {}),
+          summary: `PR ${pullRequestId} reports ${unresolvedReviewCount} unresolved review thread(s)${threadIds.length ? ` (${threadIds.join(",")})` : ""}; wake ${carrier.taskId} to reconcile the existing focused repair branch instead of leaving review comments to owner review.`,
+        },
+      });
+    }
+    return {
+      pullRequestObserved: true,
+      pullRequestId: pullRequestId || null,
+      state: state || null,
+      unresolvedReviewCount,
+      masterValidationFailureWake: shouldWakeCarrier,
+      ...(shouldWakeCampaign ? { masterValidationCycleWake: true } : {}),
+      taskId: carrier?.taskId ?? null,
+      reviewFingerprint: reviewFingerprint || null,
     };
   }
   if (event.type === "aks.pull-request.check")
@@ -2138,14 +2421,19 @@ export function verifiedCampaignFixPullRequestIds(
   const sourceCommit = stringDetail(details, "sourceCommit", "sourceVersion");
   if (
     !specId ||
-    status !== "pass" ||
-    sourceBranch !== campaign.branch ||
-    sourceCommit !== campaign.currentCommit
+    status !== "pass"
   ) {
     return [];
   }
+  const stableTaskId = `domain/master-validation-failure/${specId}`;
   return campaign.integratedFixes
-    .filter((fix) => fix.taskId.includes(`/${specId}/`))
+    .filter(
+      (fix) =>
+        (fix.taskId === stableTaskId ||
+          fix.taskId.startsWith(`${stableTaskId}/`)) &&
+        fix.sourceBranch.replace(/^refs\/heads\//, "") === sourceBranch &&
+        fix.sourceCommit === sourceCommit,
+    )
     .map((fix) => fix.pullRequestId);
 }
 
@@ -2464,6 +2752,18 @@ export default defineProjectApp({
             reason: "scheduled-durable-loop-pulse",
           },
         },
+        {
+          type: "project.task.tick",
+          target: {
+            project: projectId,
+            taskId: masterValidationCompactTaskId,
+          },
+          action: "master-validation-compact",
+          data: {
+            project: projectId,
+            reason: "scheduled-durable-loop-pulse",
+          },
+        },
       ],
     },
     {
@@ -2573,6 +2873,7 @@ export default defineProjectApp({
   tasks: {
     accepts: aksTaskSelectors,
     resolve: resolveAksTask,
+    validateAction: validateAksTaskAction,
   },
 
   events: [
@@ -2580,10 +2881,16 @@ export default defineProjectApp({
     { type: "project.task.reconcile.skipped", target: projectTarget },
     { type: "project.task.reconciled", target: projectTarget },
     { type: "project.task.handler.recovered", target: projectTarget },
-    { type: "message.created", owner: "agent:app-ops" },
+    {
+      type: "message.created",
+      owner: "agent:app-ops",
+      intents: ["approval-decision"],
+    },
     { type: "aks.pipeline.check", target: projectTarget },
     { type: "aks.master-validation.check", target: projectTarget },
+    { type: masterValidationCapacityPulseEventType, target: projectTarget },
     { type: "aks.pull-request.check", target: projectTarget },
+    { type: "pull-request.state", target: projectTarget },
     { type: "aks.repo-ref.check", target: projectTarget },
     { type: "aks.repo-ref.observed", target: projectTarget },
     { type: "aks.repo-ref.changed", target: projectTarget },
@@ -2591,6 +2898,7 @@ export default defineProjectApp({
     { type: "aks.workspace.integrity.changed", target: projectTarget },
     { type: "aks.scenario-test-inventory.check", target: projectTarget },
     { type: "aks.scenario-test-inventory.observed", target: projectTarget },
+    { type: "aks.node-image-publication.state", target: projectTarget },
     { type: "pipeline-run.state", target: projectTarget },
     { type: "pipeline.completed", target: projectTarget },
     { type: "pipeline-artifact.available", target: projectTarget },
@@ -2784,6 +3092,35 @@ export default defineProjectApp({
             taskId,
             task_id: taskId,
             reason: "manual-feature-compact-loop-pulse",
+            params: input,
+          },
+        };
+      },
+    },
+    "pulse-master-validation-compact": {
+      type: "async",
+      description:
+        "Pulse the selector-first staging master-validation compact campaign.",
+      inputSchema: targetedTaskActionInputSchema,
+      event(params) {
+        const input =
+          params && typeof params === "object"
+            ? (params as Record<string, unknown>)
+            : {};
+        const taskId =
+          typeof input.taskId === "string" && input.taskId.trim()
+            ? input.taskId.trim()
+            : masterValidationCompactTaskId;
+        return {
+          type: "project.task.tick",
+          action: "master-validation-compact",
+          target: { project: projectId, taskId },
+          data: {
+            project: projectId,
+            action: "master-validation-compact",
+            taskId,
+            task_id: taskId,
+            reason: "manual-master-validation-compact-pulse",
             params: input,
           },
         };

@@ -18,6 +18,7 @@ export type ScenarioNormalizationInput = {
   invalidatedClaimIds?: unknown;
   invalidatedSourcePaths?: unknown;
   qualityIssueCodes?: unknown;
+  reviewedTerminalSpecIds?: unknown;
 };
 
 export type ScenarioNormalizationInvariant = {
@@ -173,7 +174,49 @@ export function specTerminalDispositionCheck(
   }
 
   const selectedSpecIds = scenarioNormalizationSpecIds(input);
-  const expectedDispositionSpecId = selectedSpecIds.join(",");
+  let terminalSpecIds = selectedSpecIds;
+  if (input && input.reviewedTerminalSpecIds !== undefined) {
+    if (!Array.isArray(input.reviewedTerminalSpecIds)) {
+      return {
+        accepted: false,
+        evidence: [],
+        problem:
+          "reviewedTerminalSpecIds must be a non-empty array of exact selected specIds",
+      };
+    }
+    const declared = input.reviewedTerminalSpecIds.map((value) => text(value));
+    if (declared.length === 0 || declared.some((specId) => !specId)) {
+      return {
+        accepted: false,
+        evidence: [],
+        problem:
+          "reviewedTerminalSpecIds must not be empty or contain empty specIds",
+      };
+    }
+    if (new Set(declared).size !== declared.length) {
+      return {
+        accepted: false,
+        evidence: [],
+        problem: "reviewedTerminalSpecIds must not contain duplicate specIds",
+      };
+    }
+    const unknown = declared.filter(
+      (specId) => !selectedSpecIds.includes(specId),
+    );
+    if (unknown.length > 0) {
+      return {
+        accepted: false,
+        evidence: [],
+        problem: `reviewedTerminalSpecIds contains specIds outside the exact selected set: ${unknown.join(",")}`,
+      };
+    }
+    const declaredSet = new Set(declared);
+    terminalSpecIds = selectedSpecIds.filter((specId) =>
+      declaredSet.has(specId),
+    );
+  }
+
+  const expectedDispositionSpecId = terminalSpecIds.join(",");
   if (
     selectedSpecIds.length === 0 ||
     disposition.specId !== expectedDispositionSpecId
@@ -181,7 +224,7 @@ export function specTerminalDispositionCheck(
     return {
       accepted: false,
       evidence: [],
-      problem: `terminal-disposition specId ${disposition.specId || "(missing)"} does not match the exact selected spec ${expectedDispositionSpecId || "(missing)"}`,
+      problem: `terminal-disposition specId ${disposition.specId || "(missing)"} does not match the exact ${input?.reviewedTerminalSpecIds !== undefined ? "reviewed terminal subset" : "selected spec"} ${expectedDispositionSpecId || "(missing)"}`,
     };
   }
 
@@ -189,7 +232,7 @@ export function specTerminalDispositionCheck(
   const evidence: string[] = [
     `terminal-disposition-spec:${disposition.specId}`,
   ];
-  for (const specId of selectedSpecIds) {
+  for (const specId of terminalSpecIds) {
     const entry = specs.get(specId);
     if (!entry) {
       return {

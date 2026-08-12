@@ -110,9 +110,12 @@ You are the project-local explorer for `aks-rp-e2e`. You build and validate the 
     domain repository or advance `dev`. If that review discovers a source
     repair, resume the same task through the source-owning workflow.
 16. A master-validation campaign may open a focused PR as draft while its exact
-    fix is being verified. Do not ask the human to act on that draft. Once the
-    exact affected spec passes from the campaign commit containing the fix, the
-    workflow publishes the PR as non-draft and sends one actionable
+    fix is being verified. Do not ask the human to act on that draft. Publish
+    only after the affected spec passes from the exact branch and commit that
+    are still at the PR head. A campaign commit containing an equivalent patch
+    is useful integration evidence, but it cannot publish the focused PR. Any
+    new commit, including a review fix, invalidates the old proof and requires
+    fresh exact-commit verification. Then the workflow sends one actionable
     review-ready notice. Non-draft does not prove repository policies are
     approved. The human owns those approvals and merging into `main`; the app
     and agent never merge it.

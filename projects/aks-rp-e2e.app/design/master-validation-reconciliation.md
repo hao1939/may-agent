@@ -322,21 +322,20 @@ orphan Conditions and refuses to run with a current carrier attempt.
   PR still contains a source-bearing repair. It rejects the PR only when the
   complete focused series changes no source. Empty history must not stop later
   verified drafts from being reconciled.
-- A campaign failure does not require a separate targeted live run before its
-  focused PR can join the campaign. The repair workflow runs scoped local
-  checks, publishes a draft focused PR, and wakes the campaign immediately.
-  Use a targeted live run only when it answers a narrower safety question; the
-  full campaign rerun is the required integration proof.
-- Draft means the fix is still being verified. As soon as the affected spec
-  passes from the exact campaign commit containing that PR patch, publish the PR
-  as non-draft and notify the human merge owner, even if unrelated campaign
-  specs remain red. A fully green campaign also publishes any remaining
-  included drafts before asking for merges. The app never merges a focused PR
+- A focused PR may join the frozen campaign immediately after scoped local
+  checks, but it remains draft until its own exact head is live-verified. The
+  campaign run is integration evidence and cannot substitute for verification
+  of the PR branch and commit.
+- Draft means the PR head is still unverified. Publish only when the affected
+  spec passes from the exact source branch and commit still at the PR head.
+  Every later commit, including a review fix, invalidates the prior proof and
+  requires a fresh run. A fully green campaign leaves any individually
+  unverified PRs draft. The app never merges a focused PR
   into `main`; the human remains the merge authority. Draft preparation is an
   internal campaign event, not an actionable human notification. The human is
   notified once, retry-safely, only after the PR is non-draft and ready for
   review. This does not claim repository approval policies are satisfied:
-  exact campaign proof and draft publication belong to the app, while policy
+  exact PR-head proof and publication belong to the app, while policy
   approval and merge belong to the human/provider boundary. This exact
   verified-pass event explicitly wakes the standing cycle through its open
   aggregate-run wait; it does not wait for unrelated slices to finish.
@@ -364,7 +363,8 @@ evidence into convergence.
 ```text
 bounded fix commit and focused PR to main
   -> replay only the focused patch onto the frozen campaign
-  -> targeted proof only when useful; full campaign proof is the integration gate
+  -> verify the exact focused PR head before publication
+  -> use full campaign proof as the integration gate
   -> fix and rerun when either path still fails
   -> green campaign may wait for focused PR merge
   -> full latest-main verification after all included PRs merge
