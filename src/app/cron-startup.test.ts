@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -20,6 +20,21 @@ function session(appDir: string, source: string, recoveryOwner?: string): Persis
 }
 
 describe("cron startup recovery", () => {
+  it("runs installed project-app recovery before generic stale-session resumption", () => {
+    const source = readFileSync(new URL("./cron-startup.ts", import.meta.url), "utf8");
+    const recoveryImport = source.indexOf(
+      'import { recoverInstalledProjectAppTasks } from "./loader/project-app-loader.js";',
+    );
+    const recoveryCall = source.indexOf(
+      "recoverInstalledProjectAppTasks({ ...loaderOpts, agentCrons: getAgentCrons() });",
+    );
+    const staleResume = source.indexOf("manager.resumeStaleSessions(");
+
+    expect(recoveryImport).toBeGreaterThan(-1);
+    expect(recoveryCall).toBeGreaterThan(-1);
+    expect(recoveryCall).toBeLessThan(staleResume);
+  });
+
   it("closes completed idle chat turns instead of replaying them after restart", () => {
     expect(
       shouldResumeStartupChatSession("telegram-turn", {
@@ -53,22 +68,20 @@ describe("cron startup recovery", () => {
     ).toEqual({ resume: true });
   });
 
-  it("leaves task-bound project session recovery to the app task reconciler", () => {
+  it("leaves the exact stale parent and completing child sessions to project-app recovery", () => {
     const appDir = mkdtempSync(join(tmpdir(), "may-active-task-app-"));
     try {
-      expect(shouldResumeStartupSession("owner-session", session(appDir, "project-app-task-owner"))).toEqual({
-        resume: false,
-        reason: "Task-bound project session was not claimed by project-app recovery during startup",
-      });
-      expect(
-        shouldResumeStartupSession(
-          "workflow-session",
-          session(appDir, "workflow:task-handler", "project-app-task-reconciler"),
-        ),
-      ).toEqual({
-        resume: false,
-        reason: "Task-bound project session was not claimed by project-app recovery during startup",
-      });
+      for (const sessionId of ["s_1786376766268_235", "s_1786376881309_240"]) {
+        expect(
+          shouldResumeStartupSession(
+            sessionId,
+            session(appDir, "workflow:task-handler", "project-app-task-reconciler"),
+          ),
+        ).toEqual({
+          resume: false,
+          reason: "Task-bound project session was not claimed by project-app recovery during startup",
+        });
+      }
     } finally {
       rmSync(appDir, { recursive: true, force: true });
     }

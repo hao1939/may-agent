@@ -77,6 +77,8 @@ import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } 
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 import { invokeCatalogSkill, matchSkillActivationRule, parseExplicitSkill, type MaySkill } from "./skills.js";
 import { createFinishTool } from "./tools/lifecycle.js";
+import { createCheckpointTool } from "./tools/checkpoint.js";
+import { drainPersistedSessionBashProcessGroups } from "./tools/bash.js";
 
 // Re-export utilities that other modules import from manager
 export {
@@ -145,6 +147,7 @@ interface ActiveSession {
   stepLabel?: string;
   source?: string;
   timeoutTimer?: ReturnType<typeof setTimeout>;
+  admittedTimeoutMs?: number;
   toolCalls: number;
   turnCount: number;
   boundedFinishRequested?: boolean;
@@ -510,6 +513,13 @@ export class SubagentManager {
           projectRoot: opts?.executionRoot ?? def.projectRoot ?? this._projectRoot,
           persistDir: this._persistDir,
         }),
+      createCheckpoint: () =>
+        createCheckpointTool({
+          sessionId,
+          agentName: def.name,
+          persistDir: this._persistDir,
+        }),
+      bashProcessGroupOwner: { persistDir: this._persistDir, sessionId },
       onGuard: ({ context, guard, block, reason }) => {
         this.bus?.emit({
           type: "guard.triggered",
@@ -580,6 +590,7 @@ export class SubagentManager {
       workflowRunId: opts?.workflowRunId,
       stepLabel: opts?.stepLabel,
       source: opts?.source,
+      admittedTimeoutMs: opts?.timeoutMs ?? def.timeoutMs,
       toolCalls: 0,
       turnCount: 0,
       requestId: opts?.requestId,
@@ -1007,6 +1018,10 @@ export class SubagentManager {
     const interrupted: SessionInfo[] = [];
 
     for (const [sessionId, persisted] of stale) {
+      // A resumed or terminal stale session must never overlap descendants from
+      // its previous process. Drain only groups persisted by this exact session.
+      drainPersistedSessionBashProcessGroups(this._persistDir, sessionId);
+
       if (isHeartbeatSession(persisted) && releaseStaleHeartbeatDispatchLease(this._persistDir, persisted.agent)) {
         log("info", `[manager] Released stale heartbeat dispatch lease for ${persisted.agent} from ${sessionId}`);
       }
@@ -1728,11 +1743,12 @@ export class SubagentManager {
         }
       });
     } catch (err) {
-      errorText = session.status === "interrupted" && session.lastError
-        ? session.lastError
-        : err instanceof Error
-          ? err.message
-          : String(err);
+      errorText =
+        session.status === "interrupted" && session.lastError
+          ? session.lastError
+          : err instanceof Error
+            ? err.message
+            : String(err);
       log("error", `[runtime] ${sessionId} failed: ${err}`);
     } finally {
       if (session.timeoutTimer) clearTimeout(session.timeoutTimer);
@@ -2209,7 +2225,17 @@ export class SubagentManager {
           break;
         case "tool_execution_start":
           session.toolCalls++;
-          if (shouldRequestBoundedWorkflowFinish(session.requireFinish, session.toolCalls, session.boundedFinishRequested === true)) {
+          if (
+            shouldRequestBoundedWorkflowFinish(
+              session.requireFinish,
+              session.toolCalls,
+              session.boundedFinishRequested === true,
+              {
+                admittedTimeoutMs: session.admittedTimeoutMs,
+                elapsedMs: Date.now() - session.startedAt,
+              },
+            )
+          ) {
             session.boundedFinishRequested = true;
             agent.steer({
               role: "user",

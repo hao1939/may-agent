@@ -11,12 +11,20 @@ import {
   type ControlEvent,
   type ControlSocket,
 } from "./server.js";
+import { EVENT_INGRESS_SOURCE, EVENT_ROW_ID, EventBus, type AgentEvent } from "../../../src/app/event-bus.js";
+import { DbWriter } from "../../../src/lib/db-writer.js";
+import { closeDb, getDb } from "../../../src/lib/requests.js";
 
 let sockets: ControlSocket[] = [];
+const persistDirs: string[] = [];
 
 afterEach(() => {
   for (const socket of sockets) socket.close();
   sockets = [];
+  for (const persistDir of persistDirs.splice(0)) {
+    closeDb(persistDir);
+    rmSync(persistDir, { recursive: true, force: true });
+  }
 });
 
 function mockEndpoint(handler: (socket: Duplex) => void): SocketEndpoint {
@@ -132,12 +140,82 @@ describe("control socket protocol", () => {
     });
 
     expect(ack).toEqual({ type: "ok", command: "project.nudge", eventId: 42 });
-    expect(core.emitted).toMatchObject([{
-      type: "project.nudge",
-      source: "test",
+    expect(core.emitted).toMatchObject([
+      {
+        type: "project.nudge",
+        source: "test",
+        owner: "agent:may",
+        data: { projectPath: "agents/shared/projects/x" },
+      },
+    ]);
+  });
+
+  it("returns the original persisted event id when a canonical socket event is retried", async () => {
+    const persistDir = mkdtempSync(join(tmpdir(), "may-control-socket-retry-"));
+    persistDirs.push(persistDir);
+    const bus = new EventBus();
+    const writer = new DbWriter(persistDir);
+    bus.setPersistenceSubscriber(writer.handler);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    const core = createCore({
+      emitEvent: (event) => {
+        Object.defineProperty(event, EVENT_INGRESS_SOURCE, {
+          value: "control-socket",
+          configurable: true,
+        });
+        const emitted = bus.emit(event as AgentEvent);
+        const eventId = emitted[EVENT_ROW_ID];
+        return Number.isInteger(eventId) && Number(eventId) > 0 ? { eventId: Number(eventId) } : {};
+      },
+      subscribeEvents: (handler) => bus.subscribe((event) => handler(event as ControlEvent)),
+    });
+    const frame = {
+      type: "metric.updated",
+      source: "test:control-socket",
+      owner: "agent:dev",
+      data: {
+        metricId: "control.socket.retry.fixture",
+        idempotencyKey: "control-socket-retry-1",
+      },
+    };
+
+    const original = await sendSocketCommand(core.endpoint, frame);
+    const retry = await sendSocketCommand(core.endpoint, frame);
+
+    expect(Number(original.eventId)).toBeGreaterThan(0);
+    expect(retry).toEqual(original);
+    const rows = getDb(persistDir)
+      .prepare(
+        `SELECT id
+         FROM events
+         WHERE event_type = ?
+           AND idempotency_key = ?`,
+      )
+      .all(frame.type, frame.data.idempotencyKey) as Array<{ id: number }>;
+    expect(rows).toEqual([{ id: original.eventId }]);
+  });
+
+  it("rolls back persistence when the durable row id cannot attach to the event", () => {
+    const persistDir = mkdtempSync(join(tmpdir(), "may-control-socket-receipt-boundary-"));
+    persistDirs.push(persistDir);
+    const writer = new DbWriter(persistDir);
+    const event = {
+      type: "trigger.metrics-snapshot",
+      source: "test:control-socket",
       owner: "agent:may",
-      data: { projectPath: "agents/shared/projects/x" },
-    }]);
+      data: {},
+    } as AgentEvent;
+    Object.defineProperty(event, EVENT_INGRESS_SOURCE, {
+      value: "control-socket",
+      configurable: true,
+    });
+    Object.freeze(event);
+
+    expect(() => writer.handler(event)).toThrow("cannot expose its durable receipt");
+    const row = getDb(persistDir)
+      .prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = ?")
+      .get(event.type) as { count: number };
+    expect(row.count).toBe(0);
   });
 
   it("returns persistence errors instead of acknowledging an unpersisted event", async () => {
@@ -229,7 +307,9 @@ describe("control socket protocol", () => {
     expect(status).toEqual({
       type: "status",
       command: "status",
-      activeAgents: [{ agent: "scout", sessionId: "s_1", status: "running", kind: "call", task: "investigate a long task name" }],
+      activeAgents: [
+        { agent: "scout", sessionId: "s_1", status: "running", kind: "call", task: "investigate a long task name" },
+      ],
     });
     expect(core.emitted).toEqual([]);
   });
@@ -237,9 +317,7 @@ describe("control socket protocol", () => {
   it("includes the current chat target as ready when it is not active", async () => {
     const core = createCore({
       getSessionId: () => "s_chat_done",
-      getStatus: () => [
-        { agent: "scout", sessionId: "s_1", status: "running", kind: "call", task: "investigate" },
-      ],
+      getStatus: () => [{ agent: "scout", sessionId: "s_1", status: "running", kind: "call", task: "investigate" }],
     });
 
     const status = await sendSocketCommand(core.endpoint, { type: "status" });
@@ -277,9 +355,9 @@ describe("control socket protocol", () => {
   it("rejects subscription filters containing non-string session ids", async () => {
     const core = createCore();
 
-    await expect(
-      sendSocketCommand(core.endpoint, { type: "subscribe", sessions: ["s_1", 42] }),
-    ).rejects.toThrow("sessions must be an array of strings");
+    await expect(sendSocketCommand(core.endpoint, { type: "subscribe", sessions: ["s_1", 42] })).rejects.toThrow(
+      "sessions must be an array of strings",
+    );
   });
 
   it("does not broadcast events before a client subscribes", async () => {

@@ -1,0 +1,100 @@
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { basename, dirname, join } from "node:path";
+
+export type DeployReceiptPhase = "requested" | "succeeded" | "failed" | "rolled_back";
+
+function atomicJson(path: string, value: unknown): void {
+  mkdirSync(dirname(path), { recursive: true });
+  const tmp = join(dirname(path), `.${basename(path)}.${process.pid}.${Date.now()}.tmp`);
+  writeFileSync(tmp, `${JSON.stringify(value, null, 2)}\n`, { mode: 0o600 });
+  renameSync(tmp, path);
+}
+
+function validId(value: string | undefined, label: string): string {
+  if (!value || !/^[A-Za-z0-9._:/-]+$/.test(value)) throw new Error(`Invalid ${label}`);
+  return value;
+}
+
+export function requestReceipt(
+  path: string,
+  project: string,
+  taskId: string,
+  correlation: string,
+  artifactSha: string,
+): boolean {
+  const lock = `${path}.lock`;
+  try {
+    mkdirSync(lock);
+  } catch {
+    if (existsSync(path)) return false;
+    throw new Error(`Deploy receipt lock is busy: ${lock}`);
+  }
+  try {
+    if (existsSync(path)) return false;
+    atomicJson(path, {
+      version: 1,
+      correlation,
+      project,
+      taskId,
+      artifactSha,
+      phase: "requested",
+      requestedAt: new Date().toISOString(),
+      verification:
+        "After the supervisor settles service and HTTP health, verify loadedArtifactSha equals artifactSha, health is healthy, targetedWake is true, duplicateDeploy is false, then complete the owner task without redeploying.",
+    });
+    return true;
+  } finally {
+    rmSync(lock, { recursive: true, force: true });
+  }
+}
+
+export function settleReceipt(
+  path: string,
+  phase: Exclude<DeployReceiptPhase, "requested">,
+  loadedArtifactSha: string,
+  health: "healthy" | "unhealthy",
+  targetedWake: boolean,
+  failure?: string,
+): void {
+  const receipt = JSON.parse(readFileSync(path, "utf8"));
+  if (receipt.phase !== "requested") return;
+  atomicJson(path, {
+    ...receipt,
+    phase,
+    completedAt: new Date().toISOString(),
+    loadedArtifactSha,
+    health,
+    targetedWake,
+    duplicateDeploy: false,
+    ...(failure ? { failure } : {}),
+  });
+}
+
+if (import.meta.main) {
+  const [command, pathArg, ...args] = process.argv.slice(2);
+  const path = pathArg;
+  if (!path) throw new Error("Usage: deploy-receipt.ts <request|settle> <path> ...");
+  if (command === "request") {
+    const [projectArg, taskArg, correlationArg, shaArg] = args;
+    const created = requestReceipt(
+      path,
+      validId(projectArg, "project"),
+      validId(taskArg, "task id"),
+      validId(correlationArg, "correlation"),
+      validId(shaArg, "artifact SHA"),
+    );
+    if (!created) {
+      console.error(`Deploy correlation already has a receipt; refusing duplicate deployment: ${correlationArg}`);
+      process.exit(73);
+    }
+  } else if (command === "settle") {
+    const [phaseArg, shaArg, healthArg, wakeArg, failureArg] = args;
+    if (phaseArg !== "succeeded" && phaseArg !== "failed" && phaseArg !== "rolled_back") {
+      throw new Error("Invalid terminal deploy phase");
+    }
+    if (healthArg !== "healthy" && healthArg !== "unhealthy") throw new Error("Invalid health value");
+    settleReceipt(path, phaseArg, shaArg ?? "unknown", healthArg, wakeArg === "true", failureArg);
+  } else {
+    throw new Error(`Unknown deploy receipt command: ${command}`);
+  }
+}

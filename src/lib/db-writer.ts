@@ -83,10 +83,7 @@ function stableEventValue(value: unknown): unknown {
   );
 }
 
-function idempotencyHash(
-  event: AgentEvent,
-  payload: Record<string, unknown>,
-): string {
+function idempotencyHash(event: AgentEvent, payload: Record<string, unknown>): string {
   const record = event as AgentEvent & Record<string, unknown>;
   const canonical = isCanonicalEventEnvelope(record)
     ? {
@@ -99,16 +96,25 @@ function idempotencyHash(
         type: event.type,
         data: Object.fromEntries(Object.entries(payload).filter(([key]) => key !== "timestamp")),
       };
-  return createHash("sha256").update(JSON.stringify(stableEventValue(canonical))).digest("hex");
+  return createHash("sha256")
+    .update(JSON.stringify(stableEventValue(canonical)))
+    .digest("hex");
 }
 
 function ingressSource(event: AgentEvent, fallback: string | null): string {
   const trusted = (event as AgentEvent & { [EVENT_INGRESS_SOURCE]?: unknown })[EVENT_INGRESS_SOURCE];
-  return typeof trusted === "string" && trusted.trim() ? trusted.trim() : fallback ?? "internal";
+  return typeof trusted === "string" && trusted.trim() ? trusted.trim() : (fallback ?? "internal");
 }
 
 function idempotencyScope(correlation: ReturnType<typeof eventCorrelation>, owner: string | null): string {
-  return correlation.projectId ?? correlation.taskId ?? correlation.workflowRunId ?? correlation.sessionId ?? owner ?? "global";
+  return (
+    correlation.projectId ??
+    correlation.taskId ??
+    correlation.workflowRunId ??
+    correlation.sessionId ??
+    owner ??
+    "global"
+  );
 }
 
 function compactEventValue(value: unknown, depth = 0): unknown {
@@ -379,12 +385,7 @@ const PAIR_CONTRACTS: readonly PairContract[] = [
   {
     name: "workflow",
     open: "workflow.started",
-    closes: [
-      "workflow.completed",
-      "workflow.failed",
-      "workflow.blocked",
-      "workflow.interrupted",
-    ],
+    closes: ["workflow.completed", "workflow.failed", "workflow.blocked", "workflow.interrupted"],
     timeoutMs: DEFAULT_PAIR_TTL_MS,
     key: workflowKey,
   },
@@ -655,9 +656,7 @@ export class DbWriter {
         const existingId = Number(existing?.id);
         if (Number.isInteger(existingId) && existingId > 0) {
           if (existing?.idempotency_hash !== inputHash) {
-            throw new Error(
-              `Idempotency key ${idempotencyKey} was already used with different event input`,
-            );
+            throw new Error(`Idempotency key ${idempotencyKey} was already used with different event input`);
           }
           const retryEvent = event as AgentEvent & Record<string, unknown>;
           if (typeof existing.source === "string") retryEvent.source = existing.source;
@@ -725,8 +724,8 @@ export class DbWriter {
           value: rowId,
           configurable: true,
         });
-      } catch {
-        /* event may be frozen; delivery metadata will be skipped */
+      } catch (error) {
+        throw new Error(`Persisted event ${rowId} cannot expose its durable receipt`, { cause: error });
       }
       persistEventTrace(this.db, event, rowId, timestamp);
       this.closePairForFollowup(payload, rowId, timestamp);
@@ -881,15 +880,8 @@ export class DbWriter {
     const pairs = closingPairs(eventType);
     for (const pair of pairs) {
       const rawOpenEventId = payload.openEventId ?? payload.open_event_id;
-      const openEventId =
-        typeof rawOpenEventId === "number"
-          ? rawOpenEventId
-          : Number(rawOpenEventId);
-      if (
-        pair.preferExplicitOpenEventId &&
-        Number.isFinite(openEventId) &&
-        openEventId > 0
-      ) {
+      const openEventId = typeof rawOpenEventId === "number" ? rawOpenEventId : Number(rawOpenEventId);
+      if (pair.preferExplicitOpenEventId && Number.isFinite(openEventId) && openEventId > 0) {
         continue;
       }
       const key = pair.key(payload);

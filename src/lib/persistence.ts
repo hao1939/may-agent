@@ -76,6 +76,11 @@ export interface PersistedSession {
   executionRoot?: string;
 }
 
+/** Durable setsid process groups currently owned by one exact session. */
+export interface PersistedBashProcessGroups {
+  pgids: number[];
+}
+
 /** Shape of the registry data (in-memory view).
  *  Agents are only held in-memory (re-registered on every startup).
  *  Sessions are persisted as individual meta.json files per session dir. */
@@ -312,14 +317,64 @@ export function writeSessionMeta(persistDir: string, sessionId: string, meta: Pe
   renameSync(tmpPath, filePath);
 }
 
+function bashProcessGroupsPath(persistDir: string, sessionId: string): string {
+  return join(sessionDir(persistDir, sessionId), "bash-process-groups.json");
+}
+
+/**
+ * Read durable setsid groups for an exact session. Legacy sessions have no
+ * sidecar and intentionally dual-read as an empty set.
+ */
+export function readSessionBashProcessGroups(persistDir: string, sessionId: string): number[] {
+  try {
+    const parsed = JSON.parse(
+      readFileSync(bashProcessGroupsPath(persistDir, sessionId), "utf-8"),
+    ) as Partial<PersistedBashProcessGroups>;
+    if (!Array.isArray(parsed.pgids)) return [];
+    return [...new Set(parsed.pgids.filter((pgid): pgid is number => Number.isInteger(pgid) && pgid > 0))];
+  } catch {
+    return [];
+  }
+}
+
+function writeSessionBashProcessGroups(persistDir: string, sessionId: string, pgids: number[]): void {
+  const normalized = [...new Set(pgids)].sort((a, b) => a - b);
+  const filePath = bashProcessGroupsPath(persistDir, sessionId);
+  if (normalized.length === 0) {
+    try {
+      rmSync(filePath);
+    } catch {
+      // Legacy or already-drained sessions may not have a sidecar.
+    }
+    return;
+  }
+  ensureSessionDir(persistDir, sessionId);
+  const tmpPath = `${filePath}.tmp.${process.pid}`;
+  writeFileSync(tmpPath, JSON.stringify({ pgids: normalized }, null, 2), "utf-8");
+  renameSync(tmpPath, filePath);
+}
+
+export function addSessionBashProcessGroup(persistDir: string, sessionId: string, pgid: number): void {
+  if (!Number.isInteger(pgid) || pgid <= 0) throw new Error(`Invalid bash process group: ${pgid}`);
+  writeSessionBashProcessGroups(persistDir, sessionId, [...readSessionBashProcessGroups(persistDir, sessionId), pgid]);
+}
+
+/** Remove a group only after the caller has confirmed that the full group exited. */
+export function removeSessionBashProcessGroup(persistDir: string, sessionId: string, pgid: number): void {
+  writeSessionBashProcessGroups(
+    persistDir,
+    sessionId,
+    readSessionBashProcessGroups(persistDir, sessionId).filter((candidate) => candidate !== pgid),
+  );
+}
+
 const ACTIVE_MARKER = "[ACTIVE]";
 const STARTED_MARKER = "[STARTED]";
 
 function isPermissionError(err: unknown): err is NodeJS.ErrnoException {
   return (
     err instanceof Error &&
-    ((err as NodeJS.ErrnoException).code === "EACCES" ||
-      (err as NodeJS.ErrnoException).code === "EPERM")
+    ((err as NodeJS.ErrnoException).code === "EACCES" || (err as NodeJS.ErrnoException).code === "EPERM")
   );
 }
 

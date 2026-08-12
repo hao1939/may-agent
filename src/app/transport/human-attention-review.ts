@@ -98,6 +98,7 @@ function prompt(candidate: HumanAttentionCandidate): string {
     sourceEventId === null
       ? "This candidate has no sourceEventId. Anchor all evidence to the exact candidate payload shown below."
       : `Authoritative candidate sourceEventId: ${sourceEventId}. Treat that exact id as the admission subject throughout the review.`,
+    "Use only these canonical bounded lookups: fetch the candidate by its exact sourceEventId; fetch terminal closure rows filtered to that exact sourceEventId or an explicit recovery carrier citing it; and, when taskId is present, read project task state at resources[taskId] (never tasks[taskId] and never the whole state file).",
     "Before and after any duplicate, digest, or prior-review lookup, verify that every closure claim still matches the current candidate or an explicit recovery lineage from it.",
     "Do not treat a prior human.attention.reviewed, channel.delivery.*, or message.resolved row as closure unless it matches the exact sourceEventId above or a recovery carrier that explicitly cites that sourceEventId.",
     "After you confirm the candidate payload, exact lineage, and exact prior-closure check, either decide or safe-route. Do not spend the rest of the admission window on open-ended schema discovery or extra lookups once those three anchors are in hand.",

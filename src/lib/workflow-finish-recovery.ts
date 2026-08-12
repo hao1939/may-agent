@@ -4,12 +4,10 @@ import { classifyError } from "./classify-error.js";
 import { isRetryableEmptyAssistantFailure } from "./manager-utils.js";
 
 export const WORKFLOW_BOUNDED_FINISH_TOOL_CALL_THRESHOLD = 24;
-export const RESPONSES_STREAM_TERMINAL_ERROR =
-  "OpenAI Responses stream ended before a terminal response event";
+export const WORKFLOW_BOUNDED_FINISH_DEFAULT_WINDOW_MS = 300_000;
+export const RESPONSES_STREAM_TERMINAL_ERROR = "OpenAI Responses stream ended before a terminal response event";
 
-export function shouldAttemptWorkflowFinishRecovery(
-  reason: string | undefined,
-): boolean {
+export function shouldAttemptWorkflowFinishRecovery(reason: string | undefined): boolean {
   if (!reason) return false;
   return (
     reason === RESPONSES_STREAM_TERMINAL_ERROR ||
@@ -22,8 +20,12 @@ export function shouldRequestBoundedWorkflowFinish(
   requireFinish: boolean,
   toolCalls: number,
   alreadyRequested: boolean,
+  timing?: { admittedTimeoutMs?: number; elapsedMs?: number },
 ): boolean {
-  return requireFinish && !alreadyRequested && toolCalls >= WORKFLOW_BOUNDED_FINISH_TOOL_CALL_THRESHOLD;
+  if (!requireFinish || alreadyRequested || toolCalls < WORKFLOW_BOUNDED_FINISH_TOOL_CALL_THRESHOLD) return false;
+  const admittedTimeoutMs = timing?.admittedTimeoutMs;
+  if (admittedTimeoutMs === undefined || admittedTimeoutMs <= WORKFLOW_BOUNDED_FINISH_DEFAULT_WINDOW_MS) return true;
+  return Math.max(0, timing?.elapsedMs ?? 0) >= admittedTimeoutMs - WORKFLOW_BOUNDED_FINISH_DEFAULT_WINDOW_MS;
 }
 
 export function boundedWorkflowFinishPrompt(outputSchema?: TSchema): string {
@@ -33,10 +35,7 @@ export function boundedWorkflowFinishPrompt(outputSchema?: TSchema): string {
   );
 }
 
-export function workflowFinishRecoveryPrompt(
-  outputSchema?: TSchema,
-  reason?: string,
-): string {
+export function workflowFinishRecoveryPrompt(outputSchema?: TSchema, reason?: string): string {
   const prefix = shouldAttemptWorkflowFinishRecovery(reason)
     ? "Your last turn ended with a transient runtime/provider failure or no visible answer. "
     : "Your last turn ended with no visible answer. ";
@@ -122,7 +121,11 @@ export async function recoverCapturedWorkflowFinish(options: {
     }
 
     const semanticError = result.content.find(
-      (block: any) => block?.type === "text" && String(block.text ?? "").trimStart().startsWith("finish() error:"),
+      (block: any) =>
+        block?.type === "text" &&
+        String(block.text ?? "")
+          .trimStart()
+          .startsWith("finish() error:"),
     );
     options.messages.push({
       role: "toolResult",

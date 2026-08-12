@@ -5,6 +5,8 @@ import {
 	createWriteStream,
 	existsSync,
 	openSync,
+	readdirSync,
+	readFileSync,
 	readSync,
 	unlinkSync,
 } from "node:fs";
@@ -20,6 +22,11 @@ import {
 } from "@earendil-works/pi-agent-core";
 import { Type } from "@earendil-works/pi-ai";
 import type { TSchema } from "@earendil-works/pi-ai";
+import {
+	addSessionBashProcessGroup,
+	readSessionBashProcessGroups,
+	removeSessionBashProcessGroup,
+} from "../persistence.js";
 function getShellEnv(): NodeJS.ProcessEnv {
 	// The container image installs bun at /usr/local/bin/bun, which is already
 	// on PATH for every process the daemon spawns. Earlier versions of this
@@ -29,15 +36,70 @@ function getShellEnv(): NodeJS.ProcessEnv {
 	return { ...process.env };
 }
 
-function killProcessGroup(pid: number): void {
+export const BASH_PROCESS_GROUP_TERM_GRACE_MS = 250;
+export const BASH_PROCESS_GROUP_KILL_GRACE_MS = 1_000;
+const PROCESS_GROUP_POLL_MS = 20;
+
+function processGroupAlive(pgid: number): boolean {
 	try {
-		process.kill(-pid, "SIGKILL");
+		process.kill(-pgid, 0);
 	} catch {
-		try {
-			process.kill(pid, "SIGKILL");
-		} catch {
-			// The process group already exited.
+		return false;
+	}
+	// kill(0) includes unreaped zombies. On Linux, regard a zombie-only group as
+	// drained so settlement and recovery do not wait on an unrelated reaper.
+	try {
+		for (const entry of readdirSync("/proc")) {
+			if (!/^\d+$/.test(entry)) continue;
+			const stat = readFileSync(`/proc/${entry}/stat`, "utf8");
+			const fields = stat.slice(stat.lastIndexOf(")") + 2).split(" ");
+			if (Number(fields[2]) === pgid && fields[0] !== "Z") return true;
 		}
+		return false;
+	} catch {
+		return true;
+	}
+}
+
+function signalProcessGroup(pgid: number, signal: "SIGTERM" | "SIGKILL"): void {
+	try {
+		process.kill(-pgid, signal);
+	} catch {
+		// The exact process group already exited.
+	}
+}
+
+async function waitForProcessGroupExit(pgid: number, timeoutMs: number): Promise<boolean> {
+	const deadline = Date.now() + timeoutMs;
+	while (processGroupAlive(pgid) && Date.now() < deadline) {
+		await new Promise((resolve) => setTimeout(resolve, PROCESS_GROUP_POLL_MS));
+	}
+	return !processGroupAlive(pgid);
+}
+
+/** Drain one exact setsid group before allowing its bash tool call to settle. */
+export async function drainBashProcessGroup(pgid: number): Promise<boolean> {
+	if (!processGroupAlive(pgid)) return true;
+	signalProcessGroup(pgid, "SIGTERM");
+	if (await waitForProcessGroupExit(pgid, BASH_PROCESS_GROUP_TERM_GRACE_MS)) return true;
+	signalProcessGroup(pgid, "SIGKILL");
+	return waitForProcessGroupExit(pgid, BASH_PROCESS_GROUP_KILL_GRACE_MS);
+}
+
+/**
+ * Startup recovery has no live child-process handle and is intentionally
+ * synchronous. Bound both signal phases before terminal persistence or resume.
+ */
+export function drainPersistedSessionBashProcessGroups(persistDir: string, sessionId: string): void {
+	const sleeper = new Int32Array(new SharedArrayBuffer(4));
+	for (const pgid of readSessionBashProcessGroups(persistDir, sessionId)) {
+		if (processGroupAlive(pgid)) signalProcessGroup(pgid, "SIGTERM");
+		let deadline = Date.now() + BASH_PROCESS_GROUP_TERM_GRACE_MS;
+		while (processGroupAlive(pgid) && Date.now() < deadline) Atomics.wait(sleeper, 0, 0, PROCESS_GROUP_POLL_MS);
+		if (processGroupAlive(pgid)) signalProcessGroup(pgid, "SIGKILL");
+		deadline = Date.now() + BASH_PROCESS_GROUP_KILL_GRACE_MS;
+		while (processGroupAlive(pgid) && Date.now() < deadline) Atomics.wait(sleeper, 0, 0, PROCESS_GROUP_POLL_MS);
+		if (!processGroupAlive(pgid)) removeSessionBashProcessGroup(persistDir, sessionId, pgid);
 	}
 }
 
@@ -89,6 +151,8 @@ export interface BashOperations {
 			signal?: AbortSignal;
 			timeout?: number;
 			env?: NodeJS.ProcessEnv;
+			onProcessGroupSpawn?: (pgid: number) => void;
+			onProcessGroupDrained?: (pgid: number) => void;
 		},
 	) => Promise<{ exitCode: number | null }>;
 }
@@ -97,7 +161,7 @@ export interface BashOperations {
  * Default bash operations using local shell
  */
 const defaultBashOperations: BashOperations = {
-	exec: (command, cwd, { onData, signal, timeout, env }) => {
+	exec: (command, cwd, { onData, signal, timeout, env, onProcessGroupSpawn, onProcessGroupDrained }) => {
 		return new Promise((resolve, reject) => {
 			if (!existsSync(cwd)) {
 				reject(new Error(`Working directory does not exist: ${cwd}\nCannot execute bash commands.`));
@@ -147,35 +211,31 @@ const defaultBashOperations: BashOperations = {
 					}
 				}
 			};
-			const settleResolve = (exitCode: number | null) => {
+			const settleAfterDrain = async (exitCode: number | null, error?: Error) => {
 				if (settled) return;
 				settled = true;
+				if (timeoutHandle) clearTimeout(timeoutHandle);
+				if (signal) signal.removeEventListener("abort", onAbort);
+				if (child.pid) {
+					const drained = await drainBashProcessGroup(child.pid);
+					if (drained) onProcessGroupDrained?.(child.pid);
+				}
 				cleanup();
-				resolve({ exitCode });
+				if (error) reject(error);
+				else resolve({ exitCode });
 			};
-			const settleReject = (error: Error) => {
-				if (settled) return;
-				settled = true;
-				cleanup();
-				reject(error);
-			};
-			const onAbort = () => {
-				if (child.pid) killProcessGroup(child.pid);
-				settleReject(new Error("aborted"));
-			};
+			const onAbort = () => void settleAfterDrain(null, new Error("aborted"));
 
+			if (child.pid) onProcessGroupSpawn?.(child.pid);
 			capturePollHandle = setInterval(flushCapture, 100);
-			child.once("error", settleReject);
-			child.once("exit", (exitCode) => {
-				if (child.pid) killProcessGroup(child.pid);
-				settleResolve(exitCode);
-			});
+			child.once("error", (error) => void settleAfterDrain(null, error));
+			child.once("exit", (exitCode) => void settleAfterDrain(exitCode));
 			if (signal) signal.addEventListener("abort", onAbort, { once: true });
 			if (timeout !== undefined && timeout > 0) {
-				timeoutHandle = setTimeout(() => {
-					if (child.pid) killProcessGroup(child.pid);
-					settleReject(new Error(`timeout:${timeout}`));
-				}, timeout * 1000);
+				timeoutHandle = setTimeout(
+					() => void settleAfterDrain(null, new Error(`timeout:${timeout}`)),
+					timeout * 1000,
+				);
 			}
 		});
 	},
@@ -257,6 +317,8 @@ function resolveSpawnContext(command: string, cwd: string, spawnHook?: BashSpawn
 export interface BashToolOptions {
 	/** Custom operations for command execution. Default: local shell */
 	operations?: BashOperations;
+	/** Persist local setsid groups under this exact durable session. */
+	processGroupOwner?: { persistDir: string; sessionId: string };
 	/** Command prefix prepended to every command (e.g., "shopt -s expand_aliases" for alias support) */
 	commandPrefix?: string;
 	/** Hook to adjust command, cwd, or env before execution */
@@ -357,6 +419,20 @@ export function createBashTool(cwd: string, options?: BashToolOptions): AgentToo
 					signal,
 					timeout,
 					env: spawnContext.env,
+					onProcessGroupSpawn: options?.processGroupOwner
+						? (pgid) => addSessionBashProcessGroup(
+							options.processGroupOwner!.persistDir,
+							options.processGroupOwner!.sessionId,
+							pgid,
+						)
+						: undefined,
+					onProcessGroupDrained: options?.processGroupOwner
+						? (pgid) => removeSessionBashProcessGroup(
+							options.processGroupOwner!.persistDir,
+							options.processGroupOwner!.sessionId,
+							pgid,
+						)
+						: undefined,
 				})
 					.then(({ exitCode }) => {
 						// Close temp file stream
