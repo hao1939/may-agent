@@ -184,9 +184,9 @@ COPY container/supervisord.conf /etc/supervisord.conf
 RUN mkdir -p /app/.state/runtime-logs && chown -R mayagent:mayagent /app/.state/runtime-logs
 
 # Copy entrypoints and helpers
-COPY container/entrypoint.sh container/start-chrome.sh container/setup-claude-config.sh container/setup-codex-config.sh container/setup-pi-config.sh container/may-agent-supervisor-restart.sh /usr/local/bin/
+COPY container/entrypoint.sh container/start-chrome.sh container/setup-claude-config.sh container/setup-codex-config.sh container/setup-pi-config.sh container/setup-herdr-integrations.sh container/may-agent-supervisor-restart.sh /usr/local/bin/
 COPY packages/terminal/bin/may-console.cjs /usr/local/bin/may-console
-RUN chmod 755 /usr/local/bin/may-agent /usr/local/bin/entrypoint.sh /usr/local/bin/start-chrome.sh /usr/local/bin/setup-claude-config.sh /usr/local/bin/setup-codex-config.sh /usr/local/bin/setup-pi-config.sh /usr/local/bin/may-agent-supervisor-restart.sh /usr/local/bin/may-console && \
+RUN chmod 755 /usr/local/bin/may-agent /usr/local/bin/entrypoint.sh /usr/local/bin/start-chrome.sh /usr/local/bin/setup-claude-config.sh /usr/local/bin/setup-codex-config.sh /usr/local/bin/setup-pi-config.sh /usr/local/bin/setup-herdr-integrations.sh /usr/local/bin/may-agent-supervisor-restart.sh /usr/local/bin/may-console && \
     ln -sf /usr/local/bin/may-agent-supervisor-restart.sh /usr/local/bin/may-agent-supervisor-restart
 
 # Virtual display
