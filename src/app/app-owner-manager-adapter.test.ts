@@ -96,6 +96,66 @@ describe("manager App owner adapter", () => {
     expect(cancelled).toEqual(["session-stale"]);
   });
 
+  it("runs a single human request as the channel response session", async () => {
+    const calls: Array<{ prompt: string; options: Record<string, unknown> }> = [];
+    const manager: AppOwnerManager = {
+      hasAgent: () => true,
+      run(_agent, prompt, options) {
+        calls.push({ prompt, options });
+        return "session-human";
+      },
+      async waitFor() {
+        return {
+          status: "done",
+          structuredResult: {
+            dispositions: [
+              {
+                requestId: "human-1",
+                disposition: { type: "complete", summary: "Hello", response: "Hello" },
+              },
+            ],
+          },
+        };
+      },
+      cancel() {},
+    };
+    const invoker = createManagerAppOwnerInvoker(manager);
+    const app = defineApp({
+      id: "may",
+      version: 1,
+      owner: "may",
+      inputSchema: Type.Unknown(),
+    });
+
+    await invoker({
+      app,
+      requests: [
+        {
+          id: "human-1",
+          source: { kind: "human", id: "event:42" },
+          input: { kind: "message", data: { message: "hello" } },
+        },
+      ],
+      transport: {
+        channel: "telegram",
+        conversationId: "telegram:123",
+        channelMessageId: 99,
+      },
+      onSessionStarted() {},
+    });
+
+    expect(calls[0]?.options).toMatchObject({
+      source: "telegram",
+      kind: "job",
+      projectId: "may",
+      requestId: "app-inbox-human:human-1",
+      conversationId: "telegram:123",
+      channelMessageId: 99,
+      toolPolicy: "deputy",
+    });
+    expect(calls[0]?.prompt).toContain("exact concise human-facing progress or final reply");
+  });
+
   it("rejects an unstructured successful owner result", async () => {
     const manager: AppOwnerManager = {
       hasAgent: () => true,

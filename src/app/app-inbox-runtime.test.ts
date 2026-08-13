@@ -130,6 +130,80 @@ describe("App inbox runtime", () => {
     });
   });
 
+  it("preserves human channel metadata through admission and owner dispatch", async () => {
+    const calls: Array<Parameters<AppOwnerManager["run"]>[2]> = [];
+    const managerWithMetadata: AppOwnerManager = {
+      hasAgent: () => true,
+      run(_agent, _prompt, options) {
+        calls.push(options);
+        return "session:human-metadata";
+      },
+      async waitFor() {
+        const row = db.prepare("SELECT id FROM app_inbox_items WHERE app_id = ?").get("evaluation-canary") as {
+          id: string;
+        };
+        return {
+          status: "done",
+          structuredResult: {
+            dispositions: [
+              {
+                requestId: row.id,
+                disposition: { type: "complete", summary: "human request handled" },
+              },
+            ],
+          },
+        };
+      },
+      cancel() {},
+    };
+    const bus = new EventBus();
+    runtime = await startAppInboxRuntime({
+      projectsRoot: root,
+      db,
+      manager: managerWithMetadata,
+      bus,
+      scanIntervalMs: 10_000,
+    });
+
+    bus.emit({
+      type: "app.input.requested",
+      source: "telegram",
+      data: {
+        appId: "evaluation-canary",
+        input: { kind: "probe", data: { value: "human" } },
+        source: { kind: "human", id: "event:42" },
+        conversationId: "telegram:123",
+        conversationSequence: 42,
+        channel: "telegram",
+        channelThreadId: "topic:7",
+        channelMessageId: 99,
+        idempotencyKey: "telegram-update:42",
+      },
+    });
+
+    await waitUntil(() => calls.length === 1);
+    const item = db.prepare("SELECT id FROM app_inbox_items WHERE app_id = ?").get("evaluation-canary") as {
+      id: string;
+    };
+    await waitUntil(() => runtime?.host.get(item.id)?.status === "done");
+    expect(runtime?.host.get(item.id)).toMatchObject({
+      source: { kind: "human", id: "event:42" },
+      conversationId: "telegram:123",
+      conversationSequence: 42,
+      channel: "telegram",
+      channelThreadId: "topic:7",
+      channelMessageId: 99,
+    });
+    expect(calls[0]).toMatchObject({
+      source: "telegram",
+      kind: "job",
+      requestId: `app-inbox-human:${item.id}`,
+      conversationId: "telegram:123",
+      channelMessageId: 99,
+      toolPolicy: "deputy",
+    });
+  });
+
   it("rescans durable unfinished items when the runtime starts", async () => {
     const calls: string[] = [];
     const oldNow = Date.now() - 100;
