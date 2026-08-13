@@ -2358,6 +2358,35 @@ function installSchedules(opts: ProjectAppLoaderOptions, cron: Cron, descriptor:
 
 const appRouterDescriptorsByBus = new WeakMap<EventBus, ProjectAppDescriptor[]>();
 const appRouterOptionsByBus = new WeakMap<EventBus, ProjectAppLoaderOptions>();
+const appTaskProgressRoutesByBus = new WeakMap<EventBus, Map<string, string>>();
+
+/**
+ * Keep high-volume session progress on its exact App after the first durable
+ * match. A miss scans current descriptors so the index remains disposable and
+ * can always be rebuilt from authoritative task state.
+ */
+export function refreshProjectAppTaskProgressRoute(
+  descriptors: readonly ProjectAppDescriptor[],
+  routes: Map<string, string>,
+  sessionId: string,
+  refresh: (descriptor: ProjectAppDescriptor) => boolean,
+): boolean {
+  const normalizedSessionId = sessionId.trim();
+  if (!normalizedSessionId) return false;
+  const cachedAppId = routes.get(normalizedSessionId);
+  if (cachedAppId) {
+    const cached = descriptors.find((descriptor) => descriptor.id === cachedAppId);
+    if (cached && refresh(cached)) return true;
+    routes.delete(normalizedSessionId);
+  }
+  for (const descriptor of descriptors) {
+    if (descriptor.id === cachedAppId) continue;
+    if (!refresh(descriptor)) continue;
+    routes.set(normalizedSessionId, descriptor.id);
+    return true;
+  }
+  return false;
+}
 
 export type ProjectAppActionDescription = {
   id: string;
@@ -2950,6 +2979,11 @@ async function requeueRepairedProjectAppTaskHandlers(
 
 function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: ProjectAppDescriptor[]): void {
   appRouterOptionsByBus.set(opts.bus, opts);
+  let progressRoutes = appTaskProgressRoutesByBus.get(opts.bus);
+  if (!progressRoutes) {
+    progressRoutes = new Map();
+    appTaskProgressRoutesByBus.set(opts.bus, progressRoutes);
+  }
   const existing = appRouterDescriptorsByBus.get(opts.bus);
   if (existing) {
     existing.splice(0, existing.length, ...descriptors);
@@ -2968,19 +3002,25 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
         : "";
     if (progressSessionId) {
       const observedAt = typeof event.timestamp === "number" ? event.timestamp : Date.now();
-      for (const descriptor of appRouterDescriptorsByBus.get(opts.bus) ?? []) {
-        if (!descriptor.app.tasks) continue;
-        refreshProjectAppTaskAttemptLeaseBySession(
-          taskReconciliationConfig({
-            appDir: descriptor.appDir,
-            projectDir: descriptor.projectDir,
-            owner: descriptor.owner,
-            maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
-          }),
-          progressSessionId,
-          observedAt,
-        );
-      }
+      refreshProjectAppTaskProgressRoute(
+        appRouterDescriptorsByBus.get(opts.bus) ?? [],
+        progressRoutes,
+        progressSessionId,
+        (descriptor) =>
+          Boolean(
+            descriptor.app.tasks &&
+              refreshProjectAppTaskAttemptLeaseBySession(
+                taskReconciliationConfig({
+                  appDir: descriptor.appDir,
+                  projectDir: descriptor.projectDir,
+                  owner: descriptor.owner,
+                  maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
+                }),
+                progressSessionId,
+                observedAt,
+              ),
+          ),
+      );
     }
     const startedSessionId =
       event.type === "session.start" && typeof event.sessionId === "string" ? event.sessionId.trim() : "";
@@ -3000,7 +3040,10 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
           sessionBinding,
           startedSessionId,
         );
-        if (association.status !== "recorded") {
+        if (association.status === "recorded") {
+          progressRoutes.set(startedSessionId, descriptor.id);
+        } else {
+          progressRoutes.delete(startedSessionId);
           interruptSupersededOwnerSession(
             opts,
             startedSessionId,
@@ -3035,6 +3078,9 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
             };
           })()
         : null;
+    if (event.type === "session.end" && typeof event.sessionId === "string") {
+      progressRoutes.delete(event.sessionId.trim());
+    }
     for (const descriptor of appRouterDescriptorsByBus.get(opts.bus) ?? []) {
       if (descriptor.reconciliationPaused) continue;
       const taskController = appTaskControllersByBus.get(opts.bus)?.get(descriptor.id);
