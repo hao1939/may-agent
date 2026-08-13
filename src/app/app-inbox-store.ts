@@ -707,6 +707,20 @@ export function markAppInboxSendingDeliveriesUncertain(db: SqliteDb, now = Date.
   ).changes;
 }
 
+/**
+ * Internal agent delivery is safe to replay because its message event carries
+ * the stable App delivery operation ID as an idempotency key. External channel
+ * sends remain uncertain after restart and must never be retried blindly.
+ */
+export function restoreReplayableAppInboxDeliveries(db: SqliteDb, now = Date.now()): number {
+  return db.run(
+    `UPDATE app_inbox_deliveries
+     SET status = 'pending', attempted_at = NULL, updated_at = ?
+     WHERE status = 'sending' AND channel LIKE 'agent:%'`,
+    [now],
+  ).changes;
+}
+
 export type AppInboxDeliveryReceipt = {
   operationId: string;
   itemId: string;
