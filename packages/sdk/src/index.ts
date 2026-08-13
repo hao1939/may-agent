@@ -1007,6 +1007,9 @@ export {
   taskState,
   withTaskStateLock,
 } from "./project-task-tree-store.js";
+
+export { currentProcessInstance, isProcessInstanceAlive } from "./process-identity.js";
+export type { PersistedProcessInstance, ProcessInstance } from "./process-identity.js";
 export type { SaveTaskStateOptions, TaskStateMigrationResult } from "./project-task-tree-store.js";
 export type {
   ProjectTaskIntegrityFinding,

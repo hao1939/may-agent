@@ -13,6 +13,7 @@ import { join } from "node:path";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import type { SubagentDefinition } from "./types.js";
 import type { TSchema } from "@earendil-works/pi-ai";
+import { currentProcessInstance, isProcessInstanceAlive } from "@may-agent/sdk";
 // DB writes removed from RegistryStore — handled by DbWriter subscriber via EventBus.
 import { log } from "./log.js";
 
@@ -382,7 +383,7 @@ function isPermissionError(err: unknown): err is NodeJS.ErrnoException {
 export function markSessionActive(persistDir: string, sessionId: string): void {
   ensureSessionDir(persistDir, sessionId);
   const markerPath = join(sessionDir(persistDir, sessionId), ACTIVE_MARKER);
-  const content = JSON.stringify({ pid: process.pid, activatedAt: new Date().toISOString() });
+  const content = JSON.stringify({ ...currentProcessInstance(), activatedAt: new Date().toISOString() });
   try {
     writeFileSync(markerPath, content, "utf-8");
   } catch (err) {
@@ -410,12 +411,17 @@ export function markSessionActive(persistDir: string, sessionId: string): void {
   }
 }
 
-/** Return the process that currently owns a session lease, if the marker uses the pid-aware format. */
+/** Return the live process instance that owns a session lease. */
 export function readActiveSessionProcessId(persistDir: string, sessionId: string): number | null {
   try {
     const raw = readFileSync(join(sessionDir(persistDir, sessionId), ACTIVE_MARKER), "utf-8");
-    const parsed = JSON.parse(raw) as { pid?: unknown };
-    return Number.isInteger(parsed.pid) && Number(parsed.pid) > 0 ? Number(parsed.pid) : null;
+    const parsed = JSON.parse(raw) as {
+      pid?: unknown;
+      processIdentity?: unknown;
+      processStartedAt?: unknown;
+      activatedAt?: unknown;
+    };
+    return isProcessInstanceAlive({ ...parsed, recordedAt: parsed.activatedAt }) ? Number(parsed.pid) : null;
   } catch {
     // Legacy timestamp-only markers remain discoverable for ordinary startup
     // recovery, but cannot prove that a process still owns the session.
