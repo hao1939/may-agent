@@ -6,6 +6,7 @@
     "strict": true,
     "paths": {
       "@may-agent/sdk": ["../may-agent/packages/sdk/src/index.ts"],
+      "@may-agent/sdk/app": ["../may-agent/packages/sdk/src/app.ts"],
       "@may-agent/sdk/testing": ["../may-agent/packages/sdk/src/testing.ts"]
     },
     "skipLibCheck": true,
@@ -13,6 +14,7 @@
   },
   "include": [
     "app.ts",
+    "inbox.ts",
     "agents/tech-lead/workflows/**/*.ts",
     "scripts/**/*.ts",
     "types/**/*.ts"
