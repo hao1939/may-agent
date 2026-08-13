@@ -25,6 +25,7 @@ export interface CommandRouterOptions {
   clearCancelLatch: () => void;
   projectRoot: string;
   persistDir?: string;
+  routeHumanInputToApp?: boolean;
   reload: () => void | Promise<void>;
   restart: () => void;
   shutdown: () => void;
@@ -212,6 +213,43 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     if (!isRecord(event)) return null;
     const value = (event as Record<PropertyKey, unknown>)[EVENT_ROW_ID];
     return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : null;
+  }
+
+  function routeMayConversationApp(input: {
+    event: unknown;
+    data: Record<string, unknown>;
+    message: string;
+    source: string;
+    conversation: Record<string, unknown>;
+    context: Record<string, unknown>;
+  }): void {
+    const sourceEventId = eventRowId(input.event);
+    const channel = nonEmptyString(input.conversation.channel) ?? input.source;
+    const channelMessageId = integerField(input.conversation, "channelMessageId") ?? undefined;
+    const sequence = sourceEventId ?? channelMessageId ?? Date.now();
+    const conversationId = nonEmptyString(input.conversation.id) ?? `${channel}:${nonEmptyString(input.data.actor) ?? "human"}`;
+    bus.emit({
+      type: "app.input.requested",
+      source: input.source,
+      owner: "app:may",
+      data: {
+        appId: "may",
+        source: { kind: "human", id: sourceEventId ? `event:${sourceEventId}` : `channel:${channel}:${sequence}` },
+        input: {
+          kind: "message",
+          data: {
+            message: input.message,
+            ...(Object.keys(input.context).length ? { context: input.context } : {}),
+          },
+        },
+        conversationId,
+        conversationSequence: sequence,
+        channel,
+        channelThreadId: nonEmptyString(input.conversation.channelThreadId) ?? undefined,
+        channelMessageId,
+        idempotencyKey: nonEmptyString(input.data.inputId) ?? (sourceEventId ? `human-input:${sourceEventId}` : `human-input:${channel}:${sequence}`),
+      },
+    } as any);
   }
 
   function normalizeProjectPath(value: unknown): string | null {
@@ -1305,6 +1343,10 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     }
 
     if (mayBrokerReply) {
+      if (options.routeHumanInputToApp) {
+        routeMayConversationApp({ event, data, message: deliveredMessage, source, conversation, context });
+        return;
+      }
       bus.emit({
         type: "chat.start.requested",
         source,
@@ -1338,6 +1380,10 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     }
 
     const agent = nonEmptyString(target.agent) ?? ownerAgent(eventOwner) ?? "may";
+    if (agent === "may" && options.routeHumanInputToApp) {
+      routeMayConversationApp({ event, data, message: deliveredMessage, source, conversation, context });
+      return;
+    }
     bus.emit({
       type: "chat.start.requested",
       source,

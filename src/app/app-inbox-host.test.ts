@@ -92,6 +92,52 @@ describe("App inbox host", () => {
     });
   });
 
+  it("passes single human transport metadata to the owner without exposing it in AppRequest", async () => {
+    const invocations: unknown[] = [];
+    const host = new AppInboxHost({
+      db,
+      apps: [app("may")],
+      invokeOwner: async (input) => {
+        invocations.push(input);
+        return input.requests.map((request) => ({
+          requestId: request.id,
+          disposition: { type: "complete", summary: "done", response: "Hello" },
+        }));
+      },
+    });
+    host.admit({
+      id: "human-1",
+      appId: "may",
+      source: { kind: "human", id: "event:42" },
+      input: { kind: "probe", data: { value: "hello" } },
+      conversationId: "telegram:123",
+      conversationSequence: 42,
+      channel: "telegram",
+      channelThreadId: "thread-7",
+      channelMessageId: 99,
+    });
+
+    expect(await host.reconcileOnce("may")).toMatchObject({ admitted: 1 });
+    expect(invocations).toMatchObject([
+      {
+        transport: {
+          channel: "telegram",
+          channelThreadId: "thread-7",
+          channelMessageId: 99,
+          conversationId: "telegram:123",
+        },
+        requests: [
+          {
+            id: "human-1",
+            source: { kind: "human", id: "event:42" },
+            input: { kind: "probe", data: { value: "hello" } },
+          },
+        ],
+      },
+    ]);
+    expect((invocations[0] as { requests: Array<Record<string, unknown>> }).requests[0]).not.toHaveProperty("channel");
+  });
+
   it("releases the whole batch when the owner result is not usable", async () => {
     const host = new AppInboxHost({
       db,

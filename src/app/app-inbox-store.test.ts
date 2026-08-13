@@ -62,6 +62,30 @@ describe("App inbox store", () => {
     expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 1 });
   });
 
+  it("preserves channel reply metadata outside the App-authored input", () => {
+    const created = createAppInboxItem(db, {
+      id: "human-message",
+      appId: "may",
+      source: { kind: "human", id: "event:42" },
+      input: { kind: "message", data: { message: "hello" } },
+      conversationId: "telegram:123",
+      conversationSequence: 42,
+      channel: "telegram",
+      channelThreadId: "topic:7",
+      channelMessageId: 99,
+      now: 100,
+    });
+
+    expect(created.item).toMatchObject({
+      conversationId: "telegram:123",
+      conversationSequence: 42,
+      channel: "telegram",
+      channelThreadId: "topic:7",
+      channelMessageId: 99,
+      input: { kind: "message", data: { message: "hello" } },
+    });
+  });
+
   it("does not treat a cross-App id collision as an idempotent create", () => {
     create("shared-id", { now: 100 });
 
