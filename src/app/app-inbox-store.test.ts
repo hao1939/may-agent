@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
 import {
+  associateAppInboxClaimSession,
   claimAppInboxItem,
   claimNextAppInboxItem,
   completeAppInboxClaim,
@@ -93,6 +94,17 @@ describe("App inbox store", () => {
     expect(completeAppInboxClaim(db, stale, { summary: "stale" }, 151)).toBe(false);
     expect(completeAppInboxClaim(db, replacement, { summary: "finished" }, 152)).toBe(true);
     expect(getAppInboxItem(db, "item-1")?.result).toEqual({ summary: "finished" });
+  });
+
+  it("fences owner session association and clears it when the item waits", () => {
+    create("item-1", { now: 100 });
+    const claim = claimAppInboxItem(db, "item-1", "worker-1", 50, 100)!;
+
+    expect(associateAppInboxClaimSession(db, claim, "session-1", 101)).toBe(true);
+    expect(getAppInboxItem(db, "item-1")?.sessionId).toBe("session-1");
+    expect(waitAppInboxClaim(db, claim, { kind: "task", id: "task-1" }, { now: 102 })).toBe(true);
+    expect(getAppInboxItem(db, "item-1")?.sessionId).toBeUndefined();
+    expect(associateAppInboxClaimSession(db, claim, "stale-session", 103)).toBe(false);
   });
 
   it("wakes dependency waits and also requeues them at review time", () => {
