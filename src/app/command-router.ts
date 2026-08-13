@@ -5,7 +5,13 @@ import type { SubagentManager } from "../lib/index.js";
 import { log } from "../lib/log.js";
 import { getDb } from "../lib/requests.js";
 import type { ChatSession } from "./chat-session.js";
-import { childEventTrace, EVENT_ROW_ID, type EventBus, type EventTrace } from "./event-bus.js";
+import {
+  APP_MESSAGE_INGRESS_ACCEPTED,
+  childEventTrace,
+  EVENT_ROW_ID,
+  type EventBus,
+  type EventTrace,
+} from "./event-bus.js";
 import { getTelegramConversationView, type TelegramConversationView } from "../lib/db/notifications.js";
 import { isRecord, normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 import {
@@ -26,6 +32,7 @@ export interface CommandRouterOptions {
   projectRoot: string;
   persistDir?: string;
   routeHumanInputToApp?: boolean;
+  routeMessagesToApp?: boolean;
   reload: () => void | Promise<void>;
   restart: () => void;
   shutdown: () => void;
@@ -37,7 +44,12 @@ export interface CommandRouter {
 }
 
 const mayBridgeDecisionSchema = Type.Object({
-  disposition: Type.Union([Type.Literal("answer"), Type.Literal("clarify"), Type.Literal("reject"), Type.Literal("route")]),
+  disposition: Type.Union([
+    Type.Literal("answer"),
+    Type.Literal("clarify"),
+    Type.Literal("reject"),
+    Type.Literal("route"),
+  ]),
   response: Type.String({ minLength: 1 }),
   targetProject: Type.Optional(Type.String({ minLength: 1 })),
   instruction: Type.Optional(Type.String({ minLength: 1 })),
@@ -165,11 +177,15 @@ function buildDeliveredHumanMessage(message: string, context: Record<string, unk
   const taskId = stringField(reply, "taskId");
   const eventType = stringField(issue, "eventType") ?? stringField(reply, "eventType");
   const escalationId = stringField(issue, "escalationId") ?? stringField(reply, "escalationId");
-  const project = stringField(issue, "projectPath") ?? stringField(reply, "projectId") ?? stringField(issue, "targetProject");
+  const project =
+    stringField(issue, "projectPath") ?? stringField(reply, "projectId") ?? stringField(issue, "targetProject");
   const sourceSessionId = stringField(issue, "sourceSessionId") ?? stringField(reply, "sessionId");
-  const reason = stringField(issue, "reason") ?? stringField(notification, "reason") ?? stringField(notification, "summary");
+  const reason =
+    stringField(issue, "reason") ?? stringField(notification, "reason") ?? stringField(notification, "summary");
   const requestedAction =
-    stringField(issue, "requestedAction") ?? stringField(notification, "requestedAction") ?? stringField(notification, "requestedHumanAction");
+    stringField(issue, "requestedAction") ??
+    stringField(notification, "requestedAction") ??
+    stringField(notification, "requestedHumanAction");
   const visibleNotification = stringField(notification, "text");
   const expectedClosure = stringList(reply.expectedClosure);
 
@@ -227,7 +243,8 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     const channel = nonEmptyString(input.conversation.channel) ?? input.source;
     const channelMessageId = integerField(input.conversation, "channelMessageId") ?? undefined;
     const sequence = sourceEventId ?? channelMessageId ?? Date.now();
-    const conversationId = nonEmptyString(input.conversation.id) ?? `${channel}:${nonEmptyString(input.data.actor) ?? "human"}`;
+    const conversationId =
+      nonEmptyString(input.conversation.id) ?? `${channel}:${nonEmptyString(input.data.actor) ?? "human"}`;
     bus.emit({
       type: "app.input.requested",
       source: input.source,
@@ -247,7 +264,9 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         channel,
         channelThreadId: nonEmptyString(input.conversation.channelThreadId) ?? undefined,
         channelMessageId,
-        idempotencyKey: nonEmptyString(input.data.inputId) ?? (sourceEventId ? `human-input:${sourceEventId}` : `human-input:${channel}:${sequence}`),
+        idempotencyKey:
+          nonEmptyString(input.data.inputId) ??
+          (sourceEventId ? `human-input:${sourceEventId}` : `human-input:${channel}:${sequence}`),
       },
     } as any);
   }
@@ -291,7 +310,9 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       /* best-effort owner lookup */
     }
     try {
-      const platform = JSON.parse(readFileSync(join(options.projectRoot, "projects/may-agent.app/project.json"), "utf-8")) as { owner?: unknown };
+      const platform = JSON.parse(
+        readFileSync(join(options.projectRoot, "projects/may-agent.app/project.json"), "utf-8"),
+      ) as { owner?: unknown };
       if (typeof platform.owner === "string" && platform.owner.trim()) return platform.owner.trim();
     } catch {
       /* the platform convention still has one concrete fallback */
@@ -301,12 +322,18 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
 
   function mayBridgeInput(event: unknown): MayBridgeInput | null {
     if (!isRecord(event)) return null;
+    if (options.routeMessagesToApp && (event as Record<PropertyKey, unknown>)[APP_MESSAGE_INGRESS_ACCEPTED] === true) {
+      return null;
+    }
     const data = eventData(event);
     const direct = event.type === "message.created";
     const periodic = event.type === "owner.inbox.accepted" && data.sourceEventType === "message.created";
     if (!direct && !periodic) return null;
 
     const input = periodic && isRecord(data.input) ? data.input : data;
+    // App inbox compatibility replies are terminal delivery to the legacy
+    // sender, not a fresh request for May's old conversation bridge.
+    if (nonEmptyString(input.appResponseFor)) return null;
     const owner = ownerAgent(event.owner);
     const recipient = ownerAgent(input.to);
     const sender = ownerAgent(input.from) ?? ownerAgent(event.source);
@@ -316,7 +343,8 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
 
     const sourceEventId = Number(periodic ? data.sourceEventId : (event as Record<PropertyKey, unknown>)[EVENT_ROW_ID]);
     if (!Number.isInteger(sourceEventId) || sourceEventId <= 0) return null;
-    const trace = isRecord(event.trace) && typeof event.trace.traceId === "string" ? (event.trace as EventTrace) : undefined;
+    const trace =
+      isRecord(event.trace) && typeof event.trace.traceId === "string" ? (event.trace as EventTrace) : undefined;
     return { sourceEventId, input, trace };
   }
 
@@ -352,7 +380,9 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     if (!project) return null;
     const projectPath = `projects/${project}.app`;
     const comment = [
-      requestedProject ? input.outcome : `Resolve an ownership gap for requested app ${input.project}: ${input.outcome}`,
+      requestedProject
+        ? input.outcome
+        : `Resolve an ownership gap for requested app ${input.project}: ${input.outcome}`,
       "",
       `Required proof: ${input.requiredProof}`,
       ...(input.constraints?.length ? ["Constraints:", ...input.constraints.map((item) => `- ${item}`)] : []),
@@ -378,7 +408,12 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     return Number.isInteger(id) && id > 0 ? id : null;
   }
 
-  function emitMayTurnFailure(input: { sourceEventId: number | null; sessionId?: string; reason: string; trace?: EventTrace }): void {
+  function emitMayTurnFailure(input: {
+    sourceEventId: number | null;
+    sessionId?: string;
+    reason: string;
+    trace?: EventTrace;
+  }): void {
     bus.emit({
       type: "may.turn.failed",
       source: "handler:may-turn",
@@ -410,7 +445,9 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     channel?: string;
     trace?: EventTrace;
   }): void {
-    const evidence = input.result.evidence.length ? input.result.evidence.map((item) => `- ${item}`).join("\n") : "- none";
+    const evidence = input.result.evidence.length
+      ? input.result.evidence.map((item) => `- ${item}`).join("\n")
+      : "- none";
     const blocker = input.result.disposition === "blocked" ? `\nBlocker: ${input.result.blocker}` : "";
     bus.emit({
       type: "chat.start.requested",
@@ -641,13 +678,20 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         sourceEventId: input.sourceEventId ?? undefined,
         sessionId: input.sessionId,
         disposition: decision.disposition,
-        ...(decision.disposition === "route" ? { acceptance: "pending", projectIntentEventId: projectIntentEventId ?? undefined } : {}),
+        ...(decision.disposition === "route"
+          ? { acceptance: "pending", projectIntentEventId: projectIntentEventId ?? undefined }
+          : {}),
       },
       ...(input.trace ? { trace: input.trace } : {}),
     } as any);
   }
 
-  function startStructuredMayTurn(event: unknown, data: Record<string, unknown>, message: string, source: string): void {
+  function startStructuredMayTurn(
+    event: unknown,
+    data: Record<string, unknown>,
+    message: string,
+    source: string,
+  ): void {
     const sourceEventId = integerField(data, "humanInputEventId") ?? eventRowId(event);
     const allowBreakGlass = data.allowBreakGlass !== false;
     const task = [
@@ -732,15 +776,21 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       let conversationId: string | undefined;
       let channelMessageId: number | undefined;
       if (sourceEventId) {
-        const sourceRow = db.prepare("SELECT source, data FROM events WHERE id = ?").get(sourceEventId) as { source?: unknown; data?: unknown } | undefined;
+        const sourceRow = db.prepare("SELECT source, data FROM events WHERE id = ?").get(sourceEventId) as
+          { source?: unknown; data?: unknown } | undefined;
         try {
           const parsed = typeof sourceRow?.data === "string" ? JSON.parse(sourceRow.data) : sourceRow?.data;
           if (isRecord(parsed)) {
             originalMessage = nonEmptyString(parsed.text) ?? nonEmptyString(parsed.message) ?? originalMessage;
             const conversation = isRecord(parsed.conversation) ? parsed.conversation : {};
             conversationId = nonEmptyString(conversation.id) ?? nonEmptyString(parsed.conversationId) ?? undefined;
-            channelMessageId = integerField(conversation, "channelMessageId") ?? integerField(parsed, "channelMessageId") ?? undefined;
-            channel = nonEmptyString(conversation.channel) ?? nonEmptyString(parsed.channel) ?? nonEmptyString(sourceRow?.source) ?? channel;
+            channelMessageId =
+              integerField(conversation, "channelMessageId") ?? integerField(parsed, "channelMessageId") ?? undefined;
+            channel =
+              nonEmptyString(conversation.channel) ??
+              nonEmptyString(parsed.channel) ??
+              nonEmptyString(sourceRow?.source) ??
+              channel;
           }
         } catch {
           /* the failed event below still closes the privileged attempt */
@@ -795,7 +845,9 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         content: content.trim(),
         intent: phase === "accepted" ? "status-update" : "result",
         priority: phase === "accepted" ? "P1" : "P2",
-        ...(phase === "accepted" ? { bridgeAcknowledgementFor: sourceEventId } : { bridgeCompletionFor: sourceEventId }),
+        ...(phase === "accepted"
+          ? { bridgeAcknowledgementFor: sourceEventId }
+          : { bridgeCompletionFor: sourceEventId }),
       },
       trace: bridgeTrace(sourceEventId, trace),
     } as any);
@@ -831,7 +883,12 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     } as any);
   }
 
-  function routeMayBridgeToApp(sourceEventId: number, input: Record<string, unknown>, decision: MayBridgeDecision, trace?: EventTrace): boolean {
+  function routeMayBridgeToApp(
+    sourceEventId: number,
+    input: Record<string, unknown>,
+    decision: MayBridgeDecision,
+    trace?: EventTrace,
+  ): boolean {
     const requestedProject = normalizedAppId(decision.targetProject);
     const fallbackProject = normalizedAppId("may-agent");
     const project = requestedProject ?? fallbackProject;
@@ -974,7 +1031,13 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       return;
     }
 
-    const responseEventId = emitMayBridgeReply(bridge.sourceEventId, bridge.input, decision.response, "accepted", bridge.trace);
+    const responseEventId = emitMayBridgeReply(
+      bridge.sourceEventId,
+      bridge.input,
+      decision.response,
+      "accepted",
+      bridge.trace,
+    );
     if (decision.disposition === "route") {
       if (routeMayBridgeToApp(bridge.sourceEventId, bridge.input, decision, bridge.trace)) return;
       bus.emit({
@@ -1108,7 +1171,9 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     const sourceEventId = Number(data.openEventId);
     if (!Number.isInteger(sourceEventId) || sourceEventId <= 0) return;
     const db = getDb(options.persistDir);
-    const original = db.prepare("SELECT data FROM events WHERE id = ? AND event_type = 'message.created'").get(sourceEventId) as { data?: unknown } | undefined;
+    const original = db
+      .prepare("SELECT data FROM events WHERE id = ? AND event_type = 'message.created'")
+      .get(sourceEventId) as { data?: unknown } | undefined;
     if (!original) return;
     let input: Record<string, unknown> = {};
     try {
@@ -1129,10 +1194,21 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     if (existing) return;
     const outcome = String(data.outcome ?? data.disposition ?? "completed");
     const summary = String(data.summary ?? "The accountable app completed the request.").trim();
-    emitMayBridgeReply(sourceEventId, input, `${outcome}: ${summary}`, "completed", isRecord(event.trace) ? (event.trace as EventTrace) : undefined);
+    emitMayBridgeReply(
+      sourceEventId,
+      input,
+      `${outcome}: ${summary}`,
+      "completed",
+      isRecord(event.trace) ? (event.trace as EventTrace) : undefined,
+    );
   }
 
-  function appendProjectDiscussionEntry(projectPath: unknown, comment: unknown, source?: string, author?: string): boolean {
+  function appendProjectDiscussionEntry(
+    projectPath: unknown,
+    comment: unknown,
+    source?: string,
+    author?: string,
+  ): boolean {
     const normalized = normalizeProjectPath(projectPath);
     const trimmed = typeof comment === "string" ? comment.trim() : "";
     if (!normalized || !trimmed) {
@@ -1244,7 +1320,8 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     const escalationReply = isEscalationReplyContext(context);
     const approvalReply = approvalReplyContext(context);
     const explicitApprovalDecision = approvalReply ? parseExplicitApprovalDecision(message) : null;
-    const eventOwner = typeof event === "object" && event && "owner" in event ? String((event as any).owner) : "agent:may";
+    const eventOwner =
+      typeof event === "object" && event && "owner" in event ? String((event as any).owner) : "agent:may";
 
     if (approvalReply && explicitApprovalDecision) {
       const issue = objectField(approvalReply, "originalIssue");
@@ -1264,14 +1341,21 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         owner: normalizeEventOwner(approvalOwner),
         ...(responseTarget ? { target: responseTarget } : {}),
         data: {
-          approvalKind: stringField(issue, "approvalKind") ?? stringField(approvalReply, "approvalKind") ?? "approval-packet-dispatch",
+          approvalKind:
+            stringField(issue, "approvalKind") ??
+            stringField(approvalReply, "approvalKind") ??
+            "approval-packet-dispatch",
           approvalId: stringField(issue, "approvalId") ?? stringField(expectedResponse, "approvalId") ?? undefined,
           waitId: stringField(issue, "waitId") ?? stringField(expectedResponse, "waitId") ?? undefined,
           pathId: stringField(issue, "pathId") ?? stringField(expectedResponse, "pathId") ?? undefined,
           packetPath: stringField(issue, "packetPath") ?? undefined,
           taskId: stringField(issue, "taskId") ?? stringField(expectedResponse, "taskId") ?? undefined,
-          taskGeneration: integerField(issue, "taskGeneration") ?? integerField(expectedResponse, "taskGeneration") ?? undefined,
-          artifactFingerprint: stringField(issue, "artifactFingerprint") ?? stringField(expectedResponse, "artifactFingerprint") ?? undefined,
+          taskGeneration:
+            integerField(issue, "taskGeneration") ?? integerField(expectedResponse, "taskGeneration") ?? undefined,
+          artifactFingerprint:
+            stringField(issue, "artifactFingerprint") ??
+            stringField(expectedResponse, "artifactFingerprint") ??
+            undefined,
           projectPath: normalizedProjectPath ?? undefined,
           projectId: normalizedProjectPath ?? undefined,
           targetProject: stringField(issue, "targetProject") ?? undefined,
@@ -1316,7 +1400,12 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       return;
     }
     if (lower === "reload" || lower === "restart" || lower === "close") {
-      const type = lower === "reload" ? "runtime.reload.requested" : lower === "restart" ? "runtime.restart.requested" : "runtime.shutdown.requested";
+      const type =
+        lower === "reload"
+          ? "runtime.reload.requested"
+          : lower === "restart"
+            ? "runtime.restart.requested"
+            : "runtime.shutdown.requested";
       bus.emit({
         type,
         source,
@@ -1356,7 +1445,8 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
           message: deliveredMessage,
           channel: nonEmptyString(conversation.channel) ?? source,
           channelThreadId: nonEmptyString(conversation.channelThreadId) ?? undefined,
-          channelMessageId: typeof conversation.channelMessageId === "number" ? conversation.channelMessageId : undefined,
+          channelMessageId:
+            typeof conversation.channelMessageId === "number" ? conversation.channelMessageId : undefined,
           requestId: nonEmptyString(data.inputId) ?? undefined,
           conversationId: nonEmptyString(conversation.id) ?? undefined,
           forceNew: source === "telegram",
@@ -1625,7 +1715,9 @@ function appendTelegramConversationView(message: string, view: TelegramConversat
   if (view.recentMessages.length) lines.push("", "Recent Telegram context (oldest to newest; system-provided)");
   for (const item of view.recentMessages) {
     const speaker = item.direction === "inbound" ? "Hao" : item.agent || "May";
-    const links = [item.traceId ? `trace=${item.traceId}` : "", item.taskId ? `task=${item.taskId}` : ""].filter(Boolean).join(" ");
+    const links = [item.traceId ? `trace=${item.traceId}` : "", item.taskId ? `task=${item.taskId}` : ""]
+      .filter(Boolean)
+      .join(" ");
     lines.push(`${speaker}${links ? ` [${links}]` : ""}: ${item.text.slice(0, 400)}`);
   }
   lines.push("");
