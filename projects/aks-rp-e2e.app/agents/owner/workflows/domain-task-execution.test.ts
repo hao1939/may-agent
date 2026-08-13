@@ -60,6 +60,49 @@ function repositoryFixture(): {
   return { root, repoDir, workspaceDir };
 }
 
+function replayFixtureSource(
+  fixture: ReturnType<typeof repositoryFixture>,
+  options: { push?: boolean; mismatchedPatch?: boolean } = {},
+): { sourceCommit: string; replayCommit: string } {
+  const sourceCommit = git(fixture.workspaceDir, "rev-parse", "HEAD");
+  writeFileSync(join(fixture.repoDir, "dev-advance.txt"), "advance\n");
+  git(fixture.repoDir, "add", "dev-advance.txt");
+  git(fixture.repoDir, "commit", "-m", "advance dev");
+  if (options.mismatchedPatch) {
+    writeFileSync(join(fixture.repoDir, "different.txt"), "different\n");
+    git(fixture.repoDir, "add", "different.txt");
+    git(fixture.repoDir, "commit", "-m", "different integration patch");
+  } else {
+    git(fixture.repoDir, "cherry-pick", sourceCommit);
+  }
+  const replayCommit = git(fixture.repoDir, "rev-parse", "HEAD");
+  if (options.push !== false) git(fixture.repoDir, "push", "origin", "dev");
+  return { sourceCommit, replayCommit };
+}
+
+function provenanceResult(input: {
+  fixture: ReturnType<typeof repositoryFixture>;
+  ownedCommits: string[];
+  acceptedCommit: string;
+  integratedCommit?: string;
+  provenance?: string;
+}) {
+  return {
+    state: "converged" as const,
+    summary: "integration replay is ready",
+    evidence: [
+      `task-worktree:${input.fixture.workspaceDir}`,
+      `task-source-commits:${input.ownedCommits.join(",")}`,
+      `source-commit:${input.acceptedCommit}`,
+      ...(input.provenance
+        ? [`integration-provenance:${input.provenance}`]
+        : []),
+      `integrated-commit:${input.integratedCommit ?? input.acceptedCommit}`,
+    ],
+    actions: [],
+  };
+}
+
 function context(overrides: Partial<WorkflowContext> = {}): WorkflowContext {
   return {
     task: "bounded task",
@@ -1408,9 +1451,7 @@ exit 0
       type: "done",
       output: {
         state: "waiting",
-        summary: expect.stringContaining(
-          "Recovery-only non-converged result",
-        ),
+        summary: expect.stringContaining("Recovery-only non-converged result"),
         evidence: expect.arrayContaining([
           "recovery-owner-evidence:existing holder already captures the same frontier",
           "material-success-candidate:none",
@@ -1476,7 +1517,10 @@ exit 0
           projectDir: fixture.repoDir,
           workspaceDir: fixture.workspaceDir,
           runAgent: (async () => {
-            writeFileSync(join(fixture.workspaceDir, "generated.tmp"), "dirty\n");
+            writeFileSync(
+              join(fixture.workspaceDir, "generated.tmp"),
+              "dirty\n",
+            );
             return {
               status: "done",
               sessionId: "session-dirty-generated",
@@ -1500,7 +1544,9 @@ exit 0
         type: "done",
         output: {
           state: "needs-owner",
-          summary: expect.stringContaining("Recovery-only non-converged result"),
+          summary: expect.stringContaining(
+            "Recovery-only non-converged result",
+          ),
           evidence: expect.arrayContaining([
             "recovery-status:dirty",
             "recovery-status-porcelain:?? generated.tmp",
@@ -1591,6 +1637,205 @@ exit 0
           `verification-accepted-source-commit:${sourceCommit}`,
           `verification-origin-dev:${sourceCommit}`,
           "verification-status:clean",
+        ]),
+      });
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  it("accepts a workflow-created patch-equivalent replay with explicit provenance", async () => {
+    const fixture = repositoryFixture();
+    try {
+      const { sourceCommit, replayCommit } = replayFixtureSource(fixture);
+      const verification = await verify(
+        {
+          projectDir: fixture.repoDir,
+          workspaceDir: fixture.workspaceDir,
+          taskId: "domain/valid-replay-provenance",
+          generation: 1,
+          intent: { input: {} },
+        } as any,
+        provenanceResult({
+          fixture,
+          ownedCommits: [sourceCommit],
+          acceptedCommit: replayCommit,
+          provenance: `${sourceCommit}->${replayCommit}`,
+        }),
+      );
+      expect(verification).toMatchObject({
+        accepted: true,
+        evidence: expect.arrayContaining([
+          `verification-provenance-source-commit:${sourceCommit}`,
+          `verification-accepted-source-commit:${replayCommit}`,
+        ]),
+      });
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects an integration replay with missing provenance", async () => {
+    const fixture = repositoryFixture();
+    try {
+      const { sourceCommit, replayCommit } = replayFixtureSource(fixture);
+      const verification = await verify(
+        {
+          projectDir: fixture.repoDir,
+          workspaceDir: fixture.workspaceDir,
+          taskId: "domain/missing-provenance",
+          generation: 1,
+          intent: { input: {} },
+        } as any,
+        provenanceResult({
+          fixture,
+          ownedCommits: [sourceCommit],
+          acceptedCommit: replayCommit,
+        }),
+      );
+      expect(verification).toMatchObject({
+        accepted: false,
+        evidence: expect.arrayContaining([
+          "verification-finding:accepted-commit-not-task-owned",
+        ]),
+      });
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects mismatched stable-patch integration provenance", async () => {
+    const fixture = repositoryFixture();
+    try {
+      const { sourceCommit, replayCommit } = replayFixtureSource(fixture, {
+        mismatchedPatch: true,
+      });
+      const verification = await verify(
+        {
+          projectDir: fixture.repoDir,
+          workspaceDir: fixture.workspaceDir,
+          taskId: "domain/mismatched-provenance",
+          generation: 1,
+          intent: { input: {} },
+        } as any,
+        provenanceResult({
+          fixture,
+          ownedCommits: [sourceCommit],
+          acceptedCommit: replayCommit,
+          provenance: `${sourceCommit}->${replayCommit}`,
+        }),
+      );
+      expect(verification).toMatchObject({
+        accepted: false,
+        evidence: expect.arrayContaining([
+          "verification-finding:integration-provenance-patch-mismatch",
+        ]),
+      });
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects forged provenance from a commit outside task-source-commits", async () => {
+    const fixture = repositoryFixture();
+    try {
+      const { sourceCommit, replayCommit } = replayFixtureSource(fixture);
+      const forgedSource = git(
+        fixture.repoDir,
+        "rev-parse",
+        `${sourceCommit}^`,
+      );
+      const verification = await verify(
+        {
+          projectDir: fixture.repoDir,
+          workspaceDir: fixture.workspaceDir,
+          taskId: "domain/forged-provenance",
+          generation: 1,
+          intent: { input: {} },
+        } as any,
+        provenanceResult({
+          fixture,
+          ownedCommits: [sourceCommit],
+          acceptedCommit: replayCommit,
+          provenance: `${forgedSource}->${replayCommit}`,
+        }),
+      );
+      expect(verification).toMatchObject({
+        accepted: false,
+        evidence: expect.arrayContaining([
+          "verification-finding:accepted-commit-not-task-owned",
+        ]),
+      });
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects multi-commit ownership as ambiguous without one explicit provenance edge", async () => {
+    const fixture = repositoryFixture();
+    try {
+      const firstCommit = git(fixture.workspaceDir, "rev-parse", "HEAD");
+      writeFileSync(join(fixture.workspaceDir, "second.txt"), "second\n");
+      git(fixture.workspaceDir, "add", "second.txt");
+      git(fixture.workspaceDir, "commit", "-m", "second task patch");
+      const secondCommit = git(fixture.workspaceDir, "rev-parse", "HEAD");
+      writeFileSync(join(fixture.repoDir, "dev-advance.txt"), "advance\n");
+      git(fixture.repoDir, "add", "dev-advance.txt");
+      git(fixture.repoDir, "commit", "-m", "advance dev");
+      git(fixture.repoDir, "cherry-pick", firstCommit, secondCommit);
+      const replayCommit = git(fixture.repoDir, "rev-parse", "HEAD");
+      git(fixture.repoDir, "push", "origin", "dev");
+
+      const verification = await verify(
+        {
+          projectDir: fixture.repoDir,
+          workspaceDir: fixture.workspaceDir,
+          taskId: "domain/ambiguous-provenance",
+          generation: 1,
+          intent: { input: {} },
+        } as any,
+        provenanceResult({
+          fixture,
+          ownedCommits: [firstCommit, secondCommit],
+          acceptedCommit: replayCommit,
+        }),
+      );
+      expect(verification).toMatchObject({
+        accepted: false,
+        evidence: expect.arrayContaining([
+          "verification-finding:accepted-commit-not-task-owned",
+        ]),
+      });
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects patch-equivalent provenance when the integration commit is not on origin/dev", async () => {
+    const fixture = repositoryFixture();
+    try {
+      const { sourceCommit, replayCommit } = replayFixtureSource(fixture, {
+        push: false,
+      });
+      const verification = await verify(
+        {
+          projectDir: fixture.repoDir,
+          workspaceDir: fixture.workspaceDir,
+          taskId: "domain/nonancestor-provenance",
+          generation: 1,
+          intent: { input: {} },
+        } as any,
+        provenanceResult({
+          fixture,
+          ownedCommits: [sourceCommit],
+          acceptedCommit: replayCommit,
+          provenance: `${sourceCommit}->${replayCommit}`,
+        }),
+      );
+      expect(verification).toMatchObject({
+        accepted: false,
+        evidence: expect.arrayContaining([
+          "verification-finding:unintegrated-source-commit",
         ]),
       });
     } finally {

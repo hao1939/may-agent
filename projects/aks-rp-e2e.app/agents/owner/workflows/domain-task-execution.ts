@@ -185,7 +185,9 @@ type CleanRetainedAuthority = {
   head: string;
 };
 
-function cleanRetainedAuthority(raw: string):
+function cleanRetainedAuthority(
+  raw: string,
+):
   | { declared: false }
   | { declared: true; value: CleanRetainedAuthority | null } {
   const input = taskInput(raw);
@@ -213,7 +215,9 @@ function preservedWorkspaceAdoption(raw: string): unknown {
 function canonicalPath(path: string): string {
   const canonical = realpathSync(path);
   if (canonical !== path) {
-    throw new Error(`workspace path is not canonical: declared=${path} canonical=${canonical}`);
+    throw new Error(
+      `workspace path is not canonical: declared=${path} canonical=${canonical}`,
+    );
   }
   return canonical;
 }
@@ -244,7 +248,8 @@ function recoveryOnlyResult(
       return workspaceDir;
     }
   })();
-  const head = optionalGitValue(workspaceDir, "rev-parse", "HEAD") ?? "unreadable";
+  const head =
+    optionalGitValue(workspaceDir, "rev-parse", "HEAD") ?? "unreadable";
   const branch =
     optionalGitValue(
       workspaceDir,
@@ -408,7 +413,8 @@ function taskBranchGate(input: {
   if (sourceCommits.length > 0 && materialCommits.length === 0) {
     return {
       ok: false,
-      summary: "Final task branch contains merge-only ancestry without an accepted source patch",
+      summary:
+        "Final task branch contains merge-only ancestry without an accepted source patch",
       evidence: [
         ...evidence,
         `task-merge-commits:${[...mergeCommits].join(",")}`,
@@ -971,12 +977,14 @@ export async function verify(
     ?.split(",")
     .map((commit) => commit.trim())
     .filter(Boolean);
-  if (!ownedCommits?.includes(acceptedCommit)) {
+  if (
+    !ownedCommits?.length ||
+    ownedCommits.some((commit) => !/^[0-9a-f]{40}$/i.test(commit))
+  ) {
     return verificationRejected(
       result,
-      "the accepted source commit is not recorded as task-owned",
-      "accepted-commit-not-task-owned",
-      [`accepted-source-commit:${acceptedCommit}`],
+      "the task-owned source commit set is missing or malformed",
+      "invalid-task-source-commits",
     );
   }
 
@@ -1002,6 +1010,46 @@ export async function verify(
     );
   }
 
+  let provenanceSource: string | null = null;
+  if (!ownedCommits.includes(acceptedCommit)) {
+    const provenance = exactEvidenceValue(result, "integration-provenance:");
+    const match = provenance?.match(/^([0-9a-f]{40})->([0-9a-f]{40})$/i);
+    if (
+      !match ||
+      match[2] !== acceptedCommit ||
+      !ownedCommits.includes(match[1])
+    ) {
+      return verificationRejected(
+        result,
+        "the accepted integration commit has no explicit task-owned provenance chain",
+        "accepted-commit-not-task-owned",
+        [`accepted-source-commit:${acceptedCommit}`],
+      );
+    }
+
+    provenanceSource = match[1];
+    const sourceExists = spawnSync(
+      "git",
+      ["cat-file", "-e", `${provenanceSource}^{commit}`],
+      { cwd: workspace, encoding: "utf8", timeout: 120_000 },
+    );
+    const sourcePatch =
+      sourceExists.status === 0 ? patchId(workspace, provenanceSource) : null;
+    const acceptedPatch = patchId(workspace, acceptedCommit);
+    if (!sourcePatch || sourcePatch !== acceptedPatch) {
+      return verificationRejected(
+        result,
+        "the accepted integration commit is not a stable patch-equivalent replay of its task-owned source",
+        "integration-provenance-patch-mismatch",
+        [
+          `provenance-source-commit:${provenanceSource}`,
+          `provenance-source-patch-id:${sourcePatch ?? "unresolved"}`,
+          `accepted-source-patch-id:${acceptedPatch ?? "unresolved"}`,
+        ],
+      );
+    }
+  }
+
   const fetch = spawnSync("git", ["fetch", "origin", "dev"], {
     cwd: projectDir,
     encoding: "utf8",
@@ -1018,12 +1066,27 @@ export async function verify(
 
   const originDev = optionalGitValue(projectDir, "rev-parse", "origin/dev");
   const integratedCommit = exactEvidenceValue(result, "integrated-commit:");
-  if (!originDev || !integratedCommit || !/^[0-9a-f]{40}$/i.test(integratedCommit)) {
+  if (
+    !originDev ||
+    !integratedCommit ||
+    !/^[0-9a-f]{40}$/i.test(integratedCommit)
+  ) {
     return verificationRejected(
       result,
       "exact integrated origin/dev proof is missing",
       "missing-integrated-commit",
       [`fetched-origin-dev:${originDev ?? "unresolved"}`],
+    );
+  }
+  if (integratedCommit !== acceptedCommit) {
+    return verificationRejected(
+      result,
+      "the accepted source commit does not identify the claimed integration commit",
+      "integration-provenance-target-mismatch",
+      [
+        `accepted-source-commit:${acceptedCommit}`,
+        `claimed-integrated-commit:${integratedCommit}`,
+      ],
     );
   }
 
@@ -1058,6 +1121,9 @@ export async function verify(
       `verification-worktree:${workspace}`,
       "verification-status:clean",
       `verification-accepted-source-commit:${acceptedCommit}`,
+      ...(provenanceSource
+        ? [`verification-provenance-source-commit:${provenanceSource}`]
+        : []),
       `verification-origin-dev:${originDev}`,
     ],
   };
@@ -1078,7 +1144,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           taskId: currentTaskId,
           required:
             "canonical cleanRetainedWorktree plus a 40-character cleanRetainedHead",
-          cleanRetainedWorktree: taskInput(ctx.task)?.cleanRetainedWorktree ?? null,
+          cleanRetainedWorktree:
+            taskInput(ctx.task)?.cleanRetainedWorktree ?? null,
           cleanRetainedHead: taskInput(ctx.task)?.cleanRetainedHead ?? null,
         },
       );
@@ -1376,7 +1443,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       ...(result.structuredResult as ProjectAppTaskHandlerResult),
       evidence: [
         ...authorityEvidence,
-        ...((result.structuredResult as ProjectAppTaskHandlerResult).evidence ?? []),
+        ...((result.structuredResult as ProjectAppTaskHandlerResult).evidence ??
+          []),
       ],
     },
   });
@@ -1439,7 +1507,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   const workspaceDir = ctx.workspaceDir;
   const repoDir = ctx.projectDir ?? "/app/projects/aks-rp-e2e";
-  const recoveryDone = (result: ProjectAppTaskHandlerResult): WorkflowResult => {
+  const recoveryDone = (
+    result: ProjectAppTaskHandlerResult,
+  ): WorkflowResult => {
     const recovery = recoveryOnlyResult(workspaceDir, result);
     return ctx.done(recovery.summary, recovery);
   };
@@ -1473,6 +1543,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   const sourceBranch = expectedBranch;
   let sourceCommit = gitValue(workspaceDir, "rev-parse", "HEAD");
+  let integrationProvenanceSourceCommit = sourceCommit;
   let integration = integrateDirectlyIntoDev({
     repoDir,
     workspaceDir,
@@ -1670,6 +1741,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       ...ownerResult,
       evidence: [...(ownerResult.evidence ?? []), ...finalGate.evidence],
     };
+    integrationProvenanceSourceCommit = sourceCommit;
     integration = integrateDirectlyIntoDev({
       repoDir,
       workspaceDir,
@@ -1728,6 +1800,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       ...(ownerResult.evidence ?? []),
       `source-branch:${sourceBranch}`,
       `source-commit:${sourceCommit}`,
+      ...(sourceCommit !== integrationProvenanceSourceCommit
+        ? [
+            `integration-provenance:${integrationProvenanceSourceCommit}->${sourceCommit}`,
+          ]
+        : []),
       `target-ref:${integration.targetRef}`,
       `integrated-commit:${integration.targetCommit}`,
     ],
