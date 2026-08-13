@@ -2,6 +2,7 @@ import { SubagentManager } from "../lib/index.js";
 import { closeAllDbs, getDb } from "../lib/requests.js";
 import type { AppArgs } from "./app-args.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
+import { readRuntimeExecutionView } from "./app-read.js";
 import { attachCommandRouter } from "./command-router.js";
 import { startCronRuntime } from "./cron-startup.js";
 import {
@@ -16,7 +17,7 @@ import {
 } from "./daemon.js";
 import { EventBus } from "./event-bus.js";
 import { startInterfaceRuntime } from "./interface-startup.js";
-import { attachLoadedProjectAppTask } from "./loader/project-app-loader.js";
+import { attachLoadedProjectAppTask, readLoadedProjectAppTaskView } from "./loader/project-app-loader.js";
 import type { ModelRegistry } from "./model-registry.js";
 import { parseWebPort, startWebMode } from "./modes/web.js";
 import { runRequestedExitMode } from "./runtime-exit-modes.js";
@@ -104,6 +105,29 @@ export async function runAppRuntime(opts: {
         manager,
         bus,
         attachTask: async (input) => attachLoadedProjectAppTask({ ...input, bus }),
+        readDependency: async ({ appDir, dependency }) => {
+          if (dependency.kind === "task") {
+            const task = readLoadedProjectAppTaskView({ bus, appDir, taskId: dependency.id });
+            return task
+              ? {
+                  kind: "task",
+                  id: task.id,
+                  status: task.status,
+                  summary: task.summary,
+                  evidence: task.evidence,
+                }
+              : null;
+          }
+          const execution = readRuntimeExecutionView({ getDb: () => getDb(opts.persistDir) }, dependency.id);
+          return execution
+            ? {
+                kind: "session",
+                id: execution.id,
+                status: execution.status === "blocked" ? "waiting" : execution.status,
+                summary: execution.summary,
+              }
+            : null;
+        },
       })
     : null;
   if (appInboxRuntime) {

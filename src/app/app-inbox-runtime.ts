@@ -1,4 +1,4 @@
-import type { AppInput, AppInputSource } from "@may-agent/sdk";
+import type { AppDependencyObservation, AppInput, AppInputSource } from "@may-agent/sdk";
 import type { SqliteDb } from "../lib/db.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "./event-bus.js";
 import { AppInboxHost, type AppInboxReconcileResult, type AppTaskAttacher } from "./app-inbox-host.js";
@@ -17,6 +17,11 @@ export type StartAppInboxRuntimeOptions = {
   manager: AppOwnerManager;
   bus: EventBus;
   attachTask?: (input: Parameters<AppTaskAttacher>[0] & { appDir: string }) => ReturnType<AppTaskAttacher>;
+  readDependency?: (input: {
+    appId: string;
+    appDir: string;
+    dependency: { kind: "task" | "session"; id: string };
+  }) => Promise<AppDependencyObservation | null>;
   scanIntervalMs?: number;
   leaseMs?: number;
   retryAfterMs?: number;
@@ -68,6 +73,13 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     apps: loaded.map((entry) => entry.definition),
     invokeOwner: createManagerAppOwnerInvoker(options.manager),
     attachTask,
+    readDependency: options.readDependency
+      ? async (input) => {
+          const appDir = appDirById.get(input.appId);
+          if (!appDir) return null;
+          return options.readDependency!({ ...input, appDir });
+        }
+      : undefined,
     leaseMs: options.leaseMs,
     retryAfterMs: options.retryAfterMs,
     maxBatchSize: options.maxBatchSize,

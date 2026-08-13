@@ -60,6 +60,8 @@ import {
   type ProjectAppExecutionPaths,
   type AppTaskAttachment,
 } from "@may-agent/sdk";
+import type { TaskView } from "@may-agent/sdk/app";
+import { readRuntimeTaskView } from "../app-read.js";
 import { Cron } from "../cron.js";
 import { ProjectAppTaskCapacity, ProjectAppTaskController } from "../project-app-task-controller.js";
 import type { ProjectAppTaskQueueOptions } from "../project-app-task-queue.js";
@@ -2773,6 +2775,23 @@ export function attachLoadedProjectAppTask(input: {
     taskId: observation.taskId,
     isComplete: async () => isProjectAppTaskConverged(config, observation.taskId, observation.generation),
   };
+}
+
+/** Read the stable task projection for an inbox dependency after any restart. */
+export function readLoadedProjectAppTaskView(input: {
+  bus: EventBus;
+  appDir: string;
+  taskId: string;
+}): TaskView | null {
+  const normalizedAppDir = resolve(input.appDir);
+  const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find(
+    (candidate) => resolve(candidate.appDir) === normalizedAppDir,
+  );
+  if (!descriptor) return null;
+  return readRuntimeTaskView(
+    { executionPaths: { appDir: descriptor.appDir, projectDir: descriptor.projectDir } },
+    input.taskId,
+  );
 }
 
 function emitAppTaskDependencyCompleted(
