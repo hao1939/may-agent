@@ -25,6 +25,7 @@ import {
   claimObservedProjectAppTask,
   completeProjectAppTask,
   observeProjectAppTaskIntent,
+  recordProjectAppTaskAttemptSession,
   releaseHandlerExecutionFailedProjectAppTask,
   taskReconciliationConfig,
 } from "../project-app-task-reconciler";
@@ -40,6 +41,7 @@ import {
   parseProjectAppTaskSessionBinding,
   projectAppGlobalConcurrency,
   projectAppHostFingerprint,
+  recoverInstalledProjectAppTasks,
 } from "./project-app-loader";
 
 describe("project app host backpressure", () => {
@@ -3627,6 +3629,83 @@ describe("project app loader", () => {
       });
       expect(events.some((event) => event.type === "project.task.reconcile.started")).toBe(false);
       expect(ownerCalls).toEqual([]);
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("defers fresh task-session lease transfer until startup can pass the claimed session set to the manager", async () => {
+    const f = fixture();
+    try {
+      writeApp(f.appDir);
+      const config = taskReconciliationConfig({
+        appDir: f.appDir,
+        projectDir: f.appDir,
+        owner: "sample-owner",
+        maxConcurrent: 2,
+      });
+      const observed = observeProjectAppTaskIntent(config, {
+        intent: {
+          id: "work/fresh-startup-session",
+          parentId: "operations",
+          outcome: "Resume one fresh task session",
+          acceptance: ["The exact session is resumed"],
+          mode: "achieve",
+          workflow: "worker",
+        },
+        appOwner: "sample-owner",
+      });
+      if (observed.kind !== "observed") throw new Error("expected observed task");
+      const claim = claimObservedProjectAppTask(config, {
+        taskId: "work/fresh-startup-session",
+        generation: observed.generation,
+        appOwner: "sample-owner",
+        handler: "workflow:worker",
+      });
+      if (claim.kind !== "claimed") throw new Error("expected claimed task");
+      expect(recordProjectAppTaskAttemptSession(config, claim, "session-fresh-startup")).toBe(true);
+      const previous = readTaskState(config);
+      previous.attempts![claim.attemptId].runtimeId = "previous-runtime";
+      previous.attempts![claim.attemptId].lease!.runtimeId = "previous-runtime";
+      saveTaskState(config, previous);
+      writeSessionMeta(f.persistDir, "session-fresh-startup", {
+        agent: "sample-owner",
+        task: "Resume fresh startup task",
+        status: "running",
+        startedAt: Date.now() - 5_000,
+        source: "project-app-task-owner",
+        projectId: "sample",
+        recoveryOwner: "project-app-task-reconciler",
+        kind: "call",
+      });
+
+      const bus = new EventBus();
+      const options = {
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: { ...manager([]), hasActiveSession: () => false } as any,
+        bus,
+        agentCrons: new Map<string, Cron>(),
+      };
+      await installProjectApps(options);
+
+      expect(readTaskState(config).attempts?.[claim.attemptId]).toMatchObject({
+        runtimeId: "previous-runtime",
+        sessionId: "session-fresh-startup",
+        state: "running",
+      });
+      expect(recoverInstalledProjectAppTasks(options)).toEqual(new Set(["session-fresh-startup"]));
+      const resumedAttempt = readTaskState(config).attempts?.[claim.attemptId];
+      expect(resumedAttempt).toMatchObject({
+        sessionId: "session-fresh-startup",
+        state: "running",
+      });
+      expect(resumedAttempt?.runtimeId).not.toBe("previous-runtime");
+      expect(resumedAttempt?.lease?.runtimeId).toBe(resumedAttempt?.runtimeId);
     } finally {
       closeDb(f.persistDir);
       rmSync(f.root, { recursive: true, force: true });
