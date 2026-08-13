@@ -46,6 +46,30 @@ describe("ProjectAppTaskQueue", () => {
     }
   });
 
+  it("ages front-lane wakes so replenished higher-priority continuations cannot starve them", () => {
+    const queue = new ProjectAppTaskQueue(1);
+    queue.enqueue("targeted-p2", { front: true, priority: "P2" });
+    for (let index = 0; index < 4; index++) {
+      queue.enqueue(`continuation-p1-${index}`, { front: true, priority: "P1" });
+    }
+
+    const taken: string[] = [];
+    for (let index = 0; index < 4; index++) {
+      const taskId = queue.take();
+      expect(taskId).not.toBeNull();
+      taken.push(taskId!);
+      queue.complete(taskId!);
+      queue.enqueue(`new-continuation-p1-${index}`, { front: true, priority: "P1" });
+    }
+
+    expect(taken).toEqual([
+      "continuation-p1-0",
+      "continuation-p1-1",
+      "continuation-p1-2",
+      "targeted-p2",
+    ]);
+  });
+
   it("runs oldest ordinary work after a bounded urgent burst", () => {
     const queue = new ProjectAppTaskQueue(1);
     queue.enqueue("old-a");

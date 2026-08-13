@@ -16,6 +16,7 @@ export class ProjectAppTaskQueue {
   private readonly dirtyFront = new Set<string>();
   private readonly priorities = new Map<string, ProjectAppTaskPriority>();
   private readonly dirtyPriorities = new Map<string, ProjectAppTaskPriority>();
+  private readonly frontPrioritySkips = new Map<string, number>();
   private readonly ordinaryPrioritySkips = new Map<string, number>();
   private consecutiveFrontTakes = 0;
 
@@ -45,6 +46,7 @@ export class ProjectAppTaskQueue {
       this.pending.splice(this.frontQueued.size, 0, key);
       this.frontQueued.add(key);
       this.ordinaryPrioritySkips.delete(key);
+      this.frontPrioritySkips.set(key, 0);
       return true;
     }
     this.queued.add(key);
@@ -52,6 +54,7 @@ export class ProjectAppTaskQueue {
     if (opts.front) {
       this.pending.splice(this.frontQueued.size, 0, key);
       this.frontQueued.add(key);
+      this.frontPrioritySkips.set(key, 0);
     } else {
       this.pending.push(key);
       this.ordinaryPrioritySkips.set(key, 0);
@@ -69,6 +72,7 @@ export class ProjectAppTaskQueue {
     const [taskId] = this.pending.splice(takeIndex, 1);
     if (!taskId) return null;
     this.queued.delete(taskId);
+    this.frontPrioritySkips.delete(taskId);
     this.ordinaryPrioritySkips.delete(taskId);
     if (this.frontQueued.delete(taskId)) this.consecutiveFrontTakes += 1;
     else this.consecutiveFrontTakes = 0;
@@ -144,6 +148,20 @@ export class ProjectAppTaskQueue {
   }
 
   private nextFrontIndex(frontCount: number): number {
+    const agedIndex = this.pending.findIndex(
+      (taskId, index) =>
+        index < frontCount &&
+        (this.frontPrioritySkips.get(taskId) ?? 0) >=
+          ProjectAppTaskQueue.maxPrioritySkips,
+    );
+    if (agedIndex >= 0) {
+      for (let index = 0; index < frontCount; index++) {
+        const taskId = this.pending[index];
+        if (taskId) this.frontPrioritySkips.set(taskId, 0);
+      }
+      return agedIndex;
+    }
+
     let selected = 0;
     let selectedRank = priorityRank(this.priorities.get(this.pending[selected] ?? "") ?? "P2");
     for (let index = 1; index < frontCount; index++) {
@@ -152,6 +170,12 @@ export class ProjectAppTaskQueue {
         selected = index;
         selectedRank = rank;
       }
+    }
+    for (let index = 0; index < frontCount; index++) {
+      if (index === selected) continue;
+      const taskId = this.pending[index];
+      if (!taskId) continue;
+      this.frontPrioritySkips.set(taskId, (this.frontPrioritySkips.get(taskId) ?? 0) + 1);
     }
     return selected;
   }
