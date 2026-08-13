@@ -4,9 +4,18 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
+import { closeDb, getDb } from "../lib/requests.js";
+import { DbWriter } from "../lib/db-writer.js";
 import { associateAppInboxClaimSession, claimAppInboxItem, createAppInboxItem } from "./app-inbox-store.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
-import { EVENT_DEDUPLICATED, EVENT_REDELIVERY_REQUIRED, EventBus, type AgentEvent } from "./event-bus.js";
+import {
+  APP_MESSAGE_INGRESS_ACCEPTED,
+  EVENT_DEDUPLICATED,
+  EVENT_REDELIVERY_REQUIRED,
+  EVENT_ROW_ID,
+  EventBus,
+  type AgentEvent,
+} from "./event-bus.js";
 import type { AppOwnerManager } from "./app-owner-manager-adapter.js";
 
 describe("App inbox runtime", () => {
@@ -47,6 +56,7 @@ describe("App inbox runtime", () => {
 
   afterEach(() => {
     runtime?.close();
+    closeDb(join(root, "state"));
     db.close();
     rmSync(root, { recursive: true, force: true });
   });
@@ -128,6 +138,195 @@ describe("App inbox runtime", () => {
       result: { summary: "canary passed" },
       sessionId: `session:${row.id}`,
     });
+  });
+
+  it("admits one uniquely addressed agent message and durably returns its result", async () => {
+    const mayDir = join(root, "may.app");
+    mkdirSync(mayDir, { recursive: true });
+    writeFileSync(
+      join(mayDir, "inbox.js"),
+      `export default {
+        id: "may",
+        version: 1,
+        owner: "may",
+        inputSchema: {
+          type: "object",
+          additionalProperties: false,
+          required: ["kind", "data"],
+          properties: {
+            kind: { const: "message" },
+            data: {
+              type: "object",
+              additionalProperties: false,
+              required: ["message"],
+              properties: {
+                message: { type: "string", minLength: 1 },
+                context: { type: "object" }
+              }
+            }
+          }
+        }
+      };\n`,
+    );
+    const persistDir = join(root, "state");
+    const persistedDb = getDb(persistDir);
+    const writer = new DbWriter(persistDir);
+    const bus = new EventBus();
+    bus.setPersistenceSubscriber(writer.handler);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    const calls: string[] = [];
+    runtime = await startAppInboxRuntime({
+      projectsRoot: root,
+      db: persistedDb,
+      manager: manager(calls),
+      bus,
+      scanIntervalMs: 10_000,
+    });
+    runtime?.enableDelivery();
+
+    const original = bus.emit({
+      type: "message.created",
+      source: "agent:evaluator",
+      owner: "agent:may",
+      data: {
+        from: "evaluator",
+        to: "agent:may",
+        content: "Review the canary result.",
+        intent: "review-request",
+        artifact: "/tmp/canary.json",
+        priority: "P1",
+        sourceSessionId: "session:evaluator",
+        idempotencyKey: "agent-message:canary",
+      },
+    });
+    const sourceEventId = Number(original[EVENT_ROW_ID]);
+    expect((original as Record<PropertyKey, unknown>)[APP_MESSAGE_INGRESS_ACCEPTED]).toBe(true);
+
+    await waitUntil(() => calls.length === 1);
+    const inboxRow = persistedDb.prepare("SELECT id, input_data FROM app_inbox_items WHERE app_id = 'may'").get() as {
+      id: string;
+      input_data: string;
+    };
+    await waitUntil(() => runtime?.host.get(inboxRow.id)?.status === "done");
+
+    expect(JSON.parse(inboxRow.input_data)).toEqual({
+      message: "Review the canary result.",
+      context: {
+        from: "evaluator",
+        intent: "review-request",
+        artifact: "/tmp/canary.json",
+        priority: "P1",
+        sourceSessionId: "session:evaluator",
+        sourceEventId,
+      },
+    });
+    expect(
+      persistedDb
+        .prepare("SELECT delivery_status, accepted_by, delivery_route FROM events WHERE id = ?")
+        .get(sourceEventId),
+    ).toEqual({
+      delivery_status: "accepted",
+      accepted_by: "app-inbox:may:message",
+      delivery_route: "direct",
+    });
+    expect(
+      persistedDb
+        .prepare("SELECT COUNT(*) AS count FROM event_pair_runs WHERE pair_name = 'owner_inbox' AND open_event_id = ?")
+        .get(sourceEventId),
+    ).toEqual({ count: 0 });
+    expect(
+      persistedDb
+        .prepare(
+          `SELECT source, owner, data
+           FROM events
+           WHERE event_type = 'message.created'
+             AND json_extract(data, '$.idempotencyKey') LIKE 'app-delivery:%'`,
+        )
+        .get(),
+    ).toMatchObject({
+      source: "app:may",
+      owner: "agent:evaluator",
+      data: expect.stringContaining('"content":"canary passed"'),
+    });
+
+    bus.emit({
+      type: "message.created",
+      source: "agent:evaluator",
+      owner: "agent:may",
+      data: {
+        from: "evaluator",
+        to: "agent:may",
+        content: "Review the canary result.",
+        intent: "review-request",
+        artifact: "/tmp/canary.json",
+        priority: "P1",
+        sourceSessionId: "session:evaluator",
+        idempotencyKey: "agent-message:canary",
+      },
+    });
+    await Bun.sleep(20);
+    expect(calls).toHaveLength(1);
+    expect(persistedDb.prepare("SELECT COUNT(*) AS count FROM app_inbox_items WHERE app_id = 'may'").get()).toEqual({
+      count: 1,
+    });
+
+    runtime?.close();
+    runtime = null;
+  });
+
+  it("leaves incompatible and ambiguous agent messages on the legacy route", async () => {
+    for (const id of ["may-one", "may-two"]) {
+      const appDir = join(root, `${id}.app`);
+      mkdirSync(appDir, { recursive: true });
+      writeFileSync(
+        join(appDir, "inbox.js"),
+        `export default {
+          id: "${id}", version: 1, owner: "may",
+          inputSchema: {
+            type: "object", required: ["kind", "data"],
+            properties: {
+              kind: { const: "message" },
+              data: { type: "object", required: ["message"], properties: { message: { type: "string", minLength: 1 } } }
+            }
+          }
+        };\n`,
+      );
+    }
+    const deliveries: Array<{ event: AgentEvent; result: unknown }> = [];
+    const bus = new EventBus();
+    let rowId = 100;
+    bus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, { value: rowId++, configurable: true });
+    });
+    bus.setDeliveryRecorder((event, result) => deliveries.push({ event, result }));
+    runtime = await startAppInboxRuntime({
+      projectsRoot: root,
+      db,
+      manager: manager([]),
+      bus,
+      scanIntervalMs: 10_000,
+    });
+
+    const ambiguous = bus.emit({
+      type: "message.created",
+      source: "agent:evaluator",
+      owner: "agent:may",
+      data: { from: "evaluator", to: "may", content: "ambiguous" },
+    });
+    const incompatible = bus.emit({
+      type: "message.created",
+      source: "agent:may",
+      owner: "agent:evaluator",
+      data: { from: "may", to: "evaluator", content: "not a probe" },
+    });
+
+    expect((ambiguous as Record<PropertyKey, unknown>)[APP_MESSAGE_INGRESS_ACCEPTED]).toBeUndefined();
+    expect((incompatible as Record<PropertyKey, unknown>)[APP_MESSAGE_INGRESS_ACCEPTED]).toBeUndefined();
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 0 });
+    expect(deliveries.map(({ result }) => result)).toEqual([
+      expect.objectContaining({ by: "owner-inbox:agent:may", route: "owner_inbox" }),
+      expect.objectContaining({ by: "owner-inbox:agent:evaluator", route: "owner_inbox" }),
+    ]);
   });
 
   it("preserves human channel metadata through admission and owner dispatch", async () => {
