@@ -1,13 +1,6 @@
 import type { AppDependencyObservation, AppInput, AppInputSource } from "@may-agent/sdk";
 import type { SqliteDb } from "../lib/db.js";
-import {
-  APP_MESSAGE_INGRESS_ACCEPTED,
-  EVENT_ROW_ID,
-  eventData,
-  type AgentEvent,
-  type DeliveryResult,
-  type EventBus,
-} from "./event-bus.js";
+import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "./event-bus.js";
 import { AppInboxHost, type AppInboxReconcileResult, type AppTaskAttacher } from "./app-inbox-host.js";
 import { createManagerAppOwnerInvoker, type AppOwnerManager } from "./app-owner-manager-adapter.js";
 import { loadAppInboxDefinitions } from "./loader/app-inbox-loader.js";
@@ -278,7 +271,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           channel: `agent:${message.sender}`,
           idempotencyKey: message.identity,
         });
-        Object.defineProperty(event, APP_MESSAGE_INGRESS_ACCEPTED, { value: true, configurable: true });
         schedule(admitted.item.appId);
         return {
           accepted: true,
