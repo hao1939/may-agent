@@ -19,6 +19,7 @@ import { projectAppExecutionPaths, projectRuntimePaths, readTaskState, saveTaskS
 import { prepareProjectTaskWorkspace } from "../project-task-workspace";
 import { prepareAgentExecution } from "../../lib/agent-execution";
 import { createCheckpointTool } from "../../lib/tools/checkpoint";
+import { startAppInboxRuntime } from "../app-inbox-runtime";
 import {
   associateProjectAppTaskSession,
   claimObservedProjectAppTask,
@@ -137,6 +138,109 @@ describe("App inbox task attachment", () => {
         }),
       ).toThrow("has no loaded Project App");
     } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("resumes the App automatically when its attached task converges", async () => {
+    const f = fixture();
+    const bus = new EventBus();
+    let runtime: Awaited<ReturnType<typeof startAppInboxRuntime>> = null;
+    let ownerAttempt = 0;
+    const requestIds = new Map<string, string>();
+    try {
+      writeApp(f.appDir);
+      writeFileSync(
+        join(f.appDir, "inbox.js"),
+        `export default {
+          id: "sample-canary",
+          version: 1,
+          owner: "sample-owner",
+          inputSchema: { type: "object", additionalProperties: true }
+        };\n`,
+      );
+      const runtimeManager = Object.assign(manager([]), {
+        run(_agent: string, prompt: string) {
+          ownerAttempt += 1;
+          const sessionId = `app-owner-${ownerAttempt}`;
+          const requestId = JSON.parse(prompt.match(/```json\n([\s\S]*?)\n```/)?.[1] ?? "[]")[0].id;
+          requestIds.set(sessionId, requestId);
+          return sessionId;
+        },
+        async waitFor(sessionId: string) {
+          const requestId = requestIds.get(sessionId)!;
+          return {
+            status: "done" as const,
+            structuredResult: {
+              dispositions: [
+                {
+                  requestId,
+                  disposition:
+                    ownerAttempt === 1
+                      ? {
+                          type: "task",
+                          task: {
+                            kind: "desired",
+                            intent: {
+                              id: "work/app-inbox-resume",
+                              parentId: "operations",
+                              outcome: "Process app-inbox-resume",
+                              acceptance: ["Work converges"],
+                              mode: "achieve",
+                              workflow: "worker",
+                              input: { itemId: "app-inbox-resume" },
+                            },
+                          },
+                        }
+                      : { type: "complete", summary: "attached task observed" },
+                },
+              ],
+            },
+          };
+        },
+        cancel() {},
+      });
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: runtimeManager,
+        bus,
+        agentCrons: new Map(),
+      });
+      const db = getDb(f.persistDir);
+      runtime = await startAppInboxRuntime({
+        projectsRoot: f.projectsRoot,
+        db,
+        manager: runtimeManager,
+        bus,
+        scanIntervalMs: 60_000,
+        attachTask: async (input) => attachLoadedProjectAppTask({ ...input, bus }),
+      });
+      bus.emit({
+        type: "app.input.requested",
+        source: "test",
+        owner: "agent:sample-owner",
+        data: {
+          appId: "sample-canary",
+          input: { kind: "probe", data: {} },
+          source: { kind: "system", id: "test" },
+          idempotencyKey: "sample-canary:task-resume",
+        },
+      });
+
+      await waitUntil(() => {
+        const row = db
+          .prepare("SELECT status, result FROM app_inbox_items WHERE idempotency_key = ?")
+          .get("sample-canary:task-resume") as { status?: string; result?: string } | undefined;
+        return row?.status === "done" && row.result?.includes("attached task observed") === true;
+      });
+      expect(ownerAttempt).toBe(2);
+    } finally {
+      runtime?.close();
       closeDb(f.persistDir);
       rmSync(f.root, { recursive: true, force: true });
     }
