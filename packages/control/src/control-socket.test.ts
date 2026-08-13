@@ -352,10 +352,14 @@ describe("control socket protocol", () => {
     stream.destroy();
   });
 
-  it("delivers a Web App inbox response outside the legacy session filter", async () => {
+  it("forwards a Web App inbox response without treating socket observation as delivery", async () => {
     const delivered: Array<{ event: ControlEvent; count: number }> = [];
     const core = createCore({
       onDelivered: (event, count) => delivered.push({ event, count }),
+      emitEvent: (event) => {
+        core.emitted.push(event);
+        return { eventId: 81 };
+      },
     });
     const stream = (core.endpoint as () => Duplex)();
     await nextFrame(stream);
@@ -378,7 +382,29 @@ describe("control socket protocol", () => {
     core.getBroadcast()?.(response);
 
     await expect(nextFrame(stream)).resolves.toEqual(response);
-    expect(delivered).toEqual([{ event: response, count: 1 }]);
+    expect(delivered).toEqual([]);
+
+    const acknowledgement = {
+      type: "channel.delivery.completed",
+      source: "web-ui",
+      owner: "app:may",
+      target: { human: true },
+      data: {
+        channel: "web-ui",
+        sessionId: "bounded-owner-session",
+        resultEventType: "app.response.delivery.requested",
+        operationId: "app-delivery:item-1:1",
+        appInboxItemId: "item-1",
+        appInboxRequestId: "app-inbox-human:item-1",
+        idempotencyKey: "web-ui-delivery:app-delivery:item-1:1",
+      },
+    };
+    await expect(sendSocketCommand(core.endpoint, acknowledgement)).resolves.toEqual({
+      type: "ok",
+      command: "channel.delivery.completed",
+      eventId: 81,
+    });
+    expect(core.emitted).toEqual([acknowledgement]);
     stream.destroy();
   });
 
