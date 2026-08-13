@@ -22,6 +22,8 @@ export type StartAppInboxRuntimeOptions = {
     appDir: string;
     dependency: { kind: "task" | "session"; id: string };
   }) => Promise<AppDependencyObservation | null>;
+  runOwner?: <T>(work: () => Promise<T>) => Promise<T>;
+  maxConcurrentApps?: number;
   scanIntervalMs?: number;
   leaseMs?: number;
   retryAfterMs?: number;
@@ -68,10 +70,11 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       }
     : undefined;
 
+  const invokeOwner = createManagerAppOwnerInvoker(options.manager);
   const host = new AppInboxHost({
     db: options.db,
     apps: loaded.map((entry) => entry.definition),
-    invokeOwner: createManagerAppOwnerInvoker(options.manager),
+    invokeOwner: options.runOwner ? (input) => options.runOwner!(() => invokeOwner(input)) : invokeOwner,
     attachTask,
     readDependency: options.readDependency
       ? async (input) => {
@@ -86,6 +89,12 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   });
   const active = new Set<string>();
   const dirty = new Set<string>();
+  const pending: string[] = [];
+  const queued = new Set<string>();
+  const maxConcurrentApps = options.maxConcurrentApps ?? 2;
+  if (!Number.isSafeInteger(maxConcurrentApps) || maxConcurrentApps <= 0) {
+    throw new Error("App inbox maxConcurrentApps must be a positive safe integer");
+  }
   let closed = false;
 
   const report = (appId: string, outcome: AppInboxReconcileResult) => {
@@ -96,29 +105,41 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     });
   };
 
+  const pump = (): void => {
+    while (!closed && active.size < maxConcurrentApps) {
+      const appId = pending.shift();
+      if (!appId) return;
+      queued.delete(appId);
+      if (active.has(appId) || !dirty.has(appId)) continue;
+      active.add(appId);
+      dirty.delete(appId);
+      void host
+        .reconcileOnce(appId)
+        .then((outcome) => {
+          report(appId, outcome);
+          if (outcome.claimed > 0) dirty.add(appId);
+        })
+        .catch((error) => {
+          options.bus.emit({
+            type: "info",
+            message: `[app-inbox:${appId}] ${error instanceof Error ? error.message : String(error)}`,
+          });
+        })
+        .finally(() => {
+          active.delete(appId);
+          if (dirty.has(appId)) schedule(appId);
+          pump();
+        });
+    }
+  };
+
   const schedule = (appId: string): void => {
     if (closed || !host.appIds().includes(appId)) return;
     dirty.add(appId);
-    if (active.has(appId)) return;
-    active.add(appId);
-    void (async () => {
-      try {
-        while (!closed) {
-          dirty.delete(appId);
-          const outcome = await host.reconcileOnce(appId);
-          report(appId, outcome);
-          if (outcome.claimed === 0 && !dirty.has(appId)) break;
-        }
-      } catch (error) {
-        options.bus.emit({
-          type: "info",
-          message: `[app-inbox:${appId}] ${error instanceof Error ? error.message : String(error)}`,
-        });
-      } finally {
-        active.delete(appId);
-        if (dirty.has(appId)) schedule(appId);
-      }
-    })();
+    if (active.has(appId) || queued.has(appId)) return;
+    queued.add(appId);
+    pending.push(appId);
+    pump();
   };
 
   const scanNow = () => {
@@ -169,6 +190,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       closed = true;
       clearInterval(timer);
       unsubscribe();
+      pending.length = 0;
+      queued.clear();
+      dirty.clear();
     },
   };
 }

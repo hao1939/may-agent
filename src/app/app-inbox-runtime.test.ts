@@ -154,4 +154,90 @@ describe("App inbox runtime", () => {
     await waitUntil(() => runtime?.host.get("restart-probe")?.status === "done");
     expect(calls).toHaveLength(1);
   });
+
+  it("waits for the shared owner capacity before dispatching", async () => {
+    const calls: string[] = [];
+    let releaseCapacity: (() => void) | undefined;
+    const capacity = new Promise<void>((resolve) => {
+      releaseCapacity = resolve;
+    });
+    const bus = new EventBus();
+    runtime = await startAppInboxRuntime({
+      projectsRoot: root,
+      db,
+      manager: manager(calls),
+      bus,
+      scanIntervalMs: 10_000,
+      runOwner: async (work) => {
+        await capacity;
+        return work();
+      },
+    });
+
+    bus.emit({
+      type: "app.input.requested",
+      data: {
+        appId: "evaluation-canary",
+        input: { kind: "probe", data: { value: "capacity" } },
+        source: { kind: "system", id: "test" },
+      },
+    });
+    await Bun.sleep(20);
+    expect(calls).toHaveLength(0);
+
+    releaseCapacity!();
+    await waitUntil(() => calls.length === 1);
+  });
+
+  it("round-robins Apps instead of draining one App before the next", async () => {
+    const workerDir = join(root, "worker.app");
+    mkdirSync(workerDir, { recursive: true });
+    writeFileSync(
+      join(workerDir, "inbox.js"),
+      `export default {
+        id: "worker-canary",
+        version: 1,
+        owner: "evaluator",
+        inputSchema: {
+          type: "object",
+          required: ["kind", "data"],
+          properties: { kind: { const: "probe" }, data: { type: "object" } }
+        }
+      };\n`,
+    );
+    const calls: string[] = [];
+    const bus = new EventBus();
+    runtime = await startAppInboxRuntime({
+      projectsRoot: root,
+      db,
+      manager: manager(calls),
+      bus,
+      scanIntervalMs: 10_000,
+      maxConcurrentApps: 1,
+    });
+    await Bun.sleep(20);
+    const emit = (appId: string, value: string) =>
+      bus.emit({
+        type: "app.input.requested",
+        data: {
+          appId,
+          input: { kind: "probe", data: { value } },
+          source: { kind: "system", id: "test" },
+        },
+      });
+
+    emit("evaluation-canary", "first");
+    emit("evaluation-canary", "second");
+    emit("worker-canary", "worker");
+    await waitUntil(() => calls.length === 3);
+
+    const requestIds = calls.map((prompt) => JSON.parse(prompt.match(/```json\n([\s\S]*?)\n```/)?.[1] ?? "[]")[0].id);
+    const rows = requestIds.map((id) => db.prepare("SELECT app_id FROM app_inbox_items WHERE id = ?").get(id));
+    expect(rows).toEqual([
+      { app_id: "evaluation-canary" },
+      { app_id: "worker-canary" },
+      { app_id: "evaluation-canary" },
+    ]);
+    await waitUntil(() => requestIds.every((id) => runtime?.host.get(id)?.status === "done"));
+  });
 });
