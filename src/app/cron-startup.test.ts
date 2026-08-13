@@ -87,6 +87,13 @@ describe("cron startup recovery", () => {
     }
   });
 
+  it("lets the App inbox fence and replace an interrupted owner attempt", () => {
+    expect(shouldResumeStartupSession("app-owner-session", session("/tmp/evaluation.app", "app-inbox-owner"))).toEqual({
+      resume: false,
+      reason: "App inbox host reclaims the fenced request with a fresh bounded owner attempt",
+    });
+  });
+
   it("does not resume any background project session while its task tree is paused", () => {
     const appDir = mkdtempSync(join(tmpdir(), "may-paused-app-"));
     try {

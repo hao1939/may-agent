@@ -78,6 +78,7 @@ export const appOwnerBatchResultSchema = Type.Object(
 type AppOwnerBatchResult = Static<typeof appOwnerBatchResultSchema>;
 
 export type AppOwnerManager = {
+  hasAgent(agent: string): boolean;
   run(
     agent: string,
     task: string,

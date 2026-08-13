@@ -72,6 +72,7 @@ export function createDaemonLifecycle(opts: {
   getTelegramBot: () => { close: () => void } | undefined;
   getActiveReadline: () => { close: () => void } | null;
   clearActiveReadline: () => void;
+  beforeShutdown?: () => void;
 }) {
   let shuttingDown = false;
 
@@ -82,6 +83,7 @@ export function createDaemonLifecycle(opts: {
     }
     shuttingDown = true;
     opts.bus.emit({ type: "info", message: "Shutting down..." });
+    opts.beforeShutdown?.();
 
     for (const cron of getAgentCrons().values()) {
       cron.stop();
