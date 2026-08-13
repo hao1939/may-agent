@@ -454,25 +454,6 @@ export function wakeAppInboxItemsWaitingOn(
   return result.changes;
 }
 
-/**
- * Reclaim attempts owned by a previous host process. Waiting items have no
- * lease and are intentionally left on their dependency/timer schedule.
- */
-export function recoverLeasedAppInboxItems(db: SqliteDb, now = Date.now()): number {
-  return db.run(
-    `UPDATE app_inbox_items
-     SET status = CASE WHEN waiting_on_kind IS NULL THEN 'pending' ELSE 'handling' END,
-         available_at = ?,
-         session_id = NULL,
-         lease_generation = lease_generation + 1,
-         lease_owner = NULL,
-         lease_expires_at = NULL,
-         updated_at = ?
-     WHERE status != 'done' AND lease_owner IS NOT NULL`,
-    [now, now],
-  ).changes;
-}
-
 export function completeAppInboxClaim(
   db: SqliteDb,
   claim: AppInboxClaim,
