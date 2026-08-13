@@ -236,4 +236,32 @@ export async function execute(ctx) {
       },
     });
   });
+
+  it("exposes App-authored input without parsing the legacy task prompt", async () => {
+    const root = mkdtempSync(join(tmpdir(), "app-workflow-input-"));
+    const workflowDir = join(root, "workflows");
+    mkdirSync(workflowDir);
+    writeFileSync(
+      join(workflowDir, "app-input.ts"),
+      `
+export const name = "app-input";
+export const description = "App SDK authored input test";
+export async function execute(ctx) {
+  return ctx.done("input preserved", ctx.input);
+}
+`,
+    );
+    const runner = createWorkflowRunner({
+      manager: {} as any,
+      workflowDir,
+      agentName: "owner",
+      workflowInput: { itemId: "app_123" },
+    });
+
+    const result = await runner.run("app-input", "legacy reconciliation prompt");
+    expect(result).toMatchObject({
+      type: "done",
+      output: { itemId: "app_123" },
+    });
+  });
 });
