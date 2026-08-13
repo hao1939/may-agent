@@ -64,7 +64,8 @@ describe("App inbox host", () => {
       db,
       apps: [app("evaluation")],
       now: () => 100,
-      invokeOwner: async ({ requests: batch }) => {
+      invokeOwner: async ({ requests: batch, onSessionStarted }) => {
+        onSessionStarted("session-1");
         requests.push(...batch);
         return batch.map((request) => ({
           requestId: request.id,
@@ -86,6 +87,7 @@ describe("App inbox host", () => {
     ]);
     expect(host.get("probe-1")).toMatchObject({
       status: "done",
+      sessionId: "session-1",
       result: { summary: "Canary passed", evidence: ["probe:ok"] },
     });
   });
@@ -208,6 +210,7 @@ describe("App inbox host", () => {
                     kind: "desired",
                     intent: {
                       id: "evaluate-canary",
+                      parentId: "runtime",
                       outcome: "Evaluate the canary",
                       acceptance: ["A result exists"],
                       mode: "achieve",

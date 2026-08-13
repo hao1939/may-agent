@@ -204,6 +204,7 @@ function claimedRow(
       `UPDATE app_inbox_items
        SET status = 'handling',
            available_at = NULL,
+           session_id = NULL,
            lease_generation = lease_generation + 1,
            lease_owner = ?,
            lease_expires_at = ?,
@@ -261,6 +262,7 @@ export function claimNextAppInboxItem(
       `UPDATE app_inbox_items
        SET status = 'handling',
            available_at = NULL,
+           session_id = NULL,
            lease_generation = lease_generation + 1,
            lease_owner = ?,
            lease_expires_at = ?,
@@ -317,6 +319,24 @@ export function renewAppInboxClaim(
   );
 }
 
+export function associateAppInboxClaimSession(
+  db: SqliteDb,
+  claim: AppInboxClaim,
+  sessionId: string,
+  now = Date.now(),
+): boolean {
+  requiredText(sessionId, "sessionId");
+  return (
+    db.run(
+      `UPDATE app_inbox_items
+       SET session_id = ?, updated_at = ?
+       WHERE id = ? AND status = 'handling'
+         AND lease_generation = ? AND lease_owner = ?`,
+      [sessionId, now, claim.item.id, claim.generation, claim.owner],
+    ).changes === 1
+  );
+}
+
 export function waitAppInboxClaim(
   db: SqliteDb,
   claim: AppInboxClaim,
@@ -336,7 +356,7 @@ export function waitAppInboxClaim(
     db.run(
       `UPDATE app_inbox_items
        SET waiting_on_kind = ?, waiting_on_id = ?, review_at = ?, available_at = ?,
-           lease_owner = NULL, lease_expires_at = NULL, updated_at = ?
+           session_id = NULL, lease_owner = NULL, lease_expires_at = NULL, updated_at = ?
        WHERE id = ? AND status = 'handling'
          AND lease_generation = ? AND lease_owner = ?`,
       [
@@ -429,7 +449,8 @@ export function releaseAppInboxClaim(
     db.run(
       `UPDATE app_inbox_items
        SET status = CASE WHEN waiting_on_kind IS NULL THEN 'pending' ELSE 'handling' END,
-           available_at = ?, lease_owner = NULL, lease_expires_at = NULL, updated_at = ?
+           available_at = ?, session_id = NULL,
+           lease_owner = NULL, lease_expires_at = NULL, updated_at = ?
        WHERE id = ? AND status = 'handling'
          AND lease_generation = ? AND lease_owner = ?`,
       [retryAt, now, claim.item.id, claim.generation, claim.owner],
