@@ -21,4 +21,9 @@ describe("app runtime startup order", () => {
     expect(appInbox).toBeGreaterThan(-1);
     expect(appInbox).toBeLessThan(externalIngress);
   });
+
+  it("runs App owners through the shared reconciliation capacity", () => {
+    const source = readFileSync(new URL("./app-runtime.ts", import.meta.url), "utf8");
+    expect(source).toContain("runOwner: (work) => runWithProjectAppRuntimeCapacity(bus, work)");
+  });
 });
