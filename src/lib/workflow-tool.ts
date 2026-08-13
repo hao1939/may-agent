@@ -67,6 +67,85 @@ import { createUnavailableCommandService } from "./command-service.js";
 import { importRuntimeModule } from "./runtime-import.js";
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 import type { EventTrace } from "../app/event-bus.js";
+import type { ExecutionResult as AppExecutionResult, WorkflowContext as AppWorkflowContext } from "@may-agent/sdk/app";
+import { createRuntimeAppRead } from "../app/app-read.js";
+
+function appAgentExecutionResult(result: TaskResult): AppExecutionResult {
+  const finishStatus = result.finishResult?.status;
+  const status =
+    result.status === "interrupted"
+      ? "interrupted"
+      : result.status === "error" || finishStatus === "failure"
+        ? "error"
+        : finishStatus === "blocked"
+          ? "blocked"
+          : "done";
+  return {
+    id: result.sessionId,
+    kind: "agent",
+    status,
+    summary:
+      result.finishResult?.summary?.trim() ||
+      result.lastAssistantText?.trim() ||
+      result.error?.trim() ||
+      `Agent execution ${status}`,
+    ...(result.structuredResult !== undefined
+      ? { output: result.structuredResult }
+      : result.finishResult?.result !== undefined
+        ? { output: result.finishResult.result }
+        : {}),
+    ...(result.finishResult ? { evidence: result.finishResult } : {}),
+  };
+}
+
+function normalizeAuthoredWorkflowResult(
+  value: unknown,
+  completedSteps: CompletedStep[],
+  runId: string,
+): WorkflowResult {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("Workflow returned no terminal execution result");
+  }
+  const result = value as Record<string, unknown>;
+  if (result.type === "done" && typeof result.summary === "string") {
+    return {
+      type: "done",
+      summary: result.summary,
+      ...(result.output !== undefined ? { output: result.output } : {}),
+    };
+  }
+  if (result.type === "blocked" && typeof result.reason === "string") {
+    return {
+      type: "blocked",
+      reason: result.reason,
+      ...(result.context !== undefined ? { context: result.context } : {}),
+    };
+  }
+  const isExecutionResult =
+    (result.kind === "agent" || result.kind === "workflow") &&
+    typeof result.id === "string" &&
+    typeof result.summary === "string";
+  if (!isExecutionResult) throw new Error("Workflow returned an invalid terminal execution result");
+  if (result.status === "done") {
+    return {
+      type: "done",
+      summary: result.summary as string,
+      ...(result.output !== undefined ? { output: result.output } : {}),
+    };
+  }
+  if (result.status === "blocked") {
+    return {
+      type: "blocked",
+      reason: result.summary as string,
+      ...(result.evidence !== undefined ? { context: result.evidence } : {}),
+    };
+  }
+  if (result.status === "interrupted") {
+    throw new WorkflowInterrupted(result.summary as string, completedSteps, runId);
+  }
+  if (result.status === "error") throw new Error(result.summary as string);
+  throw new Error(`Workflow returned an unknown execution status: ${String(result.status)}`);
+}
 
 // ── Tool schema ────────────────────────────────────────────────────────
 
@@ -633,6 +712,8 @@ export interface RunWorkflowDirectOpts {
   onEvent?: (event: WorkflowEvent) => void;
   trace?: EventTrace;
   executionPaths?: { appDir: string; projectDir: string; workspaceDir: string };
+  /** App-authored input exposed through the capability-scoped WorkflowContext. */
+  workflowInput?: unknown;
   /** Maximum wall-clock duration for the complete workflow execution. */
   executionTimeoutMs?: number;
 }
@@ -663,6 +744,7 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
     trace: opts.trace,
     runtimeCtx: opts.runtimeCtx,
     executionPaths: opts.executionPaths,
+    ...(opts.workflowInput !== undefined ? { workflowInput: opts.workflowInput } : {}),
     executionTimeoutMs: opts.executionTimeoutMs,
   });
 
@@ -732,6 +814,8 @@ export interface WorkflowToolOptions {
   runtimeCtx?: RuntimeCtx;
   /** Resolved app/domain paths supplied by Agent App infrastructure. */
   executionPaths?: { appDir: string; projectDir: string; workspaceDir: string };
+  /** App-authored input for a system-dispatched top-level workflow. */
+  workflowInput?: unknown;
   /** Maximum wall-clock duration for the complete workflow execution. */
   executionTimeoutMs?: number;
   /** Trace inherited from the event that started this workflow. */
@@ -925,6 +1009,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     completedSteps: CompletedStep[],
     steeringQueue: string[],
     previousRun?: WorkflowRun,
+    authoredInput?: { value: unknown },
   ): Promise<{ result: WorkflowResult; runId: string; steps: CompletedStep[] }> {
     const runId = generateRunId();
     const localSteps: CompletedStep[] = [];
@@ -1278,12 +1363,49 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       return taskResult;
     };
 
-    const ctx: WorkflowContext = {
-      task,
-      agent: opts.agentName && opts.agentName !== "undefined" ? opts.agentName : "unknown",
+    const runNestedWorkflow = async (
+      workflowName: string,
+      nestedTask: string,
+      nestedInput?: { value: unknown },
+    ): Promise<
+      | { sub: Awaited<ReturnType<typeof executeWorkflow>> }
+      | { reason: string }
+    > => {
+      assertExecutionActive();
+      const steering = steeringQueue.shift();
+      if (steering) throw new WorkflowInterrupted(steering, completedSteps, runId);
+      if (depth + 1 > maxDepth) {
+        return { reason: `Maximum workflow nesting depth (${maxDepth}) exceeded` };
+      }
+      const { workflow: subWorkflow, error } = findWorkflow(catalog, workflowName);
+      if (!subWorkflow) {
+        return { reason: error ?? `Workflow "${workflowName}" not found` };
+      }
+      onEvent?.({ type: "workflow.started", workflow: subWorkflow.name, task: nestedTask });
+      const sub = await executeWorkflow(
+        catalog,
+        subWorkflow,
+        nestedTask,
+        depth + 1,
+        parentSessionId,
+        runId,
+        completedSteps,
+        steeringQueue,
+        undefined,
+        nestedInput,
+      );
+      assertExecutionActive();
+      if (sub.result.type === "done") {
+        onEvent?.({ type: "workflow.completed", summary: sub.result.summary });
+      } else {
+        onEvent?.({ type: "workflow.blocked", reason: sub.result.reason });
+      }
+      return { sub };
+    };
 
-      // ── RuntimeCtx (shared infra) — spread pre-built or fallback ──
-      ...(opts.runtimeCtx ?? {
+    const runtimeCtx =
+      opts.runtimeCtx ??
+      ({
         emit: (event: { type: string; [key: string]: unknown }) => {
           onEvent?.(event as WorkflowEvent);
         },
@@ -1301,8 +1423,48 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         agentsRoot: "",
         sharedRoot: "",
         projectsRoot: "",
-      }),
+      } satisfies RuntimeCtx);
+    const appRead = createRuntimeAppRead({
+      getDb: runtimeCtx.getDb,
+      metrics: runtimeCtx.metrics,
+      ...(opts.executionPaths ? { executionPaths: opts.executionPaths } : {}),
+    });
+    const workflowLog = Object.assign((message: string) => runtimeCtx.log(message), {
+      debug: (message: string) => runtimeCtx.log(`[debug] ${message}`),
+      info: (message: string) => runtimeCtx.log(message),
+      warn: (message: string) => runtimeCtx.log(`[warn] ${message}`),
+      error: (message: string) => runtimeCtx.log(`[error] ${message}`),
+    });
+    const workflowMetrics = {
+      ...runtimeCtx.metrics,
+      record(id: string, value: number, noteOrOptions?: string | Parameters<typeof runtimeCtx.metrics.record>[2]) {
+        runtimeCtx.metrics.record(
+          id,
+          value,
+          typeof noteOrOptions === "string" ? { note: noteOrOptions } : noteOrOptions,
+        );
+      },
+    };
+
+    const ctx = {
+      task,
+      agent: opts.agentName && opts.agentName !== "undefined" ? opts.agentName : "unknown",
+      input: authoredInput ? authoredInput.value : task,
+      read: appRead,
+
+      // ── RuntimeCtx (shared infra) — spread pre-built or fallback ──
+      ...runtimeCtx,
       ...(opts.executionPaths ?? {}),
+      log: workflowLog,
+      metrics: workflowMetrics,
+      ...(opts.executionPaths
+        ? {
+            workspace: {
+              root: opts.executionPaths.workspaceDir,
+              output: opts.executionPaths.workspaceDir,
+            },
+          }
+        : {}),
       // Overlay emit to also call onEvent for workflow lifecycle logging
       emit: (event: { type: string; [key: string]: unknown }) => {
         assertExecutionActive();
@@ -1323,6 +1485,19 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         stepOpts?: WorkflowAgentOptions,
       ): Promise<TaskResult> =>
         runAgentStep(agentName, agentTask, sessionId, stepOpts)) as WorkflowContext["runAgentSession"],
+
+      agents: {
+        call: async (agentName: string, agentTask: string) =>
+          appAgentExecutionResult(await runAgentStep(agentName, agentTask)),
+      },
+
+      events: {
+        emit: async (event: { type: string; data: unknown }) => {
+          assertExecutionActive();
+          emitRuntimeEvent(event);
+          onEvent?.(event as WorkflowEvent);
+        },
+      },
 
       runFunction: async (label: string, fn: () => Promise<string>): Promise<TaskResult> => {
         assertExecutionActive();
@@ -1418,51 +1593,62 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         return taskResult;
       },
 
-      summarize: (result: TaskResult, handoffOpts?) => {
+      summarize: (result: TaskResult, handoffOpts?: Parameters<typeof summarizeForHandoff>[1]) => {
         return summarizeForHandoff(result, handoffOpts);
       },
 
       runWorkflow: async (wfName: string, wfTask: string): Promise<WorkflowResult> => {
-        assertExecutionActive();
-        const steering = steeringQueue.shift();
-        if (steering) {
-          throw new WorkflowInterrupted(steering, completedSteps, runId);
-        }
-
-        if (depth + 1 > maxDepth) {
-          return { type: "blocked", reason: `Maximum workflow nesting depth (${maxDepth}) exceeded` };
-        }
-
-        const { workflow: subWf, error: subErr } = findWorkflow(catalog, wfName);
-        if (!subWf) {
-          return { type: "blocked", reason: subErr ?? `Workflow "${wfName}" not found` };
-        }
-
-        onEvent?.({ type: "workflow.started", workflow: subWf.name, task: wfTask });
-
-        const sub = await executeWorkflow(
-          catalog,
-          subWf,
-          wfTask,
-          depth + 1,
-          parentSessionId,
-          runId,
-          completedSteps,
-          steeringQueue,
-        );
-        assertExecutionActive();
-
-        if (sub.result.type === "done") {
-          onEvent?.({ type: "workflow.completed", summary: sub.result.summary });
-        } else {
-          onEvent?.({ type: "workflow.blocked", reason: sub.result.reason });
-        }
-
-        return sub.result;
+        const nested = await runNestedWorkflow(wfName, wfTask);
+        return "reason" in nested
+          ? { type: "blocked", reason: nested.reason }
+          : nested.sub.result;
       },
 
-      done: (summary: string, output?: unknown) => ({ type: "done" as const, summary, output }),
-      blocked: (reason: string, context?: unknown) => ({ type: "blocked" as const, reason, context }),
+      workflows: {
+        run: async (wfName: string, workflowInput: unknown): Promise<AppExecutionResult> => {
+          const nestedTask = typeof workflowInput === "string" ? workflowInput : JSON.stringify(workflowInput ?? null);
+          const nested = await runNestedWorkflow(wfName, nestedTask, { value: workflowInput });
+          if ("reason" in nested) {
+            return { id: runId, kind: "workflow", status: "blocked", summary: nested.reason };
+          }
+          const { sub } = nested;
+          if (sub.result.type === "done") {
+            return {
+              id: sub.runId,
+              kind: "workflow",
+              status: "done",
+              summary: sub.result.summary,
+              ...(sub.result.output !== undefined ? { output: sub.result.output } : {}),
+            };
+          }
+          return {
+            id: sub.runId,
+            kind: "workflow",
+            status: "blocked",
+            summary: sub.result.reason,
+            ...(sub.result.context !== undefined ? { evidence: sub.result.context } : {}),
+          };
+        },
+      },
+
+      done: (summary: string, output?: unknown) => ({
+        type: "done" as const,
+        id: runId,
+        kind: "workflow" as const,
+        status: "done" as const,
+        summary,
+        output,
+      }),
+      blocked: (reason: string, context?: unknown) => ({
+        type: "blocked" as const,
+        id: runId,
+        kind: "workflow" as const,
+        status: "blocked" as const,
+        summary: reason,
+        reason,
+        evidence: context,
+        context,
+      }),
 
       createSession: async (sessionOpts: SessionOptions): Promise<SessionHandle> => {
         const history: Array<{ role: string; text: string }> = [];
@@ -1569,12 +1755,12 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           },
         };
       },
-    };
+    } as unknown as WorkflowContext & AppWorkflowContext;
 
     try {
       const execution = workflow.execute(ctx);
       let executionTimer: ReturnType<typeof setTimeout> | undefined;
-      const result = executionTimeoutMs
+      const authoredResult = executionTimeoutMs
         ? await Promise.race([
             execution,
             new Promise<never>((_, reject) => {
@@ -1588,6 +1774,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
             if (executionTimer) clearTimeout(executionTimer);
           })
         : await execution;
+      const result = normalizeAuthoredWorkflowResult(authoredResult, completedSteps, runId);
 
       // ── Guard: workflow_done event ──────────────────────────────────
       if (guards.length > 0) {
@@ -1737,6 +1924,9 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         completedSteps,
         steeringQueue,
         previousRun,
+        !previousRun && opts.workflowInput !== undefined
+          ? { value: opts.workflowInput }
+          : undefined,
       );
 
       activeSteeringQueue = null;

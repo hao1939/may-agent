@@ -16,6 +16,9 @@
       "@may-agent/sdk": [
         "packages/sdk/src/index.ts"
       ],
+      "@may-agent/sdk/app": [
+        "packages/sdk/src/app.ts"
+      ],
       "@may-agent/sdk/testing": [
         "packages/sdk/src/testing.ts"
       ]
