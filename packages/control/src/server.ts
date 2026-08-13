@@ -21,12 +21,10 @@ export interface AttachControlSocketOptions {
   getStatus: () => ControlStatusItem[];
   emitEvent: (event: ControlEvent) => ControlEmitResult | void;
   describeProjectActions?: (projectId: string) => unknown[];
-  invokeProjectAction?: (input: {
-    projectId: string;
-    actionId: string;
-    params: unknown;
-    idempotencyKey?: string;
-  }) => { eventId: number; eventType: string };
+  invokeProjectAction?: (input: { projectId: string; actionId: string; params: unknown; idempotencyKey?: string }) => {
+    eventId: number;
+    eventType: string;
+  };
   subscribeEvents: (handler: (event: ControlEvent) => void) => () => void;
   onDelivered?: (event: ControlEvent, clientCount: number) => void;
   onInfo?: (message: string) => void;
@@ -103,8 +101,16 @@ function socketStatus(status: ControlStatusItem[], currentSessionId: string, age
 
 function shouldForward(client: ClientState, event: ControlEvent): boolean {
   if (!client.subscribed) return false;
-  if (!client.filter) return true;
   const data = eventPayload(event);
+  if (event.type === "app.response.delivery.requested") {
+    return (
+      data.channel === "web-ui" ||
+      data.channel === "web" ||
+      data.channel === "socket" ||
+      data.channel === "control-socket"
+    );
+  }
+  if (!client.filter) return true;
   if (typeof data.sessionId === "string") return client.filter.has(data.sessionId);
   if (event.type === "message.created" && data.to === "human") return false;
   return false;
@@ -112,7 +118,7 @@ function shouldForward(client: ClientState, event: ControlEvent): boolean {
 
 function eventPayload(event: ControlEvent): Record<string, unknown> {
   return event.data && typeof event.data === "object" && !Array.isArray(event.data)
-    ? event.data as Record<string, unknown>
+    ? (event.data as Record<string, unknown>)
     : event;
 }
 
@@ -178,7 +184,11 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
     }
 
     const data = eventPayload(event);
-    if (event.type === "session.start" && typeof data.parentSessionId === "string" && typeof data.sessionId === "string") {
+    if (
+      event.type === "session.start" &&
+      typeof data.parentSessionId === "string" &&
+      typeof data.sessionId === "string"
+    ) {
       for (const client of clients.values()) {
         if (client.filter?.has(data.parentSessionId)) client.filter.add(data.sessionId);
       }
@@ -200,7 +210,12 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
         clients.delete(sock);
       }
     }
-    if (delivered > 0 && (event.type === "session.idle" || event.type === "session.end")) {
+    if (
+      delivered > 0 &&
+      (event.type === "session.idle" ||
+        event.type === "session.end" ||
+        event.type === "app.response.delivery.requested")
+    ) {
       onDelivered?.(event, delivered);
     }
   }
@@ -408,7 +423,8 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
 }
 
 export async function attachControlSocket(opts: AttachControlSocketOptions): Promise<ControlSocket> {
-  const { socketPath, getSessionId, getStatus, emitEvent, subscribeEvents, onDelivered, onInfo, agentName, instance } = opts;
+  const { socketPath, getSessionId, getStatus, emitEvent, subscribeEvents, onDelivered, onInfo, agentName, instance } =
+    opts;
   mkdirSync(dirname(socketPath), { recursive: true });
 
   if (existsSync(socketPath)) {

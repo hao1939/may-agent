@@ -98,6 +98,7 @@ describe("App inbox host", () => {
       db,
       apps: [app("may")],
       invokeOwner: async (input) => {
+        input.onSessionStarted("session-human-1");
         invocations.push(input);
         return input.requests.map((request) => ({
           requestId: request.id,
@@ -136,6 +137,16 @@ describe("App inbox host", () => {
       },
     ]);
     expect((invocations[0] as { requests: Array<Record<string, unknown>> }).requests[0]).not.toHaveProperty("channel");
+    expect(host.get("human-1")).toMatchObject({
+      status: "handling",
+      sessionId: "session-human-1",
+      result: { summary: "done", response: "Hello" },
+      delivery: {
+        operationId: "app-delivery:human-1:1",
+        status: "pending",
+        channel: "telegram",
+      },
+    });
   });
 
   it("releases the whole batch when the owner result is not usable", async () => {
