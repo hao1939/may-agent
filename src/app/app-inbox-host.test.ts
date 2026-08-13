@@ -10,13 +10,18 @@ const probeInput = Type.Object({
   data: Type.Object({ value: Type.String() }),
 });
 
-function app(id: string, batch: "single" | "coalesce-compatible" = "single"): AppDefinition {
+function app(
+  id: string,
+  batch: "single" | "coalesce-compatible" = "single",
+  tasks = false,
+): AppDefinition {
   return defineApp({
     id,
     version: 1,
     owner: `${id}-owner`,
     inputSchema: probeInput,
     inbox: { batch },
+    ...(tasks ? { tasks: { attach: true as const } } : {}),
   });
 }
 
@@ -56,6 +61,15 @@ describe("App inbox host", () => {
       }),
     ).toThrow("Invalid input for App evaluation");
     expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 0 });
+
+    expect(
+      () =>
+        new AppInboxHost({
+          db,
+          apps: [{ ...app("malformed"), tasks: { attach: false } } as unknown as AppDefinition],
+          invokeOwner: async () => [],
+        }),
+    ).toThrow("App malformed has invalid task attachment capability");
   });
 
   it("completes a bounded request without exposing host lifecycle fields", async () => {
@@ -265,7 +279,7 @@ describe("App inbox host", () => {
     const ownerRequests: unknown[] = [];
     const host = new AppInboxHost({
       db,
-      apps: [app("evaluation")],
+      apps: [app("evaluation", "single", true)],
       retryAfterMs: 0,
       now: () => 100,
       attachTask: async (input) => {
@@ -325,12 +339,42 @@ describe("App inbox host", () => {
     });
   });
 
+  it("rejects task work when the App did not opt into task attachment", async () => {
+    const attachments: unknown[] = [];
+    const host = new AppInboxHost({
+      db,
+      apps: [app("may")],
+      retryAfterMs: 0,
+      now: () => 100,
+      attachTask: async (input) => {
+        attachments.push(input);
+        return { taskId: "must-not-exist" };
+      },
+      invokeOwner: async ({ requests }) =>
+        requests.map((request) => ({
+          requestId: request.id,
+          disposition: {
+            type: "task",
+            task: { kind: "existing", taskId: "legacy-may-task" },
+          },
+        })),
+    });
+    admit(host, "may", "may-message");
+
+    const outcome = await host.reconcileOnce("may");
+
+    expect(outcome).toMatchObject({ claimed: 1, admitted: 0, released: 1 });
+    expect(outcome.errors).toEqual(["Request may-message: App may does not allow task attachment"]);
+    expect(attachments).toEqual([]);
+    expect(host.get("may-message")?.status).toBe("pending");
+  });
+
   it("checks task completion after linking the durable wait", async () => {
     let attempts = 0;
     let sawWaitLink = false;
     const host = new AppInboxHost({
       db,
-      apps: [app("evaluation")],
+      apps: [app("evaluation", "single", true)],
       now: () => 100,
       attachTask: async () => ({
         taskId: "task-fast",
