@@ -294,6 +294,9 @@ CREATE TABLE IF NOT EXISTS app_inbox_items (
   parent_id           TEXT,
   conversation_id     TEXT,
   conversation_seq    INTEGER,
+  channel             TEXT,
+  channel_thread_id   TEXT,
+  channel_message_id  INTEGER,
   source_kind         TEXT NOT NULL,
   source_id           TEXT NOT NULL,
   input_kind          TEXT NOT NULL,
@@ -463,11 +466,25 @@ export function applyDbSchema(db: SqliteDb): void {
   ensureExistingEventsTableColumns(db);
   db.exec(SCHEMA);
   ensureExistingEventsTableColumns(db);
+  ensureExistingAppInboxTableColumns(db);
   db.exec(`
     CREATE UNIQUE INDEX IF NOT EXISTS idx_events_idempotency
     ON events(event_type, ingress_source, idempotency_scope, idempotency_key)
     WHERE idempotency_key IS NOT NULL AND idempotency_key != '';
   `);
+}
+
+const APP_INBOX_COLUMNS: Array<[string, string]> = [
+  ["channel", "TEXT"],
+  ["channel_thread_id", "TEXT"],
+  ["channel_message_id", "INTEGER"],
+];
+
+function ensureExistingAppInboxTableColumns(db: SqliteDb): void {
+  if (!tableExists(db, "app_inbox_items")) return;
+  for (const [column, definition] of APP_INBOX_COLUMNS) {
+    ensureColumn(db, "app_inbox_items", column, definition);
+  }
 }
 
 const EVENT_COLUMNS: Array<[string, string]> = [

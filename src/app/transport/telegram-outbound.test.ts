@@ -548,6 +548,69 @@ describe("Telegram outbound turn ownership", () => {
     outbound.close();
   });
 
+  test("delivers a human App inbox result as May's direct Telegram reply", () => {
+    let reviews = 0;
+    const { bus, sent, outbound } = harness("legacy-chat", async (candidate) => {
+      reviews += 1;
+      return {
+        status: "completed",
+        sessionId: "unexpected-review",
+        disposition: "deliver",
+        understoodIntent: "Deliver.",
+        reason: "Test.",
+        nextAction: "Deliver.",
+        evidence: ["Test."],
+        deliveredMessage: candidate.content,
+      };
+    });
+    const conversationId = "telegram:chat:123:topic:0:agent:may";
+
+    bus.emit({
+      type: "session.start",
+      source: "telegram",
+      owner: "agent:may",
+      data: {
+        sessionId: "s_app_inbox_human",
+        agent: "may",
+        task: "Handle one durable human request",
+        trigger: "app-inbox",
+        firedAt: Date.now(),
+        kind: "job",
+        requestId: "app-inbox-human:app_123",
+        conversationId,
+        channelMessageId: 701,
+      },
+    } as any);
+    bus.emit({
+      type: "session.end",
+      source: "telegram",
+      owner: "agent:may",
+      data: {
+        sessionId: "s_app_inbox_human",
+        agent: "may",
+        kind: "job",
+        requestId: "app-inbox-human:app_123",
+        status: "done",
+        summary: "The durable May request is complete.",
+      },
+    } as any);
+
+    expect(reviews).toBe(0);
+    expect(sent).toEqual([
+      {
+        text: "The durable May request is complete.",
+        context: expect.objectContaining({
+          eventType: "session.end",
+          agent: "may",
+          sessionId: "s_app_inbox_human",
+          replyToMessageId: 701,
+          conversationId,
+        }),
+      },
+    ]);
+    outbound.close();
+  });
+
   test("never forwards a CLI turn merely because it reuses the daemon chat session", () => {
     const { bus, sent, outbound } = harness();
 
