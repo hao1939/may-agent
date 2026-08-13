@@ -1,12 +1,27 @@
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  chownSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { basename, dirname, join } from "node:path";
 
 export type DeployReceiptPhase = "requested" | "succeeded" | "failed" | "rolled_back";
 
 function atomicJson(path: string, value: unknown): void {
   mkdirSync(dirname(path), { recursive: true });
+  const existing = existsSync(path) ? statSync(path) : undefined;
   const tmp = join(dirname(path), `.${basename(path)}.${process.pid}.${Date.now()}.tmp`);
   writeFileSync(tmp, `${JSON.stringify(value, null, 2)}\n`, { mode: 0o600 });
+  if (existing) {
+    chmodSync(tmp, existing.mode & 0o777);
+    chownSync(tmp, existing.uid, existing.gid);
+  }
   renameSync(tmp, path);
 }
 
