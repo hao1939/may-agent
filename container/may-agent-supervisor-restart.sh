@@ -12,6 +12,23 @@ deployed=0
 finalized=0
 runtime_services="may-agent may-agent-web"
 receipt=""
+health_attempts="${MAY_AGENT_HEALTH_ATTEMPTS:-90}"
+health_delay="${MAY_AGENT_HEALTH_DELAY:-1}"
+
+wait_for_health() {
+  i=1
+  while [ "$i" -le "$health_attempts" ]; do
+    if supervisorctl status $runtime_services | grep -q "^may-agent[[:space:]].*RUNNING" \
+      && supervisorctl status $runtime_services | grep -q "^may-agent-web[[:space:]].*RUNNING" \
+      && supervisorctl status $runtime_services | grep -q "^may-agent-maintenance[[:space:]].*RUNNING" \
+      && curl -fsS --max-time 6 "http://127.0.0.1:${WEB_PORT:-8080}/api/readiness" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep "$health_delay"
+    i=$((i + 1))
+  done
+  return 1
+}
 
 emit_wake() {
   phase="$1"
@@ -67,23 +84,7 @@ supervisorctl start $runtime_services
 services_stopped=0
 
 if [ "$deployed" = "1" ]; then
-  health_ok=0
-  attempts="${MAY_AGENT_HEALTH_ATTEMPTS:-20}"
-  delay="${MAY_AGENT_HEALTH_DELAY:-1}"
-  i=1
-  while [ "$i" -le "$attempts" ]; do
-    if supervisorctl status $runtime_services | grep -q "^may-agent[[:space:]].*RUNNING" \
-      && supervisorctl status $runtime_services | grep -q "^may-agent-web[[:space:]].*RUNNING" \
-      && supervisorctl status $runtime_services | grep -q "^may-agent-maintenance[[:space:]].*RUNNING" \
-      && curl -fsS --max-time 6 "http://127.0.0.1:${WEB_PORT:-8080}/api/readiness" >/dev/null 2>&1; then
-      health_ok=1
-      break
-    fi
-    sleep "$delay"
-    i=$((i + 1))
-  done
-
-  if [ "$health_ok" = "1" ]; then
+  if wait_for_health; then
     loaded="$(sha256sum "$target" | awk '{print $1}')"
     emit_wake succeeded
     settle succeeded "$loaded" healthy true
@@ -95,11 +96,9 @@ if [ "$deployed" = "1" ]; then
     install -m 755 -o mayagent -g mayagent "$backup" "$target"
     supervisorctl start $runtime_services
     services_stopped=0
-    sleep "$delay"
     loaded="$(sha256sum "$target" | awk '{print $1}')"
     rollback_health=unhealthy
-    if supervisorctl status $runtime_services | grep -q "^may-agent[[:space:]].*RUNNING" \
-      && curl -fsS --max-time 6 "http://127.0.0.1:${WEB_PORT:-8080}/api/readiness" >/dev/null 2>&1; then rollback_health=healthy; fi
+    if wait_for_health; then rollback_health=healthy; fi
     emit_wake rolled_back
     settle rolled_back "$loaded" "$rollback_health" true health-check-failed
     finalized=1
