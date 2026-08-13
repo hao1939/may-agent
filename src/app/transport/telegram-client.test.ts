@@ -281,4 +281,29 @@ describe("telegram client", () => {
       rmSync(persistDir, { recursive: true, force: true });
     }
   });
+
+  it("does not report a multipart send as delivered when any chunk is uncertain", async () => {
+    const persistDir = mkdtempSync(join(tmpdir(), "telegram-client-partial-"));
+    let attempt = 0;
+    try {
+      const client = createTelegramClient({
+        token: "token",
+        persistDir,
+        emitInfo: () => {},
+        fetchImpl: (async () => {
+          attempt += 1;
+          if (attempt === 2) throw new Error("connection ended before a response");
+          return new Response(JSON.stringify({ ok: true, result: { message_id: 800 } }), {
+            headers: { "content-type": "application/json" },
+          });
+        }) as typeof fetch,
+      });
+
+      await expect(client.sendMessage("chat-1", "a".repeat(5_000))).resolves.toBeUndefined();
+      expect(attempt).toBe(2);
+    } finally {
+      closeDb(persistDir);
+      rmSync(persistDir, { recursive: true, force: true });
+    }
+  });
 });

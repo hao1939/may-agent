@@ -334,6 +334,25 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_app_inbox_conversation_sequence
   ON app_inbox_items(app_id, conversation_id, conversation_seq)
   WHERE conversation_id IS NOT NULL AND conversation_seq IS NOT NULL;
 
+CREATE TABLE IF NOT EXISTS app_inbox_deliveries (
+  item_id              TEXT PRIMARY KEY,
+  operation_id         TEXT NOT NULL UNIQUE,
+  session_id           TEXT NOT NULL,
+  request_id           TEXT NOT NULL,
+  channel              TEXT NOT NULL,
+  status               TEXT NOT NULL DEFAULT 'pending',
+  external_message_id  TEXT,
+  failure_reason       TEXT,
+  receipt_event_id     INTEGER,
+  created_at           INTEGER NOT NULL,
+  updated_at           INTEGER NOT NULL,
+  attempted_at         INTEGER,
+  completed_at         INTEGER,
+  CHECK (status IN ('pending', 'sending', 'delivered', 'failed', 'uncertain'))
+);
+CREATE INDEX IF NOT EXISTS idx_app_inbox_delivery_status
+  ON app_inbox_deliveries(status, created_at);
+
 CREATE TRIGGER IF NOT EXISTS trg_events_referential_retention
 BEFORE DELETE ON events
 WHEN
@@ -527,9 +546,7 @@ function ensureExistingEventsTableColumns(db: SqliteDb): void {
 }
 
 function tableExists(db: SqliteDb, table: string): boolean {
-  const row = db
-    .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?")
-    .get(table);
+  const row = db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?").get(table);
   return Boolean(row);
 }
 

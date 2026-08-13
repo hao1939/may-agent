@@ -4,12 +4,15 @@ import { applyDbSchema } from "../lib/db/schema.js";
 import {
   associateAppInboxClaimSession,
   claimAppInboxItem,
+  claimNextAppInboxDelivery,
   claimNextAppInboxItem,
   completeAppInboxClaim,
   createAppInboxItem,
   getAppInboxItem,
   listAppInboxHealth,
   listAppInboxItems,
+  recordAppInboxDeliveryReceipt,
+  stageAppInboxClaimDelivery,
   waitAppInboxClaim,
   wakeAppInboxItemsWaitingOn,
 } from "./app-inbox-store.js";
@@ -24,10 +27,7 @@ describe("App inbox store", () => {
 
   afterEach(() => db.close());
 
-  function create(
-    id: string,
-    options: { conversationId?: string; conversationSequence?: number; now?: number } = {},
-  ) {
+  function create(id: string, options: { conversationId?: string; conversationSequence?: number; now?: number } = {}) {
     return createAppInboxItem(db, {
       id,
       appId: "may",
@@ -148,16 +148,14 @@ describe("App inbox store", () => {
         done: 0,
         ready: 2,
         waitingOnDependency: 1,
+        waitingOnDelivery: 0,
         activeLeases: 0,
         expiredLeases: 1,
         oldestPendingAgeMs: 81,
         oldestHandlingItemAgeMs: 71,
       },
     ]);
-    expect(listAppInboxHealth(db, { now: 181 }).map((entry) => entry.appId)).toEqual([
-      "evaluation",
-      "may",
-    ]);
+    expect(listAppInboxHealth(db, { now: 181 }).map((entry) => entry.appId)).toEqual(["evaluation", "may"]);
   });
 
   it("reclaims an expired lease and fences the stale generation", () => {
@@ -183,6 +181,146 @@ describe("App inbox store", () => {
     expect(associateAppInboxClaimSession(db, claim, "stale-session", 103)).toBe(false);
   });
 
+  it("holds an admitted human result until the exact delivery is proved", () => {
+    createAppInboxItem(db, {
+      id: "human-delivery",
+      appId: "may",
+      source: { kind: "human", id: "event:42" },
+      input: { kind: "message", data: { text: "hello" } },
+      channel: "telegram",
+      now: 100,
+    });
+    const claim = claimAppInboxItem(db, "human-delivery", "worker-1", 50, 100)!;
+    expect(associateAppInboxClaimSession(db, claim, "session-1", 101)).toBe(true);
+    const delivery = stageAppInboxClaimDelivery(
+      db,
+      claim,
+      {
+        channel: "telegram",
+        sessionId: "session-1",
+        requestId: "app-inbox-human:human-delivery",
+        result: { summary: "finished", response: "Hello back" },
+      },
+      102,
+    );
+
+    expect(delivery.status).toBe("pending");
+    expect(getAppInboxItem(db, "human-delivery")).toMatchObject({
+      status: "handling",
+      result: { summary: "finished", response: "Hello back" },
+      delivery: { status: "pending" },
+    });
+    expect(claimAppInboxItem(db, "human-delivery", "worker-2", 50, 200)).toBeNull();
+    expect(listAppInboxHealth(db, { appId: "may", now: 200 })[0]?.waitingOnDelivery).toBe(1);
+
+    const dispatch = claimNextAppInboxDelivery(db, 103)!;
+    expect(dispatch).toMatchObject({
+      text: "Hello back",
+      delivery: { status: "sending", operationId: delivery.operationId },
+    });
+    expect(
+      recordAppInboxDeliveryReceipt(
+        db,
+        {
+          operationId: delivery.operationId,
+          itemId: "different-item",
+          sessionId: "session-1",
+          requestId: "app-inbox-human:human-delivery",
+          channel: "telegram",
+          status: "delivered",
+        },
+        104,
+      ),
+    ).toEqual({ matched: false, completed: false });
+    expect(
+      recordAppInboxDeliveryReceipt(
+        db,
+        {
+          operationId: delivery.operationId,
+          itemId: "human-delivery",
+          sessionId: "session-1",
+          requestId: "app-inbox-human:human-delivery",
+          channel: "telegram",
+          status: "uncertain",
+          reason: "request outcome unknown",
+        },
+        105,
+      ),
+    ).toEqual({ matched: true, completed: false, status: "uncertain" });
+    expect(claimNextAppInboxDelivery(db, 106)).toBeNull();
+    expect(getAppInboxItem(db, "human-delivery")).toMatchObject({
+      status: "handling",
+      delivery: { status: "uncertain", failureReason: "request outcome unknown" },
+    });
+
+    expect(
+      recordAppInboxDeliveryReceipt(
+        db,
+        {
+          operationId: delivery.operationId,
+          itemId: "human-delivery",
+          sessionId: "session-1",
+          requestId: "app-inbox-human:human-delivery",
+          channel: "telegram",
+          status: "delivered",
+          externalMessageId: "700",
+        },
+        107,
+      ),
+    ).toEqual({ matched: true, completed: true, status: "delivered" });
+    expect(getAppInboxItem(db, "human-delivery")).toMatchObject({
+      status: "done",
+      delivery: { status: "delivered", externalMessageId: "700" },
+    });
+  });
+
+  it("preserves a definite delivery failure for review without redispatch", () => {
+    createAppInboxItem(db, {
+      id: "failed-delivery",
+      appId: "may",
+      source: { kind: "human", id: "event:43" },
+      input: { kind: "message", data: { text: "hello" } },
+      channel: "web-ui",
+      now: 100,
+    });
+    const claim = claimAppInboxItem(db, "failed-delivery", "worker-1", 50, 100)!;
+    associateAppInboxClaimSession(db, claim, "session-2", 101);
+    const delivery = stageAppInboxClaimDelivery(
+      db,
+      claim,
+      {
+        channel: "web-ui",
+        sessionId: "session-2",
+        requestId: "app-inbox-human:failed-delivery",
+        result: { summary: "finished" },
+      },
+      102,
+    );
+    expect(claimNextAppInboxDelivery(db, 103)).not.toBeNull();
+
+    expect(
+      recordAppInboxDeliveryReceipt(
+        db,
+        {
+          operationId: delivery.operationId,
+          itemId: "failed-delivery",
+          sessionId: "session-2",
+          requestId: "app-inbox-human:failed-delivery",
+          channel: "web-ui",
+          status: "failed",
+          reason: "no connected browser",
+        },
+        104,
+      ),
+    ).toEqual({ matched: true, completed: false, status: "failed" });
+    expect(claimNextAppInboxDelivery(db, 1_000)).toBeNull();
+    expect(getAppInboxItem(db, "failed-delivery")).toMatchObject({
+      status: "handling",
+      result: { summary: "finished" },
+      delivery: { status: "failed", failureReason: "no connected browser" },
+    });
+  });
+
   it("wakes dependency waits and also requeues them at review time", () => {
     create("wake-me", { now: 100 });
     create("review-me", { now: 100 });
@@ -190,14 +328,9 @@ describe("App inbox store", () => {
     const reviewClaim = claimAppInboxItem(db, "review-me", "worker-2", 50, 100)!;
 
     expect(waitAppInboxClaim(db, wakeClaim, { kind: "app", id: "child-1" }, { now: 110 })).toBe(true);
-    expect(
-      waitAppInboxClaim(
-        db,
-        reviewClaim,
-        { kind: "task", id: "task-1" },
-        { reviewAfterMs: 100, now: 110 },
-      ),
-    ).toBe(true);
+    expect(waitAppInboxClaim(db, reviewClaim, { kind: "task", id: "task-1" }, { reviewAfterMs: 100, now: 110 })).toBe(
+      true,
+    );
     expect(claimAppInboxItem(db, "review-me", "worker-3", 50, 209)).toBeNull();
 
     expect(wakeAppInboxItemsWaitingOn(db, { kind: "app", id: "child-1" }, 120)).toBe(1);

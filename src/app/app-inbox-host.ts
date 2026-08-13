@@ -13,14 +13,21 @@ import type { SqliteDb } from "../lib/db.js";
 import {
   associateAppInboxClaimSession,
   claimNextAppInboxItem,
+  claimNextAppInboxDelivery,
   completeAppInboxClaim,
   createAppInboxItem,
   getAppInboxItem,
+  markAppInboxSendingDeliveriesUncertain,
+  recordAppInboxDeliveryReceipt,
   releaseAppInboxClaim,
+  restorePendingAppInboxDelivery,
   renewAppInboxClaim,
+  stageAppInboxClaimDelivery,
   waitAppInboxClaim,
   wakeAppInboxItemsWaitingOn,
   type AppInboxClaim,
+  type AppInboxDeliveryDispatch,
+  type AppInboxDeliveryReceipt,
   type AppInboxItem,
   type AppInboxWaitKind,
 } from "./app-inbox-store.js";
@@ -99,6 +106,10 @@ export type AppInboxHostOptions = {
 };
 
 type RegisteredApp = AppDefinition;
+
+export function appInboxHumanRequestId(itemId: string): string {
+  return `app-inbox-human:${requiredText(itemId, "App inbox item id")}`;
+}
 
 function requiredText(value: unknown, field: string): string {
   if (typeof value !== "string" || !value.trim()) throw new Error(`${field} must be a non-empty string`);
@@ -205,6 +216,32 @@ export class AppInboxHost {
 
   wake(waitingOn: { kind: AppInboxWaitKind; id: string }): number {
     return wakeAppInboxItemsWaitingOn(this.#db, waitingOn, this.#now());
+  }
+
+  claimDelivery(): AppInboxDeliveryDispatch | null {
+    return claimNextAppInboxDelivery(this.#db, this.#now());
+  }
+
+  restoreDelivery(operationId: string): boolean {
+    return restorePendingAppInboxDelivery(this.#db, operationId, this.#now());
+  }
+
+  recoverDeliveries(): number {
+    return markAppInboxSendingDeliveriesUncertain(this.#db, this.#now());
+  }
+
+  recordDelivery(receipt: AppInboxDeliveryReceipt): {
+    matched: boolean;
+    completed: boolean;
+    status?: AppInboxDeliveryReceipt["status"] | "sending" | "pending";
+  } {
+    return withTransaction(this.#db, () => {
+      const outcome = recordAppInboxDeliveryReceipt(this.#db, receipt, this.#now());
+      if (outcome.completed) {
+        wakeAppInboxItemsWaitingOn(this.#db, { kind: "app", id: receipt.itemId }, this.#now());
+      }
+      return outcome;
+    });
   }
 
   async reconcileOnce(appId: string): Promise<AppInboxReconcileResult> {
@@ -388,17 +425,29 @@ export class AppInboxHost {
     switch (disposition.type) {
       case "complete": {
         validateCompleteDisposition(disposition);
+        const result = {
+          summary: disposition.summary,
+          response: disposition.response,
+          evidence: disposition.evidence,
+        };
         withTransaction(this.#db, () => {
-          const completed = completeAppInboxClaim(
-            this.#db,
-            claim,
-            {
-              summary: disposition.summary,
-              response: disposition.response,
-              evidence: disposition.evidence,
-            },
-            this.#now(),
-          );
+          if (claim.item.source.kind === "human" && claim.item.channel) {
+            const current = getAppInboxItem(this.#db, claim.item.id);
+            if (!current?.sessionId) throw new Error("human completion has no correlated owner session");
+            stageAppInboxClaimDelivery(
+              this.#db,
+              claim,
+              {
+                channel: claim.item.channel,
+                sessionId: current.sessionId,
+                requestId: appInboxHumanRequestId(claim.item.id),
+                result,
+              },
+              this.#now(),
+            );
+            return;
+          }
+          const completed = completeAppInboxClaim(this.#db, claim, result, this.#now());
           if (!completed) throw new Error("claim is stale");
           wakeAppInboxItemsWaitingOn(this.#db, { kind: "app", id: claim.item.id }, this.#now());
         });

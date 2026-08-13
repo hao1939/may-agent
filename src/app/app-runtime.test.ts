@@ -22,6 +22,16 @@ describe("app runtime startup order", () => {
     expect(appInbox).toBeLessThan(externalIngress);
   });
 
+  it("enables App delivery only after human transports are attached", () => {
+    const source = readFileSync(new URL("./app-runtime.ts", import.meta.url), "utf8");
+    const telegram = source.indexOf("telegramBot = TELEGRAM_ENABLED");
+    const externalIngress = source.indexOf("await startInterfaceRuntime(");
+    const delivery = source.indexOf("appInboxRuntime?.enableDelivery()");
+
+    expect(delivery).toBeGreaterThan(telegram);
+    expect(delivery).toBeGreaterThan(externalIngress);
+  });
+
   it("runs App owners through the shared reconciliation capacity", () => {
     const source = readFileSync(new URL("./app-runtime.ts", import.meta.url), "utf8");
     expect(source).toContain("runOwner: (work) => runWithProjectAppRuntimeCapacity(bus, work)");
