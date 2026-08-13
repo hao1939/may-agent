@@ -2749,6 +2749,7 @@ function recoverInterruptedProjectAppTasks(
   opts: ProjectAppLoaderOptions,
   descriptors: ProjectAppDescriptor[],
   controllers: Map<string, ProjectAppTaskController>,
+  includeFreshLeases = false,
 ): Set<string> {
   const claimedSessionIds = new Set<string>();
   for (const descriptor of descriptors) {
@@ -2760,11 +2761,12 @@ function recoverInterruptedProjectAppTasks(
       owner: descriptor.owner,
       maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
     });
-    for (const recovery of recoverableProjectAppTaskAttempts(config, Date.now(), true)) {
+    for (const recovery of recoverableProjectAppTaskAttempts(config, Date.now(), includeFreshLeases)) {
       if (recovery.sessionId && hasLiveProjectTaskSession(opts, recovery.sessionId)) {
         continue;
       }
       if (
+        includeFreshLeases &&
         recovery.sessionId &&
         claimFreshProjectAppTaskSessionForStartup(
           config,
@@ -2859,6 +2861,7 @@ export function recoverInstalledProjectAppTasks(opts: ProjectAppLoaderOptions): 
     opts,
     appRouterDescriptorsByBus.get(opts.bus) ?? [],
     appTaskControllersByBus.get(opts.bus) ?? new Map(),
+    true,
   );
 }
 
