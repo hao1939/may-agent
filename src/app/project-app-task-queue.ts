@@ -115,17 +115,12 @@ export class ProjectAppTaskQueue {
   }
 
   private nextOrdinaryIndex(frontCount: number): number {
-    const agedIndex = this.pending.findIndex(
-      (taskId, index) =>
-        index >= frontCount &&
-        (this.ordinaryPrioritySkips.get(taskId) ?? 0) >=
-          ProjectAppTaskQueue.maxPrioritySkips,
+    const agedIndex = this.nextAgedPriorityIndex(
+      frontCount,
+      this.pending.length,
+      this.ordinaryPrioritySkips,
     );
     if (agedIndex >= frontCount) {
-      for (let index = frontCount; index < this.pending.length; index++) {
-        const taskId = this.pending[index];
-        if (taskId) this.ordinaryPrioritySkips.set(taskId, 0);
-      }
       return agedIndex;
     }
 
@@ -138,27 +133,13 @@ export class ProjectAppTaskQueue {
         selectedRank = rank;
       }
     }
-    for (let index = frontCount; index < this.pending.length; index++) {
-      if (index === selected) continue;
-      const taskId = this.pending[index];
-      if (!taskId) continue;
-      this.ordinaryPrioritySkips.set(taskId, (this.ordinaryPrioritySkips.get(taskId) ?? 0) + 1);
-    }
+    this.ageLowerPriorityHeads(frontCount, this.pending.length, selectedRank, this.ordinaryPrioritySkips);
     return selected;
   }
 
   private nextFrontIndex(frontCount: number): number {
-    const agedIndex = this.pending.findIndex(
-      (taskId, index) =>
-        index < frontCount &&
-        (this.frontPrioritySkips.get(taskId) ?? 0) >=
-          ProjectAppTaskQueue.maxPrioritySkips,
-    );
+    const agedIndex = this.nextAgedPriorityIndex(0, frontCount, this.frontPrioritySkips);
     if (agedIndex >= 0) {
-      for (let index = 0; index < frontCount; index++) {
-        const taskId = this.pending[index];
-        if (taskId) this.frontPrioritySkips.set(taskId, 0);
-      }
       return agedIndex;
     }
 
@@ -171,13 +152,41 @@ export class ProjectAppTaskQueue {
         selectedRank = rank;
       }
     }
-    for (let index = 0; index < frontCount; index++) {
-      if (index === selected) continue;
+    this.ageLowerPriorityHeads(0, frontCount, selectedRank, this.frontPrioritySkips);
+    return selected;
+  }
+
+  private nextAgedPriorityIndex(start: number, end: number, skips: Map<string, number>): number {
+    let selected = -1;
+    let selectedRank = Number.POSITIVE_INFINITY;
+    for (let index = start; index < end; index++) {
       const taskId = this.pending[index];
-      if (!taskId) continue;
-      this.frontPrioritySkips.set(taskId, (this.frontPrioritySkips.get(taskId) ?? 0) + 1);
+      if (!taskId || (skips.get(taskId) ?? 0) < ProjectAppTaskQueue.maxPrioritySkips) continue;
+      const rank = priorityRank(this.priorities.get(taskId) ?? "P2");
+      if (rank < selectedRank) {
+        selected = index;
+        selectedRank = rank;
+      }
     }
     return selected;
+  }
+
+  /** Age only the FIFO head of each lower-priority class. */
+  private ageLowerPriorityHeads(
+    start: number,
+    end: number,
+    selectedRank: number,
+    skips: Map<string, number>,
+  ): void {
+    const agedRanks = new Set<number>();
+    for (let index = start; index < end; index++) {
+      const taskId = this.pending[index];
+      if (!taskId) continue;
+      const rank = priorityRank(this.priorities.get(taskId) ?? "P2");
+      if (rank <= selectedRank || agedRanks.has(rank)) continue;
+      agedRanks.add(rank);
+      skips.set(taskId, (skips.get(taskId) ?? 0) + 1);
+    }
   }
 }
 
