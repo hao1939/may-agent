@@ -125,4 +125,10 @@ describe("restart-aware deploy receipts", () => {
     );
     expect(restarter).toContain('settle failed "$loaded" unhealthy false "restarter-exit-$rc"');
   });
+
+  it("uses the same startup-sized health wait for deployment and rollback", () => {
+    const restarter = readFileSync(new URL("../container/may-agent-supervisor-restart.sh", import.meta.url), "utf8");
+    expect(restarter).toContain('health_attempts="${MAY_AGENT_HEALTH_ATTEMPTS:-90}"');
+    expect(restarter.match(/if wait_for_health; then/g)).toHaveLength(2);
+  });
 });
