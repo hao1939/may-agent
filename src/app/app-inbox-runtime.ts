@@ -1,6 +1,13 @@
 import type { AppDependencyObservation, AppInput, AppInputSource } from "@may-agent/sdk";
 import type { SqliteDb } from "../lib/db.js";
-import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "./event-bus.js";
+import {
+  APP_MESSAGE_INGRESS_ACCEPTED,
+  EVENT_ROW_ID,
+  eventData,
+  type AgentEvent,
+  type DeliveryResult,
+  type EventBus,
+} from "./event-bus.js";
 import { AppInboxHost, type AppInboxReconcileResult, type AppTaskAttacher } from "./app-inbox-host.js";
 import { createManagerAppOwnerInvoker, type AppOwnerManager } from "./app-owner-manager-adapter.js";
 import { loadAppInboxDefinitions } from "./loader/app-inbox-loader.js";
@@ -52,6 +59,58 @@ function requestedInput(data: Record<string, unknown>): AppInput {
 function eventIdentity(event: AgentEvent): string | undefined {
   const eventId = Number((event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID]);
   return Number.isSafeInteger(eventId) && eventId > 0 ? `event:${eventId}` : undefined;
+}
+
+function normalizedAgent(value: unknown): string | undefined {
+  if (typeof value !== "string" || !value.trim()) return undefined;
+  return value.trim().replace(/^agent:/, "");
+}
+
+const NON_AGENT_MESSAGE_SENDERS = new Set(["human", "operator", "telegram", "console", "socket"]);
+
+function legacyAgentMessage(event: AgentEvent):
+  | {
+      targetOwner: string;
+      sender: string;
+      sourceAppId?: string;
+      input: AppInput;
+      identity: string;
+    }
+  | undefined {
+  if (event.type !== "message.created") return undefined;
+  const identity = eventIdentity(event);
+  if (!identity) return undefined;
+  const data = eventData(event);
+  // This is a compatibility result for the legacy sender, not a fresh request.
+  // A future explicit parent-App result link can replace this owner-inbox handoff.
+  if (typeof data.appResponseFor === "string" && data.appResponseFor.trim()) return undefined;
+  // `to` is the address. The envelope owner is only a delivery projection and
+  // can still point at May for human-targeted compatibility messages.
+  const targetOwner = normalizedAgent(data.to);
+  const sender = normalizedAgent(data.from) ?? normalizedAgent((event as { source?: unknown }).source);
+  if (!targetOwner || !sender || sender === targetOwner || NON_AGENT_MESSAGE_SENDERS.has(sender)) return undefined;
+  if (data.intent === "chat.start" || data.intent === "fork") return undefined;
+
+  const context: Record<string, unknown> = {};
+  for (const key of ["from", "intent", "artifact", "priority", "sourceSessionId"] as const) {
+    if (data[key] !== undefined) context[key] = data[key];
+  }
+  context.sourceEventId = Number(identity.slice("event:".length));
+  const sourceAppId =
+    typeof data.sourceAppId === "string" && data.sourceAppId.trim() ? data.sourceAppId.trim() : undefined;
+  return {
+    targetOwner,
+    sender,
+    sourceAppId,
+    input: {
+      kind: "message",
+      data: {
+        message: typeof data.content === "string" ? data.content : "",
+        context,
+      },
+    },
+    identity,
+  };
 }
 
 export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions): Promise<AppInboxRuntime | null> {
@@ -114,8 +173,11 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             type: "app.response.delivery.requested",
             source: "app-inbox",
             owner: `app:${item.appId}`,
-            target: { human: true },
+            target: delivery.channel.startsWith("agent:")
+              ? { agent: delivery.channel.slice("agent:".length) }
+              : { human: true },
             data: {
+              appId: item.appId,
               operationId: delivery.operationId,
               appInboxItemId: delivery.itemId,
               appInboxRequestId: delivery.requestId,
@@ -202,6 +264,30 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
 
   const unsubscribe = options.bus.subscribeDurableRoute((event): DeliveryResult | void => {
     const data = eventData(event);
+    const message = legacyAgentMessage(event);
+    if (message) {
+      const candidates = host.matchingAppIds(message.targetOwner, message.input);
+      if (candidates.length === 1) {
+        const admitted = host.admit({
+          appId: candidates[0]!,
+          source:
+            message.sourceAppId && host.isOwnedApp(message.sourceAppId, message.sender)
+              ? { kind: "app", id: message.sourceAppId }
+              : { kind: "system", id: message.identity },
+          input: message.input,
+          channel: `agent:${message.sender}`,
+          idempotencyKey: message.identity,
+        });
+        Object.defineProperty(event, APP_MESSAGE_INGRESS_ACCEPTED, { value: true, configurable: true });
+        schedule(admitted.item.appId);
+        return {
+          accepted: true,
+          by: `app-inbox:${admitted.item.appId}:message`,
+          route: "direct",
+          note: "addressed agent message admitted to App inbox",
+        };
+      }
+    }
     if (event.type === "app.input.requested") {
       const appId = typeof data.appId === "string" ? data.appId.trim() : "";
       const identity = eventIdentity(event);
@@ -220,6 +306,82 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       });
       schedule(admitted.item.appId);
       return { accepted: true, by: `app-inbox:${admitted.item.appId}` };
+    }
+    if (event.type === "app.response.delivery.requested") {
+      const channel = typeof data.channel === "string" ? data.channel.trim() : "";
+      const target = channel.startsWith("agent:") ? normalizedAgent(channel.slice("agent:".length)) : undefined;
+      const operationId = typeof data.operationId === "string" ? data.operationId.trim() : "";
+      const itemId = typeof data.appInboxItemId === "string" ? data.appInboxItemId.trim() : "";
+      const requestId = typeof data.appInboxRequestId === "string" ? data.appInboxRequestId.trim() : "";
+      const sessionId = typeof data.sessionId === "string" ? data.sessionId.trim() : "";
+      const appId = typeof data.appId === "string" ? data.appId.trim() : "";
+      const response = typeof data.text === "string" ? data.text.trim() : "";
+      if (target && operationId && itemId && requestId && sessionId && appId && response) {
+        try {
+          const outbound = options.bus.emit({
+            type: "message.created",
+            source: `app:${appId}`,
+            owner: `agent:${target}`,
+            data: {
+              from: appId,
+              to: target,
+              content: response,
+              intent: "result",
+              priority: "P2",
+              sourceSessionId: sessionId,
+              sourceAppId: appId,
+              appResponseFor: itemId,
+              appDeliveryOperationId: operationId,
+              idempotencyKey: operationId,
+            },
+          });
+          const outboundEventId = Number(outbound[EVENT_ROW_ID]);
+          const outcome = host.recordDelivery({
+            operationId,
+            itemId,
+            requestId,
+            sessionId,
+            channel,
+            status: "delivered",
+            externalMessageId:
+              Number.isSafeInteger(outboundEventId) && outboundEventId > 0 ? String(outboundEventId) : undefined,
+            eventId: Number.isSafeInteger(outboundEventId) && outboundEventId > 0 ? outboundEventId : undefined,
+          });
+          if (!outcome.matched) {
+            throw new Error(`Internal App delivery ${operationId} no longer matches its outbox row`);
+          }
+          if (outcome.completed) scanNow();
+          options.bus.emit({
+            type: "channel.delivery.completed",
+            source: "app-inbox:agent-message",
+            owner: `app:${appId}`,
+            target: { agent: target },
+            data: {
+              channel,
+              sessionId,
+              resultEventType: event.type,
+              operationId,
+              appInboxItemId: itemId,
+              appInboxRequestId: requestId,
+              ...(Number.isSafeInteger(outboundEventId) && outboundEventId > 0
+                ? { externalMessageId: String(outboundEventId) }
+                : {}),
+            },
+          });
+          return { accepted: true, by: `app-inbox:agent-delivery:${itemId}`, route: "direct" };
+        } catch (error) {
+          const retry = setTimeout(() => {
+            if (host.restoreDelivery(operationId)) pumpDeliveries();
+          }, options.retryAfterMs ?? 1_000);
+          retry.unref?.();
+          return {
+            accepted: true,
+            by: `app-inbox:agent-delivery-retry:${itemId}`,
+            route: "direct",
+            note: error instanceof Error ? error.message : String(error),
+          };
+        }
+      }
     }
     if (event.type === "app.dependency.completed") {
       const kind = data.kind;

@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { attachCommandRouter } from "./command-router.js";
-import { childEventTrace, EventBus } from "./event-bus.js";
+import { APP_MESSAGE_INGRESS_ACCEPTED, childEventTrace, EventBus } from "./event-bus.js";
 import { DbWriter } from "../lib/db-writer.js";
 import { closeDb, getDb } from "../lib/requests.js";
 import { checkEventTraceIntegrity } from "../lib/db/event-traces.js";
@@ -14,7 +14,7 @@ function fixture(
   bridgeDecision?: Record<string, unknown>,
   beforeAttach?: (context: { root: string; bus: EventBus }) => void,
   turnResults: Array<Record<string, unknown>> = [],
-  routerOptions: { routeHumanInputToApp?: boolean } = {},
+  routerOptions: { routeHumanInputToApp?: boolean; routeMessagesToApp?: boolean } = {},
 ) {
   const root = mkdtempSync(join(tmpdir(), "may-command-router-"));
   const bus = new EventBus();
@@ -218,6 +218,82 @@ describe("command router human intent contract", () => {
     }
   });
 
+  it("does not run the legacy May bridge after the App inbox accepts a message", async () => {
+    const { root, bus, router, runs } = fixture(
+      { disposition: "answer", response: "legacy bridge must not run" },
+      ({ bus }) => {
+        bus.subscribeDurableRoute((event) => {
+          if (event.type !== "message.created") return;
+          Object.defineProperty(event, APP_MESSAGE_INGRESS_ACCEPTED, { value: true, configurable: true });
+          return { accepted: true, by: "app-inbox:may:message", route: "direct" };
+        });
+      },
+      [],
+      { routeMessagesToApp: true },
+    );
+    try {
+      const message = bus.emit({
+        type: "message.created",
+        source: "agent:evaluator",
+        owner: "agent:may",
+        data: { from: "evaluator", to: "may", content: "App-owned request" },
+      });
+      const sourceEventId = Number((message as any)[Symbol.for("may-agent.eventRowId")]);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(runs).toEqual([]);
+      expect(
+        getDb(root).prepare("SELECT delivery_route, accepted_by FROM events WHERE id = ?").get(sourceEventId),
+      ).toEqual({ delivery_route: "direct", accepted_by: "app-inbox:may:message" });
+      expect(
+        getDb(root)
+          .prepare(
+            "SELECT COUNT(*) AS count FROM event_pair_runs WHERE pair_name = 'owner_inbox' AND open_event_id = ?",
+          )
+          .get(sourceEventId),
+      ).toEqual({ count: 0 });
+    } finally {
+      router.close();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("does not turn an App compatibility result into a new May bridge request", async () => {
+    const { root, bus, router, runs } = fixture({
+      disposition: "answer",
+      response: "must not create a response loop",
+    });
+    try {
+      const result = bus.emit({
+        type: "message.created",
+        source: "app:project",
+        owner: "agent:may",
+        data: {
+          from: "project-owner",
+          to: "may",
+          content: "The delegated work is done.",
+          intent: "result",
+          sourceAppId: "project",
+          appResponseFor: "app-item-1",
+          appDeliveryOperationId: "app-delivery:app-item-1:1",
+          idempotencyKey: "app-delivery:app-item-1:1",
+        },
+      });
+      const sourceEventId = Number((result as any)[Symbol.for("may-agent.eventRowId")]);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(runs).toEqual([]);
+      expect(
+        getDb(root).prepare("SELECT status FROM event_pair_runs WHERE open_event_id = ?").get(sourceEventId),
+      ).toEqual({ status: "open" });
+    } finally {
+      router.close();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("reattaches a persisted bridge decision after restart", async () => {
     let sourceEventId = 0;
     const { root, router, runs } = fixture(
@@ -250,7 +326,9 @@ describe("command router human intent contract", () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(runs).toHaveLength(0);
-      expect(getDb(root).prepare("SELECT status FROM event_pair_runs WHERE open_event_id = ?").get(sourceEventId)).toEqual({ status: "closed" });
+      expect(
+        getDb(root).prepare("SELECT status FROM event_pair_runs WHERE open_event_id = ?").get(sourceEventId),
+      ).toEqual({ status: "closed" });
     } finally {
       router.close();
       closeDb(root);
@@ -493,7 +571,9 @@ describe("command router human intent contract", () => {
   });
 
   it("starts a fresh structured May turn for ordinary console input even when a session is targeted", async () => {
-    const { root, bus, router, sent, runs } = fixture(undefined, undefined, [{ disposition: "answer", response: "I reviewed the request." }]);
+    const { root, bus, router, sent, runs } = fixture(undefined, undefined, [
+      { disposition: "answer", response: "I reviewed the request." },
+    ]);
     try {
       bus.emit({
         type: "human.input.received",
@@ -517,7 +597,9 @@ describe("command router human intent contract", () => {
   });
 
   it("defaults a new May chat request to a structured deputy turn", async () => {
-    const { root, bus, router, runs } = fixture(undefined, undefined, [{ disposition: "answer", response: "The direct request is understood." }]);
+    const { root, bus, router, runs } = fixture(undefined, undefined, [
+      { disposition: "answer", response: "The direct request is understood." },
+    ]);
     try {
       bus.emit({
         type: "chat.start.requested",
@@ -550,7 +632,10 @@ describe("command router human intent contract", () => {
 
       expect(runs).toHaveLength(2);
       expect(runs.map((run) => run.opts?.toolPolicy)).toEqual(["deputy", "deputy"]);
-      expect(runs.map((run) => run.text)).toEqual([expect.stringContaining("from input"), expect.stringContaining("from fork")]);
+      expect(runs.map((run) => run.text)).toEqual([
+        expect.stringContaining("from input"),
+        expect.stringContaining("from fork"),
+      ]);
       await new Promise((resolve) => setTimeout(resolve, 0));
     } finally {
       router.close();
@@ -750,7 +835,9 @@ describe("command router human intent contract", () => {
 
       expect(runs).toHaveLength(1);
       expect(runs[0]?.opts).toMatchObject({ kind: "job", toolPolicy: "deputy", requireFinish: true });
-      const row = getDb(root).prepare("SELECT owner, data FROM events WHERE event_type = 'project.comment.created' ORDER BY id DESC LIMIT 1").get() as {
+      const row = getDb(root)
+        .prepare("SELECT owner, data FROM events WHERE event_type = 'project.comment.created' ORDER BY id DESC LIMIT 1")
+        .get() as {
         owner: string;
         data: string;
         id?: number;
@@ -761,8 +848,12 @@ describe("command router human intent contract", () => {
         projectPath: "projects/gym.app",
       });
       expect(JSON.parse(row.data).comment).toContain("The held-back Gym case passes.");
-      const intent = getDb(root).prepare("SELECT id FROM events WHERE event_type = 'project.comment.created' ORDER BY id DESC LIMIT 1").get() as { id: number };
-      const completion = getDb(root).prepare("SELECT data FROM events WHERE event_type = 'may.turn.completed' ORDER BY id DESC LIMIT 1").get() as {
+      const intent = getDb(root)
+        .prepare("SELECT id FROM events WHERE event_type = 'project.comment.created' ORDER BY id DESC LIMIT 1")
+        .get() as { id: number };
+      const completion = getDb(root)
+        .prepare("SELECT data FROM events WHERE event_type = 'may.turn.completed' ORDER BY id DESC LIMIT 1")
+        .get() as {
         data: string;
       };
       expect(JSON.parse(completion.data)).toMatchObject({
@@ -877,11 +968,15 @@ describe("command router human intent contract", () => {
       expect(runs[0]?.text).toContain("Do not choose break-glass again");
       const db = getDb(root);
       expect(
-        db.prepare("SELECT status FROM event_pair_runs WHERE pair_name = 'may.break-glass' AND correlation_key = ?").get("s_interrupted_privileged"),
+        db
+          .prepare("SELECT status FROM event_pair_runs WHERE pair_name = 'may.break-glass' AND correlation_key = ?")
+          .get("s_interrupted_privileged"),
       ).toEqual({ status: "closed" });
       expect(
         db
-          .prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'may.break-glass.failed' AND json_extract(data, '$.sourceEventId') = ?")
+          .prepare(
+            "SELECT COUNT(*) AS count FROM events WHERE event_type = 'may.break-glass.failed' AND json_extract(data, '$.sourceEventId') = ?",
+          )
           .get(sourceEventId),
       ).toEqual({ count: 1 });
 

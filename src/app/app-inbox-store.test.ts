@@ -11,7 +11,9 @@ import {
   getAppInboxItem,
   listAppInboxHealth,
   listAppInboxItems,
+  markAppInboxSendingDeliveriesUncertain,
   recordAppInboxDeliveryReceipt,
+  restoreReplayableAppInboxDeliveries,
   stageAppInboxClaimDelivery,
   waitAppInboxClaim,
   wakeAppInboxItemsWaitingOn,
@@ -318,6 +320,47 @@ describe("App inbox store", () => {
       status: "handling",
       result: { summary: "finished" },
       delivery: { status: "failed", failureReason: "no connected browser" },
+    });
+  });
+
+  it("replays only idempotent internal deliveries after restart", () => {
+    for (const [id, channel] of [
+      ["internal-delivery", "agent:evaluator"],
+      ["external-delivery", "telegram"],
+    ] as const) {
+      createAppInboxItem(db, {
+        id,
+        appId: "may",
+        source: { kind: "system", id: `event:${id}` },
+        input: { kind: "message", data: { message: id } },
+        channel,
+        now: 100,
+      });
+      const claim = claimAppInboxItem(db, id, "worker-1", 50, 100)!;
+      associateAppInboxClaimSession(db, claim, `session:${id}`, 101);
+      stageAppInboxClaimDelivery(
+        db,
+        claim,
+        {
+          channel,
+          sessionId: `session:${id}`,
+          requestId: `request:${id}`,
+          result: { summary: `${id} result` },
+        },
+        102,
+      );
+      expect(claimNextAppInboxDelivery(db, 103)).not.toBeNull();
+    }
+
+    expect(restoreReplayableAppInboxDeliveries(db, 200)).toBe(1);
+    expect(markAppInboxSendingDeliveriesUncertain(db, 200)).toBe(1);
+    expect(getAppInboxItem(db, "internal-delivery")?.delivery).toMatchObject({
+      channel: "agent:evaluator",
+      status: "pending",
+    });
+    expect(getAppInboxItem(db, "external-delivery")?.delivery).toMatchObject({
+      channel: "telegram",
+      status: "uncertain",
     });
   });
 
