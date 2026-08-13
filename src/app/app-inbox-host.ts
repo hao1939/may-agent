@@ -33,6 +33,12 @@ export type AppOwnerDispositionResult = {
 export type AppOwnerInvoker = (input: {
   app: AppDefinition;
   requests: AppRequest[];
+  transport?: {
+    channel: string;
+    channelThreadId?: string;
+    channelMessageId?: number;
+    conversationId?: string;
+  };
   onSessionStarted(sessionId: string): void;
 }) => Promise<AppOwnerDispositionResult[]>;
 
@@ -64,6 +70,9 @@ export type AdmitAppInput = {
   parentId?: string;
   conversationId?: string;
   conversationSequence?: number;
+  channel?: string;
+  channelThreadId?: string;
+  channelMessageId?: number;
   source: AppInputSource;
   input: AppInput;
   idempotencyKey?: string;
@@ -210,6 +219,16 @@ export class AppInboxHost {
       results = await this.#invokeOwner({
         app,
         requests,
+        ...(claims.length === 1 && claims[0]!.item.source.kind === "human" && claims[0]!.item.channel
+          ? {
+              transport: {
+                channel: claims[0]!.item.channel,
+                channelThreadId: claims[0]!.item.channelThreadId,
+                channelMessageId: claims[0]!.item.channelMessageId,
+                conversationId: claims[0]!.item.conversationId,
+              },
+            }
+          : {}),
         onSessionStarted: (sessionId) => {
           const normalized = requiredText(sessionId, "App owner session id");
           withTransaction(this.#db, () => {

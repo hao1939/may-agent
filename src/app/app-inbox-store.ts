@@ -11,6 +11,9 @@ export type AppInboxItem = {
   parentId?: string;
   conversationId?: string;
   conversationSequence?: number;
+  channel?: string;
+  channelThreadId?: string;
+  channelMessageId?: number;
   source: AppInputSource;
   input: AppInput;
   status: AppInboxStatus;
@@ -32,6 +35,9 @@ export type CreateAppInboxItem = {
   parentId?: string;
   conversationId?: string;
   conversationSequence?: number;
+  channel?: string;
+  channelThreadId?: string;
+  channelMessageId?: number;
   source: AppInputSource;
   input: AppInput;
   idempotencyKey?: string;
@@ -103,6 +109,9 @@ function rowToItem(row: InboxRow): AppInboxItem {
     parentId: optionalText(row.parent_id),
     conversationId: optionalText(row.conversation_id),
     conversationSequence: optionalNumber(row.conversation_seq),
+    channel: optionalText(row.channel),
+    channelThreadId: optionalText(row.channel_thread_id),
+    channelMessageId: optionalNumber(row.channel_message_id),
     source: {
       kind: requiredText(row.source_kind, "source_kind") as AppInputSource["kind"],
       id: requiredText(row.source_id, "source_id"),
@@ -145,6 +154,9 @@ function validateCreate(input: CreateAppInboxItem): void {
     (!Number.isSafeInteger(input.conversationSequence) || input.conversationSequence < 0)
   ) {
     throw new Error("App inbox conversationSequence must be a non-negative safe integer");
+  }
+  if (input.channelMessageId !== undefined && (!Number.isSafeInteger(input.channelMessageId) || input.channelMessageId <= 0)) {
+    throw new Error("App inbox channelMessageId must be a positive safe integer");
   }
 }
 
@@ -251,15 +263,19 @@ export function createAppInboxItem(
   const result = db.run(
     `INSERT OR IGNORE INTO app_inbox_items (
        id, app_id, parent_id, conversation_id, conversation_seq,
+       channel, channel_thread_id, channel_message_id,
        source_kind, source_id, input_kind, input_data, status,
        available_at, idempotency_key, created_at, updated_at
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?)`,
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?)`,
     [
       id,
       input.appId,
       input.parentId ?? null,
       input.conversationId ?? null,
       input.conversationSequence ?? null,
+      input.channel ?? null,
+      input.channelThreadId ?? null,
+      input.channelMessageId ?? null,
       input.source.kind,
       input.source.id,
       input.input.kind,

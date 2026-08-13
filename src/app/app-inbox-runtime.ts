@@ -158,6 +158,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         parentId: typeof data.parentId === "string" ? data.parentId : undefined,
         conversationId: typeof data.conversationId === "string" ? data.conversationId : undefined,
         conversationSequence: typeof data.conversationSequence === "number" ? data.conversationSequence : undefined,
+        channel: typeof data.channel === "string" ? data.channel : undefined,
+        channelThreadId: typeof data.channelThreadId === "string" ? data.channelThreadId : undefined,
+        channelMessageId: typeof data.channelMessageId === "number" ? data.channelMessageId : undefined,
         idempotencyKey:
           typeof data.idempotencyKey === "string" && data.idempotencyKey.trim() ? data.idempotencyKey.trim() : identity,
       });
