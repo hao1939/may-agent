@@ -44,6 +44,13 @@ export type AppInboxClaim = {
   owner: string;
 };
 
+export type AppInboxQuery = {
+  appId?: string;
+  status?: AppInboxStatus;
+  idempotencyKey?: string;
+  limit?: number;
+};
+
 type InboxRow = Record<string, unknown>;
 
 function requiredText(value: unknown, field: string): string {
@@ -130,6 +137,40 @@ function validateCreate(input: CreateAppInboxItem): void {
 export function getAppInboxItem(db: SqliteDb, id: string): AppInboxItem | null {
   const row = db.prepare("SELECT * FROM app_inbox_items WHERE id = ?").get(id);
   return row ? rowToItem(row) : null;
+}
+
+export function listAppInboxItems(db: SqliteDb, query: AppInboxQuery = {}): AppInboxItem[] {
+  const conditions: string[] = [];
+  const params: unknown[] = [];
+  if (query.appId !== undefined) {
+    conditions.push("app_id = ?");
+    params.push(requiredText(query.appId, "appId"));
+  }
+  if (query.status !== undefined) {
+    if (query.status !== "pending" && query.status !== "handling" && query.status !== "done") {
+      throw new Error(`Invalid App inbox status: ${String(query.status)}`);
+    }
+    conditions.push("status = ?");
+    params.push(query.status);
+  }
+  if (query.idempotencyKey !== undefined) {
+    conditions.push("idempotency_key = ?");
+    params.push(requiredText(query.idempotencyKey, "idempotencyKey"));
+  }
+  const limit = query.limit ?? 100;
+  if (!Number.isSafeInteger(limit) || limit <= 0 || limit > 500) {
+    throw new Error("App inbox query limit must be an integer from 1 to 500");
+  }
+  const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+  return db
+    .prepare(
+      `SELECT * FROM app_inbox_items
+       ${where}
+       ORDER BY created_at DESC, id DESC
+       LIMIT ?`,
+    )
+    .all(...params, limit)
+    .map(rowToItem);
 }
 
 export function createAppInboxItem(
