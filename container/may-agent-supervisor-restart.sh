@@ -75,7 +75,7 @@ if [ "$deployed" = "1" ]; then
     if supervisorctl status $runtime_services | grep -q "^may-agent[[:space:]].*RUNNING" \
       && supervisorctl status $runtime_services | grep -q "^may-agent-web[[:space:]].*RUNNING" \
       && supervisorctl status $runtime_services | grep -q "^may-agent-maintenance[[:space:]].*RUNNING" \
-      && curl -fsS "http://127.0.0.1:${WEB_PORT:-8080}/api/projects" >/dev/null 2>&1; then
+      && curl -fsS --max-time 6 "http://127.0.0.1:${WEB_PORT:-8080}/api/readiness" >/dev/null 2>&1; then
       health_ok=1
       break
     fi
@@ -99,7 +99,7 @@ if [ "$deployed" = "1" ]; then
     loaded="$(sha256sum "$target" | awk '{print $1}')"
     rollback_health=unhealthy
     if supervisorctl status $runtime_services | grep -q "^may-agent[[:space:]].*RUNNING" \
-      && curl -fsS "http://127.0.0.1:${WEB_PORT:-8080}/api/projects" >/dev/null 2>&1; then rollback_health=healthy; fi
+      && curl -fsS --max-time 6 "http://127.0.0.1:${WEB_PORT:-8080}/api/readiness" >/dev/null 2>&1; then rollback_health=healthy; fi
     emit_wake rolled_back
     settle rolled_back "$loaded" "$rollback_health" true health-check-failed
     finalized=1
