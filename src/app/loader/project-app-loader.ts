@@ -907,6 +907,7 @@ async function runTaskCapability(input: {
       recoveryOwner: PROJECT_APP_TASK_RECOVERY_OWNER,
       trace,
       executionPaths: input.executionPaths,
+      workflowInput: intent.input ?? {},
       executionTimeoutMs: PROJECT_APP_TASK_WORKFLOW_TIMEOUT_MS,
     });
     const done = result.type === "done";

@@ -712,6 +712,8 @@ export interface RunWorkflowDirectOpts {
   onEvent?: (event: WorkflowEvent) => void;
   trace?: EventTrace;
   executionPaths?: { appDir: string; projectDir: string; workspaceDir: string };
+  /** App-authored input exposed through the capability-scoped WorkflowContext. */
+  workflowInput?: unknown;
   /** Maximum wall-clock duration for the complete workflow execution. */
   executionTimeoutMs?: number;
 }
@@ -742,6 +744,7 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
     trace: opts.trace,
     runtimeCtx: opts.runtimeCtx,
     executionPaths: opts.executionPaths,
+    ...(opts.workflowInput !== undefined ? { workflowInput: opts.workflowInput } : {}),
     executionTimeoutMs: opts.executionTimeoutMs,
   });
 
@@ -811,6 +814,8 @@ export interface WorkflowToolOptions {
   runtimeCtx?: RuntimeCtx;
   /** Resolved app/domain paths supplied by Agent App infrastructure. */
   executionPaths?: { appDir: string; projectDir: string; workspaceDir: string };
+  /** App-authored input for a system-dispatched top-level workflow. */
+  workflowInput?: unknown;
   /** Maximum wall-clock duration for the complete workflow execution. */
   executionTimeoutMs?: number;
   /** Trace inherited from the event that started this workflow. */
@@ -1919,6 +1924,9 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         completedSteps,
         steeringQueue,
         previousRun,
+        !previousRun && opts.workflowInput !== undefined
+          ? { value: opts.workflowInput }
+          : undefined,
       );
 
       activeSteeringQueue = null;
