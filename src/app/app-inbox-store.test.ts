@@ -8,6 +8,7 @@ import {
   completeAppInboxClaim,
   createAppInboxItem,
   getAppInboxItem,
+  recoverLeasedAppInboxItems,
   waitAppInboxClaim,
   wakeAppInboxItemsWaitingOn,
 } from "./app-inbox-store.js";
@@ -105,6 +106,29 @@ describe("App inbox store", () => {
     expect(waitAppInboxClaim(db, claim, { kind: "task", id: "task-1" }, { now: 102 })).toBe(true);
     expect(getAppInboxItem(db, "item-1")?.sessionId).toBeUndefined();
     expect(associateAppInboxClaimSession(db, claim, "stale-session", 103)).toBe(false);
+  });
+
+  it("reclaims leased attempts after host restart without disturbing dependency waits", () => {
+    create("running-item", { now: 100 });
+    create("waiting-item", { now: 100 });
+    const running = claimAppInboxItem(db, "running-item", "old-host", 10_000, 100)!;
+    const waiting = claimAppInboxItem(db, "waiting-item", "old-host", 10_000, 100)!;
+    associateAppInboxClaimSession(db, running, "old-session", 101);
+    waitAppInboxClaim(db, waiting, { kind: "task", id: "task-1" }, { reviewAfterMs: 500, now: 101 });
+
+    expect(recoverLeasedAppInboxItems(db, 200)).toBe(1);
+    expect(getAppInboxItem(db, "running-item")).toMatchObject({
+      status: "pending",
+      availableAt: 200,
+      sessionId: undefined,
+    });
+    expect(getAppInboxItem(db, "running-item")?.lease).toBeUndefined();
+    expect(getAppInboxItem(db, "running-item")?.updatedAt).toBe(200);
+    expect(getAppInboxItem(db, "waiting-item")).toMatchObject({
+      status: "handling",
+      availableAt: 601,
+      waitingOn: { kind: "task", id: "task-1" },
+    });
   });
 
   it("wakes dependency waits and also requeues them at review time", () => {

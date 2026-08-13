@@ -10,6 +10,7 @@ describe("manager App owner adapter", () => {
   it("runs one schema-bound owner session for a batch", async () => {
     const calls: Array<{ agent: string; prompt: string; options: Record<string, unknown> }> = [];
     const manager: AppOwnerManager = {
+      hasAgent: () => true,
       run(agent, prompt, options) {
         calls.push({ agent, prompt, options });
         return "session-1";
@@ -69,6 +70,7 @@ describe("manager App owner adapter", () => {
   it("cancels a newly started session when its claim cannot be associated", async () => {
     const cancelled: string[] = [];
     const manager: AppOwnerManager = {
+      hasAgent: () => true,
       run: () => "session-stale",
       waitFor: async () => ({ status: "done", structuredResult: { dispositions: [] } }),
       cancel: (sessionId) => cancelled.push(sessionId),
@@ -95,6 +97,7 @@ describe("manager App owner adapter", () => {
 
   it("rejects an unstructured successful owner result", async () => {
     const manager: AppOwnerManager = {
+      hasAgent: () => true,
       run: () => "session-1",
       waitFor: async () => ({ status: "done", structuredResult: { summary: "not a batch" } }),
       cancel() {},
