@@ -210,12 +210,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
         clients.delete(sock);
       }
     }
-    if (
-      delivered > 0 &&
-      (event.type === "session.idle" ||
-        event.type === "session.end" ||
-        event.type === "app.response.delivery.requested")
-    ) {
+    if (delivered > 0 && (event.type === "session.idle" || event.type === "session.end")) {
       onDelivered?.(event, delivered);
     }
   }
