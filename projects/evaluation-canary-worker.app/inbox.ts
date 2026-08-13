@@ -1,4 +1,4 @@
-import { Type, defineApp } from "@may-agent/sdk/app";
+import { Type, defineApp } from "@may-agent/sdk";
 
 const workerProbeSchema = Type.Object(
   {
