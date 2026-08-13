@@ -449,6 +449,40 @@ function connectWs() {
       }
 
       switch (eventType) {
+        case 'app_response_delivery_requested': {
+          if (typeof data.text !== 'string') break;
+          const div = document.createElement('div');
+          div.className = 'msg assistant';
+          renderAssistantMsg(div, data.text);
+          messages.appendChild(div);
+          chatScrollToBottom(messages);
+
+          const deliveryIdentity = [
+            data.operationId,
+            data.appInboxItemId,
+            data.appInboxRequestId,
+            data.sessionId,
+            data.channel,
+          ];
+          if (deliveryIdentity.every(value => typeof value === 'string' && value.length > 0)) {
+            socket.send(JSON.stringify({
+              type: 'channel.delivery.completed',
+              source: 'web-ui',
+              owner: typeof event.owner === 'string' ? event.owner : 'app:may',
+              target: { human: true },
+              data: {
+                channel: data.channel,
+                sessionId: data.sessionId,
+                resultEventType: event.type,
+                operationId: data.operationId,
+                appInboxItemId: data.appInboxItemId,
+                appInboxRequestId: data.appInboxRequestId,
+                idempotencyKey: `web-ui-delivery:${data.operationId}`,
+              },
+            }));
+          }
+          break;
+        }
         case 'text':
           if (!currentAssistant) {
             currentAssistant = document.createElement('div');
