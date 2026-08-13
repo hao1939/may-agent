@@ -26,7 +26,10 @@ function taskConfig(paths: NonNullable<RuntimeAppReadOptions["executionPaths"]>)
   };
 }
 
-function readTaskView(opts: RuntimeAppReadOptions, taskId: string): TaskView | null {
+export function readRuntimeTaskView(
+  opts: Pick<RuntimeAppReadOptions, "executionPaths">,
+  taskId: string,
+): TaskView | null {
   if (!opts.executionPaths) return null;
   try {
     const tree = readTaskState(taskConfig(opts.executionPaths));
@@ -56,7 +59,7 @@ function readTaskView(opts: RuntimeAppReadOptions, taskId: string): TaskView | n
   }
 }
 
-function executionView(opts: RuntimeAppReadOptions, id: string): ExecutionView | null {
+export function readRuntimeExecutionView(opts: Pick<RuntimeAppReadOptions, "getDb">, id: string): ExecutionView | null {
   const result = getExecutionResultFromDb(opts.getDb(), id);
   if (!result) return null;
   const status = result.status === "escalated" ? "blocked" : result.status;
@@ -88,10 +91,10 @@ export function createRuntimeAppRead(opts: RuntimeAppReadOptions): AppRead {
       return getAppInboxItem(opts.getDb(), itemId)?.result ?? null;
     },
     async task(taskId) {
-      return readTaskView(opts, taskId);
+      return readRuntimeTaskView(opts, taskId);
     },
     async execution(executionId) {
-      return executionView(opts, executionId);
+      return readRuntimeExecutionView(opts, executionId);
     },
     async metric(metricId) {
       return metricView(opts.metrics, metricId);

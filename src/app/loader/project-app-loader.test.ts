@@ -42,6 +42,7 @@ import {
   projectAppGlobalConcurrency,
   projectAppHostFingerprint,
   recoverInstalledProjectAppTasks,
+  readLoadedProjectAppTaskView,
   refreshProjectAppTaskProgressRoute,
   type ProjectAppDescriptor,
 } from "./project-app-loader";
@@ -127,6 +128,12 @@ describe("App inbox task attachment", () => {
       expect(attached.taskId).toBe("work/app-inbox");
       await waitUntil(() => events.some((event) => event.type === "app.dependency.completed"));
       expect(await attached.isComplete()).toBe(true);
+      expect(readLoadedProjectAppTaskView({ bus, appDir: f.appDir, taskId: attached.taskId })).toMatchObject({
+        id: "work/app-inbox",
+        status: "done",
+        summary: "workflow done",
+        evidence: ["proof"],
+      });
       expect(
         events.filter((event) => event.type === "app.dependency.completed" && event.data?.id === "work/app-inbox"),
       ).toHaveLength(1);

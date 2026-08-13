@@ -64,6 +64,7 @@ describe("manager App owner adapter", () => {
       },
     });
     expect(calls[0]!.prompt).toContain('"id": "probe-1"');
+    expect(calls[0]!.prompt).toContain("current read-only observation");
     expect(calls[0]!.prompt).not.toContain("lease_generation");
   });
 
