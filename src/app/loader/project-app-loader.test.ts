@@ -56,26 +56,31 @@ describe("project app host backpressure", () => {
 
   it("reuses the exact App route for high-volume task-session progress", () => {
     const descriptors = ["first", "target", "last"].map((id) => ({ id }) as ProjectAppDescriptor);
-    const routes = new Map<string, string>();
+    const routes = new Map<string, { appId: string; refreshedAt: number }>();
     const visited: string[] = [];
     const refresh = (descriptor: ProjectAppDescriptor): boolean => {
       visited.push(descriptor.id);
       return descriptor.id === "target";
     };
 
-    expect(refreshProjectAppTaskProgressRoute(descriptors, routes, "session-1", refresh)).toBe(true);
+    expect(refreshProjectAppTaskProgressRoute(descriptors, routes, "session-1", 100, refresh)).toBe(true);
     expect(visited).toEqual(["first", "target"]);
-    expect(routes.get("session-1")).toBe("target");
+    expect(routes.get("session-1")).toEqual({ appId: "target", refreshedAt: 100 });
 
     visited.length = 0;
-    expect(refreshProjectAppTaskProgressRoute(descriptors, routes, "session-1", refresh)).toBe(true);
+    expect(refreshProjectAppTaskProgressRoute(descriptors, routes, "session-1", 101, refresh)).toBe(true);
+    expect(visited).toEqual([]);
+
+    visited.length = 0;
+    expect(refreshProjectAppTaskProgressRoute(descriptors, routes, "session-1", 60_100, refresh)).toBe(true);
     expect(visited).toEqual(["target"]);
+    expect(routes.get("session-1")).toEqual({ appId: "target", refreshedAt: 60_100 });
 
     visited.length = 0;
-    routes.set("session-1", "removed-app");
-    expect(refreshProjectAppTaskProgressRoute(descriptors, routes, "session-1", refresh)).toBe(true);
+    routes.set("session-1", { appId: "removed-app", refreshedAt: 60_100 });
+    expect(refreshProjectAppTaskProgressRoute(descriptors, routes, "session-1", 60_101, refresh)).toBe(true);
     expect(visited).toEqual(["first", "target"]);
-    expect(routes.get("session-1")).toBe("target");
+    expect(routes.get("session-1")).toEqual({ appId: "target", refreshedAt: 60_101 });
   });
 });
 
