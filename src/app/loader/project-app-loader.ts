@@ -2358,7 +2358,9 @@ function installSchedules(opts: ProjectAppLoaderOptions, cron: Cron, descriptor:
 
 const appRouterDescriptorsByBus = new WeakMap<EventBus, ProjectAppDescriptor[]>();
 const appRouterOptionsByBus = new WeakMap<EventBus, ProjectAppLoaderOptions>();
-const appTaskProgressRoutesByBus = new WeakMap<EventBus, Map<string, string>>();
+export const PROJECT_APP_TASK_PROGRESS_REFRESH_INTERVAL_MS = 60_000;
+export type ProjectAppTaskProgressRoute = { appId: string; refreshedAt: number };
+const appTaskProgressRoutesByBus = new WeakMap<EventBus, Map<string, ProjectAppTaskProgressRoute>>();
 
 /**
  * Keep high-volume session progress on its exact App after the first durable
@@ -2367,22 +2369,34 @@ const appTaskProgressRoutesByBus = new WeakMap<EventBus, Map<string, string>>();
  */
 export function refreshProjectAppTaskProgressRoute(
   descriptors: readonly ProjectAppDescriptor[],
-  routes: Map<string, string>,
+  routes: Map<string, ProjectAppTaskProgressRoute>,
   sessionId: string,
+  observedAt: number,
   refresh: (descriptor: ProjectAppDescriptor) => boolean,
 ): boolean {
   const normalizedSessionId = sessionId.trim();
   if (!normalizedSessionId) return false;
-  const cachedAppId = routes.get(normalizedSessionId);
-  if (cachedAppId) {
-    const cached = descriptors.find((descriptor) => descriptor.id === cachedAppId);
-    if (cached && refresh(cached)) return true;
+  const now = Number.isFinite(observedAt) ? observedAt : Date.now();
+  const cachedRoute = routes.get(normalizedSessionId);
+  if (cachedRoute) {
+    const cached = descriptors.find((descriptor) => descriptor.id === cachedRoute.appId);
+    if (
+      cached &&
+      now >= cachedRoute.refreshedAt &&
+      now - cachedRoute.refreshedAt < PROJECT_APP_TASK_PROGRESS_REFRESH_INTERVAL_MS
+    ) {
+      return true;
+    }
+    if (cached && refresh(cached)) {
+      routes.set(normalizedSessionId, { appId: cached.id, refreshedAt: now });
+      return true;
+    }
     routes.delete(normalizedSessionId);
   }
   for (const descriptor of descriptors) {
-    if (descriptor.id === cachedAppId) continue;
+    if (descriptor.id === cachedRoute?.appId) continue;
     if (!refresh(descriptor)) continue;
-    routes.set(normalizedSessionId, descriptor.id);
+    routes.set(normalizedSessionId, { appId: descriptor.id, refreshedAt: now });
     return true;
   }
   return false;
@@ -3006,6 +3020,7 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
         appRouterDescriptorsByBus.get(opts.bus) ?? [],
         progressRoutes,
         progressSessionId,
+        observedAt,
         (descriptor) =>
           Boolean(
             descriptor.app.tasks &&
@@ -3041,7 +3056,10 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
           startedSessionId,
         );
         if (association.status === "recorded") {
-          progressRoutes.set(startedSessionId, descriptor.id);
+          progressRoutes.set(startedSessionId, {
+            appId: descriptor.id,
+            refreshedAt: typeof event.timestamp === "number" ? event.timestamp : Date.now(),
+          });
         } else {
           progressRoutes.delete(startedSessionId);
           interruptSupersededOwnerSession(
