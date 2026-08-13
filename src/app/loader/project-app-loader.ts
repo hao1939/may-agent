@@ -2749,7 +2749,8 @@ function recoverInterruptedProjectAppTasks(
   opts: ProjectAppLoaderOptions,
   descriptors: ProjectAppDescriptor[],
   controllers: Map<string, ProjectAppTaskController>,
-): void {
+): Set<string> {
+  const claimedSessionIds = new Set<string>();
   for (const descriptor of descriptors) {
     if (!descriptor.app.tasks) continue;
     const controller = controllers.get(descriptor.id);
@@ -2759,8 +2760,19 @@ function recoverInterruptedProjectAppTasks(
       owner: descriptor.owner,
       maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
     });
-    for (const recovery of recoverableProjectAppTaskAttempts(config)) {
+    for (const recovery of recoverableProjectAppTaskAttempts(config, Date.now(), true)) {
       if (recovery.sessionId && hasLiveProjectTaskSession(opts, recovery.sessionId)) {
+        continue;
+      }
+      if (
+        recovery.sessionId &&
+        claimFreshProjectAppTaskSessionForStartup(
+          config,
+          { taskId: recovery.taskId, generation: recovery.taskGeneration },
+          recovery.sessionId,
+        )
+      ) {
+        claimedSessionIds.add(recovery.sessionId);
         continue;
       }
       const released = releaseInterruptedProjectAppTaskAttempt(
@@ -2833,6 +2845,7 @@ function recoverInterruptedProjectAppTasks(
       for (const attention of attentions) acknowledgeProjectAppTaskRecoveryAttention(config, attention.taskId);
     }
   }
+  return claimedSessionIds;
 }
 
 /**
@@ -2841,8 +2854,8 @@ function recoverInterruptedProjectAppTasks(
  * generic stale-session resumption so task-owned sessions are reconciled by
  * their durable task state first.
  */
-export function recoverInstalledProjectAppTasks(opts: ProjectAppLoaderOptions): void {
-  recoverInterruptedProjectAppTasks(
+export function recoverInstalledProjectAppTasks(opts: ProjectAppLoaderOptions): Set<string> {
+  return recoverInterruptedProjectAppTasks(
     opts,
     appRouterDescriptorsByBus.get(opts.bus) ?? [],
     appTaskControllersByBus.get(opts.bus) ?? new Map(),

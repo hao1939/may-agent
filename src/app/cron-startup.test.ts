@@ -26,7 +26,7 @@ describe("cron startup recovery", () => {
       'import { recoverInstalledProjectAppTasks } from "./loader/project-app-loader.js";',
     );
     const recoveryCall = source.indexOf(
-      "recoverInstalledProjectAppTasks({ ...loaderOpts, agentCrons: getAgentCrons() });",
+      "const claimedProjectTaskSessionIds = recoverInstalledProjectAppTasks({",
     );
     const staleResume = source.indexOf("manager.resumeStaleSessions(");
 
@@ -66,6 +66,22 @@ describe("cron startup recovery", () => {
         autoClose: "never",
       }),
     ).toEqual({ resume: true });
+  });
+
+  it("resumes only a task-bound session atomically claimed by project-app recovery", () => {
+    const appDir = mkdtempSync(join(tmpdir(), "may-claimed-task-app-"));
+    try {
+      const persisted = session(appDir, "project-app-task-owner");
+      expect(shouldResumeStartupSession("claimed-session", persisted, new Set(["claimed-session"]))).toEqual({
+        resume: true,
+      });
+      expect(shouldResumeStartupSession("different-session", persisted, new Set(["claimed-session"]))).toEqual({
+        resume: false,
+        reason: "Task-bound project session was not claimed by project-app recovery during startup",
+      });
+    } finally {
+      rmSync(appDir, { recursive: true, force: true });
+    }
   });
 
   it("leaves the exact stale parent and completing child sessions to project-app recovery", () => {
