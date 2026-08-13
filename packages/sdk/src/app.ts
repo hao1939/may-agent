@@ -1,5 +1,22 @@
 import type { TSchema } from "@earendil-works/pi-ai";
-import type { EventSelector, ProjectAppTaskIntent } from "./project-app.js";
+import type { EventSelector } from "./event.js";
+import type { TaskIntent } from "./task.js";
+
+export { Type } from "@earendil-works/pi-ai";
+export type { Static, TSchema } from "@earendil-works/pi-ai";
+export type { AppEvent, AppEventTarget, EventSelector } from "./event.js";
+export type { Condition, TaskIntent, TaskMode, TaskPriority } from "./task.js";
+export type {
+  AppRead,
+  ExecutionResult,
+  ExecutionView,
+  Logger,
+  MetricView,
+  ObserverContext,
+  TaskView,
+  WorkflowContext,
+  WorkflowInput,
+} from "./workflow.js";
 
 /** Canonical envelope for durable input addressed to an App. */
 export type AppInput<TData = unknown> = {
@@ -25,8 +42,6 @@ export type AppRequest<TData = unknown> = {
   parentId?: string;
   input: AppInput<TData>;
 };
-
-export type TaskIntent = ProjectAppTaskIntent;
 
 export type AppTaskAttachment =
   | { kind: "existing"; taskId: string }
