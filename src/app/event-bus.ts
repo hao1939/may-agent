@@ -245,6 +245,9 @@ export type SystemEvent =
         parentId?: string;
         conversationId?: string;
         conversationSequence?: number;
+        channel?: string;
+        channelThreadId?: string;
+        channelMessageId?: number;
         idempotencyKey?: string;
       };
     }

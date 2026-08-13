@@ -84,12 +84,14 @@ export type AppOwnerManager = {
     task: string,
     options: {
       source: string;
-      kind: "call";
+      kind: "call" | "job";
       projectId: string;
       requestId: string;
+      conversationId?: string;
+      channelMessageId?: number;
       requireFinish: true;
       outputSchema: typeof appOwnerBatchResultSchema;
-      toolPolicy: "full";
+      toolPolicy: "full" | "deputy";
     },
   ): string;
   waitFor(sessionId: string): Promise<{
@@ -101,13 +103,18 @@ export type AppOwnerManager = {
   cancel(sessionId: string): void;
 };
 
-function ownerPrompt(app: AppDefinition, requests: AppRequest[]): string {
+function ownerPrompt(app: AppDefinition, requests: AppRequest[], humanResponse: boolean): string {
   return [
     `You are the owner of App ${app.id}. Handle this bounded inbox batch.`,
     "Return exactly one disposition for every requestId by calling finish() with the required structured result.",
     "A complete disposition answers or finishes this input. A delegate disposition creates one child App input. A task disposition links durable desired work.",
     "If a request has dependency, it is the current read-only observation of the exact child or task that woke this request. Review that observation instead of querying runtime storage.",
     "Do not invent lifecycle states, mutate inbox storage, or omit a request. Preserve each requestId exactly.",
+    ...(humanResponse
+      ? [
+          "This is one human-origin request. Put the exact concise human-facing progress or final reply in the finish summary as well as in the disposition response when completing.",
+        ]
+      : []),
     "",
     "## App requests",
     "```json",
@@ -125,15 +132,19 @@ function admittedBatch(value: unknown): AppOwnerDispositionResult[] {
 }
 
 export function createManagerAppOwnerInvoker(manager: AppOwnerManager): AppOwnerInvoker {
-  return async ({ app, requests, onSessionStarted }) => {
-    const sessionId = manager.run(app.owner, ownerPrompt(app, requests), {
-      source: "app-inbox-owner",
-      kind: "call",
+  return async ({ app, requests, transport, onSessionStarted }) => {
+    const sessionId = manager.run(app.owner, ownerPrompt(app, requests, Boolean(transport)), {
+      source: transport?.channel ?? "app-inbox-owner",
+      kind: transport ? "job" : "call",
       projectId: app.id,
-      requestId: `app-inbox:${requests.map((request) => request.id).join(",")}`,
+      requestId: transport
+        ? `app-inbox-human:${requests[0]!.id}`
+        : `app-inbox:${requests.map((request) => request.id).join(",")}`,
+      conversationId: transport?.conversationId,
+      channelMessageId: transport?.channelMessageId,
       requireFinish: true,
       outputSchema: appOwnerBatchResultSchema,
-      toolPolicy: "full",
+      toolPolicy: transport ? "deputy" : "full",
     });
     try {
       onSessionStarted(sessionId);
