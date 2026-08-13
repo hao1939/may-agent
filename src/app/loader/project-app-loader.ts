@@ -1297,6 +1297,7 @@ export type DeployReceipt = {
   project: string;
   taskId: string;
   artifactSha: string;
+  sourceCommit?: string;
   phase: "requested" | "succeeded" | "failed" | "rolled_back";
   requestedAt: string;
   verification: string;

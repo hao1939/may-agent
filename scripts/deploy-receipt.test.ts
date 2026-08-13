@@ -16,7 +16,7 @@ describe("restart-aware deploy receipts", () => {
   it("persists requested metadata before interruption and tells recovery to wait", () => {
     const f = fixture();
     try {
-      expect(requestReceipt(f.path, "may-agent", "task-1", "correlation-1", "abc123")).toBe(true);
+      expect(requestReceipt(f.path, "may-agent", "task-1", "correlation-1", "abc123", "deadbeef")).toBe(true);
       const receipt = JSON.parse(readFileSync(f.path, "utf8"));
       expect(receipt).toEqual({
         version: 1,
@@ -24,6 +24,7 @@ describe("restart-aware deploy receipts", () => {
         project: "may-agent",
         taskId: "task-1",
         artifactSha: "abc123",
+        sourceCommit: "deadbeef",
         phase: "requested",
         requestedAt: expect.any(String),
         verification: expect.stringContaining("complete the owner task without redeploying"),
@@ -130,5 +131,16 @@ describe("restart-aware deploy receipts", () => {
     const restarter = readFileSync(new URL("../container/may-agent-supervisor-restart.sh", import.meta.url), "utf8");
     expect(restarter).toContain('health_attempts="${MAY_AGENT_HEALTH_ATTEMPTS:-90}"');
     expect(restarter.match(/if wait_for_health; then/g)).toHaveLength(2);
+  });
+
+  it("builds deployable artifacts from one immutable tested commit", () => {
+    const deploy = readFileSync(new URL("./deploy.sh", import.meta.url), "utf8");
+    expect(deploy).toContain('source_commit="$(git rev-parse --verify HEAD)"');
+    expect(deploy).toContain('git archive "$source_commit" | tar -x -C "$build_dir"');
+    expect(deploy).toContain(
+      "bun test packages/control/src/client.test.ts packages/control/src/control-socket.test.ts src/app/modes/emit-mode.test.ts",
+    );
+    expect(deploy).toContain('bundle/may-agent.provenance.json');
+    expect(deploy).toContain('"$artifact_sha" "$source_commit"');
   });
 });
