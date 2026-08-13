@@ -1,17 +1,10 @@
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { Type } from "@earendil-works/pi-ai";
 import type { SubagentManager } from "../lib/index.js";
 import { log } from "../lib/log.js";
 import { getDb } from "../lib/requests.js";
 import type { ChatSession } from "./chat-session.js";
-import {
-  APP_MESSAGE_INGRESS_ACCEPTED,
-  childEventTrace,
-  EVENT_ROW_ID,
-  type EventBus,
-  type EventTrace,
-} from "./event-bus.js";
+import { childEventTrace, EVENT_ROW_ID, type EventBus, type EventTrace } from "./event-bus.js";
 import { getTelegramConversationView, type TelegramConversationView } from "../lib/db/notifications.js";
 import { isRecord, normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 import {
@@ -32,7 +25,6 @@ export interface CommandRouterOptions {
   projectRoot: string;
   persistDir?: string;
   routeHumanInputToApp?: boolean;
-  routeMessagesToApp?: boolean;
   reload: () => void | Promise<void>;
   restart: () => void;
   shutdown: () => void;
@@ -42,31 +34,6 @@ export interface CommandRouter {
   handleInput: (message: string, source?: string) => void;
   close: () => void;
 }
-
-const mayBridgeDecisionSchema = Type.Object({
-  disposition: Type.Union([
-    Type.Literal("answer"),
-    Type.Literal("clarify"),
-    Type.Literal("reject"),
-    Type.Literal("route"),
-  ]),
-  response: Type.String({ minLength: 1 }),
-  targetProject: Type.Optional(Type.String({ minLength: 1 })),
-  instruction: Type.Optional(Type.String({ minLength: 1 })),
-});
-
-type MayBridgeDecision = {
-  disposition: "answer" | "clarify" | "reject" | "route";
-  response: string;
-  targetProject?: string;
-  instruction?: string;
-};
-
-type MayBridgeInput = {
-  sourceEventId: number;
-  input: Record<string, unknown>;
-  trace?: EventTrace;
-};
 
 function eventData(event: unknown): Record<string, unknown> {
   if (!isRecord(event)) return {};
@@ -222,8 +189,6 @@ function buildDeliveredHumanMessage(message: string, context: Record<string, unk
  */
 export function attachCommandRouter(options: CommandRouterOptions): CommandRouter {
   const { bus, manager } = options;
-  const activeMayBridges = new Set<number>();
-  const maxConcurrentMayBridges = 2;
 
   function eventRowId(event: unknown): number | null {
     if (!isRecord(event)) return null;
@@ -318,42 +283,6 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       /* the platform convention still has one concrete fallback */
     }
     return "tech-lead";
-  }
-
-  function mayBridgeInput(event: unknown): MayBridgeInput | null {
-    if (!isRecord(event)) return null;
-    if (options.routeMessagesToApp && (event as Record<PropertyKey, unknown>)[APP_MESSAGE_INGRESS_ACCEPTED] === true) {
-      return null;
-    }
-    const data = eventData(event);
-    const direct = event.type === "message.created";
-    const periodic = event.type === "owner.inbox.accepted" && data.sourceEventType === "message.created";
-    if (!direct && !periodic) return null;
-
-    const input = periodic && isRecord(data.input) ? data.input : data;
-    // App inbox compatibility replies are terminal delivery to the legacy
-    // sender, not a fresh request for May's old conversation bridge.
-    if (nonEmptyString(input.appResponseFor)) return null;
-    const owner = ownerAgent(event.owner);
-    const recipient = ownerAgent(input.to);
-    const sender = ownerAgent(input.from) ?? ownerAgent(event.source);
-    if (owner !== "may" || recipient !== "may" || !sender || sender === "may") return null;
-    if (["human", "operator", "telegram", "console", "socket"].includes(sender)) return null;
-    if (["chat.start", "fork"].includes(String(input.intent ?? ""))) return null;
-
-    const sourceEventId = Number(periodic ? data.sourceEventId : (event as Record<PropertyKey, unknown>)[EVENT_ROW_ID]);
-    if (!Number.isInteger(sourceEventId) || sourceEventId <= 0) return null;
-    const trace =
-      isRecord(event.trace) && typeof event.trace.traceId === "string" ? (event.trace as EventTrace) : undefined;
-    return { sourceEventId, input, trace };
-  }
-
-  function bridgeTrace(sourceEventId: number, trace?: EventTrace): EventTrace {
-    return {
-      traceId: trace?.traceId ?? `event:${sourceEventId}`,
-      parentEventId: sourceEventId,
-      links: [{ eventId: sourceEventId, type: "reference", label: "may-conversation-bridge" }],
-    };
   }
 
   function normalizedAppId(value: unknown): string | null {
@@ -819,390 +748,6 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     }
   }
 
-  function bridgeReplyTarget(input: Record<string, unknown>): string | null {
-    const sender = ownerAgent(input.from);
-    if (!sender || sender === "may") return null;
-    return sender === "operator" ? "human" : sender;
-  }
-
-  function emitMayBridgeReply(
-    sourceEventId: number,
-    input: Record<string, unknown>,
-    content: string,
-    phase: "accepted" | "completed",
-    trace?: EventTrace,
-  ): number | null {
-    const target = bridgeReplyTarget(input);
-    if (!target || !content.trim()) return null;
-    const emitted = bus.emit({
-      type: "message.created",
-      source: "agent:may",
-      owner: normalizeEventOwner(target),
-      urgency: phase === "accepted" ? "high" : "normal",
-      data: {
-        from: "may",
-        to: target,
-        content: content.trim(),
-        intent: phase === "accepted" ? "status-update" : "result",
-        priority: phase === "accepted" ? "P1" : "P2",
-        ...(phase === "accepted"
-          ? { bridgeAcknowledgementFor: sourceEventId }
-          : { bridgeCompletionFor: sourceEventId }),
-      },
-      trace: bridgeTrace(sourceEventId, trace),
-    } as any);
-    const eventId = Number(emitted[EVENT_ROW_ID]);
-    return Number.isInteger(eventId) && eventId > 0 ? eventId : null;
-  }
-
-  function resolveMayBridge(
-    sourceEventId: number,
-    outcome: "fulfilled" | "rejected" | "failed",
-    summary: string,
-    evidenceEventId: number | null,
-    trace?: EventTrace,
-  ): void {
-    bus.emit({
-      type: "message.resolved",
-      source: "handler:may-conversation-bridge",
-      owner: "agent:may",
-      data: {
-        openEventId: sourceEventId,
-        openEventType: "message.created",
-        disposition: outcome === "rejected" ? "rejected" : "answered",
-        outcome,
-        summary,
-        bridgeFinalDelivered: true,
-        taskRefs: [],
-        ...(evidenceEventId ? { evidenceEventId } : {}),
-      },
-      trace: {
-        ...bridgeTrace(sourceEventId, trace),
-        links: [{ eventId: sourceEventId, type: "closure", label: "message.resolved" }],
-      },
-    } as any);
-  }
-
-  function routeMayBridgeToApp(
-    sourceEventId: number,
-    input: Record<string, unknown>,
-    decision: MayBridgeDecision,
-    trace?: EventTrace,
-  ): boolean {
-    const requestedProject = normalizedAppId(decision.targetProject);
-    const fallbackProject = normalizedAppId("may-agent");
-    const project = requestedProject ?? fallbackProject;
-    if (!project) return false;
-    const instruction = decision.instruction?.trim() || String(input.content ?? "").trim();
-    if (!instruction) return false;
-
-    bus.emit({
-      type: "project.owner.requested",
-      source: "agent:may",
-      owner: "agent:may",
-      target: { project },
-      data: {
-        project,
-        projectId: project,
-        reason: requestedProject ? "may-conversation-bridge" : "may-ownership-gap",
-        instruction,
-        inputEventId: sourceEventId,
-        inputEventType: "message.created",
-        inputEventData: input,
-      },
-      trace: bridgeTrace(sourceEventId, trace),
-    } as any);
-    bus.emit({
-      type: "message.progressed",
-      source: "handler:may-conversation-bridge",
-      owner: "agent:may",
-      data: {
-        sourceEventId,
-        sourceEventType: "message.created",
-        disposition: "delegated",
-        targetProject: project,
-        summary: decision.response.trim(),
-      },
-      trace: bridgeTrace(sourceEventId, trace),
-    } as any);
-    return true;
-  }
-
-  function mayBridgeAttempts(sourceEventId: number): Array<{ sessionId: string; status: string | null }> {
-    if (!options.persistDir) return [];
-    const db = getDb(options.persistDir);
-    const rows = db
-      .prepare(
-        `SELECT json_extract(e.data, '$.sessionId') AS sessionId, s.status
-         FROM events e
-         LEFT JOIN sessions s ON s.sessionId = json_extract(e.data, '$.sessionId')
-         WHERE e.event_type = 'may.bridge.started'
-           AND json_extract(e.data, '$.sourceEventId') = ?
-         ORDER BY e.id DESC`,
-      )
-      .all(sourceEventId) as Array<{ sessionId?: unknown; status?: unknown }>;
-    return rows
-      .map((row) => ({
-        sessionId: typeof row.sessionId === "string" ? row.sessionId : "",
-        status: typeof row.status === "string" ? row.status : null,
-      }))
-      .filter((row) => row.sessionId);
-  }
-
-  function mayBridgeDelegated(sourceEventId: number): boolean {
-    if (!options.persistDir) return false;
-    return Boolean(
-      getDb(options.persistDir)
-        .prepare(
-          `SELECT id FROM events
-           WHERE event_type = 'message.progressed'
-             AND json_extract(data, '$.sourceEventId') = ?
-             AND json_extract(data, '$.disposition') = 'delegated'
-           LIMIT 1`,
-        )
-        .get(sourceEventId),
-    );
-  }
-
-  function startNextMayBridge(excludeSourceEventId?: number): void {
-    if (!options.persistDir || activeMayBridges.size >= maxConcurrentMayBridges) return;
-    const rows = getDb(options.persistDir)
-      .prepare(
-        `SELECT p.open_event_id AS sourceEventId, e.data
-         FROM event_pair_runs p
-         JOIN events e ON e.id = p.open_event_id
-         WHERE p.pair_name = 'owner_inbox'
-           AND p.status IN ('open', 'orphan')
-           AND e.event_type = 'message.created'
-           AND replace(COALESCE(json_extract(e.data, '$.to'), ''), 'agent:', '') = 'may'
-           AND p.open_event_id != COALESCE(?, -1)
-           AND NOT EXISTS (
-             SELECT 1 FROM events progress
-             WHERE progress.event_type = 'message.progressed'
-               AND json_extract(progress.data, '$.sourceEventId') = p.open_event_id
-               AND json_extract(progress.data, '$.disposition') = 'delegated'
-           )
-         ORDER BY p.opened_at ASC
-         LIMIT 50`,
-      )
-      .all(excludeSourceEventId ?? null) as Array<{ sourceEventId?: unknown; data?: unknown }>;
-    for (const row of rows) {
-      if (activeMayBridges.size >= maxConcurrentMayBridges) return;
-      const sourceEventId = Number(row.sourceEventId);
-      if (!Number.isInteger(sourceEventId) || sourceEventId <= 0 || activeMayBridges.has(sourceEventId)) continue;
-      try {
-        const parsed = typeof row.data === "string" ? JSON.parse(row.data) : row.data;
-        if (!isRecord(parsed)) continue;
-        const bridge = mayBridgeInput({
-          type: "message.created",
-          source: nonEmptyString(parsed.from) ?? "unknown",
-          owner: "agent:may",
-          data: parsed,
-          [EVENT_ROW_ID]: sourceEventId,
-          trace: { traceId: `event:${sourceEventId}` },
-        });
-        if (bridge) startMayBridge(bridge);
-      } catch {
-        /* malformed messages remain visible for platform repair */
-      }
-    }
-  }
-
-  function completeMayBridge(bridge: MayBridgeInput, result: Awaited<ReturnType<SubagentManager["waitFor"]>>): void {
-    const decision = isRecord(result.structuredResult) ? (result.structuredResult as MayBridgeDecision) : null;
-    if (
-      result.status !== "done" ||
-      !decision ||
-      !["answer", "clarify", "reject", "route"].includes(decision.disposition) ||
-      typeof decision.response !== "string" ||
-      !decision.response.trim()
-    ) {
-      bus.emit({
-        type: "may.bridge.failed",
-        source: "handler:may-conversation-bridge",
-        owner: "agent:may",
-        data: {
-          sourceEventId: bridge.sourceEventId,
-          sessionId: result.sessionId,
-          reason: result.error ?? "May returned no valid bridge decision",
-        },
-        trace: bridgeTrace(bridge.sourceEventId, bridge.trace),
-      } as any);
-      return;
-    }
-
-    const responseEventId = emitMayBridgeReply(
-      bridge.sourceEventId,
-      bridge.input,
-      decision.response,
-      "accepted",
-      bridge.trace,
-    );
-    if (decision.disposition === "route") {
-      if (routeMayBridgeToApp(bridge.sourceEventId, bridge.input, decision, bridge.trace)) return;
-      bus.emit({
-        type: "may.bridge.failed",
-        source: "handler:may-conversation-bridge",
-        owner: "agent:may",
-        data: {
-          sourceEventId: bridge.sourceEventId,
-          sessionId: result.sessionId,
-          reason: "May selected route without a valid app target or instruction",
-        },
-        trace: bridgeTrace(bridge.sourceEventId, bridge.trace),
-      } as any);
-      return;
-    }
-
-    resolveMayBridge(
-      bridge.sourceEventId,
-      decision.disposition === "reject" ? "rejected" : "fulfilled",
-      decision.response.trim(),
-      responseEventId,
-      bridge.trace,
-    );
-  }
-
-  function watchMayBridgeSession(bridge: MayBridgeInput, sessionId: string): void {
-    activeMayBridges.add(bridge.sourceEventId);
-    void manager
-      .waitFor(sessionId)
-      .then((result) => completeMayBridge(bridge, result))
-      .catch((error) => {
-        bus.emit({
-          type: "may.bridge.failed",
-          source: "handler:may-conversation-bridge",
-          owner: "agent:may",
-          data: {
-            sourceEventId: bridge.sourceEventId,
-            sessionId,
-            reason: error instanceof Error ? error.message : String(error),
-          },
-          trace: bridgeTrace(bridge.sourceEventId, bridge.trace),
-        } as any);
-      })
-      .finally(() => {
-        activeMayBridges.delete(bridge.sourceEventId);
-        startNextMayBridge(bridge.sourceEventId);
-      });
-  }
-
-  function startMayBridge(bridge: MayBridgeInput): void {
-    if (activeMayBridges.has(bridge.sourceEventId) || activeMayBridges.size >= maxConcurrentMayBridges) return;
-    if (mayBridgeDelegated(bridge.sourceEventId)) return;
-    const attempts = mayBridgeAttempts(bridge.sourceEventId);
-    if (attempts[0] && ["running", "idle"].includes(attempts[0].status ?? "")) {
-      watchMayBridgeSession(bridge, attempts[0].sessionId);
-      return;
-    }
-    if (attempts.length >= 3) {
-      const response =
-        "I could not safely interpret this message after three bounded attempts. I routed the ownership gap to the may-agent platform owner; you do not need to act.";
-      emitMayBridgeReply(bridge.sourceEventId, bridge.input, response, "accepted", bridge.trace);
-      routeMayBridgeToApp(
-        bridge.sourceEventId,
-        bridge.input,
-        {
-          disposition: "route",
-          response,
-          targetProject: "may-agent",
-          instruction: `Repair or disposition May conversation bridge message ${bridge.sourceEventId}: ${String(bridge.input.content ?? "")}`,
-        },
-        bridge.trace,
-      );
-      return;
-    }
-
-    const sender = bridgeReplyTarget(bridge.input) ?? "unknown";
-    const task = [
-      `Handle internal message ${bridge.sourceEventId} as Hao's conversation bridge.`,
-      `Sender: ${sender}`,
-      `Message: ${String(bridge.input.content ?? "")}`,
-      "",
-      "MAY OWNS THE CONVERSATION; APPS OWN THE WORK.",
-      "Make one bounded decision. Do not investigate, implement, poll, wait, fork, or keep background work.",
-      "- answer: the message only needs an answer",
-      "- clarify: the sender's intent is materially unclear",
-      "- reject: the request is unsafe, stale, or outside the contract",
-      "- route: durable work is needed; name the exact project app ID and give its owner a clear outcome/proof instruction",
-      "Use an existing projects/<id>.app/app.ts. If ownership is unclear, route to may-agent.",
-      "Return a short response for the sender. The runtime will send it and correlate routed work; do not call message or agents.",
-      "Call finish() with the required structured result.",
-    ].join("\n");
-
-    let sessionId: string;
-    try {
-      sessionId = manager.run("may", task, {
-        kind: "job",
-        source: "may-conversation-bridge",
-        requestId: `message:${bridge.sourceEventId}`,
-        trace: bridgeTrace(bridge.sourceEventId, bridge.trace),
-        requireFinish: true,
-        outputSchema: mayBridgeDecisionSchema,
-        toolPolicy: "readonly",
-      });
-    } catch (error) {
-      bus.emit({
-        type: "may.bridge.failed",
-        source: "handler:may-conversation-bridge",
-        owner: "agent:may",
-        data: {
-          sourceEventId: bridge.sourceEventId,
-          reason: error instanceof Error ? error.message : String(error),
-        },
-        trace: bridgeTrace(bridge.sourceEventId, bridge.trace),
-      } as any);
-      return;
-    }
-    bus.emit({
-      type: "may.bridge.started",
-      source: "handler:may-conversation-bridge",
-      owner: "agent:may",
-      data: { sourceEventId: bridge.sourceEventId, sessionId, attempt: attempts.length + 1 },
-      trace: bridgeTrace(bridge.sourceEventId, bridge.trace),
-    } as any);
-    watchMayBridgeSession(bridge, sessionId);
-  }
-
-  function carryMayBridgeCompletion(event: unknown): void {
-    if (!options.persistDir || !isRecord(event) || event.type !== "message.resolved") return;
-    const data = eventData(event);
-    if (data.bridgeFinalDelivered === true) return;
-    const sourceEventId = Number(data.openEventId);
-    if (!Number.isInteger(sourceEventId) || sourceEventId <= 0) return;
-    const db = getDb(options.persistDir);
-    const original = db
-      .prepare("SELECT data FROM events WHERE id = ? AND event_type = 'message.created'")
-      .get(sourceEventId) as { data?: unknown } | undefined;
-    if (!original) return;
-    let input: Record<string, unknown> = {};
-    try {
-      const parsed = typeof original.data === "string" ? JSON.parse(original.data) : original.data;
-      if (isRecord(parsed)) input = parsed;
-    } catch {
-      return;
-    }
-    if (ownerAgent(input.to) !== "may" || !bridgeReplyTarget(input)) return;
-    const existing = db
-      .prepare(
-        `SELECT id FROM events
-         WHERE event_type = 'message.created'
-           AND json_extract(data, '$.bridgeCompletionFor') = ?
-         LIMIT 1`,
-      )
-      .get(sourceEventId);
-    if (existing) return;
-    const outcome = String(data.outcome ?? data.disposition ?? "completed");
-    const summary = String(data.summary ?? "The accountable app completed the request.").trim();
-    emitMayBridgeReply(
-      sourceEventId,
-      input,
-      `${outcome}: ${summary}`,
-      "completed",
-      isRecord(event.trace) ? (event.trace as EventTrace) : undefined,
-    );
-  }
-
   function appendProjectDiscussionEntry(
     projectPath: unknown,
     comment: unknown,
@@ -1624,9 +1169,6 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
   }
 
   const unsubscribe = bus.subscribe((event) => {
-    const bridge = mayBridgeInput(event);
-    if (bridge) startMayBridge(bridge);
-    carryMayBridgeCompletion(event);
     switch (event.type) {
       case "input":
         if (typeof event.message !== "string") break;
@@ -1691,7 +1233,6 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
 
   queueMicrotask(() => {
     recoverOpenBreakGlassAttempts();
-    startNextMayBridge();
   });
 
   return { handleInput, close: unsubscribe };
