@@ -8,7 +8,7 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
-import { createHash, randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
 import { dirname, join } from "node:path";
 import type {
   ProjectAppCondition,
@@ -19,6 +19,7 @@ import type {
   ProjectAppTaskWorkspace,
 } from "./project-app.js";
 import { projectRuntimePaths } from "./project-runtime-state.js";
+import { currentProcessInstance, isProcessInstanceAlive } from "./process-identity.js";
 
 export type TaskNode = {
   id: string;
@@ -238,23 +239,6 @@ function isRetryableTaskTreeReadError(error: unknown): boolean {
   return error.message.includes("ENOENT") || error.message.includes("EAGAIN");
 }
 
-type TaskStateLockGlobal = typeof globalThis & {
-  __mayAgentTaskStateLockProcessIdentity?: string;
-};
-const taskStateLockGlobal = globalThis as TaskStateLockGlobal;
-const taskStateLockProcessIdentity =
-  taskStateLockGlobal.__mayAgentTaskStateLockProcessIdentity ?? randomUUID();
-taskStateLockGlobal.__mayAgentTaskStateLockProcessIdentity = taskStateLockProcessIdentity;
-
-function processStartedAt(pid: number): number | undefined {
-  try {
-    const value = statSync(`/proc/${pid}`).ctimeMs;
-    return Number.isFinite(value) && value > 0 ? value : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
 function taskStateLockOwnerIsDead(lockPath: string): boolean {
   try {
     const owner = JSON.parse(readFileSync(join(lockPath, "owner.json"), "utf8")) as {
@@ -265,30 +249,7 @@ function taskStateLockOwnerIsDead(lockPath: string): boolean {
     };
     const pid = Number(owner.pid);
     if (!Number.isInteger(pid) || pid <= 0) return false;
-    if (pid === process.pid && typeof owner.processIdentity === "string") {
-      return owner.processIdentity !== taskStateLockProcessIdentity;
-    }
-    try {
-      process.kill(pid, 0);
-    } catch (error) {
-      return (error as NodeJS.ErrnoException).code === "ESRCH";
-    }
-    const liveProcessStartedAt = processStartedAt(pid);
-    const recordedProcessStartedAt = Number(owner.processStartedAt);
-    if (
-      liveProcessStartedAt !== undefined &&
-      Number.isFinite(recordedProcessStartedAt) &&
-      recordedProcessStartedAt > 0 &&
-      recordedProcessStartedAt !== liveProcessStartedAt
-    ) {
-      return true;
-    }
-    const acquiredAt = typeof owner.acquiredAt === "string" ? Date.parse(owner.acquiredAt) : Number.NaN;
-    return (
-      liveProcessStartedAt !== undefined &&
-      Number.isFinite(acquiredAt) &&
-      acquiredAt + 1_000 < liveProcessStartedAt
-    );
+    return !isProcessInstanceAlive({ ...owner, recordedAt: owner.acquiredAt });
   } catch {
     return false;
   }
@@ -302,13 +263,11 @@ export function withTaskStateLock<T>(config: TaskStateConfig, operation: () => T
   while (true) {
     try {
       mkdirSync(lockPath);
-      const currentProcessStartedAt = processStartedAt(process.pid);
+      const currentProcess = currentProcessInstance();
       writeFileSync(
         join(lockPath, "owner.json"),
         `${JSON.stringify({
-          pid: process.pid,
-          processIdentity: taskStateLockProcessIdentity,
-          ...(currentProcessStartedAt === undefined ? {} : { processStartedAt: currentProcessStartedAt }),
+          ...currentProcess,
           acquiredAt: new Date().toISOString(),
         })}\n`,
       );
