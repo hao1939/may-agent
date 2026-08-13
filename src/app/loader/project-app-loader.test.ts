@@ -42,6 +42,8 @@ import {
   projectAppGlobalConcurrency,
   projectAppHostFingerprint,
   recoverInstalledProjectAppTasks,
+  refreshProjectAppTaskProgressRoute,
+  type ProjectAppDescriptor,
 } from "./project-app-loader";
 
 describe("project app host backpressure", () => {
@@ -50,6 +52,30 @@ describe("project app host backpressure", () => {
     expect(projectAppGlobalConcurrency("3")).toBe(3);
     expect(projectAppGlobalConcurrency("0")).toBe(2);
     expect(projectAppGlobalConcurrency("invalid")).toBe(2);
+  });
+
+  it("reuses the exact App route for high-volume task-session progress", () => {
+    const descriptors = ["first", "target", "last"].map((id) => ({ id }) as ProjectAppDescriptor);
+    const routes = new Map<string, string>();
+    const visited: string[] = [];
+    const refresh = (descriptor: ProjectAppDescriptor): boolean => {
+      visited.push(descriptor.id);
+      return descriptor.id === "target";
+    };
+
+    expect(refreshProjectAppTaskProgressRoute(descriptors, routes, "session-1", refresh)).toBe(true);
+    expect(visited).toEqual(["first", "target"]);
+    expect(routes.get("session-1")).toBe("target");
+
+    visited.length = 0;
+    expect(refreshProjectAppTaskProgressRoute(descriptors, routes, "session-1", refresh)).toBe(true);
+    expect(visited).toEqual(["target"]);
+
+    visited.length = 0;
+    routes.set("session-1", "removed-app");
+    expect(refreshProjectAppTaskProgressRoute(descriptors, routes, "session-1", refresh)).toBe(true);
+    expect(visited).toEqual(["first", "target"]);
+    expect(routes.get("session-1")).toBe("target");
   });
 });
 
