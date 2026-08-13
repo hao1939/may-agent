@@ -20,6 +20,7 @@ import {
   markAppInboxSendingDeliveriesUncertain,
   recordAppInboxDeliveryReceipt,
   releaseAppInboxClaim,
+  restoreReplayableAppInboxDeliveries,
   restorePendingAppInboxDelivery,
   renewAppInboxClaim,
   stageAppInboxClaimDelivery,
@@ -204,6 +205,26 @@ export class AppInboxHost {
     return [...this.#apps.keys()].sort();
   }
 
+  matchingAppIds(owner: string, input: AppInput): string[] {
+    const normalizedOwner = requiredText(owner, "App owner").replace(/^agent:/, "");
+    return [...this.#apps.values()]
+      .filter(
+        (app) => app.owner.trim().replace(/^agent:/, "") === normalizedOwner && Check(app.inputSchema, input),
+      )
+      .map((app) => app.id)
+      .sort();
+  }
+
+  isOwnedApp(appId: string, owner: string): boolean {
+    const app = this.#apps.get(appId.trim());
+    const normalizedOwner = owner.trim().replace(/^(?:agent|app):/, "");
+    return Boolean(
+      app &&
+        (app.id.trim().replace(/^app:/, "") === normalizedOwner ||
+          app.owner.trim().replace(/^agent:/, "") === normalizedOwner),
+    );
+  }
+
   admit(input: AdmitAppInput): { item: AppInboxItem; created: boolean } {
     const app = this.#requiredApp(input.appId);
     validateInput(app, input.input);
@@ -227,7 +248,8 @@ export class AppInboxHost {
   }
 
   recoverDeliveries(): number {
-    return markAppInboxSendingDeliveriesUncertain(this.#db, this.#now());
+    const now = this.#now();
+    return restoreReplayableAppInboxDeliveries(this.#db, now) + markAppInboxSendingDeliveriesUncertain(this.#db, now);
   }
 
   recordDelivery(receipt: AppInboxDeliveryReceipt): {
@@ -431,16 +453,20 @@ export class AppInboxHost {
           evidence: disposition.evidence,
         };
         withTransaction(this.#db, () => {
-          if (claim.item.source.kind === "human" && claim.item.channel) {
+          const responseChannel = claim.item.channel;
+          if (responseChannel && (claim.item.source.kind === "human" || responseChannel.startsWith("agent:"))) {
             const current = getAppInboxItem(this.#db, claim.item.id);
-            if (!current?.sessionId) throw new Error("human completion has no correlated owner session");
+            if (!current?.sessionId) throw new Error("deliverable completion has no correlated owner session");
             stageAppInboxClaimDelivery(
               this.#db,
               claim,
               {
-                channel: claim.item.channel,
+                channel: responseChannel,
                 sessionId: current.sessionId,
-                requestId: appInboxHumanRequestId(claim.item.id),
+                requestId:
+                  claim.item.source.kind === "human"
+                    ? appInboxHumanRequestId(claim.item.id)
+                    : `app-inbox-agent:${claim.item.id}`,
                 result,
               },
               this.#now(),
