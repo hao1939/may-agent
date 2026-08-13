@@ -2486,6 +2486,11 @@ function taskCapacityForBus(bus: EventBus): ProjectAppTaskCapacity {
   return capacity;
 }
 
+/** Transitional shared execution budget for task and App-owner reconciles. */
+export function runWithProjectAppRuntimeCapacity<T>(bus: EventBus, work: () => Promise<T>): Promise<T> {
+  return taskCapacityForBus(bus).run(work);
+}
+
 function taskCapacityForApp(bus: EventBus, appId: string, maxConcurrent: number): ProjectAppTaskCapacity {
   let capacities = appTaskCapacityByAppByBus.get(bus);
   if (!capacities) {
