@@ -918,6 +918,7 @@ function inheritedEventTrace(event: AgentEvent, parent: AgentEvent | undefined):
  */
 export class EventBus {
   private persistenceSubscriber: Subscriber | undefined;
+  private durableRouteSubscribers: Subscriber[] = [];
   private firstSubscribers: Subscriber[] = [];
   private normalSubscribers: Subscriber[] = [];
   private deliveryRecorder: DeliveryRecorder | undefined;
@@ -932,6 +933,17 @@ export class EventBus {
     return () => {
       this.firstSubscribers = this.firstSubscribers.filter((s) => s !== fn);
       this.normalSubscribers = this.normalSubscribers.filter((s) => s !== fn);
+    };
+  }
+
+  /**
+   * Register an idempotent admission route that must also run when retrying an
+   * event persisted before its delivery acceptance was recorded.
+   */
+  subscribeDurableRoute(fn: Subscriber): () => void {
+    this.durableRouteSubscribers.push(fn);
+    return () => {
+      this.durableRouteSubscribers = this.durableRouteSubscribers.filter((subscriber) => subscriber !== fn);
     };
   }
 
@@ -980,6 +992,14 @@ export class EventBus {
       if (retry[EVENT_DEDUPLICATED] && !retry[EVENT_REDELIVERY_REQUIRED]) {
         return event as AgentEvent & { [EVENT_ROW_ID]?: number };
       }
+      for (const fn of this.durableRouteSubscribers) {
+        try {
+          const result = normalizeDeliveryResult(this.runSubscriber(event, "first", fn));
+          delivery ??= result;
+        } catch (err) {
+          this.reportSubscriberFailure(event, "first", err);
+        }
+      }
       // Pending retry recovery deliberately uses only the built-in idempotent
       // pair/evidence/owner routes below. Ordinary fan-out subscribers may
       // already have performed an effect before the original process stopped.
@@ -1016,7 +1036,12 @@ export class EventBus {
 
   /** Number of subscribers. */
   get listenerCount(): number {
-    return this.firstSubscribers.length + this.normalSubscribers.length + (this.persistenceSubscriber ? 1 : 0);
+    return (
+      this.durableRouteSubscribers.length +
+      this.firstSubscribers.length +
+      this.normalSubscribers.length +
+      (this.persistenceSubscriber ? 1 : 0)
+    );
   }
 
   private runSubscriber(

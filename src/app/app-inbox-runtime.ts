@@ -107,7 +107,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     for (const appId of host.appIds()) schedule(appId);
   };
 
-  const unsubscribe = options.bus.subscribe((event): DeliveryResult | void => {
+  const unsubscribe = options.bus.subscribeDurableRoute((event): DeliveryResult | void => {
     const data = eventData(event);
     if (event.type === "app.input.requested") {
       const appId = typeof data.appId === "string" ? data.appId.trim() : "";

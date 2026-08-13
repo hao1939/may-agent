@@ -6,7 +6,7 @@ import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
 import { associateAppInboxClaimSession, claimAppInboxItem, createAppInboxItem } from "./app-inbox-store.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
-import { EventBus } from "./event-bus.js";
+import { EVENT_DEDUPLICATED, EVENT_REDELIVERY_REQUIRED, EventBus } from "./event-bus.js";
 import type { AppOwnerManager } from "./app-owner-manager-adapter.js";
 
 describe("App inbox runtime", () => {
@@ -108,6 +108,10 @@ describe("App inbox runtime", () => {
         idempotencyKey: "canary:1",
       },
     };
+    bus.setPersistenceSubscriber((retried) => {
+      Object.defineProperty(retried, EVENT_DEDUPLICATED, { value: true, configurable: true });
+      Object.defineProperty(retried, EVENT_REDELIVERY_REQUIRED, { value: true, configurable: true });
+    });
     bus.emit(event);
     await waitUntil(() => runtime?.host.get("missing") === null && calls.length === 1);
     const row = db.prepare("SELECT id FROM app_inbox_items WHERE app_id = ?").get("evaluation-canary") as {
