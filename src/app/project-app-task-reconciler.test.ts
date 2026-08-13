@@ -2037,6 +2037,71 @@ describe("project app task reconciler state", () => {
     }
   });
 
+  it("claims only the exact persisted generation and session lease for startup", () => {
+    const exact = fixture();
+    const exactClaim = declareAndClaimTask(exact.config, {
+      intent: intent(),
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (exactClaim.kind !== "claimed") throw new Error("expected exact claim");
+    expect(recordProjectAppTaskAttemptSession(exact.config, exactClaim, "session-exact")).toBe(true);
+    const exactBefore = readTaskState(exact.config);
+    exactBefore.attempts![exactClaim.attemptId].runtimeId = "previous-runtime";
+    exactBefore.attempts![exactClaim.attemptId].lease!.runtimeId = "previous-runtime";
+    saveTaskState(exact.config, exactBefore);
+
+    expect(
+      claimFreshProjectAppTaskSessionForStartup(
+        exact.config,
+        { taskId: exactClaim.taskId, generation: exactClaim.generation },
+        "session-exact",
+      ),
+    ).toBe(true);
+    expect(
+      claimFreshProjectAppTaskSessionForStartup(
+        exact.config,
+        { taskId: exactClaim.taskId, generation: exactClaim.generation },
+        "session-exact",
+      ),
+    ).toBe(false);
+    const exactAfter = readTaskState(exact.config);
+    expect(Object.values(exactAfter.attempts ?? {}).filter((attempt) => attempt.state === "running")).toHaveLength(1);
+    expect(exactAfter.attempts?.[exactClaim.attemptId]).toMatchObject({
+      sessionId: "session-exact",
+      state: "running",
+      lease: { sessionId: "session-exact" },
+    });
+    expect(exactAfter.resources?.[exactClaim.taskId].status).toMatchObject({
+      phase: "running",
+      currentAttemptId: exactClaim.attemptId,
+    });
+
+    for (const mismatch of ["generation", "session"] as const) {
+      const { config } = fixture();
+      const claim = declareAndClaimTask(config, {
+        intent: intent(),
+        appOwner: "app-owner",
+        handler: "workflow:known-workflow",
+      });
+      if (claim.kind !== "claimed") throw new Error("expected mismatch claim");
+      expect(recordProjectAppTaskAttemptSession(config, claim, `session-${mismatch}`)).toBe(true);
+      const before = readTaskState(config);
+      before.attempts![claim.attemptId].runtimeId = "previous-runtime";
+      before.attempts![claim.attemptId].lease!.runtimeId = "previous-runtime";
+      saveTaskState(config, before);
+
+      expect(
+        claimFreshProjectAppTaskSessionForStartup(
+          config,
+          { taskId: claim.taskId, generation: mismatch === "generation" ? claim.generation + 1 : claim.generation },
+          mismatch === "session" ? "different-session" : `session-${mismatch}`,
+        ),
+      ).toBe(false);
+      expect(readTaskState(config).attempts?.[claim.attemptId]).toEqual(before.attempts?.[claim.attemptId]);
+    }
+  });
+
   it("recovers an interrupted attempt only from a previous runtime trigger", () => {
     const { config } = fixture();
     const first = declareAndClaimTask(config, {
