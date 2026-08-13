@@ -145,14 +145,21 @@ describe("App inbox host", () => {
 
   it("creates a delegated child and wakes the parent when the child completes", async () => {
     let parentAttempts = 0;
+    const parentRequests: unknown[] = [];
     const invokeOwner: AppOwnerInvoker = async ({ app: definition, requests }) => {
       if (definition.id === "child") {
         return requests.map((request) => ({
           requestId: request.id,
-          disposition: { type: "complete", summary: "child complete" },
+          disposition: {
+            type: "complete",
+            summary: "child complete",
+            response: "child response",
+            evidence: ["child:evidence"],
+          },
         }));
       }
       parentAttempts += 1;
+      parentRequests.push(...requests);
       return requests.map((request) => ({
         requestId: request.id,
         disposition:
@@ -182,11 +189,23 @@ describe("App inbox host", () => {
     expect(host.get("parent-1")?.availableAt).toBe(200);
     expect(await host.reconcileOnce("parent")).toMatchObject({ admitted: 1 });
     expect(host.get("parent-1")?.result?.summary).toBe("parent reviewed child");
+    expect(parentRequests[1]).toMatchObject({
+      id: "parent-1",
+      dependency: {
+        kind: "app",
+        id: childRow.id,
+        status: "done",
+        summary: "child complete",
+        response: "child response",
+        evidence: ["child:evidence"],
+      },
+    });
   });
 
   it("links task work idempotently and wakes on explicit task completion", async () => {
     let attempts = 0;
     const attachments: unknown[] = [];
+    const ownerRequests: unknown[] = [];
     const host = new AppInboxHost({
       db,
       apps: [app("evaluation")],
@@ -196,8 +215,15 @@ describe("App inbox host", () => {
         attachments.push(input);
         return { taskId: "task-1" };
       },
+      readDependency: async ({ dependency }) => ({
+        ...dependency,
+        status: "done",
+        summary: "task complete",
+        evidence: ["task:receipt"],
+      }),
       invokeOwner: async ({ requests }) => {
         attempts += 1;
+        ownerRequests.push(...requests);
         return requests.map((request) => ({
           requestId: request.id,
           disposition:
@@ -230,6 +256,16 @@ describe("App inbox host", () => {
     expect(host.wake({ kind: "task", id: "task-1" })).toBe(1);
     expect(await host.reconcileOnce("evaluation")).toMatchObject({ admitted: 1 });
     expect(host.get("probe-1")?.status).toBe("done");
+    expect(ownerRequests[1]).toMatchObject({
+      id: "probe-1",
+      dependency: {
+        kind: "task",
+        id: "task-1",
+        status: "done",
+        summary: "task complete",
+        evidence: ["task:receipt"],
+      },
+    });
   });
 
   it("checks task completion after linking the durable wait", async () => {
