@@ -70,6 +70,39 @@ describe("ProjectAppTaskQueue", () => {
     ]);
   });
 
+  it("ages a targeted lower-priority wake behind a large same-priority backlog", () => {
+    const queue = new ProjectAppTaskQueue(1);
+    for (let index = 0; index < 12; index++) {
+      queue.enqueue(`older-p1-${index}`, { front: true, priority: "P1" });
+    }
+    queue.enqueue("targeted-p2", { front: true, priority: "P2" });
+
+    const taken: string[] = [];
+    for (let index = 0; index < 4; index++) {
+      const taskId = queue.take();
+      expect(taskId).not.toBeNull();
+      taken.push(taskId!);
+      queue.complete(taskId!);
+    }
+
+    expect(taken).toEqual(["older-p1-0", "older-p1-1", "older-p1-2", "targeted-p2"]);
+  });
+
+  it("keeps serving higher priority work between aged lower-priority heads", () => {
+    const queue = new ProjectAppTaskQueue(1);
+    for (let index = 0; index < 6; index++) queue.enqueue(`p1-${index}`, { front: true, priority: "P1" });
+    for (let index = 0; index < 4; index++) queue.enqueue(`p2-${index}`, { front: true, priority: "P2" });
+
+    const taken: string[] = [];
+    for (let index = 0; index < 8; index++) {
+      const taskId = queue.take()!;
+      taken.push(taskId);
+      queue.complete(taskId);
+    }
+
+    expect(taken).toEqual(["p1-0", "p1-1", "p1-2", "p2-0", "p1-3", "p1-4", "p1-5", "p2-1"]);
+  });
+
   it("runs oldest ordinary work after a bounded urgent burst", () => {
     const queue = new ProjectAppTaskQueue(1);
     queue.enqueue("old-a");
