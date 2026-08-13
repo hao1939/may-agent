@@ -28,6 +28,13 @@ import type {
   EventEnvelope,
   WorkflowContext,
 } from "./index.js";
+import type {
+  AppRead,
+  ExecutionResult as AppExecutionResult,
+  Logger as AppLogger,
+  ObserverContext,
+  WorkflowContext as AppWorkflowContext,
+} from "./app.js";
 
 // ── Mock function factory ────────────────────────────────────────────
 
@@ -327,5 +334,97 @@ export function createTestWorkflowContext(options: TestWorkflowContextOptions = 
       lastText: () => "",
       close: fn(() => undefined),
     })),
+  };
+}
+
+// ── App authoring contexts ───────────────────────────────────────────
+
+export function createTestAppRead(overrides: Partial<AppRead> = {}): AppRead {
+  const fn = getMockFn();
+  return {
+    appResult: overrides.appResult ?? fn(async () => null),
+    task: overrides.task ?? fn(async () => null),
+    execution: overrides.execution ?? fn(async () => null),
+    metric: overrides.metric ?? fn(async () => null),
+  };
+}
+
+export function createTestAppLogger(overrides: Partial<AppLogger> = {}): AppLogger {
+  const fn = getMockFn();
+  return {
+    debug: overrides.debug ?? fn(),
+    info: overrides.info ?? fn(),
+    warn: overrides.warn ?? fn(),
+    error: overrides.error ?? fn(),
+  };
+}
+
+export function createTestObserverContext(
+  options: {
+    read?: AppRead;
+    log?: AppLogger;
+  } = {},
+): ObserverContext {
+  return {
+    read: options.read ?? createTestAppRead(),
+    log: options.log ?? createTestAppLogger(),
+  };
+}
+
+export type TestAppWorkflowContextOptions<TInput> = {
+  input: TInput;
+  read?: AppRead;
+  log?: AppLogger;
+  callAgent?: AppWorkflowContext["agents"]["call"];
+  runWorkflow?: AppWorkflowContext["workflows"]["run"];
+  emit?: AppWorkflowContext["events"]["emit"];
+  recordMetric?: AppWorkflowContext["metrics"]["record"];
+  workspace?: AppWorkflowContext["workspace"];
+  executionId?: string;
+};
+
+/** Small fake for new App workflows; it contains no DB, queue, or global paths. */
+export function createTestAppWorkflowContext<TInput>(
+  options: TestAppWorkflowContextOptions<TInput>,
+): AppWorkflowContext<TInput> {
+  const fn = getMockFn();
+  const executionId = options.executionId ?? "wf_test";
+  const terminal = (kind: "agent" | "workflow", id: string): AppExecutionResult => ({
+    id,
+    kind,
+    status: "done",
+    summary: "ok",
+  });
+  return {
+    input: options.input,
+    read: options.read ?? createTestAppRead(),
+    agents: {
+      call: options.callAgent ?? fn(async (agent: string) => terminal("agent", `s_test_${agent}`)),
+    },
+    workflows: {
+      run: options.runWorkflow ?? fn(async (name: string) => terminal("workflow", `wf_test_${name}`)),
+    },
+    events: {
+      emit: options.emit ?? fn(async () => undefined),
+    },
+    metrics: {
+      record: options.recordMetric ?? fn(async () => undefined),
+    },
+    ...(options.workspace ? { workspace: options.workspace } : {}),
+    log: options.log ?? createTestAppLogger(),
+    done: <T>(summary: string, output?: T) => ({
+      id: executionId,
+      kind: "workflow",
+      status: "done",
+      summary,
+      ...(output !== undefined ? { output } : {}),
+    }),
+    blocked: (reason: string, evidence?: unknown) => ({
+      id: executionId,
+      kind: "workflow",
+      status: "blocked",
+      summary: reason,
+      ...(evidence !== undefined ? { evidence } : {}),
+    }),
   };
 }

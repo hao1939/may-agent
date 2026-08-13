@@ -94,3 +94,174 @@ export async function execute(ctx) {
     expect(result).toMatchObject({ type: "done" });
   });
 });
+
+describe("App workflow authoring context", () => {
+  it("adapts bounded Agent execution to the single execution result", async () => {
+    const root = mkdtempSync(join(tmpdir(), "app-workflow-agent-"));
+    const workflowDir = join(root, "workflows");
+    mkdirSync(workflowDir);
+    writeFileSync(
+      join(workflowDir, "app-agent.ts"),
+      `
+export const name = "app-agent";
+export const description = "App SDK Agent adapter test";
+export async function execute(ctx) {
+  const result = await ctx.agents.call("worker", String(ctx.input));
+  ctx.log.info(result.summary);
+  return ctx.done("adapted", result);
+}
+`,
+    );
+    const logged: string[] = [];
+    const runner = createWorkflowRunner({
+      manager: {
+        callAgent: async () => ({
+          sessionId: "s_app_step",
+          status: "done",
+          lastAssistantText: "fallback",
+          messages: [],
+          duration: "0s",
+          outputDir: "",
+          finishResult: { status: "success", summary: "bounded move complete", result: { ok: true } },
+        }),
+      } as any,
+      workflowDir,
+      agentName: "owner",
+      runtimeCtx: {
+        emit: () => undefined,
+        dispatchEvent: () => undefined,
+        getDb: () => {
+          throw new Error("unused");
+        },
+        query: {} as any,
+        commands: {} as any,
+        log: (message) => logged.push(message),
+        notify: () => undefined,
+        metrics: {} as any,
+        persistDir: "",
+        projectRoot: root,
+        agentsRoot: root,
+        sharedRoot: root,
+        projectsRoot: root,
+      },
+    });
+
+    const result = await runner.run("app-agent", "canary input");
+    expect(result).toMatchObject({
+      type: "done",
+      output: {
+        id: "s_app_step",
+        kind: "agent",
+        status: "done",
+        summary: "bounded move complete",
+        output: { ok: true },
+      },
+    });
+    expect(logged).toEqual(["bounded move complete"]);
+  });
+
+  it("normalizes a directly returned execution error at the host boundary", async () => {
+    const root = mkdtempSync(join(tmpdir(), "app-workflow-error-"));
+    const workflowDir = join(root, "workflows");
+    mkdirSync(workflowDir);
+    writeFileSync(
+      join(workflowDir, "app-error.ts"),
+      `
+export const name = "app-error";
+export const description = "App SDK error normalization test";
+export async function execute(ctx) {
+  return ctx.agents.call("worker", "fail once");
+}
+`,
+    );
+    const runner = createWorkflowRunner({
+      manager: {
+        callAgent: async () => ({
+          sessionId: "s_app_error",
+          status: "error",
+          error: "bounded move failed",
+          lastAssistantText: null,
+          messages: [],
+          duration: "0s",
+          outputDir: "",
+        }),
+      } as any,
+      workflowDir,
+      agentName: "owner",
+    });
+
+    const result = await runner.run("app-error", "input");
+    expect(result).toMatchObject({ type: "error", error: "bounded move failed" });
+  });
+
+  it("preserves structured input across capability-scoped nested workflows", async () => {
+    const root = mkdtempSync(join(tmpdir(), "app-workflow-nested-"));
+    const workflowDir = join(root, "workflows");
+    mkdirSync(workflowDir);
+    writeFileSync(
+      join(workflowDir, "child.ts"),
+      `
+export const name = "app-child";
+export const description = "App SDK child";
+export async function execute(ctx) {
+  return ctx.done("child complete", ctx.input);
+}
+`,
+    );
+    writeFileSync(
+      join(workflowDir, "parent.ts"),
+      `
+export const name = "app-parent";
+export const description = "App SDK parent";
+export async function execute(ctx) {
+  const child = await ctx.workflows.run("app-child", { probe: "kept-structured" });
+  return ctx.done("parent complete", child);
+}
+`,
+    );
+    const runner = createWorkflowRunner({
+      manager: {} as any,
+      workflowDir,
+      agentName: "owner",
+    });
+
+    const result = await runner.run("app-parent", "outer");
+    expect(result).toMatchObject({
+      type: "done",
+      output: {
+        kind: "workflow",
+        status: "done",
+        summary: "child complete",
+        output: { probe: "kept-structured" },
+      },
+    });
+  });
+
+  it("exposes App-authored input without parsing the legacy task prompt", async () => {
+    const root = mkdtempSync(join(tmpdir(), "app-workflow-input-"));
+    const workflowDir = join(root, "workflows");
+    mkdirSync(workflowDir);
+    writeFileSync(
+      join(workflowDir, "app-input.ts"),
+      `
+export const name = "app-input";
+export const description = "App SDK authored input test";
+export async function execute(ctx) {
+  return ctx.done("input preserved", ctx.input);
+}
+`,
+    );
+    const runner = createWorkflowRunner({
+      manager: {} as any,
+      workflowDir,
+      agentName: "owner",
+      workflowInput: { itemId: "app_123" },
+    });
+
+    const result = await runner.run("app-input", "legacy reconciliation prompt");
+    expect(result).toMatchObject({
+      type: "done",
+      output: { itemId: "app_123" },
+    });
+  });
+});

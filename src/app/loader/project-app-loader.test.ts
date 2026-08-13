@@ -19,6 +19,7 @@ import { projectAppExecutionPaths, projectRuntimePaths, readTaskState, saveTaskS
 import { prepareProjectTaskWorkspace } from "../project-task-workspace";
 import { prepareAgentExecution } from "../../lib/agent-execution";
 import { createCheckpointTool } from "../../lib/tools/checkpoint";
+import { startAppInboxRuntime } from "../app-inbox-runtime";
 import {
   associateProjectAppTaskSession,
   claimObservedProjectAppTask,
@@ -29,6 +30,7 @@ import {
 } from "../project-app-task-reconciler";
 import {
   beginCanonicalOwnerResidueGuard,
+  attachLoadedProjectAppTask,
   finishCanonicalOwnerResidueGuard,
   inferProjectAppOwner,
   installProjectApps,
@@ -46,6 +48,202 @@ describe("project app host backpressure", () => {
     expect(projectAppGlobalConcurrency("3")).toBe(3);
     expect(projectAppGlobalConcurrency("0")).toBe(2);
     expect(projectAppGlobalConcurrency("invalid")).toBe(2);
+  });
+});
+
+describe("App inbox task attachment", () => {
+  it("uses the loaded Project App task engine and emits a completion wake exactly once", async () => {
+    const f = fixture();
+    const bus = new EventBus();
+    const events: any[] = [];
+    bus.subscribe((event) => {
+      events.push(event);
+    });
+    try {
+      writeApp(f.appDir);
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: manager([]),
+        bus,
+        agentCrons: new Map(),
+      });
+
+      const attachment = {
+        kind: "desired" as const,
+        intent: {
+          id: "work/app-inbox",
+          parentId: "operations",
+          outcome: "Process app-inbox",
+          acceptance: ["Work converges"],
+          mode: "achieve" as const,
+          workflow: "worker",
+          input: { itemId: "app-inbox" },
+        },
+      };
+      const attached = attachLoadedProjectAppTask({
+        bus,
+        appDir: f.appDir,
+        appId: "sample-canary",
+        attachment,
+        idempotencyKey: "task:inbox-1:desired:work/app-inbox",
+      });
+      expect(attached.taskId).toBe("work/app-inbox");
+      await waitUntil(() => events.some((event) => event.type === "app.dependency.completed"));
+      expect(await attached.isComplete()).toBe(true);
+      expect(
+        events.filter((event) => event.type === "app.dependency.completed" && event.data?.id === "work/app-inbox"),
+      ).toHaveLength(1);
+
+      const duplicate = attachLoadedProjectAppTask({
+        bus,
+        appDir: f.appDir,
+        appId: "sample-canary",
+        attachment,
+        idempotencyKey: "task:inbox-1:desired:work/app-inbox",
+      });
+      expect(await duplicate.isComplete()).toBe(true);
+      await Bun.sleep(25);
+      expect(
+        events.filter((event) => event.type === "app.dependency.completed" && event.data?.id === "work/app-inbox"),
+      ).toHaveLength(1);
+
+      const existing = attachLoadedProjectAppTask({
+        bus,
+        appDir: f.appDir,
+        appId: "sample-canary",
+        attachment: { kind: "existing", taskId: "work/app-inbox" },
+        idempotencyKey: "task:inbox-2:existing:work/app-inbox",
+      });
+      expect(await existing.isComplete()).toBe(true);
+      expect(() =>
+        attachLoadedProjectAppTask({
+          bus,
+          appDir: f.appDir,
+          appId: "sample-canary",
+          attachment: { kind: "existing", taskId: "work/not-in-this-app" },
+          idempotencyKey: "task:inbox-3:existing:work/not-in-this-app",
+        }),
+      ).toThrow("does not exist in Project App sample");
+      expect(() =>
+        attachLoadedProjectAppTask({
+          bus,
+          appDir: join(f.projectsRoot, "other.app"),
+          appId: "other",
+          attachment,
+          idempotencyKey: "task:other:desired:work/app-inbox",
+        }),
+      ).toThrow("has no loaded Project App");
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("resumes the App automatically when its attached task converges", async () => {
+    const f = fixture();
+    const bus = new EventBus();
+    let runtime: Awaited<ReturnType<typeof startAppInboxRuntime>> = null;
+    let ownerAttempt = 0;
+    const requestIds = new Map<string, string>();
+    try {
+      writeApp(f.appDir);
+      writeFileSync(
+        join(f.appDir, "inbox.js"),
+        `export default {
+          id: "sample-canary",
+          version: 1,
+          owner: "sample-owner",
+          inputSchema: { type: "object", additionalProperties: true }
+        };\n`,
+      );
+      const runtimeManager = Object.assign(manager([]), {
+        run(_agent: string, prompt: string) {
+          ownerAttempt += 1;
+          const sessionId = `app-owner-${ownerAttempt}`;
+          const requestId = JSON.parse(prompt.match(/```json\n([\s\S]*?)\n```/)?.[1] ?? "[]")[0].id;
+          requestIds.set(sessionId, requestId);
+          return sessionId;
+        },
+        async waitFor(sessionId: string) {
+          const requestId = requestIds.get(sessionId)!;
+          return {
+            status: "done" as const,
+            structuredResult: {
+              dispositions: [
+                {
+                  requestId,
+                  disposition:
+                    ownerAttempt === 1
+                      ? {
+                          type: "task",
+                          task: {
+                            kind: "desired",
+                            intent: {
+                              id: "work/app-inbox-resume",
+                              parentId: "operations",
+                              outcome: "Process app-inbox-resume",
+                              acceptance: ["Work converges"],
+                              mode: "achieve",
+                              workflow: "worker",
+                              input: { itemId: "app-inbox-resume" },
+                            },
+                          },
+                        }
+                      : { type: "complete", summary: "attached task observed" },
+                },
+              ],
+            },
+          };
+        },
+        cancel() {},
+      });
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: runtimeManager,
+        bus,
+        agentCrons: new Map(),
+      });
+      const db = getDb(f.persistDir);
+      runtime = await startAppInboxRuntime({
+        projectsRoot: f.projectsRoot,
+        db,
+        manager: runtimeManager,
+        bus,
+        scanIntervalMs: 60_000,
+        attachTask: async (input) => attachLoadedProjectAppTask({ ...input, bus }),
+      });
+      bus.emit({
+        type: "app.input.requested",
+        source: "test",
+        owner: "agent:sample-owner",
+        data: {
+          appId: "sample-canary",
+          input: { kind: "probe", data: {} },
+          source: { kind: "system", id: "test" },
+          idempotencyKey: "sample-canary:task-resume",
+        },
+      });
+
+      await waitUntil(() => {
+        const row = db
+          .prepare("SELECT status, result FROM app_inbox_items WHERE idempotency_key = ?")
+          .get("sample-canary:task-resume") as { status?: string; result?: string } | undefined;
+        return row?.status === "done" && row.result?.includes("attached task observed") === true;
+      });
+      expect(ownerAttempt).toBe(2);
+    } finally {
+      runtime?.close();
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
   });
 });
 

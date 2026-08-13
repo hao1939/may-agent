@@ -39,6 +39,12 @@ export function shouldResumeStartupSession(
   _sessionId: string,
   session: PersistedSession,
 ): { resume: true } | { resume: false; reason?: string } {
+  if (session.source === "app-inbox-owner") {
+    return {
+      resume: false,
+      reason: "App inbox host reclaims the fenced request with a fresh bounded owner attempt",
+    };
+  }
   if (session.recoveryOwner === PROJECT_APP_TASK_RECOVERY_OWNER || session.source === "project-app-task-owner") {
     return {
       resume: false,
