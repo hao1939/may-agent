@@ -6,9 +6,27 @@
  */
 
 import { describe, it, expect } from "bun:test";
-import { EVENT_ROW_ID, EventBus } from "./event-bus.js";
+import { EVENT_DEDUPLICATED, EVENT_REDELIVERY_REQUIRED, EVENT_ROW_ID, EventBus } from "./event-bus.js";
 
 describe("EventBus subscriber priority", () => {
+  it("reruns only explicit durable routes during pending-event redelivery", () => {
+    const bus = new EventBus();
+    const calls: string[] = [];
+    bus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_DEDUPLICATED, { value: true });
+      Object.defineProperty(event, EVENT_REDELIVERY_REQUIRED, { value: true });
+    });
+    bus.subscribeDurableRoute(() => {
+      calls.push("durable");
+      return { accepted: true, by: "durable" };
+    });
+    bus.subscribe(() => calls.push("ordinary"));
+
+    bus.emit({ type: "info", message: "retry" });
+
+    expect(calls).toEqual(["durable"]);
+  });
+
   it("runs 'first' subscribers before 'normal' subscribers", () => {
     const bus = new EventBus();
     const order: string[] = [];
