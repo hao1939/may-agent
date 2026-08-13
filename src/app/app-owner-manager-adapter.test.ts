@@ -34,6 +34,7 @@ describe("manager App owner adapter", () => {
       version: 1,
       owner: "evaluator",
       inputSchema: Type.Object({ kind: Type.String(), data: Type.Unknown() }),
+      tasks: { attach: true },
     });
 
     const result = await invoker({
@@ -65,6 +66,7 @@ describe("manager App owner adapter", () => {
     });
     expect(calls[0]!.prompt).toContain('"id": "probe-1"');
     expect(calls[0]!.prompt).toContain("current read-only observation");
+    expect(calls[0]!.prompt).toContain("may return a task disposition");
     expect(calls[0]!.prompt).not.toContain("lease_generation");
   });
 
@@ -154,6 +156,7 @@ describe("manager App owner adapter", () => {
       toolPolicy: "deputy",
     });
     expect(calls[0]?.prompt).toContain("exact concise human-facing progress or final reply");
+    expect(calls[0]?.prompt).toContain("cannot attach tasks");
   });
 
   it("rejects an unstructured successful owner result", async () => {

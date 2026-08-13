@@ -197,7 +197,8 @@ describe("App inbox task attachment", () => {
           id: "sample-canary",
           version: 1,
           owner: "sample-owner",
-          inputSchema: { type: "object", additionalProperties: true }
+          inputSchema: { type: "object", additionalProperties: true },
+          tasks: { attach: true }
         };\n`,
       );
       const runtimeManager = Object.assign(manager([]), {
