@@ -9,6 +9,18 @@
 import type { Static, TSchema } from "@earendil-works/pi-ai";
 export { Type } from "@earendil-works/pi-ai";
 export type { Static, TSchema } from "@earendil-works/pi-ai";
+export { defineApp } from "./app.js";
+export type {
+  AppDefinition,
+  AppDisposition,
+  AppInboxBatchMode,
+  AppInput,
+  AppInputSource,
+  AppRequest,
+  AppResult,
+  AppTaskAttachment,
+  TaskIntent,
+} from "./app.js";
 
 // ── SQLite-like DB surface ────────────────────────────────────────────
 
