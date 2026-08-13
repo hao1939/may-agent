@@ -5287,6 +5287,15 @@ describe("project app loader", () => {
     const f = fixture();
     try {
       writeApp(f.appDir);
+      writeFileSync(
+        join(f.appDir, "inbox.js"),
+        `export default {
+          id: "sample-canary",
+          version: 1,
+          owner: "sample-owner",
+          inputSchema: { type: "object", additionalProperties: true }
+        };\n`,
+      );
       const bus = new EventBus();
       const events: any[] = [];
       const writer = new DbWriter(f.persistDir);
