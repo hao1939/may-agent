@@ -8,6 +8,7 @@ import {
   completeAppInboxClaim,
   createAppInboxItem,
   getAppInboxItem,
+  listAppInboxItems,
   recoverLeasedAppInboxItems,
   waitAppInboxClaim,
   wakeAppInboxItemsWaitingOn,
@@ -83,6 +84,18 @@ describe("App inbox store", () => {
     expect(first?.generation).toBe(1);
     expect(claimAppInboxItem(db, "item-1", "worker-2", 50, 149)).toBeNull();
     expect(claimNextAppInboxItem(db, "may", "worker-2", 50, 149)).toBeNull();
+  });
+
+  it("queries the authoritative inbox projection without decoding events", () => {
+    create("older", { now: 100 });
+    create("newer", { now: 101 });
+    const claim = claimAppInboxItem(db, "older", "worker-1", 50, 110)!;
+    completeAppInboxClaim(db, claim, { summary: "done" }, 120);
+
+    expect(listAppInboxItems(db, { appId: "may" }).map((item) => item.id)).toEqual(["newer", "older"]);
+    expect(listAppInboxItems(db, { appId: "may", status: "done" })).toMatchObject([
+      { id: "older", result: { summary: "done" } },
+    ]);
   });
 
   it("reclaims an expired lease and fences the stale generation", () => {
