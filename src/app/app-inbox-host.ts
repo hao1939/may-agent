@@ -43,7 +43,14 @@ export type AppTaskAttacher = (input: {
   appId: string;
   attachment: AppTaskAttachment;
   idempotencyKey: string;
-}) => Promise<{ taskId: string }>;
+}) => Promise<{
+  taskId: string;
+  /**
+   * Checked only after the durable wait link exists. This closes the race where
+   * task convergence happens immediately before or while the link is written.
+   */
+  isComplete?: () => Promise<boolean>;
+}>;
 
 export type AdmitAppInput = {
   id?: string;
@@ -376,6 +383,16 @@ export class AppInboxHost {
         const taskId = requiredText(attached.taskId, "Attached task id");
         const waiting = waitAppInboxClaim(this.#db, claim, { kind: "task", id: taskId }, { now: this.#now() });
         if (!waiting) throw new Error("claim is stale");
+        if (attached.isComplete) {
+          try {
+            if (await attached.isComplete()) {
+              wakeAppInboxItemsWaitingOn(this.#db, { kind: "task", id: taskId }, this.#now());
+            }
+          } catch {
+            // The durable completion event remains the authoritative wake path.
+            // A failed post-link race check must not undo a valid wait link.
+          }
+        }
         return;
       }
       default:

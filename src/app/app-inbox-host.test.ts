@@ -171,9 +171,7 @@ describe("App inbox host", () => {
     admit(host, "parent", "parent-1");
 
     expect(await host.reconcileOnce("parent")).toMatchObject({ admitted: 1 });
-    const childRow = db
-      .prepare("SELECT id FROM app_inbox_items WHERE parent_id = ?")
-      .get("parent-1") as { id: string };
+    const childRow = db.prepare("SELECT id FROM app_inbox_items WHERE parent_id = ?").get("parent-1") as { id: string };
     expect(host.get("parent-1")).toMatchObject({
       status: "handling",
       waitingOn: { kind: "app", id: childRow.id },
@@ -232,6 +230,56 @@ describe("App inbox host", () => {
     expect(host.wake({ kind: "task", id: "task-1" })).toBe(1);
     expect(await host.reconcileOnce("evaluation")).toMatchObject({ admitted: 1 });
     expect(host.get("probe-1")?.status).toBe("done");
+  });
+
+  it("checks task completion after linking the durable wait", async () => {
+    let attempts = 0;
+    let sawWaitLink = false;
+    const host = new AppInboxHost({
+      db,
+      apps: [app("evaluation")],
+      now: () => 100,
+      attachTask: async () => ({
+        taskId: "task-fast",
+        isComplete: async () => {
+          const linked = db
+            .prepare(
+              `SELECT waiting_on_kind, waiting_on_id, lease_owner
+               FROM app_inbox_items
+               WHERE id = ?`,
+            )
+            .get("probe-fast") as {
+            waiting_on_kind: string | null;
+            waiting_on_id: string | null;
+            lease_owner: string | null;
+          };
+          sawWaitLink =
+            linked.waiting_on_kind === "task" && linked.waiting_on_id === "task-fast" && linked.lease_owner === null;
+          return true;
+        },
+      }),
+      invokeOwner: async ({ requests }) => {
+        attempts += 1;
+        return requests.map((request) => ({
+          requestId: request.id,
+          disposition:
+            attempts === 1
+              ? { type: "task", task: { kind: "existing", taskId: "task-fast" } }
+              : { type: "complete", summary: "observed fast task completion" },
+        }));
+      },
+    });
+    admit(host, "evaluation", "probe-fast");
+
+    expect(await host.reconcileOnce("evaluation")).toMatchObject({ admitted: 1 });
+    expect(sawWaitLink).toBe(true);
+    expect(host.get("probe-fast")).toMatchObject({
+      status: "handling",
+      waitingOn: { kind: "task", id: "task-fast" },
+      availableAt: 100,
+    });
+    expect(await host.reconcileOnce("evaluation")).toMatchObject({ admitted: 1 });
+    expect(host.get("probe-fast")?.status).toBe("done");
   });
 
   it("renews claims while an owner invocation is still running", async () => {

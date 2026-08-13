@@ -29,6 +29,7 @@ import {
 } from "../project-app-task-reconciler";
 import {
   beginCanonicalOwnerResidueGuard,
+  attachLoadedProjectAppTask,
   finishCanonicalOwnerResidueGuard,
   inferProjectAppOwner,
   installProjectApps,
@@ -46,6 +47,99 @@ describe("project app host backpressure", () => {
     expect(projectAppGlobalConcurrency("3")).toBe(3);
     expect(projectAppGlobalConcurrency("0")).toBe(2);
     expect(projectAppGlobalConcurrency("invalid")).toBe(2);
+  });
+});
+
+describe("App inbox task attachment", () => {
+  it("uses the loaded Project App task engine and emits a completion wake exactly once", async () => {
+    const f = fixture();
+    const bus = new EventBus();
+    const events: any[] = [];
+    bus.subscribe((event) => {
+      events.push(event);
+    });
+    try {
+      writeApp(f.appDir);
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: manager([]),
+        bus,
+        agentCrons: new Map(),
+      });
+
+      const attachment = {
+        kind: "desired" as const,
+        intent: {
+          id: "work/app-inbox",
+          parentId: "operations",
+          outcome: "Process app-inbox",
+          acceptance: ["Work converges"],
+          mode: "achieve" as const,
+          workflow: "worker",
+          input: { itemId: "app-inbox" },
+        },
+      };
+      const attached = attachLoadedProjectAppTask({
+        bus,
+        appDir: f.appDir,
+        appId: "sample-canary",
+        attachment,
+        idempotencyKey: "task:inbox-1:desired:work/app-inbox",
+      });
+      expect(attached.taskId).toBe("work/app-inbox");
+      await waitUntil(() => events.some((event) => event.type === "app.dependency.completed"));
+      expect(await attached.isComplete()).toBe(true);
+      expect(
+        events.filter((event) => event.type === "app.dependency.completed" && event.data?.id === "work/app-inbox"),
+      ).toHaveLength(1);
+
+      const duplicate = attachLoadedProjectAppTask({
+        bus,
+        appDir: f.appDir,
+        appId: "sample-canary",
+        attachment,
+        idempotencyKey: "task:inbox-1:desired:work/app-inbox",
+      });
+      expect(await duplicate.isComplete()).toBe(true);
+      await Bun.sleep(25);
+      expect(
+        events.filter((event) => event.type === "app.dependency.completed" && event.data?.id === "work/app-inbox"),
+      ).toHaveLength(1);
+
+      const existing = attachLoadedProjectAppTask({
+        bus,
+        appDir: f.appDir,
+        appId: "sample-canary",
+        attachment: { kind: "existing", taskId: "work/app-inbox" },
+        idempotencyKey: "task:inbox-2:existing:work/app-inbox",
+      });
+      expect(await existing.isComplete()).toBe(true);
+      expect(() =>
+        attachLoadedProjectAppTask({
+          bus,
+          appDir: f.appDir,
+          appId: "sample-canary",
+          attachment: { kind: "existing", taskId: "work/not-in-this-app" },
+          idempotencyKey: "task:inbox-3:existing:work/not-in-this-app",
+        }),
+      ).toThrow("does not exist in Project App sample");
+      expect(() =>
+        attachLoadedProjectAppTask({
+          bus,
+          appDir: join(f.projectsRoot, "other.app"),
+          appId: "other",
+          attachment,
+          idempotencyKey: "task:other:desired:work/app-inbox",
+        }),
+      ).toThrow("has no loaded Project App");
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
   });
 });
 
