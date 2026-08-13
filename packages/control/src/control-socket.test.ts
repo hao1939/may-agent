@@ -352,6 +352,36 @@ describe("control socket protocol", () => {
     stream.destroy();
   });
 
+  it("delivers a Web App inbox response outside the legacy session filter", async () => {
+    const delivered: Array<{ event: ControlEvent; count: number }> = [];
+    const core = createCore({
+      onDelivered: (event, count) => delivered.push({ event, count }),
+    });
+    const stream = (core.endpoint as () => Duplex)();
+    await nextFrame(stream);
+    stream.write(JSON.stringify({ type: "subscribe", sessions: ["legacy-chat"] }) + "\n");
+    await expect(nextFrame(stream)).resolves.toEqual({ type: "ok", command: "subscribe" });
+    const response = {
+      type: "app.response.delivery.requested",
+      source: "app-inbox",
+      owner: "app:may",
+      data: {
+        channel: "web-ui",
+        sessionId: "bounded-owner-session",
+        operationId: "app-delivery:item-1:1",
+        appInboxItemId: "item-1",
+        appInboxRequestId: "app-inbox-human:item-1",
+        text: "Done.",
+      },
+    };
+
+    core.getBroadcast()?.(response);
+
+    await expect(nextFrame(stream)).resolves.toEqual(response);
+    expect(delivered).toEqual([{ event: response, count: 1 }]);
+    stream.destroy();
+  });
+
   it("rejects subscription filters containing non-string session ids", async () => {
     const core = createCore();
 

@@ -154,6 +154,11 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       typeof data.sourceEventId === "number" && Number.isInteger(data.sourceEventId) && data.sourceEventId > 0
         ? data.sourceEventId
         : undefined;
+    const deliveryIdentity = {
+      ...(typeof data.operationId === "string" ? { operationId: data.operationId } : {}),
+      ...(typeof data.appInboxItemId === "string" ? { appInboxItemId: data.appInboxItemId } : {}),
+      ...(typeof data.appInboxRequestId === "string" ? { appInboxRequestId: data.appInboxRequestId } : {}),
+    };
     sendMessage(pendingChatId, text, undefined, ctx)
       .then((messageId) => {
         if (messageId) {
@@ -167,6 +172,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
               externalMessageId: messageId,
               sessionId: ctx.sessionId,
               resultEventType: ctx.eventType,
+              ...deliveryIdentity,
               ...(sourceEventId ? { sourceEventId } : {}),
             },
             ...(context?.traceId
@@ -189,7 +195,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             channel: "telegram",
             sessionId: ctx.sessionId,
             resultEventType: ctx.eventType,
+            ...deliveryIdentity,
             ...(sourceEventId ? { sourceEventId } : {}),
+            certainty: "uncertain",
             reason: "Telegram send returned no message id",
           },
           ...(context?.traceId
@@ -213,7 +221,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             channel: "telegram",
             sessionId: ctx.sessionId,
             resultEventType: ctx.eventType,
+            ...deliveryIdentity,
             ...(sourceEventId ? { sourceEventId } : {}),
+            certainty: "uncertain",
             reason: msg,
           },
           ...(context?.traceId

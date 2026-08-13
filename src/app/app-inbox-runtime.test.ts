@@ -6,7 +6,7 @@ import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
 import { associateAppInboxClaimSession, claimAppInboxItem, createAppInboxItem } from "./app-inbox-store.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
-import { EVENT_DEDUPLICATED, EVENT_REDELIVERY_REQUIRED, EventBus } from "./event-bus.js";
+import { EVENT_DEDUPLICATED, EVENT_REDELIVERY_REQUIRED, EventBus, type AgentEvent } from "./event-bus.js";
 import type { AppOwnerManager } from "./app-owner-manager-adapter.js";
 
 describe("App inbox runtime", () => {
@@ -157,6 +157,10 @@ describe("App inbox runtime", () => {
       cancel() {},
     };
     const bus = new EventBus();
+    const deliveryRequests: Array<Extract<AgentEvent, { type: "app.response.delivery.requested" }>> = [];
+    bus.subscribe((event) => {
+      if (event.type === "app.response.delivery.requested") deliveryRequests.push(event);
+    });
     runtime = await startAppInboxRuntime({
       projectsRoot: root,
       db,
@@ -164,6 +168,7 @@ describe("App inbox runtime", () => {
       bus,
       scanIntervalMs: 10_000,
     });
+    runtime?.enableDelivery();
 
     bus.emit({
       type: "app.input.requested",
@@ -185,14 +190,17 @@ describe("App inbox runtime", () => {
     const item = db.prepare("SELECT id FROM app_inbox_items WHERE app_id = ?").get("evaluation-canary") as {
       id: string;
     };
-    await waitUntil(() => runtime?.host.get(item.id)?.status === "done");
+    await waitUntil(() => deliveryRequests.length === 1);
     expect(runtime?.host.get(item.id)).toMatchObject({
+      status: "handling",
       source: { kind: "human", id: "event:42" },
       conversationId: "telegram:123",
       conversationSequence: 42,
       channel: "telegram",
       channelThreadId: "topic:7",
       channelMessageId: 99,
+      result: { summary: "human request handled" },
+      delivery: { status: "sending" },
     });
     expect(calls[0]).toMatchObject({
       source: "telegram",
@@ -202,6 +210,89 @@ describe("App inbox runtime", () => {
       channelMessageId: 99,
       toolPolicy: "deputy",
     });
+    const request = deliveryRequests[0].data;
+    bus.emit({
+      type: "channel.delivery.completed",
+      source: "telegram",
+      owner: "agent:may",
+      target: { human: true },
+      data: {
+        channel: request.channel,
+        sessionId: request.sessionId,
+        operationId: request.operationId,
+        appInboxItemId: request.appInboxItemId,
+        appInboxRequestId: request.appInboxRequestId,
+        externalMessageId: 700,
+      },
+    });
+    await waitUntil(() => runtime?.host.get(item.id)?.status === "done");
+  });
+
+  it("dispatches a restart-pending delivery once and never blindly redispatches an attempted send", async () => {
+    const calls: string[] = [];
+    const firstBus = new EventBus();
+    runtime = await startAppInboxRuntime({
+      projectsRoot: root,
+      db,
+      manager: manager(calls),
+      bus: firstBus,
+      scanIntervalMs: 10_000,
+    });
+    firstBus.emit({
+      type: "app.input.requested",
+      source: "telegram",
+      owner: "app:evaluation-canary",
+      data: {
+        appId: "evaluation-canary",
+        input: { kind: "probe", data: { value: "restart-delivery" } },
+        source: { kind: "human", id: "event:restart-delivery" },
+        channel: "telegram",
+        idempotencyKey: "restart-delivery",
+      },
+    });
+    await waitUntil(() => {
+      const row = db.prepare("SELECT item_id FROM app_inbox_deliveries WHERE status = 'pending'").get() as
+        { item_id?: string } | undefined;
+      return Boolean(row);
+    });
+    runtime?.close();
+
+    const secondBus = new EventBus();
+    const requested: unknown[] = [];
+    secondBus.subscribe((event) => {
+      if (event.type === "app.response.delivery.requested") requested.push(event);
+    });
+    runtime = await startAppInboxRuntime({
+      projectsRoot: root,
+      db,
+      manager: manager(calls),
+      bus: secondBus,
+      scanIntervalMs: 10_000,
+    });
+    runtime?.enableDelivery();
+    await waitUntil(() => requested.length === 1);
+    expect(calls).toHaveLength(1);
+    expect(db.prepare("SELECT status FROM app_inbox_deliveries").get()).toEqual({ status: "sending" });
+    runtime?.close();
+
+    const thirdBus = new EventBus();
+    const repeated: unknown[] = [];
+    thirdBus.subscribe((event) => {
+      if (event.type === "app.response.delivery.requested") repeated.push(event);
+    });
+    runtime = await startAppInboxRuntime({
+      projectsRoot: root,
+      db,
+      manager: manager(calls),
+      bus: thirdBus,
+      scanIntervalMs: 10_000,
+    });
+    runtime?.enableDelivery();
+    await Bun.sleep(20);
+
+    expect(repeated).toEqual([]);
+    expect(calls).toHaveLength(1);
+    expect(db.prepare("SELECT status FROM app_inbox_deliveries").get()).toMatchObject({ status: "uncertain" });
   });
 
   it("rescans durable unfinished items when the runtime starts", async () => {
