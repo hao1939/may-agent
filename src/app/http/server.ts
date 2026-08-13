@@ -188,6 +188,36 @@ export async function sendProjectActionWithRetry(
   throw new Error("Project action retry exhausted");
 }
 
+export type DaemonReadiness = {
+  ready: boolean;
+  socketPath: string;
+  checkedAt: number;
+  error?: string;
+};
+
+/** Actively prove the daemon can answer control traffic; a socket file alone may be stale. */
+export async function probeDaemonReadiness(
+  socketPath: string,
+  send: typeof sendSocketCommand = sendSocketCommand,
+  timeoutMs = 5_000,
+): Promise<DaemonReadiness> {
+  const checkedAt = Date.now();
+  try {
+    const response = await send(socketPath, { type: "status" }, { timeoutMs });
+    if (response.type !== "status" || response.command !== "status") {
+      throw new Error("daemon returned an unexpected status response");
+    }
+    return { ready: true, socketPath, checkedAt };
+  } catch (error) {
+    return {
+      ready: false,
+      socketPath,
+      checkedAt,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
 function platformUiContentTypeFor(path: string): string {
   switch (extname(path).toLowerCase()) {
     case ".html":
@@ -1739,6 +1769,11 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       socketAvailable: existsSync(conventionSocketPath()),
       socketPath: conventionSocketPath(),
     });
+  }
+
+  async function handleReadiness(): Promise<Response> {
+    const readiness = await probeDaemonReadiness(conventionSocketPath());
+    return json(readiness, readiness.ready ? 200 : 503);
   }
 
   // ── Agent Activity API ──────────────────────────────────────────────
@@ -4086,6 +4121,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         return new Response("WebSocket upgrade failed", { status: 400 });
       }
       if (url.pathname === "/api/liveness") return handleLiveness(url);
+      if (url.pathname === "/api/readiness") return handleReadiness();
       if (url.pathname === "/api/stats") return handleStats();
       if (url.pathname === "/api/agents") return handleAgents();
       if (url.pathname === "/api/agents/activity") return handleAgentActivity();

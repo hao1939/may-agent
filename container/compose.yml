@@ -10,6 +10,12 @@ services:
     hostname: may-agent
     restart: unless-stopped
     stop_grace_period: 10s
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "--max-time", "6", "http://127.0.0.1:8080/api/readiness"]
+      interval: 10s
+      timeout: 7s
+      retries: 6
+      start_period: 10s
     logging:
       driver: json-file
     env_file: ../.env
