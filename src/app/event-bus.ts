@@ -923,8 +923,6 @@ export const EVENT_ROW_ID = Symbol.for("may-agent.eventRowId");
 export const EVENT_DEDUPLICATED = Symbol.for("may-agent.eventDeduplicated");
 export const EVENT_REDELIVERY_REQUIRED = Symbol.for("may-agent.eventRedeliveryRequired");
 export const EVENT_INGRESS_SOURCE = Symbol.for("may-agent.eventIngressSource");
-/** Set only after a message.created event has a durable, uniquely addressed App inbox item. */
-export const APP_MESSAGE_INGRESS_ACCEPTED = Symbol.for("may-agent.appMessageIngressAccepted");
 export const EVENT_SUBSCRIBER_WARN_MS = 25;
 
 const eventContext = new AsyncLocalStorage<AgentEvent>();
