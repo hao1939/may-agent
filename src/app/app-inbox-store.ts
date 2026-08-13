@@ -51,6 +51,20 @@ export type AppInboxQuery = {
   limit?: number;
 };
 
+export type AppInboxHealth = {
+  appId: string;
+  total: number;
+  pending: number;
+  handling: number;
+  done: number;
+  ready: number;
+  waitingOnDependency: number;
+  activeLeases: number;
+  expiredLeases: number;
+  oldestPendingAgeMs?: number;
+  oldestHandlingItemAgeMs?: number;
+};
+
 type InboxRow = Record<string, unknown>;
 
 function requiredText(value: unknown, field: string): string {
@@ -171,6 +185,60 @@ export function listAppInboxItems(db: SqliteDb, query: AppInboxQuery = {}): AppI
     )
     .all(...params, limit)
     .map(rowToItem);
+}
+
+/** Current lifecycle health derived directly from the inbox authority, never event reconstruction. */
+export function listAppInboxHealth(
+  db: SqliteDb,
+  query: { appId?: string; now?: number } = {},
+): AppInboxHealth[] {
+  const now = query.now ?? Date.now();
+  if (!Number.isFinite(now)) throw new Error("App inbox health now must be finite");
+  const appId = query.appId === undefined ? undefined : requiredText(query.appId, "appId");
+  const rows = db
+    .prepare(
+      `SELECT app_id,
+              COUNT(*) AS total,
+              SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending,
+              SUM(CASE WHEN status = 'handling' THEN 1 ELSE 0 END) AS handling,
+              SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) AS done,
+              SUM(CASE WHEN status != 'done'
+                            AND ((lease_owner IS NULL AND available_at IS NOT NULL AND available_at <= ?)
+                              OR (lease_expires_at IS NOT NULL AND lease_expires_at <= ?))
+                       THEN 1 ELSE 0 END) AS ready,
+              SUM(CASE WHEN status = 'handling' AND lease_owner IS NULL
+                            AND waiting_on_kind IS NOT NULL AND waiting_on_id IS NOT NULL
+                       THEN 1 ELSE 0 END) AS waiting_on_dependency,
+              SUM(CASE WHEN status = 'handling' AND lease_owner IS NOT NULL
+                            AND lease_expires_at > ?
+                       THEN 1 ELSE 0 END) AS active_leases,
+              SUM(CASE WHEN status = 'handling' AND lease_owner IS NOT NULL
+                            AND lease_expires_at IS NOT NULL AND lease_expires_at <= ?
+                       THEN 1 ELSE 0 END) AS expired_leases,
+              MIN(CASE WHEN status = 'pending' THEN created_at END) AS oldest_pending_at,
+              MIN(CASE WHEN status = 'handling' THEN created_at END) AS oldest_handling_at
+       FROM app_inbox_items
+       WHERE (? IS NULL OR app_id = ?)
+       GROUP BY app_id
+       ORDER BY app_id`,
+    )
+    .all(now, now, now, now, appId ?? null, appId ?? null) as Array<Record<string, unknown>>;
+
+  const age = (value: unknown): number | undefined =>
+    typeof value === "number" ? Math.max(0, now - value) : undefined;
+  return rows.map((row) => ({
+    appId: requiredText(row.app_id, "app_id"),
+    total: Number(row.total),
+    pending: Number(row.pending),
+    handling: Number(row.handling),
+    done: Number(row.done),
+    ready: Number(row.ready),
+    waitingOnDependency: Number(row.waiting_on_dependency),
+    activeLeases: Number(row.active_leases),
+    expiredLeases: Number(row.expired_leases),
+    oldestPendingAgeMs: age(row.oldest_pending_at),
+    oldestHandlingItemAgeMs: age(row.oldest_handling_at),
+  }));
 }
 
 export function createAppInboxItem(
