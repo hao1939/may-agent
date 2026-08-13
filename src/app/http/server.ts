@@ -42,6 +42,7 @@ import { openStateDb, type SqliteDb } from "./read-model/state-db.js";
 import { buildLoopTrace, type LoopTraceTarget } from "./read-model/loop-trace.js";
 import { addSessionTranscriptToEventGraph, buildEventGraph } from "./read-model/event-graph.js";
 import { resolveRuntimeAgentDirectory } from "../loader/agent-discovery.js";
+import { getAppInboxItem, listAppInboxItems } from "../app-inbox-store.js";
 
 // ── Public API ────────────────────────────────────────────────────────
 
@@ -3135,6 +3136,32 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     }
   }
 
+  function handleAppInbox(url: URL): Response {
+    const status = url.searchParams.get("status");
+    if (status && status !== "pending" && status !== "handling" && status !== "done") {
+      return json({ error: `Invalid App inbox status: ${status}` }, 400);
+    }
+    const limit = Math.max(1, Math.min(500, Number(url.searchParams.get("limit") || 100) || 100));
+    try {
+      const items = listAppInboxItems(_db(), {
+        appId: url.searchParams.get("appId") || undefined,
+        status: status as "pending" | "handling" | "done" | undefined,
+        idempotencyKey: url.searchParams.get("idempotencyKey") || undefined,
+        limit,
+      });
+      return json({ items, count: items.length });
+    } catch (error) {
+      return json({ error: error instanceof Error ? error.message : String(error) }, 400);
+    }
+  }
+
+  function handleAppInboxItem(itemIdText: string): Response {
+    const itemId = decodeURIComponent(itemIdText).trim();
+    if (!itemId) return json({ error: "App inbox item id required" }, 400);
+    const item = getAppInboxItem(_db(), itemId);
+    return item ? json(item) : json({ error: `App inbox item not found: ${itemId}` }, 404);
+  }
+
   async function handleProjectActionInvoke(
     req: Request,
     projectIdText: string,
@@ -4025,6 +4052,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/projects/discussion") return handleProjectDiscussion(url);
       if (url.pathname === "/api/projects/sessions") return handleProjectSessions(url);
       if (url.pathname === "/api/projects/comment" && req.method === "POST") return handleProjectComment(req);
+      if (url.pathname === "/api/app-inbox" && req.method === "GET") return handleAppInbox(url);
+      const appInboxItemMatch = url.pathname.match(/^\/api\/app-inbox\/([^/]+)$/);
+      if (appInboxItemMatch && req.method === "GET") return handleAppInboxItem(appInboxItemMatch[1]);
       const projectActionInvokeMatch = url.pathname.match(/^\/api\/projects\/([^/]+)\/actions\/([^/]+)$/);
       if (projectActionInvokeMatch && req.method === "POST") {
         return handleProjectActionInvoke(req, projectActionInvokeMatch[1], projectActionInvokeMatch[2]);

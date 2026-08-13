@@ -1261,6 +1261,27 @@ export function readProjectAppTaskIntent(config: TaskStateConfig, taskId: string
   });
 }
 
+/**
+ * Return whether the requested task generation has produced a converged fact.
+ * A live resource takes precedence over an older immutable receipt with the
+ * same task id, so a newly revised generation cannot look complete by accident.
+ */
+export function isProjectAppTaskConverged(config: TaskStateConfig, taskId: string, generation?: number): boolean {
+  return withTaskStateLock(config, () => {
+    const tree = readTaskState(config);
+    const resource = tree.resources?.[taskId];
+    if (resource) {
+      return (
+        (generation === undefined || resource.metadata.generation === generation) &&
+        resource.status.phase === "converged" &&
+        resource.status.observedGeneration === resource.metadata.generation
+      );
+    }
+    const receipt = tree.receipts?.[taskId];
+    return Boolean(receipt && (generation === undefined || receipt.metadata.generation === generation));
+  });
+}
+
 export type ProjectAppTaskChildContext = {
   live: Array<{
     taskId: string;

@@ -1,6 +1,7 @@
 import { SubagentManager } from "../lib/index.js";
-import { closeAllDbs } from "../lib/requests.js";
+import { closeAllDbs, getDb } from "../lib/requests.js";
 import type { AppArgs } from "./app-args.js";
+import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
 import { attachCommandRouter } from "./command-router.js";
 import { startCronRuntime } from "./cron-startup.js";
 import {
@@ -15,6 +16,7 @@ import {
 } from "./daemon.js";
 import { EventBus } from "./event-bus.js";
 import { startInterfaceRuntime } from "./interface-startup.js";
+import { attachLoadedProjectAppTask } from "./loader/project-app-loader.js";
 import type { ModelRegistry } from "./model-registry.js";
 import { parseWebPort, startWebMode } from "./modes/web.js";
 import { runRequestedExitMode } from "./runtime-exit-modes.js";
@@ -95,6 +97,22 @@ export async function runAppRuntime(opts: {
     cronEnabled: CRON_ENABLED,
   });
 
+  const appInboxRuntime: AppInboxRuntime | null = CRON_ENABLED
+    ? await startAppInboxRuntime({
+        projectsRoot: opts.projectsRoot,
+        db: getDb(opts.persistDir),
+        manager,
+        bus,
+        attachTask: async (input) => attachLoadedProjectAppTask({ ...input, bus }),
+      })
+    : null;
+  if (appInboxRuntime) {
+    bus.emit({
+      type: "info",
+      message: `[app-inbox] Started for ${appInboxRuntime.host.appIds().join(", ")}`,
+    });
+  }
+
   let activeRL: { close: () => void } | null = null;
   let telegramBot: { close: () => void; sendAlert: (...args: any[]) => any } = { close: () => {}, sendAlert: () => {} };
   let cancelledOnce = false;
@@ -112,6 +130,7 @@ export async function runAppRuntime(opts: {
     clearActiveReadline: () => {
       activeRL = null;
     },
+    beforeShutdown: () => appInboxRuntime?.close(),
   });
   installProcessHandlers();
 

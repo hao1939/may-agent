@@ -26,10 +26,16 @@ describe("canonical database schema", () => {
       expect(indexes.some(({ name }) => name === "idx_events_idempotency")).toBe(true);
       const sessionIndexes = db.prepare("PRAGMA index_list(sessions)").all() as Array<{ name: string }>;
       const workflowIndexes = db.prepare("PRAGMA index_list(workflow_runs)").all() as Array<{ name: string }>;
+      const inboxColumns = db.prepare("PRAGMA table_info(app_inbox_items)").all() as Array<{ name: string }>;
+      const inboxIndexes = db.prepare("PRAGMA index_list(app_inbox_items)").all() as Array<{ name: string }>;
       expect(sessionIndexes.some(({ name }) => name === "idx_sess_agent_started")).toBe(true);
       expect(sessionIndexes.some(({ name }) => name === "idx_sess_agent")).toBe(false);
       expect(workflowIndexes.some(({ name }) => name === "idx_wfr_project_started")).toBe(true);
       expect(workflowIndexes.some(({ name }) => name === "idx_wfr_project")).toBe(false);
+      expect(inboxColumns.some(({ name }) => name === "lease_generation")).toBe(true);
+      expect(inboxColumns.some(({ name }) => name === "available_at")).toBe(true);
+      expect(inboxIndexes.some(({ name }) => name === "idx_app_inbox_idempotency")).toBe(true);
+      expect(inboxIndexes.some(({ name }) => name === "idx_app_inbox_conversation_sequence")).toBe(true);
       expect(trigger.sql).toContain("OLD.session_id");
       expect(trigger.sql).not.toContain("json_extract");
       expect(db.prepare("SELECT name FROM sqlite_master WHERE name = 'runtime_migrations'").get()).toBeNull();
