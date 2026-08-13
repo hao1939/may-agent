@@ -36,6 +36,7 @@ export function requestReceipt(
   taskId: string,
   correlation: string,
   artifactSha: string,
+  sourceCommit?: string,
 ): boolean {
   const lock = `${path}.lock`;
   try {
@@ -52,6 +53,7 @@ export function requestReceipt(
       project,
       taskId,
       artifactSha,
+      ...(sourceCommit ? { sourceCommit } : {}),
       phase: "requested",
       requestedAt: new Date().toISOString(),
       verification:
@@ -90,13 +92,14 @@ if (import.meta.main) {
   const path = pathArg;
   if (!path) throw new Error("Usage: deploy-receipt.ts <request|settle> <path> ...");
   if (command === "request") {
-    const [projectArg, taskArg, correlationArg, shaArg] = args;
+    const [projectArg, taskArg, correlationArg, shaArg, sourceCommitArg] = args;
     const created = requestReceipt(
       path,
       validId(projectArg, "project"),
       validId(taskArg, "task id"),
       validId(correlationArg, "correlation"),
       validId(shaArg, "artifact SHA"),
+      sourceCommitArg ? validId(sourceCommitArg, "source commit") : undefined,
     );
     if (!created) {
       console.error(`Deploy correlation already has a receipt; refusing duplicate deployment: ${correlationArg}`);
