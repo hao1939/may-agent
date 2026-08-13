@@ -9,6 +9,8 @@ domain workspace.
   normal portable repo.
 - `app.ts` declares schedules, one event-to-task resolver, owner resolution, and
   actions. Reusable workflows are discovered by filename.
+- `inbox.ts` declares the separate `may` conversation App: one durable human
+  message at a time, with no schedules, watchers, or App tasks.
 - `project.json` is the structured project frame for goal, owner, workspace,
   and current strategy.
 - `.state/tasks/state.json` is the sole mutable task-resource authority;
