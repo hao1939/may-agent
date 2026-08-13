@@ -139,6 +139,7 @@ export interface ProjectAppDescriptor {
   projectDir: string;
   owner: string;
   app: ProjectApp;
+  hasExplicitInbox: boolean;
   reconciliationPaused: boolean;
 }
 
@@ -581,6 +582,9 @@ function ownerMessageForApp(
   const input = periodic && isRecord(event.input) ? event.input : isRecord(event.data) ? event.data : {};
   const recipient = typeof input.to === "string" ? input.to.replace(/^agent:/, "").trim() : "";
   if (recipient !== descriptor.owner) return null;
+  // An explicit App inbox owns fresh message admission. Keep periodic replay
+  // available so owner-inbox work persisted before the cutover can still drain.
+  if (direct && descriptor.hasExplicitInbox) return null;
   if (direct && shouldOfferToApp(descriptor.app, event)) return null;
   const project = projectValue(event) || projectValue(input);
   if (project && project !== descriptor.id && project !== `${descriptor.id}.app`) return null;
@@ -3048,16 +3052,16 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
         (descriptor) =>
           Boolean(
             descriptor.app.tasks &&
-              refreshProjectAppTaskAttemptLeaseBySession(
-                taskReconciliationConfig({
-                  appDir: descriptor.appDir,
-                  projectDir: descriptor.projectDir,
-                  owner: descriptor.owner,
-                  maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
-                }),
-                progressSessionId,
-                observedAt,
-              ),
+            refreshProjectAppTaskAttemptLeaseBySession(
+              taskReconciliationConfig({
+                appDir: descriptor.appDir,
+                projectDir: descriptor.projectDir,
+                owner: descriptor.owner,
+                maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
+              }),
+              progressSessionId,
+              observedAt,
+            ),
           ),
       );
     }
@@ -3489,6 +3493,7 @@ async function prepareProjectAppDescriptors(opts: ProjectAppLoaderOptions): Prom
       projectDir: domainProjectDir(opts.projectsRoot, appDir, id, app),
       owner: configuredProjectAppOwner(app, appDir),
       app,
+      hasExplicitInbox: existsSync(join(appDir, "inbox.ts")) || existsSync(join(appDir, "inbox.js")),
       reconciliationPaused: false,
     };
     descriptor.reconciliationPaused = descriptor.app.tasks
