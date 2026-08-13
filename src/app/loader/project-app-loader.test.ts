@@ -3679,6 +3679,14 @@ describe("project app loader", () => {
         recoveryOwner: "project-app-task-reconciler",
         kind: "call",
       });
+      writeFileSync(
+        join(f.persistDir, "sessions", "session-fresh-startup", "[ACTIVE]"),
+        JSON.stringify({
+          pid: process.pid,
+          processIdentity: "previous-container-runtime",
+          activatedAt: new Date(Date.now() - 5_000).toISOString(),
+        }),
+      );
 
       const bus = new EventBus();
       const options = {
