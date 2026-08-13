@@ -1484,6 +1484,60 @@ describe("event delivery metadata", () => {
     }
   });
 
+  it("dispatches App delivery requests without duplicating them in the owner inbox", () => {
+    const root = tempRoot();
+    try {
+      const bus = new EventBus();
+      attachPersistence(bus, root);
+      const dispatched: string[] = [];
+      bus.subscribe((event) => {
+        if (event.type === "app.response.delivery.requested") dispatched.push(event.data.operationId);
+      });
+
+      bus.emit({
+        type: "app.response.delivery.requested",
+        source: "app-inbox",
+        owner: "app:may",
+        target: { human: true },
+        data: {
+          operationId: "app-delivery:app_123:1",
+          appInboxItemId: "app_123",
+          appInboxRequestId: "app-inbox-human:app_123",
+          sessionId: "s_app_123",
+          channel: "telegram",
+          text: "Done.",
+        },
+      });
+
+      expect(dispatched).toEqual(["app-delivery:app_123:1"]);
+      expect(
+        getDb(root)
+          .prepare(
+            `SELECT delivery_status, accepted_by, delivery_route
+               FROM events
+              WHERE event_type = 'app.response.delivery.requested'`,
+          )
+          .get(),
+      ).toMatchObject({
+        delivery_status: "accepted",
+        accepted_by: "event-store:evidence-projection",
+        delivery_route: "direct",
+      });
+      expect(
+        getDb(root)
+          .prepare(
+            `SELECT COUNT(*) AS count
+               FROM event_pair_runs
+              WHERE pair_name = 'owner_inbox'`,
+          )
+          .get(),
+      ).toMatchObject({ count: 0 });
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("keeps unknown owner-addressed requests visible in the owner inbox", () => {
     const root = tempRoot();
     try {
