@@ -234,6 +234,26 @@ type MetricEventData = {
 /** System events */
 export type SystemEvent =
   | { type: "heartbeat"; agent: string; entry: string }
+  | {
+      type: "app.input.requested";
+      source?: string;
+      owner: string;
+      data: {
+        appId: string;
+        input: { kind: string; data: unknown };
+        source?: { kind: "human" | "app" | "system"; id: string };
+        parentId?: string;
+        conversationId?: string;
+        conversationSequence?: number;
+        idempotencyKey?: string;
+      };
+    }
+  | {
+      type: "app.dependency.completed";
+      source?: string;
+      owner: string;
+      data: { kind: "app" | "task" | "session"; id: string };
+    }
   | { type: "heartbeat.trigger"; source?: string; owner: string; data: { agent: string } }
   | {
       type: "heartbeat.skipped";

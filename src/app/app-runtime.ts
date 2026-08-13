@@ -1,6 +1,7 @@
 import { SubagentManager } from "../lib/index.js";
-import { closeAllDbs } from "../lib/requests.js";
+import { closeAllDbs, getDb } from "../lib/requests.js";
 import type { AppArgs } from "./app-args.js";
+import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
 import { attachCommandRouter } from "./command-router.js";
 import { startCronRuntime } from "./cron-startup.js";
 import {
@@ -95,6 +96,21 @@ export async function runAppRuntime(opts: {
     cronEnabled: CRON_ENABLED,
   });
 
+  const appInboxRuntime: AppInboxRuntime | null = CRON_ENABLED
+    ? await startAppInboxRuntime({
+        projectsRoot: opts.projectsRoot,
+        db: getDb(opts.persistDir),
+        manager,
+        bus,
+      })
+    : null;
+  if (appInboxRuntime) {
+    bus.emit({
+      type: "info",
+      message: `[app-inbox] Started for ${appInboxRuntime.host.appIds().join(", ")}`,
+    });
+  }
+
   let activeRL: { close: () => void } | null = null;
   let telegramBot: { close: () => void; sendAlert: (...args: any[]) => any } = { close: () => {}, sendAlert: () => {} };
   let cancelledOnce = false;
@@ -112,6 +128,7 @@ export async function runAppRuntime(opts: {
     clearActiveReadline: () => {
       activeRL = null;
     },
+    beforeShutdown: () => appInboxRuntime?.close(),
   });
   installProcessHandlers();
 
