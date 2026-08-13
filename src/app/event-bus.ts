@@ -1177,6 +1177,9 @@ function defaultOwnerFallback(event: AgentEvent): DeliveryResult | undefined {
 }
 
 const EVIDENCE_PROJECTION_EVENT_TYPES = new Set([
+  // The durable App outbox is authoritative for retries and completion. This
+  // event is its transport command/evidence record, not new owner work.
+  "app.response.delivery.requested",
   "runtime.daemon.heartbeat",
   "handler.workflow_dispatched",
   "handler.skipped",
