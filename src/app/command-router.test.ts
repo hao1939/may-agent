@@ -14,6 +14,7 @@ function fixture(
   bridgeDecision?: Record<string, unknown>,
   beforeAttach?: (context: { root: string; bus: EventBus }) => void,
   turnResults: Array<Record<string, unknown>> = [],
+  routerOptions: { routeHumanInputToApp?: boolean } = {},
 ) {
   const root = mkdtempSync(join(tmpdir(), "may-command-router-"));
   const bus = new EventBus();
@@ -75,6 +76,7 @@ function fixture(
     clearCancelLatch: () => undefined,
     projectRoot: root,
     persistDir: root,
+    ...routerOptions,
     reload: () => undefined,
     restart: () => undefined,
     shutdown: () => undefined,
@@ -83,6 +85,95 @@ function fixture(
 }
 
 describe("command router human intent contract", () => {
+  it("routes ordinary May input through the durable conversation App when registered", () => {
+    const { root, bus, router, runs } = fixture(undefined, undefined, [], { routeHumanInputToApp: true });
+    const emitted: unknown[] = [];
+    const unsubscribe = bus.subscribe((event) => emitted.push(event));
+    try {
+      bus.emit({
+        type: "human.input.received",
+        source: "telegram",
+        owner: "agent:may",
+        data: {
+          actor: "human",
+          inputId: "telegram-update:42",
+          text: "please review the deployment",
+          conversation: {
+            id: "telegram:123",
+            channel: "telegram",
+            channelThreadId: "thread-7",
+            channelMessageId: 99,
+          },
+          target: { agent: "may" },
+        },
+      } as any);
+
+      expect(emitted).toContainEqual(
+        expect.objectContaining({
+          type: "app.input.requested",
+          source: "telegram",
+          owner: "app:may",
+          data: expect.objectContaining({
+            appId: "may",
+            source: expect.objectContaining({ kind: "human" }),
+            input: {
+              kind: "message",
+              data: { message: "please review the deployment" },
+            },
+            conversationId: "telegram:123",
+            channel: "telegram",
+            channelThreadId: "thread-7",
+            channelMessageId: 99,
+            idempotencyKey: "telegram-update:42",
+          }),
+        }),
+      );
+      expect(emitted).not.toContainEqual(expect.objectContaining({ type: "chat.start.requested" }));
+      expect(runs).toEqual([]);
+    } finally {
+      unsubscribe();
+      router.close();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps direct project input outside the May conversation App", () => {
+    const { root, bus, router } = fixture(undefined, undefined, [], { routeHumanInputToApp: true });
+    const emitted: unknown[] = [];
+    const unsubscribe = bus.subscribe((event) => emitted.push(event));
+    try {
+      bus.emit({
+        type: "human.input.received",
+        source: "web-ui",
+        owner: "agent:may",
+        data: {
+          actor: "human",
+          text: "re-run the focused validation",
+          conversation: { id: "web:1", channel: "web-ui" },
+          target: { projectPath: "projects/aks-rp-e2e.app" },
+        },
+      } as any);
+
+      expect(emitted).toContainEqual(
+        expect.objectContaining({
+          type: "project.comment.created",
+          source: "web-ui",
+          data: expect.objectContaining({
+            projectPath: "projects/aks-rp-e2e.app",
+            comment: "re-run the focused validation",
+          }),
+        }),
+      );
+      expect(emitted).not.toContainEqual(expect.objectContaining({ type: "app.input.requested" }));
+    } finally {
+      unsubscribe();
+      router.close();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("drains a valid open May inbox message when the runtime starts", async () => {
     let sourceEventId = 0;
     const { root, router, runs } = fixture(
@@ -300,7 +391,7 @@ describe("command router human intent contract", () => {
   });
 
   it("returns an exact Telegram approval identity and artifact fingerprint", () => {
-    const { root, bus, router } = fixture();
+    const { root, bus, router } = fixture(undefined, undefined, [], { routeHumanInputToApp: true });
     const observed: Array<Record<string, unknown>> = [];
     const unsubscribe = bus.subscribe((event) => {
       if (event.type === "project.approval.submitted") {
@@ -357,7 +448,7 @@ describe("command router human intent contract", () => {
   });
 
   it("propagates one human-rooted trace into an explicitly controlled chat turn", () => {
-    const { root, bus, router, sent } = fixture();
+    const { root, bus, router, sent } = fixture(undefined, undefined, [], { routeHumanInputToApp: true });
     try {
       bus.emit({
         type: "human.input.received",
@@ -817,7 +908,7 @@ describe("command router human intent contract", () => {
   });
 
   it("rejects untargeted bare cancel instead of upgrading it to cancel-all", () => {
-    const { root, bus, router, cancelled } = fixture();
+    const { root, bus, router, cancelled } = fixture(undefined, undefined, [], { routeHumanInputToApp: true });
     try {
       bus.emit({
         type: "human.input.received",
