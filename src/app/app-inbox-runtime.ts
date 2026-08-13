@@ -2,7 +2,6 @@ import type { AppInput, AppInputSource } from "@may-agent/sdk";
 import type { SqliteDb } from "../lib/db.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "./event-bus.js";
 import { AppInboxHost, type AppInboxReconcileResult, type AppTaskAttacher } from "./app-inbox-host.js";
-import { recoverLeasedAppInboxItems } from "./app-inbox-store.js";
 import { createManagerAppOwnerInvoker, type AppOwnerManager } from "./app-owner-manager-adapter.js";
 import { loadAppInboxDefinitions } from "./loader/app-inbox-loader.js";
 
@@ -65,7 +64,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     retryAfterMs: options.retryAfterMs,
     maxBatchSize: options.maxBatchSize,
   });
-  recoverLeasedAppInboxItems(options.db);
   const active = new Set<string>();
   const dirty = new Set<string>();
   let closed = false;

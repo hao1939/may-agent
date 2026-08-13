@@ -132,13 +132,15 @@ describe("App inbox runtime", () => {
 
   it("rescans durable unfinished items when the runtime starts", async () => {
     const calls: string[] = [];
+    const oldNow = Date.now() - 100;
     createAppInboxItem(db, {
       id: "restart-probe",
       appId: "evaluation-canary",
       source: { kind: "system", id: "before-restart" },
       input: { kind: "probe", data: { value: "resume" } },
+      now: oldNow,
     });
-    const oldClaim = claimAppInboxItem(db, "restart-probe", "old-host", 60_000)!;
+    const oldClaim = claimAppInboxItem(db, "restart-probe", "old-host", 1, oldNow)!;
     associateAppInboxClaimSession(db, oldClaim, "old-session");
 
     runtime = await startAppInboxRuntime({
