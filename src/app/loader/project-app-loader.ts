@@ -58,6 +58,7 @@ import {
   type ProjectAppTaskIntent,
   type ProjectAppTaskVerifier,
   type ProjectAppExecutionPaths,
+  type AppTaskAttachment,
 } from "@may-agent/sdk";
 import { Cron } from "../cron.js";
 import { ProjectAppTaskCapacity, ProjectAppTaskController } from "../project-app-task-controller.js";
@@ -85,6 +86,7 @@ import {
   listProjectAppTaskIntents,
   listRunnableProjectAppTaskQueueEntries,
   isProjectAppTaskActionStaleError,
+  isProjectAppTaskConverged,
   observeProjectAppTaskIntent,
   pendingProjectAppTaskRecoveryAttention,
   projectAppTaskQueueEntries,
@@ -2170,6 +2172,9 @@ async function reconcileTask(input: {
           ...(stale ? { staleRecovery: stale.staleRecovery } : {}),
           workflowRunId: primaryResult.runId,
         });
+        if (apply.status === "applied" && appliedDisposition === "converged") {
+          emitAppTaskDependencyCompleted(opts, descriptor, intent.id);
+        }
         return stale?.reconcileTaskIds ?? apply.dependentTaskIds;
       } catch (error) {
         const stale = recoverStaleTaskActionResult(config, primary, error);
@@ -2352,6 +2357,7 @@ function installSchedules(opts: ProjectAppLoaderOptions, cron: Cron, descriptor:
 }
 
 const appRouterDescriptorsByBus = new WeakMap<EventBus, ProjectAppDescriptor[]>();
+const appRouterOptionsByBus = new WeakMap<EventBus, ProjectAppLoaderOptions>();
 
 export type ProjectAppActionDescription = {
   id: string;
@@ -2642,6 +2648,103 @@ function enqueueProjectAppTask(
   });
 }
 
+function projectAppTaskConfig(descriptor: ProjectAppDescriptor) {
+  return taskReconciliationConfig({
+    appDir: descriptor.appDir,
+    projectDir: descriptor.projectDir,
+    owner: descriptor.owner,
+    maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
+  });
+}
+
+/**
+ * Attach App-owned work to the one Project App that shares its .app directory.
+ * The existing reconciler remains the sole owner of task validation, state,
+ * concurrency, session fencing, and execution.
+ */
+export function attachLoadedProjectAppTask(input: {
+  bus: EventBus;
+  appDir: string;
+  appId: string;
+  attachment: AppTaskAttachment;
+  idempotencyKey: string;
+}): { taskId: string; isComplete: () => Promise<boolean> } {
+  const normalizedAppDir = resolve(input.appDir);
+  const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find(
+    (candidate) => resolve(candidate.appDir) === normalizedAppDir,
+  );
+  if (!descriptor) {
+    throw new Error(`App ${input.appId} has no loaded Project App in ${normalizedAppDir}`);
+  }
+  if (!descriptor.app.tasks) {
+    throw new Error(`Project App ${descriptor.id} does not declare task reconciliation`);
+  }
+  const controller = appTaskControllersByBus.get(input.bus)?.get(descriptor.id);
+  if (!controller) {
+    throw new Error(`Project App ${descriptor.id} task reconciliation is not active`);
+  }
+  const loaderOptions = appRouterOptionsByBus.get(input.bus);
+  if (!loaderOptions) throw new Error(`Project App ${descriptor.id} runtime is not attached`);
+
+  const idempotencyKey = input.idempotencyKey.trim();
+  if (!idempotencyKey) throw new Error("App task idempotency key must be non-empty");
+  const config = projectAppTaskConfig(descriptor);
+
+  if (input.attachment.kind === "existing") {
+    const taskId = input.attachment.taskId.trim();
+    if (!taskId) throw new Error("Existing task id must be non-empty");
+    const live = readProjectAppTaskIntent(config, taskId);
+    if (!live && !isProjectAppTaskConverged(config, taskId)) {
+      throw new Error(`Task ${taskId} does not exist in Project App ${descriptor.id}`);
+    }
+    if (live) enqueueProjectAppTask(controller, config, taskId);
+    return {
+      taskId,
+      isComplete: async () => isProjectAppTaskConverged(config, taskId),
+    };
+  }
+
+  const observation = observeProjectAppTaskIntent(config, {
+    intent: input.attachment.intent,
+    appOwner: descriptor.owner,
+  });
+  interruptSupersededObservationSessions(loaderOptions, observation);
+  if (observation.kind === "observed") {
+    if (observation.changed) {
+      recordProjectAppTaskTrigger(config, observation.taskId, {
+        type: "app.task.requested",
+        source: `app-inbox:${input.appId}`,
+        owner: `agent:${descriptor.owner}`,
+        target: { project: descriptor.id, taskId: observation.taskId },
+        data: {
+          project: descriptor.id,
+          taskId: observation.taskId,
+          appId: input.appId,
+          idempotencyKey,
+        },
+      });
+    }
+    enqueueProjectAppTask(controller, config, observation.taskId);
+  }
+  return {
+    taskId: observation.taskId,
+    isComplete: async () => isProjectAppTaskConverged(config, observation.taskId, observation.generation),
+  };
+}
+
+function emitAppTaskDependencyCompleted(
+  opts: ProjectAppLoaderOptions,
+  descriptor: ProjectAppDescriptor,
+  taskId: string,
+): void {
+  opts.bus.emit({
+    type: "app.dependency.completed",
+    source: `project-app:${descriptor.id}:task-reconciler`,
+    owner: `agent:${descriptor.owner}`,
+    data: { kind: "task", id: taskId },
+  });
+}
+
 function recoverInterruptedProjectAppTasks(
   opts: ProjectAppLoaderOptions,
   descriptors: ProjectAppDescriptor[],
@@ -2830,6 +2933,7 @@ async function requeueRepairedProjectAppTaskHandlers(
 }
 
 function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: ProjectAppDescriptor[]): void {
+  appRouterOptionsByBus.set(opts.bus, opts);
   const existing = appRouterDescriptorsByBus.get(opts.bus);
   if (existing) {
     existing.splice(0, existing.length, ...descriptors);

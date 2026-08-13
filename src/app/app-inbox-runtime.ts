@@ -16,7 +16,7 @@ export type StartAppInboxRuntimeOptions = {
   db: SqliteDb;
   manager: AppOwnerManager;
   bus: EventBus;
-  attachTask?: AppTaskAttacher;
+  attachTask?: (input: Parameters<AppTaskAttacher>[0] & { appDir: string }) => ReturnType<AppTaskAttacher>;
   scanIntervalMs?: number;
   leaseMs?: number;
   retryAfterMs?: number;
@@ -54,12 +54,20 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       throw new Error(`App ${definition.id} owner agent is not registered: ${definition.owner}`);
     }
   }
+  const appDirById = new Map(loaded.map((entry) => [entry.definition.id, entry.appDir]));
+  const attachTask: AppTaskAttacher | undefined = options.attachTask
+    ? async (input) => {
+        const appDir = appDirById.get(input.appId);
+        if (!appDir) throw new Error(`Unknown App task owner: ${input.appId}`);
+        return options.attachTask!({ ...input, appDir });
+      }
+    : undefined;
 
   const host = new AppInboxHost({
     db: options.db,
     apps: loaded.map((entry) => entry.definition),
     invokeOwner: createManagerAppOwnerInvoker(options.manager),
-    attachTask: options.attachTask,
+    attachTask,
     leaseMs: options.leaseMs,
     retryAfterMs: options.retryAfterMs,
     maxBatchSize: options.maxBatchSize,
@@ -116,12 +124,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         input: requestedInput(data),
         parentId: typeof data.parentId === "string" ? data.parentId : undefined,
         conversationId: typeof data.conversationId === "string" ? data.conversationId : undefined,
-        conversationSequence:
-          typeof data.conversationSequence === "number" ? data.conversationSequence : undefined,
+        conversationSequence: typeof data.conversationSequence === "number" ? data.conversationSequence : undefined,
         idempotencyKey:
-          typeof data.idempotencyKey === "string" && data.idempotencyKey.trim()
-            ? data.idempotencyKey.trim()
-            : identity,
+          typeof data.idempotencyKey === "string" && data.idempotencyKey.trim() ? data.idempotencyKey.trim() : identity,
       });
       schedule(admitted.item.appId);
       return { accepted: true, by: `app-inbox:${admitted.item.appId}` };

@@ -16,6 +16,7 @@ import {
 } from "./daemon.js";
 import { EventBus } from "./event-bus.js";
 import { startInterfaceRuntime } from "./interface-startup.js";
+import { attachLoadedProjectAppTask } from "./loader/project-app-loader.js";
 import type { ModelRegistry } from "./model-registry.js";
 import { parseWebPort, startWebMode } from "./modes/web.js";
 import { runRequestedExitMode } from "./runtime-exit-modes.js";
@@ -102,6 +103,7 @@ export async function runAppRuntime(opts: {
         db: getDb(opts.persistDir),
         manager,
         bus,
+        attachTask: async (input) => attachLoadedProjectAppTask({ ...input, bus }),
       })
     : null;
   if (appInboxRuntime) {
