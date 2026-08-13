@@ -2637,7 +2637,7 @@ describe("project app loader", () => {
           workflowRunId: "wr_1785776992271_4mdf",
         },
       } as any);
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await Promise.resolve();
 
       const current = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
       expect(
@@ -5372,6 +5372,93 @@ describe("project app loader", () => {
       expect(
         events.filter((event) => event.type === "message.progressed" && event.data?.sourceEventId === messageEventId),
       ).toHaveLength(0);
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("leaves fresh messages to an explicit App inbox while preserving historical owner-inbox replay", async () => {
+    const f = fixture();
+    try {
+      writeApp(f.appDir);
+      writeFileSync(
+        join(f.appDir, "inbox.js"),
+        `export default {
+          id: "sample",
+          version: 1,
+          owner: "sample-owner",
+          inputSchema: { type: "object", additionalProperties: true }
+        };\n`,
+      );
+      const bus = new EventBus();
+      const events: any[] = [];
+      const writer = new DbWriter(f.persistDir);
+      bus.setPersistenceSubscriber(writer.handler);
+      bus.setDeliveryRecorder(writer.recordDelivery);
+      bus.subscribe((event) => events.push(event));
+      const ownerCalls: string[] = [];
+      await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: manager(ownerCalls),
+        bus,
+        agentCrons: new Map(),
+      });
+
+      const message = bus.emit({
+        type: "message.created",
+        source: "agent:requester",
+        owner: "agent:sample-owner",
+        data: {
+          from: "requester",
+          to: "sample-owner",
+          content: "Handle this through the explicit App inbox",
+          intent: "request",
+        },
+      } as any);
+      const messageEventId = (message as any)[EVENT_ROW_ID];
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(ownerCalls).toHaveLength(0);
+      expect(
+        events.some((event) => event.type === "project.owner.requested" && event.data?.inputEventId === messageEventId),
+      ).toBe(false);
+
+      bus.emit({
+        type: "owner.inbox.accepted",
+        source: "handler:event-pair-orphan-gc",
+        owner: "agent:sample-owner",
+        data: {
+          sourceEventId: messageEventId,
+          sourceEventType: "message.created",
+          reason: "periodic-resync",
+          input: {
+            from: "requester",
+            to: "sample-owner",
+            content: "Handle this historical owner-inbox message",
+            intent: "request",
+          },
+        },
+      } as any);
+
+      await waitUntil(
+        () => events.some((event) => event.type === "message.resolved" && event.data?.openEventId === messageEventId),
+        2_000,
+      );
+      expect(ownerCalls).toHaveLength(1);
+      expect(ownerCalls[0]).toContain("Handle this historical owner-inbox message");
+      expect(
+        events.filter(
+          (event) => event.type === "project.owner.requested" && event.data?.inputEventId === messageEventId,
+        ),
+      ).toHaveLength(1);
+      expect(
+        events.filter((event) => event.type === "message.resolved" && event.data?.openEventId === messageEventId),
+      ).toHaveLength(1);
     } finally {
       closeDb(f.persistDir);
       rmSync(f.root, { recursive: true, force: true });
