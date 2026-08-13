@@ -2074,6 +2074,14 @@ describe("project app loader", () => {
             event.data?.disposition === "waiting",
         ),
       );
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "project.task.reconciled" &&
+            event.data?.taskId === "work/parent-child-a" &&
+            event.data?.disposition === "waiting",
+        ),
+      );
 
       const state = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
       const tree = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "tree.json"), "utf8"));
@@ -4501,10 +4509,11 @@ describe("project app loader", () => {
       });
 
       expect(readSessionMeta(f.persistDir, "owner-old")).toMatchObject({ status: "interrupted" });
-      const state = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
-      expect(state.resources["work/orphan-owner"].status).toMatchObject({
-        phase: "running",
-      });
+      await waitUntil(() =>
+        events.some(
+          (event) => event.type === "project.task.reconcile.started" && event.data?.taskId === "work/orphan-owner",
+        ),
+      );
       expect(events.some((event) => event.type === "session.end" && event.data?.sessionId === "owner-old")).toBe(true);
       expect(
         events.some(
@@ -4514,6 +4523,8 @@ describe("project app loader", () => {
       await waitUntil(() =>
         events.some((event) => event.type === "project.task.reconciled" && event.data?.taskId === "work/orphan-owner"),
       );
+      const state = JSON.parse(readFileSync(join(f.appDir, ".state", "tasks", "state.json"), "utf8"));
+      expect(state.receipts["work/orphan-owner"]).toBeTruthy();
     } finally {
       closeDb(f.persistDir);
       rmSync(f.root, { recursive: true, force: true });

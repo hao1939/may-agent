@@ -163,7 +163,8 @@ export class ProjectAppTaskCapacity {
       active: true,
       grant: (release) => {
         reservedRelease = release;
-        queueMicrotask(() => {
+        // Capacity handoffs must leave room for control-socket and timer I/O.
+        setTimeout(() => {
           if (!active) {
             reservedRelease?.();
             reservedRelease = undefined;
@@ -172,7 +173,7 @@ export class ProjectAppTaskCapacity {
           active = false;
           reservedRelease = undefined;
           callback(release);
-        });
+        }, 0);
       },
     };
     const release = this.tryAcquireLocal();
@@ -280,10 +281,11 @@ export class ProjectAppTaskController {
   private schedulePump(): void {
     if (this.scheduled || this.closed || !this.startReady) return;
     this.scheduled = true;
-    queueMicrotask(() => {
+    // A ready-work chain must not monopolize the event loop between tasks.
+    setTimeout(() => {
       this.scheduled = false;
       this.pump();
-    });
+    }, 0);
   }
 
   private pump(): void {
