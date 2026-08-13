@@ -8,6 +8,7 @@ import {
   completeAppInboxClaim,
   createAppInboxItem,
   getAppInboxItem,
+  listAppInboxHealth,
   listAppInboxItems,
   waitAppInboxClaim,
   wakeAppInboxItemsWaitingOn,
@@ -94,6 +95,44 @@ describe("App inbox store", () => {
     expect(listAppInboxItems(db, { appId: "may" }).map((item) => item.id)).toEqual(["newer", "older"]);
     expect(listAppInboxItems(db, { appId: "may", status: "done" })).toMatchObject([
       { id: "older", result: { summary: "done" } },
+    ]);
+  });
+
+  it("projects current inbox health without reconstructing lifecycle events", () => {
+    create("pending", { now: 100 });
+    create("leased", { now: 110 });
+    create("waiting", { now: 120 });
+    expect(claimAppInboxItem(db, "leased", "worker-1", 50, 130)).not.toBeNull();
+    const waiting = claimAppInboxItem(db, "waiting", "worker-2", 100, 130)!;
+    expect(waitAppInboxClaim(db, waiting, { kind: "task", id: "task-1" }, { now: 140 })).toBe(true);
+    createAppInboxItem(db, {
+      id: "evaluation-done",
+      appId: "evaluation",
+      source: { kind: "system", id: "canary" },
+      input: { kind: "probe", data: {} },
+      now: 150,
+    });
+    const evaluation = claimAppInboxItem(db, "evaluation-done", "worker-3", 50, 150)!;
+    completeAppInboxClaim(db, evaluation, { summary: "done" }, 160);
+
+    expect(listAppInboxHealth(db, { appId: "may", now: 181 })).toEqual([
+      {
+        appId: "may",
+        total: 3,
+        pending: 1,
+        handling: 2,
+        done: 0,
+        ready: 2,
+        waitingOnDependency: 1,
+        activeLeases: 0,
+        expiredLeases: 1,
+        oldestPendingAgeMs: 81,
+        oldestHandlingItemAgeMs: 71,
+      },
+    ]);
+    expect(listAppInboxHealth(db, { now: 181 }).map((entry) => entry.appId)).toEqual([
+      "evaluation",
+      "may",
     ]);
   });
 
