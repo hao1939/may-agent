@@ -181,13 +181,16 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
     return `${candidate.from} proposes sending Hao a proactive ${candidate.eventType} update${projectPart}.`;
   }
 
-  function handledReview(candidate: HumanAttentionCandidate, input: {
-    reason: string;
-    nextAction: string;
-    actionTaken: string;
-    closureCondition: string;
-    evidence: string[];
-  }): HumanAttentionReview {
+  function handledReview(
+    candidate: HumanAttentionCandidate,
+    input: {
+      reason: string;
+      nextAction: string;
+      actionTaken: string;
+      closureCondition: string;
+      evidence: string[];
+    },
+  ): HumanAttentionReview {
     return {
       status: "completed",
       disposition: "handle",
@@ -200,7 +203,11 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
     };
   }
 
-  function failedReviewFallback(candidate: HumanAttentionCandidate, review: HumanAttentionReview, attempts: number): HumanAttentionReview {
+  function failedReviewFallback(
+    candidate: HumanAttentionCandidate,
+    review: HumanAttentionReview,
+    attempts: number,
+  ): HumanAttentionReview {
     return {
       status: "completed",
       disposition: "route",
@@ -294,13 +301,9 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
     if (review.status !== "failed") return false;
     const reason = review.reason.trim().toLowerCase();
     if (!reason) return true;
-    return ![
-      "request was aborted",
-      "timed out",
-      "timeout",
-      "no structured result",
-      "without calling finish",
-    ].some((needle) => reason.includes(needle));
+    return !["request was aborted", "timed out", "timeout", "no structured result", "without calling finish"].some(
+      (needle) => reason.includes(needle),
+    );
   }
 
   async function decideProactive(
@@ -430,6 +433,25 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
   const unsubBus = bus.subscribe((event: any) => {
     const session = sessionData(event);
     const sessionId = typeof session.sessionId === "string" ? session.sessionId : undefined;
+
+    if (event.type === "app.response.delivery.requested") {
+      if (session.channel !== "telegram") return;
+      const text = typeof session.text === "string" ? session.text.trim() : "";
+      if (!text) return;
+      sendToUser(text, {
+        eventType: "app.response.delivery.requested",
+        agent: opts.interfaceAgent,
+        sessionId,
+        replyToMessageId: numberOrUndefined(session.channelMessageId),
+        conversationId: typeof session.conversationId === "string" ? session.conversationId : undefined,
+        data: {
+          operationId: session.operationId,
+          appInboxItemId: session.appInboxItemId,
+          appInboxRequestId: session.appInboxRequestId,
+        },
+      });
+      return;
+    }
 
     // Track resolved approvals so stale approval prompts are suppressed.
     if (event.type === "project.approval.submitted" || event.type === "project.approval.resolved") {
@@ -735,7 +757,9 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
                 "Checked the approval identity against current runtime resolution state and suppressed the stale prompt before delivery.",
               closureCondition:
                 "This candidate closes now as handled because the matching approval already has a terminal resolution and no new human decision remains.",
-              evidence: ["The candidate approval identity was already resolved in current runtime state before delivery."],
+              evidence: [
+                "The candidate approval identity was already resolved in current runtime state before delivery.",
+              ],
             }),
             0,
             false,
@@ -758,7 +782,9 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
                 "Matched the candidate's stable notification key against queued/delivered state and suppressed the duplicate proposal.",
               closureCondition:
                 "This candidate closes now as handled because the existing notification lineage for this key already owns the human-facing update.",
-              evidence: [`Matched stable notification key ${stableNotificationKey} against existing queued or delivered state.`],
+              evidence: [
+                `Matched stable notification key ${stableNotificationKey} against existing queued or delivered state.`,
+              ],
             }),
             0,
             false,
@@ -852,9 +878,7 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
     if (session.parentSessionId) return false;
     if (session.agent !== opts.interfaceAgent) return false;
     const structuredMayTurn =
-      session.kind === "job" &&
-      typeof session.requestId === "string" &&
-      (session.requestId.startsWith("may-turn:") || session.requestId.startsWith("app-inbox-human:"));
+      session.kind === "job" && typeof session.requestId === "string" && session.requestId.startsWith("may-turn:");
     if (session.kind && session.kind !== "chat" && !structuredMayTurn) return false;
     // A daemon chat session can be reused by Telegram, CLI, Web, and tests.
     // Route a turn to Telegram only when Telegram started that turn. Treating

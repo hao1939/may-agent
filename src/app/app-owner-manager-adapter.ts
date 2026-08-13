@@ -1,7 +1,7 @@
 import { Type, type Static } from "@earendil-works/pi-ai";
 import { Check, Errors } from "typebox/value";
 import type { AppDefinition, AppRequest } from "@may-agent/sdk";
-import type { AppOwnerDispositionResult, AppOwnerInvoker } from "./app-inbox-host.js";
+import { appInboxHumanRequestId, type AppOwnerDispositionResult, type AppOwnerInvoker } from "./app-inbox-host.js";
 
 const appInputSchema = Type.Object(
   {
@@ -50,10 +50,7 @@ export const appDispositionSchema = Type.Union([
           { kind: Type.Literal("existing"), taskId: Type.String({ minLength: 1 }) },
           { additionalProperties: false },
         ),
-        Type.Object(
-          { kind: Type.Literal("desired"), intent: taskIntentSchema },
-          { additionalProperties: false },
-        ),
+        Type.Object({ kind: Type.Literal("desired"), intent: taskIntentSchema }, { additionalProperties: false }),
       ]),
     },
     { additionalProperties: false },
@@ -138,7 +135,7 @@ export function createManagerAppOwnerInvoker(manager: AppOwnerManager): AppOwner
       kind: transport ? "job" : "call",
       projectId: app.id,
       requestId: transport
-        ? `app-inbox-human:${requests[0]!.id}`
+        ? appInboxHumanRequestId(requests[0]!.id)
         : `app-inbox:${requests.map((request) => request.id).join(",")}`,
       conversationId: transport?.conversationId,
       channelMessageId: transport?.channelMessageId,
