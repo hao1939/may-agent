@@ -9,6 +9,7 @@ export type AppInboxRuntime = {
   host: AppInboxHost;
   close(): void;
   scanNow(): void;
+  enableDelivery(): void;
 };
 
 export type StartAppInboxRuntimeOptions = {
@@ -87,6 +88,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     retryAfterMs: options.retryAfterMs,
     maxBatchSize: options.maxBatchSize,
   });
+  host.recoverDeliveries();
   const active = new Set<string>();
   const dirty = new Set<string>();
   const pending: string[] = [];
@@ -96,6 +98,56 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     throw new Error("App inbox maxConcurrentApps must be a positive safe integer");
   }
   let closed = false;
+  let deliveryEnabled = false;
+  let dispatchingDelivery = false;
+
+  const pumpDeliveries = (): void => {
+    if (closed || !deliveryEnabled || dispatchingDelivery) return;
+    dispatchingDelivery = true;
+    try {
+      for (;;) {
+        const dispatch = host.claimDelivery();
+        if (!dispatch) break;
+        const { delivery, item, text } = dispatch;
+        try {
+          options.bus.emit({
+            type: "app.response.delivery.requested",
+            source: "app-inbox",
+            owner: `app:${item.appId}`,
+            target: { human: true },
+            data: {
+              operationId: delivery.operationId,
+              appInboxItemId: delivery.itemId,
+              appInboxRequestId: delivery.requestId,
+              sessionId: delivery.sessionId,
+              channel: delivery.channel,
+              channelThreadId: item.channelThreadId,
+              channelMessageId: item.channelMessageId,
+              conversationId: item.conversationId,
+              text,
+            },
+          });
+        } catch (error) {
+          // Event persistence runs before transport subscribers. If it failed,
+          // no external send started and this outbox operation is safe to retry.
+          host.restoreDelivery(delivery.operationId);
+          throw error;
+        }
+      }
+    } catch (error) {
+      try {
+        options.bus.emit({
+          type: "info",
+          message: `[app-inbox:delivery] ${error instanceof Error ? error.message : String(error)}`,
+        });
+      } catch {
+        // Persistence is already known to be unavailable; avoid turning the
+        // diagnostic path into a second outbox failure.
+      }
+    } finally {
+      dispatchingDelivery = false;
+    }
+  };
 
   const report = (appId: string, outcome: AppInboxReconcileResult) => {
     if (outcome.errors.length === 0) return;
@@ -118,6 +170,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         .then((outcome) => {
           report(appId, outcome);
           if (outcome.claimed > 0) dirty.add(appId);
+          pumpDeliveries();
         })
         .catch((error) => {
           options.bus.emit({
@@ -144,6 +197,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
 
   const scanNow = () => {
     for (const appId of host.appIds()) schedule(appId);
+    pumpDeliveries();
   };
 
   const unsubscribe = options.bus.subscribeDurableRoute((event): DeliveryResult | void => {
@@ -175,6 +229,37 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         return { accepted: true, by: "app-inbox:wake" };
       }
     }
+    if (event.type === "channel.delivery.completed" || event.type === "channel.delivery.failed") {
+      const operationId = typeof data.operationId === "string" ? data.operationId.trim() : "";
+      const itemId = typeof data.appInboxItemId === "string" ? data.appInboxItemId.trim() : "";
+      const requestId = typeof data.appInboxRequestId === "string" ? data.appInboxRequestId.trim() : "";
+      const sessionId = typeof data.sessionId === "string" ? data.sessionId.trim() : "";
+      const channel = typeof data.channel === "string" ? data.channel.trim() : "";
+      if (operationId && itemId && requestId && sessionId && channel) {
+        const external = data.externalMessageId;
+        const outcome = host.recordDelivery({
+          operationId,
+          itemId,
+          requestId,
+          sessionId,
+          channel,
+          status:
+            event.type === "channel.delivery.completed"
+              ? "delivered"
+              : data.certainty === "not-delivered"
+                ? "failed"
+                : "uncertain",
+          externalMessageId:
+            typeof external === "string" || typeof external === "number" ? String(external) : undefined,
+          reason: typeof data.reason === "string" ? data.reason : undefined,
+          eventId: Number(eventIdentity(event)?.replace(/^event:/, "")) || undefined,
+        });
+        if (outcome.matched) {
+          if (outcome.completed) scanNow();
+          return { accepted: true, by: `app-inbox:delivery:${itemId}` };
+        }
+      }
+    }
   });
   const scanIntervalMs = options.scanIntervalMs ?? 5_000;
   if (!Number.isFinite(scanIntervalMs) || scanIntervalMs <= 0) {
@@ -188,6 +273,11 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   return {
     host,
     scanNow,
+    enableDelivery() {
+      if (closed || deliveryEnabled) return;
+      deliveryEnabled = true;
+      pumpDeliveries();
+    },
     close() {
       if (closed) return;
       closed = true;

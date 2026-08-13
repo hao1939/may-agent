@@ -7,11 +7,12 @@
 
 import { EVENT_INGRESS_SOURCE, EVENT_ROW_ID, type EventBus, type AgentEvent } from "../event-bus.js";
 import type { SubagentManager } from "../../lib/index.js";
+import { describeLoadedProjectAppActions, invokeLoadedProjectAppAction } from "../loader/project-app-loader.js";
 import {
-  describeLoadedProjectAppActions,
-  invokeLoadedProjectAppAction,
-} from "../loader/project-app-loader.js";
-import { attachControlSocket, type ControlSocket, type ControlStatusItem } from "../../../packages/control/src/server.js";
+  attachControlSocket,
+  type ControlSocket,
+  type ControlStatusItem,
+} from "../../../packages/control/src/server.js";
 export type { SocketFrame } from "../../../packages/control/src/protocol.js";
 
 export interface SocketUIOptions {
@@ -51,19 +52,23 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
     },
     describeProjectActions: (projectId) => describeLoadedProjectAppActions(bus, projectId),
     invokeProjectAction: (input) => invokeLoadedProjectAppAction({ bus, ingressSource: "control-socket", ...input }),
-    subscribeEvents: (handler) => bus.subscribe((event) => handler(event as unknown as Record<string, unknown> & { type: string })),
+    subscribeEvents: (handler) =>
+      bus.subscribe((event) => handler(event as unknown as Record<string, unknown> & { type: string })),
     onDelivered: (event, clientCount) => {
-      const data = event.data && typeof event.data === "object" ? event.data as Record<string, unknown> : event;
+      const data = event.data && typeof event.data === "object" ? (event.data as Record<string, unknown>) : event;
       bus.emit({
         type: "channel.delivery.completed",
         source: "control-socket",
         owner: "agent:may",
         target: { human: true },
         data: {
-          channel: "control-socket",
+          channel: typeof data.channel === "string" ? data.channel : "control-socket",
           clientCount,
           sessionId: data.sessionId,
           resultEventType: event.type,
+          operationId: data.operationId,
+          appInboxItemId: data.appInboxItemId,
+          appInboxRequestId: data.appInboxRequestId,
         },
       } as any);
     },

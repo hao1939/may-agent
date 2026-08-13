@@ -4,6 +4,23 @@ import type { SqliteDb } from "../lib/db.js";
 
 export type AppInboxStatus = "pending" | "handling" | "done";
 export type AppInboxWaitKind = "app" | "task" | "session";
+export type AppInboxDeliveryStatus = "pending" | "sending" | "delivered" | "failed" | "uncertain";
+
+export type AppInboxDelivery = {
+  itemId: string;
+  operationId: string;
+  sessionId: string;
+  requestId: string;
+  channel: string;
+  status: AppInboxDeliveryStatus;
+  externalMessageId?: string;
+  failureReason?: string;
+  receiptEventId?: number;
+  createdAt: number;
+  updatedAt: number;
+  attemptedAt?: number;
+  completedAt?: number;
+};
 
 export type AppInboxItem = {
   id: string;
@@ -20,6 +37,7 @@ export type AppInboxItem = {
   sessionId?: string;
   waitingOn?: { kind: AppInboxWaitKind; id: string };
   result?: AppResult;
+  delivery?: AppInboxDelivery;
   availableAt?: number;
   reviewAt?: number;
   lease?: { generation: number; owner: string; expiresAt: number };
@@ -65,6 +83,7 @@ export type AppInboxHealth = {
   done: number;
   ready: number;
   waitingOnDependency: number;
+  waitingOnDelivery: number;
   activeLeases: number;
   expiredLeases: number;
   oldestPendingAgeMs?: number;
@@ -137,6 +156,24 @@ function rowToItem(row: InboxRow): AppInboxItem {
   };
 }
 
+function rowToDelivery(row: InboxRow): AppInboxDelivery {
+  return {
+    itemId: requiredText(row.item_id, "delivery.item_id"),
+    operationId: requiredText(row.operation_id, "delivery.operation_id"),
+    sessionId: requiredText(row.session_id, "delivery.session_id"),
+    requestId: requiredText(row.request_id, "delivery.request_id"),
+    channel: requiredText(row.channel, "delivery.channel"),
+    status: requiredText(row.status, "delivery.status") as AppInboxDeliveryStatus,
+    externalMessageId: optionalText(row.external_message_id),
+    failureReason: optionalText(row.failure_reason),
+    receiptEventId: optionalNumber(row.receipt_event_id),
+    createdAt: Number(row.created_at),
+    updatedAt: Number(row.updated_at),
+    attemptedAt: optionalNumber(row.attempted_at),
+    completedAt: optionalNumber(row.completed_at),
+  };
+}
+
 function validateCreate(input: CreateAppInboxItem): void {
   requiredText(input.appId, "appId");
   requiredText(input.source.id, "source.id");
@@ -155,14 +192,25 @@ function validateCreate(input: CreateAppInboxItem): void {
   ) {
     throw new Error("App inbox conversationSequence must be a non-negative safe integer");
   }
-  if (input.channelMessageId !== undefined && (!Number.isSafeInteger(input.channelMessageId) || input.channelMessageId <= 0)) {
+  if (
+    input.channelMessageId !== undefined &&
+    (!Number.isSafeInteger(input.channelMessageId) || input.channelMessageId <= 0)
+  ) {
     throw new Error("App inbox channelMessageId must be a positive safe integer");
   }
 }
 
 export function getAppInboxItem(db: SqliteDb, id: string): AppInboxItem | null {
   const row = db.prepare("SELECT * FROM app_inbox_items WHERE id = ?").get(id);
-  return row ? rowToItem(row) : null;
+  if (!row) return null;
+  const item = rowToItem(row);
+  const delivery = getAppInboxDelivery(db, item.id);
+  return delivery ? { ...item, delivery } : item;
+}
+
+export function getAppInboxDelivery(db: SqliteDb, itemId: string): AppInboxDelivery | null {
+  const row = db.prepare("SELECT * FROM app_inbox_deliveries WHERE item_id = ?").get(itemId);
+  return row ? rowToDelivery(row) : null;
 }
 
 export function listAppInboxItems(db: SqliteDb, query: AppInboxQuery = {}): AppInboxItem[] {
@@ -196,14 +244,15 @@ export function listAppInboxItems(db: SqliteDb, query: AppInboxQuery = {}): AppI
        LIMIT ?`,
     )
     .all(...params, limit)
-    .map(rowToItem);
+    .map((row) => {
+      const item = rowToItem(row);
+      const delivery = getAppInboxDelivery(db, item.id);
+      return delivery ? { ...item, delivery } : item;
+    });
 }
 
 /** Current lifecycle health derived directly from the inbox authority, never event reconstruction. */
-export function listAppInboxHealth(
-  db: SqliteDb,
-  query: { appId?: string; now?: number } = {},
-): AppInboxHealth[] {
+export function listAppInboxHealth(db: SqliteDb, query: { appId?: string; now?: number } = {}): AppInboxHealth[] {
   const now = query.now ?? Date.now();
   if (!Number.isFinite(now)) throw new Error("App inbox health now must be finite");
   const appId = query.appId === undefined ? undefined : requiredText(query.appId, "appId");
@@ -221,6 +270,13 @@ export function listAppInboxHealth(
               SUM(CASE WHEN status = 'handling' AND lease_owner IS NULL
                             AND waiting_on_kind IS NOT NULL AND waiting_on_id IS NOT NULL
                        THEN 1 ELSE 0 END) AS waiting_on_dependency,
+              SUM(CASE WHEN status = 'handling' AND result IS NOT NULL
+                            AND EXISTS (
+                              SELECT 1 FROM app_inbox_deliveries delivery
+                              WHERE delivery.item_id = app_inbox_items.id
+                                AND delivery.status != 'delivered'
+                            )
+                       THEN 1 ELSE 0 END) AS waiting_on_delivery,
               SUM(CASE WHEN status = 'handling' AND lease_owner IS NOT NULL
                             AND lease_expires_at > ?
                        THEN 1 ELSE 0 END) AS active_leases,
@@ -246,6 +302,7 @@ export function listAppInboxHealth(
     done: Number(row.done),
     ready: Number(row.ready),
     waitingOnDependency: Number(row.waiting_on_dependency),
+    waitingOnDelivery: Number(row.waiting_on_delivery),
     activeLeases: Number(row.active_leases),
     expiredLeases: Number(row.expired_leases),
     oldestPendingAgeMs: age(row.oldest_pending_at),
@@ -253,10 +310,7 @@ export function listAppInboxHealth(
   }));
 }
 
-export function createAppInboxItem(
-  db: SqliteDb,
-  input: CreateAppInboxItem,
-): { item: AppInboxItem; created: boolean } {
+export function createAppInboxItem(db: SqliteDb, input: CreateAppInboxItem): { item: AppInboxItem; created: boolean } {
   validateCreate(input);
   const now = input.now ?? Date.now();
   const id = input.id ?? `app_${randomUUID()}`;
@@ -426,12 +480,7 @@ export function claimNextAppInboxItem(
   return { item, generation: item.lease!.generation, owner };
 }
 
-export function renewAppInboxClaim(
-  db: SqliteDb,
-  claim: AppInboxClaim,
-  leaseMs: number,
-  now = Date.now(),
-): boolean {
+export function renewAppInboxClaim(db: SqliteDb, claim: AppInboxClaim, leaseMs: number, now = Date.now()): boolean {
   if (!Number.isFinite(leaseMs) || leaseMs <= 0) throw new Error("App inbox leaseMs must be positive");
   return (
     db.run(
@@ -471,10 +520,7 @@ export function waitAppInboxClaim(
   requiredText(waitingOn.id, "waitingOn.id");
   const now = options.now ?? Date.now();
   const reviewAt = options.reviewAfterMs === undefined ? null : now + options.reviewAfterMs;
-  if (
-    options.reviewAfterMs !== undefined &&
-    (!Number.isFinite(options.reviewAfterMs) || options.reviewAfterMs < 0)
-  ) {
+  if (options.reviewAfterMs !== undefined && (!Number.isFinite(options.reviewAfterMs) || options.reviewAfterMs < 0)) {
     throw new Error("App inbox reviewAfterMs must be finite and non-negative");
   }
   return (
@@ -484,16 +530,7 @@ export function waitAppInboxClaim(
            session_id = NULL, lease_owner = NULL, lease_expires_at = NULL, updated_at = ?
        WHERE id = ? AND status = 'handling'
          AND lease_generation = ? AND lease_owner = ?`,
-      [
-        waitingOn.kind,
-        waitingOn.id,
-        reviewAt,
-        reviewAt,
-        now,
-        claim.item.id,
-        claim.generation,
-        claim.owner,
-      ],
+      [waitingOn.kind, waitingOn.id, reviewAt, reviewAt, now, claim.item.id, claim.generation, claim.owner],
     ).changes === 1
   );
 }
@@ -581,4 +618,157 @@ export function releaseAppInboxClaim(
       [retryAt, now, claim.item.id, claim.generation, claim.owner],
     ).changes === 1
   );
+}
+
+export type AppInboxDeliveryDispatch = {
+  delivery: AppInboxDelivery;
+  item: AppInboxItem;
+  text: string;
+};
+
+export function stageAppInboxClaimDelivery(
+  db: SqliteDb,
+  claim: AppInboxClaim,
+  input: { channel: string; sessionId: string; requestId: string; result: AppResult },
+  now = Date.now(),
+): AppInboxDelivery {
+  const channel = requiredText(input.channel, "delivery.channel");
+  const sessionId = requiredText(input.sessionId, "delivery.sessionId");
+  const requestId = requiredText(input.requestId, "delivery.requestId");
+  requiredText(input.result.summary, "delivery.result.summary");
+  const operationId = `app-delivery:${claim.item.id}:${claim.generation}`;
+  const updated = db.run(
+    `UPDATE app_inbox_items
+     SET result = ?, waiting_on_kind = NULL, waiting_on_id = NULL,
+         review_at = NULL, available_at = NULL,
+         lease_owner = NULL, lease_expires_at = NULL, updated_at = ?
+     WHERE id = ? AND status = 'handling'
+       AND lease_generation = ? AND lease_owner = ? AND session_id = ?`,
+    [JSON.stringify(input.result), now, claim.item.id, claim.generation, claim.owner, sessionId],
+  );
+  if (updated.changes !== 1) throw new Error("claim is stale or has no matching owner session");
+
+  const inserted = db.run(
+    `INSERT INTO app_inbox_deliveries (
+       item_id, operation_id, session_id, request_id, channel, status, created_at, updated_at
+     ) VALUES (?, ?, ?, ?, ?, 'pending', ?, ?)`,
+    [claim.item.id, operationId, sessionId, requestId, channel, now, now],
+  );
+  if (inserted.changes !== 1) throw new Error(`Cannot stage delivery for App inbox item ${claim.item.id}`);
+  return getAppInboxDelivery(db, claim.item.id)!;
+}
+
+export function claimNextAppInboxDelivery(db: SqliteDb, now = Date.now()): AppInboxDeliveryDispatch | null {
+  const row = db
+    .prepare(
+      `UPDATE app_inbox_deliveries
+       SET status = 'sending', attempted_at = ?, updated_at = ?
+       WHERE item_id = (
+         SELECT delivery.item_id
+         FROM app_inbox_deliveries delivery
+         JOIN app_inbox_items item ON item.id = delivery.item_id
+         WHERE delivery.status = 'pending' AND item.status = 'handling'
+         ORDER BY delivery.created_at, delivery.item_id
+         LIMIT 1
+       )
+       RETURNING *`,
+    )
+    .get(now, now);
+  if (!row) return null;
+  const delivery = rowToDelivery(row);
+  const item = getAppInboxItem(db, delivery.itemId);
+  if (!item?.result) throw new Error(`Delivery ${delivery.operationId} has no admitted App result`);
+  const text = item.result.response?.trim() || item.result.summary.trim();
+  if (!text) throw new Error(`Delivery ${delivery.operationId} has no human-facing response`);
+  return { delivery, item, text };
+}
+
+/** Safe only when event persistence failed before any transport subscriber ran. */
+export function restorePendingAppInboxDelivery(db: SqliteDb, operationId: string, now = Date.now()): boolean {
+  return (
+    db.run(
+      `UPDATE app_inbox_deliveries
+       SET status = 'pending', attempted_at = NULL, updated_at = ?
+       WHERE operation_id = ? AND status = 'sending'`,
+      [now, requiredText(operationId, "delivery.operationId")],
+    ).changes === 1
+  );
+}
+
+/** A persisted sending state survived its process, so the external outcome is unknown. */
+export function markAppInboxSendingDeliveriesUncertain(db: SqliteDb, now = Date.now()): number {
+  return db.run(
+    `UPDATE app_inbox_deliveries
+     SET status = 'uncertain',
+         failure_reason = COALESCE(failure_reason, 'Runtime restarted before an authoritative delivery receipt'),
+         updated_at = ?
+     WHERE status = 'sending'`,
+    [now],
+  ).changes;
+}
+
+export type AppInboxDeliveryReceipt = {
+  operationId: string;
+  itemId: string;
+  sessionId: string;
+  requestId: string;
+  channel: string;
+  status: "delivered" | "failed" | "uncertain";
+  externalMessageId?: string;
+  reason?: string;
+  eventId?: number;
+};
+
+export function recordAppInboxDeliveryReceipt(
+  db: SqliteDb,
+  receipt: AppInboxDeliveryReceipt,
+  now = Date.now(),
+): { matched: boolean; completed: boolean; status?: AppInboxDeliveryStatus } {
+  const operationId = requiredText(receipt.operationId, "delivery.operationId");
+  const currentRow = db.prepare("SELECT * FROM app_inbox_deliveries WHERE operation_id = ?").get(operationId);
+  if (!currentRow) return { matched: false, completed: false };
+  const current = rowToDelivery(currentRow);
+  if (
+    current.itemId !== receipt.itemId ||
+    current.sessionId !== receipt.sessionId ||
+    current.requestId !== receipt.requestId ||
+    current.channel !== receipt.channel
+  ) {
+    return { matched: false, completed: false };
+  }
+
+  if (receipt.status !== "delivered") {
+    if (current.status !== "delivered") {
+      db.run(
+        `UPDATE app_inbox_deliveries
+         SET status = ?, failure_reason = ?, receipt_event_id = COALESCE(?, receipt_event_id), updated_at = ?
+         WHERE operation_id = ? AND status != 'delivered'`,
+        [receipt.status, receipt.reason?.trim() || null, receipt.eventId ?? null, now, operationId],
+      );
+    }
+    return {
+      matched: true,
+      completed: false,
+      status: getAppInboxDelivery(db, current.itemId)!.status,
+    };
+  }
+
+  db.run(
+    `UPDATE app_inbox_deliveries
+     SET status = 'delivered', external_message_id = ?, failure_reason = NULL,
+         receipt_event_id = COALESCE(?, receipt_event_id), completed_at = COALESCE(completed_at, ?), updated_at = ?
+     WHERE operation_id = ?`,
+    [receipt.externalMessageId?.trim() || null, receipt.eventId ?? null, now, now, operationId],
+  );
+  const completed =
+    db.run(
+      `UPDATE app_inbox_items
+     SET status = 'done', completed_at = ?, updated_at = ?,
+         waiting_on_kind = NULL, waiting_on_id = NULL,
+         review_at = NULL, available_at = NULL,
+         lease_owner = NULL, lease_expires_at = NULL
+     WHERE id = ? AND status = 'handling' AND result IS NOT NULL AND session_id = ?`,
+      [now, now, current.itemId, current.sessionId],
+    ).changes === 1;
+  return { matched: true, completed, status: "delivered" };
 }

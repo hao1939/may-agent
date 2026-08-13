@@ -54,6 +54,7 @@ export function createTelegramClient(opts: TelegramClientOptions): TelegramClien
     const chunks = splitTelegramMessage(text, TELEGRAM_MAX_LENGTH);
     let lastMsgId: number | undefined;
     const sentMsgIds: number[] = [];
+    let complete = true;
     for (const chunk of chunks) {
       const replyParams = context?.replyToMessageId
         ? { reply_parameters: { message_id: context.replyToMessageId, allow_sending_without_reply: true } }
@@ -67,16 +68,20 @@ export function createTelegramClient(opts: TelegramClientOptions): TelegramClien
         });
         lastMsgId = result?.message_id;
         if (lastMsgId) sentMsgIds.push(lastMsgId);
+        else complete = false;
       } catch (err) {
         if (parseMode) {
           try {
             const result = await apiCall("sendMessage", { chat_id: chatId, text: chunk, ...replyParams });
             lastMsgId = result?.message_id;
             if (lastMsgId) sentMsgIds.push(lastMsgId);
+            else complete = false;
           } catch (retryErr) {
+            complete = false;
             opts.emitInfo(`[telegram] Send failed: ${errorMessage(retryErr)}`);
           }
         } else {
+          complete = false;
           opts.emitInfo(`[telegram] Send failed: ${errorMessage(err)}`);
         }
       }
@@ -98,7 +103,7 @@ export function createTelegramClient(opts: TelegramClientOptions): TelegramClien
         }
       }
     }
-    return lastMsgId;
+    return complete && sentMsgIds.length === chunks.length ? lastMsgId : undefined;
   }
 
   return { apiCall, sendMessage };
