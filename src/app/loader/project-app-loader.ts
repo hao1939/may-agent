@@ -63,6 +63,7 @@ import {
 import type { TaskView } from "@may-agent/sdk/app";
 import { readRuntimeTaskView } from "../app-read.js";
 import { Cron } from "../cron.js";
+import { loadAppInboxDefinitions } from "./app-inbox-loader.js";
 import { ProjectAppTaskCapacity, ProjectAppTaskController } from "../project-app-task-controller.js";
 import type { ProjectAppTaskQueueOptions } from "../project-app-task-queue.js";
 import { trackProjectAppConditionEvent, trackProjectAppConditionEvents } from "../project-app-condition-tracker.js";
@@ -139,7 +140,7 @@ export interface ProjectAppDescriptor {
   projectDir: string;
   owner: string;
   app: ProjectApp;
-  hasExplicitInbox: boolean;
+  ownsDirectInbox: boolean;
   reconciliationPaused: boolean;
 }
 
@@ -582,9 +583,9 @@ function ownerMessageForApp(
   const input = periodic && isRecord(event.input) ? event.input : isRecord(event.data) ? event.data : {};
   const recipient = typeof input.to === "string" ? input.to.replace(/^agent:/, "").trim() : "";
   if (recipient !== descriptor.owner) return null;
-  // An explicit App inbox owns fresh message admission. Keep periodic replay
-  // available so owner-inbox work persisted before the cutover can still drain.
-  if (direct && descriptor.hasExplicitInbox) return null;
+  // A same-ID App inbox owns fresh message admission. A co-located canary or
+  // helper App does not. Keep periodic replay so pre-cutover work can drain.
+  if (direct && descriptor.ownsDirectInbox) return null;
   if (direct && shouldOfferToApp(descriptor.app, event)) return null;
   const project = projectValue(event) || projectValue(input);
   if (project && project !== descriptor.id && project !== `${descriptor.id}.app`) return null;
@@ -3482,6 +3483,9 @@ function validatePreparedProjectApp(descriptor: ProjectAppDescriptor): void {
 async function prepareProjectAppDescriptors(opts: ProjectAppLoaderOptions): Promise<ProjectAppDescriptor[]> {
   const descriptors: ProjectAppDescriptor[] = [];
   const ids = new Set<string>();
+  const inboxAppIdByDir = new Map(
+    (await loadAppInboxDefinitions(opts.projectsRoot)).map(({ appDir, definition }) => [appDir, definition.id]),
+  );
   for (const appDir of listProjectAppDirs(opts.projectsRoot)) {
     const app = await loadProjectApp(appDir);
     const id = typeof app.id === "string" && app.id.trim() ? app.id.trim() : appIdFromDir(appDir);
@@ -3493,7 +3497,7 @@ async function prepareProjectAppDescriptors(opts: ProjectAppLoaderOptions): Prom
       projectDir: domainProjectDir(opts.projectsRoot, appDir, id, app),
       owner: configuredProjectAppOwner(app, appDir),
       app,
-      hasExplicitInbox: existsSync(join(appDir, "inbox.ts")) || existsSync(join(appDir, "inbox.js")),
+      ownsDirectInbox: inboxAppIdByDir.get(appDir) === id,
       reconciliationPaused: false,
     };
     descriptor.reconciliationPaused = descriptor.app.tasks
