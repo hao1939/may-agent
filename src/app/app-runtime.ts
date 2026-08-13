@@ -17,7 +17,11 @@ import {
 } from "./daemon.js";
 import { EventBus } from "./event-bus.js";
 import { startInterfaceRuntime } from "./interface-startup.js";
-import { attachLoadedProjectAppTask, readLoadedProjectAppTaskView } from "./loader/project-app-loader.js";
+import {
+  attachLoadedProjectAppTask,
+  readLoadedProjectAppTaskView,
+  runWithProjectAppRuntimeCapacity,
+} from "./loader/project-app-loader.js";
 import type { ModelRegistry } from "./model-registry.js";
 import { parseWebPort, startWebMode } from "./modes/web.js";
 import { runRequestedExitMode } from "./runtime-exit-modes.js";
@@ -104,6 +108,7 @@ export async function runAppRuntime(opts: {
         db: getDb(opts.persistDir),
         manager,
         bus,
+        runOwner: (work) => runWithProjectAppRuntimeCapacity(bus, work),
         attachTask: async (input) => attachLoadedProjectAppTask({ ...input, bus }),
         readDependency: async ({ appDir, dependency }) => {
           if (dependency.kind === "task") {
