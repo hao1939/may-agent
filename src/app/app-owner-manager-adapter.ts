@@ -106,6 +106,7 @@ function ownerPrompt(app: AppDefinition, requests: AppRequest[]): string {
     `You are the owner of App ${app.id}. Handle this bounded inbox batch.`,
     "Return exactly one disposition for every requestId by calling finish() with the required structured result.",
     "A complete disposition answers or finishes this input. A delegate disposition creates one child App input. A task disposition links durable desired work.",
+    "If a request has dependency, it is the current read-only observation of the exact child or task that woke this request. Review that observation instead of querying runtime storage.",
     "Do not invent lifecycle states, mutate inbox storage, or omit a request. Preserve each requestId exactly.",
     "",
     "## App requests",

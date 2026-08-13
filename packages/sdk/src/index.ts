@@ -12,6 +12,7 @@ export type { Static, TSchema } from "@earendil-works/pi-ai";
 export { defineApp } from "./app.js";
 export type {
   AppDefinition,
+  AppDependencyObservation,
   AppDisposition,
   AppInboxBatchMode,
   AppInput,

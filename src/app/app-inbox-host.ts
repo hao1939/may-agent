@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import {
+  type AppDependencyObservation,
   type AppDefinition,
   type AppDisposition,
   type AppInput,
@@ -34,6 +35,11 @@ export type AppOwnerInvoker = (input: {
   requests: AppRequest[];
   onSessionStarted(sessionId: string): void;
 }) => Promise<AppOwnerDispositionResult[]>;
+
+export type AppDependencyReader = (input: {
+  appId: string;
+  dependency: { kind: "task" | "session"; id: string };
+}) => Promise<AppDependencyObservation | null>;
 
 /**
  * The task engine must treat idempotencyKey as stable admission identity.
@@ -74,6 +80,7 @@ export type AppInboxHostOptions = {
   db: SqliteDb;
   apps: AppDefinition[];
   invokeOwner: AppOwnerInvoker;
+  readDependency?: AppDependencyReader;
   attachTask?: AppTaskAttacher;
   workerId?: string;
   leaseMs?: number;
@@ -131,15 +138,6 @@ function withTransaction<T>(db: SqliteDb, operation: () => T): T {
   }
 }
 
-function authorRequest(item: AppInboxItem): AppRequest {
-  return {
-    id: item.id,
-    source: item.source,
-    parentId: item.parentId,
-    input: item.input,
-  };
-}
-
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
@@ -148,6 +146,7 @@ export class AppInboxHost {
   readonly #db: SqliteDb;
   readonly #apps: Map<string, RegisteredApp>;
   readonly #invokeOwner: AppOwnerInvoker;
+  readonly #readDependency?: AppDependencyReader;
   readonly #attachTask?: AppTaskAttacher;
   readonly #workerId: string;
   readonly #leaseMs: number;
@@ -158,6 +157,7 @@ export class AppInboxHost {
   constructor(options: AppInboxHostOptions) {
     this.#db = options.db;
     this.#invokeOwner = options.invokeOwner;
+    this.#readDependency = options.readDependency;
     this.#attachTask = options.attachTask;
     this.#workerId = options.workerId?.trim() || `app-host:${process.pid}:${randomUUID()}`;
     this.#leaseMs = options.leaseMs ?? 60_000;
@@ -206,9 +206,10 @@ export class AppInboxHost {
     const stopRenewing = this.#renewClaims(claims);
     let results: AppOwnerDispositionResult[];
     try {
+      const requests = await Promise.all(claims.map((claim) => this.#authorRequest(claim.item)));
       results = await this.#invokeOwner({
         app,
-        requests: claims.map((claim) => authorRequest(claim.item)),
+        requests,
         onSessionStarted: (sessionId) => {
           const normalized = requiredText(sessionId, "App owner session id");
           withTransaction(this.#db, () => {
@@ -262,6 +263,49 @@ export class AppInboxHost {
     const app = this.#apps.get(normalized);
     if (!app) throw new Error(`Unknown App: ${normalized}`);
     return app;
+  }
+
+  async #authorRequest(item: AppInboxItem): Promise<AppRequest> {
+    const request: AppRequest = {
+      id: item.id,
+      source: item.source,
+      parentId: item.parentId,
+      input: item.input,
+    };
+    const waitingOn = item.waitingOn;
+    if (!waitingOn) return request;
+
+    if (waitingOn.kind === "app") {
+      const child = getAppInboxItem(this.#db, waitingOn.id);
+      request.dependency = child
+        ? {
+            kind: "app",
+            id: child.id,
+            status:
+              child.status === "done"
+                ? "done"
+                : child.status === "pending"
+                  ? "pending"
+                  : child.lease
+                    ? "running"
+                    : "waiting",
+            summary: child.result?.summary,
+            response: child.result?.response,
+            evidence: child.result?.evidence,
+          }
+        : { kind: "app", id: waitingOn.id, status: "unknown" };
+      return request;
+    }
+
+    if (waitingOn.kind !== "task" && waitingOn.kind !== "session") return request;
+    const dependency = { kind: waitingOn.kind, id: waitingOn.id } as const;
+
+    const observed = await this.#readDependency?.({ appId: item.appId, dependency });
+    if (observed && (observed.kind !== dependency.kind || observed.id !== dependency.id)) {
+      throw new Error(`Dependency reader returned a mismatched observation for ${dependency.kind}:${dependency.id}`);
+    }
+    request.dependency = observed ?? { ...dependency, status: "unknown" };
+    return request;
   }
 
   #claimBatch(app: RegisteredApp): AppInboxClaim[] {

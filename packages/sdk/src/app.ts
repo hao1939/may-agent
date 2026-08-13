@@ -35,17 +35,30 @@ export type AppResult = {
   evidence?: string[];
 };
 
+/**
+ * Read-only current observation of the exact dependency linked by the host.
+ * It gives a reawakened owner enough evidence to review the dependency without
+ * exposing inbox leases, task storage, or runtime query capabilities.
+ */
+export type AppDependencyObservation = {
+  kind: "app" | "task" | "session";
+  id: string;
+  status: "pending" | "running" | "waiting" | "attention" | "done" | "error" | "interrupted" | "unknown";
+  summary?: string;
+  response?: string;
+  evidence?: string[];
+};
+
 /** Author-visible request. Host lifecycle and lease fields stay private. */
 export type AppRequest<TData = unknown> = {
   id: string;
   source: AppInputSource;
   parentId?: string;
   input: AppInput<TData>;
+  dependency?: AppDependencyObservation;
 };
 
-export type AppTaskAttachment =
-  | { kind: "existing"; taskId: string }
-  | { kind: "desired"; intent: TaskIntent };
+export type AppTaskAttachment = { kind: "existing"; taskId: string } | { kind: "desired"; intent: TaskIntent };
 
 /** The complete lifecycle vocabulary returned by an App owner. */
 export type AppDisposition =
@@ -71,8 +84,6 @@ export type AppDefinition<TInputSchema extends TSchema = TSchema> = {
   inbox?: { batch?: AppInboxBatchMode };
 };
 
-export function defineApp<TInputSchema extends TSchema>(
-  app: AppDefinition<TInputSchema>,
-): AppDefinition<TInputSchema> {
+export function defineApp<TInputSchema extends TSchema>(app: AppDefinition<TInputSchema>): AppDefinition<TInputSchema> {
   return app;
 }
