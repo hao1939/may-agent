@@ -257,6 +257,41 @@ export type SystemEvent =
       owner: string;
       data: { kind: "app" | "task" | "session"; id: string };
     }
+  | {
+      type: "app.response.delivery.requested";
+      source: "app-inbox";
+      owner: string;
+      target: { human: true };
+      data: {
+        operationId: string;
+        appInboxItemId: string;
+        appInboxRequestId: string;
+        sessionId: string;
+        channel: string;
+        channelThreadId?: string;
+        channelMessageId?: number;
+        conversationId?: string;
+        text: string;
+      };
+    }
+  | {
+      type: "channel.delivery.completed" | "channel.delivery.failed";
+      source: string;
+      owner: string;
+      target: { human: true };
+      data: {
+        channel: string;
+        sessionId?: string;
+        resultEventType?: string;
+        operationId?: string;
+        appInboxItemId?: string;
+        appInboxRequestId?: string;
+        externalMessageId?: string | number;
+        certainty?: "not-delivered" | "uncertain";
+        reason?: string;
+        [key: string]: unknown;
+      };
+    }
   | { type: "heartbeat.trigger"; source?: string; owner: string; data: { agent: string } }
   | {
       type: "heartbeat.skipped";

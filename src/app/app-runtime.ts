@@ -207,6 +207,10 @@ export async function runAppRuntime(opts: {
     manager,
     getSessionId: () => taskSessionId ?? chatSession?.getSessionId() ?? "",
   });
+  // The inbox starts before ingress, but its outbox waits until every enabled
+  // human transport is attached. This prevents a restart-time response from
+  // being marked attempted before any channel can observe it.
+  appInboxRuntime?.enableDelivery();
 
   function emitPrompt(): void {
     bus.emit({ type: "prompt", message: interfaceAgent, channel: "chat" });

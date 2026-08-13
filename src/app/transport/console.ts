@@ -16,9 +16,9 @@ const DIM = "\x1b[2m";
 const RESET = "\x1b[0m";
 
 function messageData(event: unknown): Record<string, unknown> {
-  const record = event && typeof event === "object" && !Array.isArray(event) ? event as Record<string, unknown> : {};
+  const record = event && typeof event === "object" && !Array.isArray(event) ? (event as Record<string, unknown>) : {};
   return record.data && typeof record.data === "object" && !Array.isArray(record.data)
-    ? record.data as Record<string, unknown>
+    ? (record.data as Record<string, unknown>)
     : record;
 }
 
@@ -42,6 +42,26 @@ export function attachConsoleUI(bus: EventBus, getPrimarySessionId?: () => strin
 
   // ── Bus channel (domain events) ───────────────────────────────────────
   bus.subscribe((event) => {
+    if (event.type === "app.response.delivery.requested") {
+      const delivery = eventData(event);
+      if (delivery.channel !== "console") return;
+      console.log(String(delivery.text ?? ""));
+      bus.emit({
+        type: "channel.delivery.completed",
+        source: "console",
+        owner: "agent:may",
+        target: { human: true },
+        data: {
+          channel: "console",
+          sessionId: delivery.sessionId,
+          resultEventType: event.type,
+          operationId: delivery.operationId,
+          appInboxItemId: delivery.appInboxItemId,
+          appInboxRequestId: delivery.appInboxRequestId,
+        },
+      } as any);
+      return;
+    }
     const primarySid = getPrimarySessionId?.() ?? null;
 
     // Chat mode: only show primary session + human-directed messages
