@@ -10,6 +10,7 @@ import {
 import { Check, Errors } from "typebox/value";
 import type { SqliteDb } from "../lib/db.js";
 import {
+  associateAppInboxClaimSession,
   claimNextAppInboxItem,
   completeAppInboxClaim,
   createAppInboxItem,
@@ -31,6 +32,7 @@ export type AppOwnerDispositionResult = {
 export type AppOwnerInvoker = (input: {
   app: AppDefinition;
   requests: AppRequest[];
+  onSessionStarted(sessionId: string): void;
 }) => Promise<AppOwnerDispositionResult[]>;
 
 /**
@@ -197,7 +199,20 @@ export class AppInboxHost {
     const stopRenewing = this.#renewClaims(claims);
     let results: AppOwnerDispositionResult[];
     try {
-      results = await this.#invokeOwner({ app, requests: claims.map((claim) => authorRequest(claim.item)) });
+      results = await this.#invokeOwner({
+        app,
+        requests: claims.map((claim) => authorRequest(claim.item)),
+        onSessionStarted: (sessionId) => {
+          const normalized = requiredText(sessionId, "App owner session id");
+          withTransaction(this.#db, () => {
+            for (const claim of claims) {
+              if (!associateAppInboxClaimSession(this.#db, claim, normalized, this.#now())) {
+                throw new Error(`Cannot associate stale request ${claim.item.id} with session ${normalized}`);
+              }
+            }
+          });
+        },
+      });
     } catch (error) {
       stopRenewing();
       return this.#releaseBatch(claims, `Owner invocation failed: ${errorMessage(error)}`);
