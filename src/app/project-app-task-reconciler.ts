@@ -839,7 +839,11 @@ export function recoverableProjectAppTaskAttempts(
         return [];
       }
       const attempt = currentResourceAttempt(tree, resource);
-      if (!attempt || attempt.runtimeId === reconcilerRuntimeId || leaseIsFresh(attempt, nowMs)) return [];
+      if (
+        !attempt ||
+        attempt.runtimeId === reconcilerRuntimeId ||
+        (!includeFreshLeases && leaseIsFresh(attempt, nowMs))
+      ) return [];
       return [
         {
           taskId: resource.metadata.id,

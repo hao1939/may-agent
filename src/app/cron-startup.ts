@@ -36,8 +36,9 @@ function currentProjectLifecycle(appDir: string): string | null {
 }
 
 export function shouldResumeStartupSession(
-  _sessionId: string,
+  sessionId: string,
   session: PersistedSession,
+  claimedProjectTaskSessionIds: ReadonlySet<string> = new Set(),
 ): { resume: true } | { resume: false; reason?: string } {
   if (session.source === "app-inbox-owner") {
     return {
@@ -46,6 +47,7 @@ export function shouldResumeStartupSession(
     };
   }
   if (session.recoveryOwner === PROJECT_APP_TASK_RECOVERY_OWNER || session.source === "project-app-task-owner") {
+    if (claimedProjectTaskSessionIds.has(sessionId)) return { resume: true };
     return {
       resume: false,
       reason: "Task-bound project session was not claimed by project-app recovery during startup",
@@ -80,10 +82,14 @@ export function shouldResumeStartupChatSession(
 export async function startCronRuntime(options: CronRuntimeOptions): Promise<void> {
   const { manager, bus, loaderOpts, chatMode, chatSession } = options;
 
-  recoverInstalledProjectAppTasks({ ...loaderOpts, agentCrons: getAgentCrons() });
+  const claimedProjectTaskSessionIds = recoverInstalledProjectAppTasks({
+    ...loaderOpts,
+    agentCrons: getAgentCrons(),
+  });
   const { resumed, interrupted } = manager.resumeStaleSessions({
     kinds: ["job", "call"],
-    shouldResume: shouldResumeStartupSession,
+    shouldResume: (sessionId, session) =>
+      shouldResumeStartupSession(sessionId, session, claimedProjectTaskSessionIds),
   });
   const orphansCleaned: typeof interrupted = [];
   if (!chatMode) {
