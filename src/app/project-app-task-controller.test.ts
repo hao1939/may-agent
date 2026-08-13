@@ -64,6 +64,64 @@ describe("ProjectAppTaskController", () => {
     controller.close();
   });
 
+  it("yields to the event loop between immediately completed reconciles", async () => {
+    const started: string[] = [];
+    let releaseFirst: (() => void) | undefined;
+    const controller = new ProjectAppTaskController({
+      maxConcurrent: 1,
+      reconcile: async (taskId) => {
+        started.push(taskId);
+        if (taskId === "task-0") await new Promise<void>((resolve) => (releaseFirst = resolve));
+      },
+    });
+    for (let index = 0; index < 40; index++) controller.enqueue(`task-${index}`);
+    await waitUntil(() => started.length === 1);
+
+    let startedWhenTimerRan = -1;
+    const timerRan = new Promise<void>((resolve) => {
+      setTimeout(() => {
+        startedWhenTimerRan = started.length;
+        resolve();
+      }, 0);
+    });
+    releaseFirst?.();
+    await timerRan;
+
+    expect(startedWhenTimerRan).toBeLessThan(40);
+    await waitUntil(() => started.length === 40);
+    controller.close();
+  });
+
+  it("yields to the event loop between shared-capacity handoffs", async () => {
+    const capacity = new ProjectAppTaskCapacity(1);
+    const started: string[] = [];
+    let releaseFirst: (() => void) | undefined;
+    const controller = new ProjectAppTaskController({
+      maxConcurrent: 1,
+      capacity,
+      reconcile: async (taskId) => {
+        started.push(taskId);
+        if (taskId === "task-0") await new Promise<void>((resolve) => (releaseFirst = resolve));
+      },
+    });
+    for (let index = 0; index < 40; index++) controller.enqueue(`task-${index}`);
+    await waitUntil(() => started.length === 1);
+
+    let startedWhenTimerRan = -1;
+    const timerRan = new Promise<void>((resolve) => {
+      setTimeout(() => {
+        startedWhenTimerRan = started.length;
+        resolve();
+      }, 0);
+    });
+    releaseFirst?.();
+    await timerRan;
+
+    expect(startedWhenTimerRan).toBeLessThan(40);
+    await waitUntil(() => started.length === 40);
+    controller.close();
+  });
+
   it("shares one daemon capacity across independent app controllers", async () => {
     const capacity = new ProjectAppTaskCapacity(1);
     const started: string[] = [];
