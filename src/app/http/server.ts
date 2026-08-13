@@ -25,6 +25,8 @@ import {
   daemonSocketPath,
   sendDaemonEvent,
   sendSocketCommand,
+  type SocketEndpoint,
+  type SocketResponse,
 } from "../../../packages/control/src/client.js";
 import {
   buildCanonicalEventEnvelope,
@@ -42,7 +44,7 @@ import { openStateDb, type SqliteDb } from "./read-model/state-db.js";
 import { buildLoopTrace, type LoopTraceTarget } from "./read-model/loop-trace.js";
 import { addSessionTranscriptToEventGraph, buildEventGraph } from "./read-model/event-graph.js";
 import { resolveRuntimeAgentDirectory } from "../loader/agent-discovery.js";
-import { getAppInboxItem, listAppInboxItems } from "../app-inbox-store.js";
+import { getAppInboxItem, listAppInboxItems, type AppInboxQuery } from "../app-inbox-store.js";
 
 // ── Public API ────────────────────────────────────────────────────────
 
@@ -67,6 +69,20 @@ const DASHBOARD_SESSION_ROW_LIMIT = 2_000;
 export interface WebUIOptions {
   stateDir: string;
   port: number;
+}
+
+export function appInboxQueryFromUrl(url: URL): AppInboxQuery {
+  const status = url.searchParams.get("status");
+  if (status !== null && status !== "pending" && status !== "handling" && status !== "done") {
+    throw new Error(`Invalid App inbox status: ${status}`);
+  }
+  const limit = Math.max(1, Math.min(500, Number(url.searchParams.get("limit") || 100) || 100));
+  return {
+    appId: url.searchParams.get("appId") || undefined,
+    status: status === null ? undefined : status,
+    idempotencyKey: url.searchParams.get("idempotencyKey") || undefined,
+    limit,
+  };
 }
 
 type DaemonFrameResult = { ok: boolean; error?: string; eventId?: number };
@@ -130,6 +146,46 @@ export async function sendDaemonFrameWithRetry(
     ok: false,
     error: `daemon socket delivery failed at ${socketPath}: acknowledgement unavailable`,
   };
+}
+
+export async function sendProjectActionWithRetry(
+  endpoint: SocketEndpoint,
+  command: {
+    type: "project.action.invoke";
+    projectId: string;
+    actionId: string;
+    params: unknown;
+    idempotencyKey: string;
+  },
+  send: typeof sendSocketCommand = sendSocketCommand,
+  confirm?: (
+    idempotencyKey: string,
+  ) => { eventId: number; eventType: string } | undefined | Promise<{ eventId: number; eventType: string } | undefined>,
+): Promise<SocketResponse> {
+  for (const timeoutMs of [2_000, 10_000]) {
+    try {
+      return await send(endpoint, command, { timeoutMs });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const kind =
+        error && typeof error === "object" && "kind" in error ? (error as { kind?: unknown }).kind : undefined;
+      const outcomeMayBeDurable =
+        kind === "post-send-unknown" || message === "Socket timeout" || message.includes("outcome unknown");
+      if (!outcomeMayBeDurable) throw error;
+      if (timeoutMs === 2_000) continue;
+      const durable = await confirm?.(command.idempotencyKey);
+      if (durable) {
+        return {
+          type: "ok",
+          command: command.type,
+          eventId: durable.eventId,
+          eventType: durable.eventType,
+        };
+      }
+      throw error;
+    }
+  }
+  throw new Error("Project action retry exhausted");
 }
 
 function platformUiContentTypeFor(path: string): string {
@@ -3137,18 +3193,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   }
 
   function handleAppInbox(url: URL): Response {
-    const status = url.searchParams.get("status");
-    if (status && status !== "pending" && status !== "handling" && status !== "done") {
-      return json({ error: `Invalid App inbox status: ${status}` }, 400);
-    }
-    const limit = Math.max(1, Math.min(500, Number(url.searchParams.get("limit") || 100) || 100));
     try {
-      const items = listAppInboxItems(_db(), {
-        appId: url.searchParams.get("appId") || undefined,
-        status: status as "pending" | "handling" | "done" | undefined,
-        idempotencyKey: url.searchParams.get("idempotencyKey") || undefined,
-        limit,
-      });
+      const items = listAppInboxItems(_db(), appInboxQueryFromUrl(url));
       return json({ items, count: items.length });
     } catch (error) {
       return json({ error: error instanceof Error ? error.message : String(error) }, 400);
@@ -3176,16 +3222,31 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         params?: unknown;
         idempotencyKey?: string;
       };
-      const response = await sendSocketCommand(
+      const idempotencyKey = body.idempotencyKey?.trim() || `web-action-${randomUUID()}`;
+      const response = await sendProjectActionWithRetry(
         conventionSocketPath(),
         {
           type: "project.action.invoke",
           projectId,
           actionId,
           params: body.input ?? body.params ?? {},
-          ...(body.idempotencyKey?.trim() ? { idempotencyKey: body.idempotencyKey.trim() } : {}),
+          idempotencyKey,
         },
-        { timeoutMs: 2000 },
+        sendSocketCommand,
+        (key) => {
+          const row = _db()
+            .prepare(
+              `SELECT id, event_type
+               FROM events
+               WHERE idempotency_key = ? AND project_id = ?
+               ORDER BY id
+               LIMIT 1`,
+            )
+            .get(key, projectId) as { id?: unknown; event_type?: unknown } | undefined;
+          const eventId = Number(row?.id);
+          const eventType = typeof row?.event_type === "string" ? row.event_type : "";
+          return Number.isInteger(eventId) && eventId > 0 && eventType ? { eventId, eventType } : undefined;
+        },
       );
       return json(
         {
