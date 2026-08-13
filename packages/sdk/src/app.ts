@@ -82,6 +82,8 @@ export type AppDefinition<TInputSchema extends TSchema = TSchema> = {
   inputSchema: TInputSchema;
   subscriptions?: EventSelector[];
   inbox?: { batch?: AppInboxBatchMode };
+  /** Explicit opt-in to the shared Project App task attachment boundary. */
+  tasks?: { attach: true };
 };
 
 export function defineApp<TInputSchema extends TSchema>(app: AppDefinition<TInputSchema>): AppDefinition<TInputSchema> {

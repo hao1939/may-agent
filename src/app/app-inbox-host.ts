@@ -124,6 +124,17 @@ function validateAppDefinition(app: AppDefinition): RegisteredApp {
   if (app.inbox?.batch && app.inbox.batch !== "single" && app.inbox.batch !== "coalesce-compatible") {
     throw new Error(`App ${app.id} has unsupported inbox batch mode ${String(app.inbox.batch)}`);
   }
+  const tasks = app.tasks as unknown;
+  if (
+    tasks !== undefined &&
+    (!tasks ||
+      typeof tasks !== "object" ||
+      Array.isArray(tasks) ||
+      (tasks as { attach?: unknown }).attach !== true ||
+      Object.keys(tasks).some((key) => key !== "attach"))
+  ) {
+    throw new Error(`App ${app.id} has invalid task attachment capability`);
+  }
   return app;
 }
 
@@ -508,6 +519,9 @@ export class AppInboxHost {
         return;
       }
       case "task": {
+        if (app.tasks?.attach !== true) {
+          throw new Error(`App ${app.id} does not allow task attachment`);
+        }
         if (!this.#attachTask) throw new Error("App task attachment is not configured");
         const attachmentIdentity =
           disposition.task.kind === "existing"
