@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync } from "node:fs";
+import { chmodSync, mkdtempSync, mkdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { deployReceiptPrompt, readDeployReceiptForTask } from "../src/app/loader/project-app-loader";
@@ -48,6 +48,24 @@ describe("restart-aware deploy receipts", () => {
         duplicateDeploy: false,
       });
       expect(deployReceiptPrompt(f.projectDir, "task-1").join("\n")).toContain("loadedArtifactSha equals artifactSha");
+    } finally {
+      rmSync(f.projectDir, { recursive: true, force: true });
+    }
+  });
+
+  it("preserves receipt ownership and mode when a privileged restarter settles it", () => {
+    const f = fixture();
+    try {
+      requestReceipt(f.path, "may-agent", "task-1", "correlation-1", "abc123");
+      chmodSync(f.path, 0o640);
+      const before = statSync(f.path);
+
+      settleReceipt(f.path, "succeeded", "abc123", "healthy", true);
+
+      const after = statSync(f.path);
+      expect(after.uid).toBe(before.uid);
+      expect(after.gid).toBe(before.gid);
+      expect(after.mode & 0o777).toBe(0o640);
     } finally {
       rmSync(f.projectDir, { recursive: true, force: true });
     }
