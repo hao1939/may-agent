@@ -1,5 +1,5 @@
 /**
- * Bun plugin that maps `@may-agent/sdk` (and `@may-agent/sdk/testing`)
+ * Bun plugin that maps the public `@may-agent/sdk` entry points
  * bare specifiers to the workspace SDK source files.
  *
  * **Scope: build-time only.** `Bun.plugin()` hooks fire during `Bun.build`
@@ -35,6 +35,9 @@ plugin({
   setup(build) {
     build.onResolve({ filter: /^@may-agent\/sdk$/ }, () => ({
       path: resolve(SDK_ROOT, "index.ts"),
+    }));
+    build.onResolve({ filter: /^@may-agent\/sdk\/app$/ }, () => ({
+      path: resolve(SDK_ROOT, "app.ts"),
     }));
     build.onResolve({ filter: /^@may-agent\/sdk\/testing$/ }, () => ({
       path: resolve(SDK_ROOT, "testing.ts"),

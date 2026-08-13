@@ -45,6 +45,36 @@ describe("importRuntimeModule", () => {
     expect(mod.sdkVersion()).toBe("workflow-result-v1");
   });
 
+  it("bundles standalone App declarations through the public App entry point", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-runtime-app-import-"));
+    roots.push(root);
+
+    const modulePath = join(root, "inbox.ts");
+    writeFileSync(
+      modulePath,
+      `
+        import { Type, defineApp } from "@may-agent/sdk/app";
+
+        export default defineApp({
+          id: "standalone-canary",
+          version: 1,
+          owner: "owner",
+          inputSchema: Type.Object({
+            kind: Type.Literal("probe"),
+            data: Type.Object({}, { additionalProperties: false }),
+          }, { additionalProperties: false }),
+        });
+      `,
+    );
+
+    const mod = await importRuntimeModule<{ default: { id: string } }>(modulePath, {
+      forceBundle: true,
+      cacheDir: join(root, ".cache"),
+    });
+
+    expect(mod.default.id).toBe("standalone-canary");
+  });
+
   it("preserves dynamic relative imports from the original module directory", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-runtime-import-relative-"));
     roots.push(root);
