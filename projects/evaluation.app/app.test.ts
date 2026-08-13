@@ -1,7 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import type { ProjectAppContext } from "@may-agent/sdk";
-import app, { resolveEvaluationTask, routeEvaluationEvent } from "./app.ts";
+import app, {
+  appInboxCanaryRequested,
+  resolveEvaluationTask,
+  routeEvaluationEvent,
+} from "./app.ts";
 import {
   PROJECT_HEALTH_EVALUATOR_AGENT_PROMPT_PREAMBLE,
   projectHealthEvaluatorAgentPrompt,
@@ -58,6 +62,30 @@ describe("evaluation app metric routing", () => {
       reason:
         "ignored metric.breach for non-evaluation metric aks-rp-e2e.spec.blocked-count",
     });
+  });
+});
+
+describe("evaluation App inbox canary", () => {
+  test("keeps the manual probe on one explicit new-runtime event path", () => {
+    expect(
+      appInboxCanaryRequested({ prompt: "Report the canary result." }),
+    ).toEqual({
+      type: "app.input.requested",
+      data: {
+        appId: "evaluation-canary",
+        input: {
+          kind: "probe",
+          data: { prompt: "Report the canary result." },
+        },
+        source: { kind: "system", id: "evaluation.app:manual-canary" },
+      },
+    });
+    expect(app.actions?.["app-inbox-canary"]).toMatchObject({
+      type: "async",
+      description: expect.stringContaining("manual probe"),
+    });
+    expect(app.tasks?.accepts).not.toContain("app.input.requested");
+    expect(app.events).not.toContain("app.input.requested");
   });
 });
 

@@ -9,6 +9,7 @@ import {
 } from "@may-agent/sdk";
 import { observeEvaluationPipeline } from "./watchers/evaluation-pipeline.js";
 import { projectEvaluationFeedback } from "./watchers/feedback-projection.js";
+import { evaluationCanaryDataSchema } from "./canary-contract.js";
 
 const projectId = "evaluation";
 const actionInputSchema = Type.Object({}, { additionalProperties: true });
@@ -90,6 +91,17 @@ function projectHealthReviewRequested(params: unknown = {}): ProjectAppEvent {
       ...details,
       ...watchedTarget,
       reason,
+    },
+  };
+}
+
+export function appInboxCanaryRequested(params: unknown): ProjectAppEvent {
+  return {
+    type: "app.input.requested",
+    data: {
+      appId: "evaluation-canary",
+      input: { kind: "probe", data: eventParams(params) },
+      source: { kind: "system", id: "evaluation.app:manual-canary" },
     },
   };
 }
@@ -497,6 +509,15 @@ export default defineProjectApp({
   ],
 
   actions: {
+    "app-inbox-canary": {
+      type: "async",
+      description:
+        "Submit one manual probe through the opt-in App inbox without changing production evaluation routing.",
+      inputSchema: evaluationCanaryDataSchema,
+      event(params) {
+        return appInboxCanaryRequested(params);
+      },
+    },
     "evaluate-session": {
       type: "async",
       description: "Evaluate a specific session by sessionId.",

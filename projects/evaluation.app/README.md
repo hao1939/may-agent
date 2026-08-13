@@ -70,6 +70,8 @@ observe -> collect evidence -> evaluate -> report -> deliver -> optionally reche
 
 - `app.ts` declares schedules, event-to-task routes, workflow capabilities,
   owner entry, actions, and bounded ingress adapters.
+- `inbox.ts` declares the manual-only shared-inbox canary. It does not receive
+  scheduled or production evaluation traffic.
 - `agents/evaluator/workflows/` contains the evaluator-owned workflow entrypoints.
 - `agents/evaluator/` contains the evaluator worker identity and guidance.
 - `criteria/` contains scoring criteria and versioned methodology.
@@ -80,6 +82,22 @@ observe -> collect evidence -> evaluate -> report -> deliver -> optionally reche
 bun run check       # syntax, typecheck, and formatting
 bun run bundle      # build the app manifest and local workflows
 ```
+
+## Shared-inbox canary
+
+After deploying the matching May-agent runtime change, submit one isolated
+probe and inspect its authoritative inbox result:
+
+```sh
+key="evaluation-canary-$(date +%s)"
+curl -X POST http://localhost:8080/api/projects/evaluation/actions/app-inbox-canary \
+  -H 'content-type: application/json' \
+  -d "{\"input\":{\"prompt\":\"Return a concise canary result.\"},\"idempotencyKey\":\"$key\"}"
+curl "http://localhost:8080/api/app-inbox?appId=evaluation-canary&idempotencyKey=$key"
+```
+
+The item should move `pending -> handling -> done` and retain its owner session
+and structured result. Reusing the key must not create or run a second item.
 
 The app manifest in `app.ts` owns schedules, event-to-task correlation,
 workflow bindings, and owner fallback.
