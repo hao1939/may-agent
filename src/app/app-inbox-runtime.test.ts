@@ -9,7 +9,6 @@ import { DbWriter } from "../lib/db-writer.js";
 import { associateAppInboxClaimSession, claimAppInboxItem, createAppInboxItem } from "./app-inbox-store.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
 import {
-  APP_MESSAGE_INGRESS_ACCEPTED,
   EVENT_DEDUPLICATED,
   EVENT_REDELIVERY_REQUIRED,
   EVENT_ROW_ID,
@@ -200,8 +199,6 @@ describe("App inbox runtime", () => {
       },
     });
     const sourceEventId = Number(original[EVENT_ROW_ID]);
-    expect((original as Record<PropertyKey, unknown>)[APP_MESSAGE_INGRESS_ACCEPTED]).toBe(true);
-
     await waitUntil(() => calls.length === 1);
     const inboxRow = persistedDb.prepare("SELECT id, input_data FROM app_inbox_items WHERE app_id = 'may'").get() as {
       id: string;
@@ -320,8 +317,6 @@ describe("App inbox runtime", () => {
       data: { from: "may", to: "evaluator", content: "not a probe" },
     });
 
-    expect((ambiguous as Record<PropertyKey, unknown>)[APP_MESSAGE_INGRESS_ACCEPTED]).toBeUndefined();
-    expect((incompatible as Record<PropertyKey, unknown>)[APP_MESSAGE_INGRESS_ACCEPTED]).toBeUndefined();
     expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 0 });
     expect(deliveries.map(({ result }) => result)).toEqual([
       expect.objectContaining({ by: "owner-inbox:agent:may", route: "owner_inbox" }),

@@ -4,17 +4,16 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { attachCommandRouter } from "./command-router.js";
-import { APP_MESSAGE_INGRESS_ACCEPTED, childEventTrace, EventBus } from "./event-bus.js";
+import { childEventTrace, EventBus } from "./event-bus.js";
 import { DbWriter } from "../lib/db-writer.js";
 import { closeDb, getDb } from "../lib/requests.js";
 import { checkEventTraceIntegrity } from "../lib/db/event-traces.js";
 import { storeNotificationMessage } from "../lib/db/notifications.js";
 
 function fixture(
-  bridgeDecision?: Record<string, unknown>,
   beforeAttach?: (context: { root: string; bus: EventBus }) => void,
   turnResults: Array<Record<string, unknown>> = [],
-  routerOptions: { routeHumanInputToApp?: boolean; routeMessagesToApp?: boolean } = {},
+  routerOptions: { routeHumanInputToApp?: boolean } = {},
 ) {
   const root = mkdtempSync(join(tmpdir(), "may-command-router-"));
   const bus = new EventBus();
@@ -59,11 +58,11 @@ function fixture(
       return Promise.resolve({
         sessionId,
         status: "done",
-        lastAssistantText: "bridge decision",
+        lastAssistantText: "session result",
         messages: [],
         duration: "1ms",
         outputDir: root,
-        structuredResult: bridgeDecision,
+        structuredResult: undefined,
       });
     },
     cancel: (sessionId: string) => cancelled.push(sessionId),
@@ -86,7 +85,7 @@ function fixture(
 
 describe("command router human intent contract", () => {
   it("routes ordinary May input through the durable conversation App when registered", () => {
-    const { root, bus, router, runs } = fixture(undefined, undefined, [], { routeHumanInputToApp: true });
+    const { root, bus, router, runs } = fixture(undefined, [], { routeHumanInputToApp: true });
     const emitted: unknown[] = [];
     const unsubscribe = bus.subscribe((event) => emitted.push(event));
     try {
@@ -139,7 +138,7 @@ describe("command router human intent contract", () => {
   });
 
   it("keeps direct project input outside the May conversation App", () => {
-    const { root, bus, router } = fixture(undefined, undefined, [], { routeHumanInputToApp: true });
+    const { root, bus, router } = fixture(undefined, [], { routeHumanInputToApp: true });
     const emitted: unknown[] = [];
     const unsubscribe = bus.subscribe((event) => emitted.push(event));
     try {
@@ -174,113 +173,16 @@ describe("command router human intent contract", () => {
     }
   });
 
-  it("drains a valid open May inbox message when the runtime starts", async () => {
-    let sourceEventId = 0;
-    const { root, router, runs } = fixture(
-      {
-        disposition: "answer",
-        response: "The queued review is complete.",
-      },
-      ({ bus }) => {
-        bus.emit({
-          type: "message.created",
-          source: "human",
-          owner: "agent:may",
-          data: { from: "human", to: "may", content: "ordinary chat stays on the human path" },
-        } as any);
-        const original = bus.emit({
-          type: "message.created",
-          source: "agent:evaluator",
-          owner: "agent:may",
-          data: { from: "evaluator", to: "may", content: "Is the queued review complete?" },
-        } as any);
-        sourceEventId = Number((original as any)[Symbol.for("may-agent.eventRowId")]);
-      },
-    );
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-
-      expect(runs).toHaveLength(1);
-      expect(runs[0]?.opts).toMatchObject({ requestId: `message:${sourceEventId}` });
-      expect(
-        getDb(root)
-          .prepare(
-            `SELECT COUNT(*) AS count FROM events
-             WHERE event_type = 'may.bridge.started'
-               AND json_extract(data, '$.sourceEventId') = ?`,
-          )
-          .get(sourceEventId),
-      ).toEqual({ count: 1 });
-    } finally {
-      router.close();
-      closeDb(root);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("does not run the legacy May bridge after the App inbox accepts a message", async () => {
-    const { root, bus, router, runs } = fixture(
-      { disposition: "answer", response: "legacy bridge must not run" },
-      ({ bus }) => {
-        bus.subscribeDurableRoute((event) => {
-          if (event.type !== "message.created") return;
-          Object.defineProperty(event, APP_MESSAGE_INGRESS_ACCEPTED, { value: true, configurable: true });
-          return { accepted: true, by: "app-inbox:may:message", route: "direct" };
-        });
-      },
-      [],
-      { routeMessagesToApp: true },
-    );
+  it("does not reconstruct an agent message into a second May execution path", async () => {
+    const { root, bus, router, runs } = fixture();
     try {
       const message = bus.emit({
         type: "message.created",
         source: "agent:evaluator",
         owner: "agent:may",
-        data: { from: "evaluator", to: "may", content: "App-owned request" },
+        data: { from: "evaluator", to: "may", content: "App inbox owns this request." },
       });
       const sourceEventId = Number((message as any)[Symbol.for("may-agent.eventRowId")]);
-      await new Promise((resolve) => setTimeout(resolve, 0));
-
-      expect(runs).toEqual([]);
-      expect(
-        getDb(root).prepare("SELECT delivery_route, accepted_by FROM events WHERE id = ?").get(sourceEventId),
-      ).toEqual({ delivery_route: "direct", accepted_by: "app-inbox:may:message" });
-      expect(
-        getDb(root)
-          .prepare(
-            "SELECT COUNT(*) AS count FROM event_pair_runs WHERE pair_name = 'owner_inbox' AND open_event_id = ?",
-          )
-          .get(sourceEventId),
-      ).toEqual({ count: 0 });
-    } finally {
-      router.close();
-      closeDb(root);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("does not turn an App compatibility result into a new May bridge request", async () => {
-    const { root, bus, router, runs } = fixture({
-      disposition: "answer",
-      response: "must not create a response loop",
-    });
-    try {
-      const result = bus.emit({
-        type: "message.created",
-        source: "app:project",
-        owner: "agent:may",
-        data: {
-          from: "project-owner",
-          to: "may",
-          content: "The delegated work is done.",
-          intent: "result",
-          sourceAppId: "project",
-          appResponseFor: "app-item-1",
-          appDeliveryOperationId: "app-delivery:app-item-1:1",
-          idempotencyKey: "app-delivery:app-item-1:1",
-        },
-      });
-      const sourceEventId = Number((result as any)[Symbol.for("may-agent.eventRowId")]);
       await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(runs).toEqual([]);
@@ -294,182 +196,8 @@ describe("command router human intent contract", () => {
     }
   });
 
-  it("reattaches a persisted bridge decision after restart", async () => {
-    let sourceEventId = 0;
-    const { root, router, runs } = fixture(
-      {
-        disposition: "answer",
-        response: "The recovered decision closed the queued review.",
-      },
-      ({ root, bus }) => {
-        const original = bus.emit({
-          type: "message.created",
-          source: "agent:evaluator",
-          owner: "agent:may",
-          data: { from: "evaluator", to: "may", content: "Recover this decision after restart." },
-        } as any);
-        sourceEventId = Number((original as any)[Symbol.for("may-agent.eventRowId")]);
-        getDb(root).run(
-          `INSERT INTO sessions (sessionId, agent, task, status, kind, source, startedAt)
-           VALUES (?, 'may', 'persisted bridge decision', 'running', 'job', 'may-conversation-bridge', ?)`,
-          ["s_existing_bridge", Date.now()],
-        );
-        bus.emit({
-          type: "may.bridge.started",
-          source: "handler:may-conversation-bridge",
-          owner: "agent:may",
-          data: { sourceEventId, sessionId: "s_existing_bridge", attempt: 1 },
-        } as any);
-      },
-    );
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-
-      expect(runs).toHaveLength(0);
-      expect(
-        getDb(root).prepare("SELECT status FROM event_pair_runs WHERE open_event_id = ?").get(sourceEventId),
-      ).toEqual({ status: "closed" });
-    } finally {
-      router.close();
-      closeDb(root);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("keeps May conversational and routes durable work to one app owner", async () => {
-    const { root, bus, router, runs } = fixture({
-      disposition: "route",
-      response: "I understood the runtime repair request and routed it to the AKS app owner.",
-      targetProject: "alpha-project",
-      instruction: "Repair the recovered-owner interruption and prove a clean terminal rerun.",
-    });
-    mkdirSync(join(root, "projects/alpha-project.app"), { recursive: true });
-    writeFileSync(join(root, "projects/alpha-project.app/app.ts"), "export default {};\n");
-    try {
-      const original = bus.emit({
-        type: "message.created",
-        source: "agent:evaluator",
-        owner: "agent:may",
-        data: {
-          from: "evaluator",
-          to: "may",
-          content: "Please repair the AKS recovered-owner interruption path.",
-          intent: "review-request",
-          priority: "P1",
-        },
-      } as any);
-      const sourceEventId = Number((original as any)[Symbol.for("may-agent.eventRowId")]);
-      await new Promise((resolve) => setTimeout(resolve, 0));
-
-      expect(runs).toHaveLength(1);
-      expect(runs[0]).toMatchObject({
-        agent: "may",
-        opts: {
-          kind: "job",
-          source: "may-conversation-bridge",
-          requestId: `message:${sourceEventId}`,
-          requireFinish: true,
-          toolPolicy: "readonly",
-        },
-      });
-      expect(runs[0]?.text).toContain("MAY OWNS THE CONVERSATION; APPS OWN THE WORK");
-
-      const db = getDb(root);
-      const ownerRequest = db
-        .prepare(
-          `SELECT data FROM events
-           WHERE event_type = 'project.owner.requested'
-             AND json_extract(data, '$.inputEventId') = ?`,
-        )
-        .get(sourceEventId) as { data: string };
-      expect(JSON.parse(ownerRequest.data)).toMatchObject({
-        project: "alpha-project",
-        inputEventId: sourceEventId,
-        inputEventType: "message.created",
-        instruction: "Repair the recovered-owner interruption and prove a clean terminal rerun.",
-      });
-      expect(db.prepare("SELECT status FROM event_pair_runs WHERE open_event_id = ?").get(sourceEventId)).toEqual({
-        status: "open",
-      });
-      expect(
-        db
-          .prepare(
-            `SELECT COUNT(*) AS count FROM events
-             WHERE event_type = 'message.created'
-               AND json_extract(data, '$.bridgeAcknowledgementFor') = ?`,
-          )
-          .get(sourceEventId),
-      ).toEqual({ count: 1 });
-
-      bus.emit({
-        type: "message.resolved",
-        source: "project-app:alpha-project",
-        owner: "agent:app-ops",
-        data: {
-          openEventId: sourceEventId,
-          openEventType: "message.created",
-          outcome: "fulfilled",
-          summary: "The repair passed its terminal rerun.",
-          taskRefs: [],
-        },
-      } as any);
-
-      expect(
-        db
-          .prepare(
-            `SELECT COUNT(*) AS count FROM events
-             WHERE event_type = 'message.created'
-               AND json_extract(data, '$.bridgeCompletionFor') = ?`,
-          )
-          .get(sourceEventId),
-      ).toEqual({ count: 1 });
-      expect(db.prepare("SELECT status FROM event_pair_runs WHERE open_event_id = ?").get(sourceEventId)).toEqual({
-        status: "closed",
-      });
-    } finally {
-      router.close();
-      closeDb(root);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("lets May answer directly without creating background app work", async () => {
-    const { root, bus, router } = fixture({
-      disposition: "answer",
-      response: "The review is already complete; no app work remains.",
-    });
-    try {
-      const original = bus.emit({
-        type: "message.created",
-        source: "agent:evaluator",
-        owner: "agent:may",
-        data: { from: "evaluator", to: "may", content: "Is the review complete?" },
-      } as any);
-      const sourceEventId = Number((original as any)[Symbol.for("may-agent.eventRowId")]);
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      const db = getDb(root);
-
-      expect(
-        db
-          .prepare(
-            `SELECT COUNT(*) AS count FROM events
-             WHERE event_type = 'project.owner.requested'
-               AND json_extract(data, '$.inputEventId') = ?`,
-          )
-          .get(sourceEventId),
-      ).toEqual({ count: 0 });
-      expect(db.prepare("SELECT status FROM event_pair_runs WHERE open_event_id = ?").get(sourceEventId)).toEqual({
-        status: "closed",
-      });
-    } finally {
-      router.close();
-      closeDb(root);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
   it("returns an exact Telegram approval identity and artifact fingerprint", () => {
-    const { root, bus, router } = fixture(undefined, undefined, [], { routeHumanInputToApp: true });
+    const { root, bus, router } = fixture(undefined, [], { routeHumanInputToApp: true });
     const observed: Array<Record<string, unknown>> = [];
     const unsubscribe = bus.subscribe((event) => {
       if (event.type === "project.approval.submitted") {
@@ -526,7 +254,7 @@ describe("command router human intent contract", () => {
   });
 
   it("propagates one human-rooted trace into an explicitly controlled chat turn", () => {
-    const { root, bus, router, sent } = fixture(undefined, undefined, [], { routeHumanInputToApp: true });
+    const { root, bus, router, sent } = fixture(undefined, [], { routeHumanInputToApp: true });
     try {
       bus.emit({
         type: "human.input.received",
@@ -571,7 +299,7 @@ describe("command router human intent contract", () => {
   });
 
   it("starts a fresh structured May turn for ordinary console input even when a session is targeted", async () => {
-    const { root, bus, router, sent, runs } = fixture(undefined, undefined, [
+    const { root, bus, router, sent, runs } = fixture(undefined, [
       { disposition: "answer", response: "I reviewed the request." },
     ]);
     try {
@@ -597,7 +325,7 @@ describe("command router human intent contract", () => {
   });
 
   it("defaults a new May chat request to a structured deputy turn", async () => {
-    const { root, bus, router, runs } = fixture(undefined, undefined, [
+    const { root, bus, router, runs } = fixture(undefined, [
       { disposition: "answer", response: "The direct request is understood." },
     ]);
     try {
@@ -622,7 +350,7 @@ describe("command router human intent contract", () => {
   });
 
   it("normalizes socket input and May forks to structured human turns", async () => {
-    const { root, bus, router, runs } = fixture(undefined, undefined, [
+    const { root, bus, router, runs } = fixture(undefined, [
       { disposition: "answer", response: "Socket input understood." },
       { disposition: "answer", response: "Socket fork understood." },
     ]);
@@ -806,7 +534,7 @@ describe("command router human intent contract", () => {
   });
 
   it("turns a structured May route into one canonical app intent", async () => {
-    const { root, bus, router, runs } = fixture(undefined, undefined, [
+    const { root, bus, router, runs } = fixture(undefined, [
       {
         disposition: "route",
         response: "I am routing this to Gym; you do not need to act.",
@@ -869,7 +597,7 @@ describe("command router human intent contract", () => {
   });
 
   it("runs break glass as one audited full-tool attempt and then requests review", async () => {
-    const { root, bus, router, runs } = fixture(undefined, undefined, [
+    const { root, bus, router, runs } = fixture(undefined, [
       {
         disposition: "break-glass",
         response: "I am taking over the broken reply path; you do not need to act.",
@@ -923,7 +651,6 @@ describe("command router human intent contract", () => {
   it("closes an interrupted break-glass attempt after restart and requests one safe review", async () => {
     let sourceEventId = 0;
     const { root, bus, router, manager, runs } = fixture(
-      undefined,
       ({ bus }) => {
         const source = bus.emit({
           type: "human.input.received",
@@ -1003,7 +730,7 @@ describe("command router human intent contract", () => {
   });
 
   it("rejects untargeted bare cancel instead of upgrading it to cancel-all", () => {
-    const { root, bus, router, cancelled } = fixture(undefined, undefined, [], { routeHumanInputToApp: true });
+    const { root, bus, router, cancelled } = fixture(undefined, [], { routeHumanInputToApp: true });
     try {
       bus.emit({
         type: "human.input.received",
