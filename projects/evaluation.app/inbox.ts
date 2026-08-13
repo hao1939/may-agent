@@ -1,4 +1,4 @@
-import { defineApp } from "@may-agent/sdk";
+import { defineApp } from "@may-agent/sdk/app";
 import { evaluationCanaryInputSchema } from "./canary-contract.js";
 
 export default defineApp({

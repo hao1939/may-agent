@@ -99,6 +99,18 @@ curl "http://localhost:8080/api/app-inbox?appId=evaluation-canary&idempotencyKey
 The item should move `pending -> handling -> done` and retain its owner session
 and structured result. Reusing the key must not create or run a second item.
 
+Then pass the completed item id to the manual capability-scoped workflow:
+
+```sh
+curl -X POST http://localhost:8080/api/projects/evaluation/actions/app-runtime-canary \
+  -H 'content-type: application/json' \
+  -d '{"input":{"itemId":"app_..."}}'
+```
+
+This workflow imports only `@may-agent/sdk/app`. It reads the bounded App
+result projection and emits an observation; it has no database, queue, task
+store, or global-path capability.
+
 The app manifest in `app.ts` owns schedules, event-to-task correlation,
 workflow bindings, and owner fallback.
 Session aftermath runs only for `session.end`, bounded backfill, or explicit

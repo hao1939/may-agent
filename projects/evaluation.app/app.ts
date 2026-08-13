@@ -9,7 +9,10 @@ import {
 } from "@may-agent/sdk";
 import { observeEvaluationPipeline } from "./watchers/evaluation-pipeline.js";
 import { projectEvaluationFeedback } from "./watchers/feedback-projection.js";
-import { evaluationCanaryDataSchema } from "./canary-contract.js";
+import {
+  evaluationAppRuntimeCanarySchema,
+  evaluationCanaryDataSchema,
+} from "./canary-contract.js";
 
 const projectId = "evaluation";
 const actionInputSchema = Type.Object({}, { additionalProperties: true });
@@ -106,6 +109,14 @@ export function appInboxCanaryRequested(params: unknown): ProjectAppEvent {
   };
 }
 
+export function appRuntimeCanaryRequested(params: unknown): ProjectAppEvent {
+  return {
+    type: "evaluation.app_runtime_canary.requested",
+    project: projectId,
+    params: eventParams(params),
+  };
+}
+
 function metricId(event: Record<string, unknown>): string {
   const details = eventDetails(event);
   const value = details.metricId ?? details.metric_id ?? details.metric;
@@ -191,6 +202,22 @@ export function resolveEvaluationTask(
 ): ProjectAppTaskIntent | null {
   const details = eventDetails(event);
   switch (event.type) {
+    case "evaluation.app_runtime_canary.requested": {
+      const itemId = String(details.itemId ?? "").trim();
+      if (!itemId) return null;
+      return {
+        id: `runtime/app-inbox-canary/${safeTaskIdPart(itemId)}`,
+        parentId: "evaluator-reliability",
+        outcome: `Verify the capability-scoped runtime against completed App inbox item ${itemId}.`,
+        acceptance: [
+          "The workflow reads the exact item through AppRead and publishes one canary observation without using host internals.",
+        ],
+        mode: "achieve",
+        workflow: "evaluation-app-runtime-canary",
+        input: { itemId },
+        priority: "P2",
+      };
+    }
     case "evaluation.session.requested": {
       const sessionId = eventSessionId(event);
       if (!sessionId) return null;
@@ -492,6 +519,7 @@ export default defineProjectApp({
       "evaluation.aftermath.scan",
       "evaluation.deep.scan",
       "evaluation.project.review.requested",
+      "evaluation.app_runtime_canary.requested",
       { type: "project.comment.created", project: projectId },
       { type: "project.owner.requested", project: projectId },
     ],
@@ -516,6 +544,15 @@ export default defineProjectApp({
       inputSchema: evaluationCanaryDataSchema,
       event(params) {
         return appInboxCanaryRequested(params);
+      },
+    },
+    "app-runtime-canary": {
+      type: "async",
+      description:
+        "Run the capability-scoped workflow against one completed manual App inbox probe.",
+      inputSchema: evaluationAppRuntimeCanarySchema,
+      event(params) {
+        return appRuntimeCanaryRequested(params);
       },
     },
     "evaluate-session": {

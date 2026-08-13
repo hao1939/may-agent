@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import type { ProjectAppContext } from "@may-agent/sdk";
 import app, {
   appInboxCanaryRequested,
+  appRuntimeCanaryRequested,
   resolveEvaluationTask,
   routeEvaluationEvent,
 } from "./app.ts";
@@ -86,6 +87,27 @@ describe("evaluation App inbox canary", () => {
     });
     expect(app.tasks?.accepts).not.toContain("app.input.requested");
     expect(app.events).not.toContain("app.input.requested");
+
+    expect(appRuntimeCanaryRequested({ itemId: "app_canary" })).toEqual({
+      type: "evaluation.app_runtime_canary.requested",
+      project: "evaluation",
+      params: { itemId: "app_canary" },
+    });
+    expect(app.actions?.["app-runtime-canary"]).toMatchObject({
+      type: "async",
+      description: expect.stringContaining("capability-scoped workflow"),
+    });
+    expect(
+      resolveEvaluationTask({
+        type: "evaluation.app_runtime_canary.requested",
+        params: { itemId: "app_canary" },
+      }),
+    ).toMatchObject({
+      id: "runtime/app-inbox-canary/app_canary",
+      mode: "achieve",
+      workflow: "evaluation-app-runtime-canary",
+      input: { itemId: "app_canary" },
+    });
   });
 });
 
@@ -312,7 +334,7 @@ describe("evaluation app task reconciliation", () => {
 
   test("declares one convention-first task resolver", () => {
     expect(app.tasks?.resolve).toBe(resolveEvaluationTask);
-    expect(app.tasks?.accepts).toHaveLength(8);
+    expect(app.tasks?.accepts).toHaveLength(9);
     expect(app.tasks?.accepts).not.toContain("session.end");
     expect(app.events).toContain("session.end");
     expect(app.ownerEntry).toBeUndefined();
