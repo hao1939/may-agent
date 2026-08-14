@@ -4,7 +4,7 @@ import type { SubagentManager } from "../lib/index.js";
 import { log } from "../lib/log.js";
 import { getDb } from "../lib/requests.js";
 import type { ChatSession } from "./chat-session.js";
-import { childEventTrace, EVENT_ROW_ID, type EventBus, type EventTrace } from "./event-bus.js";
+import { childEventTrace, EVENT_ROW_ID, type DeliveryResult, type EventBus, type EventTrace } from "./event-bus.js";
 import { getTelegramConversationView, type TelegramConversationView } from "../lib/db/notifications.js";
 import { isRecord, normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 import {
@@ -34,6 +34,13 @@ export interface CommandRouter {
   handleInput: (message: string, source?: string) => void;
   close: () => void;
 }
+
+const MAY_APP_INPUT_DELIVERY: DeliveryResult = {
+  accepted: true,
+  by: "command-router:app:may",
+  route: "direct",
+  note: "human input transferred to the durable May App inbox",
+};
 
 function eventData(event: unknown): Record<string, unknown> {
   if (!isRecord(event)) return {};
@@ -203,7 +210,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     source: string;
     conversation: Record<string, unknown>;
     context: Record<string, unknown>;
-  }): void {
+  }): DeliveryResult {
     const sourceEventId = eventRowId(input.event);
     const channel = nonEmptyString(input.conversation.channel) ?? input.source;
     const channelMessageId = integerField(input.conversation, "channelMessageId") ?? undefined;
@@ -234,6 +241,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
           (sourceEventId ? `human-input:${sourceEventId}` : `human-input:${channel}:${sequence}`),
       },
     } as any);
+    return MAY_APP_INPUT_DELIVERY;
   }
 
   function normalizeProjectPath(value: unknown): string | null {
@@ -837,7 +845,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     } as any);
   }
 
-  function handleHumanInput(event: unknown): void {
+  function handleHumanInput(event: unknown): DeliveryResult | void {
     options.clearCancelLatch();
     const data = eventData(event);
     const message = nonEmptyString(data.text) ?? nonEmptyString(data.message);
@@ -978,8 +986,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
 
     if (mayBrokerReply) {
       if (options.routeHumanInputToApp) {
-        routeMayConversationApp({ event, data, message: deliveredMessage, source, conversation, context });
-        return;
+        return routeMayConversationApp({ event, data, message: deliveredMessage, source, conversation, context });
       }
       bus.emit({
         type: "chat.start.requested",
@@ -1016,8 +1023,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
 
     const agent = nonEmptyString(target.agent) ?? ownerAgent(eventOwner) ?? "may";
     if (agent === "may" && options.routeHumanInputToApp) {
-      routeMayConversationApp({ event, data, message: deliveredMessage, source, conversation, context });
-      return;
+      return routeMayConversationApp({ event, data, message: deliveredMessage, source, conversation, context });
     }
     bus.emit({
       type: "chat.start.requested",
@@ -1175,8 +1181,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         handleInput(event.message, event.source);
         break;
       case "human.input.received":
-        handleHumanInput(event);
-        break;
+        return handleHumanInput(event);
       case "steer": {
         handleSteer(event.sessionId, event.message, event.source, event);
         break;
