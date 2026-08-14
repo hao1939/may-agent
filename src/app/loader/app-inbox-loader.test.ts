@@ -20,7 +20,7 @@ function fixture(): string {
 }
 
 describe("App inbox definition loader", () => {
-  it("loads only explicit inbox modules beside legacy Project Apps", async () => {
+  it("loads canonical inbox modules and ignores legacy app manifests", async () => {
     const root = fixture();
     const modulePath = join(root, "evaluation.app", "inbox.js");
     writeFileSync(
@@ -35,12 +35,31 @@ describe("App inbox definition loader", () => {
       };\n`,
     );
 
-    expect(listAppInboxDefinitionFiles(root)).toEqual([modulePath]);
+    expect(listAppInboxDefinitionFiles(root)).toEqual([modulePath, join(root, "legacy.app", "app.js")]);
     const loaded = await loadAppInboxDefinitions(root);
     expect(loaded).toHaveLength(1);
     expect(loaded[0]).toMatchObject({
       appDir: join(root, "evaluation.app"),
       definition: { id: "evaluation-canary", owner: "evaluator" },
+    });
+  });
+
+  it("loads app.ts as the canonical manifest after inbox.ts is removed", async () => {
+    const root = fixture();
+    const appPath = join(root, "evaluation.app", "app.js");
+    writeFileSync(
+      appPath,
+      `export default {
+        id: "evaluation-canary", version: 1, owner: "evaluator",
+        inputSchema: { type: "object" }
+      };\n`,
+    );
+
+    const loaded = await loadAppInboxDefinitions(root);
+    expect(loaded).toHaveLength(1);
+    expect(loaded[0]).toMatchObject({
+      appDir: join(root, "evaluation.app"),
+      definition: { id: "evaluation-canary" },
     });
   });
 

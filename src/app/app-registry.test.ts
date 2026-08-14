@@ -28,6 +28,7 @@ describe("App registry", () => {
     const { root, inboxPath } = fixture("before");
     const registry = new AppRegistry(root);
     await registry.reload();
+    expect(registry.snapshot().generation).toBe(1);
 
     writeFileSync(
       inboxPath,
@@ -40,8 +41,10 @@ describe("App registry", () => {
     ).rejects.toThrow("host rejected replacement");
 
     expect(registry.entries().map((entry) => entry.definition.id)).toEqual(["before"]);
+    expect(registry.snapshot().generation).toBe(1);
     await registry.reload();
     expect(registry.entries().map((entry) => entry.definition.id)).toEqual(["after"]);
+    expect(registry.snapshot().generation).toBe(2);
   });
 
   it("does not expose its mutable snapshot array", async () => {
@@ -51,5 +54,9 @@ describe("App registry", () => {
 
     registry.entries().length = 0;
     expect(registry.entries().map((entry) => entry.definition.id)).toEqual(["stable"]);
+    expect(Object.isFrozen(registry.snapshot())).toBeTrue();
+    expect(Object.isFrozen(registry.snapshot().entries)).toBeTrue();
+    expect(Object.isFrozen(registry.snapshot().entries[0])).toBeTrue();
+    expect(Object.isFrozen(registry.snapshot().entries[0]?.definition)).toBeTrue();
   });
 });

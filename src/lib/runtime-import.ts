@@ -1,12 +1,4 @@
-import {
-  existsSync,
-  lstatSync,
-  mkdirSync,
-  readFileSync,
-  readdirSync,
-  symlinkSync,
-  unlinkSync,
-} from "node:fs";
+import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, symlinkSync, unlinkSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 
 let runtimeImportSeq = 0;
@@ -52,7 +44,7 @@ export async function importRuntimeModule<T = unknown>(
 
   const bundled = await bundleRuntimeModule(modulePath, opts);
   try {
-    return await import(withFreshToken(bundled.path)) as T;
+    return (await import(withFreshToken(bundled.path))) as T;
   } finally {
     bundled.cleanup();
   }
@@ -76,10 +68,7 @@ async function bundleRuntimeModule(
   mirrorSourceDirForRelativeImports(dirname(resolve(modulePath)), outDir);
 
   runtimeImportSeq += 1;
-  const outFile = join(
-    outDir,
-    `.may-runtime-module-${process.pid}-${Date.now()}-${runtimeImportSeq}.mjs`,
-  );
+  const outFile = join(outDir, `.may-runtime-module-${process.pid}-${Date.now()}-${runtimeImportSeq}.mjs`);
   const result = await Bun.build({
     entrypoints: [modulePath],
     target: "bun",
@@ -89,12 +78,8 @@ async function bundleRuntimeModule(
   });
 
   if (!result.success) {
-    const messages = result.logs
-      .map((log: { message: string }) => log.message)
-      .join("\n");
-    throw new Error(
-      `Failed to bundle runtime module ${modulePath}${messages ? `:\n${messages}` : ""}`,
-    );
+    const messages = result.logs.map((log: { message: string }) => log.message).join("\n");
+    throw new Error(`Failed to bundle runtime module ${modulePath}${messages ? `:\n${messages}` : ""}`);
   }
 
   const output = result.outputs[0];
@@ -142,10 +127,7 @@ function nearestProjectRoot(startDir: string): string | undefined {
   }
 }
 
-function mirrorSourceDirForRelativeImports(
-  sourceDir: string,
-  outDir: string,
-): void {
+function mirrorSourceDirForRelativeImports(sourceDir: string, outDir: string): void {
   if (resolve(sourceDir) === resolve(outDir)) return;
 
   let entries: string[];
@@ -164,13 +146,7 @@ function mirrorSourceDirForRelativeImports(
     if (existsSync(dest)) continue;
     try {
       const stat = lstatSync(source);
-      symlinkSync(
-        source,
-        dest,
-        stat.isDirectory() && process.platform === "win32"
-          ? "junction"
-          : undefined,
-      );
+      symlinkSync(source, dest, stat.isDirectory() && process.platform === "win32" ? "junction" : undefined);
     } catch {
       // Best effort: static imports are bundled; this mirror only preserves
       // dynamic relative imports that remain in the generated module.
@@ -193,14 +169,9 @@ function mayAgentSdkRuntimeResolver(entrypoint: string): RuntimeBunPlugin {
       // because the binary's resolver has no node_modules context.
       // Walk up from the importer to find the package in node_modules.
       build.onResolve({ filter: /^@earendil-works\// }, (args) => {
-        const resolved = resolveNodeModulesPackage(
-          args.path,
-          args.importer || entrypoint,
-        );
+        const resolved = resolveNodeModulesPackage(args.path, args.importer || entrypoint);
         if (resolved) return { path: resolved };
-        throw new Error(
-          `Cannot resolve ${args.path} from ${args.importer || entrypoint}`,
-        );
+        throw new Error(`Cannot resolve ${args.path} from ${args.importer || entrypoint}`);
       });
     },
   };
@@ -210,10 +181,7 @@ function mayAgentSdkRuntimeResolver(entrypoint: string): RuntimeBunPlugin {
  * Walk up from `startDir` looking for `specifier` in node_modules.
  * Returns the resolved package main (dist/index.js or package.json main) or undefined.
  */
-function resolveNodeModulesPackage(
-  specifier: string,
-  importer: string,
-): string | undefined {
+function resolveNodeModulesPackage(specifier: string, importer: string): string | undefined {
   let current = resolve(dirname(importer));
   while (true) {
     const candidate = join(current, "node_modules", ...specifier.split("/"));
@@ -244,11 +212,13 @@ function resolveSdkExport(specifier: string, importer: string): string {
   const exportFile =
     specifier === "@may-agent/sdk/app"
       ? "app.ts"
-      : specifier === "@may-agent/sdk/legacy"
-        ? "legacy.ts"
-      : specifier === "@may-agent/sdk/testing"
-        ? "testing.ts"
-        : "index.ts";
+      : specifier === "@may-agent/sdk/task"
+        ? "task.ts"
+        : specifier === "@may-agent/sdk/legacy"
+          ? "legacy.ts"
+          : specifier === "@may-agent/sdk/testing"
+            ? "testing.ts"
+            : "index.ts";
   const candidates = sdkRootCandidates(importer).map((root) => join(root, "src", exportFile));
   const resolved = candidates.find((candidate) => existsSync(candidate));
   if (resolved) return resolved;

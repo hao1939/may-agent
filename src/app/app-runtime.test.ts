@@ -37,7 +37,8 @@ describe("app runtime startup order", () => {
 
   it("runs App owners through the shared reconciliation capacity", () => {
     const source = readFileSync(new URL("./app-runtime.ts", import.meta.url), "utf8");
-    expect(source).toContain("runOwner: (work) => runWithProjectAppRuntimeCapacity(bus, work)");
+    expect(source).toContain("const appTasks = createAppTaskCapability");
+    expect(source).toContain("runOwner: appTasks.runOwner");
   });
 });
 

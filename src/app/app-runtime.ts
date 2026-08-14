@@ -5,7 +5,7 @@ import { closeAllDbs, getDb } from "../lib/requests.js";
 import type { AppArgs } from "./app-args.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
 import { AppRegistry } from "./app-registry.js";
-import { readRuntimeExecutionView } from "./app-read.js";
+import { createAppTaskCapability } from "./app-task-capability.js";
 import { attachCommandRouter } from "./command-router.js";
 import { startCronRuntime } from "./cron-startup.js";
 import {
@@ -20,11 +20,6 @@ import {
 } from "./daemon.js";
 import { EVENT_ROW_ID, EventBus } from "./event-bus.js";
 import { startInterfaceRuntime } from "./interface-startup.js";
-import {
-  attachLoadedProjectAppTask,
-  readLoadedProjectAppTaskView,
-  runWithProjectAppRuntimeCapacity,
-} from "./loader/project-app-loader.js";
 import type { ModelRegistry } from "./model-registry.js";
 import { parseWebPort, startWebMode } from "./modes/web.js";
 import { runRequestedExitMode } from "./runtime-exit-modes.js";
@@ -155,36 +150,19 @@ export async function runAppRuntime(opts: {
     appRegistry,
   });
 
+  const appTasks = createAppTaskCapability({
+    bus,
+    getDb: () => getDb(opts.persistDir),
+  });
+
   appInboxRuntime = await startAppInboxRuntime({
     registry: appRegistry,
     db: getDb(opts.persistDir),
     manager,
     bus,
-    runOwner: (work) => runWithProjectAppRuntimeCapacity(bus, work),
-    attachTask: async (input) => attachLoadedProjectAppTask({ ...input, bus }),
-    readDependency: async ({ appDir, dependency }) => {
-      if (dependency.kind === "task") {
-        const task = readLoadedProjectAppTaskView({ bus, appDir, taskId: dependency.id });
-        return task
-          ? {
-              kind: "task",
-              id: task.id,
-              status: task.status,
-              summary: task.summary,
-              evidence: task.evidence,
-            }
-          : null;
-      }
-      const execution = readRuntimeExecutionView({ getDb: () => getDb(opts.persistDir) }, dependency.id);
-      return execution
-        ? {
-            kind: "session",
-            id: execution.id,
-            status: execution.status === "blocked" ? "waiting" : execution.status,
-            summary: execution.summary,
-          }
-        : null;
-    },
+    runOwner: appTasks.runOwner,
+    attachTask: appTasks.attach,
+    readDependency: appTasks.readDependency,
   });
   if (appInboxRuntime.host.appIds().length > 0) {
     bus.emit({

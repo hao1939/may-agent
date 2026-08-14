@@ -68,7 +68,7 @@ describe("App inbox host", () => {
           apps: [{ ...app("malformed"), tasks: { attach: false } } as unknown as AppDefinition],
           invokeOwner: async () => [],
         }),
-    ).toThrow("App malformed has invalid task attachment capability");
+    ).toThrow("App malformed tasks attach must be true");
   });
 
   it("replaces the live App registry atomically without orphaning unfinished work", () => {

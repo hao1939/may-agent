@@ -19,6 +19,9 @@
       "@may-agent/sdk/app": [
         "packages/sdk/src/app.ts"
       ],
+      "@may-agent/sdk/task": [
+        "packages/sdk/src/task.ts"
+      ],
       "@may-agent/sdk/legacy": [
         "packages/sdk/src/legacy.ts"
       ],

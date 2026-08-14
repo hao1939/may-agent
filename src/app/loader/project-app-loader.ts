@@ -59,7 +59,7 @@ import {
   type ProjectAppTaskVerifier,
   type ProjectAppExecutionPaths,
 } from "@may-agent/sdk/legacy";
-import type { AppTaskAttachment } from "@may-agent/sdk";
+import type { AppDefinition, AppTaskAttachment } from "@may-agent/sdk";
 import type { TaskView } from "@may-agent/sdk/app";
 import { readRuntimeTaskView } from "../app-read.js";
 import { Cron } from "../cron.js";
@@ -343,12 +343,16 @@ function configuredProjectAppOwner(app: ProjectApp, appDir: string): string {
   return inferProjectAppOwner(appDir);
 }
 
-async function loadProjectApp(appDir: string): Promise<ProjectApp> {
+async function loadProjectApp(appDir: string): Promise<ProjectApp | AppDefinition> {
   const tsPath = join(appDir, "app.ts");
   const jsPath = join(appDir, "app.js");
   const modulePath = existsSync(tsPath) ? tsPath : jsPath;
-  const mod = await importRuntimeModule<{ default?: ProjectApp } & ProjectApp>(modulePath);
+  const mod = await importRuntimeModule<{ default?: ProjectApp | AppDefinition } & ProjectApp>(modulePath);
   return mod.default ?? mod;
+}
+
+function isCanonicalApp(app: ProjectApp | AppDefinition): app is AppDefinition {
+  return Object.prototype.hasOwnProperty.call(app, "inputSchema");
 }
 
 function domainProjectDir(projectsRoot: string, appDir: string, appId: string, app: ProjectApp): string {
@@ -3494,6 +3498,7 @@ async function prepareProjectAppDescriptors(opts: ProjectAppLoaderOptions): Prom
   );
   for (const appDir of listProjectAppDirs(opts.projectsRoot)) {
     const app = await loadProjectApp(appDir);
+    if (isCanonicalApp(app)) continue;
     const id = typeof app.id === "string" && app.id.trim() ? app.id.trim() : appIdFromDir(appDir);
     if (ids.has(id)) throw new Error(`Duplicate project app id: ${id}`);
     ids.add(id);
