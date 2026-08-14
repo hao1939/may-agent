@@ -572,27 +572,6 @@ function ownerValue(event: Record<string, unknown>): string {
   return owner.startsWith("agent:") ? owner.slice("agent:".length) : owner;
 }
 
-function ownerMessageForApp(
-  event: Record<string, unknown>,
-  descriptor: ProjectAppDescriptor,
-): { eventId: number; input: Record<string, unknown>; periodic: boolean } | null {
-  const periodic = event.type === "owner.inbox.accepted" && event.sourceEventType === "message.created";
-  const direct = event.type === "message.created";
-  if (!periodic && !direct) return null;
-  if (ownerValue(event) !== descriptor.owner) return null;
-  const input = periodic && isRecord(event.input) ? event.input : isRecord(event.data) ? event.data : {};
-  const recipient = typeof input.to === "string" ? input.to.replace(/^agent:/, "").trim() : "";
-  if (recipient !== descriptor.owner) return null;
-  // A same-ID App inbox owns fresh message admission. A co-located canary or
-  // helper App does not. Keep periodic replay so pre-cutover work can drain.
-  if (direct && descriptor.ownsDirectInbox) return null;
-  if (direct && shouldOfferToApp(descriptor.app, event)) return null;
-  const project = projectValue(event) || projectValue(input);
-  if (project && project !== descriptor.id && project !== `${descriptor.id}.app`) return null;
-  const eventId = Number(periodic ? event.sourceEventId : event.eventId);
-  return Number.isInteger(eventId) && eventId > 0 ? { eventId, input, periodic } : null;
-}
-
 function closedOwnerInputEventId(persistDir: string | undefined, event: Record<string, unknown>): number | null {
   if (!persistDir || event.type !== "project.owner.requested") return null;
   const inputEventId = Number(event.inputEventId);
@@ -3198,40 +3177,6 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
           "owner-message",
           `owner input ${closedOwnerInput} is already resolved`,
         );
-      }
-      const ownerMessage = ownerMessageForApp(event, descriptor);
-      if (ownerMessage) {
-        const openEventId = ownerMessage.eventId;
-        const input = ownerMessage.input;
-        const content = typeof input.content === "string" ? input.content.trim() : "";
-        const ownerRequest = {
-          type: "project.owner.requested",
-          source: `project-app:${descriptor.id}:owner-inbox-reconciler`,
-          owner: `agent:${descriptor.owner}`,
-          target: { project: descriptor.id },
-          data: {
-            project: descriptor.id,
-            projectId: descriptor.id,
-            reason: "owner-message",
-            inputEventId: openEventId,
-            inputEventType: "message.created",
-            inputEventData: input,
-            ...(content ? { instruction: content } : {}),
-          },
-          trace: {
-            traceId:
-              isRecord(event.trace) && typeof event.trace.traceId === "string"
-                ? event.trace.traceId
-                : `event:${openEventId}`,
-            parentEventId: Number(event.eventId) || openEventId,
-            links: [{ eventId: openEventId, type: "reference", label: "project.owner.requested" }],
-          },
-        } as unknown as AgentEvent;
-        if (ownerMessage.periodic) {
-          opts.bus.emit(ownerRequest);
-          return projectAppTaskDelivery(descriptor, "owner-message", "owner inbox message resync accepted");
-        }
-        queueMicrotask(() => opts.bus.emit(ownerRequest));
       }
       if (successfulOwner && taskController && descriptor.app.tasks) {
         const config = taskReconciliationConfig({
