@@ -292,6 +292,89 @@ describe("shared agent execution preparation", () => {
     }
   });
 
+  test("keeps App owners inside the disposition ownership boundary", () => {
+    const definition = {
+      name: "owner",
+      description: "App owner",
+      domain: "tests",
+      systemPrompt: "identity",
+      model: { contextWindow: 10_000 } as any,
+      tools: [
+        "agents",
+        "background_exec",
+        "bash",
+        "checkpoint",
+        "cron",
+        "edit",
+        "finish",
+        "message",
+        "query_db",
+        "read",
+        "run_cli_agent",
+        "workflow",
+        "write",
+      ].map(tool),
+    };
+
+    const full = prepareAgentExecution({
+      definition,
+      projectRoot: "/tmp",
+      sessionId: "app-owner-full",
+      task: "handle project input",
+      toolPolicy: "app-owner-full",
+      createCheckpoint: () => tool("checkpoint"),
+    });
+    const deputy = prepareAgentExecution({
+      definition,
+      projectRoot: "/tmp",
+      sessionId: "app-owner-deputy",
+      task: "handle human input",
+      toolPolicy: "app-owner-deputy",
+    });
+
+    expect(full.tools.map((candidate) => candidate.name)).toEqual([
+      "agents",
+      "bash",
+      "edit",
+      "finish",
+      "query_db",
+      "read",
+      "workflow",
+      "write",
+    ]);
+    expect(deputy.tools.map((candidate) => candidate.name)).toEqual([
+      "agents",
+      "finish",
+      "query_db",
+      "read",
+    ]);
+  });
+
+  test("leaves compatibility deputy sessions unchanged during migration", () => {
+    const prepared = prepareAgentExecution({
+      definition: {
+        name: "may",
+        description: "May",
+        domain: "tests",
+        systemPrompt: "identity",
+        model: { contextWindow: 10_000 } as any,
+        tools: ["agents", "finish", "message", "read", "run_cli_agent"].map(tool),
+      },
+      projectRoot: "/tmp",
+      sessionId: "legacy-deputy",
+      task: "handle compatibility input",
+      toolPolicy: "deputy",
+    });
+
+    expect(prepared.tools.map((candidate) => candidate.name)).toEqual([
+      "agents",
+      "finish",
+      "message",
+      "read",
+      "run_cli_agent",
+    ]);
+  });
+
   test("binds shared tools to the exact concurrent agent session", async () => {
     const observations: Array<{ before?: string; after?: string }> = [];
     const sharedTool: AgentTool = {

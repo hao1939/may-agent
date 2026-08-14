@@ -108,6 +108,10 @@ describe("cron startup recovery", () => {
       resume: false,
       reason: "App inbox host reclaims the fenced request with a fresh bounded owner attempt",
     });
+    expect(shouldResumeStartupSession("human-app-owner", session("/tmp/may.app", "telegram", "app-inbox"))).toEqual({
+      resume: false,
+      reason: "App inbox host reclaims the fenced request with a fresh bounded owner attempt",
+    });
   });
 
   it("does not resume any background project session while its task tree is paused", () => {
