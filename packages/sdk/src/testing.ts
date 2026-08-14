@@ -375,11 +375,16 @@ export function createTestObserverContext(
   options: {
     read?: AppRead;
     log?: AppLogger;
+    workspace?: ObserverContext["workspace"];
   } = {},
 ): ObserverContext {
   return {
     read: options.read ?? createTestAppRead(),
     log: options.log ?? createTestAppLogger(),
+    workspace: options.workspace ?? {
+      appRoot: "/test/apps/example.app",
+      projectRoot: "/test/projects/example",
+    },
   };
 }
 

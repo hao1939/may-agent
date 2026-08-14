@@ -44,6 +44,11 @@ export type AppRead = {
 export type ObserverContext = {
   read: AppRead;
   log: Logger;
+  /** Paths scoped to this App declaration and its configured workspace. */
+  workspace: {
+    appRoot: string;
+    projectRoot: string;
+  };
 };
 
 /** One terminal result vocabulary for bounded Agent and workflow execution. */

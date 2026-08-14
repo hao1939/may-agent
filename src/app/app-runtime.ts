@@ -214,6 +214,7 @@ export async function runAppRuntime(opts: {
           metrics: observerMetrics,
           executionPaths: { appDir, projectDir },
         }),
+        workspace: { appRoot: appDir, projectRoot: projectDir },
         log: {
           debug: (message) => log("debug", message),
           info: (message) => log("info", message),
