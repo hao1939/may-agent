@@ -216,6 +216,11 @@ export class AppInboxHost {
     return [...this.#apps.keys()].sort();
   }
 
+  acceptsInput(appId: string, input: AppInput): boolean {
+    const app = this.#apps.get(appId.trim());
+    return Boolean(app && Check(app.inputSchema, input));
+  }
+
   matchingAppIds(owner: string, input: AppInput): string[] {
     const normalizedOwner = requiredText(owner, "App owner").replace(/^agent:/, "");
     return [...this.#apps.values()]
