@@ -184,6 +184,12 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+function deepFreeze<T>(value: T): T {
+  if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
+  for (const nested of Object.values(value)) deepFreeze(nested);
+  return Object.freeze(value);
+}
+
 export class AppInboxHost {
   readonly #db: SqliteDb;
   readonly #apps: Map<string, RegisteredApp>;
@@ -422,38 +428,71 @@ export class AppInboxHost {
     if (claims.length === 0) return { claimed: 0, admitted: 0, released: 0, errors: [] };
 
     const stopRenewing = this.#renewClaims(claims);
-    let results: AppOwnerDispositionResult[];
+    const routed: AppOwnerDispositionResult[] = [];
+    const unresolvedClaims: AppInboxClaim[] = [];
+    const unresolvedRequests: AppRequest[] = [];
     try {
       const requests = await Promise.all(claims.map((claim) => this.#authorRequest(claim.item)));
-      results = await this.#invokeOwner({
-        app,
-        requests,
-        ...(claims.length === 1 && claims[0]!.item.source.kind === "human" && claims[0]!.item.channel
-          ? {
-              transport: {
-                channel: claims[0]!.item.channel,
-                channelThreadId: claims[0]!.item.channelThreadId,
-                channelMessageId: claims[0]!.item.channelMessageId,
-                conversationId: claims[0]!.item.conversationId,
+      for (const [index, request] of requests.entries()) {
+        const disposition = app.route ? app.route(request) : null;
+        if (disposition === null) {
+          unresolvedClaims.push(claims[index]!);
+          unresolvedRequests.push(request);
+          continue;
+        }
+        if (!disposition || typeof disposition !== "object") {
+          throw new Error(`App ${app.id} route must return a disposition or null`);
+        }
+        routed.push({ requestId: request.id, disposition });
+      }
+    } catch (error) {
+      stopRenewing();
+      return this.#releaseBatch(claims, `App routing failed: ${errorMessage(error)}`);
+    }
+
+    let ownerResults: AppOwnerDispositionResult[];
+    try {
+      ownerResults =
+        unresolvedClaims.length === 0
+          ? []
+          : await this.#invokeOwner({
+              app,
+              requests: unresolvedRequests,
+              ...(unresolvedClaims.length === 1 &&
+              unresolvedClaims[0]!.item.source.kind === "human" &&
+              unresolvedClaims[0]!.item.channel
+                ? {
+                    transport: {
+                      channel: unresolvedClaims[0]!.item.channel,
+                      channelThreadId: unresolvedClaims[0]!.item.channelThreadId,
+                      channelMessageId: unresolvedClaims[0]!.item.channelMessageId,
+                      conversationId: unresolvedClaims[0]!.item.conversationId,
+                    },
+                  }
+                : {}),
+              onSessionStarted: (sessionId) => {
+                const normalized = requiredText(sessionId, "App owner session id");
+                withTransaction(this.#db, () => {
+                  for (const claim of unresolvedClaims) {
+                    if (!associateAppInboxClaimSession(this.#db, claim, normalized, this.#now())) {
+                      throw new Error(`Cannot associate stale request ${claim.item.id} with session ${normalized}`);
+                    }
+                  }
+                });
               },
-            }
-          : {}),
-        onSessionStarted: (sessionId) => {
-          const normalized = requiredText(sessionId, "App owner session id");
-          withTransaction(this.#db, () => {
-            for (const claim of claims) {
-              if (!associateAppInboxClaimSession(this.#db, claim, normalized, this.#now())) {
-                throw new Error(`Cannot associate stale request ${claim.item.id} with session ${normalized}`);
-              }
-            }
-          });
-        },
-      });
+            });
     } catch (error) {
       stopRenewing();
       return this.#releaseBatch(claims, `Owner invocation failed: ${errorMessage(error)}`);
     }
 
+    const ownerError = this.#validateBatchResult(unresolvedClaims, ownerResults);
+    if (ownerError) {
+      stopRenewing();
+      return this.#releaseBatch(claims, ownerError);
+    }
+
+    const results = [...routed, ...ownerResults];
     const batchError = this.#validateBatchResult(claims, results);
     if (batchError) {
       stopRenewing();
@@ -501,7 +540,7 @@ export class AppInboxHost {
       input: item.input,
     };
     const waitingOn = item.waitingOn;
-    if (!waitingOn) return request;
+    if (!waitingOn) return deepFreeze(request);
 
     if (waitingOn.kind === "app") {
       const child = getAppInboxItem(this.#db, waitingOn.id);
@@ -522,15 +561,15 @@ export class AppInboxHost {
             evidence: child.result?.evidence,
           }
         : { kind: "app", id: waitingOn.id, status: "unknown" };
-      return request;
+      return deepFreeze(request);
     }
 
-    if (waitingOn.kind !== "task" && waitingOn.kind !== "session") return request;
+    if (waitingOn.kind !== "task" && waitingOn.kind !== "session") return deepFreeze(request);
     const dependency = { kind: waitingOn.kind, id: waitingOn.id } as const;
 
     const observed = await this.#observeDependency(item.appId, dependency);
     request.dependency = observed ?? { ...dependency, status: "unknown" };
-    return request;
+    return deepFreeze(request);
   }
 
   async #observeDependency(
