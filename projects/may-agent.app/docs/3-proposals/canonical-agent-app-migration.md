@@ -1,6 +1,7 @@
 # Canonical Agent App Migration
 
-**Status:** Accepted migration target; implementation in progress
+**Status:** Accepted; Evaluation and May/platform migrated, AKS and runtime
+deletion remain
 **Decision owner:** Hao
 **Last reviewed:** 2026-08-15
 **Supersedes:** the ownership, routing, and App-hosting parts of the legacy
@@ -45,11 +46,12 @@ inbox.ts -> defineApp -> AppRegistry -> AppInboxHost
 app.ts   -> defineProjectApp -> project-app-loader -> event/task controllers
 ```
 
-For Apps such as `aks-rp-e2e` and `evaluation`, both definitions exist in the
-same directory. The inbox definition identifies the durable address while the
-Project App definition owns schedules, event selectors, actions, task
-correlation, local agents, workspace policy, and task execution. Reload must
-coordinate two loaders, two definition types, and two sets of validation.
+At migration start, Apps such as `aks-rp-e2e` and `evaluation` had both
+definitions in the same directory. The inbox definition identified the durable
+address while the Project App definition owned schedules, event selectors,
+actions, task correlation, local agents, workspace policy, and task execution.
+Evaluation has now removed that split; AKS is the remaining external App with
+the duplicate architecture.
 
 The result works, but it leaves several questions with two answers:
 
@@ -94,12 +96,14 @@ The runtime still has production imports from `@may-agent/sdk/legacy` for:
 - HTTP/read-model compatibility;
 - process identity and older workflow helpers.
 
-The external workspace still has legacy production consumers in:
+The May conversation App, platform App, and Evaluation App now use one
+canonical manifest and the root authoring SDK. Evaluation session aftermath
+also emits `evaluation.recorded` instead of writing the runtime database or
+host-owned session paths.
 
-- `may-agent.app/app.ts`;
-- `evaluation.app/app.ts`, watchers, workflows, and maintenance scripts;
-- `aks-rp-e2e.app/app.ts`, watchers, workflows, task helpers, and maintenance
-  scripts.
+The remaining external legacy production consumers are in
+`aks-rp-e2e.app`: its `app.ts`, watchers, workflows, task helpers, and
+maintenance scripts still use the legacy declaration and authoring boundary.
 
 Many imports are only names from the old barrel. Others are real capability
 violations, especially direct task-store reads/writes, raw SQL observer access,
