@@ -172,7 +172,7 @@ export async function runAppRuntime(opts: {
     },
     projectRoot: opts.projectRoot,
     persistDir: opts.persistDir,
-    routeHumanInputToApp: appInboxRuntime?.host.appIds().includes("may") ?? false,
+    acceptsDirectAppInput: (appId, input) => appInboxRuntime?.host.acceptsInput(appId, input) ?? false,
     reload: handleReload,
     restart: gracefulRestart,
     shutdown: gracefulShutdown,
