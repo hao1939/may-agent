@@ -6,8 +6,14 @@ cd "$(dirname "$0")/.."
 project="${MAY_AGENT_DEPLOY_PROJECT:-may-agent}"
 task_id="${MAY_AGENT_DEPLOY_TASK_ID:-}"
 correlation="${MAY_AGENT_DEPLOY_CORRELATION:-deploy-$(date -u +%Y%m%dT%H%M%SZ)-$$}"
-receipt_dir="${MAY_AGENT_DEPLOY_RECEIPT_DIR:-$PWD/.state/deploy-receipts}"
+deploy_root="${MAY_AGENT_DEPLOY_ROOT:-$PWD}"
+case "$deploy_root" in
+  /*) ;;
+  *) echo "MAY_AGENT_DEPLOY_ROOT must be an absolute path." >&2; exit 2 ;;
+esac
+receipt_dir="${MAY_AGENT_DEPLOY_RECEIPT_DIR:-$deploy_root/.state/deploy-receipts}"
 receipt="$receipt_dir/$correlation.json"
+bundle_dir="$deploy_root/bundle"
 
 if [ -z "$task_id" ]; then
   echo "MAY_AGENT_DEPLOY_TASK_ID is required for a correlated deploy." >&2
@@ -34,13 +40,13 @@ ln -s "$PWD/node_modules" "$build_dir/node_modules"
   bun test packages/control/src/client.test.ts packages/control/src/control-socket.test.ts src/app/modes/emit-mode.test.ts
   bun run bundle
 )
-mkdir -p bundle
-install -m 755 "$build_dir/bundle/may-agent" bundle/may-agent.next
-mv -f bundle/may-agent.next bundle/may-agent
-artifact_sha="$(sha256sum bundle/may-agent | awk '{print $1}')"
+mkdir -p "$bundle_dir"
+install -m 755 "$build_dir/bundle/may-agent" "$bundle_dir/may-agent.next"
+mv -f "$bundle_dir/may-agent.next" "$bundle_dir/may-agent"
+artifact_sha="$(sha256sum "$bundle_dir/may-agent" | awk '{print $1}')"
 printf '{"version":1,"sourceCommit":"%s","artifactSha":"%s","focusedReceiptTests":"37 pass, 0 fail"}\n' \
-  "$source_commit" "$artifact_sha" > bundle/may-agent.provenance.json.next
-mv -f bundle/may-agent.provenance.json.next bundle/may-agent.provenance.json
+  "$source_commit" "$artifact_sha" > "$bundle_dir/may-agent.provenance.json.next"
+mv -f "$bundle_dir/may-agent.provenance.json.next" "$bundle_dir/may-agent.provenance.json"
 
 # This is the durability boundary: the requested receipt is atomically present
 # before the external restarter is started and before either runtime service stops.
@@ -50,8 +56,8 @@ rc=$?
 set -e
 if [ "$rc" = "73" ]; then exit 0; fi
 if [ "$rc" != "0" ]; then exit "$rc"; fi
-printf '%s\n' "$receipt" > bundle/deploy-requested.next
-mv -f bundle/deploy-requested.next bundle/deploy-requested
+printf '%s\n' "$receipt" > "$bundle_dir/deploy-requested.next"
+mv -f "$bundle_dir/deploy-requested.next" "$bundle_dir/deploy-requested"
 
 deploy_in_container='cd /app/projects/may-agent && install -m 755 container/may-agent-supervisor-restart.sh /usr/local/bin/may-agent-supervisor-restart && MAY_AGENT_DEPLOY_RECEIPT="'"$receipt"'" MAY_AGENT_DEPLOY_CORRELATION="'"$correlation"'" MAY_AGENT_DEPLOY_PROJECT="'"$project"'" MAY_AGENT_DEPLOY_TASK_ID="'"$task_id"'" supervisorctl start may-agent-restarter'
 
