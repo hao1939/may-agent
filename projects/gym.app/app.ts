@@ -446,8 +446,6 @@ export default defineProjectApp({
   },
 
   budget: {
-    sessionsPerDay: 6,
-    tokensPerDay: 250_000,
     maxConcurrent: 2,
   },
 
