@@ -12,7 +12,6 @@
 
 import { AsyncLocalStorage } from "node:async_hooks";
 import { log } from "../lib/log.js";
-import { DEFAULT_OWNER_DELIVERY_NOTE } from "../lib/event-delivery.js";
 
 // ── Event Types ────────────────────────────────────────────────────────
 
@@ -1068,7 +1067,6 @@ export class EventBus {
       delivery ??= ownerInboxFallback(event);
       delivery ??= pairTrackerFallback(event);
       delivery ??= evidenceProjectionFallback(event);
-      delivery ??= defaultOwnerFallback(event);
       if (delivery) this.deliveryRecorder?.(event, delivery);
     } finally {
       this.emitDepth--;
@@ -1169,18 +1167,6 @@ function pairTrackerFallback(event: AgentEvent): DeliveryResult | undefined {
   };
 }
 
-function defaultOwnerFallback(event: AgentEvent): DeliveryResult | undefined {
-  const record = event as Record<string, unknown>;
-  const owner = typeof record.owner === "string" ? record.owner.trim() : "";
-  if (!owner) return undefined;
-  return {
-    accepted: true,
-    by: `owner-inbox:${owner}`,
-    route: "owner_inbox",
-    note: `${DEFAULT_OWNER_DELIVERY_NOTE}; persisted in queryable owner inbox`,
-  };
-}
-
 const EVIDENCE_PROJECTION_EVENT_TYPES = new Set([
   // The durable App outbox is authoritative for retries and completion. This
   // event is its transport command/evidence record, not new owner work.
@@ -1200,6 +1186,7 @@ const EVIDENCE_PROJECTION_EVENT_TYPES = new Set([
 function evidenceProjectionFallback(event: AgentEvent): DeliveryResult | undefined {
   const isEvidence =
     event.type.startsWith("evaluation.") ||
+    event.type.startsWith("event-pair.") ||
     EVIDENCE_PROJECTION_EVENT_TYPES.has(event.type) ||
     event.type.startsWith("channel.delivery.") ||
     event.type === "project.owner.reviewed" ||
@@ -1269,7 +1256,7 @@ function hasKey(value: unknown): boolean {
 }
 
 function isOwnerInboxCandidate(eventType: string): boolean {
-  if (eventType === "message.created" || eventType === "learning.feedback") return true;
+  if (eventType === "learning.feedback") return true;
   if (eventType === "metric.breach" || eventType === "metric.recovered" || eventType === "metric.stalled") return true;
   if (eventType === "escalation.created") return true;
   if (eventType === "cli.task.completed" || eventType === "cli.task.failed" || eventType === "cli.task.orphaned")
