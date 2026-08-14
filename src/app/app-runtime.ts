@@ -26,7 +26,6 @@ import { runRequestedExitMode } from "./runtime-exit-modes.js";
 import { attachConsoleUI } from "./transport/console.js";
 import { attachDaemonInfoLog } from "./transport/daemon-info-log.js";
 import { attachTelegramBot } from "./transport/telegram.js";
-import { installProjectApps, startProjectAppWatcher, type ProjectAppWatcher } from "./loader/project-app-loader.js";
 
 export function createAppInputAdmission(options: {
   bus: Pick<EventBus, "emit">;
@@ -154,6 +153,7 @@ export async function runAppRuntime(opts: {
   const appTasks = createAppTaskCapability({
     bus,
     getDb: () => getDb(opts.persistDir),
+    compatibility: projectAppOpts,
   });
 
   appInboxRuntime = await startAppInboxRuntime({
@@ -173,7 +173,7 @@ export async function runAppRuntime(opts: {
   }
 
   let activeRL: { close: () => void } | null = null;
-  let appWatcher: ProjectAppWatcher | null = null;
+  let appWatcher: { close(): void } | null = null;
   let telegramBot: { close: () => void; sendAlert: (...args: any[]) => any } = { close: () => {}, sendAlert: () => {} };
   let cancelledOnce = false;
 
@@ -198,25 +198,15 @@ export async function runAppRuntime(opts: {
       let projectApps = 0;
       let entries = 0;
       const appIds = await appInboxRuntime!.reload(async ({ snapshot, commit }) => {
-        if (!projectAppOpts) {
-          commit();
-          return;
-        }
-        const result = await installProjectApps({
-          ...projectAppOpts,
-          appRegistrySnapshot: snapshot,
-          afterCommit: () => commit(),
-        });
-        projectApps = result.installed.length;
+        const result = await appTasks.publishGeneration({ snapshot, publish: commit });
+        projectApps = result.apps;
         entries = result.entries;
       });
       return { appIds, projectApps, entries };
     },
   });
   if (projectAppOpts) {
-    appWatcher = startProjectAppWatcher(projectAppOpts, {
-      reload: () => handleReload({ throwOnError: true }),
-    });
+    appWatcher = appTasks.watchGenerations(() => handleReload({ throwOnError: true }));
   }
   installProcessHandlers();
 
