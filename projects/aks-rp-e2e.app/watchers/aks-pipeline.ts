@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { execFile, spawnSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import {
   existsSync,
   mkdirSync,
@@ -490,19 +490,27 @@ export function isTaskOwnedSpecRun(run: AdoRun): boolean {
   }
 }
 
-function runAzJson(args: string[]): unknown {
-  const result = spawnSync(AZ_CLI, args, {
-    encoding: "utf8",
-    timeout: 30_000,
-    maxBuffer: 8 * 1024 * 1024,
-    env: {
-      ...process.env,
-      AZURE_CONFIG_DIR: process.env.AZURE_CONFIG_DIR || "/app/.state/.azure",
-    },
+async function runAzJson(args: string[]): Promise<unknown> {
+  const stdout = await new Promise<string | null>((resolve) => {
+    execFile(
+      AZ_CLI,
+      args,
+      {
+        encoding: "utf8",
+        timeout: 30_000,
+        maxBuffer: 8 * 1024 * 1024,
+        env: {
+          ...process.env,
+          AZURE_CONFIG_DIR:
+            process.env.AZURE_CONFIG_DIR || "/app/.state/.azure",
+        },
+      },
+      (error, output) => resolve(error ? null : output),
+    );
   });
-  if (result.status !== 0) return null;
+  if (stdout === null) return null;
   try {
-    return JSON.parse(result.stdout || "null");
+    return JSON.parse(stdout || "null");
   } catch {
     return null;
   }
@@ -561,8 +569,8 @@ function adoRunFromApi(run: AdoRun): ObservedAdoRun | null {
   };
 }
 
-function getAdoRun(runId: string): ObservedAdoRun | null {
-  const run = runAzJson([
+async function getAdoRun(runId: string): Promise<ObservedAdoRun | null> {
+  const run = await runAzJson([
     "pipelines",
     "runs",
     "show",
@@ -578,12 +586,12 @@ function getAdoRun(runId: string): ObservedAdoRun | null {
   return run && typeof run === "object" ? adoRunFromApi(run as AdoRun) : null;
 }
 
-function getAdoTimelinePage(
+async function getAdoTimelinePage(
   runId: string,
   timelineId?: string,
-): AdoTimelineRecord[] {
+): Promise<AdoTimelineRecord[]> {
   const timeline = record(
-    runAzJson([
+    await runAzJson([
       "devops",
       "invoke",
       "--organization",
@@ -623,30 +631,36 @@ export function progressTimelineDetailIds(
   ].slice(0, Math.max(0, limit));
 }
 
-function getAdoTimeline(runId: string): AdoTimelineRecord[] {
-  const root = getAdoTimelinePage(runId);
+async function getAdoTimeline(runId: string): Promise<AdoTimelineRecord[]> {
+  const root = await getAdoTimelinePage(runId);
   const rootById = new Map(root.map((entry) => [text(entry.id), entry]));
-  const progress = root
-    .filter(
-      (entry) =>
-        text(entry.type) === "Task" &&
-        text(entry.name) === "Auth and execute plan slice" &&
-        text(record(entry.details).id),
+  const progress = (
+    await Promise.all(
+      root
+        .filter(
+          (entry) =>
+            text(entry.type) === "Task" &&
+            text(entry.name) === "Auth and execute plan slice" &&
+            text(record(entry.details).id),
+        )
+        .slice(0, MAX_PROGRESS_TIMELINE_DETAILS_PER_RUN)
+        .map(async (entry) => {
+          const timelineId = text(record(entry.details).id);
+          const parent = rootById.get(text(entry.parentId));
+          const sliceId =
+            /^Execute slice slice_(\d+)$/i
+              .exec(text(parent?.name))?.[1]
+              ?.padStart(2, "0") ?? "unknown";
+          return (await getAdoTimelinePage(runId, timelineId)).map(
+            (progressEntry) => ({
+              ...progressEntry,
+              pipelineRunId: runId,
+              sliceId,
+            }),
+          );
+        }),
     )
-    .slice(0, MAX_PROGRESS_TIMELINE_DETAILS_PER_RUN)
-    .flatMap((entry) => {
-      const timelineId = text(record(entry.details).id);
-      const parent = rootById.get(text(entry.parentId));
-      const sliceId =
-        /^Execute slice slice_(\d+)$/i
-          .exec(text(parent?.name))?.[1]
-          ?.padStart(2, "0") ?? "unknown";
-      return getAdoTimelinePage(runId, timelineId).map((progressEntry) => ({
-        ...progressEntry,
-        pipelineRunId: runId,
-        sliceId,
-      }));
-    });
+  ).flat();
   return [...root, ...progress];
 }
 
@@ -839,8 +853,8 @@ export function newPipelineTestNonpassingEvents(
   return events;
 }
 
-function listAdoArtifactNames(runId: string): string[] {
-  const artifacts = runAzJson([
+async function listAdoArtifactNames(runId: string): Promise<string[]> {
+  const artifacts = await runAzJson([
     "pipelines",
     "runs",
     "artifact",
@@ -895,9 +909,9 @@ export function mergeAdoRunObservations(
   return [...byId.values()];
 }
 
-export function scanAdoPipelineRuns(
+export async function scanAdoPipelineRuns(
   trackedRunIds: string[] = [],
-): ObservedAdoRun[] {
+): Promise<ObservedAdoRun[]> {
   if (process.env.MAY_AGENT_AKS_PIPELINE_WATCHER_ADO === "0") return [];
   const listRuns = (status?: "inProgress" | "notStarted") =>
     runAzJson([
@@ -916,7 +930,13 @@ export function scanAdoPipelineRuns(
       "-o",
       "json",
     ]);
-  const listed = [listRuns(), listRuns("inProgress"), listRuns("notStarted")]
+  const listed = (
+    await Promise.all([
+      listRuns(),
+      listRuns("inProgress"),
+      listRuns("notStarted"),
+    ])
+  )
     .filter(Array.isArray)
     .flat() as AdoRun[];
   const observed = listed.length
@@ -930,7 +950,7 @@ export function scanAdoPipelineRuns(
   const byId = new Map(observed.map((run) => [run.runId, run]));
   for (const runId of trackedRunIds.slice(-100)) {
     if (byId.has(runId)) continue;
-    const run = getAdoRun(runId);
+    const run = await getAdoRun(runId);
     if (run) byId.set(runId, run);
   }
   return [...byId.values()];
@@ -2369,7 +2389,7 @@ export async function observeAksPipelines(
     ...(prior.localCompletionFingerprints ?? prior.fingerprints ?? {}),
   };
   const registrationRunIds = registeredTrackedRunIds(ctx.appPath("."));
-  const adoRuns = scanAdoPipelineRuns(
+  const adoRuns = await scanAdoPipelineRuns(
     boundedTrackedRunIds(
       [...(prior.trackedRunIds ?? []), ...registrationRunIds],
       100,
@@ -2381,12 +2401,26 @@ export async function observeAksPipelines(
   const checkedAt = new Date().toISOString();
   // One provider timeline read per active progressive run is shared by queue
   // diagnosis, live progress projection, and early nonpassing observation.
-  const timelinesByRun = new Map<string, AdoTimelineRecord[]>();
-  for (const run of adoRuns) {
-    if (run.progressive && !["completed", "canceled"].includes(run.status)) {
-      timelinesByRun.set(run.runId, getAdoTimeline(run.runId));
-    }
-  }
+  const timelinesByRun = new Map(
+    await Promise.all(
+      adoRuns
+        .filter(
+          (run) =>
+            run.progressive && !["completed", "canceled"].includes(run.status),
+        )
+        .map(
+          async (run) => [run.runId, await getAdoTimeline(run.runId)] as const,
+        ),
+    ),
+  );
+  const artifactNamesByRun = new Map<string, string[]>();
+  const artifactNamesForRun = async (runId: string): Promise<string[]> => {
+    const existing = artifactNamesByRun.get(runId);
+    if (existing) return existing;
+    const names = await listAdoArtifactNames(runId);
+    artifactNamesByRun.set(runId, names);
+    return names;
+  };
   // Repeat live levels so a newly registered Condition can observe them, but
   // emit terminal levels only on transition. Replaying the latest 100 terminal
   // runs on every pulse previously flooded the control path.
@@ -2437,7 +2471,7 @@ export async function observeAksPipelines(
       ctx.emit(event);
       observedEarlyNonpassing += 1;
     }
-    const availableNames = listAdoArtifactNames(observed.runId);
+    const availableNames = await artifactNamesForRun(observed.runId);
     if (availableNames.includes("plan-inputs")) {
       const planKey = artifactKey(observed.runId, "plan-inputs");
       const planRoot = ctx.appPath(
@@ -2701,7 +2735,10 @@ export async function observeAksPipelines(
   for (const observed of changedAdo) {
     const withArtifacts =
       observed.status === "completed"
-        ? { ...observed, artifacts: listAdoArtifactNames(observed.runId) }
+        ? {
+            ...observed,
+            artifacts: await artifactNamesForRun(observed.runId),
+          }
         : observed;
     for (const event of pipelineObservationEvents(withArtifacts))
       ctx.emit(event);

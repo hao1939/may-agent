@@ -2,6 +2,10 @@ import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
+import {
+  preserveDirtyWorkspace,
+  requireExactPreservation,
+} from "./lib/dirty-workspace-preservation.ts";
 
 type InventoryRow = {
   path: string;
@@ -59,6 +63,10 @@ const recoveryRoot = resolve(
   process.env.AKS_RECOVERY_WORKTREE_ROOT ||
     "/app/worktrees/aks-rp-e2e/recovery",
 );
+const preservationRoot = resolve(
+  process.env.AKS_DIRTY_PRESERVATION_ROOT ||
+    "/app/worktrees/aks-rp-e2e/preserved-dirty-bytes",
+);
 const inventory = JSON.parse(readFileSync(inventoryPath, "utf8")) as {
   rows: InventoryRow[];
 };
@@ -94,12 +102,24 @@ for (const row of candidates) {
       throw new Error(
         "worktree is no longer dirty; rerun inventory before relocating it",
       );
+    const snapshot = preserveDirtyWorkspace({
+      workspacePath: row.path,
+      artifactRoot: preservationRoot,
+      snapshotId: `${safePart(basename(row.path))}-${hash}-${head.slice(0, 12)}-${Date.now()}`,
+    });
+    const preservationReceipt = requireExactPreservation(snapshot.snapshotDir);
     git(repoDir, ["worktree", "move", row.path, destination]);
     results.push({
       oldPath: row.path,
       newPath: destination,
       head,
       status: "relocated",
+      preservation: {
+        snapshotDir: snapshot.snapshotDir,
+        aggregateFingerprint: preservationReceipt.aggregateFingerprint,
+        trackedPatchSha256: preservationReceipt.trackedPatch.sha256,
+        exactPreservation: preservationReceipt.exactPreservation,
+      },
     });
   } catch (error) {
     results.push({
@@ -119,6 +139,7 @@ writeFileSync(
       generatedAt: new Date().toISOString(),
       inventoryPath,
       recoveryRoot,
+      preservationRoot,
       counts: {
         candidates: candidates.length,
         relocated: results.filter((row) => row.status === "relocated").length,

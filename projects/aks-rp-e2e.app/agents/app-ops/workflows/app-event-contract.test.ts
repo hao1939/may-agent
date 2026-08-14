@@ -1910,30 +1910,36 @@ describe("app event contract", () => {
         ),
       );
 
-      const result = await routeAksEvent(
-        {
-          appPath: (path = ".") => resolve(appDir, path),
-          emit: (value: Record<string, unknown>) => emitted.push(value),
-        } as never,
-        {
-          type: "project.task.reconciled",
-          target: {
-            project: projectId,
-            taskId,
-          },
-          data: {
-            project: projectId,
-            taskId,
-            disposition: "owner-handoff",
-            handler: "workflow:wait-for-repo-ref-advance",
-            summary:
-              "origin/dev advanced beyond the baseline and the same task now needs owner judgment.",
-          },
+      const ownerHandoffEvent = {
+        type: "project.task.reconciled",
+        target: {
+          project: projectId,
+          taskId,
         },
-      );
+        data: {
+          project: projectId,
+          taskId,
+          disposition: "owner-handoff",
+          handler: "workflow:wait-for-repo-ref-advance",
+          summary:
+            "origin/dev advanced beyond the baseline and the same task now needs owner judgment.",
+        },
+      };
+      const routeContext = {
+        appPath: (path = ".") => resolve(appDir, path),
+        emit: (value: Record<string, unknown>) => emitted.push(value),
+      } as never;
+      const firstResult = await routeAksEvent(routeContext, ownerHandoffEvent);
+      const secondResult = await routeAksEvent(routeContext, ownerHandoffEvent);
+      const persistedState = JSON.parse(
+        readFileSync(resolve(appDir, ".state/tasks/state.json"), "utf8"),
+      ) as { resources: Record<string, { spec: { parentId: string } }> };
 
-      expect(result).not.toHaveProperty("repoRefOwnerHandoffReplay");
+      expect(firstResult).not.toHaveProperty("repoRefOwnerHandoffReplay");
+      expect(secondResult).not.toHaveProperty("repoRefOwnerHandoffReplay");
       expect(emitted).toEqual([]);
+      expect(Object.keys(persistedState.resources)).toEqual([taskId]);
+      expect(persistedState.resources[taskId]?.spec.parentId).toBe("project");
     } finally {
       rmSync(appDir, { recursive: true, force: true });
     }
@@ -3491,7 +3497,18 @@ describe("app event contract", () => {
       priority: "P0",
       input: {
         selectorPath: "ci/feature-sets/master-validation.txt",
-        maximumClusterCreates: 16,
+        selectorCount: 82,
+        orderedSelectorSha256:
+          "fead61bfcfe026556a0cbba74a7480a02f977be73bfe1dbededa19fa0c66c649",
+        physicalBaselineClusterBirths: 92,
+        physicalClusterBirthsNeeded: 46,
+        physicalClusterBirthsSaved: 46,
+        materialization: "ready",
+        historicalDisprovedAspiration: {
+          maximumPhysicalClusterBirths: 16,
+          minimumPhysicalClusterBirthsSaved: 64,
+          minimumSavingsRate: 0.8,
+        },
       },
     });
     expect(
@@ -3591,26 +3608,42 @@ describe("app event contract", () => {
     });
   });
 
-  test("durable-loop schedule emits direct targeted task wakes", () => {
-    expect(scheduleEvents("durable-loop-pulse")).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          type: "project.task.tick",
-          action: "spec-loop",
-          target: { project: projectId, taskId: "aks-spec-verification-loop" },
-        }),
-        expect.objectContaining({
-          type: "project.task.tick",
-          action: "feature-compact-loop",
-          target: { project: projectId, taskId: "aks-feature-compact-loop" },
-        }),
-        expect.objectContaining({
-          type: "project.task.tick",
-          action: "master-validation-compact",
-          target: { project: projectId, taskId: "master-validation-compact" },
-        }),
-      ]),
-    );
+  test("durable-loop backstops stagger direct targeted task wakes", () => {
+    const schedules = [
+      [
+        "durable-spec-loop-pulse",
+        600_000,
+        "spec-loop",
+        "aks-spec-verification-loop",
+      ],
+      [
+        "durable-feature-compact-loop-pulse",
+        605_000,
+        "feature-compact-loop",
+        "aks-feature-compact-loop",
+      ],
+      [
+        "durable-master-validation-compact-pulse",
+        610_000,
+        "master-validation-compact",
+        "master-validation-compact",
+      ],
+    ] as const;
+
+    for (const [id, intervalMs, action, taskId] of schedules) {
+      const schedule = appManifest.schedules?.find((entry) => entry.id === id);
+      expect(schedule).toMatchObject({
+        enabled: true,
+        intervalMs,
+        emits: [
+          {
+            type: "project.task.tick",
+            action,
+            target: { project: projectId, taskId },
+          },
+        ],
+      });
+    }
   });
 
   test("repository skill maintenance has one daily stable task wake", () => {

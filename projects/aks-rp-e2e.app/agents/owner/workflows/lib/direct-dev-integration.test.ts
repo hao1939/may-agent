@@ -1,5 +1,11 @@
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, test } from "bun:test";
@@ -73,15 +79,16 @@ afterEach(() => {
 });
 
 describe("integrateDirectlyIntoDev", () => {
-  test("returns a structured replay request when retained source predates the attempt baseline", () => {
+  test("returns a structured replay request when retained source predates the attempt baseline", async () => {
     const setup = setupDivergedTask();
 
-    const result = integrateDirectlyIntoDev({
+    const result = await integrateDirectlyIntoDev({
       repoDir: setup.seed,
       workspaceDir: setup.task,
       sourceBranch: "task/example",
       sourceCommit: setup.taskBaseCommit,
       taskBaseCommit: setup.currentDevCommit,
+      validationCommands: [],
     });
 
     expect(result).toEqual({
@@ -94,7 +101,7 @@ describe("integrateDirectlyIntoDev", () => {
     });
   });
 
-  test("replays only commits created by the bounded task turn", () => {
+  test("replays only commits created by the bounded task turn", async () => {
     const setup = setupDivergedTask();
     const sourceCommit = commitFile(
       setup.task,
@@ -103,12 +110,13 @@ describe("integrateDirectlyIntoDev", () => {
       "bounded task change",
     );
 
-    const result = integrateDirectlyIntoDev({
+    const result = await integrateDirectlyIntoDev({
       repoDir: setup.seed,
       workspaceDir: setup.task,
       sourceBranch: "task/example",
       sourceCommit,
       taskBaseCommit: setup.taskBaseCommit,
+      validationCommands: [],
     });
 
     expect(result.state).toBe("integrated");
@@ -124,7 +132,7 @@ describe("integrateDirectlyIntoDev", () => {
     expect(inherited.status).not.toBe(0);
   });
 
-  test("does not replay target commits adopted after a stale attempt baseline", () => {
+  test("does not replay target commits adopted after a stale attempt baseline", async () => {
     const root = mkdtempSync(join(tmpdir(), "direct-dev-integration-"));
     roots.push(root);
     const remote = join(root, "remote.git");
@@ -155,12 +163,13 @@ describe("integrateDirectlyIntoDev", () => {
       "bounded task change",
     );
 
-    const result = integrateDirectlyIntoDev({
+    const result = await integrateDirectlyIntoDev({
       repoDir: seed,
       workspaceDir: task,
       sourceBranch: "task/example",
       sourceCommit,
       taskBaseCommit,
+      validationCommands: [],
     });
 
     expect(result.state).toBe("integrated");
@@ -171,15 +180,160 @@ describe("integrateDirectlyIntoDev", () => {
     expect(git(seed, "show", "origin/dev:dev.txt")).toBe("current dev");
   });
 
-  test("does not publish stale history when the turn created no commit", () => {
+  test("does not publish a candidate when a repository validation fails", async () => {
+    const setup = setupDivergedTask();
+    const sourceCommit = commitFile(
+      setup.task,
+      "task.txt",
+      "bounded task change\n",
+      "bounded task change",
+    );
+
+    const result = await integrateDirectlyIntoDev({
+      repoDir: setup.seed,
+      workspaceDir: setup.task,
+      sourceBranch: "task/example",
+      sourceCommit,
+      taskBaseCommit: setup.taskBaseCommit,
+      validationCommands: [
+        {
+          name: "test policy",
+          command: process.execPath,
+          args: ["-e", "process.stderr.write('rejected'); process.exit(7)"],
+        },
+      ],
+    });
+
+    expect(result).toMatchObject({
+      state: "validation-failed",
+      replayBaseCommit: setup.currentDevCommit,
+      error: "test policy failed: rejected",
+    });
+    git(setup.seed, "fetch", "origin", "dev");
+    expect(git(setup.seed, "rev-parse", "origin/dev")).toBe(
+      setup.currentDevCommit,
+    );
+    expect(
+      git(setup.seed, "ls-remote", "--heads", "origin", "task/example"),
+    ).toBe("");
+  });
+
+  test("does not publish a candidate with whitespace errors", async () => {
+    const setup = setupDivergedTask();
+    const sourceCommit = commitFile(
+      setup.task,
+      "task.txt",
+      "trailing whitespace  \n",
+      "bounded task change",
+    );
+
+    const result = await integrateDirectlyIntoDev({
+      repoDir: setup.seed,
+      workspaceDir: setup.task,
+      sourceBranch: "task/example",
+      sourceCommit,
+      taskBaseCommit: setup.taskBaseCommit,
+      validationCommands: [],
+    });
+
+    expect(result).toMatchObject({
+      state: "validation-failed",
+      error: expect.stringContaining("whitespace check failed"),
+    });
+    git(setup.seed, "fetch", "origin", "dev");
+    expect(git(setup.seed, "rev-parse", "origin/dev")).toBe(
+      setup.currentDevCommit,
+    );
+  });
+
+  test("rejects newly tracked runtime evidence without inheriting baseline debt", async () => {
+    const setup = setupDivergedTask();
+    mkdirSync(join(setup.seed, "evidence", "archive"), { recursive: true });
+    const targetCommit = commitFile(
+      setup.seed,
+      "evidence/archive/reviewed-authority.json",
+      "{}\n",
+      "retain reviewed authority",
+    );
+    git(setup.seed, "push", "origin", "dev");
+    mkdirSync(join(setup.task, "evidence", "archive"), { recursive: true });
+    const sourceCommit = commitFile(
+      setup.task,
+      "evidence/archive/runtime.json",
+      "{}\n",
+      "track runtime evidence",
+    );
+
+    const result = await integrateDirectlyIntoDev({
+      repoDir: setup.seed,
+      workspaceDir: setup.task,
+      sourceBranch: "task/example",
+      sourceCommit,
+      taskBaseCommit: setup.taskBaseCommit,
+      validationCommands: [],
+    });
+
+    expect(result).toMatchObject({
+      state: "validation-failed",
+      error: expect.stringContaining(
+        "candidate newly tracks evidence/archive/runtime.json",
+      ),
+    });
+    git(setup.seed, "fetch", "origin", "dev");
+    expect(git(setup.seed, "rev-parse", "origin/dev")).toBe(targetCommit);
+  });
+
+  test("keeps the event loop responsive while validation is pending", async () => {
+    const setup = setupDivergedTask();
+    const sourceCommit = commitFile(
+      setup.task,
+      "task.txt",
+      "bounded task change\n",
+      "bounded task change",
+    );
+    const heartbeats = [Date.now()];
+    const heartbeat = setInterval(() => heartbeats.push(Date.now()), 5);
+
+    try {
+      expect(
+        (
+          await integrateDirectlyIntoDev({
+            repoDir: setup.seed,
+            workspaceDir: setup.task,
+            sourceBranch: "task/example",
+            sourceCommit,
+            taskBaseCommit: setup.taskBaseCommit,
+            validationCommands: [
+              {
+                name: "slow policy",
+                command: process.execPath,
+                args: ["-e", "setTimeout(() => {}, 300)"],
+              },
+            ],
+          })
+        ).state,
+      ).toBe("integrated");
+    } finally {
+      clearInterval(heartbeat);
+      heartbeats.push(Date.now());
+    }
+
+    const maximumHeartbeatGap = Math.max(
+      ...heartbeats.slice(1).map((time, index) => time - heartbeats[index]),
+    );
+    expect(maximumHeartbeatGap).toBeLessThan(200);
+  });
+
+  test("does not publish stale history when the turn created no commit", async () => {
     const setup = setupDivergedTask();
 
-    const result = integrateDirectlyIntoDev({
+    const result = await integrateDirectlyIntoDev({
       repoDir: setup.seed,
       workspaceDir: setup.task,
       sourceBranch: "task/example",
       sourceCommit: setup.taskBaseCommit,
       taskBaseCommit: setup.taskBaseCommit,
+      validationCommands: [],
     });
 
     expect(result.state).toBe("unchanged");

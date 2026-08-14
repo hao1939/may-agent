@@ -77,7 +77,7 @@ describe("repo ref watcher", () => {
     });
   });
 
-  test("detects current origin/dev movement from a fetched remote-tracking ref", () => {
+  test("detects current origin/dev movement from a fetched remote-tracking ref", async () => {
     const root = mkdtempSync(join(tmpdir(), "repo-ref-watcher-"));
     const remote = join(root, "remote.git");
     const seed = join(root, "seed");
@@ -96,7 +96,7 @@ describe("repo ref watcher", () => {
       git(root, `git clone ${remote} ${clone}`);
       git(clone, "git fetch origin dev");
 
-      const initial = observeRepoRef(clone, "origin/dev");
+      const initial = await observeRepoRef(clone, "origin/dev");
       expect(initial).toMatchObject({
         repoRef: "origin/dev",
         changed: false,
@@ -110,7 +110,7 @@ describe("repo ref watcher", () => {
       git(seed, "git commit -m second");
       git(seed, "git push origin dev");
 
-      const changed = observeRepoRef(clone, "origin/dev", firstCommit);
+      const changed = await observeRepoRef(clone, "origin/dev", firstCommit);
       expect(changed).toMatchObject({
         repoRef: "origin/dev",
         previousCommit: firstCommit,

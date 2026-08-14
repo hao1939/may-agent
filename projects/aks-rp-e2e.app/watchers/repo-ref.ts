@@ -1,4 +1,4 @@
-import { spawnSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import type { ProjectAppContext, ProjectAppEvent } from "@may-agent/sdk/legacy";
@@ -36,38 +36,49 @@ function saveState(path: string, state: RepoRefWatcherState): void {
 function runGit(
   projectDir: string,
   args: string[],
-): {
+): Promise<{
   status: number | null;
   stdout: string;
   stderr: string;
-} {
-  const result = spawnSync("git", args, {
-    cwd: projectDir,
-    encoding: "utf8",
-    timeout: 30_000,
-    maxBuffer: 8 * 1024 * 1024,
+}> {
+  return new Promise((resolve) => {
+    execFile(
+      "git",
+      args,
+      {
+        cwd: projectDir,
+        encoding: "utf8",
+        timeout: 30_000,
+        maxBuffer: 8 * 1024 * 1024,
+      },
+      (error, stdout, stderr) => {
+        resolve({
+          status: typeof error?.code === "number" ? error.code : error ? 1 : 0,
+          stdout: stdout ?? "",
+          stderr: stderr || error?.message || "",
+        });
+      },
+    );
   });
-  return {
-    status: result.status,
-    stdout: result.stdout ?? "",
-    stderr: result.stderr || result.error?.message || "",
-  };
 }
 
-function fetchRemoteRef(projectDir: string, repoRef: string): void {
+async function fetchRemoteRef(
+  projectDir: string,
+  repoRef: string,
+): Promise<void> {
   const [remote, ...branchParts] = repoRef.split("/");
   const branch = branchParts.join("/");
   if (!remote || !branch) return;
-  runGit(projectDir, ["fetch", remote, branch]);
+  await runGit(projectDir, ["fetch", remote, branch]);
 }
 
-export function observeRepoRef(
+export async function observeRepoRef(
   projectDir: string,
   repoRef: string,
   previousCommit?: string,
-): RepoRefObservation | null {
-  fetchRemoteRef(projectDir, repoRef);
-  const resolved = runGit(projectDir, ["rev-parse", "--verify", repoRef]);
+): Promise<RepoRefObservation | null> {
+  await fetchRemoteRef(projectDir, repoRef);
+  const resolved = await runGit(projectDir, ["rev-parse", "--verify", repoRef]);
   if (resolved.status !== 0) return null;
   const commit = resolved.stdout.trim();
   if (!commit) return null;
@@ -128,9 +139,14 @@ export async function observeRepoRefChanges(
   const state = readState(statePath);
   const projectDir = ctx.appPath("../aks-rp-e2e");
   const checkedAt = new Date().toISOString();
-  const observations = watchedRepoRefs.map((repoRef) =>
-    observeRepoRef(projectDir, repoRef, state.refs?.[repoRef]),
-  );
+  const observations: Array<RepoRefObservation | null> = [];
+  // Fetches update one shared remote-tracking namespace, so keep them ordered
+  // while allowing each subprocess to yield the event loop.
+  for (const repoRef of watchedRepoRefs) {
+    observations.push(
+      await observeRepoRef(projectDir, repoRef, state.refs?.[repoRef]),
+    );
+  }
 
   saveState(statePath, {
     refs: {
