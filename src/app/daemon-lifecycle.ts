@@ -6,6 +6,7 @@ import type { SubagentManager } from "../lib/index.js";
 import type { AgentLoaderOptions } from "./agent-loader.js";
 import { getAgentCrons, reloadAgents } from "./agent-loader.js";
 import { installProjectApps } from "./loader/project-app-loader.js";
+import type { AppRegistry } from "./app-registry.js";
 
 type ExecFileFn = (
   file: string,
@@ -73,6 +74,8 @@ export function createDaemonLifecycle(opts: {
   getActiveReadline: () => { close: () => void } | null;
   clearActiveReadline: () => void;
   beforeShutdown?: () => void;
+  reloadApps?: () => Promise<string[]>;
+  appRegistry: AppRegistry;
 }) {
   let shuttingDown = false;
 
@@ -125,6 +128,12 @@ export function createDaemonLifecycle(opts: {
 
   const handleReload = async (): Promise<void> => {
     const result = await reloadAgents(opts.loaderOpts);
+    let reloadedAppIds: string[] | undefined;
+    try {
+      reloadedAppIds = await opts.reloadApps?.();
+    } catch (err) {
+      result.errors.push(`[app-registry] ${err instanceof Error ? err.message : String(err)}`);
+    }
     let appResult: Awaited<ReturnType<typeof installProjectApps>> | undefined;
     try {
       appResult = await installProjectApps({
@@ -136,6 +145,7 @@ export function createDaemonLifecycle(opts: {
         manager: opts.loaderOpts.manager,
         bus: opts.loaderOpts.bus,
         agentCrons: getAgentCrons(),
+        appRegistry: opts.appRegistry,
       });
     } catch (err) {
       result.errors.push(`[project-app] ${err instanceof Error ? err.message : String(err)}`);
@@ -150,11 +160,12 @@ export function createDaemonLifecycle(opts: {
       if (appResult && appResult.installed.length > 0) {
         parts.push(`${appResult.installed.length} project app(s), ${appResult.entries} trigger(s)`);
       }
+      if (reloadedAppIds) parts.push(`${reloadedAppIds.length} durable App address(es)`);
       summary = `[reload] ${parts.join(", ")}`;
     } else {
       summary =
         appResult && appResult.installed.length > 0
-          ? `[reload] ${appResult.installed.length} project app(s), ${appResult.entries} trigger(s)`
+          ? `[reload] ${appResult.installed.length} project app(s), ${appResult.entries} trigger(s), ${reloadedAppIds?.length ?? 0} durable App address(es)`
           : "[reload] No changes";
     }
     // info events are forwarded to stdout by attachConsoleUI (chat/console

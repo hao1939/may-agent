@@ -12,6 +12,7 @@ import type { AgentLoaderOptions } from "./agent-loader.js";
 import { generateAutoHeartbeats, getAgentCrons, loadAgents, getAgentSessionId } from "./agent-loader.js";
 import { installProjectApps, startProjectAppWatcher } from "./loader/project-app-loader.js";
 import { registerEventPairOrphanGc } from "./handlers/register-orphan-gc.js";
+import type { AppRegistry } from "./app-registry.js";
 
 export async function prepareDaemonAgents(opts: {
   agentsRoot: string;
@@ -23,6 +24,7 @@ export async function prepareDaemonAgents(opts: {
   manager: SubagentManager;
   bus: EventBus;
   cronEnabled: boolean;
+  appRegistry: AppRegistry;
 }): Promise<{ loaderOpts: AgentLoaderOptions }> {
   const loaderOpts: AgentLoaderOptions = {
     agentsRoot: opts.agentsRoot,
@@ -148,6 +150,7 @@ export async function prepareDaemonAgents(opts: {
       bus: opts.bus,
       agentCrons: getAgentCrons(),
       registerLocalAgent,
+      appRegistry: opts.appRegistry,
     };
 
     const appResult = await installProjectApps(projectAppOpts);
