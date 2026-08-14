@@ -1,9 +1,17 @@
-import type { AppDependencyObservation, AppEvent, AppEventTarget, AppInput, AppInputSource } from "@may-agent/sdk";
+import type {
+  AppDependencyObservation,
+  AppEvent,
+  AppEventTarget,
+  AppInput,
+  AppInputSource,
+  ObserverContext,
+} from "@may-agent/sdk";
 import type { SqliteDb } from "../lib/db.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "./event-bus.js";
 import { AppInboxHost, type AppInboxReconcileResult, type AppTaskAttacher } from "./app-inbox-host.js";
 import { createManagerAppOwnerInvoker, type AppOwnerManager } from "./app-owner-manager-adapter.js";
 import type { AppRegistry, AppRegistrySnapshot } from "./app-registry.js";
+import { createAppObserverRuntime } from "./app-observer-runtime.js";
 
 export type AppRegistryReloadPreparation = (input: {
   snapshot: AppRegistrySnapshot;
@@ -37,6 +45,7 @@ export type StartAppInboxRuntimeOptions = {
   retryAfterMs?: number;
   maxBatchSize?: number;
   now?: () => number;
+  observerContext?: (appId: string, appDir: string) => ObserverContext;
 };
 
 function record(value: unknown): Record<string, unknown> {
@@ -130,6 +139,9 @@ function addressedAgentMessage(event: AgentEvent):
 
 export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions): Promise<AppInboxRuntime> {
   let loaded = options.registry.entries();
+  if (loaded.some((entry) => (entry.definition.observers?.length ?? 0) > 0) && !options.observerContext) {
+    throw new Error("Canonical App observers require an observer context factory");
+  }
   for (const { definition } of loaded) {
     if (!options.manager.hasAgent(definition.owner)) {
       throw new Error(`App ${definition.id} owner agent is not registered: ${definition.owner}`);
@@ -174,6 +186,15 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   let deliveryEnabled = false;
   let dispatchingDelivery = false;
   const now = options.now ?? Date.now;
+  const observerRuntime = createAppObserverRuntime({
+    bus: options.bus,
+    now,
+    context: (appId, appDir) => {
+      if (!options.observerContext) throw new Error(`App ${appId} observer context is unavailable`);
+      return options.observerContext(appId, appDir);
+    },
+  });
+  observerRuntime.replace(loaded);
   const scheduleActivations = new Map<string, { fingerprint: string; activatedAt: number }>();
 
   const refreshScheduleActivations = (): void => {
@@ -337,6 +358,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       }
     }
     for (const appId of host.appIds()) schedule(appId);
+    observerRuntime.scanNow();
     void recoverSessionDependencies();
     pumpDeliveries();
   };
@@ -549,6 +571,12 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             throw new Error(`App ${definition.id} owner agent is not registered: ${definition.owner}`);
           }
         }
+        if (
+          snapshot.entries.some((entry) => (entry.definition.observers?.length ?? 0) > 0) &&
+          !options.observerContext
+        ) {
+          throw new Error("Canonical App observers require an observer context factory");
+        }
         let committed = false;
         const commit = () => {
           if (committed) throw new Error(`App registry generation ${snapshot.generation} was committed twice`);
@@ -565,6 +593,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         }
       });
       loaded = next;
+      observerRuntime.replace(next);
       appDirById = new Map(next.map((entry) => [entry.definition.id, entry.appDir]));
       refreshScheduleActivations();
       scanNow();
@@ -579,6 +608,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       if (closed) return;
       closed = true;
       clearInterval(timer);
+      observerRuntime.close();
       unsubscribe();
       pending.length = 0;
       queued.clear();
