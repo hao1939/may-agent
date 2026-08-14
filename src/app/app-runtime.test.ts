@@ -40,6 +40,13 @@ describe("app runtime startup order", () => {
     expect(source).toContain("const appTasks = createAppTaskCapability");
     expect(source).toContain("runOwner: appTasks.runOwner");
   });
+
+  it("publishes inbox and compatibility task routes in one registry transaction", () => {
+    const source = readFileSync(new URL("./app-runtime.ts", import.meta.url), "utf8");
+    expect(source).toContain("appRegistrySnapshot: snapshot");
+    expect(source).toContain("afterCommit: () => commit()");
+    expect(source).toContain("reload: () => handleReload({ throwOnError: true })");
+  });
 });
 
 describe("App input control admission", () => {

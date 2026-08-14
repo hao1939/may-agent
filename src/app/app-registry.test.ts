@@ -35,7 +35,8 @@ describe("App registry", () => {
       `export default { id: "after", version: 1, owner: "may", inputSchema: { type: "object" } };\n`,
     );
     await expect(
-      registry.reload(() => {
+      registry.reload(async () => {
+        await Promise.resolve();
         throw new Error("host rejected replacement");
       }),
     ).rejects.toThrow("host rejected replacement");
@@ -58,5 +59,47 @@ describe("App registry", () => {
     expect(Object.isFrozen(registry.snapshot().entries)).toBeTrue();
     expect(Object.isFrozen(registry.snapshot().entries[0])).toBeTrue();
     expect(Object.isFrozen(registry.snapshot().entries[0]?.definition)).toBeTrue();
+  });
+
+  it("serializes overlapping generation transactions", async () => {
+    const { root, inboxPath } = fixture("initial");
+    const registry = new AppRegistry(root);
+    await registry.reload();
+
+    writeFileSync(
+      inboxPath,
+      `export default { id: "first", version: 1, owner: "may", inputSchema: { type: "object" } };\n`,
+    );
+    let releaseFirst!: () => void;
+    const firstGate = new Promise<void>((resolve) => {
+      releaseFirst = resolve;
+    });
+    let markFirstStarted!: () => void;
+    const firstStarted = new Promise<void>((resolve) => {
+      markFirstStarted = resolve;
+    });
+    const observed: string[] = [];
+    const first = registry.reload(async (snapshot) => {
+      observed.push(`start:${snapshot.generation}:${snapshot.entries[0]?.definition.id}`);
+      markFirstStarted();
+      await firstGate;
+      observed.push(`end:${snapshot.generation}`);
+    });
+    await firstStarted;
+
+    writeFileSync(
+      inboxPath,
+      `export default { id: "second", version: 1, owner: "may", inputSchema: { type: "object" } };\n`,
+    );
+    const second = registry.reload((snapshot) => {
+      observed.push(`start:${snapshot.generation}:${snapshot.entries[0]?.definition.id}`);
+    });
+    await Bun.sleep(10);
+    expect(observed).toEqual(["start:2:first"]);
+
+    releaseFirst();
+    await Promise.all([first, second]);
+    expect(observed).toEqual(["start:2:first", "end:2", "start:3:second"]);
+    expect(registry.snapshot().generation).toBe(3);
   });
 });
