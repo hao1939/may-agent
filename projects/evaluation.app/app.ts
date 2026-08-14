@@ -19,6 +19,17 @@ const sessionSchema = Type.Object(
   { sessionId: Type.String({ minLength: 1 }) },
   { additionalProperties: true },
 );
+const evaluationFeedbackSchema = Type.Object(
+  {
+    sessionId: Type.String({ minLength: 1 }),
+    agent: Type.String({ minLength: 1 }),
+    verdict: Type.String({ minLength: 1 }),
+    quality: Type.Number({ minimum: 0, maximum: 1 }),
+    issues: Type.Array(Type.String()),
+    createdAt: Type.Optional(Type.Number()),
+  },
+  { additionalProperties: true },
+);
 
 export const watchedProjectTargets = [
   {
@@ -87,6 +98,16 @@ const evaluationInputSchema = Type.Union([
   ),
   Type.Object(
     {
+      kind: Type.Literal("feedback-record"),
+      data: Type.Object(
+        { evaluation: evaluationFeedbackSchema },
+        { additionalProperties: true },
+      ),
+    },
+    { additionalProperties: false },
+  ),
+  Type.Object(
+    {
       kind: Type.Literal("project-review"),
       data: Type.Object(
         {
@@ -98,7 +119,7 @@ const evaluationInputSchema = Type.Union([
     },
     { additionalProperties: false },
   ),
-  ...["feedback-projection", "aftermath-scan", "deep-scan"].map((kind) =>
+  ...["aftermath-scan", "deep-scan"].map((kind) =>
     Type.Object(
       { kind: Type.Literal(kind), data: detailsSchema },
       { additionalProperties: false },
@@ -127,7 +148,14 @@ function safeTaskIdPart(value: unknown): string {
   const normalized = raw
     .replace(/[^A-Za-z0-9._-]+/g, "-")
     .replace(/^-+|-+$/g, "");
-  if (normalized === raw && normalized.length <= 120) return normalized;
+  if (
+    normalized === raw &&
+    normalized.length <= 120 &&
+    normalized !== "." &&
+    normalized !== ".."
+  ) {
+    return normalized;
+  }
   const digest = createHash("sha256").update(raw).digest("hex").slice(0, 12);
   return `${normalized.slice(0, 107) || "id"}-${digest}`;
 }
@@ -327,20 +355,25 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
         priority: "P1",
       };
     }
-    case "feedback-projection":
+    case "feedback-record": {
+      const evaluation = record(data.evaluation);
+      const agent = stringValue(evaluation.agent);
+      if (!agent) return null;
+      const feedbackKey = safeTaskIdPart(agent);
       return {
-        id: "runtime/evaluation-feedback-projection",
+        id: `runtime/evaluation-feedback/${feedbackKey}`,
         parentId: "finding-delivery",
-        outcome:
-          "Keep each active agent's generated last-eval feedback projection current.",
+        outcome: `Keep ${agent}'s generated last-eval feedback projection aligned with the latest durable evaluation fact.`,
         acceptance: [
-          "Recent evaluation issues are projected to the matching agent feedback file.",
-          "Stale projections are removed when no current feedback exists.",
+          "The latest evaluation issues are projected to the matching agent feedback file.",
+          "An issue-free latest evaluation removes stale generated feedback.",
         ],
         mode: "maintain",
         workflow: "evaluation-feedback-projection",
+        input: { evaluation, feedbackKey },
         priority: "P2",
       };
+    }
     case "owner-review":
       return {
         id: "runtime/owner-review",
@@ -448,8 +481,13 @@ export function taskInputForEvent(
             data: { reason: event.type, metric: eventData(event) },
           }
         : null;
-    case "evaluation.feedback.project":
-      return eventInput("feedback-projection", event);
+    case "evaluation.recorded":
+    case "evaluation.deep_recorded": {
+      const evaluation = record(eventData(event).evaluation);
+      return stringValue(evaluation.agent)
+        ? { kind: "feedback-record", data: { evaluation } }
+        : null;
+    }
     default:
       return null;
   }
@@ -492,15 +530,6 @@ const app = defineApp({
     },
   ],
   schedules: [
-    {
-      id: "evaluation-feedback-projection",
-      intervalMs: 3_600_000,
-      event: {
-        type: "evaluation.feedback.project",
-        data: { reason: "scheduled" },
-        target: { appId: projectId, project: projectId },
-      },
-    },
     {
       id: "owner-heartbeat",
       intervalMs: 86_400_000,
@@ -596,7 +625,8 @@ const app = defineApp({
       "evaluation.review_failed",
       "metric.breach",
       "metric.recovered",
-      { type: "evaluation.feedback.project", project: projectId },
+      { type: "evaluation.recorded", project: projectId },
+      { type: "evaluation.deep_recorded", project: projectId },
     ],
     resolve: taskIntentForEvent,
     maxConcurrent: 5,

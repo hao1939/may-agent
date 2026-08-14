@@ -33,6 +33,12 @@ events now enter the owning app directly; its regular owner review is the
 Kubernetes-style recovery path. This avoids a second scheduler that calls app
 agents from outside their ownership boundary.
 
+Evaluation feedback is event-driven. `evaluation.recorded` and
+`evaluation.deep_recorded` facts resolve one stable maintain task per agent;
+that task projects the latest fact under
+`evaluation.app/generated/agent-feedback/`. There is no hourly SQL scan and no
+cross-App mutation of agent source directories.
+
 ## Proof
 
 The migration retained or added focused tests for escalation delivery, session

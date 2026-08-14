@@ -74,11 +74,15 @@ export async function execute(
     );
   }
 
-  const evaluation = outcome.evaluation;
+  const evaluation = { ...outcome.evaluation, createdAt: Date.now() };
   await ctx.events.emit({
     type: "evaluation.deep_recorded",
     data: { source: name, evaluation },
-    target: { appId: "evaluation", sessionId: evaluation.sessionId },
+    target: {
+      appId: "evaluation",
+      project: "evaluation",
+      sessionId: evaluation.sessionId,
+    },
   });
   const summary = `Recorded deep evaluation for ${evaluation.sessionId} with verdict ${evaluation.verdict}.`;
   return ctx.done(

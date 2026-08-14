@@ -176,10 +176,15 @@ describe("evaluator deep workflow", () => {
         evaluation: {
           sessionId: "s_source",
           verdict: "good",
+          createdAt: expect.any(Number),
           overall: { deepEval: true, deepEvalVersion: 1 },
         },
       },
-      target: { appId: "evaluation", sessionId: "s_source" },
+      target: {
+        appId: "evaluation",
+        project: "evaluation",
+        sessionId: "s_source",
+      },
     });
   });
 });

@@ -5,6 +5,7 @@ import {
   buildReviewTask,
   classifyEvaluationLane,
   classifyVerdict,
+  evaluationRecordedFact,
   execute,
   extractReconciliationTask,
   getSessionIdFromReconciliationTask,
@@ -18,6 +19,44 @@ import {
 } from "./evaluator-aftermath";
 
 describe("evaluator aftermath event contract", () => {
+  it("publishes a project-scoped durable evaluation fact", () => {
+    expect(
+      evaluationRecordedFact(
+        {
+          sessionId: "s_feedback",
+          agent: "may",
+          heuristic: {
+            quality: 0.4,
+            efficiency: 0.6,
+            verdict: "needs_improvement",
+            issues: ["missing verification"],
+          },
+          source: "evaluator-aftermath",
+        },
+        1_700_000_000_000,
+      ),
+    ).toEqual({
+      type: "evaluation.recorded",
+      data: {
+        source: "evaluator-aftermath",
+        evaluation: {
+          sessionId: "s_feedback",
+          agent: "may",
+          quality: 0.4,
+          efficiency: 0.6,
+          verdict: "needs_improvement",
+          issues: ["missing verification"],
+          createdAt: 1_700_000_000_000,
+        },
+      },
+      target: {
+        appId: "evaluation",
+        project: "evaluation",
+        sessionId: "s_feedback",
+      },
+    });
+  });
+
   it("accepts sessionId from params for explicit session evaluation", () => {
     expect(
       getSessionIdFromTrigger({

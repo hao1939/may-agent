@@ -8,8 +8,7 @@ export const description =
   "Evaluate session aftermath, cancel stale running sessions, and drive repair/learning.";
 export const HEURISTIC_VERSION = 13;
 
-export type EvaluationLane =
-  "needs_triage" | "success_candidate" | "routine_ok";
+export type EvaluationLane = "needs_triage" | "success_candidate" | "routine_ok";
 
 type TranscriptView = {
   text: string;
@@ -36,6 +35,37 @@ type NormalizedEvaluationState = {
   route: EvaluationRoute;
   downgradedFromRepairExecution: boolean;
 };
+
+export function evaluationRecordedFact(
+  params: {
+    sessionId: string;
+    agent: string;
+    heuristic: HeuristicVerdict;
+    source: string;
+  },
+  now = Date.now(),
+): Record<string, unknown> {
+  return {
+    type: "evaluation.recorded",
+    data: {
+      source: params.source,
+      evaluation: {
+        sessionId: params.sessionId,
+        agent: params.agent,
+        quality: params.heuristic.quality,
+        efficiency: params.heuristic.efficiency,
+        verdict: params.heuristic.verdict,
+        issues: params.heuristic.issues,
+        createdAt: now,
+      },
+    },
+    target: {
+      appId: "evaluation",
+      project: "evaluation",
+      sessionId: params.sessionId,
+    },
+  };
+}
 
 type SessionEvalTrailParams = {
   sessionId: string;
@@ -1205,8 +1235,7 @@ function evalIssuesFromChecks(checks: EvalCheck[]): string[] {
     );
 }
 
-type EvalTarget =
-  "request" | "execution" | "result" | "verification" | "evolution" | "session";
+type EvalTarget = "request" | "execution" | "result" | "verification" | "evolution" | "session";
 type TargetQuality = "ok" | "check" | "issue" | "unknown";
 type RepairAction =
   | "none"
@@ -2648,6 +2677,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       );
       return `skipped aftermath for ${sessionId}: ${skipAftermath.reason}`;
     });
+    ctx.emit(
+      evaluationRecordedFact({
+        sessionId,
+        agent: session.agent,
+        heuristic: skippedHeuristic,
+        source: "evaluator-aftermath-skipped",
+      }) as any,
+    );
 
     return converged(
       ctx,
@@ -2739,6 +2776,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     );
     return `recorded ${normalized.heuristic.verdict} evaluation for ${sessionId}`;
   });
+
+  ctx.emit(
+    evaluationRecordedFact({
+      sessionId,
+      agent: session.agent,
+      heuristic: normalized.heuristic,
+      source: "evaluator-aftermath",
+    }) as any,
+  );
 
   ctx.emit({
     type: "evaluation.routed",
@@ -2908,6 +2954,25 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         }),
       } as any);
     }
+    ctx.emit(
+      evaluationRecordedFact({
+        sessionId,
+        agent: session.agent,
+        heuristic: {
+          ...normalized.heuristic,
+          verdict: reviewedVerdict,
+          quality: Math.min(
+            normalized.heuristic.quality,
+            reviewOverrideQuality(reviewedVerdict),
+          ),
+          issues: [
+            ...normalized.heuristic.issues,
+            `review override: ${reviewedVerdict}`,
+          ],
+        },
+        source: "evaluator-aftermath-review",
+      }) as any,
+    );
   }
 
   ctx.emit({

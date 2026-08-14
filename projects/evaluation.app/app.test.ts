@@ -269,16 +269,25 @@ describe("evaluation task policy", () => {
       mode: "maintain",
       workflow: "evaluator-heartbeat",
     });
+    const evaluation = {
+      sessionId: "s_feedback",
+      agent: "may",
+      quality: 0.6,
+      verdict: "needs_improvement",
+      issues: ["Verify the result."],
+      createdAt: 1_700_000_000_000,
+    };
     expect(
       taskIntentForInput({
-        kind: "feedback-projection",
-        data: { reason: "scheduled" },
+        kind: "feedback-record",
+        data: { evaluation },
       }),
     ).toMatchObject({
-      id: "runtime/evaluation-feedback-projection",
+      id: "runtime/evaluation-feedback/may",
       parentId: "finding-delivery",
       mode: "maintain",
       workflow: "evaluation-feedback-projection",
+      input: { evaluation, feedbackKey: "may" },
     });
     expect(
       taskIntentForInput({
@@ -290,6 +299,46 @@ describe("evaluation task policy", () => {
       mode: "maintain",
       workflow: "evaluator-heartbeat",
     });
+  });
+
+  test("routes recorded shallow and deep evaluations directly to per-agent feedback tasks", () => {
+    const evaluation = {
+      sessionId: "s_feedback",
+      agent: "app/ops",
+      quality: 0.5,
+      verdict: "needs_improvement",
+      issues: ["Missing evidence."],
+    };
+    const shallow = taskIntentForEvent(
+      event(
+        "evaluation.recorded",
+        { evaluation },
+        { target: { project: "evaluation" } },
+      ),
+    );
+    const deep = taskIntentForEvent(
+      event(
+        "evaluation.deep_recorded",
+        { evaluation },
+        { target: { project: "evaluation" } },
+      ),
+    );
+    expect(shallow).toEqual(deep);
+    expect(shallow).toMatchObject({
+      id: "runtime/evaluation-feedback/app-ops-bae9bad818b6",
+      mode: "maintain",
+      workflow: "evaluation-feedback-projection",
+      input: {
+        evaluation,
+        feedbackKey: "app-ops-bae9bad818b6",
+      },
+    });
+    expect(app.tasks?.subscriptions).toEqual(
+      expect.arrayContaining([
+        { type: "evaluation.recorded", project: "evaluation" },
+        { type: "evaluation.deep_recorded", project: "evaluation" },
+      ]),
+    );
   });
 
   test("keeps gym.app in standing project-health coverage", () => {
