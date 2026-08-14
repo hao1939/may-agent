@@ -21,6 +21,7 @@ import type { SqliteDb } from "./db.js";
 import { isCanonicalEventEnvelope, isRecord } from "../../packages/control/src/event-envelope.js";
 import { withSqliteBusyRetry } from "./db/busy-retry.js";
 import { persistEventClosure, persistEventTrace } from "./db/event-traces.js";
+import { evaluationProjectionFromEventData, upsertEvaluationProjection } from "./db/evaluations.js";
 import { describeText, writeContentAddressedJson, writeSessionResult, type ArtifactDescriptor } from "./artifacts.js";
 import { log } from "./log.js";
 
@@ -542,6 +543,26 @@ export class DbWriter {
         break;
       }
 
+      case "evaluation.recorded": {
+        const ev = event as any;
+        if (!isCanonicalEventEnvelope(ev)) break;
+        const payload = eventPayload(ev);
+        const projection = evaluationProjectionFromEventData(payload);
+        if (!projection) {
+          throw new Error("evaluation.recorded requires a valid sessionId, agent, quality, efficiency, and verdict");
+        }
+        this.insertEventRow(
+          event,
+          payload,
+          eventSource(ev),
+          eventOwner(ev),
+          eventUrgency(ev),
+          eventTtlMs(ev),
+          () => upsertEvaluationProjection(this.db, projection),
+        );
+        break;
+      }
+
       default:
         if (DURABLE_COMMAND_EVENTS.has(event.type) || event.type.startsWith("trigger.")) {
           const ev = event as any;
@@ -604,6 +625,7 @@ export class DbWriter {
     owner: string | null,
     urgency = eventUrgency(event as Record<string, unknown>),
     ttlMs = eventTtlMs(event as Record<string, unknown>),
+    project?: () => void,
   ): number | null {
     const timestamp = Date.now();
     this.sweepStalePairs(timestamp);
@@ -665,6 +687,7 @@ export class DbWriter {
           if (existing.delivery_status === "pending" || existing.delivery_status === "unhandled") {
             Object.defineProperty(event, EVENT_REDELIVERY_REQUIRED, { value: true, configurable: true });
           }
+          project?.();
           this.db.exec("COMMIT");
           return existingId;
         }
@@ -723,6 +746,7 @@ export class DbWriter {
       this.closePairForFollowup(payload, rowId, timestamp);
       this.closeConventionPairs(event.type, payload, rowId, timestamp);
       this.openConventionPair(event.type, payload, rowId, eventOwner(event as Record<string, unknown>), timestamp);
+      project?.();
       this.db.exec("COMMIT");
       return rowId;
     } catch (error) {
