@@ -5,3 +5,6 @@ runtime migration canary. It has no schedules, event subscriptions, Project
 App task tree, or production ingress. Test traffic reaches it only through an
 explicit `app.input.requested` event or a disposition from
 `evaluation-canary`.
+
+It is the first App whose sole canonical manifest is `app.ts`; the temporary
+Project App compatibility loader ignores it.
