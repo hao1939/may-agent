@@ -108,7 +108,7 @@ function ownerPrompt(app: AppDefinition, requests: AppRequest[], humanResponse: 
     ...(app.tasks?.attach === true
       ? ["This App may return a task disposition to link durable desired work."]
       : ["This App cannot attach tasks. Return complete or delegate; never return a task disposition."]),
-    "If a request has dependency, it is the current read-only observation of the exact child or task that woke this request. Review that observation instead of querying runtime storage.",
+    "If a request has dependency, it is the current read-only observation of the exact child, task, or recovered Runtime session that woke this request. Review that observation instead of querying runtime storage.",
     "Do not invent lifecycle states, mutate inbox storage, or omit a request. Preserve each requestId exactly.",
     ...(humanResponse
       ? [
