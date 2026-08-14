@@ -1,4 +1,4 @@
-import { EVENT_ROW_ID, childEventTrace, eventData, type AgentEvent, type EventBus, type EventTrace } from "./event-bus.js";
+import { EVENT_ROW_ID, eventData, type AgentEvent, type EventBus, type EventTrace } from "./event-bus.js";
 import { getDb } from "../lib/db/connection.js";
 import {
   getLatestInboundNotificationMessage,
@@ -6,6 +6,7 @@ import {
   type TelegramConversationView,
 } from "../lib/db/notifications.js";
 import type { RunOptions } from "../lib/manager.js";
+import { hasAppInboxWait } from "./app-inbox-store.js";
 
 type ReviewManager = {
   activeSessions: { has: (sessionId: string) => boolean };
@@ -105,6 +106,10 @@ export function attachHumanResultFollowThrough(opts: HumanResultFollowThroughOpt
       const projectId = nonEmptyString(data.projectId) ?? nonEmptyString(data.project);
       const checkpointReview = disposition === "waiting" && data.reason === CONDITION_REVIEW_REASON;
       if (!taskId || !disposition || (!PROJECT_TERMINAL_DISPOSITIONS.has(disposition) && !checkpointReview)) return;
+      // The App inbox is the authoritative continuation when it holds an
+      // explicit task link. Trace reconstruction is only a compatibility path
+      // for older project requests that have no durable App parent.
+      if (hasAppInboxWait(getDb(opts.persistDir), { kind: "task", id: taskId })) return;
 
       const humanTraceId = findHumanTraceForProjectTask(opts.persistDir, taskId, projectId);
       if (!humanTraceId) return;

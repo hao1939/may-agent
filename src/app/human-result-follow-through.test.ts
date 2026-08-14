@@ -9,6 +9,7 @@ import { storeNotificationMessage } from "../lib/db/notifications.js";
 import { attachEventPersistence } from "./daemon-events.js";
 import { EVENT_ROW_ID, EventBus } from "./event-bus.js";
 import { attachHumanResultFollowThrough } from "./human-result-follow-through.js";
+import { claimAppInboxItem, createAppInboxItem, waitAppInboxClaim } from "./app-inbox-store.js";
 
 const roots: string[] = [];
 
@@ -204,6 +205,45 @@ describe("human result follow-through", () => {
     expect(runs[0]?.task).toContain("Trace: trace-human-project");
     expect(runs[0]?.task).toContain("Linked task: learning/review");
     expect(runs[0]?.task).toContain("Nearby Telegram messages");
+  });
+
+  it("leaves an explicitly App-owned task result to its durable inbox parent", () => {
+    const { bus, persistDir, runs } = fixture();
+    storeHumanInput(persistDir, "trace-human-project");
+    bus.emit({
+      type: "project.owner.reviewed",
+      source: "project-app:gym:task-reconciler",
+      owner: "agent:gym",
+      data: { taskRefs: [{ projectId: "gym", taskId: "learning/review" }] },
+      trace: { traceId: "trace-human-project" },
+    } as any);
+
+    const db = getDb(persistDir);
+    const item = createAppInboxItem(db, {
+      id: "may-parent",
+      appId: "may",
+      source: { kind: "human", id: "event:1" },
+      input: { kind: "message", data: { message: "Finish the review." } },
+    }).item;
+    const claim = claimAppInboxItem(db, item.id, "app-host:test", 60_000);
+    expect(claim).not.toBeNull();
+    expect(waitAppInboxClaim(db, claim!, { kind: "task", id: "learning/review" })).toBe(true);
+
+    bus.emit({
+      type: "project.task.reconciled",
+      source: "project-app:gym:task-reconciler",
+      owner: "agent:gym",
+      data: {
+        project: "gym",
+        taskId: "learning/review",
+        generation: 3,
+        disposition: "converged",
+        summary: "The approved review completed.",
+      },
+      trace: { traceId: "task-run-trace" },
+    } as any);
+
+    expect(runs).toEqual([]);
   });
 
   it("starts one fresh May review for a direct app-owner answer without exposing its carrier task", () => {
