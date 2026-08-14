@@ -73,6 +73,26 @@ describe("project-local agent discovery", () => {
     }
   });
 
+  it("discovers owner agents for App inboxes without a legacy Project App module", () => {
+    const root = tempRoot();
+    try {
+      const appProject = join(root, "evaluation.app");
+      const agentDir = join(appProject, "agents", "evaluator");
+      mkdirSync(agentDir, { recursive: true });
+      writeFileSync(join(appProject, "inbox.ts"), "export default {} as unknown;\n");
+      writeFileSync(
+        join(agentDir, "agent.json"),
+        JSON.stringify({ name: "evaluator", model: "test", tools: [] }),
+      );
+
+      const agents = listProjectAgentDirectories(root);
+      expect(agents.map((agent) => agent.dir)).toEqual([agentDir]);
+      expect(agents[0]?.projectId).toBe("evaluation");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("resolves app-local agents ahead of global agents with the same configured name", () => {
     const root = tempRoot();
     try {
