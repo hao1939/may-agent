@@ -81,19 +81,19 @@ describe("shared system skills", () => {
     expect(investigation).toContain("canonical `.state/tasks/state.json`");
     expect(investigation).toContain("exactly one correlated `project.owner.reviewed`");
     expect(dispatch).toContain("completion");
-    expect(dispatch).toContain("receipts, event trace, and queryable owner inbox");
+    expect(dispatch).toContain("receipts, event trace, and durable App inbox");
     expect(dispatch).not.toContain("`project.task.assigned`");
   });
 
   it("always-loaded agent guidance does not recreate legacy project scheduling", () => {
     const mayAgents = readSkill("agents/may/AGENTS.md");
     const mayContext = readSkill("agents/may/context.md");
-    const bobAgents = readSkill("projects/may-agent.app/agents/bob/AGENTS.md");
-    expect(mayAgents).toContain("Repetition is not automatic permission to");
-    expect(mayContext).toContain("project.comment.created receipt");
-    expect(mayContext).toContain(".state/tasks/state.json");
+    expect(mayAgents).toContain("Apps own durable work");
+    expect(mayContext).toContain("may App inbox");
+    expect(mayContext).toContain("typed App delegation");
     expect(mayContext).not.toContain("project.feedback.created");
-    expect(bobAgents).not.toContain("persistent-task");
+    expect(mayAgents).not.toContain("persistent-task");
+    expect(mayAgents).not.toContain("project.task.assigned");
   });
 
   it("reading-metrics treats metrics as signals and avoids schema guessing", () => {

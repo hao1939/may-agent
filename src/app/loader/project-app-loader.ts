@@ -63,7 +63,7 @@ import type { AppTaskAttachment } from "@may-agent/sdk";
 import type { TaskView } from "@may-agent/sdk/app";
 import { readRuntimeTaskView } from "../app-read.js";
 import { Cron } from "../cron.js";
-import { loadAppInboxDefinitions } from "./app-inbox-loader.js";
+import type { AppRegistry } from "../app-registry.js";
 import { ProjectAppTaskCapacity, ProjectAppTaskController } from "../project-app-task-controller.js";
 import type { ProjectAppTaskQueueOptions } from "../project-app-task-queue.js";
 import { trackProjectAppConditionEvent, trackProjectAppConditionEvents } from "../project-app-condition-tracker.js";
@@ -153,6 +153,7 @@ export interface ProjectAppLoaderOptions {
   manager: SubagentManager;
   bus: EventBus;
   agentCrons: Map<string, Cron>;
+  appRegistry?: AppRegistry;
   /**
    * Called when an app-local agent used by the app is not yet registered.
    * The app brings its own agents; this callback registers one from its
@@ -2863,9 +2864,7 @@ function emitAppTaskDependencyCompleted(
   });
 }
 
-export function persistedProjectTaskSessionCanResume(
-  meta: { status?: string } | null,
-): boolean {
+export function persistedProjectTaskSessionCanResume(meta: { status?: string } | null): boolean {
   return meta?.status === "running" || meta?.status === "idle";
 }
 
@@ -2893,9 +2892,7 @@ function recoverInterruptedProjectAppTasks(
         includeFreshLeases &&
         recovery.sessionId &&
         opts.persistDir &&
-        persistedProjectTaskSessionCanResume(
-          readSessionMeta(opts.persistDir, recovery.sessionId),
-        ) &&
+        persistedProjectTaskSessionCanResume(readSessionMeta(opts.persistDir, recovery.sessionId)) &&
         claimFreshProjectAppTaskSessionForStartup(
           config,
           { taskId: recovery.taskId, generation: recovery.taskGeneration },
@@ -3393,21 +3390,6 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
       void Promise.resolve()
         .then(async () => {
           const ctx = makeContext(opts, descriptor, rawEvent);
-          const closeInbox = (route: string): void => {
-            const openEventId = (rawEvent as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID];
-            if (!Number.isInteger(openEventId) || Number(openEventId) <= 0) return;
-            opts.bus.emit({
-              type: "owner.inbox.reviewed",
-              source: `project-app:${descriptor.id}`,
-              owner: `agent:${descriptor.owner}`,
-              data: { openEventId, openEventType: event.type, reviewedBy: descriptor.owner, route },
-              trace: {
-                traceId: rawEvent.trace?.traceId ?? `event:${openEventId}`,
-                parentEventId: openEventId,
-                links: [{ eventId: openEventId, type: "closure", label: "owner.inbox.reviewed" }],
-              },
-            } as any);
-          };
           const result =
             typeof descriptor.app.onEvent === "function" ? await descriptor.app.onEvent(ctx, event) : undefined;
           if (projectCommentForApp) {
@@ -3424,7 +3406,6 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
                   inputEventId: event.eventId ?? null,
                 },
               });
-              closeInbox("app-owner-request");
             } else if (resultEvent.type !== "project.owner.requested") {
               const openEventId = Number((rawEvent as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID]);
               if (Number.isInteger(openEventId) && openEventId > 0) {
@@ -3509,7 +3490,7 @@ async function prepareProjectAppDescriptors(opts: ProjectAppLoaderOptions): Prom
   const descriptors: ProjectAppDescriptor[] = [];
   const ids = new Set<string>();
   const inboxAppIdByDir = new Map(
-    (await loadAppInboxDefinitions(opts.projectsRoot)).map(({ appDir, definition }) => [appDir, definition.id]),
+    (opts.appRegistry?.entries() ?? []).map(({ appDir, definition }) => [appDir, definition.id]),
   );
   for (const appDir of listProjectAppDirs(opts.projectsRoot)) {
     const app = await loadProjectApp(appDir);
