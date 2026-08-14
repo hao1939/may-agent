@@ -2657,6 +2657,86 @@ describe("project app task reconciler state", () => {
     expect(next).toMatchObject({ kind: "claimed", generation: claim.generation });
   });
 
+  it("wakes a maintain task once per canonical App admission", () => {
+    const { config } = fixture();
+    const monitor = intent("maintain");
+    const trigger = (key: string) => ({
+      type: "app.task.requested",
+      source: "app-inbox:sample",
+      idempotencyKey: key,
+      data: { taskId: monitor.id, idempotencyKey: key },
+    });
+
+    const first = observeProjectAppTaskIntent(config, {
+      intent: monitor,
+      appOwner: "app-owner",
+      admissionKey: "app-request-1",
+      trigger: trigger("app-request-1"),
+    });
+    expect(first).toMatchObject({ kind: "observed", taskId: monitor.id });
+    const firstClaim = claimObservedProjectAppTask(config, {
+      taskId: monitor.id,
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (firstClaim.kind !== "claimed") throw new Error("expected first claim");
+    expect(firstClaim.trigger).toEqual(trigger("app-request-1"));
+    completeProjectAppTask(config, firstClaim, { summary: "first scheduled review complete" });
+
+    const duplicate = observeProjectAppTaskIntent(config, {
+      intent: monitor,
+      appOwner: "app-owner",
+      admissionKey: "app-request-1",
+      trigger: trigger("app-request-1"),
+    });
+    expect(duplicate).toMatchObject({
+      kind: "observed",
+      taskId: monitor.id,
+      generation: firstClaim.generation,
+      changed: false,
+    });
+    expect(readProjectAppTaskTrigger(config, monitor.id)).toBeUndefined();
+    expect(
+      claimObservedProjectAppTask(config, {
+        taskId: monitor.id,
+        appOwner: "app-owner",
+        handler: "workflow:known-workflow",
+      }),
+    ).toMatchObject({ kind: "completed", generation: firstClaim.generation });
+
+    const second = observeProjectAppTaskIntent(config, {
+      intent: monitor,
+      appOwner: "app-owner",
+      admissionKey: "app-request-2",
+      trigger: trigger("app-request-2"),
+    });
+    expect(second).toMatchObject({
+      kind: "observed",
+      taskId: monitor.id,
+      generation: firstClaim.generation,
+      changed: false,
+    });
+    const secondClaim = claimObservedProjectAppTask(config, {
+      taskId: monitor.id,
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    expect(secondClaim).toMatchObject({
+      kind: "claimed",
+      generation: firstClaim.generation,
+      trigger: trigger("app-request-2"),
+    });
+
+    expect(() =>
+      observeProjectAppTaskIntent(config, {
+        intent: { ...monitor, outcome: "Different desired work" },
+        appOwner: "app-owner",
+        admissionKey: "app-request-2",
+        trigger: trigger("app-request-2"),
+      }),
+    ).toThrow("was already used for different desired work");
+  });
+
   it("replays a queued maintain trigger after the older attempt completes", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
