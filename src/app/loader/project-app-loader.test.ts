@@ -699,7 +699,7 @@ describe("project app loader handler result normalization", () => {
 });
 
 describe("project app loader", () => {
-  it("restores exact canonical tracked and untracked residue after a failed owner attempt", () => {
+  it("does not rehydrate a stale dirty snapshot after a different dirty transition", () => {
     const f = fixture();
     const projectDir = join(f.projectsRoot, "sample");
     try {
@@ -707,44 +707,51 @@ describe("project app loader", () => {
       execFileSync("git", ["-C", projectDir, "config", "user.email", "test@example.com"]);
       execFileSync("git", ["-C", projectDir, "config", "user.name", "Test"]);
       writeFileSync(join(projectDir, "tracked.txt"), "base tracked\n");
-      writeFileSync(join(projectDir, "staged.txt"), "base staged\n");
-      writeFileSync(join(projectDir, "deleted.txt"), "base deleted\n");
       execFileSync("git", ["-C", projectDir, "add", "."]);
       execFileSync("git", ["-C", projectDir, "commit", "-m", "base"]);
 
-      writeFileSync(join(projectDir, "tracked.txt"), "pre-existing unstaged dirt\n");
-      writeFileSync(join(projectDir, "staged.txt"), "pre-existing staged dirt\n");
-      execFileSync("git", ["-C", projectDir, "add", "staged.txt"]);
-      writeFileSync(join(projectDir, "pre-existing.tmp"), "pre-existing untracked dirt\n");
-      const statusBefore = execFileSync("git", ["-C", projectDir, "status", "--short"], { encoding: "utf8" });
-
+      writeFileSync(join(projectDir, "tracked.txt"), "stale dirty bytes\n");
       const canonicalPaths = projectAppExecutionPaths(f.appDir, projectDir);
       const guard = beginCanonicalOwnerResidueGuard(canonicalPaths);
-      let attemptedError: Error | undefined;
-      let cleaned: string[] = [];
-      try {
-        writeFileSync(join(projectDir, "tracked.txt"), "owner changed tracked\n");
-        writeFileSync(join(projectDir, "staged.txt"), "owner changed staged\n");
-        rmSync(join(projectDir, "deleted.txt"));
-        rmSync(join(projectDir, "pre-existing.tmp"));
-        mkdirSync(join(projectDir, "runner"), { recursive: true });
-        writeFileSync(join(projectDir, "runner", "tmp-proof.ts"), "attempt-created file\n");
-        execFileSync("git", ["-C", projectDir, "add", "tracked.txt", "staged.txt", "deleted.txt"]);
-        throw new Error("owner dispatch failed");
-      } catch (error) {
-        attemptedError = error as Error;
-      } finally {
-        cleaned = finishCanonicalOwnerResidueGuard(guard);
-      }
+      const statusAtStart = execFileSync("git", ["-C", projectDir, "status", "--porcelain"], { encoding: "utf8" });
 
-      expect(attemptedError?.message).toBe("owner dispatch failed");
-      expect(cleaned).toEqual(["runner/tmp-proof.ts"]);
-      expect(readFileSync(join(projectDir, "tracked.txt"), "utf8")).toBe("pre-existing unstaged dirt\n");
-      expect(readFileSync(join(projectDir, "staged.txt"), "utf8")).toBe("pre-existing staged dirt\n");
-      expect(readFileSync(join(projectDir, "deleted.txt"), "utf8")).toBe("base deleted\n");
-      expect(readFileSync(join(projectDir, "pre-existing.tmp"), "utf8")).toBe("pre-existing untracked dirt\n");
-      expect(existsSync(join(projectDir, "runner", "tmp-proof.ts"))).toBe(false);
-      expect(execFileSync("git", ["-C", projectDir, "status", "--short"], { encoding: "utf8" })).toBe(statusBefore);
+      writeFileSync(join(projectDir, "tracked.txt"), "new concurrent dirty bytes\n");
+      expect(execFileSync("git", ["-C", projectDir, "status", "--porcelain"], { encoding: "utf8" })).toBe(
+        statusAtStart,
+      );
+
+      expect(finishCanonicalOwnerResidueGuard(guard)).toEqual([]);
+      expect(readFileSync(join(projectDir, "tracked.txt"), "utf8")).toBe("new concurrent dirty bytes\n");
+      expect(execFileSync("git", ["-C", projectDir, "status", "--porcelain"], { encoding: "utf8" })).toBe(
+        statusAtStart,
+      );
+    } finally {
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("does not rehydrate a stale dirty snapshot after a concurrent canonical cleanup", () => {
+    const f = fixture();
+    const projectDir = join(f.projectsRoot, "sample");
+    try {
+      execFileSync("git", ["init", "-b", "dev", projectDir]);
+      execFileSync("git", ["-C", projectDir, "config", "user.email", "test@example.com"]);
+      execFileSync("git", ["-C", projectDir, "config", "user.name", "Test"]);
+      writeFileSync(join(projectDir, "tracked.txt"), "base tracked\n");
+      execFileSync("git", ["-C", projectDir, "add", "."]);
+      execFileSync("git", ["-C", projectDir, "commit", "-m", "base"]);
+
+      writeFileSync(join(projectDir, "tracked.txt"), "stale staged dirt\n");
+      execFileSync("git", ["-C", projectDir, "add", "tracked.txt"]);
+      const canonicalPaths = projectAppExecutionPaths(f.appDir, projectDir);
+      const guard = beginCanonicalOwnerResidueGuard(canonicalPaths);
+
+      execFileSync("git", ["-C", projectDir, "reset", "--hard", "HEAD"]);
+      expect(execFileSync("git", ["-C", projectDir, "status", "--porcelain"], { encoding: "utf8" })).toBe("");
+
+      expect(finishCanonicalOwnerResidueGuard(guard)).toEqual([]);
+      expect(readFileSync(join(projectDir, "tracked.txt"), "utf8")).toBe("base tracked\n");
+      expect(execFileSync("git", ["-C", projectDir, "status", "--porcelain"], { encoding: "utf8" })).toBe("");
     } finally {
       rmSync(f.root, { recursive: true, force: true });
     }
