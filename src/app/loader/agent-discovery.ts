@@ -50,7 +50,10 @@ export function listProjectAgentDirectories(projectsRoot: string): AgentDirector
       const projectId = entry.name.slice(0, -".app".length);
       const domainDir = resolve(projectsRoot, projectId);
       const projectDir = existsSync(domainDir) ? domainDir : appDir;
-      const hasAppFrame = existsSync(resolve(appDir, "project.md")) || existsSync(resolve(appDir, "app.ts"));
+      const hasAppFrame =
+        existsSync(resolve(appDir, "project.md")) ||
+        existsSync(resolve(appDir, "app.ts")) ||
+        existsSync(resolve(appDir, "inbox.ts"));
       if (!hasAppFrame) continue;
       const agentsRoot = resolve(appDir, "agents");
       if (!existsSync(agentsRoot)) continue;
