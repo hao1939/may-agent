@@ -2839,23 +2839,23 @@ export function attachLoadedProjectAppTask(input: {
   const observation = observeProjectAppTaskIntent(config, {
     intent: input.attachment.intent,
     appOwner: descriptor.owner,
+    admissionKey: idempotencyKey,
+    trigger: {
+      type: "app.task.requested",
+      source: `app-inbox:${input.appId}`,
+      owner: `agent:${descriptor.owner}`,
+      target: { project: descriptor.id, taskId: input.attachment.intent.id },
+      idempotencyKey,
+      data: {
+        project: descriptor.id,
+        taskId: input.attachment.intent.id,
+        appId: input.appId,
+        idempotencyKey,
+      },
+    },
   });
   interruptSupersededObservationSessions(loaderOptions, observation);
   if (observation.kind === "observed") {
-    if (observation.changed) {
-      recordProjectAppTaskTrigger(config, observation.taskId, {
-        type: "app.task.requested",
-        source: `app-inbox:${input.appId}`,
-        owner: `agent:${descriptor.owner}`,
-        target: { project: descriptor.id, taskId: observation.taskId },
-        data: {
-          project: descriptor.id,
-          taskId: observation.taskId,
-          appId: input.appId,
-          idempotencyKey,
-        },
-      });
-    }
     enqueueProjectAppTask(controller, config, observation.taskId);
   }
   return {

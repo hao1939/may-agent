@@ -76,6 +76,8 @@ export type ProjectAppTaskObservationResult =
     }
   | { kind: "completed"; taskId: string; generation: number; supersededSessionIds?: string[] };
 
+const MAX_APP_TASK_ADMISSIONS = 4_096;
+
 export type ProjectAppTaskSessionAssociation = {
   status: "recorded" | "superseded" | "missing";
   taskId: string;
@@ -1127,15 +1129,64 @@ export function observeProjectAppTaskIntent(
     intent: ProjectAppTaskIntent;
     appOwner: string;
     trigger?: Record<string, unknown>;
+    admissionKey?: string;
   },
 ): ProjectAppTaskObservationResult {
   validateIntent(input.intent);
+  const admissionKey = input.admissionKey?.trim();
+  if (input.admissionKey !== undefined && !admissionKey) {
+    throw new Error("Task admission key must be non-empty when provided");
+  }
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
     const supersededSessionIds = new Set<string>();
     validateParentReference(tree, input.intent.id, input.intent.parentId);
     const owner = resolvedOwner(tree, input.intent, input.appOwner);
     const specHash = projectAppTaskSpecHash(input.intent, owner);
+    const previousAdmission = admissionKey ? tree.appTaskAdmissions?.[admissionKey] : undefined;
+    if (previousAdmission) {
+      if (previousAdmission.taskId !== input.intent.id || previousAdmission.specHash !== specHash) {
+        throw new Error(`Task admission key ${admissionKey} was already used for different desired work`);
+      }
+      const current = tree.resources?.[previousAdmission.taskId];
+      if (current) {
+        return {
+          kind: "observed",
+          taskId: current.metadata.id,
+          generation: current.metadata.generation,
+          changed: false,
+        };
+      }
+      const completed = tree.receipts?.[previousAdmission.taskId];
+      if (completed) {
+        return {
+          kind: "completed",
+          taskId: completed.metadata.id,
+          generation: completed.metadata.generation,
+        };
+      }
+      delete tree.appTaskAdmissions?.[admissionKey!];
+    }
+
+    const recordAdmission = (taskId: string, taskGeneration: number): void => {
+      if (!admissionKey) return;
+      tree.appTaskAdmissions = {
+        ...(tree.appTaskAdmissions ?? {}),
+        [admissionKey]: {
+          taskId,
+          taskGeneration,
+          specHash,
+          admittedAt: new Date().toISOString(),
+        },
+      };
+      const admissions = Object.entries(tree.appTaskAdmissions);
+      if (admissions.length <= MAX_APP_TASK_ADMISSIONS) return;
+      for (const [key] of admissions
+        .sort((left, right) => left[1].admittedAt.localeCompare(right[1].admittedAt))
+        .slice(0, admissions.length - MAX_APP_TASK_ADMISSIONS)) {
+        delete tree.appTaskAdmissions[key];
+      }
+    };
     const receipt = tree.receipts?.[input.intent.id];
     const existingResource = tree.resources?.[input.intent.id];
     const receiptMatchesDesiredIdentity =
@@ -1144,6 +1195,7 @@ export function observeProjectAppTaskIntent(
       input.intent.mode === "achieve" &&
       (!existingResource || receipt.metadata.generation === existingResource.metadata.generation);
     if (receiptMatchesDesiredIdentity) {
+      recordAdmission(input.intent.id, receipt.metadata.generation);
       if (existingResource) {
         for (const sessionId of retireCompletedTaskDuplicate(
           tree,
@@ -1152,8 +1204,8 @@ export function observeProjectAppTaskIntent(
         )) {
           supersededSessionIds.add(sessionId);
         }
-        saveTaskState(config, tree);
       }
+      if (existingResource || admissionKey) saveTaskState(config, tree);
       return {
         kind: "completed",
         taskId: input.intent.id,
@@ -1243,6 +1295,7 @@ export function observeProjectAppTaskIntent(
         },
       };
     }
+    recordAdmission(task.id, generation);
     syncTaskProjection(task, resource, owner);
     pruneTaskAttempts(tree);
     refreshActiveTaskProjection(tree);

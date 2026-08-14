@@ -171,6 +171,13 @@ export type TaskCompletionReceipt = {
   compactedDetailSha256?: string;
 };
 
+export type AppTaskAdmission = {
+  taskId: string;
+  taskGeneration: number;
+  specHash: string;
+  admittedAt: string;
+};
+
 export type TaskTree = {
   version?: number;
   project?: string;
@@ -183,6 +190,8 @@ export type TaskTree = {
   resources?: Record<string, ProjectAppTaskResource>;
   attempts?: Record<string, ProjectAppTaskAttempt>;
   taskTriggers?: Record<string, ProjectAppTaskTrigger>;
+  /** Retry fence for canonical App inbox attachments. Host-private state. */
+  appTaskAdmissions?: Record<string, AppTaskAdmission>;
   receipts?: Record<string, TaskCompletionReceipt>;
   /** Satisfied dependencies referenced by current live tasks. Projection only. */
   satisfied_dependency_ids?: string[];
