@@ -15,6 +15,7 @@ The canonical declaration already contains the required routing distinction:
 addressed request     -> App subscription/input -> durable inbox item
 deterministic outcome -> task subscription      -> persisted TaskIntent + trigger
 exact task target     -> exact task wake         -> persisted trigger
+stored Condition      -> exact task wake(s)      -> persisted trigger(s)
 no obligation         -> observation only
 ```
 
@@ -73,11 +74,14 @@ obligation**.
 | Event requiring owner judgment or a response | `subscriptions[].toInput` | Inbox item |
 | Event deterministically declaring desired work | `tasks.subscriptions` + `tasks.resolve` | Task intent and trigger |
 | Event naming one existing task | Exact target wake | Task trigger |
+| Event matching stored task Conditions | Exact Condition wake(s) | Task trigger(s) |
 | Fact with no work obligation | Persist/project/observe | Event or read model only |
 
 The invariant applies per App obligation. One fact may intentionally be
-observed by several Apps, but one App must not turn the same fact into both an
-inbox item and a task intent.
+observed or acted on by several Apps, but one App must not turn the same fact
+into both an inbox item and task work. Within the task route, one fact may both
+refresh a resolved desired intent and satisfy zero or more stored Conditions;
+those are one task-family admission, not competing authorities.
 
 ### Addressed inputs
 
@@ -106,9 +110,29 @@ storage, or enqueue work itself.
 
 ### Exact task wakes
 
-An explicit task target is already the routing decision. The host records the
-trigger against that exact task and wakes it; broad task resolution and inbox
-translation must not synthesize unrelated work from the same event.
+An explicit canonical `(appId, taskId)` **wake address** is already the routing
+decision. The host records the trigger against that exact task and wakes it;
+broad task resolution and inbox translation must not synthesize unrelated work
+from the same event. A wake address that names an unknown App, an App without
+task capability, or a missing task remains pending as a visible admission
+failure. It never falls through to a less specific route.
+
+A task ID that merely identifies the subject of a lifecycle fact is not a wake
+address. Canonical producers keep subject and correlation identities in event
+data and reserve `target.taskId` for delivery. Transitional lifecycle producers
+that still use `target.taskId` are explicitly classified as observations; they
+must be normalized before the compatibility classifier is deleted.
+
+Legacy project/data fields may be normalized into the canonical target only at
+the compatibility boundary. They are not a second public target convention.
+
+### Stored Condition wakes
+
+A stored task Condition is also an exact routing decision made by the task that
+created it. Matching is pure preflight; admission records the event-derived
+trigger and wakes only the matched task IDs. An event may satisfy Conditions on
+several tasks or Apps, but it does not create an inbox request merely to locate
+those tasks.
 
 ### Observation-only facts
 
@@ -178,11 +202,17 @@ Successful actionable delivery requires a durable continuation:
 
 ```text
 persist canonical event
-  -> classify one App route
-  -> persist inbox item OR task intent/trigger
+  -> calculate every selected App route
+  -> for each App, persist inbox item XOR task continuation(s)
+  -> require every selected durable admission to succeed
   -> acknowledge delivery
   -> enqueue/coalesce execution
 ```
+
+The admissions need not share one cross-App database transaction. A failure
+may leave a subset durably admitted; replay completes the remaining routes
+idempotently. The event is acknowledged only after the complete selected route
+set has durable continuations.
 
 Required properties:
 
@@ -194,6 +224,9 @@ Required properties:
   evidence needed by reconciliation;
 - resolver failure or ambiguous route ownership is visible and is not
   acknowledged as completed admission; and
+- a durable route failure cannot be masked by an ordinary subscriber,
+  observation fallback, or another App's successful route;
+- a missing or mismatched exact target remains pending; and
 - task signals never require an owner session merely to choose a task ID.
 
 ## Migration
@@ -201,15 +234,19 @@ Required properties:
 This is a routing audit inside the accepted canonical Agent App migration, not
 a new migration phase.
 
-1. For every legacy event path, record exactly one classification: addressed
-   App input, deterministic task intent, exact task wake, or observation-only.
+1. For every legacy event path, record exactly one per-App classification:
+   addressed App input, deterministic task work, exact target/Condition wake,
+   or observation-only.
 2. During each App migration, move addressed events to `subscriptions` and
    deterministic work to `tasks.subscriptions`; retain explicit task-target
    wakes in the host.
-3. Persist task intent and trigger before delivery acceptance, then let the
+3. Move lifecycle subject/correlation task IDs out of routing targets and into
+   event data; delete the transitional lifecycle classification only after all
+   producers use canonical target semantics.
+4. Persist task intent and trigger before delivery acceptance, then let the
    existing task controller coalesce scheduling.
-4. Add route-ownership, idempotency, restart, and negative inbox tests.
-5. Delete legacy `onEvent`, owner-inbox fallback, and any duplicate event
+5. Add route-ownership, idempotency, restart, and negative inbox tests.
+6. Delete legacy `onEvent`, owner-inbox fallback, and any duplicate event
    subscriber after its last route migrates.
 
 The current migration order remains Evaluation, May/platform, and then AKS RP
@@ -224,8 +261,15 @@ removed.
   inbox item.
 - An exact task event wakes only its target and produces no inbox item or broad
   resolver work.
+- A stored Condition match wakes only the matched task IDs and creates no inbox
+  item.
 - An observation-only event produces no durable work authority.
-- One App never claims the same event through both inbox and task routes.
+- One App never claims the same event through both inbox and task routes, and
+  no App has two matching inbox routes for one event.
+- Every selected App continuation is durable before composite acknowledgment;
+  one route failure remains pending even if another route succeeds.
+- A missing or mismatched exact target remains visibly pending and never falls
+  through to inbox, broad task resolution, or observation acceptance.
 - Replay is idempotent, and restart between persistence and enqueue still
   reconciles the work.
 - Cross-App delegation, conversation ordering, lease fencing, task Conditions,

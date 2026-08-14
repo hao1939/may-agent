@@ -615,16 +615,30 @@ Every legacy event path is classified before migration:
 | Unknown unaddressed event | unhandled observation; no owner work synthesized |
 
 The route is exclusive per App obligation. An event must not create both an
-inbox item and task intent for the same App. Canonical App `subscriptions`
+inbox item and task work for the same App. Canonical App `subscriptions`
 translate addressed event work into inbox input; `tasks.subscriptions` resolve
-deterministic desired work directly; an explicit task target persists a trigger
-and wakes only that task; and facts with no obligation remain observations. No
-second `inbox.accepts` selector surface is introduced.
+deterministic desired work directly; an explicit canonical `(appId, taskId)`
+task wake address persists a trigger and wakes only that task; stored Conditions
+wake only their exact matching task IDs; and facts with no obligation remain
+observations. A resolved intent and matching Conditions may be admitted together
+as one task-family route. No second `inbox.accepts` selector surface is
+introduced.
+
+`target.taskId` is reserved for delivery to a task. A task ID that identifies
+the subject or correlation of a lifecycle fact belongs in event data and does
+not imply a wake. Legacy lifecycle producers that still overload the target are
+classified explicitly during migration and normalized before the compatibility
+classifier is removed.
 
 Task routing is durable admission, not an in-memory queue handoff. The host
 persists the resolved `TaskIntent` and event-derived trigger before it
 acknowledges delivery, then coalesces/enqueues execution. Recovery scans durable
 task state, so a crash between persistence and enqueue cannot lose the wake.
+One event may select routes in several Apps. Every selected continuation must
+be durably admitted before composite acknowledgment; partial success is retried
+idempotently. A durable route failure, missing exact target, or target/resolver
+mismatch remains pending and cannot be masked by another App, an ordinary
+subscriber, or observation fallback.
 
 No event is allowed to be consumed by both legacy and canonical actionable
 paths. During migration, route ownership is selected per App and per route with
