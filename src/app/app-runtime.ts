@@ -1,11 +1,14 @@
 import { randomUUID } from "node:crypto";
+import { resolve } from "node:path";
 import { SubagentManager } from "../lib/index.js";
 import type { AppInput } from "@may-agent/sdk";
 import type { AttachControlSocketOptions } from "../../packages/control/src/server.js";
 import { closeAllDbs, getDb } from "../lib/requests.js";
+import { createMetricService } from "../lib/metrics.js";
 import type { AppArgs } from "./app-args.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
 import { AppRegistry } from "./app-registry.js";
+import { createRuntimeAppRead } from "./app-read.js";
 import { createAppTaskCapability } from "./app-task-capability.js";
 import { attachCommandRouter } from "./command-router.js";
 import { startCronRuntime } from "./cron-startup.js";
@@ -187,6 +190,7 @@ export async function runAppRuntime(opts: {
     getDb: () => getDb(opts.persistDir),
     compatibility: projectAppOpts,
   });
+  const observerMetrics = createMetricService({ getDb: () => getDb(opts.persistDir) });
 
   appInboxRuntime = await startAppInboxRuntime({
     registry: appRegistry,
@@ -196,6 +200,25 @@ export async function runAppRuntime(opts: {
     runOwner: appTasks.runOwner,
     attachTask: appTasks.attach,
     readDependency: appTasks.readDependency,
+    observerContext: (appId, appDir) => {
+      const definition = appRegistry.snapshot().entries.find((entry) => entry.definition.id === appId)?.definition;
+      const projectDir = definition?.workspace?.localPath ? resolve(appDir, definition.workspace.localPath) : appDir;
+      const log = (level: string, message: string) =>
+        bus.emit({ type: "info", message: `[app:${appId}:observer:${level}] ${message}` });
+      return {
+        read: createRuntimeAppRead({
+          getDb: () => getDb(opts.persistDir),
+          metrics: observerMetrics,
+          executionPaths: { appDir, projectDir },
+        }),
+        log: {
+          debug: (message) => log("debug", message),
+          info: (message) => log("info", message),
+          warn: (message) => log("warn", message),
+          error: (message) => log("error", message),
+        },
+      };
+    },
   });
   if (appInboxRuntime.host.appIds().length > 0) {
     bus.emit({
