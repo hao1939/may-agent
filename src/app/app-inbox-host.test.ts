@@ -10,11 +10,7 @@ const probeInput = Type.Object({
   data: Type.Object({ value: Type.String() }),
 });
 
-function app(
-  id: string,
-  batch: "single" | "coalesce-compatible" = "single",
-  tasks = false,
-): AppDefinition {
+function app(id: string, batch: "single" | "coalesce-compatible" = "single", tasks = false): AppDefinition {
   return defineApp({
     id,
     version: 1,
@@ -73,6 +69,26 @@ describe("App inbox host", () => {
           invokeOwner: async () => [],
         }),
     ).toThrow("App malformed has invalid task attachment capability");
+  });
+
+  it("replaces the live App registry atomically without orphaning unfinished work", () => {
+    const host = new AppInboxHost({
+      db,
+      apps: [app("evaluation")],
+      invokeOwner: async () => [],
+    });
+
+    expect(() => host.replaceApps([app("next"), app("next")])).toThrow("Duplicate App id: next");
+    expect(host.appIds()).toEqual(["evaluation"]);
+
+    admit(host, "evaluation", "still-owned");
+    expect(() => host.replaceApps([app("next")])).toThrow(
+      "Cannot remove App evaluation while it owns unfinished inbox items",
+    );
+    expect(host.appIds()).toEqual(["evaluation"]);
+
+    host.replaceApps([app("evaluation"), app("next")]);
+    expect(host.appIds()).toEqual(["evaluation", "next"]);
   });
 
   it("completes a bounded request without exposing host lifecycle fields", async () => {
@@ -355,8 +371,7 @@ describe("App inbox host", () => {
           : {
               ...dependency,
               status: sessionStatus,
-              summary:
-                sessionStatus === "done" ? "Recovered owner execution completed" : "Owner execution is running",
+              summary: sessionStatus === "done" ? "Recovered owner execution completed" : "Owner execution is running",
             },
       invokeOwner: async ({ requests }) => {
         ownerRequests.push(...requests);
