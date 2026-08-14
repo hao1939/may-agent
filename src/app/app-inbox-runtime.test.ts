@@ -51,7 +51,12 @@ describe("App inbox runtime", () => {
               properties: { value: { type: "string" } }
             }
           }
-        }
+        },
+        subscriptions: [{
+          id: "provider-change",
+          event: { type: "provider.changed", project: "evaluation" },
+          toInput(event) { return { kind: "probe", data: { value: event.data.value } }; }
+        }]
       };\n`,
     );
     db = openDatabase(":memory:");
@@ -142,6 +147,84 @@ describe("App inbox runtime", () => {
       status: "done",
       result: { summary: "canary passed" },
       sessionId: `session:${row.id}`,
+    });
+  });
+
+  it("translates a subscribed fact into one idempotent durable App input", async () => {
+    const calls: string[] = [];
+    const bus = new EventBus();
+    bus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, { value: 42, configurable: true });
+    });
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      manager: manager(calls),
+      bus,
+      scanIntervalMs: 10_000,
+    });
+
+    const fact = () => ({
+      type: "provider.changed",
+      source: "provider-observer",
+      owner: "app:evaluation-canary",
+      data: { project: "evaluation", value: "current" },
+    });
+    bus.emit(fact());
+    await waitUntil(() => calls.length === 1);
+    const row = db.prepare("SELECT id, source_id, input_data FROM app_inbox_items").get() as {
+      id: string;
+      source_id: string;
+      input_data: string;
+    };
+    await waitUntil(() => runtime?.host.get(row.id)?.status === "done");
+    expect(row.source_id).toBe("event:42");
+    expect(JSON.parse(row.input_data)).toEqual({ value: "current" });
+
+    bus.emit(fact());
+    await Bun.sleep(20);
+    expect(calls).toHaveLength(1);
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 1 });
+  });
+
+  it("admits one durable input per schedule slot without replaying pre-start slots", async () => {
+    writeFileSync(
+      join(root, "evaluation.app", "inbox.js"),
+      `export default {
+        id: "scheduled",
+        version: 1,
+        owner: "evaluator",
+        inputSchema: {
+          type: "object", required: ["kind", "data"],
+          properties: { kind: { const: "probe" }, data: { type: "object" } }
+        },
+        schedules: [{
+          id: "review", intervalMs: 60000, catchUp: "none",
+          input: { kind: "probe", data: { value: "scheduled" } }
+        }]
+      };\n`,
+    );
+    let currentTime = 1;
+    const calls: string[] = [];
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      manager: manager(calls),
+      bus: new EventBus(),
+      scanIntervalMs: 10_000,
+      now: () => currentTime,
+    });
+    await Bun.sleep(20);
+    expect(calls).toHaveLength(0);
+
+    currentTime = 60_001;
+    runtime.scanNow();
+    await waitUntil(() => calls.length === 1);
+    runtime.scanNow();
+    await Bun.sleep(20);
+    expect(calls).toHaveLength(1);
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items WHERE app_id = 'scheduled'").get()).toEqual({
+      count: 1,
     });
   });
 

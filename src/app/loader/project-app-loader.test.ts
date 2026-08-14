@@ -97,6 +97,34 @@ describe("project app host backpressure", () => {
 });
 
 describe("App inbox task attachment", () => {
+  it("leaves canonical app.ts manifests exclusively to the App registry", async () => {
+    const f = fixture();
+    const bus = new EventBus();
+    try {
+      writeFileSync(
+        join(f.appDir, "app.ts"),
+        `export default {
+          id: "sample", version: 1, owner: "sample-owner",
+          inputSchema: { type: "object" }
+        };\n`,
+      );
+      const result = await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: manager([]),
+        bus,
+        agentCrons: new Map(),
+      });
+      expect(result).toEqual({ installed: [], entries: 0 });
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
   it("uses the loaded Project App task engine and emits a completion wake exactly once", async () => {
     const f = fixture();
     const bus = new EventBus();

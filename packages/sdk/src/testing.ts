@@ -180,21 +180,31 @@ export function createTestRuntime(options: TestRuntimeOptions = {}): TestRuntime
     commands: defaultCreateCommandService({
       getDb: () => db,
       emit: (event) => {
-        const data = event.data && typeof event.data === "object" && !Array.isArray(event.data)
-          ? event.data as Record<string, unknown>
-          : {};
+        const data =
+          event.data && typeof event.data === "object" && !Array.isArray(event.data)
+            ? (event.data as Record<string, unknown>)
+            : {};
         emit(String(event.type), data, {
           ...(typeof event.owner === "string" ? { owner: event.owner } : {}),
           ...(typeof event.source === "string" ? { source: event.source } : {}),
           ...(event.target && typeof event.target === "object" && !Array.isArray(event.target)
             ? { target: event.target as Record<string, unknown> }
             : {}),
-          ...(event.urgency === "low" || event.urgency === "normal" || event.urgency === "high" || event.urgency === "immediate"
+          ...(event.urgency === "low" ||
+          event.urgency === "normal" ||
+          event.urgency === "high" ||
+          event.urgency === "immediate"
             ? { urgency: event.urgency }
             : {}),
           ...(typeof event.ttl_ms === "number" ? { ttl_ms: event.ttl_ms } : {}),
           ...(event.trace && typeof event.trace === "object" && !Array.isArray(event.trace)
-            ? { trace: event.trace as { traceId: string; parentEventId?: number; links?: Array<{ eventId: number; type?: "reference" | "closure"; label?: string }> } }
+            ? {
+                trace: event.trace as {
+                  traceId: string;
+                  parentEventId?: number;
+                  links?: Array<{ eventId: number; type?: "reference" | "closure"; label?: string }>;
+                },
+              }
             : {}),
         });
       },
@@ -252,7 +262,9 @@ export function createTestHandlerContext(options: TestHandlerContextOptions = {}
     classifyError: options.classifyError ?? fn((): ErrorClass => "infra"),
     getLastDigest: options.getLastDigest ?? fn(() => null),
     upsertDigest: options.upsertDigest ?? fn(async () => null),
-    classifyDigest: options.classifyDigest ?? fn((): { action: DigestAction; reason: string } => ({ action: "nothing", reason: "test default" })),
+    classifyDigest:
+      options.classifyDigest ??
+      fn((): { action: DigestAction; reason: string } => ({ action: "nothing", reason: "test default" })),
     readSessionMeta: options.readSessionMeta ?? fn(() => null),
     readSessionMessages: options.readSessionMessages ?? fn(() => []),
   };

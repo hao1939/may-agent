@@ -1,8 +1,10 @@
 import { randomUUID } from "node:crypto";
 import {
+  matchesEventSelector,
   type AppDependencyObservation,
   type AppDefinition,
   type AppDisposition,
+  type AppEvent,
   type AppInput,
   type AppInputSource,
   type AppRequest,
@@ -10,6 +12,7 @@ import {
 } from "@may-agent/sdk";
 import { Check, Errors } from "typebox/value";
 import type { SqliteDb } from "../lib/db.js";
+import { assertValidAppDefinition } from "./app-definition-validation.js";
 import {
   associateAppInboxClaimSession,
   claimNextAppInboxItem,
@@ -135,23 +138,7 @@ function requiredText(value: unknown, field: string): string {
 }
 
 function validateAppDefinition(app: AppDefinition): RegisteredApp {
-  requiredText(app.id, "App id");
-  requiredText(app.owner, `App ${app.id} owner`);
-  if (app.version !== 1) throw new Error(`App ${app.id} has unsupported version ${String(app.version)}`);
-  if (app.inbox?.batch && app.inbox.batch !== "single" && app.inbox.batch !== "coalesce-compatible") {
-    throw new Error(`App ${app.id} has unsupported inbox batch mode ${String(app.inbox.batch)}`);
-  }
-  const tasks = app.tasks as unknown;
-  if (
-    tasks !== undefined &&
-    (!tasks ||
-      typeof tasks !== "object" ||
-      Array.isArray(tasks) ||
-      (tasks as { attach?: unknown }).attach !== true ||
-      Object.keys(tasks).some((key) => key !== "attach"))
-  ) {
-    throw new Error(`App ${app.id} has invalid task attachment capability`);
-  }
+  assertValidAppDefinition(app);
   return app;
 }
 
@@ -259,6 +246,24 @@ export class AppInboxHost {
       .filter((app) => app.owner.trim().replace(/^agent:/, "") === normalizedOwner && Check(app.inputSchema, input))
       .map((app) => app.id)
       .sort();
+  }
+
+  subscriptionInputs(event: AppEvent<Record<string, unknown>>): Array<{
+    appId: string;
+    subscriptionId: string;
+    input: AppInput;
+  }> {
+    const matches: Array<{ appId: string; subscriptionId: string; input: AppInput }> = [];
+    for (const app of this.#apps.values()) {
+      for (const subscription of app.subscriptions ?? []) {
+        if (!matchesEventSelector(subscription.event, event)) continue;
+        const input = subscription.toInput(event);
+        if (input === null) continue;
+        validateInput(app, input);
+        matches.push({ appId: app.id, subscriptionId: subscription.id, input });
+      }
+    }
+    return matches;
   }
 
   isOwnedApp(appId: string, owner: string): boolean {

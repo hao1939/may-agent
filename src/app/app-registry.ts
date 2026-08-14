@@ -1,5 +1,21 @@
 import { loadAppInboxDefinitions, type LoadedAppInboxDefinition } from "./loader/app-inbox-loader.js";
 
+export type AppRegistrySnapshot = Readonly<{
+  generation: number;
+  entries: readonly Readonly<LoadedAppInboxDefinition>[];
+}>;
+
+function immutableEntries(entries: LoadedAppInboxDefinition[]): readonly Readonly<LoadedAppInboxDefinition>[] {
+  return Object.freeze(
+    entries.map((entry) =>
+      Object.freeze({
+        appDir: entry.appDir,
+        definition: Object.freeze(entry.definition),
+      }),
+    ),
+  );
+}
+
 /**
  * The process-wide snapshot of durable App addresses.
  *
@@ -8,20 +24,26 @@ import { loadAppInboxDefinitions, type LoadedAppInboxDefinition } from "./loader
  * registry/host state.
  */
 export class AppRegistry {
-  private loaded: LoadedAppInboxDefinition[] = [];
+  private current: AppRegistrySnapshot = Object.freeze({ generation: 0, entries: Object.freeze([]) });
 
   constructor(private readonly projectsRoot: string) {}
 
   entries(): LoadedAppInboxDefinition[] {
-    return [...this.loaded];
+    return this.current.entries.map((entry) => ({ appDir: entry.appDir, definition: entry.definition }));
   }
 
-  async reload(
-    apply?: (next: LoadedAppInboxDefinition[]) => void,
-  ): Promise<LoadedAppInboxDefinition[]> {
+  snapshot(): AppRegistrySnapshot {
+    return this.current;
+  }
+
+  async reload(apply?: (next: LoadedAppInboxDefinition[]) => void): Promise<LoadedAppInboxDefinition[]> {
     const next = await loadAppInboxDefinitions(this.projectsRoot);
-    apply?.(next);
-    this.loaded = next;
+    const prospective = Object.freeze({
+      generation: this.current.generation + 1,
+      entries: immutableEntries(next),
+    });
+    apply?.(prospective.entries.map((entry) => ({ appDir: entry.appDir, definition: entry.definition })));
+    this.current = prospective;
     return this.entries();
   }
 }
