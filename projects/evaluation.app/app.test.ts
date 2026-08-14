@@ -138,20 +138,20 @@ describe("canonical evaluation App", () => {
     expect(
       routeEvaluationRequest(
         request(
-          { kind: "pipeline-check", data: { reason: "scheduled" } },
+          { kind: "owner-review", data: { reason: "metric.breach" } },
           {
             kind: "task",
-            id: "runtime/evaluation-pipeline",
+            id: "runtime/owner-review",
             status: "done",
-            summary: "Pipeline healthy",
-            evidence: ["pipeline:sampled"],
+            summary: "Metric evidence reviewed",
+            evidence: ["metric:reviewed"],
           },
         ),
       ),
     ).toEqual({
       type: "complete",
-      summary: "Pipeline healthy",
-      evidence: ["pipeline:sampled"],
+      summary: "Metric evidence reviewed",
+      evidence: ["metric:reviewed"],
     });
   });
 });
@@ -190,7 +190,7 @@ describe("evaluation fact admission", () => {
         ),
       ),
     ).toMatchObject({
-      kind: "pipeline-check",
+      kind: "owner-review",
       data: { reason: "metric.breach" },
     });
     expect(
@@ -260,14 +260,14 @@ describe("evaluation task policy", () => {
   test("uses standing maintain tasks for recurring responsibilities", () => {
     expect(
       taskIntentForInput({
-        kind: "pipeline-check",
-        data: { reason: "scheduled" },
+        kind: "owner-review",
+        data: { reason: "metric.breach" },
       }),
     ).toMatchObject({
-      id: "runtime/evaluation-pipeline",
-      parentId: "pipeline-health",
+      id: "runtime/owner-review",
+      parentId: "evaluator-reliability",
       mode: "maintain",
-      workflow: "evaluation-pipeline",
+      workflow: "evaluator-heartbeat",
     });
     expect(
       taskIntentForInput({

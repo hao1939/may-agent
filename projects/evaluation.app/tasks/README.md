@@ -34,17 +34,17 @@ result of the exact attached task.
 `tasks/seed.json` contains only responsibilities that remain true for the life
 of the app. They use `reconcile_mode: "maintain"`:
 
-| Task                       | Desired state                                                                                                                                  |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `evaluation-system`        | Independent evaluation stays current, useful, and reliable.                                                                                    |
-| `session-audit`            | Eligible terminal sessions have traceable evaluations or structured skips.                                                                     |
-| `project-app-audit`        | Every watched app has a current independent health assessment.                                                                                 |
-| `finding-delivery`         | Actionable findings reach owners and useful human decisions without duplicates.                                                                |
-| `evaluator-reliability`    | Structural parent for evaluation's bounded reliability responsibilities; it reflects child state without starting an owner session.            |
-| `pipeline-health`          | Structural parent for pipeline observation and the aftermath frontier; changed anomaly signals wake explicit review work instead.               |
-| `criteria-and-calibration` | Criteria remain versioned and calibrated against concrete samples.                                                                             |
-| `drift-detection`          | Comparable cohorts expose meaningful quality drift without speculative work.                                                                   |
-| `system-integrity`         | Evaluator-local state, routing, ownership, and reports remain internally consistent.                                                           |
+| Task                       | Desired state                                                                                                                       |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `evaluation-system`        | Independent evaluation stays current, useful, and reliable.                                                                         |
+| `session-audit`            | Eligible terminal sessions have traceable evaluations or structured skips.                                                          |
+| `project-app-audit`        | Every watched app has a current independent health assessment.                                                                      |
+| `finding-delivery`         | Actionable findings reach owners and useful human decisions without duplicates.                                                     |
+| `evaluator-reliability`    | Structural parent for evaluation's bounded reliability responsibilities; it reflects child state without starting an owner session. |
+| `pipeline-health`          | Structural parent for pipeline observation and the aftermath frontier; changed anomaly signals wake explicit review work instead.   |
+| `criteria-and-calibration` | Criteria remain versioned and calibrated against concrete samples.                                                                  |
+| `drift-detection`          | Comparable cohorts expose meaningful quality drift without speculative work.                                                        |
+| `system-integrity`         | Evaluator-local state, routing, ownership, and reports remain internally consistent.                                                |
 
 Completed migrations, retired ideas, incidents, and dated repair tasks do not
 belong in the seed. They are bounded `achieve` children and leave the live graph
@@ -54,15 +54,14 @@ after their result is absorbed.
 
 `app.ts` maps known events to task intent:
 
-| Task key                              | Mode       | Handler                      | Convergence                                                                                    |
-| ------------------------------------- | ---------- | ---------------------------- | ---------------------------------------------------------------------------------------------- |
-| `runtime/aftermath-backfill`          | `maintain` | `evaluator-aftermath`        | The highest-priority eligible missing evaluation is recorded (failed/interrupted first, then done sessions inside the recent 3h coverage window, then older done backlog); the same task continues while more remain. |
-| `runtime/session-aftermath/<session>` | `achieve`  | `evaluator-aftermath`        | An explicitly requested session has a durable evaluation or structured skip.                   |
-| `runtime/deep-eval/<session>`         | `achieve`  | `evaluator-deep-eval`        | The requested session has one workflow-traced deep judgment.                                   |
-| `runtime/pipeline-monitor`            | `maintain` | `evaluator-pipeline-monitor` | The current snapshot is recorded and unchanged state creates no owner wake.                    |
-| `runtime/deep-eval-scan`              | `maintain` | `evaluator-deep-eval`        | At most one candidate is reviewed, or none exists now.                                         |
-| `runtime/project-audit/<target>`      | `maintain` | `project-health-evaluator`   | The target fingerprint is current and any due report/feedback is persisted.                    |
-| `runtime/owner-review`                | `maintain` | evaluator owner              | Typed task actions are applied atomically, or the owner records a justified no-op.             |
+| Task key                              | Mode       | Handler                    | Convergence                                                                                                                                                                                                           |
+| ------------------------------------- | ---------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `runtime/aftermath-backfill`          | `maintain` | `evaluator-aftermath`      | The highest-priority eligible missing evaluation is recorded (failed/interrupted first, then done sessions inside the recent 3h coverage window, then older done backlog); the same task continues while more remain. |
+| `runtime/session-aftermath/<session>` | `achieve`  | `evaluator-aftermath`      | An explicitly requested session has a durable evaluation or structured skip.                                                                                                                                          |
+| `runtime/deep-eval/<session>`         | `achieve`  | `evaluator-deep-eval`      | The requested session has one workflow-traced deep judgment.                                                                                                                                                          |
+| `runtime/deep-eval-scan`              | `maintain` | `evaluator-deep-eval`      | At most one candidate is reviewed, or none exists now.                                                                                                                                                                |
+| `runtime/project-audit/<target>`      | `maintain` | `project-health-evaluator` | The target fingerprint is current and any due report/feedback is persisted.                                                                                                                                           |
+| `runtime/owner-review`                | `maintain` | `evaluator-heartbeat`      | Exact metric/tick facts are reviewed from bounded reconciliation context; typed child actions are applied or the owner records a justified no-op.                                                                     |
 
 Changing trigger payloads are observations. They are passed to the handler as
 the trigger event, not copied into a standing task's desired specification.

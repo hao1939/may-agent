@@ -98,12 +98,7 @@ const evaluationInputSchema = Type.Union([
     },
     { additionalProperties: false },
   ),
-  ...[
-    "pipeline-check",
-    "feedback-projection",
-    "aftermath-scan",
-    "deep-scan",
-  ].map((kind) =>
+  ...["feedback-projection", "aftermath-scan", "deep-scan"].map((kind) =>
     Type.Object(
       { kind: Type.Literal(kind), data: detailsSchema },
       { additionalProperties: false },
@@ -332,20 +327,6 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
         priority: "P1",
       };
     }
-    case "pipeline-check":
-      return {
-        id: "runtime/evaluation-pipeline",
-        parentId: "pipeline-health",
-        outcome:
-          "Keep evaluation pipeline health observed and wake owner review only when the anomaly family changes.",
-        acceptance: [
-          "Current aftermath coverage, evaluator workflow failures, review failures, and owned metrics are sampled.",
-          "Unchanged anomaly state is a no-op; changed or recovered state emits one owner-review fact.",
-        ],
-        mode: "maintain",
-        workflow: "evaluation-pipeline",
-        priority: "P1",
-      };
     case "feedback-projection":
       return {
         id: "runtime/evaluation-feedback-projection",
@@ -463,12 +444,10 @@ export function taskInputForEvent(
     case "metric.recovered":
       return isEvaluationMetric(event)
         ? {
-            kind: "pipeline-check",
+            kind: "owner-review",
             data: { reason: event.type, metric: eventData(event) },
           }
         : null;
-    case "evaluation.pipeline.check":
-      return eventInput("pipeline-check", event);
     case "evaluation.feedback.project":
       return eventInput("feedback-projection", event);
     default:
@@ -513,15 +492,6 @@ const app = defineApp({
     },
   ],
   schedules: [
-    {
-      id: "evaluation-pipeline-review",
-      intervalMs: 300_000,
-      event: {
-        type: "evaluation.pipeline.check",
-        data: { reason: "scheduled" },
-        target: { appId: projectId, project: projectId },
-      },
-    },
     {
       id: "evaluation-feedback-projection",
       intervalMs: 3_600_000,
@@ -626,7 +596,6 @@ const app = defineApp({
       "evaluation.review_failed",
       "metric.breach",
       "metric.recovered",
-      { type: "evaluation.pipeline.check", project: projectId },
       { type: "evaluation.feedback.project", project: projectId },
     ],
     resolve: taskIntentForEvent,

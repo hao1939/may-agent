@@ -382,7 +382,7 @@ The seed tree contains only standing `maintain` responsibilities:
 | `project-app-audit`        | Every watched app has a current independent assessment.                   | Each target fingerprint and due report state are current.                                                 |
 | `finding-delivery`         | Findings reach owners and useful human decisions without duplicates.      | New actionable findings have one delivery; unchanged findings create none.                                |
 | `evaluator-reliability`    | Evaluation's own process remains bounded and operable.                    | Known work uses declared workflows; exceptions have bounded work or exact Conditions.                     |
-| `pipeline-health`          | Coverage, throughput, review delivery, and anomalies remain observable.   | Pipeline snapshot, backfill frontier, and changed-anomaly wake state agree.                               |
+| `pipeline-health`          | Coverage, throughput, review delivery, and anomalies remain observable.   | Standing aftermath/deep frontiers and explicit metric/review-failure facts remain current.                |
 | `criteria-and-calibration` | Criteria remain versioned and calibrated against concrete samples.        | Accepted calibration is reflected in criteria and regression evidence.                                    |
 | `drift-detection`          | Comparable cohorts reveal meaningful quality drift.                       | Claims name cohorts, windows, criteria version, and samples; absent evidence creates no speculative work. |
 | `system-integrity`         | Evaluator-local routing, ownership, state, and reports remain consistent. | Each concrete defect has one bounded repair and observable postcondition.                                 |
@@ -400,16 +400,16 @@ not consume evaluator sessions merely to repeat unchanged child state.
 
 ### Runtime Tasks
 
-| Event                                 | Task                                  | Mode       | Observable postcondition                                                                                               |
-| ------------------------------------- | ------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `session.end`                         | `runtime/session-aftermath/<session>` | `achieve`  | The concrete ended session has a durable evaluation or structured skip without waiting for the periodic backfill scan. |
-| `evaluation.aftermath.scan`           | `runtime/aftermath-backfill`          | `maintain` | The oldest grace-eligible missing evaluation is recorded; one compact continuation wake is emitted while more remain.  |
-| `evaluation.session.requested`        | `runtime/session-aftermath/<session>` | `achieve`  | The explicitly requested session has a durable evaluation or structured skip.                                          |
-| `evaluation.deep.requested`           | `runtime/deep-eval/<session>`         | `achieve`  | The exact session has one workflow-traced deep judgment.                                                               |
-| `evaluation.pipeline.check`           | `runtime/pipeline-monitor`            | `maintain` | Snapshot persisted; only changed anomaly state wakes the owner.                                                        |
-| `evaluation.deep.scan`                | `runtime/deep-eval-scan`              | `maintain` | One candidate reviewed or no candidate currently exists.                                                               |
-| `evaluation.project.review.requested` | `runtime/project-audit/<target>`      | `maintain` | Target fingerprint is current and any due report and feedback are persisted.                                           |
-| `evaluation.tick`                     | `runtime/owner-review`                | `maintain` | Revision-checked actions are atomically applied, or a justified no-op is recorded.                                     |
+| Event                                  | Task                                  | Mode       | Observable postcondition                                                                                               |
+| -------------------------------------- | ------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `session.end`                          | `runtime/session-aftermath/<session>` | `achieve`  | The concrete ended session has a durable evaluation or structured skip without waiting for the periodic backfill scan. |
+| `evaluation.aftermath.scan`            | `runtime/aftermath-backfill`          | `maintain` | The oldest grace-eligible missing evaluation is recorded; one compact continuation wake is emitted while more remain.  |
+| `evaluation.session.requested`         | `runtime/session-aftermath/<session>` | `achieve`  | The explicitly requested session has a durable evaluation or structured skip.                                          |
+| `evaluation.deep.requested`            | `runtime/deep-eval/<session>`         | `achieve`  | The exact session has one workflow-traced deep judgment.                                                               |
+| evaluator-owned metric breach/recovery | `runtime/owner-review`                | `maintain` | The exact metric fact is reviewed from bounded reconciliation context without a broad pipeline rescan.                 |
+| `evaluation.deep.scan`                 | `runtime/deep-eval-scan`              | `maintain` | One candidate reviewed or no candidate currently exists.                                                               |
+| `evaluation.project.review.requested`  | `runtime/project-audit/<target>`      | `maintain` | Target fingerprint is current and any due report and feedback are persisted.                                           |
+| `evaluation.tick`                      | `runtime/owner-review`                | `maintain` | Revision-checked actions are atomically applied, or a justified no-op is recorded.                                     |
 
 An `achieve` task leaves the live graph after outcome absorption and keeps a
 bounded completion reference for deduplication. A converged `maintain` task
