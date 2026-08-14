@@ -3,11 +3,17 @@ import type { SqliteDb } from "../lib/db.js";
 import { readRuntimeExecutionView } from "./app-read.js";
 import type { AppTaskAttacher } from "./app-inbox-host.js";
 import type { EventBus } from "./event-bus.js";
+import type { AppRegistrySnapshot } from "./app-registry.js";
 import {
   attachLoadedProjectAppTask,
+  installProjectApps,
   readLoadedProjectAppTaskView,
   runWithProjectAppRuntimeCapacity,
+  startProjectAppWatcher,
+  type ProjectAppLoaderOptions,
 } from "./loader/project-app-loader.js";
+
+export type AppTaskGenerationResult = { apps: number; entries: number };
 
 export type AppTaskCapability = {
   runOwner<T>(work: () => Promise<T>): Promise<T>;
@@ -16,6 +22,8 @@ export type AppTaskCapability = {
     appDir: string;
     dependency: { kind: "task" | "session"; id: string };
   }): Promise<AppDependencyObservation | null>;
+  publishGeneration(input: { snapshot: AppRegistrySnapshot; publish: () => void }): Promise<AppTaskGenerationResult>;
+  watchGenerations(reload: () => Promise<void>): { close(): void } | null;
 };
 
 /**
@@ -25,10 +33,30 @@ export type AppTaskCapability = {
  * loader/storage/controller details. The implementation can therefore be
  * extracted and renamed without changing inbox ownership semantics.
  */
-export function createAppTaskCapability(options: { bus: EventBus; getDb: () => SqliteDb }): AppTaskCapability {
+export function createAppTaskCapability(options: {
+  bus: EventBus;
+  getDb: () => SqliteDb;
+  compatibility?: ProjectAppLoaderOptions;
+}): AppTaskCapability {
   return {
     runOwner: (work) => runWithProjectAppRuntimeCapacity(options.bus, work),
     attach: async (input) => attachLoadedProjectAppTask({ ...input, bus: options.bus }),
+    async publishGeneration({ snapshot, publish }) {
+      if (!options.compatibility) {
+        publish();
+        return { apps: 0, entries: 0 };
+      }
+      const result = await installProjectApps({
+        ...options.compatibility,
+        appRegistrySnapshot: snapshot,
+        afterCommit: () => publish(),
+      });
+      return { apps: result.installed.length, entries: result.entries };
+    },
+    watchGenerations(reload) {
+      if (!options.compatibility) return null;
+      return startProjectAppWatcher(options.compatibility, { reload });
+    },
     async readDependency({ appDir, dependency }) {
       if (dependency.kind === "task") {
         const task = readLoadedProjectAppTaskView({ bus: options.bus, appDir, taskId: dependency.id });
