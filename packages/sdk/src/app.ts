@@ -15,6 +15,8 @@ export type {
   MetricView,
   ObserverContext,
   TaskView,
+  TaskReconciliationChild,
+  TaskReconciliationContext,
   WorkflowContext,
   WorkflowInput,
 } from "./workflow.js";

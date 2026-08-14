@@ -385,6 +385,7 @@ export function createTestObserverContext(
 
 export type TestAppWorkflowContextOptions<TInput> = {
   input: TInput;
+  reconciliation?: AppWorkflowContext<TInput>["reconciliation"];
   read?: AppRead;
   log?: AppLogger;
   callAgent?: AppWorkflowContext["agents"]["call"];
@@ -409,6 +410,7 @@ export function createTestAppWorkflowContext<TInput>(
   });
   return {
     input: options.input,
+    ...(options.reconciliation ? { reconciliation: options.reconciliation } : {}),
     read: options.read ?? createTestAppRead(),
     agents: {
       call: options.callAgent ?? fn(async (agent: string) => terminal("agent", `s_test_${agent}`)),

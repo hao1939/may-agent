@@ -39,6 +39,8 @@ export type {
   ObserverContext,
   Static,
   TaskView,
+  TaskReconciliationChild,
+  TaskReconciliationContext,
   TSchema,
   WorkflowContext,
   WorkflowInput,
