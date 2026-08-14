@@ -877,9 +877,7 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
     const session = sessionData(event);
     if (session.parentSessionId) return false;
     if (session.agent !== opts.interfaceAgent) return false;
-    const structuredMayTurn =
-      session.kind === "job" && typeof session.requestId === "string" && session.requestId.startsWith("may-turn:");
-    if (session.kind && session.kind !== "chat" && !structuredMayTurn) return false;
+    if (session.kind && session.kind !== "chat") return false;
     // A daemon chat session can be reused by Telegram, CLI, Web, and tests.
     // Route a turn to Telegram only when Telegram started that turn. Treating
     // the daemon's current chat session as Telegram-owned leaks CLI/Gym smoke

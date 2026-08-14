@@ -20,6 +20,7 @@ import { prepareProjectTaskWorkspace } from "../project-task-workspace";
 import { prepareAgentExecution } from "../../lib/agent-execution";
 import { createCheckpointTool } from "../../lib/tools/checkpoint";
 import { startAppInboxRuntime } from "../app-inbox-runtime";
+import { AppRegistry } from "../app-registry";
 import {
   associateProjectAppTaskSession,
   claimObservedProjectAppTask,
@@ -252,6 +253,8 @@ describe("App inbox task attachment", () => {
         },
         cancel() {},
       });
+      const appRegistry = new AppRegistry(f.projectsRoot);
+      await appRegistry.reload();
       await installProjectApps({
         projectsRoot: f.projectsRoot,
         projectRoot: f.root,
@@ -261,10 +264,11 @@ describe("App inbox task attachment", () => {
         manager: runtimeManager,
         bus,
         agentCrons: new Map(),
+        appRegistry,
       });
       const db = getDb(f.persistDir);
       runtime = await startAppInboxRuntime({
-        projectsRoot: f.projectsRoot,
+        registry: appRegistry,
         db,
         manager: runtimeManager,
         bus,

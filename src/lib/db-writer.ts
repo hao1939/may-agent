@@ -411,13 +411,6 @@ const PAIR_CONTRACTS: readonly PairContract[] = [
     key: cliTaskKey,
   },
   {
-    name: "may.break-glass",
-    open: "may.break-glass.started",
-    closes: ["may.break-glass.completed", "may.break-glass.failed"],
-    timeoutMs: 60 * 60 * 1000,
-    key: sessionKey,
-  },
-  {
     name: "project.intent",
     open: "project.comment.created",
     closes: ["project.owner.reviewed"],
@@ -576,7 +569,6 @@ export class DbWriter {
         const now = Date.now();
         try {
           this.db.exec("BEGIN IMMEDIATE");
-          if (result.route === "owner_inbox") this.openOwnerInboxPair(event, rowId, now);
           this.db.run(
             `UPDATE events
              SET delivery_status = 'accepted',
@@ -774,25 +766,6 @@ export class DbWriter {
         closedAt,
       );
     }
-  }
-
-  private openOwnerInboxPair(event: AgentEvent, openEventId: number, openedAt: number): void {
-    const ttlMs = eventTtlMs(event as Record<string, unknown>) ?? 2 * 60 * 60 * 1000;
-    const owner = eventOwner(event as Record<string, unknown>);
-    this.db.run(
-      `INSERT OR IGNORE INTO event_pair_runs
-       (pair_name, correlation_key, open_event_id, owner, status, opened_at, expected_close_at, note)
-       VALUES (?, ?, ?, ?, 'open', ?, ?, ?)`,
-      [
-        "owner_inbox",
-        `event:${openEventId}`,
-        openEventId,
-        owner,
-        openedAt,
-        openedAt + ttlMs,
-        `owner inbox item opened by ${event.type}`,
-      ],
-    );
   }
 
   private openConventionPair(

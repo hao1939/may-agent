@@ -4,6 +4,7 @@ import type { AttachControlSocketOptions } from "../../packages/control/src/serv
 import { closeAllDbs, getDb } from "../lib/requests.js";
 import type { AppArgs } from "./app-args.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
+import { AppRegistry } from "./app-registry.js";
 import { readRuntimeExecutionView } from "./app-read.js";
 import { attachCommandRouter } from "./command-router.js";
 import { startCronRuntime } from "./cron-startup.js";
@@ -130,6 +131,8 @@ export async function runAppRuntime(opts: {
   });
 
   let appInboxRuntime: AppInboxRuntime | null = null;
+  const appRegistry = new AppRegistry(opts.projectsRoot);
+  await appRegistry.reload();
 
   attachDaemonEventSubscribers({
     bus,
@@ -149,42 +152,41 @@ export async function runAppRuntime(opts: {
     manager,
     bus,
     cronEnabled: CRON_ENABLED,
+    appRegistry,
   });
 
-  appInboxRuntime = CRON_ENABLED
-    ? await startAppInboxRuntime({
-        projectsRoot: opts.projectsRoot,
-        db: getDb(opts.persistDir),
-        manager,
-        bus,
-        runOwner: (work) => runWithProjectAppRuntimeCapacity(bus, work),
-        attachTask: async (input) => attachLoadedProjectAppTask({ ...input, bus }),
-        readDependency: async ({ appDir, dependency }) => {
-          if (dependency.kind === "task") {
-            const task = readLoadedProjectAppTaskView({ bus, appDir, taskId: dependency.id });
-            return task
-              ? {
-                  kind: "task",
-                  id: task.id,
-                  status: task.status,
-                  summary: task.summary,
-                  evidence: task.evidence,
-                }
-              : null;
+  appInboxRuntime = await startAppInboxRuntime({
+    registry: appRegistry,
+    db: getDb(opts.persistDir),
+    manager,
+    bus,
+    runOwner: (work) => runWithProjectAppRuntimeCapacity(bus, work),
+    attachTask: async (input) => attachLoadedProjectAppTask({ ...input, bus }),
+    readDependency: async ({ appDir, dependency }) => {
+      if (dependency.kind === "task") {
+        const task = readLoadedProjectAppTaskView({ bus, appDir, taskId: dependency.id });
+        return task
+          ? {
+              kind: "task",
+              id: task.id,
+              status: task.status,
+              summary: task.summary,
+              evidence: task.evidence,
+            }
+          : null;
+      }
+      const execution = readRuntimeExecutionView({ getDb: () => getDb(opts.persistDir) }, dependency.id);
+      return execution
+        ? {
+            kind: "session",
+            id: execution.id,
+            status: execution.status === "blocked" ? "waiting" : execution.status,
+            summary: execution.summary,
           }
-          const execution = readRuntimeExecutionView({ getDb: () => getDb(opts.persistDir) }, dependency.id);
-          return execution
-            ? {
-                kind: "session",
-                id: execution.id,
-                status: execution.status === "blocked" ? "waiting" : execution.status,
-                summary: execution.summary,
-              }
-            : null;
-        },
-      })
-    : null;
-  if (appInboxRuntime) {
+        : null;
+    },
+  });
+  if (appInboxRuntime.host.appIds().length > 0) {
     bus.emit({
       type: "info",
       message: `[app-inbox] Started for ${appInboxRuntime.host.appIds().join(", ")}`,
@@ -209,19 +211,20 @@ export async function runAppRuntime(opts: {
       activeRL = null;
     },
     beforeShutdown: () => appInboxRuntime?.close(),
+    reloadApps: () => appInboxRuntime!.reload(),
+    appRegistry,
   });
   installProcessHandlers();
 
   const commandRouter = attachCommandRouter({
     bus,
     manager,
-    getChatSession: () => chatSession,
     clearCancelLatch: () => {
       cancelledOnce = false;
     },
     projectRoot: opts.projectRoot,
     persistDir: opts.persistDir,
-    acceptsDirectAppInput: (appId, input) => appInboxRuntime?.host.acceptsInput(appId, input) ?? false,
+    acceptsAppInput: (appId, input) => appInboxRuntime?.host.acceptsInput(appId, input) ?? false,
     reload: handleReload,
     restart: gracefulRestart,
     shutdown: gracefulShutdown,

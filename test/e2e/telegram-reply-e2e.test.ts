@@ -476,6 +476,7 @@ describe("telegram reply e2e", () => {
     const humanInputs: any[] = [];
     const steers: any[] = [];
     const chatStarts: any[] = [];
+    const appInputs: any[] = [];
     const comments: any[] = [];
     const approvals: any[] = [];
     const replies: any[] = [];
@@ -483,6 +484,7 @@ describe("telegram reply e2e", () => {
       if (event.type === "human.input.received") humanInputs.push(event);
       if (event.type === "session.steer.requested") steers.push(event);
       if (event.type === "chat.start.requested") chatStarts.push(event);
+      if (event.type === "app.input.requested") appInputs.push(event);
       if (event.type === "project.comment.created") comments.push(event);
       if (event.type === "project.approval.submitted") approvals.push(event);
       if (event.type === "telegram.reply") replies.push(event);
@@ -503,9 +505,9 @@ describe("telegram reply e2e", () => {
         resumeSession: () => "unexpected-steer",
         run: () => "unexpected-chat",
       } as any,
-      getChatSession: () => null,
       clearCancelLatch: () => {},
       projectRoot: "/tmp/project",
+      acceptsAppInput: (appId) => appId === "may",
       reload: () => {},
       restart: () => {},
       shutdown: () => {},
@@ -619,6 +621,7 @@ describe("telegram reply e2e", () => {
 
     const bus = new EventBus();
     const chatStarts: any[] = [];
+    const appInputs: any[] = [];
     const handledInputs: Array<{ message: string; source?: string }> = [];
     const humanInputs: any[] = [];
     const comments: any[] = [];
@@ -629,6 +632,7 @@ describe("telegram reply e2e", () => {
     bus.subscribe((event: any) => {
       if (event.type === "human.input.received") humanInputs.push(event);
       if (event.type === "chat.start.requested") chatStarts.push(event);
+      if (event.type === "app.input.requested") appInputs.push(event);
       if (event.type === "project.comment.created") comments.push(event);
       if (event.type === "session.steer.requested") steers.push(event);
       if (event.type === "telegram.reply") replies.push(event);
@@ -653,24 +657,23 @@ describe("telegram reply e2e", () => {
           return "s_project_review_fresh";
         },
       } as any,
-      getChatSession: () =>
-        ({
-          handleInput: (message: string, source?: string) => handledInputs.push({ message, source }),
-        }) as any,
       clearCancelLatch: () => {},
       projectRoot,
+      acceptsAppInput: (appId) => appId === "may",
       reload: () => {},
       restart: () => {},
       shutdown: () => {},
     });
 
     await waitFor(() => {
-      expect(chatStarts).toHaveLength(1);
-      expect(String(chatStarts[0].data?.message)).toContain("Attached context");
-      expect(String(chatStarts[0].data?.message)).toContain("Conversation: telegram:chat:12345:topic:0:agent:may");
-      expect(String(chatStarts[0].data?.message)).toContain("Original issue: project.review.requested");
-      expect(String(chatStarts[0].data?.message)).toContain("Visible notification: Project needs review");
-      expect(String(chatStarts[0].data?.message)).toContain("please revise the scoped plan");
+      expect(chatStarts).toHaveLength(0);
+      expect(appInputs).toHaveLength(1);
+      const appMessage = String(appInputs[0].data?.input?.data?.message);
+      expect(appMessage).toContain("Attached context");
+      expect(appMessage).toContain("Conversation: telegram:chat:12345:topic:0:agent:may");
+      expect(appMessage).toContain("Original issue: project.review.requested");
+      expect(appMessage).toContain("Visible notification: Project needs review");
+      expect(appMessage).toContain("please revise the scoped plan");
       expect(String(humanInputs[0].data?.text)).toBe("please revise the scoped plan");
       expect(humanInputs[0].data?.conversation?.id).toBe("telegram:chat:12345:topic:0:agent:may");
       expect(humanInputs[0].data?.context?.telegramReply).toMatchObject({
@@ -680,11 +683,7 @@ describe("telegram reply e2e", () => {
       expect(comments).toHaveLength(0);
       expect(steers).toHaveLength(0);
       expect(handledInputs).toHaveLength(0);
-      expect(runs).toHaveLength(1);
-      expect(runs[0]?.source).toBe("telegram");
-      expect(runs[0]?.message).toContain("Attached context");
-      expect(runs[0]?.message).toContain("Conversation: telegram:chat:12345:topic:0:agent:may");
-      expect(runs[0]?.message).toContain("please revise the scoped plan");
+      expect(runs).toHaveLength(0);
       expect(replies.some((event) => event.data?.enriched === true)).toBe(true);
       expect(replies[0]?.data?.shadowConversation).toMatchObject({
         status: "linked",
@@ -709,7 +708,7 @@ describe("telegram reply e2e", () => {
         {
           sessionId: activeChatSessionId,
           agent: "may",
-          task: runs[0].message,
+          task: String(appInputs[0].data?.input?.data?.message),
           trigger: "chat",
           firedAt: Date.now(),
           kind: "chat",
@@ -809,12 +808,14 @@ describe("telegram reply e2e", () => {
     const bus = new EventBus();
     const steers: any[] = [];
     const chatStarts: any[] = [];
+    const appInputs: any[] = [];
     const humanInputs: any[] = [];
     const replies: any[] = [];
     const runs: Array<{ agent: string; message: string; source?: string }> = [];
     bus.subscribe((event: any) => {
       if (event.type === "session.steer.requested") steers.push(event);
       if (event.type === "chat.start.requested") chatStarts.push(event);
+      if (event.type === "app.input.requested") appInputs.push(event);
       if (event.type === "human.input.received") humanInputs.push(event);
       if (event.type === "telegram.reply") replies.push(event);
     });
@@ -837,9 +838,9 @@ describe("telegram reply e2e", () => {
           return "s_reply_fresh";
         },
       } as any,
-      getChatSession: () => null,
       clearCancelLatch: () => {},
       projectRoot: "/tmp/project",
+      acceptsAppInput: (appId) => appId === "may",
       reload: () => {},
       restart: () => {},
       shutdown: () => {},
@@ -851,21 +852,21 @@ describe("telegram reply e2e", () => {
       expect(String(humanInputs[0].data?.text)).not.toContain("Conversation: tg_session_input_1");
       expect(humanInputs[0].data?.conversation?.id).toBe("telegram:chat:12345:topic:0:agent:may");
       expect(steers).toHaveLength(0);
-      expect(chatStarts).toHaveLength(1);
-      expect(chatStarts[0].data?.forceNew).toBe(true);
-      expect(String(chatStarts[0].data?.message)).toContain("Attached context");
-      expect(String(chatStarts[0].data?.message)).toContain("Conversation: telegram:chat:12345:topic:0:agent:may");
-      expect(String(chatStarts[0].data?.message)).toContain("Original issue: session.blocked");
-      expect(String(chatStarts[0].data?.message)).toContain("Source session: s_reply_target");
-      expect(String(chatStarts[0].data?.message)).toContain("Visible notification: Session needs input");
-      expect(String(chatStarts[0].data?.message)).toContain("continue with the smaller plan");
-      expect(chatStarts[0].data?.context?.telegramReply).toMatchObject({
+      expect(chatStarts).toHaveLength(0);
+      expect(appInputs).toHaveLength(1);
+      const appMessage = String(appInputs[0].data?.input?.data?.message);
+      expect(appMessage).toContain("Attached context");
+      expect(appMessage).toContain("Conversation: telegram:chat:12345:topic:0:agent:may");
+      expect(appMessage).toContain("Original issue: session.blocked");
+      expect(appMessage).toContain("Source session: s_reply_target");
+      expect(appMessage).toContain("Visible notification: Session needs input");
+      expect(appMessage).toContain("continue with the smaller plan");
+      expect(appInputs[0].data?.input?.data?.context?.telegramReply).toMatchObject({
         conversationId: "telegram:chat:12345:topic:0:agent:may",
         requestConversationId: "tg_session_input_1",
         sessionId: "s_reply_target",
       });
-      expect(runs).toHaveLength(1);
-      expect(runs[0]?.message).toContain("Source session: s_reply_target");
+      expect(runs).toHaveLength(0);
       expect(replies.some((event) => event.data?.enriched === true && event.data?.hasSessionCtx === true)).toBe(true);
       expect(
         sentMessages.some(
@@ -945,6 +946,7 @@ describe("telegram reply e2e", () => {
 
     const bus = new EventBus();
     const chatStarts: any[] = [];
+    const appInputs: any[] = [];
     const handledInputs: Array<{ message: string; source?: string }> = [];
     const humanInputs: any[] = [];
     const steers: any[] = [];
@@ -953,6 +955,7 @@ describe("telegram reply e2e", () => {
     bus.subscribe((event: any) => {
       if (event.type === "human.input.received") humanInputs.push(event);
       if (event.type === "chat.start.requested") chatStarts.push(event);
+      if (event.type === "app.input.requested") appInputs.push(event);
       if (event.type === "session.steer.requested") steers.push(event);
       if (event.type === "telegram.reply") replies.push(event);
     });
@@ -975,12 +978,9 @@ describe("telegram reply e2e", () => {
           return "s_escalation_fresh";
         },
       } as any,
-      getChatSession: () =>
-        ({
-          handleInput: (message: string, source?: string) => handledInputs.push({ message, source }),
-        }) as any,
       clearCancelLatch: () => {},
       projectRoot: "/tmp/project",
+      acceptsAppInput: (appId) => appId === "may",
       reload: () => {},
       restart: () => {},
       shutdown: () => {},
@@ -991,19 +991,16 @@ describe("telegram reply e2e", () => {
       expect(humanInputs[0].data?.text).toBe("approve retry");
       expect(humanInputs[0].data?.conversation?.id).toBe("telegram:chat:12345:topic:0:agent:may");
       expect(steers).toHaveLength(0);
-      expect(chatStarts).toHaveLength(1);
-      expect(chatStarts[0].owner).toBe("agent:may");
-      expect(chatStarts[0].data?.agent).toBe("may");
-      expect(String(chatStarts[0].data?.message)).toContain("Attached context");
-      expect(String(chatStarts[0].data?.message)).toContain("Escalation: esc_1");
-      expect(String(chatStarts[0].data?.message)).toContain("Source session: s_escalation_source");
-      expect(String(chatStarts[0].data?.message)).toContain(
-        "Expected closure: escalation.resolved, escalation.dismissed",
-      );
-      expect(String(chatStarts[0].data?.message)).toContain("approve retry");
+      expect(chatStarts).toHaveLength(0);
+      expect(appInputs).toHaveLength(1);
+      const appMessage = String(appInputs[0].data?.input?.data?.message);
+      expect(appMessage).toContain("Attached context");
+      expect(appMessage).toContain("Escalation: esc_1");
+      expect(appMessage).toContain("Source session: s_escalation_source");
+      expect(appMessage).toContain("Expected closure: escalation.resolved, escalation.dismissed");
+      expect(appMessage).toContain("approve retry");
       expect(handledInputs).toHaveLength(0);
-      expect(runs).toHaveLength(1);
-      expect(runs[0]?.message).toContain("Escalation: esc_1");
+      expect(runs).toHaveLength(0);
       expect(
         replies.some(
           (event) =>
