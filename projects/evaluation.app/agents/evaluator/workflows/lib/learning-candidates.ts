@@ -3,7 +3,11 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname } from "node:path";
 
 export type LearningCandidateStatus =
-  "proposed" | "validated" | "promoted" | "rejected" | "applied";
+  | "proposed"
+  | "validated"
+  | "promoted"
+  | "rejected"
+  | "applied";
 
 export interface LearningCandidateEntry {
   candidateId: string;

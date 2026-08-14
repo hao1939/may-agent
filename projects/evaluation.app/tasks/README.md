@@ -60,6 +60,7 @@ after their result is absorbed.
 | `runtime/session-aftermath/<session>` | `achieve`  | `evaluator-aftermath`      | An explicitly requested session has a durable evaluation or structured skip.                                                                                                                                          |
 | `runtime/deep-eval/<session>`         | `achieve`  | `evaluator-deep-eval`      | The requested session has one workflow-traced deep judgment.                                                                                                                                                          |
 | `runtime/deep-eval-scan`              | `maintain` | `evaluator-deep-eval`      | At most one candidate is reviewed, or none exists now.                                                                                                                                                                |
+| `runtime/evaluation-feedback/<agent>` | `maintain` | `evaluation-feedback-projection` | The latest durable evaluation fact is reflected in Evaluation-owned generated feedback for that agent.                                                                                                      |
 | `runtime/project-audit/<target>`      | `maintain` | `project-health-evaluator` | The target fingerprint is current and any due report/feedback is persisted.                                                                                                                                           |
 | `runtime/owner-review`                | `maintain` | `evaluator-heartbeat`      | Exact metric/tick facts are reviewed from bounded reconciliation context; typed child actions are applied or the owner records a justified no-op.                                                                     |
 
@@ -75,36 +76,15 @@ compact wake when another eligible session remains. The database and session
 eval trails hold per-session history; the task tree holds only the standing
 frontier. Explicit requests may still use a short-lived per-session task.
 
-## Legacy Aftermath Migration
+## Historical Aftermath Migration
 
-The one-time migration removes the former automatic
-`runtime/session-aftermath/<session>` live resources, triggers, attempts, and
-receipts. It does not remove evaluations, session transcripts, eval trails, or
-reports. Any terminal session without an evaluation is rediscovered by the
-standing frontier. It also removes the legacy executable resources named
-`evaluator-reliability` and `pipeline-health`. Their same-named groups remain,
-making those parents structural as declared by the current seed and design.
-Session and event stores retain the old owner-run history outside task state.
-
-Run it only with evaluation reconciliation paused and attempts drained:
-
-```text
-bun run migrate:session-aftermath --pause
-# reload project apps and wait for running evaluation attempts to finish
-bun run migrate:session-aftermath
-bun run migrate:session-aftermath --apply --expected-revision=<dry-run revision>
-bun run migrate:session-aftermath --resume
-# reload project apps again
-```
-
-After the one-time legacy cleanup, use `--structural-only` for a later repair
-of the two parent resources. This preserves explicit per-session task receipts
-created after the migration:
-
-```text
-bun run migrate:session-aftermath --structural-only
-bun run migrate:session-aftermath --structural-only --apply --expected-revision=<dry-run revision>
-```
+The automatic per-session frontier migration completed in August 2026 and its
+one-time mutation command has been retired. Do not bulk-delete
+`runtime/session-aftermath/<session>` state: those IDs now represent legitimate
+explicit evaluation requests and their immutable receipts. Any future stored
+task-state migration must use the versioned runtime maintenance boundary with
+a lock, backup, validation, and receipt; ordinary App code and scripts do not
+import task persistence helpers.
 
 ## Ownership And Waits
 
