@@ -31,8 +31,9 @@ describe("bounded DB maintenance", () => {
       expect(result.deleted.sessionDirectories).toBe(2);
       expect((db.prepare("SELECT COUNT(*) AS count FROM sessions WHERE status = 'done'").get() as any).count).toBe(3);
       expect(db.prepare("SELECT sessionId FROM sessions WHERE sessionId = 'active'").get()).toBeTruthy();
-      const remainingDirectories = Array.from({ length: 5 }, (_, index) => `old_${index}`)
-        .filter((sessionId) => existsSync(join(persistDir, "sessions", sessionId)));
+      const remainingDirectories = Array.from({ length: 5 }, (_, index) => `old_${index}`).filter((sessionId) =>
+        existsSync(join(persistDir, "sessions", sessionId)),
+      );
       expect(remainingDirectories).toHaveLength(3);
     } finally {
       closeDb(persistDir);
@@ -79,18 +80,14 @@ describe("bounded DB maintenance", () => {
       const result = runDbMaintenancePass(persistDir, { now, batchSize: 2 });
       expect(result.deleted.retiredOrphans).toBe(2);
       expect(
-        (
-          db
-            .prepare("SELECT COUNT(*) AS count FROM event_pair_runs WHERE closed_at IS NOT NULL")
-            .get() as any
-        ).count,
+        (db.prepare("SELECT COUNT(*) AS count FROM event_pair_runs WHERE closed_at IS NOT NULL").get() as any).count,
       ).toBe(2);
     } finally {
       closeDb(persistDir);
     }
   });
 
-  it("leaves old message commitments for semantic lifecycle reconciliation", () => {
+  it("retires old message pairs as generic stale infrastructure", () => {
     const persistDir = mkdtempSync(join(tmpdir(), "may-maintenance-messages-"));
     const now = 10 * 86_400_000;
     try {
@@ -106,14 +103,12 @@ describe("bounded DB maintenance", () => {
         `INSERT INTO event_pair_runs
          (pair_name, correlation_key, open_event_id, owner, status, opened_at, expected_close_at)
          VALUES ('owner_inbox', ?, ?, 'agent:scout', 'orphan', ?, ?)`,
-      ).run(`event:${openEventId}`, openEventId, now - 5 * 86_400_000, now - 4 * 60 * 60_000);
+      ).run(`event:${openEventId}`, openEventId, now - 5 * 86_400_000, now - 5 * 60 * 60_000);
 
       const result = runDbMaintenancePass(persistDir, { now, batchSize: 100 });
 
-      expect(result.deleted.retiredOrphans).toBe(0);
-      expect(
-        db.prepare("SELECT status, closed_at FROM event_pair_runs WHERE open_event_id = ?").get(openEventId),
-      ).toEqual({ status: "orphan", closed_at: null });
+      expect(result.deleted.retiredOrphans).toBe(1);
+      expect(db.prepare("SELECT status FROM event_pair_runs WHERE open_event_id = ?").get(openEventId)).toBeNull();
     } finally {
       closeDb(persistDir);
     }
