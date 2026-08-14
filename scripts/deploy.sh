@@ -15,11 +15,10 @@ if [ -z "$task_id" ]; then
 fi
 
 source_commit="$(git rev-parse --verify HEAD)"
-if ! git diff --quiet --ignore-submodules -- || ! git diff --cached --quiet --ignore-submodules --; then
-  echo "Refusing deploy from a dirty tracked source tree; commit the exact source first." >&2
-  exit 2
-fi
 
+# The canonical checkout is shared and may contain unrelated tracked edits from
+# another owner. Those bytes are intentionally irrelevant: the deploy input is
+# the immutable source_commit archive below, never the mutable working tree.
 # Build and test from an immutable archive of one commit. The canonical checkout is
 # shared by concurrent May work; compiling it in place allowed a transient checkout
 # or edit to produce an artifact with no durable provenance back to tested source.
