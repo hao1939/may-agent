@@ -413,6 +413,76 @@ function eventInput(
   return { kind, data: eventData(event) };
 }
 
+export function taskInputForEvent(
+  event: AppEvent<Record<string, unknown>>,
+): AppInput | null {
+  switch (event.type) {
+    case "session.end": {
+      const agent = stringValue(eventData(event).agent);
+      return agent === "evaluator" || agent === "judge"
+        ? null
+        : {
+            kind: "aftermath-scan",
+            data: { reason: "session-end" },
+          };
+    }
+    case "evaluation.session.requested": {
+      const sessionId = eventSessionId(event);
+      return sessionId
+        ? {
+            kind: "evaluate-session",
+            data: { ...eventData(event), sessionId },
+          }
+        : null;
+    }
+    case "evaluation.aftermath.scan":
+      return eventInput("aftermath-scan", event);
+    case "evaluation.deep.requested": {
+      const sessionId = eventSessionId(event);
+      return sessionId
+        ? { kind: "deep-eval", data: { ...eventData(event), sessionId } }
+        : null;
+    }
+    case "evaluation.deep.scan":
+      return eventInput("deep-scan", event);
+    case "evaluation.project.review.requested":
+      return projectReviewInput(eventData(event));
+    case "evaluation.app_runtime_canary.requested": {
+      const itemId = stringValue(eventData(event).itemId);
+      return itemId ? { kind: "runtime-canary", data: { itemId } } : null;
+    }
+    case "evaluation.tick":
+      return eventInput("owner-review", event);
+    case "evaluation.review_failed":
+      return projectReviewInput({
+        targetProject: "evaluation.app",
+        reason: "review-failed",
+        reviewFailure: eventData(event),
+      });
+    case "metric.breach":
+    case "metric.recovered":
+      return isEvaluationMetric(event)
+        ? {
+            kind: "pipeline-check",
+            data: { reason: event.type, metric: eventData(event) },
+          }
+        : null;
+    case "evaluation.pipeline.check":
+      return eventInput("pipeline-check", event);
+    case "evaluation.feedback.project":
+      return eventInput("feedback-projection", event);
+    default:
+      return null;
+  }
+}
+
+export function taskIntentForEvent(
+  event: AppEvent<Record<string, unknown>>,
+): TaskIntent | null {
+  const input = taskInputForEvent(event);
+  return input ? taskIntentForInput(input) : null;
+}
+
 const app = defineApp({
   id: projectId,
   version: 1,
@@ -424,77 +494,6 @@ const app = defineApp({
   route: routeEvaluationRequest,
   workspace: { kind: "local", localPath: "." },
   subscriptions: [
-    {
-      id: "session-ended",
-      event: "session.end",
-      toInput(event) {
-        const data = eventData(event);
-        const agent = stringValue(data.agent);
-        if (agent === "evaluator" || agent === "judge") return null;
-        const sessionId = eventSessionId(event);
-        return sessionId
-          ? {
-              kind: "evaluate-session",
-              data: { sessionId, reason: "session-end" },
-            }
-          : {
-              kind: "aftermath-scan",
-              data: { reason: "session-end-missing-session-id" },
-            };
-      },
-    },
-    {
-      id: "explicit-session-evaluation",
-      event: { type: "evaluation.session.requested", project: projectId },
-      toInput(event) {
-        const sessionId = eventSessionId(event);
-        return sessionId
-          ? {
-              kind: "evaluate-session",
-              data: { ...eventData(event), sessionId },
-            }
-          : null;
-      },
-    },
-    {
-      id: "aftermath-frontier",
-      event: { type: "evaluation.aftermath.scan", project: projectId },
-      toInput: (event) => eventInput("aftermath-scan", event),
-    },
-    {
-      id: "explicit-deep-evaluation",
-      event: { type: "evaluation.deep.requested", project: projectId },
-      toInput(event) {
-        const sessionId = eventSessionId(event);
-        return sessionId
-          ? { kind: "deep-eval", data: { ...eventData(event), sessionId } }
-          : null;
-      },
-    },
-    {
-      id: "deep-evaluation-frontier",
-      event: { type: "evaluation.deep.scan", project: projectId },
-      toInput: (event) => eventInput("deep-scan", event),
-    },
-    {
-      id: "project-health-request",
-      event: {
-        type: "evaluation.project.review.requested",
-        project: projectId,
-      },
-      toInput: (event) => projectReviewInput(eventData(event)),
-    },
-    {
-      id: "runtime-canary-request",
-      event: {
-        type: "evaluation.app_runtime_canary.requested",
-        project: projectId,
-      },
-      toInput(event) {
-        const itemId = stringValue(eventData(event).itemId);
-        return itemId ? { kind: "runtime-canary", data: { itemId } } : null;
-      },
-    },
     {
       id: "project-comment",
       event: { type: "project.comment.created", project: projectId },
@@ -508,49 +507,9 @@ const app = defineApp({
       },
     },
     {
-      id: "evaluation-tick",
-      event: { type: "evaluation.tick", project: projectId },
-      toInput(event) {
-        return { kind: "owner-review", data: eventData(event) };
-      },
-    },
-    {
       id: "telegram-owner-reply",
       event: "telegram.reply",
       toInput: ownerMessageInput,
-    },
-    {
-      id: "review-failure",
-      event: "evaluation.review_failed",
-      toInput(event) {
-        return projectReviewInput({
-          targetProject: "evaluation.app",
-          reason: "review-failed",
-          reviewFailure: eventData(event),
-        });
-      },
-    },
-    ...["metric.breach", "metric.recovered"].map((type) => ({
-      id: type.replace(".", "-"),
-      event: type,
-      toInput(event: AppEvent<Record<string, unknown>>) {
-        return isEvaluationMetric(event)
-          ? {
-              kind: "pipeline-check",
-              data: { reason: type, metric: eventData(event) },
-            }
-          : null;
-      },
-    })),
-    {
-      id: "legacy-pipeline-check",
-      event: { type: "evaluation.pipeline.check", project: projectId },
-      toInput: (event) => eventInput("pipeline-check", event),
-    },
-    {
-      id: "legacy-feedback-projection",
-      event: { type: "evaluation.feedback.project", project: projectId },
-      toInput: (event) => eventInput("feedback-projection", event),
     },
   ],
   schedules: [
@@ -631,6 +590,25 @@ const app = defineApp({
   },
   tasks: {
     attach: true,
+    subscriptions: [
+      "session.end",
+      { type: "evaluation.session.requested", project: projectId },
+      { type: "evaluation.aftermath.scan", project: projectId },
+      { type: "evaluation.deep.requested", project: projectId },
+      { type: "evaluation.deep.scan", project: projectId },
+      { type: "evaluation.project.review.requested", project: projectId },
+      {
+        type: "evaluation.app_runtime_canary.requested",
+        project: projectId,
+      },
+      { type: "evaluation.tick", project: projectId },
+      "evaluation.review_failed",
+      "metric.breach",
+      "metric.recovered",
+      { type: "evaluation.pipeline.check", project: projectId },
+      { type: "evaluation.feedback.project", project: projectId },
+    ],
+    resolve: taskIntentForEvent,
     maxConcurrent: 5,
     resyncIntervalMs: 60_000,
   },

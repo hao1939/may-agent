@@ -1,7 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import type { AppEvent, AppInput } from "@may-agent/sdk";
-import app, { routeEvaluationRequest, taskIntentForInput } from "./app.ts";
+import app, {
+  routeEvaluationRequest,
+  taskInputForEvent,
+  taskIntentForEvent,
+  taskIntentForInput,
+} from "./app.ts";
 import {
   PROJECT_HEALTH_EVALUATOR_AGENT_PROMPT_PREAMBLE,
   projectHealthEvaluatorAgentPrompt,
@@ -40,8 +45,13 @@ describe("canonical evaluation App", () => {
       tasks: { attach: true, maxConcurrent: 5 },
     });
     expect(app.route).toBe(routeEvaluationRequest);
-    expect(app.tasks?.resolve).toBeUndefined();
-    expect(app.tasks?.subscriptions).toBeUndefined();
+    expect(app.tasks?.resolve).toBe(taskIntentForEvent);
+    expect(app.tasks?.subscriptions).not.toBeEmpty();
+    expect(app.subscriptions?.map(({ id }) => id)).toEqual([
+      "project-comment",
+      "project-owner-request",
+      "telegram-owner-reply",
+    ]);
     expect(app).not.toHaveProperty("events");
     expect(app).not.toHaveProperty("onEvent");
     expect(app).not.toHaveProperty("budget");
@@ -142,30 +152,23 @@ describe("canonical evaluation App", () => {
 });
 
 describe("evaluation fact admission", () => {
-  test("turns concrete session endings into per-session App requests", () => {
+  test("turns automatic session endings into one standing task wake", () => {
     expect(
-      subscription("session-ended").toInput(
+      taskIntentForEvent(
         event("session.end", {
           sessionId: "s/eval:42",
           agent: "may",
           task: "large payload",
         }),
       ),
-    ).toEqual({
-      kind: "evaluate-session",
-      data: { sessionId: "s/eval:42", reason: "session-end" },
-    });
-    expect(
-      subscription("session-ended").toInput(
-        event("session.end", { agent: "may" }),
-      ),
-    ).toEqual({
-      kind: "aftermath-scan",
-      data: { reason: "session-end-missing-session-id" },
+    ).toMatchObject({
+      id: "runtime/aftermath-backfill",
+      mode: "maintain",
+      input: { scope: "session-aftermath-frontier" },
     });
     for (const agent of ["evaluator", "judge"]) {
       expect(
-        subscription("session-ended").toInput(
+        taskIntentForEvent(
           event("session.end", { sessionId: `s-${agent}`, agent }),
         ),
       ).toBeNull();
@@ -174,7 +177,7 @@ describe("evaluation fact admission", () => {
 
   test("admits only evaluation-owned metric changes", () => {
     expect(
-      subscription("metric-breach").toInput(
+      taskInputForEvent(
         event(
           "metric.breach",
           { metricId: "evaluator.project-finding-delivery-rate-24h" },
@@ -186,7 +189,7 @@ describe("evaluation fact admission", () => {
       data: { reason: "metric.breach" },
     });
     expect(
-      subscription("metric-breach").toInput(
+      taskInputForEvent(
         event(
           "metric.breach",
           { project: "aks-rp-e2e", metricId: "aks-rp-e2e.spec.blocked-count" },
@@ -217,7 +220,7 @@ describe("evaluation fact admission", () => {
 
   test("turns review failures into evaluation's own project-health request", () => {
     expect(
-      subscription("review-failure").toInput(
+      taskInputForEvent(
         event("evaluation.review_failed", {
           sessionId: "s-1",
           reason: "artifact invalid",

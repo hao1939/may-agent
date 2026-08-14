@@ -8,6 +8,24 @@ task-state authorities.
 The normative schema and authoring rules live in
 `projects/may-agent.app/docs/2a-design/task-resource-engine.md`.
 
+## Ingress Routing
+
+The App inbox owns addressed work that requires an independently correlated
+result: project comments, explicit owner requests, and replies addressed to the
+evaluator. Evaluation facts do not create transient inbox items. Canonical
+`tasks.subscriptions` reduces them directly to task intent and wakes the
+reconciler:
+
+```text
+addressed request -> App inbox -> bounded disposition
+evaluation fact  -> task resolver -> task reconciliation
+```
+
+Automatic `session.end` facts wake the single aftermath frontier task rather
+than creating one inbox item and one live task per session. Explicit
+per-session actions remain addressed App inputs so their caller can receive the
+result of the exact attached task.
+
 ## Stable Responsibilities
 
 `tasks/seed.json` contains only responsibilities that remain true for the life
