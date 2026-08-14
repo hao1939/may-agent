@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
-import type { AppEvent, AppInput } from "@may-agent/sdk";
+import {
+  matchesEventSelector,
+  type AppEvent,
+  type AppInput,
+} from "@may-agent/sdk";
 import app, {
   routeEvaluationRequest,
   taskInputForEvent,
@@ -155,7 +159,38 @@ describe("canonical evaluation App", () => {
 });
 
 describe("evaluation fact admission", () => {
-  test("turns automatic session endings into one standing task wake", () => {
+  test("keeps inbox and task selectors as exclusive routing authorities", () => {
+    const inboxTypes = new Set(
+      (app.subscriptions ?? []).map((subscription) =>
+        typeof subscription.event === "string"
+          ? subscription.event
+          : subscription.event.type,
+      ),
+    );
+    const taskTypes = new Set(
+      (app.tasks?.subscriptions ?? []).map((selector) =>
+        typeof selector === "string" ? selector : selector.type,
+      ),
+    );
+    expect([...inboxTypes].filter((type) => taskTypes.has(type))).toEqual([]);
+    expect(app.inbox).not.toHaveProperty("accepts");
+
+    const ended = event("session.end", {
+      sessionId: "s_route_audit",
+      agent: "coder",
+    });
+    expect(
+      (app.subscriptions ?? []).some((subscription) =>
+        matchesEventSelector(subscription.event, ended),
+      ),
+    ).toBeFalse();
+    expect(taskIntentForEvent(ended)).toMatchObject({
+      input: { sessionId: "s_route_audit" },
+      workflow: "evaluator-aftermath",
+    });
+  });
+
+  test("routes automatic session endings to their exact independently runnable task", () => {
     expect(
       taskIntentForEvent(
         event("session.end", {
@@ -165,10 +200,14 @@ describe("evaluation fact admission", () => {
         }),
       ),
     ).toMatchObject({
-      id: "runtime/aftermath-backfill",
-      mode: "maintain",
-      input: { scope: "session-aftermath-frontier" },
+      id: expect.stringMatching(/^runtime\/session-aftermath\//),
+      mode: "achieve",
+      workflow: "evaluator-aftermath",
+      input: { sessionId: "s/eval:42" },
     });
+    expect(
+      taskIntentForEvent(event("session.end", { agent: "may" })),
+    ).toBeNull();
     for (const agent of ["evaluator", "judge"]) {
       expect(
         taskIntentForEvent(

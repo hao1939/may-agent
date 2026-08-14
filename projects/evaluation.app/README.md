@@ -18,15 +18,15 @@ session.end -> collect evidence -> evaluate -> report
 project/app sample -> collect evidence -> evaluate -> report -> deliver
 ```
 
-Four implemented lanes:
+Three audit lanes and one derived feedback projection are implemented:
 
-1. **Session aftermath** — event-driven evaluation of completed sessions, plus
-   one bounded backfill candidate every seven minutes
-2. **Pipeline monitor** — deterministic five-minute health checks that wake the
-   evaluator owner only when anomaly state changes
-3. **Deep eval** — explicit LLM-powered evaluation for selected sessions
-4. **Project/app audit** — delta-gated, independent review of target progress,
+1. **Session aftermath** — exact event-driven evaluation of completed sessions,
+   plus one bounded backfill candidate every seven minutes
+2. **Deep eval** — explicit LLM-powered evaluation for selected sessions
+3. **Project/app audit** — delta-gated, independent review of target progress,
    risks, waits, recovery behavior, and escalation quality
+4. **Agent feedback projection** — a generated, disposable view of the latest
+   durable evaluation fact for the evaluated agent
 
 All four lanes use the task reconciliation model:
 
@@ -70,8 +70,6 @@ observe -> collect evidence -> evaluate -> report -> deliver -> optionally reche
 
 - `app.ts` declares schedules, event-to-task routes, workflow capabilities,
   owner entry, actions, and bounded ingress adapters.
-- `inbox.ts` declares the manual-only shared-inbox canary. It does not receive
-  scheduled or production evaluation traffic.
 - `agents/evaluator/workflows/` contains the evaluator-owned workflow entrypoints.
 - `agents/evaluator/` contains the evaluator worker identity and guidance.
 - `criteria/` contains scoring criteria and versioned methodology.
@@ -115,8 +113,28 @@ The app manifest in `app.ts` owns schedules, event-to-task correlation,
 workflow bindings, and owner fallback.
 Session aftermath runs only for `session.end`, bounded backfill, or explicit
 `evaluation.session.requested` events that carry a concrete `sessionId`;
-the five-minute pipeline schedule runs deterministic checks and emits an owner
-review tick only when the anomaly family changes or recovers.
+evaluator-owned metric facts wake the stable owner-review task directly.
+
+### Canonical session aftermath
+
+One bounded evaluator call selects and judges at most one session. Exact
+`session.end` and manual requests carry `sessionId` through canonical task input;
+the standing backfill call selects one uncovered terminal session through the
+read-only `query_db` tool. The workflow itself receives no SQL, global runtime
+path, prompt-packet, or task-store capability.
+
+The evaluator returns one validated `evaluation`, `skip`, `existing`, or `none`
+result. The workflow emits `evaluation.recorded`; the runtime atomically
+persists that fact and its `evaluations` read-model projection. Owner findings
+use `project.owner.requested`, and only concrete human decisions use
+`evaluation.human_decision.requested` through the May App.
+
+The canonical cutover deliberately replaces the old two-stage heuristic plus
+review override. Historical false-good events and calibration documents remain
+evidence, but new evaluations have one final bounded judgment. Host-owned
+`session.eval.jsonl` trails, direct evaluation-table writes, and the private
+learning-candidate JSONL store are retired. Structured evaluation facts,
+owner requests, and human-decision requests are the durable evidence instead.
 
 Project/app auditing is separate from session aftermath. It reads target app
 state, metrics, events, loop progress, and output evidence, then produces a

@@ -413,11 +413,12 @@ export function taskInputForEvent(
   switch (event.type) {
     case "session.end": {
       const agent = stringValue(eventData(event).agent);
-      return agent === "evaluator" || agent === "judge"
+      const sessionId = eventSessionId(event);
+      return agent === "evaluator" || agent === "judge" || !sessionId
         ? null
         : {
-            kind: "aftermath-scan",
-            data: { reason: "session-end" },
+            kind: "evaluate-session",
+            data: { sessionId },
           };
     }
     case "evaluation.session.requested": {

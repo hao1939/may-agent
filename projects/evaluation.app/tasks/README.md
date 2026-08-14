@@ -24,10 +24,12 @@ evaluation fact  -> task resolver -> task reconciliation
 Periodic background work follows the same fact path: App event schedules emit
 typed wake facts instead of manufacturing callerless inbox items.
 
-Automatic `session.end` facts wake the single aftermath frontier task rather
-than creating one inbox item and one live task per session. Explicit
-per-session actions remain addressed App inputs so their caller can receive the
-result of the exact attached task.
+Automatic `session.end` facts resolve directly to exact per-session tasks and
+never create inbox items. Those independent tasks use Evaluation's declared
+task concurrency. Explicit per-session actions use the same task identity but
+remain addressed App inputs so their caller can receive the result of the exact
+attached task. The standing frontier is only the scheduled restart/backlog
+fallback.
 
 ## Stable Responsibilities
 
@@ -69,12 +71,14 @@ the trigger event, not copied into a standing task's desired specification.
 Only stable configuration belongs in a `maintain` task input. This prevents a
 metric timestamp or manual review reason from creating a new task generation.
 
-For automatic aftermath, `session.end` is first reduced to a compact
-`evaluation.aftermath.scan` event. The workflow discovers work from the session
-and evaluation tables, evaluates one session in order, and emits the same
-compact wake when another eligible session remains. The database and session
-eval trails hold per-session history; the task tree holds only the standing
-frontier. Explicit requests may still use a short-lived per-session task.
+For automatic aftermath, `session.end` resolves directly to the exact
+`runtime/session-aftermath/<session>` task. Independent session tasks can use
+the App's declared task concurrency instead of serializing behind a standing
+scan. The scheduled `evaluation.aftermath.scan` task remains the restart-safe
+fallback: its bounded evaluator call selects at most one uncovered session and
+emits the same compact wake while more remain. Durable `evaluation.recorded`
+facts and their runtime projection hold evaluation history; the task tree holds
+only desired work and bounded receipts.
 
 ## Historical Aftermath Migration
 
