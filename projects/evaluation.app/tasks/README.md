@@ -21,6 +21,9 @@ addressed request -> App inbox -> bounded disposition
 evaluation fact  -> task resolver -> task reconciliation
 ```
 
+Periodic background work follows the same fact path: App event schedules emit
+typed wake facts instead of manufacturing callerless inbox items.
+
 Automatic `session.end` facts wake the single aftermath frontier task rather
 than creating one inbox item and one live task per session. Explicit
 per-session actions remain addressed App inputs so their caller can receive the

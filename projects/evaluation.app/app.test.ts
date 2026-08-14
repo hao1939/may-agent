@@ -52,6 +52,11 @@ describe("canonical evaluation App", () => {
       "project-owner-request",
       "telegram-owner-reply",
     ]);
+    expect(app.schedules).not.toBeEmpty();
+    for (const schedule of app.schedules ?? []) {
+      expect(schedule).toHaveProperty("event");
+      expect(schedule).not.toHaveProperty("input");
+    }
     expect(app).not.toHaveProperty("events");
     expect(app).not.toHaveProperty("onEvent");
     expect(app).not.toHaveProperty("budget");

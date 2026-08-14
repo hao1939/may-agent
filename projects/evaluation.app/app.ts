@@ -516,34 +516,55 @@ const app = defineApp({
     {
       id: "evaluation-pipeline-review",
       intervalMs: 300_000,
-      input: { kind: "pipeline-check", data: { reason: "scheduled" } },
+      event: {
+        type: "evaluation.pipeline.check",
+        data: { reason: "scheduled" },
+        target: { appId: projectId, project: projectId },
+      },
     },
     {
       id: "evaluation-feedback-projection",
       intervalMs: 3_600_000,
-      input: { kind: "feedback-projection", data: { reason: "scheduled" } },
+      event: {
+        type: "evaluation.feedback.project",
+        data: { reason: "scheduled" },
+        target: { appId: projectId, project: projectId },
+      },
     },
     {
       id: "owner-heartbeat",
       intervalMs: 86_400_000,
-      input: { kind: "owner-review", data: { reason: "owner-heartbeat" } },
+      event: {
+        type: "evaluation.tick",
+        data: { reason: "owner-heartbeat" },
+        target: { appId: projectId, project: projectId },
+      },
     },
     {
       id: "session-aftermath-scan",
       intervalMs: 420_000,
-      input: { kind: "aftermath-scan", data: { reason: "scheduled" } },
+      event: {
+        type: "evaluation.aftermath.scan",
+        data: { reason: "scheduled" },
+        target: { appId: projectId, project: projectId },
+      },
     },
     {
       id: "deep-evaluation-scan",
       intervalMs: 1_800_000,
-      input: { kind: "deep-scan", data: { reason: "scheduled" } },
+      event: {
+        type: "evaluation.deep.scan",
+        data: { reason: "scheduled" },
+        target: { appId: projectId, project: projectId },
+      },
     },
     ...watchedProjectTargets.map((target) => ({
       id: `project-health-loop-${target.targetProject}`,
       intervalMs: 7_200_000,
-      input: {
-        kind: "project-review",
+      event: {
+        type: "evaluation.project.review.requested",
         data: { ...target, reason: "scheduled" },
+        target: { appId: projectId, project: projectId },
       },
     })),
   ],
