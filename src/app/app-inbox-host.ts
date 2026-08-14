@@ -77,6 +77,12 @@ export type AppTaskAttacher = (input: {
   isComplete?: () => Promise<boolean>;
 }>;
 
+export type AppActionDescription = {
+  id: string;
+  description: string;
+  inputSchema: Record<string, unknown>;
+};
+
 export type AdmitAppInput = {
   id?: string;
   appId: string;
@@ -214,6 +220,36 @@ export class AppInboxHost {
 
   appIds(): string[] {
     return [...this.#apps.keys()].sort();
+  }
+
+  hasApp(appId: string): boolean {
+    return this.#apps.has(appId.trim().replace(/\.app$/, ""));
+  }
+
+  describeActions(appId: string): AppActionDescription[] {
+    const normalized = appId.trim().replace(/\.app$/, "");
+    const app = this.#apps.get(normalized);
+    if (!app) throw new Error(`App ${appId} is not loaded`);
+    return Object.entries(app.actions ?? {}).map(([id, action]) => ({
+      id,
+      description: action.description,
+      inputSchema: structuredClone(action.inputSchema) as Record<string, unknown>,
+    }));
+  }
+
+  actionInput(appId: string, actionId: string, params: unknown): AppInput {
+    const normalized = appId.trim().replace(/\.app$/, "");
+    const app = this.#apps.get(normalized);
+    if (!app) throw new Error(`App ${appId} is not loaded`);
+    const action = app.actions?.[actionId];
+    if (!action) throw new Error(`App ${normalized} has no action ${actionId}`);
+    if (!Check(action.inputSchema, params)) {
+      const first = [...Errors(action.inputSchema, params)][0];
+      throw new Error(`Invalid input for ${normalized}.${actionId}: ${first?.message ?? "schema mismatch"}`);
+    }
+    const input = action.toInput(params as never);
+    validateInput(app, input);
+    return input;
   }
 
   /** Atomically replace the live App definitions after a validated reload. */

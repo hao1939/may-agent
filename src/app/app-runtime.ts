@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { SubagentManager } from "../lib/index.js";
 import type { AppInput } from "@may-agent/sdk";
 import type { AttachControlSocketOptions } from "../../packages/control/src/server.js";
@@ -66,6 +67,37 @@ export function createAppInputAdmission(options: {
       throw new Error(`App input for ${input.appId} was not durably persisted`);
     }
     return { eventId, eventType: "app.input.requested" };
+  };
+}
+
+export function createProjectActionAccess(options: {
+  getRuntime: () => AppInboxRuntime | null;
+  tasks: Pick<ReturnType<typeof createAppTaskCapability>, "describeActions" | "invokeAction">;
+  admit: NonNullable<AttachControlSocketOptions["admitAppInput"]>;
+}): {
+  describe: NonNullable<AttachControlSocketOptions["describeProjectActions"]>;
+  invoke: NonNullable<AttachControlSocketOptions["invokeProjectAction"]>;
+} {
+  return {
+    describe(projectId) {
+      const runtime = options.getRuntime();
+      if (runtime?.host.hasApp(projectId)) return runtime.host.describeActions(projectId);
+      return options.tasks.describeActions(projectId);
+    },
+    invoke(input) {
+      const runtime = options.getRuntime();
+      if (!runtime?.host.hasApp(input.projectId)) {
+        return options.tasks.invokeAction({ ...input, ingressSource: "control-socket" });
+      }
+      const appId = input.projectId.trim().replace(/\.app$/, "");
+      const appInput = runtime.host.actionInput(appId, input.actionId, input.params);
+      return options.admit({
+        appId,
+        input: appInput as Record<string, unknown>,
+        source: { kind: "human", id: "control-socket:project-action" },
+        idempotencyKey: input.idempotencyKey?.trim() || `action:${appId}:${input.actionId}:${randomUUID()}`,
+      });
+    },
   };
 }
 
@@ -244,6 +276,12 @@ export async function runAppRuntime(opts: {
       })
     : { close: () => {}, sendAlert: () => {} };
 
+  const admitAppInput = createAppInputAdmission({ bus, getRuntime: () => appInboxRuntime });
+  const projectActions = createProjectActionAccess({
+    getRuntime: () => appInboxRuntime,
+    tasks: appTasks,
+    admit: admitAppInput,
+  });
   const { socketPath: SOCKET_PATH, socketUI } = await startInterfaceRuntime({
     socketEnabled: SOCKET_ENABLED,
     persistDir: opts.persistDir,
@@ -252,7 +290,9 @@ export async function runAppRuntime(opts: {
     bus,
     manager,
     getSessionId: () => taskSessionId ?? chatSession?.getSessionId() ?? "",
-    admitAppInput: createAppInputAdmission({ bus, getRuntime: () => appInboxRuntime }),
+    admitAppInput,
+    describeProjectActions: projectActions.describe,
+    invokeProjectAction: projectActions.invoke,
   });
   // The inbox starts before ingress, but its outbox waits until every enabled
   // human transport is attached. This prevents a restart-time response from

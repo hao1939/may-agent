@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
-import { createAppInputAdmission } from "./app-runtime.js";
+import { createAppInputAdmission, createProjectActionAccess } from "./app-runtime.js";
 import { EVENT_ROW_ID } from "./event-bus.js";
 
 describe("app runtime startup order", () => {
@@ -98,5 +98,56 @@ describe("App input control admission", () => {
       getRuntime: () => ({ host: { acceptsInput: () => false } }) as never,
     });
     expect(() => admit(command)).toThrow("does not accept this input");
+  });
+});
+
+describe("canonical project actions", () => {
+  it("admits a canonical action as App input and keeps compatibility behind the task capability", () => {
+    const admitted: unknown[] = [];
+    const compatibility: unknown[] = [];
+    const access = createProjectActionAccess({
+      getRuntime: () =>
+        ({
+          host: {
+            hasApp: (id: string) => id.replace(/\.app$/, "") === "evaluation",
+            describeActions: () => [{ id: "review", description: "Review", inputSchema: { type: "object" } }],
+            actionInput: () => ({ kind: "review", data: { scope: "current" } }),
+          },
+        }) as never,
+      tasks: {
+        describeActions: (projectId) => [{ id: projectId, description: "legacy", inputSchema: {} }],
+        invokeAction: (input) => {
+          compatibility.push(input);
+          return { eventId: 2, eventType: "legacy.event" };
+        },
+      },
+      admit: (input) => {
+        admitted.push(input);
+        return { eventId: 1, eventType: "app.input.requested" };
+      },
+    });
+
+    expect(access.describe("evaluation.app")).toEqual([
+      { id: "review", description: "Review", inputSchema: { type: "object" } },
+    ]);
+    expect(
+      access.invoke({ projectId: "evaluation.app", actionId: "review", params: {}, idempotencyKey: "action-1" }),
+    ).toEqual({ eventId: 1, eventType: "app.input.requested" });
+    expect(admitted).toEqual([
+      {
+        appId: "evaluation",
+        input: { kind: "review", data: { scope: "current" } },
+        source: { kind: "human", id: "control-socket:project-action" },
+        idempotencyKey: "action-1",
+      },
+    ]);
+
+    expect(access.invoke({ projectId: "legacy", actionId: "run", params: {} })).toEqual({
+      eventId: 2,
+      eventType: "legacy.event",
+    });
+    expect(compatibility).toEqual([
+      { projectId: "legacy", actionId: "run", params: {}, ingressSource: "control-socket" },
+    ]);
   });
 });
