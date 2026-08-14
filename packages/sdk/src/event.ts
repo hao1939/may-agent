@@ -16,6 +16,7 @@ export type AppEvent<TData = unknown> = {
   source?: string;
   owner?: string;
   target?: AppEventTarget;
+  action?: string;
   urgency?: "low" | "normal" | "high" | "immediate";
 };
 
@@ -43,6 +44,7 @@ function normalizedOwner(value: unknown): string {
 
 function selectedValue(event: AppEvent<Record<string, unknown>>, ...keys: string[]): unknown {
   for (const key of keys) {
+    if (key === "action" && event.action !== undefined) return event.action;
     if (event.data[key] !== undefined) return event.data[key];
     if (event.target?.[key as keyof AppEventTarget] !== undefined) {
       return event.target[key as keyof AppEventTarget];

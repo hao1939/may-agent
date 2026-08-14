@@ -234,6 +234,7 @@ function applyConditionEvent(
   tree: TaskTree,
   event: Record<string, unknown>,
   wakes: Map<string, ProjectAppConditionWake>,
+  allowedTaskIds?: ReadonlySet<string>,
 ): boolean {
   const now = new Date().toISOString();
   let changed = false;
@@ -242,6 +243,13 @@ function applyConditionEvent(
   for (const [id, condition] of Object.entries(tree.conditions ?? {})) {
     if (!isCondition(condition)) continue;
     if (!matches(condition, event)) continue;
+    const waitingResources = Object.values(tree.resources ?? {}).filter(
+      (resource) =>
+        resource.status.phase === "waiting" &&
+        resource.status.conditionIds?.includes(id) &&
+        (!allowedTaskIds || allowedTaskIds.has(resource.metadata.id)),
+    );
+    if (allowedTaskIds && waitingResources.length === 0) continue;
     if (condition.status.state !== "true") {
       condition.metadata.resourceVersion += 1;
       condition.status = {
@@ -253,8 +261,7 @@ function applyConditionEvent(
       };
       changed = true;
     }
-    for (const resource of Object.values(tree.resources ?? {})) {
-      if (resource.status.phase !== "waiting" || !resource.status.conditionIds?.includes(id)) continue;
+    for (const resource of waitingResources) {
       const taskId = resource.metadata.id;
       if (eventWakes.has(taskId)) continue;
       eventWakes.set(taskId, {
@@ -324,4 +331,40 @@ export function trackProjectAppConditionEvent(
   event: Record<string, unknown>,
 ): ProjectAppConditionWake[] {
   return trackProjectAppConditionEvents(config, [event]);
+}
+
+/** Pure preflight used by the canonical App router before it chooses a route. */
+export function matchingProjectAppConditionTaskIds(
+  config: TaskStateConfig,
+  event: Record<string, unknown>,
+  allowedTaskIds?: Iterable<string>,
+): string[] {
+  const allowed = allowedTaskIds ? new Set(allowedTaskIds) : undefined;
+  const tree = readTaskState(config);
+  const matched = new Set<string>();
+  for (const [id, condition] of Object.entries(tree.conditions ?? {})) {
+    if (!isCondition(condition) || !matches(condition, event)) continue;
+    for (const resource of Object.values(tree.resources ?? {})) {
+      if (resource.status.phase !== "waiting" || !resource.status.conditionIds?.includes(id)) continue;
+      if (allowed && !allowed.has(resource.metadata.id)) continue;
+      matched.add(resource.metadata.id);
+    }
+  }
+  return [...matched].sort();
+}
+
+/** Persist one fact only for the exact task Conditions selected in preflight. */
+export function trackProjectAppConditionEventForTasks(
+  config: TaskStateConfig,
+  event: Record<string, unknown>,
+  taskIds: Iterable<string>,
+): ProjectAppConditionWake[] {
+  const allowed = new Set(taskIds);
+  if (allowed.size === 0) return [];
+  return withTaskStateLock(config, () => {
+    const tree = readTaskState(config);
+    const wakes = new Map<string, ProjectAppConditionWake>();
+    if (applyConditionEvent(tree, event, wakes, allowed)) saveTaskState(config, tree);
+    return [...wakes.values()];
+  });
 }

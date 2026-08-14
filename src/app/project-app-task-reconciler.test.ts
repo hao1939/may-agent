@@ -3,7 +3,11 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { readTaskState, saveTaskState, type ProjectAppTaskIntent, type TaskStateConfig } from "@may-agent/sdk/legacy";
-import { trackProjectAppConditionEvent } from "./project-app-condition-tracker.ts";
+import {
+  matchingProjectAppConditionTaskIds,
+  trackProjectAppConditionEvent,
+  trackProjectAppConditionEventForTasks,
+} from "./project-app-condition-tracker.ts";
 import { ProjectAppTaskQueue } from "./project-app-task-queue.ts";
 import {
   associateProjectAppTaskSession,
@@ -931,6 +935,49 @@ describe("project app task reconciler state", () => {
     expect(resumed.intent.category).toBe("domain");
     expect(resumed.trigger).toEqual(event);
     expect(readTaskState(config).attempts?.[resumed.attemptId]?.trigger).toEqual(event);
+  });
+
+  it("preflights Condition routes without mutation and admits only selected exact tasks", () => {
+    const { config } = fixture();
+    for (const taskId of ["work/first", "work/second"]) {
+      observeProjectAppTaskIntent(config, {
+        intent: { ...intent(), id: taskId },
+        appOwner: "app-owner",
+      });
+      const claim = claimObservedProjectAppTask(config, {
+        taskId,
+        appOwner: "app-owner",
+        handler: "workflow:known-workflow",
+      });
+      if (claim.kind !== "claimed") throw new Error(`expected claim for ${taskId}`);
+      deferProjectAppTask(config, claim, {
+        disposition: "waiting",
+        summary: "waiting for shared observation",
+        conditions: [
+          {
+            id: `shared-ready:${taskId}`,
+            type: "provider.state",
+            subject: "provider:shared",
+            expected: "ready",
+          },
+        ],
+      });
+    }
+    const event = { type: "provider.state", provider: "shared", state: "ready" };
+
+    expect(matchingProjectAppConditionTaskIds(config, event)).toEqual(["work/first", "work/second"]);
+    expect(readProjectAppTaskTrigger(config, "work/first")).toBeUndefined();
+    expect(readProjectAppTaskTrigger(config, "work/second")).toBeUndefined();
+    expect(matchingProjectAppConditionTaskIds(config, event, ["work/first"])).toEqual(["work/first"]);
+
+    expect(trackProjectAppConditionEventForTasks(config, event, ["work/first"])).toEqual([
+      { conditionId: "shared-ready:work/first", taskId: "work/first" },
+    ]);
+    expect(readProjectAppTaskTrigger(config, "work/first")).toEqual(event);
+    expect(readProjectAppTaskTrigger(config, "work/second")).toBeUndefined();
+    expect(readTaskState(config).conditions?.["shared-ready:work/second"]).toMatchObject({
+      status: { state: "unknown" },
+    });
   });
 
   it("claims the current canonical spec after a stale reader observed an older version", () => {

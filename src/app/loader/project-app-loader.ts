@@ -67,7 +67,12 @@ import { Cron } from "../cron.js";
 import type { AppRegistry, AppRegistrySnapshot } from "../app-registry.js";
 import { ProjectAppTaskCapacity, ProjectAppTaskController } from "../project-app-task-controller.js";
 import type { ProjectAppTaskQueueOptions } from "../project-app-task-queue.js";
-import { trackProjectAppConditionEvent, trackProjectAppConditionEvents } from "../project-app-condition-tracker.js";
+import {
+  matchingProjectAppConditionTaskIds,
+  trackProjectAppConditionEvent,
+  trackProjectAppConditionEventForTasks,
+  trackProjectAppConditionEvents,
+} from "../project-app-condition-tracker.js";
 import {
   childEventTrace,
   EVENT_INGRESS_SOURCE,
@@ -141,6 +146,8 @@ export interface ProjectAppDescriptor {
   projectDir: string;
   owner: string;
   app: ProjectApp;
+  /** True when this descriptor is the internal task adapter for defineApp. */
+  canonical?: boolean;
   ownsDirectInbox: boolean;
   reconciliationPaused: boolean;
 }
@@ -2671,6 +2678,146 @@ function projectAppEventDelivery(descriptor: ProjectAppDescriptor): DeliveryResu
   };
 }
 
+function admitResolvedProjectAppTaskEvent(input: {
+  opts: ProjectAppLoaderOptions;
+  descriptor: ProjectAppDescriptor;
+  controller: ProjectAppTaskController;
+  event: Record<string, unknown>;
+  intent: ProjectAppTaskIntent | null;
+  targetedTaskId?: string;
+  conditionTaskIds?: string[];
+}): DeliveryResult | undefined {
+  const { opts, descriptor, controller, event, intent } = input;
+  const targetedTaskId = input.targetedTaskId?.trim() ?? "";
+  const config = projectAppTaskConfig(descriptor);
+  const conditionWakes = trackProjectAppConditionEventForTasks(config, event, input.conditionTaskIds ?? []);
+  for (const wake of conditionWakes) {
+    enqueueProjectAppTask(controller, config, wake.taskId, { front: true });
+  }
+  const conditionDelivery = conditionWakes.length
+    ? projectAppTaskDelivery(
+        descriptor,
+        conditionWakes.map((wake) => wake.taskId).join(","),
+        "task Condition event accepted",
+      )
+    : undefined;
+  if (targetedTaskId) {
+    const existingIntent = readProjectAppTaskIntent(config, targetedTaskId);
+    if (existingIntent && intent?.id === targetedTaskId) {
+      const trigger = taskTriggerWithOwnerIntents(config, targetedTaskId, event);
+      const observation = observeProjectAppTaskIntent(config, {
+        intent,
+        appOwner: descriptor.owner,
+        trigger,
+      });
+      interruptSupersededObservationSessions(opts, observation);
+    }
+    const triggerResult = recordProjectAppTaskTrigger(
+      config,
+      targetedTaskId,
+      taskTriggerWithOwnerIntents(config, targetedTaskId, event),
+    );
+    if (triggerResult.kind === "recorded") {
+      enqueueProjectAppTask(controller, config, targetedTaskId, { front: true });
+      return projectAppTaskDelivery(descriptor, targetedTaskId, "existing targeted task wake accepted");
+    }
+    if (triggerResult.kind === "waiting") {
+      return projectAppTaskDelivery(
+        descriptor,
+        targetedTaskId,
+        "existing targeted task remains asleep on open Conditions",
+      );
+    }
+    if (readProjectAppTaskIntent(config, targetedTaskId)) {
+      return projectAppTaskDelivery(
+        descriptor,
+        targetedTaskId,
+        "existing targeted task remains asleep on open Conditions",
+      );
+    }
+    // The legacy router historically allowed a targeted event plus resolver
+    // policy to materialize a task. Preserve that behavior only until its last
+    // compatibility descriptor is removed. In the canonical route an exact
+    // target is a reference to existing durable work, not creation authority.
+    if (!descriptor.canonical && intent?.id === targetedTaskId) {
+      const trigger = taskTriggerWithOwnerIntents(config, targetedTaskId, event);
+      const observation = observeProjectAppTaskIntent(config, {
+        intent,
+        appOwner: descriptor.owner,
+        trigger,
+      });
+      interruptSupersededObservationSessions(opts, observation);
+      if (observation.kind === "observed") {
+        enqueueProjectAppTask(controller, config, observation.taskId, { front: true });
+      }
+      return projectAppTaskDelivery(descriptor, targetedTaskId, "new targeted task wake accepted");
+    }
+    return conditionDelivery;
+  }
+  if (!intent) return conditionDelivery;
+  const observation = observeProjectAppTaskIntent(config, {
+    intent,
+    appOwner: descriptor.owner,
+    trigger: taskTriggerWithOwnerIntents(config, intent.id, event),
+  });
+  interruptSupersededObservationSessions(opts, observation);
+  if (observation.kind === "observed") {
+    enqueueProjectAppTask(controller, config, observation.taskId, {
+      front: event.type === "project.comment.created",
+    });
+  }
+  return projectAppTaskDelivery(descriptor, observation.taskId, "resolved task event accepted");
+}
+
+/**
+ * Host-private bridge from canonical event admission into the retained task
+ * engine. Policy has already selected the App and resolved any desired intent.
+ */
+export function admitLoadedCanonicalAppTaskEvent(input: {
+  bus: EventBus;
+  appId: string;
+  event: AgentEvent;
+  intent: ProjectAppTaskIntent | null;
+  targetedTaskId?: string;
+  conditionTaskIds?: string[];
+}): DeliveryResult | undefined {
+  const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find(
+    (candidate) => candidate.id === input.appId && candidate.canonical,
+  );
+  if (!descriptor?.app.tasks) {
+    throw new Error(`Canonical App ${input.appId} task capability is not loaded`);
+  }
+  const controller = appTaskControllersByBus.get(input.bus)?.get(descriptor.id);
+  const opts = appRouterOptionsByBus.get(input.bus);
+  if (!controller || !opts) {
+    throw new Error(`Canonical App ${input.appId} task reconciliation is not active`);
+  }
+  return admitResolvedProjectAppTaskEvent({
+    opts,
+    descriptor,
+    controller,
+    event: flattenEvent(input.event),
+    intent: input.intent,
+    targetedTaskId: input.targetedTaskId,
+    conditionTaskIds: input.conditionTaskIds,
+  });
+}
+
+/** Pure task-Condition route preflight for the canonical App coordinator. */
+export function previewLoadedCanonicalAppTaskEvent(input: {
+  bus: EventBus;
+  appId: string;
+  event: AgentEvent;
+  targetedTaskId?: string;
+}): string[] {
+  const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find(
+    (candidate) => candidate.id === input.appId && candidate.canonical,
+  );
+  if (!descriptor?.app.tasks) return [];
+  const allowed = input.targetedTaskId ? [input.targetedTaskId] : undefined;
+  return matchingProjectAppConditionTaskIds(projectAppTaskConfig(descriptor), flattenEvent(input.event), allowed);
+}
+
 function isOpenProjectCondition(value: unknown): value is { spec: { type: string } } {
   if (!isRecord(value) || !isRecord(value.spec) || !isRecord(value.status)) return false;
   return typeof value.spec.type === "string" && value.status.state !== "true";
@@ -3334,6 +3481,7 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
       }
       if (
         descriptor.app.tasks &&
+        !descriptor.canonical &&
         (isProjectScopedForApp(event, descriptor.id) || ownerValue(event) === descriptor.owner)
       ) {
         const config = taskReconciliationConfig({
@@ -3351,7 +3499,7 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
           }
         }
       }
-      if (taskController && descriptor.app.tasks) {
+      if (taskController && descriptor.app.tasks && !descriptor.canonical) {
         const appAcceptsTaskEvent = descriptor.app.tasks.accepts.some((selector) =>
           matchesEventSelector(selector, event),
         );
@@ -3363,68 +3511,16 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
             ? taskIdFromEvent(event)
             : "";
         if (targetedTaskId) {
-          const config = taskReconciliationConfig({
-            appDir: descriptor.appDir,
-            projectDir: descriptor.projectDir,
-            owner: descriptor.owner,
-            maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
-          });
-          const existingIntent = readProjectAppTaskIntent(config, targetedTaskId);
-          if (existingIntent && appAcceptsTaskEvent) {
-            const resolved = descriptor.app.tasks.resolve(event);
-            if (resolved?.id === targetedTaskId) {
-              const trigger = taskTriggerWithOwnerIntents(config, targetedTaskId, event);
-              const observation = observeProjectAppTaskIntent(config, {
-                intent: resolved,
-                appOwner: descriptor.owner,
-                trigger,
-              });
-              interruptSupersededObservationSessions(opts, observation);
-            }
-          }
-          const triggerResult = recordProjectAppTaskTrigger(
-            config,
+          const resolved = appAcceptsTaskEvent ? descriptor.app.tasks.resolve(event) : null;
+          const delivery = admitResolvedProjectAppTaskEvent({
+            opts,
+            descriptor,
+            controller: taskController,
+            event,
+            intent: resolved?.id === targetedTaskId ? resolved : null,
             targetedTaskId,
-            taskTriggerWithOwnerIntents(config, targetedTaskId, event),
-          );
-          if (triggerResult.kind === "recorded") {
-            enqueueProjectAppTask(taskController, config, targetedTaskId, {
-              front: true,
-            });
-            return projectAppTaskDelivery(descriptor, targetedTaskId, "existing targeted task wake accepted");
-          }
-          if (triggerResult.kind === "waiting") {
-            return projectAppTaskDelivery(
-              descriptor,
-              targetedTaskId,
-              "existing targeted task remains asleep on open Conditions",
-            );
-          }
-          if (readProjectAppTaskIntent(config, targetedTaskId)) {
-            return projectAppTaskDelivery(
-              descriptor,
-              targetedTaskId,
-              "existing targeted task remains asleep on open Conditions",
-            );
-          }
-          if (appAcceptsTaskEvent) {
-            const resolved = descriptor.app.tasks.resolve(event);
-            if (resolved?.id === targetedTaskId) {
-              const trigger = taskTriggerWithOwnerIntents(config, targetedTaskId, event);
-              const observation = observeProjectAppTaskIntent(config, {
-                intent: resolved,
-                appOwner: descriptor.owner,
-                trigger,
-              });
-              interruptSupersededObservationSessions(opts, observation);
-              if (observation.kind === "observed") {
-                enqueueProjectAppTask(taskController, config, observation.taskId, {
-                  front: true,
-                });
-              }
-              return projectAppTaskDelivery(descriptor, targetedTaskId, "new targeted task wake accepted");
-            }
-          }
+          });
+          if (delivery) return delivery;
           // An explicit task target is the complete routing decision. The app
           // resolver may materialize exactly that target, but must not turn a
           // targeted wake into unrelated broad work.
@@ -3432,29 +3528,21 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
         }
         if (appAcceptsTaskEvent) {
           const intent = descriptor.app.tasks.resolve(event);
-          if (intent) {
-            const config = taskReconciliationConfig({
-              appDir: descriptor.appDir,
-              projectDir: descriptor.projectDir,
-              owner: descriptor.owner,
-              maxConcurrent: descriptor.app.budget?.maxConcurrent ?? 1,
-            });
-            const observation = observeProjectAppTaskIntent(config, {
-              intent,
-              appOwner: descriptor.owner,
-              trigger: taskTriggerWithOwnerIntents(config, intent.id, event),
-            });
-            interruptSupersededObservationSessions(opts, observation);
-            if (observation.kind === "observed") {
-              enqueueProjectAppTask(taskController, config, observation.taskId, {
-                front: event.type === "project.comment.created",
-              });
-            }
-            return projectAppTaskDelivery(descriptor, observation.taskId, "resolved task event accepted");
-          }
+          const delivery = admitResolvedProjectAppTaskEvent({
+            opts,
+            descriptor,
+            controller: taskController,
+            event,
+            intent,
+          });
+          if (delivery) return delivery;
           continue;
         }
       }
+      // Canonical definitions are classified and durably admitted by the App
+      // host. This adapter retains task execution and lifecycle wake mechanics
+      // only; it must never become a second event-routing authority.
+      if (descriptor.canonical) continue;
       const projectCommentForApp =
         event.type === "project.comment.created" && isProjectScopedForApp(event, descriptor.id);
       if (!projectCommentForApp && !shouldOfferToApp(descriptor.app, event)) continue;
@@ -3586,9 +3674,8 @@ async function prepareProjectAppDescriptors(opts: ProjectAppLoaderOptions): Prom
   );
   for (const appDir of listProjectAppDirs(opts.projectsRoot)) {
     const loadedApp = await loadProjectApp(appDir);
-    const app = isCanonicalApp(loadedApp)
-      ? canonicalProjectAppAdapter(loadedApp)
-      : loadedApp;
+    const canonical = isCanonicalApp(loadedApp);
+    const app = canonical ? canonicalProjectAppAdapter(loadedApp) : loadedApp;
     if (!app) continue;
     const id = typeof app.id === "string" && app.id.trim() ? app.id.trim() : appIdFromDir(appDir);
     if (ids.has(id)) throw new Error(`Duplicate project app id: ${id}`);
@@ -3599,6 +3686,7 @@ async function prepareProjectAppDescriptors(opts: ProjectAppLoaderOptions): Prom
       projectDir: domainProjectDir(opts.projectsRoot, appDir, id, app),
       owner: configuredProjectAppOwner(app, appDir),
       app,
+      canonical,
       ownsDirectInbox: inboxAppIdByDir.get(appDir) === id,
       reconciliationPaused: false,
     };
