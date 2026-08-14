@@ -550,7 +550,7 @@ export class DbWriter {
       }
 
       default:
-        if (DURABLE_COMMAND_EVENTS.has(event.type)) {
+        if (DURABLE_COMMAND_EVENTS.has(event.type) || event.type.startsWith("trigger.")) {
           const ev = event as any;
           const data = eventPayload(ev);
           this.insertEventRow(event, data, eventSource(ev), eventOwner(ev), eventUrgency(ev), eventTtlMs(ev));
