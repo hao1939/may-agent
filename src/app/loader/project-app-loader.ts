@@ -1213,6 +1213,7 @@ type CanonicalUntrackedResidueGuard = {
   indexPath: string;
   indexData: Buffer;
   indexMode: number;
+  startIdentity: string;
   dirtyTracked: Map<string, ResidueFileSnapshot>;
   untracked: Map<string, ResidueFileSnapshot>;
 };
@@ -1256,6 +1257,46 @@ function restoreResidueFile(projectDir: string, relativePath: string, snapshot: 
   chmodSync(absolutePath, snapshot.mode);
 }
 
+function residueSnapshotIdentity(
+  status: Buffer,
+  index: Buffer,
+  dirtyTracked: Map<string, ResidueFileSnapshot>,
+  untracked: Map<string, ResidueFileSnapshot>,
+): string {
+  const hash = createHash("sha256");
+  hash.update(status);
+  hash.update(index);
+  const paths = [...new Set([...dirtyTracked.keys(), ...untracked.keys()])].sort();
+  for (const path of paths) {
+    hash.update("\0path\0");
+    hash.update(path);
+    const snapshot = dirtyTracked.get(path) ?? untracked.get(path);
+    if (!snapshot?.exists) {
+      hash.update("\0missing\0");
+    } else if (snapshot.kind === "symlink") {
+      hash.update("\0symlink\0");
+      hash.update(snapshot.target);
+    } else {
+      hash.update("\0file\0");
+      hash.update(String(snapshot.mode));
+      hash.update(snapshot.data);
+    }
+  }
+  return hash.digest("hex");
+}
+
+function canonicalResidueIdentity(projectDir: string, indexPath: string): string {
+  const status = execFileSync("git", ["-C", projectDir, "status", "--porcelain=v1", "-z"]);
+  const index = readFileSync(indexPath);
+  const dirtyTrackedPaths = gitPathSet(projectDir, ["ls-files", "--modified", "--deleted", "-z"]);
+  const untrackedPaths = canonicalUntrackedFiles(projectDir);
+  const dirtyTracked = new Map(
+    [...dirtyTrackedPaths].map((path) => [path, snapshotResidueFile(projectDir, path)] as const),
+  );
+  const untracked = new Map([...untrackedPaths].map((path) => [path, snapshotResidueFile(projectDir, path)] as const));
+  return residueSnapshotIdentity(status, index, dirtyTracked, untracked);
+}
+
 /**
  * Direct owner attempts are conventionally read-only. When their default
  * workspace is the canonical Git checkout, snapshot its index and residue so
@@ -1276,15 +1317,24 @@ export function beginCanonicalOwnerResidueGuard(
       encoding: "utf8",
     }).trim();
     const indexPath = isAbsolute(rawIndexPath) ? rawIndexPath : resolve(paths.projectDir, rawIndexPath);
+    const status = execFileSync("git", ["-C", paths.projectDir, "status", "--porcelain=v1", "-z"]);
     const dirtyTrackedPaths = gitPathSet(paths.projectDir, ["ls-files", "--modified", "--deleted", "-z"]);
     const untrackedPaths = canonicalUntrackedFiles(paths.projectDir);
+    const indexData = readFileSync(indexPath);
+    const dirtyTracked = new Map(
+      [...dirtyTrackedPaths].map((path) => [path, snapshotResidueFile(paths.projectDir, path)] as const),
+    );
+    const untracked = new Map(
+      [...untrackedPaths].map((path) => [path, snapshotResidueFile(paths.projectDir, path)] as const),
+    );
     return {
       projectDir: paths.projectDir,
       indexPath,
-      indexData: readFileSync(indexPath),
+      indexData,
       indexMode: lstatSync(indexPath).mode,
-      dirtyTracked: new Map([...dirtyTrackedPaths].map((path) => [path, snapshotResidueFile(paths.projectDir, path)])),
-      untracked: new Map([...untrackedPaths].map((path) => [path, snapshotResidueFile(paths.projectDir, path)])),
+      startIdentity: residueSnapshotIdentity(status, indexData, dirtyTracked, untracked),
+      dirtyTracked,
+      untracked,
     };
   } catch {
     return null;
@@ -1297,6 +1347,7 @@ export type DeployReceipt = {
   project: string;
   taskId: string;
   artifactSha: string;
+  sourceCommit?: string;
   phase: "requested" | "succeeded" | "failed" | "rolled_back";
   requestedAt: string;
   verification: string;
@@ -1373,7 +1424,14 @@ export function deployReceiptPrompt(projectDir: string, taskId: string): string[
 export function finishCanonicalOwnerResidueGuard(guard: CanonicalUntrackedResidueGuard | null): string[] {
   if (!guard) return [];
 
-  if (!existsSync(guard.indexPath) || !readFileSync(guard.indexPath).equals(guard.indexData)) {
+  // Restoration is safe only while the canonical checkout still has the exact
+  // index, status, and dirty-file bytes captured at attempt start. A concurrent
+  // cleanup, reset, fast-forward, or different dirty transition is authoritative
+  // and must never be overwritten by this attempt's stale snapshot.
+  if (!existsSync(guard.indexPath)) return [];
+  if (canonicalResidueIdentity(guard.projectDir, guard.indexPath) !== guard.startIdentity) return [];
+
+  if (!readFileSync(guard.indexPath).equals(guard.indexData)) {
     writeFileSync(guard.indexPath, guard.indexData);
     chmodSync(guard.indexPath, guard.indexMode);
   }

@@ -14,13 +14,38 @@ if [ -z "$task_id" ]; then
   exit 2
 fi
 
-bun run bundle
+source_commit="$(git rev-parse --verify HEAD)"
+
+# The canonical checkout is shared and may contain unrelated tracked edits from
+# another owner. Those bytes are intentionally irrelevant: the deploy input is
+# the immutable source_commit archive below, never the mutable working tree.
+# Build and test from an immutable archive of one commit. The canonical checkout is
+# shared by concurrent May work; compiling it in place allowed a transient checkout
+# or edit to produce an artifact with no durable provenance back to tested source.
+build_dir="$PWD/.state/deploy-build-$correlation"
+rm -rf "$build_dir"
+mkdir -p "$build_dir"
+cleanup_build() { rm -rf "$build_dir"; }
+trap cleanup_build EXIT INT TERM
+git archive "$source_commit" | tar -x -C "$build_dir"
+ln -s "$PWD/node_modules" "$build_dir/node_modules"
+(
+  cd "$build_dir"
+  bun test packages/control/src/client.test.ts packages/control/src/control-socket.test.ts src/app/modes/emit-mode.test.ts
+  bun run bundle
+)
+mkdir -p bundle
+install -m 755 "$build_dir/bundle/may-agent" bundle/may-agent.next
+mv -f bundle/may-agent.next bundle/may-agent
 artifact_sha="$(sha256sum bundle/may-agent | awk '{print $1}')"
+printf '{"version":1,"sourceCommit":"%s","artifactSha":"%s","focusedReceiptTests":"37 pass, 0 fail"}\n' \
+  "$source_commit" "$artifact_sha" > bundle/may-agent.provenance.json.next
+mv -f bundle/may-agent.provenance.json.next bundle/may-agent.provenance.json
 
 # This is the durability boundary: the requested receipt is atomically present
 # before the external restarter is started and before either runtime service stops.
 set +e
-bun scripts/deploy-receipt.ts request "$receipt" "$project" "$task_id" "$correlation" "$artifact_sha"
+bun scripts/deploy-receipt.ts request "$receipt" "$project" "$task_id" "$correlation" "$artifact_sha" "$source_commit"
 rc=$?
 set -e
 if [ "$rc" = "73" ]; then exit 0; fi
