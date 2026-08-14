@@ -9,7 +9,8 @@ durable owner of addressed work
 
 The core addressed-work path now follows this proposal:
 
-- one unconditional process-wide App registry loads `inbox.ts` definitions;
+- one unconditional process-wide App registry loads canonical `app.ts`
+  definitions;
 - the durable App host and Project App adapter consume the same atomic
   registry snapshot;
 - `/reload` validates and applies a prospective snapshot before publishing it,
@@ -316,14 +317,38 @@ defineApp({
   id: "aks-rp-e2e",
   owner: "owner",
   subscriptions: [
-    /* semantic observations that wake this App */
+    /* facts translated into independently correlated App requests */
   ],
   inbox: { batch: "coalesce-compatible" },
   tasks: {
-    /* optional durable task attachment */
+    subscriptions: [
+      /* facts that deterministically resolve to durable desired work */
+    ],
+    resolve: resolveTaskIntent,
   },
 });
 ```
+
+The routing rule is about durable obligation, not merely whether a human is
+waiting synchronously:
+
+```text
+addressed input requiring a distinct result -> App inbox
+changed fact with deterministic desired work -> task resolver
+fact with no actionable obligation          -> event only
+```
+
+An App subscription is intentionally rare: it translates a fact into a typed
+request for which the App owes one independently correlated disposition. A
+task subscription maps a fact directly to `TaskIntent`; queue coalescing occurs
+only after the latest desired intent and trigger are persisted. The same event
+may reach both paths only when the App explicitly needs two distinct durable
+obligations.
+
+Schedules declare the same distinction. An input schedule creates an App inbox
+obligation. An event schedule publishes a typed fact that may wake a task
+subscription without manufacturing a callerless inbox item. Both use shared
+runtime scheduling mechanics.
 
 An App automatically gets:
 
@@ -339,11 +364,11 @@ its owner can return one result per item. Coalescing may share context and one
 owner session, but it must never replace several input identities with one
 uncorrelated result.
 
-`onEvent` remains deterministic translation or observation. It must not become
-an app-specific scheduler, retry loop, or direct agent launcher. An actionable
-translation creates or wakes an App inbox item or task through the shared
-host. Existing deterministic filtering and correlation stay in this observer;
-semantic judgment about what work to do stays with the owner.
+Subscription translation and task resolution remain deterministic. They must
+not become app-specific schedulers, retry loops, or direct agent launchers. An
+actionable translation creates an App request or returns desired task intent
+for the shared host to observe. Semantic judgment that cannot be expressed as
+pure policy remains with the owner.
 
 ## Runtime SDK simplification
 
@@ -620,14 +645,16 @@ from the event graph.
 Metrics are observation, not a second controller:
 
 ```text
-state -> sample -> threshold evaluation -> breach/recovery event -> App wake
+state -> sample -> threshold evaluation -> breach/recovery event -> App/task wake
 ```
 
 Infrastructure stores samples and runs shared threshold, deduplication, and
 hysteresis mechanics. The runtime automatically records generic lifecycle
 health. Apps declare domain metric meaning and thresholds, record samples, and
-choose which metric events they observe. The owner alone decides whether the
-current state needs an answer, delegation, or durable task.
+choose which metric events they observe. Pure App policy may resolve a metric
+fact directly to desired task work; otherwise a correlated App request lets
+the owner decide whether the current state needs an answer, delegation, or
+durable task.
 
 Runtime metrics include inbox age, claim and handling latency, lease reclaim,
 execution failure, dependency wait, and delivery health. App metrics describe
@@ -635,19 +662,21 @@ domain outcomes such as test pass rate, specification coverage, pull-request
 health, or deployment convergence. Adding an App metric does not change the
 runtime.
 
-A metric event cannot mutate an inbox item or task. Because a sample may be
-duplicated, delayed, or stale, the event only wakes the owning App; its owner
-reads current state before acting. Inbox/task state remains the authority for
-whether work is complete.
+A metric event is never authoritative task state. Because a sample may be
+duplicated, delayed, or stale, it only wakes an App or task. A deterministic
+resolver returns desired intent for the host to persist before coalescing the
+wake, and the reconciler must still observe current state before acting.
+Inbox/task state remains the authority for whether work is complete.
 
 The inbox store becomes the source for request-health signals: pending count
 and age, claim latency, handling duration, lease reclaim rate, disposition
 count, and delivery wait. During migration these projections are compared with
 the old owner-inbox/event-pair dashboard before that path is removed.
 
-Not every event becomes inbox work. Lifecycle facts, logs, and observations
-remain facts. Only an explicitly addressed request or App subscription creates
-actionable App work.
+Not every event becomes work, and most actionable facts do not become inbox
+work. Lifecycle facts, logs, and observations remain facts. Only explicitly
+addressed input or an App subscription creates an inbox obligation; task
+subscriptions wake durable desired work directly.
 
 ## May as an App
 
@@ -796,7 +825,8 @@ forbidden.
 - Bounded requests complete without creating a task; durable outcomes retain
   desired state and acceptance criteria until they converge.
 - Events can be pruned without losing current App work.
-- Metrics are observational and cannot move inbox or task state.
+- Metrics remain observations; they may wake declared App/task policy but
+  cannot authoritatively complete or mutate inbox/task state.
 - Inbox projections preserve pending-age, handling-duration, reclaim, and
   delivery-wait visibility before old event-pair metrics are removed.
 - The old May bridge, owner-inbox message pairs, trace-inferred follow-through,
