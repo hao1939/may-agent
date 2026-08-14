@@ -18,6 +18,33 @@ export type HumanResultFollowThroughOptions = {
   manager: ReviewManager;
   persistDir: string;
   interfaceAgent?: string;
+  admitAppReview?: (input: HumanResultAppReview) => boolean;
+};
+
+export type HumanResultAppReview = {
+  appId: string;
+  source: { kind: "human"; id: string };
+  input: {
+    kind: "message";
+    data: {
+      message: string;
+      context: {
+        compatibility: "legacy-human-result";
+        eventType: string;
+        requestId: string;
+        traceId: string;
+        taskId?: string;
+        projectId?: string;
+      };
+    };
+  };
+  conversationId: string;
+  conversationSequence: number;
+  channel: "telegram";
+  channelThreadId?: string;
+  channelMessageId: number;
+  idempotencyKey: string;
+  trace: EventTrace;
 };
 
 const CLI_TERMINAL_EVENTS = new Set(["cli.task.completed", "cli.task.failed", "cli.task.orphaned"]);
@@ -26,13 +53,14 @@ const PROJECT_DIRECT_DISPOSITIONS = new Set(["answered", "rejected", "no-op"]);
 const CONDITION_REVIEW_REASON = "condition-review-checkpoint-missed";
 
 /**
- * Start a fresh May review when a human-originated CLI result outlives the May
- * session that requested it. The CLI task and event trace remain the durable
- * work record; this subscriber only restores the missing review turn.
+ * Drain pre-App human-result links through the conversation App. The old
+ * direct session launch remains only for startup and modes without an App
+ * host; once historical links drain, this entire adapter can be removed.
  */
 export function attachHumanResultFollowThrough(opts: HumanResultFollowThroughOptions): () => void {
   const interfaceAgent = opts.interfaceAgent?.trim() || "may";
   const interfaceOwner = `agent:${interfaceAgent}`;
+  const conversationAppId = "may";
   const startedRequestIds = new Set<string>();
 
   return opts.bus.subscribe((event) => {
@@ -55,7 +83,7 @@ export function attachHumanResultFollowThrough(opts: HumanResultFollowThroughOpt
       const projectId = nonEmptyString(data.projectId) ?? nonEmptyString(data.project);
       const openEventId = positiveInteger(data.openEventId) ?? eventId;
       const requestId = `human-result-review:project:${projectId ?? "unknown"}:owner:${openEventId ?? "current"}`;
-      if (startedRequestIds.has(requestId) || hasReviewSession(opts.persistDir, requestId)) {
+      if (startedRequestIds.has(requestId) || hasReviewWork(opts.persistDir, conversationAppId, requestId)) {
         return {
           accepted: true as const,
           by: "human-result-follow-through",
@@ -68,34 +96,39 @@ export function attachHumanResultFollowThrough(opts: HumanResultFollowThroughOpt
         traceId: trace.traceId,
         projectId,
       });
-      opts.manager.run(
+      const prompt = buildDirectProjectReviewPrompt({
+        data,
+        humanText,
+        conversationId,
+        replyToMessageId: inbound.telegram_msg_id,
+        conversationView,
+      });
+      const reviewTrace = {
+        traceId: trace.traceId,
+        ...(eventId ? { parentEventId: eventId } : {}),
+      };
+      const admittedToApp = dispatchReview({
+        opts,
+        appId: conversationAppId,
         interfaceAgent,
-        buildDirectProjectReviewPrompt({
-          data,
-          humanText,
-          conversationId,
-          replyToMessageId: inbound.telegram_msg_id,
-          conversationView,
-        }),
-        {
-          kind: "chat",
-          autoClose: "never",
-          source: "telegram",
-          requestId,
-          conversationId,
-          channelMessageId: inbound.telegram_msg_id,
-          trace: {
-            traceId: trace.traceId,
-            ...(eventId ? { parentEventId: eventId } : {}),
-          },
-        },
-      );
+        eventType,
+        eventId,
+        requestId,
+        prompt,
+        trace: reviewTrace,
+        inbound,
+        inboundData: inboundData ?? {},
+        conversationId,
+        projectId,
+      });
       startedRequestIds.add(requestId);
       return {
         accepted: true as const,
         by: "human-result-follow-through",
         route: "direct" as const,
-        note: "fresh May review started for direct app-owner result",
+        note: admittedToApp
+          ? "legacy direct owner result admitted to durable May App review"
+          : "fresh May review started for direct app-owner result",
       };
     }
 
@@ -132,7 +165,7 @@ export function attachHumanResultFollowThrough(opts: HumanResultFollowThroughOpt
       const requestId = checkpointReview
         ? `human-result-review:project:${projectId ?? "unknown"}:${taskId}:${generation ?? "current"}:checkpoint:${attemptId}`
         : `human-result-review:project:${projectId ?? "unknown"}:${taskId}:${generation ?? "current"}`;
-      if (startedRequestIds.has(requestId) || hasReviewSession(opts.persistDir, requestId)) {
+      if (startedRequestIds.has(requestId) || hasReviewWork(opts.persistDir, conversationAppId, requestId)) {
         return {
           accepted: true as const,
           by: "human-result-follow-through",
@@ -142,35 +175,41 @@ export function attachHumanResultFollowThrough(opts: HumanResultFollowThroughOpt
       }
 
       const eventId = positiveInteger((event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID]);
-      opts.manager.run(
+      const prompt = buildProjectReviewPrompt({
+        data,
+        humanText,
+        conversationId,
+        replyToMessageId: inbound.telegram_msg_id,
+        conversationView,
+        checkpointReview,
+      });
+      const reviewTrace = {
+        traceId: humanTraceId,
+        ...(eventId ? { parentEventId: eventId } : {}),
+      };
+      const admittedToApp = dispatchReview({
+        opts,
+        appId: conversationAppId,
         interfaceAgent,
-        buildProjectReviewPrompt({
-          data,
-          humanText,
-          conversationId,
-          replyToMessageId: inbound.telegram_msg_id,
-          conversationView,
-          checkpointReview,
-        }),
-        {
-          kind: "chat",
-          autoClose: "never",
-          source: "telegram",
-          requestId,
-          conversationId,
-          channelMessageId: inbound.telegram_msg_id,
-          trace: {
-            traceId: humanTraceId,
-            ...(eventId ? { parentEventId: eventId } : {}),
-          },
-        },
-      );
+        eventType,
+        eventId,
+        requestId,
+        prompt,
+        trace: reviewTrace,
+        inbound,
+        inboundData: inboundData ?? {},
+        conversationId,
+        taskId,
+        projectId,
+      });
       startedRequestIds.add(requestId);
       return {
         accepted: true as const,
         by: "human-result-follow-through",
         route: "direct" as const,
-        note: "fresh May review started for human-linked project result",
+        note: admittedToApp
+          ? "legacy project result admitted to durable May App review"
+          : "fresh May review started for human-linked project result",
       };
     }
 
@@ -201,7 +240,7 @@ export function attachHumanResultFollowThrough(opts: HumanResultFollowThroughOpt
     });
 
     const requestId = `human-result-review:cli:${taskId}`;
-    if (startedRequestIds.has(requestId) || hasReviewSession(opts.persistDir, requestId)) {
+    if (startedRequestIds.has(requestId) || hasReviewWork(opts.persistDir, conversationAppId, requestId)) {
       return {
         accepted: true as const,
         by: "human-result-follow-through",
@@ -222,14 +261,20 @@ export function attachHumanResultFollowThrough(opts: HumanResultFollowThroughOpt
       replyToMessageId: inbound.telegram_msg_id,
       conversationView,
     });
-    opts.manager.run(interfaceAgent, prompt, {
-      kind: "chat",
-      autoClose: "never",
-      source: "telegram",
+    const admittedToApp = dispatchReview({
+      opts,
+      appId: conversationAppId,
+      interfaceAgent,
+      eventType,
+      eventId,
       requestId,
-      conversationId,
-      channelMessageId: inbound.telegram_msg_id,
+      prompt,
       trace: reviewTrace,
+      inbound,
+      inboundData: inboundData ?? {},
+      conversationId,
+      taskId,
+      projectId: nonEmptyString(data.projectId),
     });
     startedRequestIds.add(requestId);
 
@@ -237,9 +282,71 @@ export function attachHumanResultFollowThrough(opts: HumanResultFollowThroughOpt
       accepted: true as const,
       by: "human-result-follow-through",
       route: "direct" as const,
-      note: "fresh May review started for human-originated CLI result",
+      note: admittedToApp
+        ? "legacy CLI result admitted to durable May App review"
+        : "fresh May review started for human-originated CLI result",
     };
   });
+}
+
+function dispatchReview(input: {
+  opts: HumanResultFollowThroughOptions;
+  appId: string;
+  interfaceAgent: string;
+  eventType: string;
+  eventId?: number;
+  requestId: string;
+  prompt: string;
+  trace: EventTrace;
+  inbound: { telegram_msg_id: number; sent_at: number };
+  inboundData: Record<string, unknown>;
+  conversationId: string;
+  taskId?: string;
+  projectId?: string;
+}): boolean {
+  const channelThreadId =
+    nonEmptyString(input.inboundData.channelThreadId) ??
+    (positiveInteger(input.inboundData.topicId) ? String(input.inboundData.topicId) : undefined);
+  const admitted = input.opts.admitAppReview?.({
+    appId: input.appId,
+    source: {
+      kind: "human",
+      id: `telegram:${input.inbound.telegram_msg_id}`,
+    },
+    input: {
+      kind: "message",
+      data: {
+        message: input.prompt,
+        context: {
+          compatibility: "legacy-human-result",
+          eventType: input.eventType,
+          requestId: input.requestId,
+          traceId: input.trace.traceId,
+          ...(input.taskId ? { taskId: input.taskId } : {}),
+          ...(input.projectId ? { projectId: input.projectId } : {}),
+        },
+      },
+    },
+    conversationId: input.conversationId,
+    conversationSequence: input.eventId ?? input.inbound.sent_at,
+    channel: "telegram",
+    ...(channelThreadId ? { channelThreadId } : {}),
+    channelMessageId: input.inbound.telegram_msg_id,
+    idempotencyKey: input.requestId,
+    trace: input.trace,
+  });
+  if (admitted) return true;
+
+  input.opts.manager.run(input.interfaceAgent, input.prompt, {
+    kind: "chat",
+    autoClose: "never",
+    source: "telegram",
+    requestId: input.requestId,
+    conversationId: input.conversationId,
+    channelMessageId: input.inbound.telegram_msg_id,
+    trace: input.trace,
+  });
+  return false;
 }
 
 function buildDirectProjectReviewPrompt(input: {
@@ -389,18 +496,19 @@ function readPersistedTrace(persistDir: string, eventId: number | undefined): Ev
   return { traceId, ...(parentEventId ? { parentEventId } : {}) };
 }
 
-function hasReviewSession(persistDir: string, requestId: string): boolean {
+function hasReviewWork(persistDir: string, appId: string, requestId: string): boolean {
   const row = getDb(persistDir)
-    .prepare("SELECT 1 AS found FROM sessions WHERE requestId = ? LIMIT 1")
-    .get(requestId) as { found?: unknown } | undefined;
+    .prepare(
+      `SELECT 1 AS found FROM sessions WHERE requestId = ?
+       UNION ALL
+       SELECT 1 AS found FROM app_inbox_items WHERE app_id = ? AND idempotency_key = ?
+       LIMIT 1`,
+    )
+    .get(requestId, appId, requestId) as { found?: unknown } | undefined;
   return row?.found === 1;
 }
 
-function findHumanTraceForProjectTask(
-  persistDir: string,
-  taskId: string,
-  projectId?: string,
-): string | undefined {
+function findHumanTraceForProjectTask(persistDir: string, taskId: string, projectId?: string): string | undefined {
   try {
     const row = getDb(persistDir)
       .prepare(
