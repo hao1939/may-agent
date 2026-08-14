@@ -7,10 +7,10 @@ domain workspace.
 
 - `../may-agent/` is the platform/runtime code workspace. It should remain a
   normal portable repo.
-- `app.ts` declares schedules, one event-to-task resolver, owner resolution, and
-  actions. Reusable workflows are discovered by filename.
-- `inbox.ts` declares the separate `may` conversation App: one durable human
-  message at a time, with no schedules, watchers, or App tasks.
+- `app.ts` is the single canonical platform App manifest: addressed input,
+  event schedules, task subscriptions, actions, and task policy.
+- `../may.app/app.ts` is the separate `may` conversation App: one durable human
+  message at a time, with no schedules, observers, or App tasks.
 - `project.json` is the structured project frame for goal, owner, workspace,
   and current strategy.
 - `.state/tasks/state.json` is the sole mutable task-resource authority;

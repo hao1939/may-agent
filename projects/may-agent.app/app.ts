@@ -1,52 +1,73 @@
 import {
-  defineProjectApp,
-  eventDetails,
-  eventString,
   Type,
-  type ProjectAppContext,
-  type ProjectAppEvent,
-  type ProjectAppTaskIntent,
-} from "@may-agent/sdk/legacy";
+  defineApp,
+  type AppDisposition,
+  type AppEvent,
+  type AppInput,
+  type AppRequest,
+  type TaskIntent,
+} from "@may-agent/sdk";
 
 const projectId = "may-agent";
 const projectOwnerAgent = "tech-lead";
-const actionInputSchema = Type.Object({}, { additionalProperties: true });
+const detailsSchema = Type.Record(Type.String(), Type.Unknown());
 
-const DAY_MS = 86_400_000;
-
-/** Stable task resource every owner review (scheduled or reactive) routes to. */
 export const OWNER_REVIEW_TASK_ID = "runtime/platform-owner-review";
+export const PLATFORM_REVIEW_INTERVAL_MS = 28_800_000;
+export const OWNER_HEARTBEAT_INTERVAL_MS = 86_400_000;
 
-/** Total owner sessions available per day. */
-export const OWNER_SESSIONS_PER_DAY = Infinity;
+const platformInputSchema = Type.Union(
+  ["owner-review", "ops-health", "ops-digest", "resource-migration"].map(
+    (kind) =>
+      Type.Object(
+        { kind: Type.Literal(kind), data: detailsSchema },
+        { additionalProperties: false },
+      ),
+  ),
+);
 
-/** Owner sessions/day reserved for reactive event-owner reviews. */
-export const RESERVED_REACTIVE_SESSIONS_PER_DAY = 2;
+const deferredMetrics = new Set([
+  "project.health.finding-count",
+  "project.owner-incomplete-count",
+  "project.owner-judgment-needed-count",
+  "capability.zombie-session-count",
+  "runtime.stale-running-session-count",
+]);
 
-export const PLATFORM_REVIEW_INTERVAL_MS = 28_800_000; // 8h
-export const OWNER_HEARTBEAT_INTERVAL_MS = 86_400_000; // 24h
-
-/** Owner sessions/day booked in advance by schedules. */
-export const SCHEDULED_OWNER_SESSIONS_PER_DAY =
-  DAY_MS / PLATFORM_REVIEW_INTERVAL_MS + DAY_MS / OWNER_HEARTBEAT_INTERVAL_MS;
-
-function ownerRequested(reason: string, params: unknown = {}): ProjectAppEvent {
-  return {
-    type: "project.owner.requested",
-    project: projectId,
-    reason,
-    params:
-      params && typeof params === "object" && !Array.isArray(params)
-        ? (params as Record<string, unknown>)
-        : {},
-  };
+function record(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
 }
 
-export function resolveMayAgentTask(
-  event: Record<string, unknown>,
-): ProjectAppTaskIntent | null {
-  switch (event.type) {
-    case "project.ops_digest.tick":
+function stringValue(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function eventData(
+  event: AppEvent<Record<string, unknown>>,
+): Record<string, unknown> {
+  return record(event.data);
+}
+
+function platformOwnerReview(
+  reason: string,
+  details: Record<string, unknown> = {},
+): AppInput {
+  return { kind: "owner-review", data: { reason, ...details } };
+}
+
+function isPlatformMetric(event: AppEvent<Record<string, unknown>>): boolean {
+  const data = eventData(event);
+  const owner = stringValue(
+    event.owner ?? data.owner ?? event.target?.owner,
+  ).replace(/^agent:/, "");
+  return !owner || owner === projectOwnerAgent || owner === "may";
+}
+
+export function taskIntentForInput(input: AppInput): TaskIntent | null {
+  switch (input.kind) {
+    case "ops-digest":
       return {
         id: "runtime/daily-ops-digest",
         parentId: "ops-health",
@@ -59,7 +80,7 @@ export function resolveMayAgentTask(
         workflow: "daily-ops-digest",
         priority: "P1",
       };
-    case "project.ops_health.tick":
+    case "ops-health":
       return {
         id: "runtime/ops-health-observer",
         parentId: "ops-health",
@@ -72,7 +93,7 @@ export function resolveMayAgentTask(
         workflow: "ops-health-review",
         priority: "P1",
       };
-    case "may-agent.resource-migration.requested":
+    case "resource-migration":
       return {
         id: "runtime/unified-resource-migration-v1",
         parentId: "project",
@@ -87,10 +108,9 @@ export function resolveMayAgentTask(
         input: { migration: "unified-resource-v1" },
         priority: "P0",
       };
-    case "project.comment.created":
-    case "project.owner.requested":
+    case "owner-review":
       return {
-        id: "runtime/platform-owner-review",
+        id: OWNER_REVIEW_TASK_ID,
         parentId: "platform-system-review-feedback-loop",
         outcome:
           "Keep platform state reviewed by its accountable owner and organize the smallest useful follow-up from current evidence.",
@@ -99,6 +119,7 @@ export function resolveMayAgentTask(
         ],
         mode: "maintain",
         workflow: "platform-owner-review",
+        input: { scope: "may-agent-platform" },
         priority: "P1",
       };
     default:
@@ -106,220 +127,162 @@ export function resolveMayAgentTask(
   }
 }
 
-export async function routePlatformEvent(
-  ctx: ProjectAppContext,
-  event: Record<string, unknown>,
-): Promise<unknown> {
-  if (event.type === "project.tick") {
-    return ctx.emit(
-      ownerRequested("scheduled-project-review", eventDetails(event)),
-    );
-  }
-
-  if (
-    event.type === "metric.breach" ||
-    event.type === "metric.stalled" ||
-    event.type === "metric.recovered"
-  ) {
-    // Only wake the platform owner for platform-owned metrics.
-    // Project-specific metrics (e.g. aks-rp-e2e.task.*) are owned by their
-    // respective project apps and should not trigger a full platform review.
-    // Accept legacy May-owned platform metrics during migration, but the wake
-    // still routes to this app owner (tech-lead).
-    const metricOwner = eventString(event, "owner");
-    const platformMetricOwners = new Set([
-      projectOwnerAgent,
-      `agent:${projectOwnerAgent}`,
-      "may",
-      "agent:may",
-    ]);
-    if (metricOwner && !platformMetricOwners.has(metricOwner)) {
-      return ctx.noop(
-        `metric owned by ${metricOwner}, not platform — skipping owner wake`,
+export function taskInputForEvent(
+  event: AppEvent<Record<string, unknown>>,
+): AppInput | null {
+  const data = eventData(event);
+  switch (event.type) {
+    case "project.ops_digest.tick":
+      return { kind: "ops-digest", data };
+    case "project.ops_health.tick":
+      return { kind: "ops-health", data };
+    case "may-agent.resource-migration.requested":
+      return { kind: "resource-migration", data };
+    case "project.tick":
+      return platformOwnerReview("scheduled-project-review", data);
+    case "project.tasks.ready":
+      return platformOwnerReview("ready-tasks-available", data);
+    case "metric.recovered":
+      return null;
+    case "metric.breach":
+    case "metric.stalled": {
+      const metricId = stringValue(
+        data.metricId ?? data.metric_id ?? event.target?.metricId,
       );
+      return isPlatformMetric(event) && !deferredMetrics.has(metricId)
+        ? platformOwnerReview("metric-signal", {
+            metricId,
+            metric: data,
+          })
+        : null;
     }
-
-    // metric.recovered is informational — the problem resolved itself.
-    // Don't spend session budget on a wake; the next scheduled project.tick
-    // (8h interval) naturally captures the recovered state.
-    // Without this guard, breach→review→recover→review loops consume the
-    // entire 6-sessions/day budget for no actionable work.
-    if (event.type === "metric.recovered") {
-      return ctx.noop(
-        "metric recovered — informational, captured in next scheduled review",
-      );
-    }
-
-    // Deferred metrics: breaches for these IDs do NOT trigger an immediate
-    // owner wake; they are captured by the scheduled project.tick (8h).
-    //
-    // Retention rule (platform-local invariant only): a metric may be deferred
-    // only when an owner wake is structurally self-defeating, i.e. the metric
-    // measures the result or the act of the platform owner review itself.
-    // Cross-project incident narratives (e.g. another app's burst failures)
-    // are NOT a valid reason to defer here — those are excluded by the
-    // metric-owner filter above, or must be re-owned to the owning app.
-    const DEFERRED_METRICS = new Set([
-      // Measures the RESULT of owner reviews: no active finding -> breach ->
-      // owner wake -> review -> recover -> breach. Circular by construction.
-      "project.health.finding-count",
-      "project.owner-incomplete-count",
-      "project.owner-judgment-needed-count",
-      // Counts running sessions, which includes the owner-review session that
-      // a wake would start: breach -> wake -> session -> counted -> breach.
-      "capability.zombie-session-count",
-      "runtime.stale-running-session-count",
-    ]);
-    const metricId = eventString(event, "metricId");
-    if (metricId && DEFERRED_METRICS.has(metricId)) {
-      return ctx.noop(
-        `deferred metric ${metricId} — captured in scheduled project.tick review, not immediate wake`,
-      );
-    }
-
-    return ctx.emit(ownerRequested("metric-signal", eventDetails(event)));
+    default:
+      return null;
   }
-
-  if (event.type === "project.tasks.ready") {
-    return ctx.emit(
-      ownerRequested("ready-tasks-available", eventDetails(event)),
-    );
-  }
-
-  if (
-    event.type === "project.owner.reviewed" ||
-    event.type === "project.reviewed"
-  ) {
-    return ctx.noop(
-      "terminal signal — review cycle complete, no further routing needed",
-    );
-  }
-
-  return undefined;
 }
 
-export default defineProjectApp({
+export function resolveMayAgentTask(
+  event: AppEvent<Record<string, unknown>>,
+): TaskIntent | null {
+  const input = taskInputForEvent(event);
+  return input ? taskIntentForInput(input) : null;
+}
+
+export function routeMayAgentRequest(
+  request: Readonly<AppRequest>,
+): AppDisposition | null {
+  if (request.dependency) {
+    return request.dependency.status === "done"
+      ? {
+          type: "complete",
+          summary:
+            request.dependency.summary ?? `${request.input.kind} completed`,
+          response: request.dependency.response,
+          evidence: request.dependency.evidence,
+        }
+      : null;
+  }
+  const intent = taskIntentForInput(request.input);
+  return intent ? { type: "task", task: { kind: "desired", intent } } : null;
+}
+
+function scheduledEvent(
+  type: string,
+  data: Record<string, unknown>,
+): AppEvent<Record<string, unknown>> {
+  return {
+    type,
+    data,
+    target: { appId: projectId, project: projectId },
+  };
+}
+
+const app = defineApp({
   id: projectId,
   version: 1,
   owner: projectOwnerAgent,
   description:
-    "May-agent platform app: runtime contracts, event/session/task execution, persistence, SDK, shared web UI, and project-app conventions.",
-  workspace: {
-    kind: "local",
-    localPath: "../may-agent",
-  },
-
-  // Owner session budget policy (project-local, no global handlers):
-  //
-  //   sessionsPerDay = 6
-  //   scheduled owner sessions/day = platform-review (8h -> 3) +
-  //                                  owner-heartbeat (24h -> 1) = 4
-  //   reactive headroom/day        = 6 - 4 = 2
-  //
-  // The reserved headroom exists so reactive owner wakes — project comments
-  // (project.comment.created), platform-owned metric breach/stall signals, and
-  // other abnormal runtime events — can still reach the owner on the day they
-  // happen. Previously the schedules booked 4 + 2 = 6/day, i.e. 100% of the
-  // budget, so any reactive signal competed with an already-full calendar.
-  // All of these paths (scheduled and reactive) converge on the stable
-  // runtime/platform-owner-review task resource, so headroom is spent on the
-  // same owner review contract rather than a parallel mechanism.
-  //
-  // Invariant checked by app.test.ts: SCHEDULED_OWNER_SESSIONS_PER_DAY <
-  // budget.sessionsPerDay, with at least RESERVED_REACTIVE_SESSIONS_PER_DAY
-  // left over.
-  budget: {
-    maxConcurrent: 2,
-  },
-
+    "May-agent platform App: runtime contracts, execution, persistence, SDK, UI, and App conventions.",
+  inputSchema: platformInputSchema,
+  inbox: { batch: "single", maxConcurrent: 2 },
+  route: routeMayAgentRequest,
+  workspace: { kind: "local", localPath: "../may-agent" },
+  subscriptions: [
+    {
+      id: "project-comment",
+      event: { type: "project.comment.created", project: projectId },
+      toInput(event) {
+        return platformOwnerReview("project-comment", eventData(event));
+      },
+    },
+    {
+      id: "project-owner-request",
+      event: { type: "project.owner.requested", project: projectId },
+      toInput(event) {
+        const data = eventData(event);
+        return platformOwnerReview(
+          stringValue(data.reason) || "project-owner-request",
+          data,
+        );
+      },
+    },
+  ],
   schedules: [
     {
       id: "platform-review",
-      enabled: true,
-      intervalMs: PLATFORM_REVIEW_INTERVAL_MS, // 8h -> 3 owner sessions/day
-      emits: [
-        {
-          type: "project.tick",
-          project: projectId,
-          lane: "platform-review",
-        },
-      ],
+      intervalMs: PLATFORM_REVIEW_INTERVAL_MS,
+      event: scheduledEvent("project.tick", {
+        reason: "scheduled-project-review",
+        lane: "platform-review",
+      }),
     },
     {
       id: "owner-heartbeat",
-      enabled: true,
-      intervalMs: OWNER_HEARTBEAT_INTERVAL_MS, // 24h -> 1 owner session/day
-      emits: [
-        ownerRequested("owner-heartbeat", {
-          instruction:
-            "Low-frequency platform owner heartbeat: look for missed platform integrity, runtime, UI, or app-design issues that fixed ops-health metrics did not catch. Check recent heartbeat/platform-review/ops-health findings before creating work. Prefer one to three task-tree actions or no-op with reason; do not run multi-step implementation work from the owner session.",
-          reviewChecklist: [
-            "Look for stale assumptions in the app/project design docs versus current runtime behavior.",
-            "Look for repeated alerts, failed handlers, unclosed owner loops, or app manifests that drifted from the event-owner model.",
-            "Look for task-tree bloat or done work that should be rolled up with durable meaning preserved.",
-            "Avoid duplicate heartbeat tasks by inspecting recent owner-review findings first.",
-            "No-op is valid when existing tasks already cover the useful next work.",
-          ],
-        }),
-      ],
+      intervalMs: OWNER_HEARTBEAT_INTERVAL_MS,
+      event: scheduledEvent("project.tick", {
+        reason: "owner-heartbeat",
+        lane: "owner-heartbeat",
+      }),
     },
     {
       id: "ops-health-review",
-      enabled: true,
       intervalMs: 3_600_000,
-      emits: [
-        {
-          type: "project.ops_health.tick",
-          project: projectId,
-          lane: "ops-health-review",
-        },
-      ],
+      event: scheduledEvent("project.ops_health.tick", {
+        lane: "ops-health-review",
+      }),
     },
     {
       id: "daily-ops-digest",
-      enabled: true,
       intervalMs: 86_400_000,
-      emits: [
-        {
-          type: "project.ops_digest.tick",
-          project: projectId,
-          lane: "daily-ops-digest",
-        },
-      ],
+      event: scheduledEvent("project.ops_digest.tick", {
+        lane: "daily-ops-digest",
+      }),
     },
   ],
-
+  actions: {
+    "advance-project": {
+      description:
+        "Ask tech-lead to review and advance the May-agent platform project.",
+      inputSchema: Type.Object({}, { additionalProperties: true }),
+      toInput: (data) =>
+        platformOwnerReview("manual-advance", { params: data }),
+    },
+  },
   tasks: {
-    accepts: [
+    attach: true,
+    subscriptions: [
       { type: "project.ops_digest.tick", project: projectId },
       { type: "project.ops_health.tick", project: projectId },
       { type: "may-agent.resource-migration.requested", project: projectId },
-      { type: "project.owner.requested", project: projectId },
-      { type: "project.comment.created", project: projectId },
+      { type: "project.tick", project: projectId },
+      { type: "project.tasks.ready", project: projectId },
+      "metric.breach",
+      "metric.stalled",
     ],
     resolve: resolveMayAgentTask,
-  },
-
-  events: [
-    { type: "project.tick", project: projectId },
-    { type: "metric.breach" },
-    { type: "metric.stalled" },
-    { type: "metric.recovered" },
-  ],
-
-  actions: {
-    "advance-project": {
-      type: "async",
-      description:
-        "Ask tech-lead to review and advance the May-agent platform project.",
-      inputSchema: actionInputSchema,
-      event(params) {
-        return ownerRequested("manual-advance", params);
-      },
-    },
-  },
-
-  async onEvent(ctx, event) {
-    return routePlatformEvent(ctx, event);
+    maxConcurrent: 2,
+    resyncIntervalMs: 60_000,
   },
 });
+
+export default app;

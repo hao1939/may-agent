@@ -1,6 +1,6 @@
 import { Type, defineApp } from "@may-agent/sdk";
 
-const mayMessageInputSchema = Type.Object(
+const messageInputSchema = Type.Object(
   {
     kind: Type.Literal("message"),
     data: Type.Object(
@@ -20,6 +20,6 @@ export default defineApp({
   owner: "may",
   description:
     "Conversation App for one durable human request at a time; answers directly or delegates domain work to another App.",
-  inputSchema: mayMessageInputSchema,
+  inputSchema: messageInputSchema,
   inbox: { batch: "single" },
 });
