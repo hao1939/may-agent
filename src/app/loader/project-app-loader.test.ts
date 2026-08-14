@@ -5290,7 +5290,7 @@ describe("project app loader", () => {
     }
   });
 
-  it("reconciles an unhandled owner message through the stable app owner task", async () => {
+  it("does not turn an unhandled owner message into hidden project work", async () => {
     const f = fixture();
     try {
       writeApp(f.appDir);
@@ -5334,10 +5334,7 @@ describe("project app loader", () => {
       } as any);
       const messageEventId = (message as any)[EVENT_ROW_ID];
 
-      await waitUntil(
-        () => events.some((event) => event.type === "message.resolved" && event.data?.openEventId === messageEventId),
-        2_000,
-      );
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       expect(
         events.some(
@@ -5346,55 +5343,24 @@ describe("project app loader", () => {
             event.data?.inputEventId === messageEventId &&
             event.data?.instruction === "Please review and finish the owner request",
         ),
-      ).toBe(true);
-      expect(ownerCalls).toHaveLength(1);
-      expect(ownerCalls[0]).toContain("Please review and finish the owner request");
+      ).toBe(false);
+      expect(ownerCalls).toHaveLength(0);
       expect(
         events.filter((event) => event.type === "message.resolved" && event.data?.openEventId === messageEventId),
-      ).toHaveLength(1);
-      expect(
-        events.find((event) => event.type === "message.resolved" && event.data?.openEventId === messageEventId),
-      ).toMatchObject({
-        data: {
-          openEventType: "message.created",
-          outcome: "fulfilled",
-          disposition: "answered",
-          taskDisposition: "converged",
-          taskRefs: [],
-        },
-        trace: {
-          links: [{ eventId: messageEventId, type: "closure", label: "message.resolved" }],
-        },
-      });
-      expect(
-        getDb(f.persistDir)
-          .prepare("SELECT status FROM event_pair_runs WHERE pair_name = 'owner_inbox' AND open_event_id = ?")
-          .get(messageEventId),
-      ).toMatchObject({ status: "closed" });
-
-      bus.emit({
-        type: "project.owner.requested",
-        project: "sample",
-        data: {
-          project: "sample",
-          reason: "owner-message",
-          inputEventId: messageEventId,
-          inputEventType: "message.created",
-          instruction: "stale replay must be ignored",
-        },
-      } as any);
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      expect(ownerCalls).toHaveLength(1);
-      expect(
-        events.filter((event) => event.type === "message.progressed" && event.data?.sourceEventId === messageEventId),
       ).toHaveLength(0);
+      expect(
+        getDb(f.persistDir).prepare("SELECT delivery_status FROM events WHERE id = ?").get(messageEventId),
+      ).toEqual({ delivery_status: "pending" });
+      expect(
+        getDb(f.persistDir).prepare("SELECT status FROM event_pair_runs WHERE open_event_id = ?").get(messageEventId),
+      ).toBeNull();
     } finally {
       closeDb(f.persistDir);
       rmSync(f.root, { recursive: true, force: true });
     }
   });
 
-  it("leaves fresh messages to an explicit App inbox while preserving historical owner-inbox replay", async () => {
+  it("leaves fresh messages to an explicit App inbox and ignores historical owner-inbox replay", async () => {
     const f = fixture();
     try {
       writeApp(f.appDir);
@@ -5461,27 +5427,23 @@ describe("project app loader", () => {
         },
       } as any);
 
-      await waitUntil(
-        () => events.some((event) => event.type === "message.resolved" && event.data?.openEventId === messageEventId),
-        2_000,
-      );
-      expect(ownerCalls).toHaveLength(1);
-      expect(ownerCalls[0]).toContain("Handle this historical owner-inbox message");
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(ownerCalls).toHaveLength(0);
       expect(
         events.filter(
           (event) => event.type === "project.owner.requested" && event.data?.inputEventId === messageEventId,
         ),
-      ).toHaveLength(1);
+      ).toHaveLength(0);
       expect(
         events.filter((event) => event.type === "message.resolved" && event.data?.openEventId === messageEventId),
-      ).toHaveLength(1);
+      ).toHaveLength(0);
     } finally {
       closeDb(f.persistDir);
       rmSync(f.root, { recursive: true, force: true });
     }
   });
 
-  it("keeps a message open when a maintain owner incorrectly converges with live direct children", async () => {
+  it("keeps an explicit owner request open when the owner incorrectly converges with live children", async () => {
     const f = fixture();
     try {
       writeApp(f.appDir);
@@ -5537,40 +5499,46 @@ describe("project app loader", () => {
       });
 
       const first = bus.emit({
-        type: "message.created",
+        type: "project.owner.requested",
         source: "agent:requester",
         owner: "agent:sample-owner",
-        data: { from: "requester", to: "sample-owner", content: "delegate this", intent: "request" },
+        project: "sample",
+        ownerOnly: true,
+        instruction: "delegate this",
+        data: { project: "sample", ownerOnly: true, instruction: "delegate this" },
       } as any) as any;
       await waitUntil(() => ownerCall === 1);
       const second = bus.emit({
-        type: "message.created",
+        type: "project.owner.requested",
         source: "agent:requester",
         owner: "agent:sample-owner",
-        data: { from: "requester", to: "sample-owner", content: "check completion", intent: "request" },
+        project: "sample",
+        ownerOnly: true,
+        instruction: "check completion",
+        data: { project: "sample", ownerOnly: true, instruction: "check completion" },
       } as any) as any;
       await waitUntil(() => ownerCall === 2);
       await waitUntil(() =>
         events.some(
           (event) =>
-            (event.type === "message.progressed" && event.data?.sourceEventId === second[EVENT_ROW_ID]) ||
-            (event.type === "message.resolved" && event.data?.openEventId === second[EVENT_ROW_ID]),
+            (event.type === "project.owner.progressed" && event.data?.sourceEventId === second[EVENT_ROW_ID]) ||
+            (event.type === "project.owner.reviewed" && event.data?.openEventId === second[EVENT_ROW_ID]),
         ),
       );
 
-      for (const messageEventId of [first[EVENT_ROW_ID], second[EVENT_ROW_ID]]) {
+      for (const ownerEventId of [first[EVENT_ROW_ID], second[EVENT_ROW_ID]]) {
         expect(
-          events.some((event) => event.type === "message.resolved" && event.data?.openEventId === messageEventId),
+          events.some((event) => event.type === "project.owner.reviewed" && event.data?.openEventId === ownerEventId),
         ).toBe(false);
         expect(
           getDb(f.persistDir)
-            .prepare("SELECT status FROM event_pair_runs WHERE pair_name = 'owner_inbox' AND open_event_id = ?")
-            .get(messageEventId),
+            .prepare("SELECT status FROM event_pair_runs WHERE pair_name = 'project.owner' AND open_event_id = ?")
+            .get(ownerEventId),
         ).toMatchObject({ status: "open" });
       }
       expect(
         events.find(
-          (event) => event.type === "message.progressed" && event.data?.sourceEventId === second[EVENT_ROW_ID],
+          (event) => event.type === "project.owner.progressed" && event.data?.sourceEventId === second[EVENT_ROW_ID],
         )?.data?.taskRefs,
       ).toEqual(
         expect.arrayContaining([
@@ -5584,7 +5552,7 @@ describe("project app loader", () => {
     }
   });
 
-  it("carries the same open message through child completion without waiting for periodic resync", async () => {
+  it("carries the same explicit owner request through child completion", async () => {
     const f = fixture();
     try {
       writeApp(f.appDir);
@@ -5644,30 +5612,35 @@ describe("project app loader", () => {
         agentCrons: new Map(),
       });
 
-      const message = bus.emit({
-        type: "message.created",
+      const request = bus.emit({
+        type: "project.owner.requested",
         source: "agent:requester",
         owner: "agent:sample-owner",
-        data: { from: "requester", to: "sample-owner", content: "finish through a child", intent: "request" },
+        project: "sample",
+        ownerOnly: true,
+        instruction: "finish through a child",
+        data: { project: "sample", ownerOnly: true, instruction: "finish through a child" },
       } as any) as any;
-      const messageEventId = message[EVENT_ROW_ID];
+      const requestEventId = request[EVENT_ROW_ID];
 
       await waitUntil(
         () =>
           ownerCall === 2 &&
-          events.some((event) => event.type === "message.resolved" && event.data?.openEventId === messageEventId),
+          events.some((event) => event.type === "project.owner.reviewed" && event.data?.openEventId === requestEventId),
         3_000,
       );
       expect(
-        events.some((event) => event.type === "message.progressed" && event.data?.sourceEventId === messageEventId),
+        events.some(
+          (event) => event.type === "project.owner.progressed" && event.data?.sourceEventId === requestEventId,
+        ),
       ).toBe(true);
       expect(
-        events.filter((event) => event.type === "message.resolved" && event.data?.openEventId === messageEventId),
+        events.filter((event) => event.type === "project.owner.reviewed" && event.data?.openEventId === requestEventId),
       ).toHaveLength(1);
       expect(
         getDb(f.persistDir)
-          .prepare("SELECT status FROM event_pair_runs WHERE pair_name = 'owner_inbox' AND open_event_id = ?")
-          .get(messageEventId),
+          .prepare("SELECT status FROM event_pair_runs WHERE pair_name = 'project.owner' AND open_event_id = ?")
+          .get(requestEventId),
       ).toMatchObject({ status: "closed" });
     } finally {
       closeDb(f.persistDir);
