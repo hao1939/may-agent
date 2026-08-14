@@ -44,6 +44,10 @@ ln -s "$PWD/node_modules" "$build_dir/node_modules"
 mkdir -p "$bundle_dir"
 install -m 755 "$build_dir/bundle/may-agent" "$bundle_dir/may-agent.next"
 mv -f "$bundle_dir/may-agent.next" "$bundle_dir/may-agent"
+install -m 755 "$build_dir/container/may-agent-supervisor-restart.sh" "$bundle_dir/may-agent-supervisor-restart.next"
+mv -f "$bundle_dir/may-agent-supervisor-restart.next" "$bundle_dir/may-agent-supervisor-restart"
+install -m 644 "$build_dir/scripts/deploy-receipt.ts" "$bundle_dir/deploy-receipt.ts.next"
+mv -f "$bundle_dir/deploy-receipt.ts.next" "$bundle_dir/deploy-receipt.ts"
 artifact_sha="$(sha256sum "$bundle_dir/may-agent" | awk '{print $1}')"
 
 # Apps import the SDK at runtime, so it is part of the deployed artifact rather
@@ -77,12 +81,12 @@ mv -f "$bundle_dir/sdk-requested.next" "$bundle_dir/sdk-requested"
 printf '%s\n' "$receipt" > "$bundle_dir/deploy-requested.next"
 mv -f "$bundle_dir/deploy-requested.next" "$bundle_dir/deploy-requested"
 
-deploy_in_container='cd /app/projects/may-agent && install -m 755 container/may-agent-supervisor-restart.sh /usr/local/bin/may-agent-supervisor-restart && MAY_AGENT_DEPLOY_RECEIPT="'"$receipt"'" MAY_AGENT_DEPLOY_CORRELATION="'"$correlation"'" MAY_AGENT_DEPLOY_PROJECT="'"$project"'" MAY_AGENT_DEPLOY_TASK_ID="'"$task_id"'" supervisorctl start may-agent-restarter'
+deploy_in_container='install -m 755 /app/projects/may-agent/bundle/may-agent-supervisor-restart /usr/local/bin/may-agent-supervisor-restart && MAY_AGENT_DEPLOY_RECEIPT="'"$receipt"'" MAY_AGENT_DEPLOY_CORRELATION="'"$correlation"'" MAY_AGENT_DEPLOY_PROJECT="'"$project"'" MAY_AGENT_DEPLOY_TASK_ID="'"$task_id"'" supervisorctl start may-agent-restarter'
 
 if [ -S /tmp/supervisor.sock ] && command -v supervisorctl >/dev/null 2>&1; then
   sh -lc "$deploy_in_container"
 elif command -v docker >/dev/null 2>&1; then
-  docker exec -e MAY_AGENT_DEPLOY_RECEIPT="$receipt" -e MAY_AGENT_DEPLOY_CORRELATION="$correlation" -e MAY_AGENT_DEPLOY_PROJECT="$project" -e MAY_AGENT_DEPLOY_TASK_ID="$task_id" may-agent sh -lc 'cd /app/projects/may-agent && install -m 755 container/may-agent-supervisor-restart.sh /usr/local/bin/may-agent-supervisor-restart && supervisorctl start may-agent-restarter'
+  docker exec -e MAY_AGENT_DEPLOY_RECEIPT="$receipt" -e MAY_AGENT_DEPLOY_CORRELATION="$correlation" -e MAY_AGENT_DEPLOY_PROJECT="$project" -e MAY_AGENT_DEPLOY_TASK_ID="$task_id" may-agent sh -lc 'install -m 755 /app/projects/may-agent/bundle/may-agent-supervisor-restart /usr/local/bin/may-agent-supervisor-restart && supervisorctl start may-agent-restarter'
 else
   bun scripts/deploy-receipt.ts settle "$receipt" failed "$artifact_sha" unhealthy false supervisor-unreachable
   echo "Cannot reach the live may-agent supervisor." >&2
