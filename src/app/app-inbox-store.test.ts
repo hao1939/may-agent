@@ -9,8 +9,10 @@ import {
   completeAppInboxClaim,
   createAppInboxItem,
   getAppInboxItem,
+  listAppInboxAssociatedSessionClaims,
   listAppInboxHealth,
   listAppInboxItems,
+  listAppInboxSessionWaits,
   markAppInboxSendingDeliveriesUncertain,
   recordAppInboxDeliveryReceipt,
   restoreReplayableAppInboxDeliveries,
@@ -377,8 +379,35 @@ describe("App inbox store", () => {
     expect(claimAppInboxItem(db, "review-me", "worker-3", 50, 209)).toBeNull();
 
     expect(wakeAppInboxItemsWaitingOn(db, { kind: "app", id: "child-1" }, 120)).toBe(1);
+    expect(wakeAppInboxItemsWaitingOn(db, { kind: "app", id: "child-1" }, 120)).toBe(0);
+    expect(wakeAppInboxItemsWaitingOn(db, { kind: "app", id: "unrelated-child" }, 120)).toBe(0);
     expect(claimAppInboxItem(db, "wake-me", "worker-3", 50, 120)?.generation).toBe(2);
     expect(claimAppInboxItem(db, "review-me", "worker-4", 50, 210)?.generation).toBe(2);
+  });
+
+  it("fences recovered session waits by the exact claim generation", () => {
+    create("session-fence", { now: 100 });
+    const stale = claimAppInboxItem(db, "session-fence", "old-runtime", 10, 100)!;
+    expect(associateAppInboxClaimSession(db, stale, "session-old", 101)).toBe(true);
+    expect(listAppInboxAssociatedSessionClaims(db)).toMatchObject([
+      {
+        sessionId: "session-old",
+        claim: { generation: 1, owner: "old-runtime", item: { id: "session-fence" } },
+      },
+    ]);
+
+    const current = claimAppInboxItem(db, "session-fence", "new-runtime", 50, 111)!;
+    expect(waitAppInboxClaim(db, stale, { kind: "session", id: "session-old" }, { now: 112 })).toBe(false);
+    expect(associateAppInboxClaimSession(db, current, "session-current", 113)).toBe(true);
+    expect(waitAppInboxClaim(db, current, { kind: "session", id: "session-current" }, { now: 114 })).toBe(true);
+
+    expect(listAppInboxSessionWaits(db)).toMatchObject([
+      {
+        id: "session-fence",
+        waitingOn: { kind: "session", id: "session-current" },
+        lease: undefined,
+      },
+    ]);
   });
 
   it("admits and completes unrelated items independently", () => {
