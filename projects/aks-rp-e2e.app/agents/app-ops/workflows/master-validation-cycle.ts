@@ -15,7 +15,7 @@ import type {
   ProjectAppConditionSpec,
   WorkflowContext,
   WorkflowResult,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/legacy";
 import {
   campaignFixFromPullRequest,
   campaignReceiptPath,

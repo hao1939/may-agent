@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { TaskTree } from "@may-agent/sdk";
+import type { TaskTree } from "@may-agent/sdk/legacy";
 import { migrateSessionAftermathFrontier } from "./migrate-session-aftermath-frontier.ts";
 
 function fixture(): TaskTree {

@@ -3,7 +3,7 @@ import { execFileSync } from "node:child_process";
 import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { WorkflowContext } from "@may-agent/sdk";
+import type { WorkflowContext } from "@may-agent/sdk/legacy";
 import {
   description,
   execute,

@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
-import type { ProjectAppContext } from "@may-agent/sdk";
+import type { ProjectAppContext } from "@may-agent/sdk/legacy";
 
 export const name = "evaluation-pipeline";
 export const description =

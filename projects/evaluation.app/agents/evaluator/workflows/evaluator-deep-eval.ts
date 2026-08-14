@@ -1,4 +1,4 @@
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk/legacy";
 import {
   buildDeepEvaluationTask,
   ensureDeepEvaluationArtifactDir,

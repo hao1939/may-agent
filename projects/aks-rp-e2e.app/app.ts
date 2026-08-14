@@ -12,7 +12,7 @@ import {
   type ProjectAppEvent,
   type ProjectAppTaskAction,
   type ProjectAppTaskIntent,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/legacy";
 import { observeAksPipelines } from "./watchers/aks-pipeline.js";
 import { observeAksPullRequests } from "./watchers/aks-pull-request.js";
 import { observeRepoRefChanges } from "./watchers/repo-ref.js";

@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, resolve } from "node:path";
-import type { ProjectAppContext, ProjectAppEvent } from "@may-agent/sdk";
+import type { ProjectAppContext, ProjectAppEvent } from "@may-agent/sdk/legacy";
 
 type Worktree = { path: string; prunable: boolean };
 type LiveTaskTreeTask = {

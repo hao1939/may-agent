@@ -8,7 +8,7 @@
 
 import { join } from "node:path";
 import { appendFileSync, mkdirSync } from "node:fs";
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk/legacy";
 import {
   field,
   parseReconciliationTaskPayload,

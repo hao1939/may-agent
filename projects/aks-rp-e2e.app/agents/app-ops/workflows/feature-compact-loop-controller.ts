@@ -8,7 +8,7 @@ import {
   type WorkflowContext,
   type WorkflowIoContract,
   type WorkflowResult,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/legacy";
 import {
   defaultFeatureCompactLoopStatePath,
   hasDurableLiveProof,

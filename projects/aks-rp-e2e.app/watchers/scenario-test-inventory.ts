@@ -3,7 +3,7 @@ import type { SpawnSyncReturns } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { ProjectAppContext, ProjectAppEvent } from "@may-agent/sdk";
+import type { ProjectAppContext, ProjectAppEvent } from "@may-agent/sdk/legacy";
 
 export type ScenarioTestInventoryObservation = {
   observedAt: string;

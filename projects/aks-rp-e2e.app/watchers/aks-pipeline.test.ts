@@ -8,7 +8,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import type { ProjectAppContext } from "@may-agent/sdk";
+import type { ProjectAppContext } from "@may-agent/sdk/legacy";
 import {
   observeAksPipelines,
   artifactRunCandidates,

@@ -3,4 +3,4 @@ export type {
   ProjectApp,
   ProjectAppAction,
   ProjectAppContext,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/legacy";

@@ -6,7 +6,7 @@ import type {
   ProjectAppTaskVerificationResult,
   WorkflowContext,
   WorkflowResult,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/legacy";
 import {
   defaultFeatureCompactLoopStatePath,
   hasDurableLiveProof,

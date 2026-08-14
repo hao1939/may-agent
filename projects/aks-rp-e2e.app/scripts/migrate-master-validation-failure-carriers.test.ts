@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type { ProjectAppTaskResource, TaskTree } from "@may-agent/sdk";
+import type { ProjectAppTaskResource, TaskTree } from "@may-agent/sdk/legacy";
 import {
   masterValidationFailureTaskId,
   migrateMasterValidationFailureCarriers,

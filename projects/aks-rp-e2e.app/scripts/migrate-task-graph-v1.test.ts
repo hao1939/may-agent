@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { ProjectAppTaskResource, TaskTree } from "@may-agent/sdk";
+import type { ProjectAppTaskResource, TaskTree } from "@may-agent/sdk/legacy";
 import { applyTaskGraphMigration } from "./migrate-task-graph-v1.ts";
 
 function resource(

@@ -6,7 +6,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { join, resolve } from "node:path";
-import type { ProjectAppContext } from "@may-agent/sdk";
+import type { ProjectAppContext } from "@may-agent/sdk/legacy";
 
 type FeedbackContext = ProjectAppContext & {
   query: NonNullable<ProjectAppContext["query"]>;

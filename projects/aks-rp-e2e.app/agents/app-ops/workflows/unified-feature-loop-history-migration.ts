@@ -5,7 +5,7 @@ import type {
   ProjectAppTaskAction,
   WorkflowContext,
   WorkflowResult,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/legacy";
 import { parseReconciliationTaskPayload } from "./lib/workflow-input.ts";
 
 export const name = "unified-feature-loop-history-migration";

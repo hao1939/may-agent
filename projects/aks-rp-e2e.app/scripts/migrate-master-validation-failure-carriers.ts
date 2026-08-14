@@ -9,7 +9,7 @@ import {
   type TaskCompletionReceipt,
   type TaskStateConfig,
   type TaskTree,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/legacy";
 
 const workflow = "master-validation-failure";
 const prefix = "domain/master-validation-failure/";

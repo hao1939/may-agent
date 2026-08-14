@@ -3,7 +3,7 @@ import {
   Type,
   type WorkflowContext,
   type WorkflowResult,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/legacy";
 
 export const name = "legacy-branch-family-reconciliation";
 export const description =

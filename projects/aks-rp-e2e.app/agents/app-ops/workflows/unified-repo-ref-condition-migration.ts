@@ -5,7 +5,7 @@ import type {
   ProjectAppTaskAction,
   WorkflowContext,
   WorkflowResult,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/legacy";
 
 export const name = "unified-repo-ref-condition-migration";
 export const description =

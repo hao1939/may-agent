@@ -1,4 +1,4 @@
-import type { MetricDefinition, MetricService } from "@may-agent/sdk";
+import type { MetricDefinition, MetricService } from "@may-agent/sdk/legacy";
 import { sampleFocusMetric, type FocusMetricId } from "./focus-metrics.ts";
 
 const focusMetricIds: FocusMetricId[] = [

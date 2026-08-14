@@ -11,7 +11,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { dirname, join } from "node:path";
-import type { ProjectAppContext, ProjectAppEvent } from "@may-agent/sdk";
+import type { ProjectAppContext, ProjectAppEvent } from "@may-agent/sdk/legacy";
 
 type PipelineWatcherState = {
   schemaVersion?: string;

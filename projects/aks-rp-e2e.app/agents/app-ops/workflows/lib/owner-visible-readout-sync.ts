@@ -7,7 +7,7 @@ import {
   withTaskStateLock,
   type TaskStateConfig,
   type TaskTree,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/legacy";
 import {
   sampleFocusMetrics,
   type FocusMetricsSnapshot,

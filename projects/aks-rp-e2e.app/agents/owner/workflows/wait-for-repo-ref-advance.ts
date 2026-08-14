@@ -8,8 +8,8 @@ import type {
   WorkflowContext,
   WorkflowIoContract,
   WorkflowResult,
-} from "@may-agent/sdk";
-import { workflowResultVersion } from "@may-agent/sdk";
+} from "@may-agent/sdk/legacy";
+import { workflowResultVersion } from "@may-agent/sdk/legacy";
 
 export const name = "wait-for-repo-ref-advance";
 export const description =

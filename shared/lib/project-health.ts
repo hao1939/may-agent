@@ -106,7 +106,7 @@ import {
   appendDiscussionComment,
   unreadDiscussionTail,
   type ProjectMeta,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/legacy";
 
 export { parseProjectMeta, validateProjectFormat, updateField, appendDiscussionComment, unreadDiscussionTail };
 export type { ProjectMeta };

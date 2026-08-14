@@ -13,4 +13,4 @@ export {
   listConfiguredAgents,
   listAutonomousAgents,
   resolveMetricOwner,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/legacy";

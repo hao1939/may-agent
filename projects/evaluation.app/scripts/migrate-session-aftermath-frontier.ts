@@ -7,7 +7,7 @@ import {
   setProjectLifecycle,
   type TaskStateConfig,
   type TaskTree,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/legacy";
 
 export const legacySessionTaskPrefix = "runtime/session-aftermath/";
 

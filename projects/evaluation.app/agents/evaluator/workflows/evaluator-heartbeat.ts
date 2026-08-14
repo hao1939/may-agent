@@ -6,7 +6,7 @@ import {
   type ProjectAppTaskHandlerResult,
   type WorkflowContext,
   type WorkflowResult,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/legacy";
 
 export const name = "evaluator-heartbeat";
 export const description = "evaluation app owner review.";

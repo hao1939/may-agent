@@ -1,4 +1,4 @@
-import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk";
+import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk/legacy";
 
 /**
  * milestone-quality — Validates milestone specificity when projects start.

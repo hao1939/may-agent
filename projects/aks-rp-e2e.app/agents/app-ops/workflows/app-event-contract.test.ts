@@ -11,7 +11,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
-import type { TaskTree } from "@may-agent/sdk";
+import type { TaskTree } from "@may-agent/sdk/legacy";
 import { applyProjectAppConditionEvent } from "../../../../may-agent/src/app/project-app-condition-tracker.ts";
 import app, {
   masterValidationCapacityPulseEventType,

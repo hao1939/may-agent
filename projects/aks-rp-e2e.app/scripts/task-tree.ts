@@ -4,7 +4,7 @@ import {
   readTaskState,
   type TaskStateConfig,
   type TaskTree,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/legacy";
 import { computeVisibleFrontier } from "../agents/app-ops/workflows/lib/owner-visible-readout-sync.ts";
 
 type JsonObject = Record<string, unknown>;

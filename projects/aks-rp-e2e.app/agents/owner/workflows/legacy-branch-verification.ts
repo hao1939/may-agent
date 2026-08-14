@@ -9,7 +9,7 @@ import {
   type WorkflowIoContract,
   type WorkflowResult,
   workflowResultVersion,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/legacy";
 import {
   activeDomainPathOwners,
   type ActiveDomainPathOwner,

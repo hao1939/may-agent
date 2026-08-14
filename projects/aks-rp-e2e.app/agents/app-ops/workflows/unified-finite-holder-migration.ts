@@ -5,7 +5,7 @@ import type {
   ProjectAppTaskAction,
   WorkflowContext,
   WorkflowResult,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/legacy";
 
 export const name = "unified-finite-holder-migration";
 export const description =

@@ -3,7 +3,7 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import type { WorkflowContext } from "@may-agent/sdk";
+import type { WorkflowContext } from "@may-agent/sdk/legacy";
 import {
   boundedWorkflowEvidence,
   executeWithVerifier,

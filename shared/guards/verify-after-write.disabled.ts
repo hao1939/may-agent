@@ -1,4 +1,4 @@
-import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk";
+import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk/legacy";
 
 /**
  * verify-after-write guard — C1.3 Write/Edit-Without-Verify detection.

@@ -4,7 +4,7 @@ import { spawnSync } from "node:child_process";
 import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Database } from "bun:sqlite";
-import { projectRuntimePaths, readTaskState } from "@may-agent/sdk";
+import { projectRuntimePaths, readTaskState } from "@may-agent/sdk/legacy";
 import {
   parseTriggerEvent,
   triggerString,

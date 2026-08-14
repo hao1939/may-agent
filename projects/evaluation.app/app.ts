@@ -6,7 +6,7 @@ import {
   type ProjectAppContext,
   type ProjectAppEvent,
   type ProjectAppTaskIntent,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/legacy";
 import { observeEvaluationPipeline } from "./watchers/evaluation-pipeline.js";
 import { projectEvaluationFeedback } from "./watchers/feedback-projection.js";
 import {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type { ProjectAppTaskAction } from "@may-agent/sdk";
+import type { ProjectAppTaskAction } from "@may-agent/sdk/legacy";
 import { validateAksTaskAction } from "./app.js";
 
 const exactCommit = "0123456789abcdef0123456789abcdef01234567";

@@ -7,7 +7,7 @@ import {
   type ProjectAppTaskVerificationResult,
   type WorkflowContext,
   type WorkflowResult,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/legacy";
 import { integrateDirectlyIntoDev } from "./lib/direct-dev-integration.js";
 import {
   isRunnableScenarioNormalization,

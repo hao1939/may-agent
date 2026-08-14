@@ -22,7 +22,7 @@ import {
   type WorkflowContext,
   type WorkflowIoContract,
   type WorkflowResult,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/legacy";
 import { appendTrackedPipelineRunId } from "../../../watchers/aks-pipeline.js";
 import {
   summarizePullRequestReview as summarizeAksPullRequestReview,

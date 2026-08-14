@@ -1,4 +1,4 @@
-import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk";
+import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk/legacy";
 
 /**
  * auto-test guard — warns when source files are modified without test confirmation.

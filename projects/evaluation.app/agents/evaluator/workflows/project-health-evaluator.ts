@@ -10,7 +10,7 @@ import {
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { isAbsolute, join, relative, resolve } from "node:path";
-import { type WorkflowContext, type WorkflowResult } from "@may-agent/sdk";
+import { type WorkflowContext, type WorkflowResult } from "@may-agent/sdk/legacy";
 
 export const name = "project-health-evaluator";
 export const description =

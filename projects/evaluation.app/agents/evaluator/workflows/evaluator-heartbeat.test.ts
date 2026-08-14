@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "bun:test";
-import { admitProjectAppTaskHandlerResult } from "@may-agent/sdk";
+import { admitProjectAppTaskHandlerResult } from "@may-agent/sdk/legacy";
 import { execute, normalizeOwnerResult } from "./evaluator-heartbeat";
 
 function context(result: Record<string, unknown>) {

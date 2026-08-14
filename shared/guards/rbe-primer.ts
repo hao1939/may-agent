@@ -1,4 +1,4 @@
-import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk";
+import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk/legacy";
 
 /**
  * rbe-primer — Step-start reminder to read before edit.

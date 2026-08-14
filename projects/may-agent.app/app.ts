@@ -6,7 +6,7 @@ import {
   type ProjectAppContext,
   type ProjectAppEvent,
   type ProjectAppTaskIntent,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/legacy";
 
 const projectId = "may-agent";
 const projectOwnerAgent = "tech-lead";

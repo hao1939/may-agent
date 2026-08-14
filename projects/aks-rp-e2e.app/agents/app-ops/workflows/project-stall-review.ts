@@ -11,7 +11,7 @@ import {
   resolveTaskTreePath,
   type WorkflowContext,
   type WorkflowResult,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/legacy";
 import { defaultFeatureCompactLoopStatePath } from "./lib/feature-compact-loop-store.ts";
 import { defaultSpecLoopStatePath } from "./lib/spec-loop-store.ts";
 import {

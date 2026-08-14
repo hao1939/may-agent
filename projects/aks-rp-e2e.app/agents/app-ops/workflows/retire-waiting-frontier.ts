@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk/legacy";
 
 export const name = "retire-waiting-frontier";
 export const description =

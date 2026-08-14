@@ -11,7 +11,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { WorkflowContext } from "@may-agent/sdk";
+import type { WorkflowContext } from "@may-agent/sdk/legacy";
 import {
   assertIsolatedWriteDispatch,
   execute,

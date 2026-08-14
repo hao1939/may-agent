@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import type { WorkflowGuardEvent } from "@may-agent/sdk";
+import type { WorkflowGuardEvent } from "@may-agent/sdk/legacy";
 
 // Import the guard module - milestone-quality exports `guard`
 // We need to import the file to access the guard and the internal scoreMilestone

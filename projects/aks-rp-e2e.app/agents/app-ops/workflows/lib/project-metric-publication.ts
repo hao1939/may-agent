@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
-import type { MetricDefinition, MetricService } from "@may-agent/sdk";
+import type { MetricDefinition, MetricService } from "@may-agent/sdk/legacy";
 import type { MetricSampleOutput } from "../../../../scripts/project-metrics.ts";
 
 type ProjectMetricDefinition = {

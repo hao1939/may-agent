@@ -1,6 +1,6 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk/legacy";
 import { appendLearningCandidate } from "./lib/learning-candidates.js";
 
 export const name = "evaluator-aftermath";

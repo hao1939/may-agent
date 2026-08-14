@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
-import type { ProjectAppContext } from "@may-agent/sdk";
+import type { ProjectAppContext } from "@may-agent/sdk/legacy";
 import app, {
   appInboxCanaryRequested,
   appRuntimeCanaryRequested,

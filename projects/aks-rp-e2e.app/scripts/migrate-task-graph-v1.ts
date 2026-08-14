@@ -6,7 +6,7 @@ import {
   type TaskNode,
   type TaskStateConfig,
   type TaskTree,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/legacy";
 
 type MigrationManifest = {
   version: 1;

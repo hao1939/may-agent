@@ -1,4 +1,4 @@
-import type { ProjectAppTaskIntent } from "@may-agent/sdk";
+import type { ProjectAppTaskIntent } from "@may-agent/sdk/legacy";
 
 export const specLoopTaskId = "aks-spec-verification-loop";
 export const featureCompactLoopTaskId = "aks-feature-compact-loop";

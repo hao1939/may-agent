@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { resolveTaskTreePath } from "@may-agent/sdk";
+import { resolveTaskTreePath } from "@may-agent/sdk/legacy";
 
 export type ObservedTask = {
   id: string;
