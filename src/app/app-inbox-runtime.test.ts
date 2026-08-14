@@ -6,7 +6,12 @@ import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
 import { closeDb, getDb } from "../lib/requests.js";
 import { DbWriter } from "../lib/db-writer.js";
-import { associateAppInboxClaimSession, claimAppInboxItem, createAppInboxItem } from "./app-inbox-store.js";
+import {
+  associateAppInboxClaimSession,
+  claimAppInboxItem,
+  createAppInboxItem,
+  waitAppInboxClaim,
+} from "./app-inbox-store.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
 import {
   EVENT_DEDUPLICATED,
@@ -512,6 +517,123 @@ describe("App inbox runtime", () => {
 
     await waitUntil(() => runtime?.host.get("restart-probe")?.status === "done");
     expect(calls).toHaveLength(1);
+  });
+
+  it("converts a previous owner claim to an exact session wait and wakes only on its terminal event", async () => {
+    const calls: string[] = [];
+    let sessionStatus: "running" | "done" = "running";
+    createAppInboxItem(db, {
+      id: "session-owned-probe",
+      appId: "evaluation-canary",
+      source: { kind: "system", id: "before-restart" },
+      input: { kind: "probe", data: { value: "session-owned" } },
+      now: 100,
+    });
+    const oldClaim = claimAppInboxItem(db, "session-owned-probe", "old-runtime", 60_000, 100)!;
+    associateAppInboxClaimSession(db, oldClaim, "session-linked", 101);
+    const bus = new EventBus();
+
+    runtime = await startAppInboxRuntime({
+      projectsRoot: root,
+      db,
+      manager: manager(calls),
+      bus,
+      scanIntervalMs: 10_000,
+      readDependency: async ({ dependency }) => ({
+        ...dependency,
+        status: sessionStatus,
+        summary: sessionStatus === "done" ? "Linked session completed" : "Linked session is running",
+      }),
+    });
+
+    expect(runtime?.host.get("session-owned-probe")).toMatchObject({
+      waitingOn: { kind: "session", id: "session-linked" },
+      availableAt: undefined,
+      lease: undefined,
+    });
+    expect(calls).toHaveLength(0);
+
+    bus.emit({
+      type: "session.end",
+      source: "manager",
+      owner: "agent:evaluator",
+      data: {
+        sessionId: "session-unrelated",
+        agent: "evaluator",
+        outcome: "done",
+        summary: "Unrelated",
+        durationMs: 1,
+        status: "done",
+      },
+    });
+    await Bun.sleep(20);
+    expect(calls).toHaveLength(0);
+
+    sessionStatus = "done";
+    const terminal = {
+      type: "session.end" as const,
+      source: "manager",
+      owner: "agent:evaluator",
+      data: {
+        sessionId: "session-linked",
+        agent: "evaluator",
+        outcome: "done",
+        summary: "Linked session completed",
+        durationMs: 1,
+        status: "done",
+      },
+    };
+    bus.emit(terminal);
+    bus.emit(terminal);
+
+    await waitUntil(() => runtime?.host.get("session-owned-probe")?.status === "done");
+    expect(calls).toHaveLength(1);
+    expect(JSON.parse(calls[0]!.match(/```json\n([\s\S]*?)\n```/)?.[1] ?? "[]")[0]).toMatchObject({
+      id: "session-owned-probe",
+      dependency: {
+        kind: "session",
+        id: "session-linked",
+        status: "done",
+        summary: "Linked session completed",
+      },
+    });
+  });
+
+  it("recovers a stored session wait completed while the runtime was offline", async () => {
+    const calls: string[] = [];
+    createAppInboxItem(db, {
+      id: "offline-session-probe",
+      appId: "evaluation-canary",
+      source: { kind: "system", id: "before-restart" },
+      input: { kind: "probe", data: { value: "offline-session" } },
+      now: 100,
+    });
+    const oldClaim = claimAppInboxItem(db, "offline-session-probe", "old-runtime", 60_000, 100)!;
+    expect(waitAppInboxClaim(db, oldClaim, { kind: "session", id: "session-offline" }, { now: 101 })).toBe(true);
+
+    runtime = await startAppInboxRuntime({
+      projectsRoot: root,
+      db,
+      manager: manager(calls),
+      bus: new EventBus(),
+      scanIntervalMs: 10_000,
+      readDependency: async ({ dependency }) => ({
+        ...dependency,
+        status: "done",
+        summary: "Completed while offline",
+      }),
+    });
+
+    await waitUntil(() => runtime?.host.get("offline-session-probe")?.status === "done");
+    expect(calls).toHaveLength(1);
+    expect(JSON.parse(calls[0]!.match(/```json\n([\s\S]*?)\n```/)?.[1] ?? "[]")[0]).toMatchObject({
+      dependency: {
+        kind: "session",
+        id: "session-offline",
+        status: "done",
+        summary: "Completed while offline",
+      },
+    });
   });
 
   it("waits for the shared owner capacity before dispatching", async () => {
