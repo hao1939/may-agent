@@ -150,6 +150,40 @@ describe("control socket protocol", () => {
     ]);
   });
 
+  it("persists a flat trigger command and returns its durable event id", async () => {
+    const persistDir = mkdtempSync(join(tmpdir(), "may-control-socket-flat-trigger-"));
+    persistDirs.push(persistDir);
+    const bus = new EventBus();
+    const writer = new DbWriter(persistDir);
+    bus.setPersistenceSubscriber(writer.handler);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    const core = createCore({
+      emitEvent: (event) => {
+        Object.defineProperty(event, EVENT_INGRESS_SOURCE, {
+          value: "control-socket",
+          configurable: true,
+        });
+        const emitted = bus.emit(event as AgentEvent);
+        const eventId = emitted[EVENT_ROW_ID];
+        return Number.isInteger(eventId) && Number(eventId) > 0 ? { eventId: Number(eventId) } : {};
+      },
+      subscribeEvents: (handler) => bus.subscribe((event) => handler(event as ControlEvent)),
+    });
+
+    const receipt = await sendSocketCommand(core.endpoint, {
+      type: "trigger.metrics-snapshot",
+      source: "control",
+      owner: "agent:may",
+      forced: true,
+    });
+
+    expect(Number(receipt.eventId)).toBeGreaterThan(0);
+    const row = getDb(persistDir)
+      .prepare("SELECT id, event_type FROM events WHERE id = ?")
+      .get(receipt.eventId) as { id: number; event_type: string };
+    expect(row).toEqual({ id: receipt.eventId, event_type: "trigger.metrics-snapshot" });
+  });
+
   it("returns the original persisted event id when a canonical socket event is retried", async () => {
     const persistDir = mkdtempSync(join(tmpdir(), "may-control-socket-retry-"));
     persistDirs.push(persistDir);
