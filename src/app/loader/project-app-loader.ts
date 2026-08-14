@@ -59,7 +59,7 @@ import {
   type ProjectAppTaskVerifier,
   type ProjectAppExecutionPaths,
 } from "@may-agent/sdk/legacy";
-import type { AppDefinition, AppRequest, AppTaskAttachment } from "@may-agent/sdk";
+import type { AppDefinition, AppEvent as CanonicalAppEvent, AppRequest, AppTaskAttachment } from "@may-agent/sdk";
 import type { TaskView } from "@may-agent/sdk/app";
 import { readRuntimeTaskView } from "../app-read.js";
 import { canonicalAppEvent } from "../canonical-app-event.js";
@@ -360,24 +360,55 @@ function isCanonicalApp(app: ProjectApp | AppDefinition): app is AppDefinition {
   return Object.prototype.hasOwnProperty.call(app, "inputSchema");
 }
 
-/** Temporary internal adapter: canonical task policy, proven reconciler mechanics. */
-function canonicalTaskProjectApp(app: AppDefinition): ProjectApp | null {
-  if (!app.tasks) return null;
+function canonicalScheduledEvent(event: CanonicalAppEvent): AppEvent {
+  return {
+    type: event.type,
+    data: isRecord(event.data) ? event.data : {},
+    ...(event.source ? { source: event.source } : {}),
+    ...(event.owner ? { owner: event.owner } : {}),
+    ...(event.target ? { target: event.target as EventTarget } : {}),
+    ...(event.urgency ? { urgency: event.urgency } : {}),
+  };
+}
+
+/** Temporary internal adapter: canonical task/schedule policy, proven host mechanics. */
+function canonicalProjectAppAdapter(app: AppDefinition): ProjectApp | null {
+  const eventSchedules = (app.schedules ?? []).flatMap((schedule) =>
+    schedule.event
+      ? [
+          {
+            id: schedule.id,
+            enabled: schedule.enabled !== false,
+            intervalMs: schedule.intervalMs,
+            emits: [canonicalScheduledEvent(schedule.event)],
+          },
+        ]
+      : [],
+  );
+  if (!app.tasks && eventSchedules.length === 0) return null;
   return {
     id: app.id,
     version: 1,
     owner: app.owner,
     description: app.description ?? `Canonical App ${app.id}`,
     workspace: app.workspace,
-    budget: { maxConcurrent: app.tasks.maxConcurrent ?? 1 },
-    tasks: {
-      accepts: app.tasks.subscriptions ?? [],
-      resolve: (event) => app.tasks?.resolve?.(canonicalAppEvent(event as AgentEvent)) ?? null,
-      ...(app.tasks.validateAction
-        ? { validateAction: app.tasks.validateAction as (action: ProjectAppTaskAction) => string | null }
-        : {}),
-      ...(app.tasks.resyncIntervalMs ? { resyncIntervalMs: app.tasks.resyncIntervalMs } : {}),
-    },
+    budget: { maxConcurrent: app.tasks?.maxConcurrent ?? 1 },
+    ...(eventSchedules.length ? { schedules: eventSchedules } : {}),
+    ...(app.tasks
+      ? {
+          tasks: {
+            accepts: app.tasks.subscriptions ?? [],
+            resolve: (event: AppEvent) =>
+              app.tasks?.resolve?.(canonicalAppEvent(event as unknown as AgentEvent)) ?? null,
+            ...(app.tasks.validateAction
+              ? {
+                  validateAction: app.tasks.validateAction as (action: ProjectAppTaskAction) => string | null,
+                }
+              : {}),
+            ...(app.tasks.resyncIntervalMs ? { resyncIntervalMs: app.tasks.resyncIntervalMs } : {}),
+          },
+        }
+      : {}),
   };
 }
 
@@ -3555,7 +3586,9 @@ async function prepareProjectAppDescriptors(opts: ProjectAppLoaderOptions): Prom
   );
   for (const appDir of listProjectAppDirs(opts.projectsRoot)) {
     const loadedApp = await loadProjectApp(appDir);
-    const app = isCanonicalApp(loadedApp) ? canonicalTaskProjectApp(loadedApp) : loadedApp;
+    const app = isCanonicalApp(loadedApp)
+      ? canonicalProjectAppAdapter(loadedApp)
+      : loadedApp;
     if (!app) continue;
     const id = typeof app.id === "string" && app.id.trim() ? app.id.trim() : appIdFromDir(appDir);
     if (ids.has(id)) throw new Error(`Duplicate project app id: ${id}`);
