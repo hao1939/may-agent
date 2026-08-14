@@ -126,6 +126,68 @@ describe("App inbox task attachment", () => {
     }
   });
 
+  it("adapts canonical task policy into the internal reconciler without restoring legacy routes", async () => {
+    const f = fixture();
+    const bus = new EventBus();
+    try {
+      writeFileSync(
+        join(f.appDir, "app.ts"),
+        `export default {
+          id: "sample", version: 1, owner: "sample-owner",
+          inputSchema: { type: "object" },
+          workspace: { kind: "local", localPath: "." },
+          tasks: {
+            attach: true,
+            subscriptions: ["sample.work.requested"],
+            maxConcurrent: 3,
+            resolve(event) {
+              const itemId = event.data.itemId;
+              return itemId ? {
+                id: "work/" + itemId, parentId: "operations",
+                outcome: "Process " + itemId, acceptance: ["processed"],
+                mode: "achieve", workflow: "worker"
+              } : null;
+            }
+          }
+        };\n`,
+      );
+      const result = await installProjectApps({
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: manager([]),
+        bus,
+        agentCrons: new Map(),
+        appRegistrySnapshot: {
+          generation: 2,
+          entries: [{ appDir: f.appDir, definition: { id: "sample" } as never }],
+        },
+      });
+
+      expect(result.entries).toBe(0);
+      expect(result.installed).toHaveLength(1);
+      expect(result.installed[0]).toMatchObject({
+        id: "sample",
+        ownsDirectInbox: true,
+        app: { budget: { maxConcurrent: 3 } },
+      });
+      expect(result.installed[0]?.app.events).toBeUndefined();
+      expect(result.installed[0]?.app.actions).toBeUndefined();
+      expect(result.installed[0]?.app.schedules).toBeUndefined();
+      expect(
+        result.installed[0]?.app.tasks?.resolve({
+          type: "sample.work.requested",
+          data: { itemId: "42" },
+        }),
+      ).toMatchObject({ id: "work/42", outcome: "Process 42" });
+    } finally {
+      closeDb(f.persistDir);
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
   it("uses the loaded Project App task engine and emits a completion wake exactly once", async () => {
     const f = fixture();
     const bus = new EventBus();
