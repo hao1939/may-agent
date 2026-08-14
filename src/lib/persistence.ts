@@ -16,6 +16,7 @@ import type { TSchema } from "@earendil-works/pi-ai";
 import { currentProcessInstance, isProcessInstanceAlive } from "@may-agent/sdk";
 // DB writes removed from RegistryStore — handled by DbWriter subscriber via EventBus.
 import { log } from "./log.js";
+import type { ToolPolicy } from "./session-policy.js";
 
 /** Serializable agent config (no tools, no apiKey, no full model object). */
 export interface PersistedAgentConfig {
@@ -72,7 +73,7 @@ export interface PersistedSession {
   /** Serializable TypeBox/JSON schema for finish().result. */
   outputSchema?: TSchema;
   /** Per-session capability restriction applied by the runtime. */
-  toolPolicy?: "full" | "readonly" | "deputy";
+  toolPolicy?: ToolPolicy;
   /** Effective filesystem root supplied by the enclosing workflow/task runtime. */
   executionRoot?: string;
 }

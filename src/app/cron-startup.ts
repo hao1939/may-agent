@@ -8,6 +8,7 @@ import { log } from "../lib/log.js";
 import type { PersistedSession } from "../lib/persistence.js";
 import { PROJECT_APP_TASK_RECOVERY_OWNER } from "./project-app-task-reconciler.js";
 import { recoverInstalledProjectAppTasks } from "./loader/project-app-loader.js";
+import { APP_INBOX_RECOVERY_OWNER } from "./app-inbox-host.js";
 
 export interface CronRuntimeOptions {
   manager: SubagentManager;
@@ -40,7 +41,7 @@ export function shouldResumeStartupSession(
   session: PersistedSession,
   claimedProjectTaskSessionIds: ReadonlySet<string> = new Set(),
 ): { resume: true } | { resume: false; reason?: string } {
-  if (session.source === "app-inbox-owner") {
+  if (session.recoveryOwner === APP_INBOX_RECOVERY_OWNER || session.source === "app-inbox-owner") {
     return {
       resume: false,
       reason: "App inbox host reclaims the fenced request with a fresh bounded owner attempt",

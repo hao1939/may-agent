@@ -407,7 +407,8 @@ describe("App inbox runtime", () => {
       requestId: `app-inbox-human:${item.id}`,
       conversationId: "telegram:123",
       channelMessageId: 99,
-      toolPolicy: "deputy",
+      recoveryOwner: "app-inbox",
+      toolPolicy: "app-owner-deputy",
     });
     const request = deliveryRequests[0].data;
     bus.emit({
