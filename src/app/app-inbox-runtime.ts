@@ -181,6 +181,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     const activeKeys = new Set<string>();
     for (const { definition } of loaded) {
       for (const schedule of definition.schedules ?? []) {
+        if (!schedule.input) continue;
         const key = `${definition.id}/${schedule.id}`;
         activeKeys.add(key);
         const fingerprint = JSON.stringify({
@@ -322,6 +323,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     const currentTime = now();
     for (const { definition } of loaded) {
       for (const configuredSchedule of definition.schedules ?? []) {
+        if (!configuredSchedule.input) continue;
         if (configuredSchedule.enabled === false) continue;
         const activation = scheduleActivations.get(`${definition.id}/${configuredSchedule.id}`);
         if (!activation) continue;

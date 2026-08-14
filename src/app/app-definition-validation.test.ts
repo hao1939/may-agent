@@ -20,7 +20,21 @@ describe("canonical App definition validation", () => {
           toInput: (event) => ({ kind: "request", data: event.data }),
         },
       ],
-      schedules: [{ id: "review", intervalMs: 60_000, input: { kind: "review", data: {} } }],
+      schedules: [
+        {
+          id: "review",
+          intervalMs: 60_000,
+          input: { kind: "review", data: {} },
+        },
+        {
+          id: "task-wake",
+          intervalMs: 60_000,
+          event: {
+            type: "evaluation.review.due",
+            data: { project: "evaluation" },
+          },
+        },
+      ],
       observers: [{ id: "health", intervalMs: 60_000, run: async () => [] }],
       actions: {
         evaluate: {
@@ -54,7 +68,22 @@ describe("canonical App definition validation", () => {
           { id: "same", event: "one" },
           { id: "same", event: {}, toInput() {} },
         ],
-        schedules: [{ id: "tick", intervalMs: 0, input: { kind: "" } }],
+        schedules: [
+          { id: "tick", intervalMs: 0, input: { kind: "" } },
+          { id: "missing-target", intervalMs: 1 },
+          {
+            id: "ambiguous-target",
+            intervalMs: 1,
+            input: { kind: "request", data: {} },
+            event: { type: "request.due", data: {} },
+          },
+          {
+            id: "invalid-event",
+            intervalMs: 1,
+            event: { type: "", data: {} },
+            catchUp: "latest",
+          },
+        ],
         tasks: { subscriptions: ["task.requested"] },
       }),
     ).toEqual(
@@ -65,6 +94,10 @@ describe("canonical App definition validation", () => {
         "App broken subscription same requires a valid event selector",
         "App broken schedule tick intervalMs must be positive",
         "App broken schedule tick requires a valid App input",
+        "App broken schedule missing-target requires exactly one App input or event",
+        "App broken schedule ambiguous-target requires exactly one App input or event",
+        "App broken schedule invalid-event requires a valid event",
+        "App broken event schedule invalid-event cannot configure inbox catch-up",
         "App broken task subscriptions require resolve",
       ]),
     );

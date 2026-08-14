@@ -84,14 +84,28 @@ export type AppEventSubscription = {
   toInput(event: AppEvent<Record<string, unknown>>): AppInput | null;
 };
 
-export type AppSchedule = {
+type AppScheduleBase = {
   id: string;
   enabled?: boolean;
   intervalMs: number;
-  input: AppInput;
-  /** `latest` admits at most the newest missed slot after downtime. */
-  catchUp?: "none" | "latest";
 };
+
+/** A timer may address the App inbox or publish a fact for task reconciliation. */
+export type AppSchedule = AppScheduleBase &
+  (
+    | {
+        input: AppInput;
+        event?: never;
+        /** `latest` admits at most the newest missed inbox slot after downtime. */
+        catchUp?: "none" | "latest";
+      }
+    | {
+        event: AppEvent;
+        input?: never;
+        /** Event schedules resume from the shared scheduler; they do not replay missed facts. */
+        catchUp?: never;
+      }
+  );
 
 export type AppObserver = {
   id: string;
