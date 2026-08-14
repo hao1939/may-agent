@@ -510,6 +510,9 @@ function writeApp(appDir: string, extra = "") {
        if (ctx.appDir !== "${appDir}" || ctx.projectDir !== "${appDir}" || ctx.workspaceDir !== "${appDir}") {
          return ctx.blocked("resolved workflow context paths are missing");
        }
+       if (!ctx.reconciliation || ctx.reconciliation.appId !== "sample" || !ctx.reconciliation.taskId || JSON.stringify(ctx.reconciliation.input) !== JSON.stringify(ctx.input)) {
+         return ctx.blocked("canonical task reconciliation context is missing");
+       }
        return ctx.done("done", { state: "converged", summary: "workflow done", evidence: ["proof"], actions: [] });
      }`,
   );

@@ -35,6 +35,8 @@ const expectedRootExports = [
   "TaskIntent",
   "TaskMode",
   "TaskPriority",
+  "TaskReconciliationChild",
+  "TaskReconciliationContext",
   "TaskReconcileAdmission",
   "TaskReconcileAdmissionOptions",
   "TaskReconcileResult",

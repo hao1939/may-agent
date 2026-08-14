@@ -59,8 +59,40 @@ export type ExecutionResult<T = unknown> = {
 /** The input is App/workflow-owned; the runtime only carries it across the boundary. */
 export type WorkflowInput<T = unknown> = T;
 
+export type TaskReconciliationChild = {
+  taskId: string;
+  generation: number;
+  outcome: string;
+  summary?: string;
+  evidence: string[];
+  owner?: string;
+  workflow?: string;
+  status: "pending" | "running" | "waiting" | "attention" | "done";
+  completedAt?: string;
+};
+
+/** Bounded task-attempt facts supplied without exposing task storage or prompt packets. */
+export type TaskReconciliationContext<TInput = unknown> = {
+  appId: string;
+  taskId: string;
+  generation: number;
+  resourceVersion: number;
+  owner: string;
+  mode: "achieve" | "maintain";
+  outcome: string;
+  acceptance: string[];
+  input: TInput;
+  children: {
+    live: TaskReconciliationChild[];
+    completed: TaskReconciliationChild[];
+  };
+  trigger?: AppEvent<Record<string, unknown>>;
+};
+
 export type WorkflowContext<TInput = unknown> = {
   input: WorkflowInput<TInput>;
+  /** Present only when a durable App task owns this workflow attempt. */
+  reconciliation?: TaskReconciliationContext<TInput>;
   read: AppRead;
   agents: {
     call(agent: string, task: string): Promise<ExecutionResult>;

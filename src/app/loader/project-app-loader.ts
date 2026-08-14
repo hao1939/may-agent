@@ -927,6 +927,28 @@ async function runTaskCapability(input: {
       trace,
       executionPaths: input.executionPaths,
       workflowInput: intent.input ?? {},
+      reconciliation: {
+        appId: descriptor.id,
+        taskId: claim.taskId,
+        generation: claim.generation,
+        resourceVersion: claim.resourceVersion,
+        owner: claim.owner,
+        mode: claim.mode,
+        outcome: intent.outcome,
+        acceptance: intent.acceptance,
+        input: intent.input ?? {},
+        children: {
+          live: input.childContext.live.map(({ phase, ...child }) => ({
+            ...child,
+            status: phase === "converged" ? "done" : phase,
+          })),
+          completed: input.childContext.completed.map((child) => ({
+            ...child,
+            status: "done" as const,
+          })),
+        },
+        ...(event ? { trigger: canonicalAppEvent(event as AgentEvent) } : {}),
+      },
       executionTimeoutMs: PROJECT_APP_TASK_WORKFLOW_TIMEOUT_MS,
     });
     const done = result.type === "done";
