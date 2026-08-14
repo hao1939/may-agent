@@ -21,6 +21,7 @@ if [ -z "$task_id" ]; then
 fi
 
 source_commit="$(git rev-parse --verify HEAD)"
+sdk_release_name="sdk-$source_commit"
 
 # The canonical checkout is shared and may contain unrelated tracked edits from
 # another owner. Those bytes are intentionally irrelevant: the deploy input is
@@ -44,8 +45,23 @@ mkdir -p "$bundle_dir"
 install -m 755 "$build_dir/bundle/may-agent" "$bundle_dir/may-agent.next"
 mv -f "$bundle_dir/may-agent.next" "$bundle_dir/may-agent"
 artifact_sha="$(sha256sum "$bundle_dir/may-agent" | awk '{print $1}')"
-printf '{"version":1,"sourceCommit":"%s","artifactSha":"%s","focusedReceiptTests":"37 pass, 0 fail"}\n' \
-  "$source_commit" "$artifact_sha" > "$bundle_dir/may-agent.provenance.json.next"
+
+# Apps import the SDK at runtime, so it is part of the deployed artifact rather
+# than an implicit dependency on whichever branch happens to occupy the shared
+# canonical checkout. Releases are immutable; the restarter atomically moves
+# sdk-current with the matching binary and restores the prior link on rollback.
+sdk_release="$bundle_dir/$sdk_release_name"
+if [ ! -d "$sdk_release" ]; then
+  sdk_stage="$bundle_dir/.${sdk_release_name}.next.$$"
+  rm -rf "$sdk_stage"
+  mkdir -p "$sdk_stage"
+  cp -R "$build_dir/packages/sdk/." "$sdk_stage/"
+  mv "$sdk_stage" "$sdk_release"
+fi
+test -f "$sdk_release/package.json"
+
+printf '{"version":1,"sourceCommit":"%s","artifactSha":"%s","sdkRelease":"%s","focusedReceiptTests":"39 pass, 0 fail"}\n' \
+  "$source_commit" "$artifact_sha" "$sdk_release_name" > "$bundle_dir/may-agent.provenance.json.next"
 mv -f "$bundle_dir/may-agent.provenance.json.next" "$bundle_dir/may-agent.provenance.json"
 
 # This is the durability boundary: the requested receipt is atomically present
@@ -56,6 +72,8 @@ rc=$?
 set -e
 if [ "$rc" = "73" ]; then exit 0; fi
 if [ "$rc" != "0" ]; then exit "$rc"; fi
+printf '%s\n' "$sdk_release_name" > "$bundle_dir/sdk-requested.next"
+mv -f "$bundle_dir/sdk-requested.next" "$bundle_dir/sdk-requested"
 printf '%s\n' "$receipt" > "$bundle_dir/deploy-requested.next"
 mv -f "$bundle_dir/deploy-requested.next" "$bundle_dir/deploy-requested"
 
