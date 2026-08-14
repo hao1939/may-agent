@@ -14,6 +14,8 @@ export interface InterfaceStartupOptions {
   manager: SubagentManager;
   getSessionId: () => string;
   admitAppInput?: AttachControlSocketOptions["admitAppInput"];
+  describeProjectActions?: AttachControlSocketOptions["describeProjectActions"];
+  invokeProjectAction?: AttachControlSocketOptions["invokeProjectAction"];
 }
 
 export interface InterfaceRuntime {
@@ -45,13 +47,18 @@ export async function startInterfaceRuntime(options: InterfaceStartupOptions): P
         manager: options.manager,
         getSessionId: options.getSessionId,
         admitAppInput: options.admitAppInput,
+        describeProjectActions: options.describeProjectActions,
+        invokeProjectAction: options.invokeProjectAction,
         agentName: options.interfaceAgent,
         instance: options.instanceLabel,
       })
     : { close: () => {}, clientCount: () => 0 };
 
   if (options.socketEnabled) {
-    options.bus.emit({ type: "info", message: `[instance:${options.instanceLabel}] PID ${process.pid}, socket ${socketName}` });
+    options.bus.emit({
+      type: "info",
+      message: `[instance:${options.instanceLabel}] PID ${process.pid}, socket ${socketName}`,
+    });
   } else {
     options.bus.emit({
       type: "info",

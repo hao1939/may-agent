@@ -71,6 +71,39 @@ describe("App inbox host", () => {
     ).toThrow("App malformed tasks attach must be true");
   });
 
+  it("discovers typed actions and translates them into validated App input", () => {
+    const host = new AppInboxHost({
+      db,
+      apps: [
+        defineApp({
+          ...app("evaluation"),
+          actions: {
+            probe: {
+              description: "Submit a typed probe",
+              inputSchema: Type.Object({ value: Type.String({ minLength: 1 }) }),
+              toInput: ({ value }) => ({ kind: "probe", data: { value } }),
+            },
+          },
+        }),
+      ],
+      invokeOwner: async () => [],
+    });
+
+    expect(host.hasApp("evaluation.app")).toBe(true);
+    expect(host.describeActions("evaluation")).toEqual([
+      {
+        id: "probe",
+        description: "Submit a typed probe",
+        inputSchema: expect.objectContaining({ type: "object" }),
+      },
+    ]);
+    expect(() => host.actionInput("evaluation", "probe", { value: "" })).toThrow("Invalid input for evaluation.probe");
+    expect(host.actionInput("evaluation.app", "probe", { value: "ready" })).toEqual({
+      kind: "probe",
+      data: { value: "ready" },
+    });
+  });
+
   it("replaces the live App registry atomically without orphaning unfinished work", () => {
     const host = new AppInboxHost({
       db,
