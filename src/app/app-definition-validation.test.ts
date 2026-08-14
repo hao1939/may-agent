@@ -11,6 +11,7 @@ describe("canonical App definition validation", () => {
       version: 1,
       owner: "evaluator",
       inputSchema,
+      route: () => null,
       inbox: { batch: "single", maxConcurrent: 2 },
       subscriptions: [
         {
@@ -48,6 +49,7 @@ describe("canonical App definition validation", () => {
         version: 1,
         owner: "owner",
         inputSchema: {},
+        route: "owner",
         subscriptions: [
           { id: "same", event: "one" },
           { id: "same", event: {}, toInput() {} },
@@ -58,6 +60,7 @@ describe("canonical App definition validation", () => {
     ).toEqual(
       expect.arrayContaining([
         "App broken subscription id is duplicated: same",
+        "App broken route must be a function",
         "App broken subscription same requires toInput",
         "App broken subscription same requires a valid event selector",
         "App broken schedule tick intervalMs must be positive",
