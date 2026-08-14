@@ -9,7 +9,7 @@
  *   2: record 0.95 (recover)
  *   3+: noop
  */
-import type { CronEntry, HandlerContext, HandlerModule, EventEnvelope } from "@may-agent/sdk";
+import type { CronEntry, HandlerContext, HandlerModule, EventEnvelope } from "@may-agent/sdk/legacy";
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   const metricId = "e2e.canary";

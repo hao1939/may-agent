@@ -15,7 +15,7 @@ import {
   readSessionMessages,
   writeSessionMeta,
 } from "../../lib/persistence";
-import { projectAppExecutionPaths, projectRuntimePaths, readTaskState, saveTaskState } from "@may-agent/sdk";
+import { projectAppExecutionPaths, projectRuntimePaths, readTaskState, saveTaskState } from "@may-agent/sdk/legacy";
 import { prepareProjectTaskWorkspace } from "../project-task-workspace";
 import { prepareAgentExecution } from "../../lib/agent-execution";
 import { createCheckpointTool } from "../../lib/tools/checkpoint";
