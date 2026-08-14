@@ -10,6 +10,7 @@ import type { SubagentManager } from "../../lib/index.js";
 import { describeLoadedProjectAppActions, invokeLoadedProjectAppAction } from "../loader/project-app-loader.js";
 import {
   attachControlSocket,
+  type AttachControlSocketOptions,
   type ControlSocket,
   type ControlStatusItem,
 } from "../../../packages/control/src/server.js";
@@ -24,6 +25,7 @@ export interface SocketUIOptions {
   agentName: string;
   /** Daemon instance label. */
   instance: string;
+  admitAppInput?: AttachControlSocketOptions["admitAppInput"];
 }
 
 export type SocketUI = ControlSocket;
@@ -51,6 +53,7 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
       return Number.isInteger(eventId) && Number(eventId) > 0 ? { eventId: Number(eventId) } : {};
     },
     describeProjectActions: (projectId) => describeLoadedProjectAppActions(bus, projectId),
+    admitAppInput: opts.admitAppInput,
     invokeProjectAction: (input) => invokeLoadedProjectAppAction({ bus, ingressSource: "control-socket", ...input }),
     subscribeEvents: (handler) =>
       bus.subscribe((event) => handler(event as unknown as Record<string, unknown> & { type: string })),
