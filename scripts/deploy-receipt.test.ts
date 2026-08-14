@@ -121,8 +121,9 @@ describe("restart-aware deploy receipts", () => {
     expect(restarter.indexOf("emit_wake succeeded")).toBeLessThan(
       restarter.indexOf('settle succeeded "$loaded" healthy true'),
     );
-    expect(restarter.indexOf("emit_wake rolled_back")).toBeLessThan(
-      restarter.indexOf('settle rolled_back "$loaded" "$rollback_health" true'),
+    expect(restarter).toContain("if emit_wake rolled_back; then rollback_wake=true; fi");
+    expect(restarter).toContain(
+      'settle rolled_back "$loaded" "$rollback_health" "$rollback_wake"',
     );
     expect(restarter).toContain('settle failed "$loaded" unhealthy false "restarter-exit-$rc"');
   });
@@ -142,6 +143,8 @@ describe("restart-aware deploy receipts", () => {
     );
     expect(deploy).toContain('$bundle_dir/may-agent.provenance.json');
     expect(deploy).toContain('"$artifact_sha" "$source_commit"');
+    expect(deploy).toContain('sdk_release_name="sdk-$source_commit"');
+    expect(deploy).toContain('cp -R "$build_dir/packages/sdk/." "$sdk_stage/"');
   });
 
   it("can stage an immutable source-worktree build into the canonical deploy root", () => {
@@ -151,5 +154,9 @@ describe("restart-aware deploy receipts", () => {
     expect(deploy).toContain('bundle_dir="$deploy_root/bundle"');
     expect(deploy).toContain('install -m 755 "$build_dir/bundle/may-agent" "$bundle_dir/may-agent.next"');
     expect(deploy).toContain('mv -f "$bundle_dir/deploy-requested.next" "$bundle_dir/deploy-requested"');
+    expect(deploy).toContain('mv -f "$bundle_dir/sdk-requested.next" "$bundle_dir/sdk-requested"');
+    const restarter = readFileSync(new URL("../container/may-agent-supervisor-restart.sh", import.meta.url), "utf8");
+    expect(restarter).toContain('switch_sdk "$sdk_release"');
+    expect(restarter).toContain('switch_sdk "$previous_sdk_release"');
   });
 });
