@@ -127,7 +127,7 @@ When you must query manually, inspect schema first.
 
 After a change, trigger one representative event and verify the durable trace:
 
-- event accepted by the responsible domain consumer or queryable owner inbox,
+- event accepted by the responsible domain consumer or durable App inbox,
 - project receipt linked to exactly one correlated owner result when applicable,
 - owner result includes a bounded summary and any durable task references,
 - exact durable waits appear as task Conditions,

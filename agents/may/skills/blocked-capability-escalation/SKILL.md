@@ -22,9 +22,9 @@ description: Handle missing capabilities, unavailable commands or tools, permiss
    evidence, blocker, resume context, severity, project/session identifiers,
    and a stable dedup key. A direct agent delegation uses the `agents` tool;
    an async note uses the separate `message` tool.
-5. **Verify acceptance.** Confirm the local blocked result, targeted agent, or
-   queryable owner inbox accepted the handoff. A file-only todo or owner label
-   without a readable route is not delivery.
+5. **Verify acceptance.** Confirm the local blocked result, bounded target
+   agent execution, or durable target App inbox accepted the handoff. A
+   file-only todo or owner label without an explicit route is not delivery.
 
 ## Completion Contract
 

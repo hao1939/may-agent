@@ -28,7 +28,7 @@ Before dispatching ANY recurring or previously-attempted task:
 2. CHECK IN-FLIGHT: Is an identical task already running or waiting?
    - Use the `agents` tool with `action: "list"` to see active sessions.
    - Read canonical task status, current attempt, exact Conditions, completion
-     receipts, event trace, and queryable owner inbox.
+     receipts, event trace, and durable App inbox.
    - Use the generated tree only as a projection; do not invent a parallel
      request queue.
    → If YES: Skip dispatch. Log "already in-flight."

@@ -136,9 +136,9 @@ reacts to belong in state, logs, traces, metrics, or knowledge.
   as `data.owner`.
 - Route by target first, then owner fallback. `owner` is the accountability
   backstop, not necessarily the first handler.
-- Ensure each emitted event has a consumer: direct handler, app adapter,
-  queryable owner inbox, or explicit external platform path. Pair bookkeeping
-  alone is not domain delivery.
+- Ensure each emitted event has a consumer: direct handler, durable App inbox,
+  or explicit external platform path. Pair bookkeeping alone is not domain
+  delivery.
 - For handlers, read `event.data.*`; do not add shortcut field promotion.
 - Prefer semantic project events such as `project.owner.requested`,
   `project.problem.investigation.requested`, `project.problem.resolved`, and
@@ -202,8 +202,8 @@ reacts to belong in state, logs, traces, metrics, or knowledge.
 ### Delivery and closure integrity
 
 - Delivery acceptance must mean a domain consumer acted/queued work or a
-  queryable owner inbox received it. A default-owner label without a readable
-  owner route is not delivery.
+  durable App inbox received it. A default-owner label without an explicit
+  route is not delivery.
 - When an accepted request has no terminal result, classify it as a missing
   consumer until proven otherwise; delivery acceptance is not completion.
   Before answering, verify that the plan explicitly includes every step:
@@ -424,8 +424,8 @@ Before finishing:
   lifecycle events.
 - Confirm every newly closed lifecycle pair writes a persisted closure link in
   the normal path rather than depending on backfill.
-- Confirm unclaimed owned events create queryable owner-inbox work and do not
-  hide a missing domain consumer behind bookkeeping acceptance.
+- Confirm unclaimed owned events remain visibly pending and do not hide a
+  missing domain consumer behind bookkeeping acceptance.
 - Confirm retention cannot delete an opener or closure still referenced by
   active/retained work.
 - For event/trace changes, add or update golden-trace tests and run semantic

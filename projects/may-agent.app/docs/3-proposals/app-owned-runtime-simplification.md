@@ -1,8 +1,30 @@
 # App-Owned Runtime Simplification
 
-**Status:** Accepted; migration in progress
+**Status:** Accepted; core App-host migration implemented, legacy Project App
+task engine migration remains
 **Scope:** Simplify the autonomous infrastructure by making an Agent App the
 durable owner of addressed work
+
+## Implementation checkpoint — 2026-08-14
+
+The core addressed-work path now follows this proposal:
+
+- one unconditional process-wide App registry loads `inbox.ts` definitions;
+- the durable App host and Project App adapter consume the same atomic
+  registry snapshot;
+- `/reload` validates and applies a prospective snapshot before publishing it,
+  and refuses to remove an App that still owns unfinished inbox work;
+- human May input is admitted only to the `may` App; the command router only
+  normalizes ingress, applies deterministic controls, and performs App
+  admission;
+- structured May turns, May break-glass recovery, generic owner-inbox delivery
+  fallback, and new owner-inbox pair creation are removed; and
+- the App registry, host, store, and owner adapter depend only on the stable
+  public `@may-agent/sdk` authoring contract.
+
+The older Project App/task controller still uses `@may-agent/sdk/legacy` and
+retains its specialized task-action contract. Migrating or replacing that
+engine is follow-on work, not part of the now-canonical App inbox path.
 
 ## Proposal
 
