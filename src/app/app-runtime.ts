@@ -199,6 +199,9 @@ export async function runAppRuntime(opts: {
     bus,
     runOwner: appTasks.runOwner,
     attachTask: appTasks.attach,
+    admitTaskEvent: ({ appId, event, intent, targetedTaskId, conditionTaskIds }) =>
+      appTasks.admitEvent({ appId, event, intent, targetedTaskId, conditionTaskIds }),
+    previewTaskEvent: ({ appId, event, targetedTaskId }) => appTasks.previewEvent({ appId, event, targetedTaskId }),
     readDependency: appTasks.readDependency,
     observerContext: (appId, appDir) => {
       const definition = appRegistry.snapshot().entries.find((entry) => entry.definition.id === appId)?.definition;

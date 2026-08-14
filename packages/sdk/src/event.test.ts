@@ -7,6 +7,7 @@ describe("canonical App event selectors", () => {
     source: "metrics",
     owner: "agent:evaluator",
     target: { appId: "evaluation", project: "evaluation", metricId: "quality" },
+    action: "repair",
     urgency: "high",
     data: { lane: "review", verdict: "failed" },
   };
@@ -19,6 +20,7 @@ describe("canonical App event selectors", () => {
           project: "evaluation",
           owner: "evaluator",
           urgency: "high",
+          actions: ["repair"],
           metricIds: ["quality"],
           lanes: ["review"],
           verdicts: ["failed"],
@@ -29,6 +31,7 @@ describe("canonical App event selectors", () => {
   });
 
   it("rejects one mismatched constraint", () => {
+    expect(matchesEventSelector({ type: "metric.breach", actions: ["ignore"] }, event)).toBeFalse();
     expect(matchesEventSelector({ type: "metric.breach", metricIds: ["latency"] }, event)).toBeFalse();
     expect(matchesEventSelector("metric.recovered", event)).toBeFalse();
   });

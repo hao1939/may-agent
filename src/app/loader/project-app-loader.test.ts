@@ -27,12 +27,14 @@ import {
   claimObservedProjectAppTask,
   completeProjectAppTask,
   observeProjectAppTaskIntent,
+  readProjectAppTaskIntent,
   readProjectAppTaskTrigger,
   recordProjectAppTaskAttemptSession,
   releaseHandlerExecutionFailedProjectAppTask,
   taskReconciliationConfig,
 } from "../project-app-task-reconciler";
 import {
+  admitLoadedCanonicalAppTaskEvent,
   beginCanonicalOwnerResidueGuard,
   attachLoadedProjectAppTask,
   finishCanonicalOwnerResidueGuard,
@@ -176,6 +178,7 @@ describe("App inbox task attachment", () => {
       expect(result.installed).toHaveLength(1);
       expect(result.installed[0]).toMatchObject({
         id: "sample",
+        canonical: true,
         ownsDirectInbox: true,
         app: { budget: { maxConcurrent: 3 } },
       });
@@ -200,6 +203,88 @@ describe("App inbox task attachment", () => {
           data: { itemId: "42" },
         }),
       ).toMatchObject({ id: "work/42", outcome: "Process 42" });
+
+      bus.emit({
+        type: "sample.work.requested",
+        target: { project: "sample" },
+        data: { itemId: "legacy-route-must-not-run" },
+      } as never);
+      await Bun.sleep(20);
+      expect(
+        readProjectAppTaskIntent(
+          taskReconciliationConfig({
+            appDir: f.appDir,
+            projectDir: f.appDir,
+            owner: "sample-owner",
+            maxConcurrent: 3,
+          }),
+          "work/legacy-route-must-not-run",
+        ),
+      ).toBeNull();
+
+      const admitted = admitLoadedCanonicalAppTaskEvent({
+        bus,
+        appId: "sample",
+        event: {
+          type: "sample.work.requested",
+          target: { project: "sample" },
+          data: { itemId: "canonical-route" },
+        } as never,
+        intent: {
+          id: "work/canonical-route",
+          parentId: "operations",
+          outcome: "Process canonical route",
+          acceptance: ["processed"],
+          mode: "achieve",
+          workflow: "worker",
+        },
+      });
+      expect(admitted).toMatchObject({
+        accepted: true,
+        by: "project-app:sample:task-reconciler",
+      });
+      expect(
+        readProjectAppTaskIntent(
+          taskReconciliationConfig({
+            appDir: f.appDir,
+            projectDir: f.appDir,
+            owner: "sample-owner",
+            maxConcurrent: 3,
+          }),
+          "work/canonical-route",
+        ),
+      ).toMatchObject({ outcome: "Process canonical route" });
+
+      const missingTarget = admitLoadedCanonicalAppTaskEvent({
+        bus,
+        appId: "sample",
+        event: {
+          type: "sample.work.requested",
+          target: { appId: "sample", taskId: "work/missing-target" },
+          data: { itemId: "missing-target" },
+        } as never,
+        targetedTaskId: "work/missing-target",
+        intent: {
+          id: "work/missing-target",
+          parentId: "operations",
+          outcome: "Do not manufacture an exact target",
+          acceptance: ["existing target is woken"],
+          mode: "achieve",
+          workflow: "worker",
+        },
+      });
+      expect(missingTarget).toBeUndefined();
+      expect(
+        readProjectAppTaskIntent(
+          taskReconciliationConfig({
+            appDir: f.appDir,
+            projectDir: f.appDir,
+            owner: "sample-owner",
+            maxConcurrent: 3,
+          }),
+          "work/missing-target",
+        ),
+      ).toBeNull();
     } finally {
       closeDb(f.persistDir);
       rmSync(f.root, { recursive: true, force: true });
