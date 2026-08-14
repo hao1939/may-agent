@@ -10,7 +10,7 @@ import type { SubagentManager } from "../lib/index.js";
 import type { ModelWithApiKey } from "../lib/types.js";
 import type { AgentLoaderOptions } from "./agent-loader.js";
 import { generateAutoHeartbeats, getAgentCrons, loadAgents, getAgentSessionId } from "./agent-loader.js";
-import { installProjectApps, startProjectAppWatcher } from "./loader/project-app-loader.js";
+import { installProjectApps, type ProjectAppLoaderOptions } from "./loader/project-app-loader.js";
 import { registerEventPairOrphanGc } from "./handlers/register-orphan-gc.js";
 import type { AppRegistry } from "./app-registry.js";
 
@@ -25,7 +25,7 @@ export async function prepareDaemonAgents(opts: {
   bus: EventBus;
   cronEnabled: boolean;
   appRegistry: AppRegistry;
-}): Promise<{ loaderOpts: AgentLoaderOptions }> {
+}): Promise<{ loaderOpts: AgentLoaderOptions; projectAppOpts?: ProjectAppLoaderOptions }> {
   const loaderOpts: AgentLoaderOptions = {
     agentsRoot: opts.agentsRoot,
     sharedRoot: opts.sharedRoot,
@@ -139,8 +139,9 @@ export async function prepareDaemonAgents(opts: {
     return true;
   };
 
+  let projectAppOpts: ProjectAppLoaderOptions | undefined;
   if (opts.cronEnabled) {
-    const projectAppOpts = {
+    projectAppOpts = {
       projectsRoot: opts.projectsRoot,
       projectRoot: opts.projectRoot,
       persistDir: opts.persistDir,
@@ -160,7 +161,6 @@ export async function prepareDaemonAgents(opts: {
         message: `[project-app] Installed ${appResult.installed.length} app(s), ${appResult.entries} trigger(s): ${appResult.installed.map((app) => `${app.id}->${app.owner}`).join(", ")}`,
       });
     }
-    startProjectAppWatcher(projectAppOpts);
   }
 
   // Cron subscribe + start is handled by cron-startup.ts in one centralized
@@ -195,5 +195,5 @@ export async function prepareDaemonAgents(opts: {
     });
   }
 
-  return { loaderOpts };
+  return { loaderOpts, projectAppOpts };
 }

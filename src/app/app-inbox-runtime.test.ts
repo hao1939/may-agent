@@ -253,6 +253,50 @@ describe("App inbox runtime", () => {
     expect(runtime.host.acceptsInput("reloaded", { kind: "probe", data: null })).toBe(true);
   });
 
+  it("publishes one prepared generation only after every consumer commits", async () => {
+    const registry = await loadedRegistry(root);
+    runtime = await startAppInboxRuntime({
+      registry,
+      db,
+      manager: manager([]),
+      bus: new EventBus(),
+      scanIntervalMs: 10_000,
+    });
+    const previousGeneration = registry.snapshot().generation;
+
+    writeFileSync(
+      join(root, "evaluation.app", "inbox.js"),
+      `export default {
+        id: "replacement", version: 1, owner: "evaluator",
+        inputSchema: { type: "object", required: ["kind"], properties: { kind: { const: "probe" } } }
+      };\n`,
+    );
+
+    await expect(
+      runtime.reload(async ({ snapshot, commit }) => {
+        expect(snapshot.generation).toBe(previousGeneration + 1);
+        expect(snapshot.entries.map((entry) => entry.definition.id)).toEqual(["replacement"]);
+        expect(registry.snapshot().generation).toBe(previousGeneration);
+        expect(runtime?.host.appIds()).toEqual(["evaluation-canary"]);
+        commit();
+        expect(runtime?.host.appIds()).toEqual(["replacement"]);
+        throw new Error("compatibility consumer rejected generation");
+      }),
+    ).rejects.toThrow("compatibility consumer rejected generation");
+
+    expect(registry.snapshot().generation).toBe(previousGeneration);
+    expect(runtime.host.appIds()).toEqual(["evaluation-canary"]);
+
+    expect(
+      await runtime.reload(async ({ snapshot, commit }) => {
+        expect(registry.snapshot().generation).toBe(previousGeneration);
+        expect(snapshot.generation).toBe(previousGeneration + 1);
+        commit();
+      }),
+    ).toEqual(["replacement"]);
+    expect(registry.snapshot().generation).toBe(previousGeneration + 1);
+  });
+
   it("admits one uniquely addressed agent message and durably returns its result", async () => {
     const mayDir = join(root, "may.app");
     mkdirSync(mayDir, { recursive: true });

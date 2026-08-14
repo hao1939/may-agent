@@ -19,12 +19,13 @@ function immutableEntries(entries: LoadedAppInboxDefinition[]): readonly Readonl
 /**
  * The process-wide snapshot of durable App addresses.
  *
- * A reload is published only after its consumer synchronously validates and
- * applies the prospective snapshot, so no event-loop turn observes a split
- * registry/host state.
+ * A reload is published only after every consumer prepares and applies the
+ * prospective snapshot. The callback may be asynchronous, but publication is
+ * still fenced by the immutable generation passed to it.
  */
 export class AppRegistry {
   private current: AppRegistrySnapshot = Object.freeze({ generation: 0, entries: Object.freeze([]) });
+  private reloadQueue: Promise<void> = Promise.resolve();
 
   constructor(private readonly projectsRoot: string) {}
 
@@ -36,13 +37,29 @@ export class AppRegistry {
     return this.current;
   }
 
-  async reload(apply?: (next: LoadedAppInboxDefinition[]) => void): Promise<LoadedAppInboxDefinition[]> {
+  reload(apply?: (next: AppRegistrySnapshot) => void | Promise<void>): Promise<LoadedAppInboxDefinition[]> {
+    const operation = this.reloadQueue.then(() => this.performReload(apply));
+    this.reloadQueue = operation.then(
+      () => undefined,
+      () => undefined,
+    );
+    return operation;
+  }
+
+  private async performReload(
+    apply?: (next: AppRegistrySnapshot) => void | Promise<void>,
+  ): Promise<LoadedAppInboxDefinition[]> {
     const next = await loadAppInboxDefinitions(this.projectsRoot);
     const prospective = Object.freeze({
       generation: this.current.generation + 1,
       entries: immutableEntries(next),
     });
-    apply?.(prospective.entries.map((entry) => ({ appDir: entry.appDir, definition: entry.definition })));
+    await apply?.(prospective);
+    if (prospective.generation !== this.current.generation + 1) {
+      throw new Error(
+        `Cannot publish stale App registry generation ${prospective.generation}; current is ${this.current.generation}`,
+      );
+    }
     this.current = prospective;
     return this.entries();
   }

@@ -26,6 +26,7 @@ import { runRequestedExitMode } from "./runtime-exit-modes.js";
 import { attachConsoleUI } from "./transport/console.js";
 import { attachDaemonInfoLog } from "./transport/daemon-info-log.js";
 import { attachTelegramBot } from "./transport/telegram.js";
+import { installProjectApps, startProjectAppWatcher, type ProjectAppWatcher } from "./loader/project-app-loader.js";
 
 export function createAppInputAdmission(options: {
   bus: Pick<EventBus, "emit">;
@@ -137,7 +138,7 @@ export async function runAppRuntime(opts: {
     interfaceAgent,
   });
 
-  const { loaderOpts } = await prepareDaemonAgents({
+  const { loaderOpts, projectAppOpts } = await prepareDaemonAgents({
     agentsRoot: opts.agentsRoot,
     sharedRoot: opts.sharedRoot,
     projectsRoot: opts.projectsRoot,
@@ -172,6 +173,7 @@ export async function runAppRuntime(opts: {
   }
 
   let activeRL: { close: () => void } | null = null;
+  let appWatcher: ProjectAppWatcher | null = null;
   let telegramBot: { close: () => void; sendAlert: (...args: any[]) => any } = { close: () => {}, sendAlert: () => {} };
   let cancelledOnce = false;
 
@@ -188,10 +190,34 @@ export async function runAppRuntime(opts: {
     clearActiveReadline: () => {
       activeRL = null;
     },
-    beforeShutdown: () => appInboxRuntime?.close(),
-    reloadApps: () => appInboxRuntime!.reload(),
-    appRegistry,
+    beforeShutdown: () => {
+      appWatcher?.close();
+      appInboxRuntime?.close();
+    },
+    reloadApps: async () => {
+      let projectApps = 0;
+      let entries = 0;
+      const appIds = await appInboxRuntime!.reload(async ({ snapshot, commit }) => {
+        if (!projectAppOpts) {
+          commit();
+          return;
+        }
+        const result = await installProjectApps({
+          ...projectAppOpts,
+          appRegistrySnapshot: snapshot,
+          afterCommit: () => commit(),
+        });
+        projectApps = result.installed.length;
+        entries = result.entries;
+      });
+      return { appIds, projectApps, entries };
+    },
   });
+  if (projectAppOpts) {
+    appWatcher = startProjectAppWatcher(projectAppOpts, {
+      reload: () => handleReload({ throwOnError: true }),
+    });
+  }
   installProcessHandlers();
 
   const commandRouter = attachCommandRouter({

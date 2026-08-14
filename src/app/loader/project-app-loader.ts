@@ -63,7 +63,7 @@ import type { AppDefinition, AppTaskAttachment } from "@may-agent/sdk";
 import type { TaskView } from "@may-agent/sdk/app";
 import { readRuntimeTaskView } from "../app-read.js";
 import { Cron } from "../cron.js";
-import type { AppRegistry } from "../app-registry.js";
+import type { AppRegistry, AppRegistrySnapshot } from "../app-registry.js";
 import { ProjectAppTaskCapacity, ProjectAppTaskController } from "../project-app-task-controller.js";
 import type { ProjectAppTaskQueueOptions } from "../project-app-task-queue.js";
 import { trackProjectAppConditionEvent, trackProjectAppConditionEvents } from "../project-app-condition-tracker.js";
@@ -154,6 +154,10 @@ export interface ProjectAppLoaderOptions {
   bus: EventBus;
   agentCrons: Map<string, Cron>;
   appRegistry?: AppRegistry;
+  /** Prospective canonical generation used during one coordinated reload. */
+  appRegistrySnapshot?: AppRegistrySnapshot;
+  /** Final synchronous publication step inside the compatibility rollback boundary. */
+  afterCommit?: (result: { installed: ProjectAppDescriptor[]; entries: number }) => void;
   /**
    * Called when an app-local agent used by the app is not yet registered.
    * The app brings its own agents; this callback registers one from its
@@ -3494,7 +3498,10 @@ async function prepareProjectAppDescriptors(opts: ProjectAppLoaderOptions): Prom
   const descriptors: ProjectAppDescriptor[] = [];
   const ids = new Set<string>();
   const inboxAppIdByDir = new Map(
-    (opts.appRegistry?.entries() ?? []).map(({ appDir, definition }) => [appDir, definition.id]),
+    (opts.appRegistrySnapshot?.entries ?? opts.appRegistry?.snapshot().entries ?? []).map(({ appDir, definition }) => [
+      appDir,
+      definition.id,
+    ]),
   );
   for (const appDir of listProjectAppDirs(opts.projectsRoot)) {
     const app = await loadProjectApp(appDir);
@@ -3575,17 +3582,17 @@ export async function installProjectApps(
   const prepared = await prepareProjectAppDescriptors(opts);
   const previous = [...(appRouterDescriptorsByBus.get(opts.bus) ?? [])];
   try {
-    return await commitProjectAppDescriptors(opts, prepared);
+    const result = await commitProjectAppDescriptors(opts, prepared);
+    opts.afterCommit?.(result);
+    return result;
   } catch (error) {
-    if (previous.length > 0) {
-      try {
-        await commitProjectAppDescriptors(opts, previous);
-      } catch (rollbackError) {
-        throw new AggregateError(
-          [error, rollbackError],
-          "Project app reload failed and the previous app set could not be restored",
-        );
-      }
+    try {
+      await commitProjectAppDescriptors(opts, previous);
+    } catch (rollbackError) {
+      throw new AggregateError(
+        [error, rollbackError],
+        "Project app reload failed and the previous app set could not be restored",
+      );
     }
     throw error;
   }
@@ -3654,7 +3661,7 @@ export function projectAppHostFingerprint(projectsRoot: string): string {
 
 export function startProjectAppWatcher(
   opts: ProjectAppLoaderOptions,
-  watcherOpts: { intervalMs?: number } = {},
+  watcherOpts: { intervalMs?: number; reload?: () => Promise<void> } = {},
 ): ProjectAppWatcher {
   const intervalMs = Math.max(1_000, watcherOpts.intervalMs ?? 5_000);
   let closed = false;
@@ -3667,12 +3674,15 @@ export function startProjectAppWatcher(
     if (nextFingerprint === lastFingerprint) return false;
     inFlight = true;
     try {
-      const result = await installProjectApps(opts);
+      if (watcherOpts.reload) await watcherOpts.reload();
+      else {
+        const result = await installProjectApps(opts);
+        opts.bus.emit({
+          type: "info",
+          message: `[project-app] Auto-reloaded ${result.installed.length} app(s), ${result.entries} trigger(s)`,
+        });
+      }
       lastFingerprint = nextFingerprint;
-      opts.bus.emit({
-        type: "info",
-        message: `[project-app] Auto-reloaded ${result.installed.length} app(s), ${result.entries} trigger(s)`,
-      });
       return true;
     } catch (err) {
       opts.bus.emit({

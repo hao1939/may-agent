@@ -5,8 +5,12 @@ import type { EventBus } from "./event-bus.js";
 import type { SubagentManager } from "../lib/index.js";
 import type { AgentLoaderOptions } from "./agent-loader.js";
 import { getAgentCrons, reloadAgents } from "./agent-loader.js";
-import { installProjectApps } from "./loader/project-app-loader.js";
-import type { AppRegistry } from "./app-registry.js";
+
+export type AppGenerationReloadResult = {
+  appIds: string[];
+  projectApps: number;
+  entries: number;
+};
 
 type ExecFileFn = (
   file: string,
@@ -74,8 +78,7 @@ export function createDaemonLifecycle(opts: {
   getActiveReadline: () => { close: () => void } | null;
   clearActiveReadline: () => void;
   beforeShutdown?: () => void;
-  reloadApps?: () => Promise<string[]>;
-  appRegistry: AppRegistry;
+  reloadApps?: () => Promise<AppGenerationReloadResult>;
 }) {
   let shuttingDown = false;
 
@@ -126,29 +129,13 @@ export function createDaemonLifecycle(opts: {
     startSupervisorRestarter(opts.bus);
   };
 
-  const handleReload = async (): Promise<void> => {
+  const handleReload = async (reloadOptions: { throwOnError?: boolean } = {}): Promise<void> => {
     const result = await reloadAgents(opts.loaderOpts);
-    let reloadedAppIds: string[] | undefined;
+    let appGeneration: AppGenerationReloadResult | undefined;
     try {
-      reloadedAppIds = await opts.reloadApps?.();
+      appGeneration = await opts.reloadApps?.();
     } catch (err) {
-      result.errors.push(`[app-registry] ${err instanceof Error ? err.message : String(err)}`);
-    }
-    let appResult: Awaited<ReturnType<typeof installProjectApps>> | undefined;
-    try {
-      appResult = await installProjectApps({
-        projectsRoot: opts.loaderOpts.projectsRoot,
-        projectRoot: opts.loaderOpts.projectRoot,
-        persistDir: opts.loaderOpts.persistDir,
-        agentsRoot: opts.loaderOpts.agentsRoot,
-        sharedRoot: opts.loaderOpts.sharedRoot,
-        manager: opts.loaderOpts.manager,
-        bus: opts.loaderOpts.bus,
-        agentCrons: getAgentCrons(),
-        appRegistry: opts.appRegistry,
-      });
-    } catch (err) {
-      result.errors.push(`[project-app] ${err instanceof Error ? err.message : String(err)}`);
+      result.errors.push(`[app-generation] ${err instanceof Error ? err.message : String(err)}`);
     }
     let summary: string;
     if (result.errors.length > 0) {
@@ -157,21 +144,23 @@ export function createDaemonLifecycle(opts: {
       const parts: string[] = [];
       if (result.added.length > 0) parts.push(`${result.added.length} new (${result.added.join(", ")})`);
       if (result.updated.length > 0) parts.push(`${result.updated.length} updated (${result.updated.join(", ")})`);
-      if (appResult && appResult.installed.length > 0) {
-        parts.push(`${appResult.installed.length} project app(s), ${appResult.entries} trigger(s)`);
+      if (appGeneration && appGeneration.projectApps > 0) {
+        parts.push(`${appGeneration.projectApps} project app(s), ${appGeneration.entries} trigger(s)`);
       }
-      if (reloadedAppIds) parts.push(`${reloadedAppIds.length} durable App address(es)`);
+      if (appGeneration) parts.push(`${appGeneration.appIds.length} durable App address(es)`);
       summary = `[reload] ${parts.join(", ")}`;
     } else {
-      summary =
-        appResult && appResult.installed.length > 0
-          ? `[reload] ${appResult.installed.length} project app(s), ${appResult.entries} trigger(s), ${reloadedAppIds?.length ?? 0} durable App address(es)`
-          : "[reload] No changes";
+      summary = appGeneration
+        ? `[reload] ${appGeneration.projectApps} project app(s), ${appGeneration.entries} trigger(s), ${appGeneration.appIds.length} durable App address(es)`
+        : "[reload] No changes";
     }
     // info events are forwarded to stdout by attachConsoleUI (chat/console
     // mode) or attachDaemonInfoLog (default daemon mode). See
     // src/app/transport/daemon-info-log.ts.
     opts.bus.emit({ type: "info", message: summary });
+    if (reloadOptions.throwOnError && result.errors.length > 0) {
+      throw new Error(summary);
+    }
   };
 
   const installProcessHandlers = () => {
