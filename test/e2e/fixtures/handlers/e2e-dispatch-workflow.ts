@@ -8,7 +8,7 @@
  * Emits e2e.dispatch.attempt before the call and e2e.dispatch.result after,
  * so the test can correlate which workflow was attempted and the outcome.
  */
-import type { CronEntry, HandlerContext, HandlerModule, EventEnvelope } from "@may-agent/sdk";
+import type { CronEntry, HandlerContext, HandlerModule, EventEnvelope } from "@may-agent/sdk/legacy";
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: CronEntry) => {
   return async (event?: EventEnvelope) => {

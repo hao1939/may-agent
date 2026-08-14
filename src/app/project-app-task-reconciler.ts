@@ -24,7 +24,7 @@ import {
   type TaskNode,
   type TaskTree,
   type TaskStateConfig,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/legacy";
 import { readSessionMessages, readSessionMeta, sessionDir } from "../lib/persistence.js";
 import { readLatestCheckpoint, type CheckpointEntry } from "../lib/tools/checkpoint.js";
 import { applyProjectAppConditionEvent } from "./project-app-condition-tracker.js";
