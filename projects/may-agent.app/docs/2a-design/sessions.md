@@ -44,7 +44,8 @@ created → running → idle      (chat turn completed; same chat session can re
 ```
 
 No "pending" or "queued" state. Sessions start running immediately when spawned.
-Heartbeats are `call` sessions spawned by the heartbeat workflow via `ctx.runAgent()`. Query by `source LIKE '%heartbeat%'`, not by `kind`.
+Heartbeats are `call` sessions spawned by a bounded heartbeat workflow through
+`ctx.agents.call()`. Query by their source/correlation, not by `kind`.
 
 Chat sessions are persistent conversations. A successful chat turn moves the
 session from `running` back to `idle`; the next human message wakes the same
@@ -198,4 +199,5 @@ policy selector. `kind: "chat"` with `autoClose: "never"` uses the persistent
 chat-turn path (`running → idle`) rather than the bounded job path
 (`running → done/error/interrupted`).
 
-Heartbeats are `call` kind sessions — the workflow system uses `ctx.runAgent()` which produces `call` sessions. There's no separate "heartbeat" kind.
+Heartbeats are `call` kind sessions—the workflow uses `ctx.agents.call()`,
+which produces a call session. There is no separate `heartbeat` kind.

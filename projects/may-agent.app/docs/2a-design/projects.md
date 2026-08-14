@@ -1,9 +1,9 @@
 # Projects
 
 **Design status:** Accepted.
-**Implementation status:** Implemented through sibling V3 project apps.
-Historical Markdown project files are evidence only and are not a runtime
-compatibility path.
+**Implementation status:** Implemented through sibling canonical Agent Apps;
+legacy Project App hosting is being removed. Historical Markdown project files
+are evidence only and are not a runtime compatibility path.
 
 ## Purpose
 
@@ -30,14 +30,14 @@ Standing projects use a sibling `.app` control plane:
 ```text
 projects/<id>/              # optional portable domain workspace
 projects/<id>.app/
-  app.ts                    # schedules, one task resolver, observations, actions
+  app.ts                    # one defineApp declaration and domain policy
   project.json              # identity, owner, posture, goal, domain binding
   tasks/seed.json           # one-time initialization for an empty runtime
   agents/                   # app-local identities and their learned workflows
-  scripts/                  # integrity/projection/domain utilities
+  observers/                # optional bounded external-state adapters
+  scripts/                  # explicit offline maintenance utilities
   ui/                       # optional domain-specific UI
-  .state/tasks/state.json   # sole mutable task-resource authority
-  .state/tasks/tree.json    # generated current-state read projection
+  .state/                   # host-managed runtime state
 ```
 
 The `.app` folder is the May-agent control plane. Domain product source and
@@ -115,8 +115,11 @@ not duplicate its node schema or transition rules in project documents.
 The normal project loop is:
 
 ```text
-signal/comment/metric/completion
-  -> app resolves zero or one desired task
+addressed request
+  -> App inbox -> direct result, delegation, or task attachment
+
+changed fact/metric/completion
+  -> task subscription resolves zero or one desired task
   -> deduplicating app queue receives the task key
   -> controller reads current task, dependencies, and Conditions
   -> resolved owner runs directly or applies an owner-owned workflow
@@ -162,9 +165,9 @@ registry or owner-entry wrapper is required.
 
 ## Metrics And Monitoring
 
-Events, Conditions, and bounded resync wake the app controller. Metrics may
-provide observations, but they do not mutate task meaning or encode project
-strategy.
+Events, Conditions, event schedules, and bounded resync may wake the App task
+controller. Metrics provide observations, but they do not mutate task meaning
+or encode project strategy.
 
 Project cache rows and UI read models are projections. `project.json`, runtime
 task resources, domain artifacts, completion receipts, and typed project
@@ -173,9 +176,11 @@ judgment.
 
 ## Human Steering
 
-Human comments and structured UI actions enter through typed events. The app
-may observe them directly or correlate them to desired task state. Human input
-does not bypass the resolved owner to mutate task meaning.
+Human comments that require a distinct response enter through a declared App
+subscription and become correlated App inputs. Structured UI actions validate
+their schema and translate directly to App input. A human-originated fact that
+deterministically revises desired work may instead use a task subscription, but
+human input never bypasses the resolved owner to mutate task meaning.
 
 The caller supplies project intent, not an execution plan. It may name the
 desired outcome, current evidence, constraints, and proof, but it does not
@@ -193,9 +198,9 @@ task, escalation, or no-op disposition.
 Historical `projects/<id>/project.md`, embedded task lists, sibling
 `discussion.md`/`journal.md`, embedded `.app/`, and old project-local layouts
 may remain as archived evidence. The autonomous host does not load, mirror, or
-write them as task state. Migrated apps use only the sibling app manifest,
-agent-owned workflows, canonical `.state/tasks/state.json`, and the generated
-`.state/tasks/tree.json` projection.
+write them as task state. Migrated Apps use only the sibling `defineApp`
+manifest, agent-owned workflows, and host-managed inbox/task state and
+projections.
 
 ## Integrity Checklist
 
@@ -203,7 +208,8 @@ agent-owned workflows, canonical `.state/tasks/state.json`, and the generated
 - `active` projects have open work or an immediate owner judgment path.
 - Non-active projects record an exact reason and resume/closure condition.
 - Task state changes come through one app reconciler and atomic result application.
-- Every project event has a handler or accountable owner-inbox route.
+- Every actionable project fact has one explicit App subscription, task
+  subscription, or exact task target; observation-only facts create no work.
 - Events, Conditions, metrics, and resync may wake judgment; none decides project meaning.
 - Runtime projections never become a second source of project truth.
 - Migrated apps keep no compatibility writer, scheduler, or mirrored task tree.

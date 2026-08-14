@@ -1,728 +1,386 @@
-# Infra Surface Design
+# Infrastructure, Runtime, And App Boundary
 
 **Design status:** Accepted.
-**Implementation status:** Mostly implemented across the core infra surface.
-Keep this as the north-star while folding stable pieces into
-`architecture.md`, `sdk.md`, `events.md`, `metrics.md`, `cron.md`, and
-`../1-principles/work-model.md`.
+**Implementation status:** Canonical App host and scoped authoring SDK are
+implemented; remaining Project App, legacy SDK, handler, and owner-inbox
+authorities are being removed.
 
-This doc reframes may-agent around a simpler split:
+This document defines the stable split:
 
-```
-Infra provides primitives.
-Agents build patterns.
-```
-
-The goal is to keep the daemon small and stable while allowing heartbeat,
-project, workflow, evaluator, and alert-handling patterns to evolve without
-turning infra into a pile of special cases.
-
-## Core Insight
-
-May-agent is an event-driven agent control plane with metrics as observable
-signals.
-
-Everything important should fit this shape:
-
-```
-event -> owner/context resolution -> work execution -> evidence -> events/metrics
+```text
+Infrastructure preserves obligations and moves facts.
+Runtime hosts bounded execution and reconciliation.
+Apps own meaning, policy, and desired outcomes.
 ```
 
-Events move the system. Metrics observe the system. Agents judge and act.
+The split keeps infrastructure small and stable while Apps evolve without
+copying delivery, scheduling, storage, retry, or recovery mechanics.
 
-## Infra vs Agent Patterns
+## Core model
 
-Infra should know only the primitives that are mechanically enforceable and
-stable across all patterns.
-
-| Infra primitive | Meaning |
-|---|---|
-| Event | Something happened. Append-only fact and routing input. |
-| Metric | Observable signal. It may indicate drift, progress, failure, or stale measurement. |
-| Alert | Metric/event signal that needs owner attention. |
-| Session mechanics | Session id, transcript, status, persistence, resume, cancel, hierarchy. |
-| Work execution | Start a bounded work unit and return evidence. The unit can be one agent session or a workflow that pre-orchestrates sessions/functions. |
-| Query/projection | Safe read access to events, sessions, metrics, projects, and alerts. |
-| Guard | Mechanical detector around tools or workflow execution. It emits risk/weakness signals and may warn, repair, or block when justified. |
-| Socket control | Universal command/event ingress and realtime event stream. |
-| Agent loading | Discover agent definitions, build tool/workflow/handler surfaces, and apply reloads without changing active sessions. |
-| Recovery | Durable state cleanup, stale session handling, crash recovery. |
-
-Agent patterns are conventions built from these primitives.
-
-| Agent pattern | Meaning |
-|---|---|
-| Session | One bounded attempt to move a goal forward. Infra owns mechanics; agents own meaning. |
-| Heartbeat | Recurring agent-owned reassessment of signals, context, inbox, and open work. |
-| Project | Durable goal/context/plan/evidence container across sessions. |
-| Workflow | Known procedure that gathers context, runs steps, and dispatches agents. It is pre-orchestrated sessions, not a separate kind of intelligence. |
-| Alert triage | Owner judgment over a metric/event signal. |
-| Evaluation | Review a session, learn from good and bad work, emit signals for later action. |
-| Knowledge learning | Convert evidence into durable context, skills, workflows, or guards. |
-
-Infra should not hardcode "heartbeat logic" or "project logic" beyond generic
-session metadata and event routing. Heartbeats and projects are agent patterns.
-
-## Control Plane Shape
-
+```text
+addressed input -> App inbox -> direct result, delegation, or task attachment
+changed fact    -> event     -> App request, TaskIntent, exact wake, or observation
+durable outcome -> App task  -> repeated bounded reconciliation
+bounded action  -> session/workflow -> evidence
 ```
+
+An App inbox item is the authority for one addressed result. A task is the
+authority for one durable desired outcome. An event is a fact/wake. A session or
+workflow is one execution attempt. No other record may become a parallel work
+lifecycle.
+
+## Responsibility split
+
+### Infrastructure
+
+Infrastructure owns stable, mechanically enforceable primitives:
+
+| Primitive | Responsibility |
+| --- | --- |
+| App registry | Validate and atomically publish one generation of App definitions |
+| Inbox runtime | Admission, idempotency, claims, fencing, dependencies, results, and restart recovery |
+| Event runtime | Persist facts, match declared consumers, record delivery, and retain causal evidence |
+| Scheduler | Timer cadence, jitter, restart policy, event publication, and observer cadence |
+| Task runtime | Desired-state persistence, generations, queues, attempts, Conditions, result admission, and recovery |
+| Execution runtime | Prepare agents/workflows, enforce timeout/concurrency/tool policy, persist results and lineage |
+| Delivery | Correlate App results with App/human/channel delivery and handle uncertainty safely |
+| Metrics | Record samples and generic threshold/dedup/hysteresis/runtime health mechanics |
+| Workspace runtime | Allocate bounded workspaces, record lineage, and recover/clean them |
+| Control/adapters | Normalize ingress, expose bounded status, and translate external transports |
+
+Infrastructure does not decide domain strategy, task decomposition, whether a
+domain outcome is good enough, which workflow represents project experience,
+or whether a human preference should change.
+
+### Runtime SDK
+
+The runtime SDK is the narrow semantic membrane between Apps and
+infrastructure. It exposes:
+
+- `defineApp` and typed App policy;
+- typed input, request, disposition, result, fact, and task contracts;
+- bounded workflow execution and exact read projections;
+- scoped fact publication, metric recording, workspace paths, and logging; and
+- validated task reconciliation/verification results.
+
+It hides SQL, task files/locks, scheduler and event-bus handles, queue/lease
+state, global paths, delivery internals, process recovery, and session-manager
+control.
+
+The SDK is stable when Apps extend because App growth normally adds schemas,
+pure policy, observers, workflows, and domain projections—not new runtime
+mechanics.
+
+### Apps
+
+Each App owns:
+
+- one durable address and accountable owner;
+- typed input meaning and pure request routing;
+- explicit fact-to-request subscriptions;
+- explicit fact-to-TaskIntent policy;
+- input/event schedule meaning;
+- observer interpretation of external state;
+- actions, workflows, task validation, and terminal domain evidence;
+- domain workspace and project posture; and
+- domain metric definitions and interpretation.
+
+Apps do not implement their own inbox lifecycle, retry daemon, scheduler,
+event queue, task store, recovery pass, delivery mechanism, or process-wide
+registry.
+
+## App runtime shape
+
+```text
 Adapters
-CLI / Web UI / Telegram / timers
+CLI / Web UI / Telegram / App delegation / provider callbacks
         |
         v
-Universal Control Interface
-Unix socket: accept events, stream events, expose small status surface
+Typed ingress
+App admission / deterministic control / fact publication
         |
         v
-Infra Kernel
-Event bus + event store + metrics + session registry + guards + recovery
+Canonical App host
+registry + inbox + subscriptions + schedules + observers + task capability
         |
         v
-Agent Bridge
-infra event -> agent run
-agent/tool/session event -> infra event
+Bounded execution
+owner agent / agent-owned workflow / deterministic helper
         |
         v
-pi-coding-agent runtime
-LLM loop, tools, sessions
+Validated result admission + facts + metrics + delivery
 ```
 
-The daemon kernel should stay boring:
+There is no generic bridge from an event directly to an agent. A fact first
+reaches an explicitly declared App subscription, task subscription, or exact
+target. Only a durable App request or task reconciliation may start judgment.
 
-- persist events,
-- route events,
-- record/evaluate metrics,
-- run/resume/cancel sessions and workflow-composed session trees,
-- run guards as detectors with explicit intervention modes,
-- expose control socket,
-- maintain projections for UI/query.
+## Request boundary
 
-The kernel should not decide:
+Addressed work enters an App as typed `AppInput`. The host persists it before
+waking the App owner. A pure `route(request)` policy may complete, delegate, or
+attach it to a task without model judgment; returning `null` asks the owner for
+one bounded disposition.
 
-- what a heartbeat means,
-- how a project should progress,
-- whether a metric is "really bad",
-- what "done" means for a durable goal,
-- how an agent should investigate.
+The owner sees only:
 
-Those are pattern-level decisions owned by agents and workflows.
+- request identity, source, parent, and typed input; and
+- an exact bounded observation of the dependency it previously established.
 
-## Event And Metric Semantics
+The owner never sees or mutates inbox rows, claims, leases, retries, channel
+operations, or task storage. The host applies the disposition with fencing and
+idempotency.
 
-Events are movement:
+The `may` App owns ordinary human input and final response delivery. Domain
+Apps own project meaning. May delegates and reviews; it does not become a
+fallback project controller.
 
-- timer fired,
-- Telegram reply arrived,
-- project comment created,
-- metric breached,
-- session started,
-- session ended,
-- agent made a decision.
+## Fact boundary
 
-Metrics are signals:
+Events cross boundaries as facts:
 
-- "this may need attention",
-- "this may validate a change",
-- "this may be stale",
-- "this may be a bad threshold",
-- "this may be an accepted exception."
-
-Metrics do not judge. The owner agent judges using goal, context, facts,
-history, and causal theory. P0 metrics can immediately wake the owning app.
-Lower priority metrics follow that app's declared route and owner-review cadence.
-
-## Guard Semantics
-
-Guards are mechanical detectors with optional intervention. Their default value
-is observability: a guard trigger should become a durable signal that later
-review can connect to agent weakness, missing context, workflow prompt problems,
-or tool-surface confusion.
-
-Default path:
-
-```
-guard fires -> guard.triggered -> default guard handler records metrics/projection
+```text
+fact -> App subscription  -> toInput -> correlated App request
+     -> task subscription -> resolve -> persisted TaskIntent/trigger
+     -> exact task target -> exact wake
+     -> no route          -> observation/unhandled evidence
 ```
 
-Blocking remains a guard/runtime intervention for high-confidence,
-high-impact risk. The default handler should not decide whether to block.
+App/task selectors and translators are pure. They cannot execute a workflow,
+write state, emit another fact, or access runtime services.
 
-Current state: workflow and tool-level guard triggers emit durable
-`guard.triggered` events with owner/session/workflow context where available.
-Guard metrics separate actionable short-window block health from 24h watch
-signals. See [guards.md](guards.md).
+The runtime never turns an unhandled fact into generic owner work. Unknown
+addressed Apps fail admission visibly; unknown unaddressed facts remain
+observable. The same fact reaches multiple actionable paths only when each path
+is an explicitly distinct, tested obligation.
 
-## Agent Bridge
+## Task boundary
 
-The bridge is the explicit boundary between infra and agent behavior.
+The existing reconciler remains a valuable internal App capability:
 
-It has two directions.
-
-### Infra -> Agent
-
-```
-event
-  -> resolve owner/project/context
-  -> build task
-  -> runAgent(agent, task, opts)
-     or runWorkflow(workflow, task, opts)
+```text
+TaskIntent persisted
+  -> stable task ID coalesced in queue
+  -> fenced attempt receives bounded reconciliation context
+  -> owner/workflow returns structured result
+  -> runtime validates generation/actions/Conditions/evidence
+  -> atomically apply result
+  -> later exact fact or resync repeats until converged
 ```
 
-Examples:
+Queue entries are scheduling pressure, never desired state. The newest intent
+and trigger are durable before coalescing. Conditions name exact facts; resync
+is a safety net, not a second planner.
 
-- `timer.tick` -> heartbeat workflow builds live context -> run owner.
-- `project.comment.created` -> project app/owner route builds project context -> run owner.
-- `metric.breach` P0 -> owning app resolves a stable owner wake.
-- `metric.breach` P1/P2 -> persisted signal -> owner sees it in the next project-owner pass or standalone heartbeat.
+App workflows receive bounded task facts and child views through
+`ctx.reconciliation`. They cannot parse prompt packets, query the global task
+tree, or mutate task resources directly.
 
-`runAgent` and `runWorkflow` should feel like the same operation:
+## Schedule and observer boundary
 
+A schedule declares exactly one destination:
+
+- `{ input }` creates a correlated App inbox obligation; or
+- `{ event }` publishes a fact that may wake task work.
+
+An observer performs one bounded external read and returns facts. It cannot run
+an agent or mutate durable work. Internal runtime maintenance may use the same
+scheduler mechanics but is not App-authored policy.
+
+No timer, metric breach, provider completion, or lifecycle event may directly
+dispatch an owner session.
+
+## Execution boundary
+
+One prepared execution kernel serves direct, Gym, App-owner, and workflow
+execution:
+
+```text
+prepared agent + typed task/context + scoped tools
+  -> bounded model loop
+  -> ExecutionResult + transcript/evidence
 ```
-runAgent(agent, task, opts)       -> one agent session
-runWorkflow(workflow, task, opts) -> pre-orchestrated sessions/functions
-```
 
-Both take a task and options, create traceable execution, emit lifecycle events,
-and return a result with evidence. A workflow is not a privileged infra concept;
-it is a reusable orchestration pattern around sessions.
+The kernel has no App inbox, task, event-bus, scheduler, database, or recovery
+authority. The caller supplies the bounded context and decides how to admit the
+result.
 
-Shared result shape:
+Canonical workflow capabilities are:
 
 ```ts
-interface ExecutionResult {
-  id: string;
-  kind: "session" | "workflow";
-  status: "done" | "error" | "interrupted" | "blocked";
-  summary: string;
-  traceId: string;
-  evidence?: Record<string, unknown>;
-}
+ctx.input
+ctx.reconciliation?
+ctx.read.appResult/task/execution/metric
+ctx.agents.call(...)
+ctx.workflows.run(...)
+ctx.events.emit(...)
+ctx.metrics.record(...)
+ctx.workspace
+ctx.log
+ctx.done(...) / ctx.blocked(...)
 ```
 
-`TaskResult` and `WorkflowResult` can carry richer details, but they should map
-to this shape. This keeps tracing, diagnostics, UI, and tests simple.
-Legacy `escalated` workflow rows/results are normalized to `blocked` at the
-read boundary. New workflow results use only the current terminal vocabulary.
+Workflows are bounded synchronous controllers even when their TypeScript uses
+`await`. Durable waits end the run and continue later through App dependencies
+or task Conditions.
 
-Resume should follow the same symmetry:
+## Metrics and guards
 
-```
-resumeSession(sessionId, opts)  -> continue/recover one session
-resumeWorkflow(runId, opts)    -> recover an interrupted synchronous workflow run
-```
+Metrics observe runtime or domain state. Infrastructure owns storage,
+thresholds, deduplication, hysteresis, and generic health. Apps own domain
+metric meaning and samples.
 
-Both are diagnostic operations as much as execution operations. They should:
+A breach/recovery is a fact. It may wake a task subscription or, when a distinct
+disposition is truly required, an App subscription. It never becomes desired
+state or launches judgment directly.
 
-- inspect durable state first,
-- preserve the original id/run lineage,
-- emit recovery/resume events,
-- return a clear status,
-- expose where the resumed trace can be inspected,
-- explain why resume was possible or impossible.
+Guards are mechanical detectors around tools/execution. They record durable
+risk evidence and may warn, repair, or block only under explicit policy. A
+guard event follows normal fact routing. Guards do not decide project strategy
+or become retry planners.
 
-Workflow resume should not be a special opaque replay. It should use the same
-trace model as sessions: parent links, workflow run id, completed steps,
-current/failed step, child session ids, interruption/block reason, and next
-recoverable action.
+## External control boundary
 
-Workflow resume is crash recovery only. It must not continue a business
-process after an expected human, timer, callback, or external-dependency wait.
-Those waits end the current workflow phase; a later event starts a new
-synchronous workflow run from persisted domain state.
+CLI, Web UI, Telegram, and other adapters share one small control protocol:
 
-### Agent -> Infra
-
-```
-pi-coding-agent event
-  -> normalize system event
-  -> persist
-  -> update projections/metrics
-  -> notify subscribers
+```text
+admit App input
+publish fact
+invoke typed App action
+apply deterministic runtime control
+subscribe/read bounded projections
 ```
 
-Examples:
+Adapters do not run agents/workflows, mutate internal tables, select task
+storage, or implement project policy. They normalize transport identity,
+authenticate where required, and preserve correlation to the canonical App or
+control operation.
 
-- tool call -> neutral runtime notification, then infrastructure
-  `tool.call.started` / `tool.call.completed` evidence
-- finish -> `session.end`
-- message tool -> `message.created`
-- workflow step -> `workflow`
-- evaluation result -> metric/event/project update
+The browser and Telegram may present different experiences, but they cannot
+create separate routing or lifecycle semantics.
 
-The bridge should be explicit in code so routing, ownership, and context
-construction are not scattered across Telegram, Web UI, cron handlers, and
-manager glue.
+## Agent tools
 
-## Socket Boundary
+Model-facing tools are task-oriented capability grants, not the runtime SDK.
+Examples include bounded file/shell/edit, exact query, agent call, workflow
+run, fact publication, and finish/result tools.
 
-The Unix socket is the universal write/control interface.
+An agent tool may share implementation with a workflow capability, but its
+permission and interaction contract are explicit. Agents must not open runtime
+SQLite or mutate task/inbox files through shell. Durable cross-owner work uses
+App delegation; agent messages remain notifications only.
 
-Adapters should be thin:
+## Loading and reload
 
-```
-CLI action      -> socket event
-Web UI action   -> socket event
-Telegram update -> socket event
-Timer tick      -> event
-```
+The loader pipeline is mechanical:
 
-Socket-local controls should stay minimal:
-
-- `subscribe`
-- `status`
-- one generic app-action discovery operation
-- one generic app-action invocation operation that returns the emitted semantic
-  event ID
-
-The action operations are bounded RPCs over the daemon's live app registry, not
-durable commands or lifecycle events. Everything else state-changing should be
-an event frame:
-
-```json
-{ "type": "project.comment.created", "source": "web-ui", "owner": "agent:x-owner", "target": { "project": "x" }, "data": { "projectPath": "projects/x", "comment": "..." } }
-{ "type": "input", "sessionId": "s_123", "message": "continue" }
-{ "type": "metric.threshold_changed", "source": "metrics", "owner": "agent:metric-owner", "data": { "metricId": "m", "to": 0.8 } }
+```text
+discover -> import -> validate -> prepare complete generation
+         -> atomically publish registry/routes/schedules/controllers
 ```
 
-Socket `ok {eventId}` for an event means the semantic event was durably
-persisted. It does not mean a consumer accepted delivery or that work finished.
-Socket success for `status`, `subscribe`, or action discovery is only a bounded
-control/read response. Successful action invocation returns the ID of the one
-semantic event it emitted.
+One `defineApp` export owns each App. A failed candidate leaves the previous
+generation unchanged. Active executions retain their prepared definition and
+source lineage; subsequent dispatch uses the new generation.
 
-Read path should stay pragmatic:
+Agent definitions, prompts, tools, workflows, App definitions, schedules,
+observers, and task routes each declare their reload boundary. Reload never
+silently mutates an active session or duplicates schedule/subscription/task
+controller ownership.
 
-- Writes/control go through socket/events.
-- Realtime observation uses socket event stream.
-- Historical/dashboard reads can use DB projections directly.
+Only the long-running host attaches autonomous runtime capabilities. Direct,
+Gym, status, and read-only processes may prepare agents and workflows but
+cannot claim App work.
 
-Do not turn the socket into a large query API until there is a clear need.
+## Recovery boundary
 
-Current state:
+Infrastructure may recover mechanically:
 
-- `projects/may-agent/packages/control` owns the protocol, client helpers, and
-  server core.
-- The daemon socket is shared by the running instance. It is not one socket per
-  agent, even though the legacy filename still includes the interface agent.
-- Web UI steering and CLI send already use the control client package.
-- Project action discovery and invocation use generic control RPCs because the
-  loaded action registry and schema validators are daemon-owned. Invocation
-  still produces one semantic event receipt and no command lifecycle.
-- The server removes stale socket files when it can prove no process owns them.
-- Clients should use the convention daemon socket path:
-  `<persistDir>/instances/<instance>/<interfaceAgent>.sock`.
-- If that socket cannot be connected, fail clearly and trigger/log recovery. Do
-  not scan/rank other candidates as a normal path.
-- Selected adapter/control events (`input`, `steer`, `cancel*`, `resume`,
-  `reload`, `restart`, `shutdown`) are persisted so comparable actions leave
-  durable traces across CLI, Web UI, Telegram, and operator emits.
-- Telegram is still attached inside the daemon process. Treat that as acceptable
-  until the control client is reliable; do not split the process first.
-
-## Agent Loading Boundary
-
-Agent loading is an infra boundary, not a side effect of daemon startup. Its
-job is to turn files into runtime definitions.
-
-Default flow:
-
-```
-discover agent dirs
-  -> read/validate agent.json
-  -> build AgentDefinition
-  -> build ToolSet from presets + local tools
-  -> register definition with manager
-  -> attach cron entries and handler resolver
-  -> emit loader evidence
+```text
+stale claim/attempt/delivery
+  -> fence old owner
+  -> repair known mechanical state
+  -> requeue the same persisted obligation
+  -> attention when judgment is required
 ```
 
-Reload is the same flow applied again. It updates definitions for future
-sessions; active sessions keep the tools, prompt, model, and runtime context
-they already started with. Reload should not silently mutate in-flight work.
-
-Loading contract:
-
-| Source | Owner | Reload trigger | Active-session effect | Failure response |
-|---|---|---|---|---|
-| `agent.json` | agent loader | explicit reload command/event | none; future sessions use the new definition | skip that agent, emit loader evidence |
-| `AGENTS.md` and always-loaded prompt files | agent loader | explicit reload command/event | none; future sessions use the new prompt | skip/mark invalid if required files cannot load |
-| local tools under `tools/` | agent loader | explicit reload command/event | none; future sessions see the new toolset | skip bad tool, emit loader evidence |
-| handler files under `handlers/` | handler loader | each handler invocation | none; next invocation imports fresh code | fail that event, emit handler failure evidence |
-| `cron.json` | cron runner | file watch or explicit cron reload | unchanged timers are preserved | skip bad entries, keep valid entries running |
-| workflows under `workflows/` | workflow runner | each list/run or crash-recovery resolution | an active run keeps its selected source identity; the next new run sees current code; recovery verifies stored identity and compatibility | fail recovery with diagnostic evidence |
-
-Hot-reload should stay narrow. Handlers and workflows can reload at invocation
-boundaries because they are short-lived execution units. Agent definitions,
-prompt inputs, and local tools reload only on explicit reload because they shape
-the session contract.
-
-The loader should not decide project behavior, heartbeat meaning, or alert
-judgment. It should only assemble capabilities and register them.
-
-Target module shape:
-
-| Module | Responsibility |
-|---|---|
-| `agent-discovery` | find candidate agent directories and config paths |
-| `agent-config` | parse/validate `agent.json`, resolve conventions |
-| `toolset-loader` | map tool presets and local tools to `AgentTool[]` |
-| `heartbeat-loader` | generate conventional heartbeat cron entries |
-| `handler-loader` | attach handler resolvers and hot-reload wrapper |
-| `agent-registry-loader` | orchestrate discovery -> definition -> manager registration |
-
-Keep these as `projects/may-agent/src/app/loader/*` modules first. Create a package only if this
-surface becomes useful outside the daemon and has no app-specific imports.
-
-## Public Surfaces
-
-There should be three stable public surfaces:
-
-1. Agent tools for LLM sessions.
-2. Infra SDK for TypeScript workflows and handlers.
-3. Control client/protocol for CLI, Web UI, Telegram, and other external
-   adapters.
-
-Workflow and handler contexts may expose different handles (`ctx.*` vs
-`ctx.sdk.*`), but they should converge on the same underlying SDK semantics.
-
-### 1. Agent Tool Surface
-
-This is what the LLM sees. It should be safe and task-oriented.
-
-Examples:
-
-- `query_db` read-only, bounded, schema-aware,
-- `message`,
-- `workflow`,
-- `finish`,
-- file/edit/bash tools,
-- future `metrics` tool only if agents need first-class metric creation/recording.
-
-Agents should not be taught to open SQLite directly from bash. When live data is
-needed, prefer workflow-collected context or a safe query tool.
-
-### 2. Infra SDK
-
-For TypeScript workflows and handlers:
-
-```ts
-sdk.runAgent(agent, task)
-sdk.runWorkflow(name, task)
-sdk.emit(type, data, envelope?)
-sdk.metrics.*
-sdk.query.*
-sdk.message(...)
-sdk.escalate(reason, opts?)
-sdk.log(...)
-```
-
-Workflow contexts add workflow-local conveniences:
-
-```ts
-ctx.runFunction(label, fn)
-ctx.done(summary)
-ctx.blocked(reason, context?) // local terminal workflow result; no event unless a boundary promotes it
-ctx.task
-ctx.agent
-```
-
-Handler contexts add handler-local conveniences:
-
-```ts
-ctx.triggerNow(entryName)
-```
-
-These are not separate APIs. They are context-specific handles over the same
-infra capabilities.
-
-Default convention:
-
-```
-event/timer -> handler -> workflow -> sessions/functions/metrics
-```
-
-Handlers bridge events to workflows. They may do deterministic preflight,
-normalization, dedup, and skip checks, but they should not encode long prompts,
-project logic, or direct agent orchestration. When judgment/action is needed,
-dispatch a workflow.
-
-Direct handler logic is reserved for mechanical infra work:
-
-- metric snapshot collection,
-- event projection updates,
-- cleanup/recovery state repair,
-- reload/restart/shutdown,
-- dispatch dedup bookkeeping,
-- simple skip/no-op checks.
-
-Raw `sdk.runAgent(...)` from a handler should be exceptional. Prefer
-`sdk.runWorkflow(...)`, and let the workflow call `ctx.runAgent(...)` so trace,
-guards, function steps, and context collection stay consistent.
-
-### 3. Control Client
-
-For CLI, Web UI, Telegram, and other external adapters:
-
-```ts
-client.emitEvent(event)
-client.subscribe(filter)
-client.status()
-```
-
-Adapters translate external input/output. They should not know how to run
-projects, resume heartbeats, or mutate internal tables.
-
-## SDK Boundary
-
-Yes, the system needs an SDK.
-
-The SDK is the stable facade between infra primitives and agent-owned pattern
-code. It prevents handlers/workflows from importing random infra internals and
-lets the infra move without breaking agent code.
-
-The SDK should be small. `runAgent` and `runWorkflow` intentionally sit next to
-each other because both are execution calls:
-
-```ts
-interface InfraSDK {
-  emit(event: SystemEventInput): void;
-
-  runAgent(agent: string, task: string, opts?: RunOpts): Promise<TaskResult>;
-  runWorkflow(name: string, task: string, opts?: RunOpts): Promise<WorkflowResult>;
-
-  metrics: MetricService;
-  query: QueryAPI;
-
-  message(target: string, content: string, opts?: MessageOpts): void;
-  escalate(reason: string, opts?: EscalationOpts): void;
-
-  log(level: "info" | "warn" | "error", message: string): void;
-
-  paths: {
-    root: string;
-    agents: string;
-    persist: string;
-  };
-}
-```
-
-They should share the same option vocabulary where possible: source,
-project/session parentage, timeout, request id, and trace metadata. The return
-types can differ in detail, but both should answer the same questions:
-
-- what ran,
-- what status it ended with,
-- what evidence/output it produced,
-- where the trace can be inspected.
-
-If the two APIs drift semantically, the model becomes harder to understand.
-
-The same applies to resume:
-
-```ts
-resumeSession(sessionId: string, opts?: ResumeOpts): Promise<TaskResult>;
-resumeWorkflow(runId: string, opts?: ResumeOpts): Promise<WorkflowResult>;
-```
-
-Resume APIs should be designed for diagnostics, not just retry. A caller should
-be able to tell whether the work was resumed, requeued, already terminal,
-blocked by guard, missing state, or unsafe to continue.
-
-Metric API:
-
-```ts
-interface MetricService {
-  define(def: MetricDefinition): void;
-  record(id: string, value: number, opts?: RecordOpts): void;
-  alert(id: string, message: string, opts?: AlertOpts): void;
-  resolveAlert(alertId: number, reason?: string): void;
-  evaluate(id?: string): MetricEvaluationResult[];
-  list(filter?: MetricFilter): Metric[];
-}
-```
-
-Query API:
-
-```ts
-interface QueryAPI {
-  sql(sql: string, params?: unknown[]): unknown[];
-  session(id: string): SessionView | null;
-  project(id: string): ProjectView | null;
-  metrics(filter?: MetricFilter): MetricView[];
-  alerts(filter?: AlertFilter): AlertView[];
-  events(filter?: EventFilter): EventView[];
-  heartbeatContext(filter: HeartbeatContextFilter): HeartbeatContext;
-}
-```
-
-`getDb()` is a compatibility escape hatch, not the normal read interface for
-judgment/context code. A safe query facade gives us bounded reads, schema
-validation, fewer guessed columns, and a cleaner mental model.
-
-Current state: the SDK exposes `query` and `metrics` as first-class surfaces,
-with targeted helpers for alert triage, workflow runs, heartbeat live context,
-and evaluator session-review context. New judgment/context code should add targeted query
-helpers rather than guessing SQLite schema. Mechanical projection/snapshot
-handlers may keep direct DB access when it is simpler and well-tested.
-
-## Ownership
-
-Ownership resolution is an infra utility. Judgment is not.
-
-Infra may answer:
-
-```
-who owns this metric/event/project/session?
-```
-
-Default convention:
-
-1. explicit event/metric owner,
-2. project owner,
-3. metric/event id prefix when it matches an agent,
-4. the `may-agent` app owner for an unknown platform or routing gap.
-
-`agent:may` is the fallback only for human conversation and proposed human
-attention. It is not the fallback owner for arbitrary system or domain work.
-
-Infra should not answer:
-
-```
-is this alert real?
-should it be downgraded?
-should this project continue?
-was this session valuable?
-```
-
-Those require agent judgment.
-
-## Failure Model
-
-The happy path is not enough. Infra should make failure visible, bounded, and
-recoverable where possible. It should avoid silent drops.
-
-Failure handling should follow convention over configuration. Every component
-gets a default failover path without local wiring:
-
-```
-detect failure
-  -> preserve durable state if possible
-  -> emit failure event with trace/owner
-  -> retry/recover when mechanically safe
-  -> route to resolved owner
-  -> fallback to may
-  -> escalate to human only when may cannot safely continue
-```
-
-Components may override severity or retry limits only when the default is
-provably wrong.
-
-| Failure | Intended response | Signal |
-|---|---|---|
-| Event bus subscriber throws | Catch subscriber error, continue other subscribers, then emit a durable failure signal. Persistence subscriber should run first. | `subscriber.failed`, `infra.bus.subscriber-failed-count-1h`. |
-| Event persistence fails | Do not pretend the event is durable. Emit/log persistence failure sentinel; surface as P0/P1 infra metric. | `infra.persist-failed`, persistence failure metric. |
-| Event backlog or slow subscriber | Keep emit path bounded; measure handler/subscriber duration; alert on sustained backlog/latency. | handler duration/backlog metric. |
-| Handler throws | Mark handler failed, keep scheduler alive, expose failure in handler metrics. | `handler.failed`, `handler.success-rate`. |
-| Workflow step times out | Mark step/session interrupted or error, preserve partial trace, let workflow decide retry/escalate when safe. | workflow step result + session status. |
-| Workflow blocked by guard | Preserve completed steps and block reason; emit guard signal; route to owner or next recovery path. | local `workflow.blocked` callback, durable `workflow_runs.status = "blocked"`, `guard.triggered`. |
-| `resumeWorkflow` sees corrupted/partial state | Inspect durable state first; recover only when lineage and one safe synchronous continuation are clear. Otherwise return diagnostic status and escalate/requeue rather than replay blindly. Never use resume for an expected business wait. | `workflow.resume_failed` with reason. |
-| Session resume sees missing/corrupt transcript | Preserve original session id/state; inject recovery context only when safe; otherwise mark interrupted/error with reason. | session status + recovery event. |
-| Event/infra owner resolution is ambiguous or wrong | Prefer explicit owner, then project owner, then convention, then `may`; emit a routing anomaly. A task with an unresolved owner or unavailable explicit workflow instead remains in `attention` without handler substitution. | `routing.owner_invalid` / task attention evidence. |
-| Metric source/query fails | Record metric measurement failure without updating value as success; keep last known value distinguishable from fresh measurement. | metric measurement error event/metric. |
-| Adapter/socket client disconnects mid-command | Event acceptance is separate from subscriber completion. If event was accepted, trace it; if frame invalid, reject locally. | socket `ok`/`error`, event trace. |
-
-Default failover conventions:
-
-- **Retry** idempotent operations with bounded backoff.
-- **Recover** when durable state identifies one safe next action.
-- **Requeue** work when the prior execution failed before side effects or has a clear continuation point.
-- **Route** failures to the resolved owner by default.
-- **Fallback to `may`** only for event/infrastructure accountability when that
-  route is unresolved. Never use it to substitute a task's resolved owner or
-  explicitly bound workflow; task resolution failure remains visible in
-  `attention`.
-- **Escalate to human** only when `may` cannot safely continue, state is corrupt, or replay could duplicate side effects.
-- **Drop** only invalid external frames that were never accepted as events.
-
-Every failure path should produce a queryable signal with enough trace context
-to answer: what failed, who owned it, what was preserved, and what should happen
-next.
-
-## What To Avoid
-
-- Do not add socket commands for every product action.
-- Do not make cron a long-term memory store.
-- Do not hardcode project/heartbeat behavior into daemon internals.
-- Do not expose raw DB writes to agents or adapters.
-- Do not create separate routing paths for Telegram, Web UI, and CLI.
-- Do not let metrics become targets or automatic decisions.
-- Do not grow the SDK into a pattern framework.
-
-## Current Code Mapping
-
-Existing pieces already align with this direction:
-
-| Design concept | Current code |
-|---|---|
-| Event bus | `projects/may-agent/src/app/event-bus.ts` |
-| Metrics API | `projects/may-agent/src/lib/metrics.ts` |
-| Handler SDK | `projects/may-agent/src/lib/sdk.ts`, `projects/may-agent/src/lib/sdk-impl.ts`, `projects/may-agent/src/lib/handler-context.ts` |
-| Agent import boundary | `@may-agent/sdk` package |
-| Workflow context | `projects/may-agent/src/lib/workflow.ts`, `projects/may-agent/src/lib/workflow-tool.ts` |
-| Runtime context | `projects/may-agent/src/lib/runtime-ctx.ts` |
-| Socket protocol | `projects/may-agent/packages/control/src/protocol.ts` |
-| Socket server/client | `projects/may-agent/packages/control/src/server.ts`, `projects/may-agent/packages/control/src/client.ts` |
-| App entry/runtime | `projects/may-agent/src/app/may.ts`, `projects/may-agent/src/app/app-runtime.ts`, `projects/may-agent/src/app/runtime-exit-modes.ts` |
-| Daemon surface | `projects/may-agent/src/app/daemon.ts` stable barrel over daemon submodules |
-| Daemon lifecycle | `projects/may-agent/src/app/daemon-lifecycle.ts` |
-| Daemon event subscribers | `projects/may-agent/src/app/daemon-events.ts` |
-| Daemon agent startup | `projects/may-agent/src/app/daemon-agents.ts` |
-| Daemon session startup | `projects/may-agent/src/app/daemon-sessions.ts` |
-| Daemon loops | `projects/may-agent/src/app/daemon-loops.ts` |
-| Agent loading | `projects/may-agent/src/app/agent-loader.ts`, `projects/may-agent/src/app/loader/*` |
-| Telegram adapter | `projects/may-agent/src/app/transport/telegram.ts` |
-| Telegram transport/reply/outbound helpers | `projects/may-agent/src/app/transport/telegram-client.ts`, `projects/may-agent/src/app/transport/telegram-reply-router.ts`, `projects/may-agent/src/app/transport/telegram-outbound.ts` |
-| HTTP/Web API adapter | `projects/may-agent/src/app/http/server.ts` |
-| WebUI source assets | `projects/may-agent/packages/webui/static/*`, generated only into the served `projects/platform/ui/` target |
-| Agent patterns | agent/project workflows, project docs, heartbeat docs |
-
-The main gap is not a missing grand architecture. The remaining work is keeping
-the already-shipped boundaries boring:
-
-- keep execution inspection using the shared result/trace shape consistently,
-- keep `getDb()` limited to mechanical infra code and explicit compatibility
-  paths,
-- avoid further module splits unless a concrete sub-concern changes
-  independently or still obscures behavior,
-- fold stable behavior into the shorter architecture/manual docs so agents do
-  not learn stale patterns.
-
-The live-human Telegram smoke is now covered by runtime evidence and the
-`scripts/telegram-reply-smoke.ts` inspector.
-
-## Migration Direction
-
-Keep this incremental.
-
-1. Keep design docs current with implementation so agents do not chase stale
-   gaps.
-2. Add targeted `query` helpers only when a workflow/handler needs a bounded
-   context bundle.
-3. Keep `getDb()` for compatibility and mechanical infra work.
-4. Make new adapter actions daemon events.
-5. Make new judgment/action trigger entries workflow-backed handlers by default.
-6. Validate every boundary refactor with one real runtime event and trace.
-7. Fold stable behavior into `architecture.md`, `sdk.md`, `events.md`,
-   `metrics.md`, `cron.md`, and `../1-principles/work-model.md`.
-
-## Implementation Checklist
-
-See [system-boundary-tracker.md](../archive/implementation/system-boundary-tracker.md) for the
-canonical implementation tracker. Do not create another parallel tracker.
-
-The target principle:
-
-```
-Infra moves facts and runs sessions.
-Agents interpret facts and evolve patterns.
-```
+It cannot invent a new request, desired task, owner strategy, retry meaning, or
+completion claim. App/task IDs, generation, input, intent, dependencies, and
+evidence survive recovery unchanged unless admitted semantic policy revises
+them.
+
+Uncertain human delivery is never retried blindly. Recovery first observes the
+delivery operation and preserves the originating May request.
+
+## Failure model
+
+| Failure | Owner |
+| --- | --- |
+| Invalid App definition or route | Registry/loader rejects candidate generation |
+| Inbox claim/session interruption | Inbox runtime fences and retries same request |
+| Invalid owner disposition | Host rejects result; request remains unfinished |
+| Invalid TaskIntent/action/Condition/result | Task runtime rejects admission |
+| Workflow/agent timeout or crash | Execution runtime records failure; owning App/task decides semantics |
+| Observer/provider failure | Observer/runtime health; no automatic owner work |
+| Event publication/delivery failure | Event runtime retries/surfaces without inventing work |
+| Human delivery uncertainty | Delivery runtime preserves uncertainty and request correlation |
+| Reload failure | Previous complete generation remains active |
+
+Failures remain in their owning layer. A session failure does not imply task
+failure; task attention does not imply project blocked; event acceptance does
+not imply semantic completion.
+
+## Public surfaces
+
+There are three stable public boundaries:
+
+1. **`@may-agent/sdk`** for App declarations and bounded App-owned workflows.
+2. **Agent tools** for explicitly granted model capabilities.
+3. **Control client/protocol** for external adapters and bounded read/steering.
+
+Legacy handler contexts, `defineProjectApp`, `@may-agent/sdk/legacy`, raw
+`AgentSDK`, `getDb`, global path bags, generic query/command facades, and direct
+event-to-agent handlers are not stable public surfaces.
+
+## What to avoid
+
+- Do not add socket commands for domain actions that belong in App schemas.
+- Do not turn events, queues, metrics, traces, or projections into work state.
+- Do not create per-App schedulers, retry loops, recovery daemons, or delivery
+  systems.
+- Do not expose raw database/task/inbox mutation to Apps or agents.
+- Do not run agents directly from event, timer, observer, or metric handlers.
+- Do not create transport-specific ownership paths for Telegram, Web UI, or
+  CLI.
+- Do not add generic SDK escape hatches to make one migration easier.
+- Do not preserve legacy and canonical actionable routes in parallel.
+
+## Migration direction
+
+1. Keep one `defineApp` declaration and one atomic registry generation.
+2. Migrate addressed input to App inbox admission and facts to explicit App/task
+   subscriptions or observation only.
+3. Move Project App task reconciliation behind the canonical App host without
+   exposing its mechanics.
+4. Move workflow input to typed context and replace raw queries/paths with
+   narrow projections and workspace capabilities.
+5. Classify cron handlers and watchers as schedules, observers, task policy,
+   runtime maintenance, offline maintenance, or deletion.
+6. Remove owner-inbox/event-pair work authority, duplicate loaders/routes,
+   `defineProjectApp`, and `@may-agent/sdk/legacy` after the last consumer.
+7. Prove restart, reload, delivery, task recovery, and route uniqueness before
+   deleting compatibility state.
+
+## Integrity checklist
+
+- One App model, one registry generation, and one host own all App capabilities.
+- Every addressed request has one App inbox authority and correlated result.
+- Every durable desired outcome has one App task authority.
+- Every fact-to-work path is explicit, pure, and idempotent.
+- No infrastructure callback directly runs project judgment.
+- Apps receive semantic contracts and scoped capabilities only.
+- Execution is bounded and has no durable ownership mechanics.
+- Recovery preserves identity and cannot invent domain meaning.
+- External adapters cannot bypass App/control admission.
+- Legacy and canonical actionable routes never run together.

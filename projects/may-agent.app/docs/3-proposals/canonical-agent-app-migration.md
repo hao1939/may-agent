@@ -2,7 +2,7 @@
 
 **Status:** Accepted migration target; implementation in progress
 **Decision owner:** Hao
-**Last reviewed:** 2026-08-14
+**Last reviewed:** 2026-08-15
 **Supersedes:** the ownership, routing, and App-hosting parts of the legacy
 Project App and owner-inbox designs
 **Preserves:** the proven task-resource reconciliation semantics, migrated
@@ -15,7 +15,7 @@ May-agent will have one App model and one durable ownership rule:
 ```text
 addressed request -> App inbox -> bounded owner disposition
 durable outcome   -> App task  -> repeated reconciliation
-changed fact      -> event     -> wake an App inbox item or exact task
+changed fact      -> event     -> subscribed request, TaskIntent, exact wake, or observation
 execution         -> session   -> bounded result
 ```
 
@@ -250,7 +250,11 @@ export default defineApp({
     {
       id: "master-validation-cycle",
       intervalMs: 21_600_000,
-      input: { kind: "scheduled-review", data: { lane: "master-validation" } },
+      event: {
+        type: "aks.master-validation.check",
+        data: { reason: "scheduled" },
+        target: { appId: "aks-rp-e2e", project: "aks-rp-e2e" },
+      },
     },
   ],
 
@@ -320,18 +324,28 @@ access SQL. The host validates the translated input, derives an idempotency key
 from `(appId, subscriptionId, eventId)`, writes the inbox row, and only then
 acknowledges durable delivery.
 
-Subscriptions that only refresh an exact task do not create inbox work; the
-runtime applies the task wake through the explicit task target.
+There is no `inbox.accepts` selector or implicit fallback from task events into
+the inbox. App `subscriptions` explicitly create correlated requests;
+`tasks.subscriptions` explicitly resolve desired task work.
+
+Facts that only refresh desired task work belong in `tasks.subscriptions`, not
+in App `subscriptions`. An event carrying an explicit task target bypasses
+broad resolution and wakes only that task; neither path creates inbox work.
 
 #### `schedules`
 
-A schedule creates a typed App input, not a free-floating event that needs owner
-fallback to become work. The idempotency key includes App ID, schedule ID, and
-time slot. Missed slots follow one declared catch-up policy with a conservative
-default of one latest slot.
+A schedule declares exactly one typed destination:
 
-Mechanical periodic observation belongs to an observer schedule. Judgment or
-desired work belongs to an App-input schedule.
+- an input schedule creates an independently correlated App inbox obligation;
+  its idempotency key includes App ID, schedule ID, and time slot, and its
+  declared catch-up policy may admit at most the latest missed slot; or
+- an event schedule publishes a fact through the shared event runtime; it may
+  wake a task subscription without manufacturing a callerless inbox item and
+  does not replay missed facts.
+
+Periodic collection of external state belongs to an observer. The observer
+publishes what it observed; the resulting fact is then classified by the same
+subscription, task-subscription, or observation-only rule as every other fact.
 
 #### `observers`
 
@@ -586,7 +600,8 @@ Every legacy event path is classified before migration:
 | --- | --- |
 | Human/App addressed message | App inbox admission |
 | Typed action emits an actionable event | Action creates App input |
-| Schedule emits owner-request event | Schedule creates App input |
+| Schedule represents a distinct review obligation | Input schedule creates App input |
+| Schedule wakes deterministic desired work | Event schedule publishes fact to task subscription |
 | Schedule polls provider and emits facts | Scheduled observer emits facts |
 | Event `onEvent` performs bounded domain action | Subscription creates App input; owner handles it |
 | Event deterministically resolves desired task | Task subscription resolves task intent |
@@ -769,7 +784,8 @@ Order:
 Deliverables:
 
 - merge `evaluation.app/inbox.ts` into its canonical `app.ts`;
-- convert schedules to typed inputs or scheduled observers;
+- classify schedules as correlated App inputs, task-wake events, or scheduled
+  observers;
 - convert task events to task subscriptions and exact wakes;
 - convert imperative `onEvent` paths to pure subscription translation or
   observers;
@@ -964,7 +980,7 @@ Zero and multiple actionable consumers are failures.
 - Hao -> May -> direct answer -> delivery receipt;
 - Hao -> May -> project App -> child result -> May review -> delivery;
 - App -> App -> reply;
-- scheduled App input;
+- scheduled App input and scheduled task-wake event;
 - observer fact -> task wake;
 - task workflow -> Condition -> external fact -> convergence;
 - restart during inbox owner attempt;

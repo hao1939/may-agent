@@ -6,9 +6,9 @@ individual readouts continue to evolve.
 
 ## Purpose
 
-The Web UI is a window into the same event, project, session, metric, and owner
-model used by agents. It is not a second control plane and does not invent
-browser-only lifecycle state.
+The Web UI is a window into the same App request, task, event, project,
+session, metric, and owner model used by agents. It is not a second control
+plane and does not invent browser-only lifecycle state.
 
 The UI serves three human roles:
 
@@ -23,14 +23,15 @@ The UI serves three human roles:
 The UI renders the objects defined in [system-model.md](system-model.md):
 
 - projects and task trees are durable work context;
+- App inbox items show addressed requests and their correlated dependencies;
 - events and traces show signals and causality;
 - sessions and workflow runs show execution attempts;
 - metrics and alerts show measured signals needing judgment;
 - agents show accountable identities and their current execution context.
 
-App-owned schedules and owner workflows are project liveness. Standalone agent
-heartbeats are agent liveness. The UI must not treat heartbeat sessions as the
-only form of agency.
+App schedules, observers, task reconciliation, and owner workflows are project
+liveness. Standalone agent heartbeats are agent liveness. The UI must not treat
+heartbeat sessions as the only form of agency.
 
 ## Source Ownership
 
@@ -101,7 +102,7 @@ Liveness uses existing facts:
 - recent project owner/workflow/session activity;
 - active and recently changed projects;
 - open metric alerts;
-- event delivery and pair health;
+- event delivery, App inbox, task, and human-delivery health;
 - recent messages and human-result delivery;
 - standalone heartbeat activity where heartbeats are enabled.
 
@@ -145,30 +146,31 @@ The event page renders backend graph nodes and edges directly. It distinguishes:
 - closure links;
 - projected compatibility evidence;
 - supporting session/tool/transcript detail;
-- delivery acceptance, owner-inbox fallback, unhandled events, and orphaned
-  pairs.
+- delivery acceptance, declared App/task consumers, unhandled facts, and links
+  to correlated App requests or tasks.
 
 The browser may own selection and layout. It must not invent missing causal
 edges or infer completion from delivery.
 
 ## Steering Contract
 
-Every mutation/control affordance maps to a typed event or daemon control
-operation. Examples:
+Every mutation/control affordance maps to typed App admission, a deterministic
+daemon control, or an explicitly published fact. Examples:
 
 | Human intent | Canonical path |
 | --- | --- |
-| Start/bind chat | `human.input.received -> chat.start.requested` |
-| Steer session | `human.input.received -> session.steer.requested` |
-| Comment/steer project | `project.comment.created` receipt -> one correlated `project.owner.reviewed` |
-| Invoke declared app action | Discover schema, validate input, emit the action's typed event directly |
+| Ordinary human request | Admit one request to the `may` App |
+| Steer an active session | Deterministic typed session control linked to its May request when applicable |
+| Comment/steer project | Publish `project.comment.created`; the declared App subscription admits one correlated project-App request |
+| Invoke declared App action | Discover schema, validate input, translate and admit the App input |
 | Cancel session | `session.cancel.requested` |
 | Submit approval | `project.approval.submitted` or owning typed approval event |
 | Runtime restart/reload | `runtime.*.requested` |
 
-The UI confirms “accepted/queued” after ingress. Completion appears later as a
-session, project, task, escalation, metric, or runtime result event. Never show
-“done” merely because an HTTP POST returned successfully.
+The UI confirms “accepted/queued” only after the request, task trigger, or
+control operation is durably correlated. Completion appears later in the
+owning App request, task, delivery operation, escalation, metric, or runtime
+result. Never show “done” merely because an HTTP POST returned successfully.
 
 Project/task actions include the selected project id, task id, visible raw
 fact, expected owner response, and relevant evidence. They do not mutate task
@@ -180,7 +182,7 @@ meaning directly.
 | --- | --- |
 | Live socket/read model | Current activity and incremental updates |
 | Historical read APIs | Bounded queries over persisted events, sessions, metrics, and project state |
-| Steering POST/control | Typed intent persisted into the same runtime/event path |
+| Steering POST/control | Typed App admission or deterministic control persisted through the canonical runtime |
 
 The UI should prefer event-driven updates. Polling is an explicit fallback for
 a surface that lacks a live feed, not a hidden second source of state.
@@ -190,8 +192,8 @@ a surface that lacks a live feed, not a hidden second source of state.
 - Show when data was measured or last moved.
 - Distinguish known, inferred, missing, and stale facts.
 - Preserve raw facts beside system hints.
-- Surface unhandled events, owner-inbox fallback, orphaned pairs, failed
-  sessions, and missing coverage.
+- Surface unhandled facts, failed App admission, stale inbox/dependency waits,
+  failed sessions, delivery uncertainty, and missing coverage.
 - Keep the operator's submitted intent visible until a typed disposition
   arrives or the system reports a failure.
 - Do not turn an empty metric panel into a healthy verdict.
@@ -219,7 +221,8 @@ Telegram remains the preferred mobile notification/conversation surface.
 ## Integrity Checklist
 
 - Every visible state names its source and freshness.
-- Every control maps to a canonical intent/event and shows an async receipt.
+- Every control maps to canonical App admission, an exact task/control target,
+  or an observation-only fact and shows an honest async receipt.
 - Project and task meaning comes from project-owned state/read models.
 - Event graphs render server-provided causality without browser repair.
 - Project-app activity and standalone heartbeat activity are not conflated.

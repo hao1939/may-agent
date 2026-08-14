@@ -1,332 +1,324 @@
 # Agent App Contract
 
 **Design status:** Accepted.
-**Implementation status:** Core contract implemented; removal of duplicate
-app-specific recovery paths is incremental.
+**Implementation status:** Canonical App host implemented; migration of the
+legacy Project App task engine behind this contract remains in progress.
 
-An Agent App packages one accountable owner, optional supporting agents,
-domain context, and optional autonomous hosting. The app organizes capability;
-it does not implement a second agent runtime or scheduler.
+An Agent App is one durable address with one accountable owner. It packages
+typed input, optional supporting agents, domain policy, and optional durable
+task reconciliation without implementing another runtime.
 
 ```text
 Agent      = independently runnable capability and judgment
-Workflow   = reusable process owned by one agent
-Agent App  = owner + supporting agents + domain organization
-Task       = optional durable desired and observed work state
-Host       = optional events, schedules, watchers, tasks, persistence, recovery
+Workflow   = reusable bounded process owned by one agent
+Agent App  = durable address + inbox + owner + domain policy
+Task       = optional durable desired outcome reconciled inside an App
+Event      = persisted fact and wake signal, never work ownership
+Host       = generic admission, delivery, scheduling, execution, and recovery
 ```
 
-The public unit is the app. The execution unit remains an agent.
-
-May is deliberately not an app. May owns the immediate conversation with Hao
-and bridges messages into and out of app-owned work. Durable work always moves
-to an accountable app; putting May behind an app controller would mix human
-conversation with background ownership and duplicate existing task trees.
+The public unit is the App. The bounded execution unit remains an agent or
+workflow. The App inbox and optional task resource are the only durable work
+authorities.
 
 See [Projects](projects.md) for durable project posture,
-[Task Resource Engine](task-resource-engine.md) for optional task autonomy, and
-[Workflows](workflows.md) for reusable process ownership.
+[Task Resource Engine](task-resource-engine.md) for task reconciliation, and
+[Workflows](workflows.md) for reusable process ownership. The migration and
+deletion sequence is recorded in
+[Canonical Agent App Migration](../3-proposals/canonical-agent-app-migration.md).
 
 ## Primary mental model
 
-For durable autonomous work, an app has one visible loop:
+Every input or fact is classified by the durable obligation it creates:
 
 ```text
-event -> task -> workflow or owner -> result or Condition
+addressed input requiring a distinct result -> App inbox
+changed fact with deterministic desired work -> task resolver
+fact with no actionable obligation          -> event only
 ```
 
-- An event says that intent or an observed fact changed.
-- A task records the desired outcome and current observed state.
-- A bound workflow applies reusable experience; otherwise the accountable
-  owner uses judgment directly.
-- A result updates the task, while a Condition records the exact fact that must
-  arrive before reconciliation can continue.
+This is not a classification by transport or by whether somebody is waiting
+synchronously. Human input, App delegation, an action, a schedule, or a fact
+translated by an App subscription may all create an independently correlated
+inbox obligation. A metric, provider observation, lifecycle fact, or scheduled
+wake normally remains a fact and may resolve directly to desired task work.
 
-One app controller keeps applying this loop to current task state. The task
-tree explains relationships and progress; it does not schedule the work.
-Apps that do not need durable work may route an event directly to an owner or
-run an agent directly without installing the task attachment.
+An event may intentionally reach both an App subscription and a task
+subscription only when those routes create two genuinely distinct durable
+obligations. Accidental dual consumption is invalid.
 
-## Supporting reliability infrastructure
-
-The primary loop runs on necessary infrastructure:
+For durable autonomous work, the visible controller loop is:
 
 ```text
-persistence + delivery + deduplicating queue + attempts + leases
-+ retry/backoff + restart recovery + Conditions + watchdogs
-+ metrics + stale-state repair + escalation delivery + operational traces
+fact -> TaskIntent -> task -> workflow or owner -> result or Condition
+                       ^                              |
+                       +---------- reconcile --------+
 ```
 
-These capabilities make autonomy durable and observable, but they are not a
-second app workflow. They preserve and recover the same event, task, attempt,
-or Condition instead of inventing project strategy. Most app and workflow code
-should not need to mention them.
+- `TaskIntent` records the latest desired outcome and exact trigger.
+- A task preserves desired and observed state across bounded attempts.
+- A workflow applies reusable experience; otherwise the accountable owner uses
+  judgment.
+- A result advances observed state; a Condition names the exact fact required
+  before work can continue.
+- Queue coalescing happens only after the latest desired intent and trigger are
+  persisted.
 
-Escalation is part of this infrastructure. An agent may request human approval,
-advice, or action with one durable, deduplicated event. Infrastructure delivers
-and correlates the response; an exact Condition wakes the same task when that
-response is required for continuation.
-
-Reliability attaches by convention. Declaring tasks installs the standard
-controller, queue, persistence, recovery, and observation behavior with host
-defaults. An app overrides a mechanical default only for a measured provider
-or domain constraint; it does not declare its own reliability pipeline.
+Apps without durable autonomous work do not attach the task capability.
 
 ## Package layout
 
 ```text
 projects/<id>.app/
-  app.ts
-  project.json
+  app.ts                 # one canonical App definition
+  project.json           # optional durable project posture
   agents/
     <agent>/
       agent.json
       AGENTS.md
       workflows/
-  watchers/             # optional autonomous observation
-  tasks/seed.json       # optional boot-only task desired state
-  .state/               # runtime-owned state
+  observers/             # optional bounded external-state adapters
+  tasks/seed.json        # optional boot-only desired task state
+  scripts/               # explicit offline maintenance, not runtime imports
+  .state/                # host-managed runtime state
 ```
 
-Workflows live under the agent that owns the experience. New code does not
-discover app-root workflow registries or owner-entry wrappers.
+There is no parallel `inbox.ts` manifest, Project App definition, workflow
+registry, or owner-entry wrapper. Workflows live under the agent that owns the
+experience.
 
-## Manifest
+## Canonical declaration
 
-Only identity and ownership are fundamental. Hosting attachments are optional:
+Every App exports one `defineApp(...)` declaration from the stable
+`@may-agent/sdk` root:
 
 ```ts
-type ProjectApp = {
-  id: string;
-  version: 1;
-  owner: string;
-  description: string;
+export default defineApp({
+  id: "sample",
+  version: 1,
+  owner: "sample-owner",
+  inputSchema,
+  inbox: { batch: "single", maxConcurrent: 2 },
 
-  workspace?: {
-    kind: "git" | "local";
-    repo?: string;
-    localPath: string;
-    branch?: string;
-  };
+  route(request) {
+    // Pure deterministic request disposition, or null for owner judgment.
+    return routeRequest(request);
+  },
 
-  budget?: {
-    sessionsPerDay: number;
-    tokensPerDay: number;
-    maxConcurrent: number;
-  };
+  subscriptions: [
+    {
+      id: "human-project-comment",
+      event: { type: "project.comment.created", project: "sample" },
+      toInput: commentToInput,
+    },
+  ],
 
-  schedules?: ScheduleDeclaration[];
-  tasks?: TaskAttachment;
-  events?: EventSelector[];
-  actions?: Record<string, AppAction>;
-  onEvent?: AppObservationHandler;
-};
+  schedules: [
+    {
+      id: "reconcile-current-state",
+      intervalMs: 300_000,
+      event: {
+        type: "sample.reconcile.requested",
+        data: { reason: "scheduled" },
+        target: { appId: "sample", project: "sample" },
+      },
+    },
+  ],
+
+  observers: [providerObserver],
+
+  tasks: {
+    attach: true,
+    subscriptions: taskSelectors,
+    resolve: resolveTaskIntent,
+    validateAction,
+    maxConcurrent: 2,
+    resyncIntervalMs: 60_000,
+  },
+
+  actions: {
+    review: {
+      description: "Request one correlated review.",
+      inputSchema: reviewSchema,
+      toInput: (data) => ({ kind: "review", data }),
+    },
+  },
+
+  workspace: { kind: "local", localPath: "." },
+});
 ```
 
-An app without tasks installs no task controller, task recovery, or task
-resync. An app without schedules installs no Cron entries. Direct and Gym
-execution load only the requested agent preparation; they do not attach the
-autonomous host.
+Only identity, owner, version, and input schema are fundamental. Inbox tuning,
+subscriptions, schedules, observers, actions, workspace policy, and task
+integration are optional capabilities hosted by the same runtime.
 
-The long-running `--cron` daemon is the single autonomous host. Other CLI
-modes may reuse the same agents and workflows, but they do not install app
-event routes, schedules, queues, task controllers, recovery, or resync. This
-keeps a direct workflow, one-shot task, status command, and Web UI process from
-claiming work owned by the daemon.
+## Addressed work
 
-`budget.maxConcurrent` bounds the app task controller. The autonomous host also
-applies one shared concurrency bound across all app controllers, with a
-two-task default for the standard host, so simultaneous recovery in several
-apps cannot start an unbounded session storm. Work above either bound stays in
-the ordinary durable queue. `sessionsPerDay` and
-`tokensPerDay` are currently planning and observation metadata, not enforced
-daily quotas. Schedules must therefore be designed below the planning envelope,
-and actual use must be observed. Hard quota enforcement is a separate runtime
-capability, not an implied app guarantee.
+Every App automatically has a durable inbox and owner dispatch. An admitted
+request carries a stable identity, source, typed input, optional parent, and
+optional dependency observation. Host-private rows, claims, leases, channel
+metadata, and persistence handles never enter App code.
 
-App IDs and owner-agent IDs are independent. Existing mappings remain valid;
-same-name identity is not required.
+The optional pure `route(request)` policy may return the same disposition
+vocabulary as the owner:
 
-## Ownership boundaries
+- `complete`: finish this exact request with a correlated result;
+- `delegate`: create a child request addressed to another App; or
+- `task`: attach this request to an existing task or desired `TaskIntent`.
 
-| Component                           | Owns                                                                                                                   |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `app.ts`                            | App identity, owner, optional workspace/budget, event correlation, schedules, actions, and deterministic observations. |
-| `project.json` and domain artifacts | Durable goal, posture, strategy, and domain context.                                                                   |
-| Agent                               | Identity, instructions, skills, tool policy, private context, judgment, and learned workflows.                         |
-| Workflow                            | How one known repeatable process is performed and verified.                                                            |
-| Watcher                             | Polling/replay of an external level and emission of semantic observations.                                             |
-| Autonomous host                     | Event delivery, schedules, queues, attempts, concurrency, persistence, recovery, metrics, and interfaces.              |
-| Task runtime                        | Canonical task/Condition mutation, claims, result admission, receipts, and projections.                                |
+Returning `null` asks the owner for one bounded judgment. An inbox item remains
+the authority while it waits on a child App, task, session, or delivery. It is
+not replaced by an event pair or by a copied task record.
 
-Agents and workflows do not edit task storage directly. Infrastructure does
-not decide app strategy or domain meaning. An app adds domain-specific
-watchers and exceptional policy only when the generic host cannot know the
-external fact or business rule.
+The `may` App owns ordinary human conversation and final channel delivery. It
+may answer directly or delegate to another App and review the child result.
+It has no schedules, observers, or task attachment, so conversational
+ownership cannot become a background project controller.
 
-## Shared agent execution
+## Facts and subscriptions
 
-Direct, Gym, session, workflow, and autonomous execution use the same prepared
-agent definition and model/tool loop:
+Events are durable facts and edge-triggered wakes. They do not own work and do
+not directly launch an agent.
+
+Top-level App `subscriptions` are intentionally rare. Each has a stable ID, an
+event selector, and a pure `toInput(event)` translator. A non-null result
+creates one independently correlated App inbox request. The host validates the
+input and persists it with an idempotency key derived from App, subscription,
+and event identity before acknowledging delivery.
+
+`tasks.subscriptions` select facts that deterministically declare or revise
+desired task work. The pure `tasks.resolve(event)` returns one `TaskIntent` or
+`null`; it cannot execute work or mutate runtime state. A fact carrying an
+explicit task target bypasses broad resolution and wakes only that task.
+
+There is no `inbox.accepts`, implicit fallback from task subscriptions to the
+inbox, generic `events` route, or imperative `onEvent` execution path.
+
+## Actions, schedules, and observers
+
+An action is discoverable typed ingress. The host validates action input,
+translates it through `toInput`, and admits the result to the App inbox. An
+action cannot publish an actionable event as a shortcut around correlated
+admission.
+
+A schedule declares exactly one destination:
+
+- `{ input }` creates a correlated inbox obligation and may declare `none` or
+  `latest` catch-up; or
+- `{ event }` publishes a fact through the shared scheduler and does not replay
+  missed facts.
+
+Use an input schedule only when each due slot deserves its own disposition.
+Use an event schedule when time merely wakes deterministic desired task work.
+
+An observer is a bounded deterministic adapter for external state:
 
 ```text
-model + prompt + context + supplied tools
-  -> agent run
-  -> result + neutral execution notifications
+provider state -> observer -> semantic fact -> subscription, task, or projection
 ```
 
-The agent core does not import EventBus, SQLite, metrics, tasks, scheduling, or
-recovery. Infrastructure may wrap the same run to persist transcripts, emit
-events, enforce timeouts, or collect evaluation evidence. A supplied tool may
-use a database or remote service behind its explicit capability interface.
+It receives capability-scoped read and logging ports and returns facts for the
+host to publish after successful observation. It does not launch an agent,
+know inbox or task storage, or mutate runtime state. Legacy watchers migrate to
+observers, workflow inputs, or explicit offline maintenance according to their
+actual responsibility.
 
-## Task correlation
+## Task capability
 
-When tasks are attached, the app declares one correlation surface:
+Attaching tasks installs the shared reconciler as an internal App capability.
+The App supplies typed intent, validation policy, workflow inputs, and results;
+the host owns storage, generations, attempts, leases, queues, workspace
+allocation, result admission, recovery, and projections.
 
-```ts
-tasks: {
-  accepts: EventSelector[];
-  resolve(event): ProjectAppTaskIntent | null;
-  resyncIntervalMs?: number;
-}
+Task ownership resolves from the task, nearest explicit ancestor, then App
+owner. The resolved owner must be runnable:
+
+```text
+task.workflow present -> agents/<owner>/workflows/<workflow>.ts
+task.workflow absent  -> one bounded run of the resolved owner
 ```
 
-`tasks.accepts` selects untargeted semantic events that may declare or revise
-desired task state. `tasks.resolve` returns one stable task intent or `null`.
-It is pure and cheap: it identifies work but does not execute it or mutate
-storage.
+A workflow may return `needs-owner` for one handoff of the same attempt.
+Unavailable named workflows produce an explicit unavailable/attention state;
+they are not silently treated as unbound owner work.
 
-Targeted task wakes, Condition observations, recovery, and delivery resync do
-not need app-specific routes. They enqueue stable IDs into the same app
-controller. The queue never carries copied task specs.
+Targeted task wakes, Condition observations, recovery, and delivery resync
+enqueue stable task identities through the same controller. The queue never
+becomes desired-state authority and never carries an unpersisted replacement
+specification.
 
-## Recovery boundary
+## Runtime boundary
 
-Recovery follows one convention:
+The process-wide App registry validates and publishes one atomic generation of
+canonical definitions. A failed reload leaves the previous generation active.
+Only the long-running host attaches schedules, observers, inbox dispatch, and
+task controllers; direct, Gym, and read-only processes reuse agent/workflow
+execution without becoming competing reconcilers.
+
+The host owns:
+
+- admission, idempotency, delivery, attempts, leases, and restart recovery;
+- shared scheduling, concurrency, retry/backoff, and stale mechanical repair;
+- task and Condition mutation, result admission, receipts, and projections;
+- workspace allocation and portable path resolution; and
+- generic operational metrics and traces.
+
+Apps own domain meaning, input schemas, pure routing and correlation policy,
+observer interpretation, workflows, and domain metrics. Apps never receive raw
+SQL, unrestricted task storage, global runtime paths, scheduler handles, or
+recovery APIs.
+
+When `project_lifecycle` is paused, the host installs no schedules, observers,
+task routing, controller, recovery, or resync for that App. Pause and resume
+remain explicit control operations, not conclusions inferred from open work.
+
+## Reliability convention
 
 ```text
 known transient failure
   -> bounded retry of delivery or execution
   -> repair stale mechanical state
-  -> requeue the same persisted task
+  -> requeue the same persisted obligation
   -> attention when judgment is required
-  -> one coalesced wake to the accountable owner with accumulated evidence
   -> explicit escalation only across a real ownership boundary
 ```
 
-Infrastructure owns the first three steps because they do not require domain
-judgment. The owner or its workflow decides what an ambiguous failure means and
-how desired work should change. Repeated equivalent recovery or metric signals
-are deduplicated into the existing task/alert context; they do not create
-parallel owner-review loops.
+Infrastructure preserves the same inbox or task identity. It never invents
+project strategy. Repeated equivalent facts may coalesce scheduler pressure,
+but they do not erase the latest persisted intent, correlated request, or
+evidence.
 
-An app may declare a watcher for a domain-specific external level, but it
-should not reproduce generic attempt recovery through overlapping heartbeat,
-stall, watchdog, and metric handlers. Metrics observe the loop and may trigger
-a known mechanical repair or one coalesced owner wake. They never become a
-second planner.
-
-## Handler convention
-
-Task ownership resolves from the task, nearest explicit ancestor, then app
-owner. The resolved owner must be a runnable agent.
-
-```text
-task.workflow present
-  -> resolve agents/<owner>/workflows/<workflow>.ts
-
-task.workflow absent
-  -> run the resolved owner directly
-```
-
-A workflow may return `needs-owner`; the runtime then hands the same task to
-that owner once. This is the only automatic workflow-to-owner handoff. An
-unavailable named workflow records `HandlerUnavailable` and moves the task to
-`attention`; it is not treated as an originally unbound task. After a
-successful app reload, a repaired binding is enqueued once when the named
-workflow resolves again.
-
-The exact result, Condition, acceptance, attempt, and completion contracts are
-owned by [Task Resource Engine](task-resource-engine.md), not repeated here.
-
-## Events, actions, schedules, and watchers
-
-`events` selects deterministic app-level observations for `onEvent`. This path
-may update a read model or translate a signal; it does not execute project work
-or bypass task admission.
-
-The host exposes declared action names, descriptions, and input schemas for
-discovery. Invocation resolves the action, validates its input, calls its event
-factory, persists the returned semantic event directly, and returns that event
-ID. There is no `project.action.invoked` / accepted wrapper lifecycle.
-
-Schedules emit semantic events. Cron owns time; it does not own task
-reconciliation.
-
-A watcher owns an external provider level:
-
-```text
-provider state -> watcher -> semantic event -> app/Condition correlation
-```
-
-It may poll, retry, and replay current external state. It does not invoke an
-agent, know task IDs, or mutate task storage.
-
-## Workspace and paths
-
-The workspace binding names the portable domain project. Infrastructure
-resolves agent, app, domain, and execution paths before a run. Handlers use
-those resolved paths instead of deriving one root from another or relying on
-the process working directory.
-
-Task output admission permits only declared app/domain roots. Tool policy and
-process isolation remain responsible for actual filesystem enforcement.
-
-## State and lifecycle
-
-For apps with tasks:
-
-- `.state/tasks/state.json` is the sole mutable task authority;
-- `.state/tasks/tree.json` is a generated disposable read projection; and
-- `tasks/seed.json` initializes an empty runtime once.
-
-When `project_lifecycle` is `paused`, the host installs no schedules,
-controller, task event routing, recovery, or resync for that app. Pause and
-resume are explicit journaled control operations, not conclusions inferred
-from the amount of open work.
+Metrics observe the loop. Runtime metrics describe host health; App metrics
+describe domain outcomes. A metric breach is a fact that may wake a task or,
+when an independent disposition is genuinely required, create a subscribed App
+request. It is never an alternate work authority.
 
 ## Integrity invariants
 
-1. Loading an app package does not itself start model work.
-2. Direct and Gym execution do not require autonomous infrastructure.
-3. One app has one current root owner and optional supporting agents.
-4. Every workflow belongs to one agent and runs with that agent's preparation.
-5. Tasks, schedules, watchers, events, actions, and budgets are optional host
-   attachments.
-6. Each task-enabled app has one resolver, one controller, and one
-   deduplicating key queue.
-7. Selectors cannot route one project's event into another app.
-8. Actions translate once, and inbox work is acknowledged only after accepted
-   handling.
-9. App loading is atomic: a failed reload leaves the previous installation
-   active.
-10. Read projections never become mutation authority.
-11. Recovery preserves the current task identity and does not invent desired
-    state.
-12. Equivalent safety signals are coalesced before waking an owner.
-13. Reliability infrastructure never becomes a second app planner or domain
-    controller.
-14. A human disposition required by a task wakes that same task identity.
-15. Child tasks use the same app controller, and meaningful child transitions
-    wake their executable parent without app-specific routing.
-16. Replacement and prior app controllers share one per-app capacity lease
-    pool. Prior active attempts retain their leases, while the replacement may
-    use remaining capacity immediately; hot reload neither multiplies the app
-    budget nor pauses unrelated work behind one long attempt.
-17. Only the long-running autonomous daemon attaches app task controllers;
-    direct and read-only processes cannot become competing reconcilers.
+1. One App has one `defineApp` declaration, one registry identity, and one
+   accountable owner.
+2. Every addressed request has one authoritative inbox item and one correlated
+   terminal result.
+3. Every durable desired outcome has one authoritative task identity.
+4. Events, metrics, logs, and projections never become work authorities.
+5. Every actionable fact has exactly one canonical route unless two distinct
+   durable obligations are explicitly declared and tested.
+6. App subscriptions create correlated requests; task subscriptions resolve
+   desired task intent; observation-only facts create neither.
+7. Task intent and trigger evidence are persisted before queue coalescing.
+8. Loading or reloading an App cannot itself start model work, and failed reload
+   cannot publish a partial generation.
+9. Direct, Gym, and read-only processes cannot claim autonomous App work.
+10. Agents and workflows cannot mutate inbox/task storage or runtime mechanics.
+11. Recovery preserves obligation identity and does not invent desired state.
+12. Read projections, event delivery rows, and queue entries never become
+    mutation authority.
+13. Human delivery remains correlated to the originating May request through
+    uncertain-delivery handling and final receipt.
+14. The public authoring surface contains no `defineProjectApp`,
+    `@may-agent/sdk/legacy`, owner-inbox fallback, or imperative event execution.
 
-Focused tests cover owner-only loading, hosted/direct preparation parity,
-scoped selectors, action translation, concurrency, restart recovery,
-Condition wakeup, receipt wakeup, and explicit workflow-to-owner handoff.
+Focused verification covers request admission and delivery, delegation,
+subscription idempotency, input and event schedules, task resolution and exact
+wakes, restart/reload recovery, Conditions, bounded concurrency, and removal of
+dual legacy/canonical consumption.

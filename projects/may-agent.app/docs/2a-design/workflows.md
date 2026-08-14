@@ -1,524 +1,342 @@
 # Workflow Discovery And Execution
 
 **Design status:** Accepted.
-**Implementation status:** Implemented for validated per-invocation catalog
-snapshots, project-over-agent precedence, entry-file provenance, durable
-lifecycle events, guards, nesting, revision/task-safe resume, skill-bearing
-agent steps, workflow-authored structured agent results, and optional
-workflow-owned task-worktree selection. Full imported dependency fingerprints
-and registration-time catalog reloads remain follow-up. Workflows remain
-ordered synchronous blocks; durable waits split across event-linked runs.
+**Implementation status:** Bounded TypeScript workflows and canonical scoped
+context are implemented; legacy handler/SDK execution contexts are being
+removed.
 
 ## Purpose
 
-A workflow is executable orchestration for a repeatable process. It moves
-sequencing, branching, retries, verification, and terminal-result handling out
-of model memory and into runtime-controlled TypeScript.
+A workflow is reusable bounded orchestration owned by one agent. It moves a
+learned sequence, branching, bounded retry, and verification out of model
+memory and into tested TypeScript.
 
-A workflow is not a prompt document and is not merely an arbitrary script:
-
-- its TypeScript module is the executable controller;
-- its `name` and `description` form the discovery surface;
-- its `execute(ctx)` function uses the bounded workflow SDK;
-- its `workflowRunId`, steps, events, and terminal result make execution
-  durable and inspectable.
-
-The event, project task, or human intent that wakes a workflow remains the
-upstream work identity. The workflow run is the execution identity. Do not add
-a parallel request type to represent either one.
-
-## Skill And Workflow Boundary
-
-Skills and workflows share a resource architecture, not execution semantics.
-
-| Concern           | Skill                                   | Workflow                                            |
-| ----------------- | --------------------------------------- | --------------------------------------------------- |
-| Primary source    | `SKILL.md` instructions                 | TypeScript module                                   |
-| Controller        | Model judgment                          | Workflow runtime                                    |
-| Unit of use       | One model turn                          | Durable workflow run                                |
-| Selection         | Model match or explicit invocation      | Explicit tool, SDK, handler, or schedule invocation |
-| Sequencing        | Advisory                                | Enforced by code                                    |
-| State and closure | Enclosing session/work owns it          | `workflowRunId` and terminal workflow result        |
-| Optional code     | Helper scripts run through normal tools | Imported helpers or `ctx.runFunction(...)` steps    |
-| Best fit          | Variable, judgment-heavy method         | Repeatable, testable orchestration                  |
-
-A script bundled with a skill does not make the skill a workflow. The model
-still decides whether and how to run that helper. Conversely, prose beside a
-workflow documents the executable contract but does not control execution.
-
-## Shared Capability Resource Contract
-
-Skill and workflow loaders should expose the same small resource envelope:
-
-```ts
-type CapabilityResource = {
-  kind: "skill" | "workflow";
-  name: string;
-  description: string;
-  scope: "app-agent" | "project-app" | "agent" | "shared";
-  filePath: string;
-  contentHash: string;
-};
+```text
+typed input -> bounded workflow -> agent/helper steps -> ExecutionResult
 ```
 
-This shared envelope supports consistent discovery, precedence, compact
-catalogs, diagnostics, reloads, trace provenance, and evaluation. Each kind
-retains its own validator, invocation API, permissions, and lifecycle.
+A workflow is not durable work ownership, a scheduler, an event handler, or a
+suspended business process. The enclosing App inbox request or task owns the
+outcome. A workflow run owns only one bounded execution attempt.
 
-Do not build one generic executor for both. A capability catalog may present
-both kinds to operators, but it must preserve `kind` and route invocation to
-the correct runtime.
+## Skill and workflow boundary
 
-`contentHash` covers the primary resource for catalog identity. For a skill,
-that is the resolved `SKILL.md` body. For a workflow, exact run provenance must
-also fingerprint repository-local modules reachable from the entrypoint and
-the dependency-lock revision. A workflow entry-file hash alone is useful
-diagnostic evidence but must not be described as the complete executable
-revision.
+| Concern | Skill | Workflow |
+| --- | --- | --- |
+| Primary source | `SKILL.md` instructions | TypeScript module |
+| Controller | Model judgment | Workflow code |
+| Unit of use | One model turn | One bounded execution run |
+| Sequencing | Advisory | Enforced and testable |
+| Durable state | None | None beyond attempt evidence |
+| Best fit | Variable judgment-heavy method | Stable repeatable orchestration |
 
-## Module Contract
+A workflow may ask an agent to apply a skill. The workflow controls sequence;
+the skill guides judgment inside one step. Neither owns the enclosing App/task.
 
-The canonical v1 workflow remains a flat TypeScript file:
+## Location and ownership
+
+Canonical workflows live under the agent that owns the experience:
 
 ```text
 projects/<id>.app/agents/<agent>/workflows/<name>.ts
 agents/<agent>/workflows/<name>.ts
 ```
 
+For an App task, ownership resolves from the task, nearest explicit ancestor,
+then App owner. If that agent is App-local, its App-local workflow directory is
+the complete scope; otherwise the standalone agent directory applies. The
+runtime never merges catalogs from several owners or discovers an App-root
+workflow registry.
+
+Workflow names need only be unique within the resolved agent scope. Duplicate
+effective names are invalid and visible in catalog diagnostics rather than
+resolved by filesystem order.
+
+## Module contract
+
 ```ts
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
+import { verifyChange } from "./lib/verify-change.js";
+
+type Input = {
+  objective: string;
+  maxAttempts: number;
+};
 
 export const name = "implement-and-verify";
 export const description =
-  "Implement a change, run deterministic checks, and return the verified result.";
+  "Implement one bounded change and prove it with deterministic checks.";
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
+export async function execute(
+  ctx: WorkflowContext<Input>,
+): Promise<ExecutionResult> {
   let feedback = "";
-  for (let iteration = 1; iteration <= 3; iteration += 1) {
-    const implementation = await ctx.runAgent(
+  const limit = Math.max(1, Math.min(ctx.input.maxAttempts, 3));
+
+  for (let attempt = 1; attempt <= limit; attempt += 1) {
+    const implementation = await ctx.agents.call(
       "dev",
-      [ctx.task, feedback].filter(Boolean).join("\n\n"),
+      [ctx.input.objective, feedback].filter(Boolean).join("\n\n"),
     );
-    if (implementation.status === "error") {
-      return ctx.blocked("Agent execution failed", {
-        sessionId: implementation.sessionId,
+    if (implementation.status !== "done") {
+      return ctx.blocked("Implementation step did not finish safely", {
+        executionId: implementation.id,
+        status: implementation.status,
       });
     }
 
-    const verification = await ctx.runFunction("verify", async () => {
-      const { execSync } = await import("node:child_process");
-      return execSync("bun test", { encoding: "utf8" });
-    });
-    if (verification.status !== "error") {
-      return ctx.done("Implemented and verified");
+    const verification = await verifyChange(ctx.workspace?.root);
+    if (verification.ok) {
+      return ctx.done("Implemented and verified", {
+        evidence: verification.evidence,
+      });
     }
-    feedback = `Iteration ${iteration} verification failed:\n${verification.lastAssistantText}`;
+    feedback = `Attempt ${attempt} failed verification: ${verification.summary}`;
   }
-  return ctx.blocked("Bounded repair loop did not produce a verified result", {
-    feedback,
-  });
+
+  return ctx.blocked("Bounded repair loop exhausted", { feedback });
 }
 ```
 
 Rules:
 
-- Prefer TypeScript/JavaScript and Bun for workflow code and helpers.
-- Require explicit `name`, `description`, and `execute` exports. The active
-  catalog does not derive missing names or descriptions from filenames.
-- End every path with `ctx.done(...)` or `ctx.blocked(...)`.
-- Use `ctx.runAgent`, `ctx.runWorkflow`, and `ctx.runFunction` so steps remain
-  visible to guards, persistence, and traces.
-- Keep reusable deterministic mechanics in normal TypeScript modules and
-  import them. Do not place orchestration state in Markdown.
-- Keep tests beside the workflow or in the owning app's established test
+- export explicit `name`, `description`, and `execute`;
+- receive all invocation meaning through typed `ctx.input`;
+- end every path with `ctx.done(...)` or `ctx.blocked(...)`;
+- call agents with `ctx.agents.call` and nested workflows with
+  `ctx.workflows.run`;
+- keep deterministic mechanics in imported TypeScript helpers;
+- use `ctx.read` only for exact bounded current facts;
+- publish facts with `ctx.events.emit`, never as a work-dispatch shortcut; and
+- keep tests beside the workflow or in the owning App's established test
   layout.
 
-Flat files remain the canonical format because most workflows need no private
-resource bundle. If repeated cases require workflow-private references,
-fixtures, or helpers, a later design may add `workflows/<name>/workflow.ts`.
-Do not migrate existing workflows until that need and loader contract exist.
+Do not reconstruct input from prompt text, global task files, event history,
+the current working directory, or an unrestricted query.
 
-## Workspace convention
+## Scoped context
 
-Workflows use the app/domain shared workspace by default. A reusable process
-that performs one independent Git patch may opt into infrastructure-owned
-task isolation:
+The canonical context contains:
 
-```ts
-export const workspace = "task";
-```
+- typed `input`;
+- optional bounded `reconciliation` facts when a task owns the attempt;
+- exact `read` projections for one App result, task, execution, or metric;
+- bounded agent and nested-workflow execution;
+- fact publication and domain metric recording;
+- the allocated workspace/output paths; and
+- logging plus one terminal result vocabulary.
 
-The string form uses the app workspace branch. A workflow that owns changes
-for a different integration branch may declare it explicitly:
+It intentionally contains no raw database, event bus, task store, queue, lease,
+scheduler, recovery handle, global path set, session manager, or arbitrary
+command surface.
 
-```ts
-export const workspace = { kind: "task", baseBranch: "main" } as const;
-```
+### Task reconciliation input
 
-This is still the same task-worktree convention, not per-task scheduling or a
-second workspace registry.
+For task-owned execution, `ctx.reconciliation` supplies:
 
-For a project task, the reconciler then prepares one deterministic worktree
-from the app's configured base branch, records its path, base ref/commit,
-branch, head, and disposition on the current attempt, and supplies that path as
-both `ctx.workspaceDir` and the real filesystem root for agent-step tools.
-Retries and replacement agents for the same task generation reuse it.
+- App/task identity and current generation/resource version;
+- resolved owner, mode, outcome, and acceptance;
+- typed workflow input;
+- bounded live and completed child views; and
+- the exact event that triggered this pass, when present.
 
-The workflow must return a clean committed result or an explicit no-change
-before convergence. A dirty result is retained for recovery and moves the task
-to attention. Clean closeout removes the worktree; a useful unmerged branch is
-retained, while an empty or already-integrated branch is removed. The bounded
-Git lineage is copied into an achieve receipt.
+That is enough to reconcile current desired work without parsing a prompt
+packet or reading the global task tree. A workflow returns a typed output for
+the task boundary to validate and admit. It never edits task state itself.
 
-For a nonterminal retry, branch identity is stronger than base freshness. If a
-local task branch was removed after a clean wait but the same task branch
-exists on the configured remote, workspace preparation recreates the local
-branch from that remote task branch. It must not recreate the task at a newer
-base-branch head. This preserves the exact source commit associated with a
-pipeline run, review, or external wait while still allowing clean local
-worktrees to be removed between attempts.
+## Invocation
 
-This is a workflow convention, not a per-task setting. Do not use it for
-observation, app state, shared ledgers, exact external waits, or workflows that
-need one canonical integration workspace. Do not create another workspace
-registry or ask the agent to choose paths and branch names.
-
-## Scope And Ownership
-
-Every workflow has one owning agent. For an app task, resolve the task's owner
-first. If that agent is registered app-locally, its app-local workflow
-directory is the complete scope; otherwise use the standalone agent directory.
-The runtime does not merge the two directories. App-root workflow discovery is
-unsupported.
-
-Workflow names need only be unique for their owning agent. Cross-owner reuse
-uses an explicit qualified call or a shared helper module; discovery never
-merges catalogs from multiple owners.
-
-The effective name is the exported `name`, not only the filename. Duplicate
-effective names within the selected scope are invalid. Discovery reports and
-omits an ambiguous name instead of selecting it by directory order.
-
-## Discovery And Reload
-
-The current lifecycle is:
+Workflow execution is explicit from one bounded owner:
 
 ```text
-workflow roots at list/run/resume
-  -> enumerate TypeScript entrypoints
-  -> import and validate exports
-  -> resolve effective-name precedence
-  -> immutable workflow catalog snapshot
-  -> list or explicit invocation
+task reconciler -> resolved owner workflow
+App owner       -> bounded workflow capability
+workflow        -> ctx.workflows.run(name, input)
+model tool      -> explicit workflow invocation
 ```
 
-Missing roots are empty, not errors. Invalid modules and duplicate effective
-names appear in catalog diagnostics and are not invocable. `list`, `run`, and
-`resume` resolve through the same immutable snapshot for that tool call, so a
-valid edit is picked up by the next dispatch. A run persists the selected entry
-path, scope, and entry hash.
+An App schedule, fact subscription, observer, or metric cannot directly launch
+a workflow. It first creates the appropriate App request or persisted task
+intent; that durable owner then decides whether a workflow is required.
 
-A later optimization may build catalogs at registration and replace them on
-reload or source change. It must preserve next-dispatch freshness and must not
-change code beneath an active run.
+Descriptions aid discovery but never trigger code by fuzzy matching.
 
-## Invocation And Lifecycle
+## Synchronous bounded execution
 
-Workflow execution is always explicit:
+Synchronous describes the control contract, not the absence of JavaScript
+`await`: each declared step finishes before dependent code continues, and the
+caller receives one terminal result from the run.
+
+The host applies one finite deadline to the whole workflow attempt, including
+code between agent calls. A workflow that stalls before or after a model step
+cannot hold App/task capacity forever. Deadline expiry is execution failure,
+not domain judgment.
+
+Retries inside a workflow must be bounded and must use changed evidence. A
+workflow cannot recursively re-enter itself with the same input and state. Each
+iteration must implement/verify a change, establish a durable wait, return a
+result, or fail honestly.
+
+Good in-run waits are bounded operations such as:
+
+- an awaited agent call with host timeout;
+- an imported deterministic helper or provider request;
+- a nested workflow returning `done` or `blocked`; or
+- a bounded retry with explicit limit and terminal condition.
+
+## Durable waits
+
+Do not keep a workflow open across human replies, approval, long timers,
+callbacks, runtime restart, unavailable providers, or other unbounded waits.
+
+For task work:
 
 ```text
-workflow({ action: "run", name, task })
-ctx.runWorkflow(name, task)
-handler or schedule -> sdk.runWorkflow(name, task)
+workflow pass -> return typed waiting result + exact Conditions -> run ends
+later fact    -> exact task wake -> new reconciliation pass
 ```
 
-A description may help an agent choose a workflow, but merely matching a
-description must not start code. Event handlers and schedules own automatic
-wake-up policy.
-
-All callers use the same typed runner. Agent-facing `workflow(...)` serializes
-the typed result only at the tool boundary; project handlers and SDK calls
-consume that result directly. Internal callers must not invoke the model tool
-and parse its JSON text to recover workflow state.
-
-## Synchronous Execution And Durable Waits
-
-A workflow is a compact synchronous block. Synchronous describes its control
-contract, not whether its TypeScript uses `await`: steps execute in declared
-order, each step resolves before the next begins, and the caller receives one
-terminal result from that run.
-
-For a task-bound domain workflow, this run is one bounded reconciliation
-iteration, not the lifetime of the task. The same task may invoke the workflow
-again after an exact Condition changes or after recoverable execution failure.
-Within the current run, expected in-scope failures feed evidence back to an
-agent step and continue through a bounded repair-and-verify loop. Do not turn a
-merge conflict, failed test, or rejected implementation into a durable wait or
-immediate owner handoff merely because the first attempt failed.
-
-The task controller supplies a finite deadline for that complete workflow
-iteration, including code before, after, or between agent steps. Step timeouts
-alone are insufficient: a workflow that never starts a session, or that stalls
-between sessions, must not occupy task capacity forever. Reaching the workflow
-deadline is an execution failure, not a domain judgment. Persist the terminal
-workflow failure, release the attempt through ordinary task reconciliation,
-and retry the same task from current evidence. A workflow that needs more time
-must return an exact durable wait instead of remaining in process.
-
-A workflow must not recursively re-enter itself with the same task evidence.
-Before another iteration it must produce a real state transition: change and
-verify source, persist an exact wait, return a result, or let the controller
-record an execution failure. For example, when an integration target advances
-and invalidates live proof, update the task branch and request fresh proof;
-calling the same reconciliation function again without changing either side is
-an infinite retry disguised as progress.
-
-Keep a wait inside one workflow only when it is bounded and expected to resolve
-within the current execution, such as:
-
-- an agent step with a configured timeout;
-- a deterministic function or tool call;
-- a nested workflow that itself returns `done` or `blocked`; or
-- a bounded retry whose limit and terminal condition are explicit.
-
-Do not suspend a workflow across a human reply, approval, timer, external
-callback, unavailable dependency, runtime restart, or any wait with no useful
-in-process bound. Split that process into event-linked synchronous phase
-workflows:
+For addressed App work:
 
 ```text
-trigger event
-  -> workflow A: perform phase A in order
-  -> persist domain phase + resume condition
-  -> emit domain continuation event
-  -> workflow A returns done
-
-durable wait: no workflow is running
-
-reply / timer / callback / condition event
-  -> handler validates and deduplicates the continuation
-  -> workflow B: perform phase B in order
-  -> workflow B returns done or blocked
+owner pass -> delegate/attach dependency -> run ends
+child result -> parent inbox wake -> new owner pass
 ```
 
-Workflow A and workflow B have different `workflowRunId` values. They are not
-nested runs. Connect them with the existing event trace, the domain object's
-stable correlation key, and the persisted phase state. Preserve the original
-`traceId`; make the continuation event the causal parent of the later phase,
-and add a closure link when the later event closes an earlier commitment.
+The next pass receives current durable state through its typed request or
+reconciliation context. It never depends on workflow-local variables, an open
+session, module memory, or source-session resume.
 
-The app or project owns the durable state machine. Persist enough context to
-reconstruct phase B from current state; do not depend on workflow-local
-variables, an open session, or module memory. Prefer a transactional outbox or
-equivalent atomic state-and-event write when losing the continuation event
-would strand work. Otherwise provide an idempotent reconciler that can re-emit
-the missing event safely.
+`ctx.done` means this bounded workflow completed its own contract. It does not
+mean the enclosing App request, task, or project completed. `ctx.blocked` means
+this workflow cannot safely produce its contract; it does not create a durable
+wait, escalation, owner handoff, or new request automatically.
 
-Use an existing meaningful domain event such as an approval result, artifact
-availability, task transition, or timer signal. Do not introduce a generic
-workflow-wait request object or parallel request lifecycle merely to connect
-the phases.
+## Result admission
 
-`ctx.done(...)` from workflow A means that phase A and its continuation handoff
-completed successfully. It does not mean the enclosing project goal or task is
-done. The app boundary must keep that domain object in `waiting`,
-`pending-review`, or another truthful state until the later phase produces its
-actual terminal evidence.
-
-An expected durable wait is not `ctx.blocked(...)`. Use `blocked` only when the
-current run cannot safely choose or establish a continuation. Do not add a
-`waiting` workflow result or keep a workflow run open: waiting belongs to the
-domain/app state and the event system.
-
-`workflow.resume` remains crash recovery for an interrupted synchronous run.
-It must not be used to continue a business process after an expected durable
-wait. Start the later phase as a new workflow run from its triggering event.
-
-Each run has one durable `workflowRunId` and inherits the causal trace of its
-trigger. It persists parent session/workflow links, project scope, step
-sessions, status, and terminal summary or reason. Terminal outcomes are:
-
-- `done` via `ctx.done(summary)`;
-- `blocked` via `ctx.blocked(reason, context)`;
-- runtime interruption or error, recorded by the runtime.
-
-A local blocked result is not automatically a cross-owner escalation. The
-top-level caller or runtime boundary decides whether to record attention or
-create an explicit escalation. For a task-bound workflow, `blocked` records a
-failed attempt and task attention; the task controller passes explicit binding
-metadata and the workflow runner does not infer binding from prompt text. Only
-an admitted `needs-owner` task result causes sequential owner handoff. Nested
-workflows return their result to their parent synchronously.
-
-For task-bound domain work, use these outcomes consistently:
-
-- continue locally when the workflow and its owning agent can still make a
-  useful in-scope repair;
-- return an exact task `waiting` result only after establishing the external
-  Condition and any required request or dispatch;
-- return `needs-owner` only for an exceptional same-owner judgment that the
-  learned workflow could not safely resolve;
-- create an explicit escalation only after agent judgment identifies a real
-  cross-owner action; and
-- use `ctx.blocked` for workflow execution failure or inability to produce a
-  safe structured result, not as an ordinary domain branch.
-
-Resume creates a new run linked to the prior run. It must resolve the same
-workflow identity deliberately. If the original content hash is unavailable,
-or the current source differs, the runtime should expose that fact and require
-the workflow's declared compatibility policy rather than silently claiming an
-identical continuation. This link represents recovery lineage, not a durable
-business-process wait.
-
-## Provenance And Evaluation
-
-Persist this source snapshot with each workflow run today:
+All agent and workflow calls use:
 
 ```ts
-type WorkflowSource = {
-  scope: "project" | "agent";
-  filePath: string;
-  entryContentHash: string;
+type ExecutionResult<T = unknown> = {
+  id: string;
+  kind: "agent" | "workflow";
+  status: "done" | "blocked" | "error" | "interrupted";
+  summary: string;
+  output?: T;
+  evidence?: unknown;
 };
 ```
 
-The entry hash supports revision-safe replay but is not a complete executable
-fingerprint. A future `executableHash` should cover the entrypoint,
-repository-local imported source graph, and dependency-lock revision. Include
-the workflow name, run ID, and available revision hash in lifecycle trace
-evidence. A hash identifies controller source; it is not a lifecycle entity or
-completion event.
+When later workflow code requires structured agent output, the workflow owns a
+TypeBox or equivalent schema and validates `result.output` before use. A prose
+response or invalid payload cannot become trusted domain data. At most one
+bounded correction may occur inside the agent execution contract; validation
+never starts an unbounded model retry loop.
 
-Evaluate workflows from existing run and step evidence: completion/block/error
-rate, duration, retries, guard interventions, model/tool cost, and downstream
-task closure. Entry-hash comparisons are useful today; use the future
-executable hash for rigorous revision comparisons. Do not let a workflow
-declare its own effectiveness merely because it returned `done`.
+The App/task boundary separately validates the workflow's terminal output,
+generation, allowed actions, Conditions, and evidence. An execution status of
+`done` is still only a claim until admitted.
 
-## Structured Agent Step Results
+For task-owned work:
 
-Every agent step inside a workflow completes through the structured `finish()`
-contract. A prose-only response is an error after one bounded corrective
-prompt. Direct chat and non-workflow agent sessions keep their existing
-completion behavior.
+- continue locally while bounded in-scope repair remains;
+- return exact Conditions only after establishing the corresponding external
+  dependency;
+- use `needs-owner` only for exceptional same-App judgment the learned workflow
+  cannot safely resolve;
+- create cross-App/human escalation only through an explicit App/task
+  dependency; and
+- use `blocked` for inability to produce a safe structured execution result,
+  not as an ordinary domain branch.
 
-When later workflow code needs domain data, the workflow author declares a
-TypeBox schema:
+## Facts and side effects
 
-```ts
-import { Type } from "@earendil-works/pi-ai";
+`ctx.events.emit` publishes observed or produced facts. The workflow cannot
+assume publication means another owner accepted work. Any actionable consumer
+must be declared by the destination App as a subscription, task subscription,
+or exact target.
 
-const ReviewResult = Type.Object({
-  verdict: Type.Union([Type.Literal("pass"), Type.Literal("fail")]),
-  findings: Type.Array(Type.String()),
-});
+Where a domain mutation and its resulting fact must be atomic, use an explicit
+domain adapter/outbox capability owned by infrastructure. Do not emulate
+atomicity by writing runtime SQL or emitting before the mutation is durable.
 
-const review = await ctx.runAgent("qa", reviewTask, {
-  schema: ReviewResult,
-});
+`ctx.metrics.record` records one domain measurement. Metrics and emitted facts
+must not become workflow-local retry schedulers.
 
-if (review.status === "done") {
-  review.structuredResult.verdict; // typed as "pass" | "fail"
-}
-```
+## Workspace convention
 
-The runtime composes the standard finish schema with a required `result` field
-using the workflow's schema. The agent sees one terminal tool, not separate
-`submit_result` and `finish` tools. Existing finish validation and lifecycle
-side effects remain in force, and a successful schema-backed result always has
-`structuredResult`.
-
-The schema belongs to the workflow source or an imported TypeScript contract.
-External callers provide workflow input; they do not replace the output schema
-at runtime. This keeps one workflow revision stable for persistence, resume,
-evaluation, and downstream consumers.
-
-The terminal-result rules are:
-
-1. `ctx.runAgent`, `ctx.runAgentSession`, session prompts created by a
-   workflow, and guard-injected agent steps require `finish()`.
-2. A missing or invalid schema payload cannot become `status: "done"`.
-3. The runtime sends at most one corrective prompt when a turn ends without a
-   valid finish; it never starts an unbounded completion retry loop.
-4. A rejected finish remains recoverable within the same turn. The step ends
-   only after semantic validation succeeds or the bounded correction fails.
-5. A deliberate failure may expose a validated structured payload; runtime
-   errors and interruptions do not invent one.
-6. Chat and direct non-workflow sessions retain their ordinary completion
-   contract.
-
-The finish envelope, optional validated result, and schema requirement are
-part of the durable step evidence. Resume must recreate the same contract. A
-legacy step without the required finish envelope or schema payload is not a
-successful reusable step. The workflow source owns schema identity; do not add
-a separate request or schema lifecycle object.
-
-## Composing Skills Into Workflows
-
-A workflow may invoke an agent with a named skill when a step needs a reusable
-judgment method:
+The host allocates the workflow workspace according to the App/task policy and
+provides only:
 
 ```ts
-ctx.runAgent("qa", reviewTask, { skill: "verify-change" });
+ctx.workspace?.root
+ctx.workspace?.output
 ```
 
-The receiving agent's skill catalog resolves the name, and the resulting
-`skill.loaded` evidence remains within that step session's trace. The workflow
-stores only the skill name, not a copied skill body.
+All file and command work stays beneath that allocation. Workflows do not
+derive repository, App, agent, or persistent-state roots from process cwd.
 
-Use the composition in this direction:
+For isolated Git work, the host owns worktree creation, base revision, branch
+lineage, cleanup, and recovery. A workflow returns verified evidence and clean
+disposition; it does not create a parallel workspace registry or select random
+branches. Retries for one task generation preserve the recorded lineage.
 
-```text
-workflow controls sequence
-  -> agent step uses a skill for judgment
-  -> workflow consumes the step result
-  -> workflow returns one terminal result
-```
+Shared ledgers, observation state, and maintenance migrations do not belong in
+task worktrees. Genuine offline repair belongs in an explicit maintenance CLI.
 
-Do not ask a skill to simulate durable workflow state, retries, or completion.
+## Discovery, reload, and provenance
 
-## Run Persistence
+Discovery enumerates the resolved agent's workflow entries, imports and
+validates exports, rejects duplicate effective names, and produces an immutable
+catalog snapshot for each dispatch generation. Missing roots are empty;
+invalid modules are visible but not invocable.
 
-The authoritative run record is
-`.state/workflow-runs/<workflowRunId>/run.json`. It contains the full task,
-source provenance, lineage, lifecycle, and terminal result. Writes use atomic
-replace.
+A run records at least:
 
-`workflow_runs` is a bounded SQL projection containing the same identity and
-lifecycle fields, a short task preview, and the artifact reference/hash/size.
-Resume reads `run.json` first and falls back to full legacy SQL rows created
-before the file-backed format. See [storage.md](storage.md).
+- workflow name and owning agent/App scope;
+- entry path and source revision/hash;
+- input/reconciliation identity without leaking secrets;
+- parent execution and causal trigger;
+- child execution IDs;
+- terminal status, summary, output/evidence references; and
+- allocated workspace lineage where applicable.
 
-## Promotion Heuristic
+Active runs keep their prepared source generation. A reload affects subsequent
+dispatch only. A complete executable fingerprint should cover the entrypoint,
+repository-local imported source graph, and dependency lock revision; an entry
+hash alone is useful evidence but not a full reproducibility claim.
 
-Promote a skill or repeated practice into a workflow only when evidence shows
-that:
+Workflow-run storage and SQL projections are host-private. App code consumes
+only bounded `ExecutionView`/result references.
 
-- the sequence should be consistent across runs;
-- missing or reordering steps creates meaningful risk;
-- inputs, outputs, and terminal conditions can be made explicit;
-- deterministic checks or bounded retries improve reliability; and
-- the process is stable enough to justify code and tests.
+Expected durable waits always start a new workflow run later. Recovery of an
+interrupted run is mechanical attempt recovery only; it never becomes a hidden
+business-process continuation mechanism.
 
-Keep the capability as a skill when context changes the right sequence, human
-judgment dominates, or the process is still being learned. "Runs often" alone
-is not evidence that a skill should become a workflow; a schedule may simply
-invoke a skill-bearing session.
+## Promotion heuristic
 
-## Known Limits
+Promote a learned practice to a workflow when evidence shows:
 
-Preserve the current workflow runtime and close these gaps incrementally:
+- ordering or omission materially affects correctness;
+- inputs, outputs, and terminal conditions can be explicit;
+- deterministic checks and bounded repair improve reliability;
+- the process is stable enough for code and tests; and
+- it still fits one bounded execution attempt.
 
-1. Add a complete executable hash over local imports and the dependency lock;
-   keep the entry hash for direct source evidence.
-2. If performance requires it, move catalog construction to registration and
-   reload without losing next-dispatch freshness or snapshot safety.
-3. Add an integration fixture for a durable wait: phase A persists state and
-   emits the continuation, phase B starts from a later event with a distinct
-   run ID in the same trace, and phase-A completion does not close the project
-   task.
+Keep it as a skill when the right sequence is highly contextual, judgment
+dominates, or the process is still being learned. Split it across App/task
+reconciliation when it requires durable waits.
 
-These changes strengthen discovery and evidence. They do not replace the
-TypeScript executor, create workflow request types, or turn Markdown into code.
-No asynchronous or suspended workflow executor is planned; events compose the
-synchronous blocks across durable waits.
+## Integrity checklist
+
+- Every workflow belongs to one agent and one immutable dispatch snapshot.
+- Every invocation has typed input and one bounded terminal result.
+- The enclosing App request/task, never the workflow run, owns durable work.
+- Schedules, observers, facts, and metrics cannot launch workflows directly.
+- Durable waits end the run and resume through persisted App/task state.
+- Agent outputs and workflow outputs are validated before domain admission.
+- Workflows use scoped reads and workspace paths only.
+- No workflow imports raw SQL, task storage, global paths, scheduler, queue,
+  lease, delivery, or recovery mechanics.
+- Result `done` never implies enclosing task/project completion without owner
+  admission and evidence.

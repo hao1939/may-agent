@@ -1,320 +1,258 @@
-# AgentSDK
+# May-Agent SDK
 
 **Design status:** Accepted.
-**Implementation status:** Implemented for runtime, event, workflow,
-project-app, and canonical task-state boundaries.
+**Implementation status:** Stable App authoring and bounded workflow contracts
+implemented; legacy Project App exports and consumers are being removed.
 
-The canonical interface between agent code (handlers, workflows, gym) and the system.
+`@may-agent/sdk` is the narrow public boundary between App-owned code and the
+shared runtime. It describes semantic inputs, results, facts, and desired work;
+it does not expose runtime storage or orchestration mechanics.
 
-The two execution calls should be understood together:
-
-```
-runAgent(agent, task, opts)       -> one agent session
-runWorkflow(workflow, task, opts) -> pre-orchestrated sessions/functions
-```
-
-A workflow is not a separate kind of intelligence. It is a reusable
-orchestration pattern around sessions.
-
-## Current Interface
-
-```typescript
-interface AgentSDK {
-  runAgent(agent: string, task: string, opts?: RunOpts): Promise<TaskResult>;
-  runWorkflow(
-    name: string,
-    task: string,
-    opts?: RunOpts,
-  ): Promise<WorkflowResult>;
-  emit(
-    type: string,
-    data?: Record<string, unknown>,
-    envelope?: EventEnvelopeOptions,
-  ): void;
-  metrics: MetricService;
-  query: QueryAPI;
-  commands: CommandAPI;
-  getDb(): Database; // compatibility escape hatch
-  log(level: "info" | "warn" | "error", msg: string): void;
-  message(target: string, content: string): void;
-  escalate(reason: string, opts?: EscalationOptions): EscalationRef;
-  paths: {
-    persist: string;
-    root: string;
-    agents: string;
-    shared: string;
-    projects: string;
-  };
-}
-
-type EventEnvelopeOptions = {
-  owner?: string; // "agent:<name>" or "human:<role>"
-  source?: string;
-  target?: Record<string, unknown>;
-  action?: string;
-  urgency?: "low" | "normal" | "high" | "immediate";
-  ttl_ms?: number;
-  visibility?: "default" | "detail";
-  trace?: EventTrace;
-};
-
-type EscalationOptions = EventEnvelopeOptions & {
-  requestedAction?: string;
-  evidence?: Record<string, unknown>;
-  severity?: "P0" | "P1" | "P2" | "P3";
-  projectId?: string;
-  sourceSessionId?: string;
-  resume?: Record<string, unknown>;
-  dedupKey?: string;
-};
+```text
+App definition -> pure policy and capability declarations
+workflow       -> bounded input + scoped capabilities -> ExecutionResult
+runtime        -> admission, storage, delivery, execution, and recovery
 ```
 
-The intended surface is small: execution, events, metrics, read-only query,
-typed commands, messaging, escalation, logging, and paths. `getDb()` remains
-for compatibility and mechanical infra handlers, but new handler/workflow code
-should prefer `query`, `commands`, and `metrics`.
+See [Agent App Contract](agent-app.md) and
+[Task Resource Engine](task-resource-engine.md).
 
-`query` is read-only. State-changing helpers belong to `commands` and emit
-canonical events; they must not hide writes behind a method named as a read.
-Use `getDb()` only where a handler/workflow needs an escape hatch for mechanical
-projection or bookkeeping, and keep those reads bounded.
+## Stable root surface
 
-## Project-app and task helpers
+The root package exports:
 
-The SDK exports the current authored and runtime boundaries:
+- `defineApp`, `Type`, and App declaration types;
+- `AppInput`, `AppRequest`, `AppDisposition`, and `AppResult`;
+- `AppEvent`, `EventSelector`, and pure selector matching;
+- input/event schedules, subscriptions, observers, actions, and workspace
+  policy;
+- optional task policy, `TaskIntent`, `TaskAction`, Conditions, reconciliation
+  and verification results; and
+- bounded workflow, read, logging, metric, and execution contracts.
 
-- `defineProjectApp`, event selectors, and event-data helpers for `app.ts`;
-- exact task result/action and Condition schemas plus admission helpers;
-- canonical task-state read/save/lock/lifecycle helpers;
-- generated task-tree projection helpers; and
-- project-app execution/output path resolution.
+It does not export raw SQL, task-state files and locks, scheduler handles,
+global runtime paths, queue/lease/recovery APIs, prompt packets, or a generic
+owner-inbox/event handler context.
 
-Domain planning packets, frontier analysis, and app-specific decomposition
-belong in the owning app. They are not shared task-runtime SDK concepts. See
-[agent-app.md](agent-app.md) and
-[task-resource-engine.md](task-resource-engine.md).
+There is one App declaration function: `defineApp`. `defineProjectApp` and the
+`@may-agent/sdk/legacy` entry point are migration-only implementation debt and
+must have no consumers when the canonical migration completes.
 
-## How Handlers Get It
+## App declaration
 
-```typescript
-export const create = (ctx: HandlerContext, entry: CronEntry) => {
-  return async (event?: EventEnvelope) => {
-    const sdk = ctx.sdk; // ← the SDK
-    await sdk.runWorkflow("metric-alert-triage", "task/context from event", {
-      source: entry.name,
-    });
-    sdk.log("info", "done");
-  };
-};
-```
-
-## Method Reference
-
-| Method                        | Does what                                                                                                                            |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `runAgent(agent, task)`       | Run one named agent session and wait for its result.                                                                                 |
-| `runWorkflow(name, task)`     | Run a pre-orchestrated set of sessions/functions and wait for its result. Same execution shape as `runAgent`, broader internal plan. |
-| `emit(type, data, envelope?)` | Emit a canonical event envelope. `data` carries event-specific facts; `envelope.owner` carries responsibility/routing.               |
-| `metrics`                     | Define, record, alert, resolve, evaluate, and list metrics.                                                                          |
-| `query`                       | Preferred bounded read surface for sessions, events, metrics, alerts, and projects.                                                  |
-| `commands`                    | Typed state changes such as owner-inbox review/expiry; mutations flow through durable events.                                        |
-| `getDb()`                     | Compatibility escape hatch for shared SQLite. Prefer `query`/`metrics`.                                                              |
-| `log(level, msg)`             | Log a diagnostic message.                                                                                                            |
-| `message(target, content)`    | Emits `message.created` — `"human"` → Telegram/web. Agent name → agent's inbox.                                                      |
-| `escalate(reason, opts?)`     | Create `escalation.created`, returning `{ eventId, compatibilityId }`; defaults to `owner: "agent:may"` and `severity: "P2"`.        |
-| `paths`                       | `{ persist, root, agents, shared, projects }` — system directories.                                                                  |
-
-For escalations that should return to the original session after resolution,
-include `sourceSessionId` or `resume: { kind: "session", checkpointRef }`.
-Terminal `escalation.resolved` events send the resolution context into the
-active source session or cold-resume it. `workflowRunId` and project fields are
-context for that resumed task, not direct escalation resume targets.
-
-## Workflow Handler Helper
-
-`@may-agent/sdk` also exports `createWorkflowHandler(options)`, the adapter that
-turns a workflow into the same handler interface used by timer/event/manual
-triggers. The trigger loader uses it for `handler: { workflow, agent, task }`
-entries. TypeScript handlers may import it directly when they need a reusable
-workflow-backed module.
-
-```typescript
-import { createWorkflowHandler } from "@may-agent/sdk";
-
-export const create = createWorkflowHandler({
-  workflow: "evaluator-aftermath",
-  task: (_ctx, event) => {
-    const sessionId = event?.data?.sessionId;
-    return `Review completed session ${sessionId}`;
-  },
-  includeEvent: true,
-  shouldRun: (_ctx, event) => typeof event?.data?.sessionId === "string",
+```ts
+defineApp({
+  id,
+  version: 1,
+  owner,
+  inputSchema,
+  route,
+  subscriptions,
+  inbox,
+  schedules,
+  observers,
+  actions,
+  workspace,
+  tasks,
 });
 ```
 
-`includeEvent: true` appends the exact event envelope under `## Trigger Event`.
-For event subscriptions, event-specific fields stay inside `event.data`.
+The declaration is data and pure policy. Importing it cannot start sessions,
+register global handlers, write storage, or inspect runtime state.
 
-## WorkflowSDK
+### Request policy
 
-Workflows get an extended interface. **Note:** there are two `WorkflowResult`
-shapes in the codebase. Workflow `.ts` files (via `WorkflowContext`) see the
-**internal** shape; SDK consumers (handlers calling `sdk.runWorkflow()`) see
-the **external** shape. The mapping happens in `sdk-impl.ts`.
+`route(request)` receives an immutable author-visible `AppRequest` and returns
+`complete`, `delegate`, `task`, or `null`. `null` asks the App owner for one
+bounded judgment. The request exposes typed input and a bounded dependency
+observation, never its database row, claim, lease, channel, or delivery fields.
 
-**Internal** (what `ctx.done()` and `ctx.blocked()` return inside a workflow):
+### Fact policy
 
-```typescript
-type WorkflowResult =
-  | { type: "done"; summary: string }
-  | { type: "blocked"; reason: string; context?: unknown };
+A top-level subscription combines a stable ID, selector, and pure
+`toInput(event)` translator. It explicitly creates a correlated App request.
+
+`tasks.subscriptions` combines selectors with pure `resolve(event)` policy. It
+returns the latest `TaskIntent` or `null`; the runtime persists it before waking
+the task reconciler.
+
+No SDK callback receives a generic mutable event context. App policy cannot
+launch an agent or workflow while deciding how a fact routes.
+
+### Timed and external input
+
+An App schedule contains exactly one of:
+
+- `input`, for a correlated inbox obligation with optional catch-up; or
+- `event`, for a fact published by the shared scheduler.
+
+An observer receives only `ObserverContext` and returns facts for the host to
+publish after a successful run. An action validates parameters and translates
+them to App input.
+
+## Workflow contract
+
+App-owned workflows receive one typed input and scoped capabilities:
+
+```ts
+type WorkflowContext<TInput> = {
+  input: TInput;
+  reconciliation?: TaskReconciliationContext<TInput>;
+  read: AppRead;
+  agents: {
+    call(agent: string, task: string): Promise<ExecutionResult>;
+  };
+  workflows: {
+    run(name: string, input: unknown): Promise<ExecutionResult>;
+  };
+  events: {
+    emit(event: AppEvent): Promise<void>;
+  };
+  metrics: {
+    record(id: string, value: number, note?: string): Promise<void>;
+  };
+  workspace?: { root: string; output: string };
+  log: Logger;
+  done<T>(summary: string, output?: T): ExecutionResult<T>;
+  blocked(reason: string, evidence?: unknown): ExecutionResult;
+};
 ```
 
-**External** (what `sdk.runWorkflow()` returns to handlers):
+The workflow input is App-owned. The runtime carries it across the execution
+boundary without parsing prompts or reconstructing it from global task state.
 
-```typescript
-interface WorkflowResult {
-  status: "done" | "blocked";
-  summary: string;
-  runId?: string;
-}
+When a task owns the attempt, `reconciliation` supplies bounded current facts:
+App/task identity, generation, owner, mode, outcome, acceptance, typed input,
+live/completed child views, and exact triggering event. It does not expose the
+task tree, mutation handles, queue, or task files.
+
+`read` contains exact bounded lookups only:
+
+```ts
+type AppRead = {
+  appResult(itemId: string): Promise<AppResult | null>;
+  task(taskId: string): Promise<TaskView | null>;
+  execution(executionId: string): Promise<ExecutionView | null>;
+  metric(metricId: string): Promise<MetricView | null>;
+};
 ```
 
-Workflow context interface (what workflow `execute()` functions receive):
+There is no unrestricted list/query surface and no database escape hatch.
+Genuine new read requirements become narrow typed projections with explicit
+scope and tests.
 
-```typescript
-interface WorkflowContext {
-  task: string;
-  agent: string;
-  done(summary: string): WorkflowResult; // internal shape, no opts
-  blocked(reason: string, context?: unknown): WorkflowResult; // internal shape
-  // ... plus runAgent, runWorkflow, emit, query, getDb, etc.
-}
-```
+## One execution result
 
-The external `WorkflowSDK` interface follows the
-same terminal vocabulary: `done(summary, opts?)` or `blocked(reason,
-context?)`. Workflow modules normally receive `WorkflowContext`; both surfaces
-must remain semantically identical.
+Agent calls and nested workflows return the same bounded terminal shape:
 
-Workflow blocking is intentionally simpler than the general SDK helper because
-workflow execution is synchronous. `ctx.blocked(...)` returns a terminal
-`WorkflowResult` immediately. It does not automatically emit
-`escalation.created` or wake another owner. The `context` parameter is
-`unknown` — there is no structured `WorkflowEscalationContext` type in the
-runtime. The caller/boundary decides whether the local blocked result should
-be handled locally, persisted as workflow trace, or promoted into an external
-owner-routed escalation event.
-
-At the top-level task boundary, the controller invokes the resolved owner or an
-owner-owned workflow. A blocked workflow is persisted as
-`workflow_runs.status = "blocked"` and normalized into the task handler result.
-For workflow-bound tasks, the same controller records attention. It invokes the
-resolved owner only when the workflow returns an admitted `needs-owner` result;
-blocked or unavailable workflows do not imply handoff. No workflow emits a
-synthetic task completion event or mutates the task tree. Nested workflow
-blockers return synchronously to their parent workflow.
-
-`runAgent` and `runWorkflow` should share option semantics where possible:
-source, project/session parentage, timeout, request id, and trace metadata. The
-return shapes can differ, but both should answer:
-
-- what ran,
-- what status it ended with,
-- what evidence/output it produced,
-- where the trace can be inspected.
-
-Target shared execution view:
-
-Current implementation returns `TaskResult` and `WorkflowResult` directly. The
-design direction is to map both into this shared view for UI, diagnostics,
-tests, and resume handling; code that needs current behavior should use the
-current result types above.
-
-```typescript
-interface ExecutionResult {
+```ts
+type ExecutionResult<T = unknown> = {
   id: string;
-  kind: "session" | "workflow";
-  status: "done" | "error" | "interrupted" | "blocked";
+  kind: "agent" | "workflow";
+  status: "done" | "blocked" | "error" | "interrupted";
   summary: string;
-  traceId: string;
-  evidence?: Record<string, unknown>;
-}
+  output?: T;
+  evidence?: unknown;
+};
 ```
 
-`TaskResult` and `WorkflowResult` can include more detail, but both should map
-to this shape for UI, diagnostics, tests, and resume handling.
-Legacy `escalated` workflow records are normalized to `blocked` at the read
-boundary; new execution results do not add `escalated` as a workflow terminal
-state.
+`done` and `blocked` end the current bounded workflow run. They do not complete
+an App request or task by themselves. The calling App/task boundary validates
+and admits the result.
 
-Target diagnostic symmetry (these are not both `AgentSDK` methods today):
+A durable wait is represented by an App dependency or task Condition, not by
+holding a workflow open or resuming it as a hidden controller.
 
-```
-resumeSession(sessionId, opts) -> continue/recover one session
-resumeWorkflow(runId, opts)   -> recover an interrupted synchronous workflow run
-```
+## Task contracts
 
-Both resume calls should preserve lineage, emit recovery/resume events, return
-diagnostic status, and point to the trace. Resume is not just retry; it should
-explain whether the work was resumed, already terminal, blocked, missing state,
-or unsafe to continue.
+`TaskIntent` declares desired work:
 
-Workflow resume is not a durable-wait mechanism. Expected human, timer,
-callback, or external-dependency waits end the current workflow phase. A later
-event starts a new workflow run from persisted app/domain state.
-
-## Alignment: SDK ↔ Agent Tools
-
-The SDK and agent tools are two sides of the same coin:
-
-| Agent thinks                       | Agent tool                        | SDK method                                                 |
-| ---------------------------------- | --------------------------------- | ---------------------------------------------------------- |
-| "Ask dev and wait for the answer"  | `agents.call("dev", task)`        | `await sdk.runAgent("dev", task)`                          |
-| "Start dev in the background"      | `agents.fork("dev", task)`        | — (no SDK equivalent)                                      |
-| "Something happened"               | —                                 | `sdk.emit("metric.breach", {...}, { owner: "agent:may" })` |
-| "Tell humans"                      | Telegram/human message            | `sdk.message("human", msg)`                                |
-| "Tell dev"                         | `message({ to: "dev", content })` | `sdk.message("dev", msg)`                                  |
-| "I'm done"                         | `finish()`                        | `workflow.done(summary)`                                   |
-| "Workflow cannot continue locally" | `finish({ blocked })`             | `ctx.blocked(reason)`                                      |
-| "Another owner must act"           | route through owner/project       | `sdk.escalate(reason, opts)` from agent/handler SDK code   |
-
-## Implementation
-
-- **Types:** `projects/may-agent/src/lib/sdk.ts`
-- **Package facade:** `projects/may-agent/packages/sdk/src/index.ts`
-- **Wrapper:** `projects/may-agent/src/lib/sdk-impl.ts` (delegates to manager, bus, DB)
-- **Wiring:** `projects/may-agent/src/app/agent-loader.ts` remains the compatibility surface over `projects/may-agent/src/app/loader/*`; handler/workflow contexts build `ctx.sdk` via `buildAgentSDK()`
-
-## Known Limits
-
-- `runAgent()` and `runWorkflow()` share the same mental model, but their return
-  values are not yet mapped through the target `ExecutionResult` view.
-- Session and workflow recovery diagnostics are not yet fully symmetric;
-  workflow recovery remains limited to interrupted synchronous runs.
-- `getDb()` remains a compatibility escape hatch. New code should prefer
-  `query` and `metrics` so infra internals can keep moving.
-
-## Design Rationale
-
-The SDK is the **canonical layer** for handlers and workflows. Agent tools share
-the same manager/bus internals. Most agent tool actions have corresponding SDK methods;
-some tool-only actions (fork, peek, cancel, context, list, sessions) exist only on the
-agents tool.
-
-Handler convention: handlers bridge events to workflows. Use
-`sdk.runWorkflow(...)` by default when judgment/action is needed. Direct
-`sdk.runAgent(...)` from a handler is an exception for cases where the workflow
-layer would add no trace, guard, context, or test value.
-
-```
-SDK (canonical for handlers/workflows)
-  ├── Agent tools use same internals (agents.call → callAgent)
-  ├── Handlers dispatch workflows (ctx.sdk.runWorkflow)
-  ├── Workflows call it      (ctx.sdk.runAgent)
-  └── Tests call it          (adapter.runAgent)
+```ts
+type TaskIntent = {
+  id: string;
+  parentId: string;
+  outcome: string;
+  acceptance: string[];
+  mode: "achieve" | "maintain";
+  owner?: string;
+  workflow?: string;
+  input?: Record<string, unknown>;
+  outputs?: string[];
+  dependsOn?: string[];
+  priority?: "P0" | "P1" | "P2" | "P3";
+  category?: string;
+};
 ```
 
-**Litmus test:** if a new feature needs both handler and agent access, it should be expressible from both sides (tool AND SDK).
+One fenced reconciliation attempt returns a typed state, summary, evidence,
+optional desired task actions, and Conditions. Runtime admission validates
+generation, action scope, Conditions, and verification evidence before any
+mutation becomes authoritative.
 
-**Rule:** Handlers should use `ctx.sdk`, never `ctx.manager` directly. The manager is an implementation detail.
+Apps may supply pure action validation and bounded verification policy. They do
+not save task state, acquire locks, edit projections, or manufacture attempts.
+
+## Facts and metrics
+
+`ctx.events.emit` publishes facts only. It cannot address an App request,
+attach a task, or directly schedule another workflow. If a published fact is
+actionable, the destination App must declare a subscription, task subscription,
+or exact target.
+
+`ctx.metrics.record` records a domain sample. Thresholding, hysteresis,
+deduplication, storage, and runtime health metrics belong to infrastructure. A
+metric event remains a fact/wake, never desired state.
+
+## Workspace and paths
+
+Workflows receive only the workspace allocated to their execution and an
+output path. Portable domain code resolves from that workspace. App code must
+not derive daemon, repository, agent, or persistent-state roots from the process
+working directory.
+
+Offline repair or migration that genuinely needs storage access belongs in an
+explicit maintenance CLI, not a runtime workflow import.
+
+## Agent tools and SDK
+
+Agent tools and SDK capabilities may share runtime implementations, but they
+serve different boundaries:
+
+| Intent | Model tool | Workflow capability |
+| --- | --- | --- |
+| Ask another agent and await its bounded result | agent call | `ctx.agents.call` |
+| Run a reusable bounded workflow | workflow tool | `ctx.workflows.run` |
+| Publish a fact | event tool where authorized | `ctx.events.emit` |
+| Record a domain sample | metric tool where authorized | `ctx.metrics.record` |
+| Finish this bounded execution | finish/result | `ctx.done` / `ctx.blocked` |
+
+Background forks, session steering, cancellation, process control, and human
+delivery are host/agent-tool capabilities only when explicitly granted. They
+are not generic workflow SDK methods.
+
+## Extension rule
+
+Extend the SDK only when an App responsibility cannot be expressed through the
+existing semantic contracts:
+
+1. identify the exact App-owned question;
+2. add the narrowest typed capability or projection answering it;
+3. keep persistence, retry, delivery, and recovery mechanics host-private;
+4. prove scope, restart behavior, and idempotency; and
+5. avoid generic list, query, command, path, or database escape hatches.
+
+App growth should normally add schemas, pure policy, observers, workflows, or
+domain projections—not runtime APIs.
+
+## Integrity checklist
+
+- The root package is the only authoring entry point.
+- App definitions are pure to import and validate.
+- Workflow input is typed and never reconstructed from prompt text.
+- Every capability is bounded to one semantic responsibility.
+- Reads are exact typed projections; writes are expressed as typed results or
+  facts.
+- Execution results are bounded claims admitted by the owning App/task.
+- No App/workflow receives raw SQL, global paths, task storage, scheduler,
+  queue, lease, delivery, or recovery access.
+- No production App imports `@may-agent/sdk/legacy` when migration completes.

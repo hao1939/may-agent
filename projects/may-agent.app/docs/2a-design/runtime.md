@@ -1,279 +1,274 @@
 # Runtime Internals
 
-How the binary processes input, runs sessions concurrently, and structures LLM calls.
-
 **Design status:** Accepted runtime reference.
-**Implementation status:** Implemented; compatibility socket frames and legacy
-project-agent discovery remain supported migration surfaces.
+**Implementation status:** Shared execution kernel and canonical App host are
+implemented; compatibility socket, cron, chat, and Project App paths are being
+removed or isolated.
 
-## Input Routing
+## Process modes and authority
 
-### ChatSession (`--chat` mode)
+One binary exposes several modes, but only the long-running host may own
+autonomous work.
 
-Free-form user input first emits `human.input.received`. The input router emits
-exactly one semantic child intent:
+| Mode | May prepare agents/workflows? | May attach App inbox/schedules/tasks? |
+| --- | --- | --- |
+| Long-running `--cron` daemon | Yes | Yes; sole autonomous host |
+| Web/read process | Only as required for bounded control/read adapters | No competing controllers |
+| Direct agent/workflow | Yes | No |
+| Gym/benchmark | Yes, through production preparation | No |
+| Status/read-only CLI | No execution required | No |
 
-1. **Read-only transport commands** such as status/subscription may stay local.
-2. **State-changing commands** emit canonical intents such as
-   `session.cancel.requested` or `runtime.reload.requested`.
-3. **Normal message with no bound chat** emits `chat.start.requested`.
-4. **Normal message with an existing target** emits
-   `session.steer.requested`.
+The long-running host loads one atomic App registry generation, then attaches
+inbox dispatch, subscriptions, schedules, observers, optional task controllers,
+delivery, and recovery. Other modes cannot claim or repair App work.
 
-The manager then runs or resumes the persistent chat. Each queued turn carries
-its own trace context through manager send/resume, session terminal evidence,
-and outbound delivery. The chat session is a conversation container, not the
-trace identity.
+## Input routing
 
-### Socket Commands
+Ingress normalizes into one of four operations:
 
-Socket-local commands are intentionally narrow:
-
-| Command | Route |
-|---------|-------|
-| `subscribe` | Open realtime event stream |
-| `status` | Return current active-session status |
-
-Everything else is normalized into a daemon event and routed through the event
-bus. `input`, `steer`, `cancel_all`, `reload`, and `shutdown` are compatibility
-frames, not canonical event names. New control surfaces emit the intent events
-defined in `human-control-surfaces.md`; `trigger.<handler-name>` remains a
-manual operator shortcut.
-Event handlers then decide whether to call manager mechanics directly or
-dispatch a workflow.
-
-### Cron (--cron mode)
-
-The process running with `--cron` is the single autonomous Agent App host. It
-installs app event routes, schedules, queues, task controllers, recovery, and
-resync. Direct task, one-shot, status, workflow, and Web-only processes reuse
-agent preparation without attaching that host.
-
-| Entry type | Execution |
-|-----------|-----------|
-| JS handler | In-process function, no direct LLM unless the handler/workflow calls one |
-| Detached agent job | `spawnDetachedAgent()` in a separate OS process |
-| Heartbeat handler | Cron-triggered handler dispatches heartbeat workflow; the workflow builds context, then starts a fresh agent task session via `ctx.runAgent()` |
-
-## Event Channels
-
-Every `RunnerEvent` carries a `channel` tag:
-- `"chat"` — direct user conversation (May's text responses)
-- `"activity"` — background work (sub-agent calls, cron)
-
-UI layers filter: console dims activity, Telegram only forwards chat, socket passes the tag for client-side filtering.
-
-## Cron Tool (Agent Self-Scheduling)
-
-Agents with `"cron"` tool preset can CRUD their own `cron.json`:
-- `list` / `add` / `remove` / `update`
-- Writes to `agents/<name>/cron.json`, calls `cron.reload()`
-- Works even when `--cron` is off (agents define jobs for later)
-
----
-
-## LLM Call Structure
-
-When a session runs, the LLM receives three blocks:
-
-### 1. System Prompt (cached per agent)
-
-```
-┌─────────────────────────────────────────────┐
-│ 1. common-sense.md — behavioral fundamentals │
-│ 2. AGENTS.md       — identity and contract   │
-│ 3. Skill catalog   — task-specific metadata  │
-│ 4. Runtime env     — paths, workspace, tools │
-└─────────────────────────────────────────────┘
+```text
+ordinary human input -> admit May App request
+addressed App input  -> admit destination App request
+changed fact         -> publish canonical event
+explicit control     -> deterministic session/task/runtime controller
 ```
 
-The skill catalog contract in [skills.md](skills.md) is wired into
-`resolveSystemPrompt()` for sessions with a read-capable tool. It contains
-bounded metadata only; complete skill bodies remain per-turn context after a
-successful model read or explicit activation.
+Compatibility socket frames (`input`, `steer`, `cancel_all`, and similar)
+normalize immediately into one canonical operation. They do not define another
+lifecycle. A generic event cannot fall back to an owner or launch a workflow.
 
-Stable across sessions for LLM prefix caching. `DOMAIN.md`, `TOOLS.md`,
-`LESSONS.md`, `knowledge/INDEX.md`, `heartbeat.md`, and
-`last-session.md` are not automatically loaded.
+Socket-local observation remains narrow: status and live subscription. External
+adapters use the control protocol and never call the session manager or task
+store directly.
 
-### 2. First User Message (changes per session)
+## Host startup
 
-| Section | Source |
-|---------|--------|
-| Session ID + time | Generated |
-| Runtime context | Session-specific facts from the caller/workflow |
-| Optional continuity | Generated summaries such as `last-session.md` when a workflow injects them |
-| **Task** | The actual work request |
+Startup order preserves complete generations and durable ownership:
 
-### 3. Conversation History (grows during session)
-
-```
-[assistant] Agent response
-[tool_call] Agent calls tool
-[tool_result] Tool returns result
-... repeats ...
+```text
+open stores / recover schema
+  -> discover and validate App + agent definitions
+  -> prepare one complete App registry generation
+  -> publish registry and route generation atomically
+  -> attach inbox, schedules, observers, task controllers, and delivery
+  -> reclaim stale claims/attempts and schedule existing obligations
+  -> accept new ingress
 ```
 
-**Compaction:** May supplies Pi's `Agent.transformContext` hook. At 60% of the
-configured model context, it combines Pi's provider-usage-aware context
-estimate and message estimator with May's conservative estimate, keeps the
-newest 35% by estimated transcript tokens, and deterministically summarizes
-the older prefix. The summary preserves the original task, file/tool/agent
-facts, and latest substantial reasoning. The append-only transcript remains
-unchanged; a separate compact snapshot is used for active context and restart
-recovery.
+Failure before publication leaves the prior generation active on reload.
+Failure during initial startup prevents partial hosting. Schedule and
+subscription registration is generation-owned so reload cannot duplicate them.
 
-Pi's full harness compactor is intentionally not used here. It is an
-LLM-powered operation built around Pi session-tree entries, stable entry IDs,
-and an explicit `Models` authentication runtime. Adopting it inside May's
-low-level `Agent` path would duplicate May's persistence model, add a provider
-call during context transformation, and weaken deterministic recovery. May may
-reuse format-independent Pi helpers such as message token estimation, but owns
-the compaction decision, summary, persistence, and event evidence. Reconsider
-the full harness compactor only if May adopts the Pi harness session model as a
-whole.
+Shutdown stops new admission/dispatch, drains or interrupts bounded execution
+under policy, persists terminal evidence, releases leases, and stops adapters.
+It does not mark unfinished requests/tasks complete.
 
-**Overflow recovery:** A context-overflow terminal result is handled by the
-normal session recovery/digest path. Any new session receives an explicit
-handoff task; the runtime does not silently continue the old context.
-
-### Agent Execution And Hosting Infrastructure
+## Shared agent execution
 
 Agent capability is smaller than the autonomous runtime:
 
 ```text
-agent definition + prompt + context + tools
-                    -> model/tool run
-                    -> result and observations
+agent definition + prompt + typed context + supplied tools
+  -> model/tool loop
+  -> ExecutionResult and neutral observations
 ```
 
-The model/tool runner must not depend on sessions, files, SQLite, the event
-bus, projects, tasks, metrics, schedules, recovery, or a daemon. Hosting layers
-may wrap the same runner with those capabilities:
+One execution kernel serves direct, Gym, durable session, workflow, and App
+owner runs. Do not add a second “lightweight” runner.
+
+The source boundary is deliberate:
+
+- `src/lib/agent-runner.ts` constructs and controls the Pi Agent and exposes
+  observations, steering, and cancellation;
+- `src/lib/agent-execution.ts` prepares shared prompt, completion, guard, and
+  tool-call behavior;
+- `src/lib/manager.ts` adds hosted session persistence, transcript, lineage,
+  resume, and parent/child coordination; and
+- `src/app/direct-agent.ts` prepares the same definition/tools without event,
+  database, scheduler, task, inbox, or recovery infrastructure.
+
+The low-level runner cannot query May state to discover new direction. The
+owning App/workflow supplies initial typed context; explicitly granted steering
+or tools may provide later input.
+
+## LLM call structure
+
+The model receives three conceptual blocks.
+
+### System prompt
 
 ```text
-event / human input / benchmark
-  -> prepare definition, context, and tools
-  -> shared model/tool runner
-  -> persist, publish, route, or score observations
+behavioral fundamentals
++ owning AGENTS.md identity/contract
++ bounded skill catalog
++ permitted runtime/workspace/tool context
 ```
 
-There is one model/tool loop. Direct execution, Gym, durable sessions,
-workflows, and autonomous apps use it; do not add a `standalone` mode or a
-second lightweight runner.
+The catalog contains metadata only. A complete skill body is loaded for a turn
+only through the skill contract. Domain documents and prior-session summaries
+are not globally injected unless the caller explicitly includes them.
 
-The source boundary is deliberately narrow:
+### Invocation input
 
-- `src/lib/agent-runner.ts` constructs and controls the Pi `Agent`. It imports
-  only the model runtime and exposes observations, steering, and cancellation.
-- `src/lib/agent-execution.ts` prepares the shared prompt, completion, guard,
-  and tool-call behavior used by hosted and direct runs.
-- `src/lib/manager.ts` adds durable session lifecycle, transcript handling,
-  resume, parent/child coordination, and hosted callbacks.
-- `src/app/direct-agent.ts` loads a definition and tools without creating an
-  event bus, SQLite projection, scheduler, task controller, or recovery loop.
-  It may write explicit run artifacts under the caller-provided output root.
-- Gym calls that direct adapter, so benchmarks exercise the production
-  preparation and model/tool path without starting autonomous infrastructure.
+The first task message carries:
 
-Infrastructure prepares initial context before the run. New human direction,
-task mutations, changed priorities, or newly available evidence reach a live
-run through ordinary steering or supplied tools. The runner never queries May
-state to discover them.
+- session/execution identity and time;
+- the exact typed App/workflow/task context rendered for the agent boundary;
+- optional explicitly prepared continuity/evidence; and
+- the bounded task request.
 
-The import guard on `agent-runner.ts` prevents application events, SQLite,
-persistence, projects, metrics, and scheduling from entering the execution
-boundary. `src/lib` as a whole is hosted runtime infrastructure and is not
-promised to be dependency-free; this strict rule applies to the runner.
+Workflow logic consumes typed `ctx.input` and `ctx.reconciliation`; it must not
+recover those structures by parsing this rendered model task.
 
-### Pi Runtime Boundary
+### Conversation/tool history
 
-May passes an explicit Pi stream function into every run and forwards the May
-session id as Pi's provider session id. Pi owns provider request construction,
-stream parsing, tool-argument validation, tool execution, steering/follow-up
-queues, cancellation, and agent lifecycle events. May must not recreate those
-mechanics in guards or adapters.
+Model messages, tool calls, and results accumulate only for that bounded
+session. Append-only transcript evidence remains intact. An active compact
+snapshot may summarize an older prefix while preserving the original task,
+important file/tool/agent facts, and recent reasoning.
 
-Agent configuration uses canonical model IDs. May supplies Pi model objects
-with the configured endpoint, credentials, and verified context-window
-overrides. The endpoint is an external deployment dependency; May does not
-depend on its implementation. The runner receives one explicit Pi stream
-function rather than acquiring a second provider dispatcher.
+May owns its deterministic compaction decision and persisted evidence. Pi's
+full harness compactor is not mixed into May's independent session persistence
+unless the whole harness session model is adopted deliberately.
 
-Pi validates TypeBox tool arguments before `beforeToolCall`. May guards operate
-only on already-valid calls and therefore cover semantic or safety policy, not
-missing or malformed schema fields. Pi's validation error is the feedback sent
-to the model.
+Context overflow follows ordinary bounded failure/recovery. It does not
+silently continue a durable App/task in a hidden new session; the owning
+boundary decides the next attempt with explicit handoff context.
+
+## Pi runtime boundary
+
+May passes an explicit Pi stream function and provider session identity. Pi
+owns provider request construction, streaming, tool-argument validation, tool
+execution, steering/follow-up queues, cancellation, and model lifecycle events.
+May does not recreate those mechanics in guards or adapters.
+
+May supplies canonical model IDs, endpoint/credential configuration, and
+verified context-window overrides. The external endpoint is deployment
+configuration, not an architectural dependency on its implementation.
+
+Pi validates TypeBox tool arguments before May guards run. Guards see valid
+calls and cover semantic/safety policy, not missing schema fields.
 
 Read-only tools may execute concurrently. Tools that mutate files, processes,
-sessions, schedules, messages, or workflow state are marked `sequential` using
-Pi's per-tool execution policy. If one such tool appears in a batch, Pi
-preserves source order for the entire batch.
+sessions, messages, or runtime state use sequential execution policy. May owns
+bounded shell process behavior, including timeout, process-tree control,
+rolling output cap, full-output artifact, and error guidance.
 
-May reuses Pi's public head/tail truncation helpers for read and shell output.
-May still owns the bounded shell process implementation because it adds a
-rolling memory cap, full-output artifact, timeout/process-tree control, and
-runtime-specific error guidance.
+## Hosted session boundary
 
-### What the LLM Doesn't See
+Sessions persist bounded execution identity, transcript, lineage, status, and
+result. They do not own App requests or task outcomes.
 
-- Other agents' sessions or transcripts (unless read via tools)
-- Raw SQLite database, EventBus, socket events
-- Other agents' system prompts
-- Manager internal state (active sessions, cron schedule)
-- Git history (unless read via bash)
+The manager may resume a session interrupted mid-attempt when compatible source
+and tool state exist. It must not replay a completed idle human turn or use
+session resume as a durable business wait. App inbox/task recovery may instead
+start a new session from the same authoritative obligation.
 
-## agent.json Effect on LLM Call
+Active executions retain their prepared agent, prompt, tools, App generation,
+and workflow source. Reload affects subsequent executions only.
+
+## Workflow runtime
+
+Canonical workflows receive scoped `WorkflowContext`:
+
+```text
+typed input + optional reconciliation facts
++ exact reads + agent/workflow calls + fact/metric ports
++ allocated workspace + log + done/blocked
+```
+
+The workflow runner imports and validates the resolved owner's module, records
+source provenance, enforces one bounded deadline, persists child executions,
+and returns `ExecutionResult` to the owning App/task boundary.
+
+No workflow context contains global agent roots, task files, SQL, event bus,
+scheduler, or session manager. Portable paths come only from
+`ctx.workspace.root` and `ctx.workspace.output`.
+
+## Agent discovery
+
+The runtime discovers:
+
+- standalone agents at `AGENTS_ROOT/<agent>/agent.json`; and
+- canonical App-local agents at
+  `projects/<id>.app/agents/<agent>/agent.json`, registered through the same
+  prospective App generation.
+
+Legacy flat or embedded project-agent paths are migration readers only and must
+not be used by new Apps. Directories without a valid `agent.json` are not
+agents.
+
+Names are process-wide identities and must be unambiguous. App-local agents are
+scoped to their App/domain workspace by prepared tools; they do not infer scope
+from current working directory or copied global roots.
+
+## Agent configuration
+
+`agent.json` affects preparation:
 
 | Field | Effect |
-|-------|--------|
-| `model` | Which LLM to call |
-| `memoryLimit` | Retained compatibility field; it does not change current system-prompt assembly |
-| `compaction` | Whether to enable context compaction |
-| `tools` | Which tools available (mapped to presets) |
-| `context_files` | Files resolved relative to agent dir, passed as `contextFiles` to `SubagentDefinition`; injected into fork/call task text, not the system prompt |
+| --- | --- |
+| `model` | Configured model identity |
+| `compaction` | Active-context compaction policy |
+| `tools` | Explicit tool presets/capabilities |
+| `context_files` | Files resolved relative to the agent and explicitly added to invocation context |
+| compatibility fields | Parsed only at documented migration boundaries; never silently change the canonical contract |
 
-## Agent Discovery
+Agent configuration does not attach schedules, App subscriptions, task
+controllers, or project ownership. Those belong to `defineApp`.
 
-The runtime discovers standalone agents from the global root and app-local
-agents through project-app loading:
+## Scheduling compatibility
 
-- global agents at `AGENTS_ROOT/<agent>/agent.json`
-- V3 app-local agents at `projects/<id>.app/agents/<agent>/agent.json`
-- legacy project-local agents at
-  `PROJECTS_ROOT/<project>/agents/<agent>/agent.json` for compatibility
+The internal scheduler retains the historical `Cron` name. Canonical Apps
+declare input/event schedules and observers. Legacy `cron.json`, named
+handlers, detached jobs, and agent self-scheduling remain compatibility for
+standalone/system duties only during migration.
 
-Directories without `agent.json` are not agents. They may be leftover runtime
-workspace folders or legacy artifacts, but discovery must ignore them for
-registration, heartbeat generation, routing, and UI/runtime agent lists.
+No canonical App work may depend on a legacy handler, and no handler may run in
+parallel with a canonical subscription/schedule/task route for the same
+obligation.
 
-App-local and legacy project-local agents are not a separate runtime mode. They
-are registered in the same manager and must use globally unique names. Their
-coding tools are scoped to the owning app/domain workspace according to the app
-loader or legacy project loader.
+## What model execution cannot see implicitly
 
-When a project-app workflow runs for an app-local agent, `WorkflowContext`
-paths must describe that app-local agent root. In particular,
-`ctx.agentsRoot` is `projects/<id>.app/agents`, not global `agents/`.
-Workflow code can then write `join(ctx.agentsRoot, ctx.agent, "workspace", ...)`
-without recreating legacy global agent directories. Global agents keep
-`ctx.agentsRoot = AGENTS_ROOT`.
+- other Apps' inbox items or task storage;
+- other agents' sessions/transcripts;
+- raw SQLite, event bus, queues, leases, scheduler, or recovery state;
+- manager active-session internals;
+- other agents' prompts;
+- global filesystem/repository paths outside granted workspace/tools; and
+- project/domain facts not supplied through typed context or permitted reads.
 
-## Implementation
+## Runtime code map
 
-Source lives in `projects/may-agent/` (not bare `src/`).
+All paths are relative to `projects/may-agent/`:
 
-- **Binary entry:** `projects/may-agent/src/app/may.ts`
-- **Long-running runtime assembly:** `projects/may-agent/src/app/app-runtime.ts`
-- **Input routing:** `projects/may-agent/src/app/chat-session.ts`, `projects/may-agent/src/app/command-router.ts`
-- **Daemon modules:** `projects/may-agent/src/app/daemon.ts` re-exports lifecycle, event
-  subscribers, agent startup, session startup, and loop modules
-- **Agent loading:** `projects/may-agent/src/app/agent-loader.ts`, `projects/may-agent/src/app/loader/*`
-- **Session management:** `projects/may-agent/src/lib/manager.ts`
-- **System prompt assembly:** `projects/may-agent/src/lib/agent-execution.ts` → `resolveSystemPrompt()`
-- **Compaction:** pi-agent runtime `Agent` class + may-agent extensions
-- **Socket protocol/server/client:** `projects/may-agent/packages/control/src/*`
-- **Telegram adapter:** `projects/may-agent/src/app/transport/telegram.ts`,
-  `projects/may-agent/src/app/transport/telegram-client.ts`,
-  `projects/may-agent/src/app/transport/telegram-reply-router.ts`,
-  `projects/may-agent/src/app/transport/telegram-outbound.ts`
+- binary and long-running assembly: `src/app/may.ts`, `src/app/app-runtime.ts`;
+- daemon lifecycle/adapters: `src/app/daemon*.ts`, `src/app/transport/`,
+  `src/app/http/`;
+- App registry/validation/inbox: `src/app/app-registry.ts`,
+  `src/app/app-definition-validation.ts`, `src/app/app-inbox-*.ts`;
+- App/agent preparation: `src/app/loader/`, `src/app/agent-loader.ts`;
+- temporary canonical task adapter: `src/app/loader/project-app-loader.ts`;
+- session/execution: `src/lib/manager.ts`, `src/lib/agent-execution.ts`,
+  `src/lib/agent-runner.ts`;
+- direct/Gym adapter: `src/app/direct-agent.ts`;
+- task mechanics: `src/app/project-app-task-*.ts`;
+- stable public SDK: `packages/sdk/`; and
+- control protocol/client: `packages/control/`.
+
+Project App-named adapters/task files may remain internally while mechanics are
+moved behind the canonical host. Their legacy public contract and duplicate
+authority are not part of the target runtime.
+
+## Integrity checklist
+
+- Only the long-running host attaches autonomous App work.
+- One execution kernel serves hosted, direct, and Gym runs.
+- Agent/workflow execution has typed bounded context and no durable runtime
+  authority.
+- App definitions and routes publish atomically by generation.
+- Recovery reconciles App/task ownership rather than replaying old prompts.
+- Reload never mutates active execution or duplicates controllers/schedules.
+- App-local agents are discovered through the canonical App generation.
+- Compatibility socket/cron/chat/project paths normalize or remain read-only;
+  they never form a parallel lifecycle.

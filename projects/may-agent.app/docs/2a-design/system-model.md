@@ -1,265 +1,262 @@
 # May-Agent System Model
 
 **Design status:** Accepted.
-**Implementation status:** Implemented as the governing mental model; subsystem
-documents define the detailed contracts.
+**Implementation status:** Canonical App ownership is implemented; legacy
+Project App and event-pair authorities are being removed.
 
 ## One-Sentence Model
 
-May-agent is an event-driven deputy system in which a durable signal reaches a
-target or accountable owner, bounded execution produces evidence, the owning
-domain updates its state, and a typed follow-up event closes or continues the
-loop.
+May-agent makes sure every addressed request is handled eventually: an Agent
+App owns the request in a durable inbox, completes simple work in one bounded
+pass, and attaches hard work to a task that reconciles repeatedly until the
+desired outcome is proved.
 
 ```text
-event -> target -> owner fallback -> judgment/execution -> evidence/state -> follow-up event
+addressed request -> App inbox -> direct result or task -> verified result
+changed fact      -> event     -> request, TaskIntent, exact wake, or observation
+bounded action    -> session/workflow -> evidence
 ```
 
-There is no generic request object beside this loop. The opening event and its
-trace represent the commitment. Domain entities such as projects, tasks,
-alerts, sessions, and escalations retain their own state only when they answer
-a domain-specific question.
+The inbox item is the authority for one addressed result. The task is the
+authority for a durable desired outcome. An event is a persisted fact and wake,
+never an alternate work queue. A session or workflow is a bounded execution
+attempt, never durable ownership.
 
-## Core Objects
+## Core objects
 
-| Object         | One question it answers                                                     | Owner of truth                                  |
-| -------------- | --------------------------------------------------------------------------- | ----------------------------------------------- |
-| Event          | What durable signal crossed a boundary?                                     | Event store during its retention window         |
-| Event delivery | Did a responsible consumer accept the signal?                               | `delivery_*` fields on the event                |
-| Event pair     | Did the expected typed response arrive in time?                             | `event_pair_runs`                               |
-| Trace          | What caused this work, and which event fulfilled it?                        | Event trace and closure links                   |
-| Project        | What durable goal and operating posture does an owner maintain?             | `project.json` and project-owned state          |
-| Task resources | What desired and observed work state does the app currently own?            | `.state/tasks/state.json`                       |
-| Metric alert   | Which measured signal still needs judgment or recovery evidence?            | Metric and alert tables                         |
-| Session        | Which agent execution or conversation container ran?                        | Session registry and transcript                 |
-| Workflow run   | Which ordered executable process ran, and how did it end?                   | Workflow-run record                             |
-| Escalation     | Which blocker crossed an ownership boundary, and what action was requested? | Escalation events plus trace                    |
-| Skill          | Which situational method was loaded for one model turn?                     | Canonical `SKILL.md`; no independent work state |
+| Object | One question it answers | Owner of truth |
+| --- | --- | --- |
+| Agent App | Which durable address and owner owe this domain result? | Process-wide App registry |
+| App inbox item | Which addressed request still requires its own correlated result? | App inbox store |
+| Task | Which desired outcome and observed conditions must reconcile? | App task resource |
+| Event | What fact crossed a boundary? | Event store during its retention window |
+| Event delivery | Which declared consumer accepted this fact? | Event delivery metadata |
+| Trace | What caused this request, fact, execution, or result? | Trace and closure links |
+| Project | What durable goal and operating posture does an App maintain? | `project.json` and App-owned domain state |
+| Session | Which bounded agent execution ran and what did it claim? | Session registry and transcript |
+| Workflow run | Which bounded reusable process ran and how did it end? | Workflow-run record |
+| Metric | What measured runtime or domain signal changed? | Metric samples and projections |
+| Escalation | Which blocker crossed an ownership boundary? | Originating inbox/task plus correlated escalation result |
+| Skill | Which situational method guided one model turn? | Canonical `SKILL.md` |
 
-These records are complementary, not alternate lifecycle systems. Do not copy
-domain state into an event, infer delivery from task completion, or treat a
-workflow result as project completion.
+These records are complementary. An event cannot stand in for an inbox item or
+task; a queue cannot stand in for desired state; a session result cannot stand
+in for owner acceptance; and a projection cannot become mutation authority.
 
-## Ownership And Routing
+## Ownership and routing
 
-Every actionable event has one accountable owner. Routing is target-first:
+Classification is based on durable obligation:
 
 ```text
-matching target consumer -> accept and act/queue
-no target consumer        -> queryable owner inbox
-owner cannot resolve      -> explicit escalation across the ownership boundary
+addressed input requiring a distinct result -> App inbox
+changed fact with deterministic desired work -> task resolver
+fact with no actionable obligation          -> event only
 ```
 
-`target` identifies the intended consumer or domain object. `owner` identifies
-who is accountable if targeted delivery fails. Event-specific facts stay in
-`data`. Authoring helpers may derive a default owner from an app or agent, but
-the persisted canonical event contains the resolved owner.
+Top-level App subscriptions explicitly translate a fact into a typed,
+independently correlated App request. Task subscriptions explicitly translate a
+fact into desired task intent. An exact task target wakes only that task. The
+runtime never guesses that an unhandled event should become owner work.
 
-Owner-inbox acceptance means the signal is visible in the owner's durable pull
-queue. It does not mean the owner acted or the work completed. Owner review
-emits a typed follow-up event.
+Unknown addressed Apps are rejected with a visible admission failure. Unknown
+unaddressed facts remain observable and unhandled; they do not silently fall
+back to May, a generic owner inbox, or an arbitrary agent.
 
-### Responsibility boundary
+### Responsibility boundaries
 
 | Role | Owns | Does not normally own |
 | --- | --- | --- |
-| May | Human intent, conversation, decision framing, outcome supervision, and verified human closeout | App implementation, durable waits, polling, retries, schedules, or project task state |
-| Project app owner | Domain meaning, priority, task shape, execution method, waits, recovery, and terminal proof | Human-channel delivery or another app's internal work |
-| Shared runtime | Event delivery, persistence, bounded execution, queues, claims, recovery mechanics, and projections | Domain judgment, project truth, or human preference |
-| Human | Authority, private input, strategic direction, and consequential preferences | Routine owner execution or recovery |
+| May App | Human request, conversation, delegation, final review, and channel closeout | Project task state, polling, background schedules, or another App's implementation |
+| Domain App | Typed domain requests, domain meaning, task intent, workflows, waits, and terminal proof | Human-channel policy or another App's internal work |
+| Shared runtime | Admission, persistence, delivery, schedules, observers, queues, claims, bounded execution, recovery mechanics, and projections | Domain judgment, desired project strategy, or human preference |
+| Human | Authority, private input, strategic direction, approvals, and consequential preferences | Routine execution or mechanical recovery |
 
-The default is strict: May states the desired outcome, relevant evidence,
-safety or approval bounds, priority, and required proof; the accountable app
-chooses how to achieve it. Runtime routing must not silently turn May into the
-fallback owner of arbitrary operational work. A known domain falls back to its
-app owner. An unknown platform or routing gap falls back to the `may-agent` app
-owner. May is the fallback only for human conversation and proposed human
-attention.
+May states the desired outcome and delegates to an App address. The receiving
+App chooses whether to answer, delegate, or attach a durable task. May remains
+responsible for reviewing the child result and delivering the final response;
+it does not become the project's fallback controller.
 
-May may cross this boundary only through one bounded, audited break-glass
-attempt. The canonical human-ingress, ownership, break-glass, and closure
-contract is [Message Lifecycle](message-lifecycle.md).
+A bounded, audited break-glass attempt may cross this boundary when canonical
+delegation cannot fulfill the human outcome. It is an exceptional execution
+linked to the same May request, not a parallel ownership model.
 
-## Execution Boundaries
-
-Choose the smallest controller that matches the work:
-
-| Need                                                              | Mechanism                                                            |
-| ----------------------------------------------------------------- | -------------------------------------------------------------------- |
-| Variable judgment or one bounded action                           | Agent session, optionally guided by a skill                          |
-| Repeatable ordered branching/retry/verification                   | Synchronous TypeScript workflow                                      |
-| Wait for a human, timer, callback, restart, or external condition | Persist domain state and continue from a later event-linked workflow |
-| Mechanically detectable risk around tool/workflow execution       | Guard                                                                |
-| Capability an agent calls against an external system              | Tool                                                                 |
-| Repeated typed automation entering an existing app                | Discoverable app action that emits one semantic event                |
-| Timer/event-to-workflow bridge or mechanical projection           | Handler/app schedule                                                 |
-
-Workflows are ordered synchronous blocks even though their TypeScript uses
-`await`. They finish with `done` or local `blocked`. A durable wait never keeps
-one workflow run open; it ends the current phase and a later event starts a new
-run.
-
-Skills and workflows share discovery, scope, provenance, and evaluation
-conventions, but not execution semantics. A skill guides model judgment. A
-workflow controls execution.
-
-## Project Loop
-
-A project app is a small May-agent control plane around a portable domain
-workspace.
+## Request loop
 
 ```text
-project signal
-  -> app task resolver declares desired task state
-  -> one deduplicating queue receives the task key
-  -> controller reconciles the latest persisted resource
-  -> resolved owner runs directly or applies an owner-owned workflow
-  -> one structured result is atomically applied
-  -> Condition wait, attention, or completion receipt records the outcome
-  -> changed dependents re-enter the same queue
+human input
+  -> May App inbox
+  -> direct answer
+     or delegate -> child App inbox
+                    -> direct result
+                       or task attachment -> repeated reconciliation
+  -> May reviews dependency result
+  -> channel delivery
+  -> May request completes after delivery evidence
 ```
 
-The owner is the project brain. Runtime and app code deliver, schedule,
-observe, and persist. They do not decide domain decomposition, acceptance,
-retry policy, or project truth.
+Every request keeps one stable identity, source, typed input, and optional
+parent/dependency link. A child App result wakes its parent. A task result wakes
+the request attached to it. Delivery uncertainty remains a host concern and
+does not cause blind duplicate replies.
 
-Task resources persist desired `spec` and observed `status`. Their phases are
-`pending`, `running`, `waiting`, `attention`, and `converged`. Attempts are
-separate durable runtime records; completion receipts preserve finite results
-after completed tasks leave the live graph.
+One human conversation may contain several concurrent request threads. The
+request identity is the May inbox item, not a mutable chat session, event trace,
+reply ID, or inferred current topic. Conversation and trace views may group
+related evidence without copying work authority.
 
-Project posture is separate from task state. Project status answers whether the
-owner loop should push, wait, request judgment, pause, or stop. Session and
-workflow statuses describe execution attempts only.
+Direct controls such as cancel, reload, restart, shutdown, and an explicit
+approval may use deterministic runtime ingress. When they originate from a
+human request, their result remains correlated to that May inbox item.
 
-## Human Loop
-
-Human interaction shares event-native ingress but has two explicit semantic
-addresses:
+## Task reconciliation loop
 
 ```text
-conversation directed to an agent
-  -> human.input.received
-  -> chat.start.requested or session.steer.requested
-  -> bounded agent turn
-  -> session.idle/session.end and channel delivery
-
-outcome directed to an app
-  -> project.comment.created receipt or typed app event
-  -> app owner judgment
-  -> project.owner.reviewed
-  -> optional durable task and Conditions
+fact or attached request
+  -> pure resolver returns latest TaskIntent
+  -> host persists desired intent and exact trigger
+  -> deduplicating queue schedules the stable task ID
+  -> reconciler observes current state
+  -> owner or workflow performs one bounded attempt
+  -> structured result updates state, waits on a Condition, or completes
+  -> later fact/resync re-enters the same task ID
 ```
 
-An app request lets the app choose the handler. An agent message fixes the
-agent or conversation. They share envelopes, receipts, traces, and execution
-infrastructure without sharing one ambiguous public `send(target, message)`
-contract.
+The owner is the domain brain. The host owns task storage, generations,
+attempts, claims, leases, queues, workspace allocation, result admission,
+recovery, and projections. Queue coalescing happens only after the latest
+desired intent and trigger are durable.
 
-The app boundary is intentionally opaque to May and other external callers.
-They state the desired outcome, relevant evidence, safety or approval bounds,
-and required proof. They do not select the app's task, owner, workflow,
-session, or wake mechanism. The app owner interprets that intent and decides
-whether to answer, record a no-op, revise or wake durable work, or use an
-already-declared typed action. Free-form intent reaches owner judgment before
-domain work is selected; a typed action may map directly only because the app
-has already encoded and published that exact mapping.
+A Condition records the exact external fact required before reconciliation can
+continue. Durable waits end the current session/workflow attempt; they never
+keep model execution open.
 
-The one exception is an explicit break-glass attempt. During that attempt May
-may call an app-local agent, inspect or change implementation, operate a tool,
-or repair runtime ownership directly when that is necessary to fulfill the
-human outcome. The crossing is scoped to the linked attempt and is visible in
-its trace. Healthy app work, convenience, curiosity, or one ordinary retry are
-not reasons to cross the boundary.
+Project posture is separate from task and execution state. A project says
+whether the owning loop should push, wait, request judgment, pause, or stop. A
+task records convergence toward one desired outcome. A session or workflow
+records only one bounded attempt.
 
-`project.owner.reviewed.taskRefs` names only durable domain work that remains
-after the owner turn. A direct answer, rejection, or no-op has no task refs and
-is delivered from the owner result. Internal owner-review carriers are never
-exposed to May or the human caller.
+## Facts, schedules, and observation
 
-A human conversation is a logical channel/thread relationship, not a session
-or permanent trace. One conversation may use many bounded sessions, and each
-human turn receives its own trace. Replies to a notification continue the
-referenced trace; unrelated follow-ups start a new trace. If conversation
-judgment creates durable project work, it emits a linked app-intent event rather
-than treating the chat session as task state. The app task continues after the
-turn session ends; a later owner result starts a fresh May review session when
-needed and final channel delivery links back to the originating human trace.
+Events cross boundaries as facts. Their `target` narrows intended delivery;
+their source and data preserve attribution and meaning. An event owner field,
+when retained for compatibility or attribution, is not permission to create
+generic owner work.
 
-Session reuse may cache conversational context, but no durable work, caller
-identity, completion route, or promised human follow-up may depend on one
-mutable current session. When an old session is unavailable, runtime prepares
-a new bounded session from the linked human trace, app task, relevant recent
-conversation, and durable preferences.
+Event delivery acceptance means a declared consumer durably accepted the fact
+or resulting obligation. It is not proof of execution, semantic completion, or
+human delivery.
 
-One human conversation can contain several concurrent request threads. A
-request thread is a read view assembled from a human trace, linked channel
-messages, domain events, and the owning app task; it is not another durable
-request object. A channel reply id is an anchor used to find that trace, not the
-request identity itself. When no explicit anchor exists, routing uses a clearly
-named subject, then the only plausible open request, and otherwise one focused
-clarification. A conversation context reader exposes the focused request and
-compact neighboring context without copying work state out of the owning app.
+A schedule has exactly one destination:
 
-## Event Durability And Reliability
+- an input schedule creates one correlated App request per admitted slot; or
+- an event schedule publishes a fact that may wake deterministic task work.
 
-“Durable event” means the signal and its trace are persisted for audit,
-reconciliation, and owner-inbox review. The in-process event bus is not a
-general durable queue and does not promise automatic exactly-once replay.
+An observer reads external state through bounded capabilities and returns
+semantic facts. It cannot launch agents or mutate inbox/task state. Metrics are
+projections over runtime or domain observations; a breach may wake an existing
+obligation but is not itself desired state.
 
-Runtime guarantees are intentionally narrower:
+The in-process event bus does not provide durable work ownership or implicit
+exactly-once replay. Work that must survive restart is persisted before routing
+as an inbox request or task trigger. Continuation handlers remain idempotent.
 
-- persist before or with routing where the boundary requires durability;
-- record whether a responsible consumer accepted delivery;
-- route unclaimed owned work into the queryable owner inbox;
-- detect overdue delivery and missing typed responses;
-- make continuation handlers idempotent because reconciliation can retry them;
-- preserve domain state outside the event log when work must survive retention.
+## Execution boundaries
 
-Persistence is therefore not proof of execution, and delivery acceptance is
-not proof of completion.
+Choose the smallest mechanism matching the responsibility:
 
-## Terminal Vocabulary
+| Need | Mechanism |
+| --- | --- |
+| Variable judgment or one bounded action | Agent session, optionally guided by a skill |
+| Repeatable ordered branching and verification | Bounded TypeScript workflow |
+| One addressed result that may depend on other work | App inbox item with child/dependency link |
+| Durable desired outcome across attempts | App task and Conditions |
+| Typed external ingress | App action translated to App input |
+| Timer creates an independent obligation | Input schedule |
+| Timer wakes deterministic desired work | Event schedule and task subscription |
+| Poll external state | Observer producing facts |
+| Mechanically detectable tool risk | Guard |
+| Agent-callable external capability | Tool |
+
+Skills guide judgment. Workflows control bounded execution. Neither owns
+durable work state.
+
+## Runtime boundary
+
+The process-wide App registry validates and atomically publishes one generation
+of `defineApp` declarations. One host attaches inbox dispatch, schedules,
+observers, optional task controllers, and delivery. A failed reload keeps the
+previous complete generation active.
+
+The public App/workflow SDK exposes typed semantic contracts and scoped
+capabilities. It does not expose raw SQL, task files and locks, scheduler
+handles, global runtime paths, recovery APIs, or unrestricted event-driven
+execution.
+
+Direct, Gym, and read-only processes reuse the same prepared agents and
+workflows without attaching autonomous controllers. Loading an App definition
+cannot itself start model work.
+
+## Reliability convention
+
+```text
+known transient failure
+  -> bounded retry of delivery or execution
+  -> repair stale mechanical state
+  -> requeue the same persisted obligation
+  -> attention when judgment is required
+  -> explicit escalation only across a real ownership boundary
+```
+
+Infrastructure preserves identity and evidence. It never invents desired state
+or project strategy. Repeated equivalent wakes may coalesce execution pressure
+but cannot erase a correlated request or newer persisted intent.
+
+## Terminal vocabulary
 
 Use terminal words only inside their owning layer:
 
-| Layer          | Terminal vocabulary                                | Meaning                                               |
-| -------------- | -------------------------------------------------- | ----------------------------------------------------- |
-| Workflow       | `done`, `blocked`                                  | This ordered run finished or cannot continue locally  |
-| Session finish | `success`, `partial`, `blocked`, `failure`         | This agent attempt's claim                            |
-| Maintain task  | `converged`                                        | Current desired generation is satisfied               |
-| Achieve task   | completion receipt and removal from the live graph | Owner accepted finite work                            |
-| Project        | `done`, `closed`                                   | Goal completed, or ownership loop intentionally ended |
-| Escalation     | `resolved`, `dismissed`                            | Cross-owner request received a disposition            |
-| Metric alert   | resolved/recovered evidence                        | Signal no longer needs active judgment                |
+| Layer | Terminal vocabulary | Meaning |
+| --- | --- | --- |
+| App inbox item | `done` | This addressed request has its correlated result and required delivery evidence |
+| Workflow | `done`, `blocked` | This bounded process ended or cannot continue locally |
+| Session | `success`, `partial`, `blocked`, `failure` | This bounded agent attempt's claim |
+| Maintain task | `converged` | The current desired generation is satisfied |
+| Achieve task | completion receipt | Finite desired work was accepted and retired |
+| Project | `done`, `closed` | The durable goal completed or ownership intentionally ended |
+| Escalation | `resolved`, `dismissed` | The other owner returned a disposition |
+| Metric alert | recovered/resolved evidence | The measured condition no longer needs attention |
 
-Never translate one terminal word into another without owner judgment. A
-successful session can produce a task claim that the project owner rejects. A
-completed workflow phase can establish a durable wait without completing the
-project task.
+Never translate one layer's terminal claim into another without the owning
+admission check. A successful session can produce evidence that a task or App
+owner rejects.
 
-## Non-Negotiable Invariants
+## Non-negotiable invariants
 
-1. No generic request lifecycle beside events, traces, and domain state.
-2. Every actionable event has a target or accountable owner route.
-3. Delivery, typed response, trace closure, and domain completion remain
-   distinct.
-4. Project owners decide project meaning; infra remains mechanical.
-5. Workflows are bounded synchronous runs; durable waits cross event boundaries.
-6. Skills provide guidance and never own work state.
-7. New code writes canonical names and fields; compatibility is read-only and
-   isolated at explicit boundaries.
-8. Evidence precedes closure claims.
+1. An App inbox item is the sole authority for an addressed request.
+2. An App task is the sole authority for a durable desired outcome.
+3. Events, traces, queues, metrics, projections, sessions, and workflows never
+   become alternate work authorities.
+4. Every fact-to-work route is explicitly declared as an App subscription,
+   task subscription, or exact task target.
+5. Every request, task intent, result, and delivery remains correlated before
+   any wake is acknowledged.
+6. Domain Apps decide domain meaning; shared infrastructure remains mechanical.
+7. Workflows and sessions are bounded; durable waits cross persisted
+   inbox/task boundaries.
+8. Recovery preserves identity and never invents desired state.
+9. May owns conversation and final human closeout, not background project work.
+10. New code has one `defineApp` model and no `defineProjectApp`, legacy SDK,
+    owner-inbox/event-pair work lifecycle, or imperative event execution path.
+11. Evidence precedes closure claims.
 
-## Detailed Contracts
+## Detailed contracts
 
 - Principles and work posture: `1-principles/core-principles.md` and
   `1-principles/work-model.md`
-- Events, delivery, and inbox: `2a-design/events.md`
-- Trace and closure: `2a-design/event-graph.md`
-- Agent App contract: `2a-design/agent-app.md`
-- Task runtime: `2a-design/task-resource-engine.md`
+- App ownership and authoring: `2a-design/agent-app.md`
+- Events and delivery: `2a-design/events.md`
+- Task reconciliation: `2a-design/task-resource-engine.md`
 - Sessions and human turns: `2a-design/sessions.md` and
   `2a-design/human-control-surfaces.md`
 - Skills and workflows: `2a-design/skills.md` and `2a-design/workflows.md`
-- External ownership handoff: `2a-design/escalation.md`
+- Cross-owner escalation: `2a-design/escalation.md`

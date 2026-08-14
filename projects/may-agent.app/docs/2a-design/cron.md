@@ -1,280 +1,231 @@
-# Timer Triggers & Handlers
+# Scheduling And Observation
 
 **Design status:** Accepted.
-**Implementation status:** Implemented through the centralized cron runtime.
+**Implementation status:** Shared scheduler implemented; canonical App
+input/event schedules are implemented while legacy cron handlers are being
+removed from App-owned work.
 
-> Cron lifecycle is centralized in `cron-startup.ts`.
-> All crons (agent-level from toolset-loader, app-level from ensureOwnerCron)
-> are created and loaded by their respective loaders, but subscribe+start
-> happens in ONE place: `startCronRuntime()`. This prevents double-dispatch
-> bugs from multiple `subscribeToBus()` calls.
->
-> Project-app schedules (from `app.ts`) are installed as synthetic cron
-> entries by the project-app-loader. They fire through the same mechanism as
-> legacy cron.json entries.
+## Purpose
 
-## Overview
+Time is a wake source, not a work authority. The shared runtime owns timer
+mechanics; each App declares what a due slot means.
 
-Timer triggers are one way to invoke a handler. Event subscriptions and manual
-operator triggers use the same handler interface.
-
-The runtime file is still named `cron.json` and the CLI flag is still `--cron`,
-but the behavior model is simpler:
-
-```
-timer/event/manual trigger -> handler -> workflow/code -> sessions/functions/metrics
+```text
+due slot -> App input admission
+         -> fact publication
+         -> bounded observer run -> facts
 ```
 
-A handler can be:
+Schedules never directly launch an agent or workflow. Model execution begins
+only after an admitted App request or persisted task reconciliation requires it.
 
-- a named TypeScript handler for deterministic code;
-- a workflow-backed handler object for straightforward agent/workflow work.
+The scheduler implementation retains the historical internal name `Cron`, and
+the long-running CLI flag remains `--cron`. Those names do not expose cron
+handlers as the canonical App authoring model.
 
-Workflows are not a separate trigger mode. A workflow-backed handler implements
-the same trigger interface as a code handler.
+## One scheduler
 
-## How It Works
+One process-wide scheduler owns:
 
+- interval calculation, jitter, and restart-safe next-fire state;
+- timer registration and replacement during atomic App reload;
+- bounded dispatch and lifecycle metrics;
+- event-schedule publication; and
+- observer cadence.
+
+App loading prepares a prospective complete schedule set. The registry and
+scheduler publish it atomically only after every App definition validates. A
+failed reload keeps the previous generation active. Repeated reload cannot
+duplicate timers or subscriptions.
+
+Only the long-running host starts the scheduler. Direct, Gym, test discovery,
+read-only CLI, and Web UI processes may load App definitions but cannot fire
+their schedules or claim autonomous work.
+
+## App schedules
+
+The public declaration is a discriminated union:
+
+```ts
+type AppSchedule = {
+  id: string;
+  enabled?: boolean;
+  intervalMs: number;
+} & (
+  | {
+      input: AppInput;
+      catchUp?: "none" | "latest";
+      event?: never;
+    }
+  | {
+      event: AppEvent;
+      input?: never;
+      catchUp?: never;
+    }
+);
 ```
-cron.json defines trigger entries -> timer/event/manual trigger fires -> handler runs
-```
 
-Named code handler:
+The host rejects missing or ambiguous destinations.
 
-```json
+### Input schedule
+
+Use an input schedule when each admitted slot creates a distinct App
+obligation that deserves its own correlated disposition:
+
+```ts
 {
-  "name": "metrics-snapshot",
-  "handler": "metrics-snapshot",
-  "intervalMs": 300000,
-  "agent": "may",
-  "enabled": true
+  id: "weekly-owner-review",
+  intervalMs: 7 * 24 * 60 * 60 * 1000,
+  input: { kind: "owner-review", data: { lane: "weekly" } },
+  catchUp: "latest",
 }
 ```
 
-Workflow-backed handler:
+The host validates the input against the App schema and derives idempotency from
+App ID, schedule ID, and slot. `latest` may admit only the newest missed slot
+after downtime; `none` resumes from the next live slot. Catch-up never replays
+an unbounded backlog.
 
-```json
+### Event schedule
+
+Use an event schedule when time merely publishes a fact or wakes deterministic
+desired task work:
+
+```ts
 {
-  "name": "evaluator-aftermath",
-  "handler": {
-    "workflow": "evaluator-aftermath",
-    "agent": "evaluator",
-    "task": "Review the completed session and record evaluator signal.",
-    "includeEvent": true,
-    "timeoutMs": 900000
+  id: "pipeline-review",
+  intervalMs: 300_000,
+  event: {
+    type: "sample.pipeline.check",
+    data: { reason: "scheduled" },
+    target: { appId: "sample", project: "sample" },
   },
-  "enabled": true,
-  "on": ["session.end"]
 }
 ```
 
-- `intervalMs` — how often to fire (timer)
-- `on` — event types that also trigger this handler (reactive). `trigger.<entry>`
-  is an operator/control shortcut for manual firing; domain lifecycle events
-  should use their canonical names such as `timer.tick` or
-  `session.end`.
-- `handler: "name"` — filename in `handlers/` beside the owning `cron.json`
-- `handler: { workflow, agent, task }` — workflow-backed handler
-- `context` — local docs/projects/agent files that explain why this trigger
-  exists and where maintenance/improvement should happen
-- `message` — not a trigger mode; use `handler.task` for workflow-backed work
-- `type` — optional legacy field; current entries are jobs (`"job"` or omitted), not `"heartbeat"`
+The shared event runtime persists the fact. A declared task subscription may
+resolve it to `TaskIntent`; otherwise it remains observation only. No inbox item
+or owner session is manufactured. Event schedules do not replay missed facts.
 
-## Handler Structure
+## Observers
 
-```typescript
-// projects/example.app/agents/owner/handlers/example-observer.ts
-import type {
-  CronEntry,
-  EventEnvelope,
-  HandlerContext,
-  HandlerModule,
-} from "@may-agent/sdk";
+An observer periodically reads external state and returns semantic facts:
 
-export const create: HandlerModule["create"] = (
-  ctx: HandlerContext,
-  entry: CronEntry,
-) => {
-  return async (event?: EventEnvelope) => {
-    const sdk = ctx.sdk;
-    await sdk.runWorkflow("some-workflow", "task/context from event", {
-      source: entry.name,
-    });
-    sdk.log("info", "done");
-  };
+```ts
+const providerObserver: AppObserver = {
+  id: "provider-state",
+  intervalMs: 300_000,
+  async run(ctx) {
+    const state = await readProviderState();
+    ctx.log.info(`observed provider revision ${state.revision}`);
+    return [{
+      type: "sample.provider.observed",
+      data: state,
+      target: { appId: "sample", project: "sample" },
+    }];
+  },
 };
 ```
 
-## Handler Ownership
+Observers receive only bounded read and logging capabilities. They may call an
+explicit provider adapter owned by the App, but cannot:
 
-A handler belongs to the trigger entry that registers it. In practice, that means
-it is scoped by the `cron.json` file it sits beside:
+- launch agents or workflows;
+- mutate inbox or task state;
+- access raw SQL or global runtime paths;
+- publish through a second side-effect path; or
+- implement their own durable retry/ownership loop.
 
-| Scope              | Trigger file                                       | Named handler file                                          | Use for                                                                                  |
-| ------------------ | -------------------------------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Agent-owned        | `agents/<agent>/cron.json`                         | `agents/<agent>/handlers/<name>.ts`                         | Standalone agent/system duties such as evaluation scans or metric handling                |
-| Legacy embedded app | `projects/<project>/.app/agents/<agent>/cron.json` | `projects/<project>/.app/agents/<agent>/handlers/<name>.ts` | Backward-compatible embedded project apps                                                |
+The host publishes returned facts only after a successful bounded run. Provider
+poll retry and rate limits may live inside the bounded adapter; durable work
+recovery remains with App requests/tasks.
 
-V3 sibling apps do not use project-local `cron.json`. They declare schedules,
-workflow handlers, actions, and event adapter behavior in
-`projects/<project>.app/app.ts`. Their `agents/` folders are worker identities
-and owner-inference inputs, not trigger-definition roots.
+## Choosing the route
 
-The runtime's legacy project-agent discovery still scans two project-agent
-locations for backward compatibility:
+| Timed responsibility | Canonical declaration |
+| --- | --- |
+| Every due slot requires independent judgment/result | Input schedule |
+| Time wakes one standing desired outcome | Event schedule -> task subscription |
+| Time publishes a diagnostic/lifecycle fact | Event schedule -> observation only |
+| Time must first read an external provider | Observer -> facts |
+| Time repairs generic runtime mechanics | Internal runtime maintenance, not an App schedule |
 
-1. **Legacy embedded app:** `projects/<project>/.app/agents/`
-2. **Flat:** `projects/<project>/agents/`
+A scheduled “owner request” that deterministically selects the same standing
+task is a task-wake event, not an inbox input. Conversely, a real periodic
+review whose result must be tracked independently is an input schedule even if
+the source is the system rather than a human.
 
-V3 is canonical for new and migrated projects. Legacy paths remain for backward
-compatibility but should not be used in new projects (see `agent-app.md`).
+## Coalescing and backpressure
 
-Platform-wide mechanical behavior belongs to `may-agent.app`; domain behavior
-belongs to its domain app. May owns no trigger definitions or standing jobs.
+Timer coalescing reduces execution pressure only after the corresponding
+request admission, event publication, or task intent/trigger is durable.
 
-Workflow-backed handlers follow the same ownership rule. The trigger entry owns
-the wake-up policy; the configured workflow owns the work.
+- Input-schedule idempotency preserves one obligation per admitted slot.
+- Event publication preserves the fact before task resolution.
+- Task resolution persists the newest desired intent and trigger before the
+  stable task ID is coalesced in the controller queue.
+- A running task receives one fresh pass after a newer trigger arrives.
 
-Each trigger entry should include a small `context` array. These are not loaded
-automatically into every run; they are durable pointers for humans and agents
-who need to maintain, debug, or improve the loop:
+Dropping a timer callback before persistence is not valid deduplication.
 
-```json
-{
-  "name": "metrics-snapshot",
-  "handler": "metrics-snapshot",
-  "context": [
-    "projects/may-agent.app/project.json",
-    "projects/may-agent.app/docs/2a-design/metrics.md"
-  ]
-}
-```
+## Failure and restart
 
-Use a TypeScript handler when the work is deterministic infra logic: metrics,
-query/projection, dedup, cooldown, state repair, reload/restart/shutdown, or
-selecting which workflow should run.
+Scheduler failure is operational evidence. It does not create an App owner
+request by default. Runtime health surfaces missed/late fires, registration
+failure, observer error, and publication/admission failure.
 
-Use a workflow-backed handler object when the handler would only run one known
-workflow with a fixed task.
+On restart:
 
-When a trigger entry subscribes with `on`, the handler receives the original
-canonical event envelope:
+- input schedules apply their declared catch-up policy;
+- event schedules resume without replay;
+- observers run from current external state rather than reconstructing a fact
+  backlog; and
+- existing App inbox/task state recovers independently of the scheduler.
 
-```typescript
-{
-  type: "session.end",
-  source: "runtime",
-  owner: "agent:may",
-  data: {
-    sessionId: "s_123",
-    agent: "may",
-    outcome: "done",
-    status: "done",
-    summary: "Completed the task.",
-    durationMs: 4200
-  },
-  timestamp: 1778932481366
-}
-```
+An observer or event-schedule failure may be retried mechanically within a
+bounded host policy. Persistent ambiguity becomes runtime attention; it cannot
+silently start an owner agent.
 
-Cron does not wrap event-subscription payloads and does not lift fields out of
-`data`. A handler that needs a session id reads `event?.data?.sessionId`; a
-metric handler reads metric fields from `event.data`; a project handler reads
-project fields the same way.
+## Legacy cron compatibility
 
-Direct handler logic is acceptable for mechanical infra work such as metric
-snapshots, projections, cleanup/recovery state repair, reload/restart/shutdown,
-and dispatch dedup. Direct `sdk.runAgent(...)` from a handler is exceptional;
-prefer a workflow-backed handler or `sdk.runWorkflow(...)` from deterministic
-handler code.
+Historical `cron.json`, named handlers, workflow-backed handlers,
+auto-heartbeats, and synthetic Project App schedule entries remain temporary
+runtime compatibility surfaces. They may continue to support genuinely
+standalone agent/system duties during migration, but they cannot be the
+canonical authority for App requests or task wakes.
 
-## Mechanical Handler Exception
+Each App migration classifies every legacy entry as:
 
-Metric snapshot handlers may record metrics directly because they are
-deterministic measurement, not agent judgment. Target form after the query
-facade lands:
+- input schedule;
+- event schedule;
+- observer;
+- shared runtime maintenance;
+- explicit offline maintenance CLI; or
+- deletion because another canonical route already owns it.
 
-```typescript
-// projects/may-agent.app/agents/tech-lead/handlers/metrics-snapshot.ts
-export const create: HandlerModule["create"] = (ctx, entry) => {
-  return async () => {
-    const count = ctx.sdk.query.sessions({
-      status: "error",
-      windowMs: 3600000,
-    }).length;
-    ctx.sdk.metrics.record("session.error-count", count, {
-      measuredBy: entry.name,
-    });
-  };
-};
-```
+No legacy handler may run in parallel with its canonical replacement. App code
+must not add new `cron.json`, direct handler-to-agent dispatch, or
+`createWorkflowHandler` routes.
 
-Current mechanical handlers may still use `sdk.getDb()` directly. That should
-remain an escape hatch, not the default for new judgment/action handlers.
+## Metrics
 
-Named handler files are **hot-reloaded** — edit the file, next tick picks up
-changes. No restart needed.
+The runtime records generic scheduling health: due/late fires, admission and
+publication latency, observer duration/failure, duplicate registration, and
+restart catch-up. Apps record domain measurements through their observer or
+workflow metric capability.
 
-Trigger declarations are a separate reload surface. Editing `cron.json` changes
-the wake policy and is picked up by the scheduler config watcher. Editing a
-project app manifest (`projects/*.app/app.ts`) changes app-owned handlers,
-schedules, actions, or event routing and is picked up by the project-app
-manifest watcher or explicit runtime reload.
+Metrics observe the scheduler. A metric breach becomes a fact and follows the
+normal App/task/observation classification; it is not a second scheduler.
 
-## Handler Lifecycle Events
+## Integrity checklist
 
-Every handler fire emits lifecycle events:
-
-```
-handler.started              → handler.completed | handler.failed
-                             → handler.workflow_dispatched  (workflow-backed handlers)
-handler.skipped              (an explicit request was declined or malformed)
-handler.routed               (rare — handler forwarded to another handler)
-```
-
-| Event                         | Purpose                                                                                                                                                           |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `handler.started`             | Handler fire began                                                                                                                                                |
-| `handler.completed`           | Handler fire finished successfully                                                                                                                                |
-| `handler.skipped`             | An explicit request could not be handled, was malformed, or was deliberately declined; routine event filtering returns silently                             |
-| `handler.workflow_dispatched` | Workflow-backed handler dispatched a workflow run                                                                                                                 |
-| `handler.failed`              | Handler fire threw an error                                                                                                                                       |
-| `handler.routed`              | Handler forwarded work to another handler                                                                                                                         |
-
-Routine filtering is not a durable event. This keeps `handler.skipped` useful:
-it means work was addressed to the handler but could not proceed. For current
-counts, query:
-
-```sql
-SELECT event_type, COUNT(*) AS c
-FROM events
-WHERE event_type LIKE 'handler.%'
-  AND timestamp > strftime('%s','now')*1000 - 86400000
-GROUP BY event_type ORDER BY c DESC;
-```
-
-These events drive the `handler.success-rate`, `handler.fires-per-hour`, and
-`handler.p95-duration` metrics.
-
-## Auto-Heartbeat
-
-Registered agents with matching heartbeat workflows get auto-generated trigger
-entries:
-
-- Hash-based offset (spreads heartbeats evenly)
-- 30-minute default interval
-- Opt-out: `"heartbeat": false` in agent.json
-
-This loader also recognizes app-local agents for compatibility. New app-owned
-recurring responsibility should use an app schedule and owner workflow, not an
-additional agent heartbeat for the same responsibility.
-
-## Implementation
-
-All paths below are relative to the platform repo (`projects/may-agent/`):
-
-- **Trigger scheduler class:** `src/app/cron.ts` (historical name)
-- **Handler loading:** `src/app/loader/handler-loader.ts` via the `src/app/agent-loader.ts` compatibility surface
-- **Agent/project discovery:** `src/app/loader/agent-discovery.ts` (scans both `agents/` and `.app/agents/` under projects)
-- **Auto-heartbeat:** `generateAutoHeartbeats()` in `src/app/loader/heartbeat-loader.ts`
-- **Workflow-backed handler adapter:** `createWorkflowBackedHandler()` (internal) wraps `createWorkflowHandler()` from `@may-agent/sdk`
+- One shared scheduler owns timer mechanics for all canonical Apps.
+- Every App schedule has exactly one input or event destination.
+- Input schedules create correlated inbox obligations; event schedules create
+  facts and no callerless inbox items.
+- Observers return facts and never launch model work or mutate durable state.
+- Timer/task coalescing happens only after current intent and trigger evidence
+  are durable.
+- Reload is atomic and cannot duplicate timers, observers, or subscriptions.
+- Only the long-running host fires schedules.
+- Legacy cron handlers never dual-consume work with canonical routes.

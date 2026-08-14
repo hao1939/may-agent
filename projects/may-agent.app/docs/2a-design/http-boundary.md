@@ -1,176 +1,153 @@
-# HTTP API and WebUI Boundary
+# HTTP API And Web UI Boundary
 
 **Design status:** Accepted.
-**Implementation status:** Implemented; compatibility endpoints remain thin
-adapters over the same daemon/event and read-model boundaries.
+**Implementation status:** Bounded read and control adapter implemented;
+compatibility endpoints are converging on canonical App admission, fact, and
+deterministic-control paths.
 
 ## Purpose
 
-The HTTP adapter is the browser-facing read and control boundary for May-agent.
-It serves the default WebUI, exposes bounded read models, streams live events,
-and translates human controls into the same daemon/event paths used by CLI,
-Telegram, and May Console.
-
-It is infrastructure, not a project controller:
+HTTP is the browser-facing adapter for bounded reads, live observation, and
+typed ingress. It is not an App, project controller, workflow dispatcher, or
+second runtime.
 
 ```text
 browser
-  -> HTTP read model or canonical control event
-  -> daemon/runtime authority
-  -> project, task, session, metric, or event state
+  -> bounded read
+     or App admission / fact publication / deterministic control
+  -> canonical daemon authority
+  -> App request, task, session, metric, event, or delivery projection
 ```
-
-The adapter must not own project strategy, task acceptance, workflow policy, or
-another copy of runtime state.
 
 ## Source and process ownership
 
-There is one runtime binary: `may-agent`. Web mode runs with
-`may-agent --web`; deployment may use a separate process group, but it executes
-the same binary.
-
-Current source ownership:
-
 ```text
-projects/may-agent/src/app/http/       # HTTP, websocket, and read-model adapter
-projects/may-agent/packages/webui/static/  # editable default browser UI
-projects/platform/ui/                 # generated served UI target
-projects/<id>.app/ui/                 # optional independent domain UI
+projects/may-agent/src/app/http/           # HTTP/websocket adapter
+projects/may-agent/packages/webui/static/  # editable default UI
+projects/platform/ui/                      # generated served target
+projects/<id>.app/ui/                      # optional domain UI
 ```
 
-Edit the default UI only under `projects/may-agent/packages/webui/static`, then run
-`bun run ui:sync`. Do not hand-edit the generated platform target. A
-project-specific UI remains owned by its app and uses the shared HTTP/control
-contracts rather than private runtime storage.
+The same `may-agent` binary owns the runtime. Web mode may run in a separate
+process group, but it uses the same control/read contracts and cannot claim App
+work independently.
+
+Edit the default UI only in `packages/webui/static`, then generate the served
+copy with `bun run ui:sync`. Domain UIs use stable HTTP/control contracts rather
+than private runtime storage.
 
 ## Read boundary
 
-GET endpoints may aggregate bounded SQLite projections, task read models, and
-owned artifacts. They return an explicit API model rather than exposing table
-rows or filesystem layout as the public contract.
+GET endpoints return bounded explicit API models, never database rows or
+filesystem layout as a public contract. A read model:
 
-A read model should:
+- names its source and freshness/measurement time;
+- distinguishes missing, unknown, stale, and invalid state;
+- uses stable App request, project, task, execution, event, metric, alert, and
+  delivery identities;
+- bounds timelines, transcripts, summaries, and collections;
+- preserves canonical task generation, Conditions, readiness, and integrity
+  findings; and
+- surfaces read/projection failure without inventing domain meaning.
 
-- identify its source and measurement/freshness time;
-- distinguish missing, unknown, stale, and structurally invalid data;
-- use stable project, task, session, workflow, event, metric, and alert IDs;
-- bound timelines, transcripts, completion summaries, and large collections;
-- preserve canonical task phase, generation, Conditions, readiness, and
-  integrity findings; and
-- surface trace/read failures without changing the underlying domain meaning.
+Stable families include health/overview, App inbox/request health, events and
+traces, agents and executions, projects/tasks, metrics/alerts, delivery, and
+terminal transport. The executable server route table remains the endpoint
+catalog.
 
-The server may read canonical task state to build a projection. The browser
-does not infer controller eligibility or write a repaired interpretation back.
+The server may use internal stores to build these projections. The browser
+cannot write inferred state back or become a reconciler.
 
-The executable route table in `projects/may-agent/src/app/http/server.ts` is the current endpoint
-catalog. Stable API families include:
+## Write boundary
 
-| Family | Responsibility |
-| --- | --- |
-| Health and overview | Liveness, stats, digest, and bounded dashboard readouts |
-| Events and traces | Event queries, delivery health, graph detail, ingress, and live websocket updates |
-| Agents and sessions | Agent identity, activity, transcript/result detail, evaluation, and steering |
-| Projects and tasks | Project readout, canonical task collection/detail, bounded completions, artifacts, and comments |
-| Metrics and alerts | Current metric/alert state, history, calibration, and explicit resolution |
-| Terminal | Shared browser terminal profiles and websocket transport |
+Every state-changing request enters exactly one path:
 
-Do not duplicate the full route list here; it changes more often than the
-boundary.
-
-## Write and control boundary
-
-State-changing HTTP actions enter one of two paths:
-
-1. a canonical event/control intent sent through the daemon; or
-2. a dedicated infrastructure service that owns the mutation and emits its
-   evidence.
+1. **App input admission** for addressed work;
+2. **fact publication** for a changed observation;
+3. **declared App action** translated to App input;
+4. **exact task/approval control** owned by the task runtime; or
+5. **deterministic runtime control** owned by infrastructure.
 
 Examples:
 
 | Human intent | Canonical path |
 | --- | --- |
-| Start or steer chat/session | `chat.start.requested` or `session.steer.requested` |
-| Cancel a session | `session.cancel.requested` |
-| Comment on a project | `project.comment.created` |
-| Invoke an app action | Declared action endpoint emits its semantic event directly |
-| Reload/restart runtime | `runtime.*.requested` |
-| Resolve an alert | Metric service/command with alert and owner evidence |
+| Ordinary conversation | Admit one request to the `may` App |
+| Explicitly steer/cancel session | Exact session control |
+| Comment on project | Publish `project.comment.created`; declared App subscription may admit a correlated request |
+| Invoke App action | Discover schema, validate, call `toInput`, admit App request |
+| Submit approval | Update exact owning task/Condition through typed control |
+| Reload/restart/shutdown | Deterministic runtime control |
+| Publish provider/lifecycle fact | Validated fact ingress |
 
-`POST /api/events` is the generic canonical event ingress. It validates the
-envelope and hands it to the daemon path; it is not permission to invent domain
-events or bypass an app's declared actions.
+`POST /api/events` is fact ingress only. It is not permission to invent domain
+commands, address an owner by fallback, or bypass App actions.
 
-Project comment ingress returns the persisted `project.comment.created` event
-ID. Exactly one correlated `project.owner.reviewed` summarizes the owner's
-decision and references any durable tasks. The HTTP event receipt never means
-those tasks or downstream work completed.
+Receipts state exactly what became durable: request ID, event ID, task/control
+operation ID, or admission failure. An HTTP `2xx` never proves owner handling,
+task convergence, human delivery, or domain completion.
 
-The adapter must not:
+## App and project boundary
 
-- write task files or task phases directly;
-- execute project workflows from hard-coded project routes;
-- mutate SQLite with ad hoc SQL when a service/command owns the change;
-- turn a successful POST into a domain-completion claim; or
-- create a second owner, retry, or scheduling policy.
+Project comments and actions are different:
 
-## Project and task boundary
+```text
+comment -> fact -> declared subscription -> App input
+action  -> validate declared schema -> App input
+```
 
-Generic project pages consume the shared read model described by
-[Default Project UI](default-project-ui.md). Completed achieve tasks remain out
-of the live graph; bounded completion evidence supports old task links and
-recent activity. `state.json` remains canonical and `tree.json` remains a
-disposable projection.
+A comment may instead feed a task subscription when its semantics are a
+deterministic changed fact. This classification belongs to the loaded App and
+must have one actionable authority.
 
-Domain-specific browser panels may present deeper AKS, Evaluation, Scout, or
-other facts. They call stable artifact/event/action APIs and do not query
-private SQLite tables or derive task meaning independently.
+Actions never emit an actionable semantic event as a shortcut. The host admits
+the translated input and returns its App request identity. The App may complete,
+delegate, or attach a task.
 
-Project actions are declared by the app. The browser discovers their schemas
-from the loaded runtime and invokes a selected action through its dedicated
-project endpoint. The runtime validates the input, emits the action's semantic
-event, and returns that event ID. It does not parse source code or create an
-action wrapper event.
+Generic project pages consume shared read models. Domain panels may present
+deeper facts/artifacts but cannot query private SQL, read task files, or infer
+task meaning independently.
 
 ## Event and websocket boundary
 
-Historical event queries use bounded HTTP reads. Live observation uses the
-websocket event stream. Both expose the same canonical envelopes and trace IDs.
+Historical event queries are bounded HTTP reads. Live websockets stream the
+same canonical facts and projection changes.
 
-Websocket delivery is observation, not event acceptance. A browser subscriber
-does not satisfy owner delivery or a typed event pair merely by receiving a
-frame.
+Browser receipt of a websocket frame is observation only. It does not satisfy
+semantic event delivery, App request handling, task work, or human delivery.
+
+Trace graphs show causal evidence and links to authoritative App/task/delivery
+objects. They do not reconstruct an event-pair work lifecycle in the browser.
 
 ## Files and path safety
 
-Browser requests use stable project and artifact identifiers. Server path
-resolution must remain inside declared project/app roots. Absolute filesystem
-paths in evidence remain text unless a dedicated safe artifact endpoint admits
-them.
+Requests use stable project, App, task, execution, and artifact identifiers.
+Server resolution remains inside declared App/workspace/artifact roots.
+Absolute paths in evidence are inert text unless a dedicated safe artifact
+endpoint admits them.
 
-API routes are matched before static and project UI routes. One-project
-deployment uses the same `PROJECTS_ROOT/*` shape as multi-project deployment;
-there is no special `/project` filesystem contract.
+API routes match before static and domain UI routes. The browser never supplies
+an arbitrary server filesystem root.
 
 ## Compatibility
 
-Compatibility endpoints are acceptable when they provide a useful ergonomic
-alias and still enter the canonical event/service boundary. New code uses
-canonical events and current read models. Compatibility aliases do not define a
-second payload, lifecycle, mutation authority, or project execution path.
+Compatibility endpoints may preserve old client shapes only when they
+normalize immediately into one canonical admission/fact/control operation.
+They cannot define a second payload meaning, lifecycle, task mutation path,
+owner fallback, or execution route.
 
-The HTTP adapter and read models use the shared database/schema modules.
-`projects/may-agent/src/lib/db/schema.ts` remains the sole schema/migration
-owner.
+Compatibility responses should include the canonical identity so clients can
+move without relying on legacy event-pair or session-follow-through behavior.
 
 ## Integrity checklist
 
-- Default UI source and generated served assets have distinct ownership.
-- Reads are bounded projections with freshness and explicit unknown/error state.
-- Writes use canonical daemon events or a dedicated infrastructure service.
-- An HTTP event receipt is never presented as delivery or completion.
-- Project/task meaning remains in app-owned canonical state.
-- Browser logic does not implement readiness, reconciliation, or repair policy.
-- Event streaming does not count as owner delivery.
-- Paths remain within admitted roots.
-- Route compatibility adds no second semantics.
-- The HTTP layer contains no project-specific controller logic.
+- Reads are bounded projections with source, freshness, and honest unknowns.
+- Every write maps to exactly one App admission, fact, exact task control, or
+  runtime control.
+- An HTTP receipt never appears as semantic completion.
+- App/task meaning remains in canonical runtime and App-owned state.
+- Browser/websocket observation never counts as delivery acceptance.
+- Actions translate to App input and do not publish command-like events.
+- Paths stay within admitted roots.
+- Compatibility adds no second semantics or actionable route.
+- The HTTP layer contains no project-specific workflow/task controller logic.

@@ -1,372 +1,283 @@
-# Events, Delivery, And Inbox
+# Events, Delivery, And App Inboxes
 
 **Design status:** Accepted.
-**Implementation status:** Implemented for canonical envelopes, delivery
-acceptance, owner inbox routing, app-owner open-to-resolved follow-through,
-pair tracking, trace closure, and bounded retention.
+**Implementation status:** Canonical facts, App subscriptions, task
+subscriptions, and App inbox admission are implemented; legacy owner-inbox and
+event-pair work lifecycles are being removed.
 
 ## Purpose
 
-An event is a durable signal that another component, owner, session, workflow,
-or human can react to.
+An event records a fact that crossed a boundary and may wake an explicitly
+declared consumer.
 
 ```text
-emit -> persist -> target delivery -> owner fallback -> typed response/state
+publish fact -> persist -> match declared routes -> persist resulting obligation -> acknowledge
 ```
 
-Pure history or facts with no possible reaction belong in state, logs, metrics,
-or knowledge. Events are not decorative audit rows.
+An event does not own work, promise a response, or launch an agent. Addressed
+work lives in an App inbox. Durable desired work lives in an App task. Facts
+with no actionable obligation remain observation only.
 
-Read [system-model.md](system-model.md) for the relationship among events,
-delivery, pairs, traces, and domain entities. Read
-[event-graph.md](event-graph.md) for causal graph details.
-Read [storage.md](storage.md) for event-body storage and retention invariants.
+Read [system-model.md](system-model.md) for the relationship among requests,
+tasks, facts, and execution; [agent-app.md](agent-app.md) for authoring routes;
+and [event-graph.md](event-graph.md) for causal graph details.
 
-## Canonical Envelope
+## Authoring envelope
 
-Every persisted event uses one two-layer shape:
+Apps, observers, and workflows publish the stable public shape:
 
 ```ts
-type EventEnvelope<TData extends Record<string, unknown>> = {
-  id?: number;
+type AppEvent<TData = unknown> = {
   type: string;
-  source: string;
-  owner: string;
-  target?: Record<string, unknown>;
-  urgency?: "low" | "normal" | "high" | "immediate";
-  ttl_ms?: number;
-  timestamp?: number;
-  visibility?: "default" | "detail";
-  trace?: {
-    traceId: string;
-    parentEventId?: number;
-    links?: Array<{
-      eventId: number;
-      type?: "reference" | "closure";
-      label?: string;
-    }>;
-  };
   data: TData;
+  source?: string;
+  owner?: string;
+  target?: {
+    appId?: string;
+    project?: string;
+    taskId?: string;
+    executionId?: string;
+    sessionId?: string;
+    metricId?: string;
+    owner?: string;
+    human?: boolean;
+  };
+  urgency?: "low" | "normal" | "high" | "immediate";
 };
 ```
 
-Envelope fields belong to infra routing, ownership, urgency, retention, and
-causality. Event-specific facts belong in `data`.
+`type` and `data` describe the fact. `target` narrows its intended domain or
+exact runtime object. `source`, `owner`, and `urgency` preserve attribution and
+operational context; `owner` is not a fallback instruction to create work.
 
-Authoring adapters may accept flat compatibility fields or infer source/owner,
-but they normalize before persistence. Handlers read domain fields from
-`event.data`. New external/HTTP producers send the complete envelope.
+The host adds persistence identity, time, trace, retention, and delivery
+metadata. Compatibility adapters may normalize older flat envelopes only at an
+explicit ingress boundary; canonical App code reads typed `event.data` and
+`event.target`.
 
-## Owner And Target
+## Three routing outcomes
 
-`target` identifies the intended consumer or domain object. `owner` identifies
-who is accountable if targeted delivery fails.
-
-```text
-matching target consumer -> accepts responsibility
-no matching consumer      -> queryable owner inbox accepts
-no owner route            -> unhandled and surfaced to ops health
-```
-
-An owner is a backstop, not necessarily the first responder. Human ownership
-uses `human:<role>`. Agent ownership uses `agent:<name>`. Project events should
-target the project and resolve its configured owner.
-
-Identifiers used by both routing and domain handling may appear in typed
-`target` and `data`. They have different roles: `target` routes; `data` gives
-the consumer the domain context. Compatibility extraction of `projectId`,
-`project_id`, or flat fields belongs at ingress only.
-
-## Durability And Reliability
-
-“Durable” means the event and trace are persisted for audit, reconciliation,
-and owner review. The in-process bus is not a general durable queue and does not
-promise automatic exactly-once replay.
-
-The runtime guarantees:
-
-- durable recording at boundaries that require it;
-- explicit delivery acceptance;
-- queryable owner fallback for unclaimed owned work;
-- overdue delivery and missing-response detection;
-- idempotent reconciliation paths where a continuation can repeat;
-- referential retention for events linked to open work.
-
-Persistence is not proof of execution. Delivery acceptance is not proof of
-completion.
-
-### Body storage
-
-The event row always keeps bounded routing, delivery, causality, and common
-correlation fields. A small bounded body may remain inline. A larger body is
-atomically written to `.state/event-bodies/<sha256>.json` before the row is
-committed; `data` then contains a bounded compatibility projection and artifact
-reference. Content-addressed bodies are immutable and may be shared.
-
-Consumers that only route, correlate, or measure an event must not load the
-full body. Detail/audit readers resolve the reference when full content is
-actually required.
-
-## Delivery Acceptance
-
-Delivery metadata lives on the original event:
+The host matches only declared routes:
 
 ```text
-delivery_status = pending | accepted | unhandled
-accepted_by
-accepted_at
-delivery_route = direct | owner_inbox | noop
-delivery_note
+App subscription  -> pure toInput(event) -> correlated App inbox request
+task subscription -> pure resolve(event) -> persisted TaskIntent and trigger
+exact task target -> wake that task identity
+no actionable route -> retain as observation/unhandled fact
 ```
 
-Only a component taking responsibility reports acceptance:
+An App subscription has a stable subscription ID and creates a request only
+when its translator returns a valid input. The idempotency key derives from App,
+subscription, and event identity.
 
-- matching event consumer or workflow-dispatch binding;
-- targeted session/runtime controller;
-- receiving human/channel adapter;
-- queryable owner inbox.
+A task subscription declares or revises desired state. The host persists the
+latest intent and exact trigger before coalescing the stable task ID in its
+queue. A targeted task wake does not run broad resolution.
 
-A project app selected as the direct consumer does not also emit
-`owner.inbox.reviewed`. That review is reserved for work actually accepted by
-the owner-inbox fallback; using it to acknowledge direct lifecycle facts can
-feed those facts back into task reconciliation.
+The same fact may reach both an App and task subscription only when the App
+explicitly declares and tests two distinct durable obligations. It must never
+be consumed by both a legacy and canonical actionable path.
 
-Observation and outcome events such as daemon heartbeats, workflow dispatch
-facts, evaluator results, routed metric feedback, and review records are
-accepted directly by the evidence projection. An `owner` on those facts is
-attribution, not a request to create owner work.
+There is no target-first owner fallback, `inbox.accepts`, arbitrary `onEvent`
+execution, or generic rule that turns an unhandled fact into owner work.
 
-DbWriter, logging, passive metrics, UI tailing, graph projection, and unrelated
-broad subscribers do not count as delivery.
+## Addressed requests
 
-For asynchronous work, acceptance means “queued or started responsibly,” not
-“finished.” The normal accepted path updates the event row; it does not emit an
-`event.accepted` event.
+Addressed input enters the destination App directly rather than masquerading as
+an event commitment:
 
-## Owner Inbox
+- human input enters the `may` App;
+- App delegation creates a child App inbox item;
+- an App action translates validated parameters to App input;
+- an input schedule creates a time-correlated App input; and
+- an App subscription translates a fact into an independent request only when
+  that fact genuinely requires its own disposition.
 
-The owner inbox is the durable pull route for owned events without a specialized
-consumer when the event represents actionable work. Explicit work candidates
-include messages, escalations, metric alerts, owner requests, feedback, and
-comments. An otherwise unknown owner-addressed request also remains visible
-rather than being silently discarded. Inbox acceptance means the item is
-visible to the owner; it is progress, never completion.
+An unknown App address is rejected and retained as a visible admission
+failure. It does not fall back to a generic owner inbox or May.
 
-An unhandled `message.created` whose `to` and `owner` both name an app owner
-wakes that app's stable owner task through `project.owner.requested`. The task
-trigger retains the original message event ID and content. A specialized app
-message selector keeps precedence, so infrastructure does not duplicate
-domain-specific handling.
+The inbox item persists `pending -> handling -> done`, with claims, lease
+fencing, dependency links, restart recovery, and delivery correlation owned by
+the host. The App sees only its typed request and dependency observation. It
+returns `complete`, `delegate`, or `task`.
 
-The owner task may answer directly or delegate through task children. Waiting,
-attention, task creation, task update, and owner acceptance emit progress while
-the inbox pair remains open. Only verified convergence with no live delegated
-work emits `message.resolved` with a closure link to the original message.
-The periodic event-pair pass re-wakes any open or orphaned owner message; age
-alone never closes unfinished owner work.
+## Delivery acceptance
 
-Terminal follow-ups include:
+Event delivery metadata answers whether a declared consumer accepted the fact,
+not whether the resulting work finished. The durable acknowledgement point is:
 
-- `message.resolved`;
-- `project.owner.reviewed`;
-- a project/task/problem event;
-- `escalation.resolved` or `escalation.dismissed`;
-- an explicit evidence-backed no-op event.
+| Route | Accepted after |
+| --- | --- |
+| App subscription | translated input is validated and inbox admission is durable |
+| Task subscription | resolved intent and exact trigger are durable |
+| Exact task target | task wake/trigger is durably correlated |
+| Human/channel adapter | adapter accepts the outbound delivery operation |
+| Observation-only projection | projection explicitly accepts responsibility for that evidence |
 
-Stale inbox work becomes an orphaned owner-inbox pair. An orphan is a recovery
-signal, not a terminal state. Event rows have no generic mutable review status;
-use delivery metadata and typed pair state.
+Logging, UI tailing, passive metrics, database writing, and unrelated broad
+subscribers do not count as semantic acceptance.
 
-## Typed Response And Pair Tracking
+For asynchronous work, accepted means “the correct durable owner now has it,”
+not “finished.” Completion remains in the App inbox item, task resource,
+delivery operation, or other owning domain record.
 
-Some events open a commitment with an expected typed response:
+Unknown unaddressed facts may be marked unhandled and surfaced operationally.
+Unknown addressed work is an admission failure. Those are different defects.
+
+## Results and correlation
+
+Requests and delivery operations carry their own durable correlation instead of
+opening event pairs:
 
 ```text
-opening event -> accepted work -> closing event
-              -> deadline passes -> orphan surfaced
+May request -> child App request -> optional task -> child result
+            -> May review -> delivery operation -> receipt -> May completion
 ```
 
-`event_pair_runs` tracks whether that response arrived in time. Pair matching
-uses the opening event id when available and a stable domain correlation key
-only where an exact event relation cannot yet be carried.
+An App parent waits on the exact child App, task, or session identity. A task
+waits on exact Conditions. A human response waits on its channel delivery
+operation. Events provide causal evidence and wakes along those relationships;
+they do not recreate the relationships as opener/closer pairs.
 
-Examples:
+Escalation is an explicit cross-owner request linked to its source App request
+or task. Its resolution wakes that source obligation. Metric alert state remains
+a metric projection; a breach event may wake work but does not own its result.
 
-| Opening                     | Closing                                            |
-| --------------------------- | -------------------------------------------------- |
-| `project.owner.requested`   | `project.owner.reviewed`                           |
-| `escalation.created`        | `escalation.resolved` or `escalation.dismissed`    |
-| `cli.task.requested`        | `cli.task.completed`, `failed`, or `orphaned`      |
-| `runtime.restart.requested` | runtime restart result event                       |
-| outbound human message      | `channel.delivery.completed` or delivery failure   |
-| inbound human request       | fulfilled answer or verified source-work result     |
+Trace closure answers which evidence fulfilled an earlier cause. It is useful
+for audit but cannot replace inbox/task/delivery completion.
 
-Messages may carry two existing commitments: channel delivery and the source
-work's semantic result. Delivery-only replies and digests close after confirmed
-delivery. Action requests remain linked to the source task, escalation, or
-owner-inbox pair until their declared `expectedClosure` arrives. This is a
-derived message projection, not a new work authority or a task per message.
-
-A proactive admission result that suppresses delivery must still close or
-transfer the semantic commitment. The review record alone is evidence of May's
-judgment; it is not proof that `handle`, `route`, or `clarify-producer`
-finished. Owner acceptance proves transfer but never completion. Pair tracking
-keeps the commitment open until the intended result has verified closure proof.
-
-Not every event is paired. `metric.breach` uses the metric-alert entity for its
-open/resolved lifecycle. An observation/result event with no promised later
-response is normally unpaired.
-
-Pair closure records a trace closure link atomically. Pair status answers
-whether the expected response arrived; the trace link answers which event
-fulfilled the earlier commitment.
-
-## Lifecycle Separation
-
-| Record               | Question                                                   |
-| -------------------- | ---------------------------------------------------------- |
-| Event delivery       | Did a responsible consumer accept the signal?              |
-| Event pair           | Did an expected typed response arrive before its deadline? |
-| Trace                | What caused the work and which event fulfilled it?         |
-| Domain entity        | What is true now for the project/task/alert/escalation?    |
-| Session/workflow run | How did this bounded execution attempt end?                |
-
-Never infer project success from pair closure or task acceptance from workflow
-completion.
-
-## Core Event Vocabulary
-
-The runtime type definitions are the exhaustive executable reference. The
-design keeps the core cross-boundary vocabulary small.
-
-### Human And Session
-
-- `human.input.received` — transport-neutral human input root;
-- `chat.start.requested` — bind/create a conversation container;
-- `session.steer.requested` — deliver one turn to an existing session;
-- `session.cancel.requested` — targeted cancellation;
-- `session.start`, `session.idle`, `session.end` — execution/conversation facts;
-- channel delivery events — prove a result reached the human surface.
-
-Exactly one semantic child intent follows each free-form human input root.
-
-### Project
-
-- `project.owner.requested` / `project.owner.reviewed`;
-- `project.task.reconcile.started`, `project.task.reconcile.skipped`, and
-  `project.task.reconciled` are controller observations, not scheduling commands;
-- domain and provider observations wake tasks through an app resolver or an
-  exact `target.taskId`;
-- `project.problem.investigation.requested` / `project.problem.resolved` /
-  `project.problem.escalated`;
-- `project.comment.created` and project-specific typed actions.
-
-`project.comment.created` is the default app-intent receipt. Every persisted
-comment produces exactly one correlated `project.owner.reviewed` with a bounded
-summary and task references. Durable work or waiting lives in the referenced
-task and its Conditions. A declared typed action is an optional discoverable
-input schema that emits its semantic event directly; action wrapper events are
-not part of the contract.
-
-Historical assignment, completion, review, planning, execution, dispatch, and
-finish task events are not live ingress aliases.
-
-### Metrics And Escalation
-
-- `metric.breach`, `metric.stalled`, `metric.recovered`;
-- `metric.alert_judged` for owner judgment;
-- `escalation.created`, `escalation.resolved`, `escalation.dismissed`.
-
-Metrics wake judgment; they do not choose the fix. Escalation is reserved for
-cross-owner blockers.
-
-### Runtime And Execution
-
-- timer/handler/workflow/session lifecycle facts;
-- `workflow.owner.requested` for blocked non-project top-level workflows;
-- `cli.task.requested`, `started`, `completed`, `failed`, `orphaned`;
-- `runtime.*.requested` plus typed result/failure events;
-- `guard.triggered` and `skill.loaded` as diagnostic evidence, not owner work by
-  default.
-
-## Human-Rooted Traces
+## Human-rooted flow
 
 ```text
-human.input.received
-  -> exactly one semantic intent
-  -> session/workflow/project/runtime work
-  -> terminal evidence
-  -> channel delivery
+human input
+  -> May inbox request
+  -> direct result or child App dependency
+  -> May result review
+  -> channel delivery operation
+  -> delivery receipt
+  -> May request done
 ```
 
-A persistent chat session is a container, not a trace. Each human turn gets a
-new trace unless it is explicitly replying within a referenced notification or
-result trace.
+A persistent chat is a conversation container, not the request authority or a
+permanent trace. Each admitted human turn has its own request identity. Reply
+anchors and traces help recover context; they do not decide which unfinished
+request owns the response.
 
-## Workflow Blocking
+Direct typed runtime controls may bypass owner judgment, but their result and
+delivery remain linked to the originating May request.
 
-A workflow ends with local `done` or `blocked`. Nested blockers return to the
-parent synchronously. At a top-level project boundary:
+## Core fact vocabulary
 
-- task workflows return blocked evidence to the app controller, which records
-  attention; the controller passes explicit task-binding metadata and only an
-  admitted `needs-owner` task result causes sequential owner handoff through the
-  same task key;
-- project workflows without task context wake `project.owner.requested`;
-- non-project workflows wake `workflow.owner.requested`.
+The executable schemas remain authoritative. Cross-boundary vocabulary stays
+small and expresses facts, not work queues.
 
-The workflow itself does not emit an external escalation merely because it is
-blocked. The caller/owner decides whether the next action crosses an ownership
-boundary.
+### Human and execution
 
-## Retention
+- normalized human ingress and channel delivery facts;
+- `session.start`, `session.idle`, and `session.end`;
+- workflow/execution result and failure facts;
+- targeted cancellation, approval, and runtime-control facts where a shared
+  controller owns deterministic handling.
 
-Events are operational evidence, not permanent event sourcing. The base event
-window is short. Retention protects:
+Ordinary human language is admitted to May rather than routed through a generic
+event-owner fallback.
 
-- events referenced by open pairs or owner inbox work;
+### App and project
+
+- `project.comment.created` and `project.owner.requested` may be explicit App
+  subscriptions when the App owes a distinct result;
+- domain/provider observations feed task subscriptions or projections;
+- task reconciliation lifecycle events are evidence, not scheduling commands;
+- an event with `target.taskId` is an exact wake; and
+- typed App actions create App input rather than publishing an actionable event
+  shortcut.
+
+A project comment is not classified merely by transport. A human-addressed
+comment that needs acknowledgment becomes an App request; a provider-like
+change fact that deterministically revises desired work belongs to a task
+subscription. If one event type carries both meanings, its translators must
+classify content explicitly or the producer should publish clearer types.
+
+### Metrics and escalation
+
+- metric breach, stall, and recovery events are measured facts;
+- escalation creation and resolution represent an explicit ownership-boundary
+  dependency; and
+- alerts and escalations keep their current state in their owning projection or
+  source obligation, not in event delivery rows.
+
+### Runtime and diagnostics
+
+Timer, observer, scheduler, session, workflow, guard, and skill facts are
+normally diagnostic or wake evidence. They create work only through an explicit
+subscription or exact target.
+
+## Schedules and observers
+
+An event schedule publishes a typed fact through the shared scheduler. It does
+not create an inbox item and does not replay missed facts. An input schedule is
+not an event route; it admits a correlated App request and applies its declared
+catch-up policy.
+
+An observer reads current external state and returns facts for the host to
+publish after a successful bounded run. It cannot mutate inbox/task state or
+start model execution. Replaying a level observation is safe because request
+admission and task intent use stable idempotency/correlation.
+
+## Durability and retention
+
+“Durable event” means the fact and its causal metadata are persisted for audit
+and reconciliation. The in-process bus is not a general work queue and does not
+promise implicit exactly-once replay.
+
+The event row retains bounded routing, delivery, causality, and correlation
+metadata. Large immutable bodies may be stored content-addressably before the
+row commits. Routing consumers use the bounded projection; audit/detail readers
+resolve the full body only when required.
+
+Retention protects:
+
+- facts referenced by unfinished App requests, task triggers, Conditions, or
+  delivery operations;
 - retained trace parents and closure links;
-- human roots/results whose delivery evidence is still required;
-- other explicit open-work references.
+- human roots/results whose delivery evidence is still required; and
+- explicit audit holds.
 
-After referential protection, old detail may be pruned before roots, delivery,
-and closure evidence. Long-term domain truth belongs in projects, tasks,
-metrics, knowledge, reports, or domain artifacts.
+After referential protection, old event detail may be pruned. Long-term truth
+belongs in App requests, tasks, projects, metrics, knowledge, reports, or domain
+artifacts.
 
-## Schema Boundary
+## Operational audit
 
-The live schema has one event model. Delivery uses `delivery_status`,
-`accepted_by`, `accepted_at`, `delivery_route`, and `delivery_note`. Domain
-state uses typed events and `event_pair_runs`; there are no generic mutable
-`status`, `handled_by`, `result`, `reason`, or `retry_count` event columns.
+Operational checks distinguish:
 
-Authoring conveniences normalize at ingress into this canonical envelope.
-Runtime readers and examples use only the canonical schema and do not maintain
-a second legacy lifecycle.
+- unhandled observation from failed addressed admission;
+- delivery acceptance from semantic completion;
+- a persisted task trigger from queue pressure;
+- a correlated App request from a callerless inbox item;
+- an exact task wake from broad task resolution;
+- missing trace evidence from missing work ownership; and
+- canonical consumption from forbidden legacy dual consumption.
 
-## Operational Audit
-
-Use `query.eventDeliveryHealth()` and the event graph to check:
-
-- overdue `pending` or `unhandled` events;
-- owner-inbox fallback and orphaned inbox pairs;
-- overdue lifecycle pairs;
-- missing trace parents or closure links;
-- opener/closer trace splits;
-- human intents without terminal disposition or channel delivery;
-- bookkeeping-only acceptance hiding a missing domain consumer.
+The App inbox health surface reports pending age, claim/handling latency, lease
+reclaim, dependency waits, result admission, and delivery waits. Event health
+reports pending/unhandled facts and delivery failures; it does not infer owner
+work from them.
 
 Detailed procedures live in
 [event-runtime-audit.md](../2b-manual/event-runtime-audit.md).
 
-## Integrity Checklist
+## Integrity checklist
 
-- Event has a real possible consumer and accountable owner.
-- Persisted event has canonical envelope and `data` payload.
-- Target-first routing and owner fallback are distinguishable.
-- Passive observers never satisfy delivery.
-- Typed responses close pairs and write trace closure links atomically.
-- Domain completion remains in the owning entity.
-- Continuation/reconciliation handlers are idempotent.
-- Retention protects open work and causal evidence.
-- Compatibility is isolated and read-only.
+- Every published fact has a canonical typed envelope.
+- Every fact-to-work transition is explicitly declared and idempotent.
+- App subscriptions create correlated requests; task subscriptions persist
+  desired intent; exact task targets wake only the named task.
+- Passive observers never satisfy semantic delivery.
+- Event acceptance never implies request/task/domain completion.
+- No unhandled fact falls back to a generic owner inbox.
+- No request or task lifecycle is represented by an event pair.
+- Continuation and reconciliation are safe to repeat.
+- Retention protects causal evidence referenced by unfinished work.
+- Compatibility normalization is isolated at ingress and cannot create a
+  second actionable route.
