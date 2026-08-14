@@ -26,21 +26,33 @@ describe("AKS standing-loop convention", () => {
       frontierLimit: 3,
       selectorPath: "ci/feature-sets/master-validation.txt",
       target: "staging",
-      baselineClusterCreates: 80,
-      maximumClusterCreates: 16,
-      minimumSavingsRate: 0.8,
-      safeguardGetBeforeEachSpec: true,
+      selectorCount: 82,
+      orderedSelectorSha256:
+        "fead61bfcfe026556a0cbba74a7480a02f977be73bfe1dbededa19fa0c66c649",
+      sourceCommit: "3ed542ed57484635f24a28345faf2aeae2cf619a",
+      planPath:
+        "evidence/pipelines/master-validation-current-origin-ecca34fe-feature-journey-plan-20260814.json",
+      planSha256:
+        "ff1069a2c141d3bf1dc06c60726b2552e1b3b6a23a33df83b971332e9b983243",
+      proofMatrixPath:
+        "evidence/pipelines/master-validation-current-origin-ecca34fe-feature-journey-proof-matrix-20260814.md",
+      proofMatrixSha256:
+        "eb16b042683e244d18456647ee34d289b095cb0b0c4871168b13fc8ea2ec4ea9",
+      physicalBaselineClusterBirths: 92,
+      physicalClusterBirthsNeeded: 46,
+      physicalClusterBirthsSaved: 46,
+      physicalClusterBirthSavingsRate: 0.5,
+      safeguardGetCount: 56,
+      terminalRouteCount: 4,
+      materialization: "ready",
+      projectedMinutes: 59.132466667,
+      semanticLowerBoundBirths: 20,
+      historicalDisprovedAspiration: {
+        maximumPhysicalClusterBirths: 16,
+        minimumPhysicalClusterBirthsSaved: 64,
+        minimumSavingsRate: 0.8,
+      },
       maximumLiveCompactRuns: 3,
-      measuredIntegratedPlan: {
-        sourceCommit: "3e8f43ace9e6b20b53b6b74e720e81da3b85c659",
-        clustersNeeded: 74,
-        clustersSaved: 6,
-      },
-      measuredCrossFeatureCandidate: {
-        clustersNeeded: 63,
-        clustersSaved: 17,
-        note: "Read-only buildPlan evidence with featureJourney=true; validate again from current origin/dev before using it as a live plan.",
-      },
     });
     expect(standingLoopIntent(scenarioNormalizationTaskId).input).toEqual({
       frontierLimit: 5,
@@ -76,14 +88,27 @@ describe("AKS standing-loop convention", () => {
       priority: "P0",
     });
     expect(definition.workflow).toBeUndefined();
-    expect(definition.outcome).toContain("at most 16");
+    expect(definition.outcome).toContain("82-selector");
+    expect(definition.outcome).toContain("92 baseline physical cluster births");
+    expect(definition.outcome).toContain("46 planned births");
     expect(acceptance).toContain("one natural cross-feature journey");
     expect(acceptance).toContain("immutable-property conflict");
-    expect(acceptance).toContain("safeguard GET before every spec");
-    expect(acceptance).toContain("marginal master-validation clusters saved");
+    expect(acceptance).toContain(
+      "origin/dev@3ed542ed57484635f24a28345faf2aeae2cf619a",
+    );
+    expect(acceptance).toContain("exactly 59.132466667 projected minutes");
+    expect(acceptance).not.toContain("d0dea4bf");
+    expect(acceptance).not.toContain("47f30b08");
+    expect(acceptance).not.toContain("0706a180");
+    expect(acceptance).toContain("56 safeguard GETs");
+    expect(acceptance).toContain("historically disproved aspiration");
+    expect(acceptance).toContain("lower bound of 20 physical births");
+    expect(acceptance).toContain("integrated 46-birth safe-Pareto fallback");
+    expect(acceptance).toContain("authority-artifact drift");
+    expect(acceptance).toContain("integrated-source drift");
+    expect(acceptance).toContain("Never remove, relabel, ignore, or weaken");
     expect(acceptance).toContain("at most three actionable direct children");
     expect(acceptance).toContain("at most three compact Azure DevOps runs");
-    expect(acceptance).toContain("saves at least 64 creates");
   });
 
   test("keeps repository skill quality as one safe maintain task", () => {

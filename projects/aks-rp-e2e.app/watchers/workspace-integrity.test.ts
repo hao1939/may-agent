@@ -16,7 +16,7 @@ afterEach(() => {
 });
 
 describe("workspace integrity watcher", () => {
-  it("reports canonical health and unowned dirty worktrees without changing them", () => {
+  it("reports canonical health and unowned dirty worktrees without changing them", async () => {
     const root = mkdtempSync(join(tmpdir(), "aks-workspace-integrity-"));
     roots.push(root);
     const appDir = join(root, "sample.app");
@@ -37,7 +37,7 @@ describe("workspace integrity watcher", () => {
     git(repoDir, "worktree", "add", "-b", "task/example", recovery, "HEAD");
     writeFileSync(join(recovery, "unfinished.txt"), "recover\n");
 
-    const observation = observeWorkspaceIntegrity(appDir, repoDir);
+    const observation = await observeWorkspaceIntegrity(appDir, repoDir);
 
     expect(observation.canonical).toMatchObject({
       branch: "dev",
@@ -55,7 +55,7 @@ describe("workspace integrity watcher", () => {
     });
   });
 
-  it("does not reraise dirty worktrees already claimed by live task workspacePath", () => {
+  it("does not reraise dirty worktrees already claimed by live task workspacePath", async () => {
     const root = mkdtempSync(
       join(tmpdir(), "aks-workspace-integrity-claimed-"),
     );
@@ -100,7 +100,7 @@ describe("workspace integrity watcher", () => {
     git(repoDir, "worktree", "add", "-b", "task/example", recovery, "HEAD");
     writeFileSync(join(recovery, "unfinished.txt"), "recover\n");
 
-    const observation = observeWorkspaceIntegrity(appDir, repoDir);
+    const observation = await observeWorkspaceIntegrity(appDir, repoDir);
 
     expect(observation.counts).toMatchObject({
       worktrees: 2,

@@ -36,6 +36,19 @@ afterEach(() => {
   delete process.env.MAY_AGENT_AKS_PIPELINE_WATCHER_ADO;
 });
 
+test("scheduled provider observers do not block the May event loop", () => {
+  for (const file of [
+    "aks-pipeline.ts",
+    "aks-pull-request.ts",
+    "repo-ref.ts",
+    "scenario-test-inventory.ts",
+    "workspace-integrity.ts",
+  ]) {
+    const source = readFileSync(join(import.meta.dir, file), "utf8");
+    expect(source).not.toMatch(/\b(?:spawnSync|execFileSync|execSync)\b/);
+  }
+});
+
 describe("progressive artifact scan selection", () => {
   const completed = {
     runId: "123",

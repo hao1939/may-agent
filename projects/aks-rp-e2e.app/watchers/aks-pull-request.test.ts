@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   observePullRequest,
   pullRequestObservationEvent,
+  selectPullRequestObservations,
   summarizePullRequestReview,
 } from "./aks-pull-request.js";
 
@@ -59,6 +60,40 @@ describe("AKS pull request watcher", () => {
         mergeStatus: "succeeded",
       }),
     ).toMatchObject({ state: "abandoned" });
+  });
+
+  test("repeats actionable levels and emits terminal PRs only on transition", () => {
+    const observed = [
+      observePullRequest({
+        pullRequestId: 77,
+        status: "active",
+        mergeStatus: "succeeded",
+      }),
+      observePullRequest({
+        pullRequestId: 78,
+        status: "completed",
+        mergeStatus: "succeeded",
+      }),
+      observePullRequest({
+        pullRequestId: 79,
+        status: "completed",
+        mergeStatus: "succeeded",
+      }),
+      observePullRequest({
+        pullRequestId: 80,
+        status: "active",
+        mergeStatus: "conflicts",
+      }),
+    ].filter((value) => value !== null);
+
+    const selection = selectPullRequestObservations(observed, ["78"]);
+
+    expect(selection.activeIds).toEqual(["77", "80"]);
+    expect(selection.emitted.map((value) => value.pullRequestId)).toEqual([
+      "77",
+      "78",
+      "80",
+    ]);
   });
 
   test("includes unresolved review facts in the repeated PR observation", () => {

@@ -1,5 +1,4 @@
-import { spawnSync } from "node:child_process";
-import type { SpawnSyncReturns } from "node:child_process";
+import { execFile } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -136,16 +135,37 @@ export function scenarioTestInventoryObservationEvent(
   };
 }
 
+type CommandResult = {
+  status: number | null;
+  stdout: string;
+  stderr: string;
+  error?: Error;
+};
+
 function run(
   command: string,
   args: string[],
   cwd: string,
-): SpawnSyncReturns<string> {
-  return spawnSync(command, args, {
-    cwd,
-    encoding: "utf8",
-    timeout: 120_000,
-    maxBuffer: 8 * 1024 * 1024,
+): Promise<CommandResult> {
+  return new Promise((resolve) => {
+    execFile(
+      command,
+      args,
+      {
+        cwd,
+        encoding: "utf8",
+        timeout: 120_000,
+        maxBuffer: 8 * 1024 * 1024,
+      },
+      (error, stdout, stderr) => {
+        resolve({
+          status: typeof error?.code === "number" ? error.code : error ? 1 : 0,
+          stdout: stdout ?? "",
+          stderr: stderr ?? "",
+          ...(error ? { error } : {}),
+        });
+      },
+    );
   });
 }
 
@@ -159,7 +179,11 @@ export async function observeScenarioTestInventory(
   let observation: ScenarioTestInventoryObservation;
 
   try {
-    const fetch = run("git", ["fetch", "origin", "dev", "--quiet"], projectDir);
+    const fetch = await run(
+      "git",
+      ["fetch", "origin", "dev", "--quiet"],
+      projectDir,
+    );
     if (fetch.status !== 0) {
       observation = baseObservation(
         fetch.stderr?.trim() ||
@@ -167,7 +191,11 @@ export async function observeScenarioTestInventory(
           `git fetch origin dev exited ${String(fetch.status)}`,
       );
     } else {
-      const rev = run("git", ["rev-parse", "--verify", sourceRef], projectDir);
+      const rev = await run(
+        "git",
+        ["rev-parse", "--verify", sourceRef],
+        projectDir,
+      );
       const sourceCommit = rev.stdout?.trim() || null;
       if (rev.status !== 0 || !sourceCommit) {
         observation = baseObservation(
@@ -177,7 +205,7 @@ export async function observeScenarioTestInventory(
         );
       } else {
         worktreeDir = mkdtempSync(join(tmpdir(), "aks-scenario-inventory-"));
-        const add = run(
+        const add = await run(
           "git",
           ["worktree", "add", "--detach", worktreeDir, sourceRef],
           projectDir,
@@ -189,7 +217,7 @@ export async function observeScenarioTestInventory(
               `git worktree add ${sourceRef} exited ${String(add.status)}`,
           );
         } else {
-          const result = run(
+          const result = await run(
             "bun",
             ["scripts/check-scenario-tests.ts", "--strict", "--json"],
             worktreeDir,
@@ -209,7 +237,7 @@ export async function observeScenarioTestInventory(
     }
   } finally {
     if (worktreeDir) {
-      const removed = run(
+      const removed = await run(
         "git",
         ["worktree", "remove", "--force", worktreeDir],
         projectDir,

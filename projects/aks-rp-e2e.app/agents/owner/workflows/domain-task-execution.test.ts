@@ -46,8 +46,30 @@ function repositoryFixture(): {
   git(root, "init", "-b", "dev", repoDir);
   git(repoDir, "config", "user.name", "test");
   git(repoDir, "config", "user.email", "test@example.com");
+  mkdirSync(join(repoDir, "runner"), { recursive: true });
+  mkdirSync(join(repoDir, "scripts"), { recursive: true });
+  for (const path of [
+    "runner/check-runtime-data-policy.ts",
+    "runner/check-private-source-policy.ts",
+    "runner/schema-check.ts",
+    "scripts/check-scenario-tests.ts",
+  ]) {
+    writeFileSync(
+      join(repoDir, path),
+      "// Passing repository policy fixture.\n",
+    );
+  }
+  for (const path of [
+    "runner/live-admission-classifier.test.ts",
+    "runner/check-live-admission.test.ts",
+  ]) {
+    writeFileSync(
+      join(repoDir, path),
+      'import { test } from "bun:test";\ntest("policy fixture", () => {});\n',
+    );
+  }
   writeFileSync(join(repoDir, "base.txt"), "base\n");
-  git(repoDir, "add", "base.txt");
+  git(repoDir, "add", ".");
   git(repoDir, "commit", "-m", "base");
   git(repoDir, "remote", "add", "origin", remote);
   git(repoDir, "push", "-u", "origin", "dev");
@@ -982,6 +1004,89 @@ exit 0
           "origin/dev",
         ),
       ).toBe("");
+    } finally {
+      rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  it("repairs a rejected candidate in the same workflow before publishing it", async () => {
+    const fixture = repositoryFixture();
+    const prompts: string[] = [];
+    try {
+      const result = await execute(
+        context({
+          projectDir: fixture.repoDir,
+          workspaceDir: fixture.workspaceDir,
+          runAgent: (async (_agent: string, prompt: string) => {
+            prompts.push(prompt);
+            if (prompts.length === 1) {
+              writeFileSync(
+                join(fixture.workspaceDir, "task.txt"),
+                "task change\n",
+              );
+              writeFileSync(
+                join(fixture.workspaceDir, "runner", "schema-check.ts"),
+                "process.exit(1);\n",
+              );
+              git(
+                fixture.workspaceDir,
+                "add",
+                "task.txt",
+                "runner/schema-check.ts",
+              );
+              git(
+                fixture.workspaceDir,
+                "commit",
+                "-m",
+                "candidate with failed policy",
+              );
+            } else {
+              writeFileSync(
+                join(fixture.workspaceDir, "runner", "schema-check.ts"),
+                "// Repaired repository policy fixture.\n",
+              );
+              git(fixture.workspaceDir, "add", "runner/schema-check.ts");
+              git(
+                fixture.workspaceDir,
+                "commit",
+                "-m",
+                "repair rejected candidate",
+              );
+            }
+            return {
+              status: "done",
+              sessionId: `session-${prompts.length}`,
+              lastAssistantText: "done",
+              messages: [],
+              duration: "1s",
+              outputDir: "/tmp",
+              finishResult: { status: "success", summary: "done" },
+              structuredResult: {
+                state: "converged",
+                summary: "done",
+                evidence: [],
+                actions: [],
+              },
+            };
+          }) as WorkflowContext["runAgent"],
+        }),
+      );
+
+      expect(prompts).toHaveLength(2);
+      expect(prompts[1]).toContain("repository validation rejected it");
+      expect(result).toMatchObject({
+        type: "done",
+        output: {
+          state: "converged",
+          summary: expect.stringContaining("directly into dev"),
+        },
+      });
+      expect(git(fixture.repoDir, "show", "origin/dev:task.txt")).toBe(
+        "task change",
+      );
+      expect(
+        git(fixture.repoDir, "show", "origin/dev:runner/schema-check.ts"),
+      ).toContain("Repaired repository policy fixture");
     } finally {
       rmSync(fixture.root, { recursive: true, force: true });
     }

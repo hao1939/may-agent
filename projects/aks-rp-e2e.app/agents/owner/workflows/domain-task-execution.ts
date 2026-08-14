@@ -8,7 +8,10 @@ import {
   type WorkflowContext,
   type WorkflowResult,
 } from "@may-agent/sdk/legacy";
-import { integrateDirectlyIntoDev } from "./lib/direct-dev-integration.js";
+import {
+  AKS_DIRECT_DEV_VALIDATION_COMMANDS,
+  integrateDirectlyIntoDev,
+} from "./lib/direct-dev-integration.js";
 import {
   isRunnableScenarioNormalization,
   scenarioNormalizationInvariant,
@@ -1410,6 +1413,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     "Inspect current source and task evidence, make only the smallest accepted domain change, run scoped verification, and commit every accepted file change on the supplied task branch.",
     "This workflow publishes real domain source patches. For a disposition recheck, repo-ref wake, or unchanged wait, return hot evidence in the structured result and leave the branch unchanged; never commit an evidence-only memo merely to record the review.",
     "Do not push or create a pull request. After your converged judgment, this workflow integrates the clean accepted branch directly into dev; a dev conflict returns to you on the same task for repair.",
+    "Before any push, the workflow independently checks whitespace, runtime-data policy, private-source policy, scenario migration, schema, and live admission on the replayed candidate. Raw evidence/archive output is never a publishable deliverable.",
     "A converged result must leave the worktree clean. If work cannot be committed cleanly, return needs-owner with exact recovery evidence; use waiting only for an external fact with an exact Condition.",
     `If the truthful next step is carried by another task, create or update that holder as a direct child of ${currentTaskId ?? "the current task"} and return waiting only after the child exists or the current task has its own exact Condition.`,
     'If you already have an exact queued Azure DevOps run id, preserve that wait on this same task with condition type "pipeline-run.state", subject "pipeline-run:<runId>", and expected { field: "state", anyOf: ["completed"] } instead of prose-only waiting.',
@@ -1544,12 +1548,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const sourceBranch = expectedBranch;
   let sourceCommit = gitValue(workspaceDir, "rev-parse", "HEAD");
   let integrationProvenanceSourceCommit = sourceCommit;
-  let integration = integrateDirectlyIntoDev({
+  let integration = await integrateDirectlyIntoDev({
     repoDir,
     workspaceDir,
     sourceBranch,
     sourceCommit,
     taskBaseCommit: attemptBaseCommit,
+    validationCommands: AKS_DIRECT_DEV_VALIDATION_COMMANDS,
   });
 
   if (integration.state === "unchanged" && requiredAcceptedCommit) {
@@ -1604,13 +1609,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   if (
     integration.state === "conflict" ||
-    integration.state === "requires-replay"
+    integration.state === "requires-replay" ||
+    integration.state === "validation-failed"
   ) {
     if (integration.state === "requires-replay") {
       gitValue(repoDir, "fetch", "origin", "dev");
     }
     const replayBaseCommit =
-      integration.state === "conflict"
+      integration.state === "conflict" ||
+      integration.state === "validation-failed"
         ? integration.replayBaseCommit
         : gitValue(repoDir, "rev-parse", "origin/dev");
     const replayFacts =
@@ -1620,21 +1627,27 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
             `Conflict evidence: ${integration.error}`,
             "Resolve only this task's conflicting files and continue the cherry-pick.",
           ]
-        : [
-            `The retained source ${integration.sourceCommit} cannot be isolated from attempt baseline ${integration.taskBaseCommit}.`,
-            `Structured replay reason: ${integration.reason}.`,
-            ...(integration.mergeCommits.length
-              ? [
-                  `Merge commits in the attempted task range: ${integration.mergeCommits.join(",")}.`,
-                ]
-              : []),
-            `Replay only this task's owned change onto ${integration.targetRef}@${replayBaseCommit}; do not merge stale branch history wholesale.`,
-          ];
+        : integration.state === "validation-failed"
+          ? [
+              `The replayed candidate ${integration.sourceCommit} descends from ${integration.targetRef}@${replayBaseCommit}, but repository validation rejected it.`,
+              `Validation evidence: ${integration.error}`,
+              "Repair the rejected candidate in place and commit the correction.",
+            ]
+          : [
+              `The retained source ${integration.sourceCommit} cannot be isolated from attempt baseline ${integration.taskBaseCommit}.`,
+              `Structured replay reason: ${integration.reason}.`,
+              ...(integration.mergeCommits.length
+                ? [
+                    `Merge commits in the attempted task range: ${integration.mergeCommits.join(",")}.`,
+                  ]
+                : []),
+              `Replay only this task's owned change onto ${integration.targetRef}@${replayBaseCommit}; do not merge stale branch history wholesale.`,
+            ];
     guardWriteDispatch(ctx);
     const conflictResult = await ctx.runAgent(
       ctx.agent,
       [
-        "Reconcile the direct dev lineage for the same bounded AKS task.",
+        "Repair the same bounded AKS task before direct dev integration.",
         `Work only in ${workspaceDir}.`,
         ...replayFacts,
         "Preserve the accepted task intent, rerun scoped verification, and leave one clean linear commit lineage descending from the named origin/dev commit.",
@@ -1742,12 +1755,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       evidence: [...(ownerResult.evidence ?? []), ...finalGate.evidence],
     };
     integrationProvenanceSourceCommit = sourceCommit;
-    integration = integrateDirectlyIntoDev({
+    integration = await integrateDirectlyIntoDev({
       repoDir,
       workspaceDir,
       sourceBranch,
       sourceCommit,
       taskBaseCommit: replayBaseCommit,
+      validationCommands: AKS_DIRECT_DEV_VALIDATION_COMMANDS,
     });
   }
 

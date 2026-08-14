@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { spawnSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, resolve } from "node:path";
 import type { ProjectAppContext, ProjectAppEvent } from "@may-agent/sdk/legacy";
@@ -32,18 +32,36 @@ type WorkspaceIntegrityObservation = {
   anomalies: Array<{ path: string; kind: string }>;
 };
 
-function git(cwd: string, args: string[]): { status: number; stdout: string } {
-  const result = spawnSync("git", ["-C", cwd, ...args], {
-    encoding: "utf8",
-    maxBuffer: 16 * 1024 * 1024,
-    timeout: 60_000,
+function command(
+  executable: string,
+  args: string[],
+): Promise<{ status: number; stdout: string }> {
+  return new Promise((resolve) => {
+    execFile(
+      executable,
+      args,
+      {
+        encoding: "utf8",
+        maxBuffer: 16 * 1024 * 1024,
+        timeout: 60_000,
+      },
+      (error, stdout) => {
+        resolve({
+          status: typeof error?.code === "number" ? error.code : error ? 1 : 0,
+          stdout: stdout?.trim() ?? "",
+        });
+      },
+    );
   });
-  return { status: result.status ?? 1, stdout: result.stdout?.trim() ?? "" };
 }
 
-function worktrees(repoDir: string): Worktree[] {
-  return git(repoDir, ["worktree", "list", "--porcelain"])
-    .stdout.split(/\n\n+/)
+function git(cwd: string, args: string[]) {
+  return command("git", ["-C", cwd, ...args]);
+}
+
+async function worktrees(repoDir: string): Promise<Worktree[]> {
+  return (await git(repoDir, ["worktree", "list", "--porcelain"])).stdout
+    .split(/\n\n+/)
     .flatMap((block) => {
       const lines = block.split("\n");
       const path = lines.find((line) => line.startsWith("worktree "))?.slice(9);
@@ -58,12 +76,9 @@ function worktrees(repoDir: string): Worktree[] {
     });
 }
 
-function directoryBytes(path: string): number {
-  const result = spawnSync("du", ["-sk", path], {
-    encoding: "utf8",
-    timeout: 60_000,
-  });
-  const kib = Number(result.stdout?.trim().split(/\s+/)[0]);
+async function directoryBytes(path: string): Promise<number> {
+  const result = await command("du", ["-sk", path]);
+  const kib = Number(result.stdout.split(/\s+/)[0]);
   return Number.isFinite(kib) ? kib * 1024 : 0;
 }
 
@@ -176,10 +191,10 @@ function claimedDirtyWorktreePaths(
   }
 }
 
-export function observeWorkspaceIntegrity(
+export async function observeWorkspaceIntegrity(
   appDir: string,
   repoDir: string,
-): WorkspaceIntegrityObservation {
+): Promise<WorkspaceIntegrityObservation> {
   const state = JSON.parse(
     readFileSync(resolve(appDir, ".state/tasks/state.json"), "utf8"),
   );
@@ -196,21 +211,33 @@ export function observeWorkspaceIntegrity(
     }),
   );
   const claimedPaths = claimedDirtyWorktreePaths(appDir, repoDir);
-  const entries = worktrees(repoDir);
+  const entries = await worktrees(repoDir);
   const anomalies: WorkspaceIntegrityObservation["anomalies"] = [];
   let dirty = 0;
   let prunable = 0;
   let unownedDirty = 0;
-  for (const entry of entries) {
+  const entryStatuses = await Promise.all(
+    entries.map(async (entry) => ({
+      entry,
+      status:
+        entry.prunable || !existsSync(entry.path)
+          ? ""
+          : (
+              await git(entry.path, [
+                "status",
+                "--porcelain=v1",
+                "--untracked-files=all",
+              ])
+            ).stdout,
+    })),
+  );
+  for (const { entry, status } of entryStatuses) {
     if (entry.prunable || !existsSync(entry.path)) {
       prunable += 1;
       anomalies.push({ path: entry.path, kind: "prunable" });
       continue;
     }
-    if (
-      git(entry.path, ["status", "--porcelain=v1", "--untracked-files=all"])
-        .stdout
-    ) {
+    if (status) {
       dirty += 1;
       const normalizedEntryPath = normalizePath(entry.path);
       if (
@@ -222,14 +249,18 @@ export function observeWorkspaceIntegrity(
       }
     }
   }
-  const branch = git(repoDir, ["branch", "--show-current"]).stdout;
-  const head = git(repoDir, ["rev-parse", "HEAD"]).stdout;
-  const expectedHead = git(repoDir, ["rev-parse", "origin/dev"]).stdout;
-  const clean = !git(repoDir, [
-    "status",
-    "--porcelain=v1",
-    "--untracked-files=all",
-  ]).stdout;
+  const [branchResult, headResult, expectedHeadResult, statusResult, bytes] =
+    await Promise.all([
+      git(repoDir, ["branch", "--show-current"]),
+      git(repoDir, ["rev-parse", "HEAD"]),
+      git(repoDir, ["rev-parse", "origin/dev"]),
+      git(repoDir, ["status", "--porcelain=v1", "--untracked-files=all"]),
+      directoryBytes("/app/worktrees/aks-rp-e2e"),
+    ]);
+  const branch = branchResult.stdout;
+  const head = headResult.stdout;
+  const expectedHead = expectedHeadResult.stdout;
+  const clean = !statusResult.stdout;
   const canonical = {
     branch,
     head,
@@ -245,7 +276,7 @@ export function observeWorkspaceIntegrity(
     prunable,
     activeAttemptWorktrees: activePaths.size,
     unownedDirty,
-    workspaceBytes: directoryBytes("/app/worktrees/aks-rp-e2e"),
+    workspaceBytes: bytes,
   };
   const fingerprint = createHash("sha256")
     .update(
@@ -283,7 +314,7 @@ export async function observeWorkspaceIntegrityChanges(
   const previous = existsSync(statePath)
     ? JSON.parse(readFileSync(statePath, "utf8"))
     : {};
-  const observation = observeWorkspaceIntegrity(
+  const observation = await observeWorkspaceIntegrity(
     ctx.appPath("."),
     ctx.appPath("../aks-rp-e2e"),
   );

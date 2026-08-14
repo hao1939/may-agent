@@ -32,6 +32,8 @@ import {
   checkLiveDispatchAdmission,
   compactPlanPipelineParameters,
   collectTerminalRunEvidence,
+  candidateReviewedRunProof,
+  canonicalAggregateSpecId,
   proofMetadataMatchesSource,
   queueRunMetadata,
   queueRunPipelineParameters,
@@ -78,6 +80,7 @@ import {
   parseTaskPayload,
   pipelineWaitCondition,
   pipelineRunState,
+  publishExactDiagnosticTaskBranch,
   registerSpecLiveTrackedRun,
   preparationDecisionProblem,
   preparationHeadProblem,
@@ -86,6 +89,7 @@ import {
   reconcileRemoteTaskBranchHistory,
   remoteLeaseCommit,
   replayScenarioCandidateForDispatch,
+  reconcilePreparedTaskSource,
   reconcileSpecLive,
   resolvePriorVerificationInput,
   scenarioReplayForceWithLeaseArg,
@@ -198,6 +202,13 @@ describe("spec-live-reconciliation workflow", () => {
     });
 
     expect(accepted.problem).toBeNull();
+    expect(
+      noIntegrationDiagnosticContract({
+        allowIntegration: true,
+        preparedSourceBranch: "task/diagnostic",
+        preparedSourceCommit: sourceCommit,
+      }),
+    ).toEqual({ contract: null, problem: null });
     expect(accepted.contract).toEqual({
       artifactPath: "/tmp/diagnostic.md",
       maxReproductions: 1,
@@ -266,6 +277,228 @@ describe("spec-live-reconciliation workflow", () => {
     );
   });
 
+  test("restores an absent-remote diagnostic source only from an exact shared local branch", () => {
+    const root = mkdtempSync(join(tmpdir(), "diagnostic-local-source-"));
+    const remoteDir = join(root, "remote.git");
+    const repoDir = join(root, "repo");
+    const workspaceDir = join(root, "workflow-worktree");
+    const sourceBranch = "task/diagnostic-local-only";
+    const run = (cwd: string, args: string[]) => {
+      const result = spawnSync("git", args, { cwd, encoding: "utf8" });
+      return {
+        status: result.status ?? 1,
+        stdout: result.stdout.trim(),
+        stderr: result.stderr.trim(),
+      };
+    };
+    const mustRun = (cwd: string, args: string[]) => {
+      const result = run(cwd, args);
+      if (result.status !== 0) throw new Error(result.stderr || result.stdout);
+      return result.stdout;
+    };
+    try {
+      mustRun(root, ["init", "--bare", remoteDir]);
+      mkdirSync(repoDir, { recursive: true });
+      mustRun(repoDir, ["init"]);
+      mustRun(repoDir, ["config", "user.email", "test@example.com"]);
+      mustRun(repoDir, ["config", "user.name", "Test"]);
+      writeFileSync(join(repoDir, "README.md"), "base\n");
+      mustRun(repoDir, ["add", "README.md"]);
+      mustRun(repoDir, ["commit", "-m", "base"]);
+      mustRun(repoDir, ["branch", "-M", "dev"]);
+      const baseCommit = mustRun(repoDir, ["rev-parse", "HEAD"]);
+      mustRun(repoDir, ["remote", "add", "origin", remoteDir]);
+      mustRun(repoDir, ["push", "origin", "dev"]);
+      mustRun(repoDir, ["checkout", "-b", sourceBranch]);
+      writeFileSync(join(repoDir, "diagnostic.txt"), "prepared\n");
+      mustRun(repoDir, ["add", "diagnostic.txt"]);
+      mustRun(repoDir, ["commit", "-m", "prepared diagnostic"]);
+      const sourceCommit = mustRun(repoDir, ["rev-parse", "HEAD"]);
+      mustRun(repoDir, ["push", "origin", sourceBranch]);
+      mustRun(repoDir, ["checkout", "dev"]);
+      mustRun(repoDir, [
+        "worktree",
+        "add",
+        "--detach",
+        workspaceDir,
+        baseCommit,
+      ]);
+      mustRun(repoDir, ["push", "origin", "--delete", sourceBranch]);
+
+      const restored = restoreExactDiagnosticSource(
+        workspaceDir,
+        { sourceBranch, sourceCommit },
+        run,
+      );
+      expect(restored).toMatchObject({ accepted: true });
+      expect(restored.evidence).toEqual(
+        expect.arrayContaining([
+          `diagnostic-source-local-ref:refs/heads/${sourceBranch}`,
+          `diagnostic-source-restored-exact:${sourceCommit}`,
+        ]),
+      );
+      expect(mustRun(workspaceDir, ["rev-parse", "HEAD"])).toBe(sourceCommit);
+      expect(mustRun(workspaceDir, ["status", "--porcelain"])).toBe("");
+
+      mustRun(repoDir, ["branch", "-f", sourceBranch, baseCommit]);
+      const mismatched = restoreExactDiagnosticSource(
+        workspaceDir,
+        { sourceBranch, sourceCommit },
+        run,
+      );
+      expect(mismatched.accepted).toBe(false);
+      expect(mismatched.problem).toContain(
+        "does not contain exact prepared commit",
+      );
+
+      mustRun(repoDir, ["branch", "-D", sourceBranch]);
+      const missing = restoreExactDiagnosticSource(
+        workspaceDir,
+        { sourceBranch, sourceCommit },
+        run,
+      );
+      expect(missing.accepted).toBe(false);
+      expect(missing.problem).toContain(
+        "is absent from the workflow-owned Git ref store",
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("publishes an absent diagnostic task branch at only the exact prepared commit", () => {
+    const root = mkdtempSync(join(tmpdir(), "diagnostic-publication-"));
+    const remoteDir = join(root, "remote.git");
+    const workspaceDir = join(root, "workspace");
+    const sourceBranch = "task/diagnostic-publication";
+    const runGit = (cwd: string, args: string[]) =>
+      execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
+    try {
+      runGit(root, ["init", "--bare", remoteDir]);
+      mkdirSync(workspaceDir, { recursive: true });
+      runGit(workspaceDir, ["init"]);
+      runGit(workspaceDir, ["config", "user.email", "test@example.com"]);
+      runGit(workspaceDir, ["config", "user.name", "Test"]);
+      writeFileSync(join(workspaceDir, "README.md"), "prepared\n");
+      runGit(workspaceDir, ["add", "README.md"]);
+      runGit(workspaceDir, ["commit", "-m", "prepared diagnostic"]);
+      const sourceCommit = runGit(workspaceDir, ["rev-parse", "HEAD"]);
+      runGit(workspaceDir, ["branch", sourceBranch]);
+      runGit(workspaceDir, ["remote", "add", "origin", remoteDir]);
+
+      const published = publishExactDiagnosticTaskBranch(workspaceDir, {
+        sourceBranch,
+        sourceCommit,
+      });
+
+      expect(published).toMatchObject({ accepted: true });
+      expect(published.evidence).toContain(
+        `diagnostic-publication-created:refs/heads/${sourceBranch}@${sourceCommit}`,
+      );
+      expect(
+        runGit(root, [
+          "--git-dir",
+          remoteDir,
+          "rev-parse",
+          `refs/heads/${sourceBranch}`,
+        ]),
+      ).toBe(sourceCommit);
+      expect(
+        spawnSync(
+          "git",
+          ["--git-dir", remoteDir, "show-ref", "--verify", "refs/heads/dev"],
+          { encoding: "utf8" },
+        ).status,
+      ).not.toBe(0);
+      expect(
+        spawnSync(
+          "git",
+          ["--git-dir", remoteDir, "show-ref", "--verify", "refs/heads/main"],
+          { encoding: "utf8" },
+        ).status,
+      ).not.toBe(0);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("accepts an exact existing diagnostic remote branch without pushing", () => {
+    const sourceCommit = "a".repeat(40);
+    const calls: string[][] = [];
+    const result = publishExactDiagnosticTaskBranch(
+      "/tmp/diagnostic-publication-existing",
+      { sourceBranch: "task/diagnostic", sourceCommit },
+      (_cwd, args) => {
+        calls.push(args);
+        if (args[0] === "rev-parse") {
+          return { status: 0, stdout: sourceCommit, stderr: "" };
+        }
+        if (args[0] === "ls-remote") {
+          return {
+            status: 0,
+            stdout: `${sourceCommit}\trefs/heads/task/diagnostic`,
+            stderr: "",
+          };
+        }
+        return { status: 0, stdout: "", stderr: "" };
+      },
+    );
+
+    expect(result).toMatchObject({ accepted: true });
+    expect(result.evidence).toContain(
+      `diagnostic-publication-existing-exact:refs/heads/task/diagnostic@${sourceCommit}`,
+    );
+    expect(calls.some((args) => args[0] === "push")).toBe(false);
+  });
+
+  test("fails closed on conflicting, dirty, and non-task diagnostic publication", () => {
+    const sourceCommit = "b".repeat(40);
+    const conflictingCommit = "c".repeat(40);
+    const calls: string[][] = [];
+    const conflict = publishExactDiagnosticTaskBranch(
+      "/tmp/diagnostic-publication-conflict",
+      { sourceBranch: "task/diagnostic", sourceCommit },
+      (_cwd, args) => {
+        calls.push(args);
+        if (args[0] === "rev-parse") {
+          return { status: 0, stdout: sourceCommit, stderr: "" };
+        }
+        if (args[0] === "ls-remote") {
+          return {
+            status: 0,
+            stdout: `${conflictingCommit}\trefs/heads/task/diagnostic`,
+            stderr: "",
+          };
+        }
+        return { status: 0, stdout: "", stderr: "" };
+      },
+    );
+    expect(conflict.accepted).toBe(false);
+    expect(conflict.problem).toContain("conflicts with exact prepared commit");
+    expect(calls.some((args) => args[0] === "push")).toBe(false);
+
+    const dirty = publishExactDiagnosticTaskBranch(
+      "/tmp/diagnostic-publication-dirty",
+      { sourceBranch: "task/diagnostic", sourceCommit },
+      (_cwd, args) =>
+        args[0] === "status"
+          ? { status: 0, stdout: " M README.md", stderr: "" }
+          : { status: 0, stdout: sourceCommit, stderr: "" },
+    );
+    expect(dirty.accepted).toBe(false);
+    expect(dirty.problem).toContain("clean workflow-owned worktree");
+
+    const nonTask = publishExactDiagnosticTaskBranch(
+      "/tmp/diagnostic-publication-dev",
+      { sourceBranch: "dev", sourceCommit },
+      () => {
+        throw new Error("Git must not run for a non-task branch");
+      },
+    );
+    expect(nonTask.accepted).toBe(false);
+    expect(nonTask.problem).toContain("only a dedicated task/* branch");
+  });
+
   test("materializes the exact tracked dirty diff from a retained workspace", () => {
     const fixture = retainedWorkspaceFixture();
     try {
@@ -310,6 +543,265 @@ describe("spec-live-reconciliation workflow", () => {
       expect(result.evidence).toContain("retained-diff-materialized:exact");
     } finally {
       rmSync(fixture.root, { recursive: true, force: true });
+    }
+  });
+
+  test("loads a divergent prepared source before materializing its three-file retained YAML delta", () => {
+    const root = mkdtempSync(join(tmpdir(), "divergent-retained-source-"));
+    const remoteDir = join(root, "remote.git");
+    const authorDir = join(root, "author");
+    const retainedDir = join(root, "retained");
+    const destinationDir = join(root, "destination");
+    const mismatchedRetainedDir = join(root, "mismatched-retained");
+    const yamlPaths = [
+      "traffic/api-proxy.yaml",
+      "traffic/api-proxy-private.yaml",
+      "traffic/api-proxy-zonal.yaml",
+    ];
+    const runGit = (cwd: string, args: string[]) =>
+      execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
+    try {
+      runGit(root, ["init", "--bare", remoteDir]);
+      mkdirSync(authorDir, { recursive: true });
+      runGit(authorDir, ["init"]);
+      runGit(authorDir, ["config", "user.email", "test@example.com"]);
+      runGit(authorDir, ["config", "user.name", "Test"]);
+      writeFileSync(join(authorDir, "README.md"), "base\n");
+      runGit(authorDir, ["add", "README.md"]);
+      runGit(authorDir, ["commit", "-m", "base"]);
+      const baseCommit = runGit(authorDir, ["rev-parse", "HEAD"]);
+      runGit(authorDir, ["branch", "-M", "dev"]);
+      runGit(authorDir, ["remote", "add", "origin", remoteDir]);
+      runGit(authorDir, ["push", "origin", "dev"]);
+
+      writeFileSync(join(authorDir, "current-dev.txt"), "current dev\n");
+      runGit(authorDir, ["add", "current-dev.txt"]);
+      runGit(authorDir, ["commit", "-m", "advance dev independently"]);
+      const currentDevCommit = runGit(authorDir, ["rev-parse", "HEAD"]);
+      runGit(authorDir, ["push", "origin", "dev"]);
+
+      runGit(authorDir, [
+        "checkout",
+        "-b",
+        "task/traffic-api-proxy",
+        baseCommit,
+      ]);
+      for (const yamlPath of yamlPaths) {
+        mkdirSync(join(authorDir, yamlPath, ".."), { recursive: true });
+        writeFileSync(join(authorDir, yamlPath), "portable: false\n");
+      }
+      runGit(authorDir, ["add", ...yamlPaths]);
+      runGit(authorDir, ["commit", "-m", "prepared traffic API proxy source"]);
+      const preparedSourceCommit = runGit(authorDir, ["rev-parse", "HEAD"]);
+      runGit(authorDir, ["push", "origin", "task/traffic-api-proxy"]);
+
+      runGit(root, ["clone", remoteDir, retainedDir]);
+      runGit(retainedDir, ["checkout", "--detach", preparedSourceCommit]);
+      for (const yamlPath of yamlPaths) {
+        writeFileSync(join(retainedDir, yamlPath), "portable: true\n");
+      }
+
+      runGit(root, ["clone", remoteDir, destinationDir]);
+      runGit(destinationDir, ["checkout", "-b", "task/recovery", "origin/dev"]);
+      runGit(destinationDir, ["config", "user.email", "test@example.com"]);
+      runGit(destinationDir, ["config", "user.name", "Test"]);
+      expect(
+        spawnSync(
+          "git",
+          [
+            "merge-base",
+            "--is-ancestor",
+            preparedSourceCommit,
+            currentDevCommit,
+          ],
+          { cwd: destinationDir },
+        ).status,
+      ).not.toBe(0);
+
+      const prepared = reconcilePreparedTaskSource(destinationDir, {
+        sourceBranch: "task/traffic-api-proxy",
+        sourceCommit: preparedSourceCommit,
+      });
+      expect(prepared.state).toBe("merged");
+
+      const materialized = materializePriorRetainedWorkspace({
+        workspaceDir: destinationDir,
+        priorRetainedWorkspace: retainedDir,
+        baselineCommit: preparedSourceCommit,
+      });
+      expect(materialized.accepted).toBe(true);
+      expect(materialized.changedPaths.sort()).toEqual([...yamlPaths].sort());
+      runGit(destinationDir, [
+        "commit",
+        "-am",
+        "retain YAML portability delta",
+      ]);
+      const finalCommit = runGit(destinationDir, ["rev-parse", "HEAD"]);
+
+      expect(
+        runGit(destinationDir, [
+          "merge-base",
+          "--is-ancestor",
+          preparedSourceCommit,
+          finalCommit,
+        ]),
+      ).toBe("");
+      expect(runGit(destinationDir, ["status", "--porcelain"])).toBe("");
+      for (const yamlPath of yamlPaths) {
+        expect(readFileSync(join(destinationDir, yamlPath), "utf8")).toBe(
+          "portable: true\n",
+        );
+      }
+
+      runGit(root, ["clone", remoteDir, mismatchedRetainedDir]);
+      runGit(mismatchedRetainedDir, ["checkout", "--detach", currentDevCommit]);
+      writeFileSync(
+        join(mismatchedRetainedDir, "current-dev.txt"),
+        "mismatched retained delta\n",
+      );
+      const mismatched = materializePriorRetainedWorkspace({
+        workspaceDir: destinationDir,
+        priorRetainedWorkspace: mismatchedRetainedDir,
+        baselineCommit: preparedSourceCommit,
+      });
+      expect(mismatched.accepted).toBe(false);
+      expect(mismatched.problem).toContain(
+        "priorRetainedWorkspace HEAD does not match baselineCommit",
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("recovers an absent-remote prepared source only from exact local retained ownership", () => {
+    const root = mkdtempSync(join(tmpdir(), "local-only-retained-source-"));
+    const remoteDir = join(root, "remote.git");
+    const authorDir = join(root, "author");
+    const retainedDir = join(root, "retained");
+    const destinationDir = join(root, "destination");
+    const sourceBranch =
+      "task/domain-master-validation-failure-spec.traffic-api-proxy.toggle";
+    const trackedPaths = [
+      "bun.lock",
+      "features/traffic-api-proxy/lib/api-proxy-master-validation-live.ts",
+      "package.json",
+    ];
+    const runGit = (cwd: string, args: string[]) =>
+      execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
+    try {
+      runGit(root, ["init", "--bare", remoteDir]);
+      mkdirSync(authorDir, { recursive: true });
+      runGit(authorDir, ["init"]);
+      runGit(authorDir, ["config", "user.email", "test@example.com"]);
+      runGit(authorDir, ["config", "user.name", "Test"]);
+      writeFileSync(join(authorDir, "README.md"), "base\n");
+      runGit(authorDir, ["add", "README.md"]);
+      runGit(authorDir, ["commit", "-m", "base"]);
+      runGit(authorDir, ["branch", "-M", "dev"]);
+      runGit(authorDir, ["remote", "add", "origin", remoteDir]);
+      runGit(authorDir, ["push", "origin", "dev"]);
+
+      runGit(authorDir, ["checkout", "-b", sourceBranch]);
+      for (const path of trackedPaths) {
+        mkdirSync(join(authorDir, path, ".."), { recursive: true });
+        writeFileSync(join(authorDir, path), `prepared:${path}\n`);
+      }
+      runGit(authorDir, ["add", ...trackedPaths]);
+      runGit(authorDir, ["commit", "-m", "prepared traffic source"]);
+      const sourceCommit = runGit(authorDir, ["rev-parse", "HEAD"]);
+      runGit(authorDir, ["push", "origin", sourceBranch]);
+      runGit(authorDir, ["checkout", "dev"]);
+      runGit(authorDir, ["worktree", "add", retainedDir, sourceBranch]);
+      for (const path of trackedPaths) {
+        writeFileSync(join(retainedDir, path), `portable:${path}\n`);
+      }
+      runGit(authorDir, ["push", "origin", "--delete", sourceBranch]);
+      writeFileSync(join(authorDir, "current-dev.txt"), "advanced dev\n");
+      runGit(authorDir, ["add", "current-dev.txt"]);
+      runGit(authorDir, ["commit", "-m", "advance dev"]);
+      runGit(authorDir, ["push", "origin", "dev"]);
+
+      runGit(root, ["clone", remoteDir, destinationDir]);
+      runGit(destinationDir, ["checkout", "-b", "task/recovery", "origin/dev"]);
+      runGit(destinationDir, ["config", "user.email", "test@example.com"]);
+      runGit(destinationDir, ["config", "user.name", "Test"]);
+      expect(
+        runGit(destinationDir, [
+          "ls-remote",
+          "--heads",
+          "origin",
+          sourceBranch,
+        ]),
+      ).toBe("");
+
+      const prepared = reconcilePreparedTaskSource(
+        destinationDir,
+        { sourceBranch, sourceCommit },
+        undefined,
+        { workspaceDir: retainedDir, baselineCommit: sourceCommit },
+      );
+      expect(prepared.state).toBe("merged");
+      const materialized = materializePriorRetainedWorkspace({
+        workspaceDir: destinationDir,
+        priorRetainedWorkspace: retainedDir,
+        baselineCommit: sourceCommit,
+      });
+      expect(materialized).toMatchObject({
+        accepted: true,
+        changedPaths: trackedPaths,
+      });
+      runGit(destinationDir, ["commit", "-am", "materialize retained delta"]);
+      const finalCommit = runGit(destinationDir, ["rev-parse", "HEAD"]);
+      expect(
+        spawnSync(
+          "git",
+          ["merge-base", "--is-ancestor", sourceCommit, finalCommit],
+          {
+            cwd: destinationDir,
+          },
+        ).status,
+      ).toBe(0);
+      expect(runGit(destinationDir, ["status", "--porcelain"])).toBe("");
+      for (const path of trackedPaths) {
+        expect(readFileSync(join(destinationDir, path), "utf8")).toBe(
+          `portable:${path}\n`,
+        );
+      }
+
+      const mismatch = reconcilePreparedTaskSource(
+        destinationDir,
+        { sourceBranch, sourceCommit },
+        undefined,
+        { workspaceDir: retainedDir, baselineCommit: "f".repeat(40) },
+      );
+      expect(mismatch).toMatchObject({
+        state: "failed",
+        error:
+          "local retained prepared source HEAD, sourceCommit, and baselineCommit must match exactly",
+      });
+      const unrelated = reconcilePreparedTaskSource(
+        destinationDir,
+        { sourceBranch, sourceCommit },
+        undefined,
+        { workspaceDir: authorDir, baselineCommit: sourceCommit },
+      );
+      expect(unrelated).toMatchObject({
+        state: "failed",
+        error:
+          "local retained prepared source branch does not match sourceBranch",
+      });
+      const nonWorktree = reconcilePreparedTaskSource(
+        destinationDir,
+        { sourceBranch, sourceCommit },
+        undefined,
+        { workspaceDir: root, baselineCommit: sourceCommit },
+      );
+      expect(nonWorktree).toMatchObject({
+        state: "failed",
+        error: "local retained prepared source is not a Git worktree root",
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
     }
   });
 
@@ -777,6 +1269,24 @@ describe("spec-live-reconciliation workflow", () => {
       );
       expect(diagnostic.evidence).toContain("integration:not-attempted");
 
+      const explicitlyIntegrating = await reconcileSpecLive({
+        ...contextFor(taskFor(true)),
+        runAgent: async () => ({
+          status: "done" as const,
+          structuredResult: {
+            decision: "needs-owner" as const,
+            summary: "Default reconciliation path entered.",
+            evidence: ["default-path:entered"],
+          },
+        }),
+      });
+      expect(explicitlyIntegrating.summary).toContain(
+        "Default reconciliation path entered",
+      );
+      expect(explicitlyIntegrating.evidence).not.toContain(
+        "diagnostic-publication-branch:not-a-task-branch",
+      );
+
       const defaultContract = noIntegrationDiagnosticContract(
         JSON.parse(taskFor(undefined).split("\n")[1]!).input,
       );
@@ -784,10 +1294,10 @@ describe("spec-live-reconciliation workflow", () => {
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
-  });
+  }, 15_000);
 
   const runNoIntegrationLifecycle = (
-    mode: "consumed" | "terminal" | "omitted",
+    mode: "consumed" | "terminal" | "omitted" | "dirty",
   ) => {
     const childRoot = mkdtempSync(join(tmpdir(), `no-integration-${mode}-`));
     const childScript = join(childRoot, "run.mjs");
@@ -795,7 +1305,7 @@ describe("spec-live-reconciliation workflow", () => {
       writeFileSync(
         childScript,
         ` import { execFileSync } from "node:child_process"; import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"; import { tmpdir } from "node:os"; import { join } from "node:path"; const mode=${JSON.stringify(mode)}; const root=mkdtempSync(join(tmpdir(),"no-integration-life-")); const remote=join(root,"remote.git"); const seed=join(root,"seed"); const repoDir=join(root,"repo"); const workspaceDir=join(root,"workspace"); const appDir=join(root,"app"); const binDir=join(root,"bin"); const azLog=join(root,"az.log"); const artifactPath=join(root,"diagnostic.md"); const run=(cwd,args)=>execFileSync("git",args,{cwd,encoding:"utf8"}).trim(); mkdirSync(seed,{recursive:true}); mkdirSync(appDir,{recursive:true}); mkdirSync(binDir,{recursive:true}); writeFileSync(azLog,""); run(root,["init","--bare",remote]); run(seed,["init"]); run(seed,["config","user.email","test@example.com"]); run(seed,["config","user.name","Test"]); writeFileSync(join(seed,"README.md"),"base\\\\n"); run(seed,["add","README.md"]); run(seed,["commit","-m","base"]); run(seed,["branch","-M","dev"]); run(seed,["remote","add","origin",remote]); run(seed,["push","origin","dev"]); run(seed,["checkout","-b","task/diagnostic"]); writeFileSync(join(seed,"diagnostic.txt"),"prepared\\\\n"); run(seed,["add","diagnostic.txt"]); run(seed,["commit","-m","prepared diagnostic"]); const sourceCommit=run(seed,["rev-parse","HEAD"]); run(seed,["push","origin","task/diagnostic"]); run(root,["clone",remote,repoDir]); run(repoDir,["checkout","dev"]); run(root,["clone",remote,workspaceDir]); run(workspaceDir,["checkout","task/diagnostic"]); run(workspaceDir,["config","user.email","test@example.com"]); run(workspaceDir,["config","user.name","Test"]); writeFileSync(join(binDir,"az"),\`#!/usr/bin/env node
-const fs=require("node:fs"); const path=require("node:path"); const args=process.argv.slice(2); const mode=process.env.NO_INTEGRATION_MODE; const commit=process.env.DIAGNOSTIC_COMMIT; fs.appendFileSync(process.env.FAKE_AZ_LOG,JSON.stringify(args)+"\\\\n"); const metadata={taskId:"domain/no-integration-life",generation:1,sourceCommit:commit,reviewed_source_commit:commit}; const run={id:"175125000",state:"completed",status:"completed",result:"failed",sourceVersion:commit,templateParameters:{specs:"spec.sample.a,spec.sample.b",target:"staging",standalone_build_id:"",metadata:JSON.stringify(metadata)}}; if(mode==="terminal"&&args[0]==="pipelines"&&args[1]==="runs"&&args[2]!=="artifact"&&args.includes("list")) process.stdout.write(JSON.stringify([run])); else if(mode==="terminal"&&args[0]==="pipelines"&&args[1]==="runs"&&args.includes("artifact")&&args.includes("list")) process.stdout.write(JSON.stringify([{name:"diagnostic"}])); else if(mode==="terminal"&&args[0]==="pipelines"&&args[1]==="runs"&&args.includes("artifact")&&args.includes("download")){const out=args[args.indexOf("--path")+1]; fs.mkdirSync(out,{recursive:true}); for(const id of ["spec.sample.a","spec.sample.b"]) fs.writeFileSync(path.join(out,id+".json"),JSON.stringify({specId:id,status:"pass",cleanup:{attempted:true,status:"pass"}})); process.stdout.write("{}");} else process.stdout.write("[]"); \`,{mode:0o755}); process.env.NO_INTEGRATION_MODE=mode; process.env.DIAGNOSTIC_COMMIT=sourceCommit; process.env.FAKE_AZ_LOG=azLog; process.env.AZURE_CLI_PATH=join(binDir,"az"); const {reconcileSpecLive}=await import(${JSON.stringify(`file://${join(import.meta.dir, "spec-live-reconciliation.ts")}`)}); const input={ specIds:["spec.sample.a","spec.sample.b"], preparedSourceBranch:"task/diagnostic", preparedSourceCommit:sourceCommit,artifactPath,maxReproductions:1,reproductionConsumed:mode==="consumed"?1:0,...(mode==="omitted"?{}:{allowIntegration:false})}; const task=["## Reconciliation Task",JSON.stringify({taskId:"domain/no-integration-life",generation:1,input,children:{live:[],completed:[]}})].join("\\\\n"); let agentCalls=0; const beforeHead=run(workspaceDir,["rev-parse","HEAD"]); const result=await reconcileSpecLive({agent:"aks-explorer",task,appDir,projectDir:repoDir,workspaceDir,done:(_summary,output)=>output,runAgent:async(_agent,prompt)=>{agentCalls++; if(mode==="terminal"){const match=prompt.match(/Per-spec result paths: (.+)\\. Structural cleanup paths: (.+)\\./); const paths=match[1].split(", "); writeFileSync(artifactPath,[\`Tested commit: \${sourceCommit}\`,"Pipeline run ID: 175125000",...paths.map(p=>\`Result path: \${p}\`),\`Cleanup proof: \${match[2].split(", ")[0]}\`,"Assertion mapping: expected failure","Lineage mapping: exact prepared source",\`Request fingerprint: sha256:\${"d".repeat(64)}\`,"HTTP status: 400","ARM code: InvalidParameter","Redacted ARM body: redacted","Disposition: product/API rejection"].join("\\\\n")); return {status:"done",structuredResult:{decision:"accepted-pass",summary:"Published complete non-green diagnostic.",evidence:["diagnostic:complete"]}};} return {status:"done",structuredResult:{decision:"needs-owner",summary:"Default reconciliation path entered.",evidence:["default-path:entered"]}};} }); const commands=readFileSync(azLog,"utf8").trim().split(/\\n+/).filter(Boolean).map(JSON.parse); console.log(JSON.stringify({result,commands,agentCalls,beforeHead,afterHead:run(workspaceDir,["rev-parse","HEAD"])})); rmSync(root,{recursive:true,force:true}); `,
+const fs=require("node:fs"); const path=require("node:path"); const args=process.argv.slice(2); const mode=process.env.NO_INTEGRATION_MODE; const commit=process.env.DIAGNOSTIC_COMMIT; fs.appendFileSync(process.env.FAKE_AZ_LOG,JSON.stringify(args)+"\\\\n"); const metadata={taskId:"domain/no-integration-life",generation:1,sourceCommit:commit,reviewed_source_commit:commit}; const run={id:"175125000",state:"completed",status:"completed",result:"failed",sourceVersion:commit,templateParameters:{specs:"spec.sample.a,spec.sample.b",target:"staging",standalone_build_id:"",metadata:JSON.stringify(metadata)}}; if(mode==="terminal"&&args[0]==="pipelines"&&args[1]==="runs"&&args[2]!=="artifact"&&args.includes("list")) process.stdout.write(JSON.stringify([run])); else if(mode==="terminal"&&args[0]==="pipelines"&&args[1]==="runs"&&args.includes("artifact")&&args.includes("list")) process.stdout.write(JSON.stringify([{name:"diagnostic"}])); else if(mode==="terminal"&&args[0]==="pipelines"&&args[1]==="runs"&&args.includes("artifact")&&args.includes("download")){const out=args[args.indexOf("--path")+1]; fs.mkdirSync(out,{recursive:true}); for(const id of ["spec.sample.a","spec.sample.b"]) fs.writeFileSync(path.join(out,id+".json"),JSON.stringify({specId:id,status:"pass",cleanup:{attempted:true,status:"pass"}})); process.stdout.write("{}");} else process.stdout.write("[]"); \`,{mode:0o755}); process.env.NO_INTEGRATION_MODE=mode; process.env.DIAGNOSTIC_COMMIT=sourceCommit; process.env.FAKE_AZ_LOG=azLog; process.env.AZURE_CLI_PATH=join(binDir,"az"); const {reconcileSpecLive}=await import(${JSON.stringify(`file://${join(import.meta.dir, "spec-live-reconciliation.ts")}`)}); const input={ specIds:["spec.sample.a","spec.sample.b"], preparedSourceBranch:"task/diagnostic", preparedSourceCommit:sourceCommit,artifactPath,maxReproductions:1,reproductionConsumed:mode==="consumed"?1:0,...(mode==="omitted"?{}:{allowIntegration:false})}; const task=["## Reconciliation Task",JSON.stringify({taskId:"domain/no-integration-life",generation:1,input,children:{live:[],completed:[]}})].join("\\\\n"); let agentCalls=0; if(mode==="dirty") writeFileSync(join(workspaceDir,"README.md"),"dirty\\\\n"); const beforeHead=run(workspaceDir,["rev-parse","HEAD"]); const result=await reconcileSpecLive({agent:"aks-explorer",task,appDir,projectDir:repoDir,workspaceDir,done:(_summary,output)=>output,runAgent:async(_agent,prompt)=>{agentCalls++; if(mode==="terminal"){const match=prompt.match(/Per-spec result paths: (.+)\\. Structural cleanup paths: (.+)\\./); const paths=match[1].split(", "); writeFileSync(artifactPath,[\`Tested commit: \${sourceCommit}\`,"Pipeline run ID: 175125000",...paths.map(p=>\`Result path: \${p}\`),\`Cleanup proof: \${match[2].split(", ")[0]}\`,"Assertion mapping: expected failure","Lineage mapping: exact prepared source",\`Request fingerprint: sha256:\${"d".repeat(64)}\`,"HTTP status: 400","ARM code: InvalidParameter","Redacted ARM body: redacted","Disposition: product/API rejection"].join("\\\\n")); return {status:"done",structuredResult:{decision:"accepted-pass",summary:"Published complete non-green diagnostic.",evidence:["diagnostic:complete"]}};} return {status:"done",structuredResult:{decision:"needs-owner",summary:"Default reconciliation path entered.",evidence:["default-path:entered"]}};} }); const commands=readFileSync(azLog,"utf8").trim().split(/\\n+/).filter(Boolean).map(JSON.parse); console.log(JSON.stringify({result,commands,agentCalls,beforeHead,afterHead:run(workspaceDir,["rev-parse","HEAD"])})); rmSync(root,{recursive:true,force:true}); `,
       );
       const child = spawnSync("bun", [childScript], {
         cwd: import.meta.dir,
@@ -822,6 +1332,18 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
         "max-reproductions:1",
       ]),
     );
+  });
+  test("rejects a dirty diagnostic worktree before source restoration or dispatch", () => {
+    const output = runNoIntegrationLifecycle("dirty");
+    expect(output.afterHead).toBe(output.beforeHead);
+    expect(output.result.summary).toContain(
+      "No-integration diagnostic refused a dirty workflow-owned worktree",
+    );
+    expect(
+      output.commands.some(
+        (args: string[]) => args[0] === "pipelines" && args[1] === "run",
+      ),
+    ).toBe(false);
   });
   test("accepts a complete non-green terminal diagnostic without integration", () => {
     const output = runNoIntegrationLifecycle("terminal");
@@ -3399,6 +3921,138 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
     expect(liveSpecIds).not.toContain(supersededSpecId);
   });
 
+  test("uses one canonical sorted aggregate ID for selected queue metadata, candidate proof, and verification", () => {
+    const root = mkdtempSync(join(tmpdir(), "selected-spec-aggregate-id-"));
+    const auditSpecIds = [
+      "spec.alpha",
+      "spec.bravo",
+      "spec.charlie",
+      "spec.delta",
+      "spec.superseded",
+    ];
+    const liveSpecIds = [
+      "spec.delta",
+      "spec.alpha",
+      "spec.charlie",
+      "spec.bravo",
+    ];
+    const canonicalAggregate = "spec.alpha,spec.bravo,spec.charlie,spec.delta";
+    const taskId = "domain/selected-spec-aggregate";
+    const sourceBranch = "task/domain-selected-spec-aggregate";
+    const sourceCommit = "abc123";
+    const runId = "178900001";
+    try {
+      const selection = resolveLiveSpecIdSelection({
+        specIds: auditSpecIds,
+        liveSpecIds,
+      });
+      expect(selection.accepted).toBe(true);
+      if (!selection.accepted) throw new Error(selection.problem);
+      const selectedAggregate = canonicalAggregateSpecId(
+        selection.dispatchSpecIds,
+      );
+
+      const metadata = queueRunMetadata({
+        taskId,
+        generation: 4,
+        specId: selectedAggregate,
+        sourceBranch,
+        sourceCommit,
+        target: "staging",
+        standaloneBuildId: "",
+      });
+      const proof = candidateReviewedRunProof({
+        taskId,
+        generation: 4,
+        providerGeneration: 4,
+        specIds: selection.dispatchSpecIds,
+        target: "staging",
+        standaloneBuildId: "",
+        sourceBranch,
+        sourceCommit,
+        runId,
+        runResult: "succeeded",
+        reviewedAt: "2026-08-11T00:00:00Z",
+      });
+      const aggregatePath = join(root, "result.json");
+      writeFileSync(
+        aggregatePath,
+        JSON.stringify({
+          target: {
+            name: "staging",
+            environment: "staging",
+            subscriptionId: "26fe00f8-9173-4872-9134-bb1d2e00343a",
+            location: "westus2",
+          },
+          specResults: liveSpecIds.map((specId) => ({
+            specId,
+            status: "pass",
+          })),
+        }),
+      );
+      const specPaths = liveSpecIds.map((specId) => {
+        const path = join(root, `${specId}.json`);
+        writeFileSync(
+          path,
+          JSON.stringify({
+            specId,
+            status: "pass",
+            raw: {
+              assertions: [
+                { name: `assert.${specId}`, verdictImpact: "claim", ok: true },
+                {
+                  name: "cleanup.resource-group-delete-requested",
+                  verdictImpact: "cleanup",
+                  ok: true,
+                },
+              ],
+            },
+          }),
+        );
+        return path;
+      });
+      const verification = verifySpecLiveProofFacts({
+        taskId,
+        generation: 4,
+        specIds: selection.dispatchSpecIds,
+        target: "staging",
+        standaloneBuildId: "",
+        proof,
+        run: {
+          id: runId,
+          status: "completed",
+          result: "succeeded",
+          sourceBranch: `refs/heads/${sourceBranch}`,
+          sourceVersion: sourceCommit,
+          definition: { id: 467665 },
+          templateParameters: {
+            specs: liveSpecIds.join(","),
+            target: "staging",
+            standalone_build_id: "",
+            metadata: JSON.stringify(metadata),
+          },
+        },
+        artifactPaths: [aggregatePath, ...specPaths],
+        expectedClaimIdsBySpec: Object.fromEntries(
+          liveSpecIds.map((specId) => [specId, [`assert.${specId}`]]),
+        ),
+        sourceReachable: false,
+        integratedCommitReachable: false,
+        normalizationInvariantSatisfied: true,
+        requireIntegration: false,
+      });
+
+      expect(selection.auditSpecIds).toEqual(auditSpecIds);
+      expect(selection.dispatchSpecIds).toEqual(liveSpecIds);
+      expect(selectedAggregate).toBe(canonicalAggregate);
+      expect(metadata.specId).toBe(canonicalAggregate);
+      expect(proof.specId).toBe(canonicalAggregate);
+      expect(verification).toMatchObject({ accepted: true });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   test("preserves specIds and specId fallback when liveSpecIds is absent", () => {
     expect(
       resolveLiveSpecIdSelection({
@@ -3926,6 +4580,446 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
     expect(exactPassNeedsOwnerProblem(decision, false)).toContain(
       "confirmed internal source gap",
     );
+  });
+
+  test("continues the exact network-CNI multi-spec partial patch after its completion guardrail", async () => {
+    const retainedWorkspace = "/tmp/retained-network-cni-partial";
+    const workflowRun = {
+      runId: "wr_1786372163930_0n8i",
+      workflow: "spec-live-reconciliation",
+    };
+    const sessionResult = {
+      sessionId: "s_1786372198869_67",
+      finishParams: {
+        result: {
+          decision: "needs-owner" as const,
+          summary:
+            "Bounded guardrail stopped preparation with the preserved axis patch applied but uncommitted; all six over-cap carriers remain unresolved.",
+          evidence: ["focused checks passed"],
+          liveReady: false,
+        },
+      },
+    };
+    const payload = {
+      taskId:
+        "repair-network-cni-cap-nine-spec-source-live-integration-20260810",
+      paths: { workspaceDir: retainedWorkspace },
+      input: {
+        specIds: Array.from({ length: 9 }, (_, index) => `spec.${index}`),
+      },
+    };
+
+    expect(workflowRun).toMatchObject({
+      runId: "wr_1786372163930_0n8i",
+      workflow: "spec-live-reconciliation",
+    });
+    expect(sessionResult.sessionId).toBe("s_1786372198869_67");
+    expect(payload?.taskId).toBe(
+      "repair-network-cni-cap-nine-spec-source-live-integration-20260810",
+    );
+    expect(payload?.paths?.workspaceDir).toBe(retainedWorkspace);
+    expect(payload?.input?.specIds).toHaveLength(9);
+    expect(sessionResult.finishParams.result).toMatchObject({
+      decision: "needs-owner",
+      liveReady: false,
+    });
+    expect(
+      exactPassNeedsOwnerProblem(sessionResult.finishParams.result, true),
+    ).toContain("confirmed internal source gap");
+
+    const prompts: string[] = [];
+    const decisions = [
+      {
+        status: "done" as const,
+        structuredResult: sessionResult.finishParams.result,
+      },
+      {
+        status: "done" as const,
+        structuredResult: {
+          decision: "committed" as const,
+          summary: "Completed and committed the remaining carrier-cap repair.",
+          evidence: ["source-commit:def"],
+          liveReady: true,
+        },
+      },
+    ];
+    const result = await askAgent(
+      isolatedAgentContext({
+        agent: "aks-explorer",
+        runAgent: async (_agent: string, prompt: string) => {
+          prompts.push(prompt);
+          return decisions.shift();
+        },
+      }) as never,
+      "Resume the same network-CNI multi-spec task in its retained worktree.",
+      {
+        continueDomainWorkOnValidation: true,
+        retryDelayMs: 0,
+        validateDecision: (candidate) =>
+          exactPassNeedsOwnerProblem(candidate, true),
+      },
+    );
+
+    expect(result.decision).toBe("committed");
+    expect(prompts).toHaveLength(2);
+    expect(prompts[1]).toContain("confirmed internal source gap");
+    expect(prompts[1]).toContain("over-cap carriers");
+    expect(prompts[1]).toContain(
+      "perform that mutation and its narrow verification now",
+    );
+    expect(payload?.paths?.workspaceDir).toBe(retainedWorkspace);
+  });
+
+  test("continues the verified dirty network-CNI repair after the post-check completion guardrail", async () => {
+    const retainedWorkspace = "/tmp/retained-network-cni-verified";
+    const workflowRun = {
+      runId: "wr_1786643616678_8n0a",
+      workflow: "spec-live-reconciliation",
+    };
+    const sessionResult = {
+      sessionId: "s_1786643624590_80",
+      finishParams: {
+        result: {
+          decision: "needs-owner" as const,
+          summary:
+            "The bounded repair is locally verified but uncommitted because the completion guardrail required an immediate finish.",
+          evidence: ["154 pass, 0 fail"],
+          liveReady: false,
+        },
+      },
+    };
+    const payload = {
+      paths: { workspaceDir: retainedWorkspace },
+      input: {
+        specIds: Array.from({ length: 9 }, (_, index) => `spec.${index}`),
+      },
+    };
+
+    expect(workflowRun).toMatchObject({
+      runId: "wr_1786643616678_8n0a",
+      workflow: "spec-live-reconciliation",
+    });
+    expect(sessionResult.sessionId).toBe("s_1786643624590_80");
+    expect(payload?.paths?.workspaceDir).toBe(retainedWorkspace);
+    expect(payload?.input?.specIds).toHaveLength(9);
+    expect(sessionResult.finishParams.result.decision).toBe("needs-owner");
+    expect(
+      exactPassNeedsOwnerProblem(sessionResult.finishParams.result, true),
+    ).toContain("verified dirty repair");
+
+    const prompts: string[] = [];
+    const decisions = [
+      {
+        status: "done" as const,
+        structuredResult: sessionResult.finishParams.result,
+      },
+      {
+        status: "done" as const,
+        structuredResult: {
+          decision: "committed" as const,
+          summary: "Committed the already-verified bounded six-file repair.",
+          evidence: ["source-commit:def"],
+          liveReady: true,
+        },
+      },
+    ];
+    const result = await askAgent(
+      isolatedAgentContext({
+        agent: "aks-explorer",
+        runAgent: async (_agent: string, prompt: string) => {
+          prompts.push(prompt);
+          return decisions.shift();
+        },
+      }) as never,
+      "Resume the same retained network-CNI worktree at its commit checkpoint.",
+      {
+        continueDomainWorkOnValidation: true,
+        retryDelayMs: 0,
+        validateDecision: (candidate) =>
+          exactPassNeedsOwnerProblem(candidate, true),
+      },
+    );
+
+    expect(result.decision).toBe("committed");
+    expect(prompts).toHaveLength(2);
+    expect(prompts[1]).toContain("verified dirty repair");
+    expect(prompts[1]).toContain(
+      "perform that mutation and its narrow verification now",
+    );
+    expect(payload?.paths?.workspaceDir).toBe(retainedWorkspace);
+  });
+
+  test("continues the exact direct-runtime-observation repair to the workflow-owned commit checkpoint", async () => {
+    const retainedWorkspace = "/tmp/retained-network-cni-runtime";
+    const workflowRun = {
+      runId: "wr_1786672942557_f7zk",
+      workflow: "spec-live-reconciliation",
+    };
+    const sessionResult = {
+      sessionId: "s_1786672976089_15",
+      finishParams: {
+        result: {
+          decision: "needs-owner" as const,
+          summary:
+            "Bounded guardrail interrupted a verified but uncommitted internal source repair.",
+          evidence: ["focused post-edit checks passed"],
+          liveReady: false,
+        },
+      },
+    };
+    const payload = {
+      taskId:
+        "repair-network-cni-cap-nine-spec-source-live-integration-20260810",
+      paths: { workspaceDir: retainedWorkspace },
+      input: {
+        specIds: Array.from({ length: 9 }, (_, index) => `spec.${index}`),
+      },
+    };
+
+    expect(workflowRun).toMatchObject({
+      runId: "wr_1786672942557_f7zk",
+      workflow: "spec-live-reconciliation",
+    });
+    expect(sessionResult.sessionId).toBe("s_1786672976089_15");
+    expect(payload?.taskId).toBe(
+      "repair-network-cni-cap-nine-spec-source-live-integration-20260810",
+    );
+    expect(payload?.paths?.workspaceDir).toBe(retainedWorkspace);
+    expect(payload?.input?.specIds).toHaveLength(9);
+    expect(sessionResult.finishParams.result).toMatchObject({
+      decision: "needs-owner",
+      liveReady: false,
+    });
+    expect(
+      exactPassNeedsOwnerProblem(sessionResult.finishParams.result, true),
+    ).toContain("verified dirty repair");
+
+    const prompts: string[] = [];
+    const decisions = [
+      {
+        status: "done" as const,
+        structuredResult: sessionResult.finishParams.result,
+      },
+      {
+        status: "done" as const,
+        structuredResult: {
+          decision: "committed" as const,
+          summary:
+            "Committed the verified six-file direct-runtime-observation repair.",
+          evidence: ["source-commit:def"],
+          liveReady: true,
+        },
+      },
+    ];
+    const result = await askAgent(
+      isolatedAgentContext({
+        agent: "aks-explorer",
+        runAgent: async (_agent: string, prompt: string) => {
+          prompts.push(prompt);
+          return decisions.shift();
+        },
+      }) as never,
+      "Resume the retained network-CNI repair at its workflow-owned commit checkpoint.",
+      {
+        continueDomainWorkOnValidation: true,
+        retryDelayMs: 0,
+        validateDecision: (candidate) =>
+          exactPassNeedsOwnerProblem(candidate, true),
+      },
+    );
+
+    expect(result.decision).toBe("committed");
+    expect(prompts).toHaveLength(2);
+    expect(prompts[1]).toContain("verified dirty repair");
+    expect(prompts[1]).toContain(
+      "perform that mutation and its narrow verification now",
+    );
+    expect(payload?.paths?.workspaceDir).toBe(retainedWorkspace);
+  });
+
+  test("continues the exact verified one-file network-CNI repair through the commit checkpoint", async () => {
+    const retainedWorkspace = "/tmp/retained-network-cni-one-file";
+    const workflowRun = {
+      runId: "wr_1786675154382_otgv",
+      workflow: "spec-live-reconciliation",
+    };
+    const sessionResult = {
+      sessionId: "s_1786675340203_33",
+      finishParams: {
+        result: {
+          decision: "needs-owner" as const,
+          summary:
+            "Completion guardrail interrupted after a verified one-file source repair but before commit.",
+          evidence: ["all staging checks passed", "no commit was made"],
+          liveReady: false,
+        },
+      },
+    };
+    const payload = {
+      taskId:
+        "repair-network-cni-cap-nine-spec-source-live-integration-20260810",
+      paths: { workspaceDir: retainedWorkspace },
+      input: {
+        specIds: Array.from({ length: 9 }, (_, index) => `spec.${index}`),
+      },
+    };
+
+    expect(workflowRun).toMatchObject({
+      runId: "wr_1786675154382_otgv",
+      workflow: "spec-live-reconciliation",
+    });
+    expect(sessionResult.sessionId).toBe("s_1786675340203_33");
+    expect(payload?.taskId).toBe(
+      "repair-network-cni-cap-nine-spec-source-live-integration-20260810",
+    );
+    expect(payload?.paths?.workspaceDir).toBe(retainedWorkspace);
+    expect(payload?.input?.specIds).toHaveLength(9);
+    expect(sessionResult.finishParams.result).toMatchObject({
+      decision: "needs-owner",
+      liveReady: false,
+    });
+    expect(
+      exactPassNeedsOwnerProblem(sessionResult.finishParams.result, true),
+    ).toContain("verified dirty repair");
+
+    const prompts: string[] = [];
+    const decisions = [
+      {
+        status: "done" as const,
+        structuredResult: sessionResult.finishParams.result,
+      },
+      {
+        status: "done" as const,
+        structuredResult: {
+          decision: "committed" as const,
+          summary: "Committed the already-verified bounded one-file repair.",
+          evidence: ["source-commit:def"],
+          liveReady: true,
+        },
+      },
+    ];
+    const result = await askAgent(
+      isolatedAgentContext({
+        agent: "aks-explorer",
+        runAgent: async (_agent: string, prompt: string) => {
+          prompts.push(prompt);
+          return decisions.shift();
+        },
+      }) as never,
+      "Resume the retained network-CNI repair at its workflow-owned commit checkpoint.",
+      {
+        continueDomainWorkOnValidation: true,
+        retryDelayMs: 0,
+        validateDecision: (candidate) =>
+          exactPassNeedsOwnerProblem(candidate, true),
+      },
+    );
+
+    expect(result.decision).toBe("committed");
+    expect(prompts).toHaveLength(2);
+    expect(prompts[1]).toContain("verified dirty repair");
+    expect(prompts[1]).toContain(
+      "perform that mutation and its narrow verification now",
+    );
+    expect(payload?.paths?.workspaceDir).toBe(retainedWorkspace);
+  });
+
+  test("does not force a failed dirty repair past its check boundary", () => {
+    const decision = {
+      decision: "needs-owner" as const,
+      summary:
+        "The completion guardrail stopped this dirty repair after its focused checks failed.",
+      evidence: ["focused-checks:failed", "test-failure:planner.test.ts"],
+    };
+
+    expect(exactPassNeedsOwnerProblem(decision, true)).toBeNull();
+  });
+
+  test("resumes the exact generation-5 LocalDNS retained-context verdict as same-task structured correction", async () => {
+    const retainedWorkspace = "/tmp/retained-localdns-generation-5";
+    const authoritativePhase = "preparation-1d6f04754f";
+    const workflowRun = { runId: "wr_1786378354368_vqy7" };
+    const sessionResult = {
+      sessionId: "s_1786378366463_66",
+      finishParams: {
+        result: {
+          decision: "needs-owner" as const,
+          summary:
+            "Source is not ready for ADO and requires the identified same-task source repair; bounded completion guardrail stopped before implementation.",
+          evidence: ["confirmed internal source gap"],
+          liveReady: false,
+        },
+      },
+    };
+    const authoritativeContext = {
+      generation: 5,
+      phase: authoritativePhase,
+      handoffPath: `/tmp/runs/no-run/${authoritativePhase}.json`,
+      sourceCommit: "9faded15bc9fd5f80a4d233a82f561077436f892",
+    };
+    const payload = {
+      generation: 5,
+      paths: { workspaceDir: retainedWorkspace },
+    };
+
+    expect(workflowRun.runId).toBe("wr_1786378354368_vqy7");
+    expect(sessionResult.sessionId).toBe("s_1786378366463_66");
+    expect(payload?.generation).toBe(5);
+    expect(payload?.paths?.workspaceDir).toBe(retainedWorkspace);
+    expect(authoritativeContext).toMatchObject({
+      generation: 5,
+      phase: authoritativePhase,
+      sourceCommit: "9faded15bc9fd5f80a4d233a82f561077436f892",
+    });
+    expect(authoritativeContext.handoffPath).toContain(
+      `/runs/no-run/${authoritativePhase}.json`,
+    );
+
+    const prompts: string[] = [];
+    const decisions = [
+      {
+        status: "done" as const,
+        structuredResult: sessionResult.finishParams.result,
+      },
+      {
+        status: "done" as const,
+        structuredResult: {
+          decision: "committed" as const,
+          summary: "Applied the bounded LocalDNS source repair.",
+          evidence: ["source-commit:def"],
+          liveReady: true,
+        },
+      },
+    ];
+    const result = await askAgent(
+      isolatedAgentContext({
+        agent: "aks-explorer",
+        runAgent: async (_agent: string, prompt: string) => {
+          prompts.push(prompt);
+          return decisions.shift();
+        },
+      }) as never,
+      "Resume the same generation-5 LocalDNS task from its retained authoritative context.",
+      {
+        continueDomainWorkOnValidation: true,
+        retryDelayMs: 0,
+        validateDecision: (candidate) =>
+          exactPassNeedsOwnerProblem(candidate, true),
+      },
+    );
+
+    expect(result.decision).toBe("committed");
+    expect(prompts).toHaveLength(2);
+    expect(prompts[1]).toContain(
+      "Resume the same generation-5 LocalDNS task from its retained authoritative context.",
+    );
+    expect(prompts[1]).toContain("confirmed internal source gap");
+    expect(prompts[1]).toContain(
+      "perform that mutation and its narrow verification now",
+    );
+    expect(prompts[1]).toContain(sessionResult.finishParams.result.summary);
+    expect(payload?.paths?.workspaceDir).toBe(retainedWorkspace);
+    expect(authoritativeContext.phase).toBe(authoritativePhase);
   });
 
   test("prioritizes the diagnosed generation-6 LocalDNS mutation before the correction operation budget", async () => {

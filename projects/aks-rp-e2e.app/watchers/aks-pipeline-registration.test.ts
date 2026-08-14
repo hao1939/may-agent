@@ -136,3 +136,63 @@ process.stdout.write(JSON.stringify({ result, emitted }));`,
   );
   expect(watcherState.trackedRunIds).toContain("174851380");
 });
+
+test("the watcher keeps the event loop responsive while Azure CLI calls are pending", () => {
+  const root = mkdtempSync(join(tmpdir(), "aks-pipeline-nonblocking-"));
+  roots.push(root);
+  const appDir = join(root, "aks-rp-e2e.app");
+  mkdirSync(join(root, "aks-rp-e2e", "runs", "test-results"), {
+    recursive: true,
+  });
+
+  const fakeAzPath = join(root, "slow-fake-az.js");
+  writeFileSync(
+    fakeAzPath,
+    `#!/usr/bin/env node
+const args = process.argv.slice(2);
+if (args[0] === "pipelines" && args[1] === "runs" && args[2] === "list") {
+  setTimeout(() => process.stdout.write("[]"), 150);
+  return;
+}
+process.exit(1);
+`,
+    "utf8",
+  );
+  chmodSync(fakeAzPath, 0o755);
+  const childEnv = {
+    ...process.env,
+    APP_DIR: appDir,
+    AZURE_CLI_PATH: fakeAzPath,
+  };
+  delete childEnv.MAY_AGENT_AKS_PIPELINE_WATCHER_ADO;
+
+  const runner = spawnSync(
+    Bun.which("bun") ?? "bun",
+    [
+      "-e",
+      `import { resolve } from "node:path";
+import { observeAksPipelines } from "${join(import.meta.dir, "aks-pipeline.ts")}";
+const ctx = {
+  appPath: (path) => resolve(process.env.APP_DIR, path),
+  emit: () => {},
+  noop: (reason) => ({ reason }),
+};
+let settled = false;
+const observation = observeAksPipelines(ctx);
+void observation.finally(() => { settled = true; });
+await new Promise((resolveTimer) => setTimeout(resolveTimer, 30));
+const responsiveWhileProviderPending = !settled;
+await observation;
+process.stdout.write(JSON.stringify({ responsiveWhileProviderPending }));`,
+    ],
+    {
+      encoding: "utf8",
+      env: childEnv,
+    },
+  );
+
+  expect(runner.status).toBe(0);
+  expect(JSON.parse(runner.stdout || "{}")).toEqual({
+    responsiveWhileProviderPending: true,
+  });
+});

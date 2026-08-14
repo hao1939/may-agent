@@ -40,7 +40,10 @@ import {
   scenarioQualityInvariant,
   type ScenarioQualityInvariant,
 } from "./lib/scenario-quality-invariant.js";
-import { integrateDirectlyIntoDev } from "./lib/direct-dev-integration.js";
+import {
+  AKS_DIRECT_DEV_VALIDATION_COMMANDS,
+  integrateDirectlyIntoDev,
+} from "./lib/direct-dev-integration.js";
 import { assertIsolatedWriteDispatch } from "./lib/write-dispatch-guard.js";
 
 export const name = "spec-live-reconciliation";
@@ -456,12 +459,30 @@ export function exactPassNeedsOwnerProblem(
     "source gap",
     "source defect",
     "carrier defect",
+    "carrier-cap",
+    "over-cap carrier",
+    "patch applied but uncommitted",
   ];
   const internalSourceGap = internalSourceGapIndicators.find((indicator) =>
     judgmentText.includes(indicator),
   );
-  if (internalSourceGap) {
-    return `needs-owner cannot defer a confirmed internal source gap (${internalSourceGap}); keep the bounded repair in this workflow even when terminal disposition is available`;
+  const verifiedDirtyRepair =
+    ["completion guardrail", "bounded guardrail"].some((indicator) =>
+      judgmentText.includes(indicator),
+    ) &&
+    [
+      "uncommitted",
+      "not yet committed",
+      "before the source checkpoint could be committed",
+      "before commit",
+      "no commit was made",
+    ].some((indicator) => judgmentText.includes(indicator)) &&
+    ["verified", "locally verified", "checks passed", " pass, 0 fail"].some(
+      (indicator) => judgmentText.includes(indicator),
+    );
+  if (internalSourceGap || verifiedDirtyRepair) {
+    const reason = internalSourceGap || "verified dirty repair";
+    return `needs-owner cannot defer a confirmed internal source gap (${reason}); keep the bounded repair in this workflow even when terminal disposition is available`;
   }
   if (allowTerminalDisposition) return null;
   const requiredEvidencePrefixes = [
@@ -3518,6 +3539,10 @@ export function reconcilePreparedTaskSource(
   workspaceDir: string,
   requirement: PreparedSourceRequirement,
   runGit: GitCommand = git,
+  retainedSource?: {
+    workspaceDir: unknown;
+    baselineCommit: unknown;
+  },
 ): PreparedSourceReconciliation {
   const sourceBranch = requirement.sourceBranch.replace(/^refs\/heads\//, "");
   const sourceCommit = requirement.sourceCommit;
@@ -3540,32 +3565,140 @@ export function reconcilePreparedTaskSource(
     };
   }
 
-  const remoteRef = `refs/remotes/origin/${sourceBranch}`;
-  const fetch = runGit(
+  const destinationStatus = runGit(
     workspaceDir,
-    ["fetch", "origin", `+refs/heads/${sourceBranch}:${remoteRef}`],
+    ["status", "--porcelain"],
     true,
   );
-  if (fetch.status !== 0) {
+  if (destinationStatus.status !== 0 || destinationStatus.stdout) {
     return {
       state: "failed",
-      evidence,
-      error: fetch.stderr || fetch.stdout || "prepared source fetch failed",
+      evidence: [
+        ...evidence,
+        `prepared-source-destination-status:${destinationStatus.stdout || "unresolved"}`,
+      ],
+      error: "prepared source destination must be clean",
     };
   }
-  if (
-    runGit(
-      workspaceDir,
-      ["merge-base", "--is-ancestor", sourceCommit, remoteRef],
+
+  let preparedRef: string;
+  if (retainedSource) {
+    const retainedDir = nonEmptyString(retainedSource.workspaceDir);
+    const baselineCommit = nonEmptyString(retainedSource.baselineCommit);
+    const rejectLocal = (problem: string, localEvidence: string[] = []) => ({
+      state: "failed" as const,
+      evidence: [
+        ...evidence,
+        `prepared-source-local:${retainedDir || "unresolved"}`,
+        ...localEvidence,
+      ],
+      error: problem,
+    });
+    if (!retainedDir || !/^[0-9a-f]{40}$/i.test(baselineCommit)) {
+      return rejectLocal(
+        "local retained prepared source requires a Git root and exact baselineCommit",
+      );
+    }
+    const retainedInside = runGit(
+      retainedDir,
+      ["rev-parse", "--is-inside-work-tree"],
       true,
-    ).status !== 0
-  ) {
-    return {
-      state: "failed",
-      evidence: [...evidence, `required-source-remote:${remoteRef}`],
-      error:
-        "prepared source commit is not present on its declared remote branch",
-    };
+    );
+    const retainedTop = runGit(
+      retainedDir,
+      ["rev-parse", "--show-toplevel"],
+      true,
+    );
+    if (
+      retainedInside.status !== 0 ||
+      retainedInside.stdout !== "true" ||
+      retainedTop.status !== 0 ||
+      resolve(retainedTop.stdout) !== resolve(retainedDir)
+    ) {
+      return rejectLocal(
+        "local retained prepared source is not a Git worktree root",
+      );
+    }
+    const retainedBranch = runGit(
+      retainedDir,
+      ["symbolic-ref", "--quiet", "--short", "HEAD"],
+      true,
+    );
+    const retainedHead = runGit(retainedDir, ["rev-parse", "HEAD"], true);
+    const localEvidence = [
+      `prepared-source-local-branch:${retainedBranch.stdout || "detached"}`,
+      `prepared-source-local-head:${retainedHead.stdout || "unresolved"}`,
+      `prepared-source-local-baseline:${baselineCommit}`,
+    ];
+    if (retainedBranch.status !== 0 || retainedBranch.stdout !== sourceBranch) {
+      return rejectLocal(
+        "local retained prepared source branch does not match sourceBranch",
+        localEvidence,
+      );
+    }
+    if (
+      retainedHead.status !== 0 ||
+      retainedHead.stdout !== sourceCommit ||
+      baselineCommit !== sourceCommit
+    ) {
+      return rejectLocal(
+        "local retained prepared source HEAD, sourceCommit, and baselineCommit must match exactly",
+        localEvidence,
+      );
+    }
+    preparedRef = "FETCH_HEAD";
+    const fetch = runGit(
+      workspaceDir,
+      ["fetch", "--no-tags", retainedDir, `refs/heads/${sourceBranch}`],
+      true,
+    );
+    if (fetch.status !== 0) {
+      return rejectLocal(
+        fetch.stderr ||
+          fetch.stdout ||
+          "local retained prepared source fetch failed",
+        localEvidence,
+      );
+    }
+    const fetched = runGit(workspaceDir, ["rev-parse", preparedRef], true);
+    if (fetched.status !== 0 || fetched.stdout !== sourceCommit) {
+      return rejectLocal(
+        "local retained prepared source did not resolve the exact declared commit",
+        [
+          ...localEvidence,
+          `prepared-source-local-ref:${fetched.stdout || "unresolved"}`,
+        ],
+      );
+    }
+    evidence.push(...localEvidence, `prepared-source-local-ref:${preparedRef}`);
+  } else {
+    preparedRef = `refs/remotes/origin/${sourceBranch}`;
+    const fetch = runGit(
+      workspaceDir,
+      ["fetch", "origin", `+refs/heads/${sourceBranch}:${preparedRef}`],
+      true,
+    );
+    if (fetch.status !== 0) {
+      return {
+        state: "failed",
+        evidence,
+        error: fetch.stderr || fetch.stdout || "prepared source fetch failed",
+      };
+    }
+    if (
+      runGit(
+        workspaceDir,
+        ["merge-base", "--is-ancestor", sourceCommit, preparedRef],
+        true,
+      ).status !== 0
+    ) {
+      return {
+        state: "failed",
+        evidence: [...evidence, `required-source-remote:${preparedRef}`],
+        error:
+          "prepared source commit is not present on its declared remote branch",
+      };
+    }
   }
 
   const head = runGit(workspaceDir, ["rev-parse", "HEAD"], true);
@@ -4737,25 +4870,56 @@ export function restoreExactDiagnosticSource(
     ["fetch", "origin", `+refs/heads/${contract.sourceBranch}:${remoteRef}`],
     true,
   );
-  if (fetch.status !== 0) {
-    return {
-      accepted: false,
-      evidence,
-      problem: fetch.stderr || fetch.stdout || "diagnostic source fetch failed",
-    };
-  }
-  if (
-    runGit(
-      workspaceDir,
-      ["merge-base", "--is-ancestor", contract.sourceCommit, remoteRef],
-      true,
-    ).status !== 0
-  ) {
-    return {
-      accepted: false,
-      evidence: [...evidence, `diagnostic-source-remote:${remoteRef}`],
-      problem: "diagnostic source commit is not on its declared remote branch",
-    };
+  if (fetch.status === 0) {
+    if (
+      runGit(
+        workspaceDir,
+        ["merge-base", "--is-ancestor", contract.sourceCommit, remoteRef],
+        true,
+      ).status !== 0
+    ) {
+      return {
+        accepted: false,
+        evidence: [...evidence, `diagnostic-source-remote:${remoteRef}`],
+        problem:
+          "diagnostic source commit is not on its declared remote branch",
+      };
+    }
+    evidence.push(`diagnostic-source-remote:${remoteRef}`);
+  } else {
+    const localRef = `refs/heads/${contract.sourceBranch}`;
+    const fetchProblem =
+      fetch.stderr || fetch.stdout || "diagnostic source fetch failed";
+    if (
+      runGit(workspaceDir, ["show-ref", "--verify", "--quiet", localRef], true)
+        .status !== 0
+    ) {
+      return {
+        accepted: false,
+        evidence: [
+          ...evidence,
+          `diagnostic-source-local-ref:${localRef}:absent`,
+        ],
+        problem: `diagnostic source fetch failed and declared local branch ${localRef} is absent from the workflow-owned Git ref store: ${fetchProblem}`,
+      };
+    }
+    if (
+      runGit(
+        workspaceDir,
+        ["merge-base", "--is-ancestor", contract.sourceCommit, localRef],
+        true,
+      ).status !== 0
+    ) {
+      return {
+        accepted: false,
+        evidence: [...evidence, `diagnostic-source-local-ref:${localRef}`],
+        problem: `declared local diagnostic branch ${localRef} does not contain exact prepared commit ${contract.sourceCommit}`,
+      };
+    }
+    evidence.push(
+      `diagnostic-source-remote-fetch-failed:${fetchProblem}`,
+      `diagnostic-source-local-ref:${localRef}`,
+    );
   }
   const reset = runGit(
     workspaceDir,
@@ -4778,6 +4942,149 @@ export function restoreExactDiagnosticSource(
   return {
     accepted: true,
     evidence: [...evidence, `diagnostic-source-restored-exact:${head.stdout}`],
+  };
+}
+
+export type DiagnosticTaskBranchPublication = {
+  accepted: boolean;
+  evidence: string[];
+  problem?: string;
+};
+
+export function publishExactDiagnosticTaskBranch(
+  workspaceDir: string,
+  contract: Pick<
+    NoIntegrationDiagnosticContract,
+    "sourceBranch" | "sourceCommit"
+  >,
+  runGit: GitCommand = git,
+): DiagnosticTaskBranchPublication {
+  const remoteRef = `refs/heads/${contract.sourceBranch}`;
+  const evidence = [
+    `diagnostic-publication-branch:${contract.sourceBranch}`,
+    `diagnostic-publication-commit:${contract.sourceCommit}`,
+  ];
+  if (!contract.sourceBranch.startsWith("task/")) {
+    return {
+      accepted: false,
+      evidence,
+      problem:
+        "diagnostic publication may target only a dedicated task/* branch",
+    };
+  }
+  if (!/^[0-9a-f]{40}$/i.test(contract.sourceCommit)) {
+    return {
+      accepted: false,
+      evidence,
+      problem: "diagnostic publication requires an exact 40-character commit",
+    };
+  }
+
+  const status = runGit(
+    workspaceDir,
+    ["status", "--porcelain=v1", "--untracked-files=all"],
+    true,
+  );
+  if (status.status !== 0 || status.stdout) {
+    return {
+      accepted: false,
+      evidence: [
+        ...evidence,
+        `diagnostic-publication-worktree:${status.stdout || "unresolved"}`,
+      ],
+      problem:
+        "diagnostic publication requires a clean workflow-owned worktree",
+    };
+  }
+  const head = runGit(workspaceDir, ["rev-parse", "HEAD"], true);
+  if (head.status !== 0 || head.stdout !== contract.sourceCommit) {
+    return {
+      accepted: false,
+      evidence: [
+        ...evidence,
+        `diagnostic-publication-head:${head.stdout || "unresolved"}`,
+      ],
+      problem: `diagnostic publication HEAD does not match exact prepared commit ${contract.sourceCommit}`,
+    };
+  }
+
+  const remote = runGit(workspaceDir, ["ls-remote", "origin", remoteRef], true);
+  if (remote.status !== 0) {
+    return {
+      accepted: false,
+      evidence,
+      problem:
+        remote.stderr ||
+        remote.stdout ||
+        `could not inspect diagnostic remote branch ${remoteRef}`,
+    };
+  }
+  const remoteCommit = remoteLeaseCommit(remote);
+  if (remoteCommit) {
+    return remoteCommit === contract.sourceCommit
+      ? {
+          accepted: true,
+          evidence: [
+            ...evidence,
+            `diagnostic-publication-existing-exact:${remoteRef}@${remoteCommit}`,
+            "diagnostic-publication-mutation:not-required",
+          ],
+        }
+      : {
+          accepted: false,
+          evidence: [
+            ...evidence,
+            `diagnostic-publication-conflict:${remoteRef}@${remoteCommit}`,
+          ],
+          problem: `diagnostic remote branch ${remoteRef} conflicts with exact prepared commit ${contract.sourceCommit}`,
+        };
+  }
+
+  const push = runGit(
+    workspaceDir,
+    [
+      "push",
+      "origin",
+      `--force-with-lease=${remoteRef}:`,
+      `${contract.sourceCommit}:${remoteRef}`,
+    ],
+    true,
+  );
+  if (push.status !== 0) {
+    return {
+      accepted: false,
+      evidence: [
+        ...evidence,
+        `diagnostic-publication-remote-absent:${remoteRef}`,
+      ],
+      problem:
+        push.stderr ||
+        push.stdout ||
+        `could not publish exact diagnostic task branch ${remoteRef}`,
+    };
+  }
+  const readback = runGit(
+    workspaceDir,
+    ["ls-remote", "origin", remoteRef],
+    true,
+  );
+  const publishedCommit = remoteLeaseCommit(readback);
+  if (publishedCommit !== contract.sourceCommit) {
+    return {
+      accepted: false,
+      evidence: [
+        ...evidence,
+        `diagnostic-publication-readback:${publishedCommit || "unresolved"}`,
+      ],
+      problem: `diagnostic task branch publication did not read back exact commit ${contract.sourceCommit}`,
+    };
+  }
+  return {
+    accepted: true,
+    evidence: [
+      ...evidence,
+      `diagnostic-publication-created:${remoteRef}@${publishedCommit}`,
+    ],
   };
 }
 
@@ -5490,6 +5797,24 @@ async function reconcileNoIntegrationDiagnostic(
         ],
       );
     }
+    const publication = publishExactDiagnosticTaskBranch(
+      workspaceDir,
+      contract,
+    );
+    if (!publication.accepted) {
+      return ownerResult(
+        ctx,
+        `The exact prepared diagnostic task branch could not be published safely: ${publication.problem}.`,
+        [
+          ...restored.evidence,
+          ...admission.evidence,
+          ...publication.evidence,
+          "pipeline-run:not-created",
+          "integration:not-attempted",
+          "target-ref-advance:not-attempted",
+        ],
+      );
+    }
     run = await queueRun(repoDir, {
       taskId,
       generation,
@@ -5511,6 +5836,7 @@ async function reconcileNoIntegrationDiagnostic(
       [
         ...restored.evidence,
         ...admission.evidence,
+        ...publication.evidence,
         `pipeline-run:${runId}`,
         "reproduction-consumed:1",
         `max-reproductions:${contract.maxReproductions}`,
@@ -5778,23 +6104,6 @@ export async function reconcileSpecLive(
     );
   }
 
-  const retainedWorkspaceMaterialization = materializePriorRetainedWorkspace({
-    workspaceDir,
-    priorRetainedWorkspace: payload?.input?.priorRetainedWorkspace,
-    baselineCommit: payload?.input?.baselineCommit,
-  });
-  if (!retainedWorkspaceMaterialization.accepted) {
-    return ownerResult(
-      ctx,
-      `Could not materialize the prior retained workspace: ${retainedWorkspaceMaterialization.problem || "unknown error"}.`,
-      [
-        `task:${taskId}`,
-        `spec:${specId}`,
-        ...retainedWorkspaceMaterialization.evidence,
-      ],
-    );
-  }
-
   const diagnostic = noIntegrationDiagnosticContract(payload?.input);
   if (diagnostic.problem) {
     return ownerResult(
@@ -6042,6 +6351,125 @@ export async function reconcileSpecLive(
         [`workspace:${workspaceDir}`],
       );
     }
+
+    let sourceCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+    const baseCommit = git(repoDir, ["rev-parse", targetRef]).stdout;
+    let preparedSourceEvidence: string[] = [];
+    const reconcileRequiredSource =
+      async (): Promise<WorkflowResult | null> => {
+        if (!requiredSource) return null;
+        const prepared = reconcilePreparedTaskSource(
+          workspaceDir,
+          requiredSource,
+          git,
+          nonEmptyString(payload?.input?.priorRetainedWorkspace)
+            ? {
+                workspaceDir: payload?.input?.priorRetainedWorkspace,
+                baselineCommit: payload?.input?.baselineCommit,
+              }
+            : undefined,
+        );
+        preparedSourceEvidence = prepared.evidence;
+        if (prepared.state === "failed") {
+          return ownerResult(
+            ctx,
+            `Could not load the task's required prepared source: ${prepared.error}.`,
+            prepared.evidence,
+          );
+        }
+        if (prepared.state === "conflicted") {
+          const beforeResolution = sourceCommit;
+          const decision = await askAgent(
+            ctx,
+            [
+              `The task requires prepared source ${prepared.sourceBranch}@${prepared.sourceCommit}, and the workflow started a merge into the current task worktree ${workspaceDir}.`,
+              `Resolve only this prepared-source merge. Conflicted paths: ${prepared.conflictedPaths.join(", ")}.`,
+              "Preserve both the current same-task work and the required prepared-source history, run scoped checks, commit the merge, leave the task worktree clean, and return decision=committed.",
+              "Do not abort the merge, replace it with a cherry-pick, push, queue ADO, create another task, or edit task state. This workflow owns publication and live dispatch.",
+              "Task:",
+              ctx.task,
+            ].join("\n\n"),
+            {
+              scenarioNormalization: Boolean(normalizationInput),
+              continueDomainWorkOnValidation: true,
+              validateDecision: (candidate) => {
+                if (candidate.decision !== "committed") {
+                  return "prepared-source conflict must be resolved in this task before live dispatch";
+                }
+                if (cleanWorkspace(workspaceDir)) {
+                  return "prepared-source resolution must leave the task worktree clean";
+                }
+                const head = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+                if (head === beforeResolution) {
+                  return "prepared-source resolution did not create a new commit";
+                }
+                return git(
+                  workspaceDir,
+                  ["merge-base", "--is-ancestor", prepared.sourceCommit, head],
+                  true,
+                ).status === 0
+                  ? null
+                  : `resolved source must preserve ${prepared.sourceCommit} in its ancestry`;
+              },
+            },
+          );
+          preparedSourceEvidence = [
+            ...preparedSourceEvidence,
+            ...decision.evidence,
+          ];
+        }
+        sourceCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
+        if (
+          cleanWorkspace(workspaceDir) ||
+          git(
+            workspaceDir,
+            [
+              "merge-base",
+              "--is-ancestor",
+              requiredSource.sourceCommit,
+              sourceCommit,
+            ],
+            true,
+          ).status !== 0
+        ) {
+          return ownerResult(
+            ctx,
+            "Prepared source reconciliation did not leave one clean source containing the required commit.",
+            [
+              ...preparedSourceEvidence,
+              `source-commit:${sourceCommit || "unresolved"}`,
+            ],
+          );
+        }
+        return null;
+      };
+
+    const retainedWorkspaceRequested = Boolean(
+      nonEmptyString(payload?.input?.priorRetainedWorkspace),
+    );
+    if (retainedWorkspaceRequested) {
+      const preparedSourceProblem = await reconcileRequiredSource();
+      if (preparedSourceProblem) return preparedSourceProblem;
+    }
+
+    const retainedWorkspaceMaterialization = materializePriorRetainedWorkspace({
+      workspaceDir,
+      priorRetainedWorkspace: payload?.input?.priorRetainedWorkspace,
+      baselineCommit: payload?.input?.baselineCommit,
+    });
+    if (!retainedWorkspaceMaterialization.accepted) {
+      return ownerResult(
+        ctx,
+        `Could not materialize the prior retained workspace: ${retainedWorkspaceMaterialization.problem || "unknown error"}.`,
+        [
+          `task:${taskId}`,
+          `spec:${specId}`,
+          ...preparedSourceEvidence,
+          ...retainedWorkspaceMaterialization.evidence,
+        ],
+      );
+    }
+
     if (cleanWorkspace(workspaceDir)) {
       const beforeRecovery = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
       const recovery = await askAgent(
@@ -6113,87 +6541,11 @@ export async function reconcileSpecLive(
       }
     }
 
-    let sourceCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
-    const baseCommit = git(repoDir, ["rev-parse", targetRef]).stdout;
-    let preparedSourceEvidence: string[] = [];
-    if (requiredSource) {
-      const prepared = reconcilePreparedTaskSource(
-        workspaceDir,
-        requiredSource,
-      );
-      preparedSourceEvidence = prepared.evidence;
-      if (prepared.state === "failed") {
-        return ownerResult(
-          ctx,
-          `Could not load the task's required prepared source: ${prepared.error}.`,
-          prepared.evidence,
-        );
-      }
-      if (prepared.state === "conflicted") {
-        const beforeResolution = sourceCommit;
-        const decision = await askAgent(
-          ctx,
-          [
-            `The task requires prepared source ${prepared.sourceBranch}@${prepared.sourceCommit}, and the workflow started a merge into the current task worktree ${workspaceDir}.`,
-            `Resolve only this prepared-source merge. Conflicted paths: ${prepared.conflictedPaths.join(", ")}.`,
-            "Preserve both the current same-task work and the required prepared-source history, run scoped checks, commit the merge, leave the task worktree clean, and return decision=committed.",
-            "Do not abort the merge, replace it with a cherry-pick, push, queue ADO, create another task, or edit task state. This workflow owns publication and live dispatch.",
-            "Task:",
-            ctx.task,
-          ].join("\n\n"),
-          {
-            scenarioNormalization: Boolean(normalizationInput),
-            continueDomainWorkOnValidation: true,
-            validateDecision: (candidate) => {
-              if (candidate.decision !== "committed") {
-                return "prepared-source conflict must be resolved in this task before live dispatch";
-              }
-              if (cleanWorkspace(workspaceDir)) {
-                return "prepared-source resolution must leave the task worktree clean";
-              }
-              const head = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
-              if (head === beforeResolution) {
-                return "prepared-source resolution did not create a new commit";
-              }
-              return git(
-                workspaceDir,
-                ["merge-base", "--is-ancestor", prepared.sourceCommit, head],
-                true,
-              ).status === 0
-                ? null
-                : `resolved source must preserve ${prepared.sourceCommit} in its ancestry`;
-            },
-          },
-        );
-        preparedSourceEvidence = [
-          ...preparedSourceEvidence,
-          ...decision.evidence,
-        ];
-      }
-      sourceCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
-      if (
-        cleanWorkspace(workspaceDir) ||
-        git(
-          workspaceDir,
-          [
-            "merge-base",
-            "--is-ancestor",
-            requiredSource.sourceCommit,
-            sourceCommit,
-          ],
-          true,
-        ).status !== 0
-      ) {
-        return ownerResult(
-          ctx,
-          "Prepared source reconciliation did not leave one clean source containing the required commit.",
-          [
-            ...preparedSourceEvidence,
-            `source-commit:${sourceCommit || "unresolved"}`,
-          ],
-        );
-      }
+    if (!retainedWorkspaceRequested) {
+      const preparedSourceProblem = await reconcileRequiredSource();
+      if (preparedSourceProblem) return preparedSourceProblem;
     }
+    sourceCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
     const recordedTaskBase = nonEmptyString(
       normalizationInput?.originDevCommit,
     );
@@ -7163,23 +7515,26 @@ export async function reconcileSpecLive(
       }
 
       let candidateCommit = git(workspaceDir, ["rev-parse", "HEAD"]).stdout;
-      let integration = integrateDirectlyIntoDev({
+      let integration = await integrateDirectlyIntoDev({
         repoDir,
         workspaceDir,
         sourceBranch,
         sourceCommit: candidateCommit,
         taskBaseCommit: baseCommit,
+        validationCommands: AKS_DIRECT_DEV_VALIDATION_COMMANDS,
       });
 
       if (
         integration.state === "conflict" ||
-        integration.state === "requires-replay"
+        integration.state === "requires-replay" ||
+        integration.state === "validation-failed"
       ) {
         if (integration.state === "requires-replay") {
           git(repoDir, ["fetch", "origin", targetBranch]);
         }
         const replayBaseline =
-          integration.state === "conflict"
+          integration.state === "conflict" ||
+          integration.state === "validation-failed"
             ? integration.replayBaseCommit
             : git(repoDir, ["rev-parse", targetRef]).stdout;
         const replayFacts =
@@ -7189,16 +7544,22 @@ export async function reconcileSpecLive(
                 `Conflict evidence: ${integration.error}`,
                 "Resolve only this task's conflicts and complete the cherry-pick.",
               ]
-            : [
-                `The retained source ${integration.sourceCommit} cannot be isolated from attempt baseline ${integration.taskBaseCommit}.`,
-                `Structured replay reason: ${integration.reason}.`,
-                ...(integration.mergeCommits.length
-                  ? [
-                      `Merge commits in the attempted task range: ${integration.mergeCommits.join(",")}.`,
-                    ]
-                  : []),
-                `Replay only the task-owned terminal source onto ${integration.targetRef}@${replayBaseline}; do not merge stale branch history wholesale.`,
-              ];
+            : integration.state === "validation-failed"
+              ? [
+                  `The replayed candidate ${integration.sourceCommit} descends from ${integration.targetRef}@${replayBaseline}, but repository validation rejected it.`,
+                  `Validation evidence: ${integration.error}`,
+                  "Repair the rejected candidate in place and commit the correction.",
+                ]
+              : [
+                  `The retained source ${integration.sourceCommit} cannot be isolated from attempt baseline ${integration.taskBaseCommit}.`,
+                  `Structured replay reason: ${integration.reason}.`,
+                  ...(integration.mergeCommits.length
+                    ? [
+                        `Merge commits in the attempted task range: ${integration.mergeCommits.join(",")}.`,
+                      ]
+                    : []),
+                  `Replay only the task-owned terminal source onto ${integration.targetRef}@${replayBaseline}; do not merge stale branch history wholesale.`,
+                ];
         const beforeConflictRepair = git(workspaceDir, [
           "rev-parse",
           "HEAD",
@@ -7261,12 +7622,13 @@ export async function reconcileSpecLive(
             ],
           );
         }
-        integration = integrateDirectlyIntoDev({
+        integration = await integrateDirectlyIntoDev({
           repoDir,
           workspaceDir,
           sourceBranch,
           sourceCommit: candidateCommit,
           taskBaseCommit: replayBaseline,
+          validationCommands: AKS_DIRECT_DEV_VALIDATION_COMMANDS,
         });
       }
 

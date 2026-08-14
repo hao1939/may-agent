@@ -1,4 +1,4 @@
-import { spawnSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
@@ -75,6 +75,25 @@ function text(value: unknown): string {
   return "";
 }
 
+async function mapConcurrent<T, R>(
+  values: T[],
+  limit: number,
+  mapper: (value: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(values.length);
+  let next = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(limit, values.length) }, async () => {
+      while (next < values.length) {
+        const index = next;
+        next += 1;
+        results[index] = await mapper(values[index]!, index);
+      }
+    }),
+  );
+  return results;
+}
+
 function readState(path: string): PullRequestWatcherState {
   if (!existsSync(path)) return {};
   try {
@@ -90,40 +109,44 @@ function saveState(path: string, state: PullRequestWatcherState): void {
   writeFileSync(path, `${JSON.stringify(state, null, 2)}\n`);
 }
 
-function runAzJson(
+async function runAzJson(
   args: string[],
   options: { includeProject?: boolean } = {},
-): unknown {
+): Promise<unknown> {
   const includeProject = options.includeProject !== false;
-  const result = spawnSync(
-    azCli,
-    [
-      ...args,
-      "--organization",
-      organization,
-      ...(includeProject ? ["--project", adoProject] : []),
-      "-o",
-      "json",
-    ],
-    {
-      encoding: "utf8",
-      timeout: 30_000,
-      maxBuffer: 16 * 1024 * 1024,
-      env: {
-        ...process.env,
-        AZURE_CONFIG_DIR: process.env.AZURE_CONFIG_DIR || "/app/.state/.azure",
+  const stdout = await new Promise<string | null>((resolve) => {
+    execFile(
+      azCli,
+      [
+        ...args,
+        "--organization",
+        organization,
+        ...(includeProject ? ["--project", adoProject] : []),
+        "-o",
+        "json",
+      ],
+      {
+        encoding: "utf8",
+        timeout: 30_000,
+        maxBuffer: 16 * 1024 * 1024,
+        env: {
+          ...process.env,
+          AZURE_CONFIG_DIR:
+            process.env.AZURE_CONFIG_DIR || "/app/.state/.azure",
+        },
       },
-    },
-  );
-  if (result.status !== 0) return null;
+      (error, output) => resolve(error ? null : output),
+    );
+  });
+  if (stdout === null) return null;
   try {
-    return JSON.parse(result.stdout || "null");
+    return JSON.parse(stdout || "null");
   } catch {
     return null;
   }
 }
 
-function listPullRequestThreads(pullRequestId: string): unknown {
+function listPullRequestThreads(pullRequestId: string): Promise<unknown> {
   return runAzJson(
     [
       "devops",
@@ -220,9 +243,11 @@ export function summarizePullRequestReview(value: unknown): PullRequestReview {
   };
 }
 
-function listPullRequests(knownIds: string[] = []): PullRequest[] {
+async function listPullRequests(
+  knownIds: string[] = [],
+): Promise<PullRequest[]> {
   if (process.env.MAY_AGENT_AKS_PR_WATCHER_ADO === "0") return [];
-  const value = runAzJson([
+  const value = await runAzJson([
     "repos",
     "pr",
     "list",
@@ -237,10 +262,15 @@ function listPullRequests(knownIds: string[] = []): PullRequest[] {
   const byId = new Map(
     listed.map((pullRequest) => [text(pullRequest.pullRequestId), pullRequest]),
   );
-  for (const id of knownIds.slice(-100)) {
-    if (byId.has(id)) continue;
-    const exact = runAzJson(["repos", "pr", "show", "--id", id]);
-    if (exact && typeof exact === "object") byId.set(id, exact as PullRequest);
+  const missing = knownIds.slice(-100).filter((id) => !byId.has(id));
+  const exactPullRequests = await mapConcurrent(missing, 4, (id) =>
+    runAzJson(["repos", "pr", "show", "--id", id]),
+  );
+  for (const [index, exact] of exactPullRequests.entries()) {
+    const id = missing[index];
+    if (id && exact && typeof exact === "object") {
+      byId.set(id, exact as PullRequest);
+    }
   }
   return [...byId.values()];
 }
@@ -314,37 +344,66 @@ export function pullRequestObservationEvent(
   };
 }
 
+export function selectPullRequestObservations(
+  observed: ObservedPullRequest[],
+  priorActiveIds: string[],
+): { activeIds: string[]; emitted: ObservedPullRequest[] } {
+  const priorActive = new Set(priorActiveIds);
+  const active = observed.filter(
+    (value) => value.state === "active" || value.state === "conflicted",
+  );
+  return {
+    activeIds: active.map((value) => value.pullRequestId),
+    emitted: observed.filter(
+      (value) =>
+        value.state === "active" ||
+        value.state === "conflicted" ||
+        priorActive.has(value.pullRequestId),
+    ),
+  };
+}
+
 /** Observe task-owned AKS PRs as provider facts; task Conditions perform correlation. */
 export async function observeAksPullRequests(
   ctx: ProjectAppContext,
 ): Promise<unknown> {
   const statePath = ctx.appPath(".state/watchers/aks-pull-request.json");
   const prior = readState(statePath);
-  const pullRequests = listPullRequests(prior.activeIds ?? []).filter(
+  const pullRequests = (await listPullRequests(prior.activeIds ?? [])).filter(
     (pullRequest) => branchName(pullRequest.sourceRefName).startsWith("task/"),
   );
-  const observed = pullRequests.flatMap((pullRequest) => {
-    const pullRequestId = text(pullRequest.pullRequestId);
-    const isActive = text(pullRequest.status) === "active";
-    const review = isActive
-      ? summarizePullRequestReview(listPullRequestThreads(pullRequestId))
-      : { available: true, unresolvedCount: 0, fingerprint: "", threads: [] };
-    const value = observePullRequest(pullRequest, review);
-    return value ? [value] : [];
-  });
+  const observed = (
+    await mapConcurrent(pullRequests, 4, async (pullRequest) => {
+      const pullRequestId = text(pullRequest.pullRequestId);
+      const isActive = text(pullRequest.status) === "active";
+      const review = isActive
+        ? summarizePullRequestReview(
+            await listPullRequestThreads(pullRequestId),
+          )
+        : {
+            available: true,
+            unresolvedCount: 0,
+            fingerprint: "",
+            threads: [],
+          };
+      return observePullRequest(pullRequest, review);
+    })
+  ).filter((value): value is ObservedPullRequest => value !== null);
+  const selection = selectPullRequestObservations(
+    observed,
+    prior.activeIds ?? [],
+  );
   saveState(statePath, {
-    activeIds: observed
-      .filter(
-        (value) => value.state === "active" || value.state === "conflicted",
-      )
-      .map((value) => value.pullRequestId),
+    activeIds: selection.activeIds,
     checkedAt: new Date().toISOString(),
   });
 
-  // Level observations are deliberately repeated. A Condition registered after
-  // a provider transition must still see the current PR state on the next scan.
-  for (const value of observed) ctx.emit(pullRequestObservationEvent(value));
+  // Repeat actionable levels and emit terminal states once as transitions.
+  // Replaying every historical terminal PR would flood the durable event bus
+  // without adding a new fact or helping a live reconciliation.
+  for (const value of selection.emitted)
+    ctx.emit(pullRequestObservationEvent(value));
   return observed.length > 0
-    ? { observed: observed.length }
+    ? { observed: observed.length, emitted: selection.emitted.length }
     : ctx.noop("No task-owned AKS pull requests were observed.");
 }

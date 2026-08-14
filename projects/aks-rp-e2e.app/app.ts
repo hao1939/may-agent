@@ -2183,17 +2183,21 @@ export async function routeAksEvent(
     )
       ? details.unresolvedReviewThreads
       : [];
-    const carrier =
+    const taskState =
       typeof ctx.appPath === "function" && pullRequestId
+        ? readTaskStateSnapshot(ctx.appPath("."))
+        : null;
+    const carrier =
+      taskState && pullRequestId
         ? existingPullRequestReviewWakeCarrierForPullRequest(
-            readTaskStateSnapshot(ctx.appPath(".")),
+            taskState,
             pullRequestId,
           )
         : null;
     const campaignCarrier =
-      typeof ctx.appPath === "function" && pullRequestId
+      taskState && pullRequestId
         ? existingMasterValidationFailureCarrierForPullRequest(
-            readTaskStateSnapshot(ctx.appPath(".")),
+            taskState,
             pullRequestId,
           )
         : null;
@@ -2725,7 +2729,7 @@ export default defineProjectApp({
       ],
     },
     {
-      id: "durable-loop-pulse",
+      id: "durable-spec-loop-pulse",
       enabled: true,
       intervalMs: 600_000,
       emits: [
@@ -2738,6 +2742,15 @@ export default defineProjectApp({
             reason: "scheduled-durable-loop-pulse",
           },
         },
+      ],
+    },
+    {
+      id: "durable-feature-compact-loop-pulse",
+      enabled: true,
+      // Keep the recovery backstops close to ten minutes without enqueueing
+      // three expensive task reconciliations in the same event-loop turn.
+      intervalMs: 605_000,
+      emits: [
         {
           type: "project.task.tick",
           target: { project: projectId, taskId: featureCompactLoopTaskId },
@@ -2747,6 +2760,13 @@ export default defineProjectApp({
             reason: "scheduled-durable-loop-pulse",
           },
         },
+      ],
+    },
+    {
+      id: "durable-master-validation-compact-pulse",
+      enabled: true,
+      intervalMs: 610_000,
+      emits: [
         {
           type: "project.task.tick",
           target: {
