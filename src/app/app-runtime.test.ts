@@ -43,9 +43,8 @@ describe("app runtime startup order", () => {
 
   it("publishes inbox and compatibility task routes in one registry transaction", () => {
     const source = readFileSync(new URL("./app-runtime.ts", import.meta.url), "utf8");
-    expect(source).toContain("appRegistrySnapshot: snapshot");
-    expect(source).toContain("afterCommit: () => commit()");
-    expect(source).toContain("reload: () => handleReload({ throwOnError: true })");
+    expect(source).toContain("appTasks.publishGeneration({ snapshot, publish: commit })");
+    expect(source).toContain("appTasks.watchGenerations(() => handleReload({ throwOnError: true }))");
   });
 });
 
