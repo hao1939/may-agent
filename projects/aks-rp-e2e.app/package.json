@@ -27,7 +27,7 @@
     "format:check": "bun x prettier --check app.ts task-loops.ts task-loops.test.ts legacy-branch-active-ownership.ts package.json tsconfig.json README.md design/README.md agents/app-ops/workflows/**/*.ts agents/owner/workflows/**/*.ts watchers/**/*.ts"
   },
   "dependencies": {
-    "@may-agent/sdk": "file:../may-agent/packages/sdk"
+    "@may-agent/sdk": "file:../may-agent/bundle/sdk-current"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",

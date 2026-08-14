@@ -4,7 +4,7 @@
   "workspaces": {
     "": {
       "dependencies": {
-        "@may-agent/sdk": "file:projects/may-agent/packages/sdk",
+        "@may-agent/sdk": "file:projects/may-agent/bundle/sdk-current",
         "azure-cli": "^0.10.20",
         "puppeteer-core": "^24.43.1",
       },
@@ -72,7 +72,7 @@
 
     "@google/genai": ["@google/genai@1.52.0", "", { "dependencies": { "google-auth-library": "^10.3.0", "p-retry": "^4.6.2", "protobufjs": "^7.5.4", "ws": "^8.18.0" }, "peerDependencies": { "@modelcontextprotocol/sdk": "^1.25.2" }, "optionalPeers": ["@modelcontextprotocol/sdk"] }, "sha512-gwSvbpiN/17O9TbsqSsE/OzZcpv5Fo4RQjdngGgogtuB9RsyJ8ZHhX5KjHj1bp5N9snN2eK8LDGXSaWW2hof8Q=="],
 
-    "@may-agent/sdk": ["@may-agent/sdk@file:projects/may-agent/packages/sdk", { "dependencies": { "@earendil-works/pi-ai": "0.80.7" } }],
+    "@may-agent/sdk": ["@may-agent/sdk@file:projects/may-agent/bundle/sdk-current", { "dependencies": { "@earendil-works/pi-ai": "0.81.1", "typebox": "1.1.38" } }],
 
     "@mistralai/mistralai": ["@mistralai/mistralai@2.2.6", "", { "dependencies": { "@opentelemetry/semantic-conventions": "^1.40.0", "ws": "^8.18.0", "zod": "^3.25.0 || ^4.0.0", "zod-to-json-schema": "^3.25.0" }, "peerDependencies": { "@opentelemetry/api": "^1.9.0" }, "optionalPeers": ["@opentelemetry/api"] }, "sha512-W8pX7zHxjJvMIpw8JMxeJEleapXX0Q9NPszdNzqkM3MIEoIGPObdodujj+WHteXEvGfaP/AMwlNyRfEzSY6dQQ=="],
 

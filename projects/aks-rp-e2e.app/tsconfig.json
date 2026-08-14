@@ -12,9 +12,9 @@
     "types": ["node"],
     "allowImportingTsExtensions": true,
     "paths": {
-      "@may-agent/sdk": ["../may-agent/packages/sdk/src/index.ts"],
-      "@may-agent/sdk/legacy": ["../may-agent/packages/sdk/src/legacy.ts"],
-      "@may-agent/sdk/testing": ["../may-agent/packages/sdk/src/testing.ts"]
+      "@may-agent/sdk": ["../may-agent/bundle/sdk-current/src/index.ts"],
+      "@may-agent/sdk/legacy": ["../may-agent/bundle/sdk-current/src/legacy.ts"],
+      "@may-agent/sdk/testing": ["../may-agent/bundle/sdk-current/src/testing.ts"]
     }
   },
   "include": [

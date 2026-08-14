@@ -13,7 +13,7 @@
     "format:check": "bun x prettier --check app.ts inbox.ts app.test.ts agents/tech-lead/workflows/**/*.ts types/**/*.ts package.json project.json tsconfig.json"
   },
   "dependencies": {
-    "@may-agent/sdk": "file:../may-agent/packages/sdk"
+    "@may-agent/sdk": "file:../may-agent/bundle/sdk-current"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",

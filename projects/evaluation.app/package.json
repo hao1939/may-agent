@@ -14,7 +14,7 @@
     "format:check": "bun x prettier --check app.ts inbox.ts canary-contract.ts package.json project.json tsconfig.json agents/evaluator/workflows/**/*.ts scripts/**/*.ts watchers/**/*.ts"
   },
   "dependencies": {
-    "@may-agent/sdk": "file:../may-agent/packages/sdk"
+    "@may-agent/sdk": "file:../may-agent/bundle/sdk-current"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
