@@ -52,6 +52,9 @@ describe("App inbox host", () => {
     });
 
     expect(() => admit(host, "unknown", "unknown-item")).toThrow("Unknown App");
+    expect(host.acceptsInput("evaluation", { kind: "probe", data: { value: "valid" } })).toBe(true);
+    expect(host.acceptsInput("evaluation", { kind: "message", data: { message: "unsupported" } })).toBe(false);
+    expect(host.acceptsInput("unknown", { kind: "probe", data: { value: "valid" } })).toBe(false);
     expect(() =>
       host.admit({
         id: "invalid-item",

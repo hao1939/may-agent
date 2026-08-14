@@ -1,5 +1,6 @@
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import type { AppInput } from "@may-agent/sdk";
 import type { SubagentManager } from "../lib/index.js";
 import { log } from "../lib/log.js";
 import { getDb } from "../lib/requests.js";
@@ -24,7 +25,8 @@ export interface CommandRouterOptions {
   clearCancelLatch: () => void;
   projectRoot: string;
   persistDir?: string;
-  routeHumanInputToApp?: boolean;
+  /** Uses the live App registry and schema; false keeps the input on its compatibility route. */
+  acceptsDirectAppInput?: (appId: string, input: AppInput) => boolean;
   reload: () => void | Promise<void>;
   restart: () => void;
   shutdown: () => void;
@@ -35,12 +37,14 @@ export interface CommandRouter {
   close: () => void;
 }
 
-const MAY_APP_INPUT_DELIVERY: DeliveryResult = {
-  accepted: true,
-  by: "command-router:app:may",
-  route: "direct",
-  note: "human input transferred to the durable May App inbox",
-};
+function appInputDelivery(appId: string): DeliveryResult {
+  return {
+    accepted: true,
+    by: `command-router:app:${appId}`,
+    route: "direct",
+    note: `human input transferred to the durable ${appId} App inbox`,
+  };
+}
 
 function eventData(event: unknown): Record<string, unknown> {
   if (!isRecord(event)) return {};
@@ -203,13 +207,13 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : null;
   }
 
-  function routeMayConversationApp(input: {
+  function routeConversationApp(input: {
+    appId: string;
+    appInput: AppInput;
     event: unknown;
     data: Record<string, unknown>;
-    message: string;
     source: string;
     conversation: Record<string, unknown>;
-    context: Record<string, unknown>;
   }): DeliveryResult {
     const sourceEventId = eventRowId(input.event);
     const channel = nonEmptyString(input.conversation.channel) ?? input.source;
@@ -220,17 +224,11 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     bus.emit({
       type: "app.input.requested",
       source: input.source,
-      owner: "app:may",
+      owner: `app:${input.appId}`,
       data: {
-        appId: "may",
+        appId: input.appId,
         source: { kind: "human", id: sourceEventId ? `event:${sourceEventId}` : `channel:${channel}:${sequence}` },
-        input: {
-          kind: "message",
-          data: {
-            message: input.message,
-            ...(Object.keys(input.context).length ? { context: input.context } : {}),
-          },
-        },
+        input: input.appInput,
         conversationId,
         conversationSequence: sequence,
         channel,
@@ -241,7 +239,23 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
           (sourceEventId ? `human-input:${sourceEventId}` : `human-input:${channel}:${sequence}`),
       },
     } as any);
-    return MAY_APP_INPUT_DELIVERY;
+    return appInputDelivery(input.appId);
+  }
+
+  function messageAppInput(message: string, context: Record<string, unknown>): AppInput {
+    return {
+      kind: "message",
+      data: {
+        message,
+        ...(Object.keys(context).length ? { context } : {}),
+      },
+    };
+  }
+
+  function projectAppId(projectPath: string): string {
+    const normalized = projectPath.replace(/\\/g, "/").replace(/\/$/, "");
+    const tail = normalized.split("/").filter(Boolean).pop() ?? "";
+    return tail.endsWith(".app") ? tail.slice(0, -".app".length) : tail;
   }
 
   function normalizeProjectPath(value: unknown): string | null {
@@ -985,8 +999,16 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     }
 
     if (mayBrokerReply) {
-      if (options.routeHumanInputToApp) {
-        return routeMayConversationApp({ event, data, message: deliveredMessage, source, conversation, context });
+      const appInput = messageAppInput(deliveredMessage, context);
+      if (options.acceptsDirectAppInput?.("may", appInput)) {
+        return routeConversationApp({
+          appId: "may",
+          appInput,
+          event,
+          data,
+          source,
+          conversation,
+        });
       }
       bus.emit({
         type: "chat.start.requested",
@@ -1012,6 +1034,18 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
 
     const targetProjectPath = nonEmptyString(target.projectPath);
     if (targetProjectPath) {
+      const targetAppId = projectAppId(targetProjectPath);
+      const appInput = messageAppInput(message, context);
+      if (targetAppId && options.acceptsDirectAppInput?.(targetAppId, appInput)) {
+        return routeConversationApp({
+          appId: targetAppId,
+          appInput,
+          event,
+          data,
+          source,
+          conversation,
+        });
+      }
       bus.emit({
         type: "project.comment.created",
         source,
@@ -1022,8 +1056,16 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     }
 
     const agent = nonEmptyString(target.agent) ?? ownerAgent(eventOwner) ?? "may";
-    if (agent === "may" && options.routeHumanInputToApp) {
-      return routeMayConversationApp({ event, data, message: deliveredMessage, source, conversation, context });
+    const mayAppInput = messageAppInput(deliveredMessage, context);
+    if (agent === "may" && options.acceptsDirectAppInput?.("may", mayAppInput)) {
+      return routeConversationApp({
+        appId: "may",
+        appInput: mayAppInput,
+        event,
+        data,
+        source,
+        conversation,
+      });
     }
     bus.emit({
       type: "chat.start.requested",
