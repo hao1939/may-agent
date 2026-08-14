@@ -27,7 +27,7 @@ import type {
   TaskResult,
   EventEnvelope,
   WorkflowContext,
-} from "./index.js";
+} from "./legacy.js";
 import type {
   AppRead,
   ExecutionResult as AppExecutionResult,

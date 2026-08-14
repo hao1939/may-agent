@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, realpathSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
-import type { ProjectAppTaskWorkspace } from "@may-agent/sdk";
+import type { ProjectAppTaskWorkspace } from "@may-agent/sdk/legacy";
 
 type GitResult = { status: number; stdout: string; stderr: string };
 

@@ -58,8 +58,8 @@ import {
   type ProjectAppTaskIntent,
   type ProjectAppTaskVerifier,
   type ProjectAppExecutionPaths,
-  type AppTaskAttachment,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/legacy";
+import type { AppTaskAttachment } from "@may-agent/sdk";
 import type { TaskView } from "@may-agent/sdk/app";
 import { readRuntimeTaskView } from "../app-read.js";
 import { Cron } from "../cron.js";

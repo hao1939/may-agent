@@ -182,7 +182,7 @@ function mayAgentSdkRuntimeResolver(entrypoint: string): RuntimeBunPlugin {
   return {
     name: "may-agent-sdk-runtime-resolver",
     setup(build) {
-      build.onResolve({ filter: /^@may-agent\/sdk(?:\/(?:app|testing))?$/ }, (args) => {
+      build.onResolve({ filter: /^@may-agent\/sdk(?:\/(?:app|legacy|testing))?$/ }, (args) => {
         return {
           path: resolveSdkExport(args.path, args.importer || entrypoint),
         };
@@ -244,6 +244,8 @@ function resolveSdkExport(specifier: string, importer: string): string {
   const exportFile =
     specifier === "@may-agent/sdk/app"
       ? "app.ts"
+      : specifier === "@may-agent/sdk/legacy"
+        ? "legacy.ts"
       : specifier === "@may-agent/sdk/testing"
         ? "testing.ts"
         : "index.ts";
