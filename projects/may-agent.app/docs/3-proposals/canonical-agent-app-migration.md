@@ -610,6 +610,18 @@ Every legacy event path is classified before migration:
 | Unknown addressed App | reject and retain visible admission failure |
 | Unknown unaddressed event | unhandled observation; no owner work synthesized |
 
+The route is exclusive per App obligation. An event must not create both an
+inbox item and task intent for the same App. Canonical App `subscriptions`
+translate addressed event work into inbox input; `tasks.subscriptions` resolve
+deterministic desired work directly; an explicit task target persists a trigger
+and wakes only that task; and facts with no obligation remain observations. No
+second `inbox.accepts` selector surface is introduced.
+
+Task routing is durable admission, not an in-memory queue handoff. The host
+persists the resolved `TaskIntent` and event-derived trigger before it
+acknowledges delivery, then coalesces/enqueues execution. Recovery scans durable
+task state, so a crash between persistence and enqueue cannot lose the wake.
+
 No event is allowed to be consumed by both legacy and canonical actionable
 paths. During migration, route ownership is selected per App and per route with
 a tested compatibility flag; there is never dual consumption.
