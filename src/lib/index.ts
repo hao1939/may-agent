@@ -122,8 +122,8 @@ export type {
   EventDeliveryHealth,
   EventDeliveryHealthQuery,
 } from "./query-service.js";
-export { createWorkflowHandler } from "@may-agent/sdk";
-export type { WorkflowHandlerOptions } from "@may-agent/sdk";
+export { createWorkflowHandler } from "@may-agent/sdk/legacy";
+export type { WorkflowHandlerOptions } from "@may-agent/sdk/legacy";
 export {
   getExecutionResult,
   getExecutionResultFromDb,
