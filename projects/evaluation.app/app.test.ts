@@ -88,8 +88,6 @@ describe("canonical evaluation App", () => {
       kind: "project-review",
       data: {
         targetProject: "gym.app",
-        targetAppDir: "/app/projects/gym.app",
-        targetDomainDir: "/app/projects/gym",
       },
     });
   });
@@ -353,8 +351,6 @@ describe("evaluation task policy", () => {
       workflow: "project-health-evaluator",
       input: {
         targetProject: "gym.app",
-        targetAppDir: "/app/projects/gym.app",
-        targetDomainDir: "/app/projects/gym",
       },
     });
     expect(app.schedules).toContainEqual(

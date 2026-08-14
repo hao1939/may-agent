@@ -493,21 +493,16 @@ It may:
 
 ## Watched Targets
 
-Start with `aks-rp-e2e.app` because it has the richest ops pattern and the
-largest unfinished surface:
-
-```text
-targetProject: aks-rp-e2e.app
-targetAppDir: /app/projects/aks-rp-e2e.app
-targetDomainDir: /app/projects/aks-rp-e2e
-```
-
-Project/app review should cover all active project apps:
+Project/app review identifies a target by its stable App name only. The
+workflow does not receive absolute App or domain paths; its bounded evaluator
+inspection discovers public evidence through read-only tools. Standing coverage
+currently includes:
 
 ```text
 aks-rp-e2e.app
 may-agent.app
 scout-knowledge-lib.app
+gym.app
 evaluation.app
 ```
 
@@ -550,42 +545,22 @@ process and producing trustworthy verification output.
 
 ## Inputs
 
-The evaluator reads raw facts first:
+One bounded evaluator-agent call collects and judges current public evidence:
 
-- target task tree;
-- target project-state readout;
-- loop state files and counters;
-- recent planner, watchdog, reviewer, worker, and stall-review runs;
-- recent workflow/pipeline runs and artifacts;
-- registered metrics and recent breach/recovery events;
-- open blocked waits and overdue waits;
-- open escalations and their owner/resume/fallback state;
-- recent escalation lifecycle events from the runtime DB;
-- approval dispatch/message records that prove an escalation was actually sent
-  to the intended human/operator surface;
-- task-tree linkage between blocked waits and escalation/owner paths;
-- target git status when output depends on committed or pushed changes;
-- recent human steering events;
-- previous project/app evaluation reports for trend comparison;
-- target app metric snapshots and recent metric history, even when no metric
-  breach event was routed to `evaluation.app`;
-- target app self-recovery contract: task state, owner wake, metric handling,
-  scheduled observers, fallback/watchdog path, human escalation/reporting path,
-  and unfinished-work frontier;
-- target app discovered loop/run artifacts under its own `.state` directory,
-  without requiring AKS-specific artifact names.
+- the target's canonical App declaration;
+- its generated task projection and public project readout;
+- recent relevant metrics, events, workflow results, and pipeline evidence;
+- Git revision/status when a finding depends on source state; and
+- the previous Evaluation-owned project-health report.
 
-The raw fact packet should be saved with the report or referenced from it. The
-human must be able to disagree with evaluator judgment by inspecting the facts.
-Metrics, breach events, task-tree snapshots, and project readouts are
-timestamped observations. The evaluator compares their capture times before
-calling a condition current: a newer direct zero metric supersedes an older
-breach event, while genuinely conflicting current sources remain explicit
-uncertainty with a verification step.
-When the report shows metrics, distinguish the target app's own readout from
-runtime DB metrics. If runtime metric query returns no rows but the target app's
-project-state readout contains counters, the report should say both facts
-plainly instead of showing only `metrics: none`.
+The workflow passes only canonical input, reconciliation context, and the exact
+wake fact. It does not assemble a host-private fact packet, read task storage,
+run raw SQL, or receive global runtime paths. The evaluator agent may use its
+read-only inspection and `query_db` tools, but it must not mutate the target,
+send messages, or create work. Its structured `observations` and source
+revisions are written beside the report so a target owner can challenge the
+judgment. Conflicting or unavailable evidence produces `watch` with an exact
+verification gap, not an invented target defect.
 
 ## Report Contract
 
@@ -601,18 +576,12 @@ The report should have this shape:
 Project: aks-rp-e2e.app
 Verdict: ok | watch | concern | urgent | blocked-on-human
 Main concern: one sentence
-Requested human action: none | watch | decide | approve | provide-input | assign-owner
+Requested human action: none | watch | decide | approve | provide-input
 
-Raw facts:
-- link to the full raw facts sidecar, `<timestamp>.facts.json`
-- concise task counts and trend
-- active/review/runnable state
-- blocked/overdue/escalation counts
-- escalation/approval usage: open, stale, closed, failed dispatch, task linkage
-- loop status and trend
-- recent repeated signals
-- output evidence and suspicious output
-- self-recovery contract status and missing/weak pieces
+Public observations:
+- link to the structured sidecar, `<timestamp>.facts.json`
+- bounded task, metric, runtime, source-revision, and prior-report evidence
+- the exact evaluator execution identity and terminal status
 
 Evaluator judgment:
 - what looks healthy
@@ -643,9 +612,10 @@ Human action:
 - what the target app should do after the human action
 ```
 
-The report is the primary owner artifact. The sidecar facts file keeps the raw
-packet available without making the markdown hard to read. Events point to the
-report. Human notification is optional delivery, not the closure path.
+The report is the primary owner artifact. The sidecar keeps the bounded public
+observations and judgment available without making the markdown hard to read.
+Events point to the report. Human notification is optional addressed delivery,
+not the closure path.
 
 The report must distinguish evaluator judgment from notification delivery. If
 the evaluator says "notify" but dedupe suppresses the notification, the report
@@ -666,60 +636,41 @@ should proceed with that focus. If rejected, provide the replacement focus.
 - `ok`: raw facts show useful progress and no meaningful human action.
 - `watch`: mildly abnormal, but already represented by active work or a valid
   exact wait.
-- `concern`: target app is not clearly handling the issue; human should know.
-- `urgent`: project output is materially at risk or repeatedly misleading.
+- `concern`: target App is not clearly handling the issue; owner action is
+  warranted.
+- `urgent`: project output is materially at risk or repeatedly misleading; the
+  target owner needs prompt action.
 - `blocked-on-human`: progress requires a human decision, approval, credential,
-  capacity decision, or ownership assignment.
+  or capacity decision.
 
 ## Owner Feedback And Notification Policy
 
-An owner finding is emitted when a review introduces a new concern family,
-increases severity, or introduces a newly actionable human decision. Repeated
-same-family `watch`/`concern` reviews remain in the retained report and do not
-re-wake the target owner. Delivery means the owner workflow received the
-finding; it does not mean the owner accepted it or completed remediation. The
-owner is responsible for judging the finding, proving it is already handled,
-turning it into work, or recording an exact wait.
+An owner finding is emitted for a non-`ok` review when the concern family is
+new, severity increases, an explicit review requests it, or an unchanged
+finding remains after the one-hour retry window. Delivery means only that the
+target App durably received `project.owner.requested`; it does not mean the
+owner accepted or repaired the finding. The owner judges it, proves it is
+already handled, turns it into work, or records an exact wait.
 
-Notify only when a human can usefully act or should be aware that the target app
-is not self-correcting.
-
-`watch` is normally report-only. A `watch` verdict should not notify just
-because the evaluator says "keep watching"; the next scheduled report is the
-watch mechanism. Notify only for `concern`, `urgent`, `blocked-on-human`, or a
-concrete human action such as `approve`, `decide`, `assign-owner`, or
-`provide-input`.
-
-Notify for:
-
-- project not moving while unfinished work remains;
-- blocked or overdue blocked count remains high across multiple samples;
-- same recovery/watchdog/metric pattern repeats without reduction;
-- active work is zero or near-zero while loops still have non-terminal work;
-- suspicious output, such as a live test passing too quickly to have created
-  real resources;
-- escalation exists without exact owner, wait, fallback, or response path;
-- target app claims settled state while raw facts show important unfinished work;
-- target app keeps creating vague blockers instead of exact waits or work;
-- evaluator cannot trust the target app's own self-recovery path.
-
-Do not notify for:
-
-- a transient issue already represented by credible active work;
-- a future-dated exact wait with owner, watcher, fallback, and clear resume
-  condition;
-- a one-off metric breach that recovered and left no output risk;
-- evaluator uncertainty that can be resolved by the next scheduled sample.
+Human delivery is stricter. `evaluation.human_decision.requested` is emitted
+only for `concern`, `urgent`, or `blocked-on-human` when the structured action
+is exactly `decide`, `approve`, or `provide-input`. The May App translates that
+fact into one correlated inbox request. `watch`, routine awareness, target
+ownership, evaluator uncertainty, and failed evaluator execution never create
+human work. Every target already has a declared App owner, so `assign-owner` is
+normalized to owner feedback rather than human notification.
 
 ## Events
 
-Use explicit evaluation events:
+Use explicit facts with one actionable authority each:
 
 ```text
 evaluation.review_failed
 evaluation.project.review.requested
+evaluation.project.review_started
 evaluation.project.reviewed
-evaluation.project.notification.requested
+evaluation.project.review_failed
+evaluation.human_decision.requested
 ```
 
 `evaluation.review_failed` is emitted when the evaluation review process itself
@@ -750,25 +701,20 @@ metric.breach | metric.recovered
 The scheduled review remains mandatory because the target app may consume,
 recover, or suppress its own metric events before `evaluation.app` sees them.
 
-`evaluation.project.review.requested` includes:
+`evaluation.project.review.requested` is a task subscription. It resolves
+directly to the stable `runtime/project-audit/<target>` intent and does not
+create an inbox item. Its stable configuration contains only:
 
 ```json
 {
   "targetProject": "aks-rp-e2e.app",
-  "targetAppDir": "/app/projects/aks-rp-e2e.app",
-  "targetDomainDir": "/app/projects/aks-rp-e2e",
   "reason": "scheduled"
 }
 ```
 
-Runtime delivery may wrap those fields under `data.params` when the event is
-dispatched to a workflow. The evaluator must normalize both shapes:
-
-```text
-params.targetProject
-data.targetProject
-data.params.targetProject
-```
+The task input persists only `targetProject`; changing reason and other wake
+details remain in the reconciliation trigger. Absolute App/domain paths and
+legacy wrapper shapes are not part of the contract.
 
 `evaluation.project.reviewed` includes:
 
@@ -778,14 +724,19 @@ data.params.targetProject
   "verdict": "concern",
   "reportPath": "reports/project-health/aks-rp-e2e.app/20260708T000000Z.md",
   "summary": "Overdue blocked work is not burning down.",
-  "requestedHumanAction": "assign-owner",
-  "notify": true,
+  "requestedHumanAction": "none",
+  "notify": false,
   "dedupeKey": "aks-rp-e2e.app:overdue-blocked-frontier:spec-loop"
 }
 ```
 
-`evaluation.project.notification.requested` includes the same dedupe key plus a
-short human message and report path.
+`evaluation.project.review_failed` is operational evidence about an incomplete
+inner evaluator execution. That workflow attempt returns blocked, writes no
+successful report/cursor, and emits neither target-owner feedback nor May work.
+
+`evaluation.human_decision.requested` includes the dedupe key, exact requested
+action, short message, and report path. A canonical May App subscription
+translates it into one addressed inbox request.
 
 Finding delivery to the target app uses the target owner's normal request path:
 
@@ -793,9 +744,9 @@ Finding delivery to the target app uses the target owner's normal request path:
 project.owner.requested(target=<target owner>)
 ```
 
-The owner request is the delivery path. Human notification is extra visibility
-when the recommendation needs human action or the owner path is not trustworthy.
-Neither delivery nor a handled transport status proves acceptance or repair.
+The owner request is the routine finding-delivery path. Human delivery exists
+only when a concrete decision/input is required. Neither delivery nor a handled
+transport status proves acceptance or repair.
 
 Every non-`ok` owner request must carry enough structure to return the finding
 to the output that caused it:
@@ -835,10 +786,10 @@ human action
   -> evaluation.project.review.requested(reason=manual)
 ```
 
-The scheduled loop is a deterministic sampling baseline. It catches
-slow-moving problems that no single event makes obvious, but invokes the
-evaluator LLM only when the compact input fingerprint changes or the daily
-baseline is due.
+The scheduled loop is a sampling baseline. It catches slow-moving problems
+that no single event makes obvious. Each trigger runs one bounded read-only
+evaluator inspection; the resulting semantic fingerprint suppresses unchanged
+report publication and delivery until a meaningful delta or daily baseline.
 
 Event-driven triggers provide faster review when a concrete signal appears:
 
@@ -861,9 +812,9 @@ Use a durable scheduled loop for each watched target:
 ```text
 project-health-loop
   every 2 hours
-  -> build compact facts and compare the meaningful-state fingerprint
-  -> review only on a delta or daily baseline
-  -> write report
+  -> run one bounded public-evidence inspection
+  -> compare the structured judgment/observation fingerprint
+  -> write a report only on a delta or daily baseline
   -> send owner feedback for new/severity/actionable findings
   -> notify human only if policy says notify
 ```
@@ -872,17 +823,19 @@ The default interval is **2 hours**. That is the baseline safety net for slow
 stalls and repeated churn. Faster reaction should come from manual review or
 target signals, not from making the scheduled loop noisy.
 
-The loop should keep a small state file:
+The workflow keeps a small Evaluation-owned generated cursor:
 
 ```text
-.state/project-health/targets/<targetProject>.json
+generated/project-health-state/targets/<targetProject>.json
 ```
 
 It records last report path, last verdict, last notification dedupe key, last
-sampled counters, and unresolved concern fingerprints.
+semantic fingerprint, and owner-feedback delivery state. It is ignored
+generated App data, not host-owned `.state` and not a second task authority.
 
-This is not a task tree node per review. It is loop state, similar to how other
-durable loops track cursor/progress.
+There is one durable maintain task per target, not a task node per review. The
+cursor only suppresses duplicate artifacts and delivery; task intent remains
+the durable desired-work authority.
 
 ### Event Trigger
 
@@ -957,9 +910,9 @@ the measured condition.
 
 ## Closure
 
-A finding is closed when the next reports show one of:
+A finding is closed when later public observations show one of:
 
-- raw facts recover and remain recovered for the configured window;
+- public observations recover and remain recovered for the configured window;
 - target app creates credible active repair work and progress follows;
 - target app records a valid exact wait with owner, watcher, fallback, and
   resume condition;
@@ -970,67 +923,38 @@ A finding is closed when the next reports show one of:
 Silent disappearance is not closure. The next report must say why the concern is
 closed or downgraded.
 
-The evaluator must distinguish these two cases:
-
-- no owner/wait path exists: this can still request human action such as
-  `assign-owner`;
-- an exact wait exists but formal closure is missing: notify the target owner to
-  emit or repair the closure/follow-up signal, and suppress duplicate human
-  assignment messages.
+The evaluator must distinguish an absent owner/wait path from an exact wait
+whose formal closure is missing. Both go to the target's already-declared App
+owner. Only a concrete external decision or input may additionally address May.
 
 ## Implementation Plan
 
-Phase 1: read-only report
+The canonical implementation is complete for this workflow slice:
 
-1. Add `project-health-evaluator` workflow. Done.
-2. Add action `review-project-app`. Done.
-3. Add event handler for `evaluation.project.review.requested`. Done.
-4. Start with manual and scheduled runs for `aks-rp-e2e.app`. Done.
-5. Write markdown report under `reports/project-health/`. Done.
-6. Emit `evaluation.project.reviewed`. Done.
+1. `evaluation.project.review.requested` resolves directly to one stable
+   maintain task per target.
+2. The workflow consumes canonical input/reconciliation/workspace capabilities
+   and performs one bounded evaluator-agent inspection without raw SQL, task
+   storage, prompt parsing, or global runtime paths.
+3. Reports and sidecars live under `reports/project-health/`; dedupe cursor data
+   lives under ignored `generated/project-health-state/`.
+4. Non-`ok` findings use `project.owner.requested`; concrete human decisions use
+   `evaluation.human_decision.requested` and the May App subscription.
+5. Incomplete evaluator results block the attempt and remain evaluator-local;
+   they do not blame a target App or manufacture a successful review.
+6. Standing schedules cover every configured target, including `gym.app`.
 
-Phase 2: notification
-
-1. Add dedupe store under `.state/project-health/`.
-2. Emit `evaluation.project.notification.requested` for concern/urgent reports.
-3. Route notification to the human-facing transport.
-4. Include report path, raw facts summary, judgment, and requested action.
-
-Phase 3: schedule and trend
-
-1. Add `project-health-loop` every 2 hours for each configured target. Done.
-2. Compare with previous reports.
-3. Notify only on trend, severity, or unresolved repeated issue.
-4. Add project-health task tree lane only for maintaining the evaluator itself,
-   not for individual target reviews.
-
-Phase 3.5: self-recovery coverage
-
-1. Add a read-only self-recovery contract packet to every project/app report.
-   Done.
-2. Schedule project-health review for every active project app, not only
-   `aks-rp-e2e.app`. Done.
-3. Use the reports to decide which recovery lessons should be applied across
-   apps.
-4. Keep this observational first: no target task-tree mutation or auto-fix from
-   `evaluation.app`.
-5. Generalize fact collection so app-specific loop/run files are discovered
-   when present but are not treated as required for other apps. Done.
-
-Phase 4: feedback loop
-
-1. Emit target-owner feedback for new concern families, severity increases, or
-   newly actionable human decisions. Done.
-2. Track whether the target app reacts.
-3. Notify if feedback is ignored and the issue persists.
+Follow-on work is operational calibration: verify target-owner reactions from
+later public evidence, add precise target event fast paths only when they have
+one canonical routing authority, and tune the sampling interval from measured
+cost and latency rather than adding another queue or watcher.
 
 ## Open Review Questions
 
-- Which human notification channel should receive
-  `evaluation.project.notification.requested` first?
 - Should `watch` verdicts create reports only, or also lightweight UI entries?
-- How long should an issue stay unresolved before repeat notification?
+- Should the two-hour sampling interval change after measured evaluator cost and
+  finding latency are available?
 - Should target configuration live in `app.ts`, `project.json`, or a small
   `config/project-targets.json` file?
-- Which target-app events should trigger immediate review in the first version:
+- Which target-App facts should trigger immediate review next:
   metrics only, escalations too, or output claims too?

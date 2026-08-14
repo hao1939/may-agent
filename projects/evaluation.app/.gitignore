@@ -1,6 +1,7 @@
 *.jsonl
 /.state/
 /generated/agent-feedback/
+/generated/project-health-state/
 node_modules/
 /discussion.md
 /journal.md

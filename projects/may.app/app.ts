@@ -22,4 +22,23 @@ export default defineApp({
     "Conversation App for one durable human request at a time; answers directly or delegates domain work to another App.",
   inputSchema: messageInputSchema,
   inbox: { batch: "single" },
+  subscriptions: [
+    {
+      id: "evaluation-human-decision",
+      event: { type: "evaluation.human_decision.requested", project: "may" },
+      toInput(event) {
+        const data =
+          event.data &&
+          typeof event.data === "object" &&
+          !Array.isArray(event.data)
+            ? (event.data as Record<string, unknown>)
+            : {};
+        const message =
+          typeof data.message === "string" ? data.message.trim() : "";
+        return message
+          ? { kind: "message", data: { message, context: data } }
+          : null;
+      },
+    },
+  ],
 });

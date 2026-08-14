@@ -32,31 +32,11 @@ const evaluationFeedbackSchema = Type.Object(
 );
 
 export const watchedProjectTargets = [
-  {
-    targetProject: "aks-rp-e2e.app",
-    targetAppDir: "/app/projects/aks-rp-e2e.app",
-    targetDomainDir: "/app/projects/aks-rp-e2e",
-  },
-  {
-    targetProject: "may-agent.app",
-    targetAppDir: "/app/projects/may-agent.app",
-    targetDomainDir: "/app/projects/may-agent",
-  },
-  {
-    targetProject: "scout-knowledge-lib.app",
-    targetAppDir: "/app/projects/scout-knowledge-lib.app",
-    targetDomainDir: "/app/projects/scout-knowledge-lib",
-  },
-  {
-    targetProject: "gym.app",
-    targetAppDir: "/app/projects/gym.app",
-    targetDomainDir: "/app/projects/gym",
-  },
-  {
-    targetProject: "evaluation.app",
-    targetAppDir: "/app/projects/evaluation.app",
-    targetDomainDir: "/app/projects/evaluation.app",
-  },
+  { targetProject: "aks-rp-e2e.app" },
+  { targetProject: "may-agent.app" },
+  { targetProject: "scout-knowledge-lib.app" },
+  { targetProject: "gym.app" },
+  { targetProject: "evaluation.app" },
 ] as const;
 
 const evaluationInputSchema = Type.Union([

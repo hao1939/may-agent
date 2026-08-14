@@ -1,1319 +1,401 @@
-import { describe, expect, test } from "bun:test";
-import { mkdir, mkdtemp, readdir, writeFile } from "node:fs/promises";
+import { existsSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { describe, expect, test } from "bun:test";
+import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
 import {
-  escalationPacket,
-  projectHealthInputFingerprint,
+  PROJECT_HEALTH_EVALUATOR_AGENT_PROMPT_PREAMBLE,
+  execute,
   normalizeJudgment,
-  projectHealthJudgmentFromResult,
+  projectHealthEvaluatorAgentPrompt,
+  projectHealthInputFingerprint,
+  projectHealthJudgmentFromExecution,
   projectHealthPublication,
   projectHealthStateUpdate,
   pruneProjectHealthReports,
-  reconcileJudgmentWithFacts,
-  stableDedupeKey,
+  reconcileJudgment,
   scheduledProjectReviewDecision,
   shouldFeedbackTargetOwner,
   shouldNotify,
-  taskEscalationPacket,
-  taskTreePacket,
-  projectHealthConvergedResult,
-  targetConfig,
-} from "./project-health-evaluator.ts";
+  type ProjectHealthJudgment,
+} from "./project-health-evaluator.js";
 
-describe("project health correction contract", () => {
-  test("resolves gym.app trigger to gym coverage instead of defaulting to aks", () => {
-    expect(
-      targetConfig({
-        params: {
-          targetProject: "gym.app",
-          targetAppDir: "/app/projects/gym.app",
-          targetDomainDir: "/app/projects/gym",
-          reason: "scheduled",
-        },
-      }),
-    ).toEqual({
-      targetProject: "gym.app",
-      targetAppDir: "/app/projects/gym.app",
-      targetDomainDir: "/app/projects/gym",
-      reason: "scheduled",
-    });
-  });
+const judgment: ProjectHealthJudgment = {
+  verdict: "concern",
+  mainConcern: "The public task projection shows an unresolved failure.",
+  affectedArtifacts: ["task:runtime/example"],
+  recommendedChange:
+    "Reconcile the failed task through the declared App owner.",
+  verification: ["A later task projection shows the task converged."],
+  requestedHumanAction: "none",
+  notify: false,
+  dedupeKey: "gym.app:unresolved-task",
+  message: "Review runtime/example and record its verified disposition.",
+  observations: {
+    task: { id: "runtime/example", status: "attention" },
+    sourceRevisions: ["projects/gym.app/tasks/tree.json:abc123"],
+  },
+};
 
-  test("shapes runtime project-audit no-op as reconciler-accepted converged output", () => {
-    const result = projectHealthConvergedResult(
-      {
-        done: (summary: string, output?: unknown) => ({
-          type: "done" as const,
-          summary,
-          output,
-        }),
-      },
-      "evaluation.app project/app review skipped: unchanged-since-last-review.",
-      [
-        "Regression shape: runtime/project-audit/evaluation.app previously rejected waiting without exact Conditions.",
-      ],
-    );
-
-    expect(result).toEqual({
-      type: "done",
-      summary:
-        "evaluation.app project/app review skipped: unchanged-since-last-review.",
-      output: {
-        state: "converged",
-        summary:
-          "evaluation.app project/app review skipped: unchanged-since-last-review.",
-        evidence: [
-          "Regression shape: runtime/project-audit/evaluation.app previously rejected waiting without exact Conditions.",
-        ],
-        actions: [],
-      },
-    });
-    expect((result.output as { state: string }).state).not.toBe("waiting");
-  });
-
-  test("preserves artifact-targeted owner feedback and verification", () => {
-    expect(
-      normalizeJudgment(
-        {
-          verdict: "concern",
-          mainConcern: "Generated specs repeat an invalid request shape.",
-          affectedArtifacts: ["workflows/spec-generator.ts"],
-          recommendedChange: "Correct the shared request generator.",
-          verification: [
-            "The original spec and one sibling pass generated-request checks.",
-          ],
-          requestedHumanAction: "none",
-          notify: false,
-          dedupeKey: "aks-rp-e2e:invalid-request-shape",
-          message: "Repair the shared generator.",
-        },
-        {
-          verdict: "watch",
-          mainConcern: "Fallback concern.",
-          requestedHumanAction: "watch",
-          notify: false,
-          dedupeKey: "fallback",
-          message: "Fallback message.",
-        },
-      ),
-    ).toMatchObject({
-      affectedArtifacts: ["workflows/spec-generator.ts"],
-      recommendedChange: "Correct the shared request generator.",
-      verification: [
-        "The original spec and one sibling pass generated-request checks.",
-      ],
-    });
-  });
-
-  test("recovers structured judgment from a finish-tool deliverable", async () => {
-    const appDir = await mkdtemp(join(tmpdir(), "project-health-result-"));
-    await mkdir(join(appDir, "reports"), { recursive: true });
-    await writeFile(
-      join(appDir, "reports", "audit.md"),
-      `# Audit\n\n\`\`\`json\n${JSON.stringify({
-        verdict: "watch",
-        mainConcern: "A real concern from the delivered report.",
-        affectedArtifacts: ["workflow:project-planner"],
-        recommendedChange: "Repair the planner output.",
-        verification: ["The next output passes review."],
-        requestedHumanAction: "none",
-        notify: false,
-        dedupeKey: "target:planner-output",
-        message: "No human action needed.",
-      })}\n\`\`\`\n`,
-    );
-
-    const source = projectHealthJudgmentFromResult(
-      {
-        status: "done",
-        lastAssistantText: null,
-        finishResult: {
-          summary: "Audit written to a deliverable.",
-          deliverables: [{ path: "reports/audit.md" }],
-        },
-      },
-      appDir,
-    );
-
-    expect(source.source).toBe("deliverable:reports/audit.md");
-    expect(source.raw).toMatchObject({
-      mainConcern: "A real concern from the delivered report.",
-      affectedArtifacts: ["workflow:project-planner"],
-      verification: ["The next output passes review."],
-    });
-  });
-
-  test("uses deterministic fallback evidence for failed inner audit sessions", () => {
-    const source = projectHealthJudgmentFromResult({
-      status: "error",
-      sessionId: "s_1784760004824_308",
-      error: "Agent ended with an empty assistant turn",
-      lastAssistantText: "",
-    });
-
-    expect(source).toMatchObject({
-      raw: null,
-      source: "inner-session:error",
-    });
-    expect(source.text).toContain("s_1784760004824_308");
-    expect(source.text).toContain("Agent ended with an empty assistant turn");
-    expect(source.text).toContain("deterministic fact-packet fallback");
-  });
-
-  test("publishes one canonical concern when structured ok contradicts surrounding concern prose", () => {
-    const packet = {
-      taskTree: {
-        counts: { leafByPhase: { attention: 2 } },
-        review: [{ id: "attention-one" }, { id: "attention-two" }],
-      },
-    };
-    const evaluatorText = `The sampled facts remain at concern because attention resources are unresolved.\n\n\`\`\`json\n${JSON.stringify({
-      verdict: "ok",
-      mainConcern: "No major process concern detected.",
-      requestedHumanAction: "none",
-      notify: false,
-      dedupeKey: "evaluation.app:raw-ok",
-      message: "No action.",
-    })}\n\`\`\``;
-    const source = projectHealthJudgmentFromResult({
-      status: "done",
-      lastAssistantText: evaluatorText,
-    });
-    const normalized = normalizeJudgment(source.raw, {
-      verdict: "concern",
-      mainConcern: "fallback",
-      requestedHumanAction: "watch",
-      notify: false,
-      dedupeKey: "evaluation.app:fallback",
-      message: "fallback",
-    });
-    const canonical = reconcileJudgmentWithFacts(
-      { targetProject: "evaluation.app" },
-      packet,
-      normalized,
-    );
-    canonical.dedupeKey = stableDedupeKey(
-      {
-        targetProject: "evaluation.app",
-        targetAppDir: "/app/projects/evaluation.app",
-        reason: "test",
-      },
-      packet,
-      canonical,
-    );
-    const publication = projectHealthPublication(
-      { targetProject: "evaluation.app" },
-      packet,
-      canonical,
-      evaluatorText,
-      "reports/project-health/evaluation.app/new.facts.json",
-    );
-
-    expect(canonical).toMatchObject({
-      verdict: "concern",
-      mainConcern:
-        "2 attention resource(s) remain unresolved in the sampled task tree.",
-      dedupeKey: "evaluation.app:attention-resources",
-    });
-    expect(publication.facts.canonicalJudgment).toMatchObject({
-      verdict: "concern",
-      mainConcern: canonical.mainConcern,
-      dedupeKey: canonical.dedupeKey,
-      verification: canonical.verification,
-    });
-    expect(publication.report).toContain("Verdict: concern");
-    expect(publication.report).toContain(`Main concern: ${canonical.mainConcern}`);
-    expect(publication.report).toContain(
-      JSON.stringify(
-        (publication.facts as { canonicalJudgment: unknown }).canonicalJudgment,
-        null,
-        2,
-      ),
-    );
-    expect(publication.report).not.toContain('"verdict":"ok"');
-    expect(publication.report).not.toContain("No major process concern detected.");
-  });
-});
-
-async function makeAppDirWithTree(tree: Record<string, unknown>) {
-  const appDir = await mkdtemp(join(tmpdir(), "project-health-evaluator-"));
-  await mkdir(join(appDir, ".state", "tasks"), { recursive: true });
-  await writeFile(
-    join(appDir, ".state", "tasks", "tree.json"),
-    `${JSON.stringify(tree, null, 2)}\n`,
-    "utf8",
-  );
-  return appDir;
+function reconciliation(reason = "scheduled") {
+  return {
+    appId: "evaluation",
+    taskId: "runtime/project-audit/gym.app",
+    generation: 2,
+    resourceVersion: 4,
+    owner: "evaluator",
+    mode: "maintain" as const,
+    outcome: "Maintain an independent health assessment for gym.app.",
+    acceptance: ["A current report is recorded."],
+    input: { targetProject: "gym.app" },
+    children: { live: [], completed: [] },
+    trigger: {
+      type: "evaluation.project.review.requested",
+      data: { targetProject: "gym.app", reason },
+      target: { appId: "evaluation", project: "evaluation" },
+    },
+  };
 }
 
-describe("project health evaluator escalation audit", () => {
-  test("matches a target escalation to a minimal closure by escalationId", async () => {
-    const appDir = await makeAppDirWithTree({ tasks: {} });
-    const escalationId = "esc_aks_closed";
-    const packet = escalationPacket(
-      {
-        query: {
-          sql: () => ({
-            rows: [
-              {
-                id: 101,
-                event_type: "escalation.created",
-                timestamp: Date.now() - 60_000,
-                data: JSON.stringify({
-                  escalationId,
-                  targetProject: "aks-rp-e2e.app",
-                  reason: "A target issue",
-                }),
-              },
-              {
-                id: 102,
-                event_type: "escalation.resolved",
-                timestamp: Date.now(),
-                data: JSON.stringify({ escalationId }),
-              },
-              {
-                id: 103,
-                event_type: "escalation.resolved",
-                timestamp: Date.now(),
-                data: JSON.stringify({ escalationId: "esc_other" }),
-              },
-            ],
-          }),
-        },
-      } as never,
-      {
-        targetProject: "aks-rp-e2e.app",
-        targetAppDir: appDir,
-        targetDomainDir: appDir,
-        reason: "test",
-      },
+describe("canonical project-health evaluator", () => {
+  test("builds a bounded inspection prompt without runtime-private paths", () => {
+    const prompt = projectHealthEvaluatorAgentPrompt(
+      { targetProject: "gym.app", reason: "scheduled" },
+      reconciliation().trigger,
     );
-
-    expect(packet.counts).toMatchObject({
-      created: 1,
-      open: 0,
-      closed: 1,
-    });
-    expect(packet.openSample).toEqual([]);
-    expect(packet.closedSample).toEqual([
-      expect.objectContaining({ key: escalationId, state: "closed" }),
-    ]);
+    expect(prompt).toStartWith(PROJECT_HEALTH_EVALUATOR_AGENT_PROMPT_PREAMBLE);
+    expect(prompt).toContain("Agent App gym.app");
+    expect(prompt).toContain("query_db");
+    expect(prompt).toContain("Do not mutate the target");
+    expect(prompt).not.toContain(".state/tasks/state.json");
+    expect(prompt).not.toContain("/app/projects");
   });
 
-  test("attributes an escalation through its source session project", async () => {
-    const appDir = await makeAppDirWithTree({ tasks: {} });
-    const escalationId = "esc_session_project";
-    const packet = escalationPacket(
+  test("normalizes structured output and rejects assign-owner as a human action", () => {
+    const fallback = { ...judgment, verdict: "watch", dedupeKey: "fallback" };
+    const normalized = normalizeJudgment(
       {
-        query: {
-          sql: () => ({
-            rows: [
-              {
-                id: 201,
-                event_type: "escalation.created",
-                source_project_id: "aks-rp-e2e",
-                timestamp: Date.now(),
-                data: JSON.stringify({
-                  escalationId,
-                  sourceSessionId: "s_task_without_project_in_payload",
-                  reason: "A blocked worker result",
-                }),
-              },
-            ],
-          }),
+        judgment: {
+          ...judgment,
+          requestedHumanAction: "assign-owner",
+          observations: { metric: "red" },
         },
-      } as never,
-      {
-        targetProject: "aks-rp-e2e.app",
-        targetAppDir: appDir,
-        targetDomainDir: appDir,
-        reason: "test",
       },
+      fallback,
     );
-
-    expect(packet.counts).toMatchObject({ created: 1, open: 1 });
-    expect(packet.openSample).toEqual([
-      expect.objectContaining({ key: escalationId, state: "open" }),
-    ]);
-  });
-
-  test("queries escalation events using the current events schema", async () => {
-    const appDir = await makeAppDirWithTree({ tasks: {} });
-    const packet = escalationPacket(
-      {
-        query: {
-          sql: (sql: string) => {
-            expect(sql).not.toContain("e.status");
-            expect(sql).toContain("e.subject_status AS status");
-            return { rows: [] };
-          },
-        },
-      } as never,
-      {
-        targetProject: "evaluation.app",
-        targetAppDir: appDir,
-        targetDomainDir: appDir,
-        reason: "test",
-      },
-    );
-
-    expect(packet.rawQueryUnavailable).toBeUndefined();
-    expect(packet.counts).toMatchObject({ created: 0, open: 0, staleOpen: 0 });
-  });
-
-  test("does not warn when approval dispatch deduplication is working", async () => {
-    const appDir = await makeAppDirWithTree({ tasks: {} });
-    await writeFile(
-      join(appDir, ".state", "approval-dispatch-runs.jsonl"),
-      `${JSON.stringify({ result: "duplicate-suppressed" })}\n`,
-      "utf8",
-    );
-    const packet = escalationPacket(
-      { query: { sql: () => ({ rows: [] }) } } as never,
-      {
-        targetProject: "aks-rp-e2e.app",
-        targetAppDir: appDir,
-        targetDomainDir: appDir,
-        reason: "test",
-      },
-    );
-
-    expect(packet.warnings).not.toContain(
-      "some approval-dispatch attempts were ignored or failed",
-    );
-  });
-
-  test("blocked wait linkage reads a canonical Condition", async () => {
-    const appDir = await makeAppDirWithTree({
-      tasks: {
-        project: {
-          item_type: "group",
-          id: "project",
-          children: ["wait-runtime-input"],
-        },
-        "wait-runtime-input": {
-          item_type: "task",
-          id: "wait-runtime-input",
-          parent_id: "project",
-          phase: "waiting",
-          children: [],
-          owner: "human",
-          outcome: "Hold exact external runtime input wait.",
-          condition_ids: ["condition-underlay-kubeconfig"],
-        },
-      },
-      resources: {
-        "wait-runtime-input": {
-          metadata: {
-            id: "wait-runtime-input",
-            generation: 1,
-            resourceVersion: 1,
-          },
-          spec: {
-            parentId: "project",
-            outcome: "Hold exact external runtime input wait.",
-            acceptance: ["The approved kubeconfig is available."],
-            mode: "achieve",
-            owner: "human",
-          },
-          status: {
-            observedGeneration: 0,
-            phase: "waiting",
-            conditionIds: ["condition-underlay-kubeconfig"],
-            updatedAt: "2026-07-19T00:00:00.000Z",
-          },
-        },
-      },
-      conditions: {
-        "condition-underlay-kubeconfig": {
-          metadata: {
-            id: "condition-underlay-kubeconfig",
-            generation: 1,
-            resourceVersion: 1,
-          },
-          spec: {
-            type: "owner.decision",
-            subject: "approval:approval-underlay-kubeconfig",
-            expected: { field: "decision", anyOf: ["approve", "decline"] },
-            owner: "human",
-          },
-          status: { observedGeneration: 0, state: "unknown" },
-        },
-      },
-    });
-
-    const packet = taskEscalationPacket(appDir);
-
-    expect(packet.counts).toMatchObject({
-      blockedLeaves: 1,
-      blockedWithEscalationHint: 1,
-      blockedWithOwnerOrExternalPath: 1,
-      blockedWithoutOwnerOrExternalPath: 0,
-    });
-  });
-
-  test("exact blocked wait downgrades repeated owner-assignment notification", async () => {
-    const appDir = await makeAppDirWithTree({
-      tasks: {
-        project: {
-          item_type: "group",
-          id: "project",
-          children: ["xhs-cookie-refresh-blocked"],
-        },
-        "xhs-cookie-refresh-blocked": {
-          item_type: "task",
-          id: "xhs-cookie-refresh-blocked",
-          parent_id: "project",
-          phase: "waiting",
-          children: [],
-          owner: "human",
-          outcome: "Refresh expired XHS session cookies so scout-explore can resume XHS scans.",
-          condition_ids: ["condition-xhs-cookie"],
-        },
-      },
-      resources: {
-        "xhs-cookie-refresh-blocked": {
-          metadata: {
-            id: "xhs-cookie-refresh-blocked",
-            generation: 1,
-            resourceVersion: 1,
-          },
-          spec: {
-            parentId: "project",
-            outcome:
-              "Refresh expired XHS session cookies so scout-explore can resume XHS scans.",
-            acceptance: ["XHS scans succeed without a login wall."],
-            mode: "achieve",
-            owner: "human",
-          },
-          status: {
-            observedGeneration: 0,
-            phase: "waiting",
-            conditionIds: ["condition-xhs-cookie"],
-            updatedAt: "2026-07-19T00:00:00.000Z",
-          },
-        },
-      },
-      conditions: {
-        "condition-xhs-cookie": {
-          metadata: {
-            id: "condition-xhs-cookie",
-            generation: 1,
-            resourceVersion: 1,
-          },
-          spec: {
-            type: "owner.decision",
-            subject: "credential:xhs-cookie",
-            expected: { field: "state", anyOf: ["ready"] },
-            owner: "human",
-          },
-          status: { observedGeneration: 0, state: "unknown" },
-        },
-      },
-    });
-    const taskLinkage = taskEscalationPacket(appDir);
-    const judgment = reconcileJudgmentWithFacts(
-      { targetProject: "scout-knowledge-lib.app" },
-      {
-        escalations: {
-          counts: { open: 1, closed: 0 },
-          usage: taskLinkage.counts,
-        },
-      },
-      {
-        verdict: "watch",
-        mainConcern:
-          "The live escalation still lacks clear owner-to-action routing.",
-        requestedHumanAction: "assign-owner",
-        notify: true,
-        dedupeKey:
-          "scout-knowledge-lib.app:escalation-quality:xhs-cookie-manual-login-missing-resume",
-        message: "Assign an owner for the XHS cookie escalation.",
-      },
-    );
-
-    expect(taskLinkage.counts).toMatchObject({
-      blockedLeaves: 1,
-      blockedWithOwnerOrExternalPath: 1,
-      blockedWithoutOwnerOrExternalPath: 0,
-      blockedExactWaitLeaves: 1,
-    });
-    expect(taskLinkage.blockedExactWaitSample).toEqual([
-      expect.objectContaining({
-        id: "xhs-cookie-refresh-blocked",
-        exactWait: {
-          owner: "human",
-          requestedAction: "Observe owner.decision for credential:xhs-cookie.",
-          resumeCondition:
-            'credential:xhs-cookie matches {"field":"state","anyOf":["ready"]}.',
-          linkage: "condition-xhs-cookie",
-        },
-      }),
-    ]);
-    expect(judgment).toMatchObject({
-      verdict: "watch",
-      requestedHumanAction: "watch",
+    expect(normalized.observations).toEqual({ metric: "red" });
+    expect(reconcileJudgment("gym.app", normalized)).toMatchObject({
+      requestedHumanAction: "none",
       notify: false,
-      dedupeKey: "scout-knowledge-lib.app:declared-owner-follow-up",
-    });
-    expect(judgment.message).toContain("declared app owner");
-  });
-
-  test("missing task linkage still routes through the declared app owner", async () => {
-    const judgment = reconcileJudgmentWithFacts(
-      { targetProject: "scout-knowledge-lib.app" },
-      {
-        escalations: {
-          counts: { open: 1, closed: 0 },
-          usage: {
-            blockedLeaves: 1,
-            blockedWithOwnerOrExternalPath: 0,
-            blockedWithoutOwnerOrExternalPath: 1,
-            blockedExactWaitLeaves: 0,
-          },
-        },
-      },
-      {
-        verdict: "concern",
-        mainConcern: "Blocked work has no owner path.",
-        requestedHumanAction: "assign-owner",
-        notify: true,
-        dedupeKey: "scout-knowledge-lib.app:missing-owner-path",
-        message: "Assign an owner.",
-      },
-    );
-
-    expect(judgment).toMatchObject({
-      requestedHumanAction: "watch",
-      notify: false,
-      dedupeKey: "scout-knowledge-lib.app:declared-owner-follow-up",
+      dedupeKey: "gym.app:declared-owner-follow-up",
     });
   });
 
-  test("another open escalation still routes through the declared app owner", async () => {
-    const judgment = reconcileJudgmentWithFacts(
-      { targetProject: "scout-knowledge-lib.app" },
-      {
-        escalations: {
-          counts: { open: 2, closed: 0 },
-          usage: {
-            blockedLeaves: 1,
-            blockedWithOwnerOrExternalPath: 1,
-            blockedWithoutOwnerOrExternalPath: 0,
-            blockedExactWaitLeaves: 1,
-          },
-        },
-      },
-      {
-        verdict: "concern",
-        mainConcern: "Another escalation still lacks an owner path.",
-        requestedHumanAction: "assign-owner",
-        notify: true,
-        dedupeKey: "scout-knowledge-lib.app:second-open-escalation",
-        message: "Assign an owner for the second escalation.",
-      },
-    );
-
-    expect(judgment).toMatchObject({
-      requestedHumanAction: "watch",
-      notify: false,
-      dedupeKey: "scout-knowledge-lib.app:declared-owner-follow-up",
-    });
-  });
-
-  test("prose-only blocked task is not treated as an exact wait", async () => {
-    const appDir = await makeAppDirWithTree({
-      tasks: {
-        project: {
-          item_type: "group",
-          id: "project",
-          children: ["prose-only-wait"],
-        },
-        "prose-only-wait": {
-          item_type: "task",
-          id: "prose-only-wait",
-          parent_id: "project",
-          phase: "waiting",
-          children: [],
-          owner: "human",
-          outcome: "Human owner should approve this escalation, resume when done, and fallback tomorrow.",
-          condition_ids: [],
-          summary:
-            "This text mentions requested action, resume condition, fallback, and escalation, but it does not expose structured fields.",
-        },
-      },
-      resources: {
-        "prose-only-wait": {
-          metadata: {
-            id: "prose-only-wait",
-            generation: 1,
-            resourceVersion: 1,
-          },
-          spec: {
-            parentId: "project",
-            outcome:
-              "Human owner should approve this escalation, resume when done, and fallback tomorrow.",
-            acceptance: ["The escalation is approved."],
-            mode: "achieve",
-            owner: "human",
-          },
-          status: {
-            observedGeneration: 0,
-            phase: "waiting",
-            conditionIds: [],
-            summary:
-              "This text mentions requested action, resume condition, fallback, and escalation, but it does not expose a Condition.",
-            updatedAt: "2026-07-19T00:00:00.000Z",
-          },
-        },
-      },
-      conditions: {},
-    });
-
-    const packet = taskEscalationPacket(appDir);
-
-    expect(packet.counts).toMatchObject({
-      blockedLeaves: 1,
-      blockedExactWaitLeaves: 0,
-    });
-    expect(packet.blockedExactWaitSample).toEqual([]);
-  });
-
-  test("exact wait is synthesized from the canonical Condition", async () => {
-    const appDir = await makeAppDirWithTree({
-      tasks: {
-        project: {
-          item_type: "group",
-          id: "project",
-          children: ["nested-blocker-wait"],
-        },
-        "nested-blocker-wait": {
-          item_type: "task",
-          id: "nested-blocker-wait",
-          parent_id: "project",
-          phase: "waiting",
-          children: [],
-          owner: "agent:may",
-          outcome: "Refresh runtime credential.",
-          condition_ids: ["condition-runtime-credential"],
-        },
-      },
-      resources: {
-        "nested-blocker-wait": {
-          metadata: {
-            id: "nested-blocker-wait",
-            generation: 1,
-            resourceVersion: 1,
-          },
-          spec: {
-            parentId: "project",
-            outcome: "Refresh runtime credential.",
-            acceptance: ["Credential refresh succeeds."],
-            mode: "achieve",
-            owner: "agent:may",
-          },
-          status: {
-            observedGeneration: 0,
-            phase: "waiting",
-            conditionIds: ["condition-runtime-credential"],
-            updatedAt: "2026-07-19T00:00:00.000Z",
-          },
-        },
-      },
-      conditions: {
-        "condition-runtime-credential": {
-          metadata: {
-            id: "condition-runtime-credential",
-            generation: 1,
-            resourceVersion: 1,
-          },
-          spec: {
-            type: "credential.refreshed",
-            subject: "credential:runtime",
-            expected: { field: "state", anyOf: ["ready"] },
-            owner: "agent:may",
-          },
-          status: { observedGeneration: 0, state: "unknown" },
-        },
+  test("uses stable semantic evidence for scheduled-review gating", () => {
+    const first = projectHealthInputFingerprint(judgment);
+    const reordered = projectHealthInputFingerprint({
+      ...judgment,
+      observations: {
+        sourceRevisions: ["projects/gym.app/tasks/tree.json:abc123"],
+        task: { status: "attention", id: "runtime/example" },
       },
     });
-
-    const packet = taskEscalationPacket(appDir);
-
-    expect(packet.counts).toMatchObject({
-      blockedExactWaitLeaves: 1,
-    });
-    expect(packet.blockedExactWaitSample).toEqual([
-      expect.objectContaining({
-        exactWait: {
-          owner: "agent:may",
-          requestedAction:
-            "Observe credential.refreshed for credential:runtime.",
-          resumeCondition:
-            'credential:runtime matches {"field":"state","anyOf":["ready"]}.',
-          linkage: "condition-runtime-credential",
-        },
-      }),
-    ]);
-  });
-});
-
-describe("project health evaluator review gating", () => {
-  test("skips unchanged scheduled reviews until the daily baseline", () => {
-    const now = Date.parse("2026-07-14T12:00:00Z");
+    expect(first).toBe(reordered);
     expect(
       scheduledProjectReviewDecision(
         "scheduled",
         {
-          lastReviewedAt: "2026-07-14T06:00:00Z",
-          lastInputFingerprint: "same",
+          lastReviewedAt: new Date().toISOString(),
+          lastInputFingerprint: first,
         },
-        "same",
-        now,
+        first,
       ),
     ).toEqual({ run: false, reason: "unchanged-since-last-review" });
-    expect(
-      scheduledProjectReviewDecision(
-        "scheduled",
-        {
-          lastReviewedAt: "2026-07-13T11:59:59Z",
-          lastInputFingerprint: "same",
-        },
-        "same",
-        now,
-      ),
-    ).toEqual({ run: true, reason: "daily-baseline" });
-  });
-
-  test("runs scheduled review on a meaningful fingerprint delta", () => {
-    expect(
-      scheduledProjectReviewDecision(
-        "scheduled",
-        {
-          lastReviewedAt: "2026-07-14T06:00:00Z",
-          lastInputFingerprint: "old",
-        },
-        "new",
-      ),
-    ).toEqual({ run: true, reason: "meaningful-delta" });
-  });
-
-  test("fingerprint ignores timestamps but changes with task state", () => {
-    const base = {
-      taskTree: {
-        counts: { leafByState: { active: 1, blocked: 0 } },
-        active: [{ id: "work", updated_at: "one" }],
-      },
-      selfRecovery: { status: "strong", missing: [] },
-      escalations: { counts: { open: 0 }, warnings: [] },
-      runtime: { metrics: [], workflows: [] },
-    };
-    expect(projectHealthInputFingerprint(base)).toBe(
-      projectHealthInputFingerprint({
-        ...base,
-        sampledAt: "later",
-        taskTree: {
-          ...base.taskTree,
-          active: [{ id: "work", updated_at: "two" }],
-        },
-      }),
-    );
-    expect(projectHealthInputFingerprint(base)).not.toBe(
-      projectHealthInputFingerprint({
-        ...base,
-        taskTree: {
-          counts: { leafByState: { active: 0, blocked: 1 } },
-          active: [],
-        },
-      }),
-    );
-  });
-});
-
-describe("project health human notification gating", () => {
-  test("suppresses a duplicate approval prompt when canonical delivery is still undecided", async () => {
-    const appDir = await makeAppDirWithTree({ tasks: {} });
-    const eventRows = [
-      {
-        id: 5438280,
-        event_type: "message.created",
-        source: "agent:may",
-        owner: "human:operator",
-        timestamp: 1786348367746,
-        data: JSON.stringify({
-          from: "may",
-          to: "human",
-          intent: "approval-request",
-          content:
-            "Approve or decline approval ID `may-agent:supervisor-model-credential-restore:20260810:g1`.",
-        }),
-      },
-      {
-        id: 5438377,
-        event_type: "human.attention.reviewed",
-        source: "telegram-outbound",
-        owner: "agent:may",
-        timestamp: 1786348443958,
-        data: JSON.stringify({
-          sourceEventId: 5438280,
-          admitted: true,
-          delivered: true,
-        }),
-      },
-      {
-        id: 5438382,
-        event_type: "channel.delivery.completed",
-        source: "telegram",
-        owner: "agent:may",
-        timestamp: 1786348445382,
-        data: JSON.stringify({
-          sourceEventId: 5438280,
-          externalMessageId: 46354,
-        }),
-      },
-    ];
-    const notificationRows = [
-      {
-        telegram_msg_id: 46354,
-        event_type: "message.created",
-        agent: "may",
-        project_id: "projects/may-agent",
-        sent_at: 1786348445378,
-        data: JSON.stringify({ sourceEventId: 5438280 }),
-      },
-    ];
-    const packet = escalationPacket(
-      {
-        query: {
-          sql: (sql: string) => ({
-            rows: sql.includes("FROM notification_messages")
-              ? notificationRows
-              : eventRows,
-          }),
-        },
-      } as never,
-      {
-        targetProject: "may-agent.app",
-        targetAppDir: appDir,
-        targetDomainDir: appDir,
-        reason: "test",
-      },
-    );
-
-    expect(packet.counts).toMatchObject({
-      deliveredUndecidedApprovalRequests: 1,
-      undeliveredApprovalRequests: 0,
+    expect(scheduledProjectReviewDecision("manual", {}, first)).toEqual({
+      run: true,
+      reason: "explicit-request",
     });
-    expect(packet.approvalDelivery).toEqual([
-      expect.objectContaining({
-        requestEventId: 5438280,
-        attentionReviewEventId: 5438377,
-        channelDeliveryEventId: 5438382,
-        notificationMessageId: 46354,
-        state: "delivered-and-undecided",
-      }),
-    ]);
-    expect(
-      shouldNotify(
-        {
-          verdict: "blocked-on-human",
-          mainConcern:
-            "Approval delivery for the supervisor credential restore is unverified.",
-          requestedHumanAction: "decide",
-          notify: true,
-          dedupeKey: "may-agent.app:approval-delivery-telemetry-mismatch:g1",
-          message: "Approve or decline the credential restore.",
-        },
-        {},
-        { escalations: packet },
-      ),
-    ).toBe(false);
   });
 
-  test("suppresses watch-only project-health messages even for observed duplicate regression samples", () => {
-    const duplicateWatchSamples = [
-      {
-        previous: {
-          lastDedupeKey:
-            "aks-rp-e2e.app:state-metric-lifecycle-disagreement:paused-tree-zero-active-unowned-assignment-mismatch",
-          lastVerdict: "concern",
-        },
-        current: {
-          verdict: "concern",
-          mainConcern:
-            "The newest direct state shows a paused task tree with zero active leaf owners.",
-          requestedHumanAction: "watch",
-          notify: true,
-          dedupeKey:
-            "aks-rp-e2e.app:lifecycle-assignment-readout-disagreement:paused-zero-active-unowned-assignment-mismatch",
-          message:
-            "Regression events 3579540, 3580469, and 3582485 were duplicate watch-only lifecycle/frontier human messages.",
-        },
-      },
-      {
-        previous: {
-          lastDedupeKey:
-            "aks-rp-e2e.app:lifecycle-assignment-readout-disagreement:paused-zero-active-unowned-assignment-mismatch",
-          lastVerdict: "concern",
-        },
-        current: {
-          verdict: "concern",
-          mainConcern:
-            "Paused zero-active frontier still has no executable owner route.",
-          requestedHumanAction: "watch",
-          notify: true,
-          dedupeKey:
-            "aks-rp-e2e.app:lifecycle-frontier-controller-disagreement:paused-zero-active-review-backlog-no-route",
-          message:
-            "Regression events 3579540, 3580469, and 3582485 are the same semantic family despite key drift.",
-        },
-      },
-      {
-        previous: {
-          lastDedupeKey:
-            "scout-knowledge-lib.app:task-reconciliation:rejected-conditions-and-state-disagreement-20260719",
-          lastVerdict: "concern",
-        },
-        current: {
-          verdict: "concern",
-          mainConcern:
-            "Task reconciliation is still not converting completed or rejected Condition results.",
-          requestedHumanAction: "watch",
-          notify: true,
-          dedupeKey:
-            "scout-knowledge-lib.app:task-reconciliation:invalid-conditions-review-running-state-20260719",
-          message:
-            "Regression events 3579127, 3579572, 3580533, 3582544, and 3584133 were duplicate watch-only task-reconciliation messages.",
-        },
-      },
-      {
-        previous: {
-          lastDedupeKey:
-            "scout-knowledge-lib.app:task-reconciliation:invalid-condition-results-persists-xhs-gate-recovered-20260719",
-          lastVerdict: "concern",
-        },
-        current: {
-          verdict: "concern",
-          mainConcern:
-            "Current owner result rows remain rejected.",
-          requestedHumanAction: "watch",
-          notify: true,
-          dedupeKey:
-            "scout-knowledge-lib.app:task-reconciliation:owner-results-rejected-current-20260719",
-          message:
-            "Regression event 3584133 is the same watch/report-only task-reconciliation family.",
-        },
-      },
-      {
-        previous: {
-          lastDedupeKey:
-            "evaluation.app:result-contract-runtime-leaves:condition-action-contract-rejections-backlog-persists",
-          lastVerdict: "concern",
-        },
-        current: {
-          verdict: "concern",
-          mainConcern:
-            "Runtime/task leaves still show result/action/Condition contract backlog.",
-          requestedHumanAction: "watch",
-          notify: true,
-          dedupeKey:
-            "evaluation.app:result-action-condition-contract:runtime-leaves-backlog-persists",
-          message:
-            "Regression events 3584166 and 3584635 were duplicate watch-only evaluation.app contract messages.",
-        },
-      },
-    ];
-
-    for (const sample of duplicateWatchSamples) {
-      expect(shouldNotify(sample.current, sample.previous)).toBe(false);
-    }
-  });
-
-  test("only actionable human requests can create human decision messages", () => {
-    const previous = {
-      lastDedupeKey: "target:old-family",
-      lastVerdict: "watch",
+  test("notifies May only for a new actionable human decision", () => {
+    const approval = {
+      ...judgment,
+      verdict: "blocked-on-human",
+      requestedHumanAction: "approve",
+      notify: true,
+      dedupeKey: "gym.app:approval",
     };
-
+    expect(shouldNotify(approval, {})).toBe(true);
     expect(
-      shouldNotify(
-        {
-          verdict: "concern",
-          mainConcern: "Watch-only report.",
-          requestedHumanAction: "watch",
-          notify: true,
-          dedupeKey: "target:new-watch-family",
-          message: "Owner feedback/report path only.",
-        },
-        previous,
-      ),
-    ).toBe(false);
-    expect(
-      shouldNotify(
-        {
-          verdict: "concern",
-          mainConcern: "A concrete decision is needed.",
-          requestedHumanAction: "decide",
-          notify: true,
-          dedupeKey: "target:new-decision-family",
-          message: "Decide proceed or hold.",
-        },
-        previous,
-      ),
-    ).toBe(true);
-  });
-});
-
-describe("project health owner feedback gating", () => {
-  const judgment = {
-    verdict: "concern",
-    mainConcern: "Blocked frontier.",
-    requestedHumanAction: "watch",
-    notify: false,
-    dedupeKey: "target:no-executable-frontier-with-blocked-work",
-    message: "Watch.",
-  };
-
-  test("suppresses repeated same-family feedback", () => {
-    expect(
-      shouldFeedbackTargetOwner(judgment, {
-        lastFeedbackDedupeKey:
-          "target:no-executable-frontier-with-blocked-work",
-        lastFeedbackVerdict: "concern",
-        lastRequestedHumanAction: "watch",
+      shouldNotify(approval, {
+        lastDedupeKey: "gym.app:approval-old",
+        lastVerdict: "blocked-on-human",
       }),
     ).toBe(false);
     expect(
-      shouldFeedbackTargetOwner(
-        {
-          ...judgment,
-          dedupeKey:
-            "evaluation.app:self-recovery-watch:feedback23h49-reviewfailed3168749",
-        },
-        {
-          lastFeedbackDedupeKey:
-            "evaluation.app:review-failed-linkage-gap:3168749-3172789",
-          lastFeedbackVerdict: "concern",
-          lastRequestedHumanAction: "watch",
-        },
-      ),
+      shouldNotify({ ...approval, requestedHumanAction: "watch" }, {}),
     ).toBe(false);
-  });
-
-  test("emits feedback for a new family or severity increase", () => {
     expect(
-      shouldFeedbackTargetOwner(judgment, {
-        lastFeedbackDedupeKey: "target:different-family",
-        lastFeedbackVerdict: "concern",
+      shouldNotify(approval, {
+        lastDedupeKey: approval.dedupeKey,
+        lastVerdict: approval.verdict,
+        lastRequestedHumanAction: "none",
       }),
     ).toBe(true);
-    expect(
-      shouldFeedbackTargetOwner(
-        { ...judgment, verdict: "urgent" },
-        {
-          lastFeedbackDedupeKey: judgment.dedupeKey,
-          lastFeedbackVerdict: "concern",
-        },
-      ),
-    ).toBe(true);
   });
 
-  test("re-emits persistent feedback after its retry window or an explicit review", () => {
+  test("deduplicates owner feedback but retries a persistent finding after its window", () => {
+    expect(shouldFeedbackTargetOwner(judgment, {})).toBe(true);
     const previous = {
+      lastFeedbackAt: "2026-08-15T00:00:00.000Z",
       lastFeedbackDedupeKey: judgment.dedupeKey,
-      lastFeedbackVerdict: "concern",
-      lastRequestedHumanAction: "watch",
-      lastFeedbackAt: "2026-07-14T10:00:00.000Z",
+      lastFeedbackVerdict: judgment.verdict,
     };
-
     expect(
       shouldFeedbackTargetOwner(judgment, previous, {
-        now: Date.parse("2026-07-14T10:30:00.000Z"),
+        now: Date.parse("2026-08-15T00:30:00.000Z"),
       }),
     ).toBe(false);
     expect(
       shouldFeedbackTargetOwner(judgment, previous, {
-        now: Date.parse("2026-07-14T11:00:00.000Z"),
-      }),
-    ).toBe(true);
-    expect(
-      shouldFeedbackTargetOwner(judgment, previous, {
-        force: true,
-        now: Date.parse("2026-07-14T10:01:00.000Z"),
+        now: Date.parse("2026-08-15T02:00:00.000Z"),
       }),
     ).toBe(true);
   });
 
-  test("gates owner feedback after canonical verdict and preserves the stable receipt across raw verdict changes", () => {
-    const packet = {
-      taskTree: {
-        counts: { leafByPhase: { attention: 2 } },
-        review: [{ id: "attention-one" }, { id: "attention-two" }],
-      },
-    };
-    const target = {
-      targetProject: "evaluation.app",
-      targetAppDir: "/app/projects/evaluation.app",
-      targetDomainDir: "/app/projects/evaluation.app",
-      reason: "test",
-    };
-    const canonicalFromRawOk = reconcileJudgmentWithFacts(target, packet, {
-      ...judgment,
-      verdict: "ok",
-      requestedHumanAction: "none",
-      dedupeKey: "evaluation.app:raw-ok",
+  test("turns a malformed or failed evaluator result into a non-actionable visible fallback", () => {
+    const result = projectHealthJudgmentFromExecution("gym.app", {
+      id: "s_failed",
+      kind: "agent",
+      status: "error",
+      summary: "provider unavailable",
     });
-    canonicalFromRawOk.dedupeKey = stableDedupeKey(
-      target,
-      packet,
-      canonicalFromRawOk,
-    );
-    const canonicalFromRawWatch = reconcileJudgmentWithFacts(target, packet, {
-      ...judgment,
+    expect(result.complete).toBe(false);
+    expect(result.judgment).toMatchObject({
       verdict: "watch",
-      dedupeKey: "evaluation.app:raw-watch",
-    });
-    canonicalFromRawWatch.dedupeKey = stableDedupeKey(
-      target,
-      packet,
-      canonicalFromRawWatch,
-    );
-    const previous = {
-      lastFeedbackAt: "2026-08-10T20:00:00.000Z",
-      lastFeedbackDedupeKey: "evaluation.app:attention-resources",
-      lastFeedbackVerdict: "concern",
-      lastRequestedHumanAction: "watch",
-    };
-
-    expect(canonicalFromRawOk).toMatchObject({
-      verdict: "concern",
-      dedupeKey: "evaluation.app:attention-resources",
-      requestedHumanAction: "watch",
-    });
-    expect(canonicalFromRawWatch).toMatchObject({
-      verdict: "concern",
-      dedupeKey: canonicalFromRawOk.dedupeKey,
-      requestedHumanAction: "watch",
+      requestedHumanAction: "none",
+      notify: false,
+      dedupeKey: "gym.app:audit-execution-error",
     });
     expect(
-      shouldFeedbackTargetOwner(canonicalFromRawWatch, previous, {
-        now: Date.parse("2026-08-10T20:30:00.000Z"),
-      }),
+      projectHealthJudgmentFromExecution("gym.app", {
+        id: "s_malformed",
+        kind: "agent",
+        status: "done",
+        summary: "partial output",
+        output: {
+          verdict: "concern",
+          mainConcern: "This omits its evidence contract.",
+          requestedHumanAction: "none",
+          dedupeKey: "gym.app:partial",
+        },
+      }).complete,
     ).toBe(false);
+  });
 
-    const state = projectHealthStateUpdate(
-      previous,
-      target,
-      canonicalFromRawWatch,
-      "reports/project-health/evaluation.app/new.md",
-      "new-fingerprint",
-      false,
-      "2026-08-10T20:30:00.000Z",
-    );
-    expect(state).toMatchObject({
-      lastVerdict: "concern",
-      lastDedupeKey: canonicalFromRawOk.dedupeKey,
-      lastFeedbackAt: previous.lastFeedbackAt,
-      lastFeedbackDedupeKey: previous.lastFeedbackDedupeKey,
-      lastFeedbackVerdict: previous.lastFeedbackVerdict,
+  test("publishes one compact report and state record", () => {
+    const publication = projectHealthPublication("gym.app", judgment, {
+      id: "s_audit",
+      kind: "agent",
+      status: "done",
+      summary: "audited",
+      output: judgment,
+    });
+    expect(publication.facts).toMatchObject({
+      targetProject: "gym.app",
+      auditExecution: { id: "s_audit", status: "done" },
+      judgment: { verdict: "concern" },
+    });
+    expect(publication.report).toContain("task:runtime/example");
+    expect(
+      projectHealthStateUpdate(
+        {},
+        "gym.app",
+        judgment,
+        "reports/project-health/gym.app/review.md",
+        "fingerprint",
+        true,
+        "2026-08-15T00:00:00.000Z",
+      ),
+    ).toMatchObject({
+      targetProject: "gym.app",
+      lastDedupeKey: "gym.app:unresolved-task",
+      lastFeedbackAt: "2026-08-15T00:00:00.000Z",
     });
   });
-});
 
-describe("project health report retention", () => {
-  test("keeps only the newest report/facts pairs", async () => {
-    const reportDir = await mkdtemp(join(tmpdir(), "project-health-reports-"));
-    for (let index = 0; index < 5; index += 1) {
-      const id = `20260714T00000${index}Z`;
-      await writeFile(join(reportDir, `${id}.md`), `report ${index}\n`);
-      await writeFile(join(reportDir, `${id}.facts.json`), "{}\n");
-    }
-
-    pruneProjectHealthReports(reportDir, 3);
-
-    expect((await readdir(reportDir)).sort()).toEqual([
-      "20260714T000002Z.facts.json",
-      "20260714T000002Z.md",
-      "20260714T000003Z.facts.json",
-      "20260714T000003Z.md",
-      "20260714T000004Z.facts.json",
-      "20260714T000004Z.md",
-    ]);
-  });
-});
-
-describe("project health evaluator task reporting", () => {
-  test("surfaces design and legacy hygiene tasks separately from runnable sample", async () => {
-    const tasks: Record<string, unknown> = {
-      project: {
-        item_type: "group",
-        id: "project",
-        children: [
-          "work-1",
-          "work-2",
-          "work-3",
-          "work-4",
-          "work-5",
-          "work-6",
-          "legacy-design-hygiene-audit",
-        ],
+  test("runs from canonical input and routes owner feedback without a human message event", async () => {
+    const root = mkdtempSync(join(tmpdir(), "project-health-canonical-"));
+    const events: Array<Record<string, unknown>> = [];
+    const prompts: string[] = [];
+    const ctx = createTestAppWorkflowContext({
+      input: { targetProject: "gym.app" },
+      reconciliation: reconciliation("manual"),
+      workspace: { root, output: root },
+      callAgent: async (_agent, prompt) => {
+        prompts.push(prompt);
+        return {
+          id: "s_audit",
+          kind: "agent",
+          status: "done",
+          summary: "audited",
+          output: judgment,
+        };
       },
+      emit: async (event) => {
+        events.push(event as unknown as Record<string, unknown>);
+      },
+    });
+
+    await expect(execute(ctx)).resolves.toMatchObject({
+      status: "done",
+      output: {
+        state: "converged",
+        evidence: [expect.stringContaining("report:"), "execution:s_audit"],
+      },
+    });
+    expect(prompts).toHaveLength(1);
+    expect(events.map((event) => event.type)).toEqual([
+      "evaluation.project.review_started",
+      "evaluation.project.reviewed",
+      "project.owner.requested",
+    ]);
+    expect(events[2]).toMatchObject({
+      target: { appId: "gym", project: "gym" },
+    });
+    expect(events.some((event) => event.type === "message.created")).toBe(
+      false,
+    );
+    expect(
+      readdirSync(join(root, "reports", "project-health", "gym.app")),
+    ).toHaveLength(2);
+    expect(
+      existsSync(
+        join(
+          root,
+          "generated",
+          "project-health-state",
+          "targets",
+          "gym.app.json",
+        ),
+      ),
+    ).toBe(true);
+    expect(existsSync(join(root, ".state", "project-health"))).toBe(false);
+  });
+
+  test("creates a correlated May request for a genuine human decision", async () => {
+    const root = mkdtempSync(join(tmpdir(), "project-health-decision-"));
+    const events: Array<Record<string, unknown>> = [];
+    const approval = {
+      ...judgment,
+      verdict: "blocked-on-human",
+      requestedHumanAction: "approve",
+      notify: true,
+      dedupeKey: "gym.app:approval",
     };
-    for (let i = 1; i <= 6; i += 1) {
-      tasks[`work-${i}`] = {
-        item_type: "task",
-        id: `work-${i}`,
-        parent_id: "project",
-        phase: "pending",
-        readiness: { state: "ready" },
-        children: [],
-        outcome: `Generic backlog work ${i}`,
-      };
+    const ctx = createTestAppWorkflowContext({
+      input: { targetProject: "gym.app" },
+      reconciliation: reconciliation("manual"),
+      workspace: { root, output: root },
+      callAgent: async () => ({
+        id: "s_approval",
+        kind: "agent",
+        status: "done",
+        summary: "approval required",
+        output: approval,
+      }),
+      emit: async (event) => {
+        events.push(event as unknown as Record<string, unknown>);
+      },
+    });
+
+    await execute(ctx);
+
+    expect(events.at(-1)).toMatchObject({
+      type: "evaluation.human_decision.requested",
+      data: {
+        targetProject: "gym.app",
+        requestedHumanAction: "approve",
+      },
+      target: { appId: "may", project: "may" },
+    });
+  });
+
+  test("does not blame the target or notify May when the inner audit fails", async () => {
+    const root = mkdtempSync(join(tmpdir(), "project-health-failed-"));
+    const events: Array<Record<string, unknown>> = [];
+    const ctx = createTestAppWorkflowContext({
+      input: { targetProject: "gym.app" },
+      reconciliation: reconciliation("scheduled"),
+      workspace: { root, output: root },
+      callAgent: async () => ({
+        id: "s_failed",
+        kind: "agent",
+        status: "error",
+        summary: "provider unavailable",
+      }),
+      emit: async (event) => {
+        events.push(event as unknown as Record<string, unknown>);
+      },
+    });
+
+    await expect(execute(ctx)).resolves.toMatchObject({
+      status: "blocked",
+      summary:
+        "gym.app project/App review produced no complete judgment: provider unavailable",
+      evidence: ["execution:s_failed", "status:error"],
+    });
+
+    expect(events.map((event) => event.type)).toEqual([
+      "evaluation.project.review_started",
+      "evaluation.project.review_failed",
+    ]);
+    expect(
+      events.some((event) => event.type === "project.owner.requested"),
+    ).toBe(false);
+    expect(
+      events.some(
+        (event) => event.type === "evaluation.human_decision.requested",
+      ),
+    ).toBe(false);
+    expect(existsSync(join(root, "reports", "project-health"))).toBe(false);
+    expect(existsSync(join(root, "generated", "project-health-state"))).toBe(
+      false,
+    );
+  });
+
+  test("keeps only the newest report/facts pairs", () => {
+    const root = mkdtempSync(join(tmpdir(), "project-health-retention-"));
+    for (let index = 0; index < 4; index += 1) {
+      writeFileSync(join(root, `202608150${index}.md`), "report");
+      writeFileSync(join(root, `202608150${index}.facts.json`), "{}");
     }
-    tasks["legacy-design-hygiene-audit"] = {
-      item_type: "task",
-      id: "legacy-design-hygiene-audit",
-      parent_id: "project",
-      phase: "pending",
-      readiness: { state: "ready" },
-      children: [],
-      outcome: "Review legacy terms, stale design assumptions, and hygiene debt.",
-      conflict_scope: ["evaluation-design-hygiene"],
-    };
-
-    const appDir = await makeAppDirWithTree({ tasks });
-    const packet = taskTreePacket(appDir);
-
-    expect(packet.runnable).toHaveLength(7);
-    expect(packet.designHygiene).toEqual([
-      expect.objectContaining({ id: "legacy-design-hygiene-audit" }),
+    pruneProjectHealthReports(root, 2);
+    expect(readdirSync(root).sort()).toEqual([
+      "2026081502.facts.json",
+      "2026081502.md",
+      "2026081503.facts.json",
+      "2026081503.md",
     ]);
   });
 
-  test("does not interpret list-shaped legacy task trees", async () => {
-    const appDir = await makeAppDirWithTree({
-      tasks: [
-        {
-          id: "project",
-          state: "active",
-          children: ["task-a"],
-        },
-        {
-          id: "task-a",
-          parent_id: "project",
-          state: "backlog",
-          children: [],
-          goal: "Runnable task from an array-shaped tree.",
-        },
-      ],
+  test("blocks when canonical task context or workspace is missing", async () => {
+    const noTask = createTestAppWorkflowContext({
+      input: { targetProject: "gym.app" },
+    });
+    await expect(execute(noTask)).resolves.toMatchObject({
+      status: "blocked",
+      summary:
+        "project-health-evaluator requires canonical reconciliation context",
     });
 
-    const taskPacket = taskTreePacket(appDir);
-    const escalationPacket = taskEscalationPacket(appDir);
-
-    expect(taskPacket.counts).toMatchObject({ total: 0, leaves: 0 });
-    expect(taskPacket.runnable).toEqual([]);
-    expect(escalationPacket.counts).toMatchObject({ leafTasks: 0 });
+    const noWorkspace = createTestAppWorkflowContext({
+      input: { targetProject: "gym.app" },
+      reconciliation: reconciliation(),
+    });
+    await expect(execute(noWorkspace)).resolves.toMatchObject({
+      status: "blocked",
+      summary: "project-health-evaluator requires an allocated App workspace",
+    });
   });
 });
