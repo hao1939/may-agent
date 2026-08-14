@@ -201,6 +201,15 @@ function buildDeliveredHumanMessage(message: string, context: Record<string, unk
 export function attachCommandRouter(options: CommandRouterOptions): CommandRouter {
   const { bus, manager } = options;
 
+  function acceptDeterministicControl(control: string): DeliveryResult {
+    return {
+      accepted: true,
+      by: `command-router:${control}`,
+      route: "direct",
+      note: "deterministic control applied without opening semantic owner work",
+    };
+  }
+
   function eventRowId(event: unknown): number | null {
     if (!isRecord(event)) return null;
     const value = (event as Record<PropertyKey, unknown>)[EVENT_ROW_ID];
@@ -931,7 +940,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
           conversationId: stringField(approvalReply, "conversationId") ?? undefined,
         },
       } as any);
-      return;
+      return acceptDeterministicControl("approval");
     }
 
     const mayBrokerReply = escalationReply || Boolean(approvalReply);
@@ -954,7 +963,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
           data: { reason: "cancel requires an explicit session target", input: message },
         } as any);
       }
-      return;
+      return acceptDeterministicControl(targetSessionId ? "session-cancel" : "session-cancel-rejected");
     }
     if (lower === "cancel all") {
       bus.emit({
@@ -964,7 +973,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         urgency: "high",
         data: { reason: "human requested cancel all" },
       } as any);
-      return;
+      return acceptDeterministicControl("session-cancel-all");
     }
     if (lower === "reload" || lower === "restart" || lower === "close") {
       const type =
@@ -980,7 +989,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         ...(lower === "reload" ? {} : { urgency: "high" }),
         data: { reason: `human requested ${lower}` },
       } as any);
-      return;
+      return acceptDeterministicControl(`runtime-${lower}`);
     }
 
     const explicitSessionControl = context.explicitSessionControl === true;
@@ -995,7 +1004,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
           ...(Object.keys(context).length ? { context } : {}),
         },
       } as any);
-      return;
+      return acceptDeterministicControl("session-steer");
     }
 
     if (mayBrokerReply) {
@@ -1226,29 +1235,29 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         return handleHumanInput(event);
       case "steer": {
         handleSteer(event.sessionId, event.message, event.source, event);
-        break;
+        return acceptDeterministicControl("session-steer");
       }
       case "session.steer.requested": {
         const data = eventData(event);
         handleSteer(data.sessionId, data.message, eventSource(event), event);
-        break;
+        return acceptDeterministicControl("session-steer");
       }
       case "chat.start.requested":
         handleChatStart(event);
         break;
       case "cancel":
         if (event.sessionId) manager.cancel(event.sessionId);
-        break;
+        return acceptDeterministicControl("session-cancel");
       case "session.cancel.requested": {
         const data = eventData(event);
         const sessionId = nonEmptyString(data.sessionId);
         if (sessionId) manager.cancel(sessionId);
-        break;
+        return acceptDeterministicControl("session-cancel");
       }
       case "cancel_all":
       case "session.cancel_all.requested":
         cancelAllRunningSessions();
-        break;
+        return acceptDeterministicControl("session-cancel-all");
       case "project.comment.created":
         {
           const data = eventData(event);
@@ -1266,15 +1275,15 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       case "reload":
       case "runtime.reload.requested":
         void options.reload();
-        break;
+        return acceptDeterministicControl("runtime-reload");
       case "restart":
       case "runtime.restart.requested":
         options.restart();
-        break;
+        return acceptDeterministicControl("runtime-restart");
       case "shutdown":
       case "runtime.shutdown.requested":
         options.shutdown();
-        break;
+        return acceptDeterministicControl("runtime-shutdown");
     }
   });
 
