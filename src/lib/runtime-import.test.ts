@@ -1,12 +1,5 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readdirSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -53,7 +46,7 @@ describe("importRuntimeModule", () => {
     writeFileSync(
       modulePath,
       `
-        import { Type, defineApp } from "@may-agent/sdk/app";
+        import { Type, defineApp } from "@may-agent/sdk";
 
         export default defineApp({
           id: "standalone-canary",

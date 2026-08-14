@@ -10,6 +10,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./app": "./src/app.ts",
+    "./task": "./src/task.ts",
     "./legacy": "./src/legacy.ts",
     "./testing": "./src/testing.ts"
   },

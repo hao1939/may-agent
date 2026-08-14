@@ -1,4 +1,4 @@
-import type { AppDependencyObservation, AppInput, AppInputSource } from "@may-agent/sdk";
+import type { AppDependencyObservation, AppEvent, AppEventTarget, AppInput, AppInputSource } from "@may-agent/sdk";
 import type { SqliteDb } from "../lib/db.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "./event-bus.js";
 import { AppInboxHost, type AppInboxReconcileResult, type AppTaskAttacher } from "./app-inbox-host.js";
@@ -30,6 +30,7 @@ export type StartAppInboxRuntimeOptions = {
   leaseMs?: number;
   retryAfterMs?: number;
   maxBatchSize?: number;
+  now?: () => number;
 };
 
 function record(value: unknown): Record<string, unknown> {
@@ -53,6 +54,20 @@ function requestedInput(data: Record<string, unknown>): AppInput {
 function eventIdentity(event: AgentEvent): string | undefined {
   const eventId = Number((event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID]);
   return Number.isSafeInteger(eventId) && eventId > 0 ? `event:${eventId}` : undefined;
+}
+
+function appEvent(event: AgentEvent): AppEvent<Record<string, unknown>> {
+  const envelope = event as unknown as Record<string, unknown>;
+  const target = record(envelope.target) as AppEventTarget;
+  const urgency = envelope.urgency;
+  return Object.freeze({
+    type: event.type,
+    data: Object.freeze({ ...eventData(event) }),
+    ...(typeof envelope.source === "string" ? { source: envelope.source } : {}),
+    ...(typeof envelope.owner === "string" ? { owner: envelope.owner } : {}),
+    ...(Object.keys(target).length ? { target: Object.freeze({ ...target }) } : {}),
+    ...(urgency === "low" || urgency === "normal" || urgency === "high" || urgency === "immediate" ? { urgency } : {}),
+  });
 }
 
 function normalizedAgent(value: unknown): string | undefined {
@@ -108,7 +123,7 @@ function addressedAgentMessage(event: AgentEvent):
 }
 
 export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions): Promise<AppInboxRuntime> {
-  const loaded = options.registry.entries();
+  let loaded = options.registry.entries();
   for (const { definition } of loaded) {
     if (!options.manager.hasAgent(definition.owner)) {
       throw new Error(`App ${definition.id} owner agent is not registered: ${definition.owner}`);
@@ -152,6 +167,31 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   let closed = false;
   let deliveryEnabled = false;
   let dispatchingDelivery = false;
+  const now = options.now ?? Date.now;
+  const scheduleActivations = new Map<string, { fingerprint: string; activatedAt: number }>();
+
+  const refreshScheduleActivations = (): void => {
+    const activeKeys = new Set<string>();
+    for (const { definition } of loaded) {
+      for (const schedule of definition.schedules ?? []) {
+        const key = `${definition.id}/${schedule.id}`;
+        activeKeys.add(key);
+        const fingerprint = JSON.stringify({
+          intervalMs: schedule.intervalMs,
+          input: schedule.input,
+          catchUp: schedule.catchUp ?? "latest",
+          enabled: schedule.enabled !== false,
+        });
+        if (scheduleActivations.get(key)?.fingerprint !== fingerprint) {
+          scheduleActivations.set(key, { fingerprint, activatedAt: now() });
+        }
+      }
+    }
+    for (const key of scheduleActivations.keys()) {
+      if (!activeKeys.has(key)) scheduleActivations.delete(key);
+    }
+  };
+  refreshScheduleActivations();
 
   const pumpDeliveries = (): void => {
     if (closed || !deliveryEnabled || dispatchingDelivery) return;
@@ -272,6 +312,24 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   };
 
   const scanNow = () => {
+    const currentTime = now();
+    for (const { definition } of loaded) {
+      for (const configuredSchedule of definition.schedules ?? []) {
+        if (configuredSchedule.enabled === false) continue;
+        const activation = scheduleActivations.get(`${definition.id}/${configuredSchedule.id}`);
+        if (!activation) continue;
+        const slot = Math.floor(currentTime / configuredSchedule.intervalMs);
+        const slotStartedAt = slot * configuredSchedule.intervalMs;
+        if ((configuredSchedule.catchUp ?? "latest") === "none" && slotStartedAt < activation.activatedAt) continue;
+        const admitted = host.admit({
+          appId: definition.id,
+          source: { kind: "system", id: `schedule:${definition.id}:${configuredSchedule.id}` },
+          input: configuredSchedule.input,
+          idempotencyKey: `schedule:${definition.id}:${configuredSchedule.id}:${slot}`,
+        });
+        if (admitted.created) schedule(admitted.item.appId);
+      }
+    }
     for (const appId of host.appIds()) schedule(appId);
     void recoverSessionDependencies();
     pumpDeliveries();
@@ -442,6 +500,27 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         }
       }
     }
+    const identity = eventIdentity(event);
+    if (identity) {
+      const matches = host.subscriptionInputs(appEvent(event));
+      for (const match of matches) {
+        const admitted = host.admit({
+          appId: match.appId,
+          source: { kind: "system", id: identity },
+          input: match.input,
+          idempotencyKey: `subscription:${match.appId}:${match.subscriptionId}:${identity}`,
+        });
+        schedule(admitted.item.appId);
+      }
+      if (matches.length > 0) {
+        return {
+          accepted: true,
+          by: `app-inbox:subscriptions:${matches.map((match) => `${match.appId}/${match.subscriptionId}`).join(",")}`,
+          route: "direct",
+          note: `${matches.length} App subscription(s) admitted durably`,
+        };
+      }
+    }
   });
   const scanIntervalMs = options.scanIntervalMs ?? 5_000;
   if (!Number.isFinite(scanIntervalMs) || scanIntervalMs <= 0) {
@@ -465,7 +544,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         }
         host.replaceApps(prospective.map((entry) => entry.definition));
       });
+      loaded = next;
       appDirById = new Map(next.map((entry) => [entry.definition.id, entry.appDir]));
+      refreshScheduleActivations();
       scanNow();
       return host.appIds();
     },

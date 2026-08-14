@@ -2,6 +2,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { AppDefinition } from "@may-agent/sdk";
 import { importRuntimeModule } from "../../lib/runtime-import.js";
+import { assertValidAppDefinition } from "../app-definition-validation.js";
 
 export type LoadedAppInboxDefinition = {
   appDir: string;
@@ -14,7 +15,7 @@ export function listAppInboxDefinitionFiles(projectsRoot: string): string[] {
   for (const entry of readdirSync(projectsRoot, { withFileTypes: true })) {
     if (!entry.isDirectory() || !entry.name.endsWith(".app")) continue;
     const appDir = resolve(projectsRoot, entry.name);
-    for (const filename of ["inbox.ts", "inbox.js"]) {
+    for (const filename of ["inbox.ts", "inbox.js", "app.ts", "app.js"]) {
       const candidate = join(appDir, filename);
       if (existsSync(candidate)) {
         files.push(candidate);
@@ -31,12 +32,12 @@ export async function loadAppInboxDefinitions(projectsRoot: string): Promise<Loa
   for (const modulePath of listAppInboxDefinitionFiles(projectsRoot)) {
     const mod = await importRuntimeModule<{ default?: AppDefinition; app?: AppDefinition }>(modulePath);
     const definition = mod.default ?? mod.app;
-    if (!definition || typeof definition !== "object") {
+    if (!definition || typeof definition !== "object")
       throw new Error(`App inbox module ${modulePath} must default-export an App definition`);
-    }
-    if (typeof definition.id !== "string" || !definition.id.trim()) {
-      throw new Error(`App inbox module ${modulePath} has no App id`);
-    }
+    // During migration app.ts may still be a defineProjectApp manifest. Its
+    // compatibility loader remains its sole owner until inputSchema appears.
+    if (!Object.prototype.hasOwnProperty.call(definition, "inputSchema")) continue;
+    assertValidAppDefinition(definition);
     if (ids.has(definition.id)) throw new Error(`Duplicate App inbox id: ${definition.id}`);
     ids.add(definition.id);
     loaded.push({ appDir: resolve(modulePath, ".."), definition });
