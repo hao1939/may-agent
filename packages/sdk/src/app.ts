@@ -128,6 +128,11 @@ export type AppDefinition<TInputSchema extends TSchema = TSchema> = {
   owner: string;
   description?: string;
   inputSchema: TInputSchema;
+  /**
+   * Pure deterministic policy for requests that do not require owner
+   * judgment. Returning null delegates the decision to the owner agent.
+   */
+  route?: (request: Readonly<AppRequest>) => AppDisposition | null;
   subscriptions?: AppEventSubscription[];
   inbox?: { batch?: AppInboxBatchMode; maxConcurrent?: number };
   schedules?: AppSchedule[];
