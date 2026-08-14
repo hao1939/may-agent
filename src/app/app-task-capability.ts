@@ -6,7 +6,9 @@ import type { EventBus } from "./event-bus.js";
 import type { AppRegistrySnapshot } from "./app-registry.js";
 import {
   attachLoadedProjectAppTask,
+  describeLoadedProjectAppActions,
   installProjectApps,
+  invokeLoadedProjectAppAction,
   readLoadedProjectAppTaskView,
   runWithProjectAppRuntimeCapacity,
   startProjectAppWatcher,
@@ -24,6 +26,14 @@ export type AppTaskCapability = {
   }): Promise<AppDependencyObservation | null>;
   publishGeneration(input: { snapshot: AppRegistrySnapshot; publish: () => void }): Promise<AppTaskGenerationResult>;
   watchGenerations(reload: () => Promise<void>): { close(): void } | null;
+  describeActions(projectId: string): ReturnType<typeof describeLoadedProjectAppActions>;
+  invokeAction(input: {
+    projectId: string;
+    actionId: string;
+    params: unknown;
+    idempotencyKey?: string;
+    ingressSource?: string;
+  }): ReturnType<typeof invokeLoadedProjectAppAction>;
 };
 
 /**
@@ -57,6 +67,8 @@ export function createAppTaskCapability(options: {
       if (!options.compatibility) return null;
       return startProjectAppWatcher(options.compatibility, { reload });
     },
+    describeActions: (projectId) => describeLoadedProjectAppActions(options.bus, projectId),
+    invokeAction: (input) => invokeLoadedProjectAppAction({ bus: options.bus, ...input }),
     async readDependency({ appDir, dependency }) {
       if (dependency.kind === "task") {
         const task = readLoadedProjectAppTaskView({ bus: options.bus, appDir, taskId: dependency.id });
