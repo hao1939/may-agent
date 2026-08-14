@@ -140,7 +140,16 @@ describe("restart-aware deploy receipts", () => {
     expect(deploy).toContain(
       "bun test packages/control/src/client.test.ts packages/control/src/control-socket.test.ts src/app/modes/emit-mode.test.ts",
     );
-    expect(deploy).toContain('bundle/may-agent.provenance.json');
+    expect(deploy).toContain('$bundle_dir/may-agent.provenance.json');
     expect(deploy).toContain('"$artifact_sha" "$source_commit"');
+  });
+
+  it("can stage an immutable source-worktree build into the canonical deploy root", () => {
+    const deploy = readFileSync(new URL("./deploy.sh", import.meta.url), "utf8");
+    expect(deploy).toContain('deploy_root="${MAY_AGENT_DEPLOY_ROOT:-$PWD}"');
+    expect(deploy).toContain('receipt_dir="${MAY_AGENT_DEPLOY_RECEIPT_DIR:-$deploy_root/.state/deploy-receipts}"');
+    expect(deploy).toContain('bundle_dir="$deploy_root/bundle"');
+    expect(deploy).toContain('install -m 755 "$build_dir/bundle/may-agent" "$bundle_dir/may-agent.next"');
+    expect(deploy).toContain('mv -f "$bundle_dir/deploy-requested.next" "$bundle_dir/deploy-requested"');
   });
 });
