@@ -11,7 +11,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { dirname, join } from "node:path";
-import type { ProjectAppContext, ProjectAppEvent } from "@may-agent/sdk/legacy";
+import type { AksObserverContext, AksObserverEvent } from "./context.js";
 
 type PipelineWatcherState = {
   schemaVersion?: string;
@@ -193,7 +193,12 @@ export type MasterValidationProgress = {
     selected: number;
     observed: number;
     status:
-      "pending" | "queued" | "running" | "draining" | "partial" | "completed";
+      | "pending"
+      | "queued"
+      | "running"
+      | "draining"
+      | "partial"
+      | "completed";
   }>;
   specs: Array<{
     sliceId: string;
@@ -399,7 +404,9 @@ function localResultReadyForCompletion(observed: ObservedResult): boolean {
   return observed.run.state !== "active";
 }
 
-function localResultCompletionEvent(observed: ObservedResult): ProjectAppEvent {
+function localResultCompletionEvent(
+  observed: ObservedResult,
+): AksObserverEvent {
   const status = String(observed.result.status ?? "unknown");
   const base = pipelineFactBase({
     runId: observed.runId,
@@ -788,7 +795,7 @@ export function timelineSliceProgress(
 export function pipelineTestNonpassingEvent(
   run: ObservedAdoRun,
   progress: TimelineSpecProgress,
-): ProjectAppEvent {
+): AksObserverEvent {
   const fingerprint = createHash("sha256")
     .update(
       stableJson({
@@ -839,8 +846,8 @@ export function newPipelineTestNonpassingEvents(
   run: ObservedAdoRun,
   progressRecords: TimelineSpecProgress[],
   fingerprints: Record<string, string>,
-): ProjectAppEvent[] {
-  const events: ProjectAppEvent[] = [];
+): AksObserverEvent[] {
+  const events: AksObserverEvent[] = [];
   for (const progress of progressRecords) {
     if (!["fail", "error"].includes(progress.verdict)) continue;
     const key = `${run.runId}:${progress.specId}`;
@@ -2050,7 +2057,7 @@ export function specObservationsFromArtifact(input: {
 
 export function pipelineSpecEvent(
   observation: PipelineSpecObservation,
-): ProjectAppEvent {
+): AksObserverEvent {
   const data = { ...observation };
   return {
     type: "pipeline.spec.observed",
@@ -2063,7 +2070,7 @@ export function pipelineSpecEvent(
 
 export function nodeImagePublicationEvent(
   observation: NodeImagePublicationObservation,
-): ProjectAppEvent {
+): AksObserverEvent {
   const data = { ...observation };
   return {
     type: nodeImagePublicationEventType,
@@ -2076,7 +2083,7 @@ export function nodeImagePublicationEvent(
 
 export function pipelineFailureEvent(
   failure: PipelineFailureObservation,
-): ProjectAppEvent {
+): AksObserverEvent {
   const data = {
     project: "aks-rp-e2e",
     pipelineRunId: failure.pipelineRunId,
@@ -2195,7 +2202,7 @@ export function pipelineQueueOverdueEvent(
   observed: ObservedAdoRun,
   nowMs = Date.now(),
   timeline: AdoTimelineRecord[] = [],
-): ProjectAppEvent | null {
+): AksObserverEvent | null {
   if (!observed.progressive) return null;
   let queueTime = observed.queueTime;
   let queueScope = "run";
@@ -2284,7 +2291,7 @@ function materializedArtifactEvent(
   observed: ObservedAdoRun,
   artifactName: string,
   artifactPath: string,
-): ProjectAppEvent {
+): AksObserverEvent {
   const base = pipelineFactBase(observed);
   return {
     type: "pipeline-artifact.available",
@@ -2303,9 +2310,9 @@ function materializedArtifactEvent(
 
 export function pipelineObservationEvents(
   observed: ObservedAdoRun,
-): ProjectAppEvent[] {
+): AksObserverEvent[] {
   const base = pipelineFactBase(observed);
-  const events: ProjectAppEvent[] = [];
+  const events: AksObserverEvent[] = [];
 
   if (observed.status === "completed") {
     events.push(
@@ -2346,7 +2353,7 @@ export function pipelineObservationEvents(
   return events;
 }
 
-export function pipelineLevelEvent(observed: ObservedAdoRun): ProjectAppEvent {
+export function pipelineLevelEvent(observed: ObservedAdoRun): AksObserverEvent {
   const base = pipelineFactBase(observed);
   const terminal = observed.status === "completed";
   return {
@@ -2362,7 +2369,7 @@ export function pipelineLevelEvent(observed: ObservedAdoRun): ProjectAppEvent {
 
 /** Observe domain pipeline artifacts and emit facts; never reads or changes task state. */
 export async function observeAksPipelines(
-  ctx: ProjectAppContext,
+  ctx: AksObserverContext,
 ): Promise<unknown> {
   const statePath = ctx.appPath(".state/watchers/aks-pipeline.json");
   const prior = readState(statePath);

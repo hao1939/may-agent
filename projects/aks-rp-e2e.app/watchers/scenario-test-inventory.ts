@@ -2,7 +2,7 @@ import { execFile } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { ProjectAppContext, ProjectAppEvent } from "@may-agent/sdk/legacy";
+import type { AksObserverContext, AksObserverEvent } from "./context.js";
 
 export type ScenarioTestInventoryObservation = {
   observedAt: string;
@@ -123,7 +123,7 @@ export function parseScenarioTestInventory(
 
 export function scenarioTestInventoryObservationEvent(
   observation: ScenarioTestInventoryObservation,
-): ProjectAppEvent {
+): AksObserverEvent {
   return {
     type: "aks.scenario-test-inventory.observed",
     source: "aks-scenario-test-inventory-watcher",
@@ -171,7 +171,7 @@ function run(
 
 /** Observe strict inventory and emit a semantic fact; never reads or changes task state. */
 export async function observeScenarioTestInventory(
-  ctx: ProjectAppContext,
+  ctx: AksObserverContext,
 ): Promise<unknown> {
   const projectDir = ctx.appPath("../aks-rp-e2e");
   const sourceRef = "origin/dev";

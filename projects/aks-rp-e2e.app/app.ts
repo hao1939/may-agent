@@ -3,10 +3,20 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { basename, resolve } from "node:path";
 import {
+  Type,
+  matchesEventSelector as matchesCanonicalEventSelector,
+  type AppDisposition,
+  type AppEvent,
+  type AppEventSubscription,
+  type AppInput,
+  type AppRequest,
+  type EventSelector as CanonicalEventSelector,
+  type TaskIntent,
+} from "@may-agent/sdk";
+import {
   defineProjectApp,
   eventDetails,
   matchesEventSelector,
-  Type,
   type EventSelector,
   type ProjectAppContext,
   type ProjectAppEvent,
@@ -89,9 +99,103 @@ const targetedTaskActionInputSchema = Type.Object(
 
 type AppTaskEvent = Record<string, unknown>;
 
+const canonicalDetailsSchema = Type.Record(Type.String(), Type.Unknown());
+
+export const aksInputSchema = Type.Union(
+  [
+    "owner-review",
+    "approval-decision",
+    "problem-investigation",
+    "stall-review",
+    "approval-dispatch",
+    "task-control",
+  ].map((kind) =>
+    Type.Object(
+      { kind: Type.Literal(kind), data: canonicalDetailsSchema },
+      { additionalProperties: false },
+    ),
+  ),
+);
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
+
+function canonicalEventData(
+  event: AppEvent<Record<string, unknown>>,
+): Record<string, unknown> {
+  return isRecord(event.data) ? event.data : {};
+}
+
+function canonicalInput(
+  kind: AppInput["kind"],
+  data: Record<string, unknown>,
+): AppInput {
+  return { kind, data };
+}
+
+export function inputForAksEvent(
+  event: AppEvent<Record<string, unknown>>,
+): AppInput | null {
+  const data = canonicalEventData(event);
+  switch (event.type) {
+    case "project.owner.requested":
+    case "project.comment.created":
+      return canonicalInput("owner-review", data);
+    case "message.created":
+      return data.intent === "approval-decision"
+        ? canonicalInput("approval-decision", data)
+        : null;
+    case "project.problem.investigation.requested":
+      return canonicalInput("problem-investigation", data);
+    case "project.stall.review.requested":
+      return canonicalInput("stall-review", data);
+    case "project.approval.requested":
+      return canonicalInput("approval-dispatch", data);
+    default:
+      return null;
+  }
+}
+
+export const canonicalAksSubscriptions: AppEventSubscription[] = [
+  {
+    id: "project-owner-request",
+    event: { type: "project.owner.requested", project: projectId },
+    toInput: inputForAksEvent,
+  },
+  {
+    id: "project-comment",
+    event: { type: "project.comment.created", project: projectId },
+    toInput: inputForAksEvent,
+  },
+  {
+    id: "approval-message",
+    event: {
+      type: "message.created",
+      owner: "agent:app-ops",
+      intents: ["approval-decision"],
+    },
+    toInput: inputForAksEvent,
+  },
+  {
+    id: "problem-investigation",
+    event: {
+      type: "project.problem.investigation.requested",
+      project: projectId,
+    },
+    toInput: inputForAksEvent,
+  },
+  {
+    id: "stall-review",
+    event: { type: "project.stall.review.requested", project: projectId },
+    toInput: inputForAksEvent,
+  },
+  {
+    id: "approval-dispatch",
+    event: { type: "project.approval.requested", project: projectId },
+    toInput: inputForAksEvent,
+  },
+];
 
 function targetTaskId(event: AppTaskEvent): string {
   const details = eventDetails(event);
@@ -1156,6 +1260,25 @@ function ownerReviewPriority(event: AppTaskEvent): "P0" | "P1" {
     : "P1";
 }
 
+function ownerReviewTaskIntent(event: AppTaskEvent): ProjectAppTaskIntent {
+  return {
+    id: "runtime/owner-review",
+    parentId: "group/app-operations",
+    outcome:
+      "Keep the AKS project reviewed by its accountable owner and organize the smallest useful next step from current evidence.",
+    acceptance: [
+      "The owner performs one useful project step or returns an evidence-backed no-op with typed follow-up actions.",
+      "Any finite follow-up created by owner review must be a sibling under group/app-operations or group/domain-work; runtime/owner-review is an inbox and never waits on unrelated child work.",
+      "A progressive master-validation nonpassing event without an artifact-backed stable failure carrier is progress evidence only: inspect or report it, but do not classify it, change source, or queue a retry before pipeline.failure.observed supplies the terminal artifact.",
+      "Do not create domain/normalize-plain-scenario-carrier-* tasks from owner review. scenario-normalization is the sole frontier and live-capacity owner for that work.",
+      "When scenario inventory is red or normalization capacity appears free, wake the existing scenario-normalization task with current evidence and let its workflow select any new leaves.",
+    ],
+    mode: "maintain",
+    owner: "app-ops",
+    priority: ownerReviewPriority(event),
+  };
+}
+
 const aksTaskSelectors: EventSelector[] = [
   { type: "project.task.tick", target: projectTarget },
   { type: "aks.resource-migration.requested", target: projectTarget },
@@ -1220,6 +1343,71 @@ const aksTaskSelectors: EventSelector[] = [
   },
   { type: "project.stall.review.requested", target: projectTarget },
   { type: "project.approval.requested", target: projectTarget },
+];
+
+/**
+ * Canonical task admission excludes addressed inputs and exact task wakes.
+ * `project.task.tick` is intentionally absent: its `(appId, taskId)` target is
+ * already the complete routing decision.
+ */
+export const canonicalAksTaskSelectors: CanonicalEventSelector[] = [
+  { type: "aks.resource-migration.requested", project: projectId },
+  { type: "aks.task-state-migration.requested", project: projectId },
+  { type: "aks.task-tick-migration.requested", project: projectId },
+  { type: "aks.repo-ref-condition-migration.requested", project: projectId },
+  {
+    type: "aks.project-state-residue-migration.requested",
+    project: projectId,
+  },
+  {
+    type: "aks.spec-loop-ownership-migration.requested",
+    project: projectId,
+  },
+  {
+    type: "aks.feature-loop-ownership-migration.requested",
+    project: projectId,
+  },
+  {
+    type: "aks.feature-loop-history-migration.requested",
+    project: projectId,
+  },
+  {
+    type: "aks.feature-loop-residue-migration.requested",
+    project: projectId,
+  },
+  {
+    type: "aks.scenario-loop-ownership-migration.requested",
+    project: projectId,
+  },
+  {
+    type: "aks.waiting-frontier-retirement.requested",
+    project: projectId,
+  },
+  {
+    type: "aks.waiting-frontier-migration-cleanup.requested",
+    project: projectId,
+  },
+  { type: "aks.finite-holder-migration.requested", project: projectId },
+  { type: "pipeline.failure.observed", project: projectId },
+  { type: "project.test_run.completed", project: projectId },
+  { type: "project.stall.reviewed", project: projectId },
+  { type: "project.problem.resolved", project: projectId },
+  { type: "project.problem.escalated", project: projectId },
+  { type: "project.problem.inconclusive", project: projectId },
+  { type: "coverage.gap.detected", project: projectId },
+  { type: "escalation.resolved", owner: "agent:aks-explorer" },
+  { type: "escalation.dismissed", owner: "agent:aks-explorer" },
+  { type: "metric.breach", owner: "agent:app-ops" },
+  { type: "metric.recovered", owner: "agent:app-ops" },
+  { type: "learning.feedback", owner: "agent:aks-explorer" },
+  { type: "learning.feedback", owner: "agent:aks-reviewer" },
+  { type: "pipeline.test.nonpassing", project: projectId },
+  { type: "aks.workspace.integrity.changed", project: projectId },
+  {
+    type: "aks.scenario-test-inventory.observed",
+    project: projectId,
+  },
+  { type: "pipeline.queue.overdue", project: projectId },
 ];
 
 export function resolveAksTask(
@@ -1593,22 +1781,7 @@ export function resolveAksTask(
   }
 
   if (ownerReviewEventTypes.has(String(event.type ?? ""))) {
-    return {
-      id: "runtime/owner-review",
-      parentId: "group/app-operations",
-      outcome:
-        "Keep the AKS project reviewed by its accountable owner and organize the smallest useful next step from current evidence.",
-      acceptance: [
-        "The owner performs one useful project step or returns an evidence-backed no-op with typed follow-up actions.",
-        "Any finite follow-up created by owner review must be a sibling under group/app-operations or group/domain-work; runtime/owner-review is an inbox and never waits on unrelated child work.",
-        "A progressive master-validation nonpassing event without an artifact-backed stable failure carrier is progress evidence only: inspect or report it, but do not classify it, change source, or queue a retry before pipeline.failure.observed supplies the terminal artifact.",
-        "Do not create domain/normalize-plain-scenario-carrier-* tasks from owner review. scenario-normalization is the sole frontier and live-capacity owner for that work.",
-        "When scenario inventory is red or normalization capacity appears free, wake the existing scenario-normalization task with current evidence and let its workflow select any new leaves.",
-      ],
-      mode: "maintain",
-      owner: "app-ops",
-      priority: ownerReviewPriority(event),
-    };
+    return ownerReviewTaskIntent(event);
   }
 
   switch (event.type) {
@@ -1805,6 +1978,102 @@ export function resolveAksTask(
     default:
       return null;
   }
+}
+
+export function resolveCanonicalAksTask(
+  event: AppEvent<Record<string, unknown>>,
+): TaskIntent | null {
+  if (
+    !canonicalAksTaskSelectors.some((selector) =>
+      matchesCanonicalEventSelector(selector, event),
+    )
+  ) {
+    return null;
+  }
+
+  const legacyShape = event as unknown as Record<string, unknown>;
+  if (
+    event.type === "pipeline.test.nonpassing" ||
+    event.type === "aks.workspace.integrity.changed"
+  ) {
+    return ownerReviewTaskIntent(legacyShape) as TaskIntent;
+  }
+  if (event.type === "aks.scenario-test-inventory.observed") {
+    return standingLoopIntent(scenarioNormalizationTaskId) as TaskIntent;
+  }
+  if (event.type === "pipeline.queue.overdue") {
+    const details = canonicalEventData(event);
+    const runId = stringDetail(details, "pipelineRunId", "runId");
+    if (!runId) return null;
+    return {
+      id: `runtime/pipeline-queue-overdue/${safeTaskIdPart(runId, "unknown")}`,
+      parentId: "group/app-operations",
+      outcome: `Notify the human operator once that AKS master-validation run ${runId} is still waiting for hosted-agent capacity without canceling or duplicating the run.`,
+      acceptance: [
+        "The exact overdue run and queue scope are reported once through durable human delivery, or the task records why notification is no longer applicable.",
+      ],
+      mode: "achieve",
+      owner: "app-ops",
+      input: details,
+      priority: "P2",
+      category: "ops",
+    };
+  }
+  return resolveAksTask(legacyShape) as TaskIntent | null;
+}
+
+function taskIntentForAksInput(input: AppInput): TaskIntent | null {
+  const data = isRecord(input.data) ? input.data : {};
+  const event = (type: string): Record<string, unknown> => ({
+    type,
+    target: { project: projectId },
+    data: { project: projectId, ...data },
+  });
+
+  switch (input.kind) {
+    case "owner-review":
+      return ownerReviewTaskIntent(
+        event("project.owner.requested"),
+      ) as TaskIntent;
+    case "problem-investigation":
+      return resolveAksTask(
+        event("project.problem.investigation.requested"),
+      ) as TaskIntent | null;
+    case "stall-review":
+      return resolveAksTask(
+        event("project.stall.review.requested"),
+      ) as TaskIntent | null;
+    case "approval-dispatch":
+      return resolveAksTask(
+        event("project.approval.requested"),
+      ) as TaskIntent | null;
+    case "task-control":
+      return resolveAksTask({
+        ...event("project.task.tick"),
+        action: stringDetail(data, "action"),
+      }) as TaskIntent | null;
+    default:
+      return null;
+  }
+}
+
+export function routeCanonicalAksRequest(
+  request: Readonly<AppRequest>,
+): AppDisposition | null {
+  if (request.dependency) {
+    return request.dependency.status === "done"
+      ? {
+          type: "complete",
+          summary:
+            request.dependency.summary ??
+            `${request.input.kind} completed through ${request.dependency.id}`,
+          response: request.dependency.response,
+          evidence: request.dependency.evidence,
+        }
+      : null;
+  }
+  const intent = taskIntentForAksInput(request.input);
+  return intent ? { type: "task", task: { kind: "desired", intent } } : null;
 }
 
 export async function routeAksEvent(

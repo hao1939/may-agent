@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, resolve } from "node:path";
-import type { ProjectAppContext, ProjectAppEvent } from "@may-agent/sdk/legacy";
+import type { AksObserverContext, AksObserverEvent } from "./context.js";
 
 type Worktree = { path: string; prunable: boolean };
 type LiveTaskTreeTask = {
@@ -298,7 +298,7 @@ export async function observeWorkspaceIntegrity(
 
 export function workspaceIntegrityChangedEvent(
   observation: WorkspaceIntegrityObservation,
-): ProjectAppEvent {
+): AksObserverEvent {
   return {
     type: "aks.workspace.integrity.changed",
     source: "aks-workspace-integrity-watcher",
@@ -308,7 +308,7 @@ export function workspaceIntegrityChangedEvent(
 }
 
 export async function observeWorkspaceIntegrityChanges(
-  ctx: ProjectAppContext,
+  ctx: AksObserverContext,
 ): Promise<unknown> {
   const statePath = ctx.appPath(".state/watchers/workspace-integrity.json");
   const previous = existsSync(statePath)

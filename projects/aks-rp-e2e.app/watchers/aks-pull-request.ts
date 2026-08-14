@@ -2,7 +2,7 @@ import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
-import type { ProjectAppContext, ProjectAppEvent } from "@may-agent/sdk/legacy";
+import type { AksObserverContext, AksObserverEvent } from "./context.js";
 
 type PullRequestWatcherState = {
   activeIds?: string[];
@@ -317,7 +317,7 @@ export function observePullRequest(
 
 export function pullRequestObservationEvent(
   observed: ObservedPullRequest,
-): ProjectAppEvent {
+): AksObserverEvent {
   const data = {
     project: "aks-rp-e2e",
     pullRequestId: observed.pullRequestId,
@@ -365,7 +365,7 @@ export function selectPullRequestObservations(
 
 /** Observe task-owned AKS PRs as provider facts; task Conditions perform correlation. */
 export async function observeAksPullRequests(
-  ctx: ProjectAppContext,
+  ctx: AksObserverContext,
 ): Promise<unknown> {
   const statePath = ctx.appPath(".state/watchers/aks-pull-request.json");
   const prior = readState(statePath);

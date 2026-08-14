@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
-import type { ProjectAppContext, ProjectAppEvent } from "@may-agent/sdk/legacy";
+import type { AksObserverContext, AksObserverEvent } from "./context.js";
 
 type RepoRefWatcherState = {
   refs?: Record<string, string>;
@@ -96,7 +96,7 @@ export async function observeRepoRef(
 
 export function repoRefChangedEvent(
   observation: RepoRefObservation,
-): ProjectAppEvent {
+): AksObserverEvent {
   return {
     type: "aks.repo-ref.changed",
     source: "aks-repo-ref-watcher",
@@ -114,7 +114,7 @@ export function repoRefChangedEvent(
 
 export function repoRefObservedEvent(
   observation: RepoRefObservation,
-): ProjectAppEvent {
+): AksObserverEvent {
   return {
     type: "aks.repo-ref.observed",
     source: "aks-repo-ref-watcher",
@@ -133,7 +133,7 @@ export function repoRefObservedEvent(
 
 /** Observe remote-tracking repo refs as levels and separately report actual advances. */
 export async function observeRepoRefChanges(
-  ctx: ProjectAppContext,
+  ctx: AksObserverContext,
 ): Promise<unknown> {
   const statePath = ctx.appPath(".state/watchers/repo-ref.json");
   const state = readState(statePath);
