@@ -103,6 +103,33 @@ export function buildEventIngressFrame(
   });
 }
 
+export function buildProjectAppAdmissionCommand(input: {
+  projectPath: string;
+  projectId: string;
+  comment: string;
+  idempotencyKey: string;
+}): Record<string, unknown> & { type: "app.input.admit"; idempotencyKey: string } {
+  return {
+    type: "app.input.admit",
+    appId: input.projectId,
+    input: {
+      kind: "message",
+      data: {
+        message: input.comment,
+        context: {
+          intent: "project-comment",
+          projectId: input.projectId,
+          projectPath: input.projectPath,
+        },
+      },
+    },
+    source: { kind: "human", id: `web-ui:${input.idempotencyKey}` },
+    conversationId: `web-ui:project:${input.projectId}`,
+    channel: "web-ui",
+    idempotencyKey: input.idempotencyKey,
+  };
+}
+
 export async function sendDaemonFrameWithRetry(
   socketPath: string,
   frame: Record<string, unknown>,
@@ -153,19 +180,18 @@ export async function sendDaemonFrameWithRetry(
   };
 }
 
-export async function sendProjectActionWithRetry(
+type DurableControlReceipt = { eventId: number; eventType: string };
+type RetrySafeControlCommand = Record<string, unknown> & { type: string; idempotencyKey: string };
+type ConfirmDurableControl = (
+  idempotencyKey: string,
+) => DurableControlReceipt | undefined | Promise<DurableControlReceipt | undefined>;
+
+async function sendRetrySafeControlCommand(
   endpoint: SocketEndpoint,
-  command: {
-    type: "project.action.invoke";
-    projectId: string;
-    actionId: string;
-    params: unknown;
-    idempotencyKey: string;
-  },
-  send: typeof sendSocketCommand = sendSocketCommand,
-  confirm?: (
-    idempotencyKey: string,
-  ) => { eventId: number; eventType: string } | undefined | Promise<{ eventId: number; eventType: string } | undefined>,
+  command: RetrySafeControlCommand,
+  send: typeof sendSocketCommand,
+  confirm: ConfirmDurableControl | undefined,
+  exhaustedMessage: string,
 ): Promise<SocketResponse> {
   for (const timeoutMs of [2_000, 10_000]) {
     try {
@@ -190,7 +216,31 @@ export async function sendProjectActionWithRetry(
       throw error;
     }
   }
-  throw new Error("Project action retry exhausted");
+  throw new Error(exhaustedMessage);
+}
+
+export async function sendProjectActionWithRetry(
+  endpoint: SocketEndpoint,
+  command: {
+    type: "project.action.invoke";
+    projectId: string;
+    actionId: string;
+    params: unknown;
+    idempotencyKey: string;
+  },
+  send: typeof sendSocketCommand = sendSocketCommand,
+  confirm?: ConfirmDurableControl,
+): Promise<SocketResponse> {
+  return sendRetrySafeControlCommand(endpoint, command, send, confirm, "Project action retry exhausted");
+}
+
+export async function sendAppInputWithRetry(
+  endpoint: SocketEndpoint,
+  command: Record<string, unknown> & { type: "app.input.admit"; idempotencyKey: string },
+  send: typeof sendSocketCommand = sendSocketCommand,
+  confirm?: ConfirmDurableControl,
+): Promise<SocketResponse> {
+  return sendRetrySafeControlCommand(endpoint, command, send, confirm, "App input retry exhausted");
 }
 
 export type DaemonReadiness = {
@@ -3186,7 +3236,58 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       const identity = parseProjectIdentity(path, projectContent);
       const projectId = projectEventTargetForPath(path, identity.projectId);
       const { owner } = identity;
-      const idempotencyKey = body.idempotencyKey?.trim();
+      const idempotencyKey = body.idempotencyKey?.trim() || `web-project-${randomUUID()}`;
+      try {
+        const admitted = await sendAppInputWithRetry(
+          conventionSocketPath(),
+          buildProjectAppAdmissionCommand({
+            projectPath: path,
+            projectId,
+            comment,
+            idempotencyKey,
+          }),
+          sendSocketCommand,
+          (key) => {
+            const row = _db()
+              .prepare(
+                `SELECT id, event_type as eventType
+                 FROM events
+                 WHERE event_type = 'app.input.requested'
+                   AND ingress_source = 'control-socket'
+                   AND owner = ?
+                   AND idempotency_key = ?
+                 ORDER BY id DESC
+                 LIMIT 1`,
+              )
+              .get(`app:${projectId}`, key) as { id?: unknown; eventType?: unknown } | undefined;
+            const eventId = Number(row?.id);
+            return Number.isInteger(eventId) && eventId > 0 && typeof row?.eventType === "string"
+              ? { eventId, eventType: row.eventType }
+              : undefined;
+          },
+        );
+        return json(
+          {
+            ok: true,
+            triggered: true,
+            eventType: String(admitted.eventType ?? "app.input.requested"),
+            eventId: Number(admitted.eventId) || undefined,
+            projectId,
+          },
+          202,
+        );
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        const kind =
+          error && typeof error === "object" && "kind" in error ? (error as { kind?: unknown }).kind : undefined;
+        const compatibilityRequired =
+          kind === "definitive" &&
+          (message.includes("does not accept this input") || message.includes("App input admission is unavailable"));
+        if (!compatibilityRequired) {
+          return json({ ok: false, triggered: false, error: message }, 503);
+        }
+      }
+
       const trigger = await sendDaemonFrame({
         type: "project.comment.created",
         source: "web-ui",
@@ -3197,7 +3298,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
           projectId,
           comment,
           author: "hao",
-          ...(idempotencyKey ? { idempotencyKey } : {}),
+          idempotencyKey,
         },
       });
       if (!trigger.ok) return json({ ok: false, triggered: false, error: trigger.error }, 503);
