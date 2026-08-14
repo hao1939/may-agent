@@ -41,6 +41,7 @@ import {
   parseProjectAppTaskSessionBinding,
   projectAppGlobalConcurrency,
   projectAppHostFingerprint,
+  persistedProjectTaskSessionCanResume,
   recoverInstalledProjectAppTasks,
   readLoadedProjectAppTaskView,
   refreshProjectAppTaskProgressRoute,
@@ -53,6 +54,15 @@ describe("project app host backpressure", () => {
     expect(projectAppGlobalConcurrency("3")).toBe(3);
     expect(projectAppGlobalConcurrency("0")).toBe(2);
     expect(projectAppGlobalConcurrency("invalid")).toBe(2);
+  });
+
+  it("transfers a startup task lease only for a resumable persisted session", () => {
+    expect(persistedProjectTaskSessionCanResume({ status: "running" })).toBeTrue();
+    expect(persistedProjectTaskSessionCanResume({ status: "idle" })).toBeTrue();
+    expect(persistedProjectTaskSessionCanResume({ status: "done" })).toBeFalse();
+    expect(persistedProjectTaskSessionCanResume({ status: "error" })).toBeFalse();
+    expect(persistedProjectTaskSessionCanResume({ status: "interrupted" })).toBeFalse();
+    expect(persistedProjectTaskSessionCanResume(null)).toBeFalse();
   });
 
   it("reuses the exact App route for high-volume task-session progress", () => {
