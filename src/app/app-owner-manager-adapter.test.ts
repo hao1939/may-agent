@@ -60,12 +60,15 @@ describe("manager App owner adapter", () => {
         kind: "call",
         projectId: "evaluation",
         requestId: "app-inbox:probe-1",
+        recoveryOwner: "app-inbox",
         requireFinish: true,
         outputSchema: appOwnerBatchResultSchema,
+        toolPolicy: "app-owner-full",
       },
     });
     expect(calls[0]!.prompt).toContain('"id": "probe-1"');
     expect(calls[0]!.prompt).toContain("current read-only observation");
+    expect(calls[0]!.prompt).toContain("Durable asynchronous ownership must be returned as a delegate or task disposition");
     expect(calls[0]!.prompt).toContain("may return a task disposition");
     expect(calls[0]!.prompt).not.toContain("lease_generation");
   });
@@ -153,7 +156,8 @@ describe("manager App owner adapter", () => {
       requestId: "app-inbox-human:human-1",
       conversationId: "telegram:123",
       channelMessageId: 99,
-      toolPolicy: "deputy",
+      recoveryOwner: "app-inbox",
+      toolPolicy: "app-owner-deputy",
     });
     expect(calls[0]?.prompt).toContain("exact concise human-facing progress or final reply");
     expect(calls[0]?.prompt).toContain("cannot attach tasks");

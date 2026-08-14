@@ -1,7 +1,12 @@
 import { Type, type Static } from "@earendil-works/pi-ai";
 import { Check, Errors } from "typebox/value";
 import type { AppDefinition, AppRequest } from "@may-agent/sdk";
-import { appInboxHumanRequestId, type AppOwnerDispositionResult, type AppOwnerInvoker } from "./app-inbox-host.js";
+import {
+  APP_INBOX_RECOVERY_OWNER,
+  appInboxHumanRequestId,
+  type AppOwnerDispositionResult,
+  type AppOwnerInvoker,
+} from "./app-inbox-host.js";
 
 const appInputSchema = Type.Object(
   {
@@ -86,9 +91,10 @@ export type AppOwnerManager = {
       requestId: string;
       conversationId?: string;
       channelMessageId?: number;
+      recoveryOwner: typeof APP_INBOX_RECOVERY_OWNER;
       requireFinish: true;
       outputSchema: typeof appOwnerBatchResultSchema;
-      toolPolicy: "full" | "deputy";
+      toolPolicy: "app-owner-full" | "app-owner-deputy";
     },
   ): string;
   waitFor(sessionId: string): Promise<{
@@ -109,6 +115,7 @@ function ownerPrompt(app: AppDefinition, requests: AppRequest[], humanResponse: 
       ? ["This App may return a task disposition to link durable desired work."]
       : ["This App cannot attach tasks. Return complete or delegate; never return a task disposition."]),
     "If a request has dependency, it is the current read-only observation of the exact child, task, or recovered Runtime session that woke this request. Review that observation instead of querying runtime storage.",
+    "Use bounded agent or workflow calls only when you can review their result in this attempt. Durable asynchronous ownership must be returned as a delegate or task disposition.",
     "Do not invent lifecycle states, mutate inbox storage, or omit a request. Preserve each requestId exactly.",
     ...(humanResponse
       ? [
@@ -142,9 +149,10 @@ export function createManagerAppOwnerInvoker(manager: AppOwnerManager): AppOwner
         : `app-inbox:${requests.map((request) => request.id).join(",")}`,
       conversationId: transport?.conversationId,
       channelMessageId: transport?.channelMessageId,
+      recoveryOwner: APP_INBOX_RECOVERY_OWNER,
       requireFinish: true,
       outputSchema: appOwnerBatchResultSchema,
-      toolPolicy: transport ? "deputy" : "full",
+      toolPolicy: transport ? "app-owner-deputy" : "app-owner-full",
     });
     try {
       onSessionStarted(sessionId);

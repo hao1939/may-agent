@@ -199,6 +199,32 @@ describe("Registry persistence", () => {
     await manager.waitFor(sessionId);
   });
 
+  it("persists the App-owner capability boundary for recovery", async () => {
+    const manager = new SubagentManager({ persistDir });
+    manager.register({
+      name: "app-owner",
+      description: "Owns App input",
+      domain: "app",
+      systemPrompt: "Handle one App request.",
+      model: fakeModel(),
+      tools: [],
+      apiKey: "fake-key",
+    });
+
+    const sessionId = manager.run("app-owner", "handle request", {
+      requireFinish: true,
+      toolPolicy: "app-owner-deputy",
+      recoveryOwner: "app-inbox",
+    });
+    const meta = readSessionMeta(persistDir, sessionId);
+
+    expect(meta?.toolPolicy).toBe("app-owner-deputy");
+    expect(meta?.recoveryOwner).toBe("app-inbox");
+
+    manager.cancel(sessionId);
+    await manager.waitFor(sessionId);
+  });
+
   it("works with a fresh persistDir (no prior state)", () => {
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
 
