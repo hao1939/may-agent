@@ -20,7 +20,7 @@ afterEach(() => {
   }
 });
 
-function fixture() {
+function fixture(options: { admitAppReview?: boolean } = {}) {
   const root = mkdtempSync(join(tmpdir(), "human-result-follow-through-"));
   roots.push(root);
   const persistDir = join(root, ".state");
@@ -28,6 +28,7 @@ function fixture() {
   attachEventPersistence({ bus, persistDir });
   const runs: Array<{ agent: string; task: string; opts: Record<string, unknown> }> = [];
   const activeSessions = new Map<string, unknown>();
+  const appReviews: Array<Record<string, unknown>> = [];
   const manager = {
     activeSessions,
     run: (agent: string, task: string, opts?: Record<string, unknown>) => {
@@ -35,8 +36,21 @@ function fixture() {
       return `review-${runs.length}`;
     },
   };
-  attachHumanResultFollowThrough({ bus, manager: manager as any, persistDir, interfaceAgent: "may" });
-  return { root, persistDir, bus, runs, activeSessions };
+  attachHumanResultFollowThrough({
+    bus,
+    manager: manager as any,
+    persistDir,
+    interfaceAgent: "may",
+    ...(options.admitAppReview
+      ? {
+          admitAppReview: (input) => {
+            appReviews.push(input as unknown as Record<string, unknown>);
+            return true;
+          },
+        }
+      : {}),
+  });
+  return { root, persistDir, bus, runs, activeSessions, appReviews };
 }
 
 function storeHumanInput(persistDir: string, traceId = "trace-human-cli") {
@@ -48,7 +62,8 @@ function storeHumanInput(persistDir: string, traceId = "trace-human-cli") {
     project_id: null,
     data: JSON.stringify({
       direction: "inbound",
-      conversationId: "telegram:chat:123:topic:0:agent:may",
+      conversationId: "telegram:chat:123:topic:42:agent:may",
+      topicId: 42,
       traceId,
       text: "Use Codex to review the design and bring me a proposal.",
     }),
@@ -56,6 +71,50 @@ function storeHumanInput(persistDir: string, traceId = "trace-human-cli") {
 }
 
 describe("human result follow-through", () => {
+  it("admits a late legacy result to the durable May App instead of launching a session", () => {
+    const { bus, persistDir, runs, appReviews } = fixture({ admitAppReview: true });
+    storeHumanInput(persistDir);
+
+    bus.emit({
+      type: "cli.task.completed",
+      source: "cli-task-runner",
+      owner: "agent:may",
+      data: {
+        taskId: "cli-review-app-owned",
+        tool: "codex",
+        summary: "Review completed",
+        sourceSessionId: "missing-session",
+      },
+      trace: { traceId: "trace-human-cli", parentEventId: 1 },
+    } as any);
+
+    expect(runs).toEqual([]);
+    expect(appReviews).toHaveLength(1);
+    expect(appReviews[0]).toMatchObject({
+      appId: "may",
+      source: { kind: "human", id: "telegram:700" },
+      input: {
+        kind: "message",
+        data: {
+          context: {
+            compatibility: "legacy-human-result",
+            eventType: "cli.task.completed",
+            requestId: "human-result-review:cli:cli-review-app-owned",
+            traceId: "trace-human-cli",
+            taskId: "cli-review-app-owned",
+          },
+        },
+      },
+      conversationId: "telegram:chat:123:topic:42:agent:may",
+      channel: "telegram",
+      channelThreadId: "42",
+      channelMessageId: 700,
+      idempotencyKey: "human-result-review:cli:cli-review-app-owned",
+      trace: { traceId: "trace-human-cli" },
+    });
+    expect((appReviews[0]?.input as any).data.message).toContain("Review the worker result before answering");
+  });
+
   it("starts a fresh Telegram-owned May review when the source session is gone", () => {
     const { bus, persistDir, runs } = fixture();
     storeHumanInput(persistDir);
@@ -81,7 +140,7 @@ describe("human result follow-through", () => {
       autoClose: "never",
       source: "telegram",
       requestId: "human-result-review:cli:cli-review-1",
-      conversationId: "telegram:chat:123:topic:0:agent:may",
+      conversationId: "telegram:chat:123:topic:42:agent:may",
       channelMessageId: 700,
     });
     expect((runs[0]?.opts.trace as any)?.traceId).toBe("trace-human-cli");
@@ -98,6 +157,29 @@ describe("human result follow-through", () => {
     expect(runs[0]?.task).toContain("Nearby Telegram messages");
     expect(runs[0]?.task).toContain("Hao: Use Codex to review the design");
     expect(runs[0]?.task).toContain("Reply to Telegram message: 700");
+  });
+
+  it("does not readmit a legacy result already owned by a persisted May inbox item", () => {
+    const { bus, persistDir, runs, appReviews } = fixture({ admitAppReview: true });
+    storeHumanInput(persistDir);
+    createAppInboxItem(getDb(persistDir), {
+      id: "existing-review",
+      appId: "may",
+      source: { kind: "human", id: "event:1" },
+      input: { kind: "message", data: { message: "Review this result." } },
+      idempotencyKey: "human-result-review:cli:cli-review-existing",
+    });
+
+    bus.emit({
+      type: "cli.task.completed",
+      source: "cli-task-runner",
+      owner: "agent:may",
+      data: { taskId: "cli-review-existing", sourceSessionId: "missing-session" },
+      trace: { traceId: "trace-human-cli" },
+    } as any);
+
+    expect(appReviews).toEqual([]);
+    expect(runs).toEqual([]);
   });
 
   it("reuses an available source session instead of starting a duplicate review", () => {
@@ -193,7 +275,7 @@ describe("human result follow-through", () => {
         autoClose: "never",
         source: "telegram",
         requestId: "human-result-review:project:gym:learning/review:3",
-        conversationId: "telegram:chat:123:topic:0:agent:may",
+        conversationId: "telegram:chat:123:topic:42:agent:may",
         channelMessageId: 700,
         trace: { traceId: "trace-human-project", parentEventId: expect.any(Number) },
       },
@@ -275,7 +357,7 @@ describe("human result follow-through", () => {
         autoClose: "never",
         source: "telegram",
         requestId: "human-result-review:project:gym:owner:1",
-        conversationId: "telegram:chat:123:topic:0:agent:may",
+        conversationId: "telegram:chat:123:topic:42:agent:may",
         channelMessageId: 700,
         trace: { traceId: "trace-human-project", parentEventId: expect.any(Number) },
       },

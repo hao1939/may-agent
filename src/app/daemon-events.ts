@@ -12,6 +12,7 @@ import { log } from "../lib/log.js";
 import { runAgentCleanup, setAgentSessionId } from "./agent-loader.js";
 import { attachCliTaskRunner, markOrphanedCliTasks } from "./cli-task-runner.js";
 import { attachHumanResultFollowThrough } from "./human-result-follow-through.js";
+import type { HumanResultAppReview } from "./human-result-follow-through.js";
 import { getDb } from "../lib/db/connection.js";
 
 function createEscalationId(): string {
@@ -192,6 +193,7 @@ export function attachDaemonEventSubscribers(opts: {
   persistDir: string;
   projectRoot: string;
   interfaceAgent?: string;
+  admitHumanResultAppReview?: (input: HumanResultAppReview) => boolean;
 }): void {
   const { bus, manager, persistDir, projectRoot } = opts;
   const sourceSessionAvailable = (sessionId: string) => manager.activeSessions.has(sessionId);
@@ -202,6 +204,7 @@ export function attachDaemonEventSubscribers(opts: {
     manager,
     persistDir,
     interfaceAgent: opts.interfaceAgent,
+    admitAppReview: opts.admitHumanResultAppReview,
   });
   bus.subscribe(createMetricMutationSubscriber(persistDir));
   const orphanedCliTasks = markOrphanedCliTasks({ bus, persistDir, sourceSessionAvailable });
