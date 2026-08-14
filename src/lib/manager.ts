@@ -72,6 +72,7 @@ import { readIdentity } from "./detached.js";
 import { EVENT_ROW_ID, type EventBus, type EventTrace } from "../app/event-bus.js";
 import type { SubagentDefinition, SessionInfo, TaskResult } from "./types.js";
 import type { SessionKind, PersistedSession } from "./persistence.js";
+import type { ToolPolicy } from "./session-policy.js";
 import { log } from "./log.js";
 import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
@@ -126,7 +127,7 @@ export interface RunOptions {
   /** Caller-defined schema for the required finish().result payload. */
   outputSchema?: TSchema;
   /** Restrict the supplied capabilities for this session. */
-  toolPolicy?: "full" | "readonly" | "deputy";
+  toolPolicy?: ToolPolicy;
   /** Effective filesystem root supplied by an enclosing workflow/task. */
   executionRoot?: string;
 }
@@ -166,7 +167,7 @@ interface ActiveSession {
   requireFinish: boolean;
   outputSchema?: TSchema;
   tools?: AgentTool[];
-  toolPolicy: "full" | "readonly" | "deputy";
+  toolPolicy: ToolPolicy;
   executionRoot?: string;
 }
 
@@ -358,7 +359,7 @@ export class SubagentManager {
       trace?: EventTrace;
       requireFinish?: boolean;
       outputSchema?: TSchema;
-      toolPolicy?: "full" | "readonly" | "deputy";
+      toolPolicy?: ToolPolicy;
       executionRoot?: string;
     },
   ): void {
@@ -871,7 +872,7 @@ export class SubagentManager {
       skill?: string;
       requireFinish?: boolean;
       outputSchema?: TSchema;
-      toolPolicy?: "full" | "readonly" | "deputy";
+      toolPolicy?: ToolPolicy;
       executionRoot?: string;
     },
   ): Promise<TaskResult & { messages: AgentMessage[] }> {
@@ -923,7 +924,7 @@ export class SubagentManager {
       skill?: string;
       requireFinish?: boolean;
       outputSchema?: TSchema;
-      toolPolicy?: "full" | "readonly" | "deputy";
+      toolPolicy?: ToolPolicy;
       executionRoot?: string;
     },
   ): string {
@@ -1107,7 +1108,7 @@ export class SubagentManager {
       trace?: EventTrace;
       requireFinish?: boolean;
       outputSchema?: TSchema;
-      toolPolicy?: "full" | "readonly" | "deputy";
+      toolPolicy?: ToolPolicy;
     },
   ): string {
     if (this._sessions.has(sessionId)) {

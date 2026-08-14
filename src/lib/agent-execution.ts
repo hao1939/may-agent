@@ -51,6 +51,7 @@ import {
   workflowFinishRecoveryPrompt,
 } from "./workflow-finish-recovery.js";
 import { runWithAgentSessionContext } from "./agent-session-context.js";
+import type { ToolPolicy } from "./session-policy.js";
 
 const CHAT_TOOL_DENYLIST = new Set([
   "bash",
@@ -75,6 +76,17 @@ const DEPUTY_TOOL_ALLOWLIST = new Set([
   "run_cli_agent",
   "scrape_webpage",
   "system_status",
+]);
+
+// An App owner must return durable ownership changes through its fenced
+// disposition. These tools create asynchronous work or lifecycle state
+// outside that admission boundary and belong only to compatibility sessions.
+const APP_OWNER_TOOL_DENYLIST = new Set([
+  "background_exec",
+  "checkpoint",
+  "cron",
+  "message",
+  "run_cli_agent",
 ]);
 
 const SEQUENTIAL_TOOL_NAMES = new Set([
@@ -203,7 +215,7 @@ export type AgentPreparationOptions = {
   skill?: string;
   requireFinish?: boolean;
   outputSchema?: TSchema;
-  toolPolicy?: "full" | "readonly" | "deputy";
+  toolPolicy?: ToolPolicy;
   /** Override the registered agent's filesystem tools for this execution only. */
   executionRoot?: string;
   promptTimestamp?: string;
@@ -325,8 +337,11 @@ function resolveTools(options: AgentPreparationOptions, requireFinish: boolean):
   }
   if (options.toolPolicy === "readonly") {
     tools = tools.filter((tool) => READONLY_TOOL_ALLOWLIST.has(tool.name));
-  } else if (options.toolPolicy === "deputy") {
+  } else if (options.toolPolicy === "deputy" || options.toolPolicy === "app-owner-deputy") {
     tools = tools.filter((tool) => DEPUTY_TOOL_ALLOWLIST.has(tool.name));
+  }
+  if (options.toolPolicy === "app-owner-full" || options.toolPolicy === "app-owner-deputy") {
+    tools = tools.filter((tool) => !APP_OWNER_TOOL_DENYLIST.has(tool.name));
   }
   if (!requireFinish) return applyToolExecutionPolicy(tools);
 
