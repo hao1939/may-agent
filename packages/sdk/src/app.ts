@@ -1,6 +1,6 @@
 import type { Static, TSchema } from "typebox";
 import type { AppEvent, EventSelector } from "./event.js";
-import type { TaskIntent } from "./task.js";
+import type { TaskAction, TaskIntent } from "./task.js";
 import type { ObserverContext } from "./workflow.js";
 
 export { Type } from "typebox";
@@ -116,6 +116,7 @@ export type AppTaskPolicy = {
   attach?: true;
   subscriptions?: EventSelector[];
   resolve?: (event: AppEvent<Record<string, unknown>>) => TaskIntent | null;
+  validateAction?: (action: TaskAction) => string | null;
   maxConcurrent?: number;
   resyncIntervalMs?: number;
 };

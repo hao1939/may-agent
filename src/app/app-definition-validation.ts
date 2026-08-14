@@ -180,6 +180,9 @@ export function validateAppDefinition(definition: unknown): string[] {
       if (tasks.resolve !== undefined && typeof tasks.resolve !== "function") {
         errors.push(`App ${appId} task resolve must be a function`);
       }
+      if (tasks.validateAction !== undefined && typeof tasks.validateAction !== "function") {
+        errors.push(`App ${appId} task validateAction must be a function`);
+      }
     }
   }
 

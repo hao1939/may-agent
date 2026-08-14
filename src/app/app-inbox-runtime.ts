@@ -1,17 +1,11 @@
-import type {
-  AppDependencyObservation,
-  AppEvent,
-  AppEventTarget,
-  AppInput,
-  AppInputSource,
-  ObserverContext,
-} from "@may-agent/sdk";
+import type { AppDependencyObservation, AppInput, AppInputSource, ObserverContext } from "@may-agent/sdk";
 import type { SqliteDb } from "../lib/db.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "./event-bus.js";
 import { AppInboxHost, type AppInboxReconcileResult, type AppTaskAttacher } from "./app-inbox-host.js";
 import { createManagerAppOwnerInvoker, type AppOwnerManager } from "./app-owner-manager-adapter.js";
 import type { AppRegistry, AppRegistrySnapshot } from "./app-registry.js";
 import { createAppObserverRuntime } from "./app-observer-runtime.js";
+import { canonicalAppEvent } from "./canonical-app-event.js";
 
 export type AppRegistryReloadPreparation = (input: {
   snapshot: AppRegistrySnapshot;
@@ -69,20 +63,6 @@ function requestedInput(data: Record<string, unknown>): AppInput {
 function eventIdentity(event: AgentEvent): string | undefined {
   const eventId = Number((event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID]);
   return Number.isSafeInteger(eventId) && eventId > 0 ? `event:${eventId}` : undefined;
-}
-
-function appEvent(event: AgentEvent): AppEvent<Record<string, unknown>> {
-  const envelope = event as unknown as Record<string, unknown>;
-  const target = record(envelope.target) as AppEventTarget;
-  const urgency = envelope.urgency;
-  return Object.freeze({
-    type: event.type,
-    data: Object.freeze({ ...eventData(event) }),
-    ...(typeof envelope.source === "string" ? { source: envelope.source } : {}),
-    ...(typeof envelope.owner === "string" ? { owner: envelope.owner } : {}),
-    ...(Object.keys(target).length ? { target: Object.freeze({ ...target }) } : {}),
-    ...(urgency === "low" || urgency === "normal" || urgency === "high" || urgency === "immediate" ? { urgency } : {}),
-  });
 }
 
 function normalizedAgent(value: unknown): string | undefined {
@@ -530,7 +510,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     }
     const identity = eventIdentity(event);
     if (identity) {
-      const matches = host.subscriptionInputs(appEvent(event));
+      const matches = host.subscriptionInputs(canonicalAppEvent(event));
       for (const match of matches) {
         const admitted = host.admit({
           appId: match.appId,
