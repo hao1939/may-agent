@@ -2854,6 +2854,12 @@ function emitAppTaskDependencyCompleted(
   });
 }
 
+export function persistedProjectTaskSessionCanResume(
+  meta: { status?: string } | null,
+): boolean {
+  return meta?.status === "running" || meta?.status === "idle";
+}
+
 function recoverInterruptedProjectAppTasks(
   opts: ProjectAppLoaderOptions,
   descriptors: ProjectAppDescriptor[],
@@ -2877,6 +2883,10 @@ function recoverInterruptedProjectAppTasks(
       if (
         includeFreshLeases &&
         recovery.sessionId &&
+        opts.persistDir &&
+        persistedProjectTaskSessionCanResume(
+          readSessionMeta(opts.persistDir, recovery.sessionId),
+        ) &&
         claimFreshProjectAppTaskSessionForStartup(
           config,
           { taskId: recovery.taskId, generation: recovery.taskGeneration },
