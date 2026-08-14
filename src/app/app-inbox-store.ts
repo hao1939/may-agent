@@ -299,6 +299,22 @@ export function listAppInboxSessionWaits(db: SqliteDb): AppInboxItem[] {
     .map(rowToItem);
 }
 
+/** True when the App inbox is the explicit unfinished owner of this dependency. */
+export function hasAppInboxWait(db: SqliteDb, waitingOn: { kind: AppInboxWaitKind; id: string }): boolean {
+  const id = requiredText(waitingOn.id, "waitingOn.id");
+  const row = db
+    .prepare(
+      `SELECT 1 AS found
+       FROM app_inbox_items
+       WHERE status != 'done'
+         AND waiting_on_kind = ?
+         AND waiting_on_id = ?
+       LIMIT 1`,
+    )
+    .get(waitingOn.kind, id) as { found?: unknown } | undefined;
+  return row?.found === 1;
+}
+
 /** Current lifecycle health derived directly from the inbox authority, never event reconstruction. */
 export function listAppInboxHealth(db: SqliteDb, query: { appId?: string; now?: number } = {}): AppInboxHealth[] {
   const now = query.now ?? Date.now();
