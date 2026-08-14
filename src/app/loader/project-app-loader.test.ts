@@ -42,6 +42,7 @@ import {
   parseProjectAppTaskSessionBinding,
   projectAppGlobalConcurrency,
   projectAppHostFingerprint,
+  startProjectAppWatcher,
   persistedProjectTaskSessionCanResume,
   recoverInstalledProjectAppTasks,
   readLoadedProjectAppTaskView,
@@ -1394,6 +1395,44 @@ describe("project app loader", () => {
       );
       expect(projectAppHostFingerprint(f.projectsRoot)).not.toBe(watcherChanged);
     } finally {
+      rmSync(f.root, { recursive: true, force: true });
+    }
+  });
+
+  it("retries a coordinated watcher reload after the generation is rejected", async () => {
+    const f = fixture();
+    writeApp(f.appDir);
+    const watcherDir = join(f.appDir, "watchers");
+    mkdirSync(watcherDir, { recursive: true });
+    const watcherPath = join(watcherDir, "pipeline.ts");
+    writeFileSync(watcherPath, `export const observe = () => "initial";`);
+    let attempts = 0;
+    const watcher = startProjectAppWatcher(
+      {
+        projectsRoot: f.projectsRoot,
+        projectRoot: f.root,
+        persistDir: f.persistDir,
+        agentsRoot: join(f.root, "agents"),
+        sharedRoot: join(f.root, "shared"),
+        manager: manager([]),
+        bus: new EventBus(),
+        agentCrons: new Map(),
+      },
+      {
+        reload: async () => {
+          attempts++;
+          if (attempts === 1) throw new Error("generation rejected");
+        },
+      },
+    );
+    try {
+      writeFileSync(watcherPath, `export const observe = () => "changed";`);
+      expect(await watcher.scanNow()).toBe(false);
+      expect(await watcher.scanNow()).toBe(true);
+      expect(attempts).toBe(2);
+    } finally {
+      watcher.close();
+      closeDb(f.persistDir);
       rmSync(f.root, { recursive: true, force: true });
     }
   });

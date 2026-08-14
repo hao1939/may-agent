@@ -3,14 +3,20 @@ import type { SqliteDb } from "../lib/db.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "./event-bus.js";
 import { AppInboxHost, type AppInboxReconcileResult, type AppTaskAttacher } from "./app-inbox-host.js";
 import { createManagerAppOwnerInvoker, type AppOwnerManager } from "./app-owner-manager-adapter.js";
-import type { AppRegistry } from "./app-registry.js";
+import type { AppRegistry, AppRegistrySnapshot } from "./app-registry.js";
+
+export type AppRegistryReloadPreparation = (input: {
+  snapshot: AppRegistrySnapshot;
+  /** Must be the final synchronous step after every other consumer commits. */
+  commit: () => void;
+}) => Promise<void>;
 
 export type AppInboxRuntime = {
   host: AppInboxHost;
   close(): void;
   scanNow(): void;
   enableDelivery(): void;
-  reload(): Promise<string[]>;
+  reload(prepare?: AppRegistryReloadPreparation): Promise<string[]>;
 };
 
 export type StartAppInboxRuntimeOptions = {
@@ -535,14 +541,28 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   return {
     host,
     scanNow,
-    async reload() {
-      const next = await options.registry.reload((prospective) => {
-        for (const { definition } of prospective) {
+    async reload(prepare) {
+      const previousDefinitions = loaded.map((entry) => entry.definition);
+      const next = await options.registry.reload(async (snapshot) => {
+        for (const { definition } of snapshot.entries) {
           if (!options.manager.hasAgent(definition.owner)) {
             throw new Error(`App ${definition.id} owner agent is not registered: ${definition.owner}`);
           }
         }
-        host.replaceApps(prospective.map((entry) => entry.definition));
+        let committed = false;
+        const commit = () => {
+          if (committed) throw new Error(`App registry generation ${snapshot.generation} was committed twice`);
+          host.replaceApps(snapshot.entries.map((entry) => entry.definition));
+          committed = true;
+        };
+        try {
+          if (prepare) await prepare({ snapshot, commit });
+          else commit();
+          if (!committed) throw new Error(`App registry generation ${snapshot.generation} was not committed`);
+        } catch (error) {
+          if (committed) host.replaceApps(previousDefinitions);
+          throw error;
+        }
       });
       loaded = next;
       appDirById = new Map(next.map((entry) => [entry.definition.id, entry.appDir]));
