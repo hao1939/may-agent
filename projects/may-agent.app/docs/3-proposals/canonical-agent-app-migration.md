@@ -289,6 +289,21 @@ Defines all explicitly addressed inputs accepted by the App. Admission validates
 before persistence. Unknown or invalid input is rejected; it is never silently
 routed to an agent or generic owner queue.
 
+#### `route`
+
+`route(request)` is pure deterministic policy for requests that do not need
+owner judgment. It may complete the request, delegate it to another App, or
+attach it to a task. Returning `null` is the only way to request one bounded
+owner decision. The host applies `route` independently to every claimed item,
+then invokes the owner only with the unresolved subset; mixed batches do not
+force deterministic work through an agent.
+
+The request passed to policy is the immutable author-visible `AppRequest`, not
+an inbox row. When policy attaches a task, that exact request object—including
+its source, parent, input, and dependency observation—is recorded in the
+host-private task trigger. Claim generations, leases, channels, and delivery
+metadata never cross the authoring boundary.
+
 #### `subscriptions`
 
 Subscriptions replace legacy top-level `events` and imperative `onEvent`.
@@ -333,6 +348,15 @@ does not create a second ownership lifecycle.
 
 The task capability is optional. `attach: true` allows an owner disposition to
 attach an existing task or declare a desired `TaskIntent`.
+
+Every App-to-task attachment has a stable admission key derived from the inbox
+item and attachment identity. The task engine persists that admission before
+waking work. Redelivery of the same admission neither installs a second trigger
+nor starts a second attempt; a new inbox admission may wake the same standing
+`maintain` task with its own exact request. Reusing an admission key for a
+different task specification is rejected. The inbox links its durable wait
+before using a post-link completion check, and that check cannot report
+completion while the admission trigger is still pending.
 
 Task subscriptions and `resolve` retain the useful part of the current Project
 App contract: deterministic event-to-desired-task correlation. A targeted task

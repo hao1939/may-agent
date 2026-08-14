@@ -1,23 +1,26 @@
 import { createHash } from "node:crypto";
 import {
-  defineProjectApp,
-  eventDetails,
   Type,
-  type ProjectAppContext,
-  type ProjectAppEvent,
-  type ProjectAppTaskIntent,
-} from "@may-agent/sdk/legacy";
-import { observeEvaluationPipeline } from "./watchers/evaluation-pipeline.js";
-import { projectEvaluationFeedback } from "./watchers/feedback-projection.js";
+  defineApp,
+  type AppDisposition,
+  type AppEvent,
+  type AppInput,
+  type AppRequest,
+  type TaskIntent,
+} from "@may-agent/sdk";
 import {
   evaluationAppRuntimeCanarySchema,
   evaluationCanaryDataSchema,
 } from "./canary-contract.js";
 
 const projectId = "evaluation";
-const actionInputSchema = Type.Object({}, { additionalProperties: true });
+const detailsSchema = Type.Record(Type.String(), Type.Unknown());
+const sessionSchema = Type.Object(
+  { sessionId: Type.String({ minLength: 1 }) },
+  { additionalProperties: true },
+);
 
-const watchedProjectTargets = [
+export const watchedProjectTargets = [
   {
     targetProject: "aks-rp-e2e.app",
     targetAppDir: "/app/projects/aks-rp-e2e.app",
@@ -43,128 +46,85 @@ const watchedProjectTargets = [
     targetAppDir: "/app/projects/evaluation.app",
     targetDomainDir: "/app/projects/evaluation.app",
   },
-];
+] as const;
 
-function eventParams(params: unknown): Record<string, unknown> {
-  return params && typeof params === "object" && !Array.isArray(params)
-    ? (params as Record<string, unknown>)
+const evaluationInputSchema = Type.Union([
+  Type.Object(
+    {
+      kind: Type.Literal("message"),
+      data: Type.Object(
+        {
+          message: Type.String({ minLength: 1 }),
+          context: Type.Optional(detailsSchema),
+        },
+        { additionalProperties: false },
+      ),
+    },
+    { additionalProperties: false },
+  ),
+  Type.Object(
+    { kind: Type.Literal("canary-probe"), data: evaluationCanaryDataSchema },
+    { additionalProperties: false },
+  ),
+  Type.Object(
+    {
+      kind: Type.Literal("runtime-canary"),
+      data: evaluationAppRuntimeCanarySchema,
+    },
+    { additionalProperties: false },
+  ),
+  Type.Object(
+    { kind: Type.Literal("evaluate-session"), data: sessionSchema },
+    { additionalProperties: false },
+  ),
+  Type.Object(
+    { kind: Type.Literal("deep-eval"), data: sessionSchema },
+    { additionalProperties: false },
+  ),
+  Type.Object(
+    { kind: Type.Literal("owner-review"), data: detailsSchema },
+    { additionalProperties: false },
+  ),
+  Type.Object(
+    {
+      kind: Type.Literal("project-review"),
+      data: Type.Object(
+        {
+          targetProject: Type.Optional(Type.String({ minLength: 1 })),
+          reason: Type.Optional(Type.String({ minLength: 1 })),
+        },
+        { additionalProperties: true },
+      ),
+    },
+    { additionalProperties: false },
+  ),
+  ...[
+    "pipeline-check",
+    "feedback-projection",
+    "aftermath-scan",
+    "deep-scan",
+  ].map((kind) =>
+    Type.Object(
+      { kind: Type.Literal(kind), data: detailsSchema },
+      { additionalProperties: false },
+    ),
+  ),
+]);
+
+function record(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
     : {};
 }
 
-function evaluationSessionRequested(params: unknown): ProjectAppEvent {
-  return {
-    type: "evaluation.session.requested",
-    project: projectId,
-    params: eventParams(params),
-  };
+function eventData(
+  event: AppEvent<Record<string, unknown>>,
+): Record<string, unknown> {
+  return record(event.data);
 }
 
-function evaluationReviewRequested(
-  lane: string,
-  params: unknown = {},
-): ProjectAppEvent {
-  return {
-    type: "evaluation.tick",
-    project: projectId,
-    lane,
-    params: eventParams(params),
-  };
-}
-
-function projectHealthReviewRequested(params: unknown = {}): ProjectAppEvent {
-  const details = eventParams(params);
-  const requestedTarget =
-    typeof details.targetProject === "string"
-      ? details.targetProject
-      : typeof details.target === "string"
-        ? details.target
-        : watchedProjectTargets[0].targetProject;
-  const watchedTarget =
-    watchedProjectTargets.find(
-      (target) =>
-        target.targetProject === requestedTarget ||
-        target.targetProject.replace(/\.app$/, "") === requestedTarget,
-    ) ?? watchedProjectTargets[0];
-  const reason = typeof details.reason === "string" ? details.reason : "manual";
-
-  return {
-    type: "evaluation.project.review.requested",
-    project: projectId,
-    params: {
-      ...details,
-      ...watchedTarget,
-      reason,
-    },
-  };
-}
-
-export function appInboxCanaryRequested(params: unknown): ProjectAppEvent {
-  return {
-    type: "app.input.requested",
-    data: {
-      appId: "evaluation-canary",
-      input: { kind: "probe", data: eventParams(params) },
-      source: { kind: "system", id: "evaluation.app:manual-canary" },
-    },
-  };
-}
-
-export function appRuntimeCanaryRequested(params: unknown): ProjectAppEvent {
-  return {
-    type: "evaluation.app_runtime_canary.requested",
-    project: projectId,
-    params: eventParams(params),
-  };
-}
-
-function metricId(event: Record<string, unknown>): string {
-  const details = eventDetails(event);
-  const value = details.metricId ?? details.metric_id ?? details.metric;
-  return typeof value === "string" ? value : "";
-}
-
-function isEvaluationMetric(event: Record<string, unknown>): boolean {
-  const details = eventDetails(event);
-  const project = details.project;
-  const owner = details.owner ?? event.owner;
-  const id = metricId(event);
-  return (
-    project === projectId ||
-    project === `${projectId}.app` ||
-    owner === "evaluator" ||
-    owner === "agent:evaluator" ||
-    id.startsWith("evaluator.") ||
-    id.startsWith("evaluation.") ||
-    id.startsWith("eval.")
-  );
-}
-
-function isEvaluatorOwnerMessage(event: Record<string, unknown>): boolean {
-  const details = eventDetails(event);
-  const owner = String(event.owner ?? details.owner ?? "");
-  const to = String(details.to ?? "");
-  const target = details.target;
-  const targetProject =
-    target && typeof target === "object" && !Array.isArray(target)
-      ? String((target as Record<string, unknown>).project ?? "")
-      : "";
-  const targetOwner =
-    target && typeof target === "object" && !Array.isArray(target)
-      ? String((target as Record<string, unknown>).owner ?? "")
-      : "";
-  const project = String(details.project ?? details.projectId ?? "");
-
-  return (
-    owner === "agent:evaluator" ||
-    owner === "evaluator" ||
-    to === "evaluator" ||
-    targetOwner === "agent:evaluator" ||
-    targetOwner === "evaluator" ||
-    project === projectId ||
-    project === `${projectId}.app` ||
-    targetProject === projectId ||
-    targetProject === `${projectId}.app`
-  );
+function stringValue(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
 }
 
 function safeTaskIdPart(value: unknown): string {
@@ -173,37 +133,111 @@ function safeTaskIdPart(value: unknown): string {
     .replace(/[^A-Za-z0-9._-]+/g, "-")
     .replace(/^-+|-+$/g, "");
   if (normalized === raw && normalized.length <= 120) return normalized;
-
   const digest = createHash("sha256").update(raw).digest("hex").slice(0, 12);
-  const prefix = normalized.slice(0, 107) || "id";
-  return `${prefix}-${digest}`;
+  return `${normalized.slice(0, 107) || "id"}-${digest}`;
 }
 
-function eventSessionId(event: Record<string, unknown>): string {
-  const details = eventDetails(event);
-  const target =
-    details.target &&
-    typeof details.target === "object" &&
-    !Array.isArray(details.target)
-      ? (details.target as Record<string, unknown>)
-      : {};
-  return String(
-    details.sessionId ?? details.session_id ?? target.sessionId ?? "",
-  ).trim();
+function eventSessionId(event: AppEvent<Record<string, unknown>>): string {
+  const data = eventData(event);
+  return stringValue(
+    data.sessionId ??
+      data.session_id ??
+      event.target?.sessionId ??
+      record(data.target).sessionId,
+  );
 }
 
-function targetProject(event: Record<string, unknown>): string {
-  const details = eventDetails(event);
-  return String(details.targetProject ?? details.target ?? "").trim();
+function projectTarget(value: unknown): (typeof watchedProjectTargets)[number] {
+  const requested = stringValue(value);
+  return (
+    watchedProjectTargets.find(
+      (target) =>
+        target.targetProject === requested ||
+        target.targetProject.replace(/\.app$/, "") === requested,
+    ) ?? watchedProjectTargets[0]
+  );
 }
 
-export function resolveEvaluationTask(
-  event: Record<string, unknown>,
-): ProjectAppTaskIntent | null {
-  const details = eventDetails(event);
-  switch (event.type) {
-    case "evaluation.app_runtime_canary.requested": {
-      const itemId = String(details.itemId ?? "").trim();
+function projectReviewInput(value: unknown): AppInput {
+  const data = record(value);
+  const target = projectTarget(data.targetProject ?? data.target);
+  return {
+    kind: "project-review",
+    data: {
+      ...data,
+      ...target,
+      reason: stringValue(data.reason) || "manual",
+    },
+  };
+}
+
+function metricId(event: AppEvent<Record<string, unknown>>): string {
+  const data = eventData(event);
+  return stringValue(
+    data.metricId ?? data.metric_id ?? data.metric ?? event.target?.metricId,
+  );
+}
+
+function isEvaluationMetric(event: AppEvent<Record<string, unknown>>): boolean {
+  const data = eventData(event);
+  const project = stringValue(
+    data.project ?? data.projectId ?? event.target?.project,
+  );
+  const owner = stringValue(
+    event.owner ?? data.owner ?? event.target?.owner,
+  ).replace(/^agent:/, "");
+  const id = metricId(event);
+  return (
+    project === projectId ||
+    project === `${projectId}.app` ||
+    owner === "evaluator" ||
+    id.startsWith("evaluator.") ||
+    id.startsWith("evaluation.") ||
+    id.startsWith("eval.")
+  );
+}
+
+function isEvaluatorOwnerMessage(
+  event: AppEvent<Record<string, unknown>>,
+): boolean {
+  const data = eventData(event);
+  const target = record(data.target);
+  const values = [
+    event.owner,
+    data.owner,
+    data.to,
+    event.target?.owner,
+    target.owner,
+  ].map((value) => stringValue(value).replace(/^agent:/, ""));
+  const projects = [
+    data.project,
+    data.projectId,
+    event.target?.project,
+    target.project,
+  ].map(stringValue);
+  return (
+    values.includes("evaluator") ||
+    projects.includes(projectId) ||
+    projects.includes(`${projectId}.app`)
+  );
+}
+
+function ownerMessageInput(
+  event: AppEvent<Record<string, unknown>>,
+): AppInput | null {
+  if (!isEvaluatorOwnerMessage(event)) return null;
+  const data = eventData(event);
+  const message =
+    stringValue(data.message ?? data.text ?? data.comment) ||
+    "Review the addressed evaluator request.";
+  return { kind: "message", data: { message, context: data } };
+}
+
+export function taskIntentForInput(input: AppInput): TaskIntent | null {
+  const data = record(input.data);
+  switch (input.kind) {
+    case "runtime-canary": {
+      const itemId = stringValue(data.itemId);
       if (!itemId) return null;
       return {
         id: `runtime/app-inbox-canary/${safeTaskIdPart(itemId)}`,
@@ -218,8 +252,8 @@ export function resolveEvaluationTask(
         priority: "P2",
       };
     }
-    case "evaluation.session.requested": {
-      const sessionId = eventSessionId(event);
+    case "evaluate-session": {
+      const sessionId = stringValue(data.sessionId);
       if (!sessionId) return null;
       return {
         id: `runtime/session-aftermath/${safeTaskIdPart(sessionId)}`,
@@ -235,23 +269,23 @@ export function resolveEvaluationTask(
         priority: "P1",
       };
     }
-    case "evaluation.aftermath.scan":
+    case "aftermath-scan":
       return {
         id: "runtime/aftermath-backfill",
         parentId: "pipeline-health",
         outcome:
           "Keep the eligible terminal-session evaluation frontier current, prioritizing failed sessions and the recent 3h coverage window before stale done-session backlog.",
         acceptance: [
-          "The highest-priority eligible unevaluated session receives its normal aftermath evaluation: failed/interrupted sessions first, then done sessions inside the recent 3h coverage window, then older done-session backlog.",
-          "If more eligible sessions remain, the workflow emits one compact continuation wake; otherwise it records that the frontier is current.",
+          "The highest-priority eligible unevaluated session receives its normal aftermath evaluation.",
+          "The workflow records whether the frontier is current or emits one compact continuation wake.",
         ],
         mode: "maintain",
         workflow: "evaluator-aftermath",
         input: { scope: "session-aftermath-frontier" },
         priority: "P1",
       };
-    case "evaluation.deep.requested": {
-      const sessionId = eventSessionId(event);
+    case "deep-eval": {
+      const sessionId = stringValue(data.sessionId);
       if (!sessionId) return null;
       return {
         id: `runtime/deep-eval/${safeTaskIdPart(sessionId)}`,
@@ -266,7 +300,7 @@ export function resolveEvaluationTask(
         priority: "P1",
       };
     }
-    case "evaluation.deep.scan":
+    case "deep-scan":
       return {
         id: "runtime/deep-eval-scan",
         parentId: "pipeline-health",
@@ -274,49 +308,67 @@ export function resolveEvaluationTask(
           "Find and deeply evaluate at most one eligible recent session.",
         acceptance: [
           "At most one eligible recent session receives a workflow-traced deep evaluation.",
-          "If no candidate exists, the reconciliation records that observation without creating duplicate work.",
+          "If no candidate exists, the reconciliation records that observation without duplicate work.",
         ],
         mode: "maintain",
         workflow: "evaluator-deep-eval",
         input: { scope: "deep-evaluation-candidates" },
         priority: "P2",
       };
-    case "evaluation.project.review.requested": {
-      const project = targetProject(event);
-      if (!project) return null;
-      const watchedTarget = watchedProjectTargets.find(
-        (target) =>
-          target.targetProject === project ||
-          target.targetProject.replace(/\.app$/, "") === project,
-      );
+    case "project-review": {
+      const target = projectTarget(data.targetProject ?? data.target);
       return {
-        id: `runtime/project-audit/${safeTaskIdPart(project)}`,
+        id: `runtime/project-audit/${safeTaskIdPart(target.targetProject)}`,
         parentId: "project-app-audit",
-        outcome: `Maintain an independent, evidence-backed health assessment for ${project}.`,
+        outcome: `Maintain an independent, evidence-backed health assessment for ${target.targetProject}.`,
         acceptance: [
           "The current meaningful-state fingerprint is persisted for the target.",
-          "Material changes or a due baseline produce an owner-facing report with raw facts, judgment, and verification; unchanged scheduled samples remain no-op.",
-          "New actionable findings are deduplicated and routed to the target owner, with human notification only when policy requires it.",
+          "Material changes or a due baseline produce an owner-facing report; unchanged scheduled samples remain no-op.",
+          "New actionable findings are deduplicated and routed to the target owner.",
         ],
         mode: "maintain",
         workflow: "project-health-evaluator",
-        input: watchedTarget
-          ? { ...watchedTarget }
-          : { targetProject: project },
+        input: { ...target },
         priority: "P1",
       };
     }
-    case "project.comment.created":
-    case "project.owner.requested":
-    case "evaluation.tick":
+    case "pipeline-check":
+      return {
+        id: "runtime/evaluation-pipeline",
+        parentId: "pipeline-health",
+        outcome:
+          "Keep evaluation pipeline health observed and wake owner review only when the anomaly family changes.",
+        acceptance: [
+          "Current aftermath coverage, evaluator workflow failures, review failures, and owned metrics are sampled.",
+          "Unchanged anomaly state is a no-op; changed or recovered state emits one owner-review fact.",
+        ],
+        mode: "maintain",
+        workflow: "evaluation-pipeline",
+        priority: "P1",
+      };
+    case "feedback-projection":
+      return {
+        id: "runtime/evaluation-feedback-projection",
+        parentId: "finding-delivery",
+        outcome:
+          "Keep each active agent's generated last-eval feedback projection current.",
+        acceptance: [
+          "Recent evaluation issues are projected to the matching agent feedback file.",
+          "Stale projections are removed when no current feedback exists.",
+        ],
+        mode: "maintain",
+        workflow: "evaluation-feedback-projection",
+        priority: "P2",
+      };
+    case "owner-review":
       return {
         id: "runtime/owner-review",
         parentId: "evaluator-reliability",
         outcome:
           "Keep evaluation.app's own organization coherent and act on evaluator-local exceptions.",
         acceptance: [
-          "The owner returns revision-checked typed actions that the reconciler applies atomically, or a justified no-op with evidence.",
-          "The owner does not directly mutate the task tree or create evaluator work for target-project remediation.",
+          "The owner returns revision-checked typed actions or a justified no-op with evidence.",
+          "The owner does not take remediation ownership for findings about target projects.",
         ],
         mode: "maintain",
         workflow: "evaluator-heartbeat",
@@ -328,269 +380,245 @@ export function resolveEvaluationTask(
   }
 }
 
-export async function routeEvaluationEvent(
-  ctx: ProjectAppContext,
-  event: Record<string, unknown>,
-): Promise<unknown> {
-  if (event.type === "session.end") {
-    const details = eventDetails(event);
-    const agent = String(details.agent ?? "").trim();
-    if (agent === "evaluator" || agent === "judge") {
-      return ctx.noop(`ignored ${agent} session aftermath`);
+export function routeEvaluationRequest(
+  request: Readonly<AppRequest>,
+): AppDisposition | null {
+  if (request.dependency) {
+    if (request.dependency.status === "done") {
+      return {
+        type: "complete",
+        summary:
+          request.dependency.summary ?? `${request.input.kind} completed`,
+        evidence: request.dependency.evidence,
+      };
     }
-    const sessionId = eventSessionId(event);
-    if (sessionId) {
-      return ctx.emit({
-        type: "evaluation.session.requested",
-        project: projectId,
-        params: { sessionId, reason: "session-end" },
-      });
-    }
-    return ctx.emit({
-      type: "evaluation.aftermath.scan",
-      project: projectId,
-      params: { reason: "session-end-missing-session-id" },
-    });
+    return null;
   }
-
-  if (event.type === "evaluation.pipeline.check") {
-    if (!ctx.query)
-      throw new Error(
-        "evaluation pipeline watcher requires the hosted read-only query capability",
-      );
-    return observeEvaluationPipeline({ ...ctx, query: ctx.query });
+  if (request.input.kind === "message") return null;
+  if (request.input.kind === "canary-probe") {
+    return {
+      type: "delegate",
+      appId: "evaluation-canary-worker",
+      input: { kind: "probe", data: request.input.data },
+    };
   }
-
-  if (event.type === "evaluation.feedback.project") {
-    if (!ctx.query)
-      throw new Error(
-        "evaluation feedback projection requires the hosted read-only query capability",
-      );
-    return projectEvaluationFeedback({ ...ctx, query: ctx.query });
-  }
-
-  if (event.type === "evaluation.review_failed") {
-    return ctx.emit(
-      projectHealthReviewRequested({
-        targetProject: "evaluation.app",
-        reason: "review-failed",
-        reviewFailure: eventDetails(event),
-      }),
-    );
-  }
-
-  if (event.type === "telegram.reply") {
-    if (!isEvaluatorOwnerMessage(event)) {
-      return ctx.noop(`${event.type} not targeted to evaluation`);
-    }
-    return ctx.emit(
-      evaluationReviewRequested("owner-message", {
-        message: eventDetails(event),
-      }),
-    );
-  }
-
-  if (event.type === "metric.breach" || event.type === "metric.recovered") {
-    if (!isEvaluationMetric(event)) {
-      return ctx.noop(
-        `ignored ${event.type} for non-evaluation metric ${metricId(event) || "<unknown>"}`,
-      );
-    }
-    return ctx.emit({
-      type: "evaluation.pipeline.check",
-      project: projectId,
-      params: {
-        reason: event.type,
-        metric: eventDetails(event),
-      },
-    });
-  }
-
-  return undefined;
+  const intent = taskIntentForInput(request.input);
+  return intent ? { type: "task", task: { kind: "desired", intent } } : null;
 }
 
-export default defineProjectApp({
+function eventInput(
+  kind: string,
+  event: AppEvent<Record<string, unknown>>,
+): AppInput {
+  return { kind, data: eventData(event) };
+}
+
+const app = defineApp({
   id: projectId,
   version: 1,
   owner: "evaluator",
   description:
-    "Independent session and project-app auditing with evidence-backed owner and human reporting.",
-  workspace: {
-    kind: "local",
-    localPath: ".",
-  },
-
-  budget: {
-    maxConcurrent: 5,
-  },
-
+    "Independent session and App auditing with evidence-backed owner and human reporting.",
+  inputSchema: evaluationInputSchema,
+  inbox: { batch: "single", maxConcurrent: 5 },
+  route: routeEvaluationRequest,
+  workspace: { kind: "local", localPath: "." },
+  subscriptions: [
+    {
+      id: "session-ended",
+      event: "session.end",
+      toInput(event) {
+        const data = eventData(event);
+        const agent = stringValue(data.agent);
+        if (agent === "evaluator" || agent === "judge") return null;
+        const sessionId = eventSessionId(event);
+        return sessionId
+          ? {
+              kind: "evaluate-session",
+              data: { sessionId, reason: "session-end" },
+            }
+          : {
+              kind: "aftermath-scan",
+              data: { reason: "session-end-missing-session-id" },
+            };
+      },
+    },
+    {
+      id: "explicit-session-evaluation",
+      event: { type: "evaluation.session.requested", project: projectId },
+      toInput(event) {
+        const sessionId = eventSessionId(event);
+        return sessionId
+          ? {
+              kind: "evaluate-session",
+              data: { ...eventData(event), sessionId },
+            }
+          : null;
+      },
+    },
+    {
+      id: "aftermath-frontier",
+      event: { type: "evaluation.aftermath.scan", project: projectId },
+      toInput: (event) => eventInput("aftermath-scan", event),
+    },
+    {
+      id: "explicit-deep-evaluation",
+      event: { type: "evaluation.deep.requested", project: projectId },
+      toInput(event) {
+        const sessionId = eventSessionId(event);
+        return sessionId
+          ? { kind: "deep-eval", data: { ...eventData(event), sessionId } }
+          : null;
+      },
+    },
+    {
+      id: "deep-evaluation-frontier",
+      event: { type: "evaluation.deep.scan", project: projectId },
+      toInput: (event) => eventInput("deep-scan", event),
+    },
+    {
+      id: "project-health-request",
+      event: {
+        type: "evaluation.project.review.requested",
+        project: projectId,
+      },
+      toInput: (event) => projectReviewInput(eventData(event)),
+    },
+    {
+      id: "runtime-canary-request",
+      event: {
+        type: "evaluation.app_runtime_canary.requested",
+        project: projectId,
+      },
+      toInput(event) {
+        const itemId = stringValue(eventData(event).itemId);
+        return itemId ? { kind: "runtime-canary", data: { itemId } } : null;
+      },
+    },
+    {
+      id: "project-comment",
+      event: { type: "project.comment.created", project: projectId },
+      toInput: ownerMessageInput,
+    },
+    {
+      id: "project-owner-request",
+      event: { type: "project.owner.requested", project: projectId },
+      toInput(event) {
+        return { kind: "owner-review", data: eventData(event) };
+      },
+    },
+    {
+      id: "evaluation-tick",
+      event: { type: "evaluation.tick", project: projectId },
+      toInput(event) {
+        return { kind: "owner-review", data: eventData(event) };
+      },
+    },
+    {
+      id: "telegram-owner-reply",
+      event: "telegram.reply",
+      toInput: ownerMessageInput,
+    },
+    {
+      id: "review-failure",
+      event: "evaluation.review_failed",
+      toInput(event) {
+        return projectReviewInput({
+          targetProject: "evaluation.app",
+          reason: "review-failed",
+          reviewFailure: eventData(event),
+        });
+      },
+    },
+    ...["metric.breach", "metric.recovered"].map((type) => ({
+      id: type.replace(".", "-"),
+      event: type,
+      toInput(event: AppEvent<Record<string, unknown>>) {
+        return isEvaluationMetric(event)
+          ? {
+              kind: "pipeline-check",
+              data: { reason: type, metric: eventData(event) },
+            }
+          : null;
+      },
+    })),
+    {
+      id: "legacy-pipeline-check",
+      event: { type: "evaluation.pipeline.check", project: projectId },
+      toInput: (event) => eventInput("pipeline-check", event),
+    },
+    {
+      id: "legacy-feedback-projection",
+      event: { type: "evaluation.feedback.project", project: projectId },
+      toInput: (event) => eventInput("feedback-projection", event),
+    },
+  ],
   schedules: [
     {
       id: "evaluation-pipeline-review",
-      enabled: true,
       intervalMs: 300_000,
-      emits: [
-        {
-          type: "evaluation.pipeline.check",
-          project: projectId,
-        },
-      ],
+      input: { kind: "pipeline-check", data: { reason: "scheduled" } },
     },
     {
       id: "evaluation-feedback-projection",
-      enabled: true,
       intervalMs: 3_600_000,
-      emits: [
-        {
-          type: "evaluation.feedback.project",
-          project: projectId,
-        },
-      ],
+      input: { kind: "feedback-projection", data: { reason: "scheduled" } },
     },
     {
       id: "owner-heartbeat",
-      enabled: true,
       intervalMs: 86_400_000,
-      emits: [
-        {
-          type: "project.owner.requested",
-          project: projectId,
-          reason: "owner-heartbeat",
-          params: {
-            instruction:
-              "Daily evaluation owner review: maintain the auditing system and look for evaluator-local issues that deterministic monitoring did not catch. Prefer one to three task-tree actions or no-op with reason; do not take remediation ownership for findings about target projects, and do not run session aftermath unless a concrete sessionId is present.",
-            reviewChecklist: [
-              "Look for stale criteria/scoring assumptions and repeated evaluator misjudgments.",
-              "Look for missed session aftermath, deep-eval candidate gaps, or recurring findings not covered by current monitors.",
-              "Look for task-tree bloat; only evaluator-local defects belong in this task tree.",
-              "Avoid duplicate heartbeat tasks by inspecting recent owner-review findings first.",
-              "No-op is valid when the existing queues already cover the useful next work.",
-            ],
-          },
-        },
-      ],
+      input: { kind: "owner-review", data: { reason: "owner-heartbeat" } },
     },
     {
       id: "session-aftermath-scan",
-      enabled: true,
-      intervalMs: 420_000, // 7min — backfill terminal sessions missed by session.end handling
-      emits: [
-        {
-          type: "evaluation.aftermath.scan",
-          project: projectId,
-        },
-      ],
+      intervalMs: 420_000,
+      input: { kind: "aftermath-scan", data: { reason: "scheduled" } },
     },
     {
       id: "deep-evaluation-scan",
-      enabled: true,
-      intervalMs: 1_800_000, // 30min — one deep eval candidate per run
-      emits: [
-        {
-          type: "evaluation.deep.scan",
-          project: projectId,
-        },
-      ],
+      intervalMs: 1_800_000,
+      input: { kind: "deep-scan", data: { reason: "scheduled" } },
     },
     ...watchedProjectTargets.map((target) => ({
       id: `project-health-loop-${target.targetProject}`,
-      enabled: true,
-      intervalMs: 7_200_000, // 2h owner-facing app/project review baseline
-      emits: [
-        {
-          type: "evaluation.project.review.requested",
-          project: projectId,
-          params: {
-            ...target,
-            reason: "scheduled",
-          },
-        },
-      ],
+      intervalMs: 7_200_000,
+      input: {
+        kind: "project-review",
+        data: { ...target, reason: "scheduled" },
+      },
     })),
   ],
-
-  tasks: {
-    accepts: [
-      "evaluation.session.requested",
-      "evaluation.tick",
-      "evaluation.deep.requested",
-      "evaluation.aftermath.scan",
-      "evaluation.deep.scan",
-      "evaluation.project.review.requested",
-      "evaluation.app_runtime_canary.requested",
-      { type: "project.comment.created", project: projectId },
-      { type: "project.owner.requested", project: projectId },
-    ],
-    resolve: resolveEvaluationTask,
-  },
-
-  events: [
-    "session.end",
-    { type: "evaluation.pipeline.check", project: projectId },
-    { type: "evaluation.feedback.project", project: projectId },
-    "evaluation.review_failed",
-    "telegram.reply",
-    "metric.breach",
-    "metric.recovered",
-  ],
-
   actions: {
     "app-inbox-canary": {
-      type: "async",
       description:
-        "Submit one manual probe through the opt-in App inbox without changing production evaluation routing.",
+        "Submit one manual probe through canonical App delegation and delivery.",
       inputSchema: evaluationCanaryDataSchema,
-      event(params) {
-        return appInboxCanaryRequested(params);
-      },
+      toInput: (data) => ({ kind: "canary-probe", data }),
     },
     "app-runtime-canary": {
-      type: "async",
       description:
-        "Run the capability-scoped workflow against one completed manual App inbox probe.",
+        "Run the capability-scoped workflow against one completed App inbox probe.",
       inputSchema: evaluationAppRuntimeCanarySchema,
-      event(params) {
-        return appRuntimeCanaryRequested(params);
-      },
+      toInput: (data) => ({ kind: "runtime-canary", data }),
     },
     "evaluate-session": {
-      type: "async",
       description: "Evaluate a specific session by sessionId.",
-      inputSchema: Type.Object(
-        { sessionId: Type.String({ minLength: 1 }) },
-        { additionalProperties: true },
-      ),
-      event(params) {
-        return evaluationSessionRequested(params);
-      },
+      inputSchema: sessionSchema,
+      toInput: (data) => ({ kind: "evaluate-session", data }),
     },
     "deep-eval": {
-      type: "async",
       description: "Run one deep evaluator review for a specific session.",
-      inputSchema: Type.Object(
-        { sessionId: Type.String({ minLength: 1 }) },
-        { additionalProperties: true },
-      ),
-      event(params) {
-        return {
-          type: "evaluation.deep.requested",
-          project: projectId,
-          params: eventParams(params),
-        };
-      },
+      inputSchema: sessionSchema,
+      toInput: (data) => ({ kind: "deep-eval", data }),
     },
     "review-evaluation-project": {
-      type: "async",
-      description: "Ask the evaluation app owner to review project state.",
-      inputSchema: actionInputSchema,
-      event(params) {
-        return evaluationReviewRequested("manual-review", params);
-      },
+      description: "Run the learned evaluation owner-review workflow.",
+      inputSchema: Type.Object({}, { additionalProperties: true }),
+      toInput: (data) => ({ kind: "owner-review", data }),
     },
     "review-project-app": {
-      type: "async",
       description:
-        "Review a target project app from the outside and write owner-facing health feedback.",
+        "Review a target App from the outside and write owner-facing health feedback.",
       inputSchema: Type.Object(
         {
           targetProject: Type.Optional(Type.String({ minLength: 1 })),
@@ -598,13 +626,14 @@ export default defineProjectApp({
         },
         { additionalProperties: true },
       ),
-      event(params) {
-        return projectHealthReviewRequested(params);
-      },
+      toInput: (data) => projectReviewInput(data),
     },
   },
-
-  async onEvent(ctx, event) {
-    return routeEvaluationEvent(ctx, event);
+  tasks: {
+    attach: true,
+    maxConcurrent: 5,
+    resyncIntervalMs: 60_000,
   },
 });
+
+export default app;

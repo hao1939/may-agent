@@ -1,225 +1,326 @@
 import { describe, expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
-import type { ProjectAppContext } from "@may-agent/sdk/legacy";
-import app, {
-  appInboxCanaryRequested,
-  appRuntimeCanaryRequested,
-  resolveEvaluationTask,
-  routeEvaluationEvent,
-} from "./app.ts";
+import { existsSync, readFileSync } from "node:fs";
+import type { AppEvent, AppInput } from "@may-agent/sdk";
+import app, { routeEvaluationRequest, taskIntentForInput } from "./app.ts";
 import {
   PROJECT_HEALTH_EVALUATOR_AGENT_PROMPT_PREAMBLE,
   projectHealthEvaluatorAgentPrompt,
 } from "./agents/evaluator/workflows/project-health-evaluator.ts";
 
-function context(emitted: Array<Record<string, unknown>>): ProjectAppContext {
-  return {
-    emit(event: Record<string, unknown>) {
-      emitted.push(event);
-      return event;
-    },
-    noop(reason: string) {
-      return { reason };
-    },
-  } as unknown as ProjectAppContext;
+function subscription(id: string) {
+  const route = app.subscriptions?.find((candidate) => candidate.id === id);
+  if (!route) throw new Error(`missing subscription ${id}`);
+  return route;
 }
 
-describe("evaluation app metric routing", () => {
-  test("routes evaluation metric changes through the deterministic monitor", async () => {
-    for (const type of ["metric.breach", "metric.recovered"]) {
-      const emitted: Array<Record<string, unknown>> = [];
-      await routeEvaluationEvent(context(emitted), {
-        type,
-        owner: "agent:evaluator",
-        data: {
-          metricId: "evaluator.project-finding-delivery-rate-24h",
-          repeat: true,
-          reason: "open-alert-updated",
-        },
-      });
+function event(
+  type: string,
+  data: Record<string, unknown> = {},
+  extra: Partial<AppEvent<Record<string, unknown>>> = {},
+): AppEvent<Record<string, unknown>> {
+  return { type, data, ...extra };
+}
 
-      expect(emitted).toHaveLength(1);
-      expect(emitted[0]).toMatchObject({
-        type: "evaluation.pipeline.check",
-        project: "evaluation",
-        params: { reason: type },
-      });
+function request(input: AppInput, dependency?: Record<string, unknown>) {
+  return {
+    id: "request-1",
+    source: { kind: "system" as const, id: "test" },
+    input,
+    ...(dependency ? { dependency: dependency as never } : {}),
+  };
+}
+
+describe("canonical evaluation App", () => {
+  test("declares one canonical manifest and no legacy route authority", () => {
+    expect(app).toMatchObject({
+      id: "evaluation",
+      version: 1,
+      owner: "evaluator",
+      inbox: { batch: "single", maxConcurrent: 5 },
+      tasks: { attach: true, maxConcurrent: 5 },
+    });
+    expect(app.route).toBe(routeEvaluationRequest);
+    expect(app.tasks?.resolve).toBeUndefined();
+    expect(app.tasks?.subscriptions).toBeUndefined();
+    expect(app).not.toHaveProperty("events");
+    expect(app).not.toHaveProperty("onEvent");
+    expect(app).not.toHaveProperty("budget");
+    expect(existsSync(new URL("./inbox.ts", import.meta.url))).toBe(false);
+  });
+
+  test("translates every action into validated canonical input", () => {
+    expect(
+      app.actions?.["app-inbox-canary"]?.toInput({ prompt: "Probe" }),
+    ).toEqual({
+      kind: "canary-probe",
+      data: { prompt: "Probe" },
+    });
+    expect(
+      app.actions?.["app-runtime-canary"]?.toInput({ itemId: "probe-1" }),
+    ).toEqual({
+      kind: "runtime-canary",
+      data: { itemId: "probe-1" },
+    });
+    expect(
+      app.actions?.["evaluate-session"]?.toInput({ sessionId: "s-1" }),
+    ).toEqual({
+      kind: "evaluate-session",
+      data: { sessionId: "s-1" },
+    });
+    expect(
+      app.actions?.["review-project-app"]?.toInput({ targetProject: "gym" }),
+    ).toMatchObject({
+      kind: "project-review",
+      data: {
+        targetProject: "gym.app",
+        targetAppDir: "/app/projects/gym.app",
+        targetDomainDir: "/app/projects/gym",
+      },
+    });
+  });
+
+  test("handles configured work by policy and leaves human messages to owner judgment", () => {
+    expect(
+      routeEvaluationRequest(
+        request({
+          kind: "message",
+          data: { message: "Please inspect the result" },
+        }),
+      ),
+    ).toBeNull();
+
+    expect(
+      routeEvaluationRequest(
+        request({
+          kind: "canary-probe",
+          data: { prompt: "Report the canary result" },
+        }),
+      ),
+    ).toEqual({
+      type: "delegate",
+      appId: "evaluation-canary-worker",
+      input: { kind: "probe", data: { prompt: "Report the canary result" } },
+    });
+
+    expect(
+      routeEvaluationRequest(
+        request({ kind: "aftermath-scan", data: { reason: "scheduled" } }),
+      ),
+    ).toMatchObject({
+      type: "task",
+      task: {
+        kind: "desired",
+        intent: {
+          id: "runtime/aftermath-backfill",
+          mode: "maintain",
+          workflow: "evaluator-aftermath",
+        },
+      },
+    });
+  });
+
+  test("completes the inbox request only after its exact dependency converges", () => {
+    expect(
+      routeEvaluationRequest(
+        request(
+          { kind: "pipeline-check", data: { reason: "scheduled" } },
+          {
+            kind: "task",
+            id: "runtime/evaluation-pipeline",
+            status: "done",
+            summary: "Pipeline healthy",
+            evidence: ["pipeline:sampled"],
+          },
+        ),
+      ),
+    ).toEqual({
+      type: "complete",
+      summary: "Pipeline healthy",
+      evidence: ["pipeline:sampled"],
+    });
+  });
+});
+
+describe("evaluation fact admission", () => {
+  test("turns concrete session endings into per-session App requests", () => {
+    expect(
+      subscription("session-ended").toInput(
+        event("session.end", {
+          sessionId: "s/eval:42",
+          agent: "may",
+          task: "large payload",
+        }),
+      ),
+    ).toEqual({
+      kind: "evaluate-session",
+      data: { sessionId: "s/eval:42", reason: "session-end" },
+    });
+    expect(
+      subscription("session-ended").toInput(
+        event("session.end", { agent: "may" }),
+      ),
+    ).toEqual({
+      kind: "aftermath-scan",
+      data: { reason: "session-end-missing-session-id" },
+    });
+    for (const agent of ["evaluator", "judge"]) {
+      expect(
+        subscription("session-ended").toInput(
+          event("session.end", { sessionId: `s-${agent}`, agent }),
+        ),
+      ).toBeNull();
     }
   });
 
-  test("does not route unrelated project metrics", async () => {
-    const emitted: Array<Record<string, unknown>> = [];
-    const result = await routeEvaluationEvent(context(emitted), {
-      type: "metric.breach",
-      owner: "agent:app-ops",
-      data: {
-        project: "aks-rp-e2e",
-        metricId: "aks-rp-e2e.spec.blocked-count",
-      },
-    });
-
-    expect(emitted).toHaveLength(0);
-    expect(result).toMatchObject({
-      reason:
-        "ignored metric.breach for non-evaluation metric aks-rp-e2e.spec.blocked-count",
-    });
-  });
-});
-
-describe("evaluation App inbox canary", () => {
-  test("keeps the manual probe on one explicit new-runtime event path", () => {
+  test("admits only evaluation-owned metric changes", () => {
     expect(
-      appInboxCanaryRequested({ prompt: "Report the canary result." }),
+      subscription("metric-breach").toInput(
+        event(
+          "metric.breach",
+          { metricId: "evaluator.project-finding-delivery-rate-24h" },
+          { owner: "agent:evaluator" },
+        ),
+      ),
+    ).toMatchObject({
+      kind: "pipeline-check",
+      data: { reason: "metric.breach" },
+    });
+    expect(
+      subscription("metric-breach").toInput(
+        event(
+          "metric.breach",
+          { project: "aks-rp-e2e", metricId: "aks-rp-e2e.spec.blocked-count" },
+          { owner: "agent:app-ops" },
+        ),
+      ),
+    ).toBeNull();
+  });
+
+  test("admits only Telegram replies addressed to evaluation", () => {
+    expect(
+      subscription("telegram-owner-reply").toInput(
+        event("telegram.reply", { to: "evaluator", message: "Review this" }),
+      ),
     ).toEqual({
-      type: "app.input.requested",
+      kind: "message",
       data: {
-        appId: "evaluation-canary",
-        input: {
-          kind: "probe",
-          data: { prompt: "Report the canary result." },
-        },
-        source: { kind: "system", id: "evaluation.app:manual-canary" },
+        message: "Review this",
+        context: { to: "evaluator", message: "Review this" },
       },
     });
-    expect(app.actions?.["app-inbox-canary"]).toMatchObject({
-      type: "async",
-      description: expect.stringContaining("manual probe"),
-    });
-    expect(app.tasks?.accepts).not.toContain("app.input.requested");
-    expect(app.events).not.toContain("app.input.requested");
-
-    expect(appRuntimeCanaryRequested({ itemId: "app_canary" })).toEqual({
-      type: "evaluation.app_runtime_canary.requested",
-      project: "evaluation",
-      params: { itemId: "app_canary" },
-    });
-    expect(app.actions?.["app-runtime-canary"]).toMatchObject({
-      type: "async",
-      description: expect.stringContaining("capability-scoped workflow"),
-    });
     expect(
-      resolveEvaluationTask({
-        type: "evaluation.app_runtime_canary.requested",
-        params: { itemId: "app_canary" },
-      }),
+      subscription("telegram-owner-reply").toInput(
+        event("telegram.reply", { to: "app-ops", message: "Unrelated" }),
+      ),
+    ).toBeNull();
+  });
+
+  test("turns review failures into evaluation's own project-health request", () => {
+    expect(
+      subscription("review-failure").toInput(
+        event("evaluation.review_failed", {
+          sessionId: "s-1",
+          reason: "artifact invalid",
+        }),
+      ),
     ).toMatchObject({
-      id: "runtime/app-inbox-canary/app_canary",
-      mode: "achieve",
-      workflow: "evaluation-app-runtime-canary",
-      input: { itemId: "app_canary" },
+      kind: "project-review",
+      data: {
+        targetProject: "evaluation.app",
+        reason: "review-failed",
+      },
     });
   });
 });
 
-describe("evaluation app task reconciliation", () => {
-  test("routes concrete session endings into explicit per-session aftermath work", async () => {
-    const emitted: Array<Record<string, unknown>> = [];
-    expect(
-      resolveEvaluationTask({
-        type: "evaluation.aftermath.scan",
-        params: { reason: "session-end-backfill" },
-      }),
-    ).toMatchObject({
-      id: "runtime/aftermath-backfill",
-      parentId: "pipeline-health",
-      mode: "maintain",
-      workflow: "evaluator-aftermath",
-      input: { scope: "session-aftermath-frontier" },
+describe("evaluation task policy", () => {
+  test("keeps explicit session task identities collision-safe", () => {
+    const first = taskIntentForInput({
+      kind: "evaluate-session",
+      data: { sessionId: "s/eval:42" },
     });
-
-    await routeEvaluationEvent(context(emitted), {
-      type: "session.end",
-      data: {
-        sessionId: "s/eval:42",
-        agent: "may",
-        task: "large session text that must not enter task state",
-      },
+    const second = taskIntentForInput({
+      kind: "evaluate-session",
+      data: { sessionId: "s:eval/42" },
     });
-    expect(emitted).toEqual([
-      {
-        type: "evaluation.session.requested",
-        project: "evaluation",
-        params: { sessionId: "s/eval:42", reason: "session-end" },
-      },
-    ]);
-  });
-
-  test("falls back to compact frontier scan only when session.end lacks a session id", async () => {
-    const emitted: Array<Record<string, unknown>> = [];
-
-    await routeEvaluationEvent(context(emitted), {
-      type: "session.end",
-      data: {
-        agent: "may",
-      },
-    });
-    expect(emitted).toEqual([
-      {
-        type: "evaluation.aftermath.scan",
-        project: "evaluation",
-        params: { reason: "session-end-missing-session-id" },
-      },
-    ]);
-  });
-
-  test("keeps explicit session requests collision-safe and independently auditable", () => {
-    const first = resolveEvaluationTask({
-      type: "evaluation.session.requested",
-      params: { sessionId: "s/eval:42" },
-    });
-    const second = resolveEvaluationTask({
-      type: "evaluation.session.requested",
-      params: { sessionId: "s:eval/42" },
-    });
-
     expect(first?.id).not.toBe(second?.id);
     expect(first?.id.length).toBeLessThanOrEqual(
       "runtime/session-aftermath/".length + 120,
     );
   });
 
-  test("keeps deterministic pipeline observation outside the task graph", () => {
+  test("uses standing maintain tasks for recurring responsibilities", () => {
     expect(
-      resolveEvaluationTask({ type: "evaluation.pipeline.check" }),
-    ).toBeNull();
-    expect(app.events).toContainEqual({
-      type: "evaluation.pipeline.check",
-      project: "evaluation",
+      taskIntentForInput({
+        kind: "pipeline-check",
+        data: { reason: "scheduled" },
+      }),
+    ).toMatchObject({
+      id: "runtime/evaluation-pipeline",
+      parentId: "pipeline-health",
+      mode: "maintain",
+      workflow: "evaluation-pipeline",
+    });
+    expect(
+      taskIntentForInput({
+        kind: "feedback-projection",
+        data: { reason: "scheduled" },
+      }),
+    ).toMatchObject({
+      id: "runtime/evaluation-feedback-projection",
+      parentId: "finding-delivery",
+      mode: "maintain",
+      workflow: "evaluation-feedback-projection",
+    });
+    expect(
+      taskIntentForInput({
+        kind: "owner-review",
+        data: { reason: "scheduled" },
+      }),
+    ).toMatchObject({
+      id: "runtime/owner-review",
+      mode: "maintain",
+      workflow: "evaluator-heartbeat",
     });
   });
 
-  test("keeps deterministic feedback projection outside the task graph", () => {
+  test("keeps gym.app in standing project-health coverage", () => {
     expect(
-      resolveEvaluationTask({ type: "evaluation.feedback.project" }),
-    ).toBeNull();
-    expect(app.events).toContainEqual({
-      type: "evaluation.feedback.project",
-      project: "evaluation",
+      taskIntentForInput({
+        kind: "project-review",
+        data: { targetProject: "gym.app" },
+      }),
+    ).toMatchObject({
+      id: "runtime/project-audit/gym.app",
+      mode: "maintain",
+      workflow: "project-health-evaluator",
+      input: {
+        targetProject: "gym.app",
+        targetAppDir: "/app/projects/gym.app",
+        targetDomainDir: "/app/projects/gym",
+      },
     });
     expect(app.schedules).toContainEqual(
-      expect.objectContaining({ id: "evaluation-feedback-projection" }),
+      expect.objectContaining({ id: "project-health-loop-gym.app" }),
     );
   });
 
-  test("uses standing maintain tasks for recurring agent responsibilities", () => {
-    expect(
-      resolveEvaluationTask({
-        type: "evaluation.project.review.requested",
-        params: { targetProject: "aks-rp-e2e.app", reason: "scheduled" },
-      }),
-    ).toMatchObject({
-      id: "runtime/project-audit/aks-rp-e2e.app",
-      parentId: "project-app-audit",
-      mode: "maintain",
-      workflow: "project-health-evaluator",
+  test("keeps wake observations out of standing project-health specifications", () => {
+    const scheduled = taskIntentForInput({
+      kind: "project-review",
+      data: { targetProject: "aks-rp-e2e.app", reason: "scheduled" },
     });
+    const manual = taskIntentForInput({
+      kind: "project-review",
+      data: { targetProject: "aks-rp-e2e.app", reason: "manual" },
+    });
+    expect(scheduled?.input).toEqual(manual?.input);
   });
 
   test("keeps reliability parents structural", () => {
     const seed = JSON.parse(
       readFileSync(new URL("./tasks/seed.json", import.meta.url), "utf8"),
     ) as { groups: Record<string, Record<string, unknown>> };
-
     expect(seed.groups["evaluator-reliability"]).toMatchObject({
       id: "evaluator-reliability",
       parent_id: "evaluation-system",
@@ -234,40 +335,6 @@ describe("evaluation app task reconciliation", () => {
     expect(seed.groups["pipeline-health"]).not.toHaveProperty("workflow");
   });
 
-  test("keeps gym.app in standing project-health coverage", () => {
-    const task = resolveEvaluationTask({
-      type: "evaluation.project.review.requested",
-      params: { targetProject: "gym.app", reason: "scheduled" },
-    });
-
-    expect(task).toMatchObject({
-      id: "runtime/project-audit/gym.app",
-      parentId: "project-app-audit",
-      mode: "maintain",
-      workflow: "project-health-evaluator",
-      input: {
-        targetProject: "gym.app",
-        targetAppDir: "/app/projects/gym.app",
-        targetDomainDir: "/app/projects/gym",
-      },
-    });
-    expect(app.schedules).toContainEqual(
-      expect.objectContaining({ id: "project-health-loop-gym.app" }),
-    );
-  });
-
-  test("keeps wake observations out of standing task specifications", () => {
-    const firstAudit = resolveEvaluationTask({
-      type: "evaluation.project.review.requested",
-      params: { targetProject: "aks-rp-e2e.app", reason: "scheduled" },
-    });
-    const secondAudit = resolveEvaluationTask({
-      type: "evaluation.project.review.requested",
-      params: { targetProject: "aks-rp-e2e.app", reason: "manual" },
-    });
-    expect(firstAudit?.input).toEqual(secondAudit?.input);
-  });
-
   test("marks project-health inner evaluator calls as persistent-task guard exempt", () => {
     expect(PROJECT_HEALTH_EVALUATOR_AGENT_PROMPT_PREAMBLE).toBe(
       "persistent-task: skip",
@@ -278,93 +345,5 @@ describe("evaluation app task reconciliation", () => {
         {},
       ),
     ).toStartWith("persistent-task: skip\n\n");
-  });
-
-  test("reuses the learned evaluation owner-review workflow", () => {
-    const task = resolveEvaluationTask({
-      type: "evaluation.tick",
-      lane: "owner-message",
-    });
-    expect(task).toMatchObject({
-      id: "runtime/owner-review",
-      mode: "maintain",
-      workflow: "evaluator-heartbeat",
-    });
-  });
-
-  test("leaves ordinary owner messages to the shared lifecycle", () => {
-    expect(app.events).not.toContain("message.created");
-    expect(app.events).toContain("telegram.reply");
-    expect(
-      resolveEvaluationTask({
-        type: "project.owner.requested",
-        project: "evaluation",
-        reason: "owner-message",
-        inputEventId: 9002,
-        inputEventType: "message.created",
-      }),
-    ).toMatchObject({
-      id: "runtime/owner-review",
-      workflow: "evaluator-heartbeat",
-    });
-  });
-
-  test("does not create malformed explicit per-session tasks without a session id", () => {
-    expect(
-      resolveEvaluationTask({ type: "evaluation.session.requested" }),
-    ).toBeNull();
-    expect(
-      resolveEvaluationTask({ type: "evaluation.deep.requested" }),
-    ).toBeNull();
-  });
-
-  test("filters evaluator and judge session endings before a frontier wake", async () => {
-    for (const agent of ["evaluator", "judge"]) {
-      const emitted: Array<Record<string, unknown>> = [];
-      const result = await routeEvaluationEvent(context(emitted), {
-        type: "session.end",
-        data: { sessionId: `s-${agent}`, agent },
-      });
-      expect(emitted).toHaveLength(0);
-      expect(result).toMatchObject({
-        reason: `ignored ${agent} session aftermath`,
-      });
-    }
-  });
-
-  test("declares one convention-first task resolver", () => {
-    expect(app.tasks?.resolve).toBe(resolveEvaluationTask);
-    expect(app.tasks?.accepts).toHaveLength(9);
-    expect(app.tasks?.accepts).not.toContain("session.end");
-    expect(app.events).toContain("session.end");
-    expect(app.ownerEntry).toBeUndefined();
-    expect(app.taskWorkflows).toBeUndefined();
-    expect(app.taskRoutes).toBeUndefined();
-    expect(app.eventGraph).toBeUndefined();
-  });
-
-  test("seeds only durable maintenance responsibilities", () => {
-    const seed = JSON.parse(
-      readFileSync(new URL("./tasks/seed.json", import.meta.url), "utf8"),
-    ) as { groups: Record<string, Record<string, unknown>> };
-
-    expect(Object.keys(seed.groups)).toEqual([
-      "evaluation-system",
-      "session-audit",
-      "project-app-audit",
-      "finding-delivery",
-      "evaluator-reliability",
-      "pipeline-health",
-      "criteria-and-calibration",
-      "drift-detection",
-      "system-integrity",
-    ]);
-    for (const group of Object.values(seed.groups)) {
-      expect(group.owner).toBe("evaluator");
-      expect(group).not.toHaveProperty("reconcile_mode");
-      expect(group).not.toHaveProperty("acceptance");
-    }
-    expect(seed.groups["evaluator-reliability"]).not.toHaveProperty("workflow");
-    expect(seed.groups["pipeline-health"]).not.toHaveProperty("workflow");
   });
 });
