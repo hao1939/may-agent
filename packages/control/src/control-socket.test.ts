@@ -248,6 +248,46 @@ describe("control socket protocol", () => {
     ).rejects.toThrow("was not durably persisted");
   });
 
+  it("validates and admits App input through the explicit control command", async () => {
+    const core = createCore({
+      admitAppInput: (input) => {
+        expect(input).toEqual({
+          appId: "alpha-project",
+          input: {
+            kind: "message",
+            data: { message: "Review the current normalization gap." },
+          },
+          source: { kind: "human", id: "web-ui:project-comment-17" },
+          conversationId: "web-ui:project:alpha-project",
+          channel: "web-ui",
+          idempotencyKey: "project-comment-17",
+        });
+        return { eventId: 72, eventType: "app.input.requested" };
+      },
+    });
+
+    await expect(
+      sendSocketCommand(core.endpoint, {
+        type: "app.input.admit",
+        appId: "alpha-project",
+        input: {
+          kind: "message",
+          data: { message: "Review the current normalization gap." },
+        },
+        source: { kind: "human", id: "web-ui:project-comment-17" },
+        conversationId: "web-ui:project:alpha-project",
+        channel: "web-ui",
+        idempotencyKey: "project-comment-17",
+      }),
+    ).resolves.toMatchObject({
+      type: "ok",
+      command: "app.input.admit",
+      appId: "alpha-project",
+      eventId: 72,
+      eventType: "app.input.requested",
+    });
+  });
+
   it("discovers and invokes project action shortcuts", async () => {
     const core = createCore({
       describeProjectActions: (projectId) => [

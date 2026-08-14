@@ -2,6 +2,21 @@ import { describe, expect, it } from "bun:test";
 import { normalizeSocketFrame } from "./protocol.js";
 
 describe("socket frame normalization", () => {
+  it("keeps explicit App admission on the control plane", () => {
+    const frame = {
+      type: "app.input.admit",
+      appId: "alpha-project",
+      input: { kind: "message", data: { message: "review" } },
+      source: { kind: "human", id: "web-ui:1" },
+      idempotencyKey: "web-ui:1",
+    };
+    expect(normalizeSocketFrame(frame)).toEqual({
+      kind: "control",
+      command: "app.input.admit",
+      frame,
+    });
+  });
+
   it("accepts unknown dot-named events when they use canonical envelopes", () => {
     expect(normalizeSocketFrame({
       type: "custom.event",

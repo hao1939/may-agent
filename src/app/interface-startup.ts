@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import type { SubagentManager } from "../lib/index.js";
 import type { EventBus } from "./event-bus.js";
 import { attachSocketUI, type SocketUI } from "./transport/socket.js";
+import type { AttachControlSocketOptions } from "../../packages/control/src/server.js";
 
 export interface InterfaceStartupOptions {
   socketEnabled: boolean;
@@ -12,6 +13,7 @@ export interface InterfaceStartupOptions {
   bus: EventBus;
   manager: SubagentManager;
   getSessionId: () => string;
+  admitAppInput?: AttachControlSocketOptions["admitAppInput"];
 }
 
 export interface InterfaceRuntime {
@@ -42,6 +44,7 @@ export async function startInterfaceRuntime(options: InterfaceStartupOptions): P
         bus: options.bus,
         manager: options.manager,
         getSessionId: options.getSessionId,
+        admitAppInput: options.admitAppInput,
         agentName: options.interfaceAgent,
         instance: options.instanceLabel,
       })
