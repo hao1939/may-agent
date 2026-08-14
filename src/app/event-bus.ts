@@ -906,7 +906,7 @@ export function eventData(event: unknown): Record<string, unknown> {
 
 // ── EventBus ───────────────────────────────────────────────────────────
 
-export type DeliveryRoute = "direct" | "owner_inbox" | "noop";
+export type DeliveryRoute = "direct" | "noop";
 export type DeliveryResult = {
   accepted: true;
   by: string;
@@ -1064,7 +1064,6 @@ export class EventBus {
           }
         }
       }
-      delivery ??= ownerInboxFallback(event);
       delivery ??= pairTrackerFallback(event);
       delivery ??= evidenceProjectionFallback(event);
       if (delivery) this.deliveryRecorder?.(event, delivery);
@@ -1140,19 +1139,6 @@ function normalizeDeliveryResult(result: SubscriberResult): DeliveryResult | und
     by: result.by.trim(),
     ...(result.route ? { route: result.route } : {}),
     ...(result.note ? { note: result.note } : {}),
-  };
-}
-
-function ownerInboxFallback(event: AgentEvent): DeliveryResult | undefined {
-  if (!isOwnerInboxCandidate(event.type)) return undefined;
-  const record = event as Record<string, unknown>;
-  const owner = typeof record.owner === "string" ? record.owner.trim() : "";
-  if (!owner) return undefined;
-  return {
-    accepted: true,
-    by: `owner-inbox:${owner}`,
-    route: "owner_inbox",
-    note: "owner-addressed event accepted by owner inbox fallback",
   };
 }
 
@@ -1253,15 +1239,4 @@ function hasPairCorrelationKey(event: AgentEvent): boolean {
 
 function hasKey(value: unknown): boolean {
   return (typeof value === "string" && !!value.trim()) || (typeof value === "number" && Number.isFinite(value));
-}
-
-function isOwnerInboxCandidate(eventType: string): boolean {
-  if (eventType === "learning.feedback") return true;
-  if (eventType === "metric.breach" || eventType === "metric.recovered" || eventType === "metric.stalled") return true;
-  if (eventType === "escalation.created") return true;
-  if (eventType === "cli.task.completed" || eventType === "cli.task.failed" || eventType === "cli.task.orphaned")
-    return true;
-  if (eventType === "project.feedback.created" || eventType === "project.comment.created") return true;
-  if (eventType === "project.owner.requested") return true;
-  return eventType === "workflow.owner.requested" || eventType === "evaluation.session.requested";
 }

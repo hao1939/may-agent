@@ -22,6 +22,7 @@ describe("app runtime startup order", () => {
 
     expect(appInbox).toBeGreaterThan(-1);
     expect(appInbox).toBeLessThan(externalIngress);
+    expect(source).not.toContain("appInboxRuntime = CRON_ENABLED");
   });
 
   it("enables App delivery only after human transports are attached", () => {

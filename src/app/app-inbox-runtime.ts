@@ -3,17 +3,18 @@ import type { SqliteDb } from "../lib/db.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "./event-bus.js";
 import { AppInboxHost, type AppInboxReconcileResult, type AppTaskAttacher } from "./app-inbox-host.js";
 import { createManagerAppOwnerInvoker, type AppOwnerManager } from "./app-owner-manager-adapter.js";
-import { loadAppInboxDefinitions } from "./loader/app-inbox-loader.js";
+import type { AppRegistry } from "./app-registry.js";
 
 export type AppInboxRuntime = {
   host: AppInboxHost;
   close(): void;
   scanNow(): void;
   enableDelivery(): void;
+  reload(): Promise<string[]>;
 };
 
 export type StartAppInboxRuntimeOptions = {
-  projectsRoot: string;
+  registry: AppRegistry;
   db: SqliteDb;
   manager: AppOwnerManager;
   bus: EventBus;
@@ -61,7 +62,7 @@ function normalizedAgent(value: unknown): string | undefined {
 
 const NON_AGENT_MESSAGE_SENDERS = new Set(["human", "operator", "telegram", "console", "socket"]);
 
-function legacyAgentMessage(event: AgentEvent):
+function addressedAgentMessage(event: AgentEvent):
   | {
       targetOwner: string;
       sender: string;
@@ -74,11 +75,11 @@ function legacyAgentMessage(event: AgentEvent):
   const identity = eventIdentity(event);
   if (!identity) return undefined;
   const data = eventData(event);
-  // This is a compatibility result for the legacy sender, not a fresh request.
-  // A future explicit parent-App result link can replace this owner-inbox handoff.
+  // App delivery results are correlated by their stored parent/outbox link;
+  // they are not fresh addressed requests.
   if (typeof data.appResponseFor === "string" && data.appResponseFor.trim()) return undefined;
   // `to` is the address. The envelope owner is only a delivery projection and
-  // can still point at May for human-targeted compatibility messages.
+  // can still point at a channel-facing agent.
   const targetOwner = normalizedAgent(data.to);
   const sender = normalizedAgent(data.from) ?? normalizedAgent((event as { source?: unknown }).source);
   if (!targetOwner || !sender || sender === targetOwner || NON_AGENT_MESSAGE_SENDERS.has(sender)) return undefined;
@@ -106,15 +107,14 @@ function legacyAgentMessage(event: AgentEvent):
   };
 }
 
-export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions): Promise<AppInboxRuntime | null> {
-  const loaded = await loadAppInboxDefinitions(options.projectsRoot);
-  if (loaded.length === 0) return null;
+export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions): Promise<AppInboxRuntime> {
+  const loaded = options.registry.entries();
   for (const { definition } of loaded) {
     if (!options.manager.hasAgent(definition.owner)) {
       throw new Error(`App ${definition.id} owner agent is not registered: ${definition.owner}`);
     }
   }
-  const appDirById = new Map(loaded.map((entry) => [entry.definition.id, entry.appDir]));
+  let appDirById = new Map(loaded.map((entry) => [entry.definition.id, entry.appDir]));
   const attachTask: AppTaskAttacher | undefined = options.attachTask
     ? async (input) => {
         const appDir = appDirById.get(input.appId);
@@ -279,7 +279,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
 
   const unsubscribe = options.bus.subscribeDurableRoute((event): DeliveryResult | void => {
     const data = eventData(event);
-    const message = legacyAgentMessage(event);
+    const message = addressedAgentMessage(event);
     if (message) {
       const candidates = host.matchingAppIds(message.targetOwner, message.input);
       if (candidates.length === 1) {
@@ -456,6 +456,19 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   return {
     host,
     scanNow,
+    async reload() {
+      const next = await options.registry.reload((prospective) => {
+        for (const { definition } of prospective) {
+          if (!options.manager.hasAgent(definition.owner)) {
+            throw new Error(`App ${definition.id} owner agent is not registered: ${definition.owner}`);
+          }
+        }
+        host.replaceApps(prospective.map((entry) => entry.definition));
+      });
+      appDirById = new Map(next.map((entry) => [entry.definition.id, entry.appDir]));
+      scanNow();
+      return host.appIds();
+    },
     enableDelivery() {
       if (closed || deliveryEnabled) return;
       deliveryEnabled = true;
