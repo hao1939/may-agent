@@ -5183,11 +5183,13 @@ describe("project app loader", () => {
       writeApp(f.appDir);
       const bus = new EventBus();
       const events: any[] = [];
+      const deliveries: Array<{ event: any; result: any }> = [];
       let nextEventId = 1;
       bus.setPersistenceSubscriber((event) => {
         (event as any)[EVENT_ROW_ID] = nextEventId++;
       });
       bus.subscribe((event) => events.push(event));
+      bus.setDeliveryRecorder((event, result) => deliveries.push({ event, result }));
       await installProjectApps({
         projectsRoot: f.projectsRoot,
         projectRoot: f.root,
@@ -5212,6 +5214,19 @@ describe("project app loader", () => {
       expect(reviewedIds).not.toContain((handled as any)[EVENT_ROW_ID]);
       expect(reviewedIds).not.toContain((wrongProject as any)[EVENT_ROW_ID]);
       expect(reviewedIds).not.toContain((failed as any)[EVENT_ROW_ID]);
+      expect(deliveries.find(({ event }) => event === handled)?.result).toEqual({
+        accepted: true,
+        by: "project-app:sample:event-router",
+        route: "direct",
+        note: "matching app event accepted",
+      });
+      expect(deliveries.find(({ event }) => event === failed)?.result).toEqual({
+        accepted: true,
+        by: "project-app:sample:event-router",
+        route: "direct",
+        note: "matching app event accepted",
+      });
+      expect(deliveries.some(({ event }) => event === wrongProject)).toBe(false);
     } finally {
       closeDb(f.persistDir);
       rmSync(f.root, { recursive: true, force: true });
