@@ -102,6 +102,8 @@ export type AppInboxSessionRecoveryResult = {
   errors: string[];
 };
 
+export const APP_INBOX_RECOVERY_OWNER = "app-inbox";
+
 export type AppInboxHostOptions = {
   db: SqliteDb;
   apps: AppDefinition[];
