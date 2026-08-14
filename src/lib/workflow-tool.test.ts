@@ -247,7 +247,10 @@ export async function execute(ctx) {
 export const name = "app-input";
 export const description = "App SDK authored input test";
 export async function execute(ctx) {
-  return ctx.done("input preserved", ctx.input);
+  return ctx.done("input preserved", {
+    input: ctx.input,
+    reconciliation: ctx.reconciliation
+  });
 }
 `,
     );
@@ -256,12 +259,35 @@ export async function execute(ctx) {
       workflowDir,
       agentName: "owner",
       workflowInput: { itemId: "app_123" },
+      reconciliation: {
+        appId: "sample",
+        taskId: "runtime/sample",
+        generation: 2,
+        resourceVersion: 3,
+        owner: "owner",
+        mode: "maintain",
+        outcome: "Keep the sample current",
+        acceptance: ["Sample is current"],
+        input: { itemId: "app_123" },
+        children: { live: [], completed: [] },
+      },
     });
 
     const result = await runner.run("app-input", "legacy reconciliation prompt");
     expect(result).toMatchObject({
       type: "done",
-      output: { itemId: "app_123" },
+      output: {
+        input: { itemId: "app_123" },
+        reconciliation: {
+          appId: "sample",
+          taskId: "runtime/sample",
+          generation: 2,
+          resourceVersion: 3,
+          owner: "owner",
+          mode: "maintain",
+          children: { live: [], completed: [] },
+        },
+      },
     });
   });
 });

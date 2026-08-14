@@ -67,7 +67,11 @@ import { createUnavailableCommandService } from "./command-service.js";
 import { importRuntimeModule } from "./runtime-import.js";
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 import type { EventTrace } from "../app/event-bus.js";
-import type { ExecutionResult as AppExecutionResult, WorkflowContext as AppWorkflowContext } from "@may-agent/sdk/app";
+import type {
+  ExecutionResult as AppExecutionResult,
+  TaskReconciliationContext,
+  WorkflowContext as AppWorkflowContext,
+} from "@may-agent/sdk/app";
 import { createRuntimeAppRead } from "../app/app-read.js";
 
 function appAgentExecutionResult(result: TaskResult): AppExecutionResult {
@@ -714,6 +718,8 @@ export interface RunWorkflowDirectOpts {
   executionPaths?: { appDir: string; projectDir: string; workspaceDir: string };
   /** App-authored input exposed through the capability-scoped WorkflowContext. */
   workflowInput?: unknown;
+  /** Bounded durable-task facts exposed without requiring prompt parsing. */
+  reconciliation?: TaskReconciliationContext;
   /** Maximum wall-clock duration for the complete workflow execution. */
   executionTimeoutMs?: number;
 }
@@ -745,6 +751,7 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
     runtimeCtx: opts.runtimeCtx,
     executionPaths: opts.executionPaths,
     ...(opts.workflowInput !== undefined ? { workflowInput: opts.workflowInput } : {}),
+    ...(opts.reconciliation ? { reconciliation: opts.reconciliation } : {}),
     executionTimeoutMs: opts.executionTimeoutMs,
   });
 
@@ -816,6 +823,8 @@ export interface WorkflowToolOptions {
   executionPaths?: { appDir: string; projectDir: string; workspaceDir: string };
   /** App-authored input for a system-dispatched top-level workflow. */
   workflowInput?: unknown;
+  /** Bounded durable-task facts for a task-owned workflow attempt. */
+  reconciliation?: TaskReconciliationContext;
   /** Maximum wall-clock duration for the complete workflow execution. */
   executionTimeoutMs?: number;
   /** Trace inherited from the event that started this workflow. */
@@ -1367,10 +1376,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       workflowName: string,
       nestedTask: string,
       nestedInput?: { value: unknown },
-    ): Promise<
-      | { sub: Awaited<ReturnType<typeof executeWorkflow>> }
-      | { reason: string }
-    > => {
+    ): Promise<{ sub: Awaited<ReturnType<typeof executeWorkflow>> } | { reason: string }> => {
       assertExecutionActive();
       const steering = steeringQueue.shift();
       if (steering) throw new WorkflowInterrupted(steering, completedSteps, runId);
@@ -1450,6 +1456,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       task,
       agent: opts.agentName && opts.agentName !== "undefined" ? opts.agentName : "unknown",
       input: authoredInput ? authoredInput.value : task,
+      ...(opts.reconciliation ? { reconciliation: opts.reconciliation } : {}),
       read: appRead,
 
       // ── RuntimeCtx (shared infra) — spread pre-built or fallback ──
@@ -1599,9 +1606,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
 
       runWorkflow: async (wfName: string, wfTask: string): Promise<WorkflowResult> => {
         const nested = await runNestedWorkflow(wfName, wfTask);
-        return "reason" in nested
-          ? { type: "blocked", reason: nested.reason }
-          : nested.sub.result;
+        return "reason" in nested ? { type: "blocked", reason: nested.reason } : nested.sub.result;
       },
 
       workflows: {
@@ -1924,9 +1929,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         completedSteps,
         steeringQueue,
         previousRun,
-        !previousRun && opts.workflowInput !== undefined
-          ? { value: opts.workflowInput }
-          : undefined,
+        !previousRun && opts.workflowInput !== undefined ? { value: opts.workflowInput } : undefined,
       );
 
       activeSteeringQueue = null;
