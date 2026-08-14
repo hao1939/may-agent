@@ -39,7 +39,7 @@ import {
   type ProjectTaskPhase,
   type ProjectTaskProjectionItem,
   type ProjectTaskTreeProjection,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/legacy";
 import { openStateDb, type SqliteDb } from "./read-model/state-db.js";
 import { buildLoopTrace, type LoopTraceTarget } from "./read-model/loop-trace.js";
 import { addSessionTranscriptToEventGraph, buildEventGraph } from "./read-model/event-graph.js";
