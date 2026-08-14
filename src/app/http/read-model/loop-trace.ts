@@ -4,7 +4,7 @@ import {
   sessionRowToExecutionResult,
   workflowRowToExecutionResult,
   type ExecutionResult,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/legacy";
 
 export type LoopTraceTarget =
   | { eventId: number }

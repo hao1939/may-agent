@@ -1,7 +1,7 @@
 import type { ChatSession } from "./chat-session.js";
 import type { EventBus } from "./event-bus.js";
 import { existsSync, readFileSync } from "node:fs";
-import { projectRuntimePaths } from "@may-agent/sdk";
+import { projectRuntimePaths } from "@may-agent/sdk/legacy";
 import { getAgentCrons, getAgentSessionId, loadAgentHandlers, type AgentLoaderOptions } from "./agent-loader.js";
 import type { SubagentManager } from "../lib/index.js";
 import { log } from "../lib/log.js";

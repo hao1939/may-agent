@@ -21,7 +21,7 @@ describe("importRuntimeModule", () => {
     }
   });
 
-  it("bundles external runtime modules that import the public SDK", async () => {
+  it("bundles external runtime modules that import the legacy SDK boundary", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-runtime-import-"));
     roots.push(root);
 
@@ -29,7 +29,7 @@ describe("importRuntimeModule", () => {
     writeFileSync(
       modulePath,
       `
-        import { workflowResultVersion } from "@may-agent/sdk";
+        import { workflowResultVersion } from "@may-agent/sdk/legacy";
 
         export function sdkVersion(): string {
           return workflowResultVersion;

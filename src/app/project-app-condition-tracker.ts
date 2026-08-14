@@ -5,7 +5,7 @@ import {
   type ProjectAppCondition,
   type TaskStateConfig,
   type TaskTree,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/legacy";
 
 export type ProjectAppConditionWake = {
   conditionId: string;

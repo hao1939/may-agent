@@ -4,7 +4,7 @@
  * Used by e1-handler-loop-liveness to validate that the cron + handler-loader +
  * event-persistence pipeline runs end-to-end against a real daemon.
  */
-import type { CronEntry, HandlerContext, HandlerModule, EventEnvelope } from "@may-agent/sdk";
+import type { CronEntry, HandlerContext, HandlerModule, EventEnvelope } from "@may-agent/sdk/legacy";
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: CronEntry) => {
   return async (event?: EventEnvelope) => {

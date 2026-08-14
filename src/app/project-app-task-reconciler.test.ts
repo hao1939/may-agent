@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { readTaskState, saveTaskState, type ProjectAppTaskIntent, type TaskStateConfig } from "@may-agent/sdk";
+import { readTaskState, saveTaskState, type ProjectAppTaskIntent, type TaskStateConfig } from "@may-agent/sdk/legacy";
 import { trackProjectAppConditionEvent } from "./project-app-condition-tracker.ts";
 import { ProjectAppTaskQueue } from "./project-app-task-queue.ts";
 import {
