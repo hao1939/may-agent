@@ -1,123 +1,185 @@
 import { describe, expect, test } from "bun:test";
-import { execute, reconciliationInput } from "./evaluator-deep-eval.js";
+import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
+import { execute } from "./evaluator-deep-eval.js";
+
+const evaluation = {
+  sessionId: "s_source",
+  agent: "coder",
+  quality: 0.8,
+  efficiency: 0.7,
+  productiveCalls: 3,
+  wastedCalls: 1,
+  verdict: "good",
+  issues: ["useful implementation"],
+  overall: { resultDelivered: true },
+  usage: { inputTokens: 100 },
+  failureChains: [],
+};
 
 describe("evaluator deep workflow", () => {
-  test("reads the stable task input from the reconciliation packet", () => {
-    expect(
-      reconciliationInput(
-        [
-          "Reconcile deep evaluation",
-          "",
-          "## Reconciliation Task",
-          "```json",
-          '{"taskId":"runtime/deep-eval/s1","input":{"sessionId":"s1"}}',
-          "```",
-        ].join("\n"),
-      ),
-    ).toEqual({ sessionId: "s1" });
-  });
-
-  test("does not infer input from unrelated prose", () => {
-    expect(reconciliationInput("Please review sessionId s1")).toEqual({});
-  });
-
-  test("converges without task mutations when the inner deep evaluator session fails", async () => {
-    const emitted: unknown[] = [];
-    const result = await execute({
-      task: [
-        "## Reconciliation Task",
-        "```json",
-        JSON.stringify({ input: { sessionId: "s_source" } }),
-        "```",
-      ].join("\n"),
-      projectRoot: "/tmp/evaluation-deep-eval-test",
-      persistDir: "/tmp/evaluation-deep-eval-test/.state",
-      getDb() {
-        return {};
-      },
-      query: {
-        evaluatorAftermathContext() {
-          return {
-            session: {
-              sessionId: "s_source",
-              agent: "coder",
-              status: "done",
-              task: "do useful work",
-              source: "manual",
-              startedAt: 1,
-              endedAt: 2,
-              opCount: 3,
-            },
-          };
-        },
-      },
-      emit(event: unknown) {
-        emitted.push(event);
-      },
-      async runAgent() {
+  test("passes typed workflow input to the bounded evaluator execution", async () => {
+    const calls: Array<[string, string]> = [];
+    const ctx = createTestAppWorkflowContext({
+      input: { sessionId: "s_source" },
+      callAgent: async (agent, task) => {
+        calls.push([agent, task]);
         return {
-          status: "error",
-          sessionId: "s_inner",
-          error: "provider stream ended",
+          id: "s_inner",
+          kind: "agent",
+          status: "done",
+          summary: "no candidate",
+          output: { noCandidate: true, reason: "Session is unavailable." },
         };
       },
-      done(summary: string, output?: unknown) {
-        return { status: "done", summary, result: output };
-      },
-    } as any);
-
-    expect(result.result).toMatchObject({
-      state: "converged",
-      evidence: ["session:s_inner"],
-      actions: [],
     });
-    expect(result.result).not.toHaveProperty("conditions");
-    expect(emitted).toHaveLength(2);
+
+    await execute(ctx);
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.[0]).toBe("evaluator");
+    expect(calls[0]?.[1]).toContain(
+      "Evaluate exactly session s_source. Do not substitute another session.",
+    );
   });
 
-  test("converges without task mutations when the deep evaluator artifact is missing", async () => {
-    const result = await execute({
-      task: [
-        "## Reconciliation Task",
-        "```json",
-        JSON.stringify({ input: { sessionId: "s_missing_artifact" } }),
-        "```",
-      ].join("\n"),
-      projectRoot: "/tmp/evaluation-deep-eval-test",
-      persistDir: "/tmp/evaluation-deep-eval-test/.state",
-      getDb() {
-        return {};
+  test("publishes a visible failure and converges without task mutations", async () => {
+    const events: unknown[] = [];
+    const ctx = createTestAppWorkflowContext({
+      input: { sessionId: "s_source" },
+      callAgent: async () => ({
+        id: "s_inner",
+        kind: "agent",
+        status: "blocked",
+        summary: "transcript unavailable",
+      }),
+      emit: async (event) => {
+        events.push(event);
       },
-      query: {
-        evaluatorAftermathContext() {
-          return {
-            session: {
-              sessionId: "s_missing_artifact",
-              agent: "coder",
-              status: "done",
-              task: "do useful work",
-              source: "manual",
-              startedAt: 1,
-              endedAt: 2,
-              opCount: 3,
-            },
-          };
+    });
+
+    await expect(execute(ctx)).resolves.toMatchObject({
+      kind: "workflow",
+      status: "done",
+      output: {
+        state: "converged",
+        evidence: ["execution:s_inner"],
+        actions: [],
+      },
+    });
+    expect(events).toEqual([
+      {
+        type: "evaluation.deep_dispatched",
+        data: { source: "evaluator-deep-eval", sessionId: "s_source" },
+        target: { appId: "evaluation", sessionId: "s_source" },
+      },
+      {
+        type: "evaluation.deep_failed",
+        data: {
+          source: "evaluator-deep-eval",
+          executionId: "s_inner",
+          status: "blocked",
+          summary: "transcript unavailable",
+          sessionId: "s_source",
+        },
+        target: {
+          appId: "evaluation",
+          executionId: "s_inner",
+          sessionId: "s_source",
         },
       },
-      emit() {},
-      async runAgent() {
-        return { status: "done", sessionId: "s_inner_done" };
-      },
-      done(summary: string, output?: unknown) {
-        return { status: "done", summary, result: output };
-      },
-    } as any);
+    ]);
+  });
 
-    expect(result.result).toMatchObject({
-      state: "converged",
-      evidence: ["session:s_inner_done"],
-      actions: [],
+  test("converges visibly when structured output is missing or invalid", async () => {
+    for (const output of [undefined, { sessionId: "s_source" }]) {
+      const events: unknown[] = [];
+      const ctx = createTestAppWorkflowContext({
+        input: { sessionId: "s_source" },
+        callAgent: async () => ({
+          id: "s_inner",
+          kind: "agent",
+          status: "done",
+          summary: "finished",
+          ...(output === undefined ? {} : { output }),
+        }),
+        emit: async (event) => {
+          events.push(event);
+        },
+      });
+
+      await expect(execute(ctx)).resolves.toMatchObject({
+        status: "done",
+        summary: "Deep evaluator returned no valid result for s_source.",
+        output: { state: "converged", actions: [] },
+      });
+      expect(events.map((event: any) => event.type)).toEqual([
+        "evaluation.deep_dispatched",
+      ]);
+    }
+  });
+
+  test("accepts an explicit no-candidate outcome without recording", async () => {
+    const events: unknown[] = [];
+    const ctx = createTestAppWorkflowContext({
+      input: {},
+      callAgent: async () => ({
+        id: "s_inner",
+        kind: "agent",
+        status: "done",
+        summary: "nothing eligible",
+        output: { noCandidate: true, reason: "Nothing eligible." },
+      }),
+      emit: async (event) => {
+        events.push(event);
+      },
     });
-    expect(result.result).not.toHaveProperty("conditions");
+
+    await expect(execute(ctx)).resolves.toMatchObject({
+      status: "done",
+      summary: "Nothing eligible.",
+      output: { state: "converged", actions: [] },
+    });
+    expect(events.map((event: any) => event.type)).toEqual([
+      "evaluation.deep_dispatched",
+    ]);
+  });
+
+  test("publishes one durable fact for valid structured output", async () => {
+    const events: unknown[] = [];
+    const ctx = createTestAppWorkflowContext({
+      input: { sessionId: "s_source" },
+      callAgent: async () => ({
+        id: "s_inner",
+        kind: "agent",
+        status: "done",
+        summary: "evaluated",
+        output: { evaluation },
+      }),
+      emit: async (event) => {
+        events.push(event);
+      },
+    });
+
+    await expect(execute(ctx)).resolves.toMatchObject({
+      status: "done",
+      summary: "Recorded deep evaluation for s_source with verdict good.",
+      output: {
+        state: "converged",
+        evidence: ["execution:s_inner", "evaluated-session:s_source"],
+        actions: [],
+      },
+    });
+    expect(events[1]).toMatchObject({
+      type: "evaluation.deep_recorded",
+      data: {
+        source: "evaluator-deep-eval",
+        evaluation: {
+          sessionId: "s_source",
+          verdict: "good",
+          overall: { deepEval: true, deepEvalVersion: 1 },
+        },
+      },
+      target: { appId: "evaluation", sessionId: "s_source" },
+    });
   });
 });

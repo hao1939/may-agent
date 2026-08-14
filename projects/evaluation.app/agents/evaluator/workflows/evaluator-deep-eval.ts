@@ -1,167 +1,91 @@
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk/legacy";
+import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
 import {
   buildDeepEvaluationTask,
-  ensureDeepEvaluationArtifactDir,
-  normalizeDeepEvaluationCandidate,
-  readDeepEvaluationArtifact,
-  recordDeepEvaluation,
-  recordPendingDeepEvaluationArtifacts,
+  parseDeepEvaluationOutcome,
 } from "./lib/deep-evaluation.js";
 
 export const name = "evaluator-deep-eval";
-
 export const description =
-  "Reuse the evaluator's learned deep-review process: select one candidate, inspect substance, validate its artifact, and record the result.";
+  "Run one bounded evaluator judgment and publish its validated evaluation fact.";
 
-export function reconciliationInput(task: string): Record<string, unknown> {
-  const raw = task.match(
-    /## Reconciliation Task\s*```json\s*([\s\S]*?)```/,
-  )?.[1];
-  if (!raw) return {};
-  try {
-    const packet = JSON.parse(raw) as { input?: unknown };
-    return packet.input &&
-      typeof packet.input === "object" &&
-      !Array.isArray(packet.input)
-      ? (packet.input as Record<string, unknown>)
-      : {};
-  } catch {
-    return {};
-  }
+type DeepEvaluationInput = {
+  sessionId?: string;
+};
+
+function result(summary: string, evidence: string[]) {
+  return { state: "converged" as const, summary, evidence, actions: [] };
 }
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  const input = reconciliationInput(ctx.task);
+export async function execute(
+  ctx: WorkflowContext<DeepEvaluationInput>,
+): Promise<ExecutionResult> {
   const requestedSessionId =
-    typeof input.sessionId === "string" ? input.sessionId.trim() : "";
-  const db = ctx.getDb() as any;
-  ensureDeepEvaluationArtifactDir(ctx.projectRoot);
-
-  const recordedPending = recordPendingDeepEvaluationArtifacts(
-    db,
-    ctx.projectRoot,
-  );
-  if (recordedPending > 0) {
-    ctx.emit({
-      type: "evaluation.deep_recorded",
-      project: "evaluation",
-      data: { count: recordedPending, source: name },
-    });
-    const summary = `Recorded ${recordedPending} validated deep-evaluation artifact(s).`;
-    return ctx.done(summary, {
-      state: "converged",
-      summary,
-      evidence: [`deep-evaluations:${recordedPending}`],
-      actions: [],
-    });
-  }
-
-  let candidate;
-  if (requestedSessionId) {
-    const context = ctx.query.evaluatorAftermathContext({
-      sessionId: requestedSessionId,
-    });
-    candidate = normalizeDeepEvaluationCandidate(context.session);
-  } else {
-    const scan = ctx.query.evaluatorDeepEvalScan({
-      now: Date.now(),
-      backfillHours: 24,
-      fallbackDelayMs: 15 * 60_000,
-      activeWindowMs: 30 * 60_000,
-    });
-    if (scan.activeDeepEval) {
-      const summary =
-        "A recent deep evaluation is still active; no duplicate was dispatched.";
-      return ctx.done(summary, {
-        state: "converged",
-        summary,
-        evidence: ["query:evaluatorDeepEvalScan"],
-        actions: [],
-      });
-    }
-    candidate = normalizeDeepEvaluationCandidate(scan.candidate);
-  }
-
-  if (!candidate) {
-    const summary = requestedSessionId
-      ? `Session ${requestedSessionId} is unavailable for deep evaluation.`
-      : "No eligible session currently needs deep evaluation.";
-    return ctx.done(summary, {
-      state: "converged",
-      summary,
-      evidence: [
-        requestedSessionId
-          ? `session:${requestedSessionId}`
-          : "query:evaluatorDeepEvalScan",
-      ],
-      actions: [],
-    });
-  }
-
-  ctx.emit({
+    typeof ctx.input?.sessionId === "string" ? ctx.input.sessionId.trim() : "";
+  await ctx.events.emit({
     type: "evaluation.deep_dispatched",
-    project: "evaluation",
     data: {
       source: name,
-      sessionId: candidate.sessionId,
-      agent: candidate.agent,
+      ...(requestedSessionId ? { sessionId: requestedSessionId } : {}),
+    },
+    target: {
+      appId: "evaluation",
+      ...(requestedSessionId ? { sessionId: requestedSessionId } : {}),
     },
   });
-  const result = await ctx.runAgent(
+
+  const execution = await ctx.agents.call(
     "evaluator",
-    buildDeepEvaluationTask(candidate, ctx.persistDir, ctx.projectRoot),
+    buildDeepEvaluationTask(requestedSessionId),
   );
-  if (result.status === "error" || result.status === "interrupted") {
-    const summary = `Deep evaluator session failed for ${candidate.sessionId}: ${result.error ?? result.status}`;
-    ctx.emit({
+  if (execution.status !== "done") {
+    const summary = `Deep evaluator execution ${execution.id} ended ${execution.status}: ${execution.summary}`;
+    await ctx.events.emit({
       type: "evaluation.deep_failed",
-      project: "evaluation",
       data: {
         source: name,
-        sessionId: candidate.sessionId,
-        agent: candidate.agent,
-        error: result.error ?? result.status,
+        executionId: execution.id,
+        status: execution.status,
+        summary: execution.summary,
+        ...(requestedSessionId ? { sessionId: requestedSessionId } : {}),
+      },
+      target: {
+        appId: "evaluation",
+        executionId: execution.id,
+        ...(requestedSessionId ? { sessionId: requestedSessionId } : {}),
       },
     });
-    return ctx.done(summary, {
-      state: "converged",
-      summary,
-      evidence: [`session:${result.sessionId}`],
-      actions: [],
-    });
+    return ctx.done(summary, result(summary, [`execution:${execution.id}`]));
   }
 
-  const evaluation = readDeepEvaluationArtifact(ctx.projectRoot, candidate);
-  if (!evaluation) {
-    const summary = `Deep evaluator did not produce a valid artifact for ${candidate.sessionId}.`;
-    return ctx.done(summary, {
-      state: "converged",
-      summary,
-      evidence: [`session:${result.sessionId}`],
-      actions: [],
-    });
+  const outcome = parseDeepEvaluationOutcome(
+    execution.output,
+    requestedSessionId,
+  );
+  if (!outcome) {
+    const summary = requestedSessionId
+      ? `Deep evaluator returned no valid result for ${requestedSessionId}.`
+      : "Deep evaluator returned no valid result.";
+    return ctx.done(summary, result(summary, [`execution:${execution.id}`]));
+  }
+  if (outcome.kind === "none") {
+    return ctx.done(
+      outcome.reason,
+      result(outcome.reason, [`execution:${execution.id}`]),
+    );
   }
 
-  recordDeepEvaluation(db, evaluation);
-  ctx.emit({
+  const evaluation = outcome.evaluation;
+  await ctx.events.emit({
     type: "evaluation.deep_recorded",
-    project: "evaluation",
-    data: {
-      source: name,
-      count: 1,
-      sessionId: candidate.sessionId,
-      agent: candidate.agent,
-      verdict: evaluation.verdict,
-    },
+    data: { source: name, evaluation },
+    target: { appId: "evaluation", sessionId: evaluation.sessionId },
   });
-  const summary = `Recorded deep evaluation for ${candidate.sessionId} with verdict ${evaluation.verdict}.`;
-  return ctx.done(summary, {
-    state: "converged",
+  const summary = `Recorded deep evaluation for ${evaluation.sessionId} with verdict ${evaluation.verdict}.`;
+  return ctx.done(
     summary,
-    evidence: [
-      `session:${result.sessionId}`,
-      `evaluated-session:${candidate.sessionId}`,
-    ],
-    actions: [],
-  });
+    result(summary, [
+      `execution:${execution.id}`,
+      `evaluated-session:${evaluation.sessionId}`,
+    ]),
+  );
 }
