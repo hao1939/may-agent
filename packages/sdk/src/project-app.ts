@@ -365,8 +365,10 @@ export type ProjectApp = {
     branch?: string;
   };
   budget?: {
-    sessionsPerDay: number;
-    tokensPerDay: number;
+    /** @deprecated The runtime no longer enforces a daily session cap. */
+    sessionsPerDay?: number;
+    /** @deprecated The runtime no longer enforces a daily token cap. */
+    tokensPerDay?: number;
     maxConcurrent: number;
   };
   schedules?: Array<{
