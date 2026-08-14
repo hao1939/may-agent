@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { Type, defineApp, type AppDefinition } from "@may-agent/sdk";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
-import { claimAppInboxItem } from "./app-inbox-store.js";
+import { associateAppInboxClaimSession, claimAppInboxItem } from "./app-inbox-store.js";
 import { AppInboxHost, type AppOwnerInvoker } from "./app-inbox-host.js";
 
 const probeInput = Type.Object({
@@ -340,6 +340,77 @@ describe("App inbox host", () => {
         evidence: ["task:receipt"],
       },
     });
+  });
+
+  it("recovers an associated Runtime session as an exact dependency observation", async () => {
+    let sessionStatus: "running" | "done" = "running";
+    const ownerRequests: unknown[] = [];
+    const host = new AppInboxHost({
+      db,
+      apps: [app("evaluation")],
+      now: () => 100,
+      readDependency: async ({ dependency }) =>
+        dependency.id === "session-unknown"
+          ? null
+          : {
+              ...dependency,
+              status: sessionStatus,
+              summary:
+                sessionStatus === "done" ? "Recovered owner execution completed" : "Owner execution is running",
+            },
+      invokeOwner: async ({ requests }) => {
+        ownerRequests.push(...requests);
+        return requests.map((request) => ({
+          requestId: request.id,
+          disposition: { type: "complete", summary: "recovered session reviewed" },
+        }));
+      },
+    });
+    admit(host, "evaluation", "session-recovery");
+    const oldClaim = claimAppInboxItem(db, "session-recovery", "old-runtime", 1_000, 100)!;
+    expect(associateAppInboxClaimSession(db, oldClaim, "session-exact", 100)).toBe(true);
+    admit(host, "evaluation", "unknown-session-recovery");
+    const unknownClaim = claimAppInboxItem(db, "unknown-session-recovery", "old-runtime", 1_000, 100)!;
+    expect(associateAppInboxClaimSession(db, unknownClaim, "session-unknown", 100)).toBe(true);
+
+    expect(await host.recoverSessionDependencies({ includeAssociatedClaims: true })).toEqual({
+      linked: 1,
+      woken: 0,
+      wokenAppIds: [],
+      errors: [],
+    });
+    expect(host.get("session-recovery")).toMatchObject({
+      waitingOn: { kind: "session", id: "session-exact" },
+      availableAt: undefined,
+      lease: undefined,
+    });
+    expect(host.get("unknown-session-recovery")).toMatchObject({
+      sessionId: "session-unknown",
+      waitingOn: undefined,
+      lease: { generation: 1, owner: "old-runtime" },
+    });
+    expect(host.wake({ kind: "session", id: "session-unrelated" })).toBe(0);
+
+    sessionStatus = "done";
+    expect(await host.recoverSessionDependencies()).toEqual({
+      linked: 0,
+      woken: 1,
+      wokenAppIds: ["evaluation"],
+      errors: [],
+    });
+    expect(await host.recoverSessionDependencies()).toMatchObject({ woken: 0 });
+    expect(await host.reconcileOnce("evaluation")).toMatchObject({ admitted: 1 });
+    expect(ownerRequests).toMatchObject([
+      {
+        id: "session-recovery",
+        dependency: {
+          kind: "session",
+          id: "session-exact",
+          status: "done",
+          summary: "Recovered owner execution completed",
+        },
+      },
+    ]);
   });
 
   it("rejects task work when the App did not opt into task attachment", async () => {

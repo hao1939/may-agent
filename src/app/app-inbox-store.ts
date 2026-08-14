@@ -68,6 +68,12 @@ export type AppInboxClaim = {
   owner: string;
 };
 
+/** A claim durably associated with the exact owner session that was executing it. */
+export type AppInboxSessionClaim = {
+  claim: AppInboxClaim;
+  sessionId: string;
+};
+
 export type AppInboxQuery = {
   appId?: string;
   status?: AppInboxStatus;
@@ -249,6 +255,48 @@ export function listAppInboxItems(db: SqliteDb, query: AppInboxQuery = {}): AppI
       const delivery = getAppInboxDelivery(db, item.id);
       return delivery ? { ...item, delivery } : item;
     });
+}
+
+/**
+ * Previous-runtime claims that reached owner-session admission before the
+ * process stopped. The generation, owner, and session together are the fence
+ * used when converting one of these claims into an explicit session wait.
+ */
+export function listAppInboxAssociatedSessionClaims(db: SqliteDb): AppInboxSessionClaim[] {
+  const rows = db
+    .prepare(
+      `SELECT * FROM app_inbox_items
+       WHERE status = 'handling'
+         AND session_id IS NOT NULL
+         AND lease_owner IS NOT NULL
+         AND lease_expires_at IS NOT NULL
+       ORDER BY created_at, id`,
+    )
+    .all();
+
+  return rows.map((row) => {
+    const item = rowToItem(row);
+    if (!item.sessionId || !item.lease) throw new Error(`Invalid associated session claim ${item.id}`);
+    return {
+      claim: { item, generation: item.lease.generation, owner: item.lease.owner },
+      sessionId: item.sessionId,
+    };
+  });
+}
+
+/** Session waits are runtime recovery state, not an App authoring capability. */
+export function listAppInboxSessionWaits(db: SqliteDb): AppInboxItem[] {
+  return db
+    .prepare(
+      `SELECT * FROM app_inbox_items
+       WHERE status = 'handling'
+         AND lease_owner IS NULL
+         AND waiting_on_kind = 'session'
+         AND waiting_on_id IS NOT NULL
+       ORDER BY created_at, id`,
+    )
+    .all()
+    .map(rowToItem);
 }
 
 /** Current lifecycle health derived directly from the inbox authority, never event reconstruction. */
@@ -569,8 +617,9 @@ export function wakeAppInboxItemsWaitingOn(
      WHERE status = 'handling'
        AND lease_owner IS NULL
        AND waiting_on_kind = ?
-       AND waiting_on_id = ?`,
-    [now, now, now, waitingOn.kind, waitingOn.id],
+       AND waiting_on_id = ?
+       AND (available_at IS NULL OR available_at > ? OR review_at IS NOT NULL)`,
+    [now, now, now, waitingOn.kind, waitingOn.id, now],
   );
   return result.changes;
 }

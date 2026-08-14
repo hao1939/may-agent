@@ -250,8 +250,30 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     pump();
   };
 
+  let sessionRecovery: Promise<void> | null = null;
+  const recoverSessionDependencies = (includeAssociatedClaims = false): Promise<void> => {
+    if (sessionRecovery) return sessionRecovery;
+    const current = host
+      .recoverSessionDependencies({ includeAssociatedClaims })
+      .then((outcome) => {
+        for (const appId of outcome.wokenAppIds) schedule(appId);
+        if (outcome.errors.length > 0) {
+          options.bus.emit({
+            type: "info",
+            message: `[app-inbox:session-recovery] ${outcome.errors.join("; ")}`,
+          });
+        }
+      })
+      .finally(() => {
+        if (sessionRecovery === current) sessionRecovery = null;
+      });
+    sessionRecovery = current;
+    return current;
+  };
+
   const scanNow = () => {
     for (const appId of host.appIds()) schedule(appId);
+    void recoverSessionDependencies();
     pumpDeliveries();
   };
 
@@ -383,6 +405,12 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         return { accepted: true, by: "app-inbox:wake" };
       }
     }
+    if (event.type === "session.end") {
+      const sessionId = typeof data.sessionId === "string" ? data.sessionId.trim() : "";
+      if (sessionId && host.wake({ kind: "session", id: sessionId }) > 0) {
+        scanNow();
+      }
+    }
     if (event.type === "channel.delivery.completed" || event.type === "channel.delivery.failed") {
       const operationId = typeof data.operationId === "string" ? data.operationId.trim() : "";
       const itemId = typeof data.appInboxItemId === "string" ? data.appInboxItemId.trim() : "";
@@ -420,6 +448,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     unsubscribe();
     throw new Error("App inbox scanIntervalMs must be positive");
   }
+  await recoverSessionDependencies(true);
   const timer = setInterval(scanNow, scanIntervalMs);
   timer.unref?.();
   scanNow();
