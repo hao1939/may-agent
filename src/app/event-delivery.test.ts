@@ -14,7 +14,6 @@ import {
 import { backfillEventPairTraces, checkEventTraceIntegrity } from "../lib/db/event-traces.js";
 import { closeDb, getDb } from "../lib/requests.js";
 import { createQueryService } from "../lib/query-service.js";
-import { createCommandService } from "../lib/command-service.js";
 
 function tempRoot(): string {
   return mkdtempSync(join(tmpdir(), "may-event-delivery-"));
@@ -78,11 +77,7 @@ describe("delivery acceptance recording", () => {
 
       expect(beginAttempts).toBe(2);
       expect(
-        db
-          .prepare(
-            "SELECT delivery_status, accepted_by, delivery_route FROM events WHERE id = ?",
-          )
-          .get(rowId),
+        db.prepare("SELECT delivery_status, accepted_by, delivery_route FROM events WHERE id = ?").get(rowId),
       ).toMatchObject({
         delivery_status: "accepted",
         accepted_by: "event-pair-tracker",
@@ -181,14 +176,19 @@ describe("retry-safe event ingress", () => {
       expect(retry[EVENT_ROW_ID]).toBe(originalId);
       expect(broadFanout).toEqual([]);
       expect(getDb(root).prepare("SELECT COUNT(*) AS count FROM events").get()).toMatchObject({ count: 1 });
-      expect(getDb(root).prepare("SELECT delivery_status, delivery_route FROM events WHERE id = ?").get(originalId)).toMatchObject({
+      expect(
+        getDb(root).prepare("SELECT delivery_status, delivery_route FROM events WHERE id = ?").get(originalId),
+      ).toMatchObject({
         delivery_status: "accepted",
         delivery_route: "owner_inbox",
       });
-      expect(getDb(root).prepare(
-        "SELECT COUNT(*) AS count FROM event_pair_runs WHERE open_event_id = ? AND pair_name = 'owner_inbox'",
-      ).get(originalId))
-        .toMatchObject({ count: 1 });
+      expect(
+        getDb(root)
+          .prepare(
+            "SELECT COUNT(*) AS count FROM event_pair_runs WHERE open_event_id = ? AND pair_name = 'owner_inbox'",
+          )
+          .get(originalId),
+      ).toMatchObject({ count: 1 });
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
@@ -249,8 +249,9 @@ describe("event delivery metadata", () => {
       expect(db.prepare("SELECT delivery_status FROM events WHERE id = ?").get(rowId)).toMatchObject({
         delivery_status: "pending",
       });
-      expect(db.prepare("SELECT COUNT(*) AS count FROM event_pair_runs WHERE open_event_id = ?").get(rowId))
-        .toMatchObject({ count: 0 });
+      expect(
+        db.prepare("SELECT COUNT(*) AS count FROM event_pair_runs WHERE open_event_id = ?").get(rowId),
+      ).toMatchObject({ count: 0 });
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
@@ -1254,7 +1255,7 @@ describe("event delivery metadata", () => {
     }
   });
 
-  it("routes owner-addressed unhandled events to owner inbox and opens a pair", () => {
+  it("leaves an unhandled message pending without inventing owner work", () => {
     const root = tempRoot();
     try {
       const bus = new EventBus();
@@ -1276,9 +1277,9 @@ describe("event delivery metadata", () => {
         )
         .get() as Record<string, unknown>;
       expect(event).toMatchObject({
-        delivery_status: "accepted",
-        accepted_by: "owner-inbox:agent:dev",
-        delivery_route: "owner_inbox",
+        delivery_status: "pending",
+        accepted_by: null,
+        delivery_route: null,
       });
 
       const pair = db
@@ -1288,11 +1289,7 @@ describe("event delivery metadata", () => {
          WHERE open_event_id = ?`,
         )
         .get(event.id) as Record<string, unknown>;
-      expect(pair).toMatchObject({
-        pair_name: "owner_inbox",
-        open_event_id: event.id,
-        status: "open",
-      });
+      expect(pair).toBeNull();
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
@@ -1538,7 +1535,7 @@ describe("event delivery metadata", () => {
     }
   });
 
-  it("keeps unknown owner-addressed requests visible in the owner inbox", () => {
+  it("leaves unknown owner-addressed requests pending for an explicit consumer", () => {
     const root = tempRoot();
     try {
       const bus = new EventBus();
@@ -1561,9 +1558,9 @@ describe("event delivery metadata", () => {
           )
           .get(),
       ).toMatchObject({
-        delivery_status: "accepted",
-        accepted_by: "owner-inbox:project:sample",
-        delivery_route: "owner_inbox",
+        delivery_status: "pending",
+        accepted_by: null,
+        delivery_route: null,
       });
       expect(
         db
@@ -1573,7 +1570,7 @@ describe("event delivery metadata", () => {
               WHERE pair_name = 'owner_inbox'`,
           )
           .get(),
-      ).toMatchObject({ pair_name: "owner_inbox", status: "open" });
+      ).toBeNull();
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
@@ -1670,8 +1667,9 @@ describe("event delivery metadata", () => {
       const db = getDb(root);
       const inferred = db.prepare("SELECT id FROM event_pair_runs WHERE pair_name = 'example'").get();
       expect(inferred).toBeNull();
-      expect(db.prepare("SELECT status FROM event_pair_runs WHERE pair_name = 'owner_inbox'").get()).toMatchObject({
-        status: "open",
+      expect(db.prepare("SELECT status FROM event_pair_runs WHERE pair_name = 'owner_inbox'").get()).toBeNull();
+      expect(db.prepare("SELECT delivery_status FROM events WHERE event_type = 'example.created'").get()).toEqual({
+        delivery_status: "pending",
       });
     } finally {
       closeDb(root);
@@ -1999,7 +1997,7 @@ describe("event delivery metadata", () => {
     }
   });
 
-  it("keeps overdue messages open for semantic lifecycle reconciliation", async () => {
+  it("does not create a semantic lifecycle pair for an unaccepted message", async () => {
     const root = tempRoot();
     try {
       const bus = new EventBus();
@@ -2021,70 +2019,10 @@ describe("event delivery metadata", () => {
       } as any);
 
       const db = getDb(root);
-      const query = createQueryService({ getDb: () => db });
-      const health = query.eventDeliveryHealth({ limit: 10 });
-      expect(health.orphanPairs).toEqual([]);
-      expect(
-        db.prepare("SELECT status FROM event_pair_runs WHERE pair_name = 'owner_inbox'").get(),
-      ).toMatchObject({ status: "open" });
-    } finally {
-      closeDb(root);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("late follow-up events close overdue owner-inbox messages", async () => {
-    const root = tempRoot();
-    try {
-      const bus = new EventBus();
-      attachPersistence(bus, root);
-
-      bus.emit({
-        type: "message.created",
-        source: "test",
-        owner: "agent:dev",
-        ttl_ms: 1,
-        data: { from: "test", to: "dev", content: "please review quickly" },
-      } as any);
-
-      const db = getDb(root);
-      const event = db.prepare(`SELECT id FROM events WHERE event_type = 'message.created'`).get() as Record<
-        string,
-        unknown
-      >;
-
-      await new Promise((resolve) => setTimeout(resolve, 5));
-      bus.emit({
-        type: "handler.completed",
-        source: "cron",
-        owner: "agent:may",
-        data: { handler: "sample", agent: "may", durationMs: 5 },
-      } as any);
-
-      expect(
-        (
-          db.prepare(`SELECT status FROM event_pair_runs WHERE open_event_id = ?`).get(event.id) as Record<
-            string,
-            unknown
-          >
-        ).status,
-      ).toBe("open");
-
-      bus.emit({
-        type: "message.reviewed",
-        source: "test",
-        owner: "agent:dev",
-        data: { openEventId: event.id, reviewedBy: "dev" },
-      } as any);
-
-      expect(
-        (
-          db.prepare(`SELECT status FROM event_pair_runs WHERE open_event_id = ?`).get(event.id) as Record<
-            string,
-            unknown
-          >
-        ).status,
-      ).toBe("closed");
+      expect(db.prepare("SELECT status FROM event_pair_runs WHERE pair_name = 'owner_inbox'").get()).toBeNull();
+      expect(db.prepare("SELECT delivery_status FROM events WHERE event_type = 'message.created'").get()).toEqual({
+        delivery_status: "unhandled",
+      });
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
@@ -2187,119 +2125,6 @@ describe("event delivery metadata", () => {
       expect(
         db.prepare("SELECT COUNT(*) AS count FROM event_pair_runs WHERE pair_name = 'project.task'").get(),
       ).toEqual({ count: 0 });
-    } finally {
-      closeDb(root);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("owner inbox review records progress and keeps the message open", () => {
-    const root = tempRoot();
-    try {
-      const bus = new EventBus();
-      attachPersistence(bus, root);
-
-      bus.emit({
-        type: "message.created",
-        source: "test",
-        owner: "agent:dev",
-        data: { from: "test", to: "dev", content: "please review" },
-      } as any);
-
-      const db = getDb(root);
-      const query = createQueryService({ getDb: () => db });
-      const commands = createCommandService({ getDb: () => db, emit: (event) => bus.emit(event as any) });
-      const inbox = query.heartbeatContext({ agent: "dev" }).inbox;
-      expect(inbox).toHaveLength(1);
-      const id = inbox[0]!.id as number;
-
-      expect(commands.reviewInboxEvents([id], "dev")).toBe(1);
-
-      const followup = db
-        .prepare(
-          `SELECT id, event_type, data, delivery_status, delivery_route
-         FROM events
-         WHERE event_type = 'message.progressed'`,
-        )
-        .get() as Record<string, unknown>;
-      expect(followup).toMatchObject({
-        event_type: "message.progressed",
-        delivery_status: "accepted",
-        delivery_route: "direct",
-      });
-      expect(JSON.parse(String(followup.data))).toMatchObject({
-        sourceEventId: id,
-        sourceEventType: "message.created",
-        reviewedBy: "dev",
-        disposition: "reviewed",
-      });
-
-      const trace = db.prepare("SELECT * FROM event_traces WHERE event_id = ?").get(followup.id);
-      const link = db.prepare("SELECT * FROM event_trace_links WHERE from_event_id = ?").get(followup.id);
-      expect(trace).toMatchObject({
-        event_id: followup.id,
-        trace_id: `event:${id}`,
-        parent_event_id: id,
-      });
-      expect(link).toMatchObject({
-        from_event_id: followup.id,
-        to_event_id: id,
-        type: "reference",
-        label: "message.progressed",
-      });
-
-      const pair = db
-        .prepare(
-          `SELECT status
-         FROM event_pair_runs
-         WHERE open_event_id = ?`,
-        )
-        .get(id) as Record<string, unknown>;
-      expect(pair.status).toBe("open");
-      expect(query.heartbeatContext({ agent: "dev" }).inbox).toHaveLength(1);
-    } finally {
-      closeDb(root);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("does not retire unfinished messages because they are old", () => {
-    const root = tempRoot();
-    try {
-      const bus = new EventBus();
-      attachPersistence(bus, root);
-      bus.emit({
-        type: "message.created",
-        source: "test",
-        owner: "agent:dev",
-        data: { from: "test", to: "dev", content: "stale review" },
-      });
-
-      const db = getDb(root);
-      const event = db
-        .prepare(
-          `SELECT id, data
-         FROM events
-         WHERE event_type = 'message.created'`,
-        )
-        .get() as { id: number; data: string };
-      db.prepare("UPDATE events SET timestamp = ? WHERE id = ?").run(Date.now() - 48 * 60 * 60_000, event.id);
-
-      const commands = createCommandService({ getDb: () => db, emit: (event) => bus.emit(event as any) });
-      expect(commands.expireStaleMessages(24 * 60 * 60_000)).toBe(0);
-      expect(db.prepare("SELECT data FROM events WHERE id = ?").get(event.id)).toEqual({ data: event.data });
-      expect(
-        db
-          .prepare(
-            `SELECT status, note
-           FROM event_pair_runs
-           WHERE open_event_id = ? AND pair_name = 'owner_inbox'`,
-          )
-          .get(event.id),
-      ).toMatchObject({
-        status: "open",
-      });
-      expect(db.prepare("SELECT data FROM events WHERE event_type = 'message.expired'").get()).toBeNull();
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });

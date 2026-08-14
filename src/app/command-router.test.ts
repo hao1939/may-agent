@@ -276,7 +276,10 @@ describe("command router human intent contract", () => {
       expect(runs).toEqual([]);
       expect(
         getDb(root).prepare("SELECT status FROM event_pair_runs WHERE open_event_id = ?").get(sourceEventId),
-      ).toEqual({ status: "open" });
+      ).toBeNull();
+      expect(getDb(root).prepare("SELECT delivery_status FROM events WHERE id = ?").get(sourceEventId)).toEqual({
+        delivery_status: "pending",
+      });
     } finally {
       router.close();
       closeDb(root);

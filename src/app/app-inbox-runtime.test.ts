@@ -13,13 +13,7 @@ import {
   waitAppInboxClaim,
 } from "./app-inbox-store.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
-import {
-  EVENT_DEDUPLICATED,
-  EVENT_REDELIVERY_REQUIRED,
-  EVENT_ROW_ID,
-  EventBus,
-  type AgentEvent,
-} from "./event-bus.js";
+import { EVENT_DEDUPLICATED, EVENT_REDELIVERY_REQUIRED, EVENT_ROW_ID, EventBus, type AgentEvent } from "./event-bus.js";
 import type { AppOwnerManager } from "./app-owner-manager-adapter.js";
 
 describe("App inbox runtime", () => {
@@ -276,7 +270,7 @@ describe("App inbox runtime", () => {
     runtime = null;
   });
 
-  it("leaves incompatible and ambiguous agent messages on the legacy route", async () => {
+  it("leaves incompatible and ambiguous agent messages explicitly unaccepted", async () => {
     for (const id of ["may-one", "may-two"]) {
       const appDir = join(root, `${id}.app`);
       mkdirSync(appDir, { recursive: true });
@@ -323,10 +317,9 @@ describe("App inbox runtime", () => {
     });
 
     expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 0 });
-    expect(deliveries.map(({ result }) => result)).toEqual([
-      expect.objectContaining({ by: "owner-inbox:agent:may", route: "owner_inbox" }),
-      expect.objectContaining({ by: "owner-inbox:agent:evaluator", route: "owner_inbox" }),
-    ]);
+    expect(deliveries).toEqual([]);
+    expect(ambiguous[EVENT_ROW_ID]).toBeDefined();
+    expect(incompatible[EVENT_ROW_ID]).toBeDefined();
   });
 
   it("preserves human channel metadata through admission and owner dispatch", async () => {
