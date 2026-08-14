@@ -295,7 +295,7 @@ describe("command router human intent contract", () => {
       }
     });
     try {
-      bus.emit({
+      const source = bus.emit({
         type: "human.input.received",
         source: "telegram",
         owner: "agent:may",
@@ -335,6 +335,23 @@ describe("command router human intent contract", () => {
           decision: "approve",
         },
       });
+      const sourceEventId = Number(source[EVENT_ROW_ID]);
+      expect(
+        getDb(root)
+          .prepare("SELECT delivery_status, accepted_by, delivery_route FROM events WHERE id = ?")
+          .get(sourceEventId),
+      ).toEqual({
+        delivery_status: "accepted",
+        accepted_by: "command-router:approval",
+        delivery_route: "direct",
+      });
+      expect(
+        getDb(root)
+          .prepare(
+            "SELECT COUNT(*) AS count FROM event_pair_runs WHERE pair_name = 'owner_inbox' AND open_event_id = ?",
+          )
+          .get(sourceEventId),
+      ).toEqual({ count: 0 });
     } finally {
       unsubscribe();
       router.close();
@@ -348,7 +365,7 @@ describe("command router human intent contract", () => {
       acceptsDirectAppInput: (appId) => appId === "may",
     });
     try {
-      bus.emit({
+      const source = bus.emit({
         type: "human.input.received",
         source: "test",
         owner: "agent:may",
@@ -383,6 +400,118 @@ describe("command router human intent contract", () => {
         trace_id: rows[0]!.trace_id,
         parent_event_id: expect.any(Number),
       });
+      const sourceEventId = Number(source[EVENT_ROW_ID]);
+      const deliveries = db
+        .prepare(
+          `SELECT e.id, e.event_type, e.delivery_status, e.accepted_by, e.delivery_route,
+                  COUNT(p.id) AS owner_inbox_pairs
+           FROM events e
+           LEFT JOIN event_pair_runs p
+             ON p.open_event_id = e.id AND p.pair_name = 'owner_inbox'
+           WHERE e.id = ? OR e.event_type = 'session.steer.requested'
+           GROUP BY e.id
+           ORDER BY e.id`,
+        )
+        .all(sourceEventId);
+      expect(deliveries).toEqual([
+        {
+          id: sourceEventId,
+          event_type: "human.input.received",
+          delivery_status: "accepted",
+          accepted_by: "command-router:session-steer",
+          delivery_route: "direct",
+          owner_inbox_pairs: 0,
+        },
+        {
+          id: expect.any(Number),
+          event_type: "session.steer.requested",
+          delivery_status: "accepted",
+          accepted_by: "command-router:session-steer",
+          delivery_route: "direct",
+          owner_inbox_pairs: 0,
+        },
+      ]);
+    } finally {
+      router.close();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("owns canonical deterministic controls directly", () => {
+    const { root, bus, router } = fixture();
+    try {
+      const controls = [
+        {
+          event: {
+            type: "session.cancel.requested",
+            source: "web-ui",
+            owner: "agent:may",
+            data: { sessionId: "s_chat", reason: "human requested cancel" },
+          },
+          acceptedBy: "command-router:session-cancel",
+        },
+        {
+          event: {
+            type: "session.cancel_all.requested",
+            source: "web-ui",
+            owner: "agent:may",
+            urgency: "high",
+            data: { reason: "human requested cancel all" },
+          },
+          acceptedBy: "command-router:session-cancel-all",
+        },
+        {
+          event: {
+            type: "runtime.reload.requested",
+            source: "web-ui",
+            owner: "agent:may",
+            data: { reason: "human requested reload" },
+          },
+          acceptedBy: "command-router:runtime-reload",
+        },
+        {
+          event: {
+            type: "runtime.restart.requested",
+            source: "web-ui",
+            owner: "agent:may",
+            urgency: "high",
+            data: { reason: "human requested restart" },
+          },
+          acceptedBy: "command-router:runtime-restart",
+        },
+        {
+          event: {
+            type: "runtime.shutdown.requested",
+            source: "web-ui",
+            owner: "agent:may",
+            urgency: "high",
+            data: { reason: "human requested shutdown" },
+          },
+          acceptedBy: "command-router:runtime-shutdown",
+        },
+      ] as const;
+
+      for (const control of controls) {
+        const emitted = bus.emit(control.event);
+        const eventId = Number(emitted[EVENT_ROW_ID]);
+        expect(
+          getDb(root)
+            .prepare("SELECT delivery_status, accepted_by, delivery_route FROM events WHERE id = ?")
+            .get(eventId),
+        ).toEqual({
+          delivery_status: "accepted",
+          accepted_by: control.acceptedBy,
+          delivery_route: "direct",
+        });
+        expect(
+          getDb(root)
+            .prepare(
+              "SELECT COUNT(*) AS count FROM event_pair_runs WHERE pair_name = 'owner_inbox' AND open_event_id = ?",
+            )
+            .get(eventId),
+        ).toEqual({ count: 0 });
+      }
     } finally {
       router.close();
       closeDb(root);
@@ -826,7 +955,7 @@ describe("command router human intent contract", () => {
       acceptsDirectAppInput: (appId) => appId === "may",
     });
     try {
-      bus.emit({
+      const source = bus.emit({
         type: "human.input.received",
         source: "test",
         owner: "agent:may",
@@ -840,6 +969,23 @@ describe("command router human intent contract", () => {
         .map((row) => row.event_type);
       expect(types).toContain("human.input.rejected");
       expect(types).not.toContain("session.cancel_all.requested");
+      const sourceEventId = Number(source[EVENT_ROW_ID]);
+      expect(
+        getDb(root)
+          .prepare("SELECT delivery_status, accepted_by, delivery_route FROM events WHERE id = ?")
+          .get(sourceEventId),
+      ).toEqual({
+        delivery_status: "accepted",
+        accepted_by: "command-router:session-cancel-rejected",
+        delivery_route: "direct",
+      });
+      expect(
+        getDb(root)
+          .prepare(
+            "SELECT COUNT(*) AS count FROM event_pair_runs WHERE pair_name = 'owner_inbox' AND open_event_id = ?",
+          )
+          .get(sourceEventId),
+      ).toEqual({ count: 0 });
     } finally {
       router.close();
       closeDb(root);
