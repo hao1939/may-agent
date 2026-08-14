@@ -18,7 +18,7 @@ const DAY_MS = 86_400_000;
 export const OWNER_REVIEW_TASK_ID = "runtime/platform-owner-review";
 
 /** Total owner sessions available per day. */
-export const OWNER_SESSIONS_PER_DAY = 6;
+export const OWNER_SESSIONS_PER_DAY = Infinity;
 
 /** Owner sessions/day reserved for reactive event-owner reviews. */
 export const RESERVED_REACTIVE_SESSIONS_PER_DAY = 2;
@@ -229,8 +229,6 @@ export default defineProjectApp({
   // budget.sessionsPerDay, with at least RESERVED_REACTIVE_SESSIONS_PER_DAY
   // left over.
   budget: {
-    sessionsPerDay: OWNER_SESSIONS_PER_DAY,
-    tokensPerDay: 300_000,
     maxConcurrent: 2,
   },
 

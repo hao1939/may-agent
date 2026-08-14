@@ -2,9 +2,7 @@ import { describe, expect, it } from "bun:test";
 import app, {
   OWNER_HEARTBEAT_INTERVAL_MS,
   OWNER_REVIEW_TASK_ID,
-  OWNER_SESSIONS_PER_DAY,
   PLATFORM_REVIEW_INTERVAL_MS,
-  RESERVED_REACTIVE_SESSIONS_PER_DAY,
   SCHEDULED_OWNER_SESSIONS_PER_DAY,
   resolveMayAgentTask,
 } from "./app.ts";
@@ -18,14 +16,10 @@ function schedule(id: string) {
 }
 
 describe("may-agent.app owner session budget", () => {
-  it("reserves reactive headroom instead of booking the whole budget", () => {
-    expect(app.budget?.sessionsPerDay).toBe(OWNER_SESSIONS_PER_DAY);
-    expect(SCHEDULED_OWNER_SESSIONS_PER_DAY).toBeLessThan(
-      OWNER_SESSIONS_PER_DAY,
-    );
-    expect(OWNER_SESSIONS_PER_DAY - SCHEDULED_OWNER_SESSIONS_PER_DAY).toBe(
-      RESERVED_REACTIVE_SESSIONS_PER_DAY,
-    );
+  it("does not cap sessions or tokens", () => {
+    expect(app.budget?.sessionsPerDay).toBeUndefined();
+    expect(app.budget?.tokensPerDay).toBeUndefined();
+    expect(app.budget?.maxConcurrent).toBe(2);
   });
 
   it("derives scheduled owner sessions from the declared intervals", () => {
