@@ -1049,6 +1049,7 @@ export class EventBus {
     const event = Object.isExtensible(tracedEvent) ? tracedEvent : ({ ...tracedEvent } as AgentEvent);
     this.emitDepth++;
     let delivery: DeliveryResult | undefined;
+    let durableRouteFailed = false;
     try {
       // Required durability is deliberately outside subscriber error
       // isolation. If persistence fails, no side-effect handler may run.
@@ -1069,6 +1070,7 @@ export class EventBus {
           const result = normalizeDeliveryResult(this.runSubscriber(event, "first", fn));
           delivery ??= result;
         } catch (err) {
+          durableRouteFailed = true;
           this.reportSubscriberFailure(event, "first", err);
         }
       }
@@ -1094,9 +1096,11 @@ export class EventBus {
           }
         }
       }
-      delivery ??= pairTrackerFallback(event);
-      delivery ??= evidenceProjectionFallback(event);
-      if (delivery) this.deliveryRecorder?.(event, delivery);
+      if (!durableRouteFailed) {
+        delivery ??= pairTrackerFallback(event);
+        delivery ??= evidenceProjectionFallback(event);
+        if (delivery) this.deliveryRecorder?.(event, delivery);
+      }
     } finally {
       this.emitDepth--;
       if (this.emitDepth === 0) this.flushFailureEvents();
@@ -1193,6 +1197,12 @@ const EVIDENCE_PROJECTION_EVENT_TYPES = new Set([
   "metric.feedback.routed",
   "metric.alert_judged",
   "project.knowledge.maintained",
+  "project.task.handler.recovered",
+  "project.task.handler.unavailable",
+  "project.task.reconcile.started",
+  "project.task.reconcile.skipped",
+  "project.task.reconciled",
+  "project.task.verification.failed",
   "owner.inbox.accepted",
   "project.owner.progressed",
   "message.progressed",

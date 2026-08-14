@@ -187,6 +187,386 @@ describe("App inbox runtime", () => {
     expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 1 });
   });
 
+  it("replays deterministic task admission through the durable canonical route", async () => {
+    writeFileSync(
+      join(root, "evaluation.app", "inbox.js"),
+      `export default {
+        id: "task-app", version: 1, owner: "evaluator",
+        inputSchema: { type: "object", required: ["kind"], properties: { kind: { const: "probe" } } },
+        tasks: {
+          subscriptions: ["task.requested"],
+          resolve(event) {
+            return {
+              id: "work/" + event.data.itemId, parentId: "project",
+              outcome: "Handle " + event.data.itemId, acceptance: ["handled"], mode: "achieve"
+            };
+          }
+        }
+      };\n`,
+    );
+    const bus = new EventBus();
+    const deliveries: Array<{ event: AgentEvent; result: { by?: string } }> = [];
+    const admissions: Array<{ appId: string; taskId: string; eventId: number }> = [];
+    bus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, { value: 77, configurable: true });
+      Object.defineProperty(event, EVENT_DEDUPLICATED, { value: true, configurable: true });
+      Object.defineProperty(event, EVENT_REDELIVERY_REQUIRED, { value: true, configurable: true });
+    });
+    bus.setDeliveryRecorder((event, result) => deliveries.push({ event, result }));
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      manager: manager([]),
+      bus,
+      scanIntervalMs: 10_000,
+      admitTaskEvent(input) {
+        admissions.push({
+          appId: input.appId,
+          taskId: input.intent?.id ?? "",
+          eventId: Number(input.event[EVENT_ROW_ID]),
+        });
+        return { accepted: true, by: `task:${input.intent?.id}`, route: "direct" };
+      },
+    });
+
+    bus.emit({
+      type: "task.requested",
+      source: "test",
+      data: { itemId: "one" },
+    } as AgentEvent);
+
+    expect(admissions).toEqual([{ appId: "task-app", taskId: "work/one", eventId: 77 }]);
+    expect(deliveries.find(({ event }) => event.type === "task.requested")?.result.by).toBe(
+      "app-runtime:events:task:task-app/work/one",
+    );
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 0 });
+  });
+
+  it("durably admits task Condition matches without a manifest subscription", async () => {
+    writeFileSync(
+      join(root, "evaluation.app", "inbox.js"),
+      `export default {
+        id: "condition-app", version: 1, owner: "evaluator",
+        inputSchema: { type: "object", required: ["kind"], properties: { kind: { const: "probe" } } },
+        tasks: { attach: true }
+      };\n`,
+    );
+    const bus = new EventBus();
+    const admissions: string[][] = [];
+    bus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, { value: 78, configurable: true });
+      Object.defineProperty(event, EVENT_DEDUPLICATED, { value: true, configurable: true });
+      Object.defineProperty(event, EVENT_REDELIVERY_REQUIRED, { value: true, configurable: true });
+    });
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      manager: manager([]),
+      bus,
+      scanIntervalMs: 10_000,
+      previewTaskEvent: () => ["work/waiting"],
+      admitTaskEvent(input) {
+        admissions.push(input.conditionTaskIds ?? []);
+        return { accepted: true, by: "condition", route: "direct" };
+      },
+    });
+
+    bus.emit({ type: "provider.state", source: "test", data: { state: "ready" } } as AgentEvent);
+
+    expect(admissions).toEqual([["work/waiting"]]);
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 0 });
+  });
+
+  it("rejects one App claiming the same fact through inbox and task routes", async () => {
+    writeFileSync(
+      join(root, "evaluation.app", "inbox.js"),
+      `export default {
+        id: "ambiguous-app", version: 1, owner: "evaluator",
+        inputSchema: {
+          type: "object", required: ["kind", "data"],
+          properties: { kind: { const: "probe" }, data: { type: "object" } }
+        },
+        subscriptions: [{
+          id: "ambiguous-inbox", event: "ambiguous.fact",
+          toInput() { return { kind: "probe", data: {} }; }
+        }],
+        tasks: {
+          subscriptions: ["ambiguous.fact"],
+          resolve() {
+            return {
+              id: "work/ambiguous", parentId: "project", outcome: "Handle ambiguity",
+              acceptance: ["handled"], mode: "achieve"
+            };
+          }
+        }
+      };\n`,
+    );
+    const bus = new EventBus();
+    const failed: AgentEvent[] = [];
+    const deliveries: Array<{ event: AgentEvent }> = [];
+    let taskAdmissions = 0;
+    let rowId = 90;
+    bus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, { value: rowId++, configurable: true });
+    });
+    bus.setDeliveryRecorder((event) => deliveries.push({ event }));
+    bus.subscribe((event) => {
+      if (event.type === "subscriber.failed") failed.push(event);
+    });
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      manager: manager([]),
+      bus,
+      scanIntervalMs: 10_000,
+      admitTaskEvent() {
+        taskAdmissions += 1;
+        return { accepted: true, by: "unexpected", route: "direct" };
+      },
+    });
+
+    bus.emit({ type: "ambiguous.fact", source: "test", data: {} } as AgentEvent);
+
+    expect(taskAdmissions).toBe(0);
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 0 });
+    expect(deliveries.some(({ event }) => event.type === "ambiguous.fact")).toBe(false);
+    expect(failed.some((event) => JSON.stringify(event).includes("both inbox and task routes"))).toBe(true);
+  });
+
+  it("lets an exact task target bypass broad and inbox routing", async () => {
+    writeFileSync(
+      join(root, "evaluation.app", "inbox.js"),
+      `export default {
+        id: "target-app", version: 1, owner: "evaluator",
+        inputSchema: {
+          type: "object", required: ["kind", "data"],
+          properties: { kind: { const: "probe" }, data: { type: "object" } }
+        },
+        subscriptions: [{
+          id: "broad-inbox", event: "target.fact",
+          toInput() { return { kind: "probe", data: {} }; }
+        }],
+        tasks: {
+          subscriptions: ["target.fact"],
+          resolve() {
+            return {
+              id: "work/exact", parentId: "project", outcome: "Handle exact target",
+              acceptance: ["handled"], mode: "achieve"
+            };
+          }
+        }
+      };\n`,
+    );
+    const bus = new EventBus();
+    const admissions: Array<{ targetedTaskId?: string; intentId?: string }> = [];
+    bus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, { value: 101, configurable: true });
+    });
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      manager: manager([]),
+      bus,
+      scanIntervalMs: 10_000,
+      admitTaskEvent(input) {
+        admissions.push({ targetedTaskId: input.targetedTaskId, intentId: input.intent?.id });
+        return { accepted: true, by: "exact", route: "direct" };
+      },
+    });
+
+    bus.emit({
+      type: "target.fact",
+      source: "test",
+      target: { project: "target-app", taskId: "work/exact" },
+      data: {},
+    } as AgentEvent);
+
+    expect(admissions).toEqual([{ targetedTaskId: "work/exact", intentId: "work/exact" }]);
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 0 });
+  });
+
+  it("keeps a missing exact target pending even when an ordinary subscriber accepts the fact", async () => {
+    writeFileSync(
+      join(root, "evaluation.app", "inbox.js"),
+      `export default {
+        id: "target-app", version: 1, owner: "evaluator",
+        inputSchema: { type: "object", properties: {} },
+        tasks: { attach: true }
+      };\n`,
+    );
+    const bus = new EventBus();
+    const delivered: string[] = [];
+    const failed: AgentEvent[] = [];
+    let ordinaryCalls = 0;
+    bus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, { value: 102, configurable: true });
+    });
+    bus.setDeliveryRecorder((event) => delivered.push(event.type));
+    bus.subscribe((event) => {
+      if (event.type === "target.fact") {
+        ordinaryCalls += 1;
+        return { accepted: true, by: "ordinary" };
+      }
+      if (event.type === "subscriber.failed") failed.push(event);
+    });
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      manager: manager([]),
+      bus,
+      scanIntervalMs: 10_000,
+      admitTaskEvent: () => undefined,
+    });
+
+    bus.emit({
+      type: "target.fact",
+      source: "test",
+      target: { appId: "target-app", taskId: "work/missing" },
+      data: {},
+    } as AgentEvent);
+
+    expect(ordinaryCalls).toBe(1);
+    expect(delivered).not.toContain("target.fact");
+    expect(failed.some((event) => JSON.stringify(event).includes("was not durably admitted"))).toBe(true);
+  });
+
+  it("rejects an exact task target without canonical App identity instead of falling through", async () => {
+    const bus = new EventBus();
+    const delivered: string[] = [];
+    const failed: AgentEvent[] = [];
+    let taskAdmissions = 0;
+    bus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, { value: 104, configurable: true });
+    });
+    bus.setDeliveryRecorder((event) => delivered.push(event.type));
+    bus.subscribe((event) => {
+      if (event.type === "subscriber.failed") failed.push(event);
+    });
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      manager: manager([]),
+      bus,
+      scanIntervalMs: 10_000,
+      admitTaskEvent() {
+        taskAdmissions += 1;
+        return { accepted: true, by: "unexpected" };
+      },
+    });
+
+    bus.emit({
+      type: "target.fact",
+      source: "test",
+      target: { taskId: "work/malformed" },
+      data: {},
+    } as AgentEvent);
+
+    expect(taskAdmissions).toBe(0);
+    expect(delivered).not.toContain("target.fact");
+    expect(failed.some((event) => JSON.stringify(event).includes("has no canonical App identity"))).toBe(true);
+  });
+
+  it("keeps a lifecycle subject target observational instead of waking the described task", async () => {
+    const bus = new EventBus();
+    const delivered: Array<{ type: string; by?: string }> = [];
+    let taskAdmissions = 0;
+    bus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, { value: 105, configurable: true });
+    });
+    bus.setDeliveryRecorder((event, result) => delivered.push({ type: event.type, by: result.by }));
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      manager: manager([]),
+      bus,
+      scanIntervalMs: 10_000,
+      admitTaskEvent() {
+        taskAdmissions += 1;
+        return { accepted: true, by: "unexpected" };
+      },
+    });
+
+    bus.emit({
+      type: "project.task.reconciled",
+      source: "task-reconciler",
+      target: { appId: "evaluation-canary", taskId: "work/described" },
+      data: { taskId: "work/described", disposition: "converged" },
+    } as AgentEvent);
+
+    expect(taskAdmissions).toBe(0);
+    expect(delivered).toContainEqual({
+      type: "project.task.reconciled",
+      by: "event-store:evidence-projection",
+    });
+  });
+
+  it("attempts every selected App route and acknowledges only after all durable admissions succeed", async () => {
+    for (const appId of ["a-task", "z-task"]) {
+      const appDir = join(root, `${appId}.app`);
+      mkdirSync(appDir, { recursive: true });
+      writeFileSync(
+        join(appDir, "inbox.js"),
+        `export default {
+          id: "${appId}", version: 1, owner: "evaluator",
+          inputSchema: { type: "object", properties: {} },
+          tasks: {
+            subscriptions: [{ type: "provider.changed", actions: ["refresh"] }],
+            resolve() {
+              return {
+                id: "work/${appId}", parentId: "project", outcome: "Handle ${appId}",
+                acceptance: ["handled"], mode: "achieve"
+              };
+            }
+          }
+        };\n`,
+      );
+    }
+    const bus = new EventBus();
+    const delivered: string[] = [];
+    const attempts: string[] = [];
+    let failA = true;
+    bus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, { value: 103, configurable: true });
+    });
+    bus.setDeliveryRecorder((event) => delivered.push(event.type));
+    bus.subscribe((event) => {
+      if (event.type === "provider.changed") return { accepted: true, by: "ordinary" };
+    });
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      manager: manager([]),
+      bus,
+      scanIntervalMs: 10_000,
+      admitTaskEvent(input) {
+        attempts.push(input.appId);
+        if (input.appId === "a-task" && failA) throw new Error("a-task storage unavailable");
+        return { accepted: true, by: `task:${input.appId}`, route: "direct" };
+      },
+    });
+    const fact = () =>
+      ({
+        type: "provider.changed",
+        source: "test",
+        action: "refresh",
+        data: { project: "evaluation", value: "current" },
+      }) as AgentEvent;
+
+    bus.emit(fact());
+
+    expect(new Set(attempts)).toEqual(new Set(["a-task", "z-task"]));
+    expect(delivered).not.toContain("provider.changed");
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 1 });
+
+    failA = false;
+    attempts.length = 0;
+    bus.emit(fact());
+
+    expect(new Set(attempts)).toEqual(new Set(["a-task", "z-task"]));
+    expect(delivered).toContain("provider.changed");
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 1 });
+  });
+
   it("admits one durable input per schedule slot without replaying pre-start slots", async () => {
     writeFileSync(
       join(root, "evaluation.app", "inbox.js"),

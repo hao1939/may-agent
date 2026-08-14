@@ -1,14 +1,16 @@
-import type { AppDependencyObservation } from "@may-agent/sdk";
+import type { AppDependencyObservation, TaskIntent } from "@may-agent/sdk";
 import type { SqliteDb } from "../lib/db.js";
 import { readRuntimeExecutionView } from "./app-read.js";
 import type { AppTaskAttacher } from "./app-inbox-host.js";
 import type { EventBus } from "./event-bus.js";
 import type { AppRegistrySnapshot } from "./app-registry.js";
 import {
+  admitLoadedCanonicalAppTaskEvent,
   attachLoadedProjectAppTask,
   describeLoadedProjectAppActions,
   installProjectApps,
   invokeLoadedProjectAppAction,
+  previewLoadedCanonicalAppTaskEvent,
   readLoadedProjectAppTaskView,
   runWithProjectAppRuntimeCapacity,
   startProjectAppWatcher,
@@ -20,6 +22,18 @@ export type AppTaskGenerationResult = { apps: number; entries: number };
 export type AppTaskCapability = {
   runOwner<T>(work: () => Promise<T>): Promise<T>;
   attach(input: Parameters<AppTaskAttacher>[0] & { appDir: string }): ReturnType<AppTaskAttacher>;
+  admitEvent(input: {
+    appId: string;
+    event: Parameters<typeof admitLoadedCanonicalAppTaskEvent>[0]["event"];
+    intent: TaskIntent | null;
+    targetedTaskId?: string;
+    conditionTaskIds?: string[];
+  }): ReturnType<typeof admitLoadedCanonicalAppTaskEvent>;
+  previewEvent(input: {
+    appId: string;
+    event: Parameters<typeof previewLoadedCanonicalAppTaskEvent>[0]["event"];
+    targetedTaskId?: string;
+  }): string[];
   readDependency(input: {
     appDir: string;
     dependency: { kind: "task" | "session"; id: string };
@@ -51,6 +65,8 @@ export function createAppTaskCapability(options: {
   return {
     runOwner: (work) => runWithProjectAppRuntimeCapacity(options.bus, work),
     attach: async (input) => attachLoadedProjectAppTask({ ...input, bus: options.bus }),
+    admitEvent: (input) => admitLoadedCanonicalAppTaskEvent({ ...input, bus: options.bus }),
+    previewEvent: (input) => previewLoadedCanonicalAppTaskEvent({ ...input, bus: options.bus }),
     async publishGeneration({ snapshot, publish }) {
       if (!options.compatibility) {
         publish();
