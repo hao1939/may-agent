@@ -11,8 +11,6 @@ import { createEscalationLifecycleSubscriber } from "../lib/escalation-lifecycle
 import { log } from "../lib/log.js";
 import { runAgentCleanup, setAgentSessionId } from "./agent-loader.js";
 import { attachCliTaskRunner, markOrphanedCliTasks } from "./cli-task-runner.js";
-import { attachHumanResultFollowThrough } from "./human-result-follow-through.js";
-import type { HumanResultAppReview } from "./human-result-follow-through.js";
 import { getDb } from "../lib/db/connection.js";
 
 function createEscalationId(): string {
@@ -193,19 +191,11 @@ export function attachDaemonEventSubscribers(opts: {
   persistDir: string;
   projectRoot: string;
   interfaceAgent?: string;
-  admitHumanResultAppReview?: (input: HumanResultAppReview) => boolean;
 }): void {
   const { bus, manager, persistDir, projectRoot } = opts;
   const sourceSessionAvailable = (sessionId: string) => manager.activeSessions.has(sessionId);
 
   attachCliTaskRunner({ bus, persistDir, projectRoot, sourceSessionAvailable });
-  attachHumanResultFollowThrough({
-    bus,
-    manager,
-    persistDir,
-    interfaceAgent: opts.interfaceAgent,
-    admitAppReview: opts.admitHumanResultAppReview,
-  });
   bus.subscribe(createMetricMutationSubscriber(persistDir));
   const orphanedCliTasks = markOrphanedCliTasks({ bus, persistDir, sourceSessionAvailable });
   if (orphanedCliTasks > 0) {
@@ -236,15 +226,15 @@ export function attachDaemonEventSubscribers(opts: {
       (sessionId, _reason) => {
         bus.emit({ type: "cancel", sessionId } as any);
       },
-    (agent, sessionId, reason) => {
-      emitRuntimeEscalation(bus, {
-        source: "runtime:circuit-breaker",
-        sourceAgent: agent,
-        sourceSessionId: sessionId,
-        reason,
-        requestedAction: `Investigate the root cause for ${agent}: check the session transcript, recent errors, and whether the agent needs guidance or a code fix.`,
-        trigger: "circuit_break",
-      });
+      (agent, sessionId, reason) => {
+        emitRuntimeEscalation(bus, {
+          source: "runtime:circuit-breaker",
+          sourceAgent: agent,
+          sourceSessionId: sessionId,
+          reason,
+          requestedAction: `Investigate the root cause for ${agent}: check the session transcript, recent errors, and whether the agent needs guidance or a code fix.`,
+          trigger: "circuit_break",
+        });
       },
       persistDir,
       () => manager,
@@ -269,15 +259,15 @@ export function attachDaemonEventSubscribers(opts: {
         }
       },
       (agent, _sessionId, reason) => {
-      log("warn", `[resume] ${agent} exhausted resume attempts — escalating`);
-      emitRuntimeEscalation(bus, {
-        source: "runtime:auto-resume",
-        sourceAgent: agent,
-        sourceSessionId: _sessionId,
-        reason,
-        requestedAction: `Investigate repeated auto-resume failure for ${agent} and decide whether to resume, requeue, or fix runtime state.`,
-        trigger: "resume_exhausted",
-      });
+        log("warn", `[resume] ${agent} exhausted resume attempts — escalating`);
+        emitRuntimeEscalation(bus, {
+          source: "runtime:auto-resume",
+          sourceAgent: agent,
+          sourceSessionId: _sessionId,
+          reason,
+          requestedAction: `Investigate repeated auto-resume failure for ${agent} and decide whether to resume, requeue, or fix runtime state.`,
+          trigger: "resume_exhausted",
+        });
       },
       persistDir,
       () => manager,
@@ -295,5 +285,4 @@ export function attachDaemonEventSubscribers(opts: {
       if (info.agent) runAgentCleanup(info.agent);
     }
   });
-
 }
