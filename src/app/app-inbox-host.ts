@@ -68,6 +68,7 @@ export type AppTaskAttacher = (input: {
   appId: string;
   attachment: AppTaskAttachment;
   idempotencyKey: string;
+  request: Readonly<AppRequest>;
 }) => Promise<{
   taskId: string;
   /**
@@ -431,9 +432,11 @@ export class AppInboxHost {
     const routed: AppOwnerDispositionResult[] = [];
     const unresolvedClaims: AppInboxClaim[] = [];
     const unresolvedRequests: AppRequest[] = [];
+    const requestsById = new Map<string, Readonly<AppRequest>>();
     try {
       const requests = await Promise.all(claims.map((claim) => this.#authorRequest(claim.item)));
       for (const [index, request] of requests.entries()) {
+        requestsById.set(request.id, request);
         const disposition = app.route ? app.route(request) : null;
         if (disposition === null) {
           unresolvedClaims.push(claims[index]!);
@@ -504,7 +507,7 @@ export class AppInboxHost {
     try {
       for (const claim of claims) {
         try {
-          await this.#admitDisposition(app, claim, byRequest.get(claim.item.id)!);
+          await this.#admitDisposition(app, claim, requestsById.get(claim.item.id)!, byRequest.get(claim.item.id)!);
           outcome.admitted += 1;
         } catch (error) {
           const message = `Request ${claim.item.id}: ${errorMessage(error)}`;
@@ -640,7 +643,12 @@ export class AppInboxHost {
     return { claimed: claims.length, admitted: 0, released, errors: [message] };
   }
 
-  async #admitDisposition(app: RegisteredApp, claim: AppInboxClaim, disposition: AppDisposition): Promise<void> {
+  async #admitDisposition(
+    app: RegisteredApp,
+    claim: AppInboxClaim,
+    request: Readonly<AppRequest>,
+    disposition: AppDisposition,
+  ): Promise<void> {
     switch (disposition.type) {
       case "complete": {
         validateCompleteDisposition(disposition);
@@ -717,6 +725,7 @@ export class AppInboxHost {
           appId: app.id,
           attachment: disposition.task,
           idempotencyKey: `task:${claim.item.id}:${attachmentIdentity}`,
+          request,
         });
         const taskId = requiredText(attached.taskId, "Attached task id");
         const waiting = waitAppInboxClaim(this.#db, claim, { kind: "task", id: taskId }, { now: this.#now() });

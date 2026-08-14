@@ -16,6 +16,7 @@ import {
   writeSessionMeta,
 } from "../../lib/persistence";
 import { projectAppExecutionPaths, projectRuntimePaths, readTaskState, saveTaskState } from "@may-agent/sdk/legacy";
+import type { AppRequest } from "@may-agent/sdk";
 import { prepareProjectTaskWorkspace } from "../project-task-workspace";
 import { prepareAgentExecution } from "../../lib/agent-execution";
 import { createCheckpointTool } from "../../lib/tools/checkpoint";
@@ -26,6 +27,7 @@ import {
   claimObservedProjectAppTask,
   completeProjectAppTask,
   observeProjectAppTaskIntent,
+  readProjectAppTaskTrigger,
   recordProjectAppTaskAttemptSession,
   releaseHandlerExecutionFailedProjectAppTask,
   taskReconciliationConfig,
@@ -188,7 +190,7 @@ describe("App inbox task attachment", () => {
     }
   });
 
-  it("uses the loaded Project App task engine and emits a completion wake exactly once", async () => {
+  it("uses the loaded Project App task engine and emits one completion wake per admission", async () => {
     const f = fixture();
     const bus = new EventBus();
     const events: any[] = [];
@@ -215,7 +217,7 @@ describe("App inbox task attachment", () => {
           parentId: "operations",
           outcome: "Process app-inbox",
           acceptance: ["Work converges"],
-          mode: "achieve" as const,
+          mode: "maintain" as const,
           workflow: "worker",
           input: { itemId: "app-inbox" },
         },
@@ -226,6 +228,7 @@ describe("App inbox task attachment", () => {
         appId: "sample-canary",
         attachment,
         idempotencyKey: "task:inbox-1:desired:work/app-inbox",
+        request: appRequest("inbox-1"),
       });
       expect(attached.taskId).toBe("work/app-inbox");
       await waitUntil(() => events.some((event) => event.type === "app.dependency.completed"));
@@ -246,6 +249,7 @@ describe("App inbox task attachment", () => {
         appId: "sample-canary",
         attachment,
         idempotencyKey: "task:inbox-1:desired:work/app-inbox",
+        request: appRequest("inbox-1"),
       });
       expect(await duplicate.isComplete()).toBe(true);
       await Bun.sleep(25);
@@ -253,13 +257,30 @@ describe("App inbox task attachment", () => {
         events.filter((event) => event.type === "app.dependency.completed" && event.data?.id === "work/app-inbox"),
       ).toHaveLength(1);
 
+      const existingRequest = appRequest("inbox-2");
       const existing = attachLoadedProjectAppTask({
         bus,
         appDir: f.appDir,
         appId: "sample-canary",
         attachment: { kind: "existing", taskId: "work/app-inbox" },
         idempotencyKey: "task:inbox-2:existing:work/app-inbox",
+        request: existingRequest,
       });
+      const taskConfig = taskReconciliationConfig({
+        appDir: f.appDir,
+        projectDir: f.appDir,
+        owner: "sample-owner",
+        maxConcurrent: 2,
+      });
+      expect(readProjectAppTaskTrigger(taskConfig, existing.taskId)).toMatchObject({
+        type: "app.task.requested",
+        data: { request: existingRequest },
+      });
+      await waitUntil(
+        () =>
+          events.filter((event) => event.type === "app.dependency.completed" && event.data?.id === "work/app-inbox")
+            .length === 2,
+      );
       expect(await existing.isComplete()).toBe(true);
       expect(() =>
         attachLoadedProjectAppTask({
@@ -268,6 +289,7 @@ describe("App inbox task attachment", () => {
           appId: "sample-canary",
           attachment: { kind: "existing", taskId: "work/not-in-this-app" },
           idempotencyKey: "task:inbox-3:existing:work/not-in-this-app",
+          request: appRequest("inbox-3"),
         }),
       ).toThrow("does not exist in Project App sample");
       expect(() =>
@@ -277,6 +299,7 @@ describe("App inbox task attachment", () => {
           appId: "other",
           attachment,
           idempotencyKey: "task:other:desired:work/app-inbox",
+          request: appRequest("other"),
         }),
       ).toThrow("has no loaded Project App");
     } finally {
@@ -392,6 +415,14 @@ describe("App inbox task attachment", () => {
     }
   });
 });
+
+function appRequest(id: string): Readonly<AppRequest> {
+  return {
+    id,
+    source: { kind: "system", id: "test" },
+    input: { kind: "test", data: { id } },
+  };
+}
 
 function fixture() {
   const root = join(tmpdir(), `project-app-loader-${Date.now()}-${Math.random().toString(36).slice(2)}`);
