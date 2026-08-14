@@ -4,14 +4,20 @@ set -eu
 bundle="${MAY_AGENT_BUNDLE_PATH:-/app/projects/may-agent/bundle/may-agent}"
 target="${MAY_AGENT_BIN_PATH:-/usr/local/bin/may-agent}"
 deploy_marker="${MAY_AGENT_DEPLOY_MARKER:-/app/projects/may-agent/bundle/deploy-requested}"
+sdk_marker="${MAY_AGENT_SDK_DEPLOY_MARKER:-/app/projects/may-agent/bundle/sdk-requested}"
+sdk_root="${MAY_AGENT_SDK_ROOT:-/app/projects/may-agent/bundle}"
+sdk_link="${MAY_AGENT_SDK_LINK:-$sdk_root/sdk-current}"
 receipt_tool="/app/projects/may-agent/scripts/deploy-receipt.ts"
 install_tmp="${target}.next.$$"
 backup="${target}.prev.$$"
+sdk_link_tmp="${sdk_link}.next.$$"
 services_stopped=0
 deployed=0
 finalized=0
 runtime_services="may-agent may-agent-web"
 receipt=""
+sdk_release=""
+previous_sdk_release=""
 health_attempts="${MAY_AGENT_HEALTH_ATTEMPTS:-90}"
 health_delay="${MAY_AGENT_HEALTH_DELAY:-1}"
 
@@ -41,9 +47,16 @@ settle() {
   bun "$receipt_tool" settle "$receipt" "$phase" "$sha" "$health" "$wake" "$failure"
 }
 
+switch_sdk() {
+  release="$1"
+  rm -f "$sdk_link_tmp"
+  ln -s "$release" "$sdk_link_tmp"
+  mv -Tf "$sdk_link_tmp" "$sdk_link"
+}
+
 cleanup() {
   rc=$?
-  rm -f "$install_tmp"
+  rm -f "$install_tmp" "$sdk_link_tmp"
   if [ "$services_stopped" = "1" ]; then supervisorctl start $runtime_services || true; fi
   if [ "$deployed" = "1" ] && [ "$finalized" = "0" ] && [ -n "$receipt" ]; then
     loaded="$(sha256sum "$target" 2>/dev/null | awk '{print $1}' || echo unknown)"
@@ -65,6 +78,18 @@ if [ -e "$deploy_marker" ]; then
     echo "[may-agent-restarter] receipt or bundle missing: $receipt $bundle" >&2
     exit 1
   fi
+  source_commit="$(bun -e 'const r=JSON.parse(await Bun.file(process.argv[1]).text()); if (!/^[0-9a-f]{40}$/.test(r.sourceCommit)) throw new Error("invalid sourceCommit"); process.stdout.write(r.sourceCommit)' "$receipt")"
+  sdk_release="$(cat "$sdk_marker" 2>/dev/null || true)"
+  if [ "$sdk_release" != "sdk-$source_commit" ] || [ ! -f "$sdk_root/$sdk_release/package.json" ]; then
+    echo "[may-agent-restarter] SDK release missing or mismatched: $sdk_release" >&2
+    exit 1
+  fi
+  if [ -L "$sdk_link" ]; then
+    previous_sdk_release="$(readlink "$sdk_link")"
+  elif [ -e "$sdk_link" ]; then
+    echo "[may-agent-restarter] SDK current path is not a symlink: $sdk_link" >&2
+    exit 1
+  fi
   echo "[may-agent-restarter] correlated staged deploy detected: $receipt"
   runtime_services="$runtime_services may-agent-maintenance"
 fi
@@ -74,9 +99,10 @@ services_stopped=1
 
 if [ -n "$receipt" ]; then
   cp -f "$target" "$backup"
+  switch_sdk "$sdk_release"
   install -m 755 -o mayagent -g mayagent "$bundle" "$install_tmp"
   mv -f "$install_tmp" "$target"
-  rm -f "$deploy_marker"
+  rm -f "$deploy_marker" "$sdk_marker"
   deployed=1
 fi
 
@@ -94,13 +120,17 @@ if [ "$deployed" = "1" ]; then
     supervisorctl stop $runtime_services || true
     services_stopped=1
     install -m 755 -o mayagent -g mayagent "$backup" "$target"
+    if [ -n "$previous_sdk_release" ]; then
+      switch_sdk "$previous_sdk_release"
+    fi
     supervisorctl start $runtime_services
     services_stopped=0
     loaded="$(sha256sum "$target" | awk '{print $1}')"
     rollback_health=unhealthy
     if wait_for_health; then rollback_health=healthy; fi
-    emit_wake rolled_back
-    settle rolled_back "$loaded" "$rollback_health" true health-check-failed
+    rollback_wake=false
+    if emit_wake rolled_back; then rollback_wake=true; fi
+    settle rolled_back "$loaded" "$rollback_health" "$rollback_wake" health-check-failed
     finalized=1
     exit 1
   fi
