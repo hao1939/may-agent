@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import type { AppInput } from "@may-agent/sdk";
 
 import { attachCommandRouter } from "./command-router.js";
 import { childEventTrace, EVENT_ROW_ID, EventBus } from "./event-bus.js";
@@ -13,7 +14,7 @@ import { storeNotificationMessage } from "../lib/db/notifications.js";
 function fixture(
   beforeAttach?: (context: { root: string; bus: EventBus }) => void,
   turnResults: Array<Record<string, unknown>> = [],
-  routerOptions: { routeHumanInputToApp?: boolean } = {},
+  routerOptions: { acceptsDirectAppInput?: (appId: string, input: AppInput) => boolean } = {},
 ) {
   const root = mkdtempSync(join(tmpdir(), "may-command-router-"));
   const bus = new EventBus();
@@ -85,7 +86,9 @@ function fixture(
 
 describe("command router human intent contract", () => {
   it("routes ordinary May input through the durable conversation App when registered", () => {
-    const { root, bus, router, runs } = fixture(undefined, [], { routeHumanInputToApp: true });
+    const { root, bus, router, runs } = fixture(undefined, [], {
+      acceptsDirectAppInput: (appId) => appId === "may",
+    });
     const emitted: unknown[] = [];
     const unsubscribe = bus.subscribe((event) => emitted.push(event));
     try {
@@ -154,12 +157,14 @@ describe("command router human intent contract", () => {
     }
   });
 
-  it("keeps direct project input outside the May conversation App", () => {
-    const { root, bus, router } = fixture(undefined, [], { routeHumanInputToApp: true });
+  it("routes direct project input to that project's durable App inbox", () => {
+    const { root, bus, router } = fixture(undefined, [], {
+      acceptsDirectAppInput: (appId) => appId === "may" || appId === "alpha-project",
+    });
     const emitted: unknown[] = [];
     const unsubscribe = bus.subscribe((event) => emitted.push(event));
     try {
-      bus.emit({
+      const source = bus.emit({
         type: "human.input.received",
         source: "web-ui",
         owner: "agent:may",
@@ -173,15 +178,81 @@ describe("command router human intent contract", () => {
 
       expect(emitted).toContainEqual(
         expect.objectContaining({
-          type: "project.comment.created",
+          type: "app.input.requested",
           source: "web-ui",
           data: expect.objectContaining({
-            projectPath: "projects/alpha-project.app",
-            comment: "re-run the focused validation",
+            appId: "alpha-project",
+            source: { kind: "human", id: expect.stringMatching(/^event:\d+$/) },
+            input: {
+              kind: "message",
+              data: { message: "re-run the focused validation" },
+            },
+            conversationId: "web:1",
+            conversationSequence: expect.any(Number),
+            channel: "web-ui",
           }),
         }),
       );
-      expect(emitted).not.toContainEqual(expect.objectContaining({ type: "app.input.requested" }));
+      expect(emitted).not.toContainEqual(expect.objectContaining({ type: "project.comment.created" }));
+      const sourceEventId = Number(source[EVENT_ROW_ID]);
+      expect(
+        getDb(root)
+          .prepare("SELECT delivery_status, accepted_by, delivery_route FROM events WHERE id = ?")
+          .get(sourceEventId),
+      ).toEqual({
+        delivery_status: "accepted",
+        accepted_by: "command-router:app:alpha-project",
+        delivery_route: "direct",
+      });
+      expect(
+        getDb(root)
+          .prepare(
+            "SELECT COUNT(*) AS count FROM event_pair_runs WHERE pair_name = 'owner_inbox' AND open_event_id = ?",
+          )
+          .get(sourceEventId),
+      ).toEqual({ count: 0 });
+    } finally {
+      unsubscribe();
+      router.close();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps project comments on the compatibility path when the target App does not accept message input", () => {
+    const { root, bus, router } = fixture(undefined, [], {
+      acceptsDirectAppInput: (appId) => appId === "may",
+    });
+    const emitted: unknown[] = [];
+    const unsubscribe = bus.subscribe((event) => emitted.push(event));
+    try {
+      bus.emit({
+        type: "human.input.received",
+        source: "web-ui",
+        owner: "agent:may",
+        data: {
+          actor: "human",
+          text: "review this project",
+          conversation: { id: "web:2", channel: "web-ui" },
+          target: { projectPath: "projects/legacy-project.app" },
+        },
+      } as any);
+
+      expect(emitted).toContainEqual(
+        expect.objectContaining({
+          type: "project.comment.created",
+          data: expect.objectContaining({
+            projectPath: "projects/legacy-project.app",
+            comment: "review this project",
+          }),
+        }),
+      );
+      expect(emitted).not.toContainEqual(
+        expect.objectContaining({
+          type: "app.input.requested",
+          data: expect.objectContaining({ appId: "legacy-project" }),
+        }),
+      );
     } finally {
       unsubscribe();
       router.close();
@@ -214,7 +285,9 @@ describe("command router human intent contract", () => {
   });
 
   it("returns an exact Telegram approval identity and artifact fingerprint", () => {
-    const { root, bus, router } = fixture(undefined, [], { routeHumanInputToApp: true });
+    const { root, bus, router } = fixture(undefined, [], {
+      acceptsDirectAppInput: (appId) => appId === "may",
+    });
     const observed: Array<Record<string, unknown>> = [];
     const unsubscribe = bus.subscribe((event) => {
       if (event.type === "project.approval.submitted") {
@@ -271,7 +344,9 @@ describe("command router human intent contract", () => {
   });
 
   it("propagates one human-rooted trace into an explicitly controlled chat turn", () => {
-    const { root, bus, router, sent } = fixture(undefined, [], { routeHumanInputToApp: true });
+    const { root, bus, router, sent } = fixture(undefined, [], {
+      acceptsDirectAppInput: (appId) => appId === "may",
+    });
     try {
       bus.emit({
         type: "human.input.received",
@@ -747,7 +822,9 @@ describe("command router human intent contract", () => {
   });
 
   it("rejects untargeted bare cancel instead of upgrading it to cancel-all", () => {
-    const { root, bus, router, cancelled } = fixture(undefined, [], { routeHumanInputToApp: true });
+    const { root, bus, router, cancelled } = fixture(undefined, [], {
+      acceptsDirectAppInput: (appId) => appId === "may",
+    });
     try {
       bus.emit({
         type: "human.input.received",
