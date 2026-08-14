@@ -16,7 +16,11 @@ describe("canonical App observers", () => {
     bus.subscribe((event) => events.push(event as unknown as Record<string, unknown>));
     const runtime = createAppObserverRuntime({
       bus,
-      context: () => ({ read: {} as never, log: {} as never }),
+      context: () => ({
+        read: {} as never,
+        log: {} as never,
+        workspace: { appRoot: "/apps/evaluation.app", projectRoot: "/projects/evaluation" },
+      }),
       now: () => currentTime,
     });
     runtime.replace([
@@ -67,7 +71,11 @@ describe("canonical App observers", () => {
     bus.subscribe((event) => events.push(event.type));
     const runtime = createAppObserverRuntime({
       bus,
-      context: () => ({ read: {} as never, log: {} as never }),
+      context: () => ({
+        read: {} as never,
+        log: {} as never,
+        workspace: { appRoot: "/apps/evaluation.app", projectRoot: "/projects/evaluation" },
+      }),
       now: () => 1,
     });
     runtime.replace([
