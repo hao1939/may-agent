@@ -17,6 +17,8 @@ import {
   completeAppInboxClaim,
   createAppInboxItem,
   getAppInboxItem,
+  listAppInboxAssociatedSessionClaims,
+  listAppInboxSessionWaits,
   markAppInboxSendingDeliveriesUncertain,
   recordAppInboxDeliveryReceipt,
   releaseAppInboxClaim,
@@ -93,6 +95,13 @@ export type AppInboxReconcileResult = {
   errors: string[];
 };
 
+export type AppInboxSessionRecoveryResult = {
+  linked: number;
+  woken: number;
+  wokenAppIds: string[];
+  errors: string[];
+};
+
 export type AppInboxHostOptions = {
   db: SqliteDb;
   apps: AppDefinition[];
@@ -107,6 +116,12 @@ export type AppInboxHostOptions = {
 };
 
 type RegisteredApp = AppDefinition;
+
+const TERMINAL_SESSION_DEPENDENCY_STATUSES = new Set<AppDependencyObservation["status"]>([
+  "done",
+  "error",
+  "interrupted",
+]);
 
 export function appInboxHumanRequestId(itemId: string): string {
   return `app-inbox-human:${requiredText(itemId, "App inbox item id")}`;
@@ -268,6 +283,69 @@ export class AppInboxHost {
     return restoreReplayableAppInboxDeliveries(this.#db, now) + markAppInboxSendingDeliveriesUncertain(this.#db, now);
   }
 
+  /**
+   * Recover the runtime execution behind an App owner claim after restart.
+   *
+   * Session waits are intentionally absent from AppDisposition: sessions are
+   * Runtime execution details, not App-authored desired work. On startup only,
+   * a previously associated claim can be converted to an exact fenced wait.
+   * Every scan then observes stored waits so completion while offline cannot
+   * strand an item indefinitely.
+   */
+  async recoverSessionDependencies(
+    options: { includeAssociatedClaims?: boolean } = {},
+  ): Promise<AppInboxSessionRecoveryResult> {
+    const outcome: AppInboxSessionRecoveryResult = {
+      linked: 0,
+      woken: 0,
+      wokenAppIds: [],
+      errors: [],
+    };
+    if (!this.#readDependency) return outcome;
+
+    if (options.includeAssociatedClaims) {
+      for (const associated of listAppInboxAssociatedSessionClaims(this.#db)) {
+        const dependency = { kind: "session", id: associated.sessionId } as const;
+        try {
+          const observed = await this.#observeDependency(associated.claim.item.appId, dependency);
+          // An unknown execution cannot be made an unbounded wait. Leave its
+          // claim reclaimable through the ordinary lease-expiry path.
+          if (!observed || observed.status === "unknown") continue;
+          if (waitAppInboxClaim(this.#db, associated.claim, dependency, { now: this.#now() })) {
+            outcome.linked += 1;
+          }
+        } catch (error) {
+          outcome.errors.push(
+            `Claim ${associated.claim.item.id} session ${associated.sessionId}: ${errorMessage(error)}`,
+          );
+        }
+      }
+    }
+
+    // This second observation pass deliberately includes claims linked above.
+    // It closes the startup race where session.end is persisted between the
+    // first observation and the durable wait write.
+    const wokenApps = new Set<string>();
+    for (const item of listAppInboxSessionWaits(this.#db)) {
+      const dependency = item.waitingOn;
+      if (!dependency || dependency.kind !== "session") continue;
+      const sessionDependency = { kind: "session", id: dependency.id } as const;
+      try {
+        const observed = await this.#observeDependency(item.appId, sessionDependency);
+        if (!observed || !TERMINAL_SESSION_DEPENDENCY_STATUSES.has(observed.status)) continue;
+        const woken = wakeAppInboxItemsWaitingOn(this.#db, sessionDependency, this.#now());
+        if (woken > 0) {
+          outcome.woken += woken;
+          wokenApps.add(item.appId);
+        }
+      } catch (error) {
+        outcome.errors.push(`Wait ${item.id} session ${sessionDependency.id}: ${errorMessage(error)}`);
+      }
+    }
+    outcome.wokenAppIds = [...wokenApps].sort();
+    return outcome;
+  }
+
   recordDelivery(receipt: AppInboxDeliveryReceipt): {
     matched: boolean;
     completed: boolean;
@@ -394,12 +472,20 @@ export class AppInboxHost {
     if (waitingOn.kind !== "task" && waitingOn.kind !== "session") return request;
     const dependency = { kind: waitingOn.kind, id: waitingOn.id } as const;
 
-    const observed = await this.#readDependency?.({ appId: item.appId, dependency });
+    const observed = await this.#observeDependency(item.appId, dependency);
+    request.dependency = observed ?? { ...dependency, status: "unknown" };
+    return request;
+  }
+
+  async #observeDependency(
+    appId: string,
+    dependency: { kind: "task" | "session"; id: string },
+  ): Promise<AppDependencyObservation | null> {
+    const observed = await this.#readDependency?.({ appId, dependency });
     if (observed && (observed.kind !== dependency.kind || observed.id !== dependency.id)) {
       throw new Error(`Dependency reader returned a mismatched observation for ${dependency.kind}:${dependency.id}`);
     }
-    request.dependency = observed ?? { ...dependency, status: "unknown" };
-    return request;
+    return observed ?? null;
   }
 
   #claimBatch(app: RegisteredApp): AppInboxClaim[] {
