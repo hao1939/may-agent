@@ -28,6 +28,11 @@ function validInput(value: unknown): value is AppInput {
   return Boolean(input && nonEmpty(input.kind) && Object.prototype.hasOwnProperty.call(input, "data"));
 }
 
+function validEvent(value: unknown): boolean {
+  const event = record(value);
+  return Boolean(event && nonEmpty(event.type) && record(event.data));
+}
+
 function duplicateIds(values: unknown[], label: string, errors: string[]): void {
   const ids = new Set<string>();
   for (const [index, value] of values.entries()) {
@@ -97,9 +102,13 @@ export function validateAppDefinition(definition: unknown): string[] {
         if (!positiveFinite(schedule.intervalMs)) {
           errors.push(`App ${appId} schedule ${String(schedule.id)} intervalMs must be positive`);
         }
-        if (!validInput(schedule.input)) {
+        const hasInput = Object.prototype.hasOwnProperty.call(schedule, "input");
+        const hasEvent = Object.prototype.hasOwnProperty.call(schedule, "event");
+        if (hasInput === hasEvent) {
+          errors.push(`App ${appId} schedule ${String(schedule.id)} requires exactly one App input or event`);
+        } else if (hasInput && !validInput(schedule.input)) {
           errors.push(`App ${appId} schedule ${String(schedule.id)} requires a valid App input`);
-        } else if (record(app.inputSchema)) {
+        } else if (hasInput && record(app.inputSchema)) {
           try {
             if (!Check(app.inputSchema as TSchema, schedule.input)) {
               errors.push(`App ${appId} schedule ${String(schedule.id)} input does not match inputSchema`);
@@ -107,9 +116,14 @@ export function validateAppDefinition(definition: unknown): string[] {
           } catch {
             errors.push(`App ${appId} schedule ${String(schedule.id)} inputSchema could not be evaluated`);
           }
+        } else if (hasEvent && !validEvent(schedule.event)) {
+          errors.push(`App ${appId} schedule ${String(schedule.id)} requires a valid event`);
         }
         if (schedule.catchUp !== undefined && schedule.catchUp !== "none" && schedule.catchUp !== "latest") {
           errors.push(`App ${appId} schedule ${String(schedule.id)} catchUp must be none or latest`);
+        }
+        if (hasEvent && schedule.catchUp !== undefined) {
+          errors.push(`App ${appId} event schedule ${String(schedule.id)} cannot configure inbox catch-up`);
         }
       }
     }

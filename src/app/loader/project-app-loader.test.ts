@@ -128,7 +128,7 @@ describe("App inbox task attachment", () => {
     }
   });
 
-  it("adapts canonical task policy into the internal reconciler without restoring legacy routes", async () => {
+  it("adapts canonical task policy and event schedules without restoring legacy routes", async () => {
     const f = fixture();
     const bus = new EventBus();
     try {
@@ -138,6 +138,10 @@ describe("App inbox task attachment", () => {
           id: "sample", version: 1, owner: "sample-owner",
           inputSchema: { type: "object" },
           workspace: { kind: "local", localPath: "." },
+          schedules: [{
+            id: "periodic-work", intervalMs: 60000,
+            event: { type: "sample.work.requested", data: { itemId: "scheduled" } }
+          }],
           tasks: {
             attach: true,
             subscriptions: ["sample.work.requested"],
@@ -168,16 +172,28 @@ describe("App inbox task attachment", () => {
         },
       });
 
-      expect(result.entries).toBe(0);
+      expect(result.entries).toBe(1);
       expect(result.installed).toHaveLength(1);
       expect(result.installed[0]).toMatchObject({
         id: "sample",
         ownsDirectInbox: true,
         app: { budget: { maxConcurrent: 3 } },
       });
+      expect(result.installed[0]?.app.schedules).toEqual([
+        {
+          id: "periodic-work",
+          enabled: true,
+          intervalMs: 60_000,
+          emits: [
+            {
+              type: "sample.work.requested",
+              data: { itemId: "scheduled" },
+            },
+          ],
+        },
+      ]);
       expect(result.installed[0]?.app.events).toBeUndefined();
       expect(result.installed[0]?.app.actions).toBeUndefined();
-      expect(result.installed[0]?.app.schedules).toBeUndefined();
       expect(
         result.installed[0]?.app.tasks?.resolve({
           type: "sample.work.requested",
