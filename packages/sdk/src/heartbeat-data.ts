@@ -10,7 +10,7 @@
 
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
-import type { WorkflowContext, WorkflowResult } from "./index.js";
+import type { WorkflowContext, WorkflowResult } from "./legacy.js";
 import { checkCircuitBreaker, recordOutcome as recordCircuitOutcome } from "./circuit-breaker.js";
 import { shouldDispatch, recordDispatch, recordOutcome as recordDedupOutcome, cleanup as cleanupDispatchRecords } from "./dispatch-dedup-guard.js";
 import { listConfiguredAgents, resolveMetricOwner } from "./metric-ownership.js";
