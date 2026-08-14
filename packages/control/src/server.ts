@@ -21,6 +21,20 @@ export interface AttachControlSocketOptions {
   getStatus: () => ControlStatusItem[];
   emitEvent: (event: ControlEvent) => ControlEmitResult | void;
   describeProjectActions?: (projectId: string) => unknown[];
+  admitAppInput?: (input: {
+    appId: string;
+    input: Record<string, unknown>;
+    source: Record<string, unknown>;
+    conversationId?: string;
+    conversationSequence?: number;
+    channel?: string;
+    channelThreadId?: string;
+    channelMessageId?: number;
+    idempotencyKey: string;
+  }) => {
+    eventId: number;
+    eventType: string;
+  };
   invokeProjectAction?: (input: { projectId: string; actionId: string; params: unknown; idempotencyKey?: string }) => {
     eventId: number;
     eventType: string;
@@ -127,6 +141,7 @@ export interface ControlSocketCoreOptions {
   getStatus: () => ControlStatusItem[];
   emitEvent: (event: ControlEvent) => ControlEmitResult | void;
   describeProjectActions?: AttachControlSocketOptions["describeProjectActions"];
+  admitAppInput?: AttachControlSocketOptions["admitAppInput"];
   invokeProjectAction?: AttachControlSocketOptions["invokeProjectAction"];
   subscribeEvents: (handler: (event: ControlEvent) => void) => () => void;
   onDelivered?: (event: ControlEvent, clientCount: number) => void;
@@ -143,6 +158,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
     getSessionId,
     getStatus,
     emitEvent,
+    admitAppInput,
     describeProjectActions,
     invokeProjectAction,
     subscribeEvents,
@@ -325,6 +341,66 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
           continue;
         }
 
+        if (normalized.kind === "control" && normalized.command === "app.input.admit") {
+          const appId = typeof frame.appId === "string" ? frame.appId.trim() : "";
+          const input = frame.input;
+          const source = frame.source;
+          const idempotencyKey = typeof frame.idempotencyKey === "string" ? frame.idempotencyKey.trim() : "";
+          if (
+            !appId ||
+            !input ||
+            typeof input !== "object" ||
+            Array.isArray(input) ||
+            !source ||
+            typeof source !== "object" ||
+            Array.isArray(source) ||
+            !idempotencyKey ||
+            !admitAppInput
+          ) {
+            writeFrame(socket, {
+              type: "error",
+              command: normalized.command,
+              message: !appId
+                ? "appId is required"
+                : !input || typeof input !== "object" || Array.isArray(input)
+                  ? "input must be an object"
+                  : !source || typeof source !== "object" || Array.isArray(source)
+                    ? "source must be an object"
+                    : !idempotencyKey
+                      ? "idempotencyKey is required"
+                      : "App input admission is unavailable",
+            });
+            continue;
+          }
+          try {
+            const result = admitAppInput({
+              appId,
+              input: input as Record<string, unknown>,
+              source: source as Record<string, unknown>,
+              ...(typeof frame.conversationId === "string" && frame.conversationId.trim()
+                ? { conversationId: frame.conversationId.trim() }
+                : {}),
+              ...(typeof frame.conversationSequence === "number"
+                ? { conversationSequence: frame.conversationSequence }
+                : {}),
+              ...(typeof frame.channel === "string" && frame.channel.trim() ? { channel: frame.channel.trim() } : {}),
+              ...(typeof frame.channelThreadId === "string" && frame.channelThreadId.trim()
+                ? { channelThreadId: frame.channelThreadId.trim() }
+                : {}),
+              ...(typeof frame.channelMessageId === "number" ? { channelMessageId: frame.channelMessageId } : {}),
+              idempotencyKey,
+            });
+            writeFrame(socket, { type: "ok", command: normalized.command, appId, ...result });
+          } catch (error) {
+            writeFrame(socket, {
+              type: "error",
+              command: normalized.command,
+              message: error instanceof Error ? error.message : String(error),
+            });
+          }
+          continue;
+        }
+
         if (normalized.kind === "control" && normalized.command === "project.actions.describe") {
           const projectId = typeof frame.projectId === "string" ? frame.projectId.trim() : "";
           if (!projectId || !describeProjectActions) {
@@ -436,6 +512,7 @@ export async function attachControlSocket(opts: AttachControlSocketOptions): Pro
     getSessionId,
     getStatus,
     emitEvent,
+    admitAppInput: opts.admitAppInput,
     describeProjectActions: opts.describeProjectActions,
     invokeProjectAction: opts.invokeProjectAction,
     subscribeEvents,

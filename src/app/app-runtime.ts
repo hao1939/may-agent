@@ -1,4 +1,6 @@
 import { SubagentManager } from "../lib/index.js";
+import type { AppInput } from "@may-agent/sdk";
+import type { AttachControlSocketOptions } from "../../packages/control/src/server.js";
 import { closeAllDbs, getDb } from "../lib/requests.js";
 import type { AppArgs } from "./app-args.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
@@ -15,7 +17,7 @@ import {
   startRequestedSession,
   type InstanceIdentity,
 } from "./daemon.js";
-import { EventBus } from "./event-bus.js";
+import { EVENT_ROW_ID, EventBus } from "./event-bus.js";
 import { startInterfaceRuntime } from "./interface-startup.js";
 import {
   attachLoadedProjectAppTask,
@@ -28,6 +30,48 @@ import { runRequestedExitMode } from "./runtime-exit-modes.js";
 import { attachConsoleUI } from "./transport/console.js";
 import { attachDaemonInfoLog } from "./transport/daemon-info-log.js";
 import { attachTelegramBot } from "./transport/telegram.js";
+
+export function createAppInputAdmission(options: {
+  bus: Pick<EventBus, "emit">;
+  getRuntime: () => AppInboxRuntime | null;
+}): NonNullable<AttachControlSocketOptions["admitAppInput"]> {
+  return (input) => {
+    const appInput = input.input as unknown as AppInput;
+    if (!options.getRuntime()?.host.acceptsInput(input.appId, appInput)) {
+      throw new Error(`App ${input.appId} does not accept this input`);
+    }
+    const sourceKind = input.source.kind;
+    const sourceId = input.source.id;
+    if (
+      (sourceKind !== "human" && sourceKind !== "app" && sourceKind !== "system") ||
+      typeof sourceId !== "string" ||
+      !sourceId.trim()
+    ) {
+      throw new Error("App input source requires kind human, app, or system and a non-empty id");
+    }
+    const emitted = options.bus.emit({
+      type: "app.input.requested",
+      source: "control-socket",
+      owner: `app:${input.appId}`,
+      data: {
+        appId: input.appId,
+        input: appInput,
+        source: { kind: sourceKind, id: sourceId.trim() },
+        conversationId: input.conversationId,
+        conversationSequence: input.conversationSequence,
+        channel: input.channel,
+        channelThreadId: input.channelThreadId,
+        channelMessageId: input.channelMessageId,
+        idempotencyKey: input.idempotencyKey,
+      },
+    });
+    const eventId = Number(emitted[EVENT_ROW_ID]);
+    if (!Number.isSafeInteger(eventId) || eventId <= 0) {
+      throw new Error(`App input for ${input.appId} was not durably persisted`);
+    }
+    return { eventId, eventType: "app.input.requested" };
+  };
+}
 
 export async function runAppRuntime(opts: {
   appArgs: AppArgs;
@@ -206,6 +250,7 @@ export async function runAppRuntime(opts: {
     bus,
     manager,
     getSessionId: () => taskSessionId ?? chatSession?.getSessionId() ?? "",
+    admitAppInput: createAppInputAdmission({ bus, getRuntime: () => appInboxRuntime }),
   });
   // The inbox starts before ingress, but its outbox waits until every enabled
   // human transport is attached. This prevents a restart-time response from
