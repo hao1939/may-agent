@@ -2578,6 +2578,15 @@ function projectAppTaskDelivery(descriptor: ProjectAppDescriptor, taskId: string
   };
 }
 
+function projectAppEventDelivery(descriptor: ProjectAppDescriptor): DeliveryResult {
+  return {
+    accepted: true,
+    by: `project-app:${descriptor.id}:event-router`,
+    route: "direct",
+    note: "matching app event accepted",
+  };
+}
+
 function isOpenProjectCondition(value: unknown): value is { spec: { type: string } } {
   if (!isRecord(value) || !isRecord(value.spec) || !isRecord(value.status)) return false;
   return typeof value.spec.type === "string" && value.status.state !== "true";
@@ -3175,6 +3184,7 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
     if (event.type === "session.end" && typeof event.sessionId === "string") {
       progressRoutes.delete(event.sessionId.trim());
     }
+    let eventDelivery: DeliveryResult | undefined;
     for (const descriptor of appRouterDescriptorsByBus.get(opts.bus) ?? []) {
       if (descriptor.reconciliationPaused) continue;
       const taskController = appTaskControllersByBus.get(opts.bus)?.get(descriptor.id);
@@ -3362,6 +3372,7 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
       const projectCommentForApp =
         event.type === "project.comment.created" && isProjectScopedForApp(event, descriptor.id);
       if (!projectCommentForApp && !shouldOfferToApp(descriptor.app, event)) continue;
+      eventDelivery ??= projectAppEventDelivery(descriptor);
       if (isMetricFeedbackEvent(event)) {
         const eventOwner = ownerValue(event);
         opts.bus.emit({
@@ -3464,6 +3475,7 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
           });
         });
     }
+    return eventDelivery;
   });
 }
 
