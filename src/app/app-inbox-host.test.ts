@@ -238,14 +238,16 @@ describe("App inbox host", () => {
 
   it("routes stable desired work into the task reconciler and reviews its dependency", async () => {
     let ownerInvocations = 0;
+    let routedRequest: Readonly<AppRequest> | null = null;
     const attachments: unknown[] = [];
     const host = new AppInboxHost({
       db,
       apps: [
         defineApp({
           ...app("evaluation", "single", true),
-          route: (request) =>
-            request.dependency?.status === "done"
+          route: (request) => {
+            routedRequest = request;
+            return request.dependency?.status === "done"
               ? { type: "complete", summary: "scheduled task converged" }
               : {
                   type: "task",
@@ -259,10 +261,12 @@ describe("App inbox host", () => {
                       mode: "maintain",
                     },
                   },
-                },
+                };
+          },
         }),
       ],
       attachTask: async (input) => {
+        expect(input.request).toBe(routedRequest);
         attachments.push(input);
         return { taskId: "task-scheduled-review" };
       },
@@ -280,6 +284,11 @@ describe("App inbox host", () => {
       {
         appId: "evaluation",
         idempotencyKey: "task:scheduled-input:desired:scheduled-review",
+        request: {
+          id: "scheduled-input",
+          source: { kind: "system", id: "test" },
+          input: { kind: "probe", data: { value: "scheduled-input" } },
+        },
       },
     ]);
 
