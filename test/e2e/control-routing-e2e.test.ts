@@ -226,7 +226,6 @@ describe("control routing e2e", () => {
         send: () => {},
         resumeSession: () => {},
       } as never,
-      getChatSession: () => undefined,
       clearCancelLatch: () => {},
       projectRoot: root,
       reload: () => {},

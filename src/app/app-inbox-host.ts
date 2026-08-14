@@ -222,15 +222,30 @@ export class AppInboxHost {
     }
 
     this.#apps = new Map();
-    for (const definition of options.apps) {
-      const app = validateAppDefinition(definition);
-      if (this.#apps.has(app.id)) throw new Error(`Duplicate App id: ${app.id}`);
-      this.#apps.set(app.id, app);
-    }
+    this.replaceApps(options.apps);
   }
 
   appIds(): string[] {
     return [...this.#apps.keys()].sort();
+  }
+
+  /** Atomically replace the live App definitions after a validated reload. */
+  replaceApps(definitions: AppDefinition[]): void {
+    const next = new Map<string, RegisteredApp>();
+    for (const definition of definitions) {
+      const app = validateAppDefinition(definition);
+      if (next.has(app.id)) throw new Error(`Duplicate App id: ${app.id}`);
+      next.set(app.id, app);
+    }
+    for (const id of this.#apps.keys()) {
+      if (next.has(id)) continue;
+      const unfinished = this.#db
+        .prepare("SELECT 1 AS found FROM app_inbox_items WHERE app_id = ? AND status != 'done' LIMIT 1")
+        .get(id);
+      if (unfinished) throw new Error(`Cannot remove App ${id} while it owns unfinished inbox items`);
+    }
+    this.#apps.clear();
+    for (const [id, app] of next) this.#apps.set(id, app);
   }
 
   acceptsInput(appId: string, input: AppInput): boolean {
@@ -241,9 +256,7 @@ export class AppInboxHost {
   matchingAppIds(owner: string, input: AppInput): string[] {
     const normalizedOwner = requiredText(owner, "App owner").replace(/^agent:/, "");
     return [...this.#apps.values()]
-      .filter(
-        (app) => app.owner.trim().replace(/^agent:/, "") === normalizedOwner && Check(app.inputSchema, input),
-      )
+      .filter((app) => app.owner.trim().replace(/^agent:/, "") === normalizedOwner && Check(app.inputSchema, input))
       .map((app) => app.id)
       .sort();
   }
@@ -253,8 +266,8 @@ export class AppInboxHost {
     const normalizedOwner = owner.trim().replace(/^(?:agent|app):/, "");
     return Boolean(
       app &&
-        (app.id.trim().replace(/^app:/, "") === normalizedOwner ||
-          app.owner.trim().replace(/^agent:/, "") === normalizedOwner),
+      (app.id.trim().replace(/^app:/, "") === normalizedOwner ||
+        app.owner.trim().replace(/^agent:/, "") === normalizedOwner),
     );
   }
 

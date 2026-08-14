@@ -15,6 +15,13 @@ import {
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
 import { EVENT_DEDUPLICATED, EVENT_REDELIVERY_REQUIRED, EVENT_ROW_ID, EventBus, type AgentEvent } from "./event-bus.js";
 import type { AppOwnerManager } from "./app-owner-manager-adapter.js";
+import { AppRegistry } from "./app-registry.js";
+
+async function loadedRegistry(projectsRoot: string): Promise<AppRegistry> {
+  const registry = new AppRegistry(projectsRoot);
+  await registry.reload();
+  return registry;
+}
 
 describe("App inbox runtime", () => {
   let root: string;
@@ -97,7 +104,7 @@ describe("App inbox runtime", () => {
     const calls: string[] = [];
     const bus = new EventBus();
     runtime = await startAppInboxRuntime({
-      projectsRoot: root,
+      registry: await loadedRegistry(root),
       db,
       manager: manager(calls),
       bus,
@@ -138,6 +145,31 @@ describe("App inbox runtime", () => {
     });
   });
 
+  it("starts without registered Apps and adopts definitions on reload", async () => {
+    rmSync(join(root, "evaluation.app", "inbox.js"));
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      manager: manager([]),
+      bus: new EventBus(),
+      scanIntervalMs: 10_000,
+    });
+    expect(runtime.host.appIds()).toEqual([]);
+
+    writeFileSync(
+      join(root, "evaluation.app", "inbox.js"),
+      `export default {
+        id: "reloaded",
+        version: 1,
+        owner: "evaluator",
+        inputSchema: { type: "object", required: ["kind"], properties: { kind: { const: "probe" } } }
+      };\n`,
+    );
+
+    expect(await runtime.reload()).toEqual(["reloaded"]);
+    expect(runtime.host.acceptsInput("reloaded", { kind: "probe", data: null })).toBe(true);
+  });
+
   it("admits one uniquely addressed agent message and durably returns its result", async () => {
     const mayDir = join(root, "may.app");
     mkdirSync(mayDir, { recursive: true });
@@ -174,7 +206,7 @@ describe("App inbox runtime", () => {
     bus.setDeliveryRecorder(writer.recordDelivery);
     const calls: string[] = [];
     runtime = await startAppInboxRuntime({
-      projectsRoot: root,
+      registry: await loadedRegistry(root),
       db: persistedDb,
       manager: manager(calls),
       bus,
@@ -296,7 +328,7 @@ describe("App inbox runtime", () => {
     });
     bus.setDeliveryRecorder((event, result) => deliveries.push({ event, result }));
     runtime = await startAppInboxRuntime({
-      projectsRoot: root,
+      registry: await loadedRegistry(root),
       db,
       manager: manager([]),
       bus,
@@ -354,7 +386,7 @@ describe("App inbox runtime", () => {
       if (event.type === "app.response.delivery.requested") deliveryRequests.push(event);
     });
     runtime = await startAppInboxRuntime({
-      projectsRoot: root,
+      registry: await loadedRegistry(root),
       db,
       manager: managerWithMetadata,
       bus,
@@ -425,7 +457,7 @@ describe("App inbox runtime", () => {
     const calls: string[] = [];
     const firstBus = new EventBus();
     runtime = await startAppInboxRuntime({
-      projectsRoot: root,
+      registry: await loadedRegistry(root),
       db,
       manager: manager(calls),
       bus: firstBus,
@@ -456,7 +488,7 @@ describe("App inbox runtime", () => {
       if (event.type === "app.response.delivery.requested") requested.push(event);
     });
     runtime = await startAppInboxRuntime({
-      projectsRoot: root,
+      registry: await loadedRegistry(root),
       db,
       manager: manager(calls),
       bus: secondBus,
@@ -474,7 +506,7 @@ describe("App inbox runtime", () => {
       if (event.type === "app.response.delivery.requested") repeated.push(event);
     });
     runtime = await startAppInboxRuntime({
-      projectsRoot: root,
+      registry: await loadedRegistry(root),
       db,
       manager: manager(calls),
       bus: thirdBus,
@@ -502,7 +534,7 @@ describe("App inbox runtime", () => {
     associateAppInboxClaimSession(db, oldClaim, "old-session");
 
     runtime = await startAppInboxRuntime({
-      projectsRoot: root,
+      registry: await loadedRegistry(root),
       db,
       manager: manager(calls),
       bus: new EventBus(),
@@ -528,7 +560,7 @@ describe("App inbox runtime", () => {
     const bus = new EventBus();
 
     runtime = await startAppInboxRuntime({
-      projectsRoot: root,
+      registry: await loadedRegistry(root),
       db,
       manager: manager(calls),
       bus,
@@ -606,7 +638,7 @@ describe("App inbox runtime", () => {
     expect(waitAppInboxClaim(db, oldClaim, { kind: "session", id: "session-offline" }, { now: 101 })).toBe(true);
 
     runtime = await startAppInboxRuntime({
-      projectsRoot: root,
+      registry: await loadedRegistry(root),
       db,
       manager: manager(calls),
       bus: new EventBus(),
@@ -638,7 +670,7 @@ describe("App inbox runtime", () => {
     });
     const bus = new EventBus();
     runtime = await startAppInboxRuntime({
-      projectsRoot: root,
+      registry: await loadedRegistry(root),
       db,
       manager: manager(calls),
       bus,
@@ -683,7 +715,7 @@ describe("App inbox runtime", () => {
     const calls: string[] = [];
     const bus = new EventBus();
     runtime = await startAppInboxRuntime({
-      projectsRoot: root,
+      registry: await loadedRegistry(root),
       db,
       manager: manager(calls),
       bus,

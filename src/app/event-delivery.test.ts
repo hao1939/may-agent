@@ -150,7 +150,7 @@ describe("retry-safe event ingress", () => {
     }
   });
 
-  it("recovers a persisted pending event through the idempotent owner inbox route", () => {
+  it("keeps a retried persisted event pending when no explicit route accepts it", () => {
     const root = tempRoot();
     try {
       const writer = new DbWriter(root);
@@ -179,8 +179,8 @@ describe("retry-safe event ingress", () => {
       expect(
         getDb(root).prepare("SELECT delivery_status, delivery_route FROM events WHERE id = ?").get(originalId),
       ).toMatchObject({
-        delivery_status: "accepted",
-        delivery_route: "owner_inbox",
+        delivery_status: "pending",
+        delivery_route: null,
       });
       expect(
         getDb(root)
@@ -188,7 +188,7 @@ describe("retry-safe event ingress", () => {
             "SELECT COUNT(*) AS count FROM event_pair_runs WHERE open_event_id = ? AND pair_name = 'owner_inbox'",
           )
           .get(originalId),
-      ).toMatchObject({ count: 1 });
+      ).toMatchObject({ count: 0 });
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
@@ -223,41 +223,6 @@ describe("retry-safe event ingress", () => {
 });
 
 describe("event delivery metadata", () => {
-  it("rolls back owner-inbox acceptance when its durable continuation cannot be created", () => {
-    const root = tempRoot();
-    try {
-      const bus = new EventBus();
-      attachPersistence(bus, root);
-      const db = getDb(root);
-      db.exec(`
-        CREATE TRIGGER reject_owner_inbox_pair
-        BEFORE INSERT ON event_pair_runs
-        WHEN NEW.pair_name = 'owner_inbox'
-        BEGIN
-          SELECT RAISE(ABORT, 'owner inbox unavailable');
-        END;
-      `);
-
-      const event = bus.emit({
-        type: "custom.requested",
-        source: "test",
-        owner: "agent:owner",
-        data: { message: "review" },
-      } as any);
-      const rowId = event[EVENT_ROW_ID];
-
-      expect(db.prepare("SELECT delivery_status FROM events WHERE id = ?").get(rowId)).toMatchObject({
-        delivery_status: "pending",
-      });
-      expect(
-        db.prepare("SELECT COUNT(*) AS count FROM event_pair_runs WHERE open_event_id = ?").get(rowId),
-      ).toMatchObject({ count: 0 });
-    } finally {
-      closeDb(root);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
   it("creates event trace side tables for graphable history", () => {
     const root = tempRoot();
     try {
@@ -1296,7 +1261,7 @@ describe("event delivery metadata", () => {
     }
   });
 
-  it("does not owner-inbox lifecycle facts that should have explicit consumers", () => {
+  it("does not route lifecycle facts through an owner inbox", () => {
     const root = tempRoot();
     try {
       const bus = new EventBus();
