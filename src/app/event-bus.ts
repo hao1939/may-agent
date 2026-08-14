@@ -867,6 +867,36 @@ export type SystemEvent =
       task?: string;
     }
   | {
+      type: "evaluation.recorded";
+      source?: string;
+      owner: string;
+      timestamp?: number;
+      data: {
+        source?: string;
+        idempotencyKey?: string;
+        evaluation: {
+          sessionId: string;
+          agent: string;
+          quality: number;
+          efficiency: number;
+          verdict: string;
+          issues: string[];
+          productiveCalls?: number;
+          wastedCalls?: number;
+          lane?: string;
+          reason?: string;
+          signals?: string[];
+          overall?: Record<string, unknown>;
+          createdAt?: number;
+        };
+      };
+      target?: {
+        appId?: string;
+        project?: string;
+        sessionId?: string;
+      };
+    }
+  | {
       type: "subscriber.failed";
       source: "event-bus";
       owner: "agent:may";
