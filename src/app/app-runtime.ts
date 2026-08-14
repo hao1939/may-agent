@@ -18,6 +18,7 @@ import {
   type InstanceIdentity,
 } from "./daemon.js";
 import { EVENT_ROW_ID, EventBus } from "./event-bus.js";
+import type { HumanResultAppReview } from "./human-result-follow-through.js";
 import { startInterfaceRuntime } from "./interface-startup.js";
 import {
   attachLoadedProjectAppTask,
@@ -73,6 +74,41 @@ export function createAppInputAdmission(options: {
   };
 }
 
+export function createHumanResultAppReviewAdmission(options: {
+  bus: Pick<EventBus, "emit">;
+  getRuntime: () => AppInboxRuntime | null;
+}): (input: HumanResultAppReview) => boolean {
+  return (input) => {
+    const runtime = options.getRuntime();
+    if (!runtime) return false;
+    if (!runtime.host.acceptsInput(input.appId, input.input)) {
+      options.bus.emit({
+        type: "info",
+        message: `[human-result-follow-through] Conversation App ${input.appId} rejected the compatibility input; using the legacy review fallback`,
+      });
+      return false;
+    }
+    options.bus.emit({
+      type: "app.input.requested",
+      source: "human-result-follow-through",
+      owner: `app:${input.appId}`,
+      data: {
+        appId: input.appId,
+        source: input.source,
+        input: input.input,
+        conversationId: input.conversationId,
+        conversationSequence: input.conversationSequence,
+        channel: input.channel,
+        channelThreadId: input.channelThreadId,
+        channelMessageId: input.channelMessageId,
+        idempotencyKey: input.idempotencyKey,
+      },
+      trace: input.trace,
+    });
+    return true;
+  };
+}
+
 export async function runAppRuntime(opts: {
   appArgs: AppArgs;
   models: ModelRegistry;
@@ -103,7 +139,10 @@ export async function runAppRuntime(opts: {
   const bus = new EventBus();
   attachEventPersistence({ bus, persistDir: opts.persistDir });
 
+  // These closures are installed before startRequestedSession assigns both bindings below.
+  // eslint-disable-next-line prefer-const
   let taskSessionId: string | undefined;
+  // eslint-disable-next-line prefer-const
   let chatSession: Awaited<ReturnType<typeof startRequestedSession>>["chatSession"];
   const humanChatEnabled = TELEGRAM_ENABLED || WEB_ENABLED || SOCKET_ENABLED;
 
@@ -126,12 +165,19 @@ export async function runAppRuntime(opts: {
     bus,
   });
 
+  let appInboxRuntime: AppInboxRuntime | null = null;
+  const admitHumanResultAppReview = createHumanResultAppReviewAdmission({
+    bus,
+    getRuntime: () => appInboxRuntime,
+  });
+
   attachDaemonEventSubscribers({
     bus,
     manager,
     persistDir: opts.persistDir,
     projectRoot: opts.projectRoot,
     interfaceAgent,
+    admitHumanResultAppReview,
   });
 
   const { loaderOpts } = await prepareDaemonAgents({
@@ -146,7 +192,7 @@ export async function runAppRuntime(opts: {
     cronEnabled: CRON_ENABLED,
   });
 
-  const appInboxRuntime: AppInboxRuntime | null = CRON_ENABLED
+  appInboxRuntime = CRON_ENABLED
     ? await startAppInboxRuntime({
         projectsRoot: opts.projectsRoot,
         db: getDb(opts.persistDir),
