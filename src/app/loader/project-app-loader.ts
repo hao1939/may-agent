@@ -59,7 +59,7 @@ import {
   type ProjectAppTaskVerifier,
   type ProjectAppExecutionPaths,
 } from "@may-agent/sdk/legacy";
-import type { AppDefinition, AppTaskAttachment } from "@may-agent/sdk";
+import type { AppDefinition, AppRequest, AppTaskAttachment } from "@may-agent/sdk";
 import type { TaskView } from "@may-agent/sdk/app";
 import { readRuntimeTaskView } from "../app-read.js";
 import { canonicalAppEvent } from "../canonical-app-event.js";
@@ -2800,6 +2800,7 @@ export function attachLoadedProjectAppTask(input: {
   appId: string;
   attachment: AppTaskAttachment;
   idempotencyKey: string;
+  request: Readonly<AppRequest>;
 }): { taskId: string; isComplete: () => Promise<boolean> } {
   const normalizedAppDir = resolve(input.appDir);
   const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find(
@@ -2822,35 +2823,38 @@ export function attachLoadedProjectAppTask(input: {
   if (!idempotencyKey) throw new Error("App task idempotency key must be non-empty");
   const config = projectAppTaskConfig(descriptor);
 
+  let intent: ProjectAppTaskIntent;
   if (input.attachment.kind === "existing") {
     const taskId = input.attachment.taskId.trim();
     if (!taskId) throw new Error("Existing task id must be non-empty");
-    const live = readProjectAppTaskIntent(config, taskId);
-    if (!live && !isProjectAppTaskConverged(config, taskId)) {
+    const existingIntent = readProjectAppTaskIntent(config, taskId);
+    if (!existingIntent) {
+      if (isProjectAppTaskConverged(config, taskId)) {
+        return { taskId, isComplete: async () => true };
+      }
       throw new Error(`Task ${taskId} does not exist in Project App ${descriptor.id}`);
     }
-    if (live) enqueueProjectAppTask(controller, config, taskId);
-    return {
-      taskId,
-      isComplete: async () => isProjectAppTaskConverged(config, taskId),
-    };
+    intent = existingIntent;
+  } else {
+    intent = input.attachment.intent;
   }
 
   const observation = observeProjectAppTaskIntent(config, {
-    intent: input.attachment.intent,
+    intent,
     appOwner: descriptor.owner,
     admissionKey: idempotencyKey,
     trigger: {
       type: "app.task.requested",
-      source: `app-inbox:${input.appId}`,
+      source: input.request.source.kind === "human" ? "human" : `app-inbox:${input.appId}`,
       owner: `agent:${descriptor.owner}`,
-      target: { project: descriptor.id, taskId: input.attachment.intent.id },
+      target: { project: descriptor.id, taskId: intent.id },
       idempotencyKey,
       data: {
         project: descriptor.id,
-        taskId: input.attachment.intent.id,
+        taskId: intent.id,
         appId: input.appId,
         idempotencyKey,
+        request: input.request,
       },
     },
   });
@@ -2860,7 +2864,9 @@ export function attachLoadedProjectAppTask(input: {
   }
   return {
     taskId: observation.taskId,
-    isComplete: async () => isProjectAppTaskConverged(config, observation.taskId, observation.generation),
+    isComplete: async () =>
+      isProjectAppTaskConverged(config, observation.taskId, observation.generation) &&
+      !readProjectAppTaskTrigger(config, observation.taskId),
   };
 }
 
