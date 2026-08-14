@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { attachCommandRouter } from "./command-router.js";
-import { childEventTrace, EventBus } from "./event-bus.js";
+import { childEventTrace, EVENT_ROW_ID, EventBus } from "./event-bus.js";
 import { DbWriter } from "../lib/db-writer.js";
 import { closeDb, getDb } from "../lib/requests.js";
 import { checkEventTraceIntegrity } from "../lib/db/event-traces.js";
@@ -89,7 +89,7 @@ describe("command router human intent contract", () => {
     const emitted: unknown[] = [];
     const unsubscribe = bus.subscribe((event) => emitted.push(event));
     try {
-      bus.emit({
+      const source = bus.emit({
         type: "human.input.received",
         source: "telegram",
         owner: "agent:may",
@@ -129,6 +129,23 @@ describe("command router human intent contract", () => {
       );
       expect(emitted).not.toContainEqual(expect.objectContaining({ type: "chat.start.requested" }));
       expect(runs).toEqual([]);
+      const sourceEventId = Number(source[EVENT_ROW_ID]);
+      expect(
+        getDb(root)
+          .prepare("SELECT delivery_status, accepted_by, delivery_route FROM events WHERE id = ?")
+          .get(sourceEventId),
+      ).toEqual({
+        delivery_status: "accepted",
+        accepted_by: "command-router:app:may",
+        delivery_route: "direct",
+      });
+      expect(
+        getDb(root)
+          .prepare(
+            "SELECT COUNT(*) AS count FROM event_pair_runs WHERE pair_name = 'owner_inbox' AND open_event_id = ?",
+          )
+          .get(sourceEventId),
+      ).toEqual({ count: 0 });
     } finally {
       unsubscribe();
       router.close();
