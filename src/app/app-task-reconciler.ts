@@ -924,6 +924,67 @@ export function releaseInterruptedAppTaskAttempt(
   });
 }
 
+/**
+ * Reject a late terminal session result whose owning workflow execution stack was
+ * lost during restart. Workflow post-processing (verification, actions, and
+ * workspace finalization) did not run, so the only safe generic disposition is
+ * to interrupt the exact attempt and requeue the same task generation.
+ */
+export function releaseLateTerminalWorkflowAppTaskAttempt(
+  config: TaskStateConfig,
+  binding: { taskId: string; generation: number },
+  sessionId: string,
+  summary: string,
+): { released: boolean; taskId: string } {
+  return withTaskStateLock(config, () => {
+    const tree = readTaskState(config);
+    const task = tree.tasks[binding.taskId];
+    const resource = tree.resources?.[binding.taskId];
+    if (
+      !task ||
+      !resource ||
+      resource.metadata.generation !== binding.generation ||
+      resource.status.phase !== "running"
+    ) {
+      return { released: false, taskId: binding.taskId };
+    }
+    const attempt = currentResourceAttempt(tree, resource);
+    if (!attempt || attempt.state !== "running" || attempt.sessionId !== sessionId) {
+      return { released: false, taskId: binding.taskId };
+    }
+
+    const now = new Date().toISOString();
+    const recoveredSummary = `${summary}; retrying the same task from current evidence`;
+    if (attempt.trigger && !tree.taskTriggers?.[binding.taskId]) {
+      tree.taskTriggers = {
+        ...(tree.taskTriggers ?? {}),
+        [binding.taskId]: {
+          taskId: binding.taskId,
+          taskGeneration: resource.metadata.generation,
+          resourceVersion: 1,
+          event: structuredClone(attempt.trigger),
+          observedAt: now,
+        },
+      };
+    }
+    finishAttempt(tree, resource, "interrupted", recoveredSummary, now);
+    attempt.metadata.resourceVersion += 1;
+    attempt.failureReason = "late-terminal-workflow-result-requeued";
+    touchResource(resource, {
+      phase: "pending",
+      observedGeneration: Math.max(0, resource.metadata.generation - 1),
+      currentAttemptId: undefined,
+      summary: recoveredSummary,
+      conditionIds: [],
+    });
+    syncTaskProjection(task, resource, attempt.owner);
+    refreshActiveTaskProjection(tree);
+    pruneTaskAttempts(tree);
+    saveTaskState(config, tree);
+    return { released: true, taskId: binding.taskId };
+  });
+}
+
 export function repairPreviousRuntimeRecoveryAttention(config: TaskStateConfig): AppTaskRecoveryRepair[] {
   return withTaskStateLock(config, () => {
     const tree = readTaskState(config);
