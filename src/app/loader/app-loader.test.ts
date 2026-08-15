@@ -62,6 +62,40 @@ describe("canonical App loader", () => {
     });
   });
 
+  it("adapts a legacy ProjectApp before canonical validation", async () => {
+    const root = fixture();
+    const appPath = join(root, "evaluation.app", "app.js");
+    writeFileSync(
+      appPath,
+      `export default {
+        id: "evaluation-legacy", version: 1, owner: "evaluator", description: "legacy",
+        budget: { maxConcurrent: 3 },
+        schedules: [{ id: "pulse", enabled: true, intervalMs: 60000,
+          emits: [{ type: "evaluation.pulse", target: { project: "evaluation" } }]
+        }],
+        events: ["evaluation.reviewed"],
+        actions: { review: { description: "Review", inputSchema: {}, event: (data) => ({ type: "evaluation.review", data }) } },
+        tasks: { accepts: ["evaluation.task"], resolve: (event) => ({ id: "review", outcome: event.type, acceptance: ["done"] }) }
+      };\n`,
+    );
+
+    const [{ definition }] = await loadAppDefinitions(root);
+    expect(definition).toMatchObject({
+      id: "evaluation-legacy",
+      inputSchema: { type: "object" },
+      schedules: [{ id: "pulse:1", event: { type: "evaluation.pulse", data: {} } }],
+      observations: ["evaluation.reviewed"],
+      tasks: { attach: true, subscriptions: ["evaluation.task"], maxConcurrent: 3 },
+    });
+    expect(definition.actions?.review.toInput({ value: "ready" })).toEqual({
+      kind: "legacy-action",
+      data: {
+        actionId: "review",
+        event: { type: "evaluation.review", data: { value: "ready" } },
+      },
+    });
+  });
+
   it("rejects duplicate App ids before starting the host", async () => {
     const root = fixture();
     mkdirSync(join(root, "second.app"), { recursive: true });
