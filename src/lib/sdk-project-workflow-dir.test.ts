@@ -3,7 +3,7 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { agentWorkflowDirForProjectApp } from "./sdk-impl.ts";
+import { agentWorkflowDirForApp } from "./sdk-impl.ts";
 
 function tempRoot(): string {
   const root = join(tmpdir(), `project-workflow-dir-${Date.now()}-${Math.random().toString(36).slice(2)}`);
@@ -11,23 +11,23 @@ function tempRoot(): string {
   return root;
 }
 
-describe("agentWorkflowDirForProjectApp", () => {
-  it("finds project-app agent workflow dir (V3 sibling layout)", () => {
+describe("agentWorkflowDirForApp", () => {
+  it("finds App-local agent workflow dir (V3 sibling layout)", () => {
     const root = tempRoot();
     try {
       const expected = join(root, "scout-knowledge-lib.app", "agents", "scout", "workflows");
       mkdirSync(expected, { recursive: true });
 
-      expect(agentWorkflowDirForProjectApp(root, "scout-knowledge-lib", "scout")).toBe(expected);
+      expect(agentWorkflowDirForApp(root, "scout-knowledge-lib", "scout")).toBe(expected);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
   });
 
-  it("returns undefined when no project-app agent workflow dir exists", () => {
+  it("returns undefined when no App-local agent workflow dir exists", () => {
     const root = tempRoot();
     try {
-      expect(agentWorkflowDirForProjectApp(root, "scout-knowledge-lib", "scout")).toBeUndefined();
+      expect(agentWorkflowDirForApp(root, "scout-knowledge-lib", "scout")).toBeUndefined();
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -36,7 +36,7 @@ describe("agentWorkflowDirForProjectApp", () => {
   it("returns undefined when projectId is missing", () => {
     const root = tempRoot();
     try {
-      expect(agentWorkflowDirForProjectApp(root, undefined, "scout")).toBeUndefined();
+      expect(agentWorkflowDirForApp(root, undefined, "scout")).toBeUndefined();
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -48,7 +48,7 @@ describe("agentWorkflowDirForProjectApp", () => {
       const expected = join(root, "alpha-project.app", "agents", "aks-explorer", "workflows");
       mkdirSync(expected, { recursive: true });
 
-      expect(agentWorkflowDirForProjectApp(root, "alpha-project", "aks-explorer")).toBe(expected);
+      expect(agentWorkflowDirForApp(root, "alpha-project", "aks-explorer")).toBe(expected);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -60,12 +60,9 @@ describe("agentWorkflowDirForProjectApp", () => {
       const agentDir = join(root, "alpha-project.app", "agents", "owner");
       const expected = join(agentDir, "workflows");
       mkdirSync(expected, { recursive: true });
-      writeFileSync(
-        join(agentDir, "agent.json"),
-        JSON.stringify({ name: "aks-explorer" }),
-      );
+      writeFileSync(join(agentDir, "agent.json"), JSON.stringify({ name: "aks-explorer" }));
 
-      expect(agentWorkflowDirForProjectApp(root, "alpha-project", "aks-explorer")).toBe(expected);
+      expect(agentWorkflowDirForApp(root, "alpha-project", "aks-explorer")).toBe(expected);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

@@ -3,6 +3,11 @@ import { Type, defineApp, type AppDefinition, type AppRequest } from "@may-agent
 import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
 import { associateAppInboxClaimSession, claimAppInboxItem } from "./app-inbox-store.js";
+import {
+  completeAppEventAdmissionPlan,
+  createAppEventAdmissionPlan,
+  markAppEventAdmissionCommandAdmitted,
+} from "./app-event-admission-store.js";
 import { AppInboxHost, type AppOwnerInvoker } from "./app-inbox-host.js";
 
 const probeInput = Type.Object({
@@ -122,6 +127,72 @@ describe("App inbox host", () => {
 
     host.replaceApps([app("evaluation"), app("next")]);
     expect(host.appIds()).toEqual(["evaluation", "next"]);
+  });
+
+  it("rejects reloads incompatible with frozen event admission commands", () => {
+    const host = new AppInboxHost({
+      db,
+      apps: [app("evaluation", "single", true)],
+      invokeOwner: async () => [],
+    });
+    db.prepare(
+      `INSERT INTO events (id, event_type, data, timestamp)
+       VALUES (41, 'review.requested', '{}', 100),
+              (42, 'task.requested', '{}', 100)`,
+    ).run();
+    createAppEventAdmissionPlan(db, {
+      eventId: 41,
+      registrySnapshotId: "boot-a:1",
+      registryGeneration: 1,
+      routes: [
+        {
+          appId: "evaluation",
+          kind: "inbox",
+          routeId: "review",
+          input: { kind: "probe", data: { value: "current" } },
+          conditionTaskIds: ["work/review"],
+        },
+      ],
+    });
+
+    expect(() => host.replaceApps([])).toThrow(
+      "Cannot remove App evaluation while it owns pending event admission commands",
+    );
+    expect(() =>
+      host.replaceApps([
+        defineApp({
+          id: "evaluation",
+          version: 1,
+          owner: "evaluation-owner",
+          inputSchema: Type.Object({
+            kind: Type.Literal("different"),
+            data: Type.Object({}),
+          }),
+        }),
+      ]),
+    ).toThrow("input schema incompatible with pending event admission commands");
+    expect(() => host.replaceApps([app("evaluation")])).toThrow("pending inbox admission includes Condition wakes");
+    markAppEventAdmissionCommandAdmitted(db, { eventId: 41, appId: "evaluation" });
+    expect(completeAppEventAdmissionPlan(db, 41)).toBeTrue();
+
+    createAppEventAdmissionPlan(db, {
+      eventId: 42,
+      registrySnapshotId: "boot-a:1",
+      registryGeneration: 1,
+      routes: [
+        {
+          appId: "evaluation",
+          kind: "task",
+          routeId: "work/current",
+          intent: null,
+          conditionTaskIds: ["work/current"],
+        },
+      ],
+    });
+    expect(() => host.replaceApps([app("evaluation")])).toThrow(
+      "Cannot remove task capability from App evaluation while it owns pending event admission commands",
+    );
+    expect(host.appIds()).toEqual(["evaluation"]);
   });
 
   it("completes a bounded request without exposing host lifecycle fields", async () => {

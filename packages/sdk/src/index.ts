@@ -35,6 +35,8 @@ export type {
   ExecutionResult,
   ExecutionView,
   Logger,
+  MetricDefinition,
+  MetricRecordOptions,
   MetricView,
   ObserverContext,
   Static,
@@ -44,6 +46,8 @@ export type {
   TSchema,
   WorkflowContext,
   WorkflowInput,
+  WorkflowMetricCapability,
+  AgentCallOptions,
 } from "./app.js";
 export type {
   Condition,
@@ -60,3 +64,20 @@ export type {
   TaskReconcileAdmission,
   TaskReconcileAdmissionOptions,
 } from "./task.js";
+export { workflowResult, workflowResultVersion } from "./workflow-result.js";
+export type {
+  StructuredWorkflowResult,
+  WorkflowCheckResult,
+  WorkflowIoContract,
+  WorkflowProblem,
+  WorkflowResultStatus,
+  WorkflowSubject,
+} from "./workflow-result.js";
+export type {
+  Demand,
+  GuardModule,
+  WorkflowGuard,
+  WorkflowGuardCompletedStep,
+  WorkflowGuardEvent,
+  WorkflowGuardStepResult,
+} from "./workflow-guard.js";

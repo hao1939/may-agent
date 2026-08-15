@@ -313,14 +313,14 @@ describe("workflow tool: typed execution", () => {
       manager,
       workflowDir,
       projectId: "sample",
-      recoveryOwner: "project-app-task-reconciler",
+      recoveryOwner: "app-task-reconciler",
     });
 
     expect(await runner.run("recovery-owned", "run it")).toMatchObject({ type: "done" });
     expect(calls).toHaveLength(1);
     expect(calls[0]).toMatchObject({
       projectId: "sample",
-      recoveryOwner: "project-app-task-reconciler",
+      recoveryOwner: "app-task-reconciler",
     });
   });
 });
@@ -607,16 +607,25 @@ describe("workflow tool: run", () => {
     expect(runtimeEvents.some((event) => event.type === "escalation.created")).toBe(false);
     expect(runtimeEvents).toContainEqual(
       expect.objectContaining({
-        type: "project.owner.requested",
-        project: "may-agent",
-        reason: "workflow-blocked",
-        params: expect.objectContaining({
-          workflowRunId: parsed.workflowRunId,
-          workflow: "project-blocked",
-          workflowOwner: "agent:may",
-          projectId: "may-agent",
-          reason: "need owner judgment",
-          context: { detail: "x" },
+        type: "app.input.requested",
+        owner: "app:may-agent",
+        data: expect.objectContaining({
+          appId: "may-agent",
+          input: {
+            kind: "owner-review",
+            data: {
+              project: "may-agent",
+              reason: "workflow-blocked",
+              params: expect.objectContaining({
+                workflowRunId: parsed.workflowRunId,
+                workflow: "project-blocked",
+                workflowOwner: "agent:may",
+                projectId: "may-agent",
+                reason: "need owner judgment",
+                context: { detail: "x" },
+              }),
+            },
+          },
         }),
       }),
     );

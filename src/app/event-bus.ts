@@ -381,12 +381,6 @@ export type SystemEvent =
       };
     }
   | {
-      type: "project.owner.reviewed";
-      source?: string;
-      owner: string;
-      data: { project?: string; projectId?: string; projectPath?: string; summary?: string };
-    }
-  | {
       type: "project.nudge";
       source: string;
       owner: string;
@@ -535,18 +529,6 @@ export type SystemEvent =
         appResponseFor?: string;
         appDeliveryOperationId?: string;
         idempotencyKey?: string;
-      };
-    }
-  | {
-      type: "owner.inbox.accepted";
-      source: "event-bus" | "handler:event-pair-orphan-gc";
-      owner: string;
-      data: {
-        sourceEventId: number;
-        sourceEventType: string;
-        reason: "delivery" | "periodic-resync";
-        project?: string;
-        input?: Record<string, unknown>;
       };
     }
   | {
@@ -1098,7 +1080,6 @@ export class EventBus {
       }
       if (!durableRouteFailed) {
         delivery ??= pairTrackerFallback(event);
-        delivery ??= evidenceProjectionFallback(event);
         if (delivery) this.deliveryRecorder?.(event, delivery);
       }
     } finally {
@@ -1187,46 +1168,6 @@ function pairTrackerFallback(event: AgentEvent): DeliveryResult | undefined {
   };
 }
 
-const EVIDENCE_PROJECTION_EVENT_TYPES = new Set([
-  // The durable App outbox is authoritative for retries and completion. This
-  // event is its transport command/evidence record, not new owner work.
-  "app.response.delivery.requested",
-  "runtime.daemon.heartbeat",
-  "handler.workflow_dispatched",
-  "handler.skipped",
-  "metric.feedback.routed",
-  "metric.alert_judged",
-  "project.knowledge.maintained",
-  "project.task.handler.recovered",
-  "project.task.handler.unavailable",
-  "project.task.reconcile.started",
-  "project.task.reconcile.skipped",
-  "project.task.reconciled",
-  "project.task.verification.failed",
-  "owner.inbox.accepted",
-  "project.owner.progressed",
-  "message.progressed",
-  "message.resolved",
-]);
-
-function evidenceProjectionFallback(event: AgentEvent): DeliveryResult | undefined {
-  const isEvidence =
-    event.type.startsWith("evaluation.") ||
-    event.type.startsWith("event-pair.") ||
-    EVIDENCE_PROJECTION_EVENT_TYPES.has(event.type) ||
-    event.type.startsWith("channel.delivery.") ||
-    event.type === "project.owner.reviewed" ||
-    event.type === "guard.triggered" ||
-    event.type === "skill.loaded";
-  if (!isEvidence) return undefined;
-  return {
-    accepted: true,
-    by: "event-store:evidence-projection",
-    route: "direct",
-    note: "terminal evidence persisted for trace projection",
-  };
-}
-
 function isPairTrackedEvent(eventType: string): boolean {
   return new Set([
     "session.start",
@@ -1245,35 +1186,16 @@ function isPairTrackedEvent(eventType: string): boolean {
     "cli.task.completed",
     "cli.task.failed",
     "cli.task.orphaned",
-    "message.reviewed",
-    "message.resolved",
-    "message.expired",
-    "project.feedback.reviewed",
-    "owner.inbox.reviewed",
-    "owner.inbox.expired",
   ]).has(eventType);
 }
 
 function hasPairCorrelationKey(event: AgentEvent): boolean {
   const data = eventData(event);
-  const eventType = String(event.type);
   if (event.type.startsWith("session.")) return hasKey(data.sessionId);
   if (event.type.startsWith("workflow.")) return hasKey(data.workflowRunId);
   if (event.type.startsWith("handler."))
     return hasKey(data.handlerRunId) || hasKey(data.workflowRunId) || hasKey(data.handler);
-  if (event.type.startsWith("escalation.")) return hasKey(data.openEventId) || hasKey(data.escalationId);
   if (event.type.startsWith("cli.task.")) return hasKey(data.taskId);
-  if (event.type.startsWith("project.task.")) return hasKey(data.taskId);
-  if (
-    eventType === "message.reviewed" ||
-    eventType === "message.resolved" ||
-    eventType === "message.expired" ||
-    eventType === "project.feedback.reviewed" ||
-    eventType === "project.owner.reviewed" ||
-    eventType === "owner.inbox.reviewed" ||
-    eventType === "owner.inbox.expired"
-  )
-    return hasKey(data.openEventId);
   return false;
 }
 

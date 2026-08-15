@@ -1,3 +1,5 @@
+import type { AppEvent } from "./event.js";
+
 export type TaskMode = "achieve" | "maintain";
 export type TaskPriority = "P0" | "P1" | "P2" | "P3";
 
@@ -99,8 +101,12 @@ export type TaskVerificationContext = {
   appId: string;
   taskId: string;
   generation: number;
+  appRoot: string;
+  projectRoot: string;
   workspaceDir: string;
   intent: Readonly<TaskIntent>;
+  /** A newer durable wake observed while this attempt was running, if any. */
+  pendingTrigger?: AppEvent<Record<string, unknown>>;
 };
 
 export type TaskVerifier = (
@@ -119,5 +125,5 @@ export {
   taskOwnerResultSchema,
   taskReconcileResultSchema,
   taskVerificationResultSchema,
-} from "./project-task-handler-contract.js";
-export type { TaskReconcileAdmission, TaskReconcileAdmissionOptions } from "./project-task-handler-contract.js";
+} from "./task-contract.js";
+export type { TaskReconcileAdmission, TaskReconcileAdmissionOptions } from "./task-contract.js";

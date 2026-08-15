@@ -6,20 +6,20 @@ import type { EventBus } from "./event-bus.js";
 import type { AppRegistrySnapshot } from "./app-registry.js";
 import {
   admitLoadedCanonicalAppTaskEvent,
-  attachLoadedProjectAppTask,
-  describeLoadedProjectAppActions,
-  installProjectApps,
-  invokeLoadedProjectAppAction,
+  attachLoadedAppTask,
+  closeInstalledAppTaskRuntimes,
+  installAppTaskRuntimes,
   previewLoadedCanonicalAppTaskEvent,
-  readLoadedProjectAppTaskView,
-  runWithProjectAppRuntimeCapacity,
-  startProjectAppWatcher,
-  type ProjectAppLoaderOptions,
-} from "./loader/project-app-loader.js";
+  readLoadedAppTaskView,
+  runWithAppTaskRuntimeCapacity,
+  startAppTaskRuntimeWatcher,
+  type AppTaskRuntimeOptions,
+} from "./app-task-runtime.js";
 
-export type AppTaskGenerationResult = { apps: number; entries: number };
+export type AppTaskGenerationResult = { apps: number };
 
 export type AppTaskCapability = {
+  close(): Promise<void>;
   runOwner<T>(work: () => Promise<T>): Promise<T>;
   attach(input: Parameters<AppTaskAttacher>[0] & { appDir: string }): ReturnType<AppTaskAttacher>;
   admitEvent(input: {
@@ -40,54 +40,44 @@ export type AppTaskCapability = {
   }): Promise<AppDependencyObservation | null>;
   publishGeneration(input: { snapshot: AppRegistrySnapshot; publish: () => void }): Promise<AppTaskGenerationResult>;
   watchGenerations(reload: () => Promise<void>): { close(): void } | null;
-  describeActions(projectId: string): ReturnType<typeof describeLoadedProjectAppActions>;
-  invokeAction(input: {
-    projectId: string;
-    actionId: string;
-    params: unknown;
-    idempotencyKey?: string;
-    ingressSource?: string;
-  }): ReturnType<typeof invokeLoadedProjectAppAction>;
 };
 
 /**
- * Host-private boundary around the existing task-resource engine.
+ * Host-private boundary around App task reconciliation.
  *
- * The canonical App host depends on this capability, never on Project App
- * loader/storage/controller details. The implementation can therefore be
- * extracted and renamed without changing inbox ownership semantics.
+ * The canonical App host depends on this capability, never on task
+ * store/controller details. App Inbox remains unaware of task mechanics.
  */
 export function createAppTaskCapability(options: {
   bus: EventBus;
   getDb: () => SqliteDb;
-  compatibility?: ProjectAppLoaderOptions;
+  runtime?: AppTaskRuntimeOptions;
 }): AppTaskCapability {
   return {
-    runOwner: (work) => runWithProjectAppRuntimeCapacity(options.bus, work),
-    attach: async (input) => attachLoadedProjectAppTask({ ...input, bus: options.bus }),
+    close: () => closeInstalledAppTaskRuntimes(options.bus),
+    runOwner: (work) => runWithAppTaskRuntimeCapacity(options.bus, work),
+    attach: async (input) => attachLoadedAppTask({ ...input, bus: options.bus }),
     admitEvent: (input) => admitLoadedCanonicalAppTaskEvent({ ...input, bus: options.bus }),
     previewEvent: (input) => previewLoadedCanonicalAppTaskEvent({ ...input, bus: options.bus }),
     async publishGeneration({ snapshot, publish }) {
-      if (!options.compatibility) {
+      if (!options.runtime) {
         publish();
-        return { apps: 0, entries: 0 };
+        return { apps: 0 };
       }
-      const result = await installProjectApps({
-        ...options.compatibility,
+      const result = await installAppTaskRuntimes({
+        ...options.runtime,
         appRegistrySnapshot: snapshot,
         afterCommit: () => publish(),
       });
-      return { apps: result.installed.length, entries: result.entries };
+      return { apps: result.installed.length };
     },
     watchGenerations(reload) {
-      if (!options.compatibility) return null;
-      return startProjectAppWatcher(options.compatibility, { reload });
+      if (!options.runtime) return null;
+      return startAppTaskRuntimeWatcher(options.runtime, { reload });
     },
-    describeActions: (projectId) => describeLoadedProjectAppActions(options.bus, projectId),
-    invokeAction: (input) => invokeLoadedProjectAppAction({ bus: options.bus, ...input }),
     async readDependency({ appDir, dependency }) {
       if (dependency.kind === "task") {
-        const task = readLoadedProjectAppTaskView({ bus: options.bus, appDir, taskId: dependency.id });
+        const task = readLoadedAppTaskView({ bus: options.bus, appDir, taskId: dependency.id });
         return task
           ? {
               kind: "task",

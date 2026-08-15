@@ -363,8 +363,6 @@ const handlerKey = (payload: Record<string, unknown>) =>
   keyPart(payload.handlerRunId) ?? keyPart(payload.workflowRunId) ?? keyPart(payload.handler);
 const escalationKey = (payload: Record<string, unknown>) => keyPart(payload.escalationId);
 const cliTaskKey = (payload: Record<string, unknown>) => keyPart(payload.taskId);
-const projectOwnerKey = (payload: Record<string, unknown>) =>
-  keyPart(payload.projectId) ?? keyPart(payload.project) ?? keyPart(payload.projectPath);
 
 // Lifecycle tracking is deliberately explicit. Adding an event suffix must not
 // silently create work or a request-shaped correlation contract.
@@ -410,24 +408,6 @@ const PAIR_CONTRACTS: readonly PairContract[] = [
     closes: ["cli.task.completed", "cli.task.failed", "cli.task.orphaned"],
     timeoutMs: DEFAULT_PAIR_TTL_MS,
     key: cliTaskKey,
-  },
-  {
-    name: "project.intent",
-    open: "project.comment.created",
-    closes: ["project.owner.reviewed"],
-    timeoutMs: 60 * 60 * 1000,
-    key: projectOwnerKey,
-    allowEarlierClose: false,
-    preferExplicitOpenEventId: true,
-  },
-  {
-    name: "project.owner",
-    open: "project.owner.requested",
-    closes: ["project.owner.reviewed"],
-    timeoutMs: 60 * 60 * 1000,
-    key: projectOwnerKey,
-    allowEarlierClose: false,
-    preferExplicitOpenEventId: true,
   },
 ];
 
@@ -551,14 +531,8 @@ export class DbWriter {
         if (!projection) {
           throw new Error("evaluation.recorded requires a valid sessionId, agent, quality, efficiency, and verdict");
         }
-        this.insertEventRow(
-          event,
-          payload,
-          eventSource(ev),
-          eventOwner(ev),
-          eventUrgency(ev),
-          eventTtlMs(ev),
-          () => upsertEvaluationProjection(this.db, projection),
+        this.insertEventRow(event, payload, eventSource(ev), eventOwner(ev), eventUrgency(ev), eventTtlMs(ev), () =>
+          upsertEvaluationProjection(this.db, projection),
         );
         break;
       }

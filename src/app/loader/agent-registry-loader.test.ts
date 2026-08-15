@@ -47,7 +47,7 @@ function makeRuntime(): AgentRegistryRuntime {
 }
 
 describe("agent registry loader", () => {
-  it("project-app agent silently overrides a global stub with the same name", async () => {
+  it("App-local agent silently overrides a global stub with the same name", async () => {
     const root = tempRoot();
     try {
       // Create global agents/evaluator with agent.json
@@ -56,26 +56,24 @@ describe("agent registry loader", () => {
       mkdirSync(globalEvalDir, { recursive: true });
       writeFileSync(join(globalEvalDir, "agent.json"), makeAgentJson("evaluator"));
 
-      // Create project-app agents: projects/evaluation.app/agents/evaluator
+      // Create App-local agents: projects/evaluation.app/agents/evaluator
       const projectsRoot = join(root, "projects");
       const appDir = join(projectsRoot, "evaluation.app");
-      const projectAppEvalDir = join(appDir, "agents", "evaluator");
-      mkdirSync(projectAppEvalDir, { recursive: true });
+      const appLocalEvalDir = join(appDir, "agents", "evaluator");
+      mkdirSync(appLocalEvalDir, { recursive: true });
       writeFileSync(join(appDir, "app.ts"), "export default {};");
-      writeFileSync(join(projectAppEvalDir, "agent.json"), makeAgentJson("evaluator"));
+      writeFileSync(join(appLocalEvalDir, "agent.json"), makeAgentJson("evaluator"));
 
       const opts = makeOpts(root, globalAgentsRoot, projectsRoot);
       const runtime = makeRuntime();
       const result = await loadAgents(opts, runtime);
 
-      // Should register evaluator once (from project-app, overriding global)
+      // Should register evaluator once (from App-local App, overriding global)
       expect(result.added).toContain("evaluator");
 
       // Should NOT emit agent.config_invalid event
       const emitCalls = (opts.bus.emit as any).mock.calls;
-      const configInvalidEvents = emitCalls.filter(
-        (c: any) => c[0]?.type === "agent.config_invalid",
-      );
+      const configInvalidEvents = emitCalls.filter((c: any) => c[0]?.type === "agent.config_invalid");
       expect(configInvalidEvents).toHaveLength(0);
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -85,20 +83,20 @@ describe("agent registry loader", () => {
   it("still errors on duplicate names within the same scope", async () => {
     const root = tempRoot();
     try {
-      // Create two project-app agents with the same name
+      // Create two App-local agents with the same name
       const globalAgentsRoot = join(root, "agents");
       mkdirSync(globalAgentsRoot, { recursive: true });
 
       const projectsRoot = join(root, "projects");
 
-      // First project-app
+      // First App-local definition
       const appDir1 = join(projectsRoot, "alpha.app");
       const agentDir1 = join(appDir1, "agents", "shared-agent");
       mkdirSync(agentDir1, { recursive: true });
       writeFileSync(join(appDir1, "app.ts"), "export default {};");
       writeFileSync(join(agentDir1, "agent.json"), makeAgentJson("shared-agent"));
 
-      // Second project-app with same agent name
+      // Second App-local definition with same agent name
       const appDir2 = join(projectsRoot, "beta.app");
       const agentDir2 = join(appDir2, "agents", "shared-agent");
       mkdirSync(agentDir2, { recursive: true });
@@ -111,9 +109,7 @@ describe("agent registry loader", () => {
 
       // Should emit agent.config_invalid since both are project-scoped (same scope)
       const emitCalls = (opts.bus.emit as any).mock.calls;
-      const configInvalidEvents = emitCalls.filter(
-        (c: any) => c[0]?.type === "agent.config_invalid",
-      );
+      const configInvalidEvents = emitCalls.filter((c: any) => c[0]?.type === "agent.config_invalid");
       expect(configInvalidEvents).toHaveLength(1);
       expect(configInvalidEvents[0][0].data.errors[0].message).toContain("Duplicate agent name");
     } finally {
@@ -139,9 +135,7 @@ describe("agent registry loader", () => {
       expect(result.added).toContain("solo");
 
       const emitCalls = (opts.bus.emit as any).mock.calls;
-      const configInvalidEvents = emitCalls.filter(
-        (c: any) => c[0]?.type === "agent.config_invalid",
-      );
+      const configInvalidEvents = emitCalls.filter((c: any) => c[0]?.type === "agent.config_invalid");
       expect(configInvalidEvents).toHaveLength(0);
     } finally {
       rmSync(root, { recursive: true, force: true });

@@ -59,13 +59,13 @@ export async function loadAgents(opts: AgentLoaderOptions, runtime: AgentRegistr
     const errors = validateAgentConfig(config, models, agentsRoot);
     const priorDir = seen.get(config.name);
     if (priorDir) {
-      // Project-app agents override global stubs: if the prior registration came
+      // Agent App-local agents override global stubs: if the prior registration came
       // from agents/<name> and this one comes from projects/*.app/agents/<name>,
       // treat it as a silent override rather than an error.
       const priorIsGlobal = priorDir.startsWith("agents/");
-      const currentIsProjectApp = !!agentSource.projectId;
-      if (priorIsGlobal && currentIsProjectApp) {
-        // Override: let the project-app agent win. Remove the old seen entry
+      const currentIsAppLocal = !!agentSource.projectId;
+      if (priorIsGlobal && currentIsAppLocal) {
+        // Override: let the App-local agent win. Remove the old seen entry
         // so registration proceeds below.
         seen.delete(config.name);
       } else {

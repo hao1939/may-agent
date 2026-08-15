@@ -8,17 +8,19 @@
  * Emits e2e.dispatch.attempt before the call and e2e.dispatch.result after,
  * so the test can correlate which workflow was attempted and the outcome.
  */
-import type { CronEntry, HandlerContext, HandlerModule, EventEnvelope } from "@may-agent/sdk/legacy";
+import type { CronEntry } from "../../../../src/lib/cron-tool.js";
+import type { HandlerContext, HandlerModule, EventEnvelope } from "../../../../src/lib/handler-context.js";
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: CronEntry) => {
   return async (event?: EventEnvelope) => {
     const payload = (event?.data?.data ?? event?.data ?? {}) as Record<string, unknown>;
     const configuredWorkflow = entry.handlerConfig?.workflow;
-    const workflowName = typeof payload.workflow === "string"
-      ? payload.workflow
-      : typeof configuredWorkflow === "string"
-        ? configuredWorkflow
-        : "e2e-noop-workflow";
+    const workflowName =
+      typeof payload.workflow === "string"
+        ? payload.workflow
+        : typeof configuredWorkflow === "string"
+          ? configuredWorkflow
+          : "e2e-noop-workflow";
 
     ctx.sdk.emit("e2e.dispatch.attempt", { handler: entry.name, workflow: workflowName });
 

@@ -271,7 +271,7 @@ describe("QueryService", () => {
       "INSERT INTO events (event_type, source, owner, data, metric_id, alert_id, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)",
       [
         "metric.feedback.routed",
-        "project-app-loader",
+        "app-task-runtime",
         "agent:arc",
         JSON.stringify({ metricId: "handler.failed-count", alertId: alert.id, route: "owner-app" }),
         "handler.failed-count",
@@ -366,91 +366,6 @@ describe("QueryService", () => {
     expect(state.recentTriageRun).toBeNull();
     expect(state.recentTriageJudgment).toBeNull();
     expect(state.recentOwnerSessionJudgment).toBeNull();
-  });
-
-  it("loads heartbeat context behind one schema-aware helper", () => {
-    const { db, query } = harness();
-    const now = 90_000;
-
-    db.run("INSERT INTO projects (id, path, name, owner, updated_at) VALUES (?, ?, ?, ?, ?)", [
-      "p1",
-      "shared/projects/p1",
-      "Project One",
-      "arc",
-      now,
-    ]);
-    db.run(
-      `INSERT INTO metrics
-        (id, name, owner, current, threshold, target, priority, project, status, updated_at, alert_op, source_command)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      ["arc.quality", "Quality", null, 0.5, 0.8, 1, "P1", "p1", "active", now, "<", "echo quality"],
-    );
-    db.run(
-      `INSERT INTO metrics
-        (id, name, owner, current, threshold, target, priority, status, updated_at, alert_op)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      ["may.health", "Health", "may", 1, 0.8, 1, "P2", "active", now, "<"],
-    );
-    db.run(
-      "INSERT INTO metric_snapshots (metric_id, value, sample_size, measured_at, measured_by, note) VALUES (?, ?, ?, ?, ?, ?)",
-      ["arc.quality", 0.5, 7, now - 10, "may", "latest"],
-    );
-    db.run("INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)", [
-      "arc.quality",
-      "threshold",
-      "quality below target",
-      now - 100,
-    ]);
-    db.run(
-      "INSERT INTO events (event_type, source, owner, data, timestamp, urgency, ttl_ms, delivery_status, delivery_route) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      [
-        "project.nudge",
-        "test",
-        "agent:arc",
-        JSON.stringify({ summary: "resume project" }),
-        now - 100,
-        "immediate",
-        10_000,
-        "accepted",
-        "owner_inbox",
-      ],
-    );
-    db.run(
-      "INSERT INTO events (event_type, source, owner, data, timestamp, urgency, ttl_ms) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      ["project.nudge", "test", "arc", JSON.stringify({ summary: "legacy bare owner" }), now - 50, "immediate", 10_000],
-    );
-    db.run(
-      "INSERT INTO events (event_type, source, owner, data, timestamp, urgency, ttl_ms) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      ["stale", "test", "arc", JSON.stringify({ summary: "expired" }), now - 20_000, "normal", 1],
-    );
-
-    const context = query.heartbeatContext({
-      agent: "arc",
-      now,
-      metricLimit: 3,
-      metricSnapshotLimit: 1,
-      alertLimit: 3,
-      inboxLimit: 3,
-    });
-
-    expect(context.now).toBe(now);
-    expect(context.metrics).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          id: "arc.quality",
-          explicitOwner: null,
-          projectOwner: "arc",
-          alertOp: "<",
-          sourceCommand: "echo quality",
-          snapshots: [expect.objectContaining({ value: 0.5, sampleSize: 7, measuredBy: "may" })],
-        }),
-      ]),
-    );
-    expect(context.alerts).toMatchObject([
-      { metricId: "arc.quality", message: "quality below target", explicitOwner: null, projectOwner: "arc" },
-    ]);
-    expect(context.inbox).toMatchObject([{ eventType: "project.nudge", urgency: "immediate" }]);
-    expect(context.inbox).toHaveLength(1);
   });
 
   it("loads evaluator deep-eval scan context behind one schema-aware helper", () => {

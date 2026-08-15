@@ -75,7 +75,6 @@ export function createAppInputAdmission(options: {
 
 export function createProjectActionAccess(options: {
   getRuntime: () => AppInboxRuntime | null;
-  tasks: Pick<ReturnType<typeof createAppTaskCapability>, "describeActions" | "invokeAction">;
   admit: NonNullable<AttachControlSocketOptions["admitAppInput"]>;
 }): {
   describe: NonNullable<AttachControlSocketOptions["describeProjectActions"]>;
@@ -84,14 +83,12 @@ export function createProjectActionAccess(options: {
   return {
     describe(projectId) {
       const runtime = options.getRuntime();
-      if (runtime?.host.hasApp(projectId)) return runtime.host.describeActions(projectId);
-      return options.tasks.describeActions(projectId);
+      if (!runtime?.host.hasApp(projectId)) throw new Error(`App ${projectId} is not loaded`);
+      return runtime.host.describeActions(projectId);
     },
     invoke(input) {
       const runtime = options.getRuntime();
-      if (!runtime?.host.hasApp(input.projectId)) {
-        return options.tasks.invokeAction({ ...input, ingressSource: "control-socket" });
-      }
+      if (!runtime?.host.hasApp(input.projectId)) throw new Error(`App ${input.projectId} is not loaded`);
       const appId = input.projectId.trim().replace(/\.app$/, "");
       const appInput = runtime.host.actionInput(appId, input.actionId, input.params);
       return options.admit({
@@ -172,7 +169,7 @@ export async function runAppRuntime(opts: {
     interfaceAgent,
   });
 
-  const { loaderOpts, projectAppOpts } = await prepareDaemonAgents({
+  const { loaderOpts, appTaskOptions } = await prepareDaemonAgents({
     agentsRoot: opts.agentsRoot,
     sharedRoot: opts.sharedRoot,
     projectsRoot: opts.projectsRoot,
@@ -188,7 +185,7 @@ export async function runAppRuntime(opts: {
   const appTasks = createAppTaskCapability({
     bus,
     getDb: () => getDb(opts.persistDir),
-    compatibility: projectAppOpts,
+    runtime: appTaskOptions,
   });
   const observerMetrics = createMetricService({ getDb: () => getDb(opts.persistDir) });
 
@@ -251,20 +248,19 @@ export async function runAppRuntime(opts: {
     },
     beforeShutdown: () => {
       appWatcher?.close();
+      void appTasks.close();
       appInboxRuntime?.close();
     },
     reloadApps: async () => {
-      let projectApps = 0;
-      let entries = 0;
+      let taskApps = 0;
       const appIds = await appInboxRuntime!.reload(async ({ snapshot, commit }) => {
         const result = await appTasks.publishGeneration({ snapshot, publish: commit });
-        projectApps = result.apps;
-        entries = result.entries;
+        taskApps = result.apps;
       });
-      return { appIds, projectApps, entries };
+      return { appIds, taskApps };
     },
   });
-  if (projectAppOpts) {
+  if (appTaskOptions) {
     appWatcher = appTasks.watchGenerations(() => handleReload({ throwOnError: true }));
   }
   installProcessHandlers();
@@ -306,7 +302,6 @@ export async function runAppRuntime(opts: {
   const admitAppInput = createAppInputAdmission({ bus, getRuntime: () => appInboxRuntime });
   const projectActions = createProjectActionAccess({
     getRuntime: () => appInboxRuntime,
-    tasks: appTasks,
     admit: admitAppInput,
   });
   const { socketPath: SOCKET_PATH, socketUI } = await startInterfaceRuntime({

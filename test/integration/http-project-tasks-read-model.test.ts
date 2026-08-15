@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { buildProjectTasksReadModel, normalizeProjectTaskPhase } from "../../src/app/http/server.js";
+import { buildProjectTasksReadModel, normalizeAppTaskPhase } from "../../src/app/http/server.js";
 
 function group(children: string[]) {
   return { item_type: "group", id: "project", parent_id: null, children };
@@ -55,10 +55,10 @@ function projection(items: Record<string, unknown>, extra: Record<string, unknow
 
 describe("project task read model", () => {
   it("accepts only canonical task phases", () => {
-    expect(normalizeProjectTaskPhase({ phase: "pending" })).toBe("pending");
-    expect(normalizeProjectTaskPhase({ phase: "attention" })).toBe("attention");
-    expect(normalizeProjectTaskPhase({ phase: "converged" })).toBe("converged");
-    expect(normalizeProjectTaskPhase({ phase: "backlog" })).toBe("unknown");
+    expect(normalizeAppTaskPhase({ phase: "pending" })).toBe("pending");
+    expect(normalizeAppTaskPhase({ phase: "attention" })).toBe("attention");
+    expect(normalizeAppTaskPhase({ phase: "converged" })).toBe("converged");
+    expect(normalizeAppTaskPhase({ phase: "backlog" })).toBe("unknown");
   });
 
   it("preserves canonical classification and app metadata", () => {

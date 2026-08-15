@@ -1,4 +1,5 @@
 import { EVENT_ROW_ID, type EventBus, type EventTrace } from "../event-bus.js";
+import { appOwnerReviewEvent } from "../app-input-event.js";
 import type { HumanAttentionCandidate, HumanAttentionReview } from "./human-attention-review.js";
 import { extractProjectPath, normalizeProjectPath } from "./telegram-reply-router.js";
 
@@ -267,34 +268,36 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
       data.recovery && typeof data.recovery === "object" && !Array.isArray(data.recovery)
         ? (data.recovery as Record<string, unknown>)
         : undefined;
-    bus.emit({
-      type: "project.owner.requested",
-      source: "telegram-outbound",
-      owner: "agent:tech-lead",
-      data: {
-        project: "may-agent",
-        reason: "telegram-admission-review-failed",
-        params: {
-          instruction:
-            "Recover the held Telegram admission candidate from bounded durable evidence only: the candidate payload, cited packet/artifact paths, current task-tree truth, and exact runtime lineage for this request. Retry or route it under the existing ownership convention, keep raw candidate text internal, avoid repository-wide search unless one exact cited file still needs inspection, and contact Hao only after a successful deliver disposition.",
-          sourceEventId: candidate.sourceEventId,
-          candidateEventType: candidate.eventType,
-          candidateFrom: candidate.from,
-          candidateProjectId: candidate.projectId,
-          reviewReason: review.reason,
-          attempts,
-          closureCondition:
-            "A later admission review records a terminal handle, route, clarify-producer, reject, or deliver disposition.",
-          recoveryDisposition: {
-            allowedDispositions: ["handle", "route", "clarify-producer", "reject", "deliver"],
-            fallbackRule:
-              "If the recovery cannot be completed from bounded evidence in one turn, return the safest structured route or clarify-producer outcome instead of aborting without a terminal disposition.",
+    bus.emit(
+      appOwnerReviewEvent({
+        appId: "may-agent",
+        source: "telegram-outbound",
+        sourceId: `telegram-admission:${candidate.sourceEventId}`,
+        data: {
+          project: "may-agent",
+          reason: "telegram-admission-review-failed",
+          params: {
+            instruction:
+              "Recover the held Telegram admission candidate from bounded durable evidence only: the candidate payload, cited packet/artifact paths, current task-tree truth, and exact runtime lineage for this request. Retry or route it under the existing ownership convention, keep raw candidate text internal, avoid repository-wide search unless one exact cited file still needs inspection, and contact Hao only after a successful deliver disposition.",
+            sourceEventId: candidate.sourceEventId,
+            candidateEventType: candidate.eventType,
+            candidateFrom: candidate.from,
+            candidateProjectId: candidate.projectId,
+            reviewReason: review.reason,
+            attempts,
+            closureCondition:
+              "A later admission review records a terminal handle, route, clarify-producer, reject, or deliver disposition.",
+            recoveryDisposition: {
+              allowedDispositions: ["handle", "route", "clarify-producer", "reject", "deliver"],
+              fallbackRule:
+                "If the recovery cannot be completed from bounded evidence in one turn, return the safest structured route or clarify-producer outcome instead of aborting without a terminal disposition.",
+            },
+            approval,
+            recovery,
           },
-          approval,
-          recovery,
         },
-      },
-    } as any);
+      }),
+    );
   }
 
   function shouldRetryReviewFailure(review: HumanAttentionReview): boolean {

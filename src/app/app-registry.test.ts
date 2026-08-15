@@ -11,27 +11,27 @@ describe("App registry", () => {
     for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
   });
 
-  function fixture(id: string): { root: string; inboxPath: string } {
+  function fixture(id: string): { root: string; appPath: string } {
     const root = join(tmpdir(), `app-registry-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     const appDir = join(root, "fixture.app");
-    const inboxPath = join(appDir, "inbox.js");
+    const appPath = join(appDir, "app.js");
     roots.push(root);
     mkdirSync(appDir, { recursive: true });
     writeFileSync(
-      inboxPath,
+      appPath,
       `export default { id: "${id}", version: 1, owner: "may", inputSchema: { type: "object" } };\n`,
     );
-    return { root, inboxPath };
+    return { root, appPath };
   }
 
   it("publishes a replacement only after its consumer accepts it", async () => {
-    const { root, inboxPath } = fixture("before");
+    const { root, appPath } = fixture("before");
     const registry = new AppRegistry(root);
     await registry.reload();
     expect(registry.snapshot().generation).toBe(1);
 
     writeFileSync(
-      inboxPath,
+      appPath,
       `export default { id: "after", version: 1, owner: "may", inputSchema: { type: "object" } };\n`,
     );
     await expect(
@@ -61,13 +61,25 @@ describe("App registry", () => {
     expect(Object.isFrozen(registry.snapshot().entries[0]?.definition)).toBeTrue();
   });
 
+  it("uses a boot-unique snapshot identity even when generations repeat", async () => {
+    const { root } = fixture("stable");
+    const first = new AppRegistry(root);
+    const second = new AppRegistry(root);
+    await first.reload();
+    await second.reload();
+
+    expect(first.snapshot().generation).toBe(1);
+    expect(second.snapshot().generation).toBe(1);
+    expect(first.snapshot().id).not.toBe(second.snapshot().id);
+  });
+
   it("serializes overlapping generation transactions", async () => {
-    const { root, inboxPath } = fixture("initial");
+    const { root, appPath } = fixture("initial");
     const registry = new AppRegistry(root);
     await registry.reload();
 
     writeFileSync(
-      inboxPath,
+      appPath,
       `export default { id: "first", version: 1, owner: "may", inputSchema: { type: "object" } };\n`,
     );
     let releaseFirst!: () => void;
@@ -88,7 +100,7 @@ describe("App registry", () => {
     await firstStarted;
 
     writeFileSync(
-      inboxPath,
+      appPath,
       `export default { id: "second", version: 1, owner: "may", inputSchema: { type: "object" } };\n`,
     );
     const second = registry.reload((snapshot) => {

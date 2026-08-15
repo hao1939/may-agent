@@ -22,6 +22,7 @@ import type {
   WorkflowAgentOptions,
 } from "./workflow.js";
 import { WorkflowInterrupted, WorkflowBlocked } from "./workflow.js";
+import { appOwnerReviewEvent } from "../app/app-input-event.js";
 // ── In-memory workflow types (used during execution) ────────────────────
 
 /** In-memory record of a workflow execution. */
@@ -943,14 +944,18 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       context: data.context,
     };
     if (data.projectId) {
-      emitRuntimeEvent({
-        type: "project.owner.requested",
-        source: "workflow-tool",
-        owner: workflowOwner,
-        project: data.projectId,
-        reason: "workflow-blocked",
-        params: payload,
-      } as any);
+      emitRuntimeEvent(
+        appOwnerReviewEvent({
+          appId: data.projectId,
+          source: "workflow-tool",
+          sourceId: `workflow-blocked:${data.workflowRunId}`,
+          data: {
+            project: data.projectId,
+            reason: "workflow-blocked",
+            params: payload,
+          },
+        }),
+      );
       return;
     }
     emitRuntimeEvent({
@@ -1467,6 +1472,8 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       ...(opts.executionPaths
         ? {
             workspace: {
+              appRoot: opts.executionPaths.appDir,
+              projectRoot: opts.executionPaths.projectDir,
               root: opts.executionPaths.workspaceDir,
               output: opts.executionPaths.workspaceDir,
             },
@@ -1494,8 +1501,11 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         runAgentStep(agentName, agentTask, sessionId, stepOpts)) as WorkflowContext["runAgentSession"],
 
       agents: {
-        call: async (agentName: string, agentTask: string) =>
-          appAgentExecutionResult(await runAgentStep(agentName, agentTask)),
+        call: async (
+          agentName: string,
+          agentTask: string,
+          callOptions?: WorkflowAgentOptions & { sessionId?: string },
+        ) => appAgentExecutionResult(await runAgentStep(agentName, agentTask, callOptions?.sessionId, callOptions)),
       },
 
       events: {

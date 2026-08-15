@@ -92,6 +92,12 @@ export function validateAppDefinition(definition: unknown): string[] {
     }
   }
 
+  if (app.observations !== undefined) {
+    if (!Array.isArray(app.observations) || app.observations.some((entry) => !validSelector(entry))) {
+      errors.push(`App ${appId} observations must contain valid event selectors`);
+    }
+  }
+
   if (app.schedules !== undefined) {
     if (!Array.isArray(app.schedules)) errors.push(`App ${appId} schedules must be an array`);
     else {

@@ -14,7 +14,7 @@ describe("importRuntimeModule", () => {
     }
   });
 
-  it("bundles external runtime modules that import the legacy SDK boundary", async () => {
+  it("bundles external runtime modules through the canonical SDK boundary", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-runtime-import-"));
     roots.push(root);
 
@@ -22,7 +22,7 @@ describe("importRuntimeModule", () => {
     writeFileSync(
       modulePath,
       `
-        import { workflowResultVersion } from "@may-agent/sdk/legacy";
+        import { workflowResultVersion } from "@may-agent/sdk";
 
         export function sdkVersion(): string {
           return workflowResultVersion;
@@ -42,7 +42,7 @@ describe("importRuntimeModule", () => {
     const root = mkdtempSync(join(tmpdir(), "may-runtime-app-import-"));
     roots.push(root);
 
-    const modulePath = join(root, "inbox.ts");
+    const modulePath = join(root, "app.ts");
     writeFileSync(
       modulePath,
       `
@@ -66,6 +66,28 @@ describe("importRuntimeModule", () => {
     });
 
     expect(mod.default.id).toBe("standalone-canary");
+  });
+
+  it("rejects the removed legacy SDK entry point", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-runtime-legacy-import-"));
+    roots.push(root);
+
+    const modulePath = join(root, "legacy-handler.ts");
+    const retiredSpecifier = ["@may-agent/sdk", "legacy"].join("/");
+    writeFileSync(
+      modulePath,
+      `
+        import * as legacySdk from "${retiredSpecifier}";
+        export const legacy = legacySdk;
+      `,
+    );
+
+    await expect(
+      importRuntimeModule(modulePath, {
+        forceBundle: true,
+        cacheDir: join(root, ".cache"),
+      }),
+    ).rejects.toThrow();
   });
 
   it("preserves dynamic relative imports from the original module directory", async () => {

@@ -1,5 +1,5 @@
 import type { AppEvent, AppObserver, ObserverContext } from "@may-agent/sdk";
-import type { LoadedAppInboxDefinition } from "./loader/app-inbox-loader.js";
+import type { LoadedAppDefinition } from "./loader/app-loader.js";
 import type { EventBus } from "./event-bus.js";
 
 type ObserverState = {
@@ -12,7 +12,7 @@ type ObserverState = {
 };
 
 export type AppObserverRuntime = {
-  replace(entries: readonly Readonly<LoadedAppInboxDefinition>[]): void;
+  replace(entries: readonly Readonly<LoadedAppDefinition>[]): void;
   scanNow(): void;
   close(): void;
 };
@@ -42,7 +42,7 @@ export function createAppObserverRuntime(options: {
   let closed = false;
   let states = new Map<string, ObserverState>();
 
-  const replace = (entries: readonly Readonly<LoadedAppInboxDefinition>[]): void => {
+  const replace = (entries: readonly Readonly<LoadedAppDefinition>[]): void => {
     const next = new Map<string, ObserverState>();
     const currentTime = now();
     for (const entry of entries) {

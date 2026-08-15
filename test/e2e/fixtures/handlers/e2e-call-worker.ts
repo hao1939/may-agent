@@ -11,15 +11,12 @@
  * module-level state cannot gate dispatches. The handler will re-dispatch
  * on each cron tick; the test just looks for the first qualifying row.
  */
-import type { CronEntry, HandlerContext, HandlerModule, EventEnvelope } from "@may-agent/sdk/legacy";
+import type { CronEntry } from "../../../../src/lib/cron-tool.js";
+import type { HandlerContext, HandlerModule, EventEnvelope } from "../../../../src/lib/handler-context.js";
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: CronEntry) => {
   return async (_event?: EventEnvelope) => {
-    ctx.sdk.emit(
-      "e2e.call-worker.dispatching",
-      { caller: entry.name },
-      { owner: "agent:may", source: entry.name },
-    );
+    ctx.sdk.emit("e2e.call-worker.dispatching", { caller: entry.name }, { owner: "agent:may", source: entry.name });
     try {
       // Fire-and-await. Worker will typically fail at LLM dispatch; we don't
       // care about the outcome here, only the session row.

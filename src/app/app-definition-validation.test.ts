@@ -20,6 +20,7 @@ describe("canonical App definition validation", () => {
           toInput: (event) => ({ kind: "request", data: event.data }),
         },
       ],
+      observations: ["evaluation.reviewed"],
       schedules: [
         {
           id: "review",
@@ -68,6 +69,7 @@ describe("canonical App definition validation", () => {
           { id: "same", event: "one" },
           { id: "same", event: {}, toInput() {} },
         ],
+        observations: ["", {}],
         schedules: [
           { id: "tick", intervalMs: 0, input: { kind: "" } },
           { id: "missing-target", intervalMs: 1 },
@@ -92,6 +94,7 @@ describe("canonical App definition validation", () => {
         "App broken route must be a function",
         "App broken subscription same requires toInput",
         "App broken subscription same requires a valid event selector",
+        "App broken observations must contain valid event selectors",
         "App broken schedule tick intervalMs must be positive",
         "App broken schedule tick requires a valid App input",
         "App broken schedule missing-target requires exactly one App input or event",
