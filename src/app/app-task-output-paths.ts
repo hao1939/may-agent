@@ -26,11 +26,18 @@ function isWithin(root: string, candidate: string): boolean {
 }
 
 export function appTaskExecutionPaths(appDir: string, projectDir: string): AppTaskExecutionPaths {
+  const canonicalAppDir = canonicalExistingPath(appDir);
   return {
-    appDir: canonicalExistingPath(appDir),
+    appDir: canonicalAppDir,
     projectDir: canonicalExistingPath(projectDir),
-    workspaceDir: canonicalExistingPath(projectDir),
+    // Unbound owner work is app-process work. Domain writes require a workflow
+    // that replaces this with its isolated task worktree.
+    workspaceDir: canonicalAppDir,
   };
+}
+
+export function withAppTaskWorkspace(paths: AppTaskExecutionPaths, workspaceDir: string): AppTaskExecutionPaths {
+  return { ...paths, workspaceDir: canonicalExistingPath(workspaceDir) };
 }
 
 /** Resolve declared outputs against the domain workspace and reject root escapes. */

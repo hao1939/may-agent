@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { mkdirSync, rmSync, symlinkSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { appTaskExecutionPaths, resolveAppTaskOutputPaths } from "./app-task-output-paths.js";
+import { appTaskExecutionPaths, resolveAppTaskOutputPaths, withAppTaskWorkspace } from "./app-task-output-paths.js";
 
 const roots: string[] = [];
 
@@ -21,6 +21,26 @@ afterEach(() => {
 });
 
 describe("App task output paths", () => {
+  it("defaults unbound owner execution to the app while retaining explicit domain inspection", () => {
+    const { appDir, projectDir, paths } = fixture();
+    writeFileSync(join(projectDir, "domain-proof.txt"), "read-only domain evidence\n");
+
+    expect(paths).toEqual({ appDir, projectDir, workspaceDir: appDir });
+    expect(readFileSync(join(paths.projectDir, "domain-proof.txt"), "utf8")).toBe("read-only domain evidence\n");
+  });
+
+  it("replaces the owner cwd with a workflow-declared task worktree", () => {
+    const { root, appDir, projectDir, paths } = fixture();
+    const taskWorkspace = join(root, "worktrees", "task-example");
+    mkdirSync(taskWorkspace, { recursive: true });
+
+    expect(withAppTaskWorkspace(paths, taskWorkspace)).toEqual({
+      appDir,
+      projectDir,
+      workspaceDir: taskWorkspace,
+    });
+  });
+
   it("resolves relative outputs against the declared domain workspace", () => {
     const { projectDir, paths } = fixture();
     expect(resolveAppTaskOutputPaths(["evidence/result.json"], paths)).toEqual([
