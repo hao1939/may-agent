@@ -3,6 +3,7 @@ import { join, resolve } from "node:path";
 import type { AppDefinition } from "@may-agent/sdk";
 import { importRuntimeModule } from "../../lib/runtime-import.js";
 import { assertValidAppDefinition } from "../app-definition-validation.js";
+import { adaptLegacyProjectApp } from "./legacy-project-app-adapter.js";
 
 export type LoadedAppDefinition = {
   appDir: string;
@@ -31,9 +32,10 @@ export async function loadAppDefinitions(projectsRoot: string): Promise<LoadedAp
   const ids = new Set<string>();
   for (const modulePath of listAppDefinitionFiles(projectsRoot)) {
     const mod = await importRuntimeModule<{ default?: AppDefinition; app?: AppDefinition }>(modulePath);
-    const definition = mod.default ?? mod.app;
-    if (!definition || typeof definition !== "object")
+    const exported = mod.default ?? mod.app;
+    if (!exported || typeof exported !== "object")
       throw new Error(`App module ${modulePath} must default-export an App definition`);
+    const definition = adaptLegacyProjectApp(exported) ?? exported;
     assertValidAppDefinition(definition);
     if (ids.has(definition.id)) throw new Error(`Duplicate App id: ${definition.id}`);
     ids.add(definition.id);
