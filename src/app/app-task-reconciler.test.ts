@@ -39,6 +39,7 @@ import {
   releaseHandlerUnavailableAppTask,
   releaseWorkspacePreparationFailedAppTask,
   releaseInterruptedAppTaskAttempt,
+  releaseLateTerminalWorkflowAppTaskAttempt,
   releaseStaleAppTaskResult,
   recordAppTaskAttemptSession,
   recordAppTaskAttemptWorkspace,
@@ -2175,6 +2176,64 @@ describe("App task reconciler state", () => {
       ).toBe(false);
       expect(readTaskState(config).attempts?.[claim.attemptId]).toEqual(before.attempts?.[claim.attemptId]);
     }
+  });
+
+  it("requeues the same task when a restart-interrupted workflow session completes after startup resume", () => {
+    const { config } = fixture();
+    const trigger = {
+      type: "project.task.tick",
+      data: { project: "sample", taskId: "maintain" },
+    };
+    const claim = declareAndClaimTask(config, {
+      intent: intent("maintain"),
+      appOwner: "app-owner",
+      handler: "workflow:known-workflow",
+      trigger,
+    });
+    if (claim.kind !== "claimed") throw new Error("expected workflow claim");
+    expect(recordAppTaskAttemptSession(config, claim, "session-resumed-after-restart")).toBe(true);
+
+    const beforeRestart = readTaskState(config);
+    beforeRestart.attempts![claim.attemptId].runtimeId = "previous-runtime";
+    beforeRestart.attempts![claim.attemptId].lease!.runtimeId = "previous-runtime";
+    saveTaskState(config, beforeRestart);
+    expect(
+      claimFreshAppTaskSessionForStartup(
+        config,
+        { taskId: claim.taskId, generation: claim.generation },
+        "session-resumed-after-restart",
+      ),
+    ).toBe(true);
+
+    expect(
+      releaseLateTerminalWorkflowAppTaskAttempt(
+        config,
+        { taskId: claim.taskId, generation: claim.generation },
+        "session-resumed-after-restart",
+        "Late terminal result cannot reattach to restart-interrupted workflow workflow-run-1",
+      ),
+    ).toEqual({ released: true, taskId: claim.taskId });
+
+    const released = readTaskState(config);
+    expect(released.resources?.[claim.taskId].status).toMatchObject({
+      phase: "pending",
+      observedGeneration: claim.generation - 1,
+    });
+    expect(released.resources?.[claim.taskId].status.currentAttemptId).toBeUndefined();
+    expect(released.attempts?.[claim.attemptId]).toMatchObject({
+      state: "interrupted",
+      failureReason: "late-terminal-workflow-result-requeued",
+      sessionId: "session-resumed-after-restart",
+    });
+    expect(readAppTaskTrigger(config, claim.taskId)).toEqual(trigger);
+    expect(
+      releaseLateTerminalWorkflowAppTaskAttempt(
+        config,
+        { taskId: claim.taskId, generation: claim.generation },
+        "session-resumed-after-restart",
+        "duplicate terminal delivery",
+      ),
+    ).toEqual({ released: false, taskId: claim.taskId });
   });
 
   it("recovers an interrupted attempt only from a previous runtime trigger", () => {
