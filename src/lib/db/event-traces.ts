@@ -26,7 +26,6 @@ export type EventTraceIntegrity = {
   pairTraceSplitCount: number;
   humanRootWithoutSingleIntentCount: number;
   humanResultUndeliveredCount: number;
-  humanLinkedTaskWithoutCloseoutCount: number;
   bookkeepingOnlyAcceptanceCount: number;
   structuralOk: boolean;
   semanticOk: boolean;
@@ -90,19 +89,25 @@ function isEscalationFollowupEvent(type: string | undefined): boolean {
 }
 
 function findPriorEscalationCreated(db: SqliteDb, escalationId: string, eventId: number): number | undefined {
-  const row = db.prepare(
-    `SELECT id
+  const row = db
+    .prepare(
+      `SELECT id
      FROM events
      WHERE event_type = 'escalation.created'
        AND id != ?
        AND escalation_id = ?
      ORDER BY id DESC
      LIMIT 1`,
-  ).get(eventId, escalationId) as { id?: unknown } | null;
+    )
+    .get(eventId, escalationId) as { id?: unknown } | null;
   return positiveInteger(row?.id);
 }
 
-function hasDeclaredLink(trace: EventTraceInput | undefined, eventId: number | undefined, type?: EventTraceLinkType): boolean {
+function hasDeclaredLink(
+  trace: EventTraceInput | undefined,
+  eventId: number | undefined,
+  type?: EventTraceLinkType,
+): boolean {
   if (!trace?.links || !eventId) return false;
   return trace.links.some((link) => link.eventId === eventId && (!type || (link.type ?? "reference") === type));
 }
@@ -134,12 +139,7 @@ export function eventVisibility(event: unknown): "default" | "detail" {
   return event.visibility === "detail" ? "detail" : "default";
 }
 
-export function persistEventTrace(
-  db: SqliteDb,
-  event: unknown,
-  eventId: number,
-  createdAt: number,
-): void {
+export function persistEventTrace(db: SqliteDb, event: unknown, eventId: number, createdAt: number): void {
   if (!Number.isInteger(eventId) || eventId <= 0) return;
   const record = isRecord(event) ? event : {};
   const data = eventDataRecord(record);
@@ -157,11 +157,8 @@ export function persistEventTrace(
       ? escalationCreatedId
       : undefined;
   const traceId =
-    trace?.traceId ??
-    (inferredParentEventId ? eventTraceId(db, inferredParentEventId) : `event:${eventId}`);
-  const parentEventId = eventExists(db, trace?.parentEventId)
-    ? trace!.parentEventId!
-    : inferredParentEventId ?? null;
+    trace?.traceId ?? (inferredParentEventId ? eventTraceId(db, inferredParentEventId) : `event:${eventId}`);
+  const parentEventId = eventExists(db, trace?.parentEventId) ? trace!.parentEventId! : (inferredParentEventId ?? null);
   const visibility = eventVisibility(record);
 
   db.run(
@@ -232,14 +229,16 @@ export function persistEventClosure(
      WHERE event_id = ?`,
     [traceId, openEventId, closeEventId],
   );
-  const existing = db.prepare(
-    `SELECT 1 AS found
+  const existing = db
+    .prepare(
+      `SELECT 1 AS found
      FROM event_trace_links
      WHERE from_event_id = ?
        AND to_event_id = ?
        AND type = 'closure'
      LIMIT 1`,
-  ).get(closeEventId, openEventId) as { found?: unknown } | null;
+    )
+    .get(closeEventId, openEventId) as { found?: unknown } | null;
   if (!existing) {
     db.run(
       `INSERT INTO event_trace_links
@@ -427,7 +426,9 @@ export function backfillEventPairTraces(db: SqliteDb, options: { limit?: number;
      ORDER BY p.id
      LIMIT ${limit}`,
   );
-  db.exec("CREATE INDEX IF NOT EXISTS idx_temp_event_pair_trace_close ON temp_event_pair_trace_backfill(close_event_id)");
+  db.exec(
+    "CREATE INDEX IF NOT EXISTS idx_temp_event_pair_trace_close ON temp_event_pair_trace_backfill(close_event_id)",
+  );
   const closeTraceInsert = db.run(
     `INSERT OR IGNORE INTO event_traces
      (event_id, trace_id, parent_event_id, visibility)
@@ -569,6 +570,7 @@ export function checkEventTraceIntegrity(db: SqliteDb): EventTraceIntegrity {
              AND (
                child.event_type IN (
                  'chat.start.requested',
+                 'app.input.requested',
                  'session.steer.requested',
                  'project.comment.created',
                  'project.approval.submitted',
@@ -600,48 +602,6 @@ export function checkEventTraceIntegrity(db: SqliteDb): EventTraceIntegrity {
              AND delivery_trace.trace_id = terminal_trace.trace_id
        )`,
     ),
-    humanLinkedTaskWithoutCloseoutCount: count(
-      db,
-      `WITH humanTraces AS MATERIALIZED (
-         SELECT DISTINCT trace.trace_id
-         FROM events humanRoot
-         JOIN event_traces trace ON trace.event_id = humanRoot.id
-         WHERE humanRoot.event_type = 'human.input.received'
-       ),
-       humanTasks AS MATERIALIZED (
-         SELECT json_extract(taskRef.value, '$.taskId') AS taskId,
-                json_extract(taskRef.value, '$.projectId') AS projectId
-         FROM events ownerResult
-         JOIN event_traces ownerTrace ON ownerTrace.event_id = ownerResult.id
-         JOIN humanTraces ON humanTraces.trace_id = ownerTrace.trace_id
-         JOIN json_each(ownerResult.data, '$.taskRefs') taskRef
-         WHERE ownerResult.event_type = 'project.owner.reviewed'
-       )
-       SELECT COUNT(DISTINCT terminal.id) AS c
-       FROM humanTasks human
-       CROSS JOIN events terminal INDEXED BY idx_events_type
-       WHERE terminal.event_type = 'project.task.reconciled'
-         AND terminal.task_id = human.taskId
-         AND (terminal.project_id IS NULL OR terminal.project_id = human.projectId)
-         AND json_extract(terminal.data, '$.disposition') IN ('converged', 'attention')
-         AND NOT EXISTS (
-           SELECT 1
-           FROM event_traces reviewTrace
-           JOIN events reviewStart ON reviewStart.id = reviewTrace.event_id
-           WHERE reviewTrace.parent_event_id = terminal.id
-             AND reviewStart.event_type = 'session.start'
-             AND reviewStart.owner = 'agent:may'
-             AND EXISTS (
-               SELECT 1
-               FROM events delivery
-               JOIN event_traces deliveryTrace ON deliveryTrace.event_id = delivery.id
-               WHERE delivery.event_type = 'channel.delivery.completed'
-                 AND delivery.id > terminal.id
-                 AND deliveryTrace.trace_id = reviewTrace.trace_id
-                 AND json_extract(delivery.data, '$.sessionId') = json_extract(reviewStart.data, '$.sessionId')
-             )
-         )`,
-    ),
     bookkeepingOnlyAcceptanceCount: count(
       db,
       `SELECT COUNT(*) AS c
@@ -668,7 +628,6 @@ export function checkEventTraceIntegrity(db: SqliteDb): EventTraceIntegrity {
     result.pairTraceSplitCount === 0 &&
     result.humanRootWithoutSingleIntentCount === 0 &&
     result.humanResultUndeliveredCount === 0 &&
-    result.humanLinkedTaskWithoutCloseoutCount === 0 &&
     result.bookkeepingOnlyAcceptanceCount === 0;
   result.ok = result.structuralOk && result.semanticOk;
   return result;

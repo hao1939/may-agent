@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { chmodSync, mkdtempSync, mkdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { deployReceiptPrompt, readDeployReceiptForTask } from "../src/app/loader/project-app-loader";
+import { deployReceiptPrompt, readDeployReceiptForTask } from "../src/app/app-task-runtime";
 import { requestReceipt, settleReceipt } from "./deploy-receipt";
 
 function fixture() {
@@ -122,9 +122,7 @@ describe("restart-aware deploy receipts", () => {
       restarter.indexOf('settle succeeded "$loaded" healthy true'),
     );
     expect(restarter).toContain("if emit_wake rolled_back; then rollback_wake=true; fi");
-    expect(restarter).toContain(
-      'settle rolled_back "$loaded" "$rollback_health" "$rollback_wake"',
-    );
+    expect(restarter).toContain('settle rolled_back "$loaded" "$rollback_health" "$rollback_wake"');
     expect(restarter).toContain('settle failed "$loaded" unhealthy false "restarter-exit-$rc"');
   });
 
@@ -141,7 +139,7 @@ describe("restart-aware deploy receipts", () => {
     expect(deploy).toContain(
       "bun test packages/control/src/client.test.ts packages/control/src/control-socket.test.ts src/app/modes/emit-mode.test.ts",
     );
-    expect(deploy).toContain('$bundle_dir/may-agent.provenance.json');
+    expect(deploy).toContain("$bundle_dir/may-agent.provenance.json");
     expect(deploy).toContain('"$artifact_sha" "$source_commit"');
     expect(deploy).toContain('sdk_release_name="sdk-$source_commit"');
     expect(deploy).toContain('cp -R "$build_dir/packages/sdk/." "$sdk_stage/"');

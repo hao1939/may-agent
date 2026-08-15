@@ -4,6 +4,12 @@ import type { MetricService } from "./metrics.js";
 import type { QueryAPI } from "./query-service.js";
 import type { CommandAPI } from "./command-service.js";
 import type { Static, TSchema } from "@earendil-works/pi-ai";
+import type {
+  Demand as SdkDemand,
+  GuardModule as SdkGuardModule,
+  WorkflowGuard as SdkWorkflowGuard,
+  WorkflowGuardEvent as SdkWorkflowGuardEvent,
+} from "@may-agent/sdk";
 
 // ── Workflow Lifecycle Callback Events ────────────────────────────────
 // These are local workflow-tool callbacks for logs/guards. They are not
@@ -49,52 +55,18 @@ export type WorkflowEvent =
 // ── Guard Events (workflow-level) ──────────────────────────────────────
 
 /** Events the workflow runtime emits. Guards subscribe to these. */
-export type WorkflowGuardEvent =
-  | {
-      type: "step_done";
-      source: "agent" | "function";
-      step: string;
-      sessionId?: string;
-      result: TaskResult;
-      completedSteps: CompletedStep[];
-      task: string;
-    }
-  | { type: "step_start"; source: "agent" | "function"; step: string; task: string; completedSteps: CompletedStep[] }
-  | { type: "workflow_start"; workflow: string; task: string }
-  | { type: "workflow_done"; workflow: string; summary: string; completedSteps: CompletedStep[] };
+export type WorkflowGuardEvent = SdkWorkflowGuardEvent<TaskResult>;
 
 // ── Guard Types ────────────────────────────────────────────────────────
 
 /** A demand returned by a guard in response to a workflow event. */
-export interface Demand {
-  type: "observe" | "repair" | "run_step" | "block" | "warn";
-  /** Human-readable reason. Included in logs, warnings, and block messages. */
-  reason: string;
-  /** Name of the guard that produced this demand. Auto-filled by runtime. */
-  guardName?: string;
-  /** For repair/run_step: the step to inject. */
-  step?: {
-    agent: string;
-    task: string;
-    label?: string;
-  };
-}
+export type Demand = SdkDemand;
 
 /** A guard is a pure event listener: event in → demands out. */
-export interface WorkflowGuard {
-  name: string;
-  /** Which events this guard listens to. If omitted, listens to all. */
-  events?: WorkflowGuardEvent["type"][];
-  /** Expected cost tier of injected steps. For monitoring/alerting. */
-  costTier?: "zero" | "low" | "medium";
-  /** Receive an event, return demands (or empty array). Must be pure (no I/O). */
-  handle(event: WorkflowGuardEvent): Demand[];
-}
+export type WorkflowGuard = SdkWorkflowGuard<TaskResult>;
 
 /** Guard module file shape — each guard .ts file exports this. */
-export interface GuardModule {
-  guard: WorkflowGuard;
-}
+export type GuardModule = SdkGuardModule<TaskResult>;
 
 // ── Workflow Result ────────────────────────────────────────────────────
 

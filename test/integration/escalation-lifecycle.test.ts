@@ -159,7 +159,7 @@ describe("escalation lifecycle", () => {
 
     bus.emit({
       type: "session.start",
-      source: "project-app-task-controller",
+      source: "app-task-controller",
       owner: "agent:dev",
       data: {
         sessionId,
@@ -170,7 +170,7 @@ describe("escalation lifecycle", () => {
     } as never);
     bus.emit({
       type: "session.end",
-      source: "project-app-task-controller",
+      source: "app-task-controller",
       owner: "agent:dev",
       data: {
         sessionId,
@@ -236,7 +236,7 @@ describe("escalation lifecycle", () => {
 
     bus.emit({
       type: "session.start",
-      source: "project-app-task-controller",
+      source: "app-task-controller",
       owner: "agent:dev",
       data: {
         sessionId,
@@ -247,7 +247,7 @@ describe("escalation lifecycle", () => {
     } as never);
     bus.emit({
       type: "session.end",
-      source: "project-app-task-controller",
+      source: "app-task-controller",
       owner: "agent:dev",
       data: {
         sessionId,
@@ -296,7 +296,7 @@ describe("escalation lifecycle", () => {
 
     bus.emit({
       type: "session.start",
-      source: "project-app-task-controller",
+      source: "app-task-controller",
       owner: "agent:dev",
       data: {
         sessionId,
@@ -307,7 +307,7 @@ describe("escalation lifecycle", () => {
     } as never);
     bus.emit({
       type: "session.end",
-      source: "project-app-task-controller",
+      source: "app-task-controller",
       owner: "agent:dev",
       data: {
         sessionId,

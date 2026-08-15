@@ -267,6 +267,51 @@ export class AppInboxHost {
       if (next.has(app.id)) throw new Error(`Duplicate App id: ${app.id}`);
       next.set(app.id, app);
     }
+    const pendingAdmissions = this.#db
+      .prepare(
+        `SELECT app_id, route_kind, payload
+         FROM app_event_admission_commands
+         WHERE status = 'pending'
+         ORDER BY event_id, app_id`,
+      )
+      .all();
+    for (const command of pendingAdmissions) {
+      const appId = requiredText(command.app_id, "Pending App event admission app id");
+      const routeKind = requiredText(command.route_kind, "Pending App event admission route kind");
+      const app = next.get(appId);
+      if (!app) {
+        throw new Error(`Cannot remove App ${appId} while it owns pending event admission commands`);
+      }
+      if ((routeKind === "task" || routeKind === "exact-task") && !app.tasks) {
+        throw new Error(
+          `Cannot remove task capability from App ${appId} while it owns pending event admission commands`,
+        );
+      }
+      if (routeKind === "inbox") {
+        let input: unknown;
+        let conditionTaskIds: unknown;
+        try {
+          const payload = JSON.parse(String(command.payload)) as {
+            input?: unknown;
+            conditionTaskIds?: unknown;
+          };
+          input = payload.input;
+          conditionTaskIds = payload.conditionTaskIds;
+        } catch {
+          throw new Error(`Pending App event admission for ${appId} has invalid inbox payload JSON`);
+        }
+        if (!Check(app.inputSchema, input)) {
+          throw new Error(
+            `Cannot install an input schema incompatible with pending event admission commands for App ${appId}`,
+          );
+        }
+        if (Array.isArray(conditionTaskIds) && conditionTaskIds.length > 0 && !app.tasks) {
+          throw new Error(
+            `Cannot remove task capability from App ${appId} while its pending inbox admission includes Condition wakes`,
+          );
+        }
+      }
+    }
     for (const id of this.#apps.keys()) {
       if (next.has(id)) continue;
       const unfinished = this.#db

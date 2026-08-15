@@ -102,9 +102,8 @@ describe("App input control admission", () => {
 });
 
 describe("canonical project actions", () => {
-  it("admits a canonical action as App input and keeps compatibility behind the task capability", () => {
+  it("admits a canonical action as App input and rejects unknown Apps", () => {
     const admitted: unknown[] = [];
-    const compatibility: unknown[] = [];
     const access = createProjectActionAccess({
       getRuntime: () =>
         ({
@@ -114,13 +113,6 @@ describe("canonical project actions", () => {
             actionInput: () => ({ kind: "review", data: { scope: "current" } }),
           },
         }) as never,
-      tasks: {
-        describeActions: (projectId) => [{ id: projectId, description: "legacy", inputSchema: {} }],
-        invokeAction: (input) => {
-          compatibility.push(input);
-          return { eventId: 2, eventType: "legacy.event" };
-        },
-      },
       admit: (input) => {
         admitted.push(input);
         return { eventId: 1, eventType: "app.input.requested" };
@@ -142,12 +134,8 @@ describe("canonical project actions", () => {
       },
     ]);
 
-    expect(access.invoke({ projectId: "legacy", actionId: "run", params: {} })).toEqual({
-      eventId: 2,
-      eventType: "legacy.event",
-    });
-    expect(compatibility).toEqual([
-      { projectId: "legacy", actionId: "run", params: {}, ingressSource: "control-socket" },
-    ]);
+    expect(() => access.invoke({ projectId: "legacy", actionId: "run", params: {} })).toThrow(
+      "App legacy is not loaded",
+    );
   });
 });

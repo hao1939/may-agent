@@ -12,6 +12,8 @@ export type {
   ExecutionResult,
   ExecutionView,
   Logger,
+  MetricDefinition,
+  MetricRecordOptions,
   MetricView,
   ObserverContext,
   TaskView,
@@ -19,6 +21,8 @@ export type {
   TaskReconciliationContext,
   WorkflowContext,
   WorkflowInput,
+  WorkflowMetricCapability,
+  AgentCallOptions,
 } from "./workflow.js";
 
 /** Canonical envelope for durable input addressed to an App. */
@@ -150,6 +154,11 @@ export type AppDefinition<TInputSchema extends TSchema = TSchema> = {
    */
   route?: (request: Readonly<AppRequest>) => AppDisposition | null;
   subscriptions?: AppEventSubscription[];
+  /**
+   * Reviewed facts that intentionally create no inbox item or task. The host
+   * records a terminal no-op only after all actionable routes are evaluated.
+   */
+  observations?: EventSelector[];
   inbox?: { batch?: AppInboxBatchMode; maxConcurrent?: number };
   schedules?: AppSchedule[];
   observers?: AppObserver[];

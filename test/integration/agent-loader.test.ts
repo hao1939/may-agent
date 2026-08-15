@@ -115,7 +115,7 @@ describe("validateAgentConfig", () => {
     }
   });
 
-  it("validates all existing project-app agent.json files", () => {
+  it("validates all existing App-local agent.json files", () => {
     const { readFileSync } = require("node:fs");
 
     for (const agent of listProjectAgentDirectories(PROJECTS_ROOT)) {

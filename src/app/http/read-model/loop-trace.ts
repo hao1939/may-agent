@@ -4,14 +4,10 @@ import {
   sessionRowToExecutionResult,
   workflowRowToExecutionResult,
   type ExecutionResult,
-} from "@may-agent/sdk/legacy";
+} from "../../../lib/execution-result.js";
 
 export type LoopTraceTarget =
-  | { eventId: number }
-  | { alertId: number }
-  | { metricId: string }
-  | { workflowRunId: string }
-  | { sessionId: string };
+  { eventId: number } | { alertId: number } | { metricId: string } | { workflowRunId: string } | { sessionId: string };
 
 type Row = Record<string, unknown>;
 const FAILOVER_EVENT_TYPES = new Set([
@@ -64,7 +60,7 @@ function parseData(row: Row | null | undefined): Record<string, unknown> {
   if (typeof raw !== "string" || raw.trim() === "") return {};
   try {
     const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed as Record<string, unknown> : {};
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : {};
   } catch {
     return {};
   }
@@ -179,19 +175,21 @@ function failoverExecution(row: Row): LoopTraceExecution | null {
   if (!kind || !id) return null;
   const owner = stringValue(row.owner);
   const status = resumeDiagnosticStatus(eventType, data);
-  const execution = toLoopTraceExecution(resumeDiagnosticToExecutionResult({
-    id,
-    kind,
-    status,
-    reason: compact(data.reason ?? data.message ?? data.category ?? eventType, `${kind} resume failed`),
-    owner: owner ?? undefined,
-    projectId: stringValue(data.projectId) ?? undefined,
-    agent: stringValue(data.agent) ?? undefined,
-    workflow: stringValue(data.workflow) ?? undefined,
-    category: stringValue(data.category) ?? undefined,
-    recoverable: typeof data.recoverable === "boolean" ? data.recoverable : undefined,
-    nextAction: resumeNextAction(eventType, data),
-  }));
+  const execution = toLoopTraceExecution(
+    resumeDiagnosticToExecutionResult({
+      id,
+      kind,
+      status,
+      reason: compact(data.reason ?? data.message ?? data.category ?? eventType, `${kind} resume failed`),
+      owner: owner ?? undefined,
+      projectId: stringValue(data.projectId) ?? undefined,
+      agent: stringValue(data.agent) ?? undefined,
+      workflow: stringValue(data.workflow) ?? undefined,
+      category: stringValue(data.category) ?? undefined,
+      recoverable: typeof data.recoverable === "boolean" ? data.recoverable : undefined,
+      nextAction: resumeNextAction(eventType, data),
+    }),
+  );
   execution.evidence.eventType = eventType;
   return execution;
 }
@@ -213,7 +211,10 @@ function buildExecutions(workflows: Row[], sessions: Row[], failovers: Row[]): L
   return uniqBy(executions as unknown as Row[], "id") as unknown as LoopTraceExecution[];
 }
 
-function resolveSeeds(db: SqliteDb, target: LoopTraceTarget): {
+function resolveSeeds(
+  db: SqliteDb,
+  target: LoopTraceTarget,
+): {
   origin: Row | null;
   metricId: string | null;
   alertId: number | null;
@@ -286,7 +287,11 @@ function resolveSeeds(db: SqliteDb, target: LoopTraceTarget): {
   }
 
   if (workflowRunId) {
-    const run = safeGet(db, "SELECT runId, workflow, status, projectId, parentSessionId, parentWorkflowRunId FROM workflow_runs WHERE runId = ?", workflowRunId);
+    const run = safeGet(
+      db,
+      "SELECT runId, workflow, status, projectId, parentSessionId, parentWorkflowRunId FROM workflow_runs WHERE runId = ?",
+      workflowRunId,
+    );
     if (run) {
       projectId ??= stringValue(run.projectId);
       handlerName ??= stringValue(run.workflow);
@@ -295,7 +300,11 @@ function resolveSeeds(db: SqliteDb, target: LoopTraceTarget): {
   }
 
   if (sessionId) {
-    const session = safeGet(db, "SELECT sessionId, agent, status, source, workflowRunId, projectId FROM sessions WHERE sessionId = ?", sessionId);
+    const session = safeGet(
+      db,
+      "SELECT sessionId, agent, status, source, workflowRunId, projectId FROM sessions WHERE sessionId = ?",
+      sessionId,
+    );
     if (session) {
       owner ??= stringValue(session.agent);
       projectId ??= stringValue(session.projectId);
@@ -305,7 +314,18 @@ function resolveSeeds(db: SqliteDb, target: LoopTraceTarget): {
     }
   }
 
-  return { origin, metricId, alertId, workflowRunId, sessionId, owner, projectId, handlerName, handlerStatus, handlerReason };
+  return {
+    origin,
+    metricId,
+    alertId,
+    workflowRunId,
+    sessionId,
+    owner,
+    projectId,
+    handlerName,
+    handlerStatus,
+    handlerReason,
+  };
 }
 
 export function buildLoopTrace(db: SqliteDb, target: LoopTraceTarget): LoopTrace {
@@ -318,10 +338,18 @@ export function buildLoopTrace(db: SqliteDb, target: LoopTraceTarget): LoopTrace
     workflows.push(...safeAll(db, "SELECT * FROM workflow_runs WHERE runId = ?", seed.workflowRunId));
   }
   if (metricId) {
-    workflows.push(...safeAll(db, "SELECT * FROM workflow_runs WHERE task LIKE ? ORDER BY startedAt DESC LIMIT 20", `%${metricId}%`));
+    workflows.push(
+      ...safeAll(db, "SELECT * FROM workflow_runs WHERE task LIKE ? ORDER BY startedAt DESC LIMIT 20", `%${metricId}%`),
+    );
   }
   if (seed.projectId) {
-    workflows.push(...safeAll(db, "SELECT * FROM workflow_runs WHERE projectId = ? ORDER BY startedAt DESC LIMIT 20", seed.projectId));
+    workflows.push(
+      ...safeAll(
+        db,
+        "SELECT * FROM workflow_runs WHERE projectId = ? ORDER BY startedAt DESC LIMIT 20",
+        seed.projectId,
+      ),
+    );
   }
   const uniqueWorkflows = uniqBy(workflows, "runId");
   const workflowIds = uniqueWorkflows.map((row) => row.runId).filter((id): id is string => typeof id === "string");
@@ -329,26 +357,59 @@ export function buildLoopTrace(db: SqliteDb, target: LoopTraceTarget): LoopTrace
   const sessions: Row[] = [];
   if (seed.sessionId) {
     sessions.push(...safeAll(db, "SELECT * FROM sessions WHERE sessionId = ?", seed.sessionId));
-    sessions.push(...safeAll(db, "SELECT * FROM sessions WHERE parentSessionId = ? ORDER BY startedAt ASC LIMIT 50", seed.sessionId));
+    sessions.push(
+      ...safeAll(
+        db,
+        "SELECT * FROM sessions WHERE parentSessionId = ? ORDER BY startedAt ASC LIMIT 50",
+        seed.sessionId,
+      ),
+    );
   }
   if (workflowIds.length > 0) {
-    sessions.push(...safeAll(db, `SELECT * FROM sessions WHERE workflowRunId IN (${placeholders(workflowIds)}) ORDER BY startedAt ASC LIMIT 100`, ...workflowIds));
+    sessions.push(
+      ...safeAll(
+        db,
+        `SELECT * FROM sessions WHERE workflowRunId IN (${placeholders(workflowIds)}) ORDER BY startedAt ASC LIMIT 100`,
+        ...workflowIds,
+      ),
+    );
   }
   if (metricId) {
-    sessions.push(...safeAll(db, "SELECT * FROM sessions WHERE task LIKE ? OR source LIKE ? ORDER BY startedAt DESC LIMIT 50", `%${metricId}%`, `%${metricId}%`));
+    sessions.push(
+      ...safeAll(
+        db,
+        "SELECT * FROM sessions WHERE task LIKE ? OR source LIKE ? ORDER BY startedAt DESC LIMIT 50",
+        `%${metricId}%`,
+        `%${metricId}%`,
+      ),
+    );
   }
   if (seed.projectId) {
-    sessions.push(...safeAll(db, "SELECT * FROM sessions WHERE projectId = ? ORDER BY startedAt DESC LIMIT 50", seed.projectId));
+    sessions.push(
+      ...safeAll(db, "SELECT * FROM sessions WHERE projectId = ? ORDER BY startedAt DESC LIMIT 50", seed.projectId),
+    );
   }
   const uniqueSessions = uniqBy(sessions, "sessionId");
   const sessionIds = uniqueSessions.map((row) => row.sessionId).filter((id): id is string => typeof id === "string");
 
   const guardSignals: Row[] = [];
   if (workflowIds.length > 0) {
-    guardSignals.push(...safeAll(db, `SELECT * FROM events WHERE event_type = 'guard.triggered' AND workflow_run_id IN (${placeholders(workflowIds)}) ORDER BY timestamp DESC LIMIT 50`, ...workflowIds));
+    guardSignals.push(
+      ...safeAll(
+        db,
+        `SELECT * FROM events WHERE event_type = 'guard.triggered' AND workflow_run_id IN (${placeholders(workflowIds)}) ORDER BY timestamp DESC LIMIT 50`,
+        ...workflowIds,
+      ),
+    );
   }
   if (sessionIds.length > 0) {
-    guardSignals.push(...safeAll(db, `SELECT * FROM events WHERE event_type = 'guard.triggered' AND session_id IN (${placeholders(sessionIds)}) ORDER BY timestamp DESC LIMIT 50`, ...sessionIds));
+    guardSignals.push(
+      ...safeAll(
+        db,
+        `SELECT * FROM events WHERE event_type = 'guard.triggered' AND session_id IN (${placeholders(sessionIds)}) ORDER BY timestamp DESC LIMIT 50`,
+        ...sessionIds,
+      ),
+    );
   }
   const uniqueGuardSignals = uniqBy(guardSignals, "id");
 
@@ -366,9 +427,10 @@ export function buildLoopTrace(db: SqliteDb, target: LoopTraceTarget): LoopTrace
   if (typeof seed.origin?.event_type === "string" && FAILOVER_EVENT_TYPES.has(seed.origin.event_type)) {
     failoverEvents.push(seed.origin);
   }
-  failoverEvents.push(...safeAll(
-    db,
-    `SELECT * FROM events
+  failoverEvents.push(
+    ...safeAll(
+      db,
+      `SELECT * FROM events
      WHERE event_type IN ('workflow.resume_failed', 'workflow.resume_skipped', 'session.resume_failed', 'message.delivery_failed')
        AND (
          (? IS NOT NULL AND workflow_run_id = ?)
@@ -376,18 +438,23 @@ export function buildLoopTrace(db: SqliteDb, target: LoopTraceTarget): LoopTrace
          OR (? IS NOT NULL AND metric_id = ?)
        )
      ORDER BY timestamp DESC LIMIT 50`,
-    seed.workflowRunId,
-    seed.workflowRunId,
-    seed.sessionId,
-    seed.sessionId,
-    metricId,
-    metricId,
-  ));
+      seed.workflowRunId,
+      seed.workflowRunId,
+      seed.sessionId,
+      seed.sessionId,
+      metricId,
+      metricId,
+    ),
+  );
   const uniqueFailoverEvents = uniqBy(failoverEvents, "id");
-  const failoverOwner = uniqueFailoverEvents.map((row) => {
-    return stringValue(row.owner);
-  }).find(Boolean) ?? null;
-  const failoverProjectId = uniqueFailoverEvents.map((row) => stringValue(parseData(row).projectId)).find(Boolean) ?? null;
+  const failoverOwner =
+    uniqueFailoverEvents
+      .map((row) => {
+        return stringValue(row.owner);
+      })
+      .find(Boolean) ?? null;
+  const failoverProjectId =
+    uniqueFailoverEvents.map((row) => stringValue(parseData(row).projectId)).find(Boolean) ?? null;
 
   const metricSnapshots = metricId
     ? safeAll(db, "SELECT * FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT 20", metricId)

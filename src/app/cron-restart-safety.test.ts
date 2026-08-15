@@ -33,7 +33,7 @@ function cronAt(projectRoot: string, entryName: string, intervalMs: number, hand
     name: entryName,
     enabled: true,
     intervalMs,
-    handler: "__project_app_schedule__",
+    handler: "__app_schedule__",
   });
   return cron;
 }

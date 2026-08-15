@@ -12,6 +12,16 @@ import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type Eve
 import { AppInboxHost, type AppInboxReconcileResult, type AppTaskAttacher } from "./app-inbox-host.js";
 import { createManagerAppOwnerInvoker, type AppOwnerManager } from "./app-owner-manager-adapter.js";
 import type { AppRegistry, AppRegistrySnapshot } from "./app-registry.js";
+import {
+  completeAppEventAdmissionPlan,
+  createAppEventAdmissionPlan,
+  getAppEventAdmissionPlan,
+  markAppEventAdmissionCommandAdmitted,
+  recordAppEventAdmissionCommandFailure,
+  type AppEventAdmissionCommand,
+  type AppEventAdmissionPlan,
+  type AppEventAdmissionRoute,
+} from "./app-event-admission-store.js";
 import { createAppObserverRuntime } from "./app-observer-runtime.js";
 import { canonicalAppEvent } from "./canonical-app-event.js";
 
@@ -77,9 +87,14 @@ function requestedInput(data: Record<string, unknown>): AppInput {
   return { kind: typeof input.kind === "string" ? input.kind : "", data: input.data };
 }
 
-function eventIdentity(event: AgentEvent): string | undefined {
+function eventRowId(event: AgentEvent): number | undefined {
   const eventId = Number((event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID]);
-  return Number.isSafeInteger(eventId) && eventId > 0 ? `event:${eventId}` : undefined;
+  return Number.isSafeInteger(eventId) && eventId > 0 ? eventId : undefined;
+}
+
+function eventIdentity(event: AgentEvent): string | undefined {
+  const eventId = eventRowId(event);
+  return eventId ? `event:${eventId}` : undefined;
 }
 
 function exactTaskTarget(event: AppEvent<Record<string, unknown>>): { appId?: string; taskId: string } | null {
@@ -91,26 +106,6 @@ function exactTaskTarget(event: AppEvent<Record<string, unknown>>): { appId?: st
   );
   const appId = typeof selectedAppId === "string" ? selectedAppId.trim() : "";
   return { appId: appId ? appId.replace(/\.app$/, "") : undefined, taskId };
-}
-
-function isExactTaskWakeEvent(type: string): boolean {
-  // Transitional lifecycle producers still place the task they describe in
-  // target.taskId. These are facts about that task, not addressed wake
-  // commands. Canonical producers must reserve task targets for delivery and
-  // keep subject/correlation identities in data.
-  return ![
-    "handler.workflow_dispatched",
-    "message.progressed",
-    "message.resolved",
-    "project.owner.progressed",
-    "project.owner.reviewed",
-    "project.task.handler.recovered",
-    "project.task.handler.unavailable",
-    "project.task.reconcile.started",
-    "project.task.reconcile.skipped",
-    "project.task.reconciled",
-    "project.task.verification.failed",
-  ].includes(type);
 }
 
 function normalizedAgent(value: unknown): string | undefined {
@@ -166,6 +161,7 @@ function addressedAgentMessage(event: AgentEvent):
 }
 
 export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions): Promise<AppInboxRuntime> {
+  let registrySnapshot = options.registry.snapshot();
   let loaded = options.registry.entries();
   if (loaded.some((entry) => (entry.definition.observers?.length ?? 0) > 0) && !options.observerContext) {
     throw new Error("Canonical App observers require an observer context factory");
@@ -393,7 +389,89 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     pumpDeliveries();
   };
 
+  const admissionRouteLabel = (command: AppEventAdmissionCommand): string =>
+    `${command.kind}:${command.appId}/${command.routeId}`;
+
+  const dispatchAdmissionPlan = (plan: AppEventAdmissionPlan, event: AgentEvent): DeliveryResult => {
+    const identity = `event:${plan.eventId}`;
+    const errors: unknown[] = [];
+    for (const command of plan.commands) {
+      if (command.status !== "pending") continue;
+      try {
+        const entry = loaded.find(({ definition }) => definition.id === command.appId);
+        if (!entry) {
+          throw new Error(
+            `Frozen ${admissionRouteLabel(command)} for ${identity} names an App unavailable after registry snapshot ${plan.registrySnapshotId} (generation ${plan.registryGeneration})`,
+          );
+        }
+        if (command.kind === "inbox") {
+          const admitted = host.admit({
+            appId: command.appId,
+            source: { kind: "system", id: identity },
+            input: command.input,
+            idempotencyKey: `subscription:${command.appId}:${command.routeId}:${identity}`,
+          });
+          schedule(admitted.item.appId);
+        }
+        if (command.kind !== "inbox" || command.conditionTaskIds.length > 0) {
+          if (!entry.definition.tasks) {
+            throw new Error(
+              `Frozen ${admissionRouteLabel(command)} for ${identity} names an App without its selected task capability`,
+            );
+          }
+          if (!options.admitTaskEvent) {
+            throw new Error(`Canonical App ${command.appId} task admission is unavailable`);
+          }
+          const delivery = options.admitTaskEvent({
+            appId: command.appId,
+            appDir: entry.appDir,
+            event,
+            intent: command.kind === "task" ? command.intent : null,
+            ...(command.kind === "exact-task" ? { targetedTaskId: command.targetedTaskId } : {}),
+            conditionTaskIds: command.conditionTaskIds,
+          });
+          if (!delivery) {
+            throw new Error(`Canonical App ${command.appId} did not durably admit frozen ${command.routeId}`);
+          }
+        }
+        markAppEventAdmissionCommandAdmitted(options.db, {
+          eventId: plan.eventId,
+          appId: command.appId,
+          now: now(),
+        });
+      } catch (error) {
+        recordAppEventAdmissionCommandFailure(options.db, {
+          eventId: plan.eventId,
+          appId: command.appId,
+          error,
+          now: now(),
+        });
+        errors.push(error);
+      }
+    }
+    if (errors.length > 0) {
+      const detail = errors.map((error) => (error instanceof Error ? error.message : String(error))).join("; ");
+      throw new AggregateError(
+        errors,
+        `Canonical event ${identity} failed ${errors.length} of ${plan.commands.length} frozen App admission command(s) from registry snapshot ${plan.registrySnapshotId} (generation ${plan.registryGeneration}): ${detail}`,
+      );
+    }
+    if (!completeAppEventAdmissionPlan(options.db, plan.eventId, now())) {
+      throw new Error(
+        `Canonical event ${identity} still has pending App admission commands from registry snapshot ${plan.registrySnapshotId} (generation ${plan.registryGeneration})`,
+      );
+    }
+    return {
+      accepted: true,
+      by: `app-runtime:events:${plan.commands.map(admissionRouteLabel).join(",")}`,
+      route: "direct",
+      note: `registry-snapshot:${plan.registrySnapshotId}; generation:${plan.registryGeneration}; ${plan.commands.length} frozen App admission command(s) admitted durably`,
+    };
+  };
+
   const unsubscribe = options.bus.subscribeDurableRoute((event): DeliveryResult | void => {
+    const routeSnapshot = registrySnapshot;
+    const routeGeneration = routeSnapshot.generation;
     const data = eventData(event);
     const message = addressedAgentMessage(event);
     if (message) {
@@ -417,6 +495,11 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           note: "addressed agent message admitted to App inbox",
         };
       }
+      throw new Error(
+        candidates.length === 0
+          ? `Addressed agent message ${message.identity} names no canonical App owned by ${message.targetOwner}`
+          : `Addressed agent message ${message.identity} is ambiguous across Apps owned by ${message.targetOwner}`,
+      );
     }
     if (event.type === "app.input.requested") {
       const appId = typeof data.appId === "string" ? data.appId.trim() : "";
@@ -560,36 +643,28 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     }
     const identity = eventIdentity(event);
     if (identity) {
+      const eventId = eventRowId(event)!;
+      const frozenPlan = getAppEventAdmissionPlan(options.db, eventId);
+      if (frozenPlan) return dispatchAdmissionPlan(frozenPlan, event);
+
       const canonical = canonicalAppEvent(event);
-      const exactTarget = isExactTaskWakeEvent(canonical.type) ? exactTaskTarget(canonical) : null;
+      const exactTarget = exactTaskTarget(canonical);
       if (exactTarget) {
         if (!exactTarget.appId) {
           throw new Error(
-            `Exact task target ${exactTarget.taskId} for event ${identity} has no canonical App identity`,
+            `Exact task target ${exactTarget.taskId} for event ${identity} has no canonical App identity in registry generation ${routeGeneration}`,
           );
         }
         const entry = loaded.find(({ definition }) => definition.id === exactTarget.appId);
         const tasks = entry?.definition.tasks;
         if (!entry) {
           throw new Error(
-            `Exact task target ${exactTarget.appId}/${exactTarget.taskId} for event ${identity} names an unknown canonical App`,
+            `Exact task target ${exactTarget.appId}/${exactTarget.taskId} for event ${identity} names an unknown canonical App in registry generation ${routeGeneration}`,
           );
         }
         if (!tasks) {
           throw new Error(
-            `Exact task target ${exactTarget.appId}/${exactTarget.taskId} for event ${identity} names an App without task capability`,
-          );
-        }
-        const subscriptionMatched = Boolean(
-          tasks?.subscriptions?.some((selector) => matchesEventSelector(selector, canonical)),
-        );
-        if (!options.admitTaskEvent) {
-          throw new Error(`Canonical App ${entry.definition.id} task admission is unavailable`);
-        }
-        const intent = subscriptionMatched ? (tasks.resolve?.(canonical) ?? null) : null;
-        if (intent && intent.id !== exactTarget.taskId) {
-          throw new Error(
-            `Canonical App ${entry.definition.id} resolved targeted event ${identity} to ${intent.id}, expected ${exactTarget.taskId}`,
+            `Exact task target ${exactTarget.appId}/${exactTarget.taskId} for event ${identity} names an App without task capability in registry generation ${routeGeneration}`,
           );
         }
         const conditionTaskIds =
@@ -599,25 +674,22 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             event,
             targetedTaskId: exactTarget.taskId,
           }) ?? [];
-        const delivery = options.admitTaskEvent({
-          appId: entry.definition.id,
-          appDir: entry.appDir,
-          event,
-          intent,
-          targetedTaskId: exactTarget.taskId,
-          conditionTaskIds,
+        const plan = createAppEventAdmissionPlan(options.db, {
+          eventId,
+          registrySnapshotId: routeSnapshot.id,
+          registryGeneration: routeGeneration,
+          routes: [
+            {
+              appId: entry.definition.id,
+              kind: "exact-task",
+              routeId: exactTarget.taskId,
+              targetedTaskId: exactTarget.taskId,
+              conditionTaskIds,
+            },
+          ],
+          now: now(),
         });
-        if (!delivery) {
-          throw new Error(
-            `Exact task target ${entry.definition.id}/${exactTarget.taskId} for event ${identity} was not durably admitted`,
-          );
-        }
-        return {
-          accepted: true,
-          by: `app-runtime:exact-task:${entry.definition.id}/${exactTarget.taskId}`,
-          route: "direct",
-          note: delivery.note ?? "exact task trigger admitted durably",
-        };
+        return dispatchAdmissionPlan(plan, event);
       }
 
       const inboxMatches = host.subscriptionInputs(canonical);
@@ -636,68 +708,69 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         const subscriptionMatched = Boolean(
           tasks.subscriptions?.some((selector) => matchesEventSelector(selector, canonical)),
         );
-        const intent = subscriptionMatched ? (tasks.resolve?.(canonical) ?? null) : null;
+        let intent: TaskIntent | null = null;
+        if (subscriptionMatched) {
+          try {
+            intent = tasks.resolve?.(canonical) ?? null;
+          } catch (error) {
+            throw new Error(
+              `Canonical App ${definition.id} task resolver failed for event ${identity} in registry generation ${routeGeneration}: ${error instanceof Error ? error.message : String(error)}`,
+              { cause: error },
+            );
+          }
+        }
         const conditionTaskIds = options.previewTaskEvent?.({ appId: definition.id, appDir, event }) ?? [];
         return intent || conditionTaskIds.length > 0
           ? [{ appId: definition.id, appDir, intent, conditionTaskIds }]
           : [];
       });
       const inboxApps = new Set(inboxMatches.map((match) => match.appId));
-      const overlap = taskAdmissions.find((admission) => inboxApps.has(admission.appId));
+      const overlap = taskAdmissions.find((admission) => admission.intent && inboxApps.has(admission.appId));
       if (overlap) {
-        throw new Error(`Canonical App ${overlap.appId} has both inbox and task routes for event ${identity}`);
+        throw new Error(`Canonical App ${overlap.appId} has both inbox and task-intent routes for event ${identity}`);
+      }
+      const taskAdmissionByApp = new Map(taskAdmissions.map((admission) => [admission.appId, admission]));
+
+      const routes: AppEventAdmissionRoute[] = [
+        ...inboxMatches.map((match) => ({
+          appId: match.appId,
+          kind: "inbox" as const,
+          routeId: match.subscriptionId,
+          input: match.input,
+          conditionTaskIds: taskAdmissionByApp.get(match.appId)?.conditionTaskIds ?? [],
+        })),
+        ...taskAdmissions
+          .filter((admission) => !inboxApps.has(admission.appId))
+          .map((admission) => ({
+            appId: admission.appId,
+            kind: "task" as const,
+            routeId: admission.intent?.id ?? admission.conditionTaskIds.join("+"),
+            intent: admission.intent,
+            conditionTaskIds: admission.conditionTaskIds,
+          })),
+      ];
+      if (routes.length > 0) {
+        const plan = createAppEventAdmissionPlan(options.db, {
+          eventId,
+          registrySnapshotId: routeSnapshot.id,
+          registryGeneration: routeGeneration,
+          routes,
+          now: now(),
+        });
+        return dispatchAdmissionPlan(plan, event);
       }
 
-      const routes = [
-        ...inboxMatches.map((match) => `inbox:${match.appId}/${match.subscriptionId}`),
-        ...taskAdmissions.map(
-          (admission) => `task:${admission.appId}/${admission.intent?.id ?? admission.conditionTaskIds.join("+")}`,
-        ),
-      ];
-      const admissionErrors: unknown[] = [];
-      for (const match of inboxMatches) {
-        try {
-          const admitted = host.admit({
-            appId: match.appId,
-            source: { kind: "system", id: identity },
-            input: match.input,
-            idempotencyKey: `subscription:${match.appId}:${match.subscriptionId}:${identity}`,
-          });
-          schedule(admitted.item.appId);
-        } catch (error) {
-          admissionErrors.push(error);
-        }
-      }
-      for (const admission of taskAdmissions) {
-        try {
-          if (!options.admitTaskEvent) {
-            throw new Error(`Canonical App ${admission.appId} task admission is unavailable`);
-          }
-          const delivery = options.admitTaskEvent({ ...admission, event });
-          if (!delivery) {
-            throw new Error(
-              `Canonical App ${admission.appId} did not durably admit task ${admission.intent?.id ?? admission.conditionTaskIds.join(",")}`,
-            );
-          }
-        } catch (error) {
-          admissionErrors.push(error);
-        }
-      }
-      if (admissionErrors.length > 0) {
-        const detail = admissionErrors
-          .map((error) => (error instanceof Error ? error.message : String(error)))
-          .join("; ");
-        throw new AggregateError(
-          admissionErrors,
-          `Canonical event ${identity} failed ${admissionErrors.length} of ${routes.length} durable App route(s): ${detail}`,
-        );
-      }
-      if (routes.length > 0) {
+      const observationApps = loaded
+        .filter(({ definition }) =>
+          definition.observations?.some((selector) => matchesEventSelector(selector, canonical)),
+        )
+        .map(({ definition }) => definition.id);
+      if (observationApps.length > 0) {
         return {
           accepted: true,
-          by: `app-runtime:events:${routes.join(",")}`,
-          route: "direct",
-          note: `${routes.length} canonical App route(s) admitted durably`,
+          by: `app-runtime:observations:${observationApps.join(",")}`,
+          route: "noop",
+          note: `registry-snapshot:${routeSnapshot.id}; generation:${routeGeneration}; zero work routes selected`,
         };
       }
     }
@@ -745,6 +818,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         }
       });
       loaded = next;
+      registrySnapshot = options.registry.snapshot();
       observerRuntime.replace(next);
       appDirById = new Map(next.map((entry) => [entry.definition.id, entry.appDir]));
       refreshScheduleActivations();
