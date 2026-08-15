@@ -29,24 +29,26 @@ describe("AKS standing-loop convention", () => {
       selectorCount: 82,
       orderedSelectorSha256:
         "fead61bfcfe026556a0cbba74a7480a02f977be73bfe1dbededa19fa0c66c649",
-      sourceCommit: "3ed542ed57484635f24a28345faf2aeae2cf619a",
+      sourceCommit: "bcfcd9496fe0399bb63c69d430e6612de4a32342",
       planPath:
-        "evidence/pipelines/master-validation-current-origin-ecca34fe-feature-journey-plan-20260814.json",
+        "evidence/pipelines/master-validation-current-origin-0360b6da-feature-journey-plan-20260815.json",
       planSha256:
-        "ff1069a2c141d3bf1dc06c60726b2552e1b3b6a23a33df83b971332e9b983243",
+        "637c33a46c632797be110098b5b564de79aac362bb3ed40b8ec3e6249e1cc1d6",
       proofMatrixPath:
-        "evidence/pipelines/master-validation-current-origin-ecca34fe-feature-journey-proof-matrix-20260814.md",
+        "evidence/pipelines/master-validation-current-origin-0360b6da-feature-journey-proof-matrix-20260815.md",
       proofMatrixSha256:
-        "eb16b042683e244d18456647ee34d289b095cb0b0c4871168b13fc8ea2ec4ea9",
-      physicalBaselineClusterBirths: 92,
-      physicalClusterBirthsNeeded: 46,
+        "2b551cf6842127862a2b26eb43a45a65e9a6db2321661fd83c4cf77feef092cc",
+      physicalBaselineClusterBirths: 93,
+      physicalClusterBirthsNeeded: 47,
       physicalClusterBirthsSaved: 46,
-      physicalClusterBirthSavingsRate: 0.5,
-      safeguardGetCount: 56,
-      terminalRouteCount: 4,
+      physicalClusterBirthSavingsRate: 0.4946236559139785,
+      safeguardGetCount: 50,
+      terminalRouteCount: 9,
       materialization: "ready",
       projectedMinutes: 59.132466667,
-      semanticLowerBoundBirths: 20,
+      semanticLowerBoundBirths: 21,
+      semanticCliqueSpecCount: 12,
+      semanticCliqueEdgeCount: 66,
       historicalDisprovedAspiration: {
         maximumPhysicalClusterBirths: 16,
         minimumPhysicalClusterBirthsSaved: 64,
@@ -89,21 +91,21 @@ describe("AKS standing-loop convention", () => {
     });
     expect(definition.workflow).toBeUndefined();
     expect(definition.outcome).toContain("82-selector");
-    expect(definition.outcome).toContain("92 baseline physical cluster births");
-    expect(definition.outcome).toContain("46 planned births");
+    expect(definition.outcome).toContain("93 baseline physical cluster births");
+    expect(definition.outcome).toContain("47 planned births");
+    expect(definition.outcome).toContain("saving 46 (49.46236559139785%)");
     expect(acceptance).toContain("one natural cross-feature journey");
     expect(acceptance).toContain("immutable-property conflict");
     expect(acceptance).toContain(
-      "origin/dev@3ed542ed57484635f24a28345faf2aeae2cf619a",
+      "origin/dev@bcfcd9496fe0399bb63c69d430e6612de4a32342",
     );
     expect(acceptance).toContain("exactly 59.132466667 projected minutes");
-    expect(acceptance).not.toContain("d0dea4bf");
-    expect(acceptance).not.toContain("47f30b08");
-    expect(acceptance).not.toContain("0706a180");
-    expect(acceptance).toContain("56 safeguard GETs");
+    expect(acceptance).toContain("50 safeguard GETs");
+    expect(acceptance).toContain("nine terminal routes");
     expect(acceptance).toContain("historically disproved aspiration");
-    expect(acceptance).toContain("lower bound of 20 physical births");
-    expect(acceptance).toContain("integrated 46-birth safe-Pareto fallback");
+    expect(acceptance).toContain("12-spec/66-edge semantic clique");
+    expect(acceptance).toContain("lower bound of 21 physical births");
+    expect(acceptance).toContain("integrated 47-birth safe-Pareto fallback");
     expect(acceptance).toContain("authority-artifact drift");
     expect(acceptance).toContain("integrated-source drift");
     expect(acceptance).toContain("Never remove, relabel, ignore, or weaken");
