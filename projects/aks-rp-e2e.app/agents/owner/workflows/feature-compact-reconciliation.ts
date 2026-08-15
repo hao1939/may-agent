@@ -1,12 +1,13 @@
-import { existsSync, readFileSync } from "node:fs";
-import { isAbsolute, join } from "node:path";
+import { execFileSync } from "node:child_process";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { dirname, isAbsolute, join, resolve } from "node:path";
 import type {
-  ProjectAppTaskHandlerResult,
-  ProjectAppTaskVerificationContext,
-  ProjectAppTaskVerificationResult,
+  ExecutionResult,
+  TaskReconcileResult,
+  TaskVerificationContext,
+  TaskVerificationResult,
   WorkflowContext,
-  WorkflowResult,
-} from "@may-agent/sdk/legacy";
+} from "@may-agent/sdk";
 import {
   defaultFeatureCompactLoopStatePath,
   hasDurableLiveProof,
@@ -30,7 +31,7 @@ function text(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
+export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   const summary =
     "Feature-compact reconciliation requires current domain judgment; hand off with deterministic ledger admission retained at the completion boundary.";
   return ctx.done(summary, {
@@ -42,9 +43,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 }
 
 export async function verify(
-  context: ProjectAppTaskVerificationContext,
-  result: ProjectAppTaskHandlerResult,
-): Promise<ProjectAppTaskVerificationResult> {
+  context: TaskVerificationContext,
+  result: TaskReconcileResult,
+): Promise<TaskVerificationResult> {
   if (result.state !== "converged") {
     return {
       accepted: true,
@@ -55,6 +56,7 @@ export async function verify(
   }
 
   const featureKey = text(context.intent.input?.featureKey);
+  const declaredStatePath = text(context.intent.input?.statePath);
   if (!featureKey) {
     return {
       accepted: false,
@@ -63,8 +65,53 @@ export async function verify(
       evidence: [...result.evidence],
     };
   }
+  if (!declaredStatePath || !isAbsolute(declaredStatePath)) {
+    return {
+      accepted: false,
+      summary:
+        "Feature-compact convergence rejected: task input.statePath must name the canonical absolute App ledger.",
+      evidence: [...result.evidence],
+    };
+  }
 
-  const statePath = defaultFeatureCompactLoopStatePath(context.appDir);
+  let projectDir: string;
+  try {
+    const commonDir = execFileSync("git", ["rev-parse", "--git-common-dir"], {
+      cwd: context.workspaceDir,
+      encoding: "utf8",
+    }).trim();
+    projectDir = dirname(
+      realpathSync(
+        commonDir.startsWith("/")
+          ? commonDir
+          : resolve(context.workspaceDir, commonDir),
+      ),
+    );
+  } catch (error) {
+    return {
+      accepted: false,
+      summary:
+        "Feature-compact convergence rejected: canonical project checkout cannot be derived from the task worktree.",
+      evidence: [
+        ...result.evidence,
+        `verification-finding:${error instanceof Error ? error.message : String(error)}`,
+      ],
+    };
+  }
+  const appDir = dirname(dirname(dirname(declaredStatePath)));
+
+  const statePath = defaultFeatureCompactLoopStatePath(appDir);
+  if (resolve(statePath) !== resolve(declaredStatePath)) {
+    return {
+      accepted: false,
+      summary:
+        "Feature-compact convergence rejected: task input.statePath is not the canonical feature-compact ledger path.",
+      evidence: [
+        ...result.evidence,
+        `feature-compact-state:${declaredStatePath}`,
+      ],
+    };
+  }
   const persisted = readState(statePath);
   const row = persisted?.features?.[featureKey];
   if (!row) {
@@ -76,8 +123,8 @@ export async function verify(
   }
 
   const refreshed = loadFeatureCompactLoopState({
-    appDir: context.appDir,
-    projectDir: context.projectDir,
+    appDir,
+    projectDir,
     loopTaskId: persisted?.loopTaskId || "aks-feature-compact-loop",
     windowSize: persisted?.windowSize || 3,
     statePath,
@@ -99,13 +146,13 @@ export async function verify(
     ? isAbsolute(row.lastResultPath)
       ? row.lastResultPath
       : ([
-          join(context.appDir, row.lastResultPath),
-          join(context.projectDir, row.lastResultPath),
+          join(appDir, row.lastResultPath),
+          join(projectDir, row.lastResultPath),
         ].find((candidate) => existsSync(candidate)) ?? "")
     : "";
   const durable = hasDurableLiveProof(row, {
-    appDir: context.appDir,
-    projectDir: context.projectDir,
+    appDir,
+    projectDir,
     statePath,
   });
 

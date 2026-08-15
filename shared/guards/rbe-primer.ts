@@ -1,4 +1,4 @@
-import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk/legacy";
+import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk";
 
 /**
  * rbe-primer — Step-start reminder to read before edit.
@@ -13,6 +13,7 @@ export const guard: WorkflowGuard = {
   events: ["step_start"],
 
   handle(event: WorkflowGuardEvent): Demand[] {
+    if (event.type !== "step_start") return [];
     // Only fire for agent steps, not function/utility steps
     if (event.source === "function") return [];
 

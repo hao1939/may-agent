@@ -2,8 +2,8 @@ import { expect, test } from "bun:test";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { WorkflowContext } from "@may-agent/sdk";
 import { execute } from "./owner-review";
+import { canonicalGymTestContext } from "./lib/test-context";
 
 function task(): string {
   return [
@@ -34,7 +34,7 @@ test("owner fallback persists one idempotent human-review proposal", async () =>
   const projectsRoot = join(root, "projects");
   const emitted: Array<Record<string, unknown>> = [];
   let agentRuns = 0;
-  const ctx = {
+  const ctx = canonicalGymTestContext({
     task: task(),
     projectsRoot,
     async runAgent() {
@@ -51,14 +51,7 @@ test("owner fallback persists one idempotent human-review proposal", async () =>
     emit(event: Record<string, unknown>) {
       emitted.push(event);
     },
-    notify() {},
-    done(summary: string, output?: unknown) {
-      return { type: "done" as const, summary, output };
-    },
-    blocked(reason: string, context?: unknown) {
-      return { type: "blocked" as const, reason, context };
-    },
-  } as unknown as WorkflowContext;
+  });
 
   try {
     const first = await execute(ctx);
@@ -70,7 +63,7 @@ test("owner fallback persists one idempotent human-review proposal", async () =>
       "workflow-exception-runtime-regression-run-event-42-2.md",
     );
     expect(first).toMatchObject({
-      type: "done",
+      status: "done",
       output: { state: "converged", evidence: [reviewPath] },
     });
     expect(existsSync(reviewPath)).toBe(true);
@@ -79,16 +72,10 @@ test("owner fallback persists one idempotent human-review proposal", async () =>
     );
     expect(emitted[0]).toMatchObject({
       type: "gym.review.ready",
-      kind: "workflow-exception",
-      reviewPath,
+      data: { kind: "workflow-exception", reviewPath },
     });
 
-    await execute({
-      ...ctx,
-      async runAgent() {
-        throw new Error("idempotent replay must not invoke the owner again");
-      },
-    } as WorkflowContext);
+    await execute(ctx);
     expect(agentRuns).toBe(1);
   } finally {
     rmSync(root, { recursive: true, force: true });

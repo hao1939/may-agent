@@ -1,15 +1,10 @@
 import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { basename, dirname, resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import type { AksObserverContext, AksObserverEvent } from "./context.js";
 
-type Worktree = { path: string; prunable: boolean };
-type LiveTaskTreeTask = {
-  generation?: unknown;
-  input?: unknown;
-  evidence?: unknown;
-};
+type Worktree = { path: string; branch?: string; prunable: boolean };
 
 type WorkspaceIntegrityObservation = {
   checkedAt: string;
@@ -25,7 +20,7 @@ type WorkspaceIntegrityObservation = {
     worktrees: number;
     dirty: number;
     prunable: number;
-    activeAttemptWorktrees: number;
+    taskWorktrees: number;
     unownedDirty: number;
     workspaceBytes: number;
   };
@@ -65,10 +60,12 @@ async function worktrees(repoDir: string): Promise<Worktree[]> {
     .flatMap((block) => {
       const lines = block.split("\n");
       const path = lines.find((line) => line.startsWith("worktree "))?.slice(9);
+      const branch = lines.find((line) => line.startsWith("branch "))?.slice(7);
       return path
         ? [
             {
               path: resolve(path),
+              ...(branch ? { branch } : {}),
               prunable: lines.some((line) => line.startsWith("prunable")),
             },
           ]
@@ -86,132 +83,15 @@ function normalizePath(path: string): string {
   return resolve(path).replace(/\/+$/, "");
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function stringList(value: unknown): string[] {
-  return Array.isArray(value)
-    ? value.filter((entry): entry is string => typeof entry === "string")
-    : [];
-}
-
-function taskWorktreeClaimFromBranch(
-  branchName: string,
-  repoDir: string,
-): string | null {
-  if (!branchName.startsWith("task/")) return null;
-  const worktreeName = branchName.slice("task/".length).trim();
-  if (!worktreeName) return null;
-  return normalizePath(
-    resolve(repoDir, "../../worktrees", basename(repoDir), worktreeName),
-  );
-}
-
-function taskWorktreeLeaf(taskId: string, generation: number): string {
-  const safeTaskId =
-    taskId
-      .replace(/[^A-Za-z0-9._-]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .slice(0, 72) || "task";
-  const hash = createHash("sha256")
-    .update(`${taskId}@${generation}`)
-    .digest("hex")
-    .slice(0, 10);
-  return `${safeTaskId}-${hash}`;
-}
-
-function claimedDirtyWorktreePaths(
-  appDir: string,
-  repoDir: string,
-): Set<string> {
-  const treePath = resolve(appDir, ".state/tasks/tree.json");
-  if (!existsSync(treePath)) return new Set<string>();
-
-  try {
-    const tree = JSON.parse(readFileSync(treePath, "utf8"));
-    const tasks = isRecord(tree) && isRecord(tree.tasks) ? tree.tasks : null;
-    if (!tasks) return new Set<string>();
-
-    const claims = new Set<string>();
-    const worktreeRoot = resolve(repoDir, "../../worktrees", basename(repoDir));
-
-    for (const [taskId, taskValue] of Object.entries(tasks)) {
-      if (!isRecord(taskValue)) continue;
-      const task = taskValue as LiveTaskTreeTask;
-      const input = isRecord(task.input) ? task.input : {};
-
-      if (
-        typeof input.workspacePath === "string" &&
-        input.workspacePath.trim()
-      ) {
-        claims.add(
-          normalizePath(
-            input.workspacePath.startsWith("/")
-              ? input.workspacePath
-              : resolve(repoDir, input.workspacePath),
-          ),
-        );
-      }
-
-      if (typeof input.sourceBranch === "string") {
-        const sourceBranchClaim = taskWorktreeClaimFromBranch(
-          input.sourceBranch,
-          repoDir,
-        );
-        if (sourceBranchClaim) claims.add(sourceBranchClaim);
-      }
-
-      for (const entry of stringList(task.evidence)) {
-        if (!entry.startsWith("source-branch:")) continue;
-        const branchClaim = taskWorktreeClaimFromBranch(
-          entry.slice("source-branch:".length).trim(),
-          repoDir,
-        );
-        if (branchClaim) claims.add(branchClaim);
-      }
-
-      const generation = task.generation;
-      if (
-        typeof generation === "number" &&
-        Number.isInteger(generation) &&
-        generation >= 1
-      ) {
-        claims.add(
-          normalizePath(
-            resolve(worktreeRoot, taskWorktreeLeaf(taskId, generation)),
-          ),
-        );
-      }
-    }
-
-    return claims;
-  } catch {
-    return new Set<string>();
-  }
-}
-
 export async function observeWorkspaceIntegrity(
-  appDir: string,
   repoDir: string,
 ): Promise<WorkspaceIntegrityObservation> {
-  const state = JSON.parse(
-    readFileSync(resolve(appDir, ".state/tasks/state.json"), "utf8"),
-  );
-  const activePaths = new Set<string>(
-    Object.values(state.attempts ?? {}).flatMap((value: unknown) => {
-      const attempt = value as {
-        state?: unknown;
-        workspace?: { path?: unknown };
-      };
-      return attempt.state === "running" &&
-        typeof attempt.workspace?.path === "string"
-        ? [normalizePath(attempt.workspace.path)]
-        : [];
-    }),
-  );
-  const claimedPaths = claimedDirtyWorktreePaths(appDir, repoDir);
   const entries = await worktrees(repoDir);
+  const taskPaths = new Set(
+    entries
+      .filter(({ branch }) => branch?.startsWith("refs/heads/task/"))
+      .map(({ path }) => normalizePath(path)),
+  );
   const anomalies: WorkspaceIntegrityObservation["anomalies"] = [];
   let dirty = 0;
   let prunable = 0;
@@ -240,10 +120,7 @@ export async function observeWorkspaceIntegrity(
     if (status) {
       dirty += 1;
       const normalizedEntryPath = normalizePath(entry.path);
-      if (
-        !activePaths.has(normalizedEntryPath) &&
-        !claimedPaths.has(normalizedEntryPath)
-      ) {
+      if (!taskPaths.has(normalizedEntryPath)) {
         unownedDirty += 1;
         anomalies.push({ path: entry.path, kind: "unowned-dirty" });
       }
@@ -274,7 +151,7 @@ export async function observeWorkspaceIntegrity(
     worktrees: entries.length,
     dirty,
     prunable,
-    activeAttemptWorktrees: activePaths.size,
+    taskWorktrees: taskPaths.size,
     unownedDirty,
     workspaceBytes: bytes,
   };
@@ -315,7 +192,6 @@ export async function observeWorkspaceIntegrityChanges(
     ? JSON.parse(readFileSync(statePath, "utf8"))
     : {};
   const observation = await observeWorkspaceIntegrity(
-    ctx.appPath("."),
     ctx.appPath("../aks-rp-e2e"),
   );
   mkdirSync(dirname(statePath), { recursive: true });

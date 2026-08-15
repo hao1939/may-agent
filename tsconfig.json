@@ -13,7 +13,6 @@
     "allowImportingTsExtensions": true,
     "paths": {
       "@may-agent/sdk": ["./projects/may-agent/bundle/sdk-current/src/index.ts"],
-      "@may-agent/sdk/legacy": ["./projects/may-agent/bundle/sdk-current/src/legacy.ts"],
       "@may-agent/sdk/testing": ["./projects/may-agent/bundle/sdk-current/src/testing.ts"]
     }
   },

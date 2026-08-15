@@ -36,22 +36,84 @@ async function workspace() {
   return { appDir, projectDir, treePath };
 }
 
-function trigger(event: Record<string, unknown>): string {
-  return `## Trigger Event\n\`\`\`json\n${JSON.stringify(event)}\n\`\`\``;
+function context(input: {
+  appDir: string;
+  projectDir: string;
+  trigger: Record<string, unknown>;
+  agentResult?: unknown;
+  dispatched?: Array<{
+    type: string;
+    payload: Record<string, unknown>;
+  }>;
+}) {
+  const { type, target, data, ...legacyData } = input.trigger;
+  return {
+    input: {},
+    reconciliation: {
+      appId: "aks-rp-e2e",
+      taskId: "runtime/project-stall-review",
+      generation: 1,
+      resourceVersion: 1,
+      owner: "app-ops",
+      mode: "maintain",
+      outcome: "Review project liveness",
+      acceptance: ["One structured liveness judgment is emitted."],
+      input: {},
+      children: { live: [], completed: [] },
+      trigger: {
+        type,
+        target,
+        data: {
+          ...legacyData,
+          ...(data && typeof data === "object" ? data : {}),
+        },
+      },
+    },
+    workspace: {
+      appRoot: input.appDir,
+      projectRoot: input.projectDir,
+      root: input.projectDir,
+      output: input.projectDir,
+    },
+    agents: {
+      async call() {
+        return (
+          input.agentResult ?? {
+            id: "agent:test",
+            kind: "agent",
+            status: "done",
+            summary: "done",
+          }
+        );
+      },
+    },
+    events: {
+      async emit(event: { type: string; data: Record<string, unknown> }) {
+        input.dispatched?.push({ type: event.type, payload: event.data });
+      },
+    },
+    done(summary: string, output?: unknown) {
+      return {
+        id: "workflow:test",
+        kind: "workflow",
+        status: "done",
+        summary,
+        output,
+      };
+    },
+  } as any;
 }
 
 describe("project stall review", () => {
   test("returns owner fallback for the wrong event", async () => {
     const ws = await workspace();
-    const result = await execute({
-      task: `app: ${ws.appDir}\nproject: ${ws.projectDir}\n${trigger({ type: "wrong.event" })}`,
-      agent: "app-ops",
-      done: (message: string, output?: unknown) => ({
-        status: "done",
-        message,
-        output,
+    const result = await execute(
+      context({
+        appDir: ws.appDir,
+        projectDir: ws.projectDir,
+        trigger: { type: "wrong.event" },
       }),
-    } as any);
+    );
     expect(result).toMatchObject({ output: { state: "needs-owner" } });
   });
 
@@ -62,30 +124,29 @@ describe("project stall review", () => {
       type: string;
       payload: Record<string, unknown>;
     }> = [];
-    const result = await execute({
-      task: `app: ${ws.appDir}\nproject: ${ws.projectDir}\n${trigger({ type: "project.stall.review.requested", reason: "manual", mode: "risk-review" })}`,
-      agent: "app-ops",
-      done: (message: string, output?: unknown) => ({
-        status: "done",
-        message,
-        output,
-      }),
-      dispatchEvent(type: string, payload: Record<string, unknown>) {
-        dispatched.push({ type, payload });
-      },
-      runAgentSession: async () => ({
-        status: "success",
-        stallReview: {
-          judgment: "needs-work",
-          rootCause: "runnable work is not moving",
-          nextProjectMove: "controller should reconcile the ready task",
-          whyNotMoving: "no current attempt",
-          evidence: ["one runnable leaf"],
+    const result = await execute(
+      context({
+        appDir: ws.appDir,
+        projectDir: ws.projectDir,
+        trigger: {
+          type: "project.stall.review.requested",
+          reason: "manual",
+          mode: "risk-review",
         },
-        message: "Structured stall judgment.",
+        dispatched,
+        agentResult: {
+          status: "success",
+          stallReview: {
+            judgment: "needs-work",
+            rootCause: "runnable work is not moving",
+            nextProjectMove: "controller should reconcile the ready task",
+            whyNotMoving: "no current attempt",
+            evidence: ["one runnable leaf"],
+          },
+          message: "Structured stall judgment.",
+        },
       }),
-      summarize: () => "",
-    } as any);
+    );
 
     expect(result).toMatchObject({
       output: { state: "converged", actions: [] },

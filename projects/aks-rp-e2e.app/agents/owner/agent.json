@@ -3,5 +3,6 @@
   "description": "Project-local AKS RP E2E explorer for running tests, investigating blockers, and recording evidence",
   "domain": "AKS RP e2e execution, staging/devbox investigation, capability evidence",
   "model": "gpt-5.6-sol",
-  "tools": ["coding", "cron", "query_db", "checkpoint", "finish"]
+  "heartbeat": false,
+  "tools": ["coding", "query_db", "checkpoint", "finish"]
 }

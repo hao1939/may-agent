@@ -1,8 +1,8 @@
 # May-Agent SDK
 
 **Design status:** Accepted.
-**Implementation status:** Stable App authoring and bounded workflow contracts
-implemented; legacy Project App exports and consumers are being removed.
+**Implementation status:** Implemented. The package contains only stable App,
+task, bounded workflow/guard, and testing authoring contracts.
 
 `@may-agent/sdk` is the narrow public boundary between App-owned code and the
 shared runtime. It describes semantic inputs, results, facts, and desired work;
@@ -24,8 +24,8 @@ The root package exports:
 - `defineApp`, `Type`, and App declaration types;
 - `AppInput`, `AppRequest`, `AppDisposition`, and `AppResult`;
 - `AppEvent`, `EventSelector`, and pure selector matching;
-- input/event schedules, subscriptions, observers, actions, and workspace
-  policy;
+- input/event schedules, subscriptions, observation-only selectors, observers,
+  actions, and workspace policy;
 - optional task policy, `TaskIntent`, `TaskAction`, Conditions, reconciliation
   and verification results; and
 - bounded workflow, read, logging, metric, and execution contracts.
@@ -34,9 +34,9 @@ It does not export raw SQL, task-state files and locks, scheduler handles,
 global runtime paths, queue/lease/recovery APIs, prompt packets, or a generic
 owner-inbox/event handler context.
 
-There is one App declaration function: `defineApp`. `defineProjectApp` and the
-`@may-agent/sdk/legacy` entry point are migration-only implementation debt and
-must have no consumers when the canonical migration completes.
+There is one App declaration function: `defineApp`. The former
+`defineProjectApp` declaration and `@may-agent/sdk/legacy` entry point have been
+removed.
 
 ## App declaration
 
@@ -48,6 +48,7 @@ defineApp({
   inputSchema,
   route,
   subscriptions,
+  observations,
   inbox,
   schedules,
   observers,
@@ -123,7 +124,11 @@ boundary without parsing prompts or reconstructing it from global task state.
 
 When a task owns the attempt, `reconciliation` supplies bounded current facts:
 App/task identity, generation, owner, mode, outcome, acceptance, typed input,
-live/completed child views, and exact triggering event. It does not expose the
+live/completed child views, a bounded snapshot of other live App tasks for
+frontier-health review, and the exact triggering event. Snapshot entries carry
+typed status, category, readiness, Conditions, and bounded attempt evidence;
+the current task is omitted, the list is capped at 64, and `truncated` makes an
+incomplete view explicit. This is not a listing API and does not expose the
 task tree, mutation handles, queue, or task files.
 
 `read` contains exact bounded lookups only:
@@ -218,13 +223,13 @@ explicit maintenance CLI, not a runtime workflow import.
 Agent tools and SDK capabilities may share runtime implementations, but they
 serve different boundaries:
 
-| Intent | Model tool | Workflow capability |
-| --- | --- | --- |
-| Ask another agent and await its bounded result | agent call | `ctx.agents.call` |
-| Run a reusable bounded workflow | workflow tool | `ctx.workflows.run` |
-| Publish a fact | event tool where authorized | `ctx.events.emit` |
-| Record a domain sample | metric tool where authorized | `ctx.metrics.record` |
-| Finish this bounded execution | finish/result | `ctx.done` / `ctx.blocked` |
+| Intent                                         | Model tool                   | Workflow capability        |
+| ---------------------------------------------- | ---------------------------- | -------------------------- |
+| Ask another agent and await its bounded result | agent call                   | `ctx.agents.call`          |
+| Run a reusable bounded workflow                | workflow tool                | `ctx.workflows.run`        |
+| Publish a fact                                 | event tool where authorized  | `ctx.events.emit`          |
+| Record a domain sample                         | metric tool where authorized | `ctx.metrics.record`       |
+| Finish this bounded execution                  | finish/result                | `ctx.done` / `ctx.blocked` |
 
 Background forks, session steering, cancellation, process control, and human
 delivery are host/agent-tool capabilities only when explicitly granted. They
@@ -244,6 +249,11 @@ existing semantic contracts:
 App growth should normally add schemas, pure policy, observers, workflows, or
 domain projections—not runtime APIs.
 
+The SDK does not expose `defineService`, a service locator, or generic
+`provides`/`inject` composition. App-local pure code is an ordinary module
+import. Cross-App work uses typed delegation, and cross-App facts use declared
+subscriptions. Runtime subsystem composition remains host-private.
+
 ## Integrity checklist
 
 - The root package is the only authoring entry point.
@@ -255,4 +265,4 @@ domain projections—not runtime APIs.
 - Execution results are bounded claims admitted by the owning App/task.
 - No App/workflow receives raw SQL, global paths, task storage, scheduler,
   queue, lease, delivery, or recovery access.
-- No production App imports `@may-agent/sdk/legacy` when migration completes.
+- No application or runtime package exposes or imports a legacy SDK entry point.

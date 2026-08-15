@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
-import type { ProjectAppContext, ProjectAppEvent } from "@may-agent/sdk";
+import type { AppEvent, AppObserver, ObserverContext } from "@may-agent/sdk";
 import {
   inspectXhsCredential,
   type XhsCredentialStatus,
@@ -31,13 +31,11 @@ function writeState(path: string, state: XhsCredentialWatcherState): void {
 export function xhsCredentialEvents(
   status: XhsCredentialStatus,
   previous: XhsCredentialWatcherState = {},
-): ProjectAppEvent[] {
-  const observation: ProjectAppEvent = {
+): AppEvent<Record<string, unknown>>[] {
+  const observation: AppEvent<Record<string, unknown>> = {
     type: "credential.state",
     source: "scout-xhs-credential-watcher",
     target: { project: "scout-knowledge-lib" },
-    credential: "xhs",
-    state: status.state,
     data: {
       project: "scout-knowledge-lib",
       credential: "xhs",
@@ -45,38 +43,24 @@ export function xhsCredentialEvents(
       evidence: status.evidence,
     },
   };
-  if (status.state === "ready" || previous.state === "unavailable") {
-    return [observation];
-  }
-  return [
-    observation,
-    {
-      type: "message.created",
-      source: "scout-xhs-credential-watcher",
-      from: "scout",
-      to: "human",
-      target: { project: "scout-knowledge-lib", human: true },
-      urgency: "normal",
-      content: `Scout XHS exploration is waiting for browser login. ${status.reason}`,
-      data: {
-        project: "scout-knowledge-lib",
-        credential: "xhs",
-        state: "unavailable",
-        evidence: status.evidence,
-      },
-    },
-  ];
+  return status.state === "ready" || previous.state !== status.state
+    ? [observation]
+    : [];
 }
 
-export function observeXhsCredential(ctx: ProjectAppContext): unknown {
-  const statePath = ctx.appPath(".state/watchers/xhs-credential.json");
+export async function observeXhsCredential(
+  ctx: ObserverContext,
+): Promise<AppEvent<Record<string, unknown>>[]> {
+  const statePath = `${ctx.workspace.appRoot}/.state/watchers/xhs-credential.json`;
   const previous = readState(statePath);
-  const status = inspectXhsCredential(ctx.appPath("."));
+  const status = inspectXhsCredential(ctx.workspace.appRoot);
   const observedAt = new Date().toISOString();
   writeState(statePath, { state: status.state, observedAt });
-  const events = xhsCredentialEvents(status, previous);
-  for (const event of events) ctx.emit(event);
-  return events.length > 0
-    ? events
-    : ctx.noop(`XHS credential remains ${status.state}: ${status.reason}`);
+  return xhsCredentialEvents(status, previous);
 }
+
+export const xhsCredentialObserver: AppObserver = {
+  id: "xhs-credential",
+  intervalMs: 300_000,
+  run: observeXhsCredential,
+};

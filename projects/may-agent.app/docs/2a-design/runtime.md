@@ -1,9 +1,8 @@
 # Runtime Internals
 
 **Design status:** Accepted runtime reference.
-**Implementation status:** Shared execution kernel and canonical App host are
-implemented; compatibility socket, cron, chat, and Project App paths are being
-removed or isolated.
+**Implementation status:** Implemented. The shared execution kernel and one App
+host own App Inbox, optional task reconciliation, adapters, and recovery.
 
 ## Process modes and authority
 
@@ -58,6 +57,13 @@ open stores / recover schema
 Failure before publication leaves the prior generation active on reload.
 Failure during initial startup prevents partial hosting. Schedule and
 subscription registration is generation-owned so reload cannot duplicate them.
+
+Runtime implementation modules may be split behind host-private typed ports and
+wired by explicit constructors or factories in the host composition root. This
+is internal code structure, not an App plugin system: there is no
+`services/*.ts` discovery, string-keyed service locator, cross-App live-object
+injection, or independently reloaded dependency subgraph. Generation-owned
+attachments provide deterministic teardown for every long-lived registration.
 
 Shutdown stops new admission/dispatch, drains or interrupts bounded execution
 under policy, persists terminal evidence, releases leases, and stops adapters.
@@ -220,9 +226,10 @@ controllers, or project ownership. Those belong to `defineApp`.
 ## Scheduling compatibility
 
 The internal scheduler retains the historical `Cron` name. Canonical Apps
-declare input/event schedules and observers. Legacy `cron.json`, named
-handlers, detached jobs, and agent self-scheduling remain compatibility for
-standalone/system duties only during migration.
+declare input/event schedules and observers. `cron.json`, named handlers,
+detached jobs, and agent self-scheduling are restricted to standalone global
+agents or host-internal system duties; they are not an Agent App compatibility
+path.
 
 No canonical App work may depend on a legacy handler, and no handler may run in
 parallel with a canonical subscription/schedule/task route for the same
@@ -248,17 +255,18 @@ All paths are relative to `projects/may-agent/`:
 - App registry/validation/inbox: `src/app/app-registry.ts`,
   `src/app/app-definition-validation.ts`, `src/app/app-inbox-*.ts`;
 - App/agent preparation: `src/app/loader/`, `src/app/agent-loader.ts`;
-- temporary canonical task adapter: `src/app/loader/project-app-loader.ts`;
+- canonical task capability/runtime: `src/app/app-task-capability.ts`,
+  `src/app/app-task-runtime.ts`;
 - session/execution: `src/lib/manager.ts`, `src/lib/agent-execution.ts`,
   `src/lib/agent-runner.ts`;
 - direct/Gym adapter: `src/app/direct-agent.ts`;
-- task mechanics: `src/app/project-app-task-*.ts`;
+- task mechanics: `src/app/app-task-*.ts`;
 - stable public SDK: `packages/sdk/`; and
 - control protocol/client: `packages/control/`.
 
-Project App-named adapters/task files may remain internally while mechanics are
-moved behind the canonical host. Their legacy public contract and duplicate
-authority are not part of the target runtime.
+Task persistence, controllers, recovery, and workspaces are host-private. They
+consume canonical App definitions and cannot publish another App generation or
+route.
 
 ## Integrity checklist
 

@@ -2,7 +2,7 @@
   "name": "@may-agent/evaluation-app",
   "private": true,
   "type": "module",
-  "description": "Independent May-agent session and project-app auditing with evidence-backed finding delivery.",
+  "description": "Independent May-agent session and Agent App auditing with evidence-backed finding delivery.",
   "scripts": {
     "bundle": "rm -rf .state/bundle && bun build ./app.ts ./agents/evaluator/workflows/app-runtime-canary.ts ./agents/evaluator/workflows/evaluation-feedback-projection.ts ./agents/evaluator/workflows/evaluator-aftermath.ts ./agents/evaluator/workflows/evaluator-heartbeat.ts ./agents/evaluator/workflows/evaluator-deep-eval.ts ./agents/evaluator/workflows/project-health-evaluator.ts --target=bun --format=esm --outdir .state/bundle --external @may-agent/sdk",
     "check": "bun run syntax && bun run typecheck && bun run format:check && bun run test",

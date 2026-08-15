@@ -1,9 +1,89 @@
-import { projectRuntimePaths, resolveTaskTreePath } from "@may-agent/sdk/legacy";
 import { describe, expect, test } from "bun:test";
-import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { readFileSync } from "node:fs";
+import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execute } from "./focus-plan.ts";
+
+function taskTreePath(appDir: string): string {
+  return join(appDir, ".state", "tasks", "tree.json");
+}
+
+function reconciliationTaskSnapshot(appDir: string) {
+  const tree = JSON.parse(readFileSync(taskTreePath(appDir), "utf8")) as {
+    tasks?: Record<string, Record<string, any>>;
+    conditions?: Record<string, { spec?: Record<string, any> }>;
+  };
+  const status = (task: Record<string, any>) => {
+    const phase = String(task.phase ?? task.state ?? "pending");
+    return (
+      {
+        backlog: "pending",
+        active: "running",
+        blocked: "waiting",
+        review: "attention",
+        converged: "done",
+      } as Record<string, string>
+    )[phase] ?? phase;
+  };
+  const liveEntries = Object.entries(tree.tasks ?? {}).filter(
+    ([, task]) =>
+      task.item_type !== "group" &&
+      !["done", "closed", "converged"].includes(status(task)),
+  );
+  const liveIds = new Set(liveEntries.map(([taskId]) => taskId));
+  return {
+    live: liveEntries.map(([taskId, task]) => ({
+      taskId,
+      parentId: String(task.parent_id ?? "project"),
+      generation: Number(task.generation ?? task.revision ?? 1),
+      status: status(task),
+      outcome: String(task.outcome ?? task.goal ?? ""),
+      evidence: Array.isArray(task.evidence) ? task.evidence : [],
+      ...(typeof task.owner === "string" ? { owner: task.owner } : {}),
+      ...(typeof task.workflow === "string" ? { workflow: task.workflow } : {}),
+      input:
+        task.input && typeof task.input === "object" && !Array.isArray(task.input)
+          ? task.input
+          : {},
+      ...(typeof task.priority === "string" ? { priority: task.priority } : {}),
+      ...(typeof task.category === "string" ? { category: task.category } : {}),
+      ...(Array.isArray(task.depends_on) ? { dependsOn: task.depends_on } : {}),
+      conditions: (Array.isArray(task.condition_ids) ? task.condition_ids : []).flatMap(
+        (conditionId: string) => {
+          const spec = tree.conditions?.[conditionId]?.spec;
+          return spec
+            ? [
+                {
+                  id: conditionId,
+                  type: String(spec.type ?? ""),
+                  subject: String(spec.subject ?? ""),
+                  expected: spec.expected,
+                  ...(typeof spec.owner === "string" ? { owner: spec.owner } : {}),
+                },
+              ]
+            : [];
+        },
+      ),
+      ...(task.readiness && typeof task.readiness === "object"
+        ? {
+            readiness: {
+              state: String(task.readiness.state ?? "not-applicable"),
+              reason: String(task.readiness.reason ?? "test fixture"),
+              relatedTaskIds: Array.isArray(task.readiness.related_ids)
+                ? task.readiness.related_ids
+                : [],
+            },
+          }
+        : {}),
+      hasLiveChildren: (Array.isArray(task.children) ? task.children : []).some(
+        (childId: string) => liveIds.has(childId),
+      ),
+      ...(typeof task.updated_at === "string" ? { updatedAt: task.updated_at } : {}),
+    })),
+    truncated: false,
+  };
+}
 
 async function makeWorkspace(options?: { leafState?: string }) {
   const leafState = options?.leafState ?? "backlog";
@@ -25,7 +105,7 @@ async function makeWorkspace(options?: { leafState?: string }) {
   await mkdir(join(appDir, ".state", "tasks"), { recursive: true });
   await mkdir(projectDir, { recursive: true });
   await writeFile(
-    resolveTaskTreePath(appDir),
+    taskTreePath(appDir),
     `${JSON.stringify(
       {
         schema_version: 2,
@@ -88,7 +168,7 @@ async function makeOwnerReturnAlignedWorkspace() {
   await mkdir(join(appDir, ".state", "tasks"), { recursive: true });
   await mkdir(projectDir, { recursive: true });
   await writeFile(
-    resolveTaskTreePath(appDir),
+    taskTreePath(appDir),
     `${JSON.stringify(
       {
         schema_version: 2,
@@ -213,8 +293,78 @@ async function makeOwnerReturnAlignedWorkspace() {
   return { appDir, projectDir };
 }
 
-function triggerEvent(event: Record<string, unknown>): string {
-  return `## Trigger Event\n\`\`\`json\n${JSON.stringify(event, null, 2)}\n\`\`\``;
+function context(input: {
+  appDir: string;
+  projectDir: string;
+  trigger: Record<string, unknown>;
+  agentResult:
+    | unknown
+    | ((
+        agent: string,
+        prompt: string,
+        options?: { sessionId?: string; timeoutMs?: number },
+      ) => unknown | Promise<unknown>);
+  dispatched?: Array<{
+    type: string;
+    payload: Record<string, unknown>;
+  }>;
+}) {
+  const { type, target, data, ...legacyData } = input.trigger;
+  return {
+    input: {},
+    reconciliation: {
+      appId: "aks-rp-e2e",
+      taskId: "runtime/focus-plan",
+      generation: 1,
+      resourceVersion: 1,
+      owner: "aks-explorer",
+      mode: "maintain",
+      outcome: "Review current project focus",
+      acceptance: ["The focus review emits its bounded follow-up."],
+      input: {},
+      children: { live: [], completed: [] },
+      taskSnapshot: reconciliationTaskSnapshot(input.appDir),
+      trigger: {
+        type,
+        target,
+        data: {
+          ...legacyData,
+          ...(data && typeof data === "object" ? data : {}),
+        },
+      },
+    },
+    workspace: {
+      appRoot: input.appDir,
+      projectRoot: input.projectDir,
+      root: input.projectDir,
+      output: input.projectDir,
+    },
+    agents: {
+      async call(
+        agent: string,
+        prompt: string,
+        options?: { sessionId?: string; timeoutMs?: number },
+      ) {
+        return typeof input.agentResult === "function"
+          ? input.agentResult(agent, prompt, options)
+          : input.agentResult;
+      },
+    },
+    events: {
+      async emit(event: { type: string; data: Record<string, unknown> }) {
+        input.dispatched?.push({ type: event.type, payload: event.data });
+      },
+    },
+    done(summary: string, output?: unknown) {
+      return {
+        id: "workflow:test",
+        kind: "workflow",
+        status: "done",
+        summary,
+        output,
+      };
+    },
+  } as any;
 }
 
 describe("focus-plan workflow", () => {
@@ -225,52 +375,42 @@ describe("focus-plan workflow", () => {
       payload: Record<string, unknown>;
     }> = [];
 
-    const result = await execute({
-      task: [
-        `app: ${appDir}`,
-        `project: ${projectDir}`,
-        "agent: aks-explorer",
-        triggerEvent({
+    const result = await execute(
+      context({
+        appDir,
+        projectDir,
+        trigger: {
           type: "project.focus.review.requested",
           project: "aks-rp-e2e",
           reason: "scheduled-focus-progress-review",
-        }),
-      ].join("\n"),
-      agent: "aks-explorer",
-      done: (message: string, output?: unknown) => ({
-        status: "done",
-        message,
-        output,
+        },
+        dispatched,
+        agentResult: {
+          status: "success",
+          message:
+            "FOCUS_PLAN_RESULT: completed\nFOCUS_PLAN_TITLE: REST replay focus\nFOCUS_PLAN_SUMMARY: Project at FINAL terminal ceiling. No actionable work remains. Disable review schedule.\nOWNER_NEXT: close the loop",
+        },
       }),
-      escalate: (message: string) => ({ status: "escalated", message }),
-      emit() {},
-      dispatchEvent(type: string, payload: Record<string, unknown>) {
-        dispatched.push({ type, payload });
-      },
-      runAgent: async () => ({ status: "success" }),
-      runAgentSession: async () => ({
-        status: "success",
-        message:
-          "FOCUS_PLAN_RESULT: completed\nFOCUS_PLAN_TITLE: REST replay focus\nFOCUS_PLAN_SUMMARY: Project at FINAL terminal ceiling. No actionable work remains. Disable review schedule.\nOWNER_NEXT: close the loop",
-      }),
-      summarize: () => "",
-    } as any);
+    );
 
     expect(result.status).toBe("done");
-    expect(result.message).toContain("result updated");
-    expect(result.message).toContain(
+    expect(result.summary).toContain("result updated");
+    expect(result.summary).toContain(
       "Terminal/completed or disable-review guidance was suppressed",
     );
-    expect(result.message).toContain('active_task_ids=["run-rest-spec-batch"]');
-    expect(result.message).toContain("counts.waiting=0");
-    expect(result.message).toContain("counts.pending=0");
+    expect(result.summary).toContain('active_task_ids=["run-rest-spec-batch"]');
+    expect(result.summary).toContain("counts.waiting=0");
+    expect(result.summary).toContain("counts.pending=0");
     expect(result).toMatchObject({
       output: {
         state: "converged",
         summary: expect.stringContaining(
           "Focus-plan review completed with result updated",
         ),
-        evidence: ["focus-plan:review:updated", ".state/focus-plan-runs.jsonl"],
+        evidence: [
+          "focus-plan:review:updated",
+          "event:project.owner.requested",
+        ],
         actions: [],
       },
     });
@@ -290,36 +430,28 @@ describe("focus-plan workflow", () => {
   test("adds explicit live frontier evidence when a terminal result remains", async () => {
     const { appDir, projectDir } = await makeWorkspace({ leafState: "done" });
 
-    const result = await execute({
-      task: [
-        `app: ${appDir}`,
-        `project: ${projectDir}`,
-        "agent: aks-explorer",
-        triggerEvent({
+    const result = await execute(
+      context({
+        appDir,
+        projectDir,
+        trigger: {
           type: "project.focus.review.requested",
           project: "aks-rp-e2e",
           reason: "scheduled-focus-progress-review",
-        }),
-      ].join("\n"),
-      agent: "aks-explorer",
-      done: (message: string) => ({ status: "done", message }),
-      escalate: (message: string) => ({ status: "escalated", message }),
-      emit() {},
-      dispatchEvent() {},
-      runAgent: async () => ({ status: "success" }),
-      runAgentSession: async () => ({
-        status: "success",
-        message:
-          "FOCUS_PLAN_RESULT: completed\nFOCUS_PLAN_TITLE: REST replay focus\nFOCUS_PLAN_SUMMARY: Focus done.\nOWNER_NEXT: archive the plan",
+        },
+        agentResult: {
+          status: "success",
+          message:
+            "FOCUS_PLAN_RESULT: completed\nFOCUS_PLAN_TITLE: REST replay focus\nFOCUS_PLAN_SUMMARY: Focus done.\nOWNER_NEXT: archive the plan",
+        },
       }),
-      summarize: () => "",
-    } as any);
+    );
 
     expect(result.status).toBe("done");
-    expect(result.message).toContain("LIVE_FRONTIER_EVIDENCE:");
-    expect(result.message).toContain("frontier.review=[]");
-    expect(result.message).toContain("counts.waiting=0");
-    expect(result.message).toContain("counts.pending=0");
+    expect(result.summary).toContain("LIVE_FRONTIER_EVIDENCE:");
+    expect(result.summary).toContain("frontier.review=[]");
+    expect(result.summary).toContain("counts.waiting=0");
+    expect(result.summary).toContain("counts.pending=0");
   });
 
   test("suppresses failed-known-issues when live frontier is still nonterminal", async () => {
@@ -327,73 +459,57 @@ describe("focus-plan workflow", () => {
       leafState: "blocked",
     });
 
-    const result = await execute({
-      task: [
-        `app: ${appDir}`,
-        `project: ${projectDir}`,
-        "agent: aks-explorer",
-        triggerEvent({
+    const result = await execute(
+      context({
+        appDir,
+        projectDir,
+        trigger: {
           type: "project.focus.review.requested",
           project: "aks-rp-e2e",
           reason: "scheduled-focus-progress-review",
-        }),
-      ].join("\n"),
-      agent: "aks-explorer",
-      done: (message: string) => ({ status: "done", message }),
-      escalate: (message: string) => ({ status: "escalated", message }),
-      emit() {},
-      dispatchEvent() {},
-      runAgent: async () => ({ status: "success" }),
-      runAgentSession: async () => ({
-        status: "success",
-        message:
-          "FOCUS_PLAN_RESULT: failed_known_issues\nFOCUS_PLAN_TITLE: REST replay focus\nFOCUS_PLAN_SUMMARY: Planned run terminal failed with known issues.\nOWNER_NEXT: archive the plan",
+        },
+        agentResult: {
+          status: "success",
+          message:
+            "FOCUS_PLAN_RESULT: failed_known_issues\nFOCUS_PLAN_TITLE: REST replay focus\nFOCUS_PLAN_SUMMARY: Planned run terminal failed with known issues.\nOWNER_NEXT: archive the plan",
+        },
       }),
-      summarize: () => "",
-    } as any);
+    );
 
     expect(result.status).toBe("done");
-    expect(result.message).toContain("result updated");
-    expect(result.message).toContain(
+    expect(result.summary).toContain("result updated");
+    expect(result.summary).toContain(
       "Terminal/completed or disable-review guidance was suppressed",
     );
-    expect(result.message).toContain("counts.waiting=1");
+    expect(result.summary).toContain("counts.waiting=1");
   });
 
   test("accepts failed-known-issues when the focus frontier is terminal", async () => {
     const { appDir, projectDir } = await makeWorkspace({ leafState: "done" });
 
-    const result = await execute({
-      task: [
-        `app: ${appDir}`,
-        `project: ${projectDir}`,
-        "agent: aks-explorer",
-        triggerEvent({
+    const result = await execute(
+      context({
+        appDir,
+        projectDir,
+        trigger: {
           type: "project.focus.review.requested",
           project: "aks-rp-e2e",
           reason: "scheduled-focus-progress-review",
-        }),
-      ].join("\n"),
-      agent: "aks-explorer",
-      done: (message: string) => ({ status: "done", message }),
-      escalate: (message: string) => ({ status: "escalated", message }),
-      emit() {},
-      dispatchEvent() {},
-      runAgent: async () => ({ status: "success" }),
-      runAgentSession: async () => ({
-        status: "success",
-        message:
-          "FOCUS_PLAN_RESULT: failed_known_issues\nFOCUS_PLAN_TITLE: REST replay focus\nFOCUS_PLAN_SUMMARY: Planned run terminal failed after local repair paths were exhausted.\nOWNER_NEXT: start a new focus after escalation response",
+        },
+        agentResult: {
+          status: "success",
+          message:
+            "FOCUS_PLAN_RESULT: failed_known_issues\nFOCUS_PLAN_TITLE: REST replay focus\nFOCUS_PLAN_SUMMARY: Planned run terminal failed after local repair paths were exhausted.\nOWNER_NEXT: start a new focus after escalation response",
+        },
       }),
-      summarize: () => "",
-    } as any);
+    );
 
     expect(result.status).toBe("done");
-    expect(result.message).toContain(
+    expect(result.summary).toContain(
       "Focus-plan review completed with result failed_known_issues",
     );
-    expect(result.message).toContain("LIVE_FRONTIER_EVIDENCE:");
-    expect(result.message).toContain("counts.waiting=0");
+    expect(result.summary).toContain("LIVE_FRONTIER_EVIDENCE:");
+    expect(result.summary).toContain("counts.waiting=0");
   });
 
   test("asks for human approval and still wakes owner review for a proposed focus", async () => {
@@ -405,64 +521,58 @@ describe("focus-plan workflow", () => {
       payload: Record<string, unknown>;
     }> = [];
 
-    const result = await execute({
-      task: [
-        `app: ${appDir}`,
-        `project: ${projectDir}`,
-        "agent: aks-explorer",
-        triggerEvent({
+    const result = await execute(
+      context({
+        appDir,
+        projectDir,
+        trigger: {
           type: "project.focus.review.requested",
           project: "aks-rp-e2e",
           reason: "scheduled-mid-term-focus-plan",
           mode: "plan",
-        }),
-      ].join("\n"),
-      agent: "aks-explorer",
-      done: (message: string) => ({ status: "done", message }),
-      escalate: (message: string) => ({ status: "escalated", message }),
-      emit() {},
-      dispatchEvent(type: string, payload: Record<string, unknown>) {
-        dispatched.push({ type, payload });
-      },
-      runAgent: async () => ({ status: "success" }),
-      runAgentSession: async (
-        _agent: string,
-        prompt: string,
-        sessionId: string,
-      ) => {
-        prompts.push(prompt);
-        sessionIds.push(sessionId);
-        return {
-          status: "success",
-          message:
-            "FOCUS_PLAN_RESULT: needs_approval\nFOCUS_PLAN_TITLE: REST replay focus\nFOCUS_PLAN_SUMMARY: Propose 24h focus on REST replay execution and model feedback.\nOWNER_NEXT: wait for approval, then assign replay leaves",
-        };
-      },
-      summarize: () => "",
-    } as any);
+        },
+        dispatched,
+        agentResult: async (_agent, prompt, options) => {
+          prompts.push(prompt);
+          sessionIds.push(options?.sessionId ?? "");
+          return {
+            status: "success",
+            message:
+              "FOCUS_PLAN_RESULT: needs_approval\nFOCUS_PLAN_TITLE: REST replay focus\nFOCUS_PLAN_SUMMARY: Propose 24h focus on REST replay execution and model feedback.\nOWNER_NEXT: wait for approval, then assign replay leaves",
+          };
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
     expect(prompts).toHaveLength(1);
     expect(prompts[0]).toContain("AKS RP E2E Focus Plan Mode");
-    expect(prompts[0]).toContain("Current compact task-tree packet");
+    expect(prompts[0]).toContain(
+      "Current bounded, truncation-aware App task snapshot",
+    );
     expect(prompts[0]).toContain("run-rest-spec-batch");
     expect(sessionIds).toHaveLength(1);
     expect(sessionIds[0]).toMatch(/^s_focus_plan_strategy_\d{14}_[a-z0-9]+$/);
     expect(sessionIds[0]).not.toBe("s_focus_plan_strategy");
-    expect(dispatched.map((event) => event.type)).toEqual([
-      "message.created",
-      "project.owner.requested",
-    ]);
-    expect(dispatched[0].payload).toMatchObject({
+    expect(new Set(dispatched.map((event) => event.type))).toEqual(
+      new Set(["message.created", "project.owner.requested"]),
+    );
+    const approvalEvent = dispatched.find(
+      (event) => event.type === "message.created",
+    )!;
+    const ownerEvent = dispatched.find(
+      (event) => event.type === "project.owner.requested",
+    )!;
+    expect(approvalEvent.payload).toMatchObject({
       from: "aks-explorer",
       to: "human",
       intent: "focus-plan-approval",
       project: "aks-rp-e2e",
     });
-    expect((dispatched[0].payload as any).dedupKey).toBe(
+    expect((approvalEvent.payload as any).dedupKey).toBe(
       "aks-rp-e2e:focus-plan:needs_approval",
     );
-    expect(dispatched[0].payload).toMatchObject({
+    expect(approvalEvent.payload).toMatchObject({
       projectId: "projects/aks-rp-e2e.app",
       projectPath: "projects/aks-rp-e2e.app",
       requestedAction:
@@ -479,23 +589,25 @@ describe("focus-plan workflow", () => {
         },
       },
     });
-    expect(String((dispatched[0].payload as any).content)).toContain(
+    expect(String((approvalEvent.payload as any).content)).toContain(
       "Decision: Approve the proposal focus direction",
     );
-    expect(String((dispatched[0].payload as any).content)).toContain(
+    expect(String((approvalEvent.payload as any).content)).toContain(
       "Reply to this Telegram message with approve",
     );
-    expect(dispatched[1].payload).toMatchObject({
+    expect(ownerEvent.payload).toMatchObject({
       project: "aks-rp-e2e",
       reason: "focus-plan-proposal",
       focusResult: "needs_approval",
     });
-
-    const focusRuns = await readFile(
-      join(appDir, ".state", "focus-plan-runs.jsonl"),
-      "utf8",
-    );
-    expect(focusRuns).toContain('"result":"needs_approval"');
+    expect(result).toMatchObject({
+      output: {
+        evidence: expect.arrayContaining([
+          "event:message.created",
+          "event:project.owner.requested",
+        ]),
+      },
+    });
   });
 
   test("prefers marker-bearing assistant text over plain summary", async () => {
@@ -505,34 +617,25 @@ describe("focus-plan workflow", () => {
       payload: Record<string, unknown>;
     }> = [];
 
-    const result = await execute({
-      task: [
-        `app: ${appDir}`,
-        `project: ${projectDir}`,
-        "agent: aks-explorer",
-        triggerEvent({
+    const result = await execute(
+      context({
+        appDir,
+        projectDir,
+        trigger: {
           type: "project.focus.review.requested",
           project: "aks-rp-e2e",
           reason: "scheduled-focus-progress-review",
-        }),
-      ].join("\n"),
-      agent: "aks-explorer",
-      done: (message: string) => ({ status: "done", message }),
-      escalate: (message: string) => ({ status: "escalated", message }),
-      emit() {},
-      dispatchEvent(type: string, payload: Record<string, unknown>) {
-        dispatched.push({ type, payload });
-      },
-      runAgent: async () => ({ status: "success" }),
-      runAgentSession: async () => ({
-        status: "success",
-        summary:
-          "Completed the regular focus progress review and confirmed the focus is still on track.",
-        lastAssistantText:
-          "FOCUS_PLAN_RESULT: on_track\nFOCUS_PLAN_TITLE: REST replay focus\nFOCUS_PLAN_SUMMARY: Active focus still has runnable leaves.\nOWNER_NEXT: keep assigning backlog leaves",
+        },
+        dispatched,
+        agentResult: {
+          status: "success",
+          summary:
+            "Completed the regular focus progress review and confirmed the focus is still on track.",
+          lastAssistantText:
+            "FOCUS_PLAN_RESULT: on_track\nFOCUS_PLAN_TITLE: REST replay focus\nFOCUS_PLAN_SUMMARY: Active focus still has runnable leaves.\nOWNER_NEXT: keep assigning backlog leaves",
+        },
       }),
-      summarize: () => "",
-    } as any);
+    );
 
     expect(result.status).toBe("done");
     expect(dispatched.map((event) => event.type)).toEqual([
@@ -552,35 +655,26 @@ describe("focus-plan workflow", () => {
       payload: Record<string, unknown>;
     }> = [];
 
-    const result = await execute({
-      task: [
-        `app: ${appDir}`,
-        `project: ${projectDir}`,
-        "agent: aks-explorer",
-        triggerEvent({
+    const result = await execute(
+      context({
+        appDir,
+        projectDir,
+        trigger: {
           type: "project.focus.review.requested",
           project: "aks-rp-e2e",
           reason: "scheduled-focus-progress-review",
-        }),
-      ].join("\n"),
-      agent: "aks-explorer",
-      done: (message: string) => ({ status: "done", message }),
-      escalate: (message: string) => ({ status: "escalated", message }),
-      emit() {},
-      dispatchEvent(type: string, payload: Record<string, unknown>) {
-        dispatched.push({ type, payload });
-      },
-      runAgent: async () => ({ status: "success" }),
-      runAgentSession: async () => ({
-        status: "success",
-        summary:
-          "Completed the regular focus progress review for aks-rp-e2e, confirmed the existing no-live post-reconciliation stewardship focus is still on track, and refreshed both the durable evidence artifact and focus-plan metadata in .state/tasks/tree.json to match the current fully-drained executable frontier.",
+        },
+        dispatched,
+        agentResult: {
+          status: "success",
+          summary:
+            "Completed the regular focus progress review for aks-rp-e2e, confirmed the existing no-live post-reconciliation stewardship focus is still on track, and refreshed both the durable evidence artifact and focus-plan metadata in .state/tasks/tree.json to match the current fully-drained executable frontier.",
+        },
       }),
-      summarize: () => "",
-    } as any);
+    );
 
     expect(result.status).toBe("done");
-    expect(result.message).toContain("result on_track");
+    expect(result.summary).toContain("result on_track");
     expect(dispatched.map((event) => event.type)).toEqual([
       "project.owner.requested",
     ]);
@@ -600,35 +694,26 @@ describe("focus-plan workflow", () => {
       payload: Record<string, unknown>;
     }> = [];
 
-    const result = await execute({
-      task: [
-        `app: ${appDir}`,
-        `project: ${projectDir}`,
-        "agent: aks-explorer",
-        triggerEvent({
+    const result = await execute(
+      context({
+        appDir,
+        projectDir,
+        trigger: {
           type: "project.focus.review.requested",
           project: "aks-rp-e2e",
           reason: "scheduled-focus-progress-review",
-        }),
-      ].join("\n"),
-      agent: "aks-explorer",
-      done: (message: string) => ({ status: "done", message }),
-      escalate: (message: string) => ({ status: "escalated", message }),
-      emit() {},
-      dispatchEvent(type: string, payload: Record<string, unknown>) {
-        dispatched.push({ type, payload });
-      },
-      runAgent: async () => ({ status: "success" }),
-      runAgentSession: async () => ({
-        status: "success",
-        summary:
-          "Completed the regular focus progress review for aks-rp-e2e, confirmed the existing no-live stewardship focus is still on track, and kept it blocked behind the same governing approval wait while no returned owner decision exists.",
+        },
+        dispatched,
+        agentResult: {
+          status: "success",
+          summary:
+            "Completed the regular focus progress review for aks-rp-e2e, confirmed the existing no-live stewardship focus is still on track, and kept it blocked behind the same governing approval wait while no returned owner decision exists.",
+        },
       }),
-      summarize: () => "",
-    } as any);
+    );
 
     expect(result.status).toBe("done");
-    expect(result.message).toContain("result blocked");
+    expect(result.summary).toContain("result blocked");
     expect(dispatched.map((event) => event.type)).toEqual([
       "project.owner.requested",
     ]);
@@ -646,40 +731,36 @@ describe("focus-plan workflow", () => {
       payload: Record<string, unknown>;
     }> = [];
 
-    const result = await execute({
-      task: [
-        `app: ${appDir}`,
-        `project: ${projectDir}`,
-        "agent: aks-explorer",
-        triggerEvent({
+    const result = await execute(
+      context({
+        appDir,
+        projectDir,
+        trigger: {
           type: "project.focus.review.requested",
           project: "aks-rp-e2e",
           reason: "scheduled-mid-term-focus-plan",
           mode: "plan",
-        }),
-      ].join("\n"),
-      agent: "aks-explorer",
-      done: (message: string) => ({ status: "done", message }),
-      escalate: (message: string) => ({ status: "escalated", message }),
-      emit() {},
-      dispatchEvent(type: string, payload: Record<string, unknown>) {
-        dispatched.push({ type, payload });
-      },
-      runAgent: async () => ({ status: "success" }),
-      runAgentSession: async () => ({
-        status: "success",
-        message:
-          "FOCUS_PLAN_RESULT: needs_approval\nFOCUS_PLAN_TITLE: REST replay focus\nFOCUS_PLAN_SUMMARY: Propose 24h focus on REST replay execution and model feedback.\nOWNER_NEXT: wait for approval, then assign replay leaves",
+        },
+        dispatched,
+        agentResult: {
+          status: "success",
+          message:
+            "FOCUS_PLAN_RESULT: needs_approval\nFOCUS_PLAN_TITLE: REST replay focus\nFOCUS_PLAN_SUMMARY: Propose 24h focus on REST replay execution and model feedback.\nOWNER_NEXT: wait for approval, then assign replay leaves",
+        },
       }),
-      summarize: () => "",
-    } as any);
+    );
 
     expect(result.status).toBe("done");
-    expect(dispatched.map((event) => event.type)).toEqual([
-      "message.created",
-      "project.owner.requested",
-    ]);
-    expect(dispatched[0].payload).toMatchObject({
+    expect(new Set(dispatched.map((event) => event.type))).toEqual(
+      new Set(["message.created", "project.owner.requested"]),
+    );
+    const approvalEvent = dispatched.find(
+      (event) => event.type === "message.created",
+    )!;
+    const ownerEvent = dispatched.find(
+      (event) => event.type === "project.owner.requested",
+    )!;
+    expect(approvalEvent.payload).toMatchObject({
       intent: "focus-plan-approval",
       requestedAction:
         "Reply to this notification with approve, adjust <changes>, or hold. The reply is emitted to projects/aks-rp-e2e.app as project.approval.submitted carrying the preserved approvalId/waitId lineage.",
@@ -722,7 +803,7 @@ describe("focus-plan workflow", () => {
           "focus-review-off_track-approval-refresh-20260712",
       },
     });
-    expect(dispatched[1].payload).toMatchObject({
+    expect(ownerEvent.payload).toMatchObject({
       project: "aks-rp-e2e",
       reason: "focus-plan-proposal",
       focusResult: "needs_approval",
@@ -736,32 +817,23 @@ describe("focus-plan workflow", () => {
       payload: Record<string, unknown>;
     }> = [];
 
-    const result = await execute({
-      task: [
-        `app: ${appDir}`,
-        `project: ${projectDir}`,
-        "agent: aks-explorer",
-        triggerEvent({
+    const result = await execute(
+      context({
+        appDir,
+        projectDir,
+        trigger: {
           type: "project.focus.review.requested",
           project: "aks-rp-e2e",
           reason: "scheduled-focus-progress-review",
-        }),
-      ].join("\n"),
-      agent: "aks-explorer",
-      done: (message: string) => ({ status: "done", message }),
-      escalate: (message: string) => ({ status: "escalated", message }),
-      emit() {},
-      dispatchEvent(type: string, payload: Record<string, unknown>) {
-        dispatched.push({ type, payload });
-      },
-      runAgent: async () => ({ status: "success" }),
-      runAgentSession: async () => ({
-        status: "success",
-        message:
-          "FOCUS_PLAN_RESULT: on_track\nFOCUS_PLAN_TITLE: REST replay focus\nFOCUS_PLAN_SUMMARY: Active focus still has runnable leaves.\nOWNER_NEXT: keep assigning backlog leaves",
+        },
+        dispatched,
+        agentResult: {
+          status: "success",
+          message:
+            "FOCUS_PLAN_RESULT: on_track\nFOCUS_PLAN_TITLE: REST replay focus\nFOCUS_PLAN_SUMMARY: Active focus still has runnable leaves.\nOWNER_NEXT: keep assigning backlog leaves",
+        },
       }),
-      summarize: () => "",
-    } as any);
+    );
 
     expect(result.status).toBe("done");
     expect(dispatched.map((event) => event.type)).toEqual([

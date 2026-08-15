@@ -1,13 +1,14 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, realpathSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 import {
-  projectAppTaskHandlerResultSchema,
-  type ProjectAppTaskHandlerResult,
-  type ProjectAppTaskVerificationContext,
-  type ProjectAppTaskVerificationResult,
+  taskReconcileResultSchema,
+  type ExecutionResult,
+  type TaskReconcileResult,
+  type TaskVerificationContext,
+  type TaskVerificationResult,
   type WorkflowContext,
-  type WorkflowResult,
-} from "@may-agent/sdk/legacy";
+} from "@may-agent/sdk";
 import {
   AKS_DIRECT_DEV_VALIDATION_COMMANDS,
   integrateDirectlyIntoDev,
@@ -53,11 +54,26 @@ export function assertIsolatedWriteDispatch(input: {
 }
 
 function guardWriteDispatch(ctx: WorkflowContext): void {
+  const workspaceDir = ctx.workspace?.root;
+  const projectDir = ctx.workspace?.projectRoot;
+  if (!projectDir) {
+    throw new Error(
+      "Write-producing agent dispatch requires a project workspace",
+    );
+  }
   assertIsolatedWriteDispatch({
-    workspaceDir: ctx.workspaceDir,
-    projectDir: ctx.projectDir,
-    cwd: ctx.workspaceDir ?? ctx.projectDir,
+    workspaceDir,
+    projectDir,
+    cwd: workspaceDir ?? projectDir,
   });
+}
+
+function taskDescription(ctx: WorkflowContext): string {
+  return JSON.stringify(ctx.reconciliation ?? ctx.input, null, 2);
+}
+
+function taskOwner(ctx: WorkflowContext): string {
+  return ctx.reconciliation?.owner ?? "aks-explorer";
 }
 
 function gitValue(cwd: string, ...args: string[]): string {
@@ -86,63 +102,12 @@ function workspaceChanges(cwd: string): string {
   return gitValue(cwd, "status", "--porcelain=v1", "--untracked-files=all");
 }
 
-function matchingJsonObject(text: string, start: number): string | null {
-  let depth = 0;
-  let inString = false;
-  let escaping = false;
-  for (let index = start; index < text.length; index += 1) {
-    const char = text[index];
-    if (escaping) {
-      escaping = false;
-      continue;
-    }
-    if (char === "\\") {
-      escaping = true;
-      continue;
-    }
-    if (char === '"') {
-      inString = !inString;
-      continue;
-    }
-    if (inString) continue;
-    if (char === "{") depth += 1;
-    if (char === "}" && --depth === 0) return text.slice(start, index + 1);
-  }
-  return null;
-}
-
-type ReconciliationTaskPayload = {
-  taskId?: unknown;
-  input?: unknown;
-  children?: {
-    live?: unknown;
-  };
-};
-
-function reconciliationTaskPayload(
-  raw: string,
-): ReconciliationTaskPayload | null {
-  const marker = raw.indexOf("## Reconciliation Task");
-  if (marker < 0) return null;
-  const scoped = raw.slice(marker);
-  const start = scoped.indexOf("{");
-  const object = start >= 0 ? matchingJsonObject(scoped, start) : null;
-  if (!object) return null;
-  try {
-    return JSON.parse(object) as ReconciliationTaskPayload;
-  } catch {
-    return null;
-  }
-}
-
-export function reconciliationTaskId(raw: string): string | null {
-  const taskId = reconciliationTaskPayload(raw)?.taskId;
+export function reconciliationTaskId(value: unknown): string | null {
+  const taskId =
+    value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>).taskId
+      : null;
   return typeof taskId === "string" && taskId.trim() ? taskId.trim() : null;
-}
-
-function reconciliationTaskHasLiveChildren(raw: string): boolean {
-  const liveChildren = reconciliationTaskPayload(raw)?.children?.live;
-  return Array.isArray(liveChildren) && liveChildren.length > 0;
 }
 
 function stringValue(value: unknown): string | null {
@@ -153,8 +118,8 @@ function stringValue(value: unknown): string | null {
   return null;
 }
 
-function queuedPipelineRunId(raw: string): string | null {
-  const input = reconciliationTaskPayload(raw)?.input;
+function queuedPipelineRunId(value: unknown): string | null {
+  const input = taskInput(value);
   if (!input || typeof input !== "object") return null;
   return stringValue(
     (input as Record<string, unknown>).queuedPipelineRunId ??
@@ -162,8 +127,8 @@ function queuedPipelineRunId(raw: string): string | null {
   );
 }
 
-function requiredAcceptedSourceCommit(raw: string): string | null {
-  const input = reconciliationTaskPayload(raw)?.input;
+function requiredAcceptedSourceCommit(value: unknown): string | null {
+  const input = taskInput(value);
   if (!input || typeof input !== "object") return null;
   const values = input as Record<string, unknown>;
   const commit = stringValue(
@@ -172,15 +137,14 @@ function requiredAcceptedSourceCommit(raw: string): string | null {
   return commit && /^[0-9a-f]{40}$/i.test(commit) ? commit : null;
 }
 
-function taskInput(raw: string): Record<string, unknown> | null {
-  const input = reconciliationTaskPayload(raw)?.input;
-  return input && typeof input === "object"
-    ? (input as Record<string, unknown>)
+function taskInput(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
     : null;
 }
 
-function requestedWorkspaceDir(raw: string): string | null {
-  return stringValue(taskInput(raw)?.workspaceDir);
+function requestedWorkspaceDir(value: unknown): string | null {
+  return stringValue(taskInput(value)?.workspaceDir);
 }
 
 type CleanRetainedAuthority = {
@@ -189,11 +153,11 @@ type CleanRetainedAuthority = {
 };
 
 function cleanRetainedAuthority(
-  raw: string,
+  value: unknown,
 ):
   | { declared: false }
   | { declared: true; value: CleanRetainedAuthority | null } {
-  const input = taskInput(raw);
+  const input = taskInput(value);
   const workspaceDir = stringValue(input?.cleanRetainedWorktree);
   const head = stringValue(input?.cleanRetainedHead);
   if (!workspaceDir && !head) return { declared: false };
@@ -211,8 +175,8 @@ type PreservedWorkspaceAdoption = {
   expectedOperation?: "none" | "merge" | "rebase" | "cherry-pick" | "revert";
 };
 
-function preservedWorkspaceAdoption(raw: string): unknown {
-  return taskInput(raw)?.preservedWorkspaceAdoption;
+function preservedWorkspaceAdoption(value: unknown): unknown {
+  return taskInput(value)?.preservedWorkspaceAdoption;
 }
 
 function canonicalPath(path: string): string {
@@ -242,8 +206,8 @@ function activeGitOperation(cwd: string): string | null {
 
 function recoveryOnlyResult(
   workspaceDir: string,
-  ownerResult: ProjectAppTaskHandlerResult,
-): ProjectAppTaskHandlerResult {
+  ownerResult: TaskReconcileResult,
+): TaskReconcileResult {
   const workspace = (() => {
     try {
       return realpathSync(workspaceDir);
@@ -485,9 +449,7 @@ function taskBranchGate(input: {
   return { ok: true, evidence };
 }
 
-function pipelineRunIdFromEvidence(
-  result: ProjectAppTaskHandlerResult,
-): string | null {
+function pipelineRunIdFromEvidence(result: TaskReconcileResult): string | null {
   const runIds = new Set<string>();
   for (const text of [result.summary, ...(result.evidence ?? [])]) {
     if (typeof text !== "string") continue;
@@ -500,9 +462,9 @@ function pipelineRunIdFromEvidence(
 }
 
 function exactPipelineWaitCoverage(
-  rawTask: string,
-  result: ProjectAppTaskHandlerResult,
-): ProjectAppTaskHandlerResult | null {
+  rawTask: unknown,
+  result: TaskReconcileResult,
+): TaskReconcileResult | null {
   const runId =
     queuedPipelineRunId(rawTask) ?? pipelineRunIdFromEvidence(result);
   if (!runId) return null;
@@ -514,7 +476,7 @@ function exactPipelineWaitCoverage(
 }
 
 function selfTargetingActionIndexes(
-  result: ProjectAppTaskHandlerResult,
+  result: TaskReconcileResult,
   taskId: string | null,
 ): number[] {
   if (!taskId) return [];
@@ -528,8 +490,8 @@ async function correctSelfTargetingActions(input: {
   currentTaskId: string | null;
   phase: string;
   sessionId: string;
-  result: ProjectAppTaskHandlerResult;
-}): Promise<ProjectAppTaskHandlerResult> {
+  result: TaskReconcileResult;
+}): Promise<TaskReconcileResult> {
   const indexes = selfTargetingActionIndexes(input.result, input.currentTaskId);
   if (!indexes.length || !input.currentTaskId) return input.result;
 
@@ -542,33 +504,24 @@ async function correctSelfTargetingActions(input: {
     JSON.stringify(input.result, null, 2),
   ].join("\n\n");
   guardWriteDispatch(input.ctx);
-  const correction = input.ctx.runAgentSession
-    ? await input.ctx.runAgentSession(
-        input.ctx.agent,
-        prompt,
-        input.sessionId,
-        {
-          timeoutMs: 600_000,
-          schema: projectAppTaskHandlerResultSchema,
-        },
-      )
-    : await input.ctx.runAgent(input.ctx.agent, prompt, {
-        timeoutMs: 600_000,
-        schema: projectAppTaskHandlerResultSchema,
-      });
-  if (correction.status === "error" || correction.status === "interrupted") {
+  const correction = await input.ctx.agents.call(taskOwner(input.ctx), prompt, {
+    sessionId: input.sessionId,
+    timeoutMs: 600_000,
+    schema: taskReconcileResultSchema,
+  });
+  if (correction.status !== "done") {
     return {
       state: "needs-owner",
       summary: `The ${input.phase} result targeted its own running task and the correction session failed`,
       evidence: [
         `task:${input.currentTaskId}`,
         `invalid-action-indexes:${indexes.join(",")}`,
-        `correction-session:${correction.sessionId}`,
+        `correction-execution:${correction.id}`,
       ],
     };
   }
 
-  const corrected = correction.structuredResult as ProjectAppTaskHandlerResult;
+  const corrected = correction.output as TaskReconcileResult;
   const remaining = selfTargetingActionIndexes(corrected, input.currentTaskId);
   if (remaining.length) {
     return {
@@ -577,7 +530,7 @@ async function correctSelfTargetingActions(input: {
       evidence: [
         `task:${input.currentTaskId}`,
         `invalid-action-indexes:${remaining.join(",")}`,
-        `correction-session:${correction.sessionId}`,
+        `correction-execution:${correction.id}`,
       ],
     };
   }
@@ -585,7 +538,7 @@ async function correctSelfTargetingActions(input: {
 }
 
 function waitsOnDirectChild(
-  result: ProjectAppTaskHandlerResult,
+  result: TaskReconcileResult,
   taskId: string | null,
 ): boolean {
   if (!taskId) return false;
@@ -595,7 +548,7 @@ function waitsOnDirectChild(
 }
 
 function convergedWithLiveChildProblem(
-  result: ProjectAppTaskHandlerResult,
+  result: TaskReconcileResult,
   taskId: string | null,
   hasExistingLiveChild: boolean,
 ): string | null {
@@ -610,8 +563,8 @@ async function correctConvergedWithLiveChild(input: {
   hasExistingLiveChild: boolean;
   phase: string;
   sessionId: string;
-  result: ProjectAppTaskHandlerResult;
-}): Promise<ProjectAppTaskHandlerResult> {
+  result: TaskReconcileResult;
+}): Promise<TaskReconcileResult> {
   let ownerResult = input.result;
   let sessionId = input.sessionId;
 
@@ -634,34 +587,34 @@ async function correctConvergedWithLiveChild(input: {
       JSON.stringify(ownerResult, null, 2),
     ].join("\n\n");
     guardWriteDispatch(input.ctx);
-    const correction = input.ctx.runAgentSession
-      ? await input.ctx.runAgentSession(input.ctx.agent, prompt, sessionId, {
-          timeoutMs: 600_000,
-          schema: projectAppTaskHandlerResultSchema,
-        })
-      : await input.ctx.runAgent(input.ctx.agent, prompt, {
-          timeoutMs: 600_000,
-          schema: projectAppTaskHandlerResultSchema,
-        });
-    if (correction.status === "error" || correction.status === "interrupted") {
+    const correction = await input.ctx.agents.call(
+      taskOwner(input.ctx),
+      prompt,
+      {
+        sessionId,
+        timeoutMs: 600_000,
+        schema: taskReconcileResultSchema,
+      },
+    );
+    if (correction.status !== "done") {
       return {
         state: "needs-owner",
         summary: `The ${input.phase} result could not be corrected to a valid parent/child state`,
         evidence: [
           `task:${input.currentTaskId ?? "unknown"}`,
           `child-state-validation:${attempt}`,
-          `correction-session:${correction.sessionId}`,
+          `correction-execution:${correction.id}`,
         ],
       };
     }
 
-    sessionId = correction.sessionId;
+    sessionId = correction.id;
     ownerResult = await correctSelfTargetingActions({
       ctx: input.ctx,
       currentTaskId: input.currentTaskId,
       phase: `${input.phase} parent-child correction`,
       sessionId,
-      result: correction.structuredResult as ProjectAppTaskHandlerResult,
+      result: correction.output as TaskReconcileResult,
     });
   }
 
@@ -684,7 +637,7 @@ async function correctConvergedWithLiveChild(input: {
 }
 
 function waitingCoverageProblem(
-  result: ProjectAppTaskHandlerResult,
+  result: TaskReconcileResult,
   taskId: string | null,
   hasExistingLiveChild: boolean,
 ): string | null {
@@ -701,8 +654,8 @@ async function correctWaitingCoverage(input: {
   hasExistingLiveChild: boolean;
   phase: string;
   sessionId: string;
-  result: ProjectAppTaskHandlerResult;
-}): Promise<ProjectAppTaskHandlerResult> {
+  result: TaskReconcileResult;
+}): Promise<TaskReconcileResult> {
   let ownerResult = input.result;
   let sessionId = input.sessionId;
 
@@ -715,7 +668,7 @@ async function correctWaitingCoverage(input: {
     if (!problem) return ownerResult;
 
     const exactPipelineWait = exactPipelineWaitCoverage(
-      input.ctx.task,
+      input.ctx.reconciliation?.input ?? input.ctx.input,
       ownerResult,
     );
     if (exactPipelineWait) return exactPipelineWait;
@@ -730,34 +683,34 @@ async function correctWaitingCoverage(input: {
       JSON.stringify(ownerResult, null, 2),
     ].join("\n\n");
     guardWriteDispatch(input.ctx);
-    const correction = input.ctx.runAgentSession
-      ? await input.ctx.runAgentSession(input.ctx.agent, prompt, sessionId, {
-          timeoutMs: 600_000,
-          schema: projectAppTaskHandlerResultSchema,
-        })
-      : await input.ctx.runAgent(input.ctx.agent, prompt, {
-          timeoutMs: 600_000,
-          schema: projectAppTaskHandlerResultSchema,
-        });
-    if (correction.status === "error" || correction.status === "interrupted") {
+    const correction = await input.ctx.agents.call(
+      taskOwner(input.ctx),
+      prompt,
+      {
+        sessionId,
+        timeoutMs: 600_000,
+        schema: taskReconcileResultSchema,
+      },
+    );
+    if (correction.status !== "done") {
       return {
         state: "needs-owner",
         summary: `The ${input.phase} result could not be corrected to an exact wait shape`,
         evidence: [
           `task:${input.currentTaskId ?? "unknown"}`,
           `waiting-validation:${attempt}`,
-          `correction-session:${correction.sessionId}`,
+          `correction-execution:${correction.id}`,
         ],
       };
     }
 
-    sessionId = correction.sessionId;
+    sessionId = correction.id;
     ownerResult = await correctSelfTargetingActions({
       ctx: input.ctx,
       currentTaskId: input.currentTaskId,
       phase: `${input.phase} wait-shape correction`,
       sessionId,
-      result: correction.structuredResult as ProjectAppTaskHandlerResult,
+      result: correction.output as TaskReconcileResult,
     });
   }
 
@@ -784,8 +737,8 @@ async function completeScenarioNormalization(input: {
   currentTaskId: string | null;
   sessionId: string;
   normalizationInput: ScenarioNormalizationInput | undefined;
-  result: ProjectAppTaskHandlerResult;
-}): Promise<ProjectAppTaskHandlerResult> {
+  result: TaskReconcileResult;
+}): Promise<TaskReconcileResult> {
   const scenarioTestPath =
     typeof input.normalizationInput?.scenarioTestPath === "string"
       ? input.normalizationInput.scenarioTestPath.trim()
@@ -798,7 +751,7 @@ async function completeScenarioNormalization(input: {
   let sessionId = input.sessionId;
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     const invariant = scenarioNormalizationInvariant(
-      input.ctx.workspaceDir!,
+      input.ctx.workspace!.root,
       input.normalizationInput,
     );
     if (!invariant?.stillListed) return ownerResult;
@@ -810,43 +763,43 @@ async function completeScenarioNormalization(input: {
       "Preserve behavior and active spec coverage, move required code into the direct .test.ts implementation or a shared library outside features/*/tests/*.ts, remove the plain carrier, rerun scoped checks plus the strict inventory, commit all accepted changes, and leave the worktree clean.",
       "Do not create another task, branch, worktree, push, PR, or app-state change. Return the structured result for this same task.",
       "Task:",
-      input.ctx.task,
+      taskDescription(input.ctx),
     ].join("\n\n");
     guardWriteDispatch(input.ctx);
-    const correction = input.ctx.runAgentSession
-      ? await input.ctx.runAgentSession(input.ctx.agent, prompt, sessionId, {
-          timeoutMs: 1_800_000,
-          schema: projectAppTaskHandlerResultSchema,
-        })
-      : await input.ctx.runAgent(input.ctx.agent, prompt, {
-          timeoutMs: 1_800_000,
-          schema: projectAppTaskHandlerResultSchema,
-        });
-    if (correction.status === "error" || correction.status === "interrupted") {
+    const correction = await input.ctx.agents.call(
+      taskOwner(input.ctx),
+      prompt,
+      {
+        sessionId,
+        timeoutMs: 1_800_000,
+        schema: taskReconcileResultSchema,
+      },
+    );
+    if (correction.status !== "done") {
       return {
         state: "needs-owner",
         summary: "Scenario normalization correction session failed",
         evidence: [
           `task:${input.currentTaskId ?? "unknown"}`,
           `scenario-test-path:${scenarioTestPath}`,
-          `correction-session:${correction.sessionId}`,
+          `correction-execution:${correction.id}`,
           `correction-attempt:${attempt}`,
         ],
       };
     }
-    sessionId = correction.sessionId;
+    sessionId = correction.id;
     ownerResult = await correctSelfTargetingActions({
       ctx: input.ctx,
       currentTaskId: input.currentTaskId,
       phase: "scenario normalization correction",
       sessionId,
-      result: correction.structuredResult as ProjectAppTaskHandlerResult,
+      result: correction.output as TaskReconcileResult,
     });
     if (ownerResult.state !== "converged") return ownerResult;
   }
 
   const invariant = scenarioNormalizationInvariant(
-    input.ctx.workspaceDir!,
+    input.ctx.workspace!.root,
     input.normalizationInput,
   );
   return {
@@ -863,7 +816,7 @@ async function completeScenarioNormalization(input: {
 }
 
 function exactEvidenceValue(
-  result: ProjectAppTaskHandlerResult,
+  result: TaskReconcileResult,
   prefix: string,
 ): string | null {
   const values = result.evidence
@@ -874,11 +827,11 @@ function exactEvidenceValue(
 }
 
 function verificationRejected(
-  result: ProjectAppTaskHandlerResult,
+  result: TaskReconcileResult,
   summary: string,
   finding: string,
   evidence: string[] = [],
-): ProjectAppTaskVerificationResult {
+): TaskVerificationResult {
   return {
     accepted: false,
     summary: `Domain task convergence rejected: ${summary}`,
@@ -891,9 +844,9 @@ function verificationRejected(
 }
 
 export async function verify(
-  context: ProjectAppTaskVerificationContext,
-  result: ProjectAppTaskHandlerResult,
-): Promise<ProjectAppTaskVerificationResult> {
+  context: TaskVerificationContext,
+  result: TaskReconcileResult,
+): Promise<TaskVerificationResult> {
   if (result.state !== "converged") {
     return {
       accepted: true,
@@ -915,7 +868,14 @@ export async function verify(
   let repositoryRoot: string;
   try {
     workspace = realpathSync(context.workspaceDir);
-    projectDir = realpathSync(context.projectDir);
+    const commonGitDir = gitValue(workspace, "rev-parse", "--git-common-dir");
+    projectDir = dirname(
+      realpathSync(
+        commonGitDir.startsWith("/")
+          ? commonGitDir
+          : resolve(workspace, commonGitDir),
+      ),
+    );
     repositoryRoot = realpathSync(
       gitValue(workspace, "rev-parse", "--show-toplevel"),
     );
@@ -1132,10 +1092,21 @@ export async function verify(
   };
 }
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  const currentTaskId = reconciliationTaskId(ctx.task);
-  const retainedAuthority = cleanRetainedAuthority(ctx.task);
-  const adoptionRaw = preservedWorkspaceAdoption(ctx.task);
+export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
+  const reconciliation = ctx.reconciliation;
+  if (!reconciliation || !ctx.workspace) {
+    return ctx.blocked(
+      "Domain task execution requires a durable task and prepared workspace",
+      {
+        hasReconciliation: Boolean(reconciliation),
+        hasWorkspace: Boolean(ctx.workspace),
+      },
+    );
+  }
+  const taskData = reconciliation.input ?? ctx.input;
+  const currentTaskId = reconciliation.taskId;
+  const retainedAuthority = cleanRetainedAuthority(taskData);
+  const adoptionRaw = preservedWorkspaceAdoption(taskData);
   let adoptedWorkspace: PreservedWorkspaceAdoption | null = null;
   let authorityEvidence: string[] = [];
 
@@ -1148,8 +1119,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           required:
             "canonical cleanRetainedWorktree plus a 40-character cleanRetainedHead",
           cleanRetainedWorktree:
-            taskInput(ctx.task)?.cleanRetainedWorktree ?? null,
-          cleanRetainedHead: taskInput(ctx.task)?.cleanRetainedHead ?? null,
+            taskInput(taskData)?.cleanRetainedWorktree ?? null,
+          cleanRetainedHead: taskInput(taskData)?.cleanRetainedHead ?? null,
         },
       );
     }
@@ -1199,7 +1170,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           },
         );
       }
-      ctx = { ...ctx, workspaceDir: observedWorkspace };
+      ctx = {
+        ...ctx,
+        workspace: { ...ctx.workspace, root: observedWorkspace },
+      };
       authorityEvidence = [
         `clean-retained-worktree:${observedWorkspace}`,
         `clean-retained-head:${observedHead}`,
@@ -1214,7 +1188,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           taskId: currentTaskId,
           expectedWorkspace,
           expectedHead,
-          observedWorkspace: ctx.workspaceDir ?? null,
+          observedWorkspace: ctx.workspace?.root ?? null,
           error: error instanceof Error ? error.message : String(error),
           disposition: "rejected-before-agent-dispatch",
         },
@@ -1321,7 +1295,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
             }
           : {}),
       };
-      ctx = { ...ctx, workspaceDir };
+      ctx = { ...ctx, workspace: { ...ctx.workspace, root: workspaceDir } };
     } catch (error) {
       return ctx.blocked(
         "Preserved-worktree adoption could not be validated before agent dispatch",
@@ -1334,33 +1308,37 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     }
   }
 
+  const preparedWorkspace = ctx.workspace;
   if (
-    !ctx.workspaceDir ||
-    ctx.workspaceDir === ctx.projectDir ||
-    realpathSync(ctx.workspaceDir) === realpathSync(ctx.projectDir)
+    !preparedWorkspace ||
+    preparedWorkspace.root === preparedWorkspace.projectRoot ||
+    realpathSync(preparedWorkspace.root) ===
+      realpathSync(preparedWorkspace.projectRoot)
   ) {
     return ctx.blocked(
       "Domain task execution requires a prepared task worktree",
       {
-        workspaceDir: ctx.workspaceDir ?? null,
-        projectDir: ctx.projectDir ?? null,
+        workspaceDir: preparedWorkspace?.root ?? null,
+        projectDir: preparedWorkspace?.projectRoot ?? null,
       },
     );
   }
+  const workspaceDir = preparedWorkspace.root;
+  const repoDir = preparedWorkspace.projectRoot;
 
-  const taskRequestedWorkspace = requestedWorkspaceDir(ctx.task);
+  const taskRequestedWorkspace = requestedWorkspaceDir(taskData);
   if (taskRequestedWorkspace && !adoptedWorkspace) {
     let suppliedWorkspace: string;
     let requestedWorkspace: string;
     try {
-      suppliedWorkspace = realpathSync(ctx.workspaceDir);
+      suppliedWorkspace = realpathSync(workspaceDir);
       requestedWorkspace = realpathSync(taskRequestedWorkspace);
     } catch (error) {
       return ctx.blocked(
         "Domain task workspace authority could not be validated before agent dispatch",
         {
           taskId: currentTaskId,
-          suppliedWorkspaceDir: ctx.workspaceDir,
+          suppliedWorkspaceDir: workspaceDir,
           requestedWorkspaceDir: taskRequestedWorkspace,
           error: error instanceof Error ? error.message : String(error),
         },
@@ -1380,26 +1358,21 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     }
   }
 
-  const taskPayload = reconciliationTaskPayload(ctx.task);
-  const hasExistingLiveChild = reconciliationTaskHasLiveChildren(ctx.task);
-  const normalizationInput = taskPayload?.input;
+  const hasExistingLiveChild = reconciliation.children.live.length > 0;
+  const normalizationInput = taskData as ScenarioNormalizationInput | undefined;
   if (isRunnableScenarioNormalization(normalizationInput)) {
     return reconcileSpecLive(ctx);
   }
-  const attemptBaseCommit = optionalGitValue(
-    ctx.workspaceDir,
-    "rev-parse",
-    "HEAD",
-  );
-  let expectedWorkspace = ctx.workspaceDir;
+  const attemptBaseCommit = optionalGitValue(workspaceDir, "rev-parse", "HEAD");
+  let expectedWorkspace = workspaceDir;
   try {
-    expectedWorkspace = realpathSync(ctx.workspaceDir);
+    expectedWorkspace = realpathSync(workspaceDir);
   } catch {
     // Non-converged owner results do not need Git proof; the final gate below
     // rejects an unreadable workspace before any source can be accepted.
   }
   const expectedBranch = optionalGitValue(
-    ctx.workspaceDir,
+    workspaceDir,
     "symbolic-ref",
     "--quiet",
     "--short",
@@ -1408,7 +1381,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const prompt = [
     "Execute the bounded AKS reconciliation task below.",
     "",
-    `Your task-owned Git worktree is ${ctx.workspaceDir}.`,
+    `Your task-owned Git worktree is ${workspaceDir}.`,
     "All relative filesystem tools already run there. Do not create another branch or worktree and do not switch the shared canonical checkout.",
     "Inspect current source and task evidence, make only the smallest accepted domain change, run scoped verification, and commit every accepted file change on the supplied task branch.",
     "This workflow publishes real domain source patches. For a disposition recheck, repo-ref wake, or unchanged wait, return hot evidence in the structured result and leave the branch unchanged; never commit an evidence-only memo merely to record the review.",
@@ -1421,20 +1394,20 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     "Only the generic reconciler may change task state. Use typed actions for other tasks that independently need a change.",
     'For a master-validation product-recovery wait, use the semantic pass event: type pipeline.spec.observed, subject project:aks-rp-e2e, expected { specId: "<spec id>", status: "pass", sourceBranch: "refs/heads/main" }. The project subject is the routing scope; the expected fields select the exact proof.',
     "",
-    ctx.task,
+    taskDescription(ctx),
   ].join("\n");
 
   guardWriteDispatch(ctx);
-  const result = await ctx.runAgent(ctx.agent, prompt, {
+  const result = await ctx.agents.call(taskOwner(ctx), prompt, {
     timeoutMs: 1_800_000,
-    schema: projectAppTaskHandlerResultSchema,
+    schema: taskReconcileResultSchema,
   });
-  if (result.status === "error" || result.status === "interrupted") {
+  if (result.status !== "done" || !result.output) {
     return ctx.blocked("AKS domain task session failed", {
-      sessionId: result.sessionId,
+      sessionId: result.id,
       status: result.status,
-      summary: result.lastAssistantText,
-      workspaceDir: ctx.workspaceDir,
+      summary: result.summary,
+      workspaceDir,
     });
   }
 
@@ -1442,13 +1415,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     ctx,
     currentTaskId,
     phase: "domain execution",
-    sessionId: result.sessionId,
+    sessionId: result.id,
     result: {
-      ...(result.structuredResult as ProjectAppTaskHandlerResult),
+      ...(result.output as TaskReconcileResult),
       evidence: [
         ...authorityEvidence,
-        ...((result.structuredResult as ProjectAppTaskHandlerResult).evidence ??
-          []),
+        ...((result.output as TaskReconcileResult).evidence ?? []),
       ],
     },
   });
@@ -1457,7 +1429,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     currentTaskId,
     hasExistingLiveChild,
     phase: "domain execution",
-    sessionId: result.sessionId,
+    sessionId: result.id,
     result: ownerResult,
   });
   ownerResult = await correctWaitingCoverage({
@@ -1465,13 +1437,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     currentTaskId,
     hasExistingLiveChild,
     phase: "domain execution",
-    sessionId: result.sessionId,
+    sessionId: result.id,
     result: ownerResult,
   });
   ownerResult = await completeScenarioNormalization({
     ctx,
     currentTaskId,
-    sessionId: result.sessionId,
+    sessionId: result.id,
     normalizationInput,
     result: ownerResult,
   });
@@ -1480,7 +1452,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     currentTaskId,
     hasExistingLiveChild,
     phase: "scenario normalization correction",
-    sessionId: result.sessionId,
+    sessionId: result.id,
     result: ownerResult,
   });
   ownerResult = await correctWaitingCoverage({
@@ -1488,32 +1460,25 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     currentTaskId,
     hasExistingLiveChild,
     phase: "domain execution",
-    sessionId: result.sessionId,
+    sessionId: result.id,
     result: ownerResult,
   });
   if (ownerResult.state !== "converged") {
-    const recovery = recoveryOnlyResult(ctx.workspaceDir, ownerResult);
+    const recovery = recoveryOnlyResult(workspaceDir, ownerResult);
     return ctx.done(recovery.summary, recovery);
   }
 
   if (!attemptBaseCommit || !expectedBranch) {
-    const recovery = recoveryOnlyResult(ctx.workspaceDir, {
+    const recovery = recoveryOnlyResult(workspaceDir, {
       state: "needs-owner",
       summary:
         "Domain task workspace has no readable attempt baseline or task branch",
-      evidence: [
-        ...(ownerResult.evidence ?? []),
-        `workspace:${ctx.workspaceDir}`,
-      ],
+      evidence: [...(ownerResult.evidence ?? []), `workspace:${workspaceDir}`],
     });
     return ctx.done(recovery.summary, recovery);
   }
 
-  const workspaceDir = ctx.workspaceDir;
-  const repoDir = ctx.projectDir ?? "/app/projects/aks-rp-e2e";
-  const recoveryDone = (
-    result: ProjectAppTaskHandlerResult,
-  ): WorkflowResult => {
+  const recoveryDone = (result: TaskReconcileResult): ExecutionResult => {
     const recovery = recoveryOnlyResult(workspaceDir, result);
     return ctx.done(recovery.summary, recovery);
   };
@@ -1525,7 +1490,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     });
   }
 
-  const requiredAcceptedCommit = requiredAcceptedSourceCommit(ctx.task);
+  const requiredAcceptedCommit = requiredAcceptedSourceCommit(taskData);
   let finalGate = taskBranchGate({
     workspaceDir,
     expectedWorkspace,
@@ -1533,7 +1498,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     baselineCommit: attemptBaseCommit,
     acceptedCommit: requiredAcceptedCommit,
   });
-  if (!finalGate.ok) {
+  if (finalGate.ok === false) {
     return ctx.done(finalGate.summary, {
       state: "needs-owner",
       summary: finalGate.summary,
@@ -1644,8 +1609,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
               `Replay only this task's owned change onto ${integration.targetRef}@${replayBaseCommit}; do not merge stale branch history wholesale.`,
             ];
     guardWriteDispatch(ctx);
-    const conflictResult = await ctx.runAgent(
-      ctx.agent,
+    const conflictResult = await ctx.agents.call(
+      taskOwner(ctx),
       [
         "Repair the same bounded AKS task before direct dev integration.",
         `Work only in ${workspaceDir}.`,
@@ -1653,21 +1618,18 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         "Preserve the accepted task intent, rerun scoped verification, and leave one clean linear commit lineage descending from the named origin/dev commit.",
         "Do not push, create a PR, create another task, or edit app state. Return the same structured task result when the bounded work is truthful.",
         "Task:",
-        ctx.task,
+        taskDescription(ctx),
       ].join("\n\n"),
       {
         timeoutMs: 1_800_000,
-        schema: projectAppTaskHandlerResultSchema,
+        schema: taskReconcileResultSchema,
       },
     );
-    if (
-      conflictResult.status === "error" ||
-      conflictResult.status === "interrupted"
-    ) {
+    if (conflictResult.status !== "done" || !conflictResult.output) {
       return ctx.blocked("AKS domain integration repair session failed", {
-        sessionId: conflictResult.sessionId,
+        sessionId: conflictResult.id,
         status: conflictResult.status,
-        summary: conflictResult.lastAssistantText,
+        summary: conflictResult.summary,
         workspaceDir,
       });
     }
@@ -1675,15 +1637,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       ctx,
       currentTaskId,
       phase: "integration conflict repair",
-      sessionId: conflictResult.sessionId,
-      result: conflictResult.structuredResult as ProjectAppTaskHandlerResult,
+      sessionId: conflictResult.id,
+      result: conflictResult.output as TaskReconcileResult,
     });
     conflictOwnerResult = await correctWaitingCoverage({
       ctx,
       currentTaskId,
       hasExistingLiveChild,
       phase: "integration conflict repair",
-      sessionId: conflictResult.sessionId,
+      sessionId: conflictResult.id,
       result: conflictOwnerResult,
     });
     if (conflictOwnerResult.state !== "converged") {
@@ -1743,7 +1705,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       acceptedCommit: requiredAcceptedCommit,
       allowAcceptedTransplant: true,
     });
-    if (!finalGate.ok) {
+    if (finalGate.ok === false) {
       return ctx.done(finalGate.summary, {
         state: "needs-owner",
         summary: finalGate.summary,

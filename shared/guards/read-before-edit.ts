@@ -1,4 +1,4 @@
-import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk/legacy";
+import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk";
 
 /**
  * read-before-edit guard — C1.1 Edit-Without-Read detection.

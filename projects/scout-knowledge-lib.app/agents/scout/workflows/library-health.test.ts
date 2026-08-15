@@ -8,6 +8,7 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
 import {
   buildLibraryHealthPacket,
   execute,
@@ -230,23 +231,26 @@ describe("Scout library-health observer", () => {
     );
     const emitted: Record<string, unknown>[] = [];
 
-    const result = await execute({
-      ...paths,
-      task: "library health",
-      query: "",
-      emit(event: Record<string, unknown>) {
-        emitted.push(event);
-      },
-      done(summary: string, output?: unknown) {
-        return { type: "done", summary, output } as const;
-      },
-    } as never);
+    const result = await execute(
+      createTestAppWorkflowContext({
+        input: {},
+        workspace: {
+          appRoot: paths.appDir,
+          projectRoot: paths.projectDir,
+          root: paths.projectDir,
+          output: join(paths.appDir, ".state", "output"),
+        },
+        emit: async (event) => {
+          emitted.push(event as unknown as Record<string, unknown>);
+        },
+      }),
+    );
 
     expect(emitted).toContainEqual(
       expect.objectContaining({
         type: "project.owner.requested",
-        reason: "library-health-signal",
-        params: expect.objectContaining({
+        data: expect.objectContaining({
+          reason: "library-health-signal",
           signals: expect.arrayContaining([
             expect.objectContaining({
               key: "artifact-identity-collision:github:2026-07-20:536",
@@ -256,7 +260,7 @@ describe("Scout library-health observer", () => {
       }),
     );
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: { state: "converged" },
     });
   });

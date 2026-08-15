@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { basename, dirname, isAbsolute, join } from "node:path";
+import type { TaskReconciliationChild } from "@may-agent/sdk";
 import {
   saveFeatureCompactLoopState,
   type FeatureCompactLoopState,
@@ -10,11 +11,6 @@ type SyncResult = {
   taskId?: string;
   featureKey?: string;
   conditionId?: string;
-};
-
-type TaskStateSnapshot = {
-  resources?: Record<string, unknown>;
-  conditions?: Record<string, unknown>;
 };
 
 function record(value: unknown): Record<string, unknown> {
@@ -77,7 +73,8 @@ function projectedWait(condition: Record<string, unknown>): {
   waitingFor: Record<string, unknown> | null;
   resumeCondition: string | null;
 } {
-  const spec = record(condition.spec);
+  const nestedSpec = record(condition.spec);
+  const spec = Object.keys(nestedSpec).length ? nestedSpec : condition;
   const conditionId = text(record(condition.metadata).id);
   const type = text(spec.type);
   const subject = text(spec.subject);
@@ -287,21 +284,16 @@ function updateStateFile(
  */
 export function syncFeatureCompactProjection(
   appDir: string,
-  taskId: string,
+  child: TaskReconciliationChild,
 ): SyncResult {
-  const taskState = readJson<TaskStateSnapshot>(
-    join(appDir, ".state", "tasks", "state.json"),
-  );
+  const taskId = child.taskId;
   const appState = readJson<FeatureCompactLoopState>(appStatePath(appDir));
-  if (!taskState?.resources || !appState?.features) {
+  if (!appState?.features) {
     return { changed: false, taskId };
   }
 
-  const resource = record(taskState.resources[taskId]);
-  const spec = record(resource.spec);
-  const status = record(resource.status);
-  const input = record(spec.input);
-  const phase = text(status.phase);
+  const input = record(child.input);
+  const phase = child.status;
   const mappedStatus = phaseToStatus(phase);
   if (!mappedStatus) return { changed: false, taskId };
 
@@ -320,17 +312,18 @@ export function syncFeatureCompactProjection(
     return { changed: false, taskId, featureKey };
   }
 
-  const evidence = stringList(status.evidence);
-  const conditionId = stringList(status.conditionIds)[0] || "";
-  const wait = conditionId
-    ? projectedWait(record(taskState.conditions?.[conditionId]))
+  const evidence = child.evidence;
+  const condition = child.conditions[0];
+  const conditionId = condition?.id ?? "";
+  const wait = condition
+    ? projectedWait(record(condition))
     : {
         waitingCondition: null,
         waitingFor: null,
         resumeCondition: null,
       };
-  const summary = text(status.summary);
-  const statusUpdatedAt = text(status.updatedAt) || new Date().toISOString();
+  const summary = text(child.summary);
+  const statusUpdatedAt = child.updatedAt || new Date().toISOString();
   const waitTarget =
     mappedStatus === "blocked"
       ? projectedWaitTarget(wait.waitingFor, wait.waitingCondition)
@@ -347,8 +340,14 @@ export function syncFeatureCompactProjection(
       mappedStatus === "blocked"
         ? summary || currentItem.blockedReason || null
         : null,
-    waitingCondition: mappedStatus === "blocked" ? wait.waitingCondition : null,
-    waitingFor: mappedStatus === "blocked" ? wait.waitingFor : null,
+    waitingCondition:
+      mappedStatus === "blocked"
+        ? wait.waitingCondition || currentItem.waitingCondition || null
+        : null,
+    waitingFor:
+      mappedStatus === "blocked"
+        ? wait.waitingFor || currentItem.waitingFor || null
+        : null,
     resumeCondition:
       mappedStatus === "blocked"
         ? wait.resumeCondition || currentItem.resumeCondition || null
@@ -391,7 +390,7 @@ export function syncFeatureCompactProjection(
     }),
     blockerOwner:
       mappedStatus === "blocked"
-        ? text(spec.owner) || currentItem.blockerOwner || null
+        ? text(child.owner) || currentItem.blockerOwner || null
         : currentItem.blockerOwner || null,
     lastCheckedAt: statusUpdatedAt,
     updatedAt: statusUpdatedAt,
@@ -426,4 +425,27 @@ export function syncFeatureCompactProjection(
     featureKey,
     conditionId: conditionId || undefined,
   };
+}
+
+/** Refresh represented child resources before the standing feature loop reads its ledger. */
+export function syncFeatureCompactProjections(
+  appDir: string,
+  liveChildren: readonly TaskReconciliationChild[],
+): SyncResult[] {
+  const state = readJson<FeatureCompactLoopState>(appStatePath(appDir));
+  if (!state?.features) return [];
+  const taskIds = new Set<string>();
+  for (const item of Object.values(state.features)) {
+    const row = record(item);
+    const taskId = text(row.taskId);
+    if (taskId) taskIds.add(taskId);
+    for (const frontierTaskId of stringList(row.frontierTaskIds)) {
+      taskIds.add(frontierTaskId);
+    }
+  }
+  return liveChildren
+    .filter((child) => taskIds.has(child.taskId))
+    .sort((left, right) => left.taskId.localeCompare(right.taskId))
+    .map((child) => syncFeatureCompactProjection(appDir, child))
+    .filter((result) => result.changed);
 }

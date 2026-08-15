@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -172,34 +173,142 @@ function context(
   projectDir: string,
   taskInput?: Record<string, unknown>,
 ) {
+  const input = taskInput ?? {};
+  const read = (name: string) =>
+    JSON.parse(
+      readFileSync(join(appDir, ".state", "tasks", name), "utf8"),
+    ) as Record<string, any>;
+  const state = read("state.json");
+  const tree = read("tree.json");
+  const resources = state.resources ?? {};
+  const tasks = tree.tasks ?? {};
+  const attempts = Object.values(state.attempts ?? {}) as Record<string, any>[];
+  const latestAttempt = (taskId: string) =>
+    attempts
+      .filter((attempt) => attempt.taskId === taskId)
+      .sort((left, right) =>
+        String(right.startedAt ?? "").localeCompare(
+          String(left.startedAt ?? ""),
+        ),
+      )[0];
+  const live = Object.entries({ ...tasks, ...resources }).flatMap(
+    ([taskId, value]: [string, any]) => {
+      const task = tasks[taskId] ?? {};
+      const resource = resources[taskId] ?? {};
+      const spec = resource.spec ?? task;
+      const status = resource.status ?? task;
+      const phase = String(status.phase ?? status.state ?? "pending");
+      if (["done", "closed", "converged"].includes(phase)) return [];
+      const attempt = latestAttempt(taskId);
+      return [
+        {
+          taskId,
+          parentId: String(
+            spec.parentId ?? task.parent_id ?? "scenario-normalization",
+          ),
+          generation: Number(
+            resource.metadata?.generation ?? task.generation ?? 1,
+          ),
+          status: phase,
+          outcome: String(spec.outcome ?? task.outcome ?? "fixture task"),
+          ...(typeof spec.owner === "string" || typeof task.owner === "string"
+            ? { owner: String(spec.owner ?? task.owner) }
+            : {}),
+          ...(typeof spec.workflow === "string" || typeof task.workflow === "string"
+            ? { workflow: String(spec.workflow ?? task.workflow) }
+            : {}),
+          input: spec.input ?? task.input ?? {},
+          priority: spec.priority ?? task.priority,
+          ...(typeof spec.category === "string" || typeof task.category === "string"
+            ? { category: String(spec.category ?? task.category) }
+            : {}),
+          ...(task.readiness && typeof task.readiness === "object"
+            ? {
+                readiness: {
+                  state: String(task.readiness.state ?? "not-applicable"),
+                  reason: String(task.readiness.reason ?? "test fixture"),
+                  relatedTaskIds: Array.isArray(task.readiness.related_ids)
+                    ? task.readiness.related_ids
+                    : [],
+                },
+              }
+            : {}),
+          conditions: (status.conditionIds ?? task.condition_ids ?? []).flatMap(
+            (conditionId: string) => {
+              const condition = state.conditions?.[conditionId];
+              const spec = condition?.spec ?? condition ?? {};
+              return [
+                {
+                  id: conditionId,
+                  type: String(spec.type ?? "fixture.condition"),
+                  subject: String(spec.subject ?? `task:${taskId}`),
+                  expected: spec.expected ?? { state: "completed" },
+                  ...(typeof spec.owner === "string" ? { owner: spec.owner } : {}),
+                },
+              ];
+            },
+          ),
+          latestAttempt: attempt
+            ? {
+                handler: String(attempt.handler ?? ""),
+                failureReason: String(attempt.failureReason ?? ""),
+              }
+            : undefined,
+          hasLiveChildren: false,
+          evidence: status.evidence ?? [],
+          summary: status.summary,
+        },
+      ];
+    },
+  );
+  const completed = Object.entries(state.receipts ?? {}).map(
+    ([taskId, receipt]: [string, any]) => ({
+      taskId,
+      parentId: String(receipt.parentId ?? "scenario-normalization"),
+      generation: Number(receipt.metadata?.generation ?? 1),
+      status: "done",
+      outcome: String(receipt.outcome ?? "fixture receipt"),
+      input: receipt.input ?? {},
+      conditions: [],
+      hasLiveChildren: false,
+      evidence: receipt.evidence ?? [],
+      summary: receipt.summary,
+      completedAt: receipt.completedAt ?? "2026-01-01T00:00:00Z",
+    }),
+  );
   return {
-    task: [
-      `app: ${appDir}`,
-      `project: ${projectDir}`,
-      ...(taskInput
-        ? [
-            "## Reconciliation Task",
-            "```json",
-            JSON.stringify({ input: taskInput }),
-            "```",
-          ]
-        : []),
-      "## Trigger Event",
-      "```json",
-      JSON.stringify({
+    input,
+    reconciliation: {
+      appId: "aks-rp-e2e",
+      taskId: "scenario-normalization",
+      generation: 1,
+      resourceVersion: 1,
+      owner: "aks-explorer",
+      mode: "maintain",
+      outcome: "Normalize the scenario frontier",
+      acceptance: ["The current scenario frontier is accounted for."],
+      input,
+      children: { live, completed },
+      trigger: {
         type: "project.task.tick",
         target: {
           project: "aks-rp-e2e",
           taskId: "scenario-normalization",
         },
         data: { desiredRunnableLeaves: { min: 3, max: 5 } },
-      }),
-      "```",
-    ].join("\n"),
-    agent: "aks-explorer",
+      },
+    },
+    workspace: {
+      appRoot: appDir,
+      projectRoot: projectDir,
+      root: projectDir,
+      output: join(projectDir, "evidence", "archive"),
+    },
     done: (message: string, output?: unknown) => ({
+      id: "workflow:test",
+      kind: "workflow",
       status: "done",
-      message,
+      summary: message,
       output,
     }),
   } as any;

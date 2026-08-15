@@ -1,90 +1,32 @@
-import { readFileSync } from "node:fs";
-import { spawnSync } from "node:child_process";
-import { join } from "node:path";
 import {
-  resolveTaskTreePath,
-  workflowResultVersion,
-  type ProjectAppTaskAction,
+  type ExecutionResult,
+  type TaskAction,
+  type TaskReconcileResult,
   type WorkflowContext,
-  type WorkflowIoContract,
-  type WorkflowResult,
-} from "@may-agent/sdk/legacy";
-import {
-  legacyBranchReconciliationTaskId,
-  loopFrontierAccounting,
-} from "../../../task-loops.ts";
-import {
-  activeDomainPathOwners,
-  type LegacyOwnershipTask,
-} from "../../../legacy-branch-active-ownership.ts";
+} from "@may-agent/sdk";
+import { legacyBranchReconciliationTaskId } from "../../../task-loops.ts";
 import {
   legacyBranchInventory,
   legacyBranchWorkRevision,
   safeLegacyBranchFamily,
+  type LegacyBranchInventoryRow,
 } from "./lib/legacy-branch-inventory.ts";
 
 export const name = "legacy-branch-reconciliation-controller";
 export const description =
-  "Observe unattached legacy AKS branches and declare one verification-first integration task at a time.";
-export const workflowContract: WorkflowIoContract = {
-  workflow: name,
-  version: "legacy-branch-reconciliation-controller-v1",
-  input: {
-    required: ["project.task.tick action=legacy-branch-reconciliation"],
-    optional: ["frontierLimit"],
-    description: "Reconcile the finite legacy branch migration frontier.",
-  },
-  output: {
-    version: workflowResultVersion,
-    fields: ["state", "summary", "evidence", "actions"],
-    description:
-      "Declares at most one exact-branch verification task; it never changes Git refs itself.",
-  },
-};
-
-type GraphTask = LegacyOwnershipTask & {
-  generation?: number;
-  summary?: string;
-};
-
-type PersistedAttempt = {
-  taskId?: string;
-  handler?: string;
-  summary?: string;
-  failureReason?: string;
-  startedAt?: string;
-};
-
-type PersistedTaskState = {
-  attempts?: Record<string, PersistedAttempt>;
-};
-
-type RecordedSource = {
-  branch: string;
-  head: string;
-};
-
-type WorktreeObservation = {
-  path: string;
-  head?: string;
-  branch?: string;
-};
+  "Observe unattached legacy AKS branches and declare one verification-first child at a time.";
 
 const retryableAttentionSummaries = new Set([
   "Legacy branch family base changed; retry from current origin/dev",
-  // Compatibility for the two reviews that lost the initial three-writer race.
   "Legacy branch family closeout failed safely",
-  // Compatibility for the app-monitoring review rejected by the removed
-  // whole-commit patch-equivalence check.
   "Legacy branch family closeout requires owner review",
   "Legacy branch family closeout failed; owner review required",
   "Legacy branch base changed; retry verification against current origin/dev",
   "Legacy branch verification closeout failed safely",
-  // Compatibility for attention created before branch verification learned to
-  // repair conflicts and failed checks inside the same task.
   "Legacy branch merge conflict requires focused repair",
   "Legacy branch verification failed",
   "Handler result was rejected: evidence exceeds the 32-entry limit",
+  "Connection error.",
 ]);
 
 export function retryableAttentionSummary(summary: string): boolean {
@@ -95,445 +37,157 @@ export function retryableAttentionSummary(summary: string): boolean {
   );
 }
 
-function git(
-  repoDir: string,
-  args: string[],
-): { status: number; stdout: string } {
-  const result = spawnSync("git", ["-C", repoDir, ...args], {
-    encoding: "utf8",
-    timeout: 120_000,
-    maxBuffer: 32 * 1024 * 1024,
-  });
+function verificationTaskId(row: LegacyBranchInventoryRow): string {
+  const revision = legacyBranchWorkRevision([row]);
+  return `ops/verify-legacy-branch-${safeLegacyBranchFamily(row.branch)}-${revision}`;
+}
+
+function createVerificationTask(
+  parentId: string,
+  row: LegacyBranchInventoryRow,
+): Extract<TaskAction, { kind: "create-task" }> {
+  const revision = legacyBranchWorkRevision([row]);
   return {
-    status: result.status ?? 1,
-    stdout: result.stdout?.trim() ?? "",
+    kind: "create-task",
+    id: verificationTaskId(row),
+    parentId,
+    outcome: `Apply ${row.branch} to current origin/dev, rerun its conventional verification, merge and remove it on pass, or retain it with exact conflict/failure evidence.`,
+    mode: "achieve",
+    outputs: row.files,
+    owner: "aks-explorer",
+    workflow: "legacy-branch-verification",
+    input: {
+      loopId: legacyBranchReconciliationTaskId,
+      workKey: row.branch,
+      workRevision: revision,
+      baseRef: "origin/dev",
+      branches: [
+        {
+          branch: row.branch,
+          head: row.head,
+          files: row.files,
+        },
+      ],
+    },
+    acceptance: [
+      "Apply the exact source head to current origin/dev in the task-owned clean worktree.",
+      "Run changed check-mode carriers/tests plus the repository scenario and runner guards without accepting new failures over the current base.",
+      "A passing candidate reaches origin/dev by checked fast-forward and its local/remote source refs are removed.",
+      "An already represented branch is removed without creating an empty merge.",
+      "A superseded or terminally rejected branch is complete only after its local and remote source refs are removed; if the refs must be retained, keep the task waiting on an exact blocker instead of converging it.",
+      "A conflict or verification failure keeps the source refs and records the exact failing command or conflict for focused repair.",
+      "Do not touch attached or dirty recovery worktrees in this clean-branch task.",
+    ],
+    priority: "P0",
+    category: "ops",
   };
 }
 
-function recordedSource(task: GraphTask): RecordedSource | null {
-  const branches = task.input?.branches;
-  if (!Array.isArray(branches) || branches.length !== 1) return null;
-  const source = branches[0];
-  if (!source || typeof source !== "object" || Array.isArray(source))
-    return null;
-  const branch = (source as Record<string, unknown>).branch;
-  const head = (source as Record<string, unknown>).head;
-  if (typeof branch !== "string" || !branch) return null;
-  if (typeof head !== "string" || !/^[0-9a-f]{40}$/i.test(head)) return null;
-  return { branch, head };
-}
-
-function worktreeObservations(repoDir: string): WorktreeObservation[] | null {
-  const result = git(repoDir, ["worktree", "list", "--porcelain"]);
-  if (result.status !== 0) return null;
-  return result.stdout.split(/\n\n+/).flatMap((block) => {
-    const values = new Map(
-      block
-        .split("\n")
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .map((line) => {
-          const separator = line.indexOf(" ");
-          return separator < 0
-            ? [line, ""]
-            : [line.slice(0, separator), line.slice(separator + 1)];
-        }),
-    );
-    const path = values.get("worktree");
-    if (!path) return [];
-    const branch = values.get("branch")?.replace(/^refs\/heads\//, "");
-    return [{ path, head: values.get("HEAD"), branch }];
-  });
-}
-
-export function integratedAttentionSourceReady(
-  repoDir: string,
-  task: GraphTask,
-  baseRef = "origin/dev",
-  observedWorktrees: WorktreeObservation[] | null = worktreeObservations(
-    repoDir,
-  ),
-): boolean {
-  const source = recordedSource(task);
-  if (!source) return false;
-
-  const sourceCommit = git(repoDir, [
-    "rev-parse",
-    "--verify",
-    `${source.head}^{commit}`,
-  ]);
-  if (sourceCommit.status !== 0 || sourceCommit.stdout !== source.head)
-    return false;
-  if (
-    git(repoDir, ["merge-base", "--is-ancestor", source.head, baseRef])
-      .status !== 0
-  )
-    return false;
-
-  const local = git(repoDir, [
-    "rev-parse",
-    "--verify",
-    `refs/heads/${source.branch}^{commit}`,
-  ]);
-  if (local.status === 0 && local.stdout !== source.head) return false;
-
-  if (!observedWorktrees) return false;
-  for (const worktree of observedWorktrees) {
-    if (worktree.branch === source.branch) return false;
-    if (worktree.head !== source.head) continue;
-    const status = git(worktree.path, [
-      "status",
-      "--porcelain=v1",
-      "--untracked-files=all",
-    ]);
-    if (status.status !== 0 || status.stdout) return false;
-  }
-  return true;
-}
-
-export function patchEquivalentAttentionSourceReady(
-  repoDir: string,
-  task: GraphTask,
-  baseRef = "origin/dev",
-  observedWorktrees: WorktreeObservation[] | null = worktreeObservations(
-    repoDir,
-  ),
-): boolean {
-  const source = recordedSource(task);
-  if (!source) return false;
-
-  const local = git(repoDir, [
-    "rev-parse",
-    "--verify",
-    `refs/heads/${source.branch}^{commit}`,
-  ]);
-  if (local.status !== 0 || local.stdout !== source.head) return false;
-
-  if (!observedWorktrees) return false;
-  for (const worktree of observedWorktrees) {
-    if (worktree.branch === source.branch) return false;
-    if (worktree.head !== source.head) continue;
-    const status = git(worktree.path, [
-      "status",
-      "--porcelain=v1",
-      "--untracked-files=all",
-    ]);
-    if (status.status !== 0 || status.stdout) return false;
-  }
-
-  const cherry = git(repoDir, ["cherry", baseRef, source.branch]);
-  if (cherry.status !== 0) return false;
-  const commits = cherry.stdout
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
-  return (
-    commits.length > 0 &&
-    commits.every((line) => /^- [0-9a-f]{40}$/i.test(line))
-  );
-}
-
-function configuredFrontierLimit(raw: string, fallback: number): number {
-  const match = raw.match(/^frontierLimit:\s*(.+)$/m);
-  const configured = Number.parseInt(match?.[1]?.trim() ?? "", 10);
-  return Math.max(1, Number.isFinite(configured) ? configured : fallback);
-}
-
-function readTasks(appDir: string): Record<string, GraphTask> {
-  try {
-    const graph = JSON.parse(
-      readFileSync(resolveTaskTreePath(appDir), "utf8"),
-    ) as {
-      tasks?: Record<string, GraphTask>;
-    };
-    return graph.tasks ?? {};
-  } catch {
-    return {};
-  }
-}
-
-function readTaskState(appDir: string): PersistedTaskState {
-  try {
-    return JSON.parse(
-      readFileSync(join(appDir, ".state", "tasks", "state.json"), "utf8"),
-    ) as PersistedTaskState;
-  } catch {
-    return {};
-  }
-}
-
-function taskAttemptsFor(
-  taskId: string,
-  persistedState: PersistedTaskState,
-): PersistedAttempt[] {
-  return Object.values(persistedState.attempts ?? {}).filter(
-    (attempt) => attempt.taskId === taskId,
-  );
-}
-
-function representedFiles(task: GraphTask): string[] {
-  const branches = task.input?.branches;
-  if (!Array.isArray(branches)) return [];
-  return [
-    ...new Set(
-      branches.flatMap((branch) => {
-        if (!branch || typeof branch !== "object" || Array.isArray(branch))
-          return [];
-        const files = (branch as Record<string, unknown>).files;
-        return Array.isArray(files)
-          ? files.filter(
-              (file): file is string =>
-                typeof file === "string" && file.length > 0,
-            )
-          : [];
-      }),
-    ),
-  ];
-}
-
-function representedFeatureCount(task: GraphTask): number {
-  return new Set(
-    representedFiles(task).flatMap((file) => {
-      const match = /^features\/([^/]+)\//.exec(file);
-      return match ? [match[1]] : [];
-    }),
-  ).size;
-}
-
-function oldestAttemptAt(
-  taskId: string,
-  persistedState: PersistedTaskState,
-): string {
-  return (
-    taskAttemptsFor(taskId, persistedState)
-      .flatMap((attempt) => (attempt.startedAt ? [attempt.startedAt] : []))
-      .sort()[0] ?? "9999-12-31T23:59:59.999Z"
-  );
-}
-
-export function compareLegacyAttentionCost(
-  left: readonly [string, GraphTask],
-  right: readonly [string, GraphTask],
-  persistedState: PersistedTaskState,
-): number {
-  const leftFiles = representedFiles(left[1]);
-  const rightFiles = representedFiles(right[1]);
-  const leftFileCost = leftFiles.length || Number.MAX_SAFE_INTEGER;
-  const rightFileCost = rightFiles.length || Number.MAX_SAFE_INTEGER;
-  const leftFeatureCost = leftFiles.length
-    ? representedFeatureCount(left[1])
-    : Number.MAX_SAFE_INTEGER;
-  const rightFeatureCost = rightFiles.length
-    ? representedFeatureCount(right[1])
-    : Number.MAX_SAFE_INTEGER;
-  return (
-    leftFeatureCost - rightFeatureCost ||
-    leftFileCost - rightFileCost ||
-    oldestAttemptAt(left[0], persistedState).localeCompare(
-      oldestAttemptAt(right[0], persistedState),
-    ) ||
-    left[0].localeCompare(right[0])
-  );
-}
-
-function retryableAttentionTask(
-  taskId: string,
-  task: GraphTask,
-  persistedState: PersistedTaskState,
-): boolean {
-  const summary = String(task.summary ?? "");
-  if (retryableAttentionSummary(summary)) return true;
-  if (summary !== "Connection error.") return false;
-  return taskAttemptsFor(taskId, persistedState).some(
-    (attempt) =>
-      attempt.handler === "workflow:legacy-branch-verification" &&
-      attempt.failureReason === "needs-owner" &&
-      String(attempt.summary ?? "").includes("owner judgment in the same task"),
-  );
-}
-
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  const projectDir = ctx.projectDir ?? "/app/projects/aks-rp-e2e";
-  const appDir = ctx.appDir ?? "/app/projects/aks-rp-e2e.app";
-  const rows = legacyBranchInventory(projectDir);
-  const tasks = readTasks(appDir);
-  const activeDomainOverlaps = new Map(
-    rows.map((row) => [row.branch, activeDomainPathOwners(tasks, row.files)]),
-  );
-  const eligibleRows = rows.filter(
-    (row) => !(activeDomainOverlaps.get(row.branch)?.length ?? 0),
-  );
-  const persistedState = readTaskState(appDir);
-  const represented = Object.entries(tasks).filter(
-    ([, task]) => task.input?.loopId === legacyBranchReconciliationTaskId,
-  );
-  const accounting = loopFrontierAccounting(
-    represented.map(([taskId, task]) => ({
-      taskId,
-      phase: task.phase ?? task.state,
-    })),
-    Math.min(1, configuredFrontierLimit(ctx.task, 1)),
-  );
-  const representedBranches = new Set(
-    represented.flatMap(([, task]) => {
-      const branches = task.input?.branches;
-      if (!Array.isArray(branches)) return [];
-      return branches.flatMap((branch) => {
-        if (!branch || typeof branch !== "object" || Array.isArray(branch))
-          return [];
-        const name = (branch as Record<string, unknown>).branch;
-        return typeof name === "string" && name ? [name] : [];
-      });
-    }),
-  );
-  const byFamily = new Map<string, typeof rows>();
-  const presentBranches = new Set(rows.map((row) => row.branch));
-  for (const row of rows) {
-    const familyRows = byFamily.get(row.family) ?? [];
-    familyRows.push(row);
-    byFamily.set(row.family, familyRows);
-  }
-
-  const observedWorktrees = worktreeObservations(projectDir);
-  const integratedAttentionTaskIds = new Set(
-    represented.flatMap(([taskId, task]) =>
-      (task.phase ?? task.state) === "attention" &&
-      integratedAttentionSourceReady(
+export async function execute(
+  ctx: WorkflowContext,
+): Promise<ExecutionResult<TaskReconcileResult> | ExecutionResult> {
+  const reconciliation = ctx.reconciliation;
+  const projectDir = ctx.workspace?.projectRoot;
+  if (!reconciliation || !projectDir) {
+    return ctx.blocked(
+      "Legacy branch reconciliation requires a durable task and project workspace",
+      {
+        hasReconciliation: Boolean(reconciliation),
         projectDir,
-        task,
-        "origin/dev",
-        observedWorktrees,
-      )
-        ? [taskId]
-        : [],
-    ),
-  );
-  const patchEquivalentAttentionTaskIds = new Set(
-    represented.flatMap(([taskId, task]) => {
-      const source = recordedSource(task);
-      return (task.phase ?? task.state) === "attention" &&
-        source &&
-        !presentBranches.has(source.branch) &&
-        !integratedAttentionTaskIds.has(taskId) &&
-        patchEquivalentAttentionSourceReady(
-          projectDir,
-          task,
-          "origin/dev",
-          observedWorktrees,
-        )
-        ? [taskId]
-        : [];
-    }),
-  );
+      },
+    );
+  }
 
-  const retryActions: ProjectAppTaskAction[] = represented
-    .filter(([taskId, task]) => {
-      const workKey = String(task.input?.workKey ?? "");
-      return (
-        (task.phase ?? task.state) === "attention" &&
-        ((retryableAttentionTask(taskId, task, persistedState) &&
-          (byFamily.has(workKey) || presentBranches.has(workKey))) ||
-          integratedAttentionTaskIds.has(taskId) ||
-          patchEquivalentAttentionTaskIds.has(taskId)) &&
-        Number.isInteger(task.generation) &&
-        Number(task.generation) > 0
-      );
-    })
-    .sort(([leftId, leftTask], [rightId, rightTask]) => {
-      const replayPriority = (taskId: string): number =>
-        integratedAttentionTaskIds.has(taskId)
-          ? 0
-          : patchEquivalentAttentionTaskIds.has(taskId)
-            ? 1
-            : 2;
-      return (
-        replayPriority(leftId) - replayPriority(rightId) ||
-        compareLegacyAttentionCost(
-          [leftId, leftTask],
-          [rightId, rightTask],
-          persistedState,
-        )
-      );
-    })
-    .slice(0, accounting.available)
-    .map(([taskId, task]) => ({
-      kind: "unblock-task" as const,
-      taskId,
-      expectedGeneration: Number(task.generation),
-      reason: integratedAttentionTaskIds.has(taskId)
-        ? "Reconcile the same task after its recorded source commit reached origin/dev"
-        : patchEquivalentAttentionTaskIds.has(taskId)
-          ? "Reconcile the same task after its recorded source became patch-equivalent to origin/dev"
-          : "Retry the same branch verification against current origin/dev",
-    }));
-  const unresolvedAttention = represented.filter(
-    ([, task]) =>
-      (task.phase ?? task.state) === "attention" &&
-      (byFamily.has(String(task.input?.workKey ?? "")) ||
-        Array.isArray(task.input?.branches)),
+  const rows = legacyBranchInventory(projectDir).sort(
+    (left, right) =>
+      left.family.localeCompare(right.family) ||
+      left.branch.localeCompare(right.branch),
   );
-  const createBudget = unresolvedAttention.length
-    ? 0
-    : Math.max(0, accounting.available - retryActions.length);
-  const createActions: ProjectAppTaskAction[] = eligibleRows
-    .filter((row) => !representedBranches.has(row.branch))
-    .sort(
-      (left, right) =>
-        left.family.localeCompare(right.family) ||
-        left.branch.localeCompare(right.branch),
+  // Direct-child ownership is the controller's bounded authority. Completed
+  // child receipts intentionally omit workflow implementation details.
+  const live = reconciliation.children.live;
+  const completed = reconciliation.children.completed;
+  const representedIds = new Set(
+    [...live, ...completed].map((child) => child.taskId),
+  );
+  const retryable = live
+    .filter(
+      (child) =>
+        child.status === "attention" &&
+        retryableAttentionSummary(child.summary ?? ""),
     )
-    .slice(0, createBudget)
-    .map((row) => {
-      const revision = legacyBranchWorkRevision([row]);
-      return {
-        kind: "create-task",
-        id: `ops/verify-legacy-branch-${safeLegacyBranchFamily(row.branch)}-${revision}`,
-        parentId: "group/app-operations",
-        outcome: `Apply ${row.branch} to current origin/dev, rerun its conventional verification, merge and remove it on pass, or retain it with exact conflict/failure evidence.`,
-        mode: "achieve",
-        owner: "aks-explorer",
-        workflow: "legacy-branch-verification",
-        input: {
-          loopId: legacyBranchReconciliationTaskId,
-          workKey: row.branch,
-          workRevision: revision,
-          baseRef: "origin/dev",
-          branches: [
-            {
-              branch: row.branch,
-              head: row.head,
-              files: row.files,
-            },
-          ],
-        },
-        acceptance: [
-          "Apply the exact source head to current origin/dev in the task-owned clean worktree.",
-          "Run changed check-mode carriers/tests plus the repository scenario and runner guards without accepting new failures over the current base.",
-          "A passing candidate reaches origin/dev by checked fast-forward and its local/remote source refs are removed.",
-          "An already represented branch is removed without creating an empty merge.",
-          "A superseded or terminally rejected branch is complete only after its local and remote source refs are removed; if the refs must be retained, keep the task waiting on an exact blocker instead of converging it.",
-          "A conflict or verification failure keeps the source refs and records the exact failing command or conflict for focused repair.",
-          "Do not touch attached or dirty recovery worktrees in this clean-branch task.",
-        ],
-        priority: "P0",
-      };
-    });
-  const actions = [...retryActions, ...createActions];
+    .sort((left, right) => left.taskId.localeCompare(right.taskId))[0];
 
-  const deferredOverlapCount = rows.length - eligibleRows.length;
-  const summary = rows.length
-    ? `Legacy branch reconciliation found ${rows.length} unattached branch(es) with patches outside origin/dev across ${byFamily.size} family/families; declared ${createActions.length} verification task(s), retried ${retryActions.length} replayable attention task(s), deferred ${deferredOverlapCount} branch(es) owned by active domain tasks, and observed ${accounting.actionableTaskIds.length} already actionable.`
-    : "Legacy clean-branch reconciliation converged: no unattached local branch has a patch outside origin/dev. Attached recovery work remains a separate explicit review frontier.";
+  if (retryable) {
+    const action: TaskAction = {
+      kind: "unblock-task",
+      taskId: retryable.taskId,
+      expectedGeneration: retryable.generation,
+      reason: "Retry the same branch verification against current origin/dev",
+    };
+    const summary = `Retrying ${retryable.taskId} from bounded child state; no global task-store scan is required.`;
+    return ctx.done(summary, {
+      state: "waiting",
+      summary,
+      evidence: [
+        `retry-child:${retryable.taskId}@${retryable.generation}`,
+        `retry-summary:${retryable.summary ?? "missing"}`,
+      ],
+      actions: [action],
+    });
+  }
+
+  if (live.length > 0) {
+    const summary = `Legacy branch reconciliation is waiting for ${live.length} bounded verification child task(s).`;
+    return ctx.done(summary, {
+      state: "waiting",
+      summary,
+      evidence: live.map(
+        (child) => `child:${child.taskId}@${child.generation}:${child.status}`,
+      ),
+      actions: [],
+    });
+  }
+
+  const staleCompleted = rows.find((row) =>
+    representedIds.has(verificationTaskId(row)),
+  );
+  if (staleCompleted) {
+    const taskId = verificationTaskId(staleCompleted);
+    const summary = `Completed verification child ${taskId} still has source branch ${staleCompleted.branch}; completion and Git inventory disagree.`;
+    return ctx.done(summary, {
+      state: "needs-owner",
+      summary,
+      evidence: [
+        `completed-child:${taskId}`,
+        `remaining-branch:${staleCompleted.branch}@${staleCompleted.head}`,
+      ],
+    });
+  }
+
+  const next = rows.find((row) => !representedIds.has(verificationTaskId(row)));
+  if (next) {
+    const action = createVerificationTask(reconciliation.taskId, next);
+    const summary = `Legacy branch reconciliation found ${rows.length} unattached branch(es); declared ${action.id} for ${next.branch}@${next.head}.`;
+    return ctx.done(summary, {
+      state: "waiting",
+      summary,
+      evidence: [
+        "base-ref:origin/dev",
+        `unattached-novel-branches:${rows.length}`,
+        `declared-child:${action.id}`,
+        `source:${next.branch}@${next.head}`,
+      ],
+      actions: [action],
+    });
+  }
+
+  const summary =
+    "Legacy clean-branch reconciliation converged: no unattached local branch has a patch outside origin/dev. Attached recovery work remains a separate explicit review frontier.";
   return ctx.done(summary, {
     state: "converged",
     summary,
-    evidence: [
-      `base-ref:origin/dev`,
-      `unattached-novel-branches:${rows.length}`,
-      `families:${byFamily.size}`,
-      `active-domain-path-overlaps:${deferredOverlapCount}`,
-      `patch-equivalent-attention:${patchEquivalentAttentionTaskIds.size}`,
-    ],
-    actions,
+    evidence: ["base-ref:origin/dev", "unattached-novel-branches:0"],
+    actions: [],
   });
 }

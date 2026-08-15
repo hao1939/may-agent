@@ -87,7 +87,7 @@ describe("canonical evaluation App", () => {
       data: { sessionId: "s-1" },
     });
     expect(
-      app.actions?.["review-project-app"]?.toInput({ targetProject: "gym" }),
+      app.actions?.["review-agent-app"]?.toInput({ targetProject: "gym" }),
     ).toMatchObject({
       kind: "project-review",
       data: {
@@ -172,7 +172,19 @@ describe("evaluation fact admission", () => {
         typeof selector === "string" ? selector : selector.type,
       ),
     );
+    const observationTypes = new Set(
+      (app.observations ?? []).map((selector) =>
+        typeof selector === "string" ? selector : selector.type,
+      ),
+    );
     expect([...inboxTypes].filter((type) => taskTypes.has(type))).toEqual([]);
+    expect(
+      [...observationTypes].filter((type) => inboxTypes.has(type)),
+    ).toEqual([]);
+    expect([...observationTypes].filter((type) => taskTypes.has(type))).toEqual(
+      [],
+    );
+    expect(observationTypes).toContain("evaluation.owner_reviewed");
     expect(app.inbox).not.toHaveProperty("accepts");
 
     const ended = event("session.end", {

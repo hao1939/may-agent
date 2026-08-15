@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { admitProjectAppTaskHandlerResult } from "@may-agent/sdk";
+import { admitTaskReconcileResult, type WorkflowContext } from "@may-agent/sdk";
+import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
 import { admitExperienceReviewResult, execute } from "./knowledge-planner";
 
 describe("Scout owner reconciliation boundary", () => {
@@ -66,62 +67,79 @@ describe("Scout owner reconciliation boundary", () => {
     const emitted: Array<Record<string, unknown>> = [];
     let prompt = "";
     let runOptions: Record<string, unknown> | undefined;
-    const result = await execute({
-      task: "app: /app/projects/scout-knowledge-lib.app\nproject: /app/projects/scout-knowledge-lib",
-      async runAgent(
-        _agent: string,
-        value: string,
-        options?: Record<string, unknown>,
-      ) {
-        prompt = value;
-        runOptions = options;
-        return {
-          status: "done",
-          sessionId: "s_owner",
-          lastAssistantText: "proposed maintenance task",
-          structuredResult: {
-            state: "converged",
-            summary: "Proposed one bounded maintenance task.",
-            evidence: ["library packet identifies the gap"],
-            actions: [
-              {
-                kind: "create-task",
-                id: "repair-navigation",
-                parentId: "library-maintenance",
-                outcome: "Repair library navigation",
-                outputs: ["knowledge/README.md"],
-                acceptance: ["The landing page links canonical notes"],
-              },
-            ],
-          },
-        };
-      },
-      emit(event: Record<string, unknown>) {
-        emitted.push(event);
-      },
-      done(summary: string, output?: unknown) {
-        return { type: "done", summary, output } as const;
-      },
-      blocked(reason: string, context?: unknown) {
-        return { type: "blocked", reason, context } as const;
-      },
-    } as never);
+    const result = await execute(
+      createTestAppWorkflowContext({
+        input: {},
+        reconciliation: {
+          appId: "scout-knowledge-lib",
+          taskId: "library-maintenance",
+          generation: 1,
+          resourceVersion: 1,
+          owner: "scout",
+          mode: "maintain",
+          outcome: "Maintain the library",
+          acceptance: ["One bounded decision is recorded"],
+          input: {},
+          children: { live: [], completed: [] },
+        },
+        workspace: {
+          appRoot: "/app/projects/scout-knowledge-lib.app",
+          projectRoot: "/app/projects/scout-knowledge-lib",
+          root: "/app/projects/scout-knowledge-lib",
+          output: "/app/projects/scout-knowledge-lib.app/.state/output",
+        },
+        callAgent: (async (
+          _agent: string,
+          value: string,
+          options?: Record<string, unknown>,
+        ) => {
+          prompt = value;
+          runOptions = options;
+          return {
+            id: "s_owner",
+            kind: "agent",
+            status: "done",
+            summary: "proposed maintenance task",
+            output: {
+              state: "converged",
+              summary: "Proposed one bounded maintenance task.",
+              evidence: ["library packet identifies the gap"],
+              actions: [
+                {
+                  kind: "create-task",
+                  id: "repair-navigation",
+                  parentId: "library-maintenance",
+                  outcome: "Repair library navigation",
+                  outputs: ["knowledge/README.md"],
+                  acceptance: ["The landing page links canonical notes"],
+                },
+              ],
+            },
+          };
+        }) as WorkflowContext["agents"]["call"],
+        emit: async (event) => {
+          emitted.push(event as unknown as Record<string, unknown>);
+        },
+      }),
+    );
 
     expect(prompt).toContain("sole task-tree mutation authority");
     expect(runOptions?.schema).toBeDefined();
     expect(emitted.at(-1)).toMatchObject({
       type: "project.knowledge.maintained",
-      proposedActions: [{ kind: "create-task", id: "repair-navigation" }],
+      data: {
+        proposedActions: [{ kind: "create-task", id: "repair-navigation" }],
+      },
     });
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: {
         state: "converged",
         actions: [{ kind: "create-task", id: "repair-navigation" }],
       },
     });
-    const admitted = admitProjectAppTaskHandlerResult(
-      result.type === "done" ? result.output : undefined,
+    const admitted = admitTaskReconcileResult(
+      result.status === "done" ? result.output : undefined,
       { allowNeedsOwner: true, defaultParentId: "project" },
     );
     expect(admitted.ok && admitted.result.actions?.[0]).toMatchObject({
@@ -134,53 +152,56 @@ describe("Scout owner reconciliation boundary", () => {
 
   it("prepares bounded experience evidence before the owner generation", async () => {
     let prompt = "";
-    let eventFilter: Record<string, unknown> | undefined;
-    const result = await execute({
-      task: `app: /app/projects/scout-knowledge-lib.app
-project: /app/projects/scout-knowledge-lib
-
-## Trigger Event
-\`\`\`json
-{"project":"scout-knowledge-lib","reason":"experience-review"}
-\`\`\``,
-      query: {
-        events(filter: Record<string, unknown>) {
-          eventFilter = filter;
-          return { rows: [], rowCount: 0, limit: 200, truncated: false };
-        },
-      },
-      async runAgent(_agent: string, value: string) {
-        prompt = value;
-        return {
-          status: "done",
-          sessionId: "s_review",
-          structuredResult: {
-            state: "converged",
-            summary: "No improvement justified.",
-            evidence: ["experience window contained no reconciliations"],
-            actions: [],
+    const result = await execute(
+      createTestAppWorkflowContext({
+        input: {},
+        reconciliation: {
+          appId: "scout-knowledge-lib",
+          taskId: "library-maintenance",
+          generation: 2,
+          resourceVersion: 2,
+          owner: "scout",
+          mode: "maintain",
+          outcome: "Review library experience",
+          acceptance: ["One bounded decision is recorded"],
+          input: {},
+          children: { live: [], completed: [] },
+          trigger: {
+            type: "project.owner.requested",
+            data: {
+              project: "scout-knowledge-lib",
+              reason: "experience-review",
+            },
           },
-        };
-      },
-      emit() {},
-      done(summary: string, output?: unknown) {
-        return { type: "done", summary, output } as const;
-      },
-      blocked(reason: string, context?: unknown) {
-        return { type: "blocked", reason, context } as const;
-      },
-    } as never);
+        },
+        workspace: {
+          appRoot: "/app/projects/scout-knowledge-lib.app",
+          projectRoot: "/app/projects/scout-knowledge-lib",
+          root: "/app/projects/scout-knowledge-lib",
+          output: "/app/projects/scout-knowledge-lib.app/.state/output",
+        },
+        callAgent: (async (_agent: string, value: string) => {
+          prompt = value;
+          return {
+            id: "s_review",
+            kind: "agent",
+            status: "done",
+            summary: "No improvement justified.",
+            output: {
+              state: "converged",
+              summary: "No improvement justified.",
+              evidence: ["experience window contained no reconciliations"],
+              actions: [],
+            },
+          };
+        }) as WorkflowContext["agents"]["call"],
+      }),
+    );
 
-    expect(eventFilter).toMatchObject({
-      type: "project.task.reconciled",
-      projectId: "scout-knowledge-lib",
-      limit: 200,
-    });
-    expect(prompt).toContain("Periodic experience evidence");
-    expect(prompt).toContain("untrusted historical evidence");
-    expect(prompt).toContain('"groups": []');
+    expect(prompt).toContain("Bounded reconciliation history");
+    expect(prompt).toContain("Canonical reconciliation context");
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: { state: "converged", actions: [] },
     });
   });

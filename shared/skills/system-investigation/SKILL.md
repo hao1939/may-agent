@@ -107,12 +107,13 @@ For project-intent failures, check the contract in order:
 1. Was `project.comment.created` persisted and was its event ID returned?
 2. Did retrying the same idempotency key return the original receipt without a
    second delivery?
-3. Did the stable owner-review task retain every unresolved intent reference
-   when wakes coalesced?
-4. Did infrastructure emit exactly one correlated `project.owner.reviewed` per
-   accepted intent?
-5. Does that result contain a bounded summary, task references, and closure
-   link, with any durable wait represented by task Conditions?
+3. Did the declared App subscription translate it into exactly one correlated
+   App inbox item?
+4. Did the App complete, delegate, or attach an explicit task dependency?
+5. If a dependency completed, did `app.dependency.completed` wake the exact
+   parent request without creating another work lifecycle?
+6. Does the App result contain a bounded summary and evidence, with durable
+   waits represented by task Conditions and human delivery recorded separately?
 
 ## Repetition Rule
 

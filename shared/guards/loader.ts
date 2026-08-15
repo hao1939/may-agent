@@ -1,4 +1,4 @@
-import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk/legacy";
+import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk";
 
 /**
  * Guard Loader — dynamically imports all WorkflowGuard exports from this directory.

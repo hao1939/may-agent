@@ -3,10 +3,58 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { WorkflowContext } from "@may-agent/sdk/legacy";
+import type { WorkflowContext } from "@may-agent/sdk";
 import { execute } from "./legacy-branch-family-reconciliation.ts";
 
 const roots: string[] = [];
+
+function context(input: {
+  repo: string;
+  workspace: string;
+  taskInput: Record<string, unknown>;
+  agent: WorkflowContext["agents"]["call"];
+}) {
+  return {
+    input: input.taskInput,
+    reconciliation: {
+      appId: "aks-rp-e2e",
+      taskId: "ops/legacy-family",
+      generation: 1,
+      resourceVersion: 1,
+      owner: "aks-explorer",
+      mode: "achieve",
+      outcome: "Reconcile one legacy branch family",
+      acceptance: ["The represented refs are closed safely."],
+      input: input.taskInput,
+      children: { live: [], completed: [] },
+    },
+    workspace: {
+      appRoot: `${input.repo}.app`,
+      projectRoot: input.repo,
+      root: input.workspace,
+      output: input.workspace,
+    },
+    agents: { call: input.agent },
+    done(summary: string, output?: unknown) {
+      return {
+        id: "workflow:test",
+        kind: "workflow",
+        status: "done",
+        summary,
+        output,
+      };
+    },
+    blocked(reason: string, evidence?: unknown) {
+      return {
+        id: "workflow:test",
+        kind: "workflow",
+        status: "blocked",
+        summary: reason,
+        evidence,
+      };
+    },
+  } as WorkflowContext;
+}
 
 function git(cwd: string, ...args: string[]): string {
   return execFileSync("git", ["-C", cwd, ...args], { encoding: "utf8" }).trim();
@@ -57,47 +105,56 @@ describe("legacy branch family reconciliation", () => {
     git(repo, "push", "origin", "dev");
     git(repo, "worktree", "add", "-b", "task/review", workspace, "origin/dev");
 
-    const result = await execute({
-      task: `## Reconciliation Task\n\`\`\`json\n${JSON.stringify({ input: { branches: [{ branch: "task/source", head: sourceHead, files: ["features/localdns/change.txt", "features/localdns/already-integrated.txt"] }] } })}\n\`\`\``,
-      agent: "aks-explorer",
-      projectDir: repo,
-      workspaceDir: workspace,
-      runAgent: (async () => {
-        writeFileSync(
-          join(workspace, "features", "localdns", "change.txt"),
-          "accepted\n",
-        );
-        git(workspace, "add", ".");
-        git(workspace, "commit", "-m", "integrate remaining source concern");
-        return {
-          status: "done",
-          sessionId: "review-session",
-          lastAssistantText: "accepted",
-          messages: [],
-          duration: "1s",
-          outputDir: root,
-          structuredResult: {
-            decision: "integrate",
-            summary: "Accepted the localdns change.",
-            evidence: ["features/localdns/change.txt"],
-            verification: ["fixture-pass"],
-            branchDecisions: [
-              {
-                branch: "task/source",
-                head: sourceHead,
-                disposition: "represented",
-                reason: "The reviewed patch is the final coherent change.",
-              },
-            ],
-          },
-        };
-      }) as WorkflowContext["runAgent"],
-      done: (summary, output) => ({ type: "done", summary, output }),
-      blocked: (reason, context) => ({ type: "blocked", reason, context }),
-    } as WorkflowContext);
+    const taskInput = {
+      branches: [
+        {
+          branch: "task/source",
+          head: sourceHead,
+          files: [
+            "features/localdns/change.txt",
+            "features/localdns/already-integrated.txt",
+          ],
+        },
+      ],
+    };
+    const result = await execute(
+      context({
+        repo,
+        workspace,
+        taskInput,
+        agent: async () => {
+          writeFileSync(
+            join(workspace, "features", "localdns", "change.txt"),
+            "accepted\n",
+          );
+          git(workspace, "add", ".");
+          git(workspace, "commit", "-m", "integrate remaining source concern");
+          return {
+            status: "done",
+            id: "review-session",
+            kind: "agent",
+            summary: "accepted",
+            output: {
+              decision: "integrate",
+              summary: "Accepted the localdns change.",
+              evidence: ["features/localdns/change.txt"],
+              verification: ["fixture-pass"],
+              branchDecisions: [
+                {
+                  branch: "task/source",
+                  head: sourceHead,
+                  disposition: "represented",
+                  reason: "The reviewed patch is the final coherent change.",
+                },
+              ],
+            },
+          };
+        },
+      }),
+    );
 
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: { state: "converged" },
     });
     git(repo, "fetch", "origin", "dev");
@@ -137,50 +194,55 @@ describe("legacy branch family reconciliation", () => {
     git(repo, "switch", "dev");
     git(repo, "worktree", "add", "-b", "task/review", workspace, "origin/dev");
 
-    const result = await execute({
-      task: `## Reconciliation Task\n\`\`\`json\n${JSON.stringify({ input: { branches: [{ branch: "task/source", head: sourceHead, files: ["features/app-monitoring/change.txt"] }] } })}\n\`\`\``,
-      agent: "aks-explorer",
-      projectDir: repo,
-      workspaceDir: workspace,
-      runAgent: (async () => {
-        writeFileSync(join(repo, "README.md"), "base\nnew dev work\n");
-        git(repo, "add", ".");
-        git(repo, "commit", "-m", "advance dev");
-        git(repo, "push", "origin", "HEAD:dev");
-        return {
-          status: "done",
-          sessionId: "review-session",
-          lastAssistantText: "rejected",
-          messages: [],
-          duration: "1s",
-          outputDir: root,
-          structuredResult: {
-            decision: "reject",
-            summary: "Rejected stale app-monitoring branch.",
-            evidence: ["features/app-monitoring/change.txt"],
-            verification: ["fixture-pass"],
-            branchDecisions: [
-              {
-                branch: "task/source",
-                head: sourceHead,
-                disposition: "rejected",
-                reason: "The candidate is superseded by current coverage.",
-              },
-            ],
-          },
-        };
-      }) as WorkflowContext["runAgent"],
-      done: (summary, output) => ({ type: "done", summary, output }),
-      blocked: (reason, context) => ({ type: "blocked", reason, context }),
-    } as WorkflowContext);
+    const result = await execute(
+      context({
+        repo,
+        workspace,
+        taskInput: {
+          branches: [
+            {
+              branch: "task/source",
+              head: sourceHead,
+              files: ["features/app-monitoring/change.txt"],
+            },
+          ],
+        },
+        agent: async () => {
+          writeFileSync(join(repo, "README.md"), "base\nnew dev work\n");
+          git(repo, "add", ".");
+          git(repo, "commit", "-m", "advance dev");
+          git(repo, "push", "origin", "HEAD:dev");
+          return {
+            status: "done",
+            id: "review-session",
+            kind: "agent",
+            summary: "rejected",
+            output: {
+              decision: "reject",
+              summary: "Rejected stale app-monitoring branch.",
+              evidence: ["features/app-monitoring/change.txt"],
+              verification: ["fixture-pass"],
+              branchDecisions: [
+                {
+                  branch: "task/source",
+                  head: sourceHead,
+                  disposition: "rejected",
+                  reason: "The candidate is superseded by current coverage.",
+                },
+              ],
+            },
+          };
+        },
+      }),
+    );
 
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: {
         state: "needs-owner",
         evidence: expect.arrayContaining([
           `base-commit:${baseHead}`,
-          `review-session:review-session`,
+          `review-execution:review-session`,
         ]),
       },
     });

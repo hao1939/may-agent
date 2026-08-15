@@ -2,7 +2,7 @@
   "id": "scout-knowledge-lib.app",
   "owner": "scout",
   "status": "active",
-  "type": "project-app",
+  "type": "agent-app",
   "priority": "P1",
   "domainProject": {
     "id": "scout-knowledge-lib",

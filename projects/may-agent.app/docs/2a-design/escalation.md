@@ -1,9 +1,9 @@
 # Escalation
 
 **Design status:** Accepted.
-**Implementation status:** Canonical ownership rule accepted; legacy
-event-pair escalation and source-session resume paths are being migrated to App
-delegation and exact task/human Conditions.
+**Implementation status:** Implemented through App delegation and exact
+task/human Conditions. Historical event-pair and source-session records are
+read-only evidence, not work authority.
 
 ## Purpose
 
@@ -166,7 +166,8 @@ Health readouts surface:
 - child results not yet applied by their source obligation;
 - duplicate suppression and conflicting correlation keys;
 - repeated escalation without changed evidence; and
-- legacy escalation event pairs that still own live work during migration.
+- historical escalation records that cannot be correlated to their canonical
+  source obligation.
 
 Historical escalation events and traces remain readable as evidence. New work
 uses App request/task dependencies. Compatibility projections never admit new

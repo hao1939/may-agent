@@ -1,36 +1,37 @@
 ---
 name: may-agent-system
-description: Maintain and evolve the May-agent system and project apps. Use for Kubernetes-style task-resource reconciliation, stable tasks, task trees, Conditions, event/timer wakes, project apps, event handlers, metrics, runtime health, blocker handling, escalation flows, agent conventions, or design-doc-aligned changes under /app/projects/may-agent.app, /app/projects/*.app, agents/, shared/, or May-agent runtime code.
+description: Maintain and evolve the May-agent system and Agent Apps. Use for Kubernetes-style task-resource reconciliation, stable tasks, task trees, Conditions, event/timer wakes, Agent Apps, event handlers, metrics, runtime health, blocker handling, escalation flows, agent conventions, or design-doc-aligned changes under /app/projects/may-agent.app, /app/projects/*.app, agents/, shared/, or May-agent runtime code.
 ---
 
 # May-Agent System
 
-Use this skill when maintaining May-agent runtime behavior, project apps, agent
+Use this skill when maintaining May-agent runtime behavior, Agent Apps, agent
 directories, task trees, event flows, metrics, alerts, or escalation loops.
 
 ## Architecture Overview
 
-May-agent is an event-driven autonomous agent system. Preserve this mental
-model:
+May-agent is an Agent App host. Preserve this mental model:
 
-`event -> owner routing -> agent judgment -> evidence -> state update -> follow-up event`
+`addressed request -> App inbox -> complete, delegate, or attach task -> result`
 
 For human interaction, preserve the more specific shape:
 
-`conversation input -> human.input.received -> semantic intent -> bounded work -> terminal evidence -> channel delivery`
+`conversation input -> May App inbox -> answer or delegation -> channel delivery`
 
 For project-directed interaction, preserve:
 
-`project.comment.created receipt -> app owner judgment -> project.owner.reviewed -> optional durable task`
+`project.comment.created fact -> declared App subscription -> App inbox request -> optional task dependency -> App result`
 
-The root event and trace represent the commitment. Do not add a parallel
-request lifecycle object.
+The App inbox item is the authority for an addressed result. The task is the
+authority for a durable desired outcome. Events and traces are facts and causal
+evidence, not alternate request lifecycles.
 
 Core primitives:
 
-- Event: durable signal that something can consume.
+- Event: persisted fact and wake for declared consumers.
+- App inbox item: one addressed request and correlated result.
 - Owner: accountability backstop, not necessarily first responder.
-- Project app: control plane that drives a portable domain project.
+- Agent App: control plane that drives a portable domain project.
 - Task resources: desired and observed project work, not a scheduler queue.
 - Metric: signal for investigation, not a target.
 - Escalation: structured handoff across an ownership boundary.
@@ -93,14 +94,15 @@ doc with evidence, or call out the mismatch.
 1. Locate the owner boundary: runtime, app, project owner, worker, problem
    solver, May, or human.
 2. Read the active project/app files that own the work: `app.ts`,
-   `project.json`, canonical `.state/tasks/state.json`, the generated task-tree
-   projection when useful, agent `AGENTS.md`, workflows, metrics, and recent
-   traces as needed.
+   `project.json`, bounded canonical task views, agent `AGENTS.md`, workflows,
+   metrics, and recent traces as needed. Do not make raw task persistence an
+   App or agent contract.
 3. Preserve the loop:
    `project + metrics + trigger -> bounded work -> agent judgment -> evidence -> project update`.
 4. Make the smallest change that keeps the loop closed. Prefer existing
-   conventions, app-local workflows, SDK helpers, and task-tree tools over new
-   configuration or broad framework code.
+   conventions, app-local workflows, SDK helpers, bounded task projections,
+   and canonical App/task actions over new configuration or broad framework
+   code.
    Prefer JavaScript/TypeScript and Bun for new May-agent scripts and runtime
    tooling; use another language only when an existing required tool has no
    maintained JavaScript/TypeScript equivalent.
@@ -134,25 +136,27 @@ reacts to belong in state, logs, traces, metrics, or knowledge.
   `target`/`urgency`/`ttl_ms`/`timestamp`/`trace`, and `data`.
 - Put domain fields in `data`, not on the envelope. Do not duplicate `owner`
   as `data.owner`.
-- Route by target first, then owner fallback. `owner` is the accountability
-  backstop, not necessarily the first handler.
-- Ensure each emitted event has a consumer: direct handler, durable App inbox,
-  or explicit external platform path. Pair bookkeeping alone is not domain
-  delivery.
+- Route only through an explicit App subscription, task subscription, exact
+  task target, or host-internal maintenance consumer. `owner` is diagnostic
+  accountability metadata, never a generic routing fallback.
+- Ensure each actionable event has a declared consumer and every unaddressed
+  fact has an intentional observation/unhandled disposition. Pair bookkeeping
+  alone is not domain delivery.
 - For handlers, read `event.data.*`; do not add shortcut field promotion.
-- Prefer semantic project events such as `project.owner.requested`,
-  `project.problem.investigation.requested`, `project.problem.resolved`, and
-  `project.problem.escalated`. Task claim/result mechanics belong to the
-  reconciler and do not require assignment or completion event adapters.
+- Prefer semantic project facts such as `project.problem.resolved` and exact
+  task wakes. An addressed event such as `project.owner.requested` is valid
+  only when a declared App subscription translates it into one correlated App
+  request. Task claim/result mechanics belong to the reconciler and do not
+  require assignment or completion event adapters.
 - Treat `project.planning.requested`, `project.execution.requested`,
   `project.task.dispatched`, and `project.task.finished` as retired historical
   names, not accepted ingress aliases or examples for new code.
 - Remember retention: `events` are currently short-window operational evidence,
   not permanent history.
-- Treat a declared typed app action as a discoverable schema-backed constructor
-  for one semantic event. Validate before emission and return that semantic
-  event ID directly; do not add `project.action.invoked`, accepted/completed
-  wrappers, or an action-status record.
+- Treat a declared typed App action as discoverable schema-backed ingress.
+  Validate its parameters, translate them with `toInput`, and admit one
+  correlated App request. Do not emit an actionable semantic event as a
+  shortcut or add action accepted/completed wrapper lifecycles.
 
 ### Human-rooted traces
 
@@ -188,14 +192,16 @@ reacts to belong in state, logs, traces, metrics, or knowledge.
 - External actors state intent; they do not choose task IDs, owners, workflows,
   or sessions. The app owner reads current project and task context and decides
   answer, reject, no-op, task change, exact wait, or workflow reuse.
-- The owner or workflow returns a structured decision and typed task actions.
-  It does not edit task storage or emit `project.owner.reviewed`.
-- The generic reconciler validates and applies task actions, then infrastructure
-  emits exactly one correlated `project.owner.reviewed` per persisted comment,
-  with a bounded summary, task references, and closure link.
-- Level-based coalescing may combine several wakes on one stable task, but the
-  pending trigger must retain every unresolved input event reference until each
-  has its owner result.
+- A declared App subscription translates project intent into a correlated App
+  inbox request. The owner or pure route returns `complete`, `delegate`, or an
+  explicit task attachment; it does not edit task storage or emit an owner
+  result event.
+- The task reconciler validates and applies task actions. When an attached task
+  completes, `app.dependency.completed` wakes the exact inbox request so its
+  owner can review the bounded dependency observation and return the App result.
+- Compatible inbox work may batch and task wakes may coalesce, but every
+  addressed request keeps its own identity and result. A shared task does not
+  absorb the request lifecycle.
 - Work or waiting that must survive the turn belongs in a durable task. Express
   exact waits as task Conditions, not ephemeral response state.
 
@@ -213,7 +219,7 @@ reacts to belong in state, logs, traces, metrics, or knowledge.
   4. follow the handler through the terminal domain artifact;
   5. present the exact change and all proof; and
   6. wait for approval before any production reload or rollout.
-  Revise an answer that omits any step. Do not infer or compress a step.
+     Revise an answer that omits any step. Do not infer or compress a step.
 - Lifecycle bookkeeping may consume infra-only lifecycle events, but the pair
   tracker must not mask a missing targeted project/session/workflow/owner
   consumer.
@@ -234,15 +240,15 @@ reacts to belong in state, logs, traces, metrics, or knowledge.
   collection, and graph/timeline event-id projections in `scope`. Do not return
   duplicate raw event arrays for each UI view.
 
-## Project Apps And Task Trees
+## Agent Apps And Task Trees
 
 Keep domain projects portable and May-agent control planes separate.
 
 - Put May-agent app logic in `projects/<id>.app/`; domain tools and artifacts
   stay in the domain workspace.
-- Keep `app.ts` small: one owner, `tasks.accepts`, one `tasks.resolve`, event-only
-  schedules, optional schema-backed actions, and optional deterministic
-  `onEvent` projection.
+- Keep `app.ts` small: one owner, `tasks.subscriptions`, one `tasks.resolve`,
+  fact-publishing schedules, optional schema-backed actions, and explicit inbox
+  subscriptions that translate facts into canonical App inputs.
 - A targeted event, resolved app event, Condition change, and periodic resync
   all enqueue the same per-app controller. Do not recreate task Cron handlers.
 - Resolve a declared task workflow from the accountable agent's local
@@ -260,12 +266,12 @@ Keep domain projects portable and May-agent control planes separate.
   value unresolved frontier and judges progress; workflows preserve learned
   ordered experience; infrastructure owns queues, claims, concurrency,
   retries, recovery, and Condition correlation.
-- `.state/tasks/state.json` is the sole mutable task-resource store.
-  `tasks/seed.json` is bootstrap intent; `.state/tasks/tree.json` is a generated
-  read projection.
-- Workflows and agents read task state but never edit the store directly. They
-  return `converged`, `waiting` with exact Conditions, or `needs-owner`, plus
-  typed actions for the app to validate and apply.
+- Task persistence is host-private and reconciler-owned. `tasks/seed.json` is
+  bootstrap intent; Apps and agents consume only bounded task views.
+- Workflows use their reconciliation context and exact `ctx.read.task` views;
+  agents use bounded task readouts. They return `converged`, `waiting` with
+  exact Conditions, or `needs-owner`, plus typed actions for the host to
+  validate and apply.
 - When an app looks stuck, inspect the app and canonical task state first.
   Reuse its existing task and Condition, wake the owner through a declared app
   action, and follow the same trace through a typed response to a terminal
@@ -273,9 +279,9 @@ Keep domain projects portable and May-agent control planes separate.
   and direct state/tree edits; merely waking work is not terminal success. A
   complete plan must explicitly name both the typed owner response and terminal
   domain result; do not infer or compress either step.
-- Project comments normally resolve to one stable owner-review task. Preserve
-  unresolved comment event references when repeated wakes coalesce so response
-  correlation is not lost.
+- Project comments enter through a declared App subscription. Several requests
+  may attach one stable task, but each keeps its own inbox identity and response
+  correlation.
 - Resource `spec` is desired state and resource `status.phase` is observed
   reconciliation state. The old task-state vocabulary may appear only in a
   derived human projection, never as a second execution authority.
@@ -305,7 +311,7 @@ Treat metrics as signals, not decisions.
 - Inspect the metric row, recent snapshots, related events/sessions, project
   context, and current value before acting.
 - Resolve ownership by runtime convention: explicit `metrics.owner` first;
-  project-scoped metrics enter the `project:<id>` / project-app owner path;
+  project-scoped metrics enter an explicit App/task subscription;
   unscoped metrics fall back through a valid agent-like metric-id prefix, then
   May. The project owner remains the accountability backstop for project
   judgment.
@@ -316,18 +322,19 @@ Treat metrics as signals, not decisions.
   metric context. Do not create one alert task per breach by default.
 - Use balanced project metrics where possible: activity plus impact, with
   health metrics for stuck loops.
-- Watch runtime health through event delivery, orphan lifecycle pairs, stale
-  active tasks, heartbeat darkness, invalid config, pending escalations,
-  stale metrics, and session/provider failures.
+- Watch runtime health through event delivery/admission, stale App requests and
+  dependencies, stale active tasks, heartbeat darkness, invalid config,
+  pending deliveries, stale metrics, and session/provider failures.
 - When handling metric alerts, choose exactly one operation from the manual:
   investigate then final operation, fix root cause, calibrate, downgrade,
   upgrade/escalate, resolve stale/transient, or document exception.
 - Use safe runtime write paths for metric calibration, priority changes,
   exceptions, and manual alert resolution. Do not edit `.state/*.db` directly
   from shell or ad hoc scripts.
-- Keep `sdk.query` read-only. Put state-changing helpers on `sdk.commands`, and
-  have those commands emit canonical durable events instead of mutating query
-  tables behind a read-shaped API.
+- Use scoped `ctx.read`/`ctx.metrics` capabilities in App workflows and typed
+  runtime controls for explicit maintenance. Do not add raw query/command
+  escape hatches to the public SDK or mutate projection tables behind a
+  read-shaped API.
 
 ## Blockers And Escalations
 
@@ -338,24 +345,21 @@ Distinguish local blockers from ownership-boundary escalations.
   crosses an owner boundary.
 - A task workflow that cannot decide returns `needs-owner`; an owner waiting on
   an external fact returns `waiting` with an exact Condition. The reconciler
-  records the attempt and performs the single owner fallback—do not emit a
-  parallel task-completion event.
-- Use `project.owner.requested` for project workflows without task context and
-  `workflow.owner.requested` for non-project workflows.
-- Emit `escalation.created` only when another owner must answer or act. Prefer
-  `sdk.escalate(reason, opts)` and include source agent/session, project
-  context, reason, requested action, severity, blocker evidence, resume
-  context, and a stable `dedupKey` when possible. `sdk.escalate(...)` returns
-  `{ eventId, compatibilityId }`; persist and use `eventId` as the canonical
-  escalation identity. Preserve `data.escalationId` only when touching legacy
-  raw event paths.
-- Route `owner: "human:<role>"` through May as deputy while preserving the
-  human owner on the event.
-- On resolution, use `escalation.resolved` or `escalation.dismissed` with a
-  closure link to the opening event in the same trace. Accept legacy
-  `data.escalationId` correlation only for compatibility. A resolution
-  disposition is not proof the source project is fixed; the source owner still
-  judges unblock.
+  records the attempt and performs the bounded same-App owner handoff—do not
+  emit a parallel task-completion event.
+- Work without task context enters through a typed App input/action or a
+  declared event subscription that creates one correlated App request. Do not
+  address an owner string or workflow event as an alternate inbox.
+- When another App must answer or act, return typed App delegation with the
+  exact request, evidence, source obligation, severity, and stable semantic
+  correlation key. The parent waits on that exact child result.
+- Route human attention through a typed child request to the `may` App. May
+  owns channel policy and returns one correlated result; a human owner label or
+  notification event is not delivery.
+- Historical `escalation.*` events remain audit evidence only. New escalation
+  ownership is the parent/child App dependency or exact human/task Condition.
+  A child disposition is not proof the source project is fixed; the source
+  owner still applies it and judges completion.
 - Do not hide human notification, retry loops, or project-specific workarounds
   inside escalation code.
 
@@ -365,14 +369,15 @@ Distinguish local blockers from ownership-boundary escalations.
   `AGENTS.md`; put situational or long knowledge in `knowledge/` with an
   index.
 - Put app-scoped task agents under `projects/<id>.app/agents/<name>/`.
-  Reserve global `agents/` for May and explicitly justified system-level
-  agents during migration.
+  Reserve global `agents/` for May and explicitly justified standalone
+  system-level agents.
 - Put operational settings in `agent.json`, not prose instructions.
 - For human interaction, preserve chat/job separation: chat is a persistent
   observed REPL without `finish()`; jobs are bounded task sessions with
   terminal cleanup.
-- Human, CLI, Telegram, web, and socket actions should enter through canonical
-  intent events rather than untracked side channels.
+- Human, CLI, Telegram, web, and socket actions enter through canonical App
+  admission, fact publication, typed App actions, or deterministic runtime
+  controls rather than untracked side channels.
 - Keep per-turn causality explicit across long-lived chat sessions. Ambient
   async trace inheritance is useful inside one handler continuation but is not
   sufficient for queued turns or work that outlives that continuation.
@@ -389,8 +394,10 @@ Distinguish local blockers from ownership-boundary escalations.
 - System callers use the typed workflow runner directly. Only the model-facing
   tool boundary should construct the schema/JSON adapter.
 - Keep each workflow invocation synchronous and ordered. If work must wait for
-  a future event or external condition, end with `ctx.blocked(...)` and resume
-  through a second event-linked workflow; do not suspend one workflow run.
+  a future event or external condition, return control to the enclosing App or
+  task so it can persist an exact dependency or Condition and start a new
+  bounded attempt after the wake. `ctx.blocked(...)` reports execution failure;
+  it does not create a durable wait or resumable workflow stack.
 
 ## Runtime Restart
 
@@ -405,20 +412,21 @@ Before finishing:
 
 - Confirm the relevant design doc still supports the behavior.
 - Confirm every new event has a responsible consumer or explicit owner path.
-- Confirm project-app changes preserve app/domain boundaries.
+- Confirm Agent App changes preserve App/domain boundaries.
 - Confirm task-resource changes preserve `spec`/`status`, valid phases,
   resolved ownership, and reconciler-only mutation.
-- Confirm `.state/tasks/state.json` remains the sole mutable task authority and
-  the tree remains a generated projection.
+- Confirm the host reconciler remains the sole mutable task authority and Apps
+  consume only bounded task projections.
 - Confirm metrics and alerts remain signals requiring owner judgment.
 - Confirm blockers either return to the owner loop or become structured
   escalations with resume evidence.
 - Confirm every human-rooted turn has one semantic intent, explicit per-turn
   trace propagation, terminal evidence, and channel-delivery evidence when a
   response is claimed.
-- Confirm every persisted project comment has exactly one correlated
-  infrastructure-emitted owner result with a summary, task references, and
-  closure link; durable waits use task Conditions.
+- Confirm every accepted project comment has one correlated App inbox item and
+  App result; task attachment is explicit, dependency completion wakes the
+  parent, durable waits use task Conditions, and human delivery is recorded
+  separately.
 - Confirm typed actions expose descriptions and input schemas, reject invalid
   input before emission, and return one semantic event receipt without wrapper
   lifecycle events.

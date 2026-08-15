@@ -11,7 +11,6 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import type { LoopRunManifest, RunOptions } from "@may-agent/gym/loop";
-import type { WorkflowContext } from "@may-agent/sdk";
 import {
   applyDirectorySnapshot,
   authoritativeAssessmentProblems,
@@ -43,6 +42,7 @@ import {
   type Finding,
   type GymLoopApi,
 } from "./improve-agent";
+import { canonicalGymTestContext } from "./lib/test-context";
 
 const roots: string[] = [];
 
@@ -105,6 +105,10 @@ function manifest(
       })),
     ),
   };
+}
+
+function outputOf(result: Record<string, unknown>): Record<string, unknown> {
+  return result.output as Record<string, unknown>;
 }
 
 describe("single agent-improvement loop", () => {
@@ -276,7 +280,7 @@ describe("single agent-improvement loop", () => {
       }),
       "```",
     ].join("\n");
-    const ctx = {
+    const ctx = canonicalGymTestContext({
       projectsRoot,
       task,
       emit(event: Record<string, unknown>) {
@@ -288,7 +292,7 @@ describe("single agent-improvement loop", () => {
       blocked(reason: string) {
         return { type: "blocked", reason };
       },
-    } as unknown as WorkflowContext;
+    });
     const unusedLoop: GymLoopApi = {
       async run() {
         throw new Error("approval recovery must not start curriculum runs");
@@ -303,17 +307,19 @@ describe("single agent-improvement loop", () => {
       unknown
     >;
     expect(result.summary).toContain("Applied approved benchmark/scorer fix");
-    expect((result.evidence as unknown[]).length).toBeLessThanOrEqual(32);
+    expect((outputOf(result).evidence as unknown[]).length).toBeLessThanOrEqual(32);
     expect(readFileSync(join(targetPath, "scorer.cjs"), "utf8")).toBe(
       "fixed\n",
     );
     expect(emitted).toEqual([
       expect.objectContaining({
         type: "gym.improvement.requested",
-        reason: "approved-benchmark-fix-applied",
-        artifactFingerprint,
-        benchmark: "consumer-transfer",
-        scenarios: ["release-case"],
+        data: expect.objectContaining({
+          reason: "approved-benchmark-fix-applied",
+          artifactFingerprint,
+          benchmark: "consumer-transfer",
+          scenarios: ["release-case"],
+        }),
       }),
     ]);
   });
@@ -441,7 +447,7 @@ describe("single agent-improvement loop", () => {
     const emitted: Record<string, unknown>[] = [];
     const dispatched: Array<{ type: string; data: Record<string, unknown> }> =
       [];
-    const ctx = {
+    const ctx = canonicalGymTestContext({
       projectsRoot,
       task,
       async runAgent(_agent: string, prompt: string) {
@@ -473,7 +479,7 @@ describe("single agent-improvement loop", () => {
       blocked(reason: string) {
         return { type: "blocked", reason };
       },
-    } as unknown as WorkflowContext;
+    });
 
     const result = (await runImprovement(ctx, {
       async run() {
@@ -484,7 +490,7 @@ describe("single agent-improvement loop", () => {
       },
     })) as unknown as Record<string, unknown>;
 
-    expect(result.state).toBe("waiting");
+    expect(outputOf(result).state).toBe("waiting");
     const current = JSON.parse(readFileSync(resultPath, "utf8"));
     expect(current.next).toBe("wait-for-approval");
     expect(current.workflow_state).toBeUndefined();
@@ -758,7 +764,7 @@ describe("single agent-improvement loop", () => {
       },
     };
     let builderCalls = 0;
-    const ctx = {
+    const ctx = canonicalGymTestContext({
       projectsRoot,
       task,
       async runAgent() {
@@ -773,13 +779,13 @@ describe("single agent-improvement loop", () => {
       blocked(reason: string) {
         return { type: "blocked", reason };
       },
-    } as unknown as WorkflowContext;
+    });
 
     const result = (await runImprovement(ctx, loop)) as unknown as Record<
       string,
       unknown
     >;
-    expect(result.state).toBe("waiting");
+    expect(outputOf(result).state).toBe("waiting");
     expect(runCount).toBe(1);
     expect(verifyCount).toBe(1);
     expect(builderCalls).toBe(0);
@@ -860,9 +866,7 @@ describe("single agent-improvement loop", () => {
       }),
     );
 
-    const recoveryCtx = {
-      ...ctx,
-      task: [
+    ctx.task = [
         "## Reconciliation Task",
         "```json",
         JSON.stringify({
@@ -882,15 +886,15 @@ describe("single agent-improvement loop", () => {
           },
         }),
         "```",
-      ].join("\n"),
-    } as unknown as WorkflowContext;
+      ].join("\n");
+    const recoveryCtx = ctx;
 
     writeFileSync(join(protectedBenchmark, "suite.json"), '{"changed":true}\n');
     const drifted = (await runImprovement(
       recoveryCtx,
       loop,
     )) as unknown as Record<string, unknown>;
-    expect(drifted.state).toBe("needs-owner");
+    expect(outputOf(drifted).state).toBe("needs-owner");
     expect(drifted.summary).toBe(
       "Durable evaluation-only request no longer matches its protected inputs",
     );
@@ -903,7 +907,7 @@ describe("single agent-improvement loop", () => {
       recoveryCtx,
       loop,
     )) as unknown as Record<string, unknown>;
-    expect(recovered.state).toBe("converged");
+    expect(outputOf(recovered).state).toBe("converged");
     expect(runCount).toBe(1);
     expect(verifyCount).toBe(1);
     expect(builderCalls).toBe(0);
@@ -1508,11 +1512,11 @@ describe("single agent-improvement loop", () => {
         "```json",
         JSON.stringify({
           type: "gym.improvement.requested",
-          params: { curriculumDrain: true, reason },
+          data: { curriculumDrain: true, reason },
         }),
         "```",
       ].join("\n");
-    const ctx = {
+    const ctx = canonicalGymTestContext({
       projectsRoot,
       task: task("curriculum-refill"),
       emit(event: Record<string, unknown>) {
@@ -1527,65 +1531,45 @@ describe("single agent-improvement loop", () => {
       blocked(reason: string) {
         return { type: "blocked", reason };
       },
-    } as unknown as WorkflowContext;
+    });
 
     const first = (await runImprovement(ctx, loop)) as unknown as Record<
       string,
       unknown
     >;
     expect(first.summary).toContain("1 approved track remains");
-    expect(first.actions).toEqual([]);
+    expect(outputOf(first).actions).toEqual([]);
     expect(runCount).toBe(2);
     expect(maxActive).toBe(2);
     expect(emitted).toEqual([
       expect.objectContaining({
         type: "gym.improvement.requested",
-        params: expect.objectContaining({ reason: "curriculum-continue" }),
+        data: expect.objectContaining({ reason: "curriculum-continue" }),
       }),
     ]);
-    const taskStatePath = join(
-      projectsRoot,
-      "gym.app",
-      ".state",
-      "tasks",
-      "state.json",
-    );
-    mkdirSync(dirname(taskStatePath), { recursive: true });
-    writeFileSync(
-      taskStatePath,
-      JSON.stringify({
-        taskTriggers: {
-          "improve/may": {
-            event: { type: "gym.improvement.requested" },
-          },
-        },
-      }),
-    );
     expect(
       await verify(
         {
-          appDir: join(projectsRoot, "gym.app"),
-          projectDir: gymRoot,
+          appRoot: join(projectsRoot, "gym.app"),
+          projectRoot: gymRoot,
           taskId: "improve/may",
           generation: 1,
+          pendingTrigger: { type: "gym.improvement.requested" },
         },
-        first,
+        outputOf(first),
       ),
     ).toMatchObject({ accepted: true });
-    writeFileSync(taskStatePath, JSON.stringify({ taskTriggers: {} }));
     expect(
       await verify(
         {
-          appDir: join(projectsRoot, "gym.app"),
-          projectDir: gymRoot,
+          appRoot: join(projectsRoot, "gym.app"),
+          projectRoot: gymRoot,
           taskId: "improve/may",
           generation: 1,
         },
-        first,
+        outputOf(first),
       ),
     ).toMatchObject({ accepted: false });
-    rmSync(taskStatePath, { force: true });
-
     (ctx as unknown as { task: string }).task = task("curriculum-continue");
     const second = (await runImprovement(ctx, loop)) as unknown as Record<
       string,
@@ -1619,8 +1603,8 @@ describe("single agent-improvement loop", () => {
     expect(replay.summary).toBe(
       "May already passes every approved learning track.",
     );
-    expect(replay.evidence).toHaveLength(32);
-    expect(replay.evidence).toContain(trainingPath);
+    expect(outputOf(replay).evidence).toHaveLength(32);
+    expect(outputOf(replay).evidence).toContain(trainingPath);
     expect(runCount).toBe(3);
     expect(
       JSON.parse(
@@ -1708,7 +1692,7 @@ describe("single agent-improvement loop", () => {
       },
     };
     const emitted: Record<string, unknown>[] = [];
-    const ctx = {
+    const ctx = canonicalGymTestContext({
       projectsRoot,
       task: [
         "## Reconciliation Task",
@@ -1746,7 +1730,7 @@ describe("single agent-improvement loop", () => {
       blocked(reason: string) {
         return { type: "blocked", reason };
       },
-    } as unknown as WorkflowContext;
+    });
 
     const result = (await runImprovement(ctx, loop)) as unknown as Record<
       string,
@@ -1758,141 +1742,9 @@ describe("single agent-improvement loop", () => {
     expect(emitted).toEqual([
       expect.objectContaining({
         type: "gym.improvement.requested",
-        params: expect.objectContaining({ reason: "curriculum-continue" }),
+        data: expect.objectContaining({ reason: "curriculum-continue" }),
       }),
     ]);
-  });
-
-  test("stops a superseded attempt after its current Gym run", async () => {
-    const root = mkdtempSync(join(tmpdir(), "gym-campaign-fence-"));
-    roots.push(root);
-    const projectsRoot = join(root, "projects");
-    const gymRoot = join(projectsRoot, "gym");
-    const agentsRoot = join(root, "agents");
-    const benchmark = "fenced-track";
-    const scenario = "fenced-case";
-    mkdirSync(join(gymRoot, "benchmarks", "may-learning"), {
-      recursive: true,
-    });
-    mkdirSync(join(gymRoot, "benchmarks", benchmark), { recursive: true });
-    mkdirSync(join(gymRoot, "scenarios", scenario), { recursive: true });
-    mkdirSync(join(agentsRoot, "may"), { recursive: true });
-    writeFileSync(join(agentsRoot, "may", "AGENTS.md"), "# May\n");
-    writeFileSync(
-      join(gymRoot, "benchmarks", "may-learning", "autonomous-training.json"),
-      JSON.stringify({
-        schema_version: 1,
-        agent: "may",
-        tracks: [
-          { id: benchmark, benchmark, scenarios: [scenario], trials: 1 },
-        ],
-      }),
-    );
-    writeFileSync(
-      join(gymRoot, "benchmarks", benchmark, "suite.json"),
-      JSON.stringify({ labels_file: "labels.json", scenarios: [scenario] }),
-    );
-    writeFileSync(
-      join(gymRoot, "benchmarks", benchmark, "labels.json"),
-      JSON.stringify({
-        labels: {
-          [scenario]: {
-            status: "approved",
-            approved_by: "hao",
-            approved_at: "2026-08-01T00:00:00Z",
-          },
-        },
-      }),
-    );
-    writeFileSync(
-      join(gymRoot, "scenarios", scenario, "prompt.md"),
-      "fenced case\n",
-    );
-
-    const taskStatePath = join(
-      projectsRoot,
-      "gym.app",
-      ".state",
-      "tasks",
-      "state.json",
-    );
-    mkdirSync(join(taskStatePath, ".."), { recursive: true });
-    const writeTaskState = (generation: number, attemptId: string) =>
-      writeFileSync(
-        taskStatePath,
-        JSON.stringify({
-          resources: {
-            "improve/may": {
-              metadata: { id: "improve/may", generation },
-              status: { phase: "running", currentAttemptId: attemptId },
-            },
-          },
-        }),
-      );
-    writeTaskState(1, "attempt-1");
-
-    let runCount = 0;
-    const loop: GymLoopApi = {
-      async run(options) {
-        runCount++;
-        writeTaskState(2, "attempt-2");
-        const runId = "superseded-run";
-        const runDir = join(gymRoot, ".state", "benchmarks", runId);
-        mkdirSync(runDir, { recursive: true });
-        const value = manifest(runId, { [scenario]: ["pass"] });
-        value.benchmark = options.benchmark;
-        value.scenarios = [scenario];
-        return { runDir, manifest: value };
-      },
-      async verify() {
-        throw new Error("a superseded assessment must not verify a candidate");
-      },
-    };
-    const ctx = {
-      projectsRoot,
-      task: [
-        "## Reconciliation Task",
-        "```json",
-        JSON.stringify({
-          taskId: "improve/may",
-          generation: 1,
-          input: { agent: "may", curriculumDrain: true },
-        }),
-        "```",
-      ].join("\n"),
-      emit() {
-        throw new Error("a superseded attempt must not emit a continuation");
-      },
-      async runAgent() {
-        throw new Error("a superseded assessment must not classify findings");
-      },
-      done(summary: string, details: Record<string, unknown>) {
-        return { type: "done", summary, ...details };
-      },
-      blocked(reason: string) {
-        return { type: "blocked", reason };
-      },
-    } as unknown as WorkflowContext;
-
-    const result = (await runImprovement(ctx, loop)) as unknown as Record<
-      string,
-      unknown
-    >;
-    expect(result.summary).toBe(
-      "Stopped superseded campaign attempt improve/may@1.",
-    );
-    expect(runCount).toBe(1);
-    expect(
-      existsSync(
-        join(
-          projectsRoot,
-          "gym.app",
-          ".state",
-          "learning",
-          "training-drain.json",
-        ),
-      ),
-    ).toBe(false);
   });
 
   test("gives candidate builders lessons and evidence without release truth", () => {
@@ -1990,7 +1842,7 @@ describe("single agent-improvement loop", () => {
     );
     let runCount = 0;
     const prepared = await prepareAssessment(
-      { projectsRoot: join(root, "projects") } as WorkflowContext,
+      canonicalGymTestContext({ projectsRoot: join(root, "projects") }),
       { benchmark: "test-bench", agent: "may", trials: 3 },
       assessmentPath,
       {
@@ -2225,14 +2077,14 @@ describe("single agent-improvement loop", () => {
       requestedAction: "Approve this exact scorer fix?",
       reason: "The scorer misclassified a valid answer.",
     });
-    const ctx = {
+    const ctx = canonicalGymTestContext({
       emit(event: Record<string, unknown>) {
         emitted.push(event);
       },
       dispatchEvent(type: string, data: Record<string, unknown>) {
         dispatched.push({ type, ...data });
       },
-    } as unknown as WorkflowContext;
+    });
 
     dispatchApproval(ctx, request);
 
@@ -2248,8 +2100,10 @@ describe("single agent-improvement loop", () => {
     expect(emitted).toEqual([
       expect.objectContaining({
         type: "project.approval.requested",
-        approvalKind: "benchmark-fix",
-        approvalId: request.approvalId,
+        data: expect.objectContaining({
+          approvalKind: "benchmark-fix",
+          approvalId: request.approvalId,
+        }),
       }),
     ]);
     expect(dispatched).toEqual([
@@ -2278,9 +2132,11 @@ describe("single agent-improvement loop", () => {
       }),
     ).toMatchObject({
       type: "gym.improvement.requested",
-      scenarios: ["may-align-proof-before-adopt"],
-      trials: 3,
-      reason: "approved-benchmark-fix-applied",
+      data: {
+        scenarios: ["may-align-proof-before-adopt"],
+        trials: 3,
+        reason: "approved-benchmark-fix-applied",
+      },
     });
   });
 
@@ -2370,7 +2226,7 @@ describe("single agent-improvement loop", () => {
       JSON.stringify(event),
       "```",
     ].join("\n");
-    const ctx = {
+    const ctx = canonicalGymTestContext({
       projectsRoot,
       task,
       emit() {},
@@ -2380,7 +2236,7 @@ describe("single agent-improvement loop", () => {
       blocked(reason: string) {
         return { type: "blocked", reason };
       },
-    } as unknown as WorkflowContext;
+    });
 
     const result = (await runImprovement(ctx, loop)) as unknown as Record<
       string,
@@ -2390,7 +2246,11 @@ describe("single agent-improvement loop", () => {
     expect(result.summary).toBe(
       "May has no actionable failures in the current approved evaluation.",
     );
-    const scope = benchmarkFixConfirmationScope(event, "improve/may", 7);
+    const scope = benchmarkFixConfirmationScope(
+      event.data as Record<string, unknown>,
+      "improve/may",
+      7,
+    );
     expect(scope).toEqual({
       scope: `benchmark-fix-confirmation-${"b".repeat(64)}`,
     });
@@ -2578,7 +2438,7 @@ describe("single agent-improvement loop", () => {
       },
     };
     let classificationAttempts = 0;
-    const ctx = {
+    const ctx = canonicalGymTestContext({
       projectsRoot,
       async runAgent() {
         classificationAttempts++;
@@ -2603,7 +2463,7 @@ describe("single agent-improvement loop", () => {
           },
         };
       },
-    } as unknown as WorkflowContext;
+    });
 
     const assessmentPath = join(root, "assessment.json");
     const input = { benchmark: "test-bench", agent: "may", trials: 3 };
@@ -2765,7 +2625,7 @@ describe("single agent-improvement loop", () => {
       JSON.stringify(taskPacket),
       "```",
     ].join("\n");
-    const ctx = {
+    const ctx = canonicalGymTestContext({
       projectsRoot,
       workspaceDir,
       task,
@@ -2799,13 +2659,13 @@ describe("single agent-improvement loop", () => {
       blocked(reason: string) {
         return { type: "blocked", reason };
       },
-    } as unknown as WorkflowContext;
+    });
 
     const result = (await runImprovement(ctx, loop)) as unknown as Record<
       string,
       unknown
     >;
-    expect(result.state).toBe("waiting");
+    expect(outputOf(result).state).toBe("waiting");
     expect(result.summary).toContain(
       "passed targeted and release verification",
     );
@@ -2814,15 +2674,19 @@ describe("single agent-improvement loop", () => {
       expect.arrayContaining([
         expect.objectContaining({
           type: "project.approval.requested",
-          taskId: "improve/may",
-          taskGeneration: 2,
-          approvalKind: "agent-improvement",
-          artifactFingerprint: expect.stringMatching(/^sha256:/),
+          data: expect.objectContaining({
+            taskId: "improve/may",
+            taskGeneration: 2,
+            approvalKind: "agent-improvement",
+            artifactFingerprint: expect.stringMatching(/^sha256:/),
+          }),
         }),
         expect.objectContaining({
           type: "gym.improvement.reviewed",
-          taskId: "improve/may",
-          recommendation: "promote",
+          data: expect.objectContaining({
+            taskId: "improve/may",
+            recommendation: "promote",
+          }),
         }),
       ]),
     );
@@ -2838,7 +2702,7 @@ describe("single agent-improvement loop", () => {
         }),
       }),
     ]);
-    expect(result.conditions).toEqual([
+    expect(outputOf(result).conditions).toEqual([
       expect.objectContaining({
         type: "project.approval.submitted",
         subject: expect.stringMatching(/^approvalId:gym:agent-improvement:/),
@@ -2855,6 +2719,7 @@ describe("single agent-improvement loop", () => {
     const request = emitted.find(
       (event) => event.type === "project.approval.requested",
     )!;
+    const requestData = request.data as Record<string, unknown>;
     const withApproval = (artifactFingerprint: unknown) =>
       [
         task,
@@ -2864,7 +2729,7 @@ describe("single agent-improvement loop", () => {
         JSON.stringify({
           type: "project.approval.submitted",
           data: {
-            approvalId: request.approvalId,
+            approvalId: requestData.approvalId,
             taskId: "improve/may",
             taskGeneration: 2,
             artifactFingerprint,
@@ -2880,19 +2745,19 @@ describe("single agent-improvement loop", () => {
       string,
       unknown
     >;
-    expect(stale.state).toBe("waiting");
+    expect(outputOf(stale).state).toBe("waiting");
     expect(readFileSync(join(agentsRoot, "may", "AGENTS.md"), "utf8")).toBe(
       "# May\n",
     );
 
     (ctx as unknown as { task: string }).task = withApproval(
-      request.artifactFingerprint,
+      requestData.artifactFingerprint,
     );
     const approved = (await runImprovement(ctx, loop)) as unknown as Record<
       string,
       unknown
     >;
-    expect(approved.state).toBe("converged");
+    expect(outputOf(approved).state).toBe("converged");
     expect(approved.summary).toContain("Applied approved May candidate");
     expect(readFileSync(join(agentsRoot, "may", "AGENTS.md"), "utf8")).toBe(
       "# Improved May\n",
@@ -2901,10 +2766,12 @@ describe("single agent-improvement loop", () => {
       expect.arrayContaining([
         expect.objectContaining({
           type: "agent.revision.changed",
-          agent: "may",
-          scenarios: ["agent-case"],
-          trials: 3,
-          approvalId: request.approvalId,
+          data: expect.objectContaining({
+            agent: "may",
+            scenarios: ["agent-case"],
+            trials: 3,
+            approvalId: requestData.approvalId,
+          }),
         }),
       ]),
     );
@@ -2942,7 +2809,7 @@ describe("single agent-improvement loop", () => {
       string,
       unknown
     >;
-    expect(confirmation.state).toBe("converged");
+    expect(outputOf(confirmation).state).toBe("converged");
     expect(confirmation.summary).toContain("Applied approved May candidate");
     expect(verifyCount).toBe(2);
     expect(
@@ -3045,7 +2912,7 @@ describe("single agent-improvement loop", () => {
       }),
       "```",
     ].join("\n");
-    const ctx = {
+    const ctx = canonicalGymTestContext({
       projectsRoot,
       workspaceDir,
       task,
@@ -3102,15 +2969,15 @@ describe("single agent-improvement loop", () => {
       blocked(reason: string) {
         return { type: "blocked", reason };
       },
-    } as unknown as WorkflowContext;
+    });
 
     const result = (await runImprovement(ctx, loop)) as unknown as Record<
       string,
       unknown
     >;
 
-    expect(result.state).toBe("waiting");
-    expect(result.actions).toEqual([]);
+    expect(outputOf(result).state).toBe("waiting");
+    expect(outputOf(result).actions).toEqual([]);
     expect(implementCount).toBe(2);
     expect(reviewCount).toBe(1);
     expect(verifyCount).toBe(3);
@@ -3127,7 +2994,7 @@ describe("single agent-improvement loop", () => {
       expect.arrayContaining([
         expect.objectContaining({
           type: "gym.improvement.reviewed",
-          recommendation: "promote",
+          data: expect.objectContaining({ recommendation: "promote" }),
         }),
       ]),
     );
@@ -3226,7 +3093,7 @@ describe("single agent-improvement loop", () => {
         throw new Error("checkpointed verification should not rerun");
       },
     };
-    const ctx = {
+    const ctx = canonicalGymTestContext({
       projectsRoot,
       task: [
         "## Reconciliation Task",
@@ -3266,13 +3133,13 @@ describe("single agent-improvement loop", () => {
       blocked(reason: string) {
         return { type: "blocked", reason };
       },
-    } as unknown as WorkflowContext;
+    });
 
     const result = (await runImprovement(ctx, loop)) as unknown as Record<
       string,
       unknown
     >;
-    expect(result.state).toBe("needs-owner");
+    expect(outputOf(result).state).toBe("needs-owner");
     expect(result.summary).toBe(
       "Gym found a needs-human issue: The evidence is preference-sensitive.",
     );
@@ -3445,7 +3312,7 @@ describe("single agent-improvement loop", () => {
       },
     };
     const calledAgents: string[] = [];
-    const ctx = {
+    const ctx = canonicalGymTestContext({
       projectsRoot,
       task: [
         "## Reconciliation Task",
@@ -3468,7 +3335,7 @@ describe("single agent-improvement loop", () => {
         "```json",
         JSON.stringify({
           type: "gym.improvement.requested",
-          params: {
+          data: {
             reason: "retry-candidate-verification",
             candidateFingerprint,
           },
@@ -3496,17 +3363,17 @@ describe("single agent-improvement loop", () => {
       blocked(reason: string) {
         return { type: "blocked", reason };
       },
-    } as unknown as WorkflowContext;
+    });
 
     const result = (await runImprovement(ctx, loop)) as unknown as Record<
       string,
       unknown
     >;
-    expect(result.state).toBe("needs-owner");
+    expect(outputOf(result).state).toBe("needs-owner");
     expect(verifyCount).toBe(1);
     expect(calledAgents).toEqual(["gym"]);
     expect(fingerprintTree(candidateDir)).toBe(candidateFingerprint);
-    expect(result.actions).toEqual([
+    expect(outputOf(result).actions).toEqual([
       expect.objectContaining({
         kind: "close-task",
         taskId: "improve/may/adjudicate-old-trial",
@@ -3530,7 +3397,7 @@ describe("single agent-improvement loop", () => {
       string,
       unknown
     >;
-    expect(recovered.state).toBe("needs-owner");
+    expect(outputOf(recovered).state).toBe("needs-owner");
     expect(verifyCount).toBe(2);
     expect(calledAgents).toEqual(["gym", "gym"]);
     expect(fingerprintTree(candidateDir)).toBe(candidateFingerprint);

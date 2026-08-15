@@ -1,359 +1,298 @@
-# How to Write a Workflow
+# How To Write An App Workflow
 
-This manual describes the current authoring surface. The governing capability,
-discovery, provenance, and skill-composition contract is
-[`workflows.md`](../2a-design/workflows.md).
+This manual describes the canonical Agent App workflow surface. See
+[Workflows](../2a-design/workflows.md), [SDK](../2a-design/sdk.md), and
+[Agent App](../2a-design/agent-app.md) for the governing contracts.
 
-## Choose A Skill Or Workflow
+## Choose A Skill, Module, Or Workflow
 
-Use a skill when the agent should interpret a reusable method for the current
-context. Use a workflow when the runtime must enforce sequencing, branching,
-bounded retries, verification, and a terminal result.
+- Use a skill when an agent should interpret reusable judgment for one turn.
+- Use a normal TypeScript module for pure calculations and shared mechanics.
+- Use a workflow for bounded, repeatable sequencing that must return one typed
+  terminal result to its caller.
+- Use an App request or task when work must survive beyond the current run.
 
-A `SKILL.md` may include optional TypeScript/JavaScript helper scripts, but the
-model remains the controller. A workflow's TypeScript module is the controller;
-its description is discovery metadata, not executable instruction.
+A workflow is not a queue, daemon, owner inbox, or durable wait. Its TypeScript
+module controls the bounded run; its description is discovery metadata.
 
-## Basics
+## Location And Shape
 
-A workflow is a TypeScript file in an owning app or agent workflow directory.
-It exports `name`, `description`, and an `execute` function:
+Put a workflow under the agent that owns and operates it:
 
-Workflows are deliberately synchronous: each step returns a result before the
-next step runs, and `runWorkflow()` resolves only when the workflow is done or
-locally blocked. Use `agents.fork` for background agent sessions outside workflow
-control.
+```text
+projects/<id>.app/agents/<name>/workflows/<workflow>.ts
+agents/<name>/workflows/<workflow>.ts  # standalone/system agent only
+```
 
-Synchronous does not mean "no `await`." It means ordered, bounded execution with
-one terminal result. It is fine to await an agent, function, tool, or nested
-workflow that is expected to finish within the current run.
+Use a flat `.ts` module exporting `name`, optional `description`, and
+`execute(ctx)`:
 
-```typescript
-import type {
-  WorkflowContext,
-  WorkflowModule,
-  WorkflowResult,
-} from "@may-agent/sdk";
+```ts
+import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
 
-export const name = "my-workflow";
-export const description = "Does X by coordinating dev and QA";
+type Input = { changeId: string };
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  // 1. Run agents as steps
-  const dev = await ctx.runAgent("dev", ctx.task);
+export const name = "review-change";
+export const description = "Review one exact change and record evidence";
 
-  // 2. Use results to decide next steps
-  if (dev.status === "error") {
-    return ctx.blocked("Dev failed", { error: dev.error });
+export async function execute(
+  ctx: WorkflowContext<Input>,
+): Promise<ExecutionResult> {
+  const review = await ctx.agents.call(
+    "reviewer",
+    `Review change ${ctx.input.changeId}`,
+  );
+
+  if (review.status !== "done") {
+    return ctx.blocked("Reviewer did not complete", { review });
   }
 
-  // 3. Finish
-  return ctx.done(`Completed: ${dev.lastAssistantText}`);
+  return ctx.done("Review completed", {
+    changeId: ctx.input.changeId,
+    reviewExecutionId: review.id,
+  });
 }
 ```
+
+Workflows are bounded and ordered. They may use `await`, but every awaited
+agent, nested workflow, read, metric write, or fact publication must finish in
+the current run.
+
+## Workflow Context
+
+The stable capabilities are:
+
+| Capability | Purpose |
+| --- | --- |
+| `ctx.input` | App-owned typed workflow input |
+| `ctx.reconciliation` | Exact task generation and bounded child/trigger facts when a task owns the run |
+| `ctx.read.appResult(id)` | Read one completed App result |
+| `ctx.read.task(id)` | Read one bounded task projection |
+| `ctx.read.execution(id)` | Read one bounded execution projection |
+| `ctx.read.metric(id)` | Read one metric projection |
+| `ctx.agents.call(agent, task, options?)` | Run and await one bounded agent execution |
+| `ctx.workflows.run(name, input)` | Run and await one nested workflow |
+| `ctx.events.emit(event)` | Publish a fact after successful bounded work |
+| `ctx.metrics.record(...)` | Record a domain metric definition/sample |
+| `ctx.workspace` | App/task-scoped source and output paths when granted |
+| `ctx.log` | Structured diagnostic logging |
+| `ctx.done(summary, output?)` | Return one successful bounded result |
+| `ctx.blocked(reason, evidence?)` | Return one local terminal blocker |
+
+The context intentionally excludes raw SQL, global queries, task storage,
+queues, leases, scheduler handles, session steering, human delivery, and
+recovery APIs.
+
+## Terminal Results
+
+Every workflow returns exactly one `ExecutionResult` through `ctx.done(...)` or
+`ctx.blocked(...)`.
+
+`done` means this bounded workflow completed. It does not by itself complete an
+App request or task. The calling App/task boundary validates and admits the
+output.
+
+`blocked` means this run cannot continue locally. It does not delegate,
+escalate, start an owner session, notify a human, or keep the workflow open.
+The owning App request or task decides the durable next state.
+
+## Task-Bound Workflows
+
+When a task owns the run, `ctx.reconciliation` supplies:
+
+- App/task identity and fenced generation;
+- outcome, acceptance, mode, owner, and typed input;
+- exact trigger fact where present; and
+- bounded live/completed direct children.
+
+It does not expose the global task tree or mutation handles. A task workflow
+returns the reconciliation output expected by its App task policy:
+
+```ts
+if (!ctx.reconciliation) {
+  return ctx.blocked("This workflow requires task reconciliation");
+}
+
+if (ctx.reconciliation.children.live.length > 0) {
+  return ctx.done("Waiting for child work", {
+    state: "waiting",
+    summary: "Direct children are still live",
+    evidence: ctx.reconciliation.children.live.map(
+      (child) => `live-child:${child.taskId}`,
+    ),
+    actions: [],
+  });
+}
+
+return ctx.done("Desired state converged", {
+  state: "converged",
+  summary: "All acceptance evidence is present",
+  evidence: ["report:verified"],
+  actions: [],
+});
+```
+
+Return task actions and Conditions in the typed result. Do not edit task-state
+files, write projections, acquire task locks, or emit assignment/completion
+events.
+
+Use `needs-owner` only when the same App owner must provide exceptional
+judgment. Do not clear an explicit workflow merely to let an owner perform
+workflow-owned effects.
 
 ## Durable Wait Boundary
 
-Do not keep one workflow alive while waiting for a human, approval, timer,
-external callback, unavailable dependency, or runtime restart. End the current
-phase and let an event start a second synchronous workflow:
+Never keep a workflow alive while waiting for a human, approval, timer,
+provider callback, another App, process restart, or long-running external fact.
+
+Use the owning durable authority:
 
 ```text
-workflow A
-  -> persist phase and resume condition
-  -> emit a domain continuation event
-  -> return ctx.done("Phase A completed; continuation established")
-
-later domain event
-  -> handler validates current phase and deduplicates delivery
-  -> workflow B
+addressed outcome -> parent App request delegates -> exact child App result
+desired task work -> task returns waiting -> exact Condition/external fact
 ```
 
-Use these rules:
+The parent request/task persists the dependency before the current bounded run
+ends. A later result or fact wakes that exact authority. Do not reconstruct the
+wait from an event pair, owner label, message, session, or prompt.
 
-- Give workflow A and workflow B separate workflow run IDs.
-- Preserve the event `traceId`, causal parent, domain correlation key, and
-  closure link where applicable.
-- Store the waiting state and phase context in the owning app/project, not in
-  workflow variables or an open agent session.
-- Make workflow B reconstruct its input from durable current state.
-- Make continuation handling idempotent because events may be delivered or
-  reconciled more than once.
-- Treat `agents.fork` only as background dispatch. If a later phase depends on
-  its result, a session-result event and handler must establish that phase;
-  the original workflow must not wait in memory.
-- Do not map workflow A's `done` result to project-task completion. It means
-  only that phase A completed and established the continuation.
-- Do not return `blocked` for an expected wait. Return `blocked` only when no
-  safe continuation can be established.
-- Use `workflow.resume` only for crash recovery inside an interrupted
-  synchronous run, never for a normal cross-event wait.
+## Agent And Nested Workflow Calls
 
-If state persistence and continuation emission cannot be atomic, use a durable
-outbox or a reconciliation check that can safely emit the missing event.
+Use `ctx.agents.call(...)` when another agent can return a bounded result during
+this run:
 
-## WorkflowContext
+```ts
+const implementation = await ctx.agents.call("dev", implementPrompt);
+if (implementation.status !== "done") {
+  return ctx.blocked("Implementation failed", { implementation });
+}
 
-Available via `ctx`:
-
-| Method                            | Description                                                                                                                                                     |
-| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ctx.task`                        | The original task string                                                                                                                                        |
-| `ctx.agent`                       | The agent that invoked this workflow                                                                                                                            |
-| `ctx.runAgent(name, task, opts?)` | Run a sub-agent to structured `finish()` completion; `opts.schema` defines typed `structuredResult`                                                             |
-| `ctx.runWorkflow(name, task)`     | Run a sub-workflow, wait for result                                                                                                                             |
-| `ctx.runFunction(label, fn)`      | Run a JS function as a step (no LLM cost)                                                                                                                       |
-| `ctx.summarize(result)`           | Build rich context from a TaskResult for handoff                                                                                                                |
-| `ctx.createSession(opts)`         | Persistent multi-turn session (worker pattern)                                                                                                                  |
-| `ctx.done(summary)`               | Mark workflow as successful                                                                                                                                     |
-| `ctx.blocked(reason, context?)`   | End the workflow with a local blocked result after the workflow decides the blocker should bubble to its caller. It does not emit an external escalation event. |
-| `ctx.emit(event)`                 | Emit a typed event                                                                                                                                              |
-| `ctx.dispatchEvent(type, data)`   | Dispatch to handler subscribers                                                                                                                                 |
-| `ctx.query`                       | Read bounded runtime facts through the stable query facade                                                                                                      |
-| `ctx.commands`                    | Request supported typed runtime state changes                                                                                                                   |
-| `ctx.metrics`                     | Define, record, evaluate, and inspect metrics                                                                                                                    |
-| `ctx.getDb()`                     | Compatibility escape hatch for mechanical infrastructure queries not covered by the facades                                                                     |
-| `ctx.log(msg)`                    | Log a diagnostic message                                                                                                                                        |
-| `ctx.notify(msg)`                 | Send notification to human                                                                                                                                      |
-
-## Termination
-
-Every workflow must end with either:
-
-- `return ctx.done(summary)` — success
-- `return ctx.blocked(reason)` — locally blocked
-
-Never return without calling one of these.
-
-Prefer `ctx.query`, `ctx.commands`, and `ctx.metrics` over raw SQLite. A
-workflow may access the database through `ctx.getDb()` when a required
-mechanical operation has no stable facade yet, but database access must not
-become task-state mutation or hidden scheduling.
-
-Every agent step inside the workflow must likewise end through `finish()`.
-The runtime sends one corrective prompt and then returns an error result if the
-agent answers only with prose.
-
-When workflow code needs a domain value, define its schema in the workflow:
-
-```typescript
-import { Type } from "@earendil-works/pi-ai";
-
-const ReviewResult = Type.Object({
-  verdict: Type.Union([Type.Literal("pass"), Type.Literal("fail")]),
-  findings: Type.Array(Type.String()),
+const review = await ctx.agents.call("qa", reviewPrompt, {
+  schema: ReviewResultSchema,
 });
-
-const review = await ctx.runAgent("qa", reviewTask, { schema: ReviewResult });
-if (review.status === "done" && review.structuredResult.verdict === "fail") {
-  return ctx.blocked("Review failed", {
-    findings: review.structuredResult.findings,
-  });
+if (review.status !== "done" || review.output.verdict !== "pass") {
+  return ctx.blocked("Review failed", { review });
 }
 ```
 
-The workflow author owns the schema. Callers provide workflow inputs; they do
-not inject or replace its output contract.
+Use `ctx.workflows.run(...)` for another bounded recipe:
 
-`ctx.blocked(...)` is synchronous and terminal. The workflow stops immediately;
-the caller receives `{ type: "blocked", reason, context }`. This is local to the
-workflow call. The caller or handler may promote it to an external
-`escalation.created` event only when the blocker must route to another owner.
-For task-bound workflows, the app controller normalizes the blocker into a
-failed attempt and records task attention. It does not substitute the resolved
-owner. A workflow that deliberately requires accountable owner judgment must
-return an admitted task result with `state: "needs-owner"`. The workflow does
-not emit task lifecycle events or mutate task storage. Nested workflows return
-the blocked result to their parent workflow synchronously.
+```ts
+const result = await ctx.workflows.run("verify-change", {
+  changeId: ctx.input.changeId,
+});
+if (result.status !== "done") {
+  return ctx.blocked("Verification did not complete", { result });
+}
+```
 
-Because workflow execution is synchronous, a workflow can handle a blocker
-inside the workflow before returning: run a repair step, ask another agent with
-`ctx.runAgent`, run a sub-workflow, retry, verify, or notify. Use
-`ctx.blocked(...)` only when the workflow has reached a terminal local blocker
-and wants the caller to decide whether to record it, retry another path, or
-promote it outside the workflow boundary.
+Background forks and direct agent messages cannot satisfy a workflow
+dependency. If work must outlive this run or cross an App boundary, use the App
+request/task model instead.
 
-Do not make the workflow wait for an external human/owner response after it has
-returned `ctx.blocked(...)`. If human/owner routing is required, the caller or
-runtime boundary should promote the local result to `escalation.created`.
+## Facts And Metrics
 
-Typical blocker paths:
+Publish only semantic facts whose route or observation status is declared:
 
-| Situation inside workflow                                                       | Preferred action                                                                                                      |
-| ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| A step failed but the next fix is clear                                         | Run a repair step, retry, then verify                                                                                 |
-| Another agent can answer synchronously                                          | Use `ctx.runAgent(...)` and continue with its result                                                                  |
-| A reusable recipe should handle the problem                                     | Use `ctx.runWorkflow(...)` and continue or return based on its result                                                 |
-| A human/operator should see context but no response is required during this run | Use `ctx.notify(...)` and continue or finish with an honest summary                                                   |
-| The workflow cannot safely decide the next action                               | `return ctx.blocked(reason, context)` and let the caller/boundary decide                                              |
-| A top-level task workflow blocks                                                | Runtime persists `workflow_runs.status = "blocked"`; the controller records task attention without owner substitution |
-| A top-level non-task workflow blocks                                            | Runtime persists `workflow_runs.status = "blocked"` and wakes the project or workflow owner with lineage              |
-| The blocker crosses an ownership boundary after the workflow returns            | Caller/boundary may emit `escalation.created`; the workflow itself should not                                         |
-
-Use the second argument only for compact boundary context. It may become
-owner-facing context later if the caller promotes the result to an external
-escalation:
-
-```typescript
-return ctx.blocked("Missing sessionId", {
-  requestedAction: "Fix the session.end emitter to include sessionId.",
-  evidence: { trigger: event },
+```ts
+await ctx.events.emit({
+  type: "sample.change.verified",
+  data: { changeId: ctx.input.changeId },
+  target: { appId: "sample" },
 });
 ```
 
-## Patterns
+Publishing a fact does not address an owner or guarantee a reply. An App
+subscription, task subscription, exact task target, or Condition must own any
+actionable continuation.
 
-### Implement → Verify (shell gate)
+Metrics are observations, not desired state:
 
-```typescript
-const dev = await ctx.runAgent("dev", task);
-const verify = await ctx.runFunction("verify", async () => {
-  const { execSync } = await import("node:child_process");
-  execSync("tsc --noEmit && bun test", { encoding: "utf-8" });
-  return "PASS";
-});
-if (verify.status === "error") {
-  return ctx.blocked("Verification failed", {
-    output: verify.lastAssistantText,
-  });
-}
-return ctx.done("Implemented and verified");
+```ts
+await ctx.metrics.record("sample.verification", 1, "verified");
 ```
 
-### Implement → Review (agent gate)
+Do not let metric code mutate tasks or dispatch sessions directly.
 
-```typescript
-import { Type } from "@earendil-works/pi-ai";
+## Pure Functions And Retry
 
-const ReviewResult = Type.Object({
-  verdict: Type.Union([Type.Literal("pass"), Type.Literal("fail")]),
-  findings: Type.Array(Type.String()),
-});
+Call pure deterministic functions normally. Keep retries bounded inside the
+current run and verify after every effect:
 
-const dev = await ctx.runAgent("dev", task);
-const reviewTask = `Review this:\n\n${ctx.summarize(dev)}`;
-const review = await ctx.runAgent("qa", reviewTask, { schema: ReviewResult });
-
-if (review.status === "error") {
-  return ctx.blocked("Review did not return a valid result", {
-    error: review.error,
-  });
+```ts
+for (let attempt = 1; attempt <= 2; attempt += 1) {
+  const result = await ctx.agents.call(
+    "dev",
+    attempt === 1 ? initialPrompt : repairPrompt,
+  );
+  const verification = await verifyResult(result);
+  if (verification.ok) {
+    return ctx.done("Implemented and verified", verification);
+  }
 }
 
-if (review.structuredResult.verdict === "fail") {
-  // Retry with feedback
-  const fixTask = `Fix based on review:\n${review.structuredResult.findings.join("\n")}\n\nOriginal: ${task}`;
-  await ctx.runAgent("dev", fixTask);
-}
-return ctx.done("Implemented and reviewed");
+return ctx.blocked("Verification failed after two bounded attempts");
 ```
 
-### Multi-turn Session (worker pattern)
+Do not encode durable retry/backoff in a workflow. Task reconciliation owns
+repeated convergence across runs.
 
-```typescript
-const worker = await ctx.createSession({
-  systemPrompt: "You are a code reviewer. Be thorough.",
-  tools: "readonly",
-  label: "reviewer",
-});
+## Cross-App And Human Escalation
 
-await worker.prompt("Review src/lib/manager.ts for error handling issues");
-const issues = worker.lastText();
+A workflow cannot create a durable cross-App dependency by emitting
+`escalation.created`, addressing an owner string, or sending a message. Return
+compact evidence to the owning App/task. That boundary delegates one typed
+child request to the accountable App and waits on its exact result.
 
-await worker.prompt(`Now prioritize these issues: ${issues}`);
-const prioritized = worker.lastText();
+Human attention is a child request to the `may` App or an exact human Condition
+on the source task. May owns channel policy and correlated delivery.
 
-worker.close();
-return ctx.done(prioritized);
-```
+## Shared Mechanics
 
-### Retry Loop
+Shared workflow loading is not supported. If multiple Apps need a pure
+mechanism, extract an ordinary shared module. If another App owns the judgment
+or outcome, delegate to that App. Do not import another App's workflow or expose
+it as a live service.
 
-```typescript
-const MAX_ATTEMPTS = 2;
-for (let i = 1; i <= MAX_ATTEMPTS; i++) {
-  const result = await ctx.runAgent("dev", i === 1 ? task : fixTask);
-  const verify = runVerification();
-  if (verify.passed) return ctx.done("Verified");
-  fixTask = `Fix errors:\n${verify.output}\n\nOriginal: ${task}`;
-}
-return ctx.blocked("Failed after all attempts");
-```
+## Guards
 
-## Invoking a Workflow
+Workflow guards are pure event-to-demand functions authored through the stable
+`WorkflowGuard` contract. Add one only for a repeated, precise mechanical risk
+or an immediate high-impact boundary. Guards observe, warn, run a bounded step,
+or block under explicit policy; they do not own retries, App requests, or task
+state.
 
-From an agent (LLM tool):
-
-```
-workflow({ action: "run", name: "implement-and-verify", task: "Add retry logic" })
-```
-
-From handler/SDK code:
-
-```typescript
-const result = await ctx.runWorkflow("implement-and-verify", task);
-```
-
-## Workflow Location
-
-Put workflows next to the owner that operates them:
-
-| Location                                     | Visibility                              | Use case                                                           |
-| -------------------------------------------- | --------------------------------------- | ------------------------------------------------------------------ |
-| `projects/<id>.app/agents/<name>/workflows/` | That app-local agent's workflow loader  | Learned project-specific processes owned by that agent             |
-| `agents/<name>/workflows/`                   | That standalone agent's workflow loader | Learned standalone or infrastructure processes owned by that agent |
-
-For project-specific behavior, prefer the app-local agent workflow. Global May
-handlers may deliver events or provide compatibility backstops, but they should
-not own another app's planning packet, task assignment policy, or domain repair
-logic.
-
-Shared workflow loading is not supported. If more than one owner needs the same
-pattern, keep the workflow owned by the agent that learned and operates it and have
-other callers invoke that owner through the SDK/tool boundary, or factor
-reusable mechanics into a normal shared helper module that an agent-owned
-workflow imports.
-
-Keep the flat `<name>.ts` form. Do not create a workflow directory package or
-make Markdown executable; the current loader does not define either contract.
-
-## Guards (Advanced)
-
-Workflows can have guards that react to step events:
-
-```typescript
-export const guard: WorkflowGuard = {
-  name: "budget-check",
-  events: ["step_done"],
-  handle(event) {
-    if (event.completedSteps.length > 5) {
-      return [{ type: "block", reason: "Too many steps — budget exceeded" }];
-    }
-    return [];
-  },
-};
-```
-
-Guards are pure functions: event in → demands out. Do not add one just because
-a session looked bad once. Default to metrics or evaluator review first; add a
-guard only after the signal is repeated and precise, or when the risk is
-high-impact enough to prevent immediately. The current public
-`@may-agent/sdk` authoring types support `warn`, `run_step`, and `block`. The
-runtime also recognizes `observe` and `repair`, but do not author those through
-the public SDK until its type contract is aligned.
-
-By convention, every guard trigger should be observable through a
-`guard.triggered` event. The default guard handler owns common metrics such as
-guard trigger/warn/block counts, so individual workflow authors should not add
-custom metric plumbing unless the guard needs behavior beyond the default.
+Guard evidence should remain observable through canonical trace/metric facts.
+Do not add App-specific domain routing to a shared guard.
 
 ## Testing
 
-```bash
-# Run workflow via CLI
-bun src/app/may.ts --run-workflow implement-and-verify "fix the type error"
+Use the SDK test context rather than starting the daemon:
 
-# Or invoke from a handler/workflow test
-bun test projects/<id>.app/agents/<name>/workflows/my-workflow.test.ts
-bun test agents/<name>/workflows/__tests__/my-workflow.test.ts
+```ts
+import { expect, test } from "bun:test";
+import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
+import { execute } from "./review-change";
+
+test("returns one bounded result", async () => {
+  const ctx = createTestAppWorkflowContext({
+    input: { changeId: "v4" },
+  });
+
+  const result = await execute(ctx);
+  expect(["done", "blocked"]).toContain(result.status);
+});
 ```
+
+Test task workflows with an exact `reconciliation` fixture. Assert emitted
+facts, metric calls, child actions, Conditions, evidence, and terminal state.
+
+## Integrity Checklist
+
+- The workflow has one owner and one typed input.
+- Every call is bounded to the current run.
+- Every path returns `ctx.done(...)` or `ctx.blocked(...)`.
+- Durable waits use App dependencies or task Conditions.
+- Task mutation is returned as typed output, never performed directly.
+- Cross-App outcomes use delegation; events remain facts.
+- Tests use scoped fake capabilities and require no global runtime.

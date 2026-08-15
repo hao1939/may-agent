@@ -1,7 +1,8 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk/legacy";
+import type {
+  ExecutionResult,
+  TaskReconciliationChild,
+  WorkflowContext,
+} from "@may-agent/sdk";
 
 export const name = "retire-waiting-frontier";
 export const description =
@@ -9,28 +10,21 @@ export const description =
 
 export const waitingFrontierTaskId = "runtime/waiting-frontier-review";
 
-type TaskState = {
-  resources?: Record<
-    string,
-    {
-      spec?: { parentId?: string };
-    }
-  >;
-};
-
-export function waitingFrontierChildIds(state: TaskState): string[] {
-  return Object.entries(state.resources ?? {})
-    .filter(([, resource]) => resource.spec?.parentId === waitingFrontierTaskId)
-    .map(([taskId]) => taskId)
+export function waitingFrontierChildIds(
+  children: TaskReconciliationChild[],
+): string[] {
+  return children
+    .map((child) => child.taskId)
     .sort();
 }
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  if (!ctx.appDir) throw new Error("retire-waiting-frontier requires appDir");
-  const state = JSON.parse(
-    readFileSync(join(ctx.appDir, ".state", "tasks", "state.json"), "utf8"),
-  ) as TaskState;
-  const children = waitingFrontierChildIds(state);
+export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
+  if (!ctx.reconciliation) {
+    throw new Error("retire-waiting-frontier requires task reconciliation");
+  }
+  const children = waitingFrontierChildIds(
+    ctx.reconciliation.children.live,
+  );
 
   if (children.length > 0) {
     const summary = `Waiting for ${children.length} existing waiting-frontier children to finish; no new recovery work was created.`;

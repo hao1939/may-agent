@@ -13,13 +13,22 @@ const semanticWakeProbes = [
     app: scoutApp,
     first: {
       type: "project.owner.requested",
-      project: "scout-knowledge-lib",
-      reason: "manual-library-review",
+      data: {
+        project: "scout-knowledge-lib",
+        reason: "manual-library-review",
+      },
+      target: {
+        appId: "scout-knowledge-lib",
+        project: "scout-knowledge-lib",
+      },
     },
     repeated: {
       type: "project.owner.requested",
-      project: "scout-knowledge-lib",
-      reason: "repair-index",
+      data: { project: "scout-knowledge-lib", reason: "repair-index" },
+      target: {
+        appId: "scout-knowledge-lib",
+        project: "scout-knowledge-lib",
+      },
     },
     taskId: "library-maintenance",
   },
@@ -27,13 +36,13 @@ const semanticWakeProbes = [
     app: gymApp,
     first: {
       type: "gym.improvement.requested",
-      project: "gym",
-      params: { agent: "may", reason: "human-request" },
+      data: { project: "gym", agent: "may", reason: "human-request" },
+      target: { appId: "gym", project: "gym" },
     },
     repeated: {
       type: "gym.improvement.requested",
-      project: "gym",
-      params: { agent: "may", reason: "new-evidence" },
+      data: { project: "gym", agent: "may", reason: "new-evidence" },
+      target: { appId: "gym", project: "gym" },
     },
     taskId: "improve/may",
   },
@@ -41,27 +50,27 @@ const semanticWakeProbes = [
     app: evaluationApp,
     first: {
       type: "evaluation.project.review.requested",
-      project: "evaluation",
-      params: { targetProject: "gym.app", reason: "scheduled" },
+      data: { targetProject: "gym.app", reason: "scheduled" },
+      target: { appId: "evaluation", project: "evaluation" },
     },
     repeated: {
       type: "evaluation.project.review.requested",
-      project: "evaluation",
-      params: { targetProject: "gym.app", reason: "material-change" },
+      data: { targetProject: "gym.app", reason: "material-change" },
+      target: { appId: "evaluation", project: "evaluation" },
     },
     taskId: "runtime/project-audit/gym.app",
   },
   {
     app: mayAgentApp,
     first: {
-      type: "project.owner.requested",
-      project: "may-agent",
-      reason: "metric-signal",
+      type: "project.tick",
+      data: { project: "may-agent", reason: "scheduled-project-review" },
+      target: { appId: "may-agent", project: "may-agent" },
     },
     repeated: {
-      type: "project.owner.requested",
-      project: "may-agent",
-      reason: "operator-request",
+      type: "project.tick",
+      data: { project: "may-agent", reason: "owner-heartbeat" },
+      target: { appId: "may-agent", project: "may-agent" },
     },
     taskId: "runtime/platform-owner-review",
   },
@@ -69,17 +78,23 @@ const semanticWakeProbes = [
     app: aksApp,
     first: {
       type: "pipeline.failure.observed",
-      project: "aks-rp-e2e",
-      specId: "spec.conformance.example",
-      failureFingerprint: "episode-a",
-      pipelineRunId: "101",
+      data: {
+        project: "aks-rp-e2e",
+        specId: "spec.conformance.example",
+        failureFingerprint: "episode-a",
+        pipelineRunId: "101",
+      },
+      target: { appId: "aks-rp-e2e", project: "aks-rp-e2e" },
     },
     repeated: {
       type: "pipeline.failure.observed",
-      project: "aks-rp-e2e",
-      specId: "spec.conformance.example",
-      failureFingerprint: "episode-b",
-      pipelineRunId: "202",
+      data: {
+        project: "aks-rp-e2e",
+        specId: "spec.conformance.example",
+        failureFingerprint: "episode-b",
+        pipelineRunId: "202",
+      },
+      target: { appId: "aks-rp-e2e", project: "aks-rp-e2e" },
     },
     taskId: "domain/master-validation-failure/spec.conformance.example",
   },
@@ -103,23 +118,23 @@ describe("unified task-app conformance", () => {
         `${app.id} must use the shared task controller`,
       ).toBeDefined();
       for (const schedule of app.schedules ?? []) {
-        for (const emitted of schedule.emits) {
-          const first = app.tasks?.resolve(withEventId(emitted, 101));
-          const repeated = app.tasks?.resolve(withEventId(emitted, 202));
-          if (!first && !repeated) continue;
-          expect(
-            repeated?.id,
-            `${app.id}.${schedule.id} changed task identity`,
-          ).toBe(first?.id);
-          expect(["achieve", "maintain"]).toContain(first?.mode);
+        const emitted = "event" in schedule ? schedule.event : undefined;
+        if (!emitted) continue;
+        const first = app.tasks?.resolve(withEventId(emitted, 101));
+        const repeated = app.tasks?.resolve(withEventId(emitted, 202));
+        if (!first && !repeated) continue;
+        expect(
+          repeated?.id,
+          `${app.id}.${schedule.id} changed task identity`,
+        ).toBe(first?.id);
+        expect(["achieve", "maintain"]).toContain(first?.mode);
 
-          const target = (emitted as { target?: { taskId?: unknown } }).target;
-          if (typeof target?.taskId === "string") {
-            expect(
-              first?.id,
-              `${app.id}.${schedule.id} did not resolve its exact target`,
-            ).toBe(target.taskId);
-          }
+        const target = (emitted as { target?: { taskId?: unknown } }).target;
+        if (typeof target?.taskId === "string") {
+          expect(
+            first?.id,
+            `${app.id}.${schedule.id} did not resolve its exact target`,
+          ).toBe(target.taskId);
         }
       }
     }
@@ -142,44 +157,27 @@ describe("unified task-app conformance", () => {
     }
   });
 
-  it("keeps reconciliation results out of task scheduling", async () => {
+  it("keeps reconciliation results out of canonical task routing", () => {
     for (const app of apps) {
-      expect((app.tasks?.accepts ?? []).map(selectorType)).not.toContain(
+      expect(app).not.toHaveProperty("events");
+      expect(app).not.toHaveProperty("onEvent");
+      expect((app.tasks?.subscriptions ?? []).map(selectorType)).not.toContain(
         "project.task.reconciled",
       );
-      if (
-        !(app.events ?? [])
-          .map(selectorType)
-          .includes("project.task.reconciled")
-      )
-        continue;
-
-      const emitted: Record<string, unknown>[] = [];
-      const context = {
-        appPath: (path: string) =>
-          `/app/projects/${app.id}.app${path === "." ? "" : `/${path}`}`,
-        emit: (event: Record<string, unknown>) => {
-          emitted.push(event);
-          return event;
-        },
-        noop: (reason: string) => ({ type: "noop", reason }),
-      };
-      await app.onEvent?.(context as never, {
-        type: "project.task.reconciled",
-        project: app.id,
-        taskId: "conformance-probe",
-        status: "converged",
-        summary: "projection-only conformance probe",
-        eventId: 303,
-      });
-
-      const scheduled = emitted.filter((event) =>
-        app.tasks?.resolve(withEventId(event, 404)),
-      );
       expect(
-        scheduled,
-        `${app.id} scheduled task work from project.task.reconciled`,
-      ).toEqual([]);
+        app.tasks?.resolve({
+          type: "project.task.reconciled",
+          data: {
+            project: app.id,
+            taskId: "conformance-probe",
+            status: "converged",
+            summary: "projection-only conformance probe",
+          },
+          target: { appId: app.id, project: app.id },
+          eventId: 303,
+        }),
+        `${app.id} resolved fresh task work from project.task.reconciled`,
+      ).toBeNull();
     }
   });
 });

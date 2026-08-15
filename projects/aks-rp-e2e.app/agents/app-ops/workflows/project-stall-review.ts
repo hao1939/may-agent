@@ -5,18 +5,18 @@
  * project is not moving; the app controller owns all resulting task changes.
  */
 
-import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
-  resolveTaskTreePath,
+  type AppEvent,
+  type ExecutionResult,
   type WorkflowContext,
-  type WorkflowResult,
-} from "@may-agent/sdk/legacy";
+} from "@may-agent/sdk";
 import { defaultFeatureCompactLoopStatePath } from "./lib/feature-compact-loop-store.ts";
 import { defaultSpecLoopStatePath } from "./lib/spec-loop-store.ts";
 import {
   planningObservation,
-  readTaskObservation,
+  taskObservation,
   type ObservedTask as TaskNode,
   type ObservedTaskTree as TaskTree,
 } from "./lib/task-observation.ts";
@@ -39,22 +39,11 @@ export const name = "project-stall-review";
 export const description =
   "Collect liveness state for a stalled project, ask app-ops to judge it, and emit a planner-consumable reviewed fact.";
 
-type SessionWorkflowContext = WorkflowContext & {
-  runAgentSession?: (
-    agent: string,
-    prompt: string,
-    sessionId: string,
-    opts?: { timeoutMs?: number },
-  ) => Promise<unknown>;
-};
-
 type StallReviewConfig = {
   appDir: string;
   projectDir: string;
-  treePath: string;
   agent: string;
   maxConcurrent: number;
-  maxLoopPulses: number;
 };
 
 type StallReviewMode = "fallback" | "risk-review";
@@ -127,20 +116,19 @@ type ProjectSnapshot = {
 };
 
 function parseInput(
-  raw: string,
+  ctx: WorkflowContext,
   defaultAgent: string,
-  paths: { appDir?: string; projectDir?: string },
 ): StallReviewConfig {
-  const projectDir =
-    paths.projectDir ?? field(raw, "project") ?? "/app/projects/aks-rp-e2e";
-  const appDir = paths.appDir ?? resolveAppDir(projectDir, field(raw, "app"));
+  const projectDir = ctx.workspace?.projectRoot;
+  if (!projectDir) {
+    throw new Error("project-stall-review requires workspace.projectRoot");
+  }
+  const appDir = resolveAppDir(projectDir, ctx.workspace?.appRoot);
   return {
     appDir,
     projectDir,
-    treePath: resolveTaskTreePath(appDir),
-    agent: field(raw, "owner") ?? field(raw, "agent") ?? defaultAgent,
-    maxConcurrent: Number(field(raw, "maxConcurrent") ?? 3),
-    maxLoopPulses: Number(field(raw, "maxLoopPulses") ?? 3),
+    agent: field(ctx, "owner") ?? field(ctx, "agent") ?? defaultAgent,
+    maxConcurrent: Number(field(ctx, "maxConcurrent") ?? 3),
   };
 }
 
@@ -311,27 +299,21 @@ function leafIdsByStatus(tree: TaskTree | null, state: string): string[] {
     .sort((a, b) => a.localeCompare(b));
 }
 
-function readTreeOrNull(appDir: string): TaskTree | null {
-  try {
-    return readTaskObservation(appDir);
-  } catch {
-    return null;
-  }
-}
-
-function collectSnapshot(config: StallReviewConfig): ProjectSnapshot {
-  const tree = readTreeOrNull(config.appDir);
+function collectSnapshot(
+  config: StallReviewConfig,
+  tree: TaskTree,
+): ProjectSnapshot {
   const planning = tree
-    ? planningObservation(config.appDir, config.maxConcurrent)
+    ? planningObservation(tree, config.maxConcurrent)
     : undefined;
   const snapshot: ProjectSnapshot = {
     capturedAt: new Date().toISOString(),
     taskCounts: taskCounts(tree),
     runnableBacklogTaskIds: planning?.frontier.runnable ?? [],
-    reviewTaskIds: leafIdsByStatus(tree, "review"),
-    blockedTaskIds: leafIdsByStatus(tree, "blocked"),
+    reviewTaskIds: leafIdsByStatus(tree, "attention"),
+    blockedTaskIds: leafIdsByStatus(tree, "waiting"),
     waitingBacklogTaskIds: planning?.frontier.waiting ?? [],
-    activeTaskIds: leafIdsByStatus(tree, "active"),
+    activeTaskIds: leafIdsByStatus(tree, "running"),
     loopSummaries: loopDefinitions(config.appDir).map((def) =>
       loopSummary(tree, def),
     ),
@@ -450,12 +432,10 @@ async function runReviewStep(input: {
   prompt: string;
   sessionId: string;
 }): Promise<unknown> {
-  const sessionCtx = input.ctx as SessionWorkflowContext;
-  return sessionCtx.runAgentSession
-    ? sessionCtx.runAgentSession(input.agent, input.prompt, input.sessionId, {
-        timeoutMs: 900_000,
-      })
-    : input.ctx.runAgent(input.agent, input.prompt);
+  return input.ctx.agents.call(input.agent, input.prompt, {
+    sessionId: input.sessionId,
+    timeoutMs: 900_000,
+  });
 }
 
 function resultTextCandidates(result: unknown): string[] {
@@ -701,7 +681,7 @@ function repairChanged(repairResult: unknown): boolean {
   return false;
 }
 
-function dispatchReviewed(
+async function dispatchReviewed(
   ctx: WorkflowContext,
   input: {
     triggerReason: string;
@@ -714,10 +694,11 @@ function dispatchReviewed(
     repairResult: unknown;
     dispatchedTicks: Array<{ taskId: string; action: string }>;
   },
-): boolean {
-  try {
-    ctx.dispatchEvent("project.stall.reviewed", {
-      target: { project: "aks-rp-e2e" },
+): Promise<void> {
+  await ctx.events.emit({
+    type: "project.stall.reviewed",
+    target: { appId: "aks-rp-e2e", project: "aks-rp-e2e" },
+    data: {
       project: "aks-rp-e2e",
       reason: input.triggerReason,
       mode: input.mode,
@@ -743,11 +724,8 @@ function dispatchReviewed(
       },
       summary: input.summary.slice(0, 6000),
       requested_by: "project-stall-review",
-    });
-    return true;
-  } catch {
-    return false;
-  }
+    },
+  } satisfies AppEvent<Record<string, unknown>>);
 }
 
 function finishStallReview(
@@ -757,7 +735,7 @@ function finishStallReview(
     summary: string;
     evidence: string[];
   },
-): WorkflowResult {
+): ExecutionResult {
   return ctx.done(input.summary, {
     state: input.state,
     summary: input.summary,
@@ -766,22 +744,9 @@ function finishStallReview(
   });
 }
 
-function appendRun(appDir: string, entry: Record<string, unknown>): void {
-  const path = join(appDir, ".state", "stall-review-runs.jsonl");
-  mkdirSync(join(appDir, ".state"), { recursive: true });
-  appendFileSync(
-    path,
-    `${JSON.stringify({
-      ts: new Date().toISOString(),
-      workflow: "project-stall-review",
-      ...entry,
-    })}\n`,
-  );
-}
-
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  const config = parseInput(ctx.task, ctx.agent, ctx);
-  const trigger = parseTriggerEvent(ctx.task);
+export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
+  const config = parseInput(ctx, "app-ops");
+  const trigger = parseTriggerEvent(ctx);
   if (trigger && trigger.type !== "project.stall.review.requested") {
     return finishStallReview(ctx, {
       state: "needs-owner",
@@ -800,13 +765,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       triggerString(trigger, "mode") || triggerString(trigger, "reviewMode"),
   });
 
-  const before = collectSnapshot(config);
+  const taskTree = taskObservation(ctx.reconciliation);
+  const before = collectSnapshot(config, taskTree);
   const repairResult: unknown = {
     skipped: true,
     reason:
       "stall review is observation-only; the app controller applies structured task actions",
   };
-  const after = collectSnapshot(config);
+  const after = collectSnapshot(config, taskTree);
   const dispatchedTicks: Array<{ taskId: string; action: string }> = [];
 
   let reviewResult: unknown;
@@ -820,7 +786,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         projectDir: config.projectDir,
         triggerReason,
         mode,
-        trigger: triggerBlock(ctx.task),
+        trigger: triggerBlock(ctx),
         before,
         after,
         repairResult,
@@ -842,7 +808,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   );
   const repaired = repairChanged(repairResult);
 
-  const reviewedDispatched = dispatchReviewed(ctx, {
+  await dispatchReviewed(ctx, {
     triggerReason,
     mode,
     decision,
@@ -853,58 +819,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     repairResult,
     dispatchedTicks,
   });
-  appendRun(config.appDir, {
-    reason: triggerReason,
-    mode,
-    judgment: decision.judgment,
-    stall_review: decision,
-    repaired,
-    dispatched_ticks: dispatchedTicks,
-    loop_summaries: after.loopSummaries.map((loop) => ({
-      name: loop.name,
-      task_id: loop.taskId,
-      non_terminal_count: loop.nonTerminalCount,
-      unrepresented_non_terminal_count: loop.unrepresentedNonTerminalCount,
-      status_counts: loop.statusCounts,
-      completion_ready: loop.completionReady,
-      exact_blocked_wait_stewardship: loop.exactBlockedWaitStewardship,
-      active_external_run_wait: loop.activeExternalRunWait,
-      task_status: loop.taskStatus,
-    })),
-    summary: summary.slice(0, 4000),
-  });
 
-  const resultSummary = reviewedDispatched
-    ? `Stall review emitted project.stall.reviewed (${decision.judgment}, ${mode}); dispatched ${dispatchedTicks.length} loop tick(s).`
-    : `Stall review could not emit project.stall.reviewed (${decision.judgment}, ${mode}); owner delivery is required.`;
+  const resultSummary = `Stall review emitted project.stall.reviewed (${decision.judgment}, ${mode}); dispatched ${dispatchedTicks.length} loop tick(s).`;
   return finishStallReview(ctx, {
-    state: reviewedDispatched ? "converged" : "needs-owner",
+    state: "converged",
     summary: resultSummary,
     evidence: [
       `stall-review:${triggerReason}:${decision.judgment}`,
-      ".state/stall-review-runs.jsonl",
+      "event:project.stall.reviewed",
     ],
   });
-}
-
-if (import.meta.main) {
-  if (process.env.MAY_AGENT_RUN_WORKFLOW_ENTRYPOINT !== "1") {
-    console.error(
-      "Direct workflow entrypoint is disabled by default. Set MAY_AGENT_RUN_WORKFLOW_ENTRYPOINT=1 to run it.",
-    );
-    process.exit(0);
-  }
-  const result = await execute({
-    task: "app: /app/projects/aks-rp-e2e.app\nproject: /app/projects/aks-rp-e2e\nagent: aks-explorer",
-    agent: "aks-explorer",
-    done: (message: string) =>
-      ({ status: "done", message }) as unknown as WorkflowResult,
-    escalate: (message: string) =>
-      ({ status: "escalated", message }) as unknown as WorkflowResult,
-    emit() {},
-    dispatchEvent() {},
-    runAgent: async () => ({ status: "error", lastAssistantText: "" }),
-    summarize: () => "",
-  } as unknown as WorkflowContext);
-  console.log(JSON.stringify(result));
 }

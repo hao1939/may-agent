@@ -1,9 +1,9 @@
 # Projects
 
 **Design status:** Accepted.
-**Implementation status:** Implemented through sibling canonical Agent Apps;
-legacy Project App hosting is being removed. Historical Markdown project files
-are evidence only and are not a runtime compatibility path.
+**Implementation status:** Implemented through sibling canonical Agent Apps.
+Historical Markdown project files are evidence only and are not a runtime
+compatibility path.
 
 ## Purpose
 
@@ -52,7 +52,7 @@ artifacts stay in the portable workspace.
   "id": "my-project.app",
   "owner": "project-owner",
   "status": "active",
-  "type": "project-app",
+  "type": "agent-app",
   "priority": "P1",
   "policy": {
     "mode": "standard",

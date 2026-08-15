@@ -22,7 +22,6 @@ describe("spec live proof sync", () => {
     const appDir = mkdtempSync(join(tmpdir(), "spec-live-proof-sync-"));
     roots.push(appDir);
     const proofPath = join(appDir, ".state", "proof.json");
-    mkdirSync(join(appDir, ".state", "tasks"), { recursive: true });
     mkdirSync(join(appDir, ".state", "spec-loop"), { recursive: true });
     writeFileSync(
       proofPath,
@@ -34,17 +33,6 @@ describe("spec live proof sync", () => {
         sourceBranch: "task/spec-example",
         verdict: "pass",
         reviewedAt: "2026-07-21T00:00:00.000Z",
-      }),
-    );
-    writeFileSync(
-      join(appDir, ".state", "tasks", "state.json"),
-      JSON.stringify({
-        receipts: {
-          "spec/example": {
-            workflow: "spec-live-reconciliation",
-            evidence: [`proof:${proofPath}`],
-          },
-        },
       }),
     );
     writeFileSync(
@@ -77,7 +65,13 @@ describe("spec live proof sync", () => {
       }),
     );
 
-    expect(syncSpecLiveProof(appDir, "spec/example")).toMatchObject({
+    expect(
+      syncSpecLiveProof(appDir, {
+        taskId: "spec/example",
+        workflow: "spec-live-reconciliation",
+        evidence: [`proof:${proofPath}`],
+      }),
+    ).toMatchObject({
       changed: true,
       specId: "spec.example.lifecycle",
       runId: "42",
@@ -120,7 +114,6 @@ describe("spec live proof sync", () => {
     roots.push(appDir);
     const proofPath = join(appDir, ".state", "proof.json");
     const aggregatePath = join(appDir, "runs", "42", "result.json");
-    mkdirSync(join(appDir, ".state", "tasks"), { recursive: true });
     mkdirSync(join(appDir, ".state", "spec-loop"), { recursive: true });
     writeFileSync(
       proofPath,
@@ -132,25 +125,17 @@ describe("spec live proof sync", () => {
       }),
     );
     writeFileSync(
-      join(appDir, ".state", "tasks", "state.json"),
-      JSON.stringify({
-        receipts: {
-          "spec/example": {
-            workflow: "spec-live-reconciliation",
-            evidence: [`proof:${proofPath}`],
-            acceptanceBasis: {
-              evidence: [`aggregate-artifact:${aggregatePath}`],
-            },
-          },
-        },
-      }),
-    );
-    writeFileSync(
       join(appDir, ".state", "spec-loop", "state.json"),
       JSON.stringify({ specs: { "spec.example.lifecycle": {} } }),
     );
 
-    expect(syncSpecLiveProof(appDir, "spec/example").changed).toBe(true);
+    expect(
+      syncSpecLiveProof(appDir, {
+        taskId: "spec/example",
+        workflow: "spec-live-reconciliation",
+        evidence: [`proof:${proofPath}`, `aggregate-artifact:${aggregatePath}`],
+      }).changed,
+    ).toBe(true);
     const projected = JSON.parse(
       readFileSync(join(appDir, ".state", "spec-loop", "state.json"), "utf8"),
     ).specs["spec.example.lifecycle"];

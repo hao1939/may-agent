@@ -23,7 +23,7 @@ Metrics do not directly drive work. The unified work model is:
   compact blocked/dependency context. The owner classifies blockers, creates or
   links local problem/unblock work, keeps true external waits precise, and
   escalates only when the blocker crosses an ownership boundary.
-- A project app consumes the event through a declared event/task selector.
+- A Agent App consumes the event through a declared event/task selector.
   Periodic app-owner review is the recovery path for a missed or unchanged
   signal; no global agent calls another app's owner directly.
 - The agent **judges** what the signal means using goal, facts, history, and a causal theory, then acts, records evidence, or escalates.
@@ -204,7 +204,7 @@ wrong, fix `metrics.project`, the project row's `owner`, or the resolver code.
 Project feedback:
 
 - `metric.breach` preserves the resolved owner and project target.
-- A project app must declare a matching selector before it translates that
+- A Agent App must declare a matching selector before it translates that
   signal into `project.owner.requested` or a task intent.
 - The event carries `metricId`, current value, threshold, priority, direction,
   snapshot time, alert id, and any recent trend points available.

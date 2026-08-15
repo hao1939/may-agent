@@ -14,7 +14,7 @@ people and agents. Do not create a second task system for messages.
 
 May is Hao's immediate bridge to the agent system. May always responds to a
 message: answer it, clarify the intent, reject it with a reason, or route it to
-one accountable project app. May never becomes the background worker for that
+one accountable Agent App. May never becomes the background worker for that
 request.
 
 The bounded exception is break glass: when the normal ownership path cannot

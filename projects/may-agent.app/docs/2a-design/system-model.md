@@ -1,8 +1,9 @@
 # May-Agent System Model
 
 **Design status:** Accepted.
-**Implementation status:** Canonical App ownership is implemented; legacy
-Project App and event-pair authorities are being removed.
+**Implementation status:** Implemented. Canonical App Inbox and optional task
+capability own all live App work; legacy Project App and owner-event-pair work
+authorities have been removed.
 
 ## One-Sentence Model
 
@@ -24,20 +25,20 @@ attempt, never durable ownership.
 
 ## Core objects
 
-| Object | One question it answers | Owner of truth |
-| --- | --- | --- |
-| Agent App | Which durable address and owner owe this domain result? | Process-wide App registry |
-| App inbox item | Which addressed request still requires its own correlated result? | App inbox store |
-| Task | Which desired outcome and observed conditions must reconcile? | App task resource |
-| Event | What fact crossed a boundary? | Event store during its retention window |
-| Event delivery | Which declared consumer accepted this fact? | Event delivery metadata |
-| Trace | What caused this request, fact, execution, or result? | Trace and closure links |
-| Project | What durable goal and operating posture does an App maintain? | `project.json` and App-owned domain state |
-| Session | Which bounded agent execution ran and what did it claim? | Session registry and transcript |
-| Workflow run | Which bounded reusable process ran and how did it end? | Workflow-run record |
-| Metric | What measured runtime or domain signal changed? | Metric samples and projections |
-| Escalation | Which blocker crossed an ownership boundary? | Originating inbox/task plus correlated escalation result |
-| Skill | Which situational method guided one model turn? | Canonical `SKILL.md` |
+| Object         | One question it answers                                           | Owner of truth                                           |
+| -------------- | ----------------------------------------------------------------- | -------------------------------------------------------- |
+| Agent App      | Which durable address and owner owe this domain result?           | Process-wide App registry                                |
+| App inbox item | Which addressed request still requires its own correlated result? | App inbox store                                          |
+| Task           | Which desired outcome and observed conditions must reconcile?     | App task resource                                        |
+| Event          | What fact crossed a boundary?                                     | Event store during its retention window                  |
+| Event delivery | Which declared consumer accepted this fact?                       | Event delivery metadata                                  |
+| Trace          | What caused this request, fact, execution, or result?             | Trace and closure links                                  |
+| Project        | What durable goal and operating posture does an App maintain?     | `project.json` and App-owned domain state                |
+| Session        | Which bounded agent execution ran and what did it claim?          | Session registry and transcript                          |
+| Workflow run   | Which bounded reusable process ran and how did it end?            | Workflow-run record                                      |
+| Metric         | What measured runtime or domain signal changed?                   | Metric samples and projections                           |
+| Escalation     | Which blocker crossed an ownership boundary?                      | Originating inbox/task plus correlated escalation result |
+| Skill          | Which situational method guided one model turn?                   | Canonical `SKILL.md`                                     |
 
 These records are complementary. An event cannot stand in for an inbox item or
 task; a queue cannot stand in for desired state; a session result cannot stand
@@ -64,12 +65,12 @@ back to May, a generic owner inbox, or an arbitrary agent.
 
 ### Responsibility boundaries
 
-| Role | Owns | Does not normally own |
-| --- | --- | --- |
-| May App | Human request, conversation, delegation, final review, and channel closeout | Project task state, polling, background schedules, or another App's implementation |
-| Domain App | Typed domain requests, domain meaning, task intent, workflows, waits, and terminal proof | Human-channel policy or another App's internal work |
-| Shared runtime | Admission, persistence, delivery, schedules, observers, queues, claims, bounded execution, recovery mechanics, and projections | Domain judgment, desired project strategy, or human preference |
-| Human | Authority, private input, strategic direction, approvals, and consequential preferences | Routine execution or mechanical recovery |
+| Role           | Owns                                                                                                                           | Does not normally own                                                              |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| May App        | Human request, conversation, delegation, final review, and channel closeout                                                    | Project task state, polling, background schedules, or another App's implementation |
+| Domain App     | Typed domain requests, domain meaning, task intent, workflows, waits, and terminal proof                                       | Human-channel policy or another App's internal work                                |
+| Shared runtime | Admission, persistence, delivery, schedules, observers, queues, claims, bounded execution, recovery mechanics, and projections | Domain judgment, desired project strategy, or human preference                     |
+| Human          | Authority, private input, strategic direction, approvals, and consequential preferences                                        | Routine execution or mechanical recovery                                           |
 
 May states the desired outcome and delegates to an App address. The receiving
 App chooses whether to answer, delegate, or attach a durable task. May remains
@@ -162,23 +163,27 @@ as an inbox request or task trigger. Continuation handlers remain idempotent.
 
 ## Execution boundaries
 
-Choose the smallest mechanism matching the responsibility:
+Classify the input first and choose a durable owner when it creates work: an
+independently correlated result belongs to an App inbox, desired-state
+convergence belongs to a task, and changed state remains a fact with no durable
+work owner. Then choose the smallest mechanism for one bounded attempt:
 
-| Need | Mechanism |
-| --- | --- |
-| Variable judgment or one bounded action | Agent session, optionally guided by a skill |
-| Repeatable ordered branching and verification | Bounded TypeScript workflow |
-| One addressed result that may depend on other work | App inbox item with child/dependency link |
-| Durable desired outcome across attempts | App task and Conditions |
-| Typed external ingress | App action translated to App input |
-| Timer creates an independent obligation | Input schedule |
-| Timer wakes deterministic desired work | Event schedule and task subscription |
-| Poll external state | Observer producing facts |
-| Mechanically detectable tool risk | Guard |
-| Agent-callable external capability | Tool |
+| Need                                                     | Mechanism                                   |
+| -------------------------------------------------------- | ------------------------------------------- |
+| Deterministic calculation, validation, or narrow adapter | Ordinary TypeScript helper                  |
+| Variable judgment or one bounded action                  | Agent session, optionally guided by a skill |
+| Repeatable ordered branching and verification            | Bounded TypeScript workflow                 |
+| One addressed result that may depend on other work       | App inbox item with child/dependency link   |
+| Durable desired outcome across attempts                  | App task and Conditions                     |
+| Typed external ingress                                   | App action translated to App input          |
+| Timer creates an independent obligation                  | Input schedule                              |
+| Timer wakes deterministic desired work                   | Event schedule and task subscription        |
+| Poll external state                                      | Observer producing facts                    |
+| Mechanically detectable tool risk                        | Guard                                       |
+| Agent-callable external capability                       | Tool                                        |
 
-Skills guide judgment. Workflows control bounded execution. Neither owns
-durable work state.
+Helpers implement deterministic mechanics. Skills guide judgment. Workflows
+control bounded execution. None owns durable work state.
 
 ## Runtime boundary
 
@@ -215,16 +220,16 @@ but cannot erase a correlated request or newer persisted intent.
 
 Use terminal words only inside their owning layer:
 
-| Layer | Terminal vocabulary | Meaning |
-| --- | --- | --- |
-| App inbox item | `done` | This addressed request has its correlated result and required delivery evidence |
-| Workflow | `done`, `blocked` | This bounded process ended or cannot continue locally |
-| Session | `success`, `partial`, `blocked`, `failure` | This bounded agent attempt's claim |
-| Maintain task | `converged` | The current desired generation is satisfied |
-| Achieve task | completion receipt | Finite desired work was accepted and retired |
-| Project | `done`, `closed` | The durable goal completed or ownership intentionally ended |
-| Escalation | `resolved`, `dismissed` | The other owner returned a disposition |
-| Metric alert | recovered/resolved evidence | The measured condition no longer needs attention |
+| Layer          | Terminal vocabulary                        | Meaning                                                                         |
+| -------------- | ------------------------------------------ | ------------------------------------------------------------------------------- |
+| App inbox item | `done`                                     | This addressed request has its correlated result and required delivery evidence |
+| Workflow       | `done`, `blocked`                          | This bounded process ended or cannot continue locally                           |
+| Session        | `success`, `partial`, `blocked`, `failure` | This bounded agent attempt's claim                                              |
+| Maintain task  | `converged`                                | The current desired generation is satisfied                                     |
+| Achieve task   | completion receipt                         | Finite desired work was accepted and retired                                    |
+| Project        | `done`, `closed`                           | The durable goal completed or ownership intentionally ended                     |
+| Escalation     | `resolved`, `dismissed`                    | The other owner returned a disposition                                          |
+| Metric alert   | recovered/resolved evidence                | The measured condition no longer needs attention                                |
 
 Never translate one layer's terminal claim into another without the owning
 admission check. A successful session can produce evidence that a task or App

@@ -1,14 +1,12 @@
-import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 import {
-  resolveTaskTreePath,
   workflowResultVersion,
-  type ProjectAppTaskAction,
+  type ExecutionResult,
+  type TaskAction,
   type WorkflowContext,
   type WorkflowIoContract,
-  type WorkflowResult,
-} from "@may-agent/sdk/legacy";
+} from "@may-agent/sdk";
 import {
   defaultSpecLoopStatePath,
   importNewerSpecLoopMirrorRows,
@@ -18,6 +16,7 @@ import {
   saveSpecLoopState,
   type SpecLoopSpecState,
 } from "./lib/spec-loop-store.ts";
+import { syncAcceptedSpecLiveProofs } from "./lib/spec-live-proof-sync.ts";
 import { withCurrentOriginDevSnapshot } from "./lib/origin-dev-snapshot.ts";
 import {
   field,
@@ -70,42 +69,30 @@ type Graph = {
   satisfied_dependency_ids?: string[];
 };
 
-type TaskState = {
-  receipts?: Record<string, unknown>;
-  resources?: Record<string, unknown>;
-};
-
-function readGraph(appDir: string): Graph {
-  try {
-    return JSON.parse(
-      readFileSync(resolveTaskTreePath(appDir), "utf8"),
-    ) as Graph;
-  } catch {
-    return {};
-  }
-}
-
-function readTaskState(appDir: string): TaskState {
-  try {
-    return JSON.parse(
-      readFileSync(join(appDir, ".state", "tasks", "state.json"), "utf8"),
-    ) as TaskState;
-  } catch {
-    return {};
-  }
-}
-
-function historicalTaskIds(taskState: TaskState): string[] {
-  return [
-    ...Object.keys(taskState.receipts ?? {}),
-    ...Object.keys(taskState.resources ?? {}),
-  ];
+function graphFromContext(ctx: WorkflowContext): Graph {
+  const children = ctx.reconciliation?.children;
+  if (!children) return {};
+  return {
+    tasks: Object.fromEntries(
+      [...children.live, ...children.completed].map((child) => [
+        child.taskId,
+        {
+          phase: child.status,
+          outcome: child.outcome,
+          summary: child.summary,
+          input: child.input,
+        },
+      ]),
+    ),
+  };
 }
 
 function represented(graph: Graph, taskId: string | null | undefined): boolean {
   if (!taskId || !graph.tasks?.[taskId]) return false;
   const phase = representedTaskState(graph, taskId);
-  return phase !== "attention" && phase !== "review";
+  return !["attention", "review", "done", "closed", "converged"].includes(
+    phase,
+  );
 }
 
 function representedTaskState(graph: Graph, taskId: string): string {
@@ -177,6 +164,23 @@ function representedTaskIdsForSpec(
   return [...representedTaskIds];
 }
 
+function representationReview(
+  graph: Graph,
+  spec: SpecLoopSpecState,
+) {
+  const taskIds = [...collectReferencedTaskIds(spec)].sort();
+  if (taskIds.length === 0) return undefined;
+  return {
+    source: "parent-direct-children-and-completion-receipts",
+    tasks: taskIds.map((taskId) => ({
+      taskId,
+      status: graph.tasks?.[taskId]
+        ? representedTaskState(graph, taskId)
+        : "not-a-current-direct-child-or-receipt",
+    })),
+  };
+}
+
 function workRevision(spec: SpecLoopSpecState): string {
   const source =
     spec.inputFingerprint ??
@@ -222,18 +226,24 @@ function hasStructuredDisposition(spec: SpecLoopSpecState): boolean {
   );
 }
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
+export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   const projectDir =
-    ctx.projectDir ?? field(ctx.task, "project") ?? "/app/projects/aks-rp-e2e";
+    ctx.workspace?.projectRoot ??
+    field(ctx, "project") ??
+    "/app/projects/aks-rp-e2e";
   const appDir = resolveAppDir(
     projectDir,
-    ctx.appDir ?? field(ctx.task, "app"),
+    ctx.workspace?.appRoot ?? field(ctx, "app"),
   );
-  const trigger = parseTriggerEvent(ctx.task);
+  const trigger = parseTriggerEvent(ctx);
   const loopTaskId =
     triggerString(trigger, "taskId") ||
     triggerString(trigger, "task_id") ||
     "aks-spec-verification-loop";
+  syncAcceptedSpecLiveProofs(
+    appDir,
+    ctx.reconciliation?.children.completed ?? [],
+  );
   const statePath = defaultSpecLoopStatePath(appDir);
   const { state, catalogSource } = withCurrentOriginDevSnapshot(
     projectDir,
@@ -271,8 +281,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   );
   importNewerSpecLoopMirrorRows(state, projectStatePath);
   saveSpecLoopState(statePath, state, [projectStatePath]);
-  const graph = readGraph(appDir);
-  const historicalIds = historicalTaskIds(readTaskState(appDir));
+  const graph = graphFromContext(ctx);
+  const historicalIds = Object.keys(graph.tasks ?? {});
   const remaining = Object.entries(state.specs)
     .filter(([, spec]) => !isSpecLoopSpecSatisfied(spec))
     .sort(([left], [right]) => {
@@ -312,7 +322,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const representedTaskIds = [
     ...new Set([...representedBySpec.values()].flatMap((taskIds) => taskIds)),
   ];
-  const effectiveFrontierLimit = Math.min(12, frontierLimit(ctx.task, 5));
+  const effectiveFrontierLimit = Math.min(12, frontierLimit(ctx, 5));
   const accounting = loopFrontierAccounting(
     representedTaskIds.map((taskId) => ({
       taskId,
@@ -321,10 +331,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     effectiveFrontierLimit,
   );
   const actionBudget = accounting.available;
-  const candidateActions: ProjectAppTaskAction[] = remaining
+  const candidateActions: TaskAction[] = remaining
     .filter(([specId]) => (representedBySpec.get(specId) ?? []).length === 0)
     .map(([specId, spec]) => {
       if (hasStructuredDisposition(spec)) {
+        const reviewedRepresentation = representationReview(graph, spec);
         const taskId = ensureFreshTaskId(
           dispositionRepairId(specId, spec),
           historicalIds,
@@ -343,12 +354,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
             workKey: specId,
             workRevision: workRevision(spec),
             statePath,
+            ...(reviewedRepresentation
+              ? { representationReview: reviewedRepresentation }
+              : {}),
           },
           outputs: [statePath, "../aks-rp-e2e/evidence/archive/"],
           acceptance: [
             ...learnedSpecVerificationAcceptance,
-            "Inspect the current spec-loop row, source, model, runner, cited evidence, and current .state/tasks/tree.json before changing anything.",
-            "Treat any taskId, successorTaskId, or review.frontierTaskId that is absent from the current .state/tasks/tree.json as stale history; do not return an action that references a missing task id.",
+            "Inspect the current spec-loop row, source, model, runner, cited evidence, and input.representationReview when present before changing anything; do not query task persistence or the task-tree CLI.",
+            "Treat any cited task id marked not-a-current-direct-child-or-receipt in representationReview as stale history; do not return an action that references it.",
             "If the reviewed disposition is still valid and no further run is truthful, make it controller-visible by setting terminalDisposition=true or by creating/repointing one exact live holder task and updating taskId/review pointers.",
             "If the reviewed disposition is stale or actually runnable, clear or replace the stale disposition and leave the exact next verification task or rerun path represented.",
             "Do not launch an unchanged rerun merely because the row is pending; first repair the missing representation.",
@@ -391,7 +405,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const dependencyTails = [...accounting.actionableTaskIds];
   let immediateSlots = actionBudget;
   let nextDependencyLane = 0;
-  const actions: ProjectAppTaskAction[] = candidateActions.map((action) => {
+  const actions: TaskAction[] = candidateActions.map((action) => {
     if (action.kind !== "create-task") return action;
     if (immediateSlots > 0) {
       immediateSlots -= 1;

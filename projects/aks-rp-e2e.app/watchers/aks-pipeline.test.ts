@@ -8,7 +8,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import type { ProjectAppContext } from "@may-agent/sdk/legacy";
+import type { AksObserverContext } from "./context.js";
 import {
   observeAksPipelines,
   artifactRunCandidates,
@@ -493,7 +493,7 @@ function fixture(options?: {
     appPath: (path: string) => resolve(appDir, path),
     emit: (event: Record<string, unknown>) => emitted.push(event),
     noop: (reason: string) => ({ reason }),
-  } as ProjectAppContext;
+  } as AksObserverContext;
   return { ctx, emitted, resultPath, runPath, resultsRoot: dirname(resultDir) };
 }
 

@@ -6,12 +6,13 @@
  * planner remains responsible for task-tree reconciliation.
  */
 
-import { join } from "node:path";
-import { appendFileSync, mkdirSync } from "node:fs";
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk/legacy";
+import type {
+  AppEvent,
+  ExecutionResult,
+  WorkflowContext,
+} from "@may-agent/sdk";
 import {
   field,
-  parseReconciliationTaskPayload,
   parseTriggerEvent,
   resolveAppDir,
   resultText,
@@ -24,15 +25,6 @@ import {
 export const name = "problem-solver";
 export const description =
   "Investigate one project problem and emit resolved/escalated feedback for the planner.";
-
-type SessionWorkflowContext = WorkflowContext & {
-  runAgentSession?: (
-    agent: string,
-    prompt: string,
-    sessionId: string,
-    opts?: { timeoutMs?: number },
-  ) => Promise<unknown>;
-};
 
 function solverSessionId(problemKey: string): string {
   const safeKey =
@@ -57,10 +49,9 @@ function recordValue(value: unknown): Record<string, unknown> | null {
 }
 
 function problemSolverTaskInput(
-  raw: string,
+  ctx: WorkflowContext,
 ): Record<string, unknown> | null {
-  const payload = parseReconciliationTaskPayload(raw);
-  return recordValue(payload?.input);
+  return recordValue(ctx.reconciliation?.input ?? ctx.input);
 }
 
 function taskInputString(
@@ -96,6 +87,10 @@ function buildSolverPrompt(input: {
   problemKey: string;
   trigger: string;
   affectedTasks: string[];
+  taskFacts: {
+    live: Array<Record<string, unknown>>;
+    truncated: boolean;
+  };
 }): string {
   return `Problem Solver Mode
 
@@ -134,11 +129,14 @@ Problem key: ${input.problemKey}
 Affected tasks: ${input.affectedTasks.length ? input.affectedTasks.join(", ") : "unknown"}
 
 Useful commands:
-- cd ${input.appDir} && bun run task-tree frontier
-- cd ${input.appDir} && bun run task-tree show <task-id>
 - cd ${input.projectDir} && bun run status -- --gaps
 - cd ${input.projectDir} && find runs/executions evidence/archive -maxdepth 2 -type f -mmin -120
 - rg -n "Scenario_|NewScenario|suites.Static" ${input.sourceDir}/test/e2ev3
+
+Current bounded task facts (absence is conclusive only when truncated=false):
+\`\`\`json
+${JSON.stringify(input.taskFacts, null, 2)}
+\`\`\`
 
 ${input.trigger}`.trim();
 }
@@ -149,12 +147,10 @@ async function runSolverStep(input: {
   prompt: string;
   sessionId: string;
 }): Promise<unknown> {
-  const sessionCtx = input.ctx as SessionWorkflowContext;
-  return sessionCtx.runAgentSession
-    ? sessionCtx.runAgentSession(input.agent, input.prompt, input.sessionId, {
-        timeoutMs: 900_000,
-      })
-    : input.ctx.runAgent(input.agent, input.prompt);
+  return input.ctx.agents.call(input.agent, input.prompt, {
+    sessionId: input.sessionId,
+    timeoutMs: 900_000,
+  });
 }
 
 function problemResultType(
@@ -175,7 +171,7 @@ function problemResultType(
   return "project.problem.inconclusive";
 }
 
-function emitProblemResult(
+async function emitProblemResult(
   ctx: WorkflowContext,
   input: {
     type:
@@ -186,10 +182,11 @@ function emitProblemResult(
     affectedTasks: string[];
     summary: string;
   },
-): void {
-  try {
-    ctx.dispatchEvent(input.type, {
-      target: { project: "aks-rp-e2e" },
+): Promise<void> {
+  await ctx.events.emit({
+    type: input.type,
+    target: { appId: "aks-rp-e2e", project: "aks-rp-e2e" },
+    data: {
       project: "aks-rp-e2e",
       problemKey: input.problemKey,
       problem_key: input.problemKey,
@@ -197,26 +194,8 @@ function emitProblemResult(
       affected_tasks: input.affectedTasks,
       summary: input.summary,
       requested_by: "problem-solver",
-    });
-  } catch {
-    // Local tests may not provide a dispatcher.
-  }
-}
-
-function appendProblemRun(
-  appDir: string,
-  entry: Record<string, unknown>,
-): void {
-  const path = join(appDir, ".state", "problem-runs.jsonl");
-  mkdirSync(join(appDir, ".state"), { recursive: true });
-  appendFileSync(
-    path,
-    `${JSON.stringify({
-      ts: new Date().toISOString(),
-      workflow: "problem-solver",
-      ...entry,
-    })}\n`,
-  );
+    },
+  } satisfies AppEvent<Record<string, unknown>>);
 }
 
 function finishProblemSolver(
@@ -226,7 +205,7 @@ function finishProblemSolver(
     summary: string;
     evidence: string[];
   },
-): WorkflowResult {
+): ExecutionResult {
   const output: {
     state: "converged" | "needs-owner";
     summary: string;
@@ -241,20 +220,19 @@ function finishProblemSolver(
   return ctx.done(input.summary, output);
 }
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  const projectDir =
-    ctx.projectDir ?? field(ctx.task, "project") ?? "/app/projects/aks-rp-e2e";
-  const appDir = resolveAppDir(
-    projectDir,
-    ctx.appDir ?? field(ctx.task, "app"),
-  );
-  const sourceRoot = sourceDir(ctx.task);
-  const trigger = parseTriggerEvent(ctx.task);
-  const taskInput = problemSolverTaskInput(ctx.task);
-  const agent =
-    field(ctx.task, "owner") ?? field(ctx.task, "agent") ?? ctx.agent;
+export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
+  const projectDir = ctx.workspace?.projectRoot;
+  if (!projectDir) {
+    throw new Error("problem-solver requires workspace.projectRoot");
+  }
+  const appDir = resolveAppDir(projectDir, ctx.workspace?.appRoot);
+  const sourceRoot = sourceDir(ctx);
+  const trigger = parseTriggerEvent(ctx);
+  const taskInput = problemSolverTaskInput(ctx);
+  const agent = field(ctx, "owner") ?? field(ctx, "agent") ?? "aks-explorer";
   const recoveredFromTaskTick =
-    trigger?.type === "project.task.tick" && Boolean(taskInput);
+    trigger?.type === "project.task.tick" &&
+    Boolean(taskInput && Object.keys(taskInput).length > 0);
 
   if (
     trigger?.type !== "project.problem.investigation.requested" &&
@@ -284,6 +262,23 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       ].filter(Boolean),
     ),
   ];
+  const taskSnapshot = ctx.reconciliation?.taskSnapshot;
+  const taskFacts = {
+    live: (taskSnapshot?.live ?? [])
+      .filter(
+        (task) =>
+          affectedTasks.length === 0 || affectedTasks.includes(task.taskId),
+      )
+      .map((task) => ({
+        taskId: task.taskId,
+        status: task.status,
+        outcome: task.outcome,
+        owner: task.owner,
+        readiness: task.readiness,
+        conditions: task.conditions,
+      })),
+    truncated: taskSnapshot?.truncated ?? false,
+  };
 
   let solverResult: unknown;
   try {
@@ -297,8 +292,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         sourceDir: sourceRoot,
         agent,
         problemKey,
-        trigger: triggerBlock(ctx.task),
+        trigger: triggerBlock(ctx),
         affectedTasks,
+        taskFacts,
       }),
     });
   } catch (err) {
@@ -310,48 +306,16 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   const summary = resultText(solverResult);
   const type = problemResultType(summary);
-  emitProblemResult(ctx, {
+  await emitProblemResult(ctx, {
     type,
     problemKey,
     affectedTasks,
     summary,
   });
-  appendProblemRun(appDir, {
-    problem_key: problemKey,
-    affected_task_ids: affectedTasks,
-    result_event: type,
-    result: summary.slice(0, 4000),
-  });
-
   const resultSummary = `Problem solver emitted ${type} for ${problemKey}. Result: ${summary}`;
   return finishProblemSolver(ctx, {
     state: "converged",
     summary: resultSummary,
-    evidence: [
-      `problem-solver:${problemKey}:${type}`,
-      ".state/problem-runs.jsonl",
-    ],
+    evidence: [`problem-solver:${problemKey}:${type}`, `event:${type}`],
   });
-}
-
-if (import.meta.main) {
-  if (process.env.MAY_AGENT_RUN_WORKFLOW_ENTRYPOINT !== "1") {
-    console.error(
-      "Direct workflow entrypoint is disabled by default. Set MAY_AGENT_RUN_WORKFLOW_ENTRYPOINT=1 to run it.",
-    );
-    process.exit(0);
-  }
-  const result = await execute({
-    task: "app: /app/projects/aks-rp-e2e.app\nproject: /app/projects/aks-rp-e2e\nagent: aks-explorer",
-    agent: "aks-explorer",
-    done: (message: string) =>
-      ({ status: "done", message }) as unknown as WorkflowResult,
-    escalate: (message: string) =>
-      ({ status: "escalated", message }) as unknown as WorkflowResult,
-    emit() {},
-    dispatchEvent() {},
-    runAgent: async () => ({ status: "error", lastAssistantText: "" }),
-    summarize: () => "",
-  } as unknown as WorkflowContext);
-  console.log(JSON.stringify(result));
 }

@@ -67,10 +67,12 @@ function withoutRetiredResultFields(
 }
 
 /** Project the accepted workflow receipt into the app-owned spec-loop read model. */
-export function syncSpecLiveProof(appDir: string, taskId: string): SyncResult {
-  const taskStatePath = join(appDir, ".state", "tasks", "state.json");
-  const taskState = readJson(taskStatePath);
-  const receipt = record(record(taskState.receipts)[taskId]);
+export function syncSpecLiveProof(
+  appDir: string,
+  completedChild: unknown,
+): SyncResult {
+  const receipt = record(completedChild);
+  const taskId = text(receipt.taskId);
   if (text(receipt.workflow) !== "spec-live-reconciliation") {
     return { changed: false, taskId };
   }
@@ -89,7 +91,7 @@ export function syncSpecLiveProof(appDir: string, taskId: string): SyncResult {
   const current = record(specs[specId]);
   const acceptedAt = text(proof.reviewedAt) || new Date().toISOString();
   const acceptedResultPath = evidencePath(
-    record(receipt.acceptanceBasis).evidence,
+    receipt.evidence,
     "aggregate-artifact:",
   );
   const next = {
@@ -134,4 +136,14 @@ export function syncSpecLiveProof(appDir: string, taskId: string): SyncResult {
   state.updatedAt = new Date().toISOString();
   writeFileSync(statePath, `${JSON.stringify(state, null, 2)}\n`);
   return { changed: true, taskId, specId, runId };
+}
+
+/** Refresh accepted child receipts before the standing spec loop reads its ledger. */
+export function syncAcceptedSpecLiveProofs(
+  appDir: string,
+  completedChildren: readonly unknown[],
+): SyncResult[] {
+  return completedChildren
+    .map((child) => syncSpecLiveProof(appDir, child))
+    .filter((result) => result.changed);
 }

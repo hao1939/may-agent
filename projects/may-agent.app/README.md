@@ -1,6 +1,6 @@
-# May-agent Project App
+# May-agent Agent App
 
-This directory is the May-agent v3 app/control plane for the `may-agent`
+This directory is the canonical Agent App/control plane for the `may-agent`
 domain workspace.
 
 ## Boundary

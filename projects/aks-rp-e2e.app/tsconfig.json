@@ -9,13 +9,10 @@
     "noEmit": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "types": ["node"],
+    "types": ["node", "bun"],
     "allowImportingTsExtensions": true,
     "paths": {
       "@may-agent/sdk": ["../may-agent/bundle/sdk-current/src/index.ts"],
-      "@may-agent/sdk/legacy": [
-        "../may-agent/bundle/sdk-current/src/legacy.ts"
-      ],
       "@may-agent/sdk/testing": [
         "../may-agent/bundle/sdk-current/src/testing.ts"
       ]
@@ -23,13 +20,9 @@
   },
   "include": [
     "app.ts",
-    "agents/app-ops/workflows/approval-dispatch.ts",
-    "agents/app-ops/workflows/focus-plan.ts",
-    "agents/app-ops/workflows/project-stall-review.ts",
-    "agents/app-ops/workflows/problem-solver.ts",
-    "agents/app-ops/workflows/spec-loop-controller.ts",
-    "agents/app-ops/workflows/feature-compact-loop-controller.ts",
-    "agents/owner/workflows/normalize-scenario-frontier.ts",
+    "agents/**/*.ts",
+    "scripts/**/*.ts",
+    "task-loops.ts",
     "watchers/**/*.ts",
     "types/**/*.d.ts"
   ],

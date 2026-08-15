@@ -1,4 +1,4 @@
-import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk/legacy";
+import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk";
 
 /**
  * milestone-quality — Validates milestone specificity when projects start.
@@ -66,6 +66,7 @@ export const guard: WorkflowGuard = {
   events: ["step_start"],
 
   handle(event: WorkflowGuardEvent): Demand[] {
+    if (event.type !== "step_start") return [];
     // Only fire on the first worker iteration
     if (!event.step || !event.step.match(/^worker-iteration-1$/)) return [];
 

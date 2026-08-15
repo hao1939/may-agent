@@ -1,4 +1,6 @@
-import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk/legacy";
+import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk";
+
+type StepDoneEvent = Extract<WorkflowGuardEvent, { type: "step_done" }>;
 
 /**
  * verify-after-write guard — C1.3 Write/Edit-Without-Verify detection.
@@ -99,7 +101,7 @@ function findUnverifiedPaths(messages: any[]): string[] {
  * Scan all completed steps + current step for unverified writes/edits across
  * the entire session. A read() in a later step counts as verification.
  */
-function findSessionUnverifiedPaths(event: WorkflowGuardEvent): string[] {
+function findSessionUnverifiedPaths(event: StepDoneEvent): string[] {
   // Collect all steps: completed + current
   const allMessages: any[][] = [];
   for (const step of event.completedSteps ?? []) {

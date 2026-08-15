@@ -3,6 +3,12 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import type {
+  AppEvent,
+  ExecutionResult,
+  WorkflowContext,
+} from "@may-agent/sdk";
+import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
 import {
   admissionReportRequiresStandaloneVerification,
   advancedCampaignRepairPullRequest,
@@ -58,6 +64,111 @@ function git(cwd: string, ...args: string[]): string {
     );
   }
   return result.stdout.trim();
+}
+
+type TestContextOptions = {
+  task?: string;
+  input?: unknown;
+  taskId?: string;
+  generation?: number;
+  trigger?: AppEvent<Record<string, unknown>>;
+  appDir?: string;
+  projectDir?: string;
+  workspaceDir?: string;
+  runAgent?: (
+    agent: string,
+    prompt: string,
+    options?: Record<string, unknown>,
+  ) => Promise<{
+    status: "success" | "done" | "blocked" | "error" | "interrupted";
+    structuredResult?: unknown;
+  }>;
+  dispatchEvent?: (type: string, data: Record<string, unknown>) => void;
+};
+
+function taskEnvelope(raw: string | undefined): Record<string, unknown> {
+  if (!raw) return {};
+  const marker = raw.indexOf("## Reconciliation Task");
+  if (marker < 0) return {};
+  const candidate = raw.slice(marker).split("\n").slice(1).join("\n");
+  try {
+    return JSON.parse(candidate) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
+function workflowContext(options: TestContextOptions = {}): WorkflowContext {
+  const envelope = taskEnvelope(options.task);
+  const input = options.input ?? envelope.input ?? {};
+  const children =
+    envelope.children &&
+    typeof envelope.children === "object" &&
+    !Array.isArray(envelope.children)
+      ? (envelope.children as Record<string, unknown>)
+      : {};
+  const runAgent = options.runAgent;
+  const callAgent = runAgent
+    ? ((async (agent, prompt, callOptions): Promise<ExecutionResult> => {
+        const result = await runAgent(agent, prompt, callOptions);
+        const status = result.status === "success" ? "done" : result.status;
+        return {
+          id: "s_master_validation_failure_test",
+          kind: "agent",
+          status,
+          summary: status,
+          ...(result.structuredResult !== undefined
+            ? { output: result.structuredResult }
+            : {}),
+        };
+      }) as WorkflowContext["agents"]["call"])
+    : undefined;
+  return createTestAppWorkflowContext({
+    input,
+    reconciliation: {
+      appId: "aks-rp-e2e",
+      taskId:
+        options.taskId ??
+        (typeof envelope.taskId === "string"
+          ? envelope.taskId
+          : "domain/master-validation-failure/spec.example/fp"),
+      generation:
+        options.generation ??
+        (typeof envelope.generation === "number" ? envelope.generation : 1),
+      resourceVersion: 1,
+      owner: "aks-explorer",
+      mode: "achieve",
+      outcome: "Resolve the master-validation failure.",
+      acceptance: [],
+      input,
+      children: {
+        live: Array.isArray(children.live) ? (children.live as never[]) : [],
+        completed: Array.isArray(children.completed)
+          ? (children.completed as never[])
+          : [],
+      },
+      ...(options.trigger ? { trigger: options.trigger } : {}),
+    },
+    ...(callAgent ? { callAgent } : {}),
+    ...(options.dispatchEvent
+      ? {
+          emit: async (event: AppEvent) => {
+            options.dispatchEvent!(
+              event.type,
+              event.data as Record<string, unknown>,
+            );
+          },
+        }
+      : {}),
+    workspace: {
+      appRoot: options.appDir ?? "/tmp/master-validation-failure-test-app",
+      projectRoot: options.projectDir ?? "/app/projects/aks-rp-e2e",
+      root:
+        options.workspaceDir ?? "/app/worktrees/master-validation-failure-test",
+      output: "/tmp/master-validation-failure-test-output",
+    },
+    executionId: "wf_master_validation_failure_test",
+  });
 }
 
 describe("master-validation failure workflow", () => {
@@ -146,15 +257,14 @@ describe("master-validation failure workflow", () => {
   test("detects targeted PR review-change wakes for the existing focused repair", () => {
     expect(
       pullRequestReviewTrigger(
-        `## Trigger Observation\n${JSON.stringify({
-          type: "project.task.tick",
+        {
+          type: "pull-request.state",
           data: {
-            reason: "pull-request-review-changed",
             pullRequestId: "16692153",
             unresolvedReviewCount: 2,
             reviewFingerprint: "df13be91ae2f50be",
           },
-        })}`,
+        },
         "16692153",
       ),
     ).toEqual({
@@ -164,14 +274,13 @@ describe("master-validation failure workflow", () => {
     });
     expect(
       pullRequestReviewTrigger(
-        `## Trigger Observation\n${JSON.stringify({
-          type: "project.task.tick",
+        {
+          type: "pull-request.state",
           data: {
-            reason: "pull-request-review-changed",
             pullRequestId: "16692153",
             unresolvedReviewCount: 2,
           },
-        })}`,
+        },
         "16692154",
       ),
     ).toBeNull();
@@ -339,7 +448,7 @@ ${JSON.stringify({
       );
       const taskId =
         "domain/master-validation-failure/pipeline.master-validation.bootstrap/fp";
-      const ctx = {
+      const ctx = workflowContext({
         appDir,
         projectDir: "/repo",
         workspaceDir: "/workspace",
@@ -353,14 +462,9 @@ ${JSON.stringify({
             sourceCommit: "candidate-old",
           },
         })}`,
-        done: (summary: string, output: Record<string, unknown>) => ({
-          type: "done",
-          summary,
-          output,
-        }),
-      } as never;
+      });
       expect(await execute(ctx)).toMatchObject({
-        type: "done",
+        status: "done",
         output: {
           state: "waiting",
           conditions: [
@@ -703,8 +807,7 @@ ${JSON.stringify({
 })}
 `)!;
       const prompts: string[] = [];
-      const ctx = {
-        agent: "aks-explorer",
+      const ctx = workflowContext({
         runAgent: async (_agent: unknown, prompt: string) => {
           prompts.push(prompt);
           return {
@@ -717,12 +820,7 @@ ${JSON.stringify({
             },
           };
         },
-        blocked: (summary: string, details: Record<string, unknown>) => ({
-          type: "blocked",
-          summary,
-          details,
-        }),
-      } as never;
+      });
 
       const outcome = await runFailureInvestigation(ctx, input, {
         workspaceDir: root,
@@ -736,8 +834,8 @@ ${JSON.stringify({
       expect(outcome).toMatchObject({
         kind: "blocked",
         result: {
-          type: "blocked",
-          details: {
+          status: "blocked",
+          evidence: {
             evidence: expect.arrayContaining([
               "classification:test_issue",
               "investigation-attempts:2",
@@ -771,8 +869,7 @@ ${JSON.stringify({
 })}
 `)!;
       let attempts = 0;
-      const ctx = {
-        agent: "aks-explorer",
+      const ctx = workflowContext({
         runAgent: async () => {
           attempts += 1;
           if (attempts === 2) {
@@ -790,10 +887,7 @@ ${JSON.stringify({
             },
           };
         },
-        blocked: () => {
-          throw new Error("retry with a committed fix must not block");
-        },
-      } as never;
+      });
 
       const outcome = await runFailureInvestigation(ctx, input, {
         workspaceDir: root,
@@ -831,15 +925,9 @@ ${JSON.stringify({
   },
 })}
 `)!;
-      const ctx = {
-        agent: "aks-explorer",
+      const ctx = workflowContext({
         runAgent: async () => ({ status: "interrupted" }),
-        blocked: (summary: string, details: Record<string, unknown>) => ({
-          type: "blocked",
-          summary,
-          details,
-        }),
-      } as never;
+      });
       expect(
         await runFailureInvestigation(ctx, input, {
           workspaceDir: root,
@@ -849,8 +937,8 @@ ${JSON.stringify({
       ).toMatchObject({
         kind: "blocked",
         result: {
-          type: "blocked",
-          details: {
+          status: "blocked",
+          evidence: {
             evidence: expect.arrayContaining(["session-status:interrupted"]),
           },
         },
@@ -861,26 +949,20 @@ ${JSON.stringify({
   });
 
   test("routes a wrong-target aggregate failure through one exact standalone child", () => {
-    const root = mkdtempSync(join(tmpdir(), "master-validation-route-proof-"));
-    try {
-      mkdirSync(join(root, ".state", "tasks"), { recursive: true });
-      writeFileSync(
-        join(root, ".state", "tasks", "state.json"),
-        JSON.stringify({
-          receipts: {
-            "domain/prior-standalone-proof": {
-              summary:
-                "spec.rp-cluster-lifecycle.nginx-large-header passed exact standalone run 120 and merged into main.",
-              evidence: [
-                "pipeline-run:120",
-                "source-commit:proof123",
-                "standalone-build-id:110",
-              ],
-              completedAt: "2026-07-23T18:00:00Z",
-            },
-          },
-        }),
-      );
+    {
+      const completed = [
+        {
+          taskId: "domain/prior-standalone-proof",
+          summary:
+            "spec.rp-cluster-lifecycle.nginx-large-header passed exact standalone run 120 and merged into main.",
+          evidence: [
+            "pipeline-run:120",
+            "source-commit:proof123",
+            "standalone-build-id:110",
+          ],
+          completedAt: "2026-07-23T18:00:00Z",
+        },
+      ];
       const failure = parseFailureInput(`
 ## Reconciliation Task
 ${JSON.stringify({
@@ -897,7 +979,7 @@ ${JSON.stringify({
 })}
 `)!;
       expect(requiresStandaloneVerification(failure)).toBe(true);
-      const prior = priorStandaloneVerification(root, failure.specId)!;
+      const prior = priorStandaloneVerification(completed, failure.specId)!;
       expect(prior).toMatchObject({
         taskId: "domain/prior-standalone-proof",
         pipelineRunId: "120",
@@ -1002,48 +1084,41 @@ ${JSON.stringify({
           "main123",
         ),
       ).toBeNull();
-    } finally {
-      rmSync(root, { recursive: true, force: true });
     }
   });
 
   test("reuses an older standalone proof receipt written in plain language", () => {
-    const root = mkdtempSync(join(tmpdir(), "legacy-standalone-proof-"));
-    try {
-      mkdirSync(join(root, ".state", "tasks"), { recursive: true });
-      writeFileSync(
-        join(root, ".state", "tasks", "state.json"),
-        JSON.stringify({
-          receipts: {
-            "domain/prior-queuewatcher-proof": {
-              outcome:
-                "Verify spec.service-platform.queuewatcher on standalone build 175600006.",
-              acceptance: [
-                "Track exact run 175634889 with standalone_build_id=175600006.",
-              ],
-              summary:
-                "spec.service-platform.queuewatcher passed exact live verification on current origin/main.",
-              evidence: [
-                "pipeline-run:175634889",
-                "source-commit:9c2c111b04ef2b625b05e03bf4fae203008a268b",
-                "run 175634889 succeeded at target staging, standalone_build_id 175600006.",
-              ],
-              completedAt: "2026-08-07T17:01:45.337Z",
-            },
-          },
-        }),
-      );
+    {
+      const completed = [
+        {
+          taskId: "domain/prior-queuewatcher-proof",
+          outcome:
+            "Verify spec.service-platform.queuewatcher on standalone build 175600006.",
+          acceptance: [
+            "Track exact run 175634889 with standalone_build_id=175600006.",
+          ],
+          summary:
+            "spec.service-platform.queuewatcher passed exact live verification on current origin/main.",
+          evidence: [
+            "pipeline-run:175634889",
+            "source-commit:9c2c111b04ef2b625b05e03bf4fae203008a268b",
+            "run 175634889 succeeded at target staging, standalone_build_id 175600006.",
+          ],
+          completedAt: "2026-08-07T17:01:45.337Z",
+        },
+      ];
 
       expect(
-        priorStandaloneVerification(root, "spec.service-platform.queuewatcher"),
+        priorStandaloneVerification(
+          completed,
+          "spec.service-platform.queuewatcher",
+        ),
       ).toMatchObject({
         taskId: "domain/prior-queuewatcher-proof",
         pipelineRunId: "175634889",
         sourceCommit: "9c2c111b04ef2b625b05e03bf4fae203008a268b",
         standaloneBuildId: "175600006",
       });
-    } finally {
-      rmSync(root, { recursive: true, force: true });
     }
   });
 
@@ -1228,7 +1303,9 @@ ${JSON.stringify({
   test("reads the structured output of a nested workflow result", () => {
     expect(
       nestedWorkflowOutput({
-        type: "done",
+        id: "wf_nested",
+        kind: "workflow",
+        status: "done",
         summary: "outer",
         output: {
           state: "converged",
@@ -1356,7 +1433,7 @@ ${JSON.stringify({
     });
   });
 
-  test("finds a later same-spec main pass from durable event history after the original wake", () => {
+  test("accepts the exact later same-spec main pass carried by the condition wake", () => {
     const input = parseFailureInput(`
 ## Reconciliation Task
 ${JSON.stringify({
@@ -1412,20 +1489,12 @@ ${JSON.stringify({
         }),
       },
     ];
-    const ctx = {
-      task: `## Trigger Event\n${JSON.stringify({
-        type: "project.task.tick",
-        reason: "workflow-replay",
-      })}`,
-      query: {
-        events: () => ({
-          rows,
-          rowCount: rows.length,
-          limit: 500,
-          truncated: false,
-        }),
+    const ctx = workflowContext({
+      trigger: {
+        type: "pipeline.spec.observed",
+        data: JSON.parse(rows[1]!.data),
       },
-    } as never;
+    });
 
     expect(latestPassingRecoveryObservation(ctx, input)).toMatchObject({
       pipelineRunId: "125",
@@ -1473,20 +1542,12 @@ ${JSON.stringify({
         }),
       },
     ];
-    const ctx = {
-      task: `## Trigger Event\n${JSON.stringify({
-        type: "project.task.tick",
-        reason: "workflow-replay",
-      })}`,
-      query: {
-        events: () => ({
-          rows,
-          rowCount: rows.length,
-          limit: 500,
-          truncated: false,
-        }),
+    const ctx = workflowContext({
+      trigger: {
+        type: "pipeline.spec.observed",
+        data: JSON.parse(rows[1]!.data),
       },
-    } as never;
+    });
 
     expect(
       latestPassingRecoveryObservation(ctx, input, {
@@ -1640,7 +1701,19 @@ ${JSON.stringify({
   },
 })}
 `)!;
-      expect(currentRecoveryBaselineRunId({ appDir }, input)).toBe("456");
+      expect(
+        currentRecoveryBaselineRunId(
+          {
+            workspace: {
+              appRoot: appDir,
+              projectRoot: "/repo",
+              root: "/workspace",
+              output: "/output",
+            },
+          },
+          input,
+        ),
+      ).toBe("456");
       expect(productRecoveryCondition(input, "456")).toMatchObject({
         id: "master-validation-product-recovery-fp-after-456",
         expected: { pipelineRunId: { gt: "456" } },
@@ -1733,7 +1806,7 @@ ${JSON.stringify({
     ).toBeNull();
   });
 
-  test("keeps an integrated nested repair waiting for main-path verification", () => {
+  test("keeps an integrated nested repair waiting for main-path verification", async () => {
     const input = parseFailureInput(`
 ## Reconciliation Task
 ${JSON.stringify({
@@ -1745,25 +1818,24 @@ ${JSON.stringify({
   },
 })}
 `)!;
-    const ctx = {
-      task: "",
-      done: (summary: string, output: Record<string, unknown>) => ({
-        type: "done",
-        summary,
-        output,
-      }),
-    } as never;
-    const result = preserveVerificationAfterNestedReconciliation(ctx, input, {
-      type: "done",
-      summary: "outer",
-      output: {
-        state: "converged",
-        summary: "PR merged",
-        evidence: ["source-commit:repair"],
+    const ctx = workflowContext();
+    const result = await preserveVerificationAfterNestedReconciliation(
+      ctx,
+      input,
+      {
+        id: "wf_nested",
+        kind: "workflow",
+        status: "done",
+        summary: "outer",
+        output: {
+          state: "converged",
+          summary: "PR merged",
+          evidence: ["source-commit:repair"],
+        },
       },
-    });
+    );
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: {
         state: "waiting",
         evidence: [
@@ -1786,7 +1858,7 @@ ${JSON.stringify({
     });
   });
 
-  test("closes a replayed failure when owner review finds applicable current-main recovery", () => {
+  test("closes a replayed failure when owner review finds applicable current-main recovery", async () => {
     const input = parseFailureInput(`
 ## Reconciliation Task
 ${JSON.stringify({
@@ -1798,33 +1870,33 @@ ${JSON.stringify({
   },
 })}
 `)!;
-    const ctx = {
-      task: "",
-      done: (summary: string, output: Record<string, unknown>) => ({
-        type: "done",
-        summary,
-        output,
-      }),
-    } as never;
+    const ctx = workflowContext();
     expect(
-      preserveVerificationAfterNestedReconciliation(ctx, input, {
-        type: "done",
+      await preserveVerificationAfterNestedReconciliation(ctx, input, {
+        id: "wf_nested",
+        kind: "workflow",
+        status: "done",
         summary: "outer",
         output: {
-          state: "existing-recovery",
+          state: "converged",
           summary: "Later current-main run 124 passed spec.example.",
           evidence: [
             "recovery-pipeline-run:124",
             "source-commit:recovered-main",
+            "existing-recovery:true",
           ],
         },
       }),
     ).toMatchObject({
-      type: "done",
+      status: "done",
       output: {
         state: "converged",
         summary: "Later current-main run 124 passed spec.example.",
-        evidence: ["recovery-pipeline-run:124", "source-commit:recovered-main"],
+        evidence: [
+          "recovery-pipeline-run:124",
+          "source-commit:recovered-main",
+          "existing-recovery:true",
+        ],
       },
     });
   });
@@ -1854,13 +1926,7 @@ ${JSON.stringify({
   },
 })}
 `)!;
-    const ctx = {
-      done: (summary: string, output: Record<string, unknown>) => ({
-        type: "done",
-        summary,
-        output,
-      }),
-    } as never;
+    const ctx = workflowContext();
     const result = inconclusiveWait(
       ctx,
       input,
@@ -1868,7 +1934,7 @@ ${JSON.stringify({
       Array.from({ length: 40 }, (_, index) => `artifact-evidence-${index}`),
     );
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: {
         state: "waiting",
         conditions: [
@@ -1904,7 +1970,7 @@ ${JSON.stringify({
       mkdirSync(workspaceDir, { recursive: true });
       let runAgentCalled = false;
       let dispatchCount = 0;
-      const ctx = {
+      const ctx = workflowContext({
         appDir,
         projectDir: repoDir,
         workspaceDir,
@@ -1925,11 +1991,6 @@ ${JSON.stringify({
             progressiveObservation: true,
           },
         })}`,
-        done: (summary: string, output: Record<string, unknown>) => ({
-          type: "done",
-          summary,
-          output,
-        }),
         runAgent: async () => {
           runAgentCalled = true;
           throw new Error(
@@ -1939,11 +2000,11 @@ ${JSON.stringify({
         dispatchEvent: () => {
           dispatchCount += 1;
         },
-      } as never;
+      });
 
       const result = await execute(ctx);
       expect(result).toMatchObject({
-        type: "done",
+        status: "done",
         output: {
           state: "waiting",
           evidence: expect.arrayContaining([
@@ -2008,7 +2069,7 @@ ${JSON.stringify({
         "domain/master-validation-failure/spec.virtualmachines.mixed-sku-upgrade/fp";
       const dispatched: Array<{ type: string; data: Record<string, unknown> }> =
         [];
-      const ctx = {
+      const ctx = workflowContext({
         appDir,
         projectDir: repoDir,
         workspaceDir,
@@ -2030,28 +2091,15 @@ ${JSON.stringify({
           },
           children: { live: [], completed: [] },
         })}`,
-        query: {
-          events: () => ({
-            rows: [],
-            rowCount: 0,
-            limit: 500,
-            truncated: false,
-          }),
-        },
         dispatchEvent: (type: string, data: Record<string, unknown>) => {
           dispatched.push({ type, data });
         },
-        done: (summary: string, output: Record<string, unknown>) => ({
-          type: "done",
-          summary,
-          output,
-        }),
-      } as never;
+      });
 
       const first = await execute(ctx);
       const second = await execute(ctx);
       expect(first).toMatchObject({
-        type: "done",
+        status: "done",
         output: {
           state: "waiting",
           evidence: expect.arrayContaining([
@@ -2079,7 +2127,7 @@ ${JSON.stringify({
         ).sort(),
       ).toEqual(["actions", "conditions", "evidence", "state", "summary"]);
       expect(second).toMatchObject({
-        type: "done",
+        status: "done",
         output: {
           evidence: expect.arrayContaining([
             "source-change-disposition:not_applicable:prod_issue_requires_no_source_change",

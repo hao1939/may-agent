@@ -1,4 +1,7 @@
-import type { MetricDefinition, MetricService } from "@may-agent/sdk/legacy";
+import type {
+  MetricDefinition,
+  WorkflowMetricCapability,
+} from "@may-agent/sdk";
 import { sampleFocusMetric, type FocusMetricId } from "./focus-metrics.ts";
 
 const focusMetricIds: FocusMetricId[] = [
@@ -114,7 +117,10 @@ export function focusMetricDefinitions(appDir: string): MetricDefinition[] {
 }
 
 export function publishFocusMetrics(input: {
-  metrics?: Pick<MetricService, "defineMany" | "record" | "evaluate"> | null;
+  metrics?: Pick<
+    WorkflowMetricCapability,
+    "defineMany" | "record" | "evaluate"
+  > | null;
   appDir: string;
   projectDir: string;
   measuredBy?: string;

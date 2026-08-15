@@ -8,7 +8,13 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { Type } from "@earendil-works/pi-ai";
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
+import {
+  callGymAgent,
+  emitGymEvent,
+  gymEvent,
+  gymProjectsRoot,
+} from "./lib/context";
 import {
   reconciliationInput,
   reconciliationPacket,
@@ -378,15 +384,15 @@ function approvalDecision(
   return decision === "approve" || decision === "decline" ? decision : null;
 }
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  const trigger = triggerDetails(ctx.task);
-  const input = reconciliationInput(ctx.task);
+export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
+  const trigger = triggerDetails(ctx);
+  const input = reconciliationInput(ctx);
   const details = { ...(input ?? {}), ...(trigger ?? {}) };
   if (!input && !trigger) {
     return ctx.blocked("Review trigger event is missing or invalid");
   }
 
-  const packet = reconciliationPacket(ctx.task);
+  const packet = reconciliationPacket(ctx);
   const taskId = String(packet?.taskId ?? "").trim();
   const generation = Number(packet?.generation);
   if (!taskId || !Number.isInteger(generation) || generation < 1) {
@@ -394,16 +400,16 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   const requestKey = safeKey(details.requestKey, "review");
-  const reviewDir = join(ctx.projectsRoot, "gym.app", ".state", "reviews");
+  const reviewDir = join(gymProjectsRoot(ctx), "gym.app", ".state", "reviews");
   const reviewPath = join(reviewDir, `${requestKey}.md`);
   const decisionPath = join(reviewDir, `${requestKey}.decision.json`);
   mkdirSync(reviewDir, { recursive: true });
-  const existingCoverage = coverageSummary(ctx.projectsRoot);
+  const existingCoverage = coverageSummary(gymProjectsRoot(ctx));
   const forceNoveltyRecheck = details.forceNoveltyRecheck === true;
   let decision = forceNoveltyRecheck ? null : readDecision(decisionPath);
 
   if (!existsSync(reviewPath)) {
-    const result = await ctx.runAgent(
+    const result = await callGymAgent(ctx,
       "gym",
       reviewPrompt(details, existingCoverage),
       {
@@ -448,7 +454,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     };
     writeDecision(decisionPath, decision);
   } else if (!decision) {
-    const result = await ctx.runAgent(
+    const result = await callGymAgent(ctx,
       "gym",
       noveltyPrompt(readFileSync(reviewPath, "utf8"), existingCoverage),
       { schema: reviewDecisionSchema },
@@ -478,9 +484,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   });
 
   if (decision.disposition !== "human-review") {
-    ctx.emit({
-      type: "gym.review.filtered",
-      project: "gym",
+    await emitGymEvent(ctx, gymEvent("gym.review.filtered", {
       kind: details.kind,
       requestKey,
       reviewPath,
@@ -488,10 +492,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       disposition: decision.disposition,
       matchedCoverage: decision.matchedCoverage,
       reason: decision.dispositionReason,
-    });
-    ctx.emit({
-      type: "project.approval.resolved",
-      project: "gym",
+    }));
+    await emitGymEvent(ctx, gymEvent("project.approval.resolved", {
       approvalKind: "review-proposal",
       approvalId: approval.approvalId,
       waitId: approval.waitId,
@@ -501,7 +503,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       resolution: "superseded",
       disposition: decision.disposition,
       reason: decision.dispositionReason,
-    });
+    }));
     const matched = decision.matchedCoverage.length
       ? ` Coverage: ${decision.matchedCoverage.join(", ")}.`
       : "";
@@ -517,19 +519,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const humanDecision = approvalDecision(details, approval, taskId, generation);
 
   if (humanDecision === "approve") {
-    const learningTarget = approvedLearningTarget(ctx.projectsRoot, requestKey);
-    ctx.emit({
-      type: "gym.review.approved",
-      project: "gym",
+    const learningTarget = approvedLearningTarget(gymProjectsRoot(ctx), requestKey);
+    await emitGymEvent(ctx, gymEvent("gym.review.approved", {
       requestKey,
       reviewPath,
       approvalId: approval.approvalId,
       artifactFingerprint: approval.artifactFingerprint,
-    });
+    }));
     if (learningTarget) {
-      ctx.emit({
-        type: "gym.improvement.requested",
-        project: "gym",
+      await emitGymEvent(ctx, gymEvent("gym.improvement.requested", {
         agent: "may",
         reason: "approved-review-proposal",
         requestKey,
@@ -538,7 +536,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         approvalId: approval.approvalId,
         benchmark: learningTarget.benchmark,
         scenarios: learningTarget.scenarios,
-      });
+      }));
     }
     const summary = learningTarget
       ? `Accepted Gym review proposal ${requestKey} and started its ${learningTarget.scenarios.length}-scenario May learning target.`
@@ -552,14 +550,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   if (humanDecision === "decline") {
-    ctx.emit({
-      type: "gym.review.declined",
-      project: "gym",
+    await emitGymEvent(ctx, gymEvent("gym.review.declined", {
       requestKey,
       reviewPath,
       approvalId: approval.approvalId,
       artifactFingerprint: approval.artifactFingerprint,
-    });
+    }));
     const summary = `Rejected Gym review proposal ${requestKey}; no improvement work started.`;
     return ctx.done(summary, {
       state: "converged",
@@ -569,17 +565,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     });
   }
 
-  ctx.emit({
-    type: "gym.review.ready",
-    project: "gym",
+  await emitGymEvent(ctx, gymEvent("gym.review.ready", {
     kind: details.kind,
     requestKey,
     reviewPath,
     humanApprovalRequired: true,
-  });
-  ctx.emit({
-    type: "project.approval.requested",
-    project: "gym",
+  }));
+  await emitGymEvent(ctx, gymEvent("project.approval.requested", {
     taskId,
     taskGeneration: generation,
     approvalKind: "review-proposal",
@@ -590,10 +582,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     requestedAction: "Approve or reject this Gym review proposal.",
     reason: `Gym review ${requestKey} is ready for a human decision.`,
     expectedResponse: approval.expectedResponse,
-  });
+  }));
   const existingHumanDecision = String(details.approvedBy ?? "").trim();
   if (!existingHumanDecision) {
-    ctx.dispatchEvent("message.created", {
+    await emitGymEvent(ctx, gymEvent("message.created", {
       to: "human",
       from: "gym",
       project: "gym",
@@ -630,7 +622,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       reason: `Gym review ${requestKey} is ready for a human decision.`,
       expectedResponse: approval.expectedResponse,
       dedupKey: approval.approvalId,
-    });
+    }, { target: { human: true } }));
   }
   const summary = existingHumanDecision
     ? `Prepared Gym review proposal at ${reviewPath} and restored typed approval lineage from ${existingHumanDecision}.`

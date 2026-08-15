@@ -4,11 +4,13 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import {
   Type,
-  type ProjectAppConditionSpec,
-  type ProjectAppTaskAction,
+  type Condition,
+  type ExecutionResult,
+  type TaskAction,
+  type TaskReconcileResult,
+  type TaskReconciliationContext,
   type WorkflowContext,
-  type WorkflowResult,
-} from "@may-agent/sdk/legacy";
+} from "@may-agent/sdk";
 import {
   isNonFastForwardPushFailure,
   priorIntegratedProof,
@@ -22,6 +24,8 @@ export const name = "master-validation-failure";
 export const description =
   "Investigate one progressively observed master-validation failure; keep it open until a test fix or product fix is verified by a passing staging proof.";
 export const workspace = { kind: "task", baseBranch: "main" } as const;
+
+type FailureWorkflowResult = ExecutionResult<TaskReconcileResult>;
 
 const organization = "https://dev.azure.com/msazure";
 const adoProject = "CloudNativeCompute";
@@ -121,7 +125,7 @@ type InvestigationOutcome =
     }
   | {
       kind: "blocked";
-      result: WorkflowResult;
+      result: FailureWorkflowResult;
     };
 
 const decisionSchema = Type.Object({
@@ -213,39 +217,49 @@ export function parseFailureInput(raw: string): FailureInput | null {
   if (!object) return null;
   try {
     const payload = record(JSON.parse(object));
-    const input = record(payload.input);
-    const parsed: FailureInput = {
-      taskId: text(payload.taskId),
-      generation: Math.max(1, Number(payload.generation ?? 1) || 1),
-      specId: text(input.specId),
-      pipelineRunId: text(input.pipelineRunId),
-      failureFingerprint: text(input.failureFingerprint),
-      artifactPath: text(input.artifactPath),
-      sourceBranch: text(input.sourceBranch),
-      sourceCommit: text(input.sourceCommit),
-      reason: text(input.reason),
-      category: text(input.category),
-      status: text(input.status),
-      progressiveObservation: input.progressiveObservation === true,
-      carrierCommit: text(input.carrierCommit),
-      standaloneBuildId: text(input.standaloneBuildId),
-      priorStandalonePipelineRunId: text(
-        record(input.historicalDirectPass).pipelineRunId,
-      ),
-      priorStandaloneSourceCommit: text(
-        record(input.historicalDirectPass).sourceCommit,
-      ),
-      requestedServiceOwner: text(input.requestedServiceOwner),
-      campaignRepairReplay: parseCampaignRepairReplay(
-        input.campaignRepairReplay,
-      ),
-    };
-    return parsed.taskId && parsed.specId && parsed.failureFingerprint
-      ? parsed
-      : null;
+    return failureInput(
+      text(payload.taskId),
+      Math.max(1, Number(payload.generation ?? 1) || 1),
+      payload.input,
+    );
   } catch {
     return null;
   }
+}
+
+function failureInput(
+  taskId: string,
+  generation: number,
+  value: unknown,
+): FailureInput | null {
+  const input = record(value);
+  const parsed: FailureInput = {
+    taskId,
+    generation,
+    specId: text(input.specId),
+    pipelineRunId: text(input.pipelineRunId),
+    failureFingerprint: text(input.failureFingerprint),
+    artifactPath: text(input.artifactPath),
+    sourceBranch: text(input.sourceBranch),
+    sourceCommit: text(input.sourceCommit),
+    reason: text(input.reason),
+    category: text(input.category),
+    status: text(input.status),
+    progressiveObservation: input.progressiveObservation === true,
+    carrierCommit: text(input.carrierCommit),
+    standaloneBuildId: text(input.standaloneBuildId),
+    priorStandalonePipelineRunId: text(
+      record(input.historicalDirectPass).pipelineRunId,
+    ),
+    priorStandaloneSourceCommit: text(
+      record(input.historicalDirectPass).sourceCommit,
+    ),
+    requestedServiceOwner: text(input.requestedServiceOwner),
+    campaignRepairReplay: parseCampaignRepairReplay(input.campaignRepairReplay),
+  };
+  return parsed.taskId && parsed.specId && parsed.failureFingerprint
+    ? parsed
+    : null;
 }
 
 function command(
@@ -548,7 +562,7 @@ export function productRecoveryCondition(
   input: FailureInput,
   afterRunId = input.pipelineRunId,
   options: { requireCurrentMain?: boolean } = {},
-): ProjectAppConditionSpec {
+): Condition {
   return {
     // Include the blocking observation in the identity. Reusing the same
     // Condition across separate failure episodes can retain an earlier true
@@ -569,7 +583,7 @@ export function productRecoveryCondition(
 
 export function progressiveArtifactObservationCondition(
   input: FailureInput,
-): ProjectAppConditionSpec {
+): Condition {
   return {
     id: `master-validation-progressive-artifact-${input.failureFingerprint}-run-${input.pipelineRunId || "unknown"}`,
     type: "pipeline.failure.observed",
@@ -584,16 +598,16 @@ export function progressiveArtifactObservationCondition(
 }
 
 export function currentRecoveryBaselineRunId(
-  ctx: Pick<WorkflowContext, "appDir">,
+  ctx: Pick<WorkflowContext, "workspace">,
   input: FailureInput,
 ): string {
-  if (!ctx.appDir) return input.pipelineRunId;
+  if (!ctx.workspace?.appRoot) return input.pipelineRunId;
   let currentRunId = "";
   try {
     const cycle = record(
       JSON.parse(
         readFileSync(
-          join(ctx.appDir, ".state", "master-validation-cycle.json"),
+          join(ctx.workspace.appRoot, ".state", "master-validation-cycle.json"),
           "utf8",
         ),
       ),
@@ -705,56 +719,46 @@ function receiptStandaloneBuildId(
 }
 
 export function priorStandaloneVerification(
-  appDir: string,
+  completedChildren: ReadonlyArray<Record<string, unknown>>,
   specId: string,
 ): StandaloneVerification | null {
-  try {
-    const state = record(
-      JSON.parse(
-        readFileSync(join(appDir, ".state", "tasks", "state.json"), "utf8"),
-      ),
-    );
-    return (
-      Object.entries(record(state.receipts))
-        .map(([taskId, value]) => {
-          const receipt = record(value);
-          const evidence = Array.isArray(receipt.evidence)
-            ? receipt.evidence.map(text).filter(Boolean)
-            : [];
-          const corpus = [
-            text(receipt.outcome),
-            text(receipt.summary),
-            ...evidence,
-          ].join("\n");
-          const standaloneBuildId = receiptStandaloneBuildId(receipt, evidence);
-          const pipelineRunId = evidenceValue(evidence, "pipeline-run:");
-          const sourceCommit = evidenceValue(evidence, "source-commit:");
-          return {
-            taskId,
-            pipelineRunId,
-            sourceCommit,
-            standaloneBuildId,
-            evidence,
-            completedAt: text(receipt.completedAt),
-            matches:
-              corpus.includes(specId) &&
-              /\bpass(?:ed)?\b/i.test(corpus) &&
-              /^\d+$/.test(standaloneBuildId) &&
-              Boolean(pipelineRunId && sourceCommit),
-          };
-        })
-        .filter((candidate) => candidate.matches)
-        .sort((left, right) =>
-          right.completedAt.localeCompare(left.completedAt),
-        )
-        .map(
-          ({ completedAt: _completedAt, matches: _matches, ...candidate }) =>
-            candidate,
-        )[0] ?? null
-    );
-  } catch {
-    return null;
-  }
+  return (
+    completedChildren
+      .map((value) => {
+        const receipt = record(value);
+        const taskId = text(receipt.taskId);
+        const evidence = Array.isArray(receipt.evidence)
+          ? receipt.evidence.map(text).filter(Boolean)
+          : [];
+        const corpus = [
+          text(receipt.outcome),
+          text(receipt.summary),
+          ...evidence,
+        ].join("\n");
+        const standaloneBuildId = receiptStandaloneBuildId(receipt, evidence);
+        const pipelineRunId = evidenceValue(evidence, "pipeline-run:");
+        const sourceCommit = evidenceValue(evidence, "source-commit:");
+        return {
+          taskId,
+          pipelineRunId,
+          sourceCommit,
+          standaloneBuildId,
+          evidence,
+          completedAt: text(receipt.completedAt),
+          matches:
+            corpus.includes(specId) &&
+            /\bpass(?:ed)?\b/i.test(corpus) &&
+            /^\d+$/.test(standaloneBuildId) &&
+            Boolean(pipelineRunId && sourceCommit),
+        };
+      })
+      .filter((candidate) => candidate.matches)
+      .sort((left, right) => right.completedAt.localeCompare(left.completedAt))
+      .map(
+        ({ completedAt: _completedAt, matches: _matches, ...candidate }) =>
+          candidate,
+      )[0] ?? null
+  );
 }
 
 function standaloneRecoveryChildId(
@@ -777,7 +781,7 @@ export function standaloneRecoveryChildAction(input: {
   failure: FailureInput;
   currentMainCommit: string;
   prior: StandaloneVerification;
-}): ProjectAppTaskAction {
+}): TaskAction {
   const childId = standaloneRecoveryChildId(
     input.failure,
     input.currentMainCommit,
@@ -789,6 +793,7 @@ export function standaloneRecoveryChildAction(input: {
     parentId: input.failure.taskId,
     outcome: `Verify ${input.failure.specId} from current main on its required standalone RP-ingress target, then integrate any required repair into main.`,
     mode: "achieve",
+    outputs: [],
     owner: "aks-explorer",
     workflow: "master-validation-route-verification",
     priority: "P0",
@@ -811,15 +816,18 @@ export function standaloneRecoveryChildAction(input: {
 }
 
 function childRecords(
-  raw: string,
+  source: string | TaskReconciliationContext | undefined,
   kind: "live" | "completed",
 ): Record<string, unknown>[] {
-  const children = record(reconciliationPayload(raw)?.children)[kind];
+  const children =
+    typeof source === "string"
+      ? record(reconciliationPayload(source)?.children)[kind]
+      : source?.children[kind];
   return Array.isArray(children) ? children.map(record) : [];
 }
 
 export function standaloneRecoveryChild(
-  raw: string,
+  raw: string | TaskReconciliationContext | undefined,
   input: FailureInput,
   currentMainCommit: string,
   standaloneBuildId: string,
@@ -867,10 +875,10 @@ export function standaloneRecoveryChild(
 }
 
 function redundantStandaloneRecoveryActions(
-  raw: string,
+  raw: string | TaskReconciliationContext | undefined,
   input: FailureInput,
   retainedTaskId: string,
-): ProjectAppTaskAction[] {
+): TaskAction[] {
   return childRecords(raw, "live")
     .filter((child) => {
       const taskId = text(child.taskId ?? child.id);
@@ -908,7 +916,7 @@ export function standaloneRecoveryCompletionProblem(
 function pipelineMainRecoveryCondition(
   input: FailureInput,
   baselineRunId: string,
-): ProjectAppConditionSpec {
+): Condition {
   return {
     id: `master-validation-pipeline-recovery-${input.failureFingerprint}-campaign-${baselineRunId}`,
     type: "project.task.tick",
@@ -1086,7 +1094,11 @@ export function advancedCampaignRepairPullRequest(
     : null;
 }
 
-function triggerEvent(raw: string): Record<string, unknown> | null {
+function triggerEvent(raw: unknown): Record<string, unknown> | null {
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    return record(raw);
+  }
+  if (typeof raw !== "string") return null;
   for (const marker of ["## Trigger Observation", "## Trigger Event"]) {
     const startMarker = raw.indexOf(marker);
     if (startMarker < 0) continue;
@@ -1113,7 +1125,7 @@ function laterRun(candidate: string, baseline: string): boolean {
 }
 
 export function passingRecoveryObservation(
-  raw: string,
+  raw: unknown,
   input: FailureInput,
   options: { requireCurrentMain?: boolean } = {},
 ): Record<string, unknown> | null {
@@ -1136,7 +1148,7 @@ function eventData(value: unknown): Record<string, unknown> {
 }
 
 export function pullRequestReviewTrigger(
-  raw: string,
+  raw: unknown,
   expectedPullRequestId = "",
 ): {
   pullRequestId: string;
@@ -1147,13 +1159,12 @@ export function pullRequestReviewTrigger(
   if (!trigger) return null;
   const data = eventData(trigger.data);
   const value = (key: string) => trigger[key] ?? data[key];
-  const reason = text(value("reason"));
   const pullRequestId = text(value("pullRequestId"));
   const unresolvedReviewCount =
     Number(value("unresolvedReviewCount") ?? 0) || 0;
   const reviewFingerprint = text(value("reviewFingerprint"));
   if (
-    reason !== "pull-request-review-changed" ||
+    text(trigger.type) !== "pull-request.state" ||
     !pullRequestId ||
     unresolvedReviewCount <= 0 ||
     (expectedPullRequestId && pullRequestId !== expectedPullRequestId)
@@ -1168,7 +1179,7 @@ export function pullRequestReviewTrigger(
 }
 
 export function campaignRepairReplayObservation(
-  raw: string,
+  raw: unknown,
 ): CampaignRepairContext | null {
   const trigger = triggerEvent(raw);
   if (!trigger) return null;
@@ -1219,43 +1230,15 @@ function matchingPassingRecoveryObservation(
     : null;
 }
 
-/**
- * Conditions wake the task when a pass arrives, but they are not the durable
- * source of truth. A replay or unrelated wake can happen after that pass was
- * already consumed. Re-read the event history before opening or refreshing a
- * repair so an older failure cannot manufacture a replacement PR.
- */
 export function latestPassingRecoveryObservation(
-  ctx: Pick<WorkflowContext, "task" | "query">,
+  ctx: Pick<WorkflowContext, "reconciliation">,
   input: FailureInput,
   options: { requireCurrentMain?: boolean } = {},
 ): Record<string, unknown> | null {
-  const candidates: Record<string, unknown>[] = [];
-  const trigger = passingRecoveryObservation(ctx.task, input, options);
-  if (trigger) candidates.push(trigger);
-  try {
-    const rows = ctx.query.events({
-      type: "pipeline.spec.observed",
-      projectId: "aks-rp-e2e",
-      limit: 500,
-    }).rows;
-    for (const row of rows) {
-      const candidate = matchingPassingRecoveryObservation(row, input, options);
-      if (candidate) candidates.push(candidate);
-    }
-  } catch {
-    // The trigger remains a valid fast path when durable query infrastructure
-    // is temporarily unavailable. A later reconciliation retries the query.
-  }
-  return (
-    candidates.sort((left, right) => {
-      const leftRun = Number(text(left.pipelineRunId));
-      const rightRun = Number(text(right.pipelineRunId));
-      if (Number.isFinite(leftRun) && Number.isFinite(rightRun)) {
-        return rightRun - leftRun;
-      }
-      return text(right.pipelineRunId).localeCompare(text(left.pipelineRunId));
-    })[0] ?? null
+  return passingRecoveryObservation(
+    ctx.reconciliation?.trigger,
+    input,
+    options,
   );
 }
 
@@ -1327,7 +1310,7 @@ function doneWithEvidence(
   summary: string,
   evidence: string[],
   extras: Record<string, unknown> = {},
-): WorkflowResult {
+): FailureWorkflowResult {
   return ctx.done(summary, {
     state,
     summary,
@@ -1340,9 +1323,9 @@ function waiting(
   ctx: WorkflowContext,
   summary: string,
   evidence: string[],
-  condition: ProjectAppConditionSpec,
-  actions: ProjectAppTaskAction[] = [],
-): WorkflowResult {
+  condition: Condition,
+  actions: TaskAction[] = [],
+): FailureWorkflowResult {
   return ctx.done(summary, {
     state: "waiting",
     summary,
@@ -1356,8 +1339,8 @@ function waitingOnChild(
   ctx: WorkflowContext,
   summary: string,
   evidence: string[],
-  actions: ProjectAppTaskAction[] = [],
-): WorkflowResult {
+  actions: TaskAction[] = [],
+): FailureWorkflowResult {
   return ctx.done(summary, {
     state: "waiting",
     summary,
@@ -1372,13 +1355,13 @@ function investigationBlocked(
   input: FailureInput,
   summary: string,
   evidence: string[],
-): WorkflowResult {
+): FailureWorkflowResult {
   return ctx.blocked(summary, {
     specId: input.specId,
     pipelineRunId: input.pipelineRunId,
     artifactPath: input.artifactPath || "missing",
     evidence: boundedEvidence(evidence),
-  });
+  }) as FailureWorkflowResult;
 }
 
 export async function runFailureInvestigation(
@@ -1392,12 +1375,12 @@ export async function runFailureInvestigation(
 ): Promise<InvestigationOutcome> {
   let feedback = "";
   for (let attempt = 1; attempt <= 2; attempt += 1) {
-    const result = await ctx.runAgent(
-      ctx.agent,
+    const result = await ctx.agents.call(
+      ctx.reconciliation?.owner ?? "aks-explorer",
       feedback ? `${values.prompt}\n\n${feedback}` : values.prompt,
       { timeoutMs: 1_800_000, schema: decisionSchema },
     );
-    if (result.status === "error" || result.status === "interrupted") {
+    if (result.status !== "done" || !result.output) {
       const summary = `Failure investigation agent session did not complete for ${input.specId}.`;
       return {
         kind: "blocked",
@@ -1409,7 +1392,7 @@ export async function runFailureInvestigation(
       };
     }
 
-    const decision = result.structuredResult as Decision;
+    const decision = result.output as Decision;
     const nextCommit = git(values.workspaceDir, ["rev-parse", "HEAD"]).stdout;
     const dirty = git(values.workspaceDir, [
       "status",
@@ -1472,8 +1455,8 @@ export function inconclusiveWait(
   input: FailureInput,
   summary: string,
   evidence: string[],
-  actions: ProjectAppTaskAction[] = [],
-): WorkflowResult {
+  actions: TaskAction[] = [],
+): FailureWorkflowResult {
   return waiting(
     ctx,
     summary,
@@ -1503,11 +1486,16 @@ function reconciliationPayload(raw: string): Record<string, unknown> | null {
   }
 }
 
-export function priorProductClassification(raw: string): {
+export function priorProductClassification(
+  source: string | TaskReconciliationContext | undefined,
+): {
   taskId: string;
   evidence: string[];
 } | null {
-  const completed = record(reconciliationPayload(raw)?.children).completed;
+  const completed =
+    typeof source === "string"
+      ? record(reconciliationPayload(source)?.children).completed
+      : source?.children.completed;
   if (!Array.isArray(completed)) return null;
   const candidates = completed
     .map((value) => record(value))
@@ -1547,9 +1535,13 @@ export function priorProductClassification(raw: string): {
   };
 }
 
-export function legacyRecoveryChildren(raw: string): LiveChild[] {
-  const payload = reconciliationPayload(raw);
-  const live = record(payload?.children).live;
+export function legacyRecoveryChildren(
+  source: string | TaskReconciliationContext | undefined,
+): LiveChild[] {
+  const live =
+    typeof source === "string"
+      ? record(reconciliationPayload(source)?.children).live
+      : source?.children.live;
   if (!Array.isArray(live)) return [];
   return live
     .map((value) => record(value))
@@ -1566,13 +1558,17 @@ export function legacyRecoveryChildren(raw: string): LiveChild[] {
     );
 }
 
-function hasLegacyPublicationChild(raw: string): boolean {
+function hasLegacyPublicationChild(
+  raw: string | TaskReconciliationContext | undefined,
+): boolean {
   return legacyRecoveryChildren(raw).some((child) =>
     child.taskId.includes("publish-current-main-staging-exclusion-"),
   );
 }
 
-function absorbLegacyRecoveryActions(raw: string): ProjectAppTaskAction[] {
+function absorbLegacyRecoveryActions(
+  raw: string | TaskReconciliationContext | undefined,
+): TaskAction[] {
   return legacyRecoveryChildren(raw).map((child) => ({
     kind: "close-task" as const,
     taskId: child.taskId,
@@ -1603,7 +1599,7 @@ function changedFilesBetween(
 
 function notificationPath(ctx: WorkflowContext, key: string): string {
   return join(
-    ctx.appDir ?? "/app/projects/aks-rp-e2e.app",
+    ctx.workspace?.appRoot ?? "/app/projects/aks-rp-e2e.app",
     ".state",
     "master-validation-notifications",
     `${createHash("sha256").update(key).digest("hex")}.json`,
@@ -1617,13 +1613,13 @@ export type FindingDelivery = {
   receiptPath: string;
 };
 
-export function routeFinding(
+export async function routeFinding(
   ctx: WorkflowContext,
   input: FailureInput,
   kind: "product" | "test-pr",
   content: string,
   extra: Record<string, unknown> = {},
-): FindingDelivery {
+): Promise<FindingDelivery> {
   const recipient =
     kind === "product"
       ? input.requestedServiceOwner || "human:operator"
@@ -1638,24 +1634,27 @@ export function routeFinding(
       receiptPath: path,
     };
   }
-  ctx.dispatchEvent("message.created", {
+  await ctx.events.emit({
+    type: "message.created",
     target: { project: "aks-rp-e2e", human: true },
-    from: "aks-explorer",
-    to: recipient,
-    content,
-    priority: kind === "product" ? "P1" : "P2",
-    intent:
-      kind === "product"
-        ? "master-validation-product-issue"
-        : "master-validation-test-fix-pr",
-    project: "aks-rp-e2e",
-    taskId: input.taskId,
-    specId: input.specId,
-    pipelineRunId: input.pipelineRunId,
-    failureFingerprint: input.failureFingerprint,
-    dedupeKey: key,
-    ...(kind === "product" ? { serviceOwner: recipient } : {}),
-    ...extra,
+    data: {
+      from: "aks-explorer",
+      to: recipient,
+      content,
+      priority: kind === "product" ? "P1" : "P2",
+      intent:
+        kind === "product"
+          ? "master-validation-product-issue"
+          : "master-validation-test-fix-pr",
+      project: "aks-rp-e2e",
+      taskId: input.taskId,
+      specId: input.specId,
+      pipelineRunId: input.pipelineRunId,
+      failureFingerprint: input.failureFingerprint,
+      dedupeKey: key,
+      ...(kind === "product" ? { serviceOwner: recipient } : {}),
+      ...extra,
+    },
   });
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(
@@ -1676,11 +1675,11 @@ export function productIssueDisposition(delivery: FindingDelivery): string[] {
   ];
 }
 
-export function preserveVerificationAfterNestedReconciliation(
+export async function preserveVerificationAfterNestedReconciliation(
   ctx: WorkflowContext,
   input: FailureInput,
-  result: WorkflowResult,
-): WorkflowResult {
+  result: FailureWorkflowResult,
+): Promise<FailureWorkflowResult> {
   const resultRecord = record(result);
   const output = nestedWorkflowOutput(result);
   const evidence = Array.isArray(output.evidence)
@@ -1694,16 +1693,16 @@ export function preserveVerificationAfterNestedReconciliation(
     evidence
       .find((entry) => entry.startsWith("source-commit:"))
       ?.slice("source-commit:".length) ?? "";
-  if (text(output.state) === "existing-recovery") {
+  if (evidence.includes("existing-recovery:true")) {
     const summary =
       text(output.summary) ||
       `${input.specId} already recovered in a later applicable current-main observation.`;
     return doneWithEvidence(ctx, "converged", summary, evidence, {
-      actions: absorbLegacyRecoveryActions(ctx.task),
+      actions: absorbLegacyRecoveryActions(ctx.reconciliation),
     });
   }
   if (pullRequestId) {
-    routeFinding(
+    await routeFinding(
       ctx,
       input,
       "test-pr",
@@ -1732,7 +1731,7 @@ export function preserveVerificationAfterNestedReconciliation(
         currentRecoveryBaselineRunId(ctx, input),
         { requireCurrentMain: true },
       ),
-      absorbLegacyRecoveryActions(ctx.task),
+      absorbLegacyRecoveryActions(ctx.reconciliation),
     );
   }
   return result;
@@ -1741,12 +1740,16 @@ export function preserveVerificationAfterNestedReconciliation(
 async function reconcileTestIssue(
   ctx: WorkflowContext,
   input: FailureInput,
-): Promise<WorkflowResult> {
+): Promise<FailureWorkflowResult> {
   const result = await reconcileSpecLive(
     ctx,
     testIssueReconciliationOptions(input.pipelineRunId),
   );
-  return preserveVerificationAfterNestedReconciliation(ctx, input, result);
+  return await preserveVerificationAfterNestedReconciliation(
+    ctx,
+    input,
+    result,
+  );
 }
 
 export function testIssueReconciliationOptions(
@@ -1874,7 +1877,7 @@ export function publishCampaignRepairBranch(
   };
 }
 
-function prepareCampaignRepair(
+async function prepareCampaignRepair(
   ctx: WorkflowContext,
   input: FailureInput,
   values: {
@@ -1885,7 +1888,7 @@ function prepareCampaignRepair(
     campaignBaseCommit: string;
     evidence: string[];
   },
-): WorkflowResult {
+): Promise<FailureWorkflowResult> {
   const sourceBranchPullRequests = pullRequests(
     values.repoDir,
     values.sourceBranch,
@@ -1910,7 +1913,7 @@ function prepareCampaignRepair(
         "verification-required:later-current-main-spec-pass",
       ],
       productRecoveryCondition(input, currentRecoveryBaselineRunId(ctx, input)),
-      absorbLegacyRecoveryActions(ctx.task),
+      absorbLegacyRecoveryActions(ctx.reconciliation),
     );
   }
   const existingTaskPullRequests = activeTaskPullRequests(
@@ -1991,10 +1994,19 @@ function prepareCampaignRepair(
     },
   );
   pullRequestId = text(pullRequest.pullRequestId) || pullRequestId;
-  ctx.dispatchEvent(
-    "project.task.tick",
-    masterValidationFocusedFixWake(pullRequestId, values.sourceCommit),
+  const wake = masterValidationFocusedFixWake(
+    pullRequestId,
+    values.sourceCommit,
   );
+  await ctx.events.emit({
+    type: "project.task.tick",
+    target: {
+      project: "aks-rp-e2e",
+      taskId: "master-validation-staging-cycle",
+    },
+    action: "master-validation-cycle",
+    data: wake,
+  });
   const summary = `${canonicalPullRequestId ? "Updated" : "Prepared"} draft focused PR ${pullRequestId} for ${input.specId}; the frozen campaign can integrate it immediately, but the human will be notified only after the exact PR head passes live verification and the app publishes it as non-draft.`;
   return waiting(
     ctx,
@@ -2013,22 +2025,36 @@ function prepareCampaignRepair(
       "verification-required:frozen-campaign-then-current-main",
     ],
     productRecoveryCondition(input, currentRecoveryBaselineRunId(ctx, input)),
-    absorbLegacyRecoveryActions(ctx.task),
+    absorbLegacyRecoveryActions(ctx.reconciliation),
   );
 }
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  const input = parseFailureInput(ctx.task);
-  const repoDir = ctx.projectDir ?? "/app/projects/aks-rp-e2e";
-  const workspaceDir = ctx.workspaceDir ?? repoDir;
-  if (!input || workspaceDir === repoDir) {
+export async function execute(
+  ctx: WorkflowContext,
+): Promise<FailureWorkflowResult> {
+  const input = ctx.reconciliation
+    ? failureInput(
+        ctx.reconciliation.taskId,
+        ctx.reconciliation.generation,
+        ctx.reconciliation.input,
+      )
+    : null;
+  const repoDir = ctx.workspace?.projectRoot ?? "/app/projects/aks-rp-e2e";
+  const workspaceDir = ctx.workspace?.root ?? repoDir;
+  if (
+    !ctx.reconciliation ||
+    !ctx.workspace ||
+    !input ||
+    workspaceDir === repoDir
+  ) {
     const summary = `${name} requires a valid failure observation and a main-based task worktree.`;
     return doneWithEvidence(ctx, "needs-owner", summary, [
       `workspace:${workspaceDir}`,
     ]);
   }
   input.campaignRepairReplay =
-    campaignRepairReplayObservation(ctx.task) ?? input.campaignRepairReplay;
+    campaignRepairReplayObservation(ctx.reconciliation.trigger) ??
+    input.campaignRepairReplay;
 
   if (input.progressiveObservation && !input.artifactPath) {
     const summary = `Observed an early progressive placeholder for ${input.specId} in aggregate run ${input.pipelineRunId}; wait for the later artifact-backed pipeline.failure.observed event before any classification, source edit, or PR action.`;
@@ -2044,7 +2070,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         "artifact-observation-required:true",
       ],
       progressiveArtifactObservationCondition(input),
-      absorbLegacyRecoveryActions(ctx.task),
+      absorbLegacyRecoveryActions(ctx.reconciliation),
     );
   }
 
@@ -2053,7 +2079,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     if (!standaloneRequested) {
       const campaign = progressedCampaign(
         input,
-        ctx.appDir ?? "/app/projects/aks-rp-e2e.app",
+        ctx.workspace?.appRoot ?? "/app/projects/aks-rp-e2e.app",
       );
       if (campaign) {
         const summary = `Pipeline/bootstrap failure ${input.pipelineRunId} has a newer frozen-campaign commit ${campaign.currentCommit} in run ${campaign.runId}. Keep this stable issue open for final current-main proof; do not wait for merge before the campaign continues.`;
@@ -2067,7 +2093,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
             `campaign-commit:${campaign.currentCommit}`,
           ],
           pipelineMainRecoveryCondition(input, campaign.baselineRunId),
-          absorbLegacyRecoveryActions(ctx.task),
+          absorbLegacyRecoveryActions(ctx.reconciliation),
         );
       }
     }
@@ -2092,13 +2118,19 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         )
       : null;
     if (advancedRepair) {
-      ctx.dispatchEvent(
-        "project.task.tick",
-        masterValidationFocusedFixWake(
-          advancedRepair.pullRequestId,
-          advancedRepair.sourceCommit,
-        ),
+      const wake = masterValidationFocusedFixWake(
+        advancedRepair.pullRequestId,
+        advancedRepair.sourceCommit,
       );
+      await ctx.events.emit({
+        type: "project.task.tick",
+        target: {
+          project: "aks-rp-e2e",
+          taskId: "master-validation-staging-cycle",
+        },
+        action: "master-validation-cycle",
+        data: wake,
+      });
       const summary = `Focused PR ${advancedRepair.pullRequestId} already advanced beyond the stale replay-conflict head for ${input.specId}; campaign verification will evaluate the current PR head without rewriting it.`;
       return waiting(
         ctx,
@@ -2113,19 +2145,19 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           input,
           currentRecoveryBaselineRunId(ctx, input),
         ),
-        absorbLegacyRecoveryActions(ctx.task),
+        absorbLegacyRecoveryActions(ctx.reconciliation),
       );
     }
     const priorStandalone = shouldDelegateStandaloneRecovery(input)
       ? (requestedStandaloneVerification(input) ??
         priorStandaloneVerification(
-          ctx.appDir ?? "/app/projects/aks-rp-e2e.app",
+          ctx.reconciliation.children.completed,
           input.specId,
         ))
       : null;
     if (priorStandalone) {
       const completedChild = standaloneRecoveryChild(
-        ctx.task,
+        ctx.reconciliation,
         input,
         baseCommit,
         priorStandalone.standaloneBuildId,
@@ -2154,11 +2186,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
             `verification-child:${text(completedChild.taskId ?? completedChild.id)}`,
             ...childEvidence,
           ],
-          { actions: absorbLegacyRecoveryActions(ctx.task) },
+          { actions: absorbLegacyRecoveryActions(ctx.reconciliation) },
         );
       }
       const liveChild = standaloneRecoveryChild(
-        ctx.task,
+        ctx.reconciliation,
         input,
         baseCommit,
         priorStandalone.standaloneBuildId,
@@ -2187,13 +2219,17 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           `verification-child:${childId}`,
         ],
         liveChild
-          ? redundantStandaloneRecoveryActions(ctx.task, input, childId)
+          ? redundantStandaloneRecoveryActions(
+              ctx.reconciliation,
+              input,
+              childId,
+            )
           : [action],
       );
     }
     const frozenBaseCommit = frozenCampaignBaseForFailure(
       input,
-      ctx.appDir ?? "/app/projects/aks-rp-e2e.app",
+      ctx.workspace?.appRoot ?? "/app/projects/aks-rp-e2e.app",
     );
     // The human-facing PR always stays based on current main. The campaign
     // controller replays only its focused patch onto the frozen snapshot.
@@ -2245,7 +2281,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           `artifact:${text(recovery.artifactPath)}`,
           ...supersededPullRequests,
         ],
-        { actions: absorbLegacyRecoveryActions(ctx.task) },
+        { actions: absorbLegacyRecoveryActions(ctx.reconciliation) },
       );
     }
     const retainedIntegratedProof = priorIntegratedProof({
@@ -2310,7 +2346,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     // lifecycle on the parent before stale-main logic can put both resources
     // back to sleep. The child is absorbed after nested reconciliation has
     // produced integration evidence.
-    if (hasLegacyPublicationChild(ctx.task) && !input.campaignRepairReplay) {
+    if (
+      hasLegacyPublicationChild(ctx.reconciliation) &&
+      !input.campaignRepairReplay
+    ) {
       if (
         frozenBaseCommit &&
         campaignRepairReady({
@@ -2332,7 +2371,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       }
       return reconcileTestIssue(ctx, input);
     }
-    const priorProduct = priorProductClassification(ctx.task);
+    const priorProduct = priorProductClassification(ctx.reconciliation);
     if (
       priorProduct &&
       !generatedSharedFixtureSetupDefect(input) &&
@@ -2340,7 +2379,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         input.category,
       )
     ) {
-      const delivery = routeFinding(
+      const delivery = await routeFinding(
         ctx,
         input,
         "product",
@@ -2367,11 +2406,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           currentRecoveryBaselineRunId(ctx, input),
           { requireCurrentMain: true },
         ),
-        absorbLegacyRecoveryActions(ctx.task),
+        absorbLegacyRecoveryActions(ctx.reconciliation),
       );
     }
     if (["product_failure", "prod_issue"].includes(input.category)) {
-      const delivery = routeFinding(
+      const delivery = await routeFinding(
         ctx,
         input,
         "product",
@@ -2396,12 +2435,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           currentRecoveryBaselineRunId(ctx, input),
           { requireCurrentMain: true },
         ),
-        absorbLegacyRecoveryActions(ctx.task),
+        absorbLegacyRecoveryActions(ctx.reconciliation),
       );
     }
     const existingPr = pullRequests(repoDir, sourceBranch)[0];
     const existingPrId = text(existingPr?.pullRequestId);
-    const reviewTrigger = pullRequestReviewTrigger(ctx.task, existingPrId);
+    const reviewTrigger = pullRequestReviewTrigger(
+      ctx.reconciliation?.trigger,
+      existingPrId,
+    );
     const sourceIsInTarget =
       git(repoDir, ["merge-base", "--is-ancestor", headCommit, targetRef], true)
         .status === 0;
@@ -2493,7 +2535,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           `unexpected-commit:${nextCommit}`,
         ]);
       }
-      const delivery = routeFinding(
+      const delivery = await routeFinding(
         ctx,
         input,
         "product",
@@ -2514,7 +2556,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           currentRecoveryBaselineRunId(ctx, input),
           { requireCurrentMain: true },
         ),
-        absorbLegacyRecoveryActions(ctx.task),
+        absorbLegacyRecoveryActions(ctx.reconciliation),
       );
     }
 
@@ -2525,7 +2567,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         input,
         summary,
         decision.evidence,
-        absorbLegacyRecoveryActions(ctx.task),
+        absorbLegacyRecoveryActions(ctx.reconciliation),
       );
     }
 

@@ -510,6 +510,18 @@ const app = defineApp({
       toInput: ownerMessageInput,
     },
   ],
+  observations: [
+    "evaluation.app_runtime_canary.observed",
+    "evaluation.deep_dispatched",
+    "evaluation.deep_failed",
+    "evaluation.owner_review_started",
+    "evaluation.owner_review_failed",
+    "evaluation.owner_reviewed",
+    "evaluation.project.review_started",
+    "evaluation.project.review_failed",
+    "evaluation.project.review_skipped",
+    "evaluation.project.reviewed",
+  ],
   schedules: [
     {
       id: "owner-heartbeat",
@@ -576,7 +588,7 @@ const app = defineApp({
       inputSchema: Type.Object({}, { additionalProperties: true }),
       toInput: (data) => ({ kind: "owner-review", data }),
     },
-    "review-project-app": {
+    "review-agent-app": {
       description:
         "Review a target App from the outside and write owner-facing health feedback.",
       inputSchema: Type.Object(

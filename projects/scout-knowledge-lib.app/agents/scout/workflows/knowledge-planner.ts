@@ -1,26 +1,17 @@
 import {
-  admitProjectAppTaskHandlerResult,
-  projectAppTaskOwnerResultSchema,
-  resolveTaskTreePath,
-  type ProjectAppTaskHandlerResult,
+  admitTaskReconcileResult,
+  taskOwnerResultSchema,
+  type ExecutionResult,
+  type TaskReconcileResult,
   type WorkflowContext,
-  type WorkflowResult,
 } from "@may-agent/sdk";
-import {
-  buildExperienceReviewPacket,
-  experiencePacketPrompt,
-  isExperienceReviewTask,
-} from "./experience-review.js";
 
-type OwnerResult = Exclude<
-  ProjectAppTaskHandlerResult,
-  { state: "needs-owner" }
->;
+type OwnerResult = Exclude<TaskReconcileResult, { state: "needs-owner" }>;
 
 export function admitExperienceReviewResult(
   value: unknown,
 ): { ok: true; result: OwnerResult } | { ok: false; error: string } {
-  const admitted = admitProjectAppTaskHandlerResult(value, {
+  const admitted = admitTaskReconcileResult(value, {
     allowNeedsOwner: false,
     defaultParentId: "project",
   });
@@ -46,27 +37,30 @@ export function admitExperienceReviewResult(
   return { ok: true, result: admitted.result };
 }
 
-function field(task: string, name: string): string | undefined {
-  const pattern = new RegExp(`^${name}:\\s*(.+)$`, "m");
-  return task.match(pattern)?.[1]?.trim();
-}
-
-function triggerBlock(task: string): string {
-  return task.match(/## Trigger Event[\s\S]*$/)?.[0] ?? "";
+function isExperienceReview(ctx: WorkflowContext): boolean {
+  const data = ctx.reconciliation?.trigger?.data;
+  return Boolean(
+    data &&
+    typeof data === "object" &&
+    (data as Record<string, unknown>).reason === "experience-review",
+  );
 }
 
 export const name = "knowledge-planner";
 export const description =
   "Scout knowledge-library planner. Reviews the project task tree and performs the smallest useful library maintenance step.";
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  const appDir =
-    field(ctx.task, "app") ?? "/app/projects/scout-knowledge-lib.app";
-  const projectDir =
-    field(ctx.task, "project") ?? "/app/projects/scout-knowledge-lib";
-  const taskTreePath = resolveTaskTreePath(appDir);
-  const experienceContext = isExperienceReviewTask(ctx.task)
-    ? experiencePacketPrompt(buildExperienceReviewPacket(ctx.query))
+export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
+  if (!ctx.workspace || !ctx.reconciliation) {
+    return ctx.blocked(
+      "Scout maintenance requires a canonical App task context",
+    );
+  }
+  const appDir = ctx.workspace.appRoot;
+  const projectDir = ctx.workspace.projectRoot;
+  const experienceReview = isExperienceReview(ctx);
+  const experienceContext = experienceReview
+    ? `Bounded reconciliation history:\n${JSON.stringify(ctx.reconciliation.children, null, 2)}`
     : "";
   const prompt =
     `You are Scout maintaining the Scout Knowledge Library as a project.
@@ -83,7 +77,7 @@ tree, understand the trigger, and do the smallest useful maintenance step.
 
 Start by reading:
 - ${appDir}/project.json
-- ${taskTreePath}
+- the bounded reconciliation packet below
 - ${projectDir}/README.md
 - ${projectDir}/knowledge/INDEX.md
 
@@ -145,40 +139,44 @@ Operating rules:
 
 ${experienceContext}
 
-${triggerBlock(ctx.task)}`.trim();
+## Canonical reconciliation context
+${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
 
-  const result = await ctx.runAgent("scout", prompt, {
+  const result = await ctx.agents.call("scout", prompt, {
     timeoutMs: 1_800_000,
-    schema: projectAppTaskOwnerResultSchema,
+    schema: taskOwnerResultSchema,
   });
   if (result.status === "error" || result.status === "interrupted") {
     return ctx.blocked("Scout owner maintenance session failed", {
-      sessionId: result.sessionId,
+      executionId: result.id,
       status: result.status,
-      summary: result.lastAssistantText,
+      summary: result.summary,
     });
   }
 
-  let ownerResult = result.structuredResult as unknown as OwnerResult;
-  if (isExperienceReviewTask(ctx.task)) {
+  let ownerResult = result.output as unknown as OwnerResult;
+  if (experienceReview) {
     const admitted = admitExperienceReviewResult(ownerResult);
     if (!admitted.ok) {
       return ctx.blocked(
         `Scout experience review result was rejected: ${admitted.error}`,
         {
-          sessionId: result.sessionId,
+          executionId: result.id,
         },
       );
     }
     ownerResult = admitted.result;
   }
-  ctx.emit({
+  await ctx.events.emit({
     type: "project.knowledge.maintained",
-    project: "scout-knowledge-lib",
-    summary: ownerResult.summary,
-    state: ownerResult.state,
-    proposedActions: ownerResult.actions ?? [],
-    evidence: ownerResult.evidence,
+    target: { appId: "scout-knowledge-lib", project: "scout-knowledge-lib" },
+    data: {
+      project: "scout-knowledge-lib",
+      summary: ownerResult.summary,
+      state: ownerResult.state,
+      proposedActions: ownerResult.actions ?? [],
+      evidence: ownerResult.evidence,
+    },
   });
   return ctx.done(ownerResult.summary, ownerResult);
 }

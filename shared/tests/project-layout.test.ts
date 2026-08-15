@@ -6,8 +6,13 @@ const allowedTopLevelProjects = new Set([
   "_archive",
   "aks-rp-e2e",
   "aks-rp-e2e.app",
+  "evaluation-canary-worker.app",
+  "evaluation.app",
+  "gym",
+  "gym.app",
   "may-agent",
   "may-agent.app",
+  "may.app",
   "scout-knowledge-lib",
   "scout-knowledge-lib.app",
 ]);

@@ -1,9 +1,8 @@
 # Canonical Agent App Migration
 
-**Status:** Accepted; Evaluation and May/platform migrated, AKS and runtime
-deletion remain
+**Status:** Implemented and verified; ready to merge
 **Decision owner:** Hao
-**Last reviewed:** 2026-08-15
+**Last reviewed:** 2026-08-16
 **Supersedes:** the ownership, routing, and App-hosting parts of the legacy
 Project App and owner-inbox designs
 **Preserves:** the proven task-resource reconciliation semantics, migrated
@@ -35,6 +34,17 @@ consumers migrate.
 
 This is a deletion migration, not a task-engine rewrite.
 
+## Implementation outcome
+
+- Every App has one `defineApp(...)` declaration and one registry/host path.
+- App Inbox is the only authority for addressed work.
+- The optional App task capability is the only authority for durable desired
+  work and wakes attached requests through `app.dependency.completed`.
+- `defineProjectApp`, `@may-agent/sdk/legacy`, duplicate App loaders/routes, and
+  live owner-inbox/event-pair work authority are removed.
+- Applications use typed App inputs, subscriptions, schedules, observers,
+  actions, task policy, and capability-scoped workflows.
+
 ## Why this migration is necessary
 
 The first App-host migration established a clean addressed-work core, but the
@@ -50,8 +60,8 @@ At migration start, Apps such as `aks-rp-e2e` and `evaluation` had both
 definitions in the same directory. The inbox definition identified the durable
 address while the Project App definition owned schedules, event selectors,
 actions, task correlation, local agents, workspace policy, and task execution.
-Evaluation has now removed that split; AKS is the remaining external App with
-the duplicate architecture.
+Evaluation, May, and AKS now use the single declaration and host. No external
+App retains the duplicate architecture.
 
 The result works, but it leaves several questions with two answers:
 
@@ -65,12 +75,12 @@ The result works, but it leaves several questions with two answers:
 
 The canonical design gives every question one answer.
 
-## Current-state inventory
+## Migration baseline (historical)
 
 The inventory is intentionally recorded by responsibility rather than a
 volatile line count.
 
-### Canonical core already implemented
+### Canonical core present at migration start
 
 - `AppRegistry` loads durable App addresses unconditionally.
 - `AppInboxStore` persists `pending -> handling -> done` independently of event
@@ -79,13 +89,14 @@ volatile line count.
   `complete`, `delegate`, or `task` dispositions.
 - The App runtime provides fair scheduling, restart recovery, explicit
   dependency wakes, and an outbox for human and agent delivery.
-- May human input is admitted to the `may` App.
+- Human input and explicit human-decision events are admitted to the separate
+  canonical `may` App.
 - The root `@may-agent/sdk` entry point is capability-scoped and does not expose
   raw database or task-store mutation.
 
-### Legacy implementation still active
+### Legacy implementation active at migration start
 
-The runtime still has production imports from `@may-agent/sdk/legacy` for:
+The runtime had production imports from `@may-agent/sdk/legacy` for:
 
 - loading and hosting `defineProjectApp` definitions;
 - task tree storage and projection;
@@ -96,20 +107,22 @@ The runtime still has production imports from `@may-agent/sdk/legacy` for:
 - HTTP/read-model compatibility;
 - process identity and older workflow helpers.
 
-The May conversation App, platform App, and Evaluation App now use one
-canonical manifest and the root authoring SDK. Evaluation session aftermath
-also emits `evaluation.recorded` instead of writing the runtime database or
-host-owned session paths.
+At migration start, the May conversation App, may-agent platform App, and
+Evaluation App used one canonical manifest and the root authoring SDK.
+Evaluation session aftermath emitted `evaluation.recorded` instead of writing
+the runtime database or host-owned session paths. The separate `may.app/app.ts` translated
+`evaluation.human_decision.requested` into one validated May inbox obligation
+without merging conversation policy into the platform App.
 
-The remaining external legacy production consumers are in
-`aks-rp-e2e.app`: its `app.ts`, watchers, workflows, task helpers, and
-maintenance scripts still use the legacy declaration and authoring boundary.
+The remaining external legacy production consumers were in `aks-rp-e2e.app`:
+its `app.ts`, watchers, workflows, task helpers, and maintenance scripts used
+the legacy declaration and authoring boundary.
 
 Many imports are only names from the old barrel. Others are real capability
 violations, especially direct task-store reads/writes, raw SQL observer access,
 and arbitrary `onEvent` execution.
 
-### Legacy behavior to delete
+### Legacy behavior selected for deletion
 
 - `defineProjectApp` as a second App declaration.
 - A second Project App descriptor registry.
@@ -121,7 +134,7 @@ and arbitrary `onEvent` execution.
   controller, and persistence helpers.
 - Duplicate reload/install/watcher paths for the same App.
 
-### Behavior to preserve
+### Behavior selected for preservation
 
 - Task desired/observed state and generation fencing.
 - Task attempts, leases, restart recovery, and stale-result rejection.
@@ -204,15 +217,15 @@ task lifecycle directly.
 
 ## Responsibility boundaries
 
-| Layer | Owns | Must not own |
-| --- | --- | --- |
-| Infrastructure | event persistence, database, timers, transports, process lifecycle, execution engine, metrics storage | domain judgment or desired outcomes |
-| App host | definition loading, admission, claims, leases, bounded invocation, recovery, task-capability attachment, delivery | App-specific policy |
-| App | input meaning, subscriptions, task correlation, schedules, actions, owner identity, workspace policy | generic retry/recovery/delivery loops |
-| Owner agent | one bounded judgment/execution move and a typed disposition | durable polling or hidden background ownership |
-| Task reconciler | desired/observed task state, Conditions, attempts, verification, convergence | human conversation or arbitrary message routing |
-| Observer | collect current facts and emit observations | create hidden durable ownership |
-| Workflow | reusable bounded execution | direct inbox/claim mutation or global task-store mutation |
+| Layer           | Owns                                                                                                              | Must not own                                              |
+| --------------- | ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Infrastructure  | event persistence, database, timers, transports, process lifecycle, execution engine, metrics storage             | domain judgment or desired outcomes                       |
+| App host        | definition loading, admission, claims, leases, bounded invocation, recovery, task-capability attachment, delivery | App-specific policy                                       |
+| App             | input meaning, subscriptions, task correlation, schedules, actions, owner identity, workspace policy              | generic retry/recovery/delivery loops                     |
+| Owner agent     | one bounded judgment/execution move and a typed disposition                                                       | durable polling or hidden background ownership            |
+| Task reconciler | desired/observed task state, Conditions, attempts, verification, convergence                                      | human conversation or arbitrary message routing           |
+| Observer        | collect current facts and emit observations                                                                       | create hidden durable ownership                           |
+| Workflow        | reusable bounded execution                                                                                        | direct inbox/claim mutation or global task-store mutation |
 
 ## Canonical App declaration
 
@@ -249,6 +262,8 @@ export default defineApp({
       },
     },
   ],
+
+  observations: ["project.task.reconciled"],
 
   schedules: [
     {
@@ -333,8 +348,18 @@ the inbox. App `subscriptions` explicitly create correlated requests;
 `tasks.subscriptions` explicitly resolve desired task work.
 
 Facts that only refresh desired task work belong in `tasks.subscriptions`, not
-in App `subscriptions`. An event carrying an explicit task target bypasses
-broad resolution and wakes only that task; neither path creates inbox work.
+in App `subscriptions`. An event carrying an explicit task target does not call
+`tasks.resolve`: it records a trigger against the existing exact task and wakes
+only that task. Neither path creates inbox work.
+
+#### `observations`
+
+`observations` is the reviewed exact selector catalog for facts that
+intentionally create no App inbox item or task. The host evaluates every
+actionable route first, then records a durable `noop` receipt when a selector
+matches and zero work routes were selected. This keeps application event names
+in App definitions rather than in the core EventBus. It is diagnostic
+classification, not another subscriber or work authority.
 
 #### `schedules`
 
@@ -405,12 +430,12 @@ The root `@may-agent/sdk` remains the only runtime authoring entry point.
 It exposes four small semantic result families because they answer different
 questions:
 
-| Contract | Question |
-| --- | --- |
-| `AppDisposition` | What should happen to this addressed inbox request? |
+| Contract              | Question                                                          |
+| --------------------- | ----------------------------------------------------------------- |
+| `AppDisposition`      | What should happen to this addressed inbox request?               |
 | `TaskReconcileResult` | What observed result and next state applies to this desired task? |
-| `ExecutionResult` | How did this bounded agent/workflow execution end? |
-| `AppEvent` | Which fact should observers and owners be able to react to? |
+| `ExecutionResult`     | How did this bounded agent/workflow execution end?                |
+| `AppEvent`            | Which fact should observers and owners be able to react to?       |
 
 The root package may expose:
 
@@ -494,7 +519,9 @@ prospective snapshot before publication:
 - removal safety for unfinished inbox items and active tasks.
 
 The published snapshot is immutable. Every runtime component consumes the same
-generation.
+generation. A boot-unique snapshot ID accompanies the process-local generation
+whenever the identity is persisted; generation numbers alone restart at one and
+cannot identify a historical selector snapshot.
 
 ### Transactional reload
 
@@ -513,6 +540,18 @@ Any prepare failure leaves the previous generation fully active. Commit does
 not publish the App registry before task controllers and routes are ready.
 In-flight attempts retain their old generation fence; their effects are admitted
 only against the compatible stored task/inbox generation.
+
+Event delivery uses the same fence. Before admitting any selected continuation,
+the host durably records the complete set of validated per-App admission
+commands chosen by that registry snapshot. A partially admitted event is
+replayed from those commands, not reclassified by a newer manifest. This record
+is the durable delivery obligation until admission finishes, not a domain-work
+authority; durable work ownership still begins only in the destination inbox
+item or task. It carries the boot-unique snapshot ID, diagnostic generation,
+and a versioned payload interpreted by stable host-owned admission primitives.
+Explicit migration may supersede a pending command, but ordinary reload cannot
+change inbox work into task work, silently drop an App obligation, or create
+both for one source event.
 
 ### AppAdmission
 
@@ -600,29 +639,46 @@ with May, while platform convergence remains with `may-agent`.
 
 Every legacy event path is classified before migration:
 
-| Current behavior | Canonical behavior |
-| --- | --- |
-| Human/App addressed message | App inbox admission |
-| Typed action emits an actionable event | Action creates App input |
-| Schedule represents a distinct review obligation | Input schedule creates App input |
-| Schedule wakes deterministic desired work | Event schedule publishes fact to task subscription |
-| Schedule polls provider and emits facts | Scheduled observer emits facts |
-| Event `onEvent` performs bounded domain action | Subscription creates App input; owner handles it |
-| Event deterministically resolves desired task | Task subscription resolves task intent |
-| Event targets exact task/Condition | Exact task wake, no App inbox item |
-| Lifecycle/log/projection event | Persist/observe only |
-| Unknown addressed App | reject and retain visible admission failure |
-| Unknown unaddressed event | unhandled observation; no owner work synthesized |
+| Current behavior                                 | Canonical behavior                                 |
+| ------------------------------------------------ | -------------------------------------------------- |
+| Human/App addressed message                      | App inbox admission                                |
+| Typed action emits an actionable event           | Action creates App input                           |
+| Schedule represents a distinct review obligation | Input schedule creates App input                   |
+| Schedule wakes deterministic desired work        | Event schedule publishes fact to task subscription |
+| Schedule polls provider and emits facts          | Scheduled observer emits facts                     |
+| Event `onEvent` performs bounded domain action   | Subscription creates App input; owner handles it   |
+| Event deterministically resolves desired task    | Task subscription resolves task intent             |
+| Event targets exact task/Condition               | Exact task wake, no App inbox item                 |
+| Lifecycle/log/projection event                   | Persist/observe only                               |
+| Unknown addressed App                            | reject and retain visible admission failure        |
+| Unknown unaddressed event                        | unhandled observation; no owner work synthesized   |
 
-The route is exclusive per App obligation. An event must not create both an
-inbox item and task work for the same App. Canonical App `subscriptions`
-translate addressed event work into inbox input; `tasks.subscriptions` resolve
-deterministic desired work directly; an explicit canonical `(appId, taskId)`
-task wake address persists a trigger and wakes only that task; stored Conditions
-wake only their exact matching task IDs; and facts with no obligation remain
-observations. A resolved intent and matching Conditions may be admitted together
-as one task-family route. No second `inbox.accepts` selector surface is
-introduced.
+The route is exclusive per newly created App obligation. Canonical App
+`subscriptions` translate addressed work into an inbox input, while
+`tasks.subscriptions` resolve deterministic desired work directly; one event
+must not select both for the same App. Stored Conditions are additive exact
+wakes for already-authoritative tasks, so they may accompany either an inbox
+admission or a resolved task intent without creating dual ownership. An
+explicit canonical `(appId, taskId)` wake address bypasses broad inbox and task
+resolution, persists a trigger, and wakes only that task, including a matching
+Condition on that task. Facts with no obligation remain observations. No second
+`inbox.accepts` selector surface is introduced.
+
+Observation-only is a terminal delivery disposition, not missing ownership.
+Reviewed exact selectors live in App `observations`, never in a core EventBus
+catalog. After all actionable routes succeed, a matching fact with no selected
+work receives a durable no-op receipt containing the registry snapshot and
+creates no inbox or task. A task resolver returning `null` removes only that
+App's deterministic task obligation; it does not globally acknowledge a fact
+unless an installed observation contract matches. This never masks an
+addressed-input failure, exact-target failure, or resolver failure.
+
+At closeout, persistence and route admission are separate statuses. An ordinary
+unaddressed fact records that a registry snapshot selected zero routes, while
+an addressed input, exact target, or contract-declared expected route must be
+durably admitted. Reviewed contracts may declare required delivery, but core
+event persistence has no application event catalog and application event names
+do not accumulate in runtime source.
 
 `target.taskId` is reserved for delivery to a task. A task ID that identifies
 the subject or correlation of a lifecycle fact belongs in event data and does
@@ -636,9 +692,20 @@ acknowledges delivery, then coalesces/enqueues execution. Recovery scans durable
 task state, so a crash between persistence and enqueue cannot lose the wake.
 One event may select routes in several Apps. Every selected continuation must
 be durably admitted before composite acknowledgment; partial success is retried
-idempotently. A durable route failure, missing exact target, or target/resolver
-mismatch remains pending and cannot be masked by another App, an ordinary
+idempotently. A durable route failure, missing exact target, or invalid task
+admission remains pending and cannot be masked by another App, an ordinary
 subscriber, or observation fallback.
+
+One delivery attempt evaluates one installed immutable App-registry snapshot
+and persists its validated per-App admission commands before dispatch. Replay
+completes those commands even after reload. The commands are delivery fences,
+not a second domain-work authority; inbox items and tasks remain the only work
+authorities. A boot-unique snapshot ID prevents a process-local generation from
+being confused with a later process's generation, and a payload version keeps
+the host replay contract explicit. An intentional migration must explicitly
+supersede a still-pending command and record its replacement. Reload and
+delivery diagnostics expose snapshot identity, generation, route identity,
+admission state, and any supersession.
 
 No event is allowed to be consumed by both legacy and canonical actionable
 paths. During migration, route ownership is selected per App and per route with
@@ -782,6 +849,8 @@ Deliverables:
 - canonical loader reads `app.ts` only for migrated Apps;
 - prospective snapshot validation and transactional prepare/commit reload;
 - task controller preparation consumes the same registry generation;
+- durable per-event/App admission commands fence route kind and validated
+  payload across partial admission, restart, and registry reload;
 - `AppAdmission`, `AppReconciler`, `AppTaskRuntime`, and `AppDelivery` boundaries
   exist behind the current runtime facade;
 - compatibility Project Apps are adapted during prepare, not installed through
@@ -791,6 +860,8 @@ Exit gate:
 
 - reload failure leaves the complete old generation active;
 - no component observes a split App/task registry;
+- partial event admission followed by reload completes the originally selected
+  commands without inbox/task dual ownership or a dropped App obligation;
 - startup and shutdown ordering tests pass.
 
 Deletion:
@@ -841,7 +912,9 @@ Rollback:
 
 Deliverables:
 
-- move conversation definition to `may.app/app.ts`;
+- create `may.app/app.ts` from the former May inbox definition and add explicit
+  subscriptions for human-decision requests such as
+  `evaluation.human_decision.requested`;
 - migrate `may-agent.app/app.ts` to canonical platform App;
 - convert platform schedules, metric subscriptions, actions, and tasks;
 - make May-to-platform work an explicit delegation;
@@ -851,6 +924,8 @@ Deliverables:
 Exit gate:
 
 - every ordinary human request has one May inbox item;
+- Evaluation human-decision events produce one May inbox item and retain their
+  dedupe and response lineage;
 - platform work has a `may-agent` inbox item or task;
 - no May bridge, break-glass, generic owner fallback, or platform
   `defineProjectApp` path remains;
@@ -880,6 +955,8 @@ Deliverables:
 - move task authoring types and workflow results to the canonical SDK;
 - replace direct task-tree mutation in ordinary workflows with returned task
   actions or scoped host reads;
+- replace ordinary workflow reads of raw task persistence with direct-child
+  reconciliation facts or the bounded App live-task health snapshot;
 - migrate explicit maintenance scripts to the maintenance CLI;
 - preserve task IDs, task state, workspace lineage, and concurrency policy.
 
@@ -914,11 +991,14 @@ Deliverables:
 - rename remaining internal `ProjectApp*` task mechanics to `AppTask*` where the
   name describes the canonical capability;
 - simplify command router and runtime facade after old paths disappear.
+- replace the hand-maintained core observation-event list with distinct
+  persisted-versus-routed status or a generated reviewed contract catalog;
 
 Exit gate:
 
 - repository-wide search finds no production or test legacy SDK import;
 - no second App loader, descriptor registry, or event router exists;
+- core runtime source has no growing application-owned observation-event list;
 - full tests, type checking, restart/reload fault injection, and deployed
   canaries pass;
 - historical read-only compatibility is either unnecessary or isolated in one
@@ -988,9 +1068,13 @@ Exit gate:
 - prospective invalid definition leaves old generation active;
 - missing owner/workflow leaves old generation active;
 - removal with unfinished inbox/task work is rejected;
+- partial multi-App admission followed by reload completes the frozen route
+  commands and cannot change one App from inbox to task ownership;
 - prepare failure does not partially publish routes/controllers;
 - in-flight old-generation results are safely admitted or rejected by fences;
-- schedule/observer subscriptions do not duplicate across reload.
+- the process-scoped durable App event route and schedule scan loop do not
+  duplicate across successful or failed reload;
+- late observer results from a superseded generation remain fenced.
 
 ### Route-ownership tests
 
@@ -1070,11 +1154,13 @@ a release metric, and the legacy package has no new exports.
 Mitigation: migrate AKS last, first reconcile its current worktree, and avoid
 mechanical import churn until its canonical route table is reviewed.
 
-## Completion criteria
+## Implementation and merge criteria
 
 The migration is complete only when all of the following are true:
 
 - every App has exactly one canonical `app.ts` definition;
+- no second service/plugin loader, cross-App live service registry, or generic
+  runtime capability injection exists beside that definition;
 - `may` and `may-agent` are explicit separate Apps;
 - one registry generation owns definitions, routes, schedules, observers, and
   task controllers;
@@ -1084,6 +1170,9 @@ The migration is complete only when all of the following are true:
 - every App subscription, schedule, and action admits through the canonical
   host;
 - the task engine is host-private and consumes canonical App definitions;
+- ordinary App workflows do not read task persistence; direct-child decisions
+  use child/receipt facts and App-wide health review uses the capped,
+  truncation-aware live snapshot;
 - no application or runtime file imports `@may-agent/sdk/legacy`;
 - `defineProjectApp`, the legacy SDK export, duplicate App loaders, generic
   owner-inbox request handling, and legacy event-driven App execution are
@@ -1091,22 +1180,29 @@ The migration is complete only when all of the following are true:
 - restart/reload and route-ownership suites pass;
 - accepted design documents and manuals describe the implemented canonical
   model only;
-- deployed canaries demonstrate direct answer, delegation, task convergence,
-  restart recovery, and safe delivery.
+- runtime subsystem composition is host-private and explicitly wired; every
+  long-lived effect has a process or registry-generation owner, repeated
+  reload does not duplicate process-scoped adapters, and genuinely
+  generation-scoped attachments have deterministic teardown;
+- direct answer, delegation, task convergence, restart recovery, and safe
+  delivery paths have deterministic integration or end-to-end coverage.
 
-## Immediate implementation slice
+## Post-merge rollout gate
 
-The first reviewable implementation slice is intentionally narrow:
+Production rollout is complete only after deployed canaries demonstrate direct
+answer, delegation, task convergence, restart recovery, reload, and safe
+delivery against retained live state. This is a deployment gate, not a reason
+to retain a second App model in source.
 
-1. add canonical definition types for subscription translation, schedules,
-   actions, workspace, and task policy without changing live routing;
-2. add validation and contract tests;
-3. introduce a prepared immutable registry generation shared by App inbox and
-   task compatibility adapter;
-4. prove transactional reload failure leaves the old generation active;
-5. migrate the evaluation canary to `app.ts` and delete its duplicate
-   definition;
-6. review the resulting boundary before moving production evaluation routes.
+## Merge-readiness evidence (2026-08-16)
 
-This slice proves the architecture while preserving all existing live App and
-task state.
+- The paired runtime worktree passes both TypeScript gates and 2,196 tests with
+  `MAY_AGENT_APP_ROOT` bound to this Apps worktree.
+- The six migrated Apps pass their complete local checks. AKS passes 633 tests,
+  its two workflow-input tests, and current-bundle verification.
+- Repository-wide Apps typecheck, the 350-test default App health suite, and
+  May design integrity all pass.
+- Live source contains no `defineProjectApp`, `@may-agent/sdk/legacy`, parallel
+  `inbox.ts`, retired App loader, or task-tree CLI authoring guidance.
+- Both migration branches contain their current integration bases and pass
+  `git diff --check`.

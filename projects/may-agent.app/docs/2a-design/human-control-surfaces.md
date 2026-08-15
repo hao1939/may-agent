@@ -1,9 +1,8 @@
 # Human Control Surfaces
 
 **Design status:** Accepted.
-**Implementation status:** Canonical May App admission and correlated delivery
-are implemented; remaining legacy chat/event follow-through paths are being
-removed.
+**Implementation status:** Implemented through canonical May App admission,
+explicit dependencies, and correlated channel delivery.
 
 ## Purpose
 
@@ -27,7 +26,7 @@ transport
   -> typed ingress
      -> ordinary request: admit to May App
      -> explicit control: deterministic controller
-     -> project comment: publish fact to declared project-App subscription
+     -> project comment: publish fact to declared Agent App subscription
      -> App action: validate schema and admit App input
   -> canonical runtime ownership
   -> bounded read/progress/delivery projection
@@ -150,9 +149,9 @@ Project steering has two distinct ingress forms.
 
 ```text
 project.comment.created fact
-  -> declared project-App subscription
+  -> declared Agent App subscription
   -> pure toInput translation
-  -> correlated project-App inbox request
+  -> correlated Agent App inbox request
 ```
 
 The HTTP/transport receipt proves only that the fact was persisted or request
@@ -277,7 +276,7 @@ All transports prove the same behaviors:
 - Conversation, session, event, trace, and reply anchors are context—not work
   authority.
 - Domain work crosses through typed App delegation or an explicitly declared
-  project-App subscription/action.
+  Agent App subscription/action.
 - May retains final human closeout while domain Apps retain project meaning.
 - Every future-result promise has a durable child/task dependency before May's
   current pass ends.

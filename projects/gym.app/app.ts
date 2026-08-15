@@ -1,10 +1,13 @@
 import { createHash } from "node:crypto";
 import {
-  defineProjectApp,
-  eventDetails,
   Type,
-  type ProjectAppEvent,
-  type ProjectAppTaskIntent,
+  defineApp,
+  type AppDisposition,
+  type AppEvent,
+  type AppInput,
+  type AppRequest,
+  type EventSelector,
+  type TaskIntent,
 } from "@may-agent/sdk";
 import mayCanary from "../gym/benchmarks/may-alignment/canary.json";
 
@@ -18,81 +21,56 @@ function params(value: unknown): Record<string, unknown> {
     : {};
 }
 
-function regressionRequested(input: unknown = {}): ProjectAppEvent {
+function eventDetails(event: Record<string, unknown>): Record<string, unknown> {
+  const data = params(event.data);
   return {
-    type: "gym.regression.requested",
-    project: projectId,
-    params: {
-      benchmark: "may-alignment",
-      agent: "may",
-      trials: mayCanary.development_trials,
-      ...params(input),
-    },
+    ...params(event.target),
+    ...data,
+    ...selected(event, ["action", "owner", "source", "urgency"]),
   };
 }
 
-function incidentDetected(input: unknown = {}): ProjectAppEvent {
+function gymEvent(
+  type: string,
+  input: unknown = {},
+): AppEvent<Record<string, unknown>> {
   return {
-    type: "gym.incident.detected",
-    project: projectId,
-    params: params(input),
+    type,
+    data: { project: projectId, ...params(input) },
+    target: { appId: projectId, project: projectId },
   };
 }
 
-function improvementRequested(input: unknown = {}): ProjectAppEvent {
-  return {
-    type: "gym.improvement.requested",
-    project: projectId,
-    params: {
-      agent: "may",
-      benchmark: "may-alignment",
-      scenarios: [...mayCanaryScenarios],
-      trials: 3,
-      ...params(input),
-    },
-  };
+function improvementRequested(
+  input: unknown = {},
+): AppEvent<Record<string, unknown>> {
+  return gymEvent("gym.improvement.requested", {
+    agent: "may",
+    benchmark: "may-alignment",
+    scenarios: [...mayCanaryScenarios],
+    trials: 3,
+    ...params(input),
+  });
 }
 
 function isMayEvaluation(event: Record<string, unknown>): boolean {
   return String(eventDetails(event).agent ?? "").toLowerCase() === "may";
 }
 
-function codexLearningRequested(input: unknown = {}): ProjectAppEvent {
-  return {
-    type: "gym.codex.learning.requested",
-    project: projectId,
-    params: {
-      batchSize: 200,
-      maxBatches: 1,
-      ...params(input),
-    },
-  };
+function codexLearningRequested(
+  input: unknown = {},
+): AppEvent<Record<string, unknown>> {
+  return gymEvent("gym.codex.learning.requested", {
+    batchSize: 200,
+    maxBatches: 1,
+    ...params(input),
+  });
 }
 
-function telegramFieldReviewRequested(input: unknown = {}): ProjectAppEvent {
-  return {
-    type: "gym.telegram.field-review.requested",
-    project: projectId,
-    params: {
-      batchSize: 40,
-      ...params(input),
-    },
-  };
-}
-
-function designAlignmentRequested(input: unknown = {}): ProjectAppEvent {
-  return {
-    type: "gym.design-alignment.requested",
-    project: projectId,
-    params: params(input),
-  };
-}
-
-function durableEventId(event: Record<string, unknown>): number | null {
-  const value = event.eventId;
-  return typeof value === "number" && Number.isInteger(value) && value > 0
-    ? value
-    : null;
+function designAlignmentRequested(
+  input: unknown = {},
+): AppEvent<Record<string, unknown>> {
+  return gymEvent("gym.design-alignment.requested", input);
 }
 
 function taskIdentity(prefix: string, value: unknown): string {
@@ -132,7 +110,7 @@ function isMayMetricBreach(event: Record<string, unknown>): boolean {
   );
 }
 
-function mayImprovementIntent(): ProjectAppTaskIntent {
+function mayImprovementIntent(): TaskIntent {
   return {
     id: "improve/may",
     parentId: "regression-assurance",
@@ -161,7 +139,7 @@ function mayImprovementIntent(): ProjectAppTaskIntent {
   };
 }
 
-function gymOwnerReviewIntent(): ProjectAppTaskIntent {
+function gymOwnerReviewIntent(): TaskIntent {
   return {
     id: "runtime/owner-review",
     parentId: "review-proposals",
@@ -180,10 +158,8 @@ function gymOwnerReviewIntent(): ProjectAppTaskIntent {
 
 export function resolveGymTask(
   event: Record<string, unknown>,
-): ProjectAppTaskIntent | null {
+): TaskIntent | null {
   const details = eventDetails(event);
-  const eventId = durableEventId(event);
-  if (!eventId) return null;
 
   switch (event.type) {
     case "evaluation.reviewed":
@@ -210,9 +186,6 @@ export function resolveGymTask(
             priority: "P1",
           }
         : null;
-    case "project.comment.created":
-    case "project.owner.requested":
-      return gymOwnerReviewIntent();
     case "gym.design-alignment.requested":
       return {
         id: "runtime/design-alignment-review",
@@ -262,7 +235,8 @@ export function resolveGymTask(
         evaluation.sessionId ??
         details.sessionId ??
         details.incidentId ??
-        `event-${eventId}`;
+        details.requestId;
+      if (!incidentIdentity) return null;
       return {
         id: taskIdentity("incident-intake", incidentIdentity),
         parentId: "incident-learning",
@@ -301,8 +275,9 @@ export function resolveGymTask(
       const evidenceIdentity =
         evaluation.reviewSessionId ??
         evaluation.sessionId ??
-        details.sessionId ??
-        `event-${eventId}`;
+        details.reviewSessionId ??
+        details.sessionId;
+      if (!evidenceIdentity) return null;
       return {
         id: taskIdentity("learning-evidence", evidenceIdentity),
         parentId: "incident-learning",
@@ -354,29 +329,11 @@ export function resolveGymTask(
         outputs: [".state/learning/codex"],
         priority: "P2",
       };
-    case "gym.telegram.field-review.requested":
+    case "gym.regression.requested": {
+      const requestId = String(details.requestId ?? "").trim();
+      if (!requestId) return null;
       return {
-        id: "learning/telegram-field-review",
-        parentId: "incident-learning",
-        outcome:
-          "Review completed May Telegram conversations and preserve only strong evidence that improves deputy behavior or the surrounding system.",
-        acceptance: [
-          "The review judges Hao's intent, May's handling, the delivered outcome, and any clear human reaction.",
-          "Weak or one-off signals are discarded and completed source events advance a durable checkpoint.",
-          "Every retained signal names the responsible layer; only strong actionable failures request a proposal.",
-        ],
-        mode: "maintain",
-        workflow: "telegram-field-review",
-        input: {
-          reason: String(details.reason ?? "daily-field-review"),
-          ...selected(details, ["batchSize"]),
-        },
-        outputs: [".state/learning/telegram"],
-        priority: "P2",
-      };
-    case "gym.regression.requested":
-      return {
-        id: taskIdentity("regression-run", `event-${eventId}`),
+        id: taskIdentity("regression-run", requestId),
         parentId: "regression-assurance",
         outcome:
           "Run the requested standalone Gym benchmark and preserve its result or operational failure for review.",
@@ -395,11 +352,15 @@ export function resolveGymTask(
         outputs: [".state/runs", ".state/failures"],
         priority: "P1",
       };
+    }
     case "gym.review.requested": {
-      const requestIdentity = [
-        details.requestKey ?? `event-${eventId}`,
-        details.recoveryId,
-      ]
+      const evidenceIdentity =
+        details.requestKey ??
+        details.failurePath ??
+        details.incidentId ??
+        details.runId;
+      if (!evidenceIdentity) return null;
+      const requestIdentity = [evidenceIdentity, details.recoveryId]
         .filter(Boolean)
         .join(":");
       return {
@@ -434,7 +395,99 @@ export function resolveGymTask(
   }
 }
 
-export default defineProjectApp({
+const gymInputKinds = [
+  "owner-review",
+  "improve-may",
+  "run-regression",
+  "report-incident",
+  "collect-codex-learning",
+  "review-telegram-field",
+] as const;
+
+const gymInputSchema = Type.Object(
+  {
+    kind: Type.Union(gymInputKinds.map((kind) => Type.Literal(kind))),
+    data: Type.Record(Type.String(), Type.Unknown()),
+  },
+  { additionalProperties: false },
+);
+
+function gymInput(
+  kind: (typeof gymInputKinds)[number],
+  data: unknown,
+): AppInput {
+  return { kind, data: params(data) };
+}
+
+function taskForGymInput(
+  input: AppInput,
+  requestId: string,
+): TaskIntent | null {
+  const data = { ...params(input.data), requestId };
+  switch (input.kind) {
+    case "owner-review":
+      return gymOwnerReviewIntent();
+    case "improve-may":
+      return mayImprovementIntent();
+    case "run-regression":
+      return resolveGymTask(gymEvent("gym.regression.requested", data));
+    case "report-incident":
+      return resolveGymTask(gymEvent("gym.incident.detected", data));
+    case "collect-codex-learning":
+      return resolveGymTask(gymEvent("gym.codex.learning.requested", data));
+    default:
+      return null;
+  }
+}
+
+export function routeGymRequest(
+  request: Readonly<AppRequest>,
+): AppDisposition | null {
+  if (request.dependency) {
+    return request.dependency.status === "done"
+      ? {
+          type: "complete",
+          summary:
+            request.dependency.summary ?? `${request.input.kind} completed`,
+          response: request.dependency.response,
+          evidence: request.dependency.evidence,
+        }
+      : null;
+  }
+  if (request.input.kind === "review-telegram-field") {
+    return {
+      type: "delegate",
+      appId: "evaluation",
+      input: {
+        kind: "deep-scan",
+        data: {
+          reason: "gym-telegram-field-review",
+          requestedBy: "gym",
+          ...params(request.input.data),
+        },
+      },
+    };
+  }
+  const intent = taskForGymInput(request.input, request.id);
+  return intent ? { type: "task", task: { kind: "desired", intent } } : null;
+}
+
+const gymTaskSubscriptions: EventSelector[] = [
+  { type: "evaluation.reviewed", agents: ["may"] },
+  "gym.incident.detected",
+  "gym.learning.evidence.observed",
+  "gym.codex.learning.requested",
+  "gym.design-alignment.requested",
+  "gym.resource-migration.requested",
+  "gym.regression.requested",
+  "gym.review.requested",
+  "gym.improvement.requested",
+  { type: "metric.breach" },
+  { type: "agent.revision.changed", agents: ["may"] },
+  { type: "project.approval.submitted", project: projectId },
+];
+
+export default defineApp({
   id: projectId,
   version: 1,
   owner: "gym",
@@ -444,107 +497,97 @@ export default defineProjectApp({
     kind: "local",
     localPath: "../gym",
   },
-
-  budget: {
-    maxConcurrent: 2,
-  },
+  inputSchema: gymInputSchema,
+  inbox: { batch: "single", maxConcurrent: 2 },
+  route: routeGymRequest,
+  subscriptions: [
+    {
+      id: "project-comment",
+      event: { type: "project.comment.created", project: projectId },
+      toInput(event) {
+        return gymInput("owner-review", eventDetails(event));
+      },
+    },
+    {
+      id: "project-owner-request",
+      event: { type: "project.owner.requested", project: projectId },
+      toInput(event) {
+        return gymInput("owner-review", eventDetails(event));
+      },
+    },
+  ],
 
   schedules: [
     {
       id: "may-training-refill",
       enabled: mayCanary.automatic_schedule_enabled,
       intervalMs: 86_400_000,
-      emits: [
-        improvementRequested({
-          reason: "curriculum-refill",
-          curriculumDrain: true,
-        }),
-      ],
+      event: improvementRequested({
+        reason: "curriculum-refill",
+        curriculumDrain: true,
+      }),
     },
     {
       id: "codex-learning-drain",
       enabled: true,
       intervalMs: 3_600_000,
-      emits: [
-        codexLearningRequested({
-          reason: "continuous-source-drain",
-          batchSize: 200,
-          maxBatches: 5,
-        }),
-      ],
-    },
-    {
-      id: "telegram-field-review-daily",
-      enabled: true,
-      intervalMs: 86_400_000,
-      emits: [telegramFieldReviewRequested({ reason: "daily-field-review" })],
+      event: codexLearningRequested({
+        reason: "continuous-source-drain",
+        batchSize: 200,
+        maxBatches: 5,
+      }),
     },
     {
       id: "design-alignment-review-daily",
       enabled: true,
       intervalMs: 86_400_000,
-      emits: [
-        designAlignmentRequested({ reason: "daily-design-alignment-review" }),
-      ],
+      event: designAlignmentRequested({
+        reason: "daily-design-alignment-review",
+      }),
     },
   ],
 
   tasks: {
-    accepts: [
-      { type: "evaluation.reviewed", agents: ["may"] },
-      "gym.incident.detected",
-      "gym.learning.evidence.observed",
-      "gym.codex.learning.requested",
-      "gym.telegram.field-review.requested",
-      "gym.design-alignment.requested",
-      "gym.resource-migration.requested",
-      "gym.regression.requested",
-      "gym.review.requested",
-      "gym.improvement.requested",
-      { type: "metric.breach" },
-      { type: "agent.revision.changed", agents: ["may"] },
-      { type: "project.comment.created", project: projectId },
-      { type: "project.owner.requested", project: projectId },
-      { type: "project.approval.submitted", project: projectId },
-    ],
+    attach: true,
+    maxConcurrent: 2,
+    subscriptions: [...gymTaskSubscriptions],
     resolve: resolveGymTask,
   },
 
   actions: {
     "improve-may-now": {
-      type: "async",
       description:
         "Run one bounded May improvement cycle against approved Gym evidence.",
       inputSchema: actionInputSchema,
-      event(input) {
-        return improvementRequested({ reason: "manual", ...params(input) });
+      toInput(input) {
+        return gymInput("improve-may", { reason: "manual", ...params(input) });
       },
     },
     "run-regression": {
-      type: "async",
       description:
         "Run May alignment regression now, optionally for one scenario.",
       inputSchema: actionInputSchema,
-      event(input) {
-        return regressionRequested(input);
+      toInput(input) {
+        return gymInput("run-regression", input);
       },
     },
     "report-incident": {
-      type: "async",
       description:
         "Submit a concrete May failure or human correction for benchmark review.",
       inputSchema: actionInputSchema,
-      event(input) {
-        return incidentDetected({ reason: "manual", ...params(input) });
+      toInput(input) {
+        return gymInput("report-incident", {
+          reason: "manual",
+          ...params(input),
+        });
       },
     },
     "collect-codex-learning": {
-      type: "async",
       description:
         "Collect a bounded batch of strong Hao preference and decision signals from Codex sessions.",
       inputSchema: actionInputSchema,
-      event(input) {
-        return codexLearningRequested({
+      toInput(input) {
+        return gymInput("collect-codex-learning", {
           reason: "manual-backfill",
           batchSize: 200,
           maxBatches: 5,
@@ -553,12 +596,11 @@ export default defineProjectApp({
       },
     },
     "review-telegram-field": {
-      type: "async",
       description:
-        "Review a bounded batch of completed May Telegram conversations for strong field evidence.",
+        "Ask Evaluation to review current May field behavior through its canonical evidence pipeline.",
       inputSchema: actionInputSchema,
-      event(input) {
-        return telegramFieldReviewRequested({
+      toInput(input) {
+        return gymInput("review-telegram-field", {
           reason: "manual-field-review",
           ...params(input),
         });

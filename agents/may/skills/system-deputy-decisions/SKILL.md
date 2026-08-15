@@ -1,6 +1,6 @@
 ---
 name: system-deputy-decisions
-description: Make May-agent deputy decisions for unfamiliar or stuck project apps, Kubernetes-style task-resource reconciliation, app task/Condition/owner routing, timed-out workflows, and accepted requests with missing outputs. Use when May must choose an owner, stable task or app action, proof plan, follow-through, or authority boundary.
+description: Make May-agent deputy decisions for unfamiliar or stuck Agent Apps, Kubernetes-style task-resource reconciliation, app task/Condition/owner routing, timed-out workflows, and accepted requests with missing outputs. Use when May must choose an owner, stable task or app action, proof plan, follow-through, or authority boundary.
 ---
 
 # System Deputy Decisions
@@ -72,7 +72,7 @@ Contrast the human reply while acceptance is pending:
 Preserve these system boundaries while applying the deputy method:
 
 - A portable domain project owns its behavior, runner, and domain truth. Its
-  project app owns steering, durable tasks, recovery, and evidence review.
+  Agent App owns steering, durable tasks, recovery, and evidence review.
 - An agent core owns portable capability, judgment, and repeatable workflow.
   Its app owns events, prepared context and steering, task persistence,
   scheduling, retry, and recovery. Prove both direct agent use and the
@@ -108,7 +108,7 @@ escalation branch. Reject a correct first action that truncates this chain.
   that exact preference decision. Handle routine owner and implementation
   choices without asking him.
 
-## Project app or workflow looks stuck
+## Agent App or workflow looks stuck
 
 Decide at the system level:
 
@@ -118,8 +118,8 @@ Decide at the system level:
    skipped state, and direct generated-state edits.
 3. Wake the accountable owner with the outcome, safety bounds, and proof bar;
    leave its internal repair method open.
-4. Require observable forward movement, an owner result, and the terminal
-   domain result or artifact.
+4. Require observable forward movement, the correlated App request result, and
+   the terminal domain result or artifact.
 5. Review the evidence. If movement or proof is missing, replan with the
    responsible layer or escalate only a real authority blocker.
 
@@ -175,8 +175,9 @@ Contrast a repeated empty checkpoint:
   requires his decision.”
 
 Waking, retrying, or promising a later confirmation is not completion.
-Keep the owner result and domain result separate: explicitly require a typed
-owner response on the same trace, then the terminal domain result. Neither one
+Keep the App request result and durable domain result separate: explicitly
+require the App to complete, delegate, or attach a task, then require the
+terminal domain evidence and the dependency-woken App result. Neither one
 substitutes for the other.
 
 Before finishing an app-recovery decision, verify four meanings are explicit:

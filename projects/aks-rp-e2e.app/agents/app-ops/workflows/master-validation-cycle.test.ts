@@ -3,10 +3,7 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import {
-  resolveAksTask,
-  verifiedCampaignFixPullRequestIds,
-} from "../../../app.js";
+import { resolveAksTask } from "../../../app.js";
 import {
   activeMasterValidationRun,
   buildMasterValidationQueueArgs,
@@ -227,66 +224,18 @@ describe("master-validation cycle", () => {
   });
 
   test("publishes only a fix proven at the exact focused PR head", () => {
-    const campaign = {
-      schemaVersion: "1" as const,
-      baselineRunId: "100",
-      baseCommit: "base",
-      branch: "validation/master-validation-100",
-      currentCommit: "candidate",
-      integratedFixes: [
-        {
-          pullRequestId: "7",
-          taskId: "domain/master-validation-failure/spec.example/fp",
+    expect(
+      fixVerificationTrigger({
+        type: "project.task.tick",
+        data: {
+          reason: "master-validation-fix-verified",
+          specId: "spec.example",
+          pipelineRunId: "101",
           sourceBranch: "task/example",
           sourceCommit: "fix",
-          title: "fix example",
-        },
-        {
-          pullRequestId: "8",
-          taskId: "domain/master-validation-failure/spec.example",
-          sourceBranch: "task/example-stable",
-          sourceCommit: "stable-fix",
-          title: "stable fix example",
-        },
-      ],
-      updatedAt: "2026-07-25T00:00:00Z",
-    };
-    const event = {
-      type: "pipeline.spec.observed",
-      data: {
-        specId: "spec.example",
-        status: "pass",
-        pipelineRunId: "101",
-        sourceBranch: "refs/heads/validation/master-validation-100",
-        sourceCommit: "candidate",
-      },
-    };
-    expect(verifiedCampaignFixPullRequestIds(campaign, event)).toEqual([]);
-    expect(
-      verifiedCampaignFixPullRequestIds(campaign, {
-        ...event,
-        data: {
-          ...event.data,
-          sourceBranch: "refs/heads/task/example",
-          sourceCommit: "fix",
+          pullRequestIds: ["7"],
         },
       }),
-    ).toEqual(["7"]);
-    expect(
-      fixVerificationTrigger(`
-## Trigger Event
-${JSON.stringify({
-  type: "project.task.tick",
-  data: {
-    reason: "master-validation-fix-verified",
-    specId: "spec.example",
-    pipelineRunId: "101",
-    sourceBranch: "task/example",
-    sourceCommit: "fix",
-    pullRequestIds: ["7"],
-  },
-})}
-`),
     ).toEqual({
       specId: "spec.example",
       pipelineRunId: "101",

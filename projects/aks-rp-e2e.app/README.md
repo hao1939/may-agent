@@ -6,7 +6,7 @@ the convention-first Agent App reconciliation model.
 ## Mental model
 
 ```text
-event or periodic resync
+subscribed fact or periodic resync
   -> app resolves desired task identity
   -> one app work queue deduplicates the task key
   -> generic reconciler compares desired and observed state
@@ -26,9 +26,9 @@ event or periodic resync
 `app.ts` declares:
 
 - one accountable owner: `app-ops`;
-- one `tasks.accepts` selector list and one `tasks.resolve` function;
-- schedules that emit semantic events only;
-- actions that translate directly to semantic events; and
+- one `tasks.subscriptions` selector list and one `tasks.resolve` function;
+- schedules that publish semantic facts only;
+- actions that translate into validated canonical App inputs; and
 - no task routes, owner-entry wrapper, workflow map, or manual event graph.
 
 A task with `workflow: "name"` resolves
@@ -40,15 +40,16 @@ workflow; it corrects the same task and resumes that workflow, or records an
 exact external wait/escalation when the required action is outside the owner
 boundary.
 
-Every handler returns one envelope:
+Every task workflow completes with a canonical execution result whose output is
+one reconciliation envelope:
 
 ```ts
 {
   state: "converged" | "waiting" | "needs-owner";
   summary: string;
   evidence: string[];
-  actions?: ProjectAppTaskAction[];
-  conditions?: ProjectAppConditionSpec[];
+  actions?: TaskAction[];
+  conditions?: Condition[];
 }
 ```
 
@@ -80,7 +81,8 @@ events may likewise target independent focus task IDs.
 
 ## State
 
-- `.state/tasks/state.json` — sole mutable task resource authority.
+- `.state/tasks/state.json` — host-private mutable task resource authority;
+  App code never reads or writes it.
 - `.state/tasks/tree.json` — generated disposable read projection.
 - `.state/spec-loop/state.json` — spec verification domain ledger.
 - `.state/feature-compact-loop/state.json` — compact-package domain ledger.
@@ -100,5 +102,6 @@ bun run test
 bun run check
 ```
 
-The canonical design is
-[`app-task-reconciliation-model.md`](../may-agent.app/docs/3-proposals/app-task-reconciliation-model.md).
+The canonical design is [Agent App](../may-agent.app/docs/2a-design/agent-app.md),
+with migration rationale in [Canonical Agent App
+migration](../may-agent.app/docs/3-proposals/canonical-agent-app-migration.md).

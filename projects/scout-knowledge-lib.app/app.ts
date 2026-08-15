@@ -1,12 +1,13 @@
 import {
-  defineProjectApp,
-  eventDetails,
   Type,
-  type ProjectAppContext,
-  type ProjectAppEvent,
-  type ProjectAppTaskIntent,
+  defineApp,
+  type AppDisposition,
+  type AppEvent,
+  type AppInput,
+  type AppRequest,
+  type TaskIntent,
 } from "@may-agent/sdk";
-import { observeXhsCredential } from "./watchers/xhs-credential.js";
+import { xhsCredentialObserver } from "./watchers/xhs-credential.js";
 
 const projectId = "scout-knowledge-lib";
 const appDir = "/app/projects/scout-knowledge-lib.app";
@@ -19,13 +20,39 @@ function eventParams(params: unknown): Record<string, unknown> {
     : {};
 }
 
-function ownerRequested(reason: string, params: unknown = {}): ProjectAppEvent {
+function eventDetails(event: Record<string, unknown>): Record<string, unknown> {
+  const data = eventParams(event.data);
   return {
-    type: "project.owner.requested",
-    project: projectId,
-    reason,
-    params: eventParams(params),
+    ...eventParams(event.target),
+    ...eventParams(data.params),
+    ...data,
+    ...Object.fromEntries(
+      Object.entries(event).filter(
+        ([key]) => !["data", "target"].includes(key),
+      ),
+    ),
   };
+}
+
+function scoutEvent(
+  type: string,
+  data: unknown = {},
+): AppEvent<Record<string, unknown>> {
+  return {
+    type,
+    data: { project: projectId, ...eventParams(data) },
+    target: { appId: projectId, project: projectId },
+  };
+}
+
+function ownerRequested(
+  reason: string,
+  params: unknown = {},
+): AppEvent<Record<string, unknown>> {
+  return scoutEvent("project.owner.requested", {
+    reason,
+    ...eventParams(params),
+  });
 }
 
 const scoutSources = new Set(["arxiv", "hn", "xhs", "github"]);
@@ -40,7 +67,7 @@ const ownerReviewReasons = new Set([
 
 export function resolveScoutTask(
   event: Record<string, unknown>,
-): ProjectAppTaskIntent | null {
+): TaskIntent | null {
   const details = eventDetails(event);
   switch (event.type) {
     case "scout.explore": {
@@ -124,38 +151,88 @@ export function resolveScoutTask(
   }
 }
 
-async function routeScoutEvent(
-  ctx: ProjectAppContext,
-  event: Record<string, unknown>,
-): Promise<unknown> {
-  if (event.type === "project.xhs_credential.check") {
-    return observeXhsCredential(ctx);
+function scoutMetricInput(
+  event: AppEvent<Record<string, unknown>>,
+): AppInput | null {
+  const details = eventDetails(event as unknown as Record<string, unknown>);
+  const owner = String(event.owner ?? details.owner ?? "");
+  const metricId = String(
+    details.metricId ?? details.metric_id ?? details.metric ?? "",
+  );
+  if (
+    owner !== "scout" &&
+    owner !== "agent:scout" &&
+    !metricId.startsWith("scout.")
+  ) {
+    return null;
   }
-
-  if (event.type === "metric.breach") {
-    const details = eventDetails(event);
-    const owner = String(event.owner ?? details.owner ?? "");
-    const metricId = String(
-      details.metricId ?? details.metric_id ?? details.metric ?? "",
-    );
-    if (
-      owner !== "scout" &&
-      owner !== "agent:scout" &&
-      !metricId.startsWith("scout.")
-    ) {
-      return ctx.noop(`ignored non-Scout metric breach ${metricId || "<unknown>"}`);
-    }
-    return ctx.emit(
-      ownerRequested("library-health-signal", {
-        metric: details,
-      }),
-    );
-  }
-
-  return undefined;
+  return {
+    kind: "owner-review",
+    data: { reason: "library-health-signal", metric: details },
+  };
 }
 
-export default defineProjectApp({
+const scoutInputSchema = Type.Object(
+  {
+    kind: Type.Union([
+      Type.Literal("owner-review"),
+      Type.Literal("library-health"),
+      Type.Literal("explore"),
+    ]),
+    data: Type.Record(Type.String(), Type.Unknown()),
+  },
+  { additionalProperties: false },
+);
+
+function scoutInput(kind: AppInput["kind"], data: unknown): AppInput {
+  return { kind, data: eventParams(data) };
+}
+
+function taskForScoutInput(input: AppInput): TaskIntent | null {
+  const data = eventParams(input.data);
+  switch (input.kind) {
+    case "owner-review":
+      return resolveScoutTask(
+        scoutEvent("project.owner.requested", data) as unknown as Record<
+          string,
+          unknown
+        >,
+      );
+    case "library-health":
+      return resolveScoutTask(
+        scoutEvent("project.library_health.tick", data) as unknown as Record<
+          string,
+          unknown
+        >,
+      );
+    case "explore":
+      return resolveScoutTask(
+        scoutEvent("scout.explore", data) as unknown as Record<string, unknown>,
+      );
+    default:
+      return null;
+  }
+}
+
+export function routeScoutRequest(
+  request: Readonly<AppRequest>,
+): AppDisposition | null {
+  if (request.dependency) {
+    return request.dependency.status === "done"
+      ? {
+          type: "complete",
+          summary:
+            request.dependency.summary ?? `${request.input.kind} completed`,
+          response: request.dependency.response,
+          evidence: request.dependency.evidence,
+        }
+      : null;
+  }
+  const intent = taskForScoutInput(request.input);
+  return intent ? { type: "task", task: { kind: "desired", intent } } : null;
+}
+
+export default defineApp({
   id: projectId,
   version: 1,
   owner: "scout",
@@ -165,166 +242,154 @@ export default defineProjectApp({
     kind: "local",
     localPath: "../scout-knowledge-lib",
   },
-
-  budget: {
-    sessionsPerDay: 50,
-    tokensPerDay: 800_000,
-    // All source lanes share one knowledge tree and one digest accumulator.
-    maxConcurrent: 1,
-  },
+  inputSchema: scoutInputSchema,
+  inbox: { batch: "single", maxConcurrent: 1 },
+  route: routeScoutRequest,
+  subscriptions: [
+    {
+      id: "project-comment",
+      event: { type: "project.comment.created", project: projectId },
+      toInput(event) {
+        return scoutInput("owner-review", {
+          reason: "project-comment",
+          ...eventDetails(event as unknown as Record<string, unknown>),
+        });
+      },
+    },
+    {
+      id: "project-owner-request",
+      event: { type: "project.owner.requested", project: projectId },
+      toInput(event) {
+        const details = eventDetails(
+          event as unknown as Record<string, unknown>,
+        );
+        return ownerReviewReasons.has(String(details.reason ?? ""))
+          ? scoutInput("owner-review", details)
+          : null;
+      },
+    },
+    {
+      id: "scout-metric-breach",
+      event: { type: "metric.breach" },
+      toInput: scoutMetricInput,
+    },
+    {
+      id: "xhs-credential-attention",
+      event: { type: "credential.state", project: projectId },
+      toInput(event) {
+        const details = eventDetails(
+          event as unknown as Record<string, unknown>,
+        );
+        return details.credential === "xhs" && details.state === "unavailable"
+          ? scoutInput("owner-review", {
+              reason: "library-health-signal",
+              credential: details,
+            })
+          : null;
+      },
+    },
+  ],
+  observations: ["project.knowledge.maintained"],
+  observers: [xhsCredentialObserver],
 
   schedules: [
     {
       id: "owner-review",
       enabled: true,
       intervalMs: 86_400_000,
-      emits: [
-        ownerRequested("experience-review", {
-          instruction:
-            "Daily knowledge-library owner review: inspect current library needs and the bounded reconciliation-history packet. Choose ordinary maintenance, at most one finite process improvement or investigation task, or an evidence-backed no-op. Do not create standalone projects.",
-          reviewChecklist: [
-            "When useful, read recent findings, connect sources, identify one non-obvious implication, update canonical knowledge, and verify the output. Synthesis is optional; do not manufacture it.",
-            "Look for stale or duplicate findings, missing index coverage, and knowledge entries that need rollup.",
-            "Look for exact repeated failures, owner handoffs, or evidence-backed no-ops that may justify one reusable improvement.",
-            "Check the current tree before proposing work and do not duplicate a live task.",
-            "No-op is valid when existing exploration and maintenance tasks already cover the useful next work.",
-          ],
-        }),
-      ],
-    },
-    {
-      id: "xhs-credential-watcher",
-      enabled: true,
-      intervalMs: 300_000,
-      emits: [
-        {
-          type: "project.xhs_credential.check",
-          project: projectId,
-        },
-      ],
+      event: ownerRequested("experience-review", {
+        instruction:
+          "Daily knowledge-library owner review: inspect current library needs and the bounded reconciliation-history packet. Choose ordinary maintenance, at most one finite process improvement or investigation task, or an evidence-backed no-op. Do not create standalone projects.",
+        reviewChecklist: [
+          "When useful, read recent findings, connect sources, identify one non-obvious implication, update canonical knowledge, and verify the output. Synthesis is optional; do not manufacture it.",
+          "Look for stale or duplicate findings, missing index coverage, and knowledge entries that need rollup.",
+          "Look for exact repeated failures, owner handoffs, or evidence-backed no-ops that may justify one reusable improvement.",
+          "Check the current tree before proposing work and do not duplicate a live task.",
+          "No-op is valid when existing exploration and maintenance tasks already cover the useful next work.",
+        ],
+      }),
     },
     {
       id: "scout-explore-arxiv",
       enabled: true,
       intervalMs: 14_400_000, // 4h
-      emits: [
-        {
-          type: "scout.explore",
-          project: projectId,
-          source: "arxiv",
-        },
-      ],
+      event: scoutEvent("scout.explore", { source: "arxiv" }),
     },
     {
       id: "scout-explore-hn",
       enabled: true,
       intervalMs: 7_200_000, // 2h
-      emits: [
-        {
-          type: "scout.explore",
-          project: projectId,
-          source: "hn",
-        },
-      ],
+      event: scoutEvent("scout.explore", { source: "hn" }),
     },
     {
       id: "scout-explore-xhs",
       enabled: true,
       intervalMs: 14_400_000, // 4h
-      emits: [
-        {
-          type: "scout.explore",
-          project: projectId,
-          source: "xhs",
-        },
-      ],
+      event: scoutEvent("scout.explore", { source: "xhs" }),
     },
     {
       id: "scout-explore-github",
       enabled: true,
       intervalMs: 7_200_000, // 2h
-      emits: [
-        {
-          type: "scout.explore",
-          project: projectId,
-          source: "github",
-        },
-      ],
+      event: scoutEvent("scout.explore", { source: "github" }),
     },
     {
       id: "scout-daily-digest",
       enabled: true,
       intervalMs: 86_400_000, // 24h
-      emits: [
-        {
-          type: "scout.digest",
-          project: projectId,
-        },
-      ],
+      event: scoutEvent("scout.digest"),
     },
     {
       id: "library-health",
       enabled: true,
       intervalMs: 21_600_000, // 6h
-      emits: [
-        {
-          type: "project.library_health.tick",
-          project: projectId,
-        },
-      ],
+      event: scoutEvent("project.library_health.tick"),
     },
   ],
 
   tasks: {
-    accepts: [
+    attach: true,
+    maxConcurrent: 1,
+    subscriptions: [
       { type: "scout.explore", project: projectId },
       { type: "scout.digest", project: projectId },
       { type: "project.library_health.tick", project: projectId },
-      { type: "project.owner.requested", project: projectId },
-      { type: "project.comment.created", project: projectId },
     ],
     resolve: resolveScoutTask,
   },
 
-  events: [
-    { type: "project.xhs_credential.check", project: projectId },
-    { type: "metric.breach" },
-  ],
-
   actions: {
     "review-library": {
-      type: "async",
       description:
         "Ask Scout to review the knowledge library and update it if useful.",
       inputSchema: actionInputSchema,
-      event(params) {
-        return ownerRequested("manual-library-review", params);
+      toInput(params) {
+        return scoutInput("owner-review", {
+          reason: "manual-library-review",
+          ...eventParams(params),
+        });
       },
     },
     "repair-index": {
-      type: "async",
       description:
         "Ask Scout to repair knowledge/INDEX.md and related navigation.",
       inputSchema: actionInputSchema,
-      event(params) {
-        return ownerRequested("repair-index", params);
+      toInput(params) {
+        return scoutInput("owner-review", {
+          reason: "repair-index",
+          ...eventParams(params),
+        });
       },
     },
     "health-check": {
-      type: "async",
       description:
         "Run the deterministic library-health observer and wake Scout if maintenance signals are found.",
       inputSchema: actionInputSchema,
-      event(params) {
-        return {
-          type: "project.library_health.tick",
-          project: projectId,
-          params: eventParams(params),
-        };
+      toInput(params) {
+        return scoutInput("library-health", params);
       },
     },
     "explore-now": {
-      type: "async",
       description:
         "Trigger a scout exploration for a specific source (arxiv, hn, xhs, github).",
       inputSchema: Type.Object(
@@ -340,21 +405,13 @@ export default defineProjectApp({
         },
         { additionalProperties: false },
       ),
-      event(params) {
+      toInput(params) {
         const source =
           params && typeof params === "object" && "source" in params
             ? String((params as Record<string, unknown>).source ?? "arxiv")
             : "arxiv";
-        return {
-          type: "scout.explore",
-          project: projectId,
-          source,
-        };
+        return scoutInput("explore", { source });
       },
     },
-  },
-
-  async onEvent(ctx, event) {
-    return routeScoutEvent(ctx, event);
   },
 });

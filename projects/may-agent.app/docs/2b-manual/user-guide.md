@@ -193,10 +193,12 @@ Agents cooperate through these canonical actions on the `agents` tool:
 | `sessions` | Query | Query persisted execution sessions |
 
 The removed `requests` action is not a work lifecycle or routing primitive.
-Use `sessions`, event traces, and the owner inbox.
+Use App Inbox status for addressed work, task status for desired outcomes, and
+sessions/event traces for execution and causality.
 
-`call` is the primary cooperation primitive — synchronous, simple, debuggable.
-For async communication, use the `message` tool (emits `message.created`).
+`call` is the primary bounded agent cooperation primitive. An asynchronous
+message is notification only; durable cross-App work uses a child App request
+and durable desired work uses a task.
 
 ## Session Kinds
 
@@ -204,7 +206,7 @@ For async communication, use the `message` tool (emits `message.created`).
 |------|-----------|-----------|
 | `chat` | ChatSession | Persistent — stays idle between messages. User owns. |
 | `job` | `agents.fork` and other background/detached dispatch | Bounded background work with restart recovery policy. |
-| `call` | `agents.call`, workflow `ctx.runAgent`, heartbeat agent step | Bounded synchronous work owned by its caller/workflow. |
+| `call` | `agents.call`, workflow `ctx.agents.call`, standalone heartbeat agent step | Bounded synchronous work owned by its caller/workflow. |
 
 See [sessions.md](../2a-design/sessions.md) for details.
 
@@ -260,34 +262,42 @@ See [runtime.md](../2a-design/runtime.md) for socket protocol details.
 You usually interact with events through features, not through the event schema:
 
 | Scenario | What to do |
-|----------|------------|
+| --- | --- |
 | Manually rerun a cron job | Emit `trigger.<entry-name>` as an operator shortcut, for example `trigger.metrics-snapshot` |
-| React when a session ends | Subscribe a handler to `session.end` and read the result from `event.data` |
-| React when a metric breaches | Subscribe a handler to `metric.breach`; the handler should route to the metric owner/workflow |
-| Send work to another agent asynchronously | Use `sdk.message(...)` or the `message` tool; this emits `message.created` |
-| Route a blocker outside current ownership | Use `sdk.escalate(...)`; for humans use `owner: "human:<role>"` |
-| Finish an escalation | Emit `escalation.resolved` or `escalation.dismissed` with a closure link; wake the source owner, which still judges whether the project/task is unblocked |
-| Need human input before continuing | Record an exact wait/Condition or visible attention, then emit a linked child escalation owned by `human:<role>` with the requested action and resume context |
+| Publish a changed domain fact | Emit the semantic fact; its App/task route or observation status must already be declared |
+| React when a session ends | Use an internal projection or declared App/task subscription; a session event does not own follow-up work |
+| React when a metric breaches | Use a declared App/task subscription or host-internal health route; never generic owner fallback |
+| Request a result from another App | Create one typed child App delegation and wait on its correlated result |
+| Route a blocker outside current ownership | Return evidence to the owning App/task boundary; it delegates to the accountable App |
+| Need human input before continuing | Delegate to the `may` App or persist an exact human Condition on the source task |
+| Invoke repeated typed App automation | Discover and invoke the App action; validation and `toInput` admit one correlated App request |
 
 `trigger.*` events are control shortcuts. They are useful for operators and
-tests, but they are not domain lifecycle events. Lifecycle docs and handlers
-should use canonical event names such as `session.end`, `metric.breach`,
-`escalation.created`, and `escalation.resolved`.
+tests, but they are not domain lifecycle events. Domain facts use semantic
+names such as `session.end` and `metric.breach`; App requests and escalations
+are represented by inbox/dependency records rather than event-pair lifecycles.
 
 Dot-named domain events use the canonical envelope: top-level `type`, `source`,
-and `owner`, plus domain context inside `data`. Flat dot-named socket frames are
-rejected before persistence. Handler subscriptions receive the original event
-envelope unchanged; domain fields are under `event.data`.
+optional diagnostic ownership/target metadata, and domain context inside
+`data`. Flat dot-named socket frames are rejected before persistence. Declared
+consumers receive the original event envelope unchanged; domain fields are
+under `event.data`.
 
 ## Timer And Event Handlers
 
-Timer-triggered handlers are enabled with `--cron`. The filename is historical:
-each agent can have a `cron.json` defining trigger entries.
+The long-running host enables scheduling with `--cron`. Agent Apps declare
+input/event schedules and observers in `app.ts`; these routes are owned by the
+same atomic App registry generation.
+
+The historical `cron.json` and handler loader is restricted to standalone
+global-agent or host-internal system duties:
 
 - **Workflow-backed handlers**: Run a workflow directly (`handler: { "workflow": "...", "agent": "...", "task": "..." }`)
 - **JS handlers**: Run deterministic in-process functions (`handler: "evaluate-sessions"`)
 
-Handlers live in `agents/<name>/handlers/` and are auto-discovered.
+Internal handlers may live under the runtime/standalone agent conventions, but
+they cannot dispatch Agent App judgment, own domain work, or duplicate an App
+subscription/schedule/task route.
 
 See [cron.md](../2a-design/cron.md) for details.
 

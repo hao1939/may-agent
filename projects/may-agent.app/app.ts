@@ -227,6 +227,21 @@ const app = defineApp({
       },
     },
   ],
+  observations: [
+    "runtime.daemon.heartbeat",
+    "handler.workflow_dispatched",
+    "handler.skipped",
+    "metric.feedback.routed",
+    "metric.alert_judged",
+    "project.task.handler.recovered",
+    "project.task.handler.unavailable",
+    "project.task.reconcile.started",
+    "project.task.reconcile.skipped",
+    "project.task.reconciled",
+    "project.task.verification.failed",
+    "guard.triggered",
+    "skill.loaded",
+  ],
   schedules: [
     {
       id: "platform-review",

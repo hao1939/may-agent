@@ -1,0 +1,12 @@
+{
+  "id": "may",
+  "type": "agent-app",
+  "owner": "may",
+  "status": "active",
+  "priority": "P0",
+  "domainProject": {
+    "id": "may",
+    "path": "."
+  },
+  "goal": "Ensure every human request or explicit human-decision obligation is handled and receives an appropriate response."
+}

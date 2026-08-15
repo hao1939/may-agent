@@ -29,30 +29,53 @@ describe("master-validation campaign verification catch-up", () => {
   };
 
   test("recovers exact campaign pass proof for legacy and stable task PRs", () => {
-    const data = {
+    const observed = {
       specId: "spec.example",
       status: "pass",
       pipelineRunId: "101",
-      sourceBranch: "refs/heads/validation/master-validation-100",
-      sourceCommit: "candidate",
     };
     expect(
       campaignPassVerificationTrigger(campaign, {
         event_type: "pipeline.spec.observed",
         status: "pending",
-        data: JSON.stringify(data),
+        data: JSON.stringify({
+          ...observed,
+          sourceBranch: "refs/heads/task/legacy",
+          sourceCommit: "legacy-fix",
+        }),
       }),
     ).toEqual({
       specId: "spec.example",
       pipelineRunId: "101",
-      sourceBranch: "validation/master-validation-100",
-      sourceCommit: "candidate",
-      pullRequestIds: ["7", "8"],
+      sourceBranch: "task/legacy",
+      sourceCommit: "legacy-fix",
+      pullRequestIds: ["7"],
     });
     expect(
       campaignPassVerificationTrigger(campaign, {
         event_type: "pipeline.spec.observed",
-        data: JSON.stringify({ ...data, sourceCommit: "older-candidate" }),
+        data: JSON.stringify({
+          ...observed,
+          pipelineRunId: "102",
+          sourceBranch: "task/stable",
+          sourceCommit: "stable-fix",
+        }),
+      }),
+    ).toEqual({
+      specId: "spec.example",
+      pipelineRunId: "102",
+      sourceBranch: "task/stable",
+      sourceCommit: "stable-fix",
+      pullRequestIds: ["8"],
+    });
+    expect(
+      campaignPassVerificationTrigger(campaign, {
+        event_type: "pipeline.spec.observed",
+        data: JSON.stringify({
+          ...observed,
+          sourceBranch: "task/stable",
+          sourceCommit: "older-stable-fix",
+        }),
       }),
     ).toBeNull();
   });

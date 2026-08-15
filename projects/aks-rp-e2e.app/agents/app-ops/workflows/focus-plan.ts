@@ -7,18 +7,17 @@
  * the app controller applies any accepted task changes.
  */
 
-import { appendFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import {
-  resolveTaskTreePath,
   workflowResultVersion,
+  type AppEvent,
+  type ExecutionResult,
   type WorkflowContext,
   type WorkflowIoContract,
-  type WorkflowResult,
-} from "@may-agent/sdk/legacy";
+} from "@may-agent/sdk";
 import {
   planningObservation,
-  readTaskObservation,
+  taskObservation,
   type ObservedTask,
   type ObservedTaskTree,
   type TaskPlanningObservation,
@@ -50,15 +49,6 @@ export const workflowContract: WorkflowIoContract = {
     description:
       "Records one focus-plan run and emits owner/approval events when the reviewed focus requires follow-up.",
   },
-};
-
-type SessionWorkflowContext = WorkflowContext & {
-  runAgentSession?: (
-    agent: string,
-    prompt: string,
-    sessionId: string,
-    opts?: { timeoutMs?: number },
-  ) => Promise<unknown>;
 };
 
 type FocusResult =
@@ -220,6 +210,7 @@ function packetCount(packet: TaskPlanningObservation, status: string): number {
 }
 
 function liveFrontierEvidence(packet: TaskPlanningObservation): {
+  truncated: boolean;
   activeTaskIds: string[];
   reviewTaskIds: string[];
   runnableTaskIds: string[];
@@ -229,6 +220,7 @@ function liveFrontierEvidence(packet: TaskPlanningObservation): {
   pendingCount: number;
 } {
   return {
+    truncated: packet.truncated,
     activeTaskIds: [...(packet.active_task_ids ?? [])],
     reviewTaskIds: [...(packet.frontier.review ?? [])],
     runnableTaskIds: [...(packet.frontier.runnable ?? [])],
@@ -242,6 +234,7 @@ function liveFrontierEvidence(packet: TaskPlanningObservation): {
 function liveFrontierEvidenceText(packet: TaskPlanningObservation): string {
   const evidence = liveFrontierEvidence(packet);
   return [
+    `truncated=${evidence.truncated}`,
     `counts.running=${evidence.runningCount}`,
     `active_task_ids=${JSON.stringify(evidence.activeTaskIds)}`,
     `frontier.review=${JSON.stringify(evidence.reviewTaskIds)}`,
@@ -255,6 +248,7 @@ function liveFrontierEvidenceText(packet: TaskPlanningObservation): string {
 function hasNonterminalLiveFrontier(packet: TaskPlanningObservation): boolean {
   const evidence = liveFrontierEvidence(packet);
   return (
+    evidence.truncated ||
     evidence.activeTaskIds.length > 0 ||
     evidence.reviewTaskIds.length > 0 ||
     evidence.runnableTaskIds.length > 0 ||
@@ -418,9 +412,6 @@ Focus review questions:
    feed evidence back into the model?
 
 Commands you may use:
-- cd ${input.appDir} && bun run task-tree summary
-- cd ${input.appDir} && bun run task-tree packet
-- cd ${input.appDir} && bun run task-tree frontier
 - cd ${input.appDir} && bun run focus:metric-sample aks-rp-e2e.run.live-started-24h --json
 - cd ${input.appDir} && bun run focus:metric-sample aks-rp-e2e.run.live-succeeded-24h --json
 - cd ${input.appDir} && bun run focus:metric-sample aks-rp-e2e.spec.unverified-count --json
@@ -459,7 +450,7 @@ App: ${input.appDir}
 Domain workspace: ${input.projectDir}
 Agent: ${input.agent}
 
-Current compact task-tree packet:
+Current bounded, truncation-aware App task snapshot:
 \`\`\`json
 ${JSON.stringify(input.packet, null, 2)}
 \`\`\`
@@ -473,25 +464,24 @@ async function runFocusAgent(input: {
   prompt: string;
   sessionId: string;
 }): Promise<unknown> {
-  const sessionCtx = input.ctx as SessionWorkflowContext;
-  return sessionCtx.runAgentSession
-    ? sessionCtx.runAgentSession(input.agent, input.prompt, input.sessionId, {
-        timeoutMs: 1_200_000,
-      })
-    : input.ctx.runAgent(input.agent, input.prompt);
+  return input.ctx.agents.call(input.agent, input.prompt, {
+    sessionId: input.sessionId,
+    timeoutMs: 1_200_000,
+  });
 }
 
-function dispatchOwnerRequested(
+async function dispatchOwnerRequested(
   ctx: WorkflowContext,
   input: {
     result: FocusResult;
     kind: "proposal" | "review";
     summary: string;
   },
-): boolean {
-  try {
-    ctx.dispatchEvent("project.owner.requested", {
-      target: { project: "aks-rp-e2e" },
+): Promise<void> {
+  await ctx.events.emit({
+    type: "project.owner.requested",
+    target: { appId: "aks-rp-e2e", project: "aks-rp-e2e" },
+    data: {
       project: "aks-rp-e2e",
       reason: `focus-plan-${input.kind}`,
       focusResult: input.result,
@@ -502,11 +492,8 @@ function dispatchOwnerRequested(
         instruction:
           "Review the focus result and return structured controller actions for work inside the approved focus when useful.",
       },
-    });
-    return true;
-  } catch {
-    return false;
-  }
+    },
+  } satisfies AppEvent<Record<string, unknown>>);
 }
 
 type FocusApprovalLineage = {
@@ -622,9 +609,8 @@ function lineageFromApprovalRecord(input: {
 }
 
 function resolveFocusApprovalLineage(
-  appDir: string,
+  tree: ObservedTaskTree,
 ): FocusApprovalLineage | null {
-  const tree = readTaskObservation(appDir);
   const focusTask = liveFocusPlanTask(tree);
   if (!focusTask) return null;
 
@@ -656,7 +642,7 @@ function resolveFocusApprovalLineage(
   return null;
 }
 
-function dispatchHumanApproval(
+async function dispatchHumanApproval(
   ctx: WorkflowContext,
   input: {
     appDir: string;
@@ -666,9 +652,9 @@ function dispatchHumanApproval(
     title: string;
     summary: string;
   },
-): boolean {
+): Promise<void> {
   if (input.result !== "needs_approval" && input.result !== "off_track") {
-    return true;
+    return;
   }
 
   const plannerNext =
@@ -679,7 +665,9 @@ function dispatchHumanApproval(
     (input.result === "off_track"
       ? "AKS RP E2E focus is off track"
       : "AKS RP E2E focus plan needs approval");
-  const preservedLineage = resolveFocusApprovalLineage(input.appDir);
+  const preservedLineage = resolveFocusApprovalLineage(
+    taskObservation(ctx.reconciliation),
+  );
   const planId =
     preservedLineage?.planId || focusPlanId(input.kind, input.result);
   const question = approvalQuestion({ ...input, title });
@@ -746,9 +734,14 @@ function dispatchHumanApproval(
   const dedupKey =
     preservedLineage?.approvalId || `aks-rp-e2e:focus-plan:${input.result}`;
 
-  try {
-    ctx.dispatchEvent("message.created", {
-      target: { project: "aks-rp-e2e", human: true },
+  await ctx.events.emit({
+    type: "message.created",
+    target: {
+      appId: "aks-rp-e2e",
+      project: "aks-rp-e2e",
+      human: true,
+    },
+    data: {
       from: "aks-explorer",
       to: "human",
       content: text,
@@ -792,17 +785,14 @@ function dispatchHumanApproval(
         ...(preservedLineage?.waitId
           ? { preservedFocusWaitId: preservedLineage.waitId }
           : {}),
-        appTaskTree: resolveTaskTreePath(input.appDir),
+        taskObservation: "bounded App task snapshot",
         projectState: join(input.appDir, ".state", "project-state.json"),
         domainStatusCommand: `cd ${input.projectDir} && bun run status -- --gaps`,
         kanban: "/projects/aks-rp-e2e.app/ui/kanban/",
       },
       dedupKey,
-    });
-    return true;
-  } catch {
-    return false;
-  }
+    },
+  } satisfies AppEvent<Record<string, unknown>>);
 }
 
 function finishFocusReview(
@@ -812,7 +802,7 @@ function finishFocusReview(
     summary: string;
     evidence: string[];
   },
-): WorkflowResult {
+): ExecutionResult {
   return ctx.done(input.summary, {
     state: input.state,
     summary: input.summary,
@@ -821,34 +811,18 @@ function finishFocusReview(
   });
 }
 
-function appendFocusRun(appDir: string, entry: Record<string, unknown>): void {
-  const path = join(appDir, ".state", "focus-plan-runs.jsonl");
-  mkdirSync(join(appDir, ".state"), { recursive: true });
-  appendFileSync(
-    path,
-    `${JSON.stringify({
-      ts: new Date().toISOString(),
-      workflow: "focus-plan",
-      ...entry,
-    })}\n`,
-  );
-}
-
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  const projectDir =
-    ctx.projectDir ?? field(ctx.task, "project") ?? "/app/projects/aks-rp-e2e";
-  const appDir = resolveAppDir(
-    projectDir,
-    ctx.appDir ?? field(ctx.task, "app"),
-  );
-  const trigger = parseTriggerEvent(ctx.task);
-  const triggerType = trigger?.type;
+export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
+  const projectDir = ctx.workspace?.projectRoot;
+  if (!projectDir) {
+    throw new Error("focus-plan requires workspace.projectRoot");
+  }
+  const appDir = resolveAppDir(projectDir, ctx.workspace?.appRoot);
+  const trigger = parseTriggerEvent(ctx);
   const kind = focusRunKind(trigger);
-  const agent =
-    field(ctx.task, "owner") ?? field(ctx.task, "agent") ?? ctx.agent;
+  const agent = field(ctx, "owner") ?? field(ctx, "agent") ?? "app-ops";
   const packet = planningObservation(
-    appDir,
-    Number(field(ctx.task, "maxConcurrent") ?? 50),
+    taskObservation(ctx.reconciliation),
+    Number(field(ctx, "maxConcurrent") ?? 50),
   );
 
   const focusAgentResult = await runFocusAgent({
@@ -861,7 +835,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       agent,
       kind,
       packet,
-      trigger: triggerBlock(ctx.task),
+      trigger: triggerBlock(ctx),
     }),
   });
 
@@ -874,31 +848,32 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const summary = guarded.summary;
   const result = guarded.result;
   const title = extractMarker(summary, "FOCUS_PLAN_TITLE");
-  const approvalDelivered = dispatchHumanApproval(ctx, {
-    appDir,
-    projectDir,
-    result,
-    kind,
-    title,
-    summary,
-  });
-  const ownerDelivered = dispatchOwnerRequested(ctx, {
-    result,
-    kind,
-    summary,
-  });
-  appendFocusRun(appDir, {
-    kind,
-    trigger_type: triggerType ?? "manual",
-    result,
-    title,
-    summary: truncate(summary, 4000),
-  });
+  await Promise.all([
+    dispatchHumanApproval(ctx, {
+      appDir,
+      projectDir,
+      result,
+      kind,
+      title,
+      summary,
+    }),
+    dispatchOwnerRequested(ctx, {
+      result,
+      kind,
+      summary,
+    }),
+  ]);
 
   const resultSummary = `Focus-plan ${kind} completed with result ${result}. Summary: ${summary}`;
   return finishFocusReview(ctx, {
-    state: approvalDelivered && ownerDelivered ? "converged" : "needs-owner",
+    state: "converged",
     summary: resultSummary,
-    evidence: [`focus-plan:${kind}:${result}`, ".state/focus-plan-runs.jsonl"],
+    evidence: [
+      `focus-plan:${kind}:${result}`,
+      "event:project.owner.requested",
+      ...(result === "needs_approval" || result === "off_track"
+        ? ["event:message.created"]
+        : []),
+    ],
   });
 }

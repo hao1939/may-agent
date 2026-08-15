@@ -22,6 +22,44 @@ function git(cwd: string, command: string): string {
   return Buffer.from(proc.stdout).toString("utf8").trim();
 }
 
+function workflowContext(input: {
+  taskId: string;
+  projectDir: string;
+  taskInput: Record<string, unknown>;
+  trigger?: { type: string; data: Record<string, unknown> };
+}) {
+  return {
+    input: input.taskInput,
+    reconciliation: {
+      appId: "aks-rp-e2e",
+      taskId: input.taskId,
+      generation: 1,
+      resourceVersion: 1,
+      owner: "owner",
+      mode: "achieve",
+      outcome: "Wait for the exact repository ref",
+      acceptance: [],
+      input: input.taskInput,
+      children: { live: [], completed: [] },
+      ...(input.trigger ? { trigger: input.trigger } : {}),
+    },
+    workspace: {
+      appRoot: `${input.projectDir}.app`,
+      projectRoot: input.projectDir,
+      root: input.projectDir,
+      output: input.projectDir,
+    },
+    done: (summary: string, output: unknown) => ({
+      type: "done",
+      id: "wf_test",
+      kind: "workflow",
+      status: "done",
+      summary,
+      output,
+    }),
+  } as never;
+}
+
 describe("wait-for-repo-ref-advance workflow", () => {
   test("parses the reconciliation payload block", () => {
     const payload =
@@ -178,29 +216,20 @@ describe("wait-for-repo-ref-advance workflow", () => {
   });
 
   test("returns needs-owner for unsupported repo-ref waits before admitting a new Condition", async () => {
-    const result = await execute({
-      projectDir: "/tmp/project",
-      task: `## Reconciliation Task\n${JSON.stringify(
-        {
-          taskId:
-            "wait-compact-workload-autoscaler-package-partial-origin-dev-advance-780f3d01-20260727",
-          input: {
-            baseRef: "origin/dev",
-            resumeBaselineCommit: "780f3d01",
-            specId: "spec.workload-autoscaler.keda-upgrade-survival",
-            sourceCommit: "780f3d01",
-            publicationBranch: "dev",
-          },
-          paths: { projectDir: "/tmp/project" },
+    const result = await execute(
+      workflowContext({
+        taskId:
+          "wait-compact-workload-autoscaler-package-partial-origin-dev-advance-780f3d01-20260727",
+        projectDir: "/tmp/project",
+        taskInput: {
+          baseRef: "origin/dev",
+          resumeBaselineCommit: "780f3d01",
+          specId: "spec.workload-autoscaler.keda-upgrade-survival",
+          sourceCommit: "780f3d01",
+          publicationBranch: "dev",
         },
-        null,
-        2,
-      )}`,
-      done: (_summary: string, output: Record<string, unknown>) => ({
-        type: "done",
-        output,
       }),
-    } as never);
+    );
 
     expect(result).toMatchObject({
       type: "done",
@@ -220,29 +249,20 @@ describe("wait-for-repo-ref-advance workflow", () => {
   });
 
   test("returns needs-owner for unsupported normalization repo-ref waits before admitting a new Condition", async () => {
-    const result = await execute({
-      projectDir: "/tmp/project",
-      task: `## Reconciliation Task\n${JSON.stringify(
-        {
-          taskId:
-            "wait-spec-network-acns-performance-cilium-upgrade-user-iptables-runtime-frontier-origin-dev-advance-5c252d46-20260727",
-          input: {
-            baseRef: "origin/dev",
-            resumeBaselineCommit: "5c252d46",
-            specId: "spec.network-acns.performance-cilium-upgrade",
-            sourceCommit: "5c252d46",
-            publicationBranch: "dev",
-          },
-          paths: { projectDir: "/tmp/project" },
+    const result = await execute(
+      workflowContext({
+        taskId:
+          "wait-spec-network-acns-performance-cilium-upgrade-user-iptables-runtime-frontier-origin-dev-advance-5c252d46-20260727",
+        projectDir: "/tmp/project",
+        taskInput: {
+          baseRef: "origin/dev",
+          resumeBaselineCommit: "5c252d46",
+          specId: "spec.network-acns.performance-cilium-upgrade",
+          sourceCommit: "5c252d46",
+          publicationBranch: "dev",
         },
-        null,
-        2,
-      )}`,
-      done: (_summary: string, output: Record<string, unknown>) => ({
-        type: "done",
-        output,
       }),
-    } as never);
+    );
 
     expect(result).toMatchObject({
       type: "done",
@@ -280,36 +300,24 @@ describe("wait-for-repo-ref-advance workflow", () => {
       git(repo, "git fetch origin dev");
       const baselineCommit = git(repo, "git rev-parse --verify origin/dev");
 
-      const result = await execute({
-        projectDir: repo,
-        task: `## Reconciliation Task\n${JSON.stringify(
-          {
-            taskId: "domain/example",
-            input: {
-              baseRef: "origin/dev",
-              resumeBaselineCommit: baselineCommit,
-              specId: "spec.localdns.vm-prerelease.enable-disable",
-              sourceCommit: `${baselineCommit}-pending-fix`,
-              publicationBranch:
-                "aks-explorer/reconcile-localdns-enable-disable-origin-dev",
-            },
-            paths: { projectDir: repo },
+      const result = await execute(
+        workflowContext({
+          taskId: "domain/example",
+          projectDir: repo,
+          taskInput: {
+            baseRef: "origin/dev",
+            resumeBaselineCommit: baselineCommit,
+            specId: "spec.localdns.vm-prerelease.enable-disable",
+            sourceCommit: `${baselineCommit}-pending-fix`,
+            publicationBranch:
+              "aks-explorer/reconcile-localdns-enable-disable-origin-dev",
           },
-          null,
-          2,
-        )}\n## Trigger Observation\n${JSON.stringify(
-          {
+          trigger: {
             type: "aks.repo-ref.observed",
             data: { repoRef: "origin/dev", commit: "different-commit" },
           },
-          null,
-          2,
-        )}`,
-        done: (_summary: string, output: Record<string, unknown>) => ({
-          type: "done",
-          output,
         }),
-      } as never);
+      );
 
       expect(result).toMatchObject({
         type: "done",
@@ -358,29 +366,20 @@ describe("wait-for-repo-ref-advance workflow", () => {
       git(seed, "git commit -m second");
       git(seed, "git push origin dev");
 
-      const result = await execute({
-        projectDir: stale,
-        task: `## Reconciliation Task\n${JSON.stringify(
-          {
-            taskId: "domain/example",
-            input: {
-              baseRef: "origin/dev",
-              resumeBaselineCommit: baselineCommit,
-              specId: "spec.localdns.vm-prerelease.enable-disable",
-              sourceCommit: `${baselineCommit}-pending-fix`,
-              publicationBranch:
-                "aks-explorer/reconcile-localdns-enable-disable-origin-dev",
-            },
-            paths: { projectDir: canonical },
+      const result = await execute(
+        workflowContext({
+          taskId: "domain/example",
+          projectDir: canonical,
+          taskInput: {
+            baseRef: "origin/dev",
+            resumeBaselineCommit: baselineCommit,
+            specId: "spec.localdns.vm-prerelease.enable-disable",
+            sourceCommit: `${baselineCommit}-pending-fix`,
+            publicationBranch:
+              "aks-explorer/reconcile-localdns-enable-disable-origin-dev",
           },
-          null,
-          2,
-        )}`,
-        done: (_summary: string, output: Record<string, unknown>) => ({
-          type: "done",
-          output,
         }),
-      } as never);
+      );
 
       expect(result).toMatchObject({
         type: "done",

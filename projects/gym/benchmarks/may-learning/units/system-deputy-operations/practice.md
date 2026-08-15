@@ -10,8 +10,10 @@ and the next authority boundary.
    `may-agent-system` skill and accepted app contract. Use a workflow only when
    an ordered process must run repeatedly or preserve orchestration state.
 3. An event is persisted and delivery is accepted, but no domain result exists.
-   Inspect the owner, target, consumer registration, owner inbox, workflow run,
-   and closure evidence. Reject the claim that delivery proves completion.
+   Classify it as addressed work or a fact, inspect the selected App inbox,
+   subscription, exact task wake, or observation route, and then inspect the
+   correlated result and closure evidence. Reject the claim that persistence or
+   delivery proves completion.
 4. Hao approves an artifact from an older task generation. Reject the stale
    approval and preserve the current candidate. Ask for a decision only on the
    current exact fingerprint.

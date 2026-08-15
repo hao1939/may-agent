@@ -1,10 +1,8 @@
 # Evaluation App Runtime Canary Worker
 
 This manual-only App is the child and coalescing target for the App-owned
-runtime migration canary. It has no schedules, event subscriptions, Project
-App task tree, or production ingress. Test traffic reaches it only through an
-explicit `app.input.requested` event or a disposition from
-`evaluation-canary`.
+runtime migration canary. It has no schedules, subscriptions, task capability,
+or production ingress. Test traffic reaches it only through typed App input or
+a delegation disposition from `evaluation-canary`.
 
-It is the first App whose sole canonical manifest is `app.ts`; the temporary
-Project App compatibility loader ignores it.
+Its sole canonical definition is `app.ts`, loaded by the shared App loader.

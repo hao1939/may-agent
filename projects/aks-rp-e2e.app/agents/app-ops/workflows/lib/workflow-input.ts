@@ -1,5 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join, sep } from "node:path";
+import type { WorkflowContext } from "@may-agent/sdk";
+
+export type WorkflowSource = string | WorkflowContext<unknown>;
 
 export type TriggerEvent = {
   type?: string;
@@ -8,7 +11,36 @@ export type TriggerEvent = {
   [key: string]: unknown;
 };
 
-export function field(raw: string, name: string): string | undefined {
+function record(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function isWorkflowContext(value: WorkflowSource): value is WorkflowContext {
+  return typeof value !== "string";
+}
+
+function authoredInput(source: WorkflowContext): Record<string, unknown> {
+  return record(source.reconciliation?.input ?? source.input);
+}
+
+export function field(
+  source: WorkflowSource,
+  name: string,
+): string | undefined {
+  if (isWorkflowContext(source)) {
+    const input = authoredInput(source);
+    const value = input[name];
+    if (typeof value === "string" && value.trim()) return value.trim();
+    if (name === "owner" || name === "agent") {
+      return source.reconciliation?.owner;
+    }
+    if (name === "app") return source.workspace?.appRoot;
+    if (name === "project") return source.workspace?.projectRoot;
+    return undefined;
+  }
+  const raw = source;
   const match = raw.match(new RegExp(`^${name}:\\s*(.+)$`, "m"));
   return match ? match[1].trim() : undefined;
 }
@@ -45,7 +77,7 @@ export function resolveAppDir(
   );
 }
 
-export function sourceDir(raw: string): string {
+export function sourceDir(raw: WorkflowSource): string {
   return (
     field(raw, "source") ||
     field(raw, "sourceRoot") ||
@@ -83,7 +115,10 @@ function matchingJsonObject(text: string, start: number): string | null {
   return null;
 }
 
-export function parseTriggerEvent(raw: string): TriggerEvent | null {
+export function parseTriggerEvent(raw: WorkflowSource): TriggerEvent | null {
+  if (isWorkflowContext(raw)) {
+    return (raw.reconciliation?.trigger as TriggerEvent | undefined) ?? null;
+  }
   const marker = raw.indexOf("## Trigger Event");
   if (marker < 0) return null;
   const scoped = raw.slice(marker);
@@ -100,8 +135,25 @@ export function parseTriggerEvent(raw: string): TriggerEvent | null {
 }
 
 export function parseReconciliationTaskPayload(
-  raw: string,
+  raw: WorkflowSource,
 ): Record<string, unknown> | null {
+  if (isWorkflowContext(raw)) {
+    const reconciliation = raw.reconciliation;
+    if (!reconciliation) return null;
+    return {
+      appId: reconciliation.appId,
+      taskId: reconciliation.taskId,
+      generation: reconciliation.generation,
+      resourceVersion: reconciliation.resourceVersion,
+      owner: reconciliation.owner,
+      mode: reconciliation.mode,
+      outcome: reconciliation.outcome,
+      acceptance: reconciliation.acceptance,
+      input: reconciliation.input,
+      children: reconciliation.children,
+      ...(reconciliation.trigger ? { trigger: reconciliation.trigger } : {}),
+    };
+  }
   const marker = raw.indexOf("## Reconciliation Task");
   if (marker < 0) return null;
   const scoped = raw.slice(marker);
@@ -196,25 +248,28 @@ export function resultText(result: unknown): string {
   );
 }
 
-export function triggerBlock(raw: string): string {
+export function triggerBlock(raw: WorkflowSource): string {
+  if (isWorkflowContext(raw)) {
+    return raw.reconciliation?.trigger
+      ? `## Trigger Event\n\`\`\`json\n${JSON.stringify(raw.reconciliation.trigger, null, 2)}\n\`\`\``
+      : "";
+  }
   return raw.match(/## Trigger Event[\s\S]*$/)?.[0] ?? "";
 }
 
 export function maxConcurrent(
-  raw: string,
+  raw: WorkflowSource,
   trigger: TriggerEvent | null,
   fallback = 3,
 ): number {
-  const match = raw.match(/^maxConcurrent:\s*(.+)$/m);
-  const fromTask = Number.parseInt(match?.[1]?.trim() ?? "", 10);
+  const fromTask = Number.parseInt(field(raw, "maxConcurrent") ?? "", 10);
   return Math.max(
     1,
     triggerNumber(trigger, "maxConcurrent") || fromTask || fallback,
   );
 }
 
-export function frontierLimit(raw: string, fallback: number): number {
-  const match = raw.match(/^frontierLimit:\s*(.+)$/m);
-  const configured = Number.parseInt(match?.[1]?.trim() ?? "", 10);
+export function frontierLimit(raw: WorkflowSource, fallback: number): number {
+  const configured = Number.parseInt(field(raw, "frontierLimit") ?? "", 10);
   return Math.max(1, Number.isFinite(configured) ? configured : fallback);
 }

@@ -1,4 +1,6 @@
-import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk/legacy";
+import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk";
+
+type StepDoneEvent = Extract<WorkflowGuardEvent, { type: "step_done" }>;
 
 /**
  * knowledge-entry-overwrite guard — detects risky canonical KE overwrites.
@@ -36,7 +38,7 @@ function extractToolCalls(messages: any[]): ExtractedCall[] {
   return calls;
 }
 
-function allSessionCalls(event: WorkflowGuardEvent): ExtractedCall[] {
+function allSessionCalls(event: StepDoneEvent): ExtractedCall[] {
   const calls: ExtractedCall[] = [];
   for (const step of event.completedSteps ?? []) {
     const messages = step.result?.messages;

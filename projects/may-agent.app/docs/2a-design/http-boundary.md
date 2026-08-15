@@ -1,9 +1,9 @@
 # HTTP API And Web UI Boundary
 
 **Design status:** Accepted.
-**Implementation status:** Bounded read and control adapter implemented;
-compatibility endpoints are converging on canonical App admission, fact, and
-deterministic-control paths.
+**Implementation status:** Bounded reads and controls use canonical App
+admission, fact publication, and deterministic-control paths. Compatibility
+endpoints cannot create alternate work authority.
 
 ## Purpose
 

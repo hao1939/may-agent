@@ -14,10 +14,10 @@ import {
 } from "node:fs";
 import { isAbsolute, resolve, sep } from "node:path";
 import {
-  type ProjectAppTaskHandlerResult,
+  type ExecutionResult,
+  type TaskReconcileResult,
   Type,
   type WorkflowContext,
-  type WorkflowResult,
 } from "@may-agent/sdk";
 import {
   inspectXhsCredential,
@@ -29,10 +29,7 @@ import {
   type XhsSearchResult,
 } from "../tools/xhs-source.js";
 
-type TaskHandlerResult = Exclude<
-  ProjectAppTaskHandlerResult,
-  { state: "needs-owner" }
->;
+type TaskHandlerResult = Exclude<TaskReconcileResult, { state: "needs-owner" }>;
 
 export const name = "scout-explore";
 export const description =
@@ -91,8 +88,9 @@ export function buildExploreTask(
     projectDir: defaultProjectDir,
   },
   xhsPacket?: { query: string; items: XhsSearchItem[] },
+  selectedSource?: SourceName,
 ): string {
-  const source = reconciliationSource(task);
+  const source = selectedSource ?? reconciliationSource(task);
   const sourceContract =
     source === "xhs"
       ? `
@@ -137,49 +135,26 @@ Output contract:
 ${resultContract}`;
 }
 
-function reconciliationPacket(task: string): Record<string, unknown> {
-  const marker = "## Reconciliation Task";
-  const markerIndex = task.indexOf(marker);
-  if (markerIndex < 0) return {};
-  const fenced = task.slice(markerIndex + marker.length);
-  const start = fenced.indexOf("```json");
-  if (start < 0) return {};
-  const jsonStart = start + "```json".length;
-  const end = fenced.indexOf("```", jsonStart);
-  if (end < 0) return {};
-  try {
-    const value = JSON.parse(fenced.slice(jsonStart, end).trim());
-    return value && typeof value === "object" && !Array.isArray(value)
-      ? (value as Record<string, unknown>)
-      : {};
-  } catch {
-    return {};
-  }
-}
-
-function reconciliationSource(task: string): string {
-  const packet = reconciliationPacket(task);
+function reconciliationSource(value: unknown): string {
   const input =
-    packet.input &&
-    typeof packet.input === "object" &&
-    !Array.isArray(packet.input)
-      ? (packet.input as Record<string, unknown>)
+    value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
       : {};
   return String(input.source ?? "").toLowerCase();
 }
 
-function sourceName(task: string): SourceName | null {
-  const source = reconciliationSource(task);
+function sourceName(input: unknown): SourceName | null {
+  const source = reconciliationSource(input);
   return sourceNames.includes(source as SourceName)
     ? (source as SourceName)
     : null;
 }
 
 export function xhsWaitResult(
-  task: string,
+  source: SourceName,
   credential: XhsCredentialStatus,
 ): TaskHandlerResult | null {
-  if (reconciliationSource(task) !== "xhs") return null;
+  if (source !== "xhs") return null;
   if (credential.state === "ready") return null;
 
   const summary =
@@ -212,14 +187,15 @@ export function admittedOutputPaths(
   outputs: string[],
   paths: { appDir: string; projectDir: string },
 ): string[] | null {
-  const roots = [
-    resolve(paths.projectDir, "knowledge"),
-    resolve(paths.appDir, "agents", "scout", "workspace"),
-  ];
   const normalized = [
     ...new Set(outputs.map((output) => output.trim()).filter(Boolean)),
   ];
   if (normalized.some((output) => !isAbsolute(output))) return null;
+  if (normalized.length === 0) return [];
+  const roots = [
+    resolve(paths.projectDir, "knowledge"),
+    resolve(paths.appDir, "agents", "scout", "workspace"),
+  ];
   try {
     const realRoots = roots.map((root) => realpathSync(root));
     const resolved = normalized.map((output) => {
@@ -466,7 +442,8 @@ function repeatedPrimarySourceReferences(
   let sectionId = 0;
   let parentSectionId = 0;
   let currentSection:
-    { id: number; label: string; level: number; parent: number } | undefined;
+    | { id: number; label: string; level: number; parent: number }
+    | undefined;
 
   for (const line of content.split(/\r?\n/)) {
     const heading = /^(#{2,3})\s+(.+?)\s*$/.exec(line);
@@ -604,11 +581,16 @@ function sourceResultEvidence(
 export async function executeScoutExplore(
   ctx: WorkflowContext,
   dependencies: ScoutExploreDependencies = defaultDependencies,
-): Promise<WorkflowResult> {
+): Promise<ExecutionResult> {
   const agent = "scout";
-  const appDir = ctx.appDir ?? defaultAppDir;
-  const projectDir = ctx.projectDir ?? defaultProjectDir;
-  const source = sourceName(ctx.task);
+  if (!ctx.workspace || !ctx.reconciliation) {
+    return ctx.blocked(
+      "Scout exploration requires a canonical App task context",
+    );
+  }
+  const appDir = ctx.workspace.appRoot;
+  const projectDir = ctx.workspace.projectRoot;
+  const source = sourceName(ctx.reconciliation.input);
   if (!source)
     return ctx.blocked("Scout exploration source is missing or unsupported");
   const now = Date.now();
@@ -617,7 +599,7 @@ export async function executeScoutExplore(
 
   if (source === "xhs") {
     const credential = dependencies.inspectXhsCredential(appDir);
-    const waiting = xhsWaitResult(ctx.task, credential);
+    const waiting = xhsWaitResult(source, credential);
     if (waiting) return ctx.done(waiting.summary, waiting);
 
     const search = dependencies.searchXhs(appDir, defaultXhsQuery);
@@ -648,9 +630,13 @@ export async function executeScoutExplore(
   }
 
   // The task comes from the workflow-backed handler config — source-specific instructions
-  const task =
-    ctx.task || "Explore sources and update the Scout knowledge library.";
-  const agentTask = buildExploreTask(task, { appDir, projectDir }, xhsPacket);
+  const task = JSON.stringify(ctx.reconciliation, null, 2);
+  const agentTask = buildExploreTask(
+    task,
+    { appDir, projectDir },
+    xhsPacket,
+    source,
+  );
   const existingOutputSources = snapshotExistingOutputPrimarySources({
     appDir,
     projectDir,
@@ -663,23 +649,23 @@ export async function executeScoutExplore(
     ),
   );
 
-  const result = await ctx.runAgent(agent, agentTask, {
+  const result = await ctx.agents.call(agent, agentTask, {
     schema: ExploreAgentResultSchema,
   });
 
   if (result.status === "error" || result.status === "interrupted") {
     return ctx.blocked("Scout exploration session failed", {
-      sessionId: result.sessionId,
+      executionId: result.id,
       status: result.status,
-      summary: result.lastAssistantText,
+      summary: result.summary,
     });
   }
-  const structured = result.structuredResult as ExploreAgentResult | undefined;
+  const structured = result.output as ExploreAgentResult | undefined;
   if (!structured || !Array.isArray(structured.outputs)) {
     return ctx.blocked(
       "Scout exploration did not return a structured source result",
       {
-        sessionId: result.sessionId,
+        executionId: result.id,
       },
     );
   }
@@ -697,7 +683,7 @@ export async function executeScoutExplore(
         source,
         invalidField: observationAdmission.invalidField,
         reason: observationAdmission.reason,
-        sessionId: result.sessionId,
+        executionId: result.id,
       },
     );
   }
@@ -718,7 +704,7 @@ export async function executeScoutExplore(
       "Scout exploration removed primary sources from an existing output",
       {
         replacements,
-        sessionId: result.sessionId,
+        executionId: result.id,
       },
     );
   }
@@ -732,7 +718,7 @@ export async function executeScoutExplore(
       "Scout exploration created a finding with duplicate source references",
       {
         duplicates: duplicateReferences,
-        sessionId: result.sessionId,
+        executionId: result.id,
       },
     );
   }
@@ -748,13 +734,13 @@ export async function executeScoutExplore(
         ),
         ...outputs.map((output) => `output:${output}`),
         ...(outputs.length === 0 ? ["result:evidence-backed-no-op"] : []),
-        ...(result.sessionId ? [`session:${result.sessionId}`] : []),
+        `execution:${result.id}`,
       ]),
     ],
     actions: [],
   } satisfies TaskHandlerResult);
 }
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
+export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   return executeScoutExplore(ctx);
 }

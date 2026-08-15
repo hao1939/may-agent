@@ -1,10 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join } from "node:path";
 import { execute } from "./feature-compact-loop-controller";
 import { verify as verifyFeatureCompactConvergence } from "../../owner/workflows/feature-compact-reconciliation";
+import { defaultFeatureCompactLoopStatePath } from "./lib/feature-compact-loop-store";
 
 async function workspace(
   item: Record<string, unknown>,
@@ -91,9 +93,115 @@ function item(status: string, taskId?: string) {
 }
 
 function context(appDir: string, projectDir: string) {
+  const read = (name: string) => {
+    try {
+      return JSON.parse(
+        readFileSync(join(appDir, ".state", "tasks", name), "utf8"),
+      ) as Record<string, any>;
+    } catch {
+      return {};
+    }
+  };
+  const tree = read("tree.json");
+  const state = read("state.json");
+  const tasks = { ...(tree.tasks ?? {}), ...(state.tasks ?? {}) };
+  const resources = state.resources ?? {};
+  const liveById = new Map<string, any>();
+  for (const [taskId, task] of Object.entries(tasks) as Array<
+    [string, Record<string, any>]
+  >) {
+    const resource = resources[taskId] ?? {};
+    const spec = resource.spec ?? task;
+    const status = resource.status ?? task;
+    const phase = String(status.phase ?? status.state ?? "pending");
+    if (["done", "closed", "converged"].includes(phase)) continue;
+    liveById.set(taskId, {
+      taskId,
+      parentId: String(task.parent_id ?? "aks-feature-compact-loop"),
+      generation: Number(resource.metadata?.generation ?? task.generation ?? 1),
+      status: phase,
+      outcome: String(spec.outcome ?? task.goal ?? "fixture task"),
+      input: spec.input ?? task.input ?? {},
+      conditions: [],
+      hasLiveChildren: (task.children ?? []).some((childId: string) => {
+        const child = resources[childId]?.status ?? tasks[childId] ?? {};
+        return !["done", "closed", "converged"].includes(
+          String(child.phase ?? child.state ?? "pending"),
+        );
+      }),
+      evidence: status.evidence ?? [],
+      summary: status.summary,
+    });
+  }
+  for (const [taskId, resource] of Object.entries(resources) as Array<
+    [string, Record<string, any>]
+  >) {
+    if (liveById.has(taskId)) continue;
+    const phase = String(resource.status?.phase ?? "pending");
+    if (["done", "closed", "converged"].includes(phase)) continue;
+    liveById.set(taskId, {
+      taskId,
+      parentId: String(resource.spec?.parentId ?? "aks-feature-compact-loop"),
+      generation: Number(resource.metadata?.generation ?? 1),
+      status: phase,
+      outcome: String(resource.spec?.outcome ?? "fixture task"),
+      input: resource.spec?.input ?? {},
+      conditions: (resource.status?.conditionIds ?? []).flatMap(
+        (conditionId: string) => {
+          const condition = state.conditions?.[conditionId];
+          return condition
+            ? [{ id: conditionId, ...(condition.spec ?? condition) }]
+            : [];
+        },
+      ),
+      hasLiveChildren: false,
+      evidence: resource.status?.evidence ?? [],
+      summary: resource.status?.summary,
+      updatedAt: resource.status?.updatedAt,
+    });
+  }
+  const completed = Object.entries(state.receipts ?? {}).map(
+    ([taskId, receipt]: [string, any]) => ({
+      taskId,
+      parentId: String(receipt.parentId ?? "aks-feature-compact-loop"),
+      generation: Number(receipt.metadata?.generation ?? 1),
+      status: "done",
+      outcome: String(receipt.outcome ?? receipt.summary ?? "fixture receipt"),
+      input: receipt.input ?? {},
+      conditions: [],
+      hasLiveChildren: false,
+      evidence: receipt.evidence ?? [],
+      summary: receipt.summary,
+      completedAt: receipt.completedAt ?? "2026-01-01T00:00:00Z",
+    }),
+  );
   return {
-    task: `app: ${appDir}\nproject: ${projectDir}\n## Trigger Event\n\`\`\`json\n${JSON.stringify({ type: "project.task.tick", action: "feature-compact-loop", taskId: "aks-feature-compact-loop" })}\n\`\`\``,
-    agent: "aks-explorer",
+    input: {},
+    reconciliation: {
+      appId: "aks-rp-e2e",
+      taskId: "aks-feature-compact-loop",
+      generation: 1,
+      resourceVersion: 1,
+      owner: "app-ops",
+      mode: "maintain",
+      outcome: "Maintain feature compaction",
+      acceptance: [],
+      input: {},
+      children: { live: [...liveById.values()], completed },
+      trigger: {
+        type: "project.task.tick",
+        data: {
+          action: "feature-compact-loop",
+          taskId: "aks-feature-compact-loop",
+        },
+      },
+    },
+    workspace: {
+      appRoot: appDir,
+      projectRoot: projectDir,
+      root: projectDir,
+      output: projectDir,
+    },
     done: (message: string, output?: unknown) => ({
       status: "done",
       message,
@@ -140,6 +248,7 @@ describe("feature compact reconciliation workflow", () => {
       frontierTaskIds: null,
       inputFingerprint: "feature-input-v1:stale",
     });
+    initializeOriginDevFixture(ws.projectDir);
 
     const verification = await verifyFeatureCompactConvergence(
       {
@@ -157,7 +266,10 @@ describe("feature compact reconciliation workflow", () => {
           mode: "achieve",
           owner: "aks-explorer",
           workflow: "feature-compact-reconciliation",
-          input: { featureKey: "networking" },
+          input: {
+            featureKey: "networking",
+            statePath: defaultFeatureCompactLoopStatePath(ws.appDir),
+          },
         },
       },
       {
@@ -176,6 +288,7 @@ describe("feature compact reconciliation workflow", () => {
 
   test("admits owner convergence when the current terminal row retains durable proof and no holder residue", async () => {
     const ws = await workspace(item("done"));
+    initializeOriginDevFixture(ws.projectDir);
     await execute(context(ws.appDir, ws.projectDir));
 
     const verification = await verifyFeatureCompactConvergence(
@@ -194,7 +307,10 @@ describe("feature compact reconciliation workflow", () => {
           mode: "achieve",
           owner: "aks-explorer",
           workflow: "feature-compact-reconciliation",
-          input: { featureKey: "networking" },
+          input: {
+            featureKey: "networking",
+            statePath: defaultFeatureCompactLoopStatePath(ws.appDir),
+          },
         },
       },
       {
@@ -216,6 +332,7 @@ describe("feature compact reconciliation workflow", () => {
     const ws = await workspace(current, false, {
       materializeResultPath: false,
     });
+    initializeOriginDevFixture(ws.projectDir);
     const appResultPath = join(ws.appDir, current.lastResultPath as string);
     await mkdir(dirname(appResultPath), { recursive: true });
     await writeFile(
@@ -240,7 +357,10 @@ describe("feature compact reconciliation workflow", () => {
           mode: "achieve",
           owner: "aks-explorer",
           workflow: "feature-compact-reconciliation",
-          input: { featureKey: "networking" },
+          input: {
+            featureKey: "networking",
+            statePath: defaultFeatureCompactLoopStatePath(ws.appDir),
+          },
         },
       },
       {
@@ -970,7 +1090,7 @@ describe("feature compact reconciliation workflow", () => {
     });
     const acceptance = result.output.actions[0].acceptance.join("\n");
     expect(acceptance).toContain(
-      "do not return an action that references a missing task id",
+      "marked not-a-current-direct-child-or-receipt in representationReview as stale history",
     );
     expect(acceptance).toContain("exact branch/worktree in place");
     expect(acceptance).toContain("shared canonical dev checkout");
@@ -1072,9 +1192,8 @@ describe("feature compact reconciliation workflow", () => {
     expect(action.outcome).not.toContain("pending");
     const acceptance = action.acceptance.join("\n");
     expect(acceptance).toContain("feature packet");
-    expect(acceptance).toContain("bun run task-tree show <task-id> --json");
-    expect(acceptance).toContain("failed ad hoc JSON parse is unknown");
-    expect(acceptance).toContain("resource status plus condition objects");
+    expect(acceptance).toContain("input includes representationReview");
+    expect(acceptance).toContain("Do not query task-state files");
     expect(acceptance).toContain("reuse known-good carriers");
     expect(acceptance).toContain("Every feature-owned spec");
     expect(acceptance).toContain("shared/read-only");
@@ -1101,21 +1220,15 @@ describe("feature compact reconciliation workflow", () => {
     expect(acceptance).toContain("terminal with no artifacts");
     expect(acceptance).toContain("smallest failing branch");
     expect(acceptance).toContain(
-      "do not return an action that references a missing task id",
+      "current task input and direct-child reconciliation facts carry task authority",
     );
   });
 
   test("preserves current feature state from serialized structured task input without refilling while the master campaign is active", async () => {
     const ws = await workspace(item("pending"));
     const ctx = context(ws.appDir, ws.projectDir);
-    ctx.task = `${ctx.task}\n## Reconciliation Task\n\`\`\`json\n${JSON.stringify(
-      {
-        appId: "aks-rp-e2e",
-        taskId: "aks-feature-compact-loop",
-        generation: 17,
-        input: { frontierLimit: 3, refillEnabled: false },
-      },
-    )}\n\`\`\``;
+    ctx.reconciliation.generation = 17;
+    ctx.reconciliation.input = { frontierLimit: 3, refillEnabled: false };
 
     const result = (await execute(ctx)) as any;
 
@@ -1328,9 +1441,8 @@ describe("feature compact reconciliation workflow", () => {
     expect(acceptance).toContain(
       "recreate or repoint exactly one live holder task",
     );
-    expect(acceptance).toContain("bun run task-tree show <task-id> --json");
-    expect(acceptance).toContain("failed ad hoc JSON parse is unknown");
-    expect(acceptance).toContain("resource status plus condition objects");
+    expect(acceptance).toContain("input.representationReview");
+    expect(acceptance).toContain("do not query task persistence");
     expect(acceptance).toContain("exact branch/worktree in place");
     expect(acceptance).toContain("shared canonical dev checkout");
     expect(acceptance).toContain(
@@ -1791,18 +1903,29 @@ describe("feature compact reconciliation workflow", () => {
               workRevision: networkingRevision,
             },
           },
+        },
+        conditions: {},
+        satisfied_dependency_ids: [],
+      }),
+    );
+    await writeFile(
+      join(ws.appDir, ".state", "tasks", "state.json"),
+      JSON.stringify({
+        receipts: {
           [terminalTaskId]: {
-            id: terminalTaskId,
-            phase: "converged",
+            metadata: { id: terminalTaskId, generation: 1 },
+            parentId: "aks-feature-compact-loop",
+            outcome: "Compact compute",
             input: {
               loopId: "aks-feature-compact-loop",
               workKey: "compute",
               workRevision: computeRevision,
             },
+            evidence: [],
+            summary: "Terminal current-revision history",
+            completedAt: "2026-07-20T00:00:00Z",
           },
         },
-        conditions: {},
-        satisfied_dependency_ids: [],
       }),
     );
 

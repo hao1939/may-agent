@@ -3,7 +3,8 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import type { WorkflowContext } from "@may-agent/sdk/legacy";
+import type { WorkflowContext } from "@may-agent/sdk";
+import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
 import {
   boundedWorkflowEvidence,
   executeWithVerifier,
@@ -73,15 +74,32 @@ function fixture(options: { devChange?: string } = {}): Fixture {
     join(appDir, ".state", "tasks", "tree.json"),
     JSON.stringify({ tasks: {} }),
   );
-  const context = {
-    task: `## Reconciliation Task\n\`\`\`json\n${JSON.stringify({ taskId: "ops/verify-source", input: { branches: [{ branch: "task/source", head: sourceHead, files: ["candidate.txt"] }] } })}\n\`\`\``,
-    agent: "aks-explorer",
-    appDir,
-    projectDir: repo,
-    workspaceDir: workspace,
-    done: (summary, output) => ({ type: "done", summary, output }),
-    blocked: (reason, context) => ({ type: "blocked", reason, context }),
-  } as WorkflowContext;
+  const input = {
+    branches: [
+      { branch: "task/source", head: sourceHead, files: ["candidate.txt"] },
+    ],
+  };
+  const context = createTestAppWorkflowContext({
+    input,
+    reconciliation: {
+      appId: "aks-rp-e2e",
+      taskId: "ops/verify-source",
+      generation: 1,
+      resourceVersion: 1,
+      owner: "aks-explorer",
+      mode: "achieve",
+      outcome: "Verify the exact legacy source branch.",
+      acceptance: [],
+      input,
+      children: { live: [], completed: [] },
+    },
+    workspace: {
+      appRoot: appDir,
+      projectRoot: repo,
+      root: workspace,
+      output: join(appDir, ".state", "output"),
+    },
+  });
   return { appDir, repo, workspace, sourceHead, baseHead, context };
 }
 
@@ -129,7 +147,7 @@ describe("legacy branch verification workflow", () => {
     );
 
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: { state: "converged" },
     });
     git(value.repo, "fetch", "origin", "dev");
@@ -142,7 +160,7 @@ describe("legacy branch verification workflow", () => {
     ).toBe("");
   });
 
-  test("waits instead of publishing over an active domain-owned path", async () => {
+  test("uses Git base fencing instead of reading global task ownership", async () => {
     const value = fixture();
     writeFileSync(
       join(value.appDir, ".state", "tasks", "tree.json"),
@@ -168,24 +186,14 @@ describe("legacy branch verification workflow", () => {
       baseline,
     );
 
-    expect(verifierCalled).toBe(false);
+    expect(verifierCalled).toBe(true);
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: {
-        state: "waiting",
-        evidence: expect.arrayContaining([
-          "domain-owner:domain/normalize-candidate:waiting@9",
-          "overlap-path:candidate.txt",
-        ]),
-        conditions: [
-          expect.objectContaining({
-            type: "project.task.reconciled",
-            subject: "task:domain/normalize-candidate",
-          }),
-        ],
+        state: "converged",
       },
     });
-    expect(git(value.repo, "rev-parse", "origin/dev")).toBe(value.baseHead);
+    expect(git(value.repo, "rev-parse", "origin/dev")).not.toBe(value.baseHead);
   });
 
   test("removes an already represented branch without an empty merge", async () => {
@@ -202,7 +210,7 @@ describe("legacy branch verification workflow", () => {
     );
 
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: { state: "converged" },
     });
     expect(git(value.repo, "rev-parse", "origin/dev")).toBe(representedHead);
@@ -231,7 +239,7 @@ describe("legacy branch verification workflow", () => {
     );
 
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: {
         state: "converged",
         evidence: expect.arrayContaining([
@@ -284,7 +292,7 @@ describe("legacy branch verification workflow", () => {
     );
 
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: {
         state: "converged",
         evidence: expect.arrayContaining([
@@ -319,7 +327,7 @@ describe("legacy branch verification workflow", () => {
     );
 
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: {
         state: "converged",
         evidence: expect.arrayContaining([
@@ -349,9 +357,9 @@ describe("legacy branch verification workflow", () => {
     );
 
     expect(failed).toMatchObject({
-      type: "blocked",
-      reason: "Legacy branch verification closeout failed safely",
-      context: {
+      status: "blocked",
+      summary: "Legacy branch verification closeout failed safely",
+      evidence: {
         error: "repair worker interrupted",
         recoveryBaseCommit: value.baseHead,
         recoveryResidue: [],
@@ -377,7 +385,7 @@ describe("legacy branch verification workflow", () => {
     );
 
     expect(recovered).toMatchObject({
-      type: "done",
+      status: "done",
       output: { state: "converged" },
     });
   });
@@ -411,7 +419,7 @@ describe("legacy branch verification workflow", () => {
     );
 
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: {
         state: "converged",
         evidence: expect.arrayContaining([
@@ -439,7 +447,7 @@ describe("legacy branch verification workflow", () => {
     );
 
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: {
         state: "needs-owner",
         summary: expect.stringContaining("requires owner judgment"),
@@ -470,7 +478,7 @@ describe("legacy branch verification workflow", () => {
     );
 
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: {
         state: "needs-owner",
         summary: expect.stringContaining("worktree-attached"),
@@ -512,7 +520,7 @@ describe("legacy branch verification workflow", () => {
     );
 
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: {
         state: "needs-owner",
         summary: expect.stringContaining("requires owner judgment"),
@@ -530,19 +538,21 @@ describe("legacy branch verification workflow", () => {
   test("tells the repair agent to reject superseded conflict source without committing it", async () => {
     const value = fixture({ devChange: "dev\n" });
     let prompt = "";
-    value.context.runAgent = (async (_agent, task) => {
+    value.context.agents.call = (async (_agent, task) => {
       prompt = task;
       git(value.workspace, "merge", "--abort");
       return {
+        id: "repair-reject",
+        kind: "agent",
         status: "done",
-        sessionId: "repair-reject",
-        structuredResult: {
+        summary: "The source is superseded by current dev.",
+        output: {
           decision: "reject",
           summary: "The source is superseded by current dev.",
           evidence: ["source:superseded"],
         },
       };
-    }) as WorkflowContext["runAgent"];
+    }) as WorkflowContext["agents"]["call"];
 
     const result = await executeWithVerifier(
       value.context,
@@ -557,7 +567,7 @@ describe("legacy branch verification workflow", () => {
       "resolve the useful current result, commit it",
     );
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: {
         state: "converged",
         evidence: expect.arrayContaining(["source:superseded"]),
@@ -581,7 +591,7 @@ describe("legacy branch verification workflow", () => {
     );
 
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: {
         state: "needs-owner",
         evidence: expect.arrayContaining(["ambiguity:shared-contract"]),

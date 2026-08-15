@@ -26,7 +26,7 @@ workspace, or `.state/`.
   and compatibility surfaces used across agents.
 - `shared/knowledge/` - system-consumed knowledge base entries, conventions,
   concepts, and agent-operational knowledge.
-- `projects/` - project apps, domain workspaces, legacy project workspaces, and
+- `projects/` - Agent Apps, domain workspaces, legacy project workspaces, and
   archives. Its own classification lives in `projects/README.md`.
 - `projects/scout-knowledge-lib/knowledge/` - Scout-maintained external
   research and paper/doc knowledge library.

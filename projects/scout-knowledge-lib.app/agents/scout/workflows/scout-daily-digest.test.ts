@@ -9,6 +9,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
 import { execute, normalizedDigestBody } from "./scout-daily-digest";
 
 const roots: string[] = [];
@@ -31,17 +32,18 @@ function fixture(today: string, archives: Record<string, string> = {}) {
     appDir,
     digestDir,
     emitted,
-    ctx: {
-      appDir,
-      task: "digest",
-      emit(event: Record<string, unknown>) {
-        emitted.push(event);
+    ctx: createTestAppWorkflowContext({
+      input: {},
+      workspace: {
+        appRoot: appDir,
+        projectRoot: appDir,
+        root: appDir,
+        output: join(appDir, ".state", "output"),
       },
-      log() {},
-      done(summary: string, output?: unknown) {
-        return { type: "done", summary, output } as const;
+      emit: async (event) => {
+        emitted.push(event as unknown as Record<string, unknown>);
       },
-    } as never,
+    }),
   };
 }
 
@@ -53,7 +55,7 @@ describe("Scout daily digest", () => {
 
     expect(test.emitted).toHaveLength(0);
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: { summary: "No findings to digest today." },
     });
   });
@@ -69,7 +71,7 @@ describe("Scout daily digest", () => {
 
     expect(test.emitted).toHaveLength(0);
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: {
         evidence: expect.arrayContaining(["delivery:idempotent-no-op"]),
       },
@@ -97,7 +99,7 @@ describe("Scout daily digest", () => {
       "### Earlier finding",
     );
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       summary: `Daily digest sent (${date}). Archived to ${date}-2.md.`,
       output: { evidence: [`digest:${numbered}`] },
     });

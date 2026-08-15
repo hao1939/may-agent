@@ -1,4 +1,4 @@
-import type { ProjectAppTaskIntent } from "@may-agent/sdk/legacy";
+import type { TaskIntent } from "@may-agent/sdk";
 
 export const specLoopTaskId = "aks-spec-verification-loop";
 export const featureCompactLoopTaskId = "aks-feature-compact-loop";
@@ -48,7 +48,7 @@ export const learnedSpecVerificationAcceptance = [
 
 export const learnedCompactVerificationAcceptance = [
   "Start from the feature packet, declared spec list, current single-spec evidence, and prior compact artifacts before deciding the next move.",
-  "Before declaring that no exact wait exists or clearing taskId/frontierTaskIds, query every cited holder with the app's canonical helper (`cd ../aks-rp-e2e.app && bun run task-tree show <task-id> --json`) and inspect its returned resource status plus condition objects. A failed ad hoc JSON parse is unknown, never evidence that a task or Condition is absent.",
+  "When the task input includes representationReview, treat those fenced parent direct-child and completion-receipt facts as the task-authority evidence for cited holders. Do not query task-state files or the task-tree CLI from this workflow, and do not reference a historical task id that the review does not identify as a current direct child or immutable receipt.",
   "Use single-spec learning as input: compact should reuse known-good carriers and represent broken or blocked specs exactly instead of hiding them inside a larger package.",
   "Every feature-owned spec must be covered by the compact package, excluded with a source-grounded reason, or represented by an exact wait or reviewed terminal disposition.",
   "An unbound compact owner task is shared/read-only. When current evidence cites an existing source branch, commit, dispatch metadata, or task worktree, inspect and verify that exact branch/worktree in place; do not copy its delta into the shared canonical dev checkout just to review it.",
@@ -274,9 +274,7 @@ export function isStandingLoopId(value: unknown): value is StandingLoopId {
   );
 }
 
-export function standingLoopIntent(
-  loopId: StandingLoopId,
-): ProjectAppTaskIntent {
+export function standingLoopIntent(loopId: StandingLoopId): TaskIntent {
   const definition = standingLoopDefinitions[loopId];
   return {
     id: definition.id,

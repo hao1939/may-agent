@@ -261,15 +261,12 @@ there is no unrelated work to preserve.
 Live `master-validation-failure` tasks are the known-issue list. No separate
 issue ledger or workflow phase database is introduced.
 
-The identity cutover is guarded. Before deploying the spec-keyed resolver, run
-`bun run migrate:master-validation-carriers --pause`, wait for attempts to
-drain, run the command without flags to review its state revision and exact
-disposition, then run it with `--apply --expected-revision=<revision>`. Deploy
-the matching app source while still paused and resume with
-`bun run migrate:master-validation-carriers --resume`. The migration keeps the
-newest live carrier and exact wait for each spec, retargets dependencies, and
-turns superseded fingerprint identities into receipts. It preserves unrelated
-orphan Conditions and refuses to run with a current carrier attempt.
+The guarded identity cutover is complete. The live-state audit found the
+spec-keyed carrier state already canonical after two legacy branch children
+were reparented under the correct task lineage. The one-time migration commands
+were removed after revision-guarded verification and lifecycle resume. Future
+state-shape changes must use the same pause, drain, dry-run, expected-revision,
+verify, and resume protocol; they must not restore this retired migration.
 
 - The task input records `validationTaskId`, spec, normalized fingerprint,
   first/current pipeline evidence, artifact path, source commit, and desired

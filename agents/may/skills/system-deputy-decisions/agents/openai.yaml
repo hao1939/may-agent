@@ -1,4 +1,4 @@
 interface:
   display_name: "System Deputy Decisions"
-  short_description: "Choose safe May-agent app and event actions"
-  default_prompt: "Use $system-deputy-decisions to decide the correct May-agent app or event action and proof boundary."
+  short_description: "Choose safe Agent App and event actions"
+  default_prompt: "Use $system-deputy-decisions to decide the correct Agent App input, task, fact, or runtime-control action and proof boundary."

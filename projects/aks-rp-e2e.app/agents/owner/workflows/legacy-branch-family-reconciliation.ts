@@ -1,9 +1,10 @@
 import { spawnSync } from "node:child_process";
 import {
   Type,
+  type ExecutionResult,
+  type TaskReconcileResult,
   type WorkflowContext,
-  type WorkflowResult,
-} from "@may-agent/sdk/legacy";
+} from "@may-agent/sdk";
 
 export const name = "legacy-branch-family-reconciliation";
 export const description =
@@ -47,53 +48,14 @@ const reviewSchema = Type.Object({
   ),
 });
 
-function matchingJsonObject(text: string, start: number): string | null {
-  let depth = 0;
-  let inString = false;
-  let escaping = false;
-  for (let index = start; index < text.length; index += 1) {
-    const char = text[index];
-    if (escaping) {
-      escaping = false;
-      continue;
-    }
-    if (char === "\\") {
-      escaping = true;
-      continue;
-    }
-    if (char === '"') {
-      inString = !inString;
-      continue;
-    }
-    if (inString) continue;
-    if (char === "{") depth += 1;
-    if (char === "}" && --depth === 0) return text.slice(start, index + 1);
-  }
-  return null;
+function record(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
 }
 
-function reconciliationInput(raw: string): Record<string, unknown> {
-  const marker = raw.indexOf("## Reconciliation Task");
-  if (marker < 0) return {};
-  const scoped = raw.slice(marker);
-  const firstBrace = scoped.indexOf("{");
-  if (firstBrace < 0) return {};
-  const objectText = matchingJsonObject(scoped, firstBrace);
-  if (!objectText) return {};
-  try {
-    const payload = JSON.parse(objectText) as { input?: unknown };
-    return payload.input &&
-      typeof payload.input === "object" &&
-      !Array.isArray(payload.input)
-      ? (payload.input as Record<string, unknown>)
-      : {};
-  } catch {
-    return {};
-  }
-}
-
-function sourceBranches(raw: string): SourceBranch[] {
-  const branches = reconciliationInput(raw).branches;
+function sourceBranches(value: unknown): SourceBranch[] {
+  const branches = record(value).branches;
   if (!Array.isArray(branches)) return [];
   return branches.flatMap((value) => {
     if (!value || typeof value !== "object" || Array.isArray(value)) return [];
@@ -219,10 +181,17 @@ function cleanSourceRefs(repoDir: string, branches: SourceBranch[]): void {
     git(repoDir, ["branch", "-D", "--", source.branch]);
 }
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  const repoDir = ctx.projectDir ?? "/app/projects/aks-rp-e2e";
-  const workspaceDir = ctx.workspaceDir ?? repoDir;
-  const branches = sourceBranches(ctx.task);
+export async function execute(
+  ctx: WorkflowContext,
+): Promise<ExecutionResult<TaskReconcileResult> | ExecutionResult> {
+  const repoDir = ctx.workspace?.projectRoot;
+  const workspaceDir = ctx.workspace?.root;
+  const branches = sourceBranches(ctx.reconciliation?.input ?? ctx.input);
+  if (!repoDir || !workspaceDir) {
+    throw new Error(
+      "legacy-branch-family-reconciliation requires project and task workspace roots",
+    );
+  }
   if (workspaceDir === repoDir || branches.length === 0) {
     return ctx.blocked(
       "Legacy branch reconciliation requires a task worktree and exact source branches",
@@ -257,21 +226,25 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     "Source branches:",
     JSON.stringify(branches, null, 2),
     "Task:",
-    ctx.task,
+    JSON.stringify(ctx.reconciliation ?? ctx.input, null, 2),
   ].join("\n\n");
-  const result = await ctx.runAgent(ctx.agent, prompt, {
-    timeoutMs: 1_800_000,
-    schema: reviewSchema,
-  });
-  if (result.status === "error" || result.status === "interrupted") {
+  const result = await ctx.agents.call(
+    ctx.reconciliation?.owner ?? "aks-explorer",
+    prompt,
+    {
+      timeoutMs: 1_800_000,
+      schema: reviewSchema,
+    },
+  );
+  if (result.status !== "done") {
     return ctx.blocked("Legacy branch family review session failed", {
-      sessionId: result.sessionId,
+      executionId: result.id,
       status: result.status,
-      summary: result.lastAssistantText,
+      summary: result.summary,
     });
   }
 
-  const review = result.structuredResult as FamilyReview;
+  const review = result.output as FamilyReview;
   try {
     validateReview(branches, review);
     const dirty = git(workspaceDir, [
@@ -292,7 +265,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           ...review.evidence,
           `base-commit:${baseCommit}`,
           `current-origin-dev:${currentBase}`,
-          `review-session:${result.sessionId}`,
+          `review-execution:${result.id}`,
         ],
       });
     }
@@ -341,7 +314,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
             ...review.evidence,
             `base-commit:${baseCommit}`,
             `result-commit:${headCommit}`,
-            `review-session:${result.sessionId}`,
+            `review-execution:${result.id}`,
           ],
         });
       }
@@ -375,7 +348,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         error: message,
         review,
         branches,
-        sessionId: result.sessionId,
+        executionId: result.id,
       },
     );
   }

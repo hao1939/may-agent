@@ -6,8 +6,10 @@
     "strict": true,
     "paths": {
       "@may-agent/gym/loop": ["../gym/src/loop/index.ts"],
-      "@may-agent/sdk": ["../may-agent/packages/sdk/src/index.ts"],
-      "@may-agent/sdk/testing": ["../may-agent/packages/sdk/src/testing.ts"]
+      "@may-agent/sdk": ["../may-agent/bundle/sdk-current/src/index.ts"],
+      "@may-agent/sdk/testing": [
+        "../may-agent/bundle/sdk-current/src/testing.ts"
+      ]
     },
     "skipLibCheck": true,
     "noEmit": true,

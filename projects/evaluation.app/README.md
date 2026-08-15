@@ -1,13 +1,13 @@
 # Evaluation App
 
-Independently audits completed May-agent sessions and project apps. It identifies
+Independently audits completed May-agent sessions and Agent Apps. It identifies
 evidence-backed risks and improvement opportunities, reports actionable findings
 to responsible project owners, and notifies humans only when useful.
 
-This is a project-app: it organizes the evaluation process, task state,
+This is an Agent App: it organizes the evaluation process, task state,
 workflow capabilities, and scoring criteria. The evaluator agent provides
 adaptive judgment and is the app's accountable fallback for unfamiliar work.
-Every project app remains responsible for its own domain goal and remediation.
+Every Agent App remains responsible for its own domain goal and remediation.
 `evaluation.app` observes, judges, and reports; it does not become a second
 planner or fixer for the target project.
 
@@ -145,7 +145,7 @@ is trustworthy.
 
 Target apps are sampled every two hours, but unchanged scheduled samples do not
 invoke an LLM or write a report. A daily baseline review still runs when no
-meaningful state delta appears. Use the `review-project-app` action for an
+meaningful state delta appears. Use the `review-agent-app` action for an
 immediate manual review. Reports retain the latest 30 review/facts pairs per
 target. Owner feedback is emitted only for a new concern family, increased
 severity, or a newly actionable human decision.

@@ -1,17 +1,16 @@
 # AKS RP E2E Canonical Route Ledger
 
-**Status:** Migration gate
+**Status:** Implemented route contract
 **Applies to:** `projects/aks-rp-e2e.app/app.ts`
 **Parent decision:**
 [`../../may-agent.app/docs/3-proposals/inbox-scope-reduction.md`](../../may-agent.app/docs/3-proposals/inbox-scope-reduction.md)
 
 ## Purpose
 
-This ledger is the behavior contract for replacing the AKS
-`defineProjectApp` manifest and imperative `routeAksEvent` router with one
-canonical `defineApp` declaration. The cutover is not complete until every
-legacy selector, schedule, action, and router branch below has one tested
-canonical route and the legacy route has been deleted.
+This ledger records how the former AKS `defineProjectApp` manifest and
+imperative `routeAksEvent` router were replaced by one canonical `defineApp`
+declaration. Every former selector, schedule, action, and router branch below
+has one tested canonical route; the legacy route is deleted.
 
 The route classes are:
 
@@ -65,21 +64,16 @@ completion path.
 
 ## Deterministic task intent
 
+Completed `aks.*migration*.requested` routes are not steady-state App policy.
+Their task identities have converged into durable receipts and their one-time
+workflow modules are retired. Historical events and receipts remain readable;
+replaying a retired migration event is observation-only and cannot recreate
+obsolete task-store mutation authority. The still-live waiting-frontier
+retirement remains declared until its final existing child leaves the graph.
+
 | Event family                                              | Stable desired task                                                                                                                    | Notes                                                                                                                                            |
 | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `aks.resource-migration.requested`                        | `runtime/unified-resource-migration-resource-liveness-v3`                                                                              | Pure migration intent.                                                                                                                           |
-| `aks.task-state-migration.requested`                      | `runtime/unified-resource-migration-task-state-v1`                                                                                     | Pure migration intent.                                                                                                                           |
-| `aks.task-tick-migration.requested`                       | `runtime/unified-resource-migration-task-tick-v1`                                                                                      | Pure migration intent.                                                                                                                           |
-| `aks.repo-ref-condition-migration.requested`              | `runtime/unified-resource-migration-repo-ref-condition-v1`                                                                             | Pure migration intent.                                                                                                                           |
-| `aks.project-state-residue-migration.requested`           | `runtime/unified-resource-migration-project-state-v2`                                                                                  | Pure migration intent.                                                                                                                           |
-| `aks.spec-loop-ownership-migration.requested`             | `runtime/unified-resource-migration-spec-loop-ownership-v1`                                                                            | Preserve the current stable intent.                                                                                                              |
-| `aks.feature-loop-ownership-migration.requested`          | `runtime/unified-resource-migration-feature-loop-current-v1`                                                                           | Preserve the current stable intent.                                                                                                              |
-| `aks.feature-loop-history-migration.requested`            | `runtime/unified-resource-migration-feature-loop-history-v<1..5>`                                                                      | The validated batch remains part of the stable ID.                                                                                               |
-| `aks.feature-loop-residue-migration.requested`            | `runtime/unified-resource-migration-feature-loop-residue-v<1..2>`                                                                      | The validated batch remains part of the stable ID.                                                                                               |
-| `aks.scenario-loop-ownership-migration.requested`         | `runtime/unified-resource-migration-scenario-loop-ownership-v<1..2>`                                                                   | The validated batch remains part of the stable ID.                                                                                               |
 | `aks.waiting-frontier-retirement.requested`               | `runtime/waiting-frontier-review`                                                                                                      | Preserve the current stable intent.                                                                                                              |
-| `aks.waiting-frontier-migration-cleanup.requested`        | `runtime/unified-resource-migration-waiting-frontier-v1`                                                                               | Preserve the current stable intent.                                                                                                              |
-| `aks.finite-holder-migration.requested`                   | `runtime/unified-resource-migration-finite-holders-v<batch>`                                                                           | The numeric batch remains part of the stable ID.                                                                                                 |
 | Valid `pipeline.failure.observed`                         | `domain/master-validation-failure/<specId>`                                                                                            | Missing `specId` or fingerprint is observation-only and has a negative route test.                                                               |
 | `project.test_run.completed`                              | `runtime/owner-review`                                                                                                                 | A system fact changes the standing review outcome; it does not create a reply obligation.                                                        |
 | `project.stall.reviewed`                                  | keyed stall follow-up for `needs-work`/`escalate`; otherwise standing owner review or observation according to the structured judgment | Classification is data-dependent but pure; inbox translation returns `null`.                                                                     |
@@ -159,7 +153,23 @@ Every canonical action uses `toInput`; no action emits an actionable event.
 | `dispatch-approval-packet`                                                                                                                                                                | `approval-dispatch` input; attach packet-keyed task.                                                                                                                                               |
 | `pulse-spec-loop`, `pulse-feature-compact-loop`, `pulse-master-validation-compact`, `pulse-scenario-frontier`, `pulse-legacy-branch-reconciliation`, `pulse-repository-skill-maintenance` | typed `task-control` input; validate the requested task family, then attach/wake that exact desired task. The inbox item preserves action completion; no independent task event route is admitted. |
 
-## Cutover assertions
+## Bounded controller state
+
+The `legacy-branch-reconciliation` standing task owns each
+`legacy-branch-verification` task as a direct child. Its workflow reads only
+`ctx.reconciliation.children`; it does not scan the global task tree or attempt
+ledger. Git inventory supplies the external desired-state observation, while
+the child workflow's reviewed-base check and non-fast-forward push fence remain
+the write-safety boundary.
+
+At canonical cutover, live verification tasks whose input still declared
+`loopId: legacy-branch-reconciliation` must be reparented from
+`group/app-operations` to the standing task without changing task IDs,
+generations, attempts, Conditions, or workspaces. The state-compatibility audit
+must prove that no such live sibling remains; otherwise the bounded controller
+could not observe it and must not be enabled.
+
+## Route assertions
 
 The route fixture must cover every row above and prove:
 
@@ -176,14 +186,17 @@ The route fixture must cover every row above and prove:
 9. removing `routeAksEvent` leaves no check-event, emitted-tick, raw task-state
    scan, projection, or human-delivery side effect without a canonical owner.
 
-## Deletion gate
+## Deletion evidence
 
-The AKS compatibility descriptor can be deleted only after:
+The deleted AKS compatibility descriptor is guarded by these continuing
+invariants:
 
 - this ledger is represented by table-driven route tests;
 - all observer adapters use canonical bounded contexts;
 - `app.ts` exports one `defineApp` manifest;
 - production AKS code has no `@may-agent/sdk/legacy` import;
 - existing task IDs/state pass the read-only compatibility audit; and
+- every live legacy-branch verification is a direct child of
+  `legacy-branch-reconciliation`;
 - focused watcher, workflow, route, restart, reload, and task-recovery suites
   pass.

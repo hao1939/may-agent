@@ -21,14 +21,14 @@ describe("rbe-primer guard", () => {
   });
 
   it("returns a warning demand for non-function sources", () => {
-    const demands = guard.handle({ source: "agent" });
+    const demands = guard.handle({ type: "step_start", source: "agent" });
     expect(demands).toHaveLength(1);
     expect(demands[0].type).toBe("warn");
     expect(demands[0].reason).toContain("read()");
   });
 
   it("returns empty for function source", () => {
-    const demands = guard.handle({ source: "function" });
+    const demands = guard.handle({ type: "step_start", source: "function" });
     expect(demands).toHaveLength(0);
   });
 });
@@ -46,14 +46,14 @@ describe("vae-primer guard", () => {
   });
 
   it("returns a warning about verify after edit", () => {
-    const demands = guard.handle({ source: "agent" });
+    const demands = guard.handle({ type: "step_start", source: "agent" });
     expect(demands).toHaveLength(1);
     expect(demands[0].type).toBe("warn");
     expect(demands[0].reason).toContain("edit()");
   });
 
   it("skips function sources", () => {
-    const demands = guard.handle({ source: "function" });
+    const demands = guard.handle({ type: "step_start", source: "function" });
     expect(demands).toHaveLength(0);
   });
 });

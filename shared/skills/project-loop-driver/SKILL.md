@@ -1,7 +1,7 @@
 ---
 name: project-loop-driver
 description: >
-  Drive a V3 May-agent project app toward its goal through owner review,
+  Drive a V3 May-agent Agent App toward its goal through owner review,
   task-tree judgment, evidence, exact waits, and canonical project events. Use
   when judging whether a project is moving, blocked, ready for work, or terminal.
 ---
@@ -46,17 +46,16 @@ There are only two practical modes:
 | Monitoring | The goal is currently satisfied and no urgent gap is known. | Keep metrics/signals watched; resume intensive work when new evidence appears. |
 
 These are reasoning postures, not persisted project or task states. Preserve
-project posture in `project.json` and task desired/observed state in
-`.state/tasks/state.json`. Use `.state/tasks/tree.json` only as a generated read
-projection.
+project posture in `project.json`. Task persistence is host-private and
+reconciler-owned; use only the bounded current task view or generated read
+projection supplied by the runtime.
 
 ## Protocol
 
 ### 1. Read the Goal Before Acting
 
-Read `project.json`, `app.ts`, canonical `.state/tasks/state.json`, the generated
-`.state/tasks/tree.json` projection when useful, and the relevant domain
-artifacts first. Extract:
+Read `project.json`, `app.ts`, the bounded task view or generated read projection
+when useful, and the relevant domain artifacts first. Extract:
 
 - goal,
 - owner,
@@ -111,22 +110,24 @@ reviews and reject escalation to Hao for an ordinary owner decision.
 
 ### 4. React to Comments and Signals
 
-Project comments, alerts, guard events, evaluator findings, and metric changes
-are wake signals. They cause owner judgment; they are not parallel request
-objects or commands to execute blindly.
+Project comments may be addressed requests. Alerts, guard events, evaluator
+findings, and metric changes are facts. Classify each through the App's declared
+subscription/task policy; never turn all of them into generic owner work.
 
 For project-directed intent, preserve this contract:
 
 ```text
 project.comment.created receipt
-  -> app owner reviews current state
-  -> infrastructure emits one correlated project.owner.reviewed result
-  -> optional durable task and exact Conditions
+  -> declared App subscription admits one correlated App inbox request
+  -> app completes, delegates, or attaches a durable task
+  -> dependency completion wakes the same request
+  -> correlated App result and any required delivery
 ```
 
-Several comments may wake one stable owner-review task. Judge the latest level,
-but preserve every unresolved input event reference so infrastructure can emit
-one result per persisted comment.
+Compatible requests may be processed together, but every accepted comment keeps
+its own inbox identity and correlated result. When several requests attach the
+same stable task, the task owns the shared desired outcome while each inbox item
+continues to own its addressed response.
 
 When a comment arrives:
 
@@ -143,13 +144,14 @@ At session end, return or state:
 2. What changed.
 3. What evidence proves it.
 4. Next action or monitored signal.
-5. One valid reconciler disposition: `converged`, `waiting` with exact
-   Conditions, `needs-owner` when a workflow cannot decide, or typed task
-   actions for the reconciler to validate and apply.
+5. At an App request boundary, one disposition: `complete`, `delegate`, or
+   `task`. At a task boundary, one valid reconciliation result such as
+   `converged`, `waiting` with exact Conditions, `needs-owner`, or typed task
+   actions.
 
-Do not edit task storage or emit assignment, completion, or owner-result events.
-The generic reconciler applies task actions and emits the correlated
-`project.owner.reviewed` closure after admitting the result.
+Do not edit task storage or emit assignment, completion, or owner-result
+events. The host applies task actions and wakes an attached App request through
+its explicit dependency.
 
 Do not say the project is `done` if it is meant to keep maintaining a metric or
 system quality. Record an exact wait or monitoring signal without inventing a
@@ -163,7 +165,7 @@ new task state.
   to monitoring.
 - Asking the reviewer to decide facts that the session can verify directly.
 - Creating a new project because an existing project needs a journal update.
-- Dropping earlier comment receipts when several intents coalesce on one stable
+- Dropping an App inbox identity when several requests attach the same stable
   task.
 - Recreating a completed task ID instead of respecting its immutable receipt.
 - Keeping passed or superseded work at the top of the priority list.

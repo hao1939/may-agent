@@ -8,6 +8,8 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
+import type { WorkflowContext } from "@may-agent/sdk";
 import {
   admittedOutputPaths,
   buildExploreTask,
@@ -33,22 +35,47 @@ function workflowContext(
     options?: unknown,
   ) => Promise<unknown>,
   source = "xhs",
-): any {
-  return {
-    task: `work\n\n## Reconciliation Task\n\`\`\`json\n${JSON.stringify({ input: { source } })}\n\`\`\``,
-    appDir: "/app/projects/scout-knowledge-lib.app",
-    projectDir: "/app/projects/scout-knowledge-lib",
-    runAgent,
-    done(summary: string, output?: unknown) {
-      return { type: "done", summary, output };
+): WorkflowContext {
+  return createTestAppWorkflowContext({
+    input: { source },
+    reconciliation: {
+      appId: "scout-knowledge-lib",
+      taskId: `explore-${source}`,
+      generation: 1,
+      resourceVersion: 1,
+      owner: "scout",
+      mode: "maintain",
+      outcome: `Explore ${source}`,
+      acceptance: ["Current source checked"],
+      input: { source },
+      children: { live: [], completed: [] },
     },
-    blocked(reason: string, context?: unknown) {
-      return { type: "blocked", reason, context };
+    workspace: {
+      appRoot: "/app/projects/scout-knowledge-lib.app",
+      projectRoot: "/app/projects/scout-knowledge-lib",
+      root: "/app/projects/scout-knowledge-lib",
+      output: "/app/projects/scout-knowledge-lib.app/.state/output",
     },
-    summarize() {
-      return "summary";
-    },
-  };
+    callAgent: (async (agent: string, task: string, options?: unknown) => {
+      const result = (await runAgent(agent, task, options)) as Record<
+        string,
+        unknown
+      >;
+      const status =
+        result.status === "error" || result.status === "interrupted"
+          ? result.status
+          : "done";
+      return {
+        id: String(result.sessionId ?? "s_test"),
+        kind: "agent",
+        status,
+        summary: String(result.lastAssistantText ?? status),
+        ...(result.structuredResult !== undefined
+          ? { output: result.structuredResult }
+          : {}),
+      };
+    }) as WorkflowContext["agents"]["call"],
+  });
 }
 
 describe("scout-explore workflow prompt", () => {
@@ -110,7 +137,7 @@ describe("scout-explore workflow prompt", () => {
   });
 
   it("returns an exact credential wait before dispatch while XHS login is unavailable", () => {
-    const result = xhsWaitResult(xhsTask, {
+    const result = xhsWaitResult("xhs", {
       credential: "xhs",
       state: "unavailable",
       reason: "XHS login is required",
@@ -133,7 +160,7 @@ describe("scout-explore workflow prompt", () => {
 
   it("allows XHS exploration after the credential is observed ready", () => {
     expect(
-      xhsWaitResult(xhsTask, {
+      xhsWaitResult("xhs", {
         credential: "xhs",
         state: "ready",
         reason: "source content is readable",
@@ -143,18 +170,23 @@ describe("scout-explore workflow prompt", () => {
   });
 
   it("passes the workflow-acquired XHS packet and forbids blocked-scan artifacts", () => {
-    const prompt = buildExploreTask(xhsTask, undefined, {
-      query: "AI agent 智能体",
-      items: [
-        {
-          id: "note-1",
-          title: "Agent workflow",
-          author: "author",
-          likes: "12",
-          link: "https://www.xiaohongshu.com/explore/note-1?xsec_token=test",
-        },
-      ],
-    });
+    const prompt = buildExploreTask(
+      xhsTask,
+      undefined,
+      {
+        query: "AI agent 智能体",
+        items: [
+          {
+            id: "note-1",
+            title: "Agent workflow",
+            author: "author",
+            likes: "12",
+            link: "https://www.xiaohongshu.com/explore/note-1?xsec_token=test",
+          },
+        ],
+      },
+      "xhs",
+    );
 
     expect(prompt).toContain("Current XHS source packet");
     expect(prompt).toContain('"id": "note-1"');
@@ -191,7 +223,7 @@ describe("scout-explore workflow prompt", () => {
     expect(agentCalls).toBe(0);
     expect(searchCalls).toBe(0);
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: {
         state: "waiting",
         conditions: [{ id: "credential-ready:xhs" }],
@@ -224,9 +256,9 @@ describe("scout-explore workflow prompt", () => {
 
     expect(agentCalls).toBe(0);
     expect(result).toMatchObject({
-      type: "blocked",
-      reason: "XHS search failed: search page timed out",
-      context: { evidence: ["access:ready", "note-count:12", "exit:1"] },
+      status: "blocked",
+      summary: "XHS search failed: search page timed out",
+      evidence: { evidence: ["access:ready", "note-count:12", "exit:1"] },
     });
   });
 
@@ -255,7 +287,7 @@ describe("scout-explore workflow prompt", () => {
 
     expect(agentCalls).toBe(0);
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: {
         state: "converged",
         evidence: expect.arrayContaining([
@@ -269,64 +301,72 @@ describe("scout-explore workflow prompt", () => {
   });
 
   it("dispatches current search data once and returns reviewable evidence", async () => {
+    const root = mkdtempSync(join(tmpdir(), "scout-xhs-run-"));
+    temporaryRoots.push(root);
+    const appDir = join(root, "scout.app");
+    const projectDir = join(root, "scout");
+    const knowledgeDir = join(projectDir, "knowledge");
+    const digestDir = join(appDir, "agents", "scout", "workspace", "digest");
+    const output = join(digestDir, "today.md");
+    mkdirSync(knowledgeDir, { recursive: true });
+    mkdirSync(digestDir, { recursive: true });
     let prompt = "";
     let runOptions: unknown;
     let agentCalls = 0;
-    const result = await executeScoutExplore(
-      workflowContext(async (_agent, task, options) => {
-        agentCalls += 1;
-        prompt = task;
-        runOptions = options;
-        return {
-          status: "done",
-          sessionId: "s_xhs",
-          structuredResult: {
-            summary: "Recorded one source-grounded XHS finding.",
-            source: {
-              name: "xhs",
-              queryOrFeed: "ignored because the workflow owns XHS evidence",
-              itemIdsOrUrls: [],
-            },
-            outputs: [
-              "/app/projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md",
-            ],
+    const ctx = workflowContext(async (_agent, task, options) => {
+      agentCalls += 1;
+      prompt = task;
+      runOptions = options;
+      writeFileSync(output, "Current XHS finding.\n");
+      return {
+        status: "done",
+        sessionId: "s_xhs",
+        structuredResult: {
+          summary: "Recorded one source-grounded XHS finding.",
+          source: {
+            name: "xhs",
+            queryOrFeed: "ignored because the workflow owns XHS evidence",
+            itemIdsOrUrls: [],
           },
-        };
+          outputs: [output],
+        },
+      };
+    });
+    ctx.workspace!.appRoot = appDir;
+    ctx.workspace!.projectRoot = projectDir;
+    const result = await executeScoutExplore(ctx, {
+      inspectXhsCredential: () => ({
+        credential: "xhs",
+        state: "ready",
+        reason: "ready",
+        evidence: ["note-count:12", "login-wall:false"],
       }),
-      {
-        inspectXhsCredential: () => ({
-          credential: "xhs",
-          state: "ready",
-          reason: "ready",
-          evidence: ["note-count:12", "login-wall:false"],
-        }),
-        searchXhs: (_appDir, query) => ({
-          state: "success",
-          query,
-          items: [
-            {
-              id: "note-1",
-              title: "Agent workflow",
-              author: "author",
-              likes: "12",
-              link: "https://www.xiaohongshu.com/explore/note-1?xsec_token=test",
-            },
-          ],
-          evidence: [
-            "source:xhs",
-            `query:${query}`,
-            "items:1",
-            "source-ids:note-1",
-          ],
-        }),
-      },
-    );
+      searchXhs: (_appDir, query) => ({
+        state: "success",
+        query,
+        items: [
+          {
+            id: "note-1",
+            title: "Agent workflow",
+            author: "author",
+            likes: "12",
+            link: "https://www.xiaohongshu.com/explore/note-1?xsec_token=test",
+          },
+        ],
+        evidence: [
+          "source:xhs",
+          `query:${query}`,
+          "items:1",
+          "source-ids:note-1",
+        ],
+      }),
+    });
 
     expect(agentCalls).toBe(1);
     expect(runOptions).toMatchObject({ schema: expect.any(Object) });
     expect(prompt).toContain('"id": "note-1"');
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: {
         state: "converged",
         summary: "Recorded one source-grounded XHS finding.",
@@ -337,8 +377,8 @@ describe("scout-explore workflow prompt", () => {
           "items:1",
           "source-ids:note-1",
           "source-provenance:workflow",
-          "output:/app/projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md",
-          "session:s_xhs",
+          `output:${output}`,
+          "execution:s_xhs",
         ]),
         actions: [],
       },
@@ -387,8 +427,8 @@ describe("scout-explore workflow prompt", () => {
     );
 
     expect(result).toMatchObject({
-      type: "blocked",
-      reason:
+      status: "blocked",
+      summary:
         "Scout exploration returned a missing output or an output outside the allowed roots",
     });
   });
@@ -401,8 +441,8 @@ describe("scout-explore workflow prompt", () => {
       ),
     );
     expect(result).toMatchObject({
-      type: "blocked",
-      reason: "Scout exploration did not return a structured source result",
+      status: "blocked",
+      summary: "Scout exploration did not return a structured source result",
     });
   });
 
@@ -431,13 +471,13 @@ describe("scout-explore workflow prompt", () => {
     const serialized = JSON.stringify(result);
 
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: {
         state: "converged",
         evidence: expect.arrayContaining([
           "source-provenance:agent-result+workflow-time",
           "result:evidence-backed-no-op",
-          "session:s_hn",
+          "execution:s_hn",
         ]),
       },
     });
@@ -466,9 +506,9 @@ describe("scout-explore workflow prompt", () => {
     );
 
     expect(result).toMatchObject({
-      type: "blocked",
-      reason: "Scout exploration returned invalid current-source evidence",
-      context: {
+      status: "blocked",
+      summary: "Scout exploration returned invalid current-source evidence",
+      evidence: {
         source: "hn",
         invalidField: "name",
         reason: "expected hn",
@@ -498,7 +538,7 @@ describe("scout-explore workflow prompt", () => {
     );
 
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: {
         state: "converged",
         evidence: expect.arrayContaining([
@@ -660,14 +700,14 @@ describe("scout-explore workflow prompt", () => {
         },
       };
     }, "hn");
-    ctx.appDir = appDir;
-    ctx.projectDir = projectDir;
+    ctx.workspace!.appRoot = appDir;
+    ctx.workspace!.projectRoot = projectDir;
 
     expect(await executeScoutExplore(ctx)).toMatchObject({
-      type: "blocked",
-      reason:
+      status: "blocked",
+      summary:
         "Scout exploration created a finding with duplicate source references",
-      context: {
+      evidence: {
         duplicates: [
           {
             kind: "existing-file",
@@ -676,7 +716,7 @@ describe("scout-explore workflow prompt", () => {
             existingFiles: [existing],
           },
         ],
-        sessionId: "s_duplicate",
+        executionId: "s_duplicate",
       },
     });
   });
@@ -709,22 +749,23 @@ describe("scout-explore workflow prompt", () => {
         },
       };
     }, "hn");
-    ctx.appDir = appDir;
-    ctx.projectDir = projectDir;
+    ctx.workspace!.appRoot = appDir;
+    ctx.workspace!.projectRoot = projectDir;
 
     expect(await executeScoutExplore(ctx)).toMatchObject({
-      type: "blocked",
-      reason:
+      status: "blocked",
+      summary:
         "Scout exploration removed primary sources from an existing output",
-      context: {
+      evidence: {
         replacements: [
           {
             kind: "existing-output-replaced",
             output: existing,
             removedPrimarySources: ["https://example.com/original"],
+            currentPrimarySources: ["https://example.com/replacement"],
           },
         ],
-        sessionId: "s_replacement",
+        executionId: "s_replacement",
       },
     });
   });

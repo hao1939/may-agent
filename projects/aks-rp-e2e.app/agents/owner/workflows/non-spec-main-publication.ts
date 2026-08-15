@@ -1,12 +1,12 @@
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import {
-  projectAppTaskHandlerResultSchema,
-  type ProjectAppTaskHandlerResult,
-  type ProjectAppConditionSpec,
+  taskReconcileResultSchema,
+  type Condition,
+  type ExecutionResult,
+  type TaskReconcileResult,
   type WorkflowContext,
-  type WorkflowResult,
-} from "@may-agent/sdk/legacy";
+} from "@may-agent/sdk";
 import {
   completedPullRequestIntegration,
   pullRequestWaitConditions,
@@ -18,14 +18,6 @@ export const name = "non-spec-main-publication";
 export const description =
   "Publish one bounded non-spec repository patch from a main-based task worktree through a non-draft PR and exact merge observation.";
 export const workspace = { kind: "task", baseBranch: "main" } as const;
-
-type TaskPayload = {
-  taskId?: unknown;
-  generation?: unknown;
-  outcome?: unknown;
-  acceptance?: unknown;
-  input?: Record<string, unknown>;
-};
 
 type PullRequest = {
   pullRequestId?: unknown;
@@ -76,65 +68,6 @@ function optionalStringArray(value: unknown): string[] {
     : [];
 }
 
-function matchingJsonObject(text: string, start: number): string | null {
-  let depth = 0;
-  let inString = false;
-  let escaping = false;
-  for (let index = start; index < text.length; index += 1) {
-    const char = text[index];
-    if (escaping) {
-      escaping = false;
-      continue;
-    }
-    if (char === "\\") {
-      escaping = true;
-      continue;
-    }
-    if (char === '"') {
-      inString = !inString;
-      continue;
-    }
-    if (inString) continue;
-    if (char === "{") depth += 1;
-    if (char === "}" && --depth === 0) return text.slice(start, index + 1);
-  }
-  return null;
-}
-
-function reconciliationTaskPayload(raw: string): TaskPayload | null {
-  const marker = raw.indexOf("## Reconciliation Task");
-  if (marker < 0) return null;
-  const scoped = raw.slice(marker);
-  const start = scoped.indexOf("{");
-  const object = start >= 0 ? matchingJsonObject(scoped, start) : null;
-  if (!object) return null;
-  try {
-    return JSON.parse(object) as TaskPayload;
-  } catch {
-    return null;
-  }
-}
-
-function taskIdFromPrompt(raw: string): string {
-  return (
-    optionalString(reconciliationTaskPayload(raw)?.taskId) || "unknown-task"
-  );
-}
-
-function taskGenerationFromPrompt(raw: string): number {
-  const value = reconciliationTaskPayload(raw)?.generation;
-  return typeof value === "number" && Number.isInteger(value) && value > 0
-    ? value
-    : 1;
-}
-
-function taskInputFromPrompt(raw: string): Record<string, unknown> {
-  const input = reconciliationTaskPayload(raw)?.input;
-  return input && typeof input === "object"
-    ? (input as Record<string, unknown>)
-    : {};
-}
-
 type PullRequestReviewThread = {
   threadId: string;
   path: string | null;
@@ -148,23 +81,6 @@ type PullRequestReview = {
   fingerprint: string;
   threads: PullRequestReviewThread[];
 };
-
-function triggerEvent(raw: string): Record<string, unknown> | null {
-  const marker = raw.indexOf("## Trigger Event");
-  if (marker < 0) return null;
-  const scoped = raw.slice(marker);
-  const start = scoped.indexOf("{");
-  const object = start >= 0 ? matchingJsonObject(scoped, start) : null;
-  if (!object) return null;
-  try {
-    const parsed = JSON.parse(object);
-    return parsed && typeof parsed === "object"
-      ? (parsed as Record<string, unknown>)
-      : null;
-  } catch {
-    return null;
-  }
-}
 
 function reviewThread(value: unknown): PullRequestReviewThread | null {
   if (!value || typeof value !== "object") return null;
@@ -181,30 +97,29 @@ function reviewThread(value: unknown): PullRequestReviewThread | null {
 }
 
 function pullRequestReviewTrigger(
-  raw: string,
+  trigger: Record<string, unknown> | null,
   expectedPullRequestId = "",
 ): PullRequestReview | null {
-  const trigger = triggerEvent(raw);
   if (!trigger) return null;
   const data =
     trigger.data && typeof trigger.data === "object"
       ? (trigger.data as Record<string, unknown>)
       : {};
   const value = (key: string) => trigger[key] ?? data[key];
-  const reason = optionalString(value("reason"));
   const pullRequestId = optionalString(value("pullRequestId"));
   const unresolvedCount = Number(value("unresolvedReviewCount") ?? 0) || 0;
   if (
-    reason !== "pull-request-review-changed" ||
+    optionalString(trigger.type) !== "pull-request.state" ||
     !pullRequestId ||
     unresolvedCount <= 0 ||
     (expectedPullRequestId && pullRequestId !== expectedPullRequestId)
   ) {
     return null;
   }
-  const threads = Array.isArray(value("unresolvedReviewThreads"))
-    ? value("unresolvedReviewThreads")
-        .map((entry) => reviewThread(entry))
+  const unresolvedThreads = value("unresolvedReviewThreads");
+  const threads = Array.isArray(unresolvedThreads)
+    ? unresolvedThreads
+        .map((entry: unknown) => reviewThread(entry))
         .filter((entry): entry is PullRequestReviewThread => Boolean(entry))
     : [];
   return {
@@ -333,13 +248,15 @@ async function pullRequests(
       );
   const rows = Array.isArray(value)
     ? value
-    : value && typeof value === "object" && Array.isArray((value as { value?: unknown }).value)
+    : value &&
+        typeof value === "object" &&
+        Array.isArray((value as { value?: unknown }).value)
       ? (value as { value: unknown[] }).value
       : [];
   return (rows as PullRequest[]).sort(
-        (left, right) =>
-          Number(right.pullRequestId ?? 0) - Number(left.pullRequestId ?? 0),
-      );
+    (left, right) =>
+      Number(right.pullRequestId ?? 0) - Number(left.pullRequestId ?? 0),
+  );
 }
 
 async function pullRequest(
@@ -430,7 +347,7 @@ function waitConditions(input: {
   pullRequestId: string;
   sourceCommit: string;
   review?: PullRequestReview;
-}): ProjectAppConditionSpec[] {
+}): Condition[] {
   return pullRequestWaitConditions(
     input.pullRequestId,
     input.sourceCommit,
@@ -441,7 +358,7 @@ function waitConditions(input: {
 }
 
 function isWorkflowOwnedPublicationWait(input: {
-  result: ProjectAppTaskHandlerResult;
+  result: TaskReconcileResult;
   sourceCommit: string;
   targetRef: string;
 }): boolean {
@@ -476,14 +393,14 @@ function promptForPublication(input: {
     ? `Keep the patch strictly bounded to these repository paths: ${input.allowedChangedFiles.join(", ")}.`
     : "Keep the patch strictly bounded to the smallest repository surface required by the task acceptance.";
   return [
-    `Reconcile this bounded non-spec publication task in ${input.ctx.workspaceDir}.`,
+    `Reconcile this bounded non-spec publication task in ${input.ctx.workspace?.root}.`,
     `The task worktree is already based on current origin/${input.targetBranch}@${input.baseCommit} and currently uses source branch ${input.sourceBranch}.`,
     allowed,
     "Do not create another branch or worktree. Do not push, open a PR, merge, edit app state, or create/retarget tasks; this workflow will handle publication and merge observation.",
     "If a truthful bounded source patch is required, make it in this worktree, run the scoped verification named by the task acceptance, commit the bounded change, and return state=converged with exact evidence for the prepared commit. Converged here means the bounded local preparation is complete; this workflow still owns push, PR creation, merge waiting, and final task convergence. Do not return waiting merely because those workflow-owned publication steps remain.",
     "If the task must wait on an exact external fact before a bounded patch can truthfully proceed, return waiting with one exact typed Condition. If the blocker is a genuine external ownership gap, return needs-owner with precise evidence.",
     "Task:",
-    input.ctx.task,
+    JSON.stringify(input.ctx.reconciliation ?? input.ctx.input, null, 2),
   ].join("\n\n");
 }
 
@@ -516,7 +433,7 @@ function promptForExistingPullRequestReview(input: {
     "Review threads:",
     reviewThreads,
     "Task:",
-    input.ctx.task,
+    JSON.stringify(input.ctx.reconciliation ?? input.ctx.input, null, 2),
   ].join("\n\n");
 }
 
@@ -562,14 +479,14 @@ function pullRequestMergeStatus(pr: PullRequest): string {
 }
 
 function verifiedIntegrationEvidence(input: {
-  result: ProjectAppTaskHandlerResult;
+  result: TaskReconcileResult;
   pullRequestId: string;
   sourceBranch: string;
   sourceCommit: string;
   mergeCommit: string;
   targetRef: string;
   targetCommit: string;
-}): ProjectAppTaskHandlerResult {
+}): TaskReconcileResult {
   const summary = `${input.result.summary} PR ${input.pullRequestId} integrated ${input.sourceCommit} into ${input.targetRef}@${input.targetCommit}.`;
   return {
     ...input.result,
@@ -615,7 +532,7 @@ function sameStrings(left: string[], right: string[]): boolean {
 function reviewNeedsJudgment(
   review: PullRequestReview | null,
   input: Record<string, unknown>,
-): review is PullRequestReview {
+): boolean {
   if (!review?.available || review.unresolvedCount <= 0) return false;
   const priorFingerprint = optionalString(input.reviewFingerprint);
   const priorThreadIds = optionalStringArray(input.unresolvedReviewThreadIds)
@@ -630,7 +547,7 @@ function reviewNeedsJudgment(
 }
 
 function waitingForPullRequest(input: {
-  result: ProjectAppTaskHandlerResult;
+  result: TaskReconcileResult;
   taskId: string;
   generation: number;
   pullRequestId: string;
@@ -641,7 +558,7 @@ function waitingForPullRequest(input: {
   mergeStatus: string;
   review?: PullRequestReview;
   waitingReason?: string;
-}): ProjectAppTaskHandlerResult {
+}): TaskReconcileResult {
   const summary = `${input.result.summary} ${input.waitingReason || `Published non-draft PR ${input.pullRequestId} from ${input.sourceBranch}@${input.sourceCommit}; keep the same task waiting for review or merge into ${input.targetRef}.`}`;
   return {
     ...input.result,
@@ -668,32 +585,36 @@ function waitingForPullRequest(input: {
   };
 }
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
+export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
+  const reconciliation = ctx.reconciliation;
+  const repoDir = ctx.workspace?.projectRoot;
+  const workspaceDir = ctx.workspace?.root;
   if (
-    !ctx.projectDir ||
-    !ctx.workspaceDir ||
-    ctx.projectDir === ctx.workspaceDir
+    !reconciliation ||
+    !repoDir ||
+    !workspaceDir ||
+    repoDir === workspaceDir
   ) {
     return ctx.blocked(
       "Non-spec main publication requires a prepared task worktree",
       {
-        projectDir: ctx.projectDir,
-        workspaceDir: ctx.workspaceDir,
+        hasReconciliation: Boolean(reconciliation),
+        projectDir: repoDir,
+        workspaceDir,
       },
     );
   }
 
-  const payload = reconciliationTaskPayload(ctx.task) ?? {};
-  const taskId = taskIdFromPrompt(ctx.task);
-  const generation = taskGenerationFromPrompt(ctx.task);
-  const input = taskInputFromPrompt(ctx.task);
+  const taskId = reconciliation.taskId;
+  const generation = reconciliation.generation;
+  const input =
+    reconciliation.input && typeof reconciliation.input === "object"
+      ? (reconciliation.input as Record<string, unknown>)
+      : {};
   const allowedChangedFiles = optionalStringArray(input.allowedChangedFiles);
   const { targetBranch, targetRef } = resolveIntegrationTarget(
     optionalString(input.targetBranch) || "main",
   );
-  const repoDir = ctx.projectDir;
-  const workspaceDir = ctx.workspaceDir;
-
   gitValue(repoDir, "fetch", "origin", targetBranch);
   const sourceBranch = gitValue(
     workspaceDir,
@@ -705,13 +626,18 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const baseCommit = gitValue(repoDir, "rev-parse", targetRef);
   const sourceCommit = gitValue(workspaceDir, "rev-parse", "HEAD");
 
-  const existingPr = (await pullRequests(repoDir, sourceBranch, targetBranch))[0];
+  const existingPr = (
+    await pullRequests(repoDir, sourceBranch, targetBranch)
+  )[0];
   const existingPrId = optionalString(existingPr?.pullRequestId);
   if (existingPrId) {
     const currentPr = await pullRequest(repoDir, existingPrId);
     const prState = pullRequestState(currentPr);
     const mergeStatus = pullRequestMergeStatus(currentPr);
-    const review = pullRequestReviewTrigger(ctx.task, existingPrId);
+    const review = pullRequestReviewTrigger(
+      (reconciliation.trigger as Record<string, unknown> | undefined) ?? null,
+      existingPrId,
+    );
     if (prState === "completed") {
       const integration = completedPullRequestIntegration({
         mergeStatus,
@@ -768,7 +694,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       const converged = verifiedIntegrationEvidence({
         result: {
           state: "converged",
-          summary: optionalString(payload.outcome) || `Published ${taskId}`,
+          summary: reconciliation.outcome || `Published ${taskId}`,
           evidence: [],
           actions: [],
         },
@@ -799,8 +725,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       );
     }
     if (reviewNeedsJudgment(review, input)) {
-      const session = await ctx.runAgent(
-        ctx.agent,
+      const session = await ctx.agents.call(
+        reconciliation.owner,
         promptForExistingPullRequestReview({
           ctx,
           pullRequestId: existingPrId,
@@ -812,16 +738,16 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         }),
         {
           timeoutMs: 1_800_000,
-          schema: projectAppTaskHandlerResultSchema,
+          schema: taskReconcileResultSchema,
         },
       );
-      if (session.status === "error" || session.status === "interrupted") {
+      if (session.status !== "done") {
         return ctx.blocked(
           "Non-spec main publication review-repair owner session failed",
           {
-            sessionId: session.sessionId,
+            executionId: session.id,
             status: session.status,
-            summary: session.lastAssistantText,
+            summary: session.summary,
             workspaceDir,
             pullRequestId: existingPrId,
             reviewFingerprint: review.fingerprint,
@@ -829,7 +755,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         );
       }
 
-      const ownerResult = session.structuredResult as ProjectAppTaskHandlerResult;
+      const ownerResult = session.output as TaskReconcileResult;
       const committedSourceCommit = gitValue(workspaceDir, "rev-parse", "HEAD");
       const recoverWorkflowOwnedWait = isWorkflowOwnedPublicationWait({
         result: ownerResult,
@@ -875,7 +801,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
             "Publication task changed files outside its bounded scope",
             {
               state: "needs-owner",
-              summary: "Publication task changed files outside its bounded scope",
+              summary:
+                "Publication task changed files outside its bounded scope",
               evidence: [
                 ...(ownerResult.evidence ?? []),
                 `unexpected-files:${unexpected.join(",")}`,
@@ -906,7 +833,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     const waiting = waitingForPullRequest({
       result: {
         state: "waiting",
-        summary: optionalString(payload.outcome) || `Published ${taskId}`,
+        summary: reconciliation.outcome || `Published ${taskId}`,
         evidence: [],
         actions: [],
       },
@@ -926,8 +853,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return ctx.done(waiting.summary, waiting);
   }
 
-  const session = await ctx.runAgent(
-    ctx.agent,
+  const session = await ctx.agents.call(
+    reconciliation.owner,
     promptForPublication({
       ctx,
       targetBranch,
@@ -937,19 +864,19 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     }),
     {
       timeoutMs: 1_800_000,
-      schema: projectAppTaskHandlerResultSchema,
+      schema: taskReconcileResultSchema,
     },
   );
-  if (session.status === "error" || session.status === "interrupted") {
+  if (session.status !== "done") {
     return ctx.blocked("Non-spec main publication owner session failed", {
-      sessionId: session.sessionId,
+      executionId: session.id,
       status: session.status,
-      summary: session.lastAssistantText,
+      summary: session.summary,
       workspaceDir,
     });
   }
 
-  const ownerResult = session.structuredResult as ProjectAppTaskHandlerResult;
+  const ownerResult = session.output as TaskReconcileResult;
   const committedSourceCommit = gitValue(workspaceDir, "rev-parse", "HEAD");
   const recoverWorkflowOwnedWait = isWorkflowOwnedPublicationWait({
     result: ownerResult,
@@ -1018,7 +945,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       title: pullRequestTitle(taskId, input),
       description: pullRequestDescription({
         taskId,
-        outcome: optionalString(payload.outcome),
+        outcome: reconciliation.outcome,
         sourceCommit: committedSourceCommit,
         targetBranch,
         allowedChangedFiles,

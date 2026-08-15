@@ -188,11 +188,10 @@ silently start an owner agent.
 
 ## Legacy cron compatibility
 
-Historical `cron.json`, named handlers, workflow-backed handlers,
-auto-heartbeats, and synthetic Project App schedule entries remain temporary
-runtime compatibility surfaces. They may continue to support genuinely
-standalone agent/system duties during migration, but they cannot be the
-canonical authority for App requests or task wakes.
+Historical `cron.json`, named handlers, workflow-backed handlers, and
+auto-heartbeats remain only for genuinely standalone agent/system duties. App
+schedules, observers, and task resync are hosted directly by the canonical App
+runtime; cron handlers cannot own App requests or task wakes.
 
 Each App migration classifies every legacy entry as:
 

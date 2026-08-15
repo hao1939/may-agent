@@ -134,7 +134,7 @@ The owner selects the smallest mechanism that matches the cause:
 | Missing deterministic capability | Tool or SDK |
 | Precise mechanical risk | Observe/warn guard, then block only after evidence |
 | Trigger or observation gap | Handler, schedule, watcher, or metric |
-| Durable multi-run implementation | Project app and optional task resources |
+| Durable multi-run implementation | Agent App and optional task resources |
 | Cross-owner required action | Escalation |
 
 Frequency alone does not justify automation. Debug misleading input before

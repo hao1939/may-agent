@@ -317,13 +317,13 @@ stronger execution is justified:
 | Deterministic multi-step sequencing | Workflow |
 | Mechanical observation or intervention | Guard |
 | Capability an agent calls against an external system | Tool |
-| Repeated typed automation entering an existing app | Discoverable app action that emits one semantic event |
+| Repeated typed automation entering an existing App | Discoverable App action that validates and admits one correlated App input |
 | Ordinary project-directed request | Project comment/intent handled by the app owner |
 | Recurring/event-driven wake-up | Schedule or handler |
 | Cross-owner decision or action | Escalation |
 
 Do not encode project state, task ownership, retries, approvals, or completion
-inside a skill. Those remain in project apps, workflows, events, and sessions.
+inside a skill. Those remain in Agent Apps, workflows, events, and sessions.
 
 Promote a skill into a workflow only when repeated evidence shows that
 sequencing should be consistent, terminal conditions can be explicit, and

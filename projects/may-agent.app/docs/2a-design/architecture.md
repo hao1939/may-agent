@@ -1,8 +1,8 @@
 # May-Agent Architecture
 
 **Design status:** Accepted.
-**Implementation status:** Canonical App ownership and authoring core are
-implemented; legacy Project App hosting and work authorities are being deleted.
+**Implementation status:** Implemented. One `defineApp` registry and host own
+App Inbox, schedules, observers, and the optional task capability.
 
 May-agent is an Agent App host. Apps own durable requests and desired outcomes;
 agents provide judgment; workflows preserve repeatable bounded processes; and
@@ -206,16 +206,15 @@ regenerated and cannot become mutation authority.
 | Canonical App definition/validation | `projects/may-agent/packages/sdk/src/app.ts`, `src/app/app-definition-validation.ts` |
 | App registry/loader | `projects/may-agent/src/app/app-registry.ts`, `src/app/loader/` |
 | App inbox | `projects/may-agent/src/app/app-inbox-*.ts` |
-| Temporary canonical-to-task adapter | `projects/may-agent/src/app/loader/project-app-loader.ts` |
-| Task mechanics | `projects/may-agent/src/app/project-app-task-controller.ts`, `project-app-task-reconciler.ts` |
+| App task capability | `projects/may-agent/src/app/app-task-capability.ts`, `app-task-runtime.ts` |
+| Task mechanics | `projects/may-agent/src/app/app-task-controller.ts`, `app-task-reconciler.ts`, `app-task-store.ts` |
 | Events and persistence | `projects/may-agent/src/app/event-bus.ts`, `src/lib/db/` |
 | Bounded execution | `projects/may-agent/src/lib/agent-execution.ts`, workflow/runner modules |
 | HTTP/UI | `projects/may-agent/src/app/http/`, `packages/webui/` |
 | Stable public SDK | `projects/may-agent/packages/sdk/` |
 
-The temporary adapter and Project App-named task files are implementation debt;
-their useful task mechanics move behind the canonical host, and their public
-legacy contracts are deleted.
+Task mechanics are host-private and consume the same published App generation;
+they do not load manifests, publish routes, or expose storage through the SDK.
 
 ## Invariants
 

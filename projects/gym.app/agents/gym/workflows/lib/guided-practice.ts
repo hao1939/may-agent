@@ -6,12 +6,7 @@ import type {
   LearningUnitContext,
 } from "@may-agent/gym/loop";
 import type { WorkflowContext } from "@may-agent/sdk";
-
-const TERMINAL_EVENTS = new Set([
-  "cli.task.completed",
-  "cli.task.failed",
-  "cli.task.orphaned",
-]);
+import { callGymAgent } from "./context";
 
 const reflectionSchema = Type.Object(
   {
@@ -26,6 +21,7 @@ const reflectionSchema = Type.Object(
             Type.Literal("failed"),
             Type.Literal("orphaned"),
           ]),
+          failureCategory: Type.Optional(Type.String({ minLength: 1 })),
           evidence: Type.Array(Type.String({ minLength: 1 }), {
             minItems: 1,
             maxItems: 8,
@@ -140,6 +136,7 @@ function terminalName(
 export function assessCliPractice(
   events: CliPracticeEvent[],
   requirements: GuidedPracticeRequirement[],
+  requireLifecycleEvents = true,
 ): CliPracticeAssessment {
   const used = new Set<number>();
   const missing: string[] = [];
@@ -166,16 +163,18 @@ export function assessCliPractice(
       continue;
     }
     used.add(match.id);
-    const lifecycle = new Set(
-      events
-        .filter(({ taskId }) => taskId === match.taskId)
-        .map(({ eventType }) => eventType),
-    );
-    if (!lifecycle.has("cli.task.requested")) {
-      missing.push(`${label}:requested`);
-    }
-    if (!lifecycle.has("cli.task.started")) {
-      missing.push(`${label}:started`);
+    if (requireLifecycleEvents) {
+      const lifecycle = new Set(
+        events
+          .filter(({ taskId }) => taskId === match.taskId)
+          .map(({ eventType }) => eventType),
+      );
+      if (!lifecycle.has("cli.task.requested")) {
+        missing.push(`${label}:requested`);
+      }
+      if (!lifecycle.has("cli.task.started")) {
+        missing.push(`${label}:started`);
+      }
     }
     evidence.push(
       ...[
@@ -194,58 +193,51 @@ export function assessCliPractice(
   };
 }
 
-function readSessionEvents(
-  ctx: WorkflowContext,
-  sessionId: string,
-): CliPracticeEvent[] {
-  const result = ctx.query.sql(
-    `SELECT id, event_type, task_id, data
-       FROM events
-      WHERE session_id = ?
-        AND event_type IN (
-          'cli.task.requested',
-          'cli.task.started',
-          'cli.task.completed',
-          'cli.task.failed',
-          'cli.task.orphaned'
-        )
-      ORDER BY timestamp ASC, id ASC`,
-    [sessionId],
-    { limit: 100 },
-  );
-  return parseCliPracticeEvents(result.rows);
-}
-
-function allRequestedCallsFinished(events: CliPracticeEvent[]): boolean {
-  const requested = events.filter(
-    ({ eventType }) => eventType === "cli.task.requested",
-  );
-  if (!requested.length) return true;
-  return requested.every(({ taskId }) =>
-    events.some(
-      (event) =>
-        event.taskId === taskId && TERMINAL_EVENTS.has(event.eventType),
-    ),
-  );
-}
-
 async function observePractice(
   ctx: WorkflowContext,
-  sessionId: string,
+  reflection: unknown,
   practice: GuidedPracticeCase,
 ): Promise<{ events: CliPracticeEvent[]; assessment: CliPracticeAssessment }> {
-  const deadline = Date.now() + practice.max_wait_ms;
-  let events = readSessionEvents(ctx, sessionId);
-  let assessment = assessCliPractice(events, practice.requirements);
-  while (
-    !assessment.passed &&
-    !allRequestedCallsFinished(events) &&
-    Date.now() < deadline
-  ) {
-    await new Promise((resolve) => setTimeout(resolve, 2_000));
-    events = readSessionEvents(ctx, sessionId);
-    assessment = assessCliPractice(events, practice.requirements);
+  const calls = Array.isArray(record(reflection).calls)
+    ? (record(reflection).calls as unknown[]).map(record)
+    : [];
+  const events: CliPracticeEvent[] = [];
+  let eventId = 1;
+  for (const call of calls) {
+    const taskId = String(call.taskId ?? "").trim();
+    const tool =
+      call.tool === "codex" || call.tool === "claude" ? call.tool : null;
+    const outcome = String(call.outcome ?? "");
+    if (
+      !taskId ||
+      !tool ||
+      !["completed", "failed", "orphaned"].includes(outcome)
+    )
+      continue;
+    const execution = await ctx.read.execution(taskId);
+    const terminalStatusMatches =
+      (outcome === "completed" && execution?.status === "done") ||
+      (outcome === "failed" &&
+        ["blocked", "error"].includes(execution?.status ?? "")) ||
+      (outcome === "orphaned" && execution?.status === "interrupted");
+    if (!terminalStatusMatches) continue;
+    const evidence = Array.isArray(call.evidence)
+      ? call.evidence.map(String).filter((path) => existsSync(path))
+      : [];
+    if (evidence.length === 0) continue;
+    events.push({
+      id: eventId++,
+      eventType: `cli.task.${outcome}`,
+      taskId,
+      tool,
+      failureCategory:
+        typeof call.failureCategory === "string" ? call.failureCategory : null,
+      resultPath: evidence[0] ?? null,
+      structuredResultPath: evidence[1] ?? null,
+      eventsPath: evidence[2] ?? null,
+    });
   }
+  const assessment = assessCliPractice(events, practice.requirements, false);
   return { events, assessment };
 }
 
@@ -300,7 +292,8 @@ export async function runGuidedPractice(input: {
       const attempts: GuidedPracticeAttempt[] = [];
       for (let attempt = 1; attempt <= 2; attempt++) {
         const prior = attempts.at(-1) ?? null;
-        const result = await input.ctx.runAgent(
+        const result = await callGymAgent(
+          input.ctx,
           input.agent,
           guidedPracticePrompt(unit, practice, prior),
           {
@@ -310,7 +303,11 @@ export async function runGuidedPractice(input: {
         );
         const observed =
           practice.type === "live"
-            ? await observePractice(input.ctx, result.sessionId, practice)
+            ? await observePractice(
+                input.ctx,
+                result.structuredResult,
+                practice,
+              )
             : {
                 events: [] as CliPracticeEvent[],
                 assessment: {

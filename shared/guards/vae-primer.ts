@@ -1,4 +1,4 @@
-import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk/legacy";
+import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk";
 
 /**
  * vae-primer — Step-start reminder to verify after edit.
@@ -13,6 +13,7 @@ export const guard: WorkflowGuard = {
   events: ["step_start"],
 
   handle(event: WorkflowGuardEvent): Demand[] {
+    if (event.type !== "step_start") return [];
     if (event.source === "function") return [];
 
     return [

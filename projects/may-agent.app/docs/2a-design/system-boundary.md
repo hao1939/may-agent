@@ -1,9 +1,9 @@
 # Infrastructure, Runtime, And App Boundary
 
 **Design status:** Accepted.
-**Implementation status:** Canonical App host and scoped authoring SDK are
-implemented; remaining Project App, legacy SDK, handler, and owner-inbox
-authorities are being removed.
+**Implementation status:** Implemented. The canonical App host and scoped SDK
+replace Project App declarations, the legacy SDK, and owner-inbox work
+authority; remaining internal handlers are runtime adapters, not App hosts.
 
 This document defines the stable split:
 
@@ -174,8 +174,11 @@ and trigger are durable before coalescing. Conditions name exact facts; resync
 is a safety net, not a second planner.
 
 App workflows receive bounded task facts and child views through
-`ctx.reconciliation`. They cannot parse prompt packets, query the global task
-tree, or mutate task resources directly.
+`ctx.reconciliation`. The host additionally supplies a capped live-task
+snapshot only for App-wide frontier-health workflows; it omits the reviewing
+task and reports truncation. Workflows cannot parse prompt packets, issue
+arbitrary global task queries, read task persistence, or mutate task resources
+directly.
 
 ## Schedule and observer boundary
 
@@ -284,6 +287,13 @@ One `defineApp` export owns each App. A failed candidate leaves the previous
 generation unchanged. Active executions retain their prepared definition and
 source lineage; subsequent dispatch uses the new generation.
 
+There is no second `services/` discovery graph or cross-App service registry.
+Runtime subsystems may use host-private typed ports and explicit factory wiring,
+but Apps receive only the bounded capabilities declared by the canonical SDK.
+Long-lived route, schedule, observer, and controller registrations are owned
+and torn down by the complete registry generation, never independently
+hot-swapped as a dependency subgraph.
+
 Agent definitions, prompts, tools, workflows, App definitions, schedules,
 observers, and task routes each declare their reload boundary. Reload never
 silently mutates an active session or duplicates schedule/subscription/task
@@ -356,21 +366,20 @@ event-to-agent handlers are not stable public surfaces.
 - Do not add generic SDK escape hatches to make one migration easier.
 - Do not preserve legacy and canonical actionable routes in parallel.
 
-## Migration direction
+## Adopted migration
 
-1. Keep one `defineApp` declaration and one atomic registry generation.
-2. Migrate addressed input to App inbox admission and facts to explicit App/task
-   subscriptions or observation only.
-3. Move Project App task reconciliation behind the canonical App host without
-   exposing its mechanics.
-4. Move workflow input to typed context and replace raw queries/paths with
-   narrow projections and workspace capabilities.
-5. Classify cron handlers and watchers as schedules, observers, task policy,
-   runtime maintenance, offline maintenance, or deletion.
-6. Remove owner-inbox/event-pair work authority, duplicate loaders/routes,
-   `defineProjectApp`, and `@may-agent/sdk/legacy` after the last consumer.
-7. Prove restart, reload, delivery, task recovery, and route uniqueness before
-   deleting compatibility state.
+1. One `defineApp` declaration and atomic registry generation own each App.
+2. Addressed input uses App Inbox admission; facts use explicit App/task
+   subscriptions, exact wakes, or observation only.
+3. Task reconciliation is an optional capability behind the canonical host.
+4. Workflows receive typed input, narrow reads, and scoped workspace/metric
+   capabilities.
+5. Timers and external reads are App schedules/observers; shared maintenance
+   remains internal runtime work or explicit offline tooling.
+6. Owner-inbox/event-pair work authority, duplicate loaders/routes,
+   `defineProjectApp`, and `@may-agent/sdk/legacy` are deleted.
+7. Restart, reload, delivery, task recovery, and route uniqueness are covered by
+   runtime and App verification.
 
 ## Integrity checklist
 

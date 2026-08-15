@@ -3,7 +3,8 @@ import { execFileSync } from "node:child_process";
 import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { WorkflowContext } from "@may-agent/sdk/legacy";
+import type { AppEvent, WorkflowContext } from "@may-agent/sdk";
+import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
 import {
   description,
   execute,
@@ -117,63 +118,72 @@ process.exit(1);
 function taskPrompt(
   input: Record<string, unknown> = {},
   triggerObservation?: Record<string, unknown>,
-): string {
-  return [
-    "## Reconciliation Task",
-    "```json",
-    JSON.stringify(
-      {
-        taskId:
-          "domain/publish-master-validation-origin-main-baseline-refresh-after-cpu-removal-20260804",
-        generation: 1,
-        outcome: "Publish the bounded master-validation refresh into main.",
-        input,
-      },
-      null,
-      2,
-    ),
-    "```",
+): {
+  input: Record<string, unknown>;
+  trigger?: AppEvent<Record<string, unknown>>;
+} {
+  return {
+    input,
     ...(triggerObservation
-      ? [
-          "",
-          "## Trigger Event",
-          "```json",
-          JSON.stringify(triggerObservation, null, 2),
-          "```",
-        ]
-      : []),
-  ].join("\n");
+      ? {
+          trigger: {
+            type: "pull-request.state",
+            data: triggerObservation,
+          },
+        }
+      : {}),
+  };
 }
 
-function context(overrides: Partial<WorkflowContext> = {}): WorkflowContext {
-  return {
-    task: taskPrompt(),
-    agent: "aks-explorer",
-    projectDir: "/repo",
-    workspaceDir: "/worktrees/task-1",
-    runAgent: (async () => ({
+type ContextOverrides = {
+  task?: ReturnType<typeof taskPrompt>;
+  projectDir?: string;
+  workspaceDir?: string;
+  runAgent?: WorkflowContext["agents"]["call"];
+};
+
+function context(overrides: ContextOverrides = {}): WorkflowContext {
+  const task = overrides.task ?? taskPrompt();
+  const projectDir = overrides.projectDir ?? "/repo";
+  const workspaceDir = overrides.workspaceDir ?? "/worktrees/task-1";
+  const runAgent =
+    overrides.runAgent ??
+    ((async () => ({
+      id: "session-1",
+      kind: "agent",
       status: "done",
-      sessionId: "session-1",
-      lastAssistantText: "done",
-      messages: [],
-      duration: "1s",
-      outputDir: "/tmp",
-      finishResult: { status: "success", summary: "done" },
-      structuredResult: {
+      summary: "done",
+      output: {
         state: "converged",
         summary: "done",
         evidence: ["commit:abc"],
         actions: [],
       },
-    })) as WorkflowContext["runAgent"],
-    done: (summary, output) => ({ type: "done", summary, output }),
-    blocked: (reason, details) => ({
-      type: "blocked",
-      reason,
-      context: details,
-    }),
-    ...overrides,
-  } as WorkflowContext;
+    })) as WorkflowContext["agents"]["call"]);
+  return createTestAppWorkflowContext({
+    input: task.input,
+    reconciliation: {
+      appId: "aks-rp-e2e",
+      taskId:
+        "domain/publish-master-validation-origin-main-baseline-refresh-after-cpu-removal-20260804",
+      generation: 1,
+      resourceVersion: 1,
+      owner: "aks-explorer",
+      mode: "achieve",
+      outcome: "Publish the bounded master-validation refresh into main.",
+      acceptance: [],
+      input: task.input,
+      children: { live: [], completed: [] },
+      ...(task.trigger ? { trigger: task.trigger } : {}),
+    },
+    callAgent: runAgent,
+    workspace: {
+      appRoot: "/app",
+      projectRoot: projectDir,
+      root: workspaceDir,
+      output: "/tmp",
+    },
+  });
 }
 
 describe("non-spec main publication workflow", () => {
@@ -227,20 +237,20 @@ describe("non-spec main publication workflow", () => {
             git(fixture.workspaceDir, "commit", "-m", "bounded refresh");
             return {
               status: "done",
-              sessionId: "session-1",
-              lastAssistantText: "done",
+              id: "session-1",
+              summary: "done",
               messages: [],
               duration: "1s",
               outputDir: "/tmp",
               finishResult: { status: "success", summary: "done" },
-              structuredResult: {
+              output: {
                 state: "converged",
                 summary: "bounded refresh ready",
                 evidence: ["verification:bounded-refresh"],
                 actions: [],
               },
             };
-          }) as WorkflowContext["runAgent"],
+          }) as WorkflowContext["agents"]["call"],
         }),
       );
 
@@ -254,7 +264,7 @@ describe("non-spec main publication workflow", () => {
         "Do not return waiting merely because those workflow-owned publication steps remain",
       );
       expect(result).toMatchObject({
-        type: "done",
+        status: "done",
         output: {
           state: "waiting",
           summary: expect.stringContaining("Published non-draft PR 1"),
@@ -301,20 +311,16 @@ describe("non-spec main publication workflow", () => {
             writeFileSync(join(fixture.workspaceDir, "allowed.txt"), "after\n");
             git(fixture.workspaceDir, "add", "allowed.txt");
             git(fixture.workspaceDir, "commit", "-m", "bounded refresh");
-            const sourceCommit = git(
-              fixture.workspaceDir,
-              "rev-parse",
-              "HEAD",
-            );
+            const sourceCommit = git(fixture.workspaceDir, "rev-parse", "HEAD");
             return {
               status: "done",
-              sessionId: "session-1",
-              lastAssistantText: "waiting for main",
+              id: "session-1",
+              summary: "waiting for main",
               messages: [],
               duration: "1s",
               outputDir: "/tmp",
               finishResult: { status: "success", summary: "waiting" },
-              structuredResult: {
+              output: {
                 state: "waiting",
                 summary: "Prepared commit; waiting for origin/main",
                 evidence: [`prepared-commit:${sourceCommit}`],
@@ -329,12 +335,12 @@ describe("non-spec main publication workflow", () => {
                 ],
               },
             };
-          }) as WorkflowContext["runAgent"],
+          }) as WorkflowContext["agents"]["call"],
         }),
       );
 
       expect(result).toMatchObject({
-        type: "done",
+        status: "done",
         output: {
           state: "waiting",
           summary: expect.stringContaining("Published non-draft PR 1"),
@@ -381,34 +387,34 @@ describe("non-spec main publication workflow", () => {
             git(fixture.workspaceDir, "commit", "-m", "bounded refresh");
             return {
               status: "done",
-              sessionId: "session-1",
-              lastAssistantText: "done",
+              id: "session-1",
+              summary: "done",
               messages: [],
               duration: "1s",
               outputDir: "/tmp",
               finishResult: { status: "success", summary: "done" },
-              structuredResult: {
+              output: {
                 state: "converged",
                 summary: "bounded refresh ready",
                 evidence: ["verification:bounded-refresh"],
                 actions: [],
               },
             };
-          }) as WorkflowContext["runAgent"],
+          }) as WorkflowContext["agents"]["call"],
         }),
       );
 
       expect(result).toMatchObject({
-        type: "done",
+        status: "done",
         output: {
           state: "waiting",
           summary: expect.stringContaining("Published non-draft PR 1"),
           evidence: expect.arrayContaining(["pull-request:1"]),
         },
       });
-      const state = JSON.parse(
-        await Bun.file(az.statePath).text(),
-      ) as { prs: unknown[] };
+      const state = JSON.parse(await Bun.file(az.statePath).text()) as {
+        prs: unknown[];
+      };
       expect(state.prs).toHaveLength(1);
     } finally {
       process.env.AZURE_CLI_PATH = previousAz;
@@ -472,25 +478,28 @@ describe("non-spec main publication workflow", () => {
           workspaceDir: fixture.workspaceDir,
           runAgent: (async (_agent: string, task: string) => {
             prompt = task;
-            writeFileSync(join(fixture.workspaceDir, "allowed.txt"), "after review\n");
+            writeFileSync(
+              join(fixture.workspaceDir, "allowed.txt"),
+              "after review\n",
+            );
             git(fixture.workspaceDir, "add", "allowed.txt");
             git(fixture.workspaceDir, "commit", "-m", "address review");
             return {
               status: "done",
-              sessionId: "session-review-1",
-              lastAssistantText: "done",
+              id: "session-review-1",
+              summary: "done",
               messages: [],
               duration: "1s",
               outputDir: "/tmp",
               finishResult: { status: "success", summary: "done" },
-              structuredResult: {
+              output: {
                 state: "converged",
                 summary: "review fix ready",
                 evidence: ["verification:review-fix"],
                 actions: [],
               },
             };
-          }) as WorkflowContext["runAgent"],
+          }) as WorkflowContext["agents"]["call"],
         }),
       );
 
@@ -499,9 +508,11 @@ describe("non-spec main publication workflow", () => {
       expect(prompt).toContain(
         "Use the shared direct-node helper instead of duplicating cleanup logic.",
       );
-      expect(prompt).toContain("Do not create another branch, worktree, or PR.");
+      expect(prompt).toContain(
+        "Do not create another branch, worktree, or PR.",
+      );
       expect(result).toMatchObject({
-        type: "done",
+        status: "done",
         output: {
           state: "waiting",
           summary: expect.stringContaining("Published non-draft PR 1"),
@@ -521,7 +532,10 @@ describe("non-spec main publication workflow", () => {
       expect(output.output.conditions).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            expected: { field: "reviewFingerprint", notEquals: "ee3dd77a3da02bc8" },
+            expected: {
+              field: "reviewFingerprint",
+              notEquals: "ee3dd77a3da02bc8",
+            },
           }),
           expect.objectContaining({
             expected: { field: "unresolvedReviewCount", notEquals: 1 },
@@ -531,9 +545,9 @@ describe("non-spec main publication workflow", () => {
       expect(
         git(fixture.repoDir, "ls-remote", "--heads", "origin", "task/example"),
       ).toContain(repairedCommit);
-      const state = JSON.parse(
-        await Bun.file(az.statePath).text(),
-      ) as { prs: Array<{ pullRequestId: string }> };
+      const state = JSON.parse(await Bun.file(az.statePath).text()) as {
+        prs: Array<{ pullRequestId: string }>;
+      };
       expect(state.prs).toHaveLength(1);
       expect(state.prs[0]?.pullRequestId).toBe("1");
     } finally {
@@ -598,17 +612,21 @@ describe("non-spec main publication workflow", () => {
           workspaceDir: fixture.workspaceDir,
           runAgent: (async () => {
             runAgentCalls += 1;
-            throw new Error("runAgent should not be called for identical review payloads");
-          }) as WorkflowContext["runAgent"],
+            throw new Error(
+              "runAgent should not be called for identical review payloads",
+            );
+          }) as WorkflowContext["agents"]["call"],
         }),
       );
 
       expect(runAgentCalls).toBe(0);
       expect(result).toMatchObject({
-        type: "done",
+        status: "done",
         output: {
           state: "waiting",
-          summary: expect.stringContaining("repeated identical review payload was coalesced"),
+          summary: expect.stringContaining(
+            "repeated identical review payload was coalesced",
+          ),
           evidence: expect.arrayContaining([
             "pull-request:1",
             "pull-request-review-fingerprint:ee3dd77a3da02bc8",
@@ -679,11 +697,11 @@ describe("non-spec main publication workflow", () => {
             throw new Error(
               "runAgent should not be called when the PR is already merged",
             );
-          }) as WorkflowContext["runAgent"],
+          }) as WorkflowContext["agents"]["call"],
         }),
       );
       expect(result).toMatchObject({
-        type: "done",
+        status: "done",
         output: {
           state: "converged",
           summary: expect.stringContaining("PR 7 integrated"),

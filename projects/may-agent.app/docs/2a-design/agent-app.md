@@ -1,8 +1,8 @@
 # Agent App Contract
 
 **Design status:** Accepted.
-**Implementation status:** Canonical App host implemented; migration of the
-legacy Project App task engine behind this contract remains in progress.
+**Implementation status:** Implemented. The canonical host owns App Inbox and
+the optional host-private App task runtime through this contract.
 
 An Agent App is one durable address with one accountable owner. It packages
 typed input, optional supporting agents, domain policy, and optional durable
@@ -43,9 +43,11 @@ translated by an App subscription may all create an independently correlated
 inbox obligation. A metric, provider observation, lifecycle fact, or scheduled
 wake normally remains a fact and may resolve directly to desired task work.
 
-An event may intentionally reach both an App subscription and a task
-subscription only when those routes create two genuinely distinct durable
-obligations. Accidental dual consumption is invalid.
+One fact may intentionally be observed or acted on by several Apps, but within
+one App it never matches both an App subscription and a task subscription. If
+an independently correlated request also needs desired-state convergence, its
+inbox disposition may attach the task after request admission. Exact stored
+Condition wakes are additive because their tasks already own the work.
 
 For durable autonomous work, the visible controller loop is:
 
@@ -125,6 +127,7 @@ export default defineApp({
     },
   ],
 
+  observations: ["provider.snapshot.recorded"],
   observers: [providerObserver],
 
   tasks: {
@@ -149,8 +152,15 @@ export default defineApp({
 ```
 
 Only identity, owner, version, and input schema are fundamental. Inbox tuning,
-subscriptions, schedules, observers, actions, workspace policy, and task
+subscriptions, observation-only selectors, schedules, observers, actions,
+workspace policy, and task
 integration are optional capabilities hosted by the same runtime.
+
+`app.ts` is also the sole App composition boundary. App-local modules may be
+imported normally, but no conventional `services/` directory, live service
+export, or second loader grants autonomous behavior. Another App's outcome is
+requested through typed delegation; shared facts cross through declared event
+routes.
 
 ## Addressed work
 
@@ -193,6 +203,12 @@ explicit task target bypasses broad resolution and wakes only that task.
 
 There is no `inbox.accepts`, implicit fallback from task subscriptions to the
 inbox, generic `events` route, or imperative `onEvent` execution path.
+
+An App may declare exact `observations` selectors for reviewed facts that
+intentionally create no work. After actionable route evaluation selects no
+inbox item, TaskIntent, exact wake, or Condition wake, the host records a
+terminal no-op against the installed registry generation. The core EventBus
+does not contain an application event-name catalog.
 
 ## Actions, schedules, and observers
 

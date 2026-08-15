@@ -857,7 +857,7 @@ cleaner signals.
 Manual review should be available as an action:
 
 ```text
-review-project-app target=aks-rp-e2e.app
+review-agent-app target=aks-rp-e2e.app
 ```
 
 Manual review always writes a report. It should notify only if the evaluator

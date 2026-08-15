@@ -12,7 +12,8 @@ import {
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { Type } from "@earendil-works/pi-ai";
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
+import { callGymAgent, gymProjectsRoot } from "./lib/context";
 import {
   scanCodexLearningSource,
   type CodexLearningTurn,
@@ -443,7 +444,7 @@ function catalogPreferences(
 
 function defaultDesignSources(ctx: WorkflowContext): string[] {
   const designRoot = join(
-    ctx.projectsRoot,
+    gymProjectsRoot(ctx),
     "may-agent.app",
     "docs",
     "2a-design",
@@ -456,14 +457,14 @@ function defaultDesignSources(ctx: WorkflowContext): string[] {
     : [];
   return [
     join(
-      ctx.projectsRoot,
+      gymProjectsRoot(ctx),
       "gym.app",
       "design",
       "may-deputy-learning-curriculum.md",
     ),
-    join(ctx.projectsRoot, "gym.app", "design", "may-training-program.md"),
+    join(gymProjectsRoot(ctx), "gym.app", "design", "may-training-program.md"),
     join(
-      dirname(ctx.projectsRoot),
+      dirname(gymProjectsRoot(ctx)),
       "agents",
       "may",
       "skills",
@@ -587,7 +588,7 @@ async function reviewLearningMaterials(
 
   const reviewInputPath = join(scratchDir, "design-review.json");
   writeJson(reviewInputPath, { designSources, preferences });
-  const result = await ctx.runAgent(
+  const result = await callGymAgent(ctx,
     "gym",
     designReviewPrompt(reviewInputPath),
     {
@@ -629,8 +630,8 @@ async function reviewLearningMaterials(
 }
 
 function workflowInput(ctx: WorkflowContext): Record<string, unknown> {
-  const packet = reconciliationPacket(ctx.task);
-  return record(packet?.input ?? triggerDetails(ctx.task));
+  const packet = reconciliationPacket(ctx);
+  return record(packet?.input ?? triggerDetails(ctx));
 }
 
 export async function runCodexLearningIntake(
@@ -640,7 +641,7 @@ export async function runCodexLearningIntake(
     scan?: () => Promise<CodexSourceScan>;
     designSources?: string[];
   } = {},
-): Promise<WorkflowResult> {
+): Promise<ExecutionResult> {
   const input = workflowInput(ctx);
   const batchSize = integer(
     input.batchSize,
@@ -657,7 +658,7 @@ export async function runCodexLearningIntake(
   const codexHome = options.codexHome;
   const codexHomes = codexHome ? [codexHome] : defaultCodexHomes();
   const stateDir = join(
-    ctx.projectsRoot,
+    gymProjectsRoot(ctx),
     "gym.app",
     ".state",
     "learning",
@@ -763,7 +764,7 @@ export async function runCodexLearningIntake(
           previousAssistant: boundedText(turn.previousAssistant, 1_600),
         })),
       );
-      const result = await ctx.runAgent("gym", extractionPrompt(batchPath), {
+      const result = await callGymAgent(ctx, "gym", extractionPrompt(batchPath), {
         schema: signalSchema,
         timeoutMs: 900_000,
       });
@@ -802,7 +803,7 @@ export async function runCodexLearningIntake(
         existingCatalog,
         newEvidence: rows,
       });
-      const result = await ctx.runAgent(
+      const result = await callGymAgent(ctx,
         "gym",
         consolidationPrompt(consolidationPath),
         {
@@ -915,7 +916,7 @@ async function scanSourceSubprocess(
   outputPath: string,
 ): Promise<CodexSourceScan> {
   const cliPath = join(
-    ctx.projectsRoot,
+    gymProjectsRoot(ctx),
     "gym.app",
     "agents",
     "gym",
@@ -926,7 +927,7 @@ async function scanSourceSubprocess(
   const process = Bun.spawn(
     ["bun", cliPath, checkpointPath, outputPath, ...codexHomes],
     {
-      cwd: join(ctx.projectsRoot, "gym.app"),
+      cwd: join(gymProjectsRoot(ctx), "gym.app"),
       stdout: "pipe",
       stderr: "pipe",
     },
@@ -951,6 +952,6 @@ function defaultCodexHomes(): string[] {
   );
 }
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
+export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   return runCodexLearningIntake(ctx);
 }

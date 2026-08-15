@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { WorkflowContext } from "@may-agent/sdk";
+import { canonicalGymTestContext } from "./lib/test-context";
 import { runRegression, type ProcessRunner } from "./regression-run.ts";
 
 function task(event: Record<string, unknown>): string {
@@ -39,10 +39,10 @@ test("regression workflow invokes standalone Gym and queues review", async () =>
     observedCommand = command;
     return { exitCode: 0, stdout: `${runDir}\n`, stderr: "" };
   };
-  const ctx = {
+  const ctx = canonicalGymTestContext({
     task: task({
       type: "gym.regression.requested",
-      params: {
+      data: {
         benchmark: "may-alignment",
         agent: "may",
         scenario: "may-align-proof-before-adopt",
@@ -53,17 +53,11 @@ test("regression workflow invokes standalone Gym and queues review", async () =>
     emit(event: Record<string, unknown>) {
       emitted.push(event);
     },
-    done(summary: string) {
-      return { type: "done" as const, summary };
-    },
-    blocked(reason: string, context?: unknown) {
-      return { type: "blocked" as const, reason, context };
-    },
-  } as unknown as WorkflowContext;
+  });
 
   const result = await runRegression(ctx, runner);
 
-  expect(result.type).toBe("done");
+  expect(result.status).toBe("done");
   expect(observedCommand).toEqual([
     "bun",
     "run",
@@ -100,23 +94,20 @@ test("regression workflow invokes standalone Gym and queues review", async () =>
 test("regression workflow rejects unsafe input before spawning", async () => {
   for (const scenario of ["bad;command", "../may-align-secret"]) {
     let called = false;
-    const ctx = {
+    const ctx = canonicalGymTestContext({
       task: task({
         type: "gym.regression.requested",
-        params: { scenario, trials: 1 },
+        data: { scenario, trials: 1 },
       }),
       projectsRoot: "/tmp/projects",
-      blocked(reason: string) {
-        return { type: "blocked" as const, reason };
-      },
-    } as unknown as WorkflowContext;
+    });
     const result = await runRegression(ctx, async () => {
       called = true;
       return { exitCode: 0, stdout: "", stderr: "" };
     });
     expect(result).toMatchObject({
-      type: "blocked",
-      reason: "scenario contains unsupported characters",
+      status: "blocked",
+      summary: "scenario contains unsupported characters",
     });
     expect(called).toBe(false);
   }
@@ -126,22 +117,16 @@ test("regression process failure becomes durable review work", async () => {
   const root = mkdtempSync(join(tmpdir(), "gym-app-failure-"));
   const projectsRoot = join(root, "projects");
   const emitted: Array<Record<string, unknown>> = [];
-  const ctx = {
+  const ctx = canonicalGymTestContext({
     task: task({
       type: "gym.regression.requested",
-      params: { benchmark: "may-alignment", trials: 1 },
+      data: { benchmark: "may-alignment", trials: 1 },
     }),
     projectsRoot,
     emit(event: Record<string, unknown>) {
       emitted.push(event);
     },
-    done(summary: string, output?: unknown) {
-      return { type: "done" as const, summary, output };
-    },
-    blocked(reason: string, context?: unknown) {
-      return { type: "blocked" as const, reason, context };
-    },
-  } as unknown as WorkflowContext;
+  });
 
   const result = await runRegression(ctx, async () => ({
     exitCode: 2,
@@ -150,7 +135,7 @@ test("regression process failure becomes durable review work", async () => {
   }));
 
   expect(result).toMatchObject({
-    type: "done",
+    status: "done",
     summary: "Gym regression process exited 2",
     output: {
       state: "converged",
@@ -160,7 +145,9 @@ test("regression process failure becomes durable review work", async () => {
     "gym.regression.failed",
     "gym.review.requested",
   ]);
-  const failurePath = String(emitted[0]!.failurePath);
+  const failurePath = String(
+    (emitted[0]!.data as Record<string, unknown>).failurePath,
+  );
   expect(JSON.parse(readFileSync(failurePath, "utf8"))).toMatchObject({
     benchmark: "may-alignment",
     evidence: { exitCode: 2, stderr: "adapter unavailable" },

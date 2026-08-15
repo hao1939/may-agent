@@ -3,7 +3,7 @@
   "owner": "app-ops",
   "domainOwner": "aks-explorer",
   "status": "active",
-  "type": "project-app",
+  "type": "agent-app",
   "priority": "P1",
   "policy": {
     "mode": "aggressive-push",

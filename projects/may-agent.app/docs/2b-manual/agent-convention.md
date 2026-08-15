@@ -28,7 +28,7 @@ agents/<name>/
   last-session.md         # Generated runtime memory, not system prompt.
 
 projects/<id>.app/agents/<name>/
-  agent.json              # Same shape; agent is scoped to the project app.
+  agent.json              # Same shape; agent is scoped to the Agent App.
   AGENTS.md
   skills/<name>/SKILL.md
   workspace/
@@ -160,7 +160,7 @@ instructions into configuration.
    `skills/<name>/SKILL.md`, handlers, or workflows.
 4. Restart or use the runtime reload command.
 
-For a project-app-scoped agent, use the same shape under
+For an Agent-App-scoped agent, use the same shape under
 `projects/<id>.app/agents/<name>/`. Wire project-specific automation from the
 app's `app.ts` schedules and workflow handlers, not from a separate
 project-local cron file. Use this for project-specific automation, not shared

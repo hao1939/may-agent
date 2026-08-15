@@ -1,4 +1,6 @@
-import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk/legacy";
+import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk";
+
+type StepDoneEvent = Extract<WorkflowGuardEvent, { type: "step_done" }>;
 
 /**
  * finish-guard — FM-3.4 Persistent-Task Enforcement.
@@ -248,7 +250,7 @@ function toolCallsFromMessages(messages: unknown[]): any[] {
   return calls;
 }
 
-function messagesForEvent(event: WorkflowGuardEvent): unknown[] {
+function messagesForEvent(event: StepDoneEvent): unknown[] {
   const messages: unknown[] = [];
   for (const step of event.completedSteps ?? []) {
     messages.push(...((step.result?.messages as unknown[]) ?? []));
@@ -279,7 +281,7 @@ function touchedPathsFromMessages(messages: unknown[]): string[] {
   return [...new Set(paths)];
 }
 
-function agentNameFromEvent(event: WorkflowGuardEvent): string | undefined {
+function agentNameFromEvent(event: StepDoneEvent): string | undefined {
   const raw =
     (event as any).agentName ??
     (event as any).agent ??
@@ -288,7 +290,7 @@ function agentNameFromEvent(event: WorkflowGuardEvent): string | undefined {
   return typeof raw === "string" && raw.length > 0 ? raw : undefined;
 }
 
-function agentsDirFromEvent(event: WorkflowGuardEvent): string | undefined {
+function agentsDirFromEvent(event: StepDoneEvent): string | undefined {
   const explicit = (event as any).agentsRoot ?? (event.result as any)?.agentsRoot;
   if (typeof explicit === "string") return explicit;
 
@@ -304,7 +306,7 @@ function isSameOrChild(candidate: string, ownerPath: string): boolean {
   return candidate === ownerPath || candidate.startsWith(`${ownerPath.replace(/\/$/, "")}/`);
 }
 
-function dirtyWorktreeWarning(event: WorkflowGuardEvent, finishResult: FinishCallParams): Demand | null {
+function dirtyWorktreeWarning(event: StepDoneEvent, finishResult: FinishCallParams): Demand | null {
   const agentName = agentNameFromEvent(event);
   const agentsDir = agentsDirFromEvent(event);
   if (!agentsDir || !fs.existsSync(path.join(agentsDir, ".git"))) return null;

@@ -11,7 +11,11 @@ import {
 import { basename, dirname, isAbsolute, join, relative } from "node:path";
 
 export type FeatureCompactStatus =
-  "pending" | "running" | "done" | "blocked" | "error";
+  | "pending"
+  | "running"
+  | "done"
+  | "blocked"
+  | "error";
 
 export type FeatureCompactRecord = {
   featureKey: string;
@@ -502,14 +506,6 @@ function structuredRepresentationHolderIds(
   ].filter((taskId): taskId is string => typeof taskId === "string");
 }
 
-function readTaskTreeTasks(appDir: string): Record<string, TaskTreeTask> {
-  const tree = readJson<{ tasks?: Record<string, TaskTreeTask> }>(
-    join(appDir, ".state", "tasks", "tree.json"),
-    { tasks: {} },
-  );
-  return tree.tasks ?? {};
-}
-
 function matchesFeatureCompactHolder(
   featureKey: string,
   taskId: string,
@@ -729,10 +725,10 @@ function invalidatedSettledFeatureState(
   existing: FeatureCompactItemState,
   currentFingerprint: string,
   now: string,
-  appDir?: string,
+  taskViews?: Record<string, TaskTreeTask>,
 ): Partial<FeatureCompactItemState> {
-  if (appDir) {
-    const tasks = readTaskTreeTasks(appDir);
+  if (taskViews) {
+    const tasks = taskViews;
     const liveHolderId =
       structuredRepresentationHolderIds(existing).find((taskId) =>
         matchesFeatureCompactHolder(existing.featureKey, taskId, tasks[taskId]),
@@ -796,6 +792,8 @@ export function loadFeatureCompactLoopState(input: {
   statePath?: string;
   featureKeys?: string[];
   refreshFromProject?: boolean;
+  /** Bounded direct-child task views supplied by the host workflow context. */
+  taskViews?: Record<string, TaskTreeTask>;
 }): { state: FeatureCompactLoopState; path: string; created: boolean } {
   const path =
     input.statePath ?? defaultFeatureCompactLoopStatePath(input.appDir);
@@ -826,7 +824,7 @@ export function loadFeatureCompactLoopState(input: {
     (record) =>
       scopedFeatureKeys.size === 0 || scopedFeatureKeys.has(record.featureKey),
   );
-  const taskTreeTasks = readTaskTreeTasks(input.appDir);
+  const taskTreeTasks = input.taskViews ?? {};
   const features: Record<string, FeatureCompactItemState> = {};
   for (const record of records) {
     const existing = normalizeExistingItem(
@@ -848,7 +846,7 @@ export function loadFeatureCompactLoopState(input: {
             existing,
             currentInputFingerprint,
             now,
-            input.appDir,
+            taskTreeTasks,
           )
         : null;
     const reboundLiveHolderId = isInputFingerprintDriftReopenState(existing)

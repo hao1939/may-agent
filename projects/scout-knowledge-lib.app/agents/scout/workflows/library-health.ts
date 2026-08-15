@@ -7,7 +7,7 @@ import {
 } from "node:fs";
 import { createHash } from "node:crypto";
 import { join, relative } from "node:path";
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
 
 export const name = "library-health";
 export const description =
@@ -722,33 +722,33 @@ function writePacket(appDir: string, packet: LibraryHealthPacket): string {
   return path;
 }
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  const appDir =
-    ctx.appDir ??
-    field(ctx.task, "app") ??
-    "/app/projects/scout-knowledge-lib.app";
-  const projectDir =
-    ctx.projectDir ??
-    field(ctx.task, "project") ??
-    "/app/projects/scout-knowledge-lib";
+export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
+  if (!ctx.workspace)
+    return ctx.blocked("Library health requires a canonical App workspace");
+  const appDir = ctx.workspace.appRoot;
+  const projectDir = ctx.workspace.projectRoot;
   const packet = buildLibraryHealthPacket({ appDir, projectDir });
   const packetPath = writePacket(appDir, packet);
 
-  ctx.emit({
+  await ctx.events.emit({
     type: "project.library_health.observed",
-    project: projectId,
-    packetPath,
-    factCount: packet.facts.length,
-    wakeCount: packet.wake_signals.length,
-    wakeSignals: packet.wake_signals,
+    target: { appId: projectId, project: projectId },
+    data: {
+      project: projectId,
+      packetPath,
+      factCount: packet.facts.length,
+      wakeCount: packet.wake_signals.length,
+      wakeSignals: packet.wake_signals,
+    },
   });
 
   if (packet.wake_signals.length > 0) {
-    ctx.emit({
+    await ctx.events.emit({
       type: "project.owner.requested",
-      project: projectId,
-      reason: "library-health-signal",
-      params: {
+      target: { appId: projectId, project: projectId },
+      data: {
+        project: projectId,
+        reason: "library-health-signal",
         packetPath,
         signalCount: packet.wake_signals.length,
         signals: packet.wake_signals,

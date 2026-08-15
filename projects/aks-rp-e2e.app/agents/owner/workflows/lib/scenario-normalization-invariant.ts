@@ -19,6 +19,7 @@ export type ScenarioNormalizationInput = {
   invalidatedSourcePaths?: unknown;
   qualityIssueCodes?: unknown;
   reviewedTerminalSpecIds?: unknown;
+  featureIds?: unknown;
 };
 
 export type ScenarioNormalizationInvariant = {

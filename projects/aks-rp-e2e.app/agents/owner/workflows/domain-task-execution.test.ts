@@ -11,7 +11,14 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { WorkflowContext } from "@may-agent/sdk/legacy";
+import type {
+  ExecutionResult,
+  TaskReconcileResult,
+  TaskReconciliationChild,
+  TaskReconciliationContext,
+  WorkflowContext,
+} from "@may-agent/sdk";
+import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
 import {
   assertIsolatedWriteDispatch,
   execute,
@@ -125,13 +132,99 @@ function provenanceResult(input: {
   };
 }
 
-function context(overrides: Partial<WorkflowContext> = {}): WorkflowContext {
+type LegacyAgentResult = {
+  status: "done" | "blocked" | "error" | "interrupted";
+  sessionId: string;
+  lastAssistantText: string;
+  structuredResult?: TaskReconcileResult;
+};
+
+type LegacyAgentCall = (
+  agent: string,
+  prompt: string,
+  options?: { sessionId?: string },
+) => Promise<LegacyAgentResult>;
+
+type ContextOverrides = {
+  task?: string;
+  agent?: string;
+  projectDir?: string;
+  workspaceDir?: string;
+  runAgent?: LegacyAgentCall;
+  runAgentSession?: LegacyAgentCall;
+};
+
+function reconciliationChild(value: unknown): TaskReconciliationChild {
+  const child =
+    value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Partial<TaskReconciliationChild>)
+      : {};
+  const taskId =
+    typeof value === "string"
+      ? value
+      : typeof child.taskId === "string"
+        ? child.taskId
+        : "child/unknown";
   return {
-    task: "bounded task",
-    agent: "aks-explorer",
-    projectDir: contextProjectDir,
-    workspaceDir: contextWorkspaceDir,
-    runAgent: (async () => ({
+    taskId,
+    generation: child.generation ?? 1,
+    outcome: child.outcome ?? taskId,
+    evidence: child.evidence ?? [],
+    status: child.status ?? "running",
+    ...(child.summary ? { summary: child.summary } : {}),
+    ...(child.owner ? { owner: child.owner } : {}),
+    ...(child.workflow ? { workflow: child.workflow } : {}),
+    ...(child.completedAt ? { completedAt: child.completedAt } : {}),
+  };
+}
+
+function reconciliationFromTask(
+  rawTask: string,
+  owner: string,
+): TaskReconciliationContext {
+  const match = rawTask.match(/```json\s*([\s\S]*?)\s*```/);
+  const envelope = match
+    ? (JSON.parse(match[1]) as Record<string, unknown>)
+    : {};
+  const children =
+    envelope.children &&
+    typeof envelope.children === "object" &&
+    !Array.isArray(envelope.children)
+      ? (envelope.children as Record<string, unknown>)
+      : {};
+  return {
+    appId: "aks-rp-e2e",
+    taskId:
+      typeof envelope.taskId === "string" ? envelope.taskId : "domain/example",
+    generation: 1,
+    resourceVersion: 1,
+    owner: typeof envelope.owner === "string" ? envelope.owner : owner,
+    mode: envelope.mode === "maintain" ? "maintain" : "achieve",
+    outcome: typeof envelope.outcome === "string" ? envelope.outcome : rawTask,
+    acceptance: Array.isArray(envelope.acceptance)
+      ? envelope.acceptance.filter(
+          (item): item is string => typeof item === "string",
+        )
+      : [],
+    input: envelope.input ?? {},
+    children: {
+      live: Array.isArray(children.live)
+        ? children.live.map(reconciliationChild)
+        : [],
+      completed: Array.isArray(children.completed)
+        ? children.completed.map(reconciliationChild)
+        : [],
+    },
+    taskSnapshot: { live: [], truncated: false },
+  };
+}
+
+function context(overrides: ContextOverrides = {}): WorkflowContext {
+  const owner = overrides.agent ?? "aks-explorer";
+  const rawTask = overrides.task ?? "bounded task";
+  const initialCall: LegacyAgentCall =
+    overrides.runAgent ??
+    (async () => ({
       status: "done",
       sessionId: "session-1",
       lastAssistantText: "done",
@@ -145,24 +238,44 @@ function context(overrides: Partial<WorkflowContext> = {}): WorkflowContext {
         evidence: ["commit:abc"],
         actions: [],
       },
-    })) as WorkflowContext["runAgent"],
-    done: (summary, output) => ({ type: "done", summary, output }),
-    blocked: (reason, details) => ({
-      type: "blocked",
-      reason,
-      context: details,
-    }),
-    ...overrides,
-  } as WorkflowContext;
+    }));
+  const callAgent = (async (
+    agent: string,
+    prompt: string,
+    options?: { sessionId?: string },
+  ): Promise<ExecutionResult> => {
+    const call = options?.sessionId
+      ? (overrides.runAgentSession ?? initialCall)
+      : initialCall;
+    const result = await call(agent, prompt, options);
+    return {
+      id: result.sessionId,
+      kind: "agent",
+      status: result.status,
+      summary: result.lastAssistantText,
+      ...(result.structuredResult ? { output: result.structuredResult } : {}),
+    };
+  }) as WorkflowContext["agents"]["call"];
+
+  return createTestAppWorkflowContext({
+    input: reconciliationFromTask(rawTask, owner).input,
+    reconciliation: reconciliationFromTask(rawTask, owner),
+    callAgent,
+    workspace: {
+      appRoot: contextRoot,
+      projectRoot: overrides.projectDir ?? contextProjectDir,
+      root: overrides.workspaceDir ?? contextWorkspaceDir,
+      output: join(contextRoot, "output"),
+    },
+    executionId: "wf_domain_task_execution",
+  });
 }
 
 describe("domain task execution", () => {
   it("reads the current task id from the reconciliation payload", () => {
-    expect(
-      reconciliationTaskId(
-        'prefix\n## Reconciliation Task\n```json\n{"taskId":"domain/example","input":{}}\n```',
-      ),
-    ).toBe("domain/example");
+    expect(reconciliationTaskId({ taskId: "domain/example", input: {} })).toBe(
+      "domain/example",
+    );
   });
 
   it("guards canonical and symlink-equivalent project paths while accepting an isolated workspace", () => {
@@ -208,14 +321,14 @@ describe("domain task execution", () => {
         runAgent: (async () => {
           agentCalls += 1;
           throw new Error("canonical checkout must never reach runAgent");
-        }) as WorkflowContext["runAgent"],
+        }) as LegacyAgentCall,
       }),
     );
 
     expect(agentCalls).toBe(0);
     expect(result).toMatchObject({
-      type: "blocked",
-      reason: expect.stringContaining("prepared task worktree"),
+      status: "blocked",
+      summary: expect.stringContaining("prepared task worktree"),
     });
   });
 
@@ -271,7 +384,7 @@ describe("domain task execution", () => {
                 ],
               },
             };
-          }) as WorkflowContext["runAgent"],
+          }) as LegacyAgentCall,
         }),
       );
 
@@ -279,7 +392,7 @@ describe("domain task execution", () => {
         `Your task-owned Git worktree is ${fixture.workspaceDir}`,
       );
       expect(result).toMatchObject({
-        type: "done",
+        status: "done",
         output: {
           state: "waiting",
           evidence: expect.arrayContaining([
@@ -316,15 +429,15 @@ describe("domain task execution", () => {
           runAgent: (async () => {
             agentCalls += 1;
             throw new Error("stale retained lineage must not reach the owner");
-          }) as WorkflowContext["runAgent"],
+          }) as LegacyAgentCall,
         }),
       );
 
       expect(agentCalls).toBe(0);
       expect(result).toMatchObject({
-        type: "blocked",
-        reason: expect.stringContaining("lineage validation failed"),
-        context: {
+        status: "blocked",
+        summary: expect.stringContaining("lineage validation failed"),
+        evidence: {
           taskId: "domain/retained-lineage",
           expectedWorkspace: fixture.workspaceDir,
           observedWorkspace: fixture.workspaceDir,
@@ -386,15 +499,15 @@ describe("domain task execution", () => {
           runAgent: (async () => {
             agentCalls += 1;
             throw new Error("agent must not run with contradictory workspaces");
-          }) as WorkflowContext["runAgent"],
+          }) as LegacyAgentCall,
         }),
       );
 
       expect(agentCalls).toBe(0);
       expect(result).toMatchObject({
-        type: "blocked",
-        reason: expect.stringContaining("differs from the prepared"),
-        context: {
+        status: "blocked",
+        summary: expect.stringContaining("differs from the prepared"),
+        evidence: {
           taskId: "domain/queuewatcher-integration",
           suppliedWorkspaceDir: generatedWorkspace,
           requestedWorkspaceDir: fixture.workspaceDir,
@@ -496,7 +609,7 @@ describe("domain task execution", () => {
                 ],
               },
             };
-          }) as WorkflowContext["runAgent"],
+          }) as LegacyAgentCall,
         }),
       );
 
@@ -507,7 +620,7 @@ describe("domain task execution", () => {
         `Your task-owned Git worktree is ${generatedWorkspace}`,
       );
       expect(result).toMatchObject({
-        type: "done",
+        status: "done",
         output: {
           state: "waiting",
           summary: expect.stringContaining(
@@ -609,7 +722,7 @@ describe("domain task execution", () => {
                 ],
               },
             };
-          }) as WorkflowContext["runAgent"],
+          }) as LegacyAgentCall,
         }),
       );
 
@@ -620,7 +733,7 @@ describe("domain task execution", () => {
         `Your task-owned Git worktree is ${generatedWorkspace}`,
       );
       expect(result).toMatchObject({
-        type: "done",
+        status: "done",
         output: {
           state: "waiting",
           summary: expect.stringContaining(
@@ -686,7 +799,7 @@ describe("domain task execution", () => {
             runAgent: (async () => {
               agentCalls += 1;
               throw new Error("agent must not run after adoption mismatch");
-            }) as WorkflowContext["runAgent"],
+            }) as LegacyAgentCall,
           }),
         );
 
@@ -712,19 +825,19 @@ describe("domain task execution", () => {
 
       expect(agentCalls).toBe(0);
       expect(dirtyMismatch).toMatchObject({
-        type: "blocked",
-        reason: expect.stringContaining("validation failed"),
-        context: { expectedDirty: true, observedDirty: false },
+        status: "blocked",
+        summary: expect.stringContaining("validation failed"),
+        evidence: { expectedDirty: true, observedDirty: false },
       });
       expect(operationMismatch).toMatchObject({
-        type: "blocked",
-        reason: expect.stringContaining("validation failed"),
-        context: { expectedOperation: "merge", observedOperation: null },
+        status: "blocked",
+        summary: expect.stringContaining("validation failed"),
+        evidence: { expectedOperation: "merge", observedOperation: null },
       });
       expect(workspaceMismatch).toMatchObject({
-        type: "blocked",
-        reason: expect.stringContaining("validation failed"),
-        context: {
+        status: "blocked",
+        summary: expect.stringContaining("validation failed"),
+        evidence: {
           declaredWorkspaceDir: workspaceAlias,
           realWorkspaceDir: fixture.workspaceDir,
         },
@@ -765,7 +878,7 @@ describe("domain task execution", () => {
                 actions: [],
               },
             };
-          }) as WorkflowContext["runAgent"],
+          }) as LegacyAgentCall,
         }),
       );
 
@@ -774,7 +887,7 @@ describe("domain task execution", () => {
       expect(prompt).toContain("subject project:aks-rp-e2e");
       expect(prompt).toContain('specId: "<spec id>"');
       expect(result).toMatchObject({
-        type: "done",
+        status: "done",
         output: {
           state: "converged",
           summary: expect.stringContaining("directly into dev"),
@@ -820,7 +933,7 @@ describe("domain task execution", () => {
       );
 
       expect(result).toMatchObject({
-        type: "done",
+        status: "done",
         output: {
           state: "needs-owner",
           summary: expect.stringContaining(
@@ -893,13 +1006,13 @@ describe("domain task execution", () => {
                 actions: [],
               },
             };
-          }) as WorkflowContext["runAgent"],
+          }) as LegacyAgentCall,
         }),
       );
 
       expect(agentCalls).toBe(2);
       expect(result).toMatchObject({
-        type: "done",
+        status: "done",
         output: {
           state: "converged",
           summary: expect.stringContaining("directly into dev"),
@@ -983,13 +1096,13 @@ exit 0
                 actions: [],
               },
             };
-          }) as WorkflowContext["runAgent"],
+          }) as LegacyAgentCall,
         }),
       );
 
       expect(existsSync(marker)).toBe(true);
       expect(result).toMatchObject({
-        type: "done",
+        status: "done",
         output: {
           state: "converged",
           summary: expect.stringContaining("directly into dev"),
@@ -1068,14 +1181,14 @@ exit 0
                 actions: [],
               },
             };
-          }) as WorkflowContext["runAgent"],
+          }) as LegacyAgentCall,
         }),
       );
 
       expect(prompts).toHaveLength(2);
       expect(prompts[1]).toContain("repository validation rejected it");
       expect(result).toMatchObject({
-        type: "done",
+        status: "done",
         output: {
           state: "converged",
           summary: expect.stringContaining("directly into dev"),
@@ -1150,7 +1263,7 @@ exit 0
                 actions: [],
               },
             };
-          }) as WorkflowContext["runAgent"],
+          }) as LegacyAgentCall,
           runAgentSession: (async (_agent: string, prompt: string) => {
             prompts.push(prompt);
             rmSync(join(fixture.workspaceDir, scenarioTestPath));
@@ -1171,7 +1284,7 @@ exit 0
                 actions: [],
               },
             };
-          }) as NonNullable<WorkflowContext["runAgentSession"]>,
+          }) as LegacyAgentCall,
         }),
       );
 
@@ -1181,7 +1294,7 @@ exit 0
       );
       expect(prompts[1]).toContain("progress, not completion");
       expect(result).toMatchObject({
-        type: "done",
+        status: "done",
         output: {
           state: "converged",
           summary: expect.stringContaining("directly into dev"),
@@ -1228,7 +1341,7 @@ exit 0
               conditions: [],
             },
           };
-        }) as WorkflowContext["runAgent"],
+        }) as LegacyAgentCall,
         runAgentSession: (async (_agent: string, prompt: string) => {
           prompts.push(prompt);
           return {
@@ -1254,14 +1367,14 @@ exit 0
               ],
             },
           };
-        }) as NonNullable<WorkflowContext["runAgentSession"]>,
+        }) as LegacyAgentCall,
       }),
     );
 
     expect(prompts[0]).toContain("currently running task is domain/example");
     expect(prompts[1]).toContain("actions 0 target the currently running task");
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: { state: "waiting", actions: [] },
     });
   });
@@ -1299,17 +1412,17 @@ exit 0
             actions: [],
             conditions: [],
           },
-        })) as WorkflowContext["runAgent"],
+        })) as LegacyAgentCall,
         runAgentSession: (async () => {
           throw new Error(
             "exact queued pipeline wait should be recovered without a correction session",
           );
-        }) as NonNullable<WorkflowContext["runAgentSession"]>,
+        }) as LegacyAgentCall,
       }),
     );
 
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: {
         state: "waiting",
         actions: [],
@@ -1377,7 +1490,7 @@ exit 0
               conditions: [],
             },
           };
-        }) as WorkflowContext["runAgent"],
+        }) as LegacyAgentCall,
         runAgentSession: (async (_agent: string, prompt: string) => {
           prompts.push(prompt);
           return {
@@ -1417,7 +1530,7 @@ exit 0
               conditions: [],
             },
           };
-        }) as NonNullable<WorkflowContext["runAgentSession"]>,
+        }) as LegacyAgentCall,
       }),
     );
 
@@ -1426,7 +1539,7 @@ exit 0
       "requires one exact Condition or a direct child task created with parentId compact/compact-feature-serverless",
     );
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: {
         state: "waiting",
         actions: [
@@ -1477,7 +1590,7 @@ exit 0
               actions: [childAction],
             },
           };
-        }) as WorkflowContext["runAgent"],
+        }) as LegacyAgentCall,
         runAgentSession: (async (_agent: string, prompt: string) => {
           prompts.push(prompt);
           return {
@@ -1497,7 +1610,7 @@ exit 0
               conditions: [],
             },
           };
-        }) as NonNullable<WorkflowContext["runAgentSession"]>,
+        }) as LegacyAgentCall,
       }),
     );
 
@@ -1506,7 +1619,7 @@ exit 0
       "cannot be applied while it has or creates a live direct child",
     );
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: {
         state: "waiting",
         actions: [
@@ -1548,12 +1661,12 @@ exit 0
             actions: [],
             conditions: [],
           },
-        })) as WorkflowContext["runAgent"],
+        })) as LegacyAgentCall,
       }),
     );
 
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: {
         state: "waiting",
         summary: expect.stringContaining("Recovery-only non-converged result"),
@@ -1594,12 +1707,12 @@ exit 0
                 actions: [],
               },
             };
-          }) as WorkflowContext["runAgent"],
+          }) as LegacyAgentCall,
         }),
       );
 
       expect(result).toMatchObject({
-        type: "done",
+        status: "done",
         output: {
           state: "needs-owner",
           summary: expect.stringContaining("merge-only ancestry"),
@@ -1641,12 +1754,12 @@ exit 0
                 actions: [],
               },
             };
-          }) as WorkflowContext["runAgent"],
+          }) as LegacyAgentCall,
         }),
       );
 
       expect(result).toMatchObject({
-        type: "done",
+        status: "done",
         output: {
           state: "needs-owner",
           summary: expect.stringContaining(
@@ -1685,12 +1798,12 @@ exit 0
               evidence: ["owner-claim:material-success"],
               actions: [],
             },
-          })) as WorkflowContext["runAgent"],
+          })) as LegacyAgentCall,
         }),
       );
 
       expect(result).toMatchObject({
-        type: "done",
+        status: "done",
         output: {
           state: "needs-owner",
           summary: "Final task branch contains zero accepted source patches",
@@ -2061,7 +2174,7 @@ exit 0
                 conditions: [],
               },
             };
-          }) as WorkflowContext["runAgent"],
+          }) as LegacyAgentCall,
           runAgentSession: (async (_agent: string, prompt: string) => {
             prompts.push(prompt);
             return {
@@ -2082,7 +2195,7 @@ exit 0
                 actions: [],
               },
             };
-          }) as NonNullable<WorkflowContext["runAgentSession"]>,
+          }) as LegacyAgentCall,
         }),
       );
 
@@ -2091,7 +2204,7 @@ exit 0
         "requires one exact Condition or a direct child task created with parentId compact/compact-feature-bootstrap-profile",
       );
       expect(result).toMatchObject({
-        type: "done",
+        status: "done",
         output: {
           state: "needs-owner",
           summary: "Final task branch contains zero accepted source patches",

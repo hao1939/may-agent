@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mkdir, mkdtemp, readFile } from "node:fs/promises";
+import { mkdir, mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execute } from "./problem-solver.ts";
@@ -14,37 +14,93 @@ async function makeWorkspace() {
   return { appDir, projectDir };
 }
 
-function triggerEvent(event: Record<string, unknown>): string {
-  return `## Trigger Event\n\`\`\`json\n${JSON.stringify(event, null, 2)}\n\`\`\``;
+function context(input: {
+  appDir: string;
+  projectDir: string;
+  trigger: Record<string, unknown>;
+  taskInput?: Record<string, unknown>;
+  agentResult?: unknown;
+  prompts?: string[];
+  dispatched?: Array<{
+    type: string;
+    payload: Record<string, unknown>;
+  }>;
+}) {
+  const { type, target, data, ...legacyData } = input.trigger;
+  const taskInput = input.taskInput ?? {};
+  return {
+    input: taskInput,
+    reconciliation: {
+      appId: "aks-rp-e2e",
+      taskId: "runtime/problem-solver/test",
+      generation: 1,
+      resourceVersion: 1,
+      owner: "aks-explorer",
+      mode: "achieve",
+      outcome: "Investigate the project problem",
+      acceptance: ["The problem is resolved or explicitly escalated."],
+      input: taskInput,
+      children: { live: [], completed: [] },
+      trigger: {
+        type,
+        target,
+        data: {
+          ...legacyData,
+          ...(data && typeof data === "object" ? data : {}),
+        },
+      },
+    },
+    workspace: {
+      appRoot: input.appDir,
+      projectRoot: input.projectDir,
+      root: input.projectDir,
+      output: input.projectDir,
+    },
+    agents: {
+      async call(_agent: string, prompt: string) {
+        input.prompts?.push(prompt);
+        return (
+          input.agentResult ?? {
+            id: "agent:test",
+            kind: "agent",
+            status: "done",
+            summary: "done",
+          }
+        );
+      },
+    },
+    events: {
+      async emit(event: { type: string; data: Record<string, unknown> }) {
+        input.dispatched?.push({ type: event.type, payload: event.data });
+      },
+    },
+    done(summary: string, output?: unknown) {
+      return {
+        id: "workflow:test",
+        kind: "workflow",
+        status: "done",
+        summary,
+        output,
+      };
+    },
+  } as any;
 }
 
 describe("problem solver", () => {
   test("returns needs-owner without actions for unsupported triggers", async () => {
     const { appDir, projectDir } = await makeWorkspace();
 
-    const result = await execute({
-      task: [
-        `app: ${appDir}`,
-        `project: ${projectDir}`,
-        "agent: aks-explorer",
-        triggerEvent({
+    const result = await execute(
+      context({
+        appDir,
+        projectDir,
+        trigger: {
           type: "project.task.tick",
           project: "aks-rp-e2e",
           taskId: "runtime/problem-solver/example",
-        }),
-      ].join("\n"),
-      agent: "aks-explorer",
-      done: (message: string, output?: unknown) => ({
-        status: "done",
-        message,
-        output,
+        },
       }),
-      escalate: (message: string) => ({ status: "escalated", message }),
-      emit() {},
-      dispatchEvent() {},
-      runAgent: async () => ({ status: "success" }),
-      summarize: () => "",
-    } as any);
+    );
 
     expect(result.status).toBe("done");
     expect(result).toMatchObject({
@@ -56,9 +112,9 @@ describe("problem solver", () => {
         evidence: ["problem-solver:invalid-trigger"],
       },
     });
-    expect((result as { output?: Record<string, unknown> }).output).not.toHaveProperty(
-      "actions",
-    );
+    expect(
+      (result as { output?: Record<string, unknown> }).output,
+    ).not.toHaveProperty("actions");
   });
 
   test("emits resolved problem result for explicit solver success", async () => {
@@ -69,40 +125,25 @@ describe("problem solver", () => {
       payload: Record<string, unknown>;
     }> = [];
 
-    const result = await execute({
-      task: [
-        `app: ${appDir}`,
-        `project: ${projectDir}`,
-        "agent: aks-explorer",
-        triggerEvent({
+    const result = await execute(
+      context({
+        appDir,
+        projectDir,
+        trigger: {
           type: "project.problem.investigation.requested",
           project: "aks-rp-e2e",
           problemKey: "aks-rp-e2e:staging-arm-auth-unavailable",
           affectedTasks: ["feature-a-live-execute"],
-        }),
-      ].join("\n"),
-      agent: "aks-explorer",
-      done: (message: string, output?: unknown) => ({
-        status: "done",
-        message,
-        output,
-      }),
-      escalate: (message: string) => ({ status: "escalated", message }),
-      emit() {},
-      dispatchEvent(type: string, payload: Record<string, unknown>) {
-        dispatched.push({ type, payload });
-      },
-      runAgent: async () => ({ status: "success" }),
-      runAgentSession: async (_agent: string, prompt: string) => {
-        prompts.push(prompt);
-        return {
+        },
+        prompts,
+        dispatched,
+        agentResult: {
           status: "success",
           message:
             "ROOT_CAUSE: runner auth env missing\nACTION_TAKEN: configured auth preflight\nVERIFICATION: preflight passed\nPLANNER_NEXT: retry affected tasks\nPROBLEM_RESULT: resolved",
-        };
-      },
-      summarize: () => "",
-    } as any);
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
     expect(result).toMatchObject({
@@ -111,7 +152,7 @@ describe("problem solver", () => {
         summary: expect.stringContaining("project.problem.resolved"),
         evidence: [
           "problem-solver:aks-rp-e2e:staging-arm-auth-unavailable:project.problem.resolved",
-          ".state/problem-runs.jsonl",
+          "event:project.problem.resolved",
         ],
         actions: [],
       },
@@ -130,12 +171,6 @@ describe("problem solver", () => {
         affectedTasks: ["feature-a-live-execute"],
       },
     });
-
-    const problemRuns = await readFile(
-      join(appDir, ".state", "problem-runs.jsonl"),
-      "utf8",
-    );
-    expect(problemRuns).toContain('"result_event":"project.problem.resolved"');
   });
 
   test("emits escalated problem result without explicit resolved marker", async () => {
@@ -145,33 +180,24 @@ describe("problem solver", () => {
       payload: Record<string, unknown>;
     }> = [];
 
-    const result = await execute({
-      task: [
-        `app: ${appDir}`,
-        `project: ${projectDir}`,
-        "agent: aks-explorer",
-        triggerEvent({
+    const result = await execute(
+      context({
+        appDir,
+        projectDir,
+        trigger: {
           type: "project.problem.investigation.requested",
           project: "aks-rp-e2e",
           problem_key: "aks-rp-e2e:azure-quota",
           affected_tasks: ["quota-blocked-task"],
-        }),
-      ].join("\n"),
-      agent: "aks-explorer",
-      done: (message: string) => ({ status: "done", message }),
-      escalate: (message: string) => ({ status: "escalated", message }),
-      emit() {},
-      dispatchEvent(type: string, payload: Record<string, unknown>) {
-        dispatched.push({ type, payload });
-      },
-      runAgent: async () => ({ status: "success" }),
-      runAgentSession: async () => ({
-        status: "success",
-        message:
-          "ROOT_CAUSE: subscription quota exhausted\nACTION_TAKEN: verified quota\nVERIFICATION: quota check failed\nPLANNER_NEXT: wait for human quota increase\nPROBLEM_RESULT: escalated",
+        },
+        dispatched,
+        agentResult: {
+          status: "success",
+          message:
+            "ROOT_CAUSE: subscription quota exhausted\nACTION_TAKEN: verified quota\nVERIFICATION: quota check failed\nPLANNER_NEXT: wait for human quota increase\nPROBLEM_RESULT: escalated",
+        },
       }),
-      summarize: () => "",
-    } as any);
+    );
 
     expect(result.status).toBe("done");
     expect(dispatched).toHaveLength(1);
@@ -192,55 +218,30 @@ describe("problem solver", () => {
       payload: Record<string, unknown>;
     }> = [];
 
-    const result = await execute({
-      task: [
-        `app: ${appDir}`,
-        `project: ${projectDir}`,
-        "agent: aks-explorer",
-        "## Reconciliation Task",
-        "```json",
-        JSON.stringify(
-          {
-            appId: "aks-rp-e2e",
-            taskId: "runtime/problem-solver/localdns-producerless-project-state-condition-20260730",
-            owner: "app-ops",
-            workflow: "problem-solver",
-            input: {
-              problemKey: "localdns-producerless-project-state-condition-20260730",
-              targetTaskId: "hold-compact-localdns-split-frontier-e8d7677892-20260730",
-            },
-          },
-          null,
-          2,
-        ),
-        "```",
-        triggerEvent({
+    const result = await execute(
+      context({
+        appDir,
+        projectDir,
+        taskInput: {
+          problemKey: "localdns-producerless-project-state-condition-20260730",
+          targetTaskId:
+            "hold-compact-localdns-split-frontier-e8d7677892-20260730",
+        },
+        trigger: {
           type: "project.task.tick",
           project: "aks-rp-e2e",
           taskId:
             "runtime/problem-solver/localdns-producerless-project-state-condition-20260730",
           reason: "run-created-problem-investigation",
-        }),
-      ].join("\n"),
-      agent: "aks-explorer",
-      done: (message: string, output?: unknown) => ({
-        status: "done",
-        message,
-        output,
+        },
+        dispatched,
+        agentResult: {
+          status: "success",
+          message:
+            "ROOT_CAUSE: producerless project.state condition\nACTION_TAKEN: verified owner handoff path\nVERIFICATION: LocalDNS holder is pending on current evidence\nPLANNER_NEXT: let the owner-held LocalDNS carrier run\nPROBLEM_RESULT: resolved",
+        },
       }),
-      escalate: (message: string) => ({ status: "escalated", message }),
-      emit() {},
-      dispatchEvent(type: string, payload: Record<string, unknown>) {
-        dispatched.push({ type, payload });
-      },
-      runAgent: async () => ({ status: "success" }),
-      runAgentSession: async () => ({
-        status: "success",
-        message:
-          "ROOT_CAUSE: producerless project.state condition\nACTION_TAKEN: verified owner handoff path\nVERIFICATION: LocalDNS holder is pending on current evidence\nPLANNER_NEXT: let the owner-held LocalDNS carrier run\nPROBLEM_RESULT: resolved",
-      }),
-      summarize: () => "",
-    } as any);
+    );
 
     expect(result.status).toBe("done");
     expect(result).toMatchObject({
@@ -272,33 +273,24 @@ describe("problem solver", () => {
       payload: Record<string, unknown>;
     }> = [];
 
-    const result = await execute({
-      task: [
-        `app: ${appDir}`,
-        `project: ${projectDir}`,
-        "agent: aks-explorer",
-        triggerEvent({
+    const result = await execute(
+      context({
+        appDir,
+        projectDir,
+        trigger: {
           type: "project.problem.investigation.requested",
           project: "aks-rp-e2e",
           problemKey: "aks-rp-e2e:staging-arm-auth-unavailable",
           affectedTasks: ["staging-replay-task"],
-        }),
-      ].join("\n"),
-      agent: "aks-explorer",
-      done: (message: string) => ({ status: "done", message }),
-      escalate: (message: string) => ({ status: "escalated", message }),
-      emit() {},
-      dispatchEvent(type: string, payload: Record<string, unknown>) {
-        dispatched.push({ type, payload });
-      },
-      runAgent: async () => ({ status: "success" }),
-      runAgentSession: async () => ({
-        status: "success",
-        message:
-          "Fixed ARM auth blocker for staging execution tasks. Root cause: az was installed outside PATH. Added resolveAzPath fallback. Verification: checkAuth passed and armRequest returned HTTP 200.",
+        },
+        dispatched,
+        agentResult: {
+          status: "success",
+          message:
+            "Fixed ARM auth blocker for staging execution tasks. Root cause: az was installed outside PATH. Added resolveAzPath fallback. Verification: checkAuth passed and armRequest returned HTTP 200.",
+        },
       }),
-      summarize: () => "",
-    } as any);
+    );
 
     expect(result.status).toBe("done");
     expect(dispatched).toHaveLength(1);
@@ -319,33 +311,24 @@ describe("problem solver", () => {
       payload: Record<string, unknown>;
     }> = [];
 
-    const result = await execute({
-      task: [
-        `app: ${appDir}`,
-        `project: ${projectDir}`,
-        "agent: aks-explorer",
-        triggerEvent({
+    const result = await execute(
+      context({
+        appDir,
+        projectDir,
+        trigger: {
           type: "project.problem.investigation.requested",
           project: "aks-rp-e2e",
           problemKey: "aks-rp-e2e:task-problem:test-empty-text",
           affectedTasks: ["triage-task"],
-        }),
-      ].join("\n"),
-      agent: "aks-explorer",
-      done: (message: string) => ({ status: "done", message }),
-      escalate: (message: string) => ({ status: "escalated", message }),
-      emit() {},
-      dispatchEvent(type: string, payload: Record<string, unknown>) {
-        dispatched.push({ type, payload });
-      },
-      runAgent: async () => ({ status: "error" }),
-      runAgentSession: async () => ({
-        sessionId: "s_problem_test_empty",
-        status: "error",
-        lastAssistantText: "",
+        },
+        dispatched,
+        agentResult: {
+          sessionId: "s_problem_test_empty",
+          status: "error",
+          lastAssistantText: "",
+        },
       }),
-      summarize: () => "",
-    } as any);
+    );
 
     expect(result.status).toBe("done");
     expect(dispatched).toHaveLength(1);
@@ -367,41 +350,32 @@ describe("problem solver", () => {
       payload: Record<string, unknown>;
     }> = [];
 
-    const result = await execute({
-      task: [
-        `app: ${appDir}`,
-        `project: ${projectDir}`,
-        "agent: aks-explorer",
-        triggerEvent({
+    const result = await execute(
+      context({
+        appDir,
+        projectDir,
+        trigger: {
           type: "project.problem.investigation.requested",
           project: "aks-rp-e2e",
           problemKey: "aks-rp-e2e:task-problem:test",
           affectedTasks: ["triage-task"],
-        }),
-      ].join("\n"),
-      agent: "aks-explorer",
-      done: (message: string) => ({ status: "done", message }),
-      escalate: (message: string) => ({ status: "escalated", message }),
-      emit() {},
-      dispatchEvent(type: string, payload: Record<string, unknown>) {
-        dispatched.push({ type, payload });
-      },
-      runAgent: async () => ({ status: "success" }),
-      runAgentSession: async () => ({
-        sessionId: "s_problem_test",
-        status: "done",
-        lastAssistantText: null,
-        messages: [],
-        duration: "1s",
-        outputDir: "/tmp/problem-test",
-        finishResult: {
-          status: "blocked",
-          summary:
-            "ROOT_CAUSE: external quota\nACTION_TAKEN: verified quota\nVERIFICATION: quota check failed\nPLANNER_NEXT: request quota increase\nPROBLEM_RESULT: escalated",
+        },
+        dispatched,
+        agentResult: {
+          sessionId: "s_problem_test",
+          status: "done",
+          lastAssistantText: null,
+          messages: [],
+          duration: "1s",
+          outputDir: "/tmp/problem-test",
+          finishResult: {
+            status: "blocked",
+            summary:
+              "ROOT_CAUSE: external quota\nACTION_TAKEN: verified quota\nVERIFICATION: quota check failed\nPLANNER_NEXT: request quota increase\nPROBLEM_RESULT: escalated",
+          },
         },
       }),
-      summarize: () => "",
-    } as any);
+    );
 
     expect(result.status).toBe("done");
     expect(dispatched).toHaveLength(1);

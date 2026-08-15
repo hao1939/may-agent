@@ -1,20 +1,10 @@
 import { spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
 import {
   Type,
-  resolveTaskTreePath,
-  type ProjectAppConditionSpec,
+  type ExecutionResult,
+  type TaskReconcileResult,
   type WorkflowContext,
-  type WorkflowIoContract,
-  type WorkflowResult,
-  workflowResultVersion,
-} from "@may-agent/sdk/legacy";
-import {
-  activeDomainPathOwners,
-  type ActiveDomainPathOwner,
-  type LegacyOwnershipTask,
-} from "../../../legacy-branch-active-ownership.ts";
+} from "@may-agent/sdk";
 import {
   captureLegacyVerificationBaseline,
   verifyLegacyBranchCandidate,
@@ -25,22 +15,6 @@ export const name = "legacy-branch-verification";
 export const description =
   "Apply one unattached legacy branch to current origin/dev, rerun conventional checks, and merge/delete it on pass.";
 export const workspace = "task";
-export const workflowContract: WorkflowIoContract = {
-  workflow: name,
-  version: "legacy-branch-verification-v1",
-  input: {
-    required: ["one exact source branch and head"],
-    optional: [],
-    description: "Verify one clean unattached legacy branch.",
-  },
-  output: {
-    version: workflowResultVersion,
-    fields: ["state", "summary", "evidence", "actions"],
-    description:
-      "Reconciles conflicts and failed checks through bounded agent repair; converges only after verified merge, represented cleanup, or explicit rejection.",
-  },
-};
-
 type SourceBranch = { branch: string; head: string; files?: string[] };
 
 export type LegacyRepairRequest = {
@@ -93,92 +67,23 @@ export function boundedWorkflowEvidence(values: string[]): string[] {
   ];
 }
 
-function matchingJsonObject(text: string, start: number): string | null {
-  let depth = 0;
-  let inString = false;
-  let escaping = false;
-  for (let index = start; index < text.length; index += 1) {
-    const char = text[index];
-    if (escaping) {
-      escaping = false;
-      continue;
-    }
-    if (char === "\\") {
-      escaping = true;
-      continue;
-    }
-    if (char === '"') {
-      inString = !inString;
-      continue;
-    }
-    if (inString) continue;
-    if (char === "{") depth += 1;
-    if (char === "}" && --depth === 0) return text.slice(start, index + 1);
-  }
-  return null;
-}
-
-function sourceBranch(raw: string): SourceBranch | null {
-  const marker = raw.indexOf("## Reconciliation Task");
-  if (marker < 0) return null;
-  const scoped = raw.slice(marker);
-  const firstBrace = scoped.indexOf("{");
-  if (firstBrace < 0) return null;
-  const objectText = matchingJsonObject(scoped, firstBrace);
-  if (!objectText) return null;
-  try {
-    const payload = JSON.parse(objectText) as {
-      input?: { branches?: unknown };
-    };
-    const branches = payload.input?.branches;
-    if (!Array.isArray(branches) || branches.length !== 1) return null;
-    const row = branches[0] as Record<string, unknown>;
-    if (typeof row.branch !== "string" || typeof row.head !== "string")
-      return null;
-    return {
-      branch: row.branch,
-      head: row.head,
-      files: Array.isArray(row.files)
-        ? row.files.filter((file): file is string => typeof file === "string")
-        : [],
-    };
-  } catch {
+function sourceBranch(value: unknown): SourceBranch | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const branches = (value as Record<string, unknown>).branches;
+  if (!Array.isArray(branches) || branches.length !== 1) return null;
+  const raw = branches[0];
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const row = raw as Record<string, unknown>;
+  if (typeof row.branch !== "string" || typeof row.head !== "string") {
     return null;
   }
-}
-
-function taskGraph(appDir: string): Record<string, LegacyOwnershipTask> {
-  try {
-    const value = JSON.parse(
-      readFileSync(resolveTaskTreePath(appDir), "utf8"),
-    ) as {
-      tasks?: Record<string, LegacyOwnershipTask>;
-    };
-    return value.tasks ?? {};
-  } catch {
-    return {};
-  }
-}
-
-function ownershipWaitConditions(
-  owners: ActiveDomainPathOwner[],
-): ProjectAppConditionSpec[] {
-  return owners.map((owner) => {
-    const digest = createHash("sha256")
-      .update(`${owner.taskId}\n${owner.resourceVersion}`)
-      .digest("hex")
-      .slice(0, 12);
-    return {
-      id: `legacy-domain-owner-${digest}`,
-      type: "project.task.reconciled",
-      subject: `task:${owner.taskId}`,
-      expected: {
-        field: "disposition",
-        anyOf: ["converged", "owner-handoff"],
-      },
-      owner: "app-ops",
-    } satisfies ProjectAppConditionSpec;
-  });
+  return {
+    branch: row.branch,
+    head: row.head,
+    files: Array.isArray(row.files)
+      ? row.files.filter((file): file is string => typeof file === "string")
+      : [],
+  };
 }
 
 function git(
@@ -479,8 +384,8 @@ async function runRepairAgent(
   ctx: WorkflowContext,
   request: LegacyRepairRequest,
 ): Promise<LegacyRepairDecision> {
-  const result = await ctx.runAgent(
-    ctx.agent,
+  const result = await ctx.agents.call(
+    ctx.reconciliation?.owner ?? "aks-explorer",
     [
       `Continue the same legacy-branch task after ${request.cause}.`,
       `Work only in ${request.workspaceDir}. Do not create another branch or worktree, push, delete refs, or edit task state.`,
@@ -499,21 +404,21 @@ async function runRepairAgent(
         : "Verification evidence: none",
       request.feedback ? `Prior iteration feedback:\n${request.feedback}` : "",
       "Task:",
-      ctx.task,
+      JSON.stringify(ctx.reconciliation ?? ctx.input, null, 2),
     ]
       .filter(Boolean)
       .join("\n\n"),
     { timeoutMs: 1_800_000, schema: repairSchema },
   );
-  if (result.status === "error" || result.status === "interrupted") {
+  if (result.status !== "done") {
     throw new Error(
-      `Legacy branch repair agent ${result.status}: ${result.lastAssistantText || result.sessionId}`,
+      `Legacy branch repair agent ${result.status}: ${result.summary || result.id}`,
     );
   }
-  const decision = result.structuredResult as LegacyRepairDecision;
+  const decision = result.output as LegacyRepairDecision;
   return {
     ...decision,
-    evidence: [...decision.evidence, `repair-session:${result.sessionId}`],
+    evidence: [...decision.evidence, `repair-execution:${result.id}`],
   };
 }
 
@@ -580,12 +485,11 @@ export async function executeWithVerifier(
   verifier: LegacyCandidateVerifier,
   baselineProvider: LegacyBaselineProvider = captureLegacyVerificationBaseline,
   repairAgent: LegacyRepairAgent = (request) => runRepairAgent(ctx, request),
-): Promise<WorkflowResult> {
-  const repoDir = ctx.projectDir ?? "/app/projects/aks-rp-e2e";
-  const appDir = ctx.appDir ?? "/app/projects/aks-rp-e2e.app";
-  const workspaceDir = ctx.workspaceDir ?? repoDir;
-  const source = sourceBranch(ctx.task);
-  if (workspaceDir === repoDir || !source) {
+): Promise<ExecutionResult<TaskReconcileResult> | ExecutionResult> {
+  const repoDir = ctx.workspace?.projectRoot;
+  const workspaceDir = ctx.workspace?.root;
+  const source = sourceBranch(ctx.reconciliation?.input ?? ctx.input);
+  if (!repoDir || !workspaceDir || workspaceDir === repoDir || !source) {
     return ctx.blocked(
       "Legacy branch verification requires a task worktree and exactly one source branch",
       { workspaceDir, repoDir, source },
@@ -625,27 +529,6 @@ export async function executeWithVerifier(
           `base-commit:${baseCommit}`,
         ],
         actions: [],
-      });
-    }
-    const pathOwners = activeDomainPathOwners(
-      taskGraph(appDir),
-      source.files ?? [],
-    );
-    if (pathOwners.length) {
-      const summary = `Deferred ${source.branch}@${source.head}: active domain task ownership must finish before legacy reconciliation can write the same path.`;
-      return ctx.done(summary, {
-        state: "waiting",
-        summary,
-        evidence: boundedWorkflowEvidence([
-          `branch:${source.branch}@${source.head}:deferred-active-domain-owner`,
-          `base-commit:${baseCommit}`,
-          ...pathOwners.flatMap((owner) => [
-            `domain-owner:${owner.taskId}:${owner.phase}@${owner.resourceVersion}`,
-            ...owner.paths.map((path) => `overlap-path:${path}`),
-          ]),
-        ]),
-        actions: [],
-        conditions: ownershipWaitConditions(pathOwners),
       });
     }
     const staleBeforeVerification = sourceStateNeedsOwner(repoDir, source, [
@@ -916,7 +799,7 @@ export async function executeWithVerifier(
   }
 }
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
+export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   return executeWithVerifier(
     ctx,
     (workspaceDir, projectDir, baseCommit, baseline) =>

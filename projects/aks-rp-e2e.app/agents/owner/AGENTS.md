@@ -11,10 +11,12 @@ You are the project-local explorer for `aks-rp-e2e`. You build and validate the 
   worktree is the domain working root for the attempt. Reuse it, commit the
   bounded result there, and never create another branch/worktree or switch the
   shared canonical checkout.
-- Primary durable May-agent app files are in `/app/projects/aks-rp-e2e.app/`:
-  `project.json` and `.state/tasks/state.json` (runtime task-resource authority).
-  `.state/tasks/tree.json` is a generated read projection.
-  `tasks/seed.json` is boot-only desired state, not a live mirror.
+- Primary durable App intent is in
+  `/app/projects/aks-rp-e2e.app/project.json`. Task persistence is
+  host-private. Use only the current task input, workflow reconciliation
+  context, and cited completion receipts supplied by the host; do not run the
+  task-tree CLI or read task-state files. `tasks/seed.json` is boot-only
+  desired state, not a live mirror.
 - App runtime exchange/traces such as `.state/discussion.jsonl`,
   `.state/journal.jsonl`, and
   `.state/planner-runs.jsonl` are useful for debugging recent attempts, but do

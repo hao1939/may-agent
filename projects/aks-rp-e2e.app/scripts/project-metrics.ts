@@ -4,7 +4,6 @@ import { spawnSync } from "node:child_process";
 import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Database } from "bun:sqlite";
-import { projectRuntimePaths, readTaskState } from "@may-agent/sdk/legacy";
 import {
   parseTriggerEvent,
   triggerString,
@@ -37,6 +36,15 @@ type TaskTreeConfigLike = {
   treePath: string;
 };
 
+function projectRuntimePaths(appDir: string) {
+  const stateDir = join(appDir, ".state");
+  return {
+    taskStatePath: join(stateDir, "tasks", "state.json"),
+    taskTreePath: join(stateDir, "tasks", "tree.json"),
+    journalPath: join(stateDir, "journal.jsonl"),
+  };
+}
+
 function taskTreeConfig(input: {
   appDir: string;
   projectDir: string;
@@ -53,7 +61,7 @@ function taskTreeConfig(input: {
 }
 
 function readTaskTree(config: TaskTreeConfigLike): TaskTree {
-  return readTaskState(config as any) as TaskTree;
+  return JSON.parse(readFileSync(config.statePath, "utf8")) as TaskTree;
 }
 
 function readTaskTreeProjection(config: TaskTreeConfigLike): TaskTree {
@@ -3342,7 +3350,7 @@ function activeOwnerTaskSessionRow(
           task_ref
         from sessions
         where projectId = ?
-          and source = 'project-app-task-owner'
+          and source in ('app-task-owner', 'project-app-task-owner')
           and agent = ?
           and startedAt between ? and ?
         order by

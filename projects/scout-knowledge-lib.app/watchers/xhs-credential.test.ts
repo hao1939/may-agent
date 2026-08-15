@@ -13,13 +13,12 @@ describe("XHS credential watcher", () => {
     ).toMatchObject([
       {
         type: "credential.state",
-        credential: "xhs",
-        state: "ready",
+        data: { credential: "xhs", state: "ready" },
       },
     ]);
   });
 
-  it("notifies the human once when credentials become unavailable", () => {
+  it("publishes one unavailable transition for the App owner route", () => {
     const status = {
       credential: "xhs" as const,
       state: "unavailable" as const,
@@ -27,11 +26,8 @@ describe("XHS credential watcher", () => {
       evidence: ["login-wall:true"],
     };
     expect(xhsCredentialEvents(status, { state: "ready" })).toMatchObject([
-      { type: "credential.state", state: "unavailable" },
-      { type: "message.created", to: "human" },
+      { type: "credential.state", data: { state: "unavailable" } },
     ]);
-    expect(xhsCredentialEvents(status, { state: "unavailable" })).toMatchObject(
-      [{ type: "credential.state", state: "unavailable" }],
-    );
+    expect(xhsCredentialEvents(status, { state: "unavailable" })).toEqual([]);
   });
 });

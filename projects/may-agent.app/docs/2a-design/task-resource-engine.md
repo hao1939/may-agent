@@ -55,6 +55,28 @@ external Condition, or it has entered visible attention. It never means that
 the app emitted another internal tick. Bounded attempts may end, but the
 resource loop continues through the same queue and task identity.
 
+## When to attach a task resource
+
+A task is desired-state identity across bounded attempts, not a generic
+durability wrapper. Attach one when an App owns an outcome that requires
+repeated reconciliation, stable desired-state identity revised or woken by
+multiple triggers, exact Conditions, independently tracked decomposition, an
+outcome that other work or operators must address, revise, wake, or depend on
+by stable identity, or a standing condition maintained over time.
+
+Do not create a task merely because work is asynchronous, auditable, or must
+survive restart. The App inbox already provides durable correlation and may
+complete directly, delegate to one child App request, or remain the correlated
+parent of an attached task. Observers produce facts only; they never complete
+inbox or task work.
+
+The forcing question is whether the App owes a distinct correlated result or
+owns desired state that must converge. The first remains an inbox obligation;
+the second deserves task identity. One request may attach to one task when both
+responsibilities exist. A changed fact with neither responsibility remains a
+fact and may satisfy a Condition or refresh existing work without creating a
+new work record.
+
 ## Keyed runtime contract
 
 The execution key is `(appId, taskId)`. The controller serializes one current
@@ -637,6 +659,12 @@ timestamp changes do not wake the parent.
 Only live direct children count as the parent's in-flight decomposition.
 Related tasks elsewhere in the graph may be useful evidence, but they do not
 keep this parent waiting or occupy its child frontier.
+
+App-wide focus and stall reviewers receive a separate bounded live-task
+snapshot. It excludes the reviewing task, is capped at 64 entries, and reports
+truncation. This observation surface can prevent a false terminal judgment; it
+does not make sibling tasks children, consume child-frontier capacity, or grant
+access to task persistence.
 
 The child transition and parent trigger commit in the same task-state
 transaction. The in-memory queue hint follows that commit and delivery resync

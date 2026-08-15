@@ -1,5 +1,4 @@
-import { readFileSync } from "node:fs";
-import { resolveTaskTreePath } from "@may-agent/sdk/legacy";
+import type { TaskReconciliationContext } from "@may-agent/sdk";
 
 export type ObservedTask = {
   id: string;
@@ -23,6 +22,7 @@ export type ObservedTask = {
 
 export type ObservedTaskTree = {
   tasks: Record<string, ObservedTask>;
+  truncated?: boolean;
   satisfied_dependency_ids?: string[];
   conditions?: Record<
     string,
@@ -40,6 +40,7 @@ export type ObservedTaskTree = {
 };
 
 export type TaskPlanningObservation = {
+  truncated: boolean;
   counts: Record<string, number>;
   active_task_ids: string[];
   frontier: {
@@ -59,11 +60,66 @@ export function taskState(tree: ObservedTaskTree, task: ObservedTask): string {
   return task.phase ?? "unknown";
 }
 
-export function readTaskObservation(appDir: string): ObservedTaskTree {
-  const parsed = JSON.parse(
-    readFileSync(resolveTaskTreePath(appDir), "utf8"),
-  ) as Partial<ObservedTaskTree>;
-  return { ...parsed, tasks: parsed.tasks ?? {} };
+export function taskObservation(
+  reconciliation: TaskReconciliationContext | undefined,
+): ObservedTaskTree {
+  const children = reconciliation?.children;
+  if (!children) return { tasks: {} };
+  const snapshot = reconciliation.taskSnapshot;
+  const live = snapshot ? snapshot.live : children.live;
+  const completed = snapshot ? [] : children.completed;
+  const all = [...live, ...completed];
+  const conditions = Object.fromEntries(
+    all.flatMap((child) =>
+      child.conditions.map((condition) => [
+        condition.id,
+        {
+          metadata: { id: condition.id },
+          spec: {
+            type: condition.type,
+            subject: condition.subject,
+            expected: condition.expected,
+            ...(condition.owner ? { owner: condition.owner } : {}),
+          },
+        },
+      ]),
+    ),
+  );
+  return {
+    tasks: Object.fromEntries(
+      all.map((child) => [
+        child.taskId,
+        {
+          id: child.taskId,
+          item_type: "task",
+          phase: child.status,
+          parent_id: child.parentId,
+          children: child.hasLiveChildren ? ["bounded-live-child"] : [],
+          outcome: child.outcome,
+          owner: child.owner,
+          priority: child.priority,
+          category: child.category,
+          depends_on: child.dependsOn,
+          ...(child.readiness
+            ? {
+                readiness: {
+                  state: child.readiness.state,
+                  reason: child.readiness.reason,
+                  related_ids: child.readiness.relatedTaskIds,
+                },
+              }
+            : {}),
+          input: child.input,
+          condition_ids: child.conditions.map(({ id }) => id),
+        },
+      ]),
+    ),
+    conditions,
+    ...(snapshot ? { truncated: snapshot.truncated } : {}),
+    active_task_ids: live
+      .filter(({ status }) => status === "running")
+      .map(({ taskId }) => taskId),
+  };
 }
 
 function isLeaf(task: ObservedTask): boolean {
@@ -71,10 +127,9 @@ function isLeaf(task: ObservedTask): boolean {
 }
 
 export function planningObservation(
-  appDir: string,
+  tree: ObservedTaskTree,
   limit = 50,
 ): TaskPlanningObservation {
-  const tree = readTaskObservation(appDir);
   const counts: Record<string, number> = {};
   const leaves = Object.values(tree.tasks).filter(
     (task) => task.item_type === "task" && isLeaf(task),
@@ -98,6 +153,7 @@ export function planningObservation(
     .sort()
     .slice(0, limit);
   return {
+    truncated: tree.truncated === true,
     counts,
     active_task_ids: active,
     frontier: {

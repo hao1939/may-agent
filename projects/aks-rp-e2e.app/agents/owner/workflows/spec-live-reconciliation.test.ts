@@ -13,6 +13,13 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import type {
+  AppEvent,
+  ExecutionResult,
+  TaskReconciliationContext,
+  WorkflowContext,
+} from "@may-agent/sdk";
+import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
 import {
   acceptedLiveProofSourceInstruction,
   admittedAgentCallTimeoutMs,
@@ -77,7 +84,6 @@ import {
   noIntegrationDiagnosticContract,
   diagnosticArtifactProblem,
   restoreExactDiagnosticSource,
-  parseTaskPayload,
   pipelineWaitCondition,
   pipelineRunState,
   publishExactDiagnosticTaskBranch,
@@ -143,17 +149,126 @@ const isolatedAgentWorkspace = mkdtempSync(
 );
 const isolatedAgentProject = "/app/projects/aks-rp-e2e.app";
 
-function isolatedAgentContext<T extends object>(
-  ctx: T,
-): T & {
-  projectDir: string;
-  workspaceDir: string;
-} {
+type LegacyTestAgentResult = {
+  status: "done" | "blocked" | "error" | "interrupted";
+  sessionId?: string;
+  lastAssistantText?: string;
+  structuredResult?: unknown;
+};
+
+type TestContextInput = {
+  agent?: string;
+  task?: string;
+  input?: unknown;
+  trigger?: AppEvent<Record<string, unknown>>;
+  appDir?: string;
+  projectDir?: string;
+  workspaceDir?: string;
+  runAgent?: (
+    agent: string,
+    prompt: string,
+    options?: Record<string, unknown>,
+  ) => Promise<LegacyTestAgentResult | undefined>;
+};
+
+function taskEnvelope(rawTask: string | undefined): Record<string, unknown> {
+  if (!rawTask) return {};
+  const fenced = rawTask.match(/```json\s*([\s\S]*?)\s*```/);
+  const candidate = fenced?.[1] ?? rawTask.split("\n").slice(1).join("\n");
+  try {
+    const parsed = JSON.parse(candidate);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function testReconciliation(
+  input: TestContextInput,
+): TaskReconciliationContext {
+  const envelope = taskEnvelope(input.task);
+  const children =
+    envelope.children &&
+    typeof envelope.children === "object" &&
+    !Array.isArray(envelope.children)
+      ? (envelope.children as Record<string, unknown>)
+      : {};
   return {
-    ...ctx,
-    projectDir: isolatedAgentProject,
-    workspaceDir: isolatedAgentWorkspace,
+    appId: "aks-rp-e2e",
+    taskId: typeof envelope.taskId === "string" ? envelope.taskId : "spec/test",
+    generation:
+      typeof envelope.generation === "number" ? envelope.generation : 1,
+    resourceVersion: 1,
+    owner: input.agent ?? "aks-explorer",
+    mode: "achieve",
+    outcome:
+      typeof envelope.outcome === "string"
+        ? envelope.outcome
+        : (input.task ?? "Reconcile the bounded spec."),
+    acceptance: [],
+    input: input.input ?? envelope.input ?? {},
+    children: {
+      live: Array.isArray(children.live) ? (children.live as never[]) : [],
+      completed: Array.isArray(children.completed)
+        ? (children.completed as never[])
+        : [],
+    },
+    taskSnapshot: { live: [], truncated: false },
+    ...(input.trigger ? { trigger: input.trigger } : {}),
   };
+}
+
+function isolatedAgentContext(input: TestContextInput): WorkflowContext {
+  const reconciliation = testReconciliation(input);
+  const runAgent =
+    input.runAgent ??
+    (async () => ({
+      status: "done" as const,
+      structuredResult: {
+        decision: "needs-owner",
+        summary: "Default reconciliation path entered.",
+        evidence: ["default-path:entered"],
+      },
+    }));
+  const callAgent = (async (
+    agent: string,
+    prompt: string,
+    options?: Record<string, unknown>,
+  ): Promise<ExecutionResult> => {
+    const result = await runAgent(agent, prompt, options);
+    if (!result) throw new Error("test agent result was exhausted");
+    const summary =
+      result.lastAssistantText ??
+      (result.structuredResult &&
+      typeof result.structuredResult === "object" &&
+      "summary" in result.structuredResult &&
+      typeof result.structuredResult.summary === "string"
+        ? result.structuredResult.summary
+        : result.status);
+    return {
+      id: result.sessionId ?? "s_spec_live_test",
+      kind: "agent",
+      status: result.status,
+      summary,
+      ...(result.structuredResult !== undefined
+        ? { output: result.structuredResult }
+        : {}),
+    };
+  }) as WorkflowContext["agents"]["call"];
+  return createTestAppWorkflowContext({
+    input: reconciliation.input,
+    reconciliation,
+    callAgent,
+    workspace: {
+      appRoot: input.appDir ?? isolatedAgentProject,
+      projectRoot: input.projectDir ?? isolatedAgentProject,
+      root: input.workspaceDir ?? isolatedAgentWorkspace,
+      output: join(input.workspaceDir ?? isolatedAgentWorkspace, ".output"),
+    },
+    executionId: "wf_spec_live_test",
+  });
 }
 
 function retainedWorkspaceFixture(): {
@@ -1252,38 +1367,45 @@ describe("spec-live-reconciliation workflow", () => {
             children: { live: [], completed: [] },
           }),
         ].join("\n");
-      const contextFor = (task: string) => ({
-        agent: "aks-explorer",
-        task,
-        projectDir: repoDir,
-        workspaceDir,
-        done: (_summary: string, output: unknown) => output,
-        runAgent: async () => {
-          throw new Error("runAgent should not be called");
-        },
-      });
+      const contextFor = (task: string) =>
+        isolatedAgentContext({
+          agent: "aks-explorer",
+          task,
+          projectDir: repoDir,
+          workspaceDir,
+          runAgent: async () => {
+            throw new Error("runAgent should not be called");
+          },
+        });
 
       const diagnostic = await reconcileSpecLive(contextFor(taskFor(false)));
-      expect(diagnostic.summary).toContain(
+      expect(diagnostic.output?.summary).toContain(
         "Invalid no-integration diagnostic contract",
       );
-      expect(diagnostic.evidence).toContain("integration:not-attempted");
+      expect(diagnostic.output?.evidence).toContain(
+        "integration:not-attempted",
+      );
 
-      const explicitlyIntegrating = await reconcileSpecLive({
-        ...contextFor(taskFor(true)),
-        runAgent: async () => ({
-          status: "done" as const,
-          structuredResult: {
-            decision: "needs-owner" as const,
-            summary: "Default reconciliation path entered.",
-            evidence: ["default-path:entered"],
-          },
+      const explicitlyIntegrating = await reconcileSpecLive(
+        isolatedAgentContext({
+          agent: "aks-explorer",
+          task: taskFor(true),
+          projectDir: repoDir,
+          workspaceDir,
+          runAgent: async () => ({
+            status: "done" as const,
+            structuredResult: {
+              decision: "needs-owner" as const,
+              summary: "Default reconciliation path entered.",
+              evidence: ["default-path:entered"],
+            },
+          }),
         }),
-      });
-      expect(explicitlyIntegrating.summary).toContain(
+      );
+      expect(explicitlyIntegrating.output?.summary).toContain(
         "Default reconciliation path entered",
       );
-      expect(explicitlyIntegrating.evidence).not.toContain(
+      expect(explicitlyIntegrating.output?.evidence).not.toContain(
         "diagnostic-publication-branch:not-a-task-branch",
       );
 
@@ -1305,7 +1427,7 @@ describe("spec-live-reconciliation workflow", () => {
       writeFileSync(
         childScript,
         ` import { execFileSync } from "node:child_process"; import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"; import { tmpdir } from "node:os"; import { join } from "node:path"; const mode=${JSON.stringify(mode)}; const root=mkdtempSync(join(tmpdir(),"no-integration-life-")); const remote=join(root,"remote.git"); const seed=join(root,"seed"); const repoDir=join(root,"repo"); const workspaceDir=join(root,"workspace"); const appDir=join(root,"app"); const binDir=join(root,"bin"); const azLog=join(root,"az.log"); const artifactPath=join(root,"diagnostic.md"); const run=(cwd,args)=>execFileSync("git",args,{cwd,encoding:"utf8"}).trim(); mkdirSync(seed,{recursive:true}); mkdirSync(appDir,{recursive:true}); mkdirSync(binDir,{recursive:true}); writeFileSync(azLog,""); run(root,["init","--bare",remote]); run(seed,["init"]); run(seed,["config","user.email","test@example.com"]); run(seed,["config","user.name","Test"]); writeFileSync(join(seed,"README.md"),"base\\\\n"); run(seed,["add","README.md"]); run(seed,["commit","-m","base"]); run(seed,["branch","-M","dev"]); run(seed,["remote","add","origin",remote]); run(seed,["push","origin","dev"]); run(seed,["checkout","-b","task/diagnostic"]); writeFileSync(join(seed,"diagnostic.txt"),"prepared\\\\n"); run(seed,["add","diagnostic.txt"]); run(seed,["commit","-m","prepared diagnostic"]); const sourceCommit=run(seed,["rev-parse","HEAD"]); run(seed,["push","origin","task/diagnostic"]); run(root,["clone",remote,repoDir]); run(repoDir,["checkout","dev"]); run(root,["clone",remote,workspaceDir]); run(workspaceDir,["checkout","task/diagnostic"]); run(workspaceDir,["config","user.email","test@example.com"]); run(workspaceDir,["config","user.name","Test"]); writeFileSync(join(binDir,"az"),\`#!/usr/bin/env node
-const fs=require("node:fs"); const path=require("node:path"); const args=process.argv.slice(2); const mode=process.env.NO_INTEGRATION_MODE; const commit=process.env.DIAGNOSTIC_COMMIT; fs.appendFileSync(process.env.FAKE_AZ_LOG,JSON.stringify(args)+"\\\\n"); const metadata={taskId:"domain/no-integration-life",generation:1,sourceCommit:commit,reviewed_source_commit:commit}; const run={id:"175125000",state:"completed",status:"completed",result:"failed",sourceVersion:commit,templateParameters:{specs:"spec.sample.a,spec.sample.b",target:"staging",standalone_build_id:"",metadata:JSON.stringify(metadata)}}; if(mode==="terminal"&&args[0]==="pipelines"&&args[1]==="runs"&&args[2]!=="artifact"&&args.includes("list")) process.stdout.write(JSON.stringify([run])); else if(mode==="terminal"&&args[0]==="pipelines"&&args[1]==="runs"&&args.includes("artifact")&&args.includes("list")) process.stdout.write(JSON.stringify([{name:"diagnostic"}])); else if(mode==="terminal"&&args[0]==="pipelines"&&args[1]==="runs"&&args.includes("artifact")&&args.includes("download")){const out=args[args.indexOf("--path")+1]; fs.mkdirSync(out,{recursive:true}); for(const id of ["spec.sample.a","spec.sample.b"]) fs.writeFileSync(path.join(out,id+".json"),JSON.stringify({specId:id,status:"pass",cleanup:{attempted:true,status:"pass"}})); process.stdout.write("{}");} else process.stdout.write("[]"); \`,{mode:0o755}); process.env.NO_INTEGRATION_MODE=mode; process.env.DIAGNOSTIC_COMMIT=sourceCommit; process.env.FAKE_AZ_LOG=azLog; process.env.AZURE_CLI_PATH=join(binDir,"az"); const {reconcileSpecLive}=await import(${JSON.stringify(`file://${join(import.meta.dir, "spec-live-reconciliation.ts")}`)}); const input={ specIds:["spec.sample.a","spec.sample.b"], preparedSourceBranch:"task/diagnostic", preparedSourceCommit:sourceCommit,artifactPath,maxReproductions:1,reproductionConsumed:mode==="consumed"?1:0,...(mode==="omitted"?{}:{allowIntegration:false})}; const task=["## Reconciliation Task",JSON.stringify({taskId:"domain/no-integration-life",generation:1,input,children:{live:[],completed:[]}})].join("\\\\n"); let agentCalls=0; if(mode==="dirty") writeFileSync(join(workspaceDir,"README.md"),"dirty\\\\n"); const beforeHead=run(workspaceDir,["rev-parse","HEAD"]); const result=await reconcileSpecLive({agent:"aks-explorer",task,appDir,projectDir:repoDir,workspaceDir,done:(_summary,output)=>output,runAgent:async(_agent,prompt)=>{agentCalls++; if(mode==="terminal"){const match=prompt.match(/Per-spec result paths: (.+)\\. Structural cleanup paths: (.+)\\./); const paths=match[1].split(", "); writeFileSync(artifactPath,[\`Tested commit: \${sourceCommit}\`,"Pipeline run ID: 175125000",...paths.map(p=>\`Result path: \${p}\`),\`Cleanup proof: \${match[2].split(", ")[0]}\`,"Assertion mapping: expected failure","Lineage mapping: exact prepared source",\`Request fingerprint: sha256:\${"d".repeat(64)}\`,"HTTP status: 400","ARM code: InvalidParameter","Redacted ARM body: redacted","Disposition: product/API rejection"].join("\\\\n")); return {status:"done",structuredResult:{decision:"accepted-pass",summary:"Published complete non-green diagnostic.",evidence:["diagnostic:complete"]}};} return {status:"done",structuredResult:{decision:"needs-owner",summary:"Default reconciliation path entered.",evidence:["default-path:entered"]}};} }); const commands=readFileSync(azLog,"utf8").trim().split(/\\n+/).filter(Boolean).map(JSON.parse); console.log(JSON.stringify({result,commands,agentCalls,beforeHead,afterHead:run(workspaceDir,["rev-parse","HEAD"])})); rmSync(root,{recursive:true,force:true}); `,
+const fs=require("node:fs"); const path=require("node:path"); const args=process.argv.slice(2); const mode=process.env.NO_INTEGRATION_MODE; const commit=process.env.DIAGNOSTIC_COMMIT; fs.appendFileSync(process.env.FAKE_AZ_LOG,JSON.stringify(args)+"\\\\n"); const metadata={taskId:"domain/no-integration-life",generation:1,sourceCommit:commit,reviewed_source_commit:commit}; const run={id:"175125000",state:"completed",status:"completed",result:"failed",sourceVersion:commit,templateParameters:{specs:"spec.sample.a,spec.sample.b",target:"staging",standalone_build_id:"",metadata:JSON.stringify(metadata)}}; if(mode==="terminal"&&args[0]==="pipelines"&&args[1]==="runs"&&args[2]!=="artifact"&&args.includes("list")) process.stdout.write(JSON.stringify([run])); else if(mode==="terminal"&&args[0]==="pipelines"&&args[1]==="runs"&&args.includes("artifact")&&args.includes("list")) process.stdout.write(JSON.stringify([{name:"diagnostic"}])); else if(mode==="terminal"&&args[0]==="pipelines"&&args[1]==="runs"&&args.includes("artifact")&&args.includes("download")){const out=args[args.indexOf("--path")+1]; fs.mkdirSync(out,{recursive:true}); for(const id of ["spec.sample.a","spec.sample.b"]) fs.writeFileSync(path.join(out,id+".json"),JSON.stringify({specId:id,status:"pass",cleanup:{attempted:true,status:"pass"}})); process.stdout.write("{}");} else process.stdout.write("[]"); \`,{mode:0o755}); process.env.NO_INTEGRATION_MODE=mode; process.env.DIAGNOSTIC_COMMIT=sourceCommit; process.env.FAKE_AZ_LOG=azLog; process.env.AZURE_CLI_PATH=join(binDir,"az"); const {reconcileSpecLive}=await import(${JSON.stringify(`file://${join(import.meta.dir, "spec-live-reconciliation.ts")}`)}); const input={ specIds:["spec.sample.a","spec.sample.b"], preparedSourceBranch:"task/diagnostic", preparedSourceCommit:sourceCommit,artifactPath,maxReproductions:1,reproductionConsumed:mode==="consumed"?1:0,...(mode==="omitted"?{}:{allowIntegration:false})}; const {createSpecLiveTestContext}=await import(${JSON.stringify(`file://${join(import.meta.dir, "lib/spec-live-test-context.ts")}`)}); let agentCalls=0; if(mode==="dirty") writeFileSync(join(workspaceDir,"README.md"),"dirty\\n"); const beforeHead=run(workspaceDir,["rev-parse","HEAD"]); const resultEnvelope=await reconcileSpecLive(createSpecLiveTestContext({taskId:"domain/no-integration-life",input,appRoot:appDir,projectRoot:repoDir,workspaceRoot:workspaceDir,callAgent:async(_agent,prompt)=>{agentCalls++; if(mode==="terminal"){const match=prompt.match(/Per-spec result paths: (.+)\. Structural cleanup paths: (.+)\./); const paths=match[1].split(", "); writeFileSync(artifactPath,["Tested commit: "+sourceCommit,"Pipeline run ID: 175125000",...paths.map(p=>"Result path: "+p),"Cleanup proof: "+match[2].split(", ")[0],"Assertion mapping: expected failure","Lineage mapping: exact prepared source","Request fingerprint: sha256:"+"d".repeat(64),"HTTP status: 400","ARM code: InvalidParameter","Redacted ARM body: redacted","Disposition: product/API rejection"].join(String.fromCharCode(10))); const output={decision:"accepted-pass",summary:"Published complete non-green diagnostic.",evidence:["diagnostic:complete"]}; return {id:"s_diagnostic_test",kind:"agent",status:"done",summary:output.summary,output};} const output={decision:"needs-owner",summary:"Default reconciliation path entered.",evidence:["default-path:entered"]}; return {id:"s_default_test",kind:"agent",status:"done",summary:output.summary,output};}})); const result=resultEnvelope.output; const commands=readFileSync(azLog,"utf8").trim().split(/\\n+/).filter(Boolean).map(JSON.parse); console.log(JSON.stringify({result,commands,agentCalls,beforeHead,afterHead:run(workspaceDir,["rev-parse","HEAD"])})); rmSync(root,{recursive:true,force:true}); `,
       );
       const child = spawnSync("bun", [childScript], {
         cwd: import.meta.dir,
@@ -1394,23 +1516,33 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
       "Please keep the assertion tied to the exact node-pool object.",
     );
 
-    const task = [
-      "## Trigger Observation",
-      JSON.stringify({
-        reason: "pull-request-review-changed",
+    const trigger = {
+      type: "pull-request.state",
+      data: {
         pullRequestId: "16706118",
         reviewFingerprint: watcherReview.fingerprint,
-      }),
-    ].join("\n");
+      },
+    };
     expect(
-      pullRequestReviewTriggeredForJudgment(task, "16706118", workflowReview),
+      pullRequestReviewTriggeredForJudgment(
+        trigger,
+        "16706118",
+        workflowReview,
+      ),
     ).toBe(true);
     expect(
-      pullRequestReviewTriggeredForJudgment(task, "16705929", workflowReview),
+      pullRequestReviewTriggeredForJudgment(
+        trigger,
+        "16705929",
+        workflowReview,
+      ),
     ).toBe(false);
     expect(
       pullRequestReviewTriggeredForJudgment(
-        task.replace(watcherReview.fingerprint, "stale-fingerprint"),
+        {
+          ...trigger,
+          data: { ...trigger.data, reviewFingerprint: "stale-fingerprint" },
+        },
         "16706118",
         workflowReview,
       ),
@@ -1711,6 +1843,7 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
           'import { tmpdir } from "node:os";',
           'import { join } from "node:path";',
           `const modulePath = ${JSON.stringify(join(import.meta.dir, "spec-live-reconciliation.ts"))};`,
+          `const contextModulePath = ${JSON.stringify(join(import.meta.dir, "lib/spec-live-test-context.ts"))};`,
           'const root = mkdtempSync(join(tmpdir(), "spec-live-plan-boundary-"));',
           'const run = (cwd, args) => execFileSync("git", args, { cwd, encoding: "utf8" }).trim();',
           'const remote = join(root, "remote.git");',
@@ -1731,6 +1864,7 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
           'process.env.PATH = `${binDir}:${process.env.PATH || ""}`;',
           'process.env.AZURE_CLI_PATH = join(binDir, "az");',
           "const { reconcileSpecLive } = await import(`file://${modulePath}`);",
+          "const { createSpecLiveTestContext } = await import(`file://${contextModulePath}`);",
           'run(root, ["init", "--bare", remote]);',
           'run(seed, ["init"]);',
           'run(seed, ["config", "user.email", "test@example.com"]);',
@@ -1754,7 +1888,9 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
           'run(workspaceDir, ["config", "user.name", "Test"]);',
           'const sourceCommit = run(workspaceDir, ["rev-parse", "HEAD"]);',
           'const task = ["## Reconciliation Task", JSON.stringify({ taskId: "domain/implement-master-validation-cross-feature-18spec-journey-20260804", generation: 8, input: { specId: "spec.managed-namespaces.lifecycle,spec.node-image.profile-upgrade-validation,spec.ossku-migration.ubuntu-to-azurelinux,spec.secure-tls-bootstrap.vnet-integration,spec.secure-tls-bootstrap.network-isolated,spec.network-cni.azure-overlay,spec.cloud-provider.ccm-lifecycle,spec.cloud-provider.multiple-slb,spec.storage-csi.encryption-at-host,spec.kms.v2-public-cluster-public-kv-lifecycle,spec.kms.v2plus-create-cmk-public-kv-lifecycle,spec.kms.v2plus-create-cmk-public-kv-vnet-integration,spec.kms.v2plus-create-cmk-custom-vnet,spec.kms.v2plus-pmk-migrate-cmk-public-kv-lifecycle,spec.private-cluster.apiserver-vnet-integration-create,spec.virtualmachines.mixed-sku-upgrade,spec.deployment-safeguards.basic-enable-disable", sourceBranch: "task/example", sourceCommit, target: "staging", postPlanPathRepairVerification: { requiredPlanPath: "ci/plans/master-validation-cross-feature-17selector-staging.plan.json" } }, children: { live: [], completed: [] } }, null, 2)].join("\\n");',
-          'const result = await reconcileSpecLive({ agent: "aks-explorer", task, appDir, projectDir: repoDir, workspaceDir, done: (_summary, output) => output, runAgent: async () => { throw new Error("runAgent should not be called"); } }, { reviewedScenarioPatch: true });',
+          'const envelope = JSON.parse(task.split("\\n").slice(1).join("\\n"));',
+          'const resultEnvelope = await reconcileSpecLive(createSpecLiveTestContext({ taskId: envelope.taskId, generation: envelope.generation, input: envelope.input, appRoot: appDir, projectRoot: repoDir, workspaceRoot: workspaceDir, callAgent: async () => { throw new Error("agent call should not be reached"); } }), { reviewedScenarioPatch: true });',
+          "const result = resultEnvelope.output;",
           'const azCommands = readFileSync(azLog, "utf8").trim().split(/\\n+/).filter(Boolean).map((line) => JSON.parse(line));',
           'const bunCommands = readFileSync(bunLog, "utf8").trim().split(/\\n+/).filter(Boolean);',
           "console.log(JSON.stringify({ result, azCommands, bunCommands }));",
@@ -1822,6 +1958,7 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
           'import { tmpdir } from "node:os";',
           'import { join } from "node:path";',
           `const modulePath = ${JSON.stringify(join(import.meta.dir, "spec-live-reconciliation.ts"))};`,
+          `const contextModulePath = ${JSON.stringify(join(import.meta.dir, "lib/spec-live-test-context.ts"))};`,
           "const roots = [];",
           'const run = (cwd, args, allowFailure = false) => { try { return execFileSync("git", args, { cwd, encoding: "utf8" }).trim(); } catch (error) { if (allowFailure) return ""; throw error; } };',
           'const succeeds = (cwd, args) => { try { execFileSync("git", args, { cwd, encoding: "utf8" }); return true; } catch { return false; } };',
@@ -1836,8 +1973,8 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
           '  run(root,["init","--bare",remote]); run(seed,["init"]); run(seed,["config","user.email","test@example.com"]); run(seed,["config","user.name","Test"]); writeFileSync(join(seed,"README.md"),"base\\n"); run(seed,["add","README.md"]); run(seed,["commit","-m","base"]); run(seed,["branch","-M","dev"]); run(seed,["remote","add","origin",remote]); run(seed,["push","origin","dev"]);',
           '  if(mode==="divergent"||mode==="bounded-no-delta"){ run(seed,["checkout","-b","task/example"]); const candidatePath=mode==="bounded-no-delta"?"unrelated.txt":"candidate.txt"; const candidateText=mode==="bounded-no-delta"?"must not replay\\n":"unsafe 7475562cc shape\\n"; writeFileSync(join(seed,candidatePath),candidateText); run(seed,["add",candidatePath]); run(seed,["commit","-m",mode==="bounded-no-delta"?"unrelated retained commit":"divergent candidate"]); var candidate=run(seed,["rev-parse","HEAD"]); run(seed,["push","origin","task/example"]); run(seed,["checkout","dev"]); writeFileSync(join(seed,"authority.txt"),"fresh authority\\n"); run(seed,["add","authority.txt"]); run(seed,["commit","-m","advance authority"]); run(seed,["push","origin","dev"]); run(seed,["checkout","task/example"]); } else if(mode==="conflict"){ run(seed,["checkout","-b","task/example"]); writeFileSync(join(seed,"README.md"),"candidate value\\n"); run(seed,["add","README.md"]); run(seed,["commit","-m","conflicting candidate"]); var candidate=run(seed,["rev-parse","HEAD"]); run(seed,["push","origin","task/example"]); run(seed,["checkout","dev"]); writeFileSync(join(seed,"README.md"),"authority value\\n"); run(seed,["add","README.md"]); run(seed,["commit","-m","conflicting authority"]); run(seed,["push","origin","dev"]); run(seed,["checkout","task/example"]); } else { writeFileSync(join(seed,"authority.txt"),"fresh authority\\n"); run(seed,["add","authority.txt"]); run(seed,["commit","-m","advance authority"]); run(seed,["push","origin","dev"]); run(seed,["checkout","-b","task/example"]); writeFileSync(join(seed,"candidate.txt"),"safe candidate\\n"); run(seed,["add","candidate.txt"]); run(seed,["commit","-m","descendant candidate"]); var candidate=run(seed,["rev-parse","HEAD"]); run(seed,["push","origin","task/example"]); }',
           '  run(root,["clone",remote,repoDir]); run(repoDir,["checkout","dev"]); writeFileSync(gitLog, "");',
-          '  const { reconcileSpecLive } = await import(`file://${modulePath}`); const task=["## Reconciliation Task",JSON.stringify({taskId:`domain/fresh-base-${mode}`,generation:1,input:{specId:"spec.sample.fresh-base",sourceBranch:"task/example",sourceCommit:candidate,target:"staging",requireFreshBaseAtDispatch:true,baseRef:"origin/dev",...(mode==="bounded-no-delta"?{boundedChangedFiles:["README.md"]}:{})},children:{live:[],completed:[]}},null,2)].join("\\n");',
-          '  let repairCalls=0; let queuedBeforeRepair=false; let repairPrompt=""; const result=await reconcileSpecLive({agent:"aks-explorer",task,appDir,projectDir:repoDir,workspaceDir:seed,done:(_summary,output)=>output,runAgent:async(_agent,prompt)=>{ if(mode!=="conflict") throw new Error("runAgent should not be called"); repairCalls+=1; repairPrompt=prompt; queuedBeforeRepair=readFileSync(azLog,"utf8").trim().split(/\\n+/).filter(Boolean).map(JSON.parse).some((args)=>args[0]==="pipelines"&&args[1]==="run"); writeFileSync(join(seed,"README.md"),"authority value with candidate behavior\\n"); run(seed,["add","README.md"]); run(seed,["cherry-pick","--continue"]); return {status:"done",structuredResult:{decision:"committed",summary:"Resolved the bounded replay conflict.",evidence:["fresh-base-conflict:repaired"]}}; }},{reviewedScenarioPatch:true});',
+          '  const { reconcileSpecLive } = await import(`file://${modulePath}`); const { createSpecLiveTestContext } = await import(`file://${contextModulePath}`); const input={specId:"spec.sample.fresh-base",sourceBranch:"task/example",sourceCommit:candidate,target:"staging",requireFreshBaseAtDispatch:true,baseRef:"origin/dev",...(mode==="bounded-no-delta"?{boundedChangedFiles:["README.md"]}:{})};',
+          '  let repairCalls=0; let queuedBeforeRepair=false; let repairPrompt=""; const resultEnvelope=await reconcileSpecLive(createSpecLiveTestContext({taskId:`domain/fresh-base-${mode}`,input,appRoot:appDir,projectRoot:repoDir,workspaceRoot:seed,callAgent:async(_agent,prompt)=>{ if(mode!=="conflict") throw new Error("agent call should not be reached"); repairCalls+=1; repairPrompt=prompt; queuedBeforeRepair=readFileSync(azLog,"utf8").trim().split(/\\n+/).filter(Boolean).map(JSON.parse).some((args)=>args[0]==="pipelines"&&args[1]==="run"); writeFileSync(join(seed,"README.md"),"authority value with candidate behavior\\n"); run(seed,["add","README.md"]); run(seed,["cherry-pick","--continue"]); return {id:"s_fresh_base_test",kind:"agent",status:"done",summary:"Resolved the bounded replay conflict.",output:{decision:"committed",summary:"Resolved the bounded replay conflict.",evidence:["fresh-base-conflict:repaired"]}}; }}),{reviewedScenarioPatch:true}); const result=resultEnvelope.output;',
           '  const commands=readFileSync(azLog,"utf8").trim().split(/\\n+/).filter(Boolean).map(JSON.parse); const pushes=readFileSync(gitLog,"utf8").trim().split(/\\n+/).filter(Boolean); const remoteTask=run(seed,["ls-remote","origin","refs/heads/task/example"],true); const publishedCommit=remoteTask.split(/\\s+/)[0]||""; const authority=run(seed,["rev-parse","origin/dev"]); const replayHead=run(seed,["rev-parse","HEAD"]); const authorityIsAncestor=succeeds(seed,["merge-base","--is-ancestor",authority,replayHead]); const staleCandidateIsAncestor=succeeds(seed,["merge-base","--is-ancestor",candidate,replayHead]); const retainedCandidateChange=mode==="conflict"?readFileSync(join(seed,"README.md"),"utf8"):mode==="bounded-no-delta"?"":readFileSync(join(seed,"candidate.txt"),"utf8"); const unrelatedExists=existsSync(join(seed,"unrelated.txt")); const queuedSourceVersion=commands.find((args)=>args[0]==="pipelines"&&args[1]==="run")?.[commands.find((args)=>args[0]==="pipelines"&&args[1]==="run")?.indexOf("--commit-id")+1]||""; return {mode,result,commands,pushes,remoteTask,candidate,publishedCommit,authority,replayHead,authorityIsAncestor,staleCandidateIsAncestor,retainedCandidateChange,unrelatedExists,queuedSourceVersion,repairCalls,queuedBeforeRepair,repairPrompt};',
           "};",
           'const outputs=[await execute("divergent"),await execute("bounded-no-delta"),await execute("current"),await execute("conflict")]; console.log(JSON.stringify(outputs)); for(const root of roots) rmSync(root,{recursive:true,force:true});',
@@ -3154,10 +3291,16 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
 
     try {
       await expect(
-        askAgent(contextFor(projectDir) as never, "Repair bounded source."),
+        askAgent(
+          isolatedAgentContext(contextFor(projectDir)),
+          "Repair bounded source.",
+        ),
       ).rejects.toThrow("refused canonical workspace");
       await expect(
-        askAgent(contextFor(projectAlias) as never, "Repair bounded source."),
+        askAgent(
+          isolatedAgentContext(contextFor(projectAlias)),
+          "Repair bounded source.",
+        ),
       ).rejects.toThrow("refused canonical workspace");
       expect(agentCalls).toBe(0);
     } finally {
@@ -5629,65 +5772,6 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
     );
   });
 
-  test("accepts a same-task correction without treating it as final live proof", async () => {
-    const context = {
-      projectDir: "/tmp/not-used-for-self-revision",
-      workspaceDir: "/tmp/not-used-for-self-revision",
-      taskId: "domain/normalize-one-spec",
-      generation: 2,
-      intent: {
-        input: {
-          loopId: "scenario-normalization",
-          specId: "spec.sample.one",
-          target: "staging",
-        },
-      },
-    } as any;
-    const revision = {
-      state: "converged",
-      summary: "Bound current cleanup evidence",
-      evidence: ["cleanup-proof:absent"],
-      actions: [
-        {
-          kind: "update-task",
-          taskId: context.taskId,
-          expectedGeneration: 2,
-          workflow: "spec-live-reconciliation",
-          input: {
-            loopId: "scenario-normalization",
-            specId: "spec.sample.one",
-            target: "staging",
-            ownerCorrection: { cleanupProofPath: "proof.json" },
-          },
-        },
-      ],
-    } as any;
-
-    const accepted = await verify(context, revision);
-    expect(accepted.accepted).toBe(true);
-    expect(accepted.summary).toContain(
-      "final live-proof verification remains required",
-    );
-    expect(accepted.evidence).toContain(
-      "task-revision:domain/normalize-one-spec@3",
-    );
-
-    const weakenedPolicy = structuredClone(revision);
-    context.intent.input.allowTerminalDisposition = false;
-    const weakenedPolicyVerification = await verify(context, weakenedPolicy);
-    expect(weakenedPolicyVerification.accepted).toBe(false);
-    expect(weakenedPolicyVerification.summary).toContain(
-      "preserve the terminal-disposition policy",
-    );
-    delete context.intent.input.allowTerminalDisposition;
-
-    const changedTarget = structuredClone(revision);
-    changedTarget.actions[0].input.target = "standalone";
-    const rejected = await verify(context, changedTarget);
-    expect(rejected.accepted).toBe(false);
-    expect(rejected.summary).toContain("preserve the exact live target");
-  });
-
   test("rejects a wait whose event type has no app producer", () => {
     expect(
       agentConditionProblem({
@@ -5796,22 +5880,6 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
     ).toContain("cannot wait for an arbitrary repository advance");
   });
 
-  test("parses the finite spec task identity and generation", () => {
-    expect(
-      parseTaskPayload(
-        `prefix\n## Reconciliation Task\n${JSON.stringify({
-          taskId: "spec/example-a1b2c3",
-          generation: 2,
-          input: { specId: "spec.example.lifecycle" },
-        })}`,
-      ),
-    ).toMatchObject({
-      taskId: "spec/example-a1b2c3",
-      generation: 2,
-      input: { specId: "spec.example.lifecycle" },
-    });
-  });
-
   test("keeps exact source proof across a task metadata revision", () => {
     const exact = {
       id: 42,
@@ -5904,11 +5972,10 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
     ).toBeNull();
   });
 
-  test("inherits an authoritative pass from the completed child receipt when payload evidence is absent", () => {
+  test("inherits an authoritative pass from bounded completed-child evidence", () => {
     const appDir = mkdtempSync(join(tmpdir(), "spec-live-child-proof-"));
     try {
       const proofPath = join(appDir, "proof.json");
-      mkdirSync(join(appDir, ".state", "tasks"), { recursive: true });
       writeFileSync(
         proofPath,
         JSON.stringify({
@@ -5924,18 +5991,6 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
           verdict: "pass",
         }),
       );
-      writeFileSync(
-        join(appDir, ".state", "tasks", "state.json"),
-        JSON.stringify({
-          receipts: {
-            "domain/recover-spec-traffic-api-proxy-cert-rotation-post-rotation-proxy-500-20260801":
-              {
-                evidence: [`proof:${proofPath}`],
-              },
-          },
-        }),
-      );
-
       expect(
         inheritedAuthoritativeRunReference(
           {
@@ -5944,6 +5999,7 @@ const fs=require("node:fs"); const path=require("node:path"); const args=process
                 {
                   taskId:
                     "domain/recover-spec-traffic-api-proxy-cert-rotation-post-rotation-proxy-500-20260801",
+                  evidence: [`proof:${proofPath}`],
                 },
               ],
             },

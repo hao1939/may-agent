@@ -5,24 +5,25 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  realpathSync,
   renameSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { join, resolve, sep } from "node:path";
+import { dirname, join, resolve, sep } from "node:path";
 import { tmpdir } from "node:os";
 import {
   Type,
-  isTypedProjectAppConditionSubject,
+  isTypedConditionSubject,
   workflowResultVersion,
-  type ProjectAppTaskHandlerResult,
-  type ProjectAppTaskVerificationContext,
-  type ProjectAppTaskVerificationResult,
-  type ProjectAppConditionSpec,
+  type Condition,
+  type ExecutionResult,
+  type TaskReconcileResult,
+  type TaskVerificationContext,
+  type TaskVerificationResult,
   type WorkflowContext,
   type WorkflowIoContract,
-  type WorkflowResult,
-} from "@may-agent/sdk/legacy";
+} from "@may-agent/sdk";
 import { appendTrackedPipelineRunId } from "../../../watchers/aks-pipeline.js";
 import {
   summarizePullRequestReview as summarizeAksPullRequestReview,
@@ -50,6 +51,8 @@ export const name = "spec-live-reconciliation";
 export const description =
   "Reconcile one AKS spec through a task-owned source branch, exact live ADO verification, fix-forward retries, and integration into dev.";
 export const workspace = "task";
+
+type SpecLiveWorkflowResult = ExecutionResult<TaskReconcileResult>;
 
 const organization = "https://dev.azure.com/msazure";
 const adoProject = "CloudNativeCompute";
@@ -160,6 +163,14 @@ type TaskPayload = {
   };
 };
 
+function taskDescription(ctx: WorkflowContext): string {
+  return JSON.stringify(ctx.reconciliation ?? ctx.input, null, 2);
+}
+
+function taskOwner(ctx: WorkflowContext): string {
+  return ctx.reconciliation?.owner ?? "aks-explorer";
+}
+
 type PipelineRun = {
   id?: unknown;
   status?: unknown;
@@ -202,7 +213,9 @@ export function completedPullRequestIntegration(input: {
   | {
       status: "unproven";
       reason:
-        "merge-not-succeeded" | "source-mismatch" | "merge-commit-missing";
+        | "merge-not-succeeded"
+        | "source-mismatch"
+        | "merge-commit-missing";
     } {
   if (input.mergeStatus !== "succeeded") {
     return { status: "unproven", reason: "merge-not-succeeded" };
@@ -229,7 +242,7 @@ type AgentDecision = {
   evidence: string[];
   liveReady?: boolean;
   terminalDisposition?: SpecTerminalDisposition;
-  condition?: ProjectAppConditionSpec;
+  condition?: Condition;
   recovery?: {
     pipelineRunId: string;
     sourceBranch: string;
@@ -1182,7 +1195,9 @@ export function resolveLivePlanDispatch(input: {
 }): {
   planPath?: string;
   source:
-    "livePlanPath" | "postPlanPathRepairVerification.requiredPlanPath" | null;
+    | "livePlanPath"
+    | "postPlanPathRepairVerification.requiredPlanPath"
+    | null;
   evidence: string[];
 } {
   const taskInput = jsonRecord(input.taskInput);
@@ -1272,7 +1287,9 @@ export function mergeAcceptedTargetAdvanceProof(input: {
   | {
       state: "reverify";
       reason:
-        "merge-conflict" | "protected-path-changed" | "merge-commit-failed";
+        | "merge-conflict"
+        | "protected-path-changed"
+        | "merge-commit-failed";
     } {
   const merge = git(
     input.workspaceDir,
@@ -1720,7 +1737,7 @@ export function verifySpecLiveProofFacts(input: {
   requireIntegration?: boolean;
   providerTaskIds?: string[];
   integrationTargetRef?: string;
-}): ProjectAppTaskVerificationResult {
+}): TaskVerificationResult {
   const problems: string[] = [];
   const proof = input.proof;
   const requireIntegration = input.requireIntegration !== false;
@@ -1959,7 +1976,7 @@ const observableConditionTypes = new Set([
 ]);
 
 export function masterValidationCapacityPulseConditionProblem(
-  condition: ProjectAppConditionSpec,
+  condition: Condition,
 ): string | null {
   if (condition.type === "aks.master-validation.check") {
     return "Wait on aks.master-validation.capacity-pulse, not raw aks.master-validation.check";
@@ -2002,7 +2019,7 @@ export function agentConditionProblem(decision: AgentDecision): string | null {
       ? "decision=waiting requires one exact Condition"
       : `decision=${decision.decision} with liveReady=false requires one exact observable Condition; use needs-owner when the app cannot observe the external boundary`;
   }
-  if (!isTypedProjectAppConditionSubject(condition.subject)) {
+  if (!isTypedConditionSubject(condition.subject)) {
     return `Condition subject must be typed, not prose: ${condition.subject}`;
   }
   const capacityPulseProblem =
@@ -2199,74 +2216,13 @@ export function pipelineRunState(run: PipelineRun): string {
   return nonEmptyString(run.status) || nonEmptyString(run.state) || "unknown";
 }
 
-function matchingJsonObject(text: string, start: number): string | null {
-  let depth = 0;
-  let inString = false;
-  let escaping = false;
-  for (let index = start; index < text.length; index += 1) {
-    const char = text[index];
-    if (escaping) {
-      escaping = false;
-      continue;
-    }
-    if (char === "\\") {
-      escaping = true;
-      continue;
-    }
-    if (char === '"') {
-      inString = !inString;
-      continue;
-    }
-    if (inString) continue;
-    if (char === "{") depth += 1;
-    if (char === "}" && --depth === 0) return text.slice(start, index + 1);
-  }
-  return null;
-}
-
-export function parseTaskPayload(raw: string): TaskPayload | null {
-  const marker = raw.indexOf("## Reconciliation Task");
-  if (marker < 0) return null;
-  const scoped = raw.slice(marker);
-  const start = scoped.indexOf("{");
-  if (start < 0) return null;
-  const object = matchingJsonObject(scoped, start);
-  if (!object) return null;
-  try {
-    const parsed = JSON.parse(object) as TaskPayload;
-    return parsed && typeof parsed === "object" ? parsed : null;
-  } catch {
-    return null;
-  }
-}
-
-function triggerObservation(raw: string): Record<string, unknown> | null {
-  for (const marker of ["## Trigger Observation", "## Trigger Event"]) {
-    const markerIndex = raw.indexOf(marker);
-    if (markerIndex < 0) continue;
-    const scoped = raw.slice(markerIndex);
-    const start = scoped.indexOf("{");
-    const object = start >= 0 ? matchingJsonObject(scoped, start) : null;
-    if (!object) continue;
-    try {
-      const parsed = JSON.parse(object);
-      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-        return parsed as Record<string, unknown>;
-      }
-    } catch {
-      // Try the next supported trigger marker.
-    }
-  }
-  return null;
-}
-
 export function pullRequestReviewTriggeredForJudgment(
-  raw: string,
+  event: unknown,
   pullRequestId: string,
   review: PullRequestReview,
 ): boolean {
-  const trigger = triggerObservation(raw);
-  if (!trigger || !review.available || review.unresolvedCount <= 0) {
+  const trigger = jsonRecord(event);
+  if (!review.available || review.unresolvedCount <= 0) {
     return false;
   }
   const data =
@@ -2277,7 +2233,7 @@ export function pullRequestReviewTriggeredForJudgment(
       : {};
   const value = (key: string) => trigger[key] ?? data[key];
   return (
-    nonEmptyString(value("reason")) === "pull-request-review-changed" &&
+    nonEmptyString(trigger.type) === "pull-request.state" &&
     nonEmptyString(value("pullRequestId")) === pullRequestId &&
     nonEmptyString(value("reviewFingerprint")) === review.fingerprint
   );
@@ -2354,13 +2310,9 @@ function commandAsync(
         },
       },
       (error, stdout, stderr) => {
+        const exitCode = (error as { code?: unknown } | null)?.code;
         const output = {
-          status:
-            typeof (error as NodeJS.ErrnoException | null)?.code === "number"
-              ? ((error as NodeJS.ErrnoException).code as number)
-              : error
-                ? 1
-                : 0,
+          status: typeof exitCode === "number" ? exitCode : error ? 1 : 0,
           stdout: (stdout ?? "").trim(),
           stderr: (stderr || error?.message || "").trim(),
         };
@@ -3435,29 +3387,13 @@ function proofPathFromEvidence(evidence: unknown, appDir: string): string {
   return resolve(appDir, proofPath);
 }
 
-function receiptProofPath(taskId: string, appDir: string): string {
-  if (!taskId) return "";
-  const taskState = readJsonRecord(
-    join(appDir, ".state", "tasks", "state.json"),
-  );
-  const receipt = jsonRecord(jsonRecord(taskState?.receipts)[taskId]);
-  return (
-    proofPathFromEvidence(receipt.evidence, appDir) ||
-    proofPathFromEvidence(jsonRecord(receipt.acceptanceBasis).evidence, appDir)
-  );
-}
-
 function completedChildProofPath(
   child: Record<string, unknown>,
   appDir: string,
 ): string {
-  const childTaskId =
-    nonEmptyString(child.taskId) ||
-    nonEmptyString(jsonRecord(child.metadata).id);
   return (
     proofPathFromEvidence(child.evidence, appDir) ||
-    proofPathFromEvidence(jsonRecord(child.acceptanceBasis).evidence, appDir) ||
-    receiptProofPath(childTaskId, appDir)
+    proofPathFromEvidence(jsonRecord(child.acceptanceBasis).evidence, appDir)
   );
 }
 
@@ -3874,7 +3810,7 @@ function pullRequestReviewPrompt(input: {
     threads ||
       "- structured review text unavailable; inspect the PR and cited source directly",
     "Task:",
-    input.ctx.task,
+    taskDescription(input.ctx),
   ].join("\n\n");
 }
 
@@ -3903,7 +3839,7 @@ export async function collectTerminalRunEvidence(
       options?: { includeProject?: boolean },
     ) => unknown | Promise<unknown>;
   } = {},
-): CollectedRunEvidence {
+): Promise<CollectedRunEvidence> {
   mkdirSync(runContextDir, { recursive: true });
   const runPath = join(runContextDir, "ado-run-show.json");
   writeFileSync(runPath, `${JSON.stringify(run, null, 2)}\n`);
@@ -4283,7 +4219,9 @@ export function supersededQueuedTaskRuns(
 }
 
 export type PriorVerificationRunDisposition =
-  "exact" | "invalidated-lineage-context" | "mismatch";
+  | "exact"
+  | "invalidated-lineage-context"
+  | "mismatch";
 
 export function runMatchesPriorVerification(
   run: PipelineRun,
@@ -4348,7 +4286,7 @@ export function priorVerificationRunDisposition(
   return "mismatch";
 }
 
-export function pipelineWaitCondition(runId: string): ProjectAppConditionSpec {
+export function pipelineWaitCondition(runId: string): Condition {
   return {
     id: `pipeline-run-${runId}-completed`,
     type: "pipeline-run.state",
@@ -4364,8 +4302,8 @@ export function registerSpecLiveTrackedRun(appDir: string, runId: string) {
 export function taskScopedAgentCondition(
   taskId: string,
   generation: number,
-  condition: ProjectAppConditionSpec,
-): ProjectAppConditionSpec {
+  condition: Condition,
+): Condition {
   const taskScope = createHash("sha256")
     .update(`${taskId}@${generation}`)
     .digest("hex")
@@ -4398,7 +4336,7 @@ export function masterValidationCapacityPulseWaitCondition(
   taskId: string,
   generation: number,
   baselineCycleSlot: number,
-): ProjectAppConditionSpec {
+): Condition {
   if (!Number.isInteger(baselineCycleSlot) || baselineCycleSlot < 0) {
     throw new Error("baselineCycleSlot must be a non-negative integer");
   }
@@ -4410,9 +4348,7 @@ export function masterValidationCapacityPulseWaitCondition(
   });
 }
 
-export function pullRequestWaitCondition(
-  pullRequestId: string,
-): ProjectAppConditionSpec {
+export function pullRequestWaitCondition(pullRequestId: string): Condition {
   return {
     id: `pull-request-${pullRequestId}-changed`,
     type: "pull-request.state",
@@ -4427,7 +4363,7 @@ export function pullRequestWaitCondition(
 export function pullRequestSourceUpdateCondition(
   pullRequestId: string,
   testedSourceCommit: string,
-): ProjectAppConditionSpec {
+): Condition {
   return {
     id: `pull-request-${pullRequestId}-source-not-${testedSourceCommit}`,
     type: "pull-request.state",
@@ -4439,7 +4375,7 @@ export function pullRequestSourceUpdateCondition(
 export function pullRequestReviewCountCondition(
   pullRequestId: string,
   unresolvedReviewCount: number,
-): ProjectAppConditionSpec {
+): Condition {
   return {
     id: `pull-request-${pullRequestId}-unresolved-review-count-not-${unresolvedReviewCount}`,
     type: "pull-request.state",
@@ -4454,7 +4390,7 @@ export function pullRequestReviewCountCondition(
 export function pullRequestReviewFingerprintCondition(
   pullRequestId: string,
   reviewFingerprint: string,
-): ProjectAppConditionSpec {
+): Condition {
   return {
     id: `pull-request-${pullRequestId}-review-fingerprint-not-${reviewFingerprint}`,
     type: "pull-request.state",
@@ -4475,7 +4411,7 @@ export function pullRequestWaitConditions(
     fingerprint: "",
     threads: [],
   },
-): ProjectAppConditionSpec[] {
+): Condition[] {
   const conditions = [
     pullRequestWaitCondition(pullRequestId),
     pullRequestSourceUpdateCondition(pullRequestId, testedSourceCommit),
@@ -5247,7 +5183,7 @@ async function publishPullRequestReviewReady(
   );
 }
 
-function reviewReadyHandoff(
+async function reviewReadyHandoff(
   ctx: WorkflowContext,
   input: {
     taskId: string;
@@ -5256,8 +5192,8 @@ function reviewReadyHandoff(
     runId: string;
     sourceCommit: string;
   },
-): string[] {
-  const appDir = ctx.appDir ?? "/app/projects/aks-rp-e2e.app";
+): Promise<string[]> {
+  const appDir = ctx.workspace!.appRoot;
   const receipt = join(
     appDir,
     ".state",
@@ -5271,24 +5207,28 @@ function reviewReadyHandoff(
       `review-ready-handoff-receipt:${receipt}`,
     ];
   }
-  ctx.dispatchEvent("message.created", {
+  await ctx.events.emit({
+    type: "message.created",
+    source: "workflow:spec-live-reconciliation",
     target: { project: "aks-rp-e2e", human: true },
-    from: "aks-explorer",
-    to: "human:operator",
-    intent: "master-validation-route-review-ready",
-    priority: "P1",
-    project: "aks-rp-e2e",
-    taskId: input.taskId,
-    specId: input.specId,
-    pipelineRunId: input.runId,
-    pullRequestId: input.pullRequestId,
-    sourceCommit: input.sourceCommit,
-    content: [
-      `AKS master-validation route repair for ${input.specId} passed exact live run ${input.runId} at ${input.sourceCommit}.`,
-      `Focused PR ${input.pullRequestId} is published non-draft and review-ready.`,
-      "Repository approvals or policies may still remain; please satisfy them and merge this PR into main.",
-      "The app will keep the same task open and explicitly read current origin/main before accepting the repair.",
-    ].join("\n"),
+    data: {
+      from: "aks-explorer",
+      to: "human:operator",
+      intent: "master-validation-route-review-ready",
+      priority: "P1",
+      project: "aks-rp-e2e",
+      taskId: input.taskId,
+      specId: input.specId,
+      pipelineRunId: input.runId,
+      pullRequestId: input.pullRequestId,
+      sourceCommit: input.sourceCommit,
+      content: [
+        `AKS master-validation route repair for ${input.specId} passed exact live run ${input.runId} at ${input.sourceCommit}.`,
+        `Focused PR ${input.pullRequestId} is published non-draft and review-ready.`,
+        "Repository approvals or policies may still remain; please satisfy them and merge this PR into main.",
+        "The app will keep the same task open and explicitly read current origin/main before accepting the repair.",
+      ].join("\n"),
+    },
   });
   mkdirSync(join(appDir, ".state", "master-validation-route-review-ready"), {
     recursive: true,
@@ -5591,15 +5531,15 @@ export async function askAgent(
       );
     }
     assertIsolatedWriteDispatch({
-      workspaceDir: ctx.workspaceDir,
-      projectDir: ctx.projectDir,
-      cwd: ctx.workspaceDir ?? ctx.projectDir,
+      workspaceDir: ctx.workspace!.root,
+      projectDir: ctx.workspace!.projectRoot,
+      cwd: ctx.workspace!.root,
     });
-    const result = await ctx.runAgent(ctx.agent, nextPrompt, {
+    const result = await ctx.agents.call(taskOwner(ctx), nextPrompt, {
       timeoutMs,
       schema: decisionSchema,
     });
-    if (result.status === "error" || result.status === "interrupted") {
+    if (result.status !== "done" || !result.output) {
       runtimeFailures += 1;
       lastProblem = `agent invocation ${result.status} before structured judgment`;
       if (runtimeFailures < 2 && attempt < maxAttempts) {
@@ -5628,7 +5568,7 @@ export async function askAgent(
         `Agent invocation failed before structured judgment after ${runtimeFailures === 2 ? "two" : runtimeFailures} attempt${runtimeFailures === 1 ? "" : "s"}: ${lastProblem}`,
       );
     }
-    const decision = result.structuredResult as AgentDecision;
+    const decision = result.output as AgentDecision;
     const problem =
       options.validateDecision?.(decision) ??
       agentConditionProblem(decision) ??
@@ -5657,8 +5597,8 @@ function waitingResult(
   ctx: WorkflowContext,
   summary: string,
   evidence: string[],
-  condition: ProjectAppConditionSpec | ProjectAppConditionSpec[],
-): WorkflowResult {
+  condition: Condition | Condition[],
+): SpecLiveWorkflowResult {
   return ctx.done(summary, {
     state: "waiting",
     summary,
@@ -5672,7 +5612,7 @@ function ownerResult(
   ctx: WorkflowContext,
   summary: string,
   evidence: string[],
-): WorkflowResult {
+): SpecLiveWorkflowResult {
   return ctx.done(summary, {
     state: "needs-owner",
     summary,
@@ -5711,7 +5651,7 @@ async function reconcileNoIntegrationDiagnostic(
     target: string;
     standaloneBuildId: string;
   },
-): Promise<WorkflowResult> {
+): Promise<SpecLiveWorkflowResult> {
   const {
     taskId,
     generation,
@@ -5825,10 +5765,7 @@ async function reconcileNoIntegrationDiagnostic(
       standaloneBuildId,
     });
     const runId = nonEmptyString(run.id);
-    registerSpecLiveTrackedRun(
-      ctx.appDir ?? "/app/projects/aks-rp-e2e.app",
-      runId,
-    );
+    registerSpecLiveTrackedRun(ctx.workspace!.appRoot, runId);
     saveRunReceipt(contextDir, run, contract.sourceCommit);
     return waitingResult(
       ctx,
@@ -5914,7 +5851,7 @@ async function reconcileNoIntegrationDiagnostic(
       "The disposition must be exactly one of: request-shape repair, product/API rejection, or retryable external failure. Include only a deterministic request-shape fingerprint and secret-redacted ARM facts; never include credentials, authorization headers, tokens, or raw secrets.",
       "Return decision=accepted-pass only when the diagnostic artifact is complete and read back. This accepts the diagnostic disposition, not the non-green product result. Do not edit source, commit, push, queue or retry ADO, create a PR, integrate into dev, or advance any target ref.",
       "Task:",
-      ctx.task,
+      taskDescription(ctx),
     ].join("\n\n"),
     {
       validateDecision: (candidate) => {
@@ -5967,26 +5904,41 @@ async function reconcileNoIntegrationDiagnostic(
 export async function reconcileSpecLive(
   ctx: WorkflowContext,
   options: SpecLiveReconciliationOptions = {},
-): Promise<WorkflowResult> {
+): Promise<SpecLiveWorkflowResult> {
+  if (!ctx.reconciliation || !ctx.workspace) {
+    return ctx.blocked(
+      "Spec live reconciliation requires a durable task and prepared workspace",
+      {
+        hasReconciliation: Boolean(ctx.reconciliation),
+        hasWorkspace: Boolean(ctx.workspace),
+      },
+    ) as SpecLiveWorkflowResult;
+  }
   if (!workflowDeadlines.has(ctx as object)) {
     workflowDeadlines.set(
       ctx as object,
       Date.now() + specLiveWorkflowDeadlineMs,
     );
   }
-  const payload = parseTaskPayload(ctx.task);
+  const payload: TaskPayload = {
+    taskId: ctx.reconciliation.taskId,
+    generation: ctx.reconciliation.generation,
+    input: jsonRecord(ctx.reconciliation.input),
+    children: { completed: ctx.reconciliation.children.completed },
+  };
   const { targetBranch, targetRef } = resolveIntegrationTarget(
     options.targetBranch,
   );
   const taskId = nonEmptyString(payload?.taskId);
   const generation = Number(payload?.generation ?? 1);
   const normalizationInput = payload?.input as
-    ScenarioNormalizationInput | undefined;
+    | ScenarioNormalizationInput
+    | undefined;
   const allowTerminalDisposition =
     options.allowTerminalDisposition ??
     payload?.input?.allowTerminalDisposition !== false;
   const liveSpecIdSelection = resolveLiveSpecIdSelection(payload?.input);
-  if (!liveSpecIdSelection.accepted) {
+  if (liveSpecIdSelection.accepted === false) {
     return ownerResult(ctx, liveSpecIdSelection.problem, [
       `task:${taskId || "missing"}`,
       `audit-spec-ids:${liveSpecIdSelection.auditSpecIds.join(",") || "none"}`,
@@ -6048,7 +6000,7 @@ export async function reconcileSpecLive(
   );
   const authoritativeReference = resolvedAuthoritativeRunReference(
     payload,
-    ctx.appDir ?? "/app/projects/aks-rp-e2e.app",
+    ctx.workspace!.appRoot,
     specId,
     liveTarget,
   );
@@ -6066,8 +6018,8 @@ export async function reconcileSpecLive(
   const providerTaskIds = authoritativeReference?.taskId
     ? [authoritativeReference.taskId]
     : [];
-  const repoDir = ctx.projectDir ?? "/app/projects/aks-rp-e2e";
-  const workspaceDir = ctx.workspaceDir ?? repoDir;
+  const repoDir = ctx.workspace!.projectRoot;
+  const workspaceDir = ctx.workspace!.root;
 
   if (
     !taskId ||
@@ -6356,7 +6308,7 @@ export async function reconcileSpecLive(
     const baseCommit = git(repoDir, ["rev-parse", targetRef]).stdout;
     let preparedSourceEvidence: string[] = [];
     const reconcileRequiredSource =
-      async (): Promise<WorkflowResult | null> => {
+      async (): Promise<SpecLiveWorkflowResult | null> => {
         if (!requiredSource) return null;
         const prepared = reconcilePreparedTaskSource(
           workspaceDir,
@@ -6387,7 +6339,7 @@ export async function reconcileSpecLive(
               "Preserve both the current same-task work and the required prepared-source history, run scoped checks, commit the merge, leave the task worktree clean, and return decision=committed.",
               "Do not abort the merge, replace it with a cherry-pick, push, queue ADO, create another task, or edit task state. This workflow owns publication and live dispatch.",
               "Task:",
-              ctx.task,
+              taskDescription(ctx),
             ].join("\n\n"),
             {
               scenarioNormalization: Boolean(normalizationInput),
@@ -6483,7 +6435,7 @@ export async function reconcileSpecLive(
           "Do not push, queue ADO, create a PR, edit app task state, or discard work whose ownership cannot be established. A technical failure is not ownership ambiguity: when this dedicated task branch establishes ownership, keep repairing until the source is clean instead of returning needs-owner.",
           `Only if ownership is genuinely ambiguous may you return needs-owner. In that case cite ownership-ambiguity:<exact fact>, authoritative-checkpoint:${currentTaskContextPath(contextDir)}, and authoritative-source-commit:<current HEAD>; the checkpoint pointer must identify the current source/run handoff so a replacement owner can resume safely.`,
           "Task:",
-          ctx.task,
+          taskDescription(ctx),
         ].join("\n\n"),
         {
           scenarioNormalization: Boolean(normalizationInput),
@@ -6590,7 +6542,7 @@ export async function reconcileSpecLive(
     const enforceFreshBaseLineage = (
       candidateCommit: string,
       operation: "publication" | "queue",
-    ): WorkflowResult | null => {
+    ): SpecLiveWorkflowResult | null => {
       const admission = freshBaseLineageAdmission({
         workspaceDir,
         candidateCommit,
@@ -6646,7 +6598,7 @@ export async function reconcileSpecLive(
       reason: string,
     ): Promise<
       | { state: "ready"; sourceCommit: string; evidence: string[] }
-      | { state: "result"; result: WorkflowResult }
+      | { state: "result"; result: SpecLiveWorkflowResult }
     > => {
       let currentCommit = candidateCommit;
       const accumulatedEvidence: string[] = [];
@@ -6690,7 +6642,7 @@ export async function reconcileSpecLive(
             "A source-only check is diagnostic evidence, not completion. If no truthful staging-observable contract exists, return one exact external wait or needs-owner with the concrete ownership boundary; do not mark the task complete.",
             "Use waiting only for one exact externally observable condition and needs-owner only for a genuine ownership-boundary decision. Do not push, queue ADO, create another task, or edit app state.",
             "Task:",
-            ctx.task,
+            taskDescription(ctx),
           ].join("\n\n"),
           {
             scenarioNormalization: Boolean(normalizationInput),
@@ -6768,7 +6720,7 @@ export async function reconcileSpecLive(
       reason: string,
     ): Promise<
       | { state: "ready"; sourceCommit: string; evidence: string[] }
-      | { state: "result"; result: WorkflowResult }
+      | { state: "result"; result: SpecLiveWorkflowResult }
     > => {
       let currentCommit = candidateCommit;
       const evidence: string[] = [];
@@ -6834,7 +6786,7 @@ export async function reconcileSpecLive(
                 "Resolve only this replay conflict, complete the cherry-pick, run scoped checks, commit the resolved source, leave the task worktree clean, and return decision=committed.",
                 "Do not weaken the fresh-base guard, merge stale branch history, push, queue ADO, create another task, or edit app state. The workflow will re-run admission and publish the replayed source.",
                 "Task:",
-                ctx.task,
+                taskDescription(ctx),
               ].join("\n\n"),
               {
                 scenarioNormalization: Boolean(normalizationInput),
@@ -7003,7 +6955,7 @@ export async function reconcileSpecLive(
               "Resolve only this task-branch history merge, preserve the current bounded source intent and both branch histories, run scoped checks, commit the merge, leave the worktree clean, and return decision=committed.",
               "Do not abort and replace the merge with a cherry-pick, force-push, queue ADO, create another task, or edit app state. The workflow will re-run admission, publish, and require exact live proof for the resulting commit.",
               "Task:",
-              ctx.task,
+              taskDescription(ctx),
             ].join("\n\n"),
             {
               scenarioNormalization: Boolean(normalizationInput),
@@ -7100,7 +7052,7 @@ export async function reconcileSpecLive(
           sourceCommit: string;
           evidence: string[];
         }
-      | { state: "result"; result: WorkflowResult }
+      | { state: "result"; result: SpecLiveWorkflowResult }
     > => {
       const directScenarioNormalization =
         integrationMode(targetBranch) === "direct" &&
@@ -7159,7 +7111,7 @@ export async function reconcileSpecLive(
                 "Resolve only this replay conflict, complete the cherry-pick, run scoped checks, commit the resolved source, leave the task worktree clean, and return decision=committed.",
                 "Do not reconsider the already completed terminal-run judgment, merge stale branch history, push, queue ADO, create another task, or edit app state. The workflow will rerun hard admission and publish the replayed source.",
                 "Task:",
-                ctx.task,
+                taskDescription(ctx),
               ].join("\n\n"),
               {
                 scenarioNormalization: true,
@@ -7302,7 +7254,7 @@ export async function reconcileSpecLive(
             : {}),
         });
         registerSpecLiveTrackedRun(
-          ctx.appDir ?? "/app/projects/aks-rp-e2e.app",
+          ctx.workspace!.appRoot,
           nonEmptyString(run.id),
         );
         return {
@@ -7330,7 +7282,7 @@ export async function reconcileSpecLive(
           ...(retryOfRunId ? { retryOfRunId } : {}),
         });
         registerSpecLiveTrackedRun(
-          ctx.appDir ?? "/app/projects/aks-rp-e2e.app",
+          ctx.workspace!.appRoot,
           nonEmptyString(run.id),
         );
         return {
@@ -7359,7 +7311,7 @@ export async function reconcileSpecLive(
     const applyTerminalDisposition = async (
       decision: AgentDecision,
       reviewedRunId = "",
-    ): Promise<WorkflowResult> => {
+    ): Promise<SpecLiveWorkflowResult> => {
       if (!allowTerminalDisposition) {
         return ownerResult(
           ctx,
@@ -7466,7 +7418,7 @@ export async function reconcileSpecLive(
             "Run the scoped checks required by those files, commit the result, leave the current task worktree clean, and return decision=committed.",
             "This is source-only replay of an already reviewed exact run. Omit liveReady and condition; do not queue ADO, create a PR, create another task, or edit task state.",
             "Task:",
-            ctx.task,
+            taskDescription(ctx),
           ].join("\n\n"),
           {
             scenarioNormalization: false,
@@ -7573,7 +7525,7 @@ export async function reconcileSpecLive(
             "This is source-only lineage repair for an already reviewed terminal judgment. Omit liveReady and condition; do not create a new readiness decision or wait.",
             "Do not push, queue ADO, create another task, or change the terminal judgment. The workflow will revalidate and integrate the resolved source.",
             "Task:",
-            ctx.task,
+            taskDescription(ctx),
           ].join("\n\n"),
           {
             scenarioNormalization: true,
@@ -7900,7 +7852,7 @@ export async function reconcileSpecLive(
               "Resolve only conflicts caused by these task-owned commits, finish or abort the complete cherry-pick sequence, run scoped checks, leave one clean task branch, and return decision=committed.",
               "Do not merge either repository history wholesale, push, queue ADO, create another branch/task, or edit app state. The workflow will lease-update the task branch and require a fresh exact live run.",
               "Task:",
-              ctx.task,
+              taskDescription(ctx),
             ].join("\n\n"),
             { scenarioNormalization: true },
           );
@@ -7966,7 +7918,7 @@ export async function reconcileSpecLive(
           "Return decision=committed only after the strict inventory no longer lists this exact row. Separately return liveReady=true when that exact committed source is runnable now; return liveReady=false only with one exact external Condition the app can observe.",
           "Do not push, queue ADO, create a PR, create another task, or edit app state. Those are workflow mechanics and do not make a runnable source liveReady=false.",
           "Task:",
-          ctx.task,
+          taskDescription(ctx),
         ].join("\n\n"),
         {
           scenarioNormalization: true,
@@ -8149,10 +8101,7 @@ export async function reconcileSpecLive(
       saveRunReceipt(contextDir, run, sourceCommit);
       const runId = nonEmptyString(run.id);
       if (runId) {
-        registerSpecLiveTrackedRun(
-          ctx.appDir ?? "/app/projects/aks-rp-e2e.app",
-          runId,
-        );
+        registerSpecLiveTrackedRun(ctx.workspace!.appRoot, runId);
       }
       return null;
     };
@@ -8275,7 +8224,7 @@ export async function reconcileSpecLive(
         "Do not queue ADO, create a PR, create another branch/worktree, or edit app task state; this workflow owns those steps.",
         "Use waiting only with one exact machine-observable Condition. Use needs-owner only for a concrete decision that source facts cannot resolve.",
         "Task:",
-        ctx.task,
+        taskDescription(ctx),
       ].join("\n\n");
       let decision = await askAgent(ctx, preparationPrompt, {
         scenarioNormalization: Boolean(normalizationInput),
@@ -8406,7 +8355,7 @@ export async function reconcileSpecLive(
         const artifactPath = recovery ? resolve(recovery.artifactPath) : "";
         const watcherRoot = recovery
           ? resolve(
-              ctx.appDir ?? "/app/projects/aks-rp-e2e.app",
+              ctx.workspace!.appRoot,
               ".state",
               "watchers",
               "aks-pipeline-artifacts",
@@ -8465,9 +8414,9 @@ export async function reconcileSpecLive(
           );
         }
         return ctx.done(decision.summary, {
-          state: "existing-recovery",
+          state: "converged",
           summary: decision.summary,
-          evidence: decision.evidence,
+          evidence: [...decision.evidence, "existing-recovery:true"],
           recovery,
           actions: [],
         });
@@ -8780,7 +8729,7 @@ export async function reconcileSpecLive(
             : "Use retry-transient only when artifacts prove a transient provider/environment failure and an unchanged retry is truthful.",
           "Do not create a successor task, queue ADO, create/complete a PR, or edit app task state.",
           "Task:",
-          ctx.task,
+          taskDescription(ctx),
         ].join("\n\n"),
         {
           scenarioNormalization: Boolean(normalizationInput),
@@ -9180,7 +9129,7 @@ export async function reconcileSpecLive(
               "Return test-current when any intervening change can affect this proof; the workflow will refresh the candidate and queue a fresh exact run.",
               "Do not edit, commit, merge, push, queue ADO, create a task, or edit app state.",
               "Task:",
-              ctx.task,
+              taskDescription(ctx),
             ].join("\n\n"),
             {
               scenarioNormalization: directScenarioNormalization,
@@ -9305,7 +9254,7 @@ export async function reconcileSpecLive(
                   `Resolve only the current bounded patch application in ${workspaceDir}. Conflicted paths: ${refresh.conflictedPaths.join(", ") || "unknown"}. Preserve the scenario-normalization intent, run scoped checks plus the strict scenario inventory, commit the resolved patch, leave the worktree clean, and return decision=committed.`,
                   "Do not push, queue ADO, create a PR, create another task, or edit app state. The workflow will push the refreshed task branch and require a new exact live run before integration.",
                   "Task:",
-                  ctx.task,
+                  taskDescription(ctx),
                 ].join("\n\n"),
                 { scenarioNormalization: true },
               );
@@ -9383,7 +9332,7 @@ export async function reconcileSpecLive(
                 `Resolve only the current merge in ${workspaceDir}, preserve the accepted task intent, run scoped checks, commit the resolved source, leave the worktree clean, and return decision=committed.`,
                 "Do not push, queue ADO, create a PR, create another task, or edit app state. The workflow will push the resolved branch and require a fresh exact live run before integration.",
                 "Task:",
-                ctx.task,
+                taskDescription(ctx),
               ].join("\n\n"),
               { scenarioNormalization: false },
             );
@@ -9645,7 +9594,7 @@ export async function reconcileSpecLive(
       );
     }
     if (prStatus === "completed") {
-      reviewReadyEvidence = reviewReadyHandoff(ctx, {
+      reviewReadyEvidence = await reviewReadyHandoff(ctx, {
         taskId,
         specId,
         pullRequestId: prId,
@@ -9745,7 +9694,7 @@ export async function reconcileSpecLive(
           `Resolve only this task branch in ${workspaceDir}, run scoped checks, commit the resolved source, and return decision=committed.`,
           "Do not complete or recreate the PR and do not queue ADO; the workflow will push and live-test the new source commit.",
           "Task:",
-          ctx.task,
+          taskDescription(ctx),
         ].join("\n\n"),
         { scenarioNormalization: Boolean(normalizationInput) },
       );
@@ -9795,7 +9744,7 @@ export async function reconcileSpecLive(
     }
 
     await publishPullRequestReviewReady(repoDir, prId);
-    reviewReadyEvidence = reviewReadyHandoff(ctx, {
+    reviewReadyEvidence = await reviewReadyHandoff(ctx, {
       taskId,
       specId,
       pullRequestId: prId,
@@ -9806,7 +9755,11 @@ export async function reconcileSpecLive(
     let reviewJudgmentEvidence: string[] = [];
     if (
       waitingForReview &&
-      pullRequestReviewTriggeredForJudgment(ctx.task, prId, review)
+      pullRequestReviewTriggeredForJudgment(
+        ctx.reconciliation.trigger,
+        prId,
+        review,
+      )
     ) {
       const reviewDecision = await askAgent(
         ctx,
@@ -9924,7 +9877,9 @@ export async function reconcileSpecLive(
   }
 }
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
+export async function execute(
+  ctx: WorkflowContext,
+): Promise<SpecLiveWorkflowResult> {
   return reconcileSpecLive(ctx);
 }
 
@@ -9941,7 +9896,7 @@ function collectedArtifactPaths(runContextDir: string): string[] {
   return artifactJsonFiles(artifactRoots);
 }
 
-function resultEvidenceItems(result: ProjectAppTaskHandlerResult): string[] {
+function resultEvidenceItems(result: TaskReconcileResult): string[] {
   return Array.isArray(result.evidence)
     ? result.evidence
         .map(nonEmptyString)
@@ -9949,85 +9904,25 @@ function resultEvidenceItems(result: ProjectAppTaskHandlerResult): string[] {
     : [];
 }
 
-function verifySameTaskRevision(
-  context: ProjectAppTaskVerificationContext,
-  result: ProjectAppTaskHandlerResult,
-): ProjectAppTaskVerificationResult | null {
-  const actions = Array.isArray(result.actions) ? result.actions : [];
-  if (
-    actions.length !== 1 ||
-    actions[0]?.kind !== "update-task" ||
-    actions[0].taskId !== context.taskId
-  ) {
-    return null;
-  }
+const verificationProjectDirs = new WeakMap<object, string>();
 
-  const action = actions[0];
-  const currentInput = jsonRecord(context.intent.input);
-  const nextInput = jsonRecord(action.input);
-  const currentSpecIds = scenarioNormalizationSpecIds(
-    currentInput as ScenarioNormalizationInput,
-  );
-  const nextSpecIds = scenarioNormalizationSpecIds(
-    nextInput as ScenarioNormalizationInput,
-  );
-  const currentAllowsTerminalDisposition =
-    currentInput.allowTerminalDisposition !== false;
-  const nextAllowsTerminalDisposition =
-    nextInput.allowTerminalDisposition !== false;
-  let currentTarget: LiveExecutionTarget;
-  let nextTarget: LiveExecutionTarget;
-  try {
-    currentTarget = resolveLiveExecutionTarget(currentInput);
-    nextTarget = resolveLiveExecutionTarget(nextInput);
-  } catch (error) {
-    return {
-      accepted: false,
-      summary: error instanceof Error ? error.message : String(error),
-      evidence: ["verification-finding:invalid-self-revision-target"],
-    };
-  }
-
-  const problems: string[] = [];
-  if (action.expectedGeneration !== context.generation) {
-    problems.push("self-revision generation does not match the current task");
-  }
-  if (action.workflow !== name) {
-    problems.push("self-revision must resume spec-live-reconciliation");
-  }
-  if (
-    currentSpecIds.length === 0 ||
-    currentSpecIds.join(",") !== nextSpecIds.join(",")
-  ) {
-    problems.push("self-revision must preserve the exact spec ids");
-  }
-  if (
-    currentTarget.target !== nextTarget.target ||
-    currentTarget.standaloneBuildId !== nextTarget.standaloneBuildId
-  ) {
-    problems.push("self-revision must preserve the exact live target");
-  }
-  if (currentAllowsTerminalDisposition !== nextAllowsTerminalDisposition) {
-    problems.push(
-      "self-revision must preserve the terminal-disposition policy",
+function verificationProjectDir(context: TaskVerificationContext): string {
+  const cached = verificationProjectDirs.get(context);
+  if (cached) return cached;
+  const common = git(context.workspaceDir, ["rev-parse", "--git-common-dir"]);
+  if (common.status !== 0 || !common.stdout) {
+    throw new Error(
+      common.stderr || "Task Git common directory is unavailable",
     );
   }
-
-  return {
-    accepted: problems.length === 0,
-    summary:
-      problems.length === 0
-        ? "Accepted a generation-changing correction for the same task; final live-proof verification remains required on the revised generation."
-        : `Rejected same-task revision: ${problems.join("; ")}.`,
-    evidence:
-      problems.length === 0
-        ? [
-            `task-revision:${context.taskId}@${context.generation + 1}`,
-            `spec-ids:${currentSpecIds.join(",")}`,
-            `target:${currentTarget.target}`,
-          ]
-        : problems.map((problem) => `verification-finding:${problem}`),
-  };
+  const commonDir = realpathSync(
+    common.stdout.startsWith("/")
+      ? common.stdout
+      : resolve(context.workspaceDir, common.stdout),
+  );
+  const projectDir = dirname(commonDir);
+  verificationProjectDirs.set(context, projectDir);
+  return projectDir;
 }
 
 function evidenceValue(evidence: readonly string[], prefix: string): string {
@@ -10039,11 +9934,11 @@ function evidenceValue(evidence: readonly string[], prefix: string): string {
 }
 
 function verifyTerminalDispositionResult(
-  context: ProjectAppTaskVerificationContext,
-  result: ProjectAppTaskHandlerResult,
+  context: TaskVerificationContext,
+  result: TaskReconcileResult,
   input: ScenarioNormalizationInput | undefined,
   allowTerminalDisposition: boolean,
-): ProjectAppTaskVerificationResult | null {
+): TaskVerificationResult | null {
   const evidence = resultEvidenceItems(result);
   if (!evidence.includes("terminal-disposition:no-new-ado-pass-claimed")) {
     return null;
@@ -10142,12 +10037,16 @@ function verifyTerminalDispositionResult(
     };
   }
 
-  git(context.projectDir, ["fetch", "origin", defaultTargetBranch], true);
+  git(
+    verificationProjectDir(context),
+    ["fetch", "origin", defaultTargetBranch],
+    true,
+  );
   const sourceCommit = evidenceValue(evidence, "source-commit:");
   if (
     !sourceCommit ||
     git(
-      context.projectDir,
+      verificationProjectDir(context),
       ["merge-base", "--is-ancestor", sourceCommit, targetRef],
       true,
     ).status !== 0
@@ -10166,7 +10065,7 @@ function verifyTerminalDispositionResult(
   if (
     !integratedCommit ||
     git(
-      context.projectDir,
+      verificationProjectDir(context),
       ["merge-base", "--is-ancestor", integratedCommit, targetRef],
       true,
     ).status !== 0
@@ -10197,10 +10096,10 @@ function verifyTerminalDispositionResult(
 }
 
 export async function verifySpecLiveResult(
-  context: ProjectAppTaskVerificationContext,
-  result: ProjectAppTaskHandlerResult,
+  context: TaskVerificationContext,
+  result: TaskReconcileResult,
   targetBranch = defaultTargetBranch,
-): Promise<ProjectAppTaskVerificationResult> {
+): Promise<TaskVerificationResult> {
   const { targetRef } = resolveIntegrationTarget(targetBranch);
   if (result.state !== "converged") {
     return {
@@ -10210,9 +10109,6 @@ export async function verifySpecLiveResult(
       evidence: [`handler-state:${result.state}`],
     };
   }
-
-  const sameTaskRevision = verifySameTaskRevision(context, result);
-  if (sameTaskRevision) return sameTaskRevision;
 
   const input = context.intent.input as ScenarioNormalizationInput | undefined;
   const allowTerminalDisposition =
@@ -10236,6 +10132,19 @@ export async function verifySpecLiveResult(
     return terminalDispositionVerification;
   }
 
+  try {
+    verificationProjectDir(context);
+  } catch (error) {
+    return {
+      accepted: false,
+      summary:
+        "Spec live verification cannot resolve the canonical project checkout.",
+      evidence: [
+        `verification-finding:${error instanceof Error ? error.message : String(error)}`,
+      ],
+    };
+  }
+
   let liveExecution: LiveExecutionTarget;
   try {
     liveExecution = resolveLiveExecutionTarget(context.intent.input);
@@ -10248,7 +10157,7 @@ export async function verifySpecLiveResult(
   }
 
   const contextDir = taskContextDir(
-    context.projectDir,
+    verificationProjectDir(context),
     context.taskId,
     context.generation,
   );
@@ -10256,7 +10165,7 @@ export async function verifySpecLiveResult(
   let run: PipelineRun | null = null;
   if (proof?.runId) {
     try {
-      run = await getPipelineRun(context.projectDir, proof.runId);
+      run = await getPipelineRun(verificationProjectDir(context), proof.runId);
     } catch (error) {
       return {
         accepted: false,
@@ -10272,11 +10181,11 @@ export async function verifySpecLiveResult(
     ? terminalRunContextDir(contextDir, proof.runId)
     : contextDir;
   const artifactPaths = proof ? collectedArtifactPaths(runContextDir) : [];
-  git(context.projectDir, ["fetch", "origin", targetBranch], true);
+  git(verificationProjectDir(context), ["fetch", "origin", targetBranch], true);
   const sourceAncestryReachable = Boolean(
     proof?.sourceCommit &&
     git(
-      context.projectDir,
+      verificationProjectDir(context),
       ["merge-base", "--is-ancestor", proof.sourceCommit, targetRef],
       true,
     ).status === 0,
@@ -10306,7 +10215,7 @@ export async function verifySpecLiveResult(
       JSON.stringify(proofIntegratedPaths) ===
         JSON.stringify(expectedBoundedPaths)) &&
     frozenCandidateContentEquivalent({
-      repoDir: context.projectDir,
+      repoDir: verificationProjectDir(context),
       sourceCommit: proof.sourceCommit,
       targetCommit: targetRef,
       boundedSourceFiles: boundedPaths,
@@ -10316,7 +10225,7 @@ export async function verifySpecLiveResult(
   const integratedCommitReachable = Boolean(
     proof?.mergedCommit &&
     git(
-      context.projectDir,
+      verificationProjectDir(context),
       ["merge-base", "--is-ancestor", proof.mergedCommit, targetRef],
       true,
     ).status === 0,
@@ -10350,7 +10259,7 @@ export async function verifySpecLiveResult(
     run,
     artifactPaths,
     expectedClaimIdsBySpec: claimAssertionIdsBySpecAtCommit(
-      context.projectDir,
+      verificationProjectDir(context),
       proof?.sourceCommit || "",
       specIds,
     ),
@@ -10411,8 +10320,8 @@ export async function verifySpecLiveResult(
 }
 
 export async function verify(
-  context: ProjectAppTaskVerificationContext,
-  result: ProjectAppTaskHandlerResult,
-): Promise<ProjectAppTaskVerificationResult> {
+  context: TaskVerificationContext,
+  result: TaskReconcileResult,
+): Promise<TaskVerificationResult> {
   return verifySpecLiveResult(context, result);
 }

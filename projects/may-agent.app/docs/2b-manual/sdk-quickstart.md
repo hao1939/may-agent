@@ -1,173 +1,210 @@
 # SDK Quick Reference
 
-The AgentSDK is available to all handlers via `ctx.sdk`. See
-[sdk.md](../2a-design/sdk.md) for the full interface.
+`@may-agent/sdk` is the stable authoring boundary for Agent Apps, bounded
+workflows, task policy, guards, and tests. It is not a runtime service object.
+There is no `ctx.sdk`, database handle, queue, scheduler, service locator, or
+legacy entry point.
 
-## Choose the Right Primitive
+See [SDK](../2a-design/sdk.md) and
+[Agent App Contract](../2a-design/agent-app.md) for the governing contracts.
 
-| Scenario | Use |
-|----------|-----|
-| Need an agent's answer now | `sdk.runAgent(...)` |
-| Need a multi-step recipe with retries/verification | `sdk.runWorkflow(...)` |
-| Need to publish a fact other infra can react to | `sdk.emit(type, data, envelope)` |
-| Need async communication to an agent or human | `sdk.message(target, content)` |
-| Need to route a blocker outside the current owner | `sdk.escalate(reason, opts)` |
-| Need runtime facts for preflight | `sdk.query` first, `sdk.getDb()` only as escape hatch |
+## Choose The Right Primitive
 
-## Run an Agent
+| Need | Use |
+| --- | --- |
+| Address one App and require a result | App input/admission or typed App delegation |
+| Expose repeated typed ingress | `defineApp({ actions: ... })` with `toInput` |
+| React to a changed fact with a disposition | App `subscription` -> correlated inbox input |
+| Declare/revise deterministic desired work | `tasks.subscription` -> `TaskIntent` |
+| Wake one existing task | Exact event target or matching task Condition |
+| Run one bounded agent step | `ctx.agents.call(...)` |
+| Run one bounded reusable workflow | `ctx.workflows.run(...)` |
+| Publish a fact | `ctx.events.emit(...)` |
+| Record a domain metric sample | `ctx.metrics.record(...)` |
+| Read an exact runtime projection | `ctx.read.appResult/task/execution/metric(...)` |
+| Wait durably | App dependency or task Condition, never an open workflow |
 
-```typescript
-const result = await sdk.runAgent("tech-lead", "Review this PR");
-// result.status, result.lastAssistantText, result.sessionId
+## Define One App
 
-const [dev, qa] = await Promise.all([
-  sdk.runAgent("dev", "Implement the fix"),
-  sdk.runAgent("qa", "Review the fix"),
-]);
-```
+Every App exports one `defineApp(...)` declaration from `app.ts`:
 
-## Emit an Event
+```ts
+import { Type, defineApp } from "@may-agent/sdk";
 
-Use events for durable boundary signals and observations that another component
-can react to. Put routing metadata in the envelope argument and domain context
-in `data`. Use dedicated services for metrics and controller-owned task
-lifecycle; do not forge their events directly.
-
-```typescript
-sdk.emit("platform.change.observed", {
-  project: "platform",
-  subject: "release-validation",
-  state: "passed",
-  evidence: ["Tests are green."],
-}, { owner: "agent:may", source: "release-watcher" });
-```
-
-Do not put `owner` or `source` inside `data` for canonical events. Use the
-envelope argument so persistence and routing can see those fields consistently.
-
-## Record a Metric
-
-Use the metric capability so definition, snapshots, alert state, recovery, and
-owner routing remain consistent:
-
-```typescript
-sdk.metrics.define({
-  id: "platform.release-check-failures",
-  owner: "may",
-  type: "counter",
-  threshold: 0,
-  alertOp: ">",
+const inputSchema = Type.Object({
+  kind: Type.Literal("review"),
+  data: Type.Object({ subject: Type.String() }),
 });
-sdk.metrics.record("platform.release-check-failures", failures, {
-  sampleSize: checks,
-});
-sdk.metrics.evaluate("platform.release-check-failures");
-```
 
-## Query Runtime Facts
-
-Prefer `sdk.query` for common preflight reads because it keeps handlers stable
-when database tables evolve. Use `sdk.getDb()` only when the query facade does
-not cover the needed read yet.
-
-```typescript
-const alerts = sdk.query.alerts({ resolved: false, limit: 10 });
-const context = sdk.query.metricAlertContext({ metricId: "handler.success-rate" });
-```
-
-Compatibility escape hatch:
-
-```typescript
-const db = sdk.getDb();
-const sessions = db.prepare("SELECT * FROM sessions WHERE agent = ? AND status = 'running'").all("bob");
-const events = db.prepare("SELECT * FROM events WHERE owner = ? AND timestamp > ?").all("agent:may", Date.now() - 7200000);
-```
-
-## Log
-
-```typescript
-sdk.log("info", "Processing complete");
-sdk.log("warn", "Threshold approaching");
-sdk.log("error", "Failed to connect");
-```
-
-## Message
-
-Use messages for async communication. Messages are not proof that work was done;
-they create inbox context for the target.
-
-```typescript
-sdk.message("human", "Deploy complete");     // → Telegram/web
-sdk.message("bob", "Your PR was merged");    // → bob's inbox as owner agent:bob
-```
-
-## External Escalate
-
-Use `sdk.escalate(...)` from handlers or agent-side SDK code when the blocker
-must be routed outside the current owner. Workflow `ctx.blocked(...)` is a
-local terminal workflow result; it does not emit this event by itself.
-
-For human routing, set `owner: "human:<role>"`. May is the human's deputy for
-delivery, but the owner remains the human role.
-
-```typescript
-sdk.escalate("Blocked on missing API key"); // defaults to owner: "agent:may"
-
-sdk.escalate("Missing production decision", {
-  owner: "human:operator",
-  requestedAction: "Choose whether to deploy now or wait for the next window.",
-  severity: "P1",
+export default defineApp({
+  id: "sample",
+  version: 1,
+  owner: "sample-owner",
+  inputSchema,
+  route(request) {
+    if (request.input.data.subject === "ping") {
+      return { type: "complete", response: "pong" };
+    }
+    return null; // one bounded owner judgment
+  },
 });
 ```
 
-Typical escalation choices:
+Importing an App definition is pure. It cannot start sessions, attach timers,
+write state, or publish facts. The host validates and attaches the complete App
+registry generation.
 
-| Situation | Use |
-|-----------|-----|
-| The current handler/agent is blocked and May should route or resolve | `sdk.escalate(reason)` |
-| A human decision is required | `sdk.escalate(reason, { owner: "human:<role>", requestedAction, evidence })` |
-| A workflow hit a local blocker | Return `ctx.blocked(...)`; let the caller decide whether to promote it |
-| The owner has resolved an escalation | Emit `escalation.resolved` with `outcome`, `summary`, and optional `resumeInstruction` |
+## App Dispositions
 
-When a terminal `escalation.resolved` event matches an earlier
-`escalation.created` with `sourceSessionId`, runtime sends the resolution back
-to the active source session or cold-resumes that session. If the escalation also
-has `workflowRunId` or project context, that context is passed to the resumed
-task; workflow and project records are not resumed directly by escalation
-lifecycle. `needs_human` is the exception: it waits for the linked human child
-escalation to resolve.
+An addressed request returns exactly one disposition:
 
-## Paths
+```ts
+{ type: "complete", response: "Done", evidence: ["report.json"] }
 
-```typescript
-sdk.paths.persist  // .state/ directory (DB, logs)
-sdk.paths.root     // project root
-sdk.paths.agents   // agents/ directory
+{
+  type: "delegate",
+  appId: "release-governance",
+  input: { kind: "approval", data: { changeId: "v4" } },
+}
+
+{
+  type: "task",
+  task: {
+    id: "review/v4",
+    parentId: "root",
+    outcome: "Review change v4",
+    acceptance: ["A verdict and evidence are recorded"],
+    mode: "achieve",
+  },
+}
 ```
 
-## Common Patterns
+The parent inbox item remains authoritative while waiting for a delegated App
+or attached task. Do not represent that wait with an event pair, owner label,
+message, or mutable session.
 
-### Check inbox
-```typescript
-const inbox = sdk.query.events({
-  owner: "agent:may",
-  since: Date.now() - 7200000,
-  limit: 10,
+## Workflow Context
+
+```ts
+import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
+
+export const name = "review-change";
+
+export async function execute(
+  ctx: WorkflowContext<{ changeId: string }>,
+): Promise<ExecutionResult> {
+  const prior = await ctx.read.metric(`review.${ctx.input.changeId}`);
+  const review = await ctx.agents.call(
+    "reviewer",
+    `Review ${ctx.input.changeId}; prior metric: ${prior?.value ?? "none"}`,
+  );
+
+  if (review.status !== "done") {
+    return ctx.blocked("Reviewer did not complete", { review });
+  }
+
+  await ctx.metrics.record(`review.${ctx.input.changeId}`, 1, "reviewed");
+  await ctx.events.emit({
+    type: "sample.change.reviewed",
+    data: { changeId: ctx.input.changeId, executionId: review.id },
+  });
+  return ctx.done("Change reviewed", { executionId: review.id });
+}
+```
+
+Available capabilities are intentionally narrow:
+
+- `ctx.input`
+- optional `ctx.reconciliation`
+- exact `ctx.read` projections
+- `ctx.agents.call(...)`
+- `ctx.workflows.run(...)`
+- `ctx.events.emit(...)`
+- `ctx.metrics.record(...)`
+- optional `ctx.workspace`
+- `ctx.log`
+- `ctx.done(...)` and `ctx.blocked(...)`
+
+## Task-Bound Workflows
+
+When `ctx.reconciliation` exists, it contains the exact task generation,
+desired input, trigger, owner, and bounded live/completed child views. It does
+not expose the global task tree or mutation handles.
+
+A task workflow returns an `ExecutionResult` whose output is admitted as a
+typed reconciliation result. Return task actions and Conditions in that output;
+do not write task files or emit parallel task-completion events.
+
+```ts
+return ctx.done("Waiting for rollout approval", {
+  state: "waiting",
+  summary: "Approval is still required",
+  evidence: ["change:v4"],
+  actions: [],
+  conditions: [approvalCondition],
 });
 ```
 
-### Agent-to-agent message
-```typescript
-sdk.message("bob", "Check the failing tests");
-// emits canonical message.created with owner: "agent:bob"
-// and data: { from: agent, to: "bob", content: "...", priority: "P2" }
+Use `needs-owner` only for exceptional judgment by the same App owner. When
+another App owns the next decision, the App boundary establishes a typed child
+delegation. Human attention is a child request to the `may` App or an exact
+human Condition owned by the source task.
+
+## Facts Are Not Requests
+
+`ctx.events.emit(...)` publishes a fact. It does not directly launch an agent,
+address an owner, attach a task, or guarantee a reply. An actionable destination
+must declare an App subscription, task subscription, exact task target, or
+matching Condition.
+
+Typed App actions translate validated parameters directly to App input. They do
+not emit an actionable event as an admission shortcut.
+
+## Reads And Writes
+
+Use exact reads only:
+
+```ts
+await ctx.read.appResult(itemId);
+await ctx.read.task(taskId);
+await ctx.read.execution(executionId);
+await ctx.read.metric(metricId);
 ```
 
-### Trigger another handler from handler code
-```typescript
-ctx.triggerNow("metrics-snapshot");
+There is no raw SQL, `sdk.query`, `sdk.commands`, `getDb()`, global list/query,
+or task-store escape hatch. A recurring legitimate need becomes the narrowest
+typed projection or capability with scope and restart tests. Explicit offline
+repair belongs in a maintenance CLI.
+
+## Test A Workflow
+
+```ts
+import { expect, test } from "bun:test";
+import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
+import { execute } from "./review-change";
+
+test("reviews one change", async () => {
+  const ctx = createTestAppWorkflowContext({
+    input: { changeId: "v4" },
+  });
+
+  const result = await execute(ctx);
+  expect(result.status).toBe("done");
+});
 ```
 
-`trigger.<entry-name>` is an operator/control shortcut for a trigger entry, not a
-domain lifecycle event. Use `ctx.triggerNow(...)` inside handlers instead of
-publishing `trigger.*` through `sdk.emit(...)`.
+Inject exact fake reads, agent/workflow results, emitted facts, and metric
+records through the test context. Testing an App workflow does not require the
+daemon or a database.
+
+## Integrity Checklist
+
+- Import authoring contracts from `@may-agent/sdk`; testing helpers come from
+  `@may-agent/sdk/testing`.
+- Keep App definitions pure and use one `app.ts` entry point.
+- Keep workflows bounded; durable waits belong to App dependencies or task
+  Conditions.
+- Use typed delegation for cross-App outcomes and events for facts.
+- Return structured results; never mutate inbox/task/runtime storage directly.
+- Do not add a legacy SDK entry point, service locator, generic runtime context,
+  or implementation export.

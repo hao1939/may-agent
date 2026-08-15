@@ -1,8 +1,14 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { Type } from "@earendil-works/pi-ai";
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
-import { safeKey } from "./lib/trigger";
+import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
+import {
+  callGymAgent,
+  emitGymEvent,
+  gymAppRoot,
+  gymEvent,
+} from "./lib/context";
+import { extractTrigger, reconciliationPacket, safeKey } from "./lib/trigger";
 
 export const name = "owner-review";
 export const description =
@@ -16,33 +22,13 @@ const resultSchema = Type.Object({
   }),
 });
 
-function section(task: string, heading: string): Record<string, unknown> {
-  const marker = `## ${heading}`;
-  const start = task.indexOf(marker);
-  if (start < 0) return {};
-  const after = task.slice(start + marker.length);
-  const open = after.indexOf("```json");
-  if (open < 0) return {};
-  const json = after.slice(open + "```json".length);
-  const close = json.indexOf("```");
-  if (close < 0) return {};
-  try {
-    const value = JSON.parse(json.slice(0, close).trim());
-    return value && typeof value === "object" && !Array.isArray(value)
-      ? (value as Record<string, unknown>)
-      : {};
-  } catch {
-    return {};
-  }
-}
-
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  const reconciliation = section(ctx.task, "Reconciliation Task");
-  const trigger = section(ctx.task, "Trigger Event");
+export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
+  const reconciliation = reconciliationPacket(ctx) ?? {};
+  const trigger = extractTrigger(ctx) ?? {};
   const taskId = safeKey(reconciliation.taskId, "unknown-task");
   const generation = Number(reconciliation.generation ?? 0);
   const requestKey = `workflow-exception-${taskId}-${generation}`;
-  const reviewDir = join(ctx.projectsRoot, "gym.app", ".state", "reviews");
+  const reviewDir = join(gymAppRoot(ctx), ".state", "reviews");
   const reviewPath = join(reviewDir, `${requestKey}.md`);
   mkdirSync(reviewDir, { recursive: true });
 
@@ -61,7 +47,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       JSON.stringify(trigger, null, 2),
       "```",
     ].join("\n");
-    const result = await ctx.runAgent("gym", prompt, { schema: resultSchema });
+    const result = await callGymAgent(ctx, "gym", prompt, { schema: resultSchema });
     if (result.status === "error" || result.status === "interrupted") {
       return ctx.blocked("Gym owner exception review failed", {
         sessionId: result.sessionId,
@@ -90,15 +76,25 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     );
   }
 
-  ctx.emit({
-    type: "gym.review.ready",
-    project: "gym",
+  await emitGymEvent(ctx, gymEvent("gym.review.ready", {
     kind: "workflow-exception",
     requestKey,
     reviewPath,
     humanApprovalRequired: true,
-  });
-  ctx.notify(`Gym workflow exception review ready: ${reviewPath}`);
+  }));
+  await emitGymEvent(
+    ctx,
+    gymEvent(
+      "message.created",
+      {
+        to: "human",
+        from: "gym",
+        content: `Gym workflow exception review ready: ${reviewPath}`,
+        intent: "gym-review-ready",
+      },
+      { target: { human: true } },
+    ),
+  );
   const summary = `Preserved Gym workflow exception review at ${reviewPath}.`;
   return ctx.done(summary, {
     state: "converged",

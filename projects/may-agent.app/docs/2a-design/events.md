@@ -1,9 +1,9 @@
 # Events, Delivery, And App Inboxes
 
 **Design status:** Accepted.
-**Implementation status:** Canonical facts, App subscriptions, task
-subscriptions, and App inbox admission are implemented; legacy owner-inbox and
-event-pair work lifecycles are being removed.
+**Implementation status:** Implemented. Canonical facts, App/task subscriptions,
+exact wakes, and App Inbox admission are live; owner-event-pair work lifecycles
+are retired.
 
 ## Purpose
 
@@ -74,9 +74,11 @@ A task subscription declares or revises desired state. The host persists the
 latest intent and exact trigger before coalescing the stable task ID in its
 queue. A targeted task wake does not run broad resolution.
 
-The same fact may reach both an App and task subscription only when the App
-explicitly declares and tests two distinct durable obligations. It must never
-be consumed by both a legacy and canonical actionable path.
+The same fact may reach several Apps, but one App never derives both an inbox
+item and a new or refreshed TaskIntent from it. If an independently correlated
+request also needs convergence, its inbox disposition may attach a task after
+admission. Exact stored Condition wakes remain additive because they wake work
+that already has durable ownership.
 
 There is no target-first owner fallback, `inbox.accepts`, arbitrary `onEvent`
 execution, or generic rule that turns an unhandled fact into owner work.
@@ -106,12 +108,12 @@ returns `complete`, `delegate`, or `task`.
 Event delivery metadata answers whether a declared consumer accepted the fact,
 not whether the resulting work finished. The durable acknowledgement point is:
 
-| Route | Accepted after |
-| --- | --- |
-| App subscription | translated input is validated and inbox admission is durable |
-| Task subscription | resolved intent and exact trigger are durable |
-| Exact task target | task wake/trigger is durably correlated |
-| Human/channel adapter | adapter accepts the outbound delivery operation |
+| Route                       | Accepted after                                                 |
+| --------------------------- | -------------------------------------------------------------- |
+| App subscription            | translated input is validated and inbox admission is durable   |
+| Task subscription           | resolved intent and exact trigger are durable                  |
+| Exact task target           | task wake/trigger is durably correlated                        |
+| Human/channel adapter       | adapter accepts the outbound delivery operation                |
 | Observation-only projection | projection explicitly accepts responsibility for that evidence |
 
 Logging, UI tailing, passive metrics, database writing, and unrelated broad

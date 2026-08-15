@@ -13,7 +13,7 @@ import {
   readdirSync,
 } from "node:fs";
 import { basename, join } from "node:path";
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
 
 export const name = "scout-daily-digest";
 export const description = "Compile and send daily research digest.";
@@ -55,8 +55,10 @@ function nextArchivePath(
   return join(digestDir, `${date}-${number}.md`);
 }
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  const appDir = ctx.appDir ?? "/app/projects/scout-knowledge-lib.app";
+export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
+  if (!ctx.workspace)
+    return ctx.blocked("Scout digest requires a canonical App workspace");
+  const appDir = ctx.workspace.appRoot;
   const digestDir = join(appDir, "agents", "scout", "workspace", "digest");
   const todayFile = join(digestDir, "today.md");
 
@@ -70,7 +72,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   const todayBody = normalizedDigestBody(todayContent);
   if (!todayBody) {
-    ctx.log("[scout-daily-digest] No findings today — skipping digest.");
+    ctx.log.info("[scout-daily-digest] No findings today — skipping digest.");
     const summary = "No findings to digest today.";
     return ctx.done(summary, {
       state: "converged",
@@ -104,16 +106,21 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const digest = `📡 Scout Daily Digest — ${dateStr}\n\n${todayBody}`;
 
   // Send to human via bus event (Telegram picks this up)
-  ctx.emit({
+  await ctx.events.emit({
     type: "message.created",
-    from: "scout",
-    to: "human",
-    content: digest,
-    intent: "daily-digest",
-    priority: "P2",
+    source: "app:scout-knowledge-lib",
+    owner: "human:operator",
+    target: { human: true },
+    data: {
+      from: "scout",
+      to: "human",
+      content: digest,
+      intent: "daily-digest",
+      priority: "P2",
+    },
   });
 
-  ctx.log(
+  ctx.log.info(
     `[scout-daily-digest] Sent digest (${todayBody.length} chars) to human.`,
   );
 

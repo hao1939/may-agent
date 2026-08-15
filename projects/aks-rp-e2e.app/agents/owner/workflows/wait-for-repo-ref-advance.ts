@@ -1,15 +1,17 @@
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import type {
-  ProjectAppConditionSpec,
-  ProjectAppTaskHandlerResult,
-  ProjectAppTaskVerificationContext,
-  ProjectAppTaskVerificationResult,
+import { realpathSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import {
+  workflowResultVersion,
+  type Condition,
+  type ExecutionResult,
+  type TaskReconcileResult,
+  type TaskVerificationContext,
+  type TaskVerificationResult,
   WorkflowContext,
   WorkflowIoContract,
-  WorkflowResult,
-} from "@may-agent/sdk/legacy";
-import { workflowResultVersion } from "@may-agent/sdk/legacy";
+} from "@may-agent/sdk";
 
 export const name = "wait-for-repo-ref-advance";
 export const description =
@@ -128,7 +130,7 @@ function repoRefAdvanceCondition(
   taskId: string,
   repoRef: string,
   baselineCommit: string,
-): ProjectAppConditionSpec {
+): Condition {
   const digest = createHash("sha256")
     .update(`${taskId}\n${repoRef}\n${baselineCommit}`)
     .digest("hex")
@@ -250,7 +252,7 @@ export function decideRepoRefAdvanceGate(input: RepoAdvanceGateInput): {
   state: "waiting" | "needs-owner";
   summary: string;
   evidence: string[];
-  conditions?: ProjectAppConditionSpec[];
+  conditions?: Condition[];
 } {
   const scope = input.specId ? ` for ${input.specId}` : "";
   const publication = input.publicationBranch
@@ -292,16 +294,18 @@ export function decideRepoRefAdvanceGate(input: RepoAdvanceGateInput): {
 }
 
 function verificationSummaryContains(
-  result: ProjectAppTaskHandlerResult,
+  result: TaskReconcileResult,
   expected: string,
 ): boolean {
-  return [result.summary, ...result.evidence].some((entry) => entry.includes(expected));
+  return [result.summary, ...result.evidence].some((entry) =>
+    entry.includes(expected),
+  );
 }
 
 export async function verify(
-  context: ProjectAppTaskVerificationContext,
-  result: ProjectAppTaskHandlerResult,
-): Promise<ProjectAppTaskVerificationResult> {
+  context: TaskVerificationContext,
+  result: TaskReconcileResult,
+): Promise<TaskVerificationResult> {
   if (result.state !== "converged") {
     return {
       accepted: false,
@@ -312,6 +316,33 @@ export async function verify(
   }
 
   const workflowInput = context.intent.input ?? {};
+  let projectDir: string;
+  try {
+    const common = runGit(context.workspaceDir, [
+      "rev-parse",
+      "--git-common-dir",
+    ]);
+    if (common.status !== 0 || !common.stdout.trim()) {
+      throw new Error(common.stderr || "Git common directory is unavailable");
+    }
+    const commonPath = common.stdout.trim();
+    projectDir = dirname(
+      realpathSync(
+        commonPath.startsWith("/")
+          ? commonPath
+          : resolve(context.workspaceDir, commonPath),
+      ),
+    );
+  } catch (error) {
+    return {
+      accepted: false,
+      summary:
+        "Repo-ref wait verifier cannot derive the canonical project checkout from its task worktree.",
+      evidence: [
+        `verification-finding:${error instanceof Error ? error.message : String(error)}`,
+      ],
+    };
+  }
   const repoRef = nonEmptyString(workflowInput.baseRef) || "origin/dev";
   const baselineCommit = nonEmptyString(workflowInput.resumeBaselineCommit);
   if (!baselineCommit) {
@@ -323,30 +354,28 @@ export async function verify(
     };
   }
 
-  const fetched = fetchRepoRef(context.projectDir, repoRef);
+  const fetched = fetchRepoRef(projectDir, repoRef);
   if (fetched.status !== 0) {
     return {
       accepted: false,
-      summary:
-        `Repo-ref wait verifier could not refresh ${repoRef}: ${fetched.stderr.trim() || `git fetch exited ${fetched.status}`}`,
+      summary: `Repo-ref wait verifier could not refresh ${repoRef}: ${fetched.stderr.trim() || `git fetch exited ${fetched.status}`}`,
       evidence: [
         `repo-ref:${repoRef}`,
         `resume-baseline:${baselineCommit}`,
-        `project-dir:${context.projectDir}`,
+        `project-dir:${projectDir}`,
       ],
     };
   }
 
-  const current = runGit(context.projectDir, ["rev-parse", "--verify", repoRef]);
+  const current = runGit(projectDir, ["rev-parse", "--verify", repoRef]);
   if (current.status !== 0) {
     return {
       accepted: false,
-      summary:
-        `Repo-ref wait verifier could not resolve ${repoRef}: ${current.stderr.trim() || `git rev-parse exited ${current.status}`}`,
+      summary: `Repo-ref wait verifier could not resolve ${repoRef}: ${current.stderr.trim() || `git rev-parse exited ${current.status}`}`,
       evidence: [
         `repo-ref:${repoRef}`,
         `resume-baseline:${baselineCommit}`,
-        `project-dir:${context.projectDir}`,
+        `project-dir:${projectDir}`,
       ],
     };
   }
@@ -355,8 +384,7 @@ export async function verify(
   if (!currentCommit || currentCommit === baselineCommit) {
     return {
       accepted: false,
-      summary:
-        `Repo-ref wait verifier still sees ${repoRef} at baseline ${baselineCommit}; the owner handoff cannot converge yet.`,
+      summary: `Repo-ref wait verifier still sees ${repoRef} at baseline ${baselineCommit}; the owner handoff cannot converge yet.`,
       evidence: [
         `repo-ref:${repoRef}`,
         `resume-baseline:${baselineCommit}`,
@@ -373,8 +401,7 @@ export async function verify(
   if (!hasProof) {
     return {
       accepted: false,
-      summary:
-        `Repo-ref wait verifier needs bounded recheck proof for ${repoRef} after baseline ${baselineCommit} advanced.`,
+      summary: `Repo-ref wait verifier needs bounded recheck proof for ${repoRef} after baseline ${baselineCommit} advanced.`,
       evidence: [
         `repo-ref:${repoRef}`,
         `resume-baseline:${baselineCommit}`,
@@ -385,8 +412,7 @@ export async function verify(
 
   return {
     accepted: true,
-    summary:
-      `Verified repo-ref wait handoff after ${repoRef} advanced beyond ${baselineCommit}.`,
+    summary: `Verified repo-ref wait handoff after ${repoRef} advanced beyond ${baselineCommit}.`,
     evidence: [
       `repo-ref:${repoRef}`,
       `resume-baseline:${baselineCommit}`,
@@ -396,9 +422,17 @@ export async function verify(
   };
 }
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  const payload = parseReconciliationTaskPayload(ctx.task);
-  const trigger = parseTriggerEvent(ctx.task);
+export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
+  const reconciliation = ctx.reconciliation;
+  if (!reconciliation) {
+    throw new Error(`${name} requires task reconciliation`);
+  }
+  const payload: ReconciliationPayload = {
+    taskId: reconciliation.taskId,
+    input: reconciliation.input as Record<string, unknown>,
+    paths: { projectDir: ctx.workspace?.projectRoot },
+  };
+  const trigger = reconciliation.trigger ?? null;
   const taskId = nonEmptyString(payload?.taskId) || "unknown-task";
   const workflowInput = payload?.input ?? {};
   const repoRef = nonEmptyString(workflowInput.baseRef) || "origin/dev";
@@ -408,7 +442,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const publicationBranch = nonEmptyString(workflowInput.publicationBranch);
   const projectDir =
     nonEmptyString(payload?.paths?.projectDir) ||
-    ctx.projectDir ||
+    ctx.workspace?.projectRoot ||
     "/app/projects/aks-rp-e2e";
 
   if (!baselineCommit) {
@@ -427,9 +461,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     specId,
     sourceCommit,
     publicationBranch,
-    pullRequestId: nonEmptyString((workflowInput as Record<string, unknown>).pullRequestId),
-    sourceBranch: nonEmptyString((workflowInput as Record<string, unknown>).sourceBranch),
-    authorizedRef: nonEmptyString((workflowInput as Record<string, unknown>).authorizedRef),
+    pullRequestId: nonEmptyString(
+      (workflowInput as Record<string, unknown>).pullRequestId,
+    ),
+    sourceBranch: nonEmptyString(
+      (workflowInput as Record<string, unknown>).sourceBranch,
+    ),
+    authorizedRef: nonEmptyString(
+      (workflowInput as Record<string, unknown>).authorizedRef,
+    ),
   });
   if (!producer.supported) {
     const summary = `${taskId} cannot use ${name}: ${producer.reason}. Preserve the truthful same-task compact frontier or an exact non-repo wait instead of binding a generic origin/dev advance.`;
@@ -476,8 +516,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     trigger?.data && typeof trigger.data === "object"
       ? (trigger.data as Record<string, unknown>)
       : {};
-  const triggerCommit =
-    nonEmptyString(trigger?.commit) || nonEmptyString(triggerData.commit);
+  const triggerCommit = nonEmptyString(triggerData.commit);
   if (
     currentCommit === baselineCommit &&
     triggerType === "aks.repo-ref.observed" &&

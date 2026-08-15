@@ -5,13 +5,19 @@ import {
   type AppRequest,
 } from "@may-agent/sdk";
 import {
+  default as app,
   canonicalAksSubscriptions,
   canonicalAksTaskSelectors,
   inputForAksEvent,
   resolveCanonicalAksTask,
   routeCanonicalAksRequest,
 } from "./app.js";
-import { specLoopTaskId } from "./task-loops.js";
+import {
+  featureCompactLoopTaskId,
+  masterValidationCompactTaskId,
+  repositorySkillMaintenanceTaskId,
+  specLoopTaskId,
+} from "./task-loops.js";
 
 const projectId = "aks-rp-e2e";
 
@@ -72,10 +78,6 @@ describe("AKS canonical route ledger", () => {
 
   test.each([
     [
-      event("aks.resource-migration.requested"),
-      "runtime/unified-resource-migration-resource-liveness-v3",
-    ],
-    [
       event("pipeline.failure.observed", {
         specId: "network-policy",
         failureFingerprint: "failure-1",
@@ -98,6 +100,12 @@ describe("AKS canonical route ledger", () => {
     expect(taskRoute(value)).toBe(taskId);
   });
 
+  test("preserves the still-live waiting-frontier retirement identity", () => {
+    expect(taskRoute(event("aks.waiting-frontier-retirement.requested"))).toBe(
+      "runtime/waiting-frontier-review",
+    );
+  });
+
   test.each([
     event(
       "project.task.tick",
@@ -118,6 +126,8 @@ describe("AKS canonical route ledger", () => {
     }),
     event("pipeline.completed", { pipelineRunId: "10" }),
     event("aks.node-image-publication.state", { publishedVersion: "v2" }),
+    event("aks.resource-migration.requested"),
+    event("aks.finite-holder-migration.requested", { batch: "4" }),
     event("unrelated.fact"),
   ])(
     "does not manufacture broad work for exact/Condition/observation facts",
@@ -195,5 +205,83 @@ describe("AKS canonical route ledger", () => {
       task: { kind: "desired", intent: { id: specLoopTaskId } },
     });
     expect(routeCanonicalAksRequest(request("approval-decision"))).toBeNull();
+    expect(
+      routeCanonicalAksRequest(
+        request("approval-decision", {
+          content:
+            "Decision: approve\nApproval id: approval-1\nWait id: wait-1\nProject: aks-rp-e2e\nFeature path: feature/path",
+        }),
+      ),
+    ).toMatchObject({
+      type: "task",
+      task: {
+        kind: "desired",
+        intent: { workflow: "approval-decision" },
+      },
+    });
+  });
+
+  test("exports only the canonical App hosting surface", () => {
+    expect(app.id).toBe(projectId);
+    expect("events" in app).toBe(false);
+    expect("onEvent" in app).toBe(false);
+    expect(app.observers?.map((observer) => observer.id)).toEqual([
+      "pipeline",
+      "pull-request",
+      "workspace-integrity",
+      "scenario-test-inventory",
+      "repo-ref",
+    ]);
+    expect(app.tasks?.subscriptions).toBe(canonicalAksTaskSelectors);
+    expect(app.tasks?.resolve).toBe(resolveCanonicalAksTask);
+  });
+
+  test("uses direct task wakes and inbox inputs instead of check-event hops", () => {
+    const schedules = Object.fromEntries(
+      (app.schedules ?? []).map((schedule) => [schedule.id, schedule]),
+    );
+    for (const [id, taskId] of [
+      ["master-validation-staging-cycle", "master-validation-staging-cycle"],
+      ["durable-spec-loop-pulse", specLoopTaskId],
+      ["durable-feature-compact-loop-pulse", featureCompactLoopTaskId],
+      [
+        "durable-master-validation-compact-pulse",
+        masterValidationCompactTaskId,
+      ],
+      ["repository-skill-maintenance", repositorySkillMaintenanceTaskId],
+    ]) {
+      const schedule = schedules[id];
+      expect(
+        schedule && "event" in schedule ? schedule.event.target?.taskId : null,
+      ).toBe(taskId);
+      expect(
+        schedule && "event" in schedule ? schedule.event.target?.appId : null,
+      ).toBe(projectId);
+    }
+    expect(
+      schedules["regular-learning"] &&
+        "input" in schedules["regular-learning"]!,
+    ).toBe(true);
+    expect(
+      schedules["app-ops-heartbeat"] &&
+        "input" in schedules["app-ops-heartbeat"]!,
+    ).toBe(true);
+    expect(JSON.stringify(app.schedules)).not.toContain(".check");
+  });
+
+  test("translates every action directly into a typed App input", () => {
+    const actions = app.actions ?? {};
+    expect(actions["advance-project"]?.toInput({}).kind).toBe("owner-review");
+    expect(actions["investigate-problem"]?.toInput({}).kind).toBe(
+      "problem-investigation",
+    );
+    expect(actions["review-stall-risk"]?.toInput({}).kind).toBe("stall-review");
+    expect(actions["dispatch-approval-packet"]?.toInput({}).kind).toBe(
+      "approval-dispatch",
+    );
+    expect(actions["pulse-spec-loop"]?.toInput({})).toMatchObject({
+      kind: "task-control",
+      data: { action: "spec-loop", taskId: specLoopTaskId },
+    });
   });
 });

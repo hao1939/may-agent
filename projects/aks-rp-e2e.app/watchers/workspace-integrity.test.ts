@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { observeWorkspaceIntegrity } from "./workspace-integrity.js";
@@ -19,14 +19,8 @@ describe("workspace integrity watcher", () => {
   it("reports canonical health and unowned dirty worktrees without changing them", async () => {
     const root = mkdtempSync(join(tmpdir(), "aks-workspace-integrity-"));
     roots.push(root);
-    const appDir = join(root, "sample.app");
     const repoDir = join(root, "sample");
     const recovery = join(root, "recovery");
-    mkdirSync(join(appDir, ".state/tasks"), { recursive: true });
-    writeFileSync(
-      join(appDir, ".state/tasks/state.json"),
-      JSON.stringify({ attempts: {} }),
-    );
     execFileSync("git", ["init", "-b", "dev", repoDir]);
     git(repoDir, "config", "user.email", "test@example.com");
     git(repoDir, "config", "user.name", "Test");
@@ -34,10 +28,10 @@ describe("workspace integrity watcher", () => {
     git(repoDir, "add", "README.md");
     git(repoDir, "commit", "-m", "base");
     git(repoDir, "update-ref", "refs/remotes/origin/dev", "HEAD");
-    git(repoDir, "worktree", "add", "-b", "task/example", recovery, "HEAD");
+    git(repoDir, "worktree", "add", "-b", "recovery/example", recovery, "HEAD");
     writeFileSync(join(recovery, "unfinished.txt"), "recover\n");
 
-    const observation = await observeWorkspaceIntegrity(appDir, repoDir);
+    const observation = await observeWorkspaceIntegrity(repoDir);
 
     expect(observation.canonical).toMatchObject({
       branch: "dev",
@@ -55,41 +49,13 @@ describe("workspace integrity watcher", () => {
     });
   });
 
-  it("does not reraise dirty worktrees already claimed by live task workspacePath", async () => {
+  it("does not classify runtime-owned task worktrees as unowned", async () => {
     const root = mkdtempSync(
       join(tmpdir(), "aks-workspace-integrity-claimed-"),
     );
     roots.push(root);
-    const appDir = join(root, "sample.app");
     const repoDir = join(root, "sample");
     const recovery = join(root, "recovery");
-    const taskId = "ops/reconcile-demo-retained-worktree";
-    mkdirSync(join(appDir, ".state/tasks"), { recursive: true });
-    writeFileSync(
-      join(appDir, ".state/tasks/state.json"),
-      JSON.stringify({ attempts: {} }),
-    );
-    writeFileSync(
-      join(appDir, ".state/tasks/tree.json"),
-      JSON.stringify(
-        {
-          root_task_id: "project",
-          tasks: {
-            project: { id: "project", children: [taskId] },
-            [taskId]: {
-              id: taskId,
-              generation: 1,
-              phase: "waiting",
-              input: {
-                workspacePath: recovery,
-              },
-            },
-          },
-        },
-        null,
-        2,
-      ),
-    );
     execFileSync("git", ["init", "-b", "dev", repoDir]);
     git(repoDir, "config", "user.email", "test@example.com");
     git(repoDir, "config", "user.name", "Test");
@@ -100,11 +66,12 @@ describe("workspace integrity watcher", () => {
     git(repoDir, "worktree", "add", "-b", "task/example", recovery, "HEAD");
     writeFileSync(join(recovery, "unfinished.txt"), "recover\n");
 
-    const observation = await observeWorkspaceIntegrity(appDir, repoDir);
+    const observation = await observeWorkspaceIntegrity(repoDir);
 
     expect(observation.counts).toMatchObject({
       worktrees: 2,
       dirty: 1,
+      taskWorktrees: 1,
       unownedDirty: 0,
     });
     expect(observation.anomalies).not.toContainEqual({

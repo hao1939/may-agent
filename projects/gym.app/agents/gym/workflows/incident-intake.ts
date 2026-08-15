@@ -5,7 +5,8 @@ import {
   writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
+import { emitGymEvent, gymAppRoot, gymEvent } from "./lib/context";
 import { safeKey, triggerDetails } from "./lib/trigger";
 
 export const name = "incident-intake";
@@ -33,12 +34,12 @@ function incidentKey(details: Record<string, unknown>): string {
 
 export async function execute(
   ctx: WorkflowContext,
-): Promise<WorkflowResult> {
-  const details = triggerDetails(ctx.task);
+): Promise<ExecutionResult> {
+  const details = triggerDetails(ctx);
   if (!details) return ctx.blocked("Incident trigger event is missing or invalid");
 
   const key = incidentKey(details);
-  const incidentDir = join(ctx.projectsRoot, "gym.app", ".state", "incidents");
+  const incidentDir = join(gymAppRoot(ctx), ".state", "incidents");
   const incidentPath = join(incidentDir, `${key}.json`);
   mkdirSync(incidentDir, { recursive: true });
 
@@ -59,14 +60,12 @@ export async function execute(
     );
   }
 
-  ctx.emit({
-    type: "gym.review.requested",
-    project: "gym",
+  await emitGymEvent(ctx, gymEvent("gym.review.requested", {
     kind: "incident",
     requestKey: `incident-${key}`,
     incidentId: key,
     incidentPath,
-  });
+  }));
 
   const summary = `Captured incident ${key} at ${incidentPath}.`;
   return ctx.done(summary, {

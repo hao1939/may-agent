@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 import { appendFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
+import { gymAppRoot } from "./lib/context";
 import { safeKey, triggerDetails } from "./lib/trigger";
 
 export const name = "learning-evidence-intake";
@@ -28,8 +29,8 @@ function evidenceKey(details: Record<string, unknown>): string {
     .slice(0, 20);
 }
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  const details = triggerDetails(ctx.task);
+export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
+  const details = triggerDetails(ctx);
   if (!details)
     return ctx.blocked("Learning-evidence trigger is missing or invalid");
 
@@ -39,8 +40,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
   const key = evidenceKey(details);
   const evidenceDir = join(
-    ctx.projectsRoot,
-    "gym.app",
+    gymAppRoot(ctx),
     ".state",
     "learning",
     "evidence",

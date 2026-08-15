@@ -1,10 +1,10 @@
 import { describe, expect, it } from "bun:test";
-import type { ProjectAppTaskAction } from "@may-agent/sdk/legacy";
+import type { TaskAction } from "@may-agent/sdk";
 import { validateAksTaskAction } from "./app.js";
 
 const exactCommit = "0123456789abcdef0123456789abcdef01234567";
 
-function createAction(input: Record<string, unknown>): ProjectAppTaskAction {
+function createAction(input: Record<string, unknown>): TaskAction {
   return {
     kind: "create-task",
     id: "domain/prepared-source-test",
@@ -19,7 +19,7 @@ function createAction(input: Record<string, unknown>): ProjectAppTaskAction {
   };
 }
 
-function updateAction(input: Record<string, unknown>): ProjectAppTaskAction {
+function updateAction(input: Record<string, unknown>): TaskAction {
   return {
     kind: "update-task",
     taskId: "domain/prepared-source-test",

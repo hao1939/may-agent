@@ -42,6 +42,8 @@ describe("canonical may-agent platform App", () => {
       "project-comment",
       "project-owner-request",
     ]);
+    expect(app.observations).toContain("project.task.reconciled");
+    expect(app.observations).toContain("runtime.daemon.heartbeat");
     expect(app).not.toHaveProperty("events");
     expect(app).not.toHaveProperty("onEvent");
     expect(app).not.toHaveProperty("budget");

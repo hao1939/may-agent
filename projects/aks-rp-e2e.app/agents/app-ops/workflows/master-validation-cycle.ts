@@ -12,10 +12,12 @@ import {
 } from "node:fs";
 import { dirname, join } from "node:path";
 import type {
-  ProjectAppConditionSpec,
+  AppEventTarget,
+  Condition,
+  ExecutionResult,
+  TaskReconcileResult,
   WorkflowContext,
-  WorkflowResult,
-} from "@may-agent/sdk/legacy";
+} from "@may-agent/sdk";
 import {
   campaignFixFromPullRequest,
   campaignReceiptPath,
@@ -223,7 +225,20 @@ export function campaignPatchConflictRepairWake(
   };
 }
 
-function campaignPatchConflictWait(
+async function emitWorkflowEvent(
+  ctx: WorkflowContext,
+  type: string,
+  data: Record<string, unknown>,
+): Promise<void> {
+  await ctx.events.emit({
+    type,
+    source: "workflow:master-validation-cycle",
+    target: record(data.target) as AppEventTarget,
+    data,
+  });
+}
+
+async function campaignPatchConflictWait(
   ctx: WorkflowContext,
   conflict: {
     pullRequestId: string;
@@ -235,7 +250,7 @@ function campaignPatchConflictWait(
   message: string,
   appDir: string,
   repoDir: string,
-): WorkflowResult {
+): Promise<ExecutionResult<TaskReconcileResult>> {
   const campaign = readCampaignReceipt(appDir);
   let repairWake = false;
   let compositionBaseCommit = "";
@@ -248,7 +263,8 @@ function campaignPatchConflictWait(
       campaign.baseCommit !== currentMainCommit
         ? currentMainCommit
         : campaign.currentCommit;
-    ctx.dispatchEvent(
+    await emitWorkflowEvent(
+      ctx,
       "project.task.tick",
       campaignPatchConflictRepairWake(conflict, campaign, currentMainCommit),
     );
@@ -382,75 +398,20 @@ function azJson(
   return JSON.parse(result.stdout || "null");
 }
 
-function taskPayload(raw: string): {
+function taskPayload(reconciliation: WorkflowContext["reconciliation"]): {
   taskId: string;
   generation: number;
 } {
-  const marker = raw.indexOf("## Reconciliation Task");
-  const scoped = marker >= 0 ? raw.slice(marker) : raw;
-  const start = scoped.indexOf("{");
-  if (start < 0)
-    return { taskId: "master-validation-staging-cycle", generation: 1 };
-  let depth = 0;
-  let inString = false;
-  let escaping = false;
-  let object = "";
-  for (let index = start; index < scoped.length; index += 1) {
-    const char = scoped[index];
-    if (escaping) escaping = false;
-    else if (char === "\\") escaping = true;
-    else if (char === '"') inString = !inString;
-    if (!inString && char === "{") depth += 1;
-    if (!inString && char === "}" && --depth === 0) {
-      object = scoped.slice(start, index + 1);
-      break;
-    }
-  }
-  if (!object)
-    return { taskId: "master-validation-staging-cycle", generation: 1 };
-  try {
-    const parsed = record(JSON.parse(object));
-    return {
-      taskId: text(parsed.taskId) || "master-validation-staging-cycle",
-      generation: Math.max(1, Number(parsed.generation ?? 1) || 1),
-    };
-  } catch {
-    return { taskId: "master-validation-staging-cycle", generation: 1 };
-  }
-}
-
-function triggerEvent(raw: string): Record<string, unknown> {
-  for (const marker of ["## Trigger Event", "## Trigger Observation"]) {
-    const markerAt = raw.indexOf(marker);
-    if (markerAt < 0) continue;
-    const scoped = raw.slice(markerAt);
-    const start = scoped.indexOf("{");
-    if (start < 0) continue;
-    let depth = 0;
-    let inString = false;
-    let escaping = false;
-    for (let index = start; index < scoped.length; index += 1) {
-      const char = scoped[index];
-      if (escaping) escaping = false;
-      else if (char === "\\") escaping = true;
-      else if (char === '"') inString = !inString;
-      if (!inString && char === "{") depth += 1;
-      if (!inString && char === "}" && --depth === 0) {
-        try {
-          return record(JSON.parse(scoped.slice(start, index + 1)));
-        } catch {
-          break;
-        }
-      }
-    }
-  }
-  return {};
+  return {
+    taskId: reconciliation?.taskId || "master-validation-staging-cycle",
+    generation: reconciliation?.generation ?? 1,
+  };
 }
 
 export function fixVerificationTrigger(
-  raw: string,
+  event: unknown,
 ): FixVerificationTrigger | null {
-  const trigger = triggerEvent(raw);
+  const trigger = record(event);
   const data = record(trigger.data);
   const value = (key: string) => text(trigger[key] ?? data[key]);
   const pullRequestIds = Array.isArray(data.pullRequestIds)
@@ -531,40 +492,8 @@ export function campaignPassVerificationTrigger(
     : null;
 }
 
-function durableCampaignPassVerificationTriggers(
-  ctx: Pick<WorkflowContext, "query">,
-  campaign: CampaignReceipt | null,
-): FixVerificationTrigger[] {
-  if (!campaign) return [];
-  try {
-    const latestBySpec = new Map<string, FixVerificationTrigger>();
-    for (const event of ctx.query.events({
-      type: "pipeline.spec.observed",
-      projectId: "aks-rp-e2e",
-      limit: 500,
-    }).rows) {
-      const trigger = campaignPassVerificationTrigger(campaign, event);
-      if (!trigger) continue;
-      const prior = latestBySpec.get(trigger.specId);
-      if (
-        !prior ||
-        Number(trigger.pipelineRunId) > Number(prior.pipelineRunId)
-      ) {
-        latestBySpec.set(trigger.specId, trigger);
-      }
-    }
-    return [...latestBySpec.values()];
-  } catch {
-    return [];
-  }
-}
-
 function receiptPath(ctx: WorkflowContext): string {
-  return join(
-    ctx.appDir ?? "/app/projects/aks-rp-e2e.app",
-    ".state",
-    "master-validation-cycle.json",
-  );
+  return join(ctx.workspace!.appRoot, ".state", "master-validation-cycle.json");
 }
 
 function readReceipt(path: string): CycleReceipt | null {
@@ -584,7 +513,7 @@ function saveReceipt(path: string, receipt: CycleReceipt): void {
   writeFileSync(path, `${JSON.stringify(receipt, null, 2)}\n`);
 }
 
-function waitCondition(runId: string): ProjectAppConditionSpec {
+function waitCondition(runId: string): Condition {
   return {
     id: `master-validation-run-${runId}-completed`,
     type: "pipeline-run.state",
@@ -608,7 +537,7 @@ function waiting(
   sourceCommit: string,
   summary: string,
   extraEvidence: string[] = [],
-): WorkflowResult {
+): ExecutionResult<TaskReconcileResult> {
   return ctx.done(summary, {
     state: "waiting",
     summary,
@@ -630,7 +559,7 @@ function completeCampaignObservation(
   campaign: CampaignReceipt,
   summary: string,
   evidence: string[] = [],
-): WorkflowResult {
+): ExecutionResult<TaskReconcileResult> {
   return ctx.done(summary, {
     state: "converged",
     summary,
@@ -650,7 +579,7 @@ function completeTransientAccessObservation(
   appDir: string,
   summary: string,
   message: string,
-): WorkflowResult {
+): ExecutionResult<TaskReconcileResult> {
   const campaign = readCampaignReceipt(appDir);
   return ctx.done(summary, {
     state: "converged",
@@ -847,7 +776,12 @@ function pullRequest(repoDir: string, pullRequestId: string): PullRequest {
 function integratedPullRequestStates(
   repoDir: string,
   campaign: CampaignReceipt,
-): Array<{ fix: CampaignFix; state: string; mergeStatus: string }> {
+): Array<{
+  fix: CampaignFix;
+  state: string;
+  mergeStatus: string;
+  isDraft: boolean;
+}> {
   return latestCampaignFixes(campaign.integratedFixes).map((fix) => {
     const current = pullRequest(repoDir, fix.pullRequestId);
     return {
@@ -917,12 +851,12 @@ export function registerMasterValidationRun(appDir: string, runId: string) {
   return appendTrackedPipelineRunId(appDir, runId);
 }
 
-function publishVerifiedFixes(
+async function publishVerifiedFixes(
   ctx: WorkflowContext,
   repoDir: string,
   campaign: CampaignReceipt | null,
   trigger: FixVerificationTrigger | null,
-): string[] {
+): Promise<string[]> {
   if (!campaign || !trigger) {
     return [];
   }
@@ -952,7 +886,7 @@ function publishVerifiedFixes(
   }));
   const evidence = publications.map((publication) => publication.evidence);
   if (!pullRequestIds.length) return evidence;
-  const appDir = ctx.appDir ?? "/app/projects/aks-rp-e2e.app";
+  const appDir = ctx.workspace!.appRoot;
   const notificationKey = [
     trigger.pipelineRunId,
     trigger.specId,
@@ -977,7 +911,7 @@ function publishVerifiedFixes(
     pipelineRunId: trigger.pipelineRunId,
     pullRequestIds: actionablePullRequestIds,
   });
-  ctx.dispatchEvent("message.created", {
+  await emitWorkflowEvent(ctx, "message.created", {
     target: { project: "aks-rp-e2e", human: true },
     from: "app-ops",
     to: "human:operator",
@@ -1041,7 +975,7 @@ function clearCampaign(
   ];
 }
 
-function notifyCampaignTasks(
+async function notifyCampaignTasks(
   ctx: WorkflowContext,
   campaign: CampaignReceipt,
   input: {
@@ -1049,13 +983,13 @@ function notifyCampaignTasks(
     runId: string;
     sourceCommit: string;
   },
-): void {
+): Promise<void> {
   for (const taskId of new Set(
     campaign.integratedFixes
       .map((fix) => fix.taskId)
       .filter((value) => value.startsWith("domain/master-validation-failure/")),
   )) {
-    ctx.dispatchEvent("project.task.tick", {
+    await emitWorkflowEvent(ctx, "project.task.tick", {
       target: { project: "aks-rp-e2e", taskId },
       project: "aks-rp-e2e",
       taskId,
@@ -1068,13 +1002,13 @@ function notifyCampaignTasks(
   }
 }
 
-function notifyCampaignReady(
+async function notifyCampaignReady(
   ctx: WorkflowContext,
   campaign: CampaignReceipt,
   runId: string,
   pullRequestIds: string[],
-): void {
-  const appDir = ctx.appDir ?? "/app/projects/aks-rp-e2e.app";
+): Promise<void> {
+  const appDir = ctx.workspace!.appRoot;
   const key = `${campaign.baselineRunId}:${campaign.currentCommit}:${pullRequestIds.join(",")}`;
   const receipt = join(
     appDir,
@@ -1083,7 +1017,7 @@ function notifyCampaignReady(
     `${createHash("sha256").update(key).digest("hex")}.json`,
   );
   if (existsSync(receipt)) return;
-  ctx.dispatchEvent("message.created", {
+  await emitWorkflowEvent(ctx, "message.created", {
     target: { project: "aks-rp-e2e", human: true },
     from: "app-ops",
     to: "human:operator",
@@ -1116,9 +1050,9 @@ function queueCycle(
   purpose: typeof scheduledPurpose | typeof campaignPurpose,
   campaign?: CampaignReceipt | null,
   staleRunId?: string,
-): WorkflowResult {
+): ExecutionResult<TaskReconcileResult> {
   const queueClaimPath = join(
-    ctx.appDir ?? "/app/projects/aks-rp-e2e.app",
+    ctx.workspace!.appRoot,
     ".state",
     "master-validation-queue.claim",
   );
@@ -1166,10 +1100,7 @@ function queueCycle(
     const runId = text(queued.id);
     if (!runId)
       throw new Error("Azure DevOps did not return a pipeline run id");
-    registerMasterValidationRun(
-      ctx.appDir ?? "/app/projects/aks-rp-e2e.app",
-      runId,
-    );
+    registerMasterValidationRun(ctx.workspace!.appRoot, runId);
     saveReceipt(receiptPath(ctx), {
       runId,
       sourceBranch: runBranch,
@@ -1187,19 +1118,30 @@ function queueCycle(
   }
 }
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  const repoDir = ctx.projectDir ?? "/app/projects/aks-rp-e2e";
-  const appDir = ctx.appDir ?? "/app/projects/aks-rp-e2e.app";
-  const payload = taskPayload(ctx.task);
+export async function execute(
+  ctx: WorkflowContext,
+): Promise<ExecutionResult<TaskReconcileResult>> {
+  if (!ctx.reconciliation || !ctx.workspace) {
+    return ctx.blocked(
+      "Master validation cycle requires a durable task and App workspace",
+      {
+        hasReconciliation: Boolean(ctx.reconciliation),
+        hasWorkspace: Boolean(ctx.workspace),
+      },
+    ) as ExecutionResult<TaskReconcileResult>;
+  }
+  const repoDir = ctx.workspace.projectRoot;
+  const appDir = ctx.workspace.appRoot;
+  const payload = taskPayload(ctx.reconciliation);
   try {
     const campaign = readCampaignReceipt(appDir);
-    const directVerification = fixVerificationTrigger(ctx.task);
-    const verificationTriggers = directVerification
-      ? [directVerification]
-      : durableCampaignPassVerificationTriggers(ctx, campaign);
-    const fixPublicationEvidence = verificationTriggers.flatMap((trigger) =>
-      publishVerifiedFixes(ctx, repoDir, campaign, trigger),
-    );
+    const trigger = ctx.reconciliation.trigger;
+    const directVerification =
+      fixVerificationTrigger(trigger) ??
+      campaignPassVerificationTrigger(campaign, record(trigger));
+    const fixPublicationEvidence = directVerification
+      ? await publishVerifiedFixes(ctx, repoDir, campaign, directVerification)
+      : [];
     const listActive = (status: "inProgress" | "notStarted") =>
       azJson(
         [
@@ -1456,7 +1398,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           );
         }
         if (open.length) {
-          notifyCampaignReady(
+          await notifyCampaignReady(
             ctx,
             composed.receipt,
             prior.runId,
@@ -1504,7 +1446,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         }
         const campaign = readCampaignReceipt(appDir);
         if (campaign) {
-          notifyCampaignTasks(ctx, campaign, {
+          await notifyCampaignTasks(ctx, campaign, {
             reason: "master-validation-main-passed",
             runId: prior.runId,
             sourceCommit: prior.sourceCommit,
@@ -1595,7 +1537,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     const message = error instanceof Error ? error.message : String(error);
     const patchConflict = campaignPatchConflict(message);
     if (patchConflict) {
-      return campaignPatchConflictWait(
+      return await campaignPatchConflictWait(
         ctx,
         patchConflict,
         message,

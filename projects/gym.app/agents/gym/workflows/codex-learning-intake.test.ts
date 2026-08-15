@@ -10,8 +10,8 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { WorkflowContext } from "@may-agent/sdk";
 import { runCodexLearningIntake } from "./codex-learning-intake";
+import { canonicalGymTestContext } from "./lib/test-context";
 
 const roots: string[] = [];
 
@@ -79,14 +79,15 @@ test("keeps only validated strong signals and persists source references without
     "# Accepted design\n\nUse clear direct decision verbs.\n",
   );
   let calls = 0;
-  const ctx = {
-    projectsRoot: join(root, "projects"),
+  const projectsRoot = join(root, "projects");
+  const ctx = canonicalGymTestContext({
+    projectsRoot,
     task: task({ batchSize: 10, maxBatches: 1 }),
     async runAgent() {
       calls += 1;
       if (calls === 1) {
         const checkpoint = join(
-          ctx.projectsRoot,
+          projectsRoot,
           "gym.app",
           ".state",
           "learning",
@@ -133,7 +134,7 @@ test("keeps only validated strong signals and persists source references without
         };
       }
       const evidenceDir = join(
-        ctx.projectsRoot,
+        projectsRoot,
         "gym.app",
         ".state",
         "learning",
@@ -183,19 +184,16 @@ test("keeps only validated strong signals and persists source references without
         },
       };
     },
-    done(summary: string, details: unknown) {
-      return { type: "done" as const, summary, details };
-    },
-  } as unknown as WorkflowContext;
+  });
 
   const result = await runCodexLearningIntake(ctx, {
     codexHome,
     designSources: [designSource],
   });
-  expect(result.type).toBe("done");
+  expect(result.status).toBe("done");
   expect(calls).toBe(3);
   const stateDir = join(
-    ctx.projectsRoot,
+    projectsRoot,
     "gym.app",
     ".state",
     "learning",
@@ -243,8 +241,9 @@ test("advances the checkpoint when review finds no strong signal", async () => {
   roots.push(root);
   const codexHome = source(root);
   let calls = 0;
-  const ctx = {
-    projectsRoot: join(root, "projects"),
+  const projectsRoot = join(root, "projects");
+  const ctx = canonicalGymTestContext({
+    projectsRoot,
     task: task(),
     async runAgent() {
       calls += 1;
@@ -254,10 +253,7 @@ test("advances the checkpoint when review finds no strong signal", async () => {
         structuredResult: { signals: [] },
       };
     },
-    done(summary: string) {
-      return { type: "done" as const, summary };
-    },
-  } as unknown as WorkflowContext;
+  });
 
   await runCodexLearningIntake(ctx, { codexHome });
   await runCodexLearningIntake(ctx, { codexHome });
@@ -265,7 +261,7 @@ test("advances the checkpoint when review finds no strong signal", async () => {
   const checkpoint = JSON.parse(
     readFileSync(
       join(
-        ctx.projectsRoot,
+        projectsRoot,
         "gym.app",
         ".state",
         "learning",

@@ -1,10 +1,10 @@
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
 
 export const name = "unified-resource-migration";
 export const description =
   "Finish the invalid Gym resource-retirement request without mutating standing runtime resources.";
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
+export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   const summary =
     "Cancelled the invalid resource retirement; Gym's owner-review and design-alignment resources remain standing responsibilities.";
   return ctx.done(summary, {

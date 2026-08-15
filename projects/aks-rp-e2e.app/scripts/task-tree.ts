@@ -1,15 +1,20 @@
 #!/usr/bin/env bun
-import {
-  projectRuntimePaths,
-  readTaskState,
-  type TaskStateConfig,
-  type TaskTree,
-} from "@may-agent/sdk/legacy";
-import { computeVisibleFrontier } from "../agents/app-ops/workflows/lib/owner-visible-readout-sync.ts";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { computeVisibleFrontier } from "./lib/task-frontier.ts";
 
 type JsonObject = Record<string, unknown>;
 
 type TaskRecord = Record<string, any>;
+
+type TaskTree = {
+  resources?: Record<string, any>;
+  tasks?: Record<string, TaskRecord>;
+  conditions?: Record<string, any>;
+  attempts?: Record<string, any>;
+  active_task_ids?: string[];
+  [key: string]: any;
+};
 
 function usage(): never {
   console.error(`Usage:
@@ -20,20 +25,10 @@ function usage(): never {
   process.exit(1);
 }
 
-function configFor(appDir: string): TaskStateConfig {
-  const runtimePaths = projectRuntimePaths(appDir);
-  return {
-    appDir,
-    projectDir: appDir,
-    statePath: runtimePaths.taskStatePath,
-    journalPath: runtimePaths.journalPath,
-    worker: "app-ops",
-    maxConcurrent: 80,
-  };
-}
-
 function loadTree(appDir: string): TaskTree {
-  return readTaskState(configFor(appDir));
+  return JSON.parse(
+    readFileSync(join(appDir, ".state", "tasks", "state.json"), "utf8"),
+  ) as TaskTree;
 }
 
 function taskPhase(tree: TaskTree, taskId: string): string {

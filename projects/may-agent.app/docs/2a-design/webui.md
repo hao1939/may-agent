@@ -106,7 +106,7 @@ Liveness uses existing facts:
 - recent messages and human-result delivery;
 - standalone heartbeat activity where heartbeats are enabled.
 
-Empty standalone heartbeat tracks are not a project-app failure. A project app
+Empty standalone heartbeat tracks are not an Agent App failure. An Agent App
 is alive when its schedules/events reach owner workflows and produce current
 project/task evidence.
 
@@ -161,7 +161,7 @@ daemon control, or an explicitly published fact. Examples:
 | --- | --- |
 | Ordinary human request | Admit one request to the `may` App |
 | Steer an active session | Deterministic typed session control linked to its May request when applicable |
-| Comment/steer project | Publish `project.comment.created`; the declared App subscription admits one correlated project-App request |
+| Comment/steer project | Publish `project.comment.created`; the declared App subscription admits one correlated Agent App request |
 | Invoke declared App action | Discover schema, validate input, translate and admit the App input |
 | Cancel session | `session.cancel.requested` |
 | Submit approval | `project.approval.submitted` or owning typed approval event |
@@ -225,7 +225,7 @@ Telegram remains the preferred mobile notification/conversation surface.
   or an observation-only fact and shows an honest async receipt.
 - Project and task meaning comes from project-owned state/read models.
 - Event graphs render server-provided causality without browser repair.
-- Project-app activity and standalone heartbeat activity are not conflated.
+- Agent App activity and standalone heartbeat activity are not conflated.
 - Default UI source has one editable location and one generated served target.
 - Legacy hash routes and compatibility APIs are not used in new examples.
 - Missing evidence fails visibly instead of appearing healthy.

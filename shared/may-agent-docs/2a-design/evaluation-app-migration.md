@@ -2,11 +2,11 @@
 
 ## Context
 
-The system is transitioning from agent-oriented to project-app-oriented. In the
-agent model, each agent owns its domain: heartbeat, knowledge, workflows, skills,
-periodic tasks. In the app model, each durable concern is a project-app that owns
-the goal, task tree, domain model, and process. Agents become workers dispatched
-by apps.
+The system has transitioned from agent-oriented scheduling to Agent Apps. In
+the old agent model, each agent owned its domain: heartbeat, knowledge,
+workflows, skills, and periodic tasks. In the App model, each durable concern is
+an Agent App that owns the goal, task tree, domain model, and process. Agents
+provide bounded judgment and execution for Apps.
 
 aks-rp-e2e proved the app pattern for domain projects. This plan applies it to
 evaluation — the first internal system-service migration. Evaluation is a durable
@@ -129,100 +129,59 @@ version was active.
 ## app.ts Declaration
 
 ```typescript
-export default defineProjectApp({
+import { Type, defineApp } from "@may-agent/sdk";
+
+export default defineApp({
   id: "evaluation",
+  version: 1,
   owner: "evaluator",
-  workspace: "projects/evaluation.app",
-
-  budget: {
-    sessionsPerDay: 100,
-    tokensPerDay: 2_000_000,
-    maxConcurrent: 5,
-  },
-
+  inputSchema: Type.Union([
+    Type.Object({
+      kind: Type.Literal("evaluate-session"),
+      data: Type.Object({ sessionId: Type.String({ minLength: 1 }) }),
+    }),
+    Type.Object({
+      kind: Type.Literal("project-review"),
+      data: Type.Record(Type.String(), Type.Unknown()),
+    }),
+  ]),
+  inbox: { batch: "single", maxConcurrent: 5 },
+  workspace: { kind: "local", localPath: "." },
+  subscriptions: [
+    {
+      id: "session-evaluation-request",
+      event: "evaluation.session.requested",
+      toInput(event) {
+        const sessionId = String(event.data.sessionId ?? "").trim();
+        return sessionId
+          ? { kind: "evaluate-session", data: { sessionId } }
+          : null;
+      },
+    },
+  ],
   schedules: [
     {
-      id: "evaluation-pipeline-review",
-      cron: "*/5 * * * *",
-      event: { type: "evaluation.tick", lane: "pipeline-health" },
-    },
-    {
-      id: "drift-detection",
-      cron: "0 * * * *",
-      event: { type: "evaluation.tick", lane: "drift" },
-    },
-    {
-      id: "integrity-patrol",
-      cron: "0 */6 * * *",
-      event: { type: "evaluation.tick", lane: "patrol" },
+      id: "project-health-review",
+      intervalMs: 7_200_000,
+      event: {
+        type: "evaluation.project.review.requested",
+        data: { reason: "scheduled" },
+        target: { appId: "evaluation" },
+      },
     },
   ],
-
-  events: [
-    "session.completed",
-    "evaluation.session.requested",
-    "evaluation.tick",
-    "metric.breach",
-  ],
-
-  eventGraph: {
-    routes: {
-      "evaluation-aftermath": {
-        emits: [
-          "evaluation.reviewed",
-          "evaluation.triage_closed",
-          "evaluation.learning_created",
-        ],
-      },
-      "evaluation-heartbeat": {
-        emits: ["heartbeat.step_started", "heartbeat.skipped"],
-      },
-      "evaluation-deep-eval": {
-        emits: ["handler.workflow_dispatched"],
-      },
-    },
-    adapters: [
-      {
-        event: "metric.breach",
-        emits: ["evaluation.tick"],
-      },
-      {
-        event: "project.action.invoked",
-        emits: ["evaluation.tick"],
-      },
-    ],
-    externalEvents: [
-      "evaluation.reviewed",
-      "evaluation.triage_closed",
-      "evaluation.learning_created",
-      "heartbeat.step_started",
-      "heartbeat.skipped",
-      "handler.workflow_dispatched",
-    ],
-  },
-
   actions: {
     "evaluate-session": {
-      type: "async",
       description: "Evaluate a specific session",
-    },
-    "review-criteria": {
-      type: "sync",
-      description: "Show current evaluation criteria",
-    },
-    "calibration-status": {
-      type: "sync",
-      description: "Show human-vs-machine agreement",
-    },
-    "pipeline-health": {
-      type: "sync",
-      description: "Show evaluation pipeline health",
+      inputSchema: Type.Object({ sessionId: Type.String({ minLength: 1 }) }),
+      toInput: (data) => ({ kind: "evaluate-session", data }),
     },
   },
-
-  // Events correlate to durable evaluation tasks through taskRoutes.
-  // taskWorkflows provides aftermath, heartbeat, and deep-evaluation
-  // capabilities; ownerEntry handles tasks without a bound workflow.
+  tasks: {
+    attach: true,
+    subscriptions: ["evaluation.project.review.requested"],
+    resolve: taskIntentForEvent,
+  },
 });
 ```
 

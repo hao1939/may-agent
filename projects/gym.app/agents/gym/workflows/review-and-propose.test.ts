@@ -3,6 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { WorkflowContext } from "@may-agent/sdk";
+import { canonicalGymTestContext } from "./lib/test-context";
 import { execute } from "./review-and-propose";
 
 function task(trigger: Record<string, unknown>): string {
@@ -28,6 +29,12 @@ function task(trigger: Record<string, unknown>): string {
   ].join("\n");
 }
 
+function factData(event: Record<string, unknown>): Record<string, unknown> {
+  return event.data && typeof event.data === "object" && !Array.isArray(event.data)
+    ? (event.data as Record<string, unknown>)
+    : {};
+}
+
 function context(input: {
   task: string;
   projectsRoot: string;
@@ -41,7 +48,7 @@ function context(input: {
   };
   agentTasks?: string[];
 }): WorkflowContext {
-  return {
+  return canonicalGymTestContext({
     task: input.task,
     projectsRoot: input.projectsRoot,
     async runAgent(_agent: string, agentTask: string) {
@@ -65,16 +72,7 @@ function context(input: {
     dispatchEvent(type: string, data?: Record<string, unknown>) {
       input.dispatched.push({ type, ...data });
     },
-    notify() {
-      throw new Error("review proposals use the typed approval convention");
-    },
-    done(summary: string, output?: unknown) {
-      return { type: "done" as const, summary, output };
-    },
-    blocked(reason: string, context?: unknown) {
-      return { type: "blocked" as const, reason, context };
-    },
-  } as unknown as WorkflowContext;
+  });
 }
 
 test("semantic novelty gate files covered evidence without asking the human", async () => {
@@ -102,21 +100,25 @@ test("semantic novelty gate files covered evidence without asking the human", as
     );
 
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: { state: "converged" },
     });
     expect(emitted).toEqual([
       expect.objectContaining({
         type: "gym.review.filtered",
-        disposition: "covered",
-        matchedCoverage: ["may-alignment/durable-submission-path"],
+        data: expect.objectContaining({
+          disposition: "covered",
+          matchedCoverage: ["may-alignment/durable-submission-path"],
+        }),
       }),
       expect.objectContaining({
         type: "project.approval.resolved",
-        taskId: "runtime/review-proposal/incident-42",
-        taskGeneration: 3,
-        resolution: "superseded",
-        disposition: "covered",
+        data: expect.objectContaining({
+          taskId: "runtime/review-proposal/incident-42",
+          taskGeneration: 3,
+          resolution: "superseded",
+          disposition: "covered",
+        }),
       }),
     ]);
     expect(dispatched).toEqual([]);
@@ -186,7 +188,7 @@ test("review proposal requests one typed project approval", async () => {
     );
 
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: {
         state: "waiting",
         conditions: [
@@ -198,13 +200,16 @@ test("review proposal requests one typed project approval", async () => {
       (event) => event.type === "project.approval.requested",
     );
     expect(requested).toMatchObject({
-      project: "gym",
-      taskId: "runtime/review-proposal/incident-42",
-      taskGeneration: 3,
-      approvalKind: "review-proposal",
-      approvalId: expect.stringMatching(/^gym:review-proposal:incident-42:g3:/),
-      expectedResponse: expect.objectContaining({
-        type: "project.approval.submitted",
+      type: "project.approval.requested",
+      data: expect.objectContaining({
+        project: "gym",
+        taskId: "runtime/review-proposal/incident-42",
+        taskGeneration: 3,
+        approvalKind: "review-proposal",
+        approvalId: expect.stringMatching(/^gym:review-proposal:incident-42:g3:/),
+        expectedResponse: expect.objectContaining({
+          type: "project.approval.submitted",
+        }),
       }),
     });
     expect(dispatched).toEqual([
@@ -212,7 +217,7 @@ test("review proposal requests one typed project approval", async () => {
         type: "message.created",
         to: "human",
         projectPath: "projects/gym.app",
-        approvalId: requested?.approvalId,
+        approvalId: expect.stringMatching(/^gym:review-proposal:incident-42:g3:/),
         expectedResponse: expect.objectContaining({
           type: "project.approval.submitted",
         }),
@@ -258,7 +263,7 @@ test("approved review starts the existing improvement path", async () => {
       join(benchmarkDir, "labels.json"),
       `${JSON.stringify({ labels: { "incident-replay": { status: "approved", source: "incident-42-approved-review" } } })}\n`,
     );
-    const expected = requested.expectedResponse as Record<string, unknown>;
+    const expected = factData(requested).expectedResponse as Record<string, unknown>;
     const emitted: Record<string, unknown>[] = [];
     const result = await execute(
       context({
@@ -278,23 +283,25 @@ test("approved review starts the existing improvement path", async () => {
     );
 
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: { state: "converged" },
     });
     expect(emitted).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           type: "gym.review.approved",
-          approvalId: expected.approvalId,
+          data: expect.objectContaining({ approvalId: expected.approvalId }),
         }),
         expect.objectContaining({
           type: "gym.improvement.requested",
-          reason: "approved-review-proposal",
-          requestKey: "incident-42",
-          incidentId: "incident-42",
-          approvalId: expected.approvalId,
-          benchmark: "incident-review",
-          scenarios: ["incident-replay"],
+          data: expect.objectContaining({
+            reason: "approved-review-proposal",
+            requestKey: "incident-42",
+            incidentId: "incident-42",
+            approvalId: expected.approvalId,
+            benchmark: "incident-review",
+            scenarios: ["incident-replay"],
+          }),
         }),
       ]),
     );
@@ -326,7 +333,7 @@ test("approved review never falls back to an unrelated benchmark", async () => {
     const requested = firstEvents.find(
       (event) => event.type === "project.approval.requested",
     )!;
-    const expected = requested.expectedResponse as Record<string, unknown>;
+    const expected = factData(requested).expectedResponse as Record<string, unknown>;
     const emitted: Record<string, unknown>[] = [];
     const result = await execute(
       context({
@@ -342,7 +349,7 @@ test("approved review never falls back to an unrelated benchmark", async () => {
     );
 
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: { state: "needs-owner" },
     });
     expect(
@@ -376,7 +383,7 @@ test("approval recovery restores lineage without asking the human again", async 
     );
 
     expect(result).toMatchObject({
-      type: "done",
+      status: "done",
       output: { state: "waiting" },
     });
     expect(

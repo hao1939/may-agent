@@ -21,7 +21,13 @@ type SpecFile = {
 };
 
 export type SpecLoopSpecStatus =
-  "pending" | "running" | "pass" | "fail" | "error" | "pr_open" | "done";
+  | "pending"
+  | "running"
+  | "pass"
+  | "fail"
+  | "error"
+  | "pr_open"
+  | "done";
 
 export type SpecLoopSpecState = {
   status: SpecLoopSpecStatus;

@@ -1,10 +1,10 @@
 import type {
-  ProjectAppTaskHandlerResult,
-  ProjectAppTaskVerificationContext,
-  ProjectAppTaskVerificationResult,
+  ExecutionResult,
+  TaskReconcileResult,
+  TaskVerificationContext,
+  TaskVerificationResult,
   WorkflowContext,
-  WorkflowResult,
-} from "@may-agent/sdk/legacy";
+} from "@may-agent/sdk";
 import {
   reconcileSpecLive,
   verifySpecLiveResult,
@@ -19,14 +19,16 @@ export const reconciliationOptions = {
   allowTerminalDisposition: false,
 } as const;
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
+export async function execute(
+  ctx: WorkflowContext,
+): Promise<ExecutionResult<TaskReconcileResult>> {
   return reconcileSpecLive(ctx, reconciliationOptions);
 }
 
 export async function verify(
-  context: ProjectAppTaskVerificationContext,
-  result: ProjectAppTaskHandlerResult,
-): Promise<ProjectAppTaskVerificationResult> {
+  context: TaskVerificationContext,
+  result: TaskReconcileResult,
+): Promise<TaskVerificationResult> {
   return verifySpecLiveResult(
     context,
     result,

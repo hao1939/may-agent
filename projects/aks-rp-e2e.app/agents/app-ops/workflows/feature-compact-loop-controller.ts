@@ -1,14 +1,12 @@
-import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 import {
-  resolveTaskTreePath,
   workflowResultVersion,
-  type ProjectAppTaskAction,
+  type ExecutionResult,
+  type TaskAction,
   type WorkflowContext,
   type WorkflowIoContract,
-  type WorkflowResult,
-} from "@may-agent/sdk/legacy";
+} from "@may-agent/sdk";
 import {
   defaultFeatureCompactLoopStatePath,
   hasDurableLiveProof,
@@ -18,8 +16,8 @@ import {
   safeFeatureCompactTaskId,
   type FeatureCompactItemState,
 } from "./lib/feature-compact-loop-store.ts";
+import { syncFeatureCompactProjections } from "./lib/feature-compact-projection-sync.ts";
 import { publishFocusMetrics } from "./lib/focus-metric-publication.ts";
-import { publishProjectMetrics } from "./lib/project-metric-publication.ts";
 import {
   field,
   frontierLimit,
@@ -64,47 +62,35 @@ type Graph = {
       phase?: string;
       state?: string;
       children?: string[];
+      parent_id?: string;
+      hasLiveChildren?: boolean;
       input?: Record<string, unknown>;
     }
   >;
 };
 
-type TaskState = {
-  receipts?: Record<string, unknown>;
-  resources?: Record<string, unknown>;
-};
-
-function readGraph(appDir: string): Graph {
-  try {
-    return JSON.parse(
-      readFileSync(resolveTaskTreePath(appDir), "utf8"),
-    ) as Graph;
-  } catch {
-    return {};
-  }
+function graphFromContext(ctx: WorkflowContext): Graph {
+  const children = ctx.reconciliation?.children;
+  if (!children) return {};
+  return {
+    tasks: Object.fromEntries(
+      [...children.live, ...children.completed].map((child) => [
+        child.taskId,
+        {
+          phase: child.status,
+          input: child.input,
+          parent_id: child.parentId,
+          hasLiveChildren: child.hasLiveChildren,
+        },
+      ]),
+    ),
+  };
 }
 
 function representedTaskState(graph: Graph, taskId: string): string {
   return String(
     graph.tasks?.[taskId]?.phase ?? graph.tasks?.[taskId]?.state ?? "unknown",
   );
-}
-
-function readTaskState(appDir: string): TaskState {
-  try {
-    return JSON.parse(
-      readFileSync(join(appDir, ".state", "tasks", "state.json"), "utf8"),
-    ) as TaskState;
-  } catch {
-    return {};
-  }
-}
-
-function historicalTaskIds(taskState: TaskState): string[] {
-  return [
-    ...Object.keys(taskState.receipts ?? {}),
-    ...Object.keys(taskState.resources ?? {}),
-  ];
 }
 
 function digest(value: string): string {
@@ -168,6 +154,20 @@ function structuredRepresentationHolderIds(
   ].filter((taskId): taskId is string => Boolean(taskId));
 }
 
+function representationReview(item: FeatureCompactItemState, graph: Graph) {
+  const taskIds = structuredRepresentationHolderIds(item);
+  if (taskIds.length === 0) return undefined;
+  return {
+    source: "parent-direct-children-and-completion-receipts",
+    tasks: taskIds.map((taskId) => ({
+      taskId,
+      status: graph.tasks?.[taskId]
+        ? representedTaskState(graph, taskId)
+        : "not-a-current-direct-child-or-receipt",
+    })),
+  };
+}
+
 function desiredTaskId(
   featureKey: string,
   item: FeatureCompactItemState,
@@ -224,11 +224,7 @@ function representsInFlightFeatureTransition(
   const task = graph.tasks?.[taskId];
   if (!task) return false;
   const phase = representedTaskState(graph, taskId).trim().toLowerCase();
-  const hasLiveChild = (task.children ?? []).some(
-    (childId) =>
-      Boolean(graph.tasks?.[childId]) &&
-      !isTerminalRepresentationPhase(representedTaskState(graph, childId)),
-  );
+  const hasLiveChild = task.hasLiveChildren === true;
   if (phase !== "running" && !(phase === "waiting" && hasLiveChild)) {
     return false;
   }
@@ -269,12 +265,14 @@ function ensureFreshTaskId(
   return `${baseId}-${digest(`${seed}:overflow`)}`;
 }
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
+export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   const projectDir =
-    ctx.projectDir ?? field(ctx.task, "project") ?? "/app/projects/aks-rp-e2e";
+    ctx.workspace?.projectRoot ??
+    field(ctx, "project") ??
+    "/app/projects/aks-rp-e2e";
   const appDir = resolveAppDir(
     projectDir,
-    ctx.appDir ?? field(ctx.task, "app"),
+    ctx.workspace?.appRoot ?? field(ctx, "app"),
   );
   try {
     const publishedFocus = publishFocusMetrics({
@@ -283,30 +281,28 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       projectDir,
       measuredBy: "workflow:feature-compact-loop-controller",
     });
-    const publishedProject = publishProjectMetrics({
-      metrics: ctx.metrics,
-      appDir,
-      projectDir,
-      measuredBy: "workflow:feature-compact-loop-controller",
-    });
-    if (publishedFocus.length || publishedProject.length) {
-      ctx.log(
-        `Published ${publishedFocus.length} focus metrics and ${publishedProject.length} project metrics during the durable-loop pulse.`,
+    if (publishedFocus.length) {
+      ctx.log.info(
+        `Published ${publishedFocus.length} domain focus metrics during the durable-loop pulse.`,
       );
     }
   } catch (error) {
-    ctx.log(
+    ctx.log.warn(
       `Metric publication failed during the durable-loop pulse: ${String(error)}`,
     );
   }
 
-  const trigger = parseTriggerEvent(ctx.task);
+  const trigger = parseTriggerEvent(ctx);
   const loopTaskId =
     triggerString(trigger, "taskId") ||
     triggerString(trigger, "task_id") ||
     "aks-feature-compact-loop";
-  const frontierTarget = Math.min(12, frontierLimit(ctx.task, 3));
-  const reconciliationTask = parseReconciliationTaskPayload(ctx.task);
+  syncFeatureCompactProjections(
+    appDir,
+    ctx.reconciliation?.children.live ?? [],
+  );
+  const frontierTarget = Math.min(12, frontierLimit(ctx, 3));
+  const reconciliationTask = parseReconciliationTaskPayload(ctx);
   const structuredInput =
     reconciliationTask?.input &&
     typeof reconciliationTask.input === "object" &&
@@ -319,7 +315,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       ? structuredRefillEnabled
       : typeof structuredRefillEnabled === "string"
         ? structuredRefillEnabled.trim().toLowerCase() !== "false"
-        : field(ctx.task, "refillEnabled") !== "false";
+        : field(ctx, "refillEnabled") !== "false";
+  const graph = graphFromContext(ctx);
   const statePath = defaultFeatureCompactLoopStatePath(appDir);
   const { state } = loadFeatureCompactLoopState({
     appDir,
@@ -328,15 +325,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     windowSize: frontierTarget,
     statePath,
     refreshFromProject: true,
+    taskViews: graph.tasks,
   });
   state.windowSize = frontierTarget;
   saveFeatureCompactLoopState(statePath, state, {
     pruneAbsentFeatureKeys: true,
   });
-  const graph = readGraph(appDir);
-  const taskState = readTaskState(appDir);
   const proofContext = { appDir, projectDir, statePath };
-  const historicalIds = new Set(historicalTaskIds(taskState));
+  const historicalIds = new Set(Object.keys(graph.tasks ?? {}));
   const remaining = Object.entries(state.features)
     .filter(
       ([, item]) =>
@@ -397,7 +393,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     frontierTarget,
   );
   const actionBudget = refillEnabled ? accounting.available : 0;
-  const actions: ProjectAppTaskAction[] = remaining
+  const actions: TaskAction[] = remaining
     .filter(([featureKey]) => {
       const representation = representedByFeature.get(featureKey);
       return (representation?.live.length ?? 0) === 0;
@@ -413,6 +409,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         item.status === "done" && missingProofFields.length > 0;
       const repairsRepresentation =
         item.status !== "done" && hasStructuredRepresentation(item);
+      const reviewedRepresentation = representationReview(item, graph);
       const baseTaskId = desiredTaskId(
         featureKey,
         item,
@@ -443,6 +440,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           statePath,
           packetPath: item.packetPath,
           workRevision: revision,
+          ...(reviewedRepresentation
+            ? { representationReview: reviewedRepresentation }
+            : {}),
           ...(repairsLegacyProof
             ? { repair: "legacy-proof", missingProofFields }
             : repairsRepresentation
@@ -453,9 +453,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         acceptance: repairsLegacyProof
           ? [
               "Inspect the existing compact result and cited evidence before changing the ledger.",
-              "Before declaring that no exact wait exists or clearing taskId/frontierTaskIds, query every cited holder with the app's canonical helper (`cd ../aks-rp-e2e.app && bun run task-tree show <task-id> --json`) and inspect its returned resource status plus condition objects. A failed ad hoc JSON parse is unknown, never evidence that a task or Condition is absent.",
+              "When present, use input.representationReview as the fenced parent direct-child/receipt evidence for every cited holder; do not query task persistence or the task-tree CLI.",
               "If the cited evidence names an existing source branch, commit, dispatch metadata file, or task worktree, inspect that exact branch/worktree in place; do not copy its delta into the shared canonical dev checkout just to review it.",
-              "Treat any taskId, frontierTaskIds, waitingFor.taskId, or waitingFor.representedTaskIds that the canonical task-tree helper proves absent as stale history; do not return an action that references a missing task id.",
+              "Treat any cited task id marked not-a-current-direct-child-or-receipt in representationReview as stale history; do not return an action that references it.",
               "If current evidence proves the accepted live result, fill the missing structured proof fields and preserve done.",
               "Otherwise move the item to the exact truthful pending, blocked, or reviewed terminal state without launching an unchanged rerun.",
               "If review shows an executable compact plan, spec, carrier, or runner source must change, rebind the same task to spec-live-reconciliation with the complete feature specIds, livePlanPath, fixed target, and any prepared sourceBranch/sourceCommit instead of editing or publishing from the shared canonical checkout. Use domain-task-execution only for a truly source-only patch that requires no live behavior proof.",
@@ -463,10 +463,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           : repairsRepresentation
             ? [
                 "Inspect the current feature-compact row, feature packet, compact artifacts, and cited evidence before changing anything.",
-                "Before declaring that no exact wait exists or clearing taskId/frontierTaskIds, query every cited holder with the app's canonical helper (`cd ../aks-rp-e2e.app && bun run task-tree show <task-id> --json`) and inspect its returned resource status plus condition objects. A failed ad hoc JSON parse is unknown, never evidence that a task or Condition is absent.",
+                "Use input.representationReview as the fenced parent direct-child/receipt evidence for every cited holder; do not query task persistence or the task-tree CLI.",
                 "If the cited evidence names an existing source branch, commit, dispatch metadata file, or task worktree, inspect that exact branch/worktree in place; do not copy its delta into the shared canonical dev checkout just to review it.",
-                "Treat any taskId, frontierTaskIds, waitingFor.taskId, or waitingFor.representedTaskIds that the canonical task-tree helper proves absent as stale history; do not return an action that references a missing task id.",
-                "Before creating a replacement holder, check .state/tasks/state.json receipts as well as the live tree. A completed task ID is immutable; use one new deterministic holder ID and repoint the feature row instead of attempting to recreate a completed ID.",
+                "Treat any cited task id marked not-a-current-direct-child-or-receipt in representationReview as stale history; do not return an action that references it.",
+                "A cited completed receipt is immutable; use one new deterministic holder ID and repoint the feature row instead of attempting to recreate a completed ID.",
                 "If the current exact wait/frontier is still truthful, recreate or repoint exactly one live holder task and update the feature-compact row to that holder instead of reopening a broad unchanged compact rerun.",
                 "If the prior exact wait/frontier is stale, replace it with the smallest truthful current pending task, exact wait, reviewed terminal disposition, or done state using current evidence.",
                 "A feature-level holder represents only the workRevision it carries. Preserve still-true narrower waits, but do not let an older or subset-scoped wait hide materially changed runnable work in the same feature.",
@@ -475,7 +475,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
               ]
             : [
                 ...learnedCompactVerificationAcceptance,
-                "Treat any taskId, frontierTaskIds, waitingFor.taskId, or waitingFor.representedTaskIds that the canonical task-tree helper proves absent as stale history; do not return an action that references a missing task id.",
+                "Do not query or reference historical task ids from a domain ledger; only the current task input and direct-child reconciliation facts carry task authority.",
                 "Regenerate the feature-owned compact plan after each planner, spec, carrier, or cleanup repair; do not preserve stale cluster counts or split reasons.",
                 "Keep repairing the smallest artificial split until every remaining split names a real immutable-property or logical-history conflict, then run the complete generated check suite before live dispatch.",
                 "The feature-owned package covers its complete declared spec set.",
@@ -483,7 +483,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
                 "The compact loop state is updated with evidence before this task converges.",
               ],
         priority: "P1",
-      } satisfies ProjectAppTaskAction;
+      } satisfies TaskAction;
     });
   const summary = `Feature compact loop ${loopTaskId} has ${remaining.length} nonterminal feature(s): ${refillEnabled ? "refill enabled" : "refill paused for the selector-first master-validation campaign"}; declared ${actions.length} bounded task action(s), observed ${accounting.actionableTaskIds.length} actionable, ${accounting.waitingTaskIds.length} waiting, ${accounting.attentionTaskIds.length} attention, and ${accounting.terminalTaskIds.length} stale terminal representation(s).`;
   if (

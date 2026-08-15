@@ -82,37 +82,36 @@ describe("Scout task reconciliation", () => {
         inputEventId: 9001,
         inputEventType: "message.created",
       }),
-    ).toMatchObject({ id: "library-maintenance", workflow: "knowledge-planner" });
+    ).toMatchObject({
+      id: "library-maintenance",
+      workflow: "knowledge-planner",
+    });
   });
 
-  it("routes Scout metric breaches to the app owner", async () => {
-    const emitted: Array<Record<string, unknown>> = [];
-    await app.onEvent?.(
-      {
-        appPath: (path: string) => path,
-        emit: (event: Record<string, unknown>) => {
-          emitted.push(event);
-          return event;
-        },
-        noop: (reason: string) => ({ reason }),
-      },
-      {
+  it("translates Scout metric breaches into one addressed owner input", () => {
+    const subscription = app.subscriptions?.find(
+      ({ id }) => id === "scout-metric-breach",
+    );
+    expect(
+      subscription?.toInput({
         type: "metric.breach",
         owner: "agent:scout",
-        data: {
-          metricId: "scout.knowledge-practice-loaded",
-          current: 0,
-        },
-      },
-    );
-
-    expect(emitted).toEqual([
-      expect.objectContaining({
-        type: "project.owner.requested",
-        project: "scout-knowledge-lib",
-        reason: "library-health-signal",
+        data: { metricId: "scout.knowledge-practice-loaded", current: 0 },
       }),
-    ]);
+    ).toMatchObject({
+      kind: "owner-review",
+      data: {
+        reason: "library-health-signal",
+        metric: { metricId: "scout.knowledge-practice-loaded", current: 0 },
+      },
+    });
+    expect(
+      subscription?.toInput({
+        type: "metric.breach",
+        owner: "agent:other",
+        data: { metricId: "other.health" },
+      }),
+    ).toBeNull();
   });
 
   it("rejects infrastructure and unknown owner wakes", () => {
@@ -133,35 +132,22 @@ describe("Scout task reconciliation", () => {
   });
 
   it("declares one scoped resolver and relies on workflow discovery", () => {
-    expect(app.tasks?.accepts).toEqual([
+    expect(app.tasks?.subscriptions).toEqual([
       { type: "scout.explore", project: "scout-knowledge-lib" },
       { type: "scout.digest", project: "scout-knowledge-lib" },
       {
         type: "project.library_health.tick",
         project: "scout-knowledge-lib",
       },
-      {
-        type: "project.owner.requested",
-        project: "scout-knowledge-lib",
-      },
-      {
-        type: "project.comment.created",
-        project: "scout-knowledge-lib",
-      },
     ]);
     expect(app.tasks?.resolve).toBe(resolveScoutTask);
     expect(app.owner).toBe("scout");
-    expect(app.events).toContainEqual({
-      type: "project.xhs_credential.check",
-      project: "scout-knowledge-lib",
-    });
-    expect(app.events).toContainEqual({ type: "metric.breach" });
-    expect(app.events.some((event) => event.type === "project.tick")).toBe(
-      false,
+    expect(app.observers).toContainEqual(
+      expect.objectContaining({ id: "xhs-credential", intervalMs: 300_000 }),
     );
-    expect(app.schedules).toContainEqual(
-      expect.objectContaining({ id: "xhs-credential-watcher", enabled: true }),
-    );
+    expect(app.observations).toEqual(["project.knowledge.maintained"]);
+    expect(app).not.toHaveProperty("events");
+    expect(app).not.toHaveProperty("onEvent");
     expect(app).not.toHaveProperty("ownerEntry");
     expect(app).not.toHaveProperty("taskWorkflows");
     expect(app).not.toHaveProperty("taskRoutes");
@@ -177,7 +163,7 @@ describe("Scout task reconciliation", () => {
     expect(intervals["scout-explore-hn"]).toBe(7_200_000);
     expect(intervals["scout-explore-xhs"]).toBe(14_400_000);
     expect(intervals["scout-explore-github"]).toBe(7_200_000);
-    expect(app.budget?.maxConcurrent).toBe(1);
+    expect(app.tasks?.maxConcurrent).toBe(1);
   });
 
   it("uses one daily combined owner review", () => {
@@ -189,13 +175,17 @@ describe("Scout task reconciliation", () => {
     expect(ownerSchedules[0]).toMatchObject({
       enabled: true,
       intervalMs: 86_400_000,
-      emits: [
-        {
-          type: "project.owner.requested",
+      event: {
+        type: "project.owner.requested",
+        target: {
+          appId: "scout-knowledge-lib",
+          project: "scout-knowledge-lib",
+        },
+        data: expect.objectContaining({
           project: "scout-knowledge-lib",
           reason: "experience-review",
-        },
-      ],
+        }),
+      },
     });
     expect(
       app.schedules.some((schedule) => schedule.id === "owner-heartbeat"),

@@ -1,9 +1,8 @@
 import type { AppEvent } from "@may-agent/sdk";
 
 /**
- * App-local collector boundary. Legacy hosting and the canonical observer
- * adapter can both supply it while collectors remain unaware of inbox/task
- * runtime mechanics.
+ * App-local collector boundary. The canonical observer adapter supplies it
+ * while collectors remain unaware of task-runtime mechanics.
  */
 export type AksObserverEvent = AppEvent<Record<string, unknown>> &
   Record<string, unknown>;

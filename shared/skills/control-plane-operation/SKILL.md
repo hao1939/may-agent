@@ -22,13 +22,14 @@ Use this skill when you need to interact with may-agent runtime behavior:
 Use the control plane first.
 
 ```text
-conversation input -> human.input.received -> one semantic intent -> bounded work -> terminal evidence -> delivery
-project intent -> project.comment.created receipt -> owner result -> optional durable task
-system signal -> owner/target routing -> app resolver or handler -> evidence -> state update
+conversation input -> May App inbox -> answer or delegation -> delivery
+project comment fact -> declared App subscription -> correlated App inbox request
+system fact -> task subscription, exact task wake, App subscription, or observation
 ```
 
-The root event and trace are the commitment. Do not add a parallel request
-record or lifecycle.
+The App inbox item is the commitment for an addressed result. A task is the
+commitment for a durable desired outcome. Events and traces explain facts and
+causality; they never replace either work authority.
 
 For task-enabled apps, control-plane activity is a wake, not a second
 scheduler. A timer, semantic event, external Condition observation, or
@@ -44,13 +45,13 @@ only, and should normally live behind SDK/query/metrics helpers.
 
 | Need | Prefer |
 |---|---|
-| Normal project request | Project comment ingress -> `project.comment.created` event receipt |
-| Repeated stable app automation | Discover a typed action -> validate -> direct semantic event receipt |
-| Conversational human input | `human.input.received` -> one chat/session/project semantic intent |
+| Normal project request | Project comment ingress -> declared App subscription -> correlated App request |
+| Repeated stable app automation | Discover a typed App action -> validate -> App input admission |
+| Conversational human input | Admit one request to the `may` App |
 | Task-enabled project judgment | App `tasks.resolve` -> stable task -> resolved owner or owner-owned workflow |
-| Standalone event judgment | Thin handler bridge -> workflow or owner session |
-| Workflow or handler live reads | `sdk.query.*` or targeted workflow-collected context |
-| Metric creation/update | `sdk.metrics.*` |
+| Runtime maintenance callback | Narrow internal handler with no domain work authority |
+| App workflow live reads | Scoped `ctx.read` or workflow-collected context |
+| Metric creation/update | Scoped `ctx.metrics.*` |
 | Agent-facing live data | `query_db` tool or workflow-injected facts |
 | Historical dashboard reads | DB projection read |
 
@@ -61,9 +62,10 @@ only, and should normally live behind SDK/query/metrics helpers.
 Before editing code, classify the path:
 
 - Adapter: CLI/Web UI/Telegram/timer.
-- Control: socket/event frame, including read-only discovery or typed action
-  invocation that returns a semantic event receipt.
-- Handler: deterministic bridge from event to workflow.
+- Control: socket/control frame, including read-only discovery or typed App
+  action invocation that returns an App-admission receipt.
+- Handler: deterministic host-internal maintenance adapter with no App work
+  authority.
 - App resolver/controller: correlate an event to desired task state and
   reconcile the latest resource level.
 - Workflow: context collection, function steps, sessions, metrics.
@@ -71,9 +73,11 @@ Before editing code, classify the path:
 
 Fix the lowest boundary that actually owns the bug.
 
-### 2. Emit Events Instead of Calling Internals
+### 2. Use Canonical Ingress Instead Of Calling Internals
 
-For operator actions, emit a daemon event through the convention socket path.
+Invoke declared App actions through App admission. Publish a daemon fact only
+for an observation, exact task wake, or host-internal maintenance operation
+whose contract is explicitly event-shaped.
 
 Typical source checkout:
 
@@ -99,21 +103,22 @@ semantic event -> tasks.resolve -> stable task key -> owner/workflow -> reconcil
 ```
 
 The queue carries task keys, not copied work. The owner or workflow returns a
-structured decision; infrastructure mutates task state and emits correlated
-owner results. Do not add per-task handlers, assignment events, or a parallel
-request queue.
+structured reconciliation result; infrastructure validates and mutates task
+state. Task completion wakes an attached App request through
+`app.dependency.completed`; it does not emit a parallel owner-result lifecycle.
+Do not add per-task handlers, assignment events, or another request queue.
 
-### 4. Keep Standalone Handlers Thin
+### 4. Keep Remaining Internal Handlers Mechanical
 
 Default shape:
 
 ```
-event/timer -> handler -> workflow
+runtime fact -> internal handler -> bounded maintenance operation
 ```
 
-Handlers may normalize input, deduplicate, skip no-op work, and dispatch a
-workflow. Put prompts, multi-step context gathering, retries, and judgment in
-the workflow.
+Handlers may normalize input, deduplicate, skip no-op work, and maintain shared
+runtime mechanics. Domain judgment enters a declared App request or task; an
+internal handler must not become a hidden App or owner inbox.
 
 ### 5. Prefer Query Helpers Over Schema Guessing
 
@@ -127,9 +132,10 @@ When you must query manually, inspect schema first.
 
 After a change, trigger one representative event and verify the durable trace:
 
-- event accepted by the responsible domain consumer or durable App inbox,
-- project receipt linked to exactly one correlated owner result when applicable,
-- owner result includes a bounded summary and any durable task references,
+- addressed input admitted to exactly one correlated App inbox item,
+- the App disposition completes, delegates, or attaches one task dependency,
+- a completed dependency wakes the exact parent through
+  `app.dependency.completed`,
 - exact durable waits appear as task Conditions,
 - handler started/completed or failed with reason,
 - workflow/session linked when expected,

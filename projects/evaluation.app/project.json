@@ -1,6 +1,6 @@
 {
   "id": "evaluation",
-  "type": "project-app",
+  "type": "agent-app",
   "owner": "evaluator",
   "status": "active",
   "priority": "P0",
@@ -8,5 +8,5 @@
     "id": "evaluation",
     "path": "."
   },
-  "goal": "Independently audit May-agent sessions and project apps, identify evidence-backed risks and improvement opportunities, and report actionable findings to humans and responsible project owners."
+  "goal": "Independently audit May-agent sessions and Agent Apps, identify evidence-backed risks and improvement opportunities, and report actionable findings to humans and accountable App owners."
 }

@@ -2,8 +2,8 @@ import { expect, test } from "bun:test";
 import { existsSync, mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { WorkflowContext } from "@may-agent/sdk";
 import { execute as captureIncident } from "./incident-intake.ts";
+import { canonicalGymTestContext } from "./lib/test-context";
 import { execute as reviewAndPropose } from "./review-and-propose.ts";
 
 function task(event: Record<string, unknown>): string {
@@ -11,6 +11,7 @@ function task(event: Record<string, unknown>): string {
 }
 
 function reviewTask(event: Record<string, unknown>): string {
+  const data = event.data as Record<string, unknown>;
   return [
     "app: test",
     "",
@@ -20,10 +21,10 @@ function reviewTask(event: Record<string, unknown>): string {
       taskId: "runtime/review-proposal/s-e2e-failure",
       generation: 1,
       input: {
-        kind: event.kind,
-        requestKey: event.requestKey,
-        incidentId: event.incidentId,
-        incidentPath: event.incidentPath,
+        kind: data.kind,
+        requestKey: data.requestKey,
+        incidentId: data.incidentId,
+        incidentPath: data.incidentPath,
       },
     }),
     "```",
@@ -40,7 +41,7 @@ test("a failure incident flows to a durable review proposal", async () => {
   const projectsRoot = join(root, "projects");
   const incident = {
     type: "gym.incident.detected",
-    params: {
+    data: {
       reason: "may-evaluation-failure",
       evaluation: {
         agent: "may",
@@ -50,30 +51,26 @@ test("a failure incident flows to a durable review proposal", async () => {
         artifactPath: "/app/example-review.md",
       },
     },
+    target: { appId: "gym", project: "gym" },
   };
 
   const intakeEvents: Array<Record<string, unknown>> = [];
-  const intakeCtx = {
+  const intakeCtx = canonicalGymTestContext({
     task: task(incident),
     projectsRoot,
     emit(event: Record<string, unknown>) {
       intakeEvents.push(event);
     },
-    done(summary: string) {
-      return { type: "done" as const, summary };
-    },
-    blocked(reason: string) {
-      return { type: "blocked" as const, reason };
-    },
-  } as unknown as WorkflowContext;
-  expect((await captureIncident(intakeCtx)).type).toBe("done");
+  });
+  expect((await captureIncident(intakeCtx)).status).toBe("done");
   expect(intakeEvents).toHaveLength(1);
-  const incidentPath = String(intakeEvents[0]!.incidentPath);
+  const incidentData = intakeEvents[0]!.data as Record<string, unknown>;
+  const incidentPath = String(incidentData.incidentPath);
   expect(existsSync(incidentPath)).toBe(true);
 
   const reviewEvents: Array<Record<string, unknown>> = [];
   const reviewDispatches: Array<Record<string, unknown>> = [];
-  const reviewCtx = {
+  const reviewCtx = canonicalGymTestContext({
     task: reviewTask(intakeEvents[0]!),
     projectsRoot,
     async runAgent(agent: string, prompt: string, options: unknown) {
@@ -86,12 +83,13 @@ test("a failure incident flows to a durable review proposal", async () => {
         status: "done" as const,
         sessionId: "s_gym_review",
         lastAssistantText: "Review complete.",
-        messages: [
-          {
-            role: "assistant",
-            content: [{ type: "text", text: proposal }],
-          },
-        ],
+        structuredResult: {
+          proposal,
+          disposition: "human-review",
+          matchedCoverage: [],
+          dispositionReason:
+            "This incident requires a new human-owned May behavior decision before benchmark activation.",
+        },
       };
     },
     emit(event: Record<string, unknown>) {
@@ -100,31 +98,25 @@ test("a failure incident flows to a durable review proposal", async () => {
     dispatchEvent(type: string, data: Record<string, unknown>) {
       reviewDispatches.push({ type, ...data });
     },
-    notify() {
-      throw new Error("typed review approval must replace plain notifications");
-    },
-    done(summary: string, output?: unknown) {
-      return { type: "done" as const, summary, output };
-    },
-    blocked(reason: string) {
-      return { type: "blocked" as const, reason };
-    },
-  } as unknown as WorkflowContext;
-  expect((await reviewAndPropose(reviewCtx)).type).toBe("done");
+  });
+  expect((await reviewAndPropose(reviewCtx)).status).toBe("done");
 
   expect(reviewEvents).toHaveLength(2);
   expect(reviewEvents[0]).toMatchObject({
     type: "gym.review.ready",
-    humanApprovalRequired: true,
+    data: { humanApprovalRequired: true },
   });
-  const reviewPath = String(reviewEvents[0]!.reviewPath);
+  const reviewData = reviewEvents[0]!.data as Record<string, unknown>;
+  const reviewPath = String(reviewData.reviewPath);
   expect(readFileSync(reviewPath, "utf8")).toContain(
     "Replay the correction, add a paraphrase, and add an opposite control",
   );
   expect(reviewEvents[1]).toMatchObject({
     type: "project.approval.requested",
-    approvalKind: "review-proposal",
-    packetPath: reviewPath,
+    data: {
+      approvalKind: "review-proposal",
+      packetPath: reviewPath,
+    },
   });
   expect(reviewDispatches).toEqual([
     expect.objectContaining({

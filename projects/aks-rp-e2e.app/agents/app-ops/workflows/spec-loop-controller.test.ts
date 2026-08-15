@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -77,9 +78,86 @@ function git(projectDir: string, ...args: string[]): string {
 }
 
 function context(appDir: string, projectDir: string) {
+  const read = (name: string) =>
+    JSON.parse(
+      readFileSync(join(appDir, ".state", "tasks", name), "utf8"),
+    ) as Record<string, any>;
+  const tree = read("tree.json");
+  const state = read("state.json");
+  const tasks = { ...(tree.tasks ?? {}), ...(state.tasks ?? {}) };
+  const resources = state.resources ?? {};
+  const live = Object.entries({ ...tasks, ...resources }).flatMap(
+    ([taskId, value]: [string, any]) => {
+      const task = tasks[taskId] ?? {};
+      const resource = resources[taskId] ?? {};
+      const spec = resource.spec ?? task;
+      const status = resource.status ?? task;
+      const phase = String(status.phase ?? status.state ?? "pending");
+      return ["done", "closed", "converged"].includes(phase)
+        ? []
+        : [
+            {
+              taskId,
+              parentId: String(
+                spec.parentId ?? task.parent_id ?? "aks-spec-verification-loop",
+              ),
+              generation: Number(
+                resource.metadata?.generation ?? task.generation ?? 1,
+              ),
+              status: phase,
+              outcome: String(spec.outcome ?? task.goal ?? "fixture task"),
+              input: spec.input ?? task.input ?? {},
+              conditions: [],
+              hasLiveChildren: false,
+              evidence: status.evidence ?? [],
+              summary: status.summary,
+            },
+          ];
+    },
+  );
+  const completed = Object.entries(state.receipts ?? {}).map(
+    ([taskId, receipt]: [string, any]) => ({
+      taskId,
+      parentId: String(receipt.parentId ?? "aks-spec-verification-loop"),
+      generation: Number(receipt.metadata?.generation ?? 1),
+      status: "done",
+      outcome: String(receipt.outcome ?? receipt.summary ?? "fixture receipt"),
+      input: receipt.input ?? {},
+      conditions: [],
+      hasLiveChildren: false,
+      evidence: receipt.evidence ?? [],
+      summary: receipt.summary,
+      completedAt: receipt.completedAt ?? "2026-01-01T00:00:00Z",
+    }),
+  );
   return {
-    task: `app: ${appDir}\nproject: ${projectDir}\nfrontierLimit: 5\nmaxConcurrent: 80\n## Trigger Event\n\`\`\`json\n${JSON.stringify({ type: "project.task.tick", action: "spec-loop", taskId: "aks-spec-verification-loop", maxConcurrent: 80 })}\n\`\`\``,
-    agent: "aks-explorer",
+    input: { frontierLimit: 5, maxConcurrent: 80 },
+    reconciliation: {
+      appId: "aks-rp-e2e",
+      taskId: "aks-spec-verification-loop",
+      generation: 1,
+      resourceVersion: 1,
+      owner: "app-ops",
+      mode: "maintain",
+      outcome: "Maintain spec verification",
+      acceptance: [],
+      input: { frontierLimit: 5, maxConcurrent: 80 },
+      children: { live, completed },
+      trigger: {
+        type: "project.task.tick",
+        data: {
+          action: "spec-loop",
+          taskId: "aks-spec-verification-loop",
+          maxConcurrent: 80,
+        },
+      },
+    },
+    workspace: {
+      appRoot: appDir,
+      projectRoot: projectDir,
+      root: projectDir,
+      output: projectDir,
+    },
     done: (message: string, output?: unknown) => ({
       status: "done",
       message,
@@ -457,11 +535,9 @@ describe("spec loop reconciliation workflow", () => {
 
     expect(result.output.state).toBe("converged");
     expect(result.output.actions).toHaveLength(3);
-    expect(result.output.actions.map((action: any) => action.input.specId)).toEqual([
-      "spec.reviewed",
-      "spec.seven",
-      "spec.six",
-    ]);
+    expect(
+      result.output.actions.map((action: any) => action.input.specId),
+    ).toEqual(["spec.reviewed", "spec.seven", "spec.six"]);
     expect(result.output.actions).toSatisfy((actions: Array<any>) =>
       actions.every(
         (action) =>
@@ -765,7 +841,7 @@ describe("spec loop reconciliation workflow", () => {
       "a GitHub Actions auth or workflow failure cannot justify a terminal disposition after the project moved to ADO",
     );
     expect(acceptance).toContain(
-      "do not return an action that references a missing task id",
+      "marked not-a-current-direct-child-or-receipt in representationReview as stale history",
     );
   });
 

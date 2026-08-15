@@ -2,19 +2,19 @@
   "id": "may-agent.app",
   "owner": "tech-lead",
   "status": "active",
-  "type": "project-app",
+  "type": "agent-app",
   "priority": "P0",
   "domainProject": {
     "id": "may-agent",
     "path": "../may-agent"
   },
-  "goal": "Drive the May-agent platform as a v3 project app: keep runtime contracts, event/session/task execution, persistence, SDK, shared UI, and project-app conventions coherent, tested, and reusable.",
+  "goal": "Drive the May-agent platform through one canonical Agent App: keep runtime contracts, App inbox/task execution, persistence, SDK, shared UI, and App conventions coherent, tested, and reusable.",
   "strategy": [
     "Keep platform design and principles in this app's docs/ tree.",
-    "Use the task tree as the durable expression of project thinking, priorities, and accepted understanding; the SDK owns its runtime file path.",
+    "Use the App inbox for addressed obligations and the optional task capability for durable desired-state convergence; never edit host-private task persistence directly.",
     "Use ../may-agent as the portable domain/runtime code workspace.",
-    "Route human steering, metric signals, scheduled review, and abnormal runtime signals into event-based owner review.",
-    "Before claiming platform health, inspect open alerts, recent failures, stale project state, task-tree state, evaluator findings, and communication failures.",
+    "Route human steering through typed App input and translate facts into explicit App subscriptions, task intents, exact wakes, or observation-only dispositions.",
+    "Before claiming platform health, inspect bounded App/task projections, open alerts, recent failures, stale project state, evaluator findings, and communication failures.",
     "Keep runtime scratch in .state/ and fold durable decisions back into docs, tasks, or code."
   ]
 }

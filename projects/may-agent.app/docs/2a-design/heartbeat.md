@@ -1,9 +1,8 @@
 # Heartbeat
 
 **Design status:** Accepted.
-**Implementation status:** Implemented. The loader still supports app-local
-heartbeat workflows as a compatibility path; new project responsibilities use
-app schedules and owner workflows.
+**Implementation status:** Implemented for standalone global-agent duties.
+Agent Apps use canonical schedules, observers, inbox inputs, and task wakes.
 
 ## Purpose
 
@@ -16,27 +15,25 @@ timer.tick -> standalone heartbeat workflow -> agent judgment -> evidence/events
 ```
 
 A heartbeat is a trigger, not a work identity, queue, or project lifecycle.
-The workflow/session it starts is the bounded execution. Events and owner state
-remain the durable loop.
+The workflow/session it starts is one bounded execution. It may publish evidence
+or facts, but it cannot become durable project work outside an Agent App request
+or task.
 
 ## Scope
 
 Use a standalone heartbeat only when an agent has a standing responsibility
-that no project app owns.
+that no Agent App owns.
 
 | Owner type | Recurring review mechanism |
 | --- | --- |
 | Standalone global agent | `agents/<name>/workflows/<name>-heartbeat.ts` |
-| Project-app owner/specialist | App schedule emits `project.owner.requested` or another typed app event |
+| Agent App owner/specialist | App input schedule or exact task-wake schedule declared in `app.ts` |
 | Runtime infrastructure | Mechanical handler/schedule and ops-health routing |
 
-Do not run both a standalone heartbeat and a project-app owner cadence for the
-same responsibility. App-local agents normally set `"heartbeat": false`.
-
-The current loader can auto-generate a heartbeat for an app-local agent when a
-matching `<agent>-heartbeat.ts` exists. That is implementation compatibility,
-not a reason to add a second cadence. Existing apps should retire or explicitly
-justify overlaps during their normal convergence work.
+Do not run both a standalone heartbeat and an Agent App cadence for the same
+responsibility. App-local agents set `"heartbeat": false`. A workflow whose
+name contains `heartbeat` may remain as ordinary App-owned workflow code, but
+only a canonical App input/task route may invoke it autonomously.
 
 ## Work Context
 
@@ -72,24 +69,25 @@ Rules:
 - Keep the cadence bounded and inexpensive.
 - Emit observable skipped/failed/completed lifecycle evidence.
 - Do not encode long-term plans in the timer prompt; durable goals belong in a
-  project app or agent-owned knowledge/context.
+  Agent App or agent-owned knowledge/context.
 - Urgent P0 signals may start immediate bounded work; lower-priority signals
   normally wait for the next review cadence or owning project event.
 
 ## Project Owner Review
 
-Project apps may use a low-frequency creative/health review in addition to
-event-driven owner wakes. This is a project schedule, not a standalone agent
-heartbeat:
+Agent Apps may use a low-frequency creative/health review. This is an App input
+schedule, not a standalone agent heartbeat or event-owned lifecycle:
 
 ```text
 app schedule
-  -> project.owner.requested { reason: "scheduled-owner-review" }
-  -> normal owner workflow
+  -> correlated App input { reason: "scheduled-owner-review" }
+  -> inbox disposition or attached standing task
 ```
 
-The same owner workflow reviews event-driven and scheduled input. The schedule
-does not create another planning controller or task lifecycle.
+If time only refreshes deterministic desired work, the schedule instead emits
+one fact addressed to an exact task or selected by a task subscription. The
+schedule never dispatches an owner session directly or creates another work
+authority.
 
 An observer records every bounded packet but wakes the owner only when the
 canonical signal-family fingerprint changes, a previously reported signal
@@ -100,10 +98,12 @@ do not spend another owner session.
 
 ## Human Steering
 
-Human steering should target the relevant chat, session, or project directly.
+Human steering should target the relevant request, session, App action, or task
+directly.
 “Trigger heartbeat now” is only appropriate for a standalone agent whose
 standing review context is the intended target. Project steering should emit
-`project.owner.requested`; it should not depend on an agent heartbeat.
+a correlated App input or an exact task control; it should not depend on an
+agent heartbeat.
 
 ## Health
 
@@ -115,12 +115,11 @@ A standalone heartbeat is healthy when it:
 - avoids duplicate dispatch and repeated blind retries;
 - surfaces provider/runtime failures visibly.
 
-A project app is healthy based on project events, owner workflow runs, task
+An Agent App is healthy based on App requests, owner workflow runs, task
 motion, delivery, and evidence—not on standalone heartbeat coverage.
 
 ## Implementation
 
-- Helper: `@may-agent/sdk` heartbeat-data utilities.
 - Auto-generation: `projects/may-agent/src/app/loader/heartbeat-loader.ts`.
 - Standalone workflows: `agents/<name>/workflows/<name>-heartbeat.ts`.
 - App owner schedules: `projects/<id>.app/app.ts`.

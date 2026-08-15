@@ -28,15 +28,15 @@ archive.
 
 ### Agents and execution
 
-| Document                                                       | Purpose                                                  |
-| -------------------------------------------------------------- | -------------------------------------------------------- |
-| [agents.md](2a-design/agents.md)                               | Agent identity, cooperation, and app-local registration. |
+| Document                                                       | Purpose                                                       |
+| -------------------------------------------------------------- | ------------------------------------------------------------- |
+| [agents.md](2a-design/agents.md)                               | Agent identity, cooperation, and app-local registration.      |
 | [runtime.md](2a-design/runtime.md)                             | Model/tool boundary, direct execution, and runtime internals. |
-| [sessions.md](2a-design/sessions.md)                           | Durable execution lifecycle and persistence.             |
-| [workflows.md](2a-design/workflows.md)                         | Agent-owned reusable process and execution contract.     |
-| [skills.md](2a-design/skills.md)                               | Scoped reusable judgment guidance.                       |
-| [sdk.md](2a-design/sdk.md)                                     | Stable agent and workflow capability surface.            |
-| [native-coding-workers.md](2a-design/native-coding-workers.md) | Codex/Claude adapter and continuity model.               |
+| [sessions.md](2a-design/sessions.md)                           | Durable execution lifecycle and persistence.                  |
+| [workflows.md](2a-design/workflows.md)                         | Agent-owned reusable process and execution contract.          |
+| [skills.md](2a-design/skills.md)                               | Scoped reusable judgment guidance.                            |
+| [sdk.md](2a-design/sdk.md)                                     | Stable agent and workflow capability surface.                 |
+| [native-coding-workers.md](2a-design/native-coding-workers.md) | Codex/Claude adapter and continuity model.                    |
 
 ### Agent Apps and projects
 
@@ -79,34 +79,33 @@ current-design list.
 
 ## Tier 2b — Manuals
 
-| Document                                                                       | Purpose                                                     |
-| ------------------------------------------------------------------------------ | ----------------------------------------------------------- |
-| [user-guide.md](2b-manual/user-guide.md)                                       | CLI flags, Docker, socket, and chat commands.               |
-| [sdk-quickstart.md](2b-manual/sdk-quickstart.md)                               | SDK usage examples.                                         |
-| [handler-authoring.md](2b-manual/handler-authoring.md)                         | Event handler authoring.                                    |
-| [workflow-authoring.md](2b-manual/workflow-authoring.md)                       | Workflow authoring and invocation.                          |
-| [project-app-adoption-playbook.md](2b-manual/project-app-adoption-playbook.md) | Adopt the Agent App and optional task-resource conventions. |
-| [agent-convention.md](2b-manual/agent-convention.md)                           | Agent directory and definition conventions.                 |
-| [metric-alerts.md](2b-manual/metric-alerts.md)                                 | Alert triage, repair, calibration, and escalation.          |
-| [event-runtime-audit.md](2b-manual/event-runtime-audit.md)                     | Compare event runtime behavior with design.                 |
-| [guard-runtime-audit.md](2b-manual/guard-runtime-audit.md)                     | Inspect guard volume and signal quality.                    |
+| Document                                                                   | Purpose                                                     |
+| -------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| [user-guide.md](2b-manual/user-guide.md)                                   | CLI flags, Docker, socket, and chat commands.               |
+| [sdk-quickstart.md](2b-manual/sdk-quickstart.md)                           | SDK usage examples.                                         |
+| [handler-authoring.md](2b-manual/handler-authoring.md)                     | Event handler authoring.                                    |
+| [workflow-authoring.md](2b-manual/workflow-authoring.md)                   | Workflow authoring and invocation.                          |
+| [agent-app-adoption-playbook.md](2b-manual/agent-app-adoption-playbook.md) | Adopt the Agent App and optional task-resource conventions. |
+| [agent-convention.md](2b-manual/agent-convention.md)                       | Agent directory and definition conventions.                 |
+| [metric-alerts.md](2b-manual/metric-alerts.md)                             | Alert triage, repair, calibration, and escalation.          |
+| [event-runtime-audit.md](2b-manual/event-runtime-audit.md)                 | Compare event runtime behavior with design.                 |
+| [guard-runtime-audit.md](2b-manual/guard-runtime-audit.md)                 | Inspect guard volume and signal quality.                    |
 
 ## Tier 3 — Active proposals and trackers
 
-| Document                                                                                                               | Status                               | Purpose                                                                                              |
-| ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------- |
-| [chat-agent-separation.md](3-proposals/chat-agent-separation.md)                                                       | Active tracker                       | Close remaining chat restart, trace, and delegation gaps.                                            |
-| [app-owned-runtime-simplification.md](3-proposals/app-owned-runtime-simplification.md)                                | Accepted; migration in progress      | Make Apps durable addressed-work owners and reduce the daemon to one generic App host.                |
-| [canonical-agent-app-migration.md](3-proposals/canonical-agent-app-migration.md)                                      | Accepted; implementation in progress | Fully converge App hosting, routing, tasks, SDK, and docs on one canonical Agent App design.          |
-| [inbox-scope-reduction.md](3-proposals/inbox-scope-reduction.md)                                                      | Draft refinement                     | Keep addressed obligations in inboxes and route durable task intent without a second selector API.   |
-| [agent-app-external-interaction-contract.md](3-proposals/agent-app-external-interaction-contract.md)                   | Implemented                          | Use project intent by default and discoverable typed shortcuts for repeated automation.              |
-| [event-ingress-and-socket-reliability.md](3-proposals/event-ingress-and-socket-reliability.md)                         | Implemented                          | Define durable receipts, retry safety, bounded subscribers, and a minimal socket boundary.           |
-| [system-operations-model.md](3-proposals/system-operations-model.md)                                                   | Active tracker                       | Close remaining platform operations ownership gaps.                                                  |
-| [task-authorship-and-workflow-governance.md](3-proposals/task-authorship-and-workflow-governance.md)                   | Draft                                | Assign task specification management by creation path without per-task authority config.             |
-| [task-handler-resolution-refinement.md](3-proposals/task-handler-resolution-refinement.md)                             | Accepted; canary pending             | Make explicit workflow binding authoritative and surface unavailable workflows as attention.         |
-| [task-reconciliation-closeout-and-reviewability.md](3-proposals/task-reconciliation-closeout-and-reviewability.md)     | Accepted; delivery proof pending     | Close persistent-task policy, Scout evidence, and delivery gaps.                                     |
-| [task-reconciliation-simplification-and-integrity.md](3-proposals/task-reconciliation-simplification-and-integrity.md) | Approved; cleanup in progress        | Remove active compatibility vocabulary without changing the task model.                              |
-| [task-workspace-convention.md](3-proposals/task-workspace-convention.md)                                               | Accepted; AKS pilot implemented      | Use shared domain workspaces by default and isolate independent mutations when evidence warrants it. |
+| Document                                                                                                               | Status                             | Purpose                                                                                              |
+| ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| [chat-agent-separation.md](3-proposals/chat-agent-separation.md)                                                       | Active tracker                     | Close remaining chat restart, trace, and delegation gaps.                                            |
+| [canonical-agent-app-migration.md](3-proposals/canonical-agent-app-migration.md)                                       | Implemented; ready to merge        | Fully converge App hosting, routing, tasks, SDK, and docs on one canonical Agent App design.         |
+| [convention-based-service-composition.md](3-proposals/convention-based-service-composition.md)                         | Reviewed; limited decision adopted | Keep runtime composition host-private; reject a second App service/plugin loader.                    |
+| [inbox-scope-reduction.md](3-proposals/inbox-scope-reduction.md)                                                       | Accepted and incorporated          | Keep addressed obligations in inboxes and route durable task intent without a second selector API.   |
+| [work-admission-and-mechanism-selection.md](3-proposals/work-admission-and-mechanism-selection.md)                     | Accepted; archive with migration   | Choose durable ownership first, then the bounded execution mechanism.                                |
+| [system-operations-model.md](3-proposals/system-operations-model.md)                                                   | Active tracker                     | Close remaining platform operations ownership gaps.                                                  |
+| [task-authorship-and-workflow-governance.md](3-proposals/task-authorship-and-workflow-governance.md)                   | Draft                              | Assign task specification management by creation path without per-task authority config.             |
+| [task-handler-resolution-refinement.md](3-proposals/task-handler-resolution-refinement.md)                             | Accepted; canary pending           | Make explicit workflow binding authoritative and surface unavailable workflows as attention.         |
+| [task-reconciliation-closeout-and-reviewability.md](3-proposals/task-reconciliation-closeout-and-reviewability.md)     | Accepted; delivery proof pending   | Close persistent-task policy, Scout evidence, and delivery gaps.                                     |
+| [task-reconciliation-simplification-and-integrity.md](3-proposals/task-reconciliation-simplification-and-integrity.md) | Approved; cleanup in progress      | Remove active compatibility vocabulary without changing the task model.                              |
+| [task-workspace-convention.md](3-proposals/task-workspace-convention.md)                                               | Accepted; AKS pilot implemented    | Use shared domain workspaces by default and isolate independent mutations when evidence warrants it. |
 
 Completed proposals do not remain in the active proposal folder.
 

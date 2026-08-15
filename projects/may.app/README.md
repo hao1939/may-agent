@@ -1,5 +1,5 @@
-# May Conversation App
+# May App
 
-This App is the durable human-conversation address owned by May. It has no
-background schedules, observers, or task capability. Platform maintenance is
-owned separately by `may-agent.app`.
+The May App is the durable conversation address for human requests and explicit
+human-decision obligations. It owns no platform task policy; platform convergence
+belongs to the separate `may-agent` App.

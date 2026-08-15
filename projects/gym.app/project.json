@@ -1,6 +1,6 @@
 {
   "id": "gym",
-  "type": "project-app",
+  "type": "agent-app",
   "owner": "gym",
   "status": "active",
   "priority": "P1",

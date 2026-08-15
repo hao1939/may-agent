@@ -1,4 +1,18 @@
-export function extractTrigger(task: string): Record<string, unknown> | null {
+import type { WorkflowContext } from "@may-agent/sdk";
+
+type TriggerSource = string | Pick<WorkflowContext, "input" | "reconciliation">;
+
+function record(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+export function extractTrigger(
+  source: TriggerSource,
+): Record<string, unknown> | null {
+  if (typeof source !== "string") return record(source.reconciliation?.trigger);
+  const task = source;
   const header = "## Trigger Event";
   const lineIndex = task.lastIndexOf(`\n${header}`);
   const headerIndex =
@@ -23,9 +37,11 @@ export function extractTrigger(task: string): Record<string, unknown> | null {
   }
 }
 
-export function triggerDetails(task: string): Record<string, unknown> | null {
-  const trigger = extractTrigger(task);
-  const input = reconciliationInput(task);
+export function triggerDetails(
+  source: TriggerSource,
+): Record<string, unknown> | null {
+  const trigger = extractTrigger(source);
+  const input = reconciliationInput(source);
   if (!trigger) return input;
   const merged: Record<string, unknown> = {};
   for (const key of ["data", "payload", "params"]) {
@@ -38,9 +54,12 @@ export function triggerDetails(task: string): Record<string, unknown> | null {
 }
 
 export function reconciliationInput(
-  task: string,
+  source: TriggerSource,
 ): Record<string, unknown> | null {
-  const packet = reconciliationPacket(task);
+  if (typeof source !== "string") {
+    return record(source.reconciliation?.input) ?? record(source.input);
+  }
+  const packet = reconciliationPacket(source);
   return packet?.input &&
     typeof packet.input === "object" &&
     !Array.isArray(packet.input)
@@ -49,8 +68,10 @@ export function reconciliationInput(
 }
 
 export function reconciliationPacket(
-  task: string,
+  source: TriggerSource,
 ): Record<string, unknown> | null {
+  if (typeof source !== "string") return record(source.reconciliation);
+  const task = source;
   const header = "## Reconciliation Task";
   const headerIndex = task.lastIndexOf(header);
   if (headerIndex < 0) return null;

@@ -138,11 +138,15 @@ For task-owned execution, `ctx.reconciliation` supplies:
 - resolved owner, mode, outcome, and acceptance;
 - typed workflow input;
 - bounded live and completed child views; and
+- a capped snapshot of other live App tasks when App-wide frontier health must
+  be reviewed; and
 - the exact event that triggered this pass, when present.
 
-That is enough to reconcile current desired work without parsing a prompt
-packet or reading the global task tree. A workflow returns a typed output for
-the task boundary to validate and admit. It never edits task state itself.
+The snapshot excludes the current task, carries a `truncated` bit, and does not
+change parent/child ownership semantics. These facts are enough to reconcile
+current desired work without parsing a prompt packet or reading global task
+persistence. A workflow returns a typed output for the task boundary to
+validate and admit. It never edits task state itself.
 
 ## Invocation
 
@@ -322,6 +326,15 @@ Promote a learned practice to a workflow when evidence shows:
 - deterministic checks and bounded repair improve reliability;
 - the process is stable enough for code and tests; and
 - it still fits one bounded execution attempt.
+
+Three successful runs may be useful evidence of stability, but they are not a
+hard threshold. A known safety-critical protocol may deserve a typed, tested
+workflow before its first production run. Frequent execution alone is not a
+reason to promote an unstable or judgment-dominated sequence.
+
+Workflows may call agents. Their workflow-owned schemas, branching, limits,
+gates, verification, and result admission must be testable with fake agent
+responses rather than requiring a live model in unit tests.
 
 Keep it as a skill when the right sequence is highly contextual, judgment
 dominates, or the process is still being learned. Split it across App/task

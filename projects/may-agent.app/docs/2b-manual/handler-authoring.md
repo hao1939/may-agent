@@ -1,33 +1,41 @@
 # Authoring Agent App task handlers
 
-An Agent App has one event-to-task resolver and one accountable owner. The
-runtime supplies one deduplicating work queue and reconciler for the app.
+An Agent App has one `app.ts` declaration and one accountable owner. Ordinary
+addressed requests enter its Inbox. Only deterministic desired outcomes enter
+its optional task reconciler.
 
 ## App manifest
 
 ```ts
-export default defineProjectApp({
+import { Type, defineApp } from "@may-agent/sdk";
+
+export default defineApp({
   id: "example",
   version: 1,
   owner: "example-owner",
+  inputSchema: Type.Object({
+    kind: Type.String(),
+    data: Type.Unknown(),
+  }),
   workspace: { kind: "local", localPath: "../example" },
-  budget: { sessionsPerDay: 20, tokensPerDay: 500_000, maxConcurrent: 2 },
-  schedules: [],
   tasks: {
-    accepts: [{ type: "example.requested", project: "example" }],
+    attach: true,
+    subscriptions: [{ type: "example.requested", target: { project: "example" } }],
+    maxConcurrent: 2,
     resolve(event) {
+      const requestId = String(event.data.requestId ?? "");
+      if (!requestId) return null;
       return {
-        id: `request/${String(event.eventId)}`,
+        id: `request/${requestId}`,
         parentId: "project",
         outcome: "Handle the request.",
         acceptance: ["The requested outcome is evidenced."],
         mode: "achieve",
         workflow: "handle-request",
-        input: { eventId: event.eventId },
+        input: { requestId },
       };
     },
   },
-  actions: {},
 });
 ```
 
@@ -51,8 +59,8 @@ Every handler returns one envelope:
   state: "converged" | "waiting" | "needs-owner";
   summary: string;
   evidence: string[];
-  actions?: ProjectAppTaskAction[];
-  conditions?: ProjectAppConditionSpec[];
+  actions?: TaskAction[];
+  conditions?: Condition[];
 }
 ```
 
@@ -114,10 +122,9 @@ for its own task. Its admitted `converged` or `waiting` result owns that
 transition. Broad reprioritization, duplicate cleanup, and unrelated-branch
 changes belong to a bounded owner-review pass.
 
-App UI actions declare an input schema and semantic event factory in
-`app.actions`. Infrastructure discovers and validates the action, then persists
-its semantic event directly. Do not add an app-local adapter or wrapper action
-lifecycle.
+App UI actions declare an input schema and a pure `toInput` translation in
+`app.actions`. Infrastructure validates the action and durably admits the
+resulting App input. Do not add another action lifecycle or event router.
 
 Validate with the app's `bun run check` and runtime reconciliation tests.
 
@@ -127,7 +134,8 @@ A handler is a small infrastructure adapter. It may translate, observe,
 persist, or dispatch bounded work. It must not become a second task scheduler,
 task-state writer, domain owner, or learned process.
 
-- Does project work enter the app's single resolver/queue/controller?
+- Does every addressed request enter the App Inbox, or exactly one task when it
+  is a deterministic desired outcome?
 - Is reusable judgment implemented under its owning agent?
 - Does any watcher know task IDs or mutate task resources?
 - Can recovery start from durable state without replaying a synthetic scheduler

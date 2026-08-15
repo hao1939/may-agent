@@ -25,11 +25,17 @@ import {
 } from "@may-agent/gym/loop";
 import { Type } from "@earendil-works/pi-ai";
 import type {
-  ProjectAppConditionSpec,
-  ProjectAppTaskAction,
+  Condition,
+  ExecutionResult,
+  TaskAction,
   WorkflowContext,
-  WorkflowResult,
 } from "@may-agent/sdk";
+import {
+  callGymAgent,
+  emitGymEvent,
+  gymEvent,
+  gymProjectsRoot,
+} from "./lib/context";
 import { reconciliationPacket, safeKey, triggerDetails } from "./lib/trigger";
 import {
   readGuidedPracticeResult,
@@ -41,6 +47,8 @@ export const description =
   "Evaluate May, classify each finding, and iterate one isolated candidate at a time until progress stops or one verified proposal is ready.";
 export const workspace = "shared";
 export const executionTimeoutMs = 120 * 60_000;
+
+type GymExecutionResult = ExecutionResult<any>;
 
 const RELEASE_TRIALS = 5;
 
@@ -112,8 +120,8 @@ interface StoredResult {
   summary: string;
   state: "converged" | "waiting" | "needs-owner";
   evidence: string[];
-  actions: ProjectAppTaskAction[];
-  conditions: ProjectAppConditionSpec[];
+  actions: TaskAction[];
+  conditions: Condition[];
   approval: ApprovalRequest | null;
 }
 
@@ -197,7 +205,7 @@ interface ApprovalRequest {
   packetPath: string;
   requestedAction: string;
   reason: string;
-  condition: ProjectAppConditionSpec;
+  condition: Condition;
 }
 
 interface EvaluationOnlyAdjustment {
@@ -228,144 +236,10 @@ export interface GymLoopApi {
   }): ReturnType<typeof verifyLoop>;
 }
 
-interface CampaignLease {
-  statePath: string;
-  taskId: string;
-  generation: number;
-  attemptId: string | null;
-  enforced: boolean;
-}
-
-class CampaignSupersededError extends Error {
-  constructor(taskId: string, generation: number) {
-    super(`Campaign ${taskId}@${generation} was superseded`);
-    this.name = "CampaignSupersededError";
-  }
-}
-
 const defaultLoopApi: GymLoopApi = {
   run: (options) => runLoop(options),
   verify: (input) => verifyLoop(input),
 };
-
-function campaignRuntime(
-  statePath: string,
-  taskId: string,
-): { generation: number | null; attemptId: string | null } | null {
-  const state = readJson<Record<string, unknown>>(statePath);
-  if (!state) return null;
-  const resource = record(record(state.resources)[taskId]);
-  if (!Object.keys(resource).length) {
-    return { generation: null, attemptId: null };
-  }
-  const metadata = record(resource.metadata);
-  const status = record(resource.status);
-  const generation = Number(metadata.generation);
-  return {
-    generation: Number.isInteger(generation) ? generation : null,
-    attemptId:
-      typeof status.currentAttemptId === "string" &&
-      status.currentAttemptId.trim()
-        ? status.currentAttemptId
-        : null,
-  };
-}
-
-function createCampaignLease(
-  ctx: WorkflowContext,
-  taskId: string,
-  generation: number,
-): CampaignLease {
-  const statePath = join(
-    ctx.projectsRoot,
-    "gym.app",
-    ".state",
-    "tasks",
-    "state.json",
-  );
-  const current = campaignRuntime(statePath, taskId);
-  return {
-    statePath,
-    taskId,
-    generation,
-    attemptId: current?.attemptId ?? null,
-    enforced: current !== null,
-  };
-}
-
-function assertCampaignLease(lease: CampaignLease): void {
-  if (!lease.enforced) return;
-  const current = campaignRuntime(lease.statePath, lease.taskId);
-  if (
-    !current ||
-    current.generation !== lease.generation ||
-    current.attemptId !== lease.attemptId
-  ) {
-    throw new CampaignSupersededError(lease.taskId, lease.generation);
-  }
-}
-
-function fencedLoopApi(loop: GymLoopApi, lease: CampaignLease): GymLoopApi {
-  return {
-    async run(options) {
-      assertCampaignLease(lease);
-      const result = await loop.run(options);
-      assertCampaignLease(lease);
-      return result;
-    },
-    async verify(input) {
-      assertCampaignLease(lease);
-      const result = await loop.verify(input);
-      assertCampaignLease(lease);
-      return result;
-    },
-  };
-}
-
-function fencedWorkflowContext(
-  ctx: WorkflowContext,
-  lease: CampaignLease,
-): WorkflowContext {
-  return new Proxy(ctx, {
-    get(target, property, receiver) {
-      const value = Reflect.get(target, property, receiver);
-      if (property === "runAgent") {
-        return async (...args: unknown[]) => {
-          assertCampaignLease(lease);
-          const result = await (
-            value as (...input: unknown[]) => Promise<unknown>
-          ).apply(target, args);
-          assertCampaignLease(lease);
-          return result;
-        };
-      }
-      if (property === "emit" || property === "dispatchEvent") {
-        return (...args: unknown[]) => {
-          assertCampaignLease(lease);
-          return (value as (...input: unknown[]) => unknown).apply(
-            target,
-            args,
-          );
-        };
-      }
-      return typeof value === "function" ? value.bind(target) : value;
-    },
-  });
-}
-
-function supersededCampaignResult(
-  ctx: WorkflowContext,
-  taskId: string,
-  generation: number,
-): WorkflowResult {
-  const summary = `Stopped superseded campaign attempt ${taskId}@${generation}.`;
-  return ctx.done(summary, {
-    state: "converged",
-    summary,
-    evidence: [`superseded:${taskId}@${generation}`],
-    actions: [],
-  });
-}
 
 const findingSchema = Type.Object(
   {
@@ -756,7 +630,7 @@ function recordOperatingMetrics(
   ctx: WorkflowContext,
   sample: OperatingMetricSample,
 ): void {
-  const metricsDir = join(ctx.projectsRoot, "gym.app", ".state", "metrics");
+  const metricsDir = join(gymProjectsRoot(ctx), "gym.app", ".state", "metrics");
   const statePath = join(metricsDir, "autonomous-improvement.json");
   const journalPath = join(metricsDir, "autonomous-improvement.jsonl");
   mkdirSync(metricsDir, { recursive: true });
@@ -1041,7 +915,7 @@ async function classifyFailures(
   runDirs: string[],
 ): Promise<Finding[] | null> {
   if (!failing.length) return [];
-  const result = await ctx.runAgent(
+  const result = await callGymAgent(ctx,
     "gym",
     [
       "Classify every listed failing Gym scenario from immutable evidence.",
@@ -1121,7 +995,7 @@ async function completeFocusedBaseline(
     return { assessment };
   }
   const trials = requestedTrials(input.trials);
-  const agentsRoot = join(dirname(ctx.projectsRoot), "agents");
+  const agentsRoot = join(dirname(gymProjectsRoot(ctx)), "agents");
   if (!baseline) {
     baseline = await loop.run({
       phase: "test",
@@ -1201,14 +1075,14 @@ export async function prepareAssessment(
   const agent = safeName(input.agent, "may");
   if (!benchmark || !agent) throw new Error("Invalid benchmark or agent name");
   const trials = requestedTrials(input.trials);
-  const gymRoot = join(ctx.projectsRoot, "gym");
+  const gymRoot = join(gymProjectsRoot(ctx), "gym");
   const gate = approvalGate(gymRoot, benchmark, requestedScenarios(input));
   if (gate.unapproved.length) {
     throw new Error(
       `Benchmark truth is not approved: ${gate.unapproved.join(", ")}`,
     );
   }
-  const agentsRoot = join(dirname(ctx.projectsRoot), "agents");
+  const agentsRoot = join(dirname(gymProjectsRoot(ctx)), "agents");
   const screening = await loop.run({
     phase: "test",
     benchmark,
@@ -1328,7 +1202,7 @@ function planFromInput(
     return null;
   }
   const baselineDir = join(
-    ctx.projectsRoot,
+    gymProjectsRoot(ctx),
     "gym",
     ".state",
     "benchmarks",
@@ -1338,7 +1212,7 @@ function planFromInput(
   const suite = record(
     JSON.parse(
       readFileSync(
-        join(ctx.projectsRoot, "gym", "benchmarks", benchmark, "suite.json"),
+        join(gymProjectsRoot(ctx), "gym", "benchmarks", benchmark, "suite.json"),
         "utf8",
       ),
     ),
@@ -1347,7 +1221,7 @@ function planFromInput(
     ? suite.scenarios.map(String)
     : [];
   const learningUnits = resolveLearningContexts(
-    join(ctx.projectsRoot, "gym"),
+    join(gymProjectsRoot(ctx), "gym"),
     benchmark,
     scenarios,
   );
@@ -1484,9 +1358,7 @@ export function buildBenchmarkFixRetryEvent(input: {
   taskGeneration: number;
   approvalId: string;
 }) {
-  return {
-    type: "gym.improvement.requested",
-    project: "gym",
+  return gymEvent("gym.improvement.requested", {
     agent: input.agent,
     benchmark: input.benchmark,
     scenarios: [...input.scenarios],
@@ -1496,7 +1368,7 @@ export function buildBenchmarkFixRetryEvent(input: {
     taskId: input.taskId,
     taskGeneration: input.taskGeneration,
     approvalId: input.approvalId,
-  };
+  });
 }
 
 export function dispatchApproval(
@@ -1531,9 +1403,7 @@ export function dispatchApproval(
     directEvent: expectedResponse,
   };
 
-  ctx.emit({
-    type: "project.approval.requested",
-    project: "gym",
+  void emitGymEvent(ctx, gymEvent("project.approval.requested", {
     taskId: request.taskId,
     taskGeneration: request.taskGeneration,
     approvalKind: request.kind,
@@ -1544,8 +1414,8 @@ export function dispatchApproval(
     requestedAction: request.requestedAction,
     reason: request.reason,
     expectedResponse,
-  });
-  ctx.dispatchEvent("message.created", {
+  }));
+  void emitGymEvent(ctx, gymEvent("message.created", {
     to: "human",
     from: "gym",
     project: "gym",
@@ -1582,7 +1452,7 @@ export function dispatchApproval(
     reason: request.reason,
     expectedResponse,
     dedupKey: request.approvalId,
-  });
+  }, { target: { human: true } }));
 }
 
 function approvalFromStored(
@@ -1662,10 +1532,10 @@ function existingResult(path: string): StoredResult | null {
         : [path],
     ),
     actions: Array.isArray(value.actions)
-      ? (value.actions as ProjectAppTaskAction[])
+      ? (value.actions as TaskAction[])
       : [],
     conditions: Array.isArray(value.conditions)
-      ? (value.conditions as ProjectAppConditionSpec[])
+      ? (value.conditions as Condition[])
       : [],
     approval,
   };
@@ -1810,8 +1680,8 @@ export function locateCandidateRetry(
 function adjudicationChildCloseActions(
   ctx: WorkflowContext,
   taskId: string,
-): ProjectAppTaskAction[] {
-  const packet = reconciliationPacket(ctx.task);
+): TaskAction[] {
+  const packet = reconciliationPacket(ctx);
   const live = record(packet?.children).live;
   if (!Array.isArray(live)) return [];
   return live.flatMap((value) => {
@@ -1838,10 +1708,10 @@ function adjudicationChildCloseActions(
 }
 
 function appendTaskActions(
-  result: WorkflowResult,
-  actions: ProjectAppTaskAction[],
-): WorkflowResult {
-  if (result.type !== "done" || !actions.length) return result;
+  result: GymExecutionResult,
+  actions: TaskAction[],
+): GymExecutionResult {
+  if (result.status !== "done" || !actions.length) return result;
   if (result.output && typeof result.output === "object") {
     const output = record(result.output);
     return {
@@ -1850,7 +1720,7 @@ function appendTaskActions(
         ...output,
         actions: [
           ...(Array.isArray(output.actions)
-            ? (output.actions as ProjectAppTaskAction[])
+            ? (output.actions as TaskAction[])
             : []),
           ...actions,
         ],
@@ -1964,11 +1834,11 @@ function approvalResponse(
 }
 
 function approvalDecision(
-  task: string,
+  ctx: WorkflowContext,
   request: ApprovalRequest,
   stateDir?: string,
 ): ApprovalResponse | null {
-  const live = approvalResponse(triggerDetails(task), request);
+  const live = approvalResponse(triggerDetails(ctx), request);
   if (live || !stateDir) return live;
   const decisionKey = safeKey(request.artifactFingerprint, "artifact");
   for (const path of [
@@ -2327,7 +2197,7 @@ function planFromApprovalPacket(
     approval?.kind === "benchmark-fix"
       ? []
       : resolveLearningContexts(
-          join(ctx.projectsRoot, "gym"),
+          join(gymProjectsRoot(ctx), "gym"),
           assessment.benchmark,
           scenarios,
         );
@@ -2425,7 +2295,7 @@ async function buildBenchmarkFix(
   confirmationBenchmark: string;
   confirmationScenarios: string[];
 } | null> {
-  const gymRoot = join(ctx.projectsRoot, "gym");
+  const gymRoot = join(gymProjectsRoot(ctx), "gym");
   const consumerBenchmark = verificationBenchmark(
     verificationDir,
     plan.benchmark,
@@ -2455,7 +2325,7 @@ async function buildBenchmarkFix(
   mkdirSync(dirname(workspacePath), { recursive: true });
   cpSync(targetPath, workspacePath, { recursive: true });
   const before = fingerprintTree(workspacePath);
-  const result = await ctx.runAgent(
+  const result = await callGymAgent(ctx,
     "gym-implementer",
     [
       "Build one narrow isolated benchmark/scorer fix from this reviewed Gym evidence.",
@@ -2729,7 +2599,7 @@ async function reviewFailedCandidate(
   verificationDir: string,
 ): Promise<FailedReview | null> {
   for (let attempt = 1; attempt <= 2; attempt++) {
-    const result = await ctx.runAgent(
+    const result = await callGymAgent(ctx,
       "gym",
       [
         "Review this failed May candidate before deciding what changes next.",
@@ -2799,7 +2669,7 @@ function saveAttentionResult(
   summary: string,
   evidence: string[],
   details: Record<string, unknown> = {},
-): WorkflowResult {
+): GymExecutionResult {
   const bounded = boundedEvidence([resultPath, ...evidence]);
   const previous = readJson<Record<string, unknown>>(resultPath) ?? {};
   saveWorkflowResult(resultPath, {
@@ -2914,8 +2784,8 @@ async function runCandidateIteration(
   scratchRoot: string,
   resultPath: string,
   baseCandidatePath: string | null,
-): Promise<WorkflowResult | IterationRevision> {
-  const productionAgentsRoot = join(dirname(ctx.projectsRoot), "agents");
+): Promise<GymExecutionResult | IterationRevision> {
+  const productionAgentsRoot = join(dirname(gymProjectsRoot(ctx)), "agents");
   const sourceMay = join(productionAgentsRoot, plan.agent);
   if (!existsSync(sourceMay)) {
     return saveAttentionResult(
@@ -2959,7 +2829,7 @@ async function runCandidateIteration(
     if (baseCandidatePath && existsSync(baseCandidatePath)) {
       cpSync(baseCandidatePath, candidateDir, { recursive: true });
     }
-    const result = await ctx.runAgent(
+    const result = await callGymAgent(ctx,
       "gym-implementer",
       [
         "Build one narrow isolated May candidate for this approved Gym finding.",
@@ -3122,7 +2992,7 @@ async function runCandidateIteration(
   }
   recordVerificationMetrics(ctx, development);
 
-  const gymRoot = join(ctx.projectsRoot, "gym");
+  const gymRoot = join(gymProjectsRoot(ctx), "gym");
   let comparison = development.comparison;
   if (isFrameworkOnlyComparisonFailure(comparison) && !freshBaseline) {
     freshBaseline = await loop.run({
@@ -3455,9 +3325,7 @@ async function runCandidateIteration(
     conditions: approval ? [approval.condition] : [],
     approval,
   });
-  ctx.emit({
-    type: "gym.improvement.reviewed",
-    project: "gym",
+  void emitGymEvent(ctx, gymEvent("gym.improvement.reviewed", {
     taskId,
     agent: plan.agent,
     candidateId,
@@ -3465,7 +3333,7 @@ async function runCandidateIteration(
     verificationDir,
     recommendation,
     resultPath,
-  });
+  }));
   if (approval) dispatchApproval(ctx, approval);
   if (!approval) {
     return ctx.done(summary, {
@@ -3495,7 +3363,7 @@ async function runEvaluationOnlyAdjustment(
   taskId: string,
   generation: number,
   decisionPath: string,
-): Promise<WorkflowResult> {
+): Promise<GymExecutionResult> {
   const resultPath = join(stateDir, "result.json");
   const iteration = Number(stored.iteration);
   const candidatePath = resolve(String(stored.candidate_path ?? ""));
@@ -3535,7 +3403,7 @@ async function runEvaluationOnlyAdjustment(
     );
   }
 
-  const gymRoot = join(ctx.projectsRoot, "gym");
+  const gymRoot = join(gymProjectsRoot(ctx), "gym");
   let gate: ReturnType<typeof approvalGate>;
   try {
     gate = approvalGate(gymRoot, adjustment.benchmark, []);
@@ -3634,7 +3502,7 @@ async function runEvaluationOnlyAdjustment(
     );
   }
 
-  const productionAgentsRoot = join(dirname(ctx.projectsRoot), "agents");
+  const productionAgentsRoot = join(dirname(gymProjectsRoot(ctx)), "agents");
   const sourceMay = join(productionAgentsRoot, plan.agent);
   if (!existsSync(sourceMay)) {
     return saveAttentionResult(
@@ -3646,7 +3514,7 @@ async function runEvaluationOnlyAdjustment(
     );
   }
   const scratchRoot = join(
-    ctx.projectsRoot,
+    gymProjectsRoot(ctx),
     "gym.app",
     ".state",
     "scratch",
@@ -3853,9 +3721,7 @@ async function runEvaluationOnlyAdjustment(
       conditions: [approval.condition],
       approval,
     });
-    ctx.emit({
-      type: "gym.improvement.reviewed",
-      project: "gym",
+    await emitGymEvent(ctx, gymEvent("gym.improvement.reviewed", {
       taskId,
       agent: plan.agent,
       candidateId,
@@ -3863,7 +3729,7 @@ async function runEvaluationOnlyAdjustment(
       verificationDir: verification.runDir,
       recommendation: "promote",
       resultPath,
-    });
+    }));
     dispatchApproval(ctx, approval);
     return ctx.done(summary, {
       state: "waiting",
@@ -3893,14 +3759,14 @@ async function prepareBenchmarkFixProposal(
   taskId: string,
   generation: number,
   priorEvidence: string[] = [],
-): Promise<WorkflowResult> {
+): Promise<GymExecutionResult> {
   const resultPath = join(stateDir, "result.json");
   const revisionKey = createHash("sha256")
     .update(`${review.disposition}\n${review.proposedChange}`)
     .digest("hex")
     .slice(0, 16);
   const scratchRoot = join(
-    ctx.projectsRoot,
+    gymProjectsRoot(ctx),
     "gym.app",
     ".state",
     "scratch",
@@ -3987,15 +3853,13 @@ async function prepareBenchmarkFixProposal(
     conditions: [approval.condition],
     approval,
   });
-  ctx.emit({
-    type: "gym.improvement.reviewed",
-    project: "gym",
+  await emitGymEvent(ctx, gymEvent("gym.improvement.reviewed", {
     taskId,
     agent: plan.agent,
     artifactFingerprint: fix.fingerprint,
     recommendation: review.disposition,
     resultPath,
-  });
+  }));
   dispatchApproval(ctx, approval);
   return ctx.done(summary, {
     state: "waiting",
@@ -4014,14 +3878,14 @@ async function runCandidate(
   generation: number,
   candidateStateDir: string,
   input: Record<string, unknown>,
-): Promise<WorkflowResult> {
+): Promise<GymExecutionResult> {
   const resultPath = join(candidateStateDir, "result.json");
   migrateLegacyRevision(candidateStateDir);
   let previous = existingResult(resultPath);
   let plan = initialPlan;
   let startIteration = 1;
   let resumedCandidatePath: string | null = null;
-  let retryCloseActions: ProjectAppTaskAction[] = [];
+  let retryCloseActions: TaskAction[] = [];
   const recoveringRetry = candidateRetryCheckpoint(
     candidateStateDir,
     String(input.candidateFingerprint ?? "").replace(/^sha256:/, ""),
@@ -4035,7 +3899,7 @@ async function runCandidate(
     const recovery =
       preservedEvaluationAdjustment(
         candidateStateDir,
-        triggerDetails(ctx.task),
+        triggerDetails(ctx),
       ) ??
       recoverableStoredEvaluationAdjustment(
         candidateStateDir,
@@ -4124,7 +3988,7 @@ async function runCandidate(
       });
     }
     const response = approvalDecision(
-      ctx.task,
+      ctx,
       previous.approval,
       candidateStateDir,
     );
@@ -4178,7 +4042,7 @@ async function runCandidate(
             candidatePath: artifactPath,
             expectedFingerprint: previous.approval.artifactFingerprint,
             productionAgentPath: join(
-              dirname(ctx.projectsRoot),
+              dirname(gymProjectsRoot(ctx)),
               "agents",
               plan.agent,
             ),
@@ -4203,11 +4067,9 @@ async function runCandidate(
         proposalAccepted: true,
         evidence: [resultPath, decisionPath, artifactPath],
       });
-      ctx.emit(
+      await emitGymEvent(ctx,
         previous.approval.kind === "agent-improvement"
-          ? {
-              type: "agent.revision.changed",
-              project: "gym",
+          ? gymEvent("agent.revision.changed", {
               agent: plan.agent,
               revision: previous.approval.artifactFingerprint,
               scenarios: [...plan.focus.scenarios],
@@ -4215,7 +4077,7 @@ async function runCandidate(
               taskId,
               taskGeneration: generation,
               approvalId: previous.approval.approvalId,
-            }
+            })
           : buildBenchmarkFixRetryEvent({
               agent: plan.agent,
               ...benchmarkFixConfirmationTarget(stored, plan),
@@ -4299,7 +4161,7 @@ async function runCandidate(
 
   const iterationsDir = join(candidateStateDir, "iterations");
   const scratchBase = join(
-    ctx.projectsRoot,
+    gymProjectsRoot(ctx),
     "gym.app",
     ".state",
     "scratch",
@@ -4349,7 +4211,7 @@ async function runCandidate(
       );
       const revision = outcome as IterationRevision;
       if (revision.kind !== "revise") {
-        return appendTaskActions(outcome as WorkflowResult, retryCloseActions);
+        return appendTaskActions(outcome as GymExecutionResult, retryCloseActions);
       }
       accumulatedEvidence.push(...revision.evidence);
       plan = {
@@ -4392,7 +4254,7 @@ async function handleAssessmentBenchmarkFix(
   generation: number,
   stateDir: string,
   workflowInput: Record<string, unknown>,
-): Promise<WorkflowResult> {
+): Promise<GymExecutionResult> {
   const plan: CandidatePlan = {
     agent: assessment.agent,
     benchmark: assessment.benchmark,
@@ -4402,7 +4264,7 @@ async function handleAssessmentBenchmarkFix(
     baselineDir: assessment.screening_run_dir,
     assessmentPath,
     learningUnits: resolveLearningContexts(
-      join(ctx.projectsRoot, "gym"),
+      join(gymProjectsRoot(ctx), "gym"),
       assessment.benchmark,
       finding.scenarios,
     ),
@@ -4452,7 +4314,7 @@ function improvementStatePaths(
   const scopeKey = scope ? safeKey(scope, "curriculum-track") : null;
   return {
     stateDir: join(
-      ctx.projectsRoot,
+      gymProjectsRoot(ctx),
       "gym.app",
       ".state",
       "candidates",
@@ -4462,7 +4324,7 @@ function improvementStatePaths(
     ),
     assessmentPath: scopeKey
       ? join(
-          ctx.projectsRoot,
+          gymProjectsRoot(ctx),
           "gym.app",
           ".state",
           "assessments",
@@ -4471,7 +4333,7 @@ function improvementStatePaths(
           `${scopeKey}.json`,
         )
       : join(
-          ctx.projectsRoot,
+          gymProjectsRoot(ctx),
           "gym.app",
           ".state",
           "assessments",
@@ -4488,7 +4350,7 @@ async function runImprovementOnce(
   taskId: string,
   generation: number,
   scope?: string,
-): Promise<WorkflowResult> {
+): Promise<GymExecutionResult> {
   const { stateDir, assessmentPath } = improvementStatePaths(
     ctx,
     taskId,
@@ -4601,7 +4463,7 @@ async function runImprovementOnce(
         focus: assessment.focus,
         assessmentPath,
         learningUnits: resolveLearningContexts(
-          join(ctx.projectsRoot, "gym"),
+          join(gymProjectsRoot(ctx), "gym"),
           assessment.benchmark,
           assessment.focus.scenarios,
         ),
@@ -4617,7 +4479,7 @@ async function runImprovementOnce(
   return runCandidate(ctx, loop, plan, taskId, generation, stateDir, input);
 }
 
-function workflowOutcome(result: WorkflowResult): {
+function workflowOutcome(result: GymExecutionResult): {
   state: string;
   summary: string;
   evidence: string[];
@@ -4728,7 +4590,7 @@ async function selectPriorityExperiment(
     focus: experiment.assessment.focus,
     findings: experiment.assessment.findings,
   }));
-  const result = await ctx.runAgent(
+  const result = await callGymAgent(ctx,
     "gym",
     [
       "You own the improve/may goal and must choose the single highest-priority integration path from two independent, frozen development assessments.",
@@ -4813,16 +4675,12 @@ function emitCurriculumContinuation(
   ctx: WorkflowContext,
   campaignId: string,
 ): void {
-  ctx.emit({
-    type: "gym.improvement.requested",
-    project: "gym",
-    params: {
+  void emitGymEvent(ctx, gymEvent("gym.improvement.requested", {
       agent: "may",
       curriculumDrain: true,
       reason: "curriculum-continue",
       campaignId,
-    },
-  });
+  }));
 }
 
 export function improvementInput(
@@ -4893,11 +4751,11 @@ export function benchmarkFixConfirmationScope(
 export async function runImprovement(
   ctx: WorkflowContext,
   loop: GymLoopApi = defaultLoopApi,
-): Promise<WorkflowResult> {
-  const gymRoot = join(ctx.projectsRoot, "gym");
+): Promise<GymExecutionResult> {
+  const gymRoot = join(gymProjectsRoot(ctx), "gym");
   configureGymRoot(gymRoot);
-  const packet = reconciliationPacket(ctx.task);
-  const trigger = triggerDetails(ctx.task);
+  const packet = reconciliationPacket(ctx);
+  const trigger = triggerDetails(ctx);
   const input = improvementInput(packet, trigger);
   const taskId = String(packet?.taskId ?? "improve/may");
   const generation = Number(packet?.generation ?? 1);
@@ -4908,26 +4766,15 @@ export async function runImprovement(
     improvementStatePaths(ctx, taskId, generation).stateDir,
     "result.json",
   );
-  const lease = createCampaignLease(ctx, taskId, generation);
-  try {
-    assertCampaignLease(lease);
-  } catch (error) {
-    if (error instanceof CampaignSupersededError) {
-      return supersededCampaignResult(ctx, taskId, generation);
-    }
-    throw error;
-  }
-  const activeLoop = fencedLoopApi(loop, lease);
-  const activeCtx = fencedWorkflowContext(ctx, lease);
   const approvalPacket = locateApprovalPacket(
-    activeCtx.projectsRoot,
+    gymProjectsRoot(ctx),
     taskId,
     generation,
     trigger,
   );
   if (approvalPacket && "error" in approvalPacket) {
     return saveAttentionResult(
-      activeCtx,
+      ctx,
       campaignResultPath,
       approvalPacket.error,
       approvalPacket.evidence,
@@ -4936,12 +4783,12 @@ export async function runImprovement(
   }
   if (approvalPacket) {
     try {
-      const plan = planFromApprovalPacket(activeCtx, approvalPacket.resultPath);
+      const plan = planFromApprovalPacket(ctx, approvalPacket.resultPath);
       if (!plan) {
         const summary =
           "Exact approval packet cannot reconstruct its evaluation plan";
         return saveAttentionResult(
-          activeCtx,
+          ctx,
           approvalPacket.resultPath,
           summary,
           [approvalPacket.resultPath],
@@ -4949,8 +4796,8 @@ export async function runImprovement(
         );
       }
       return await runCandidate(
-        activeCtx,
-        activeLoop,
+        ctx,
+        loop,
         plan,
         taskId,
         generation,
@@ -4958,12 +4805,9 @@ export async function runImprovement(
         input,
       );
     } catch (error) {
-      if (error instanceof CampaignSupersededError) {
-        return supersededCampaignResult(ctx, taskId, generation);
-      }
       const summary = error instanceof Error ? error.message : String(error);
       return saveAttentionResult(
-        activeCtx,
+        ctx,
         approvalPacket.resultPath,
         summary,
         [approvalPacket.resultPath],
@@ -4972,14 +4816,14 @@ export async function runImprovement(
     }
   }
   const storedAdjustment = locateStoredEvaluationAdjustment(
-    activeCtx.projectsRoot,
+    gymProjectsRoot(ctx),
     taskId,
     generation,
     input,
   );
   if (storedAdjustment && "error" in storedAdjustment) {
     return saveAttentionResult(
-      activeCtx,
+      ctx,
       campaignResultPath,
       storedAdjustment.error,
       storedAdjustment.evidence,
@@ -4989,12 +4833,12 @@ export async function runImprovement(
   if (storedAdjustment) {
     try {
       const plan = planFromApprovalPacket(
-        activeCtx,
+        ctx,
         storedAdjustment.resultPath,
       );
       if (!plan) {
         return saveAttentionResult(
-          activeCtx,
+          ctx,
           storedAdjustment.resultPath,
           "Preserved adjustment cannot reconstruct its evaluation plan",
           storedAdjustment.evidence,
@@ -5002,8 +4846,8 @@ export async function runImprovement(
         );
       }
       return await runCandidate(
-        activeCtx,
-        activeLoop,
+        ctx,
+        loop,
         plan,
         taskId,
         generation,
@@ -5011,12 +4855,9 @@ export async function runImprovement(
         input,
       );
     } catch (error) {
-      if (error instanceof CampaignSupersededError) {
-        return supersededCampaignResult(ctx, taskId, generation);
-      }
       const summary = error instanceof Error ? error.message : String(error);
       return saveAttentionResult(
-        activeCtx,
+        ctx,
         storedAdjustment.resultPath,
         summary,
         storedAdjustment.evidence,
@@ -5033,7 +4874,7 @@ export async function runImprovement(
       );
       if (confirmation && "error" in confirmation) {
         return saveAttentionResult(
-          activeCtx,
+          ctx,
           campaignResultPath,
           confirmation.error,
           [],
@@ -5041,14 +4882,14 @@ export async function runImprovement(
         );
       }
       const retry = locateCandidateRetry(
-        activeCtx.projectsRoot,
+        gymProjectsRoot(ctx),
         taskId,
         generation,
         input,
       );
       if (retry?.error) {
         return saveAttentionResult(
-          activeCtx,
+          ctx,
           campaignResultPath,
           retry.error,
           retry.evidence,
@@ -5056,19 +4897,16 @@ export async function runImprovement(
         );
       }
       return await runImprovementOnce(
-        activeCtx,
-        activeLoop,
+        ctx,
+        loop,
         input,
         taskId,
         generation,
         confirmation?.scope ?? retry?.scope,
       );
     } catch (error) {
-      if (error instanceof CampaignSupersededError) {
-        return supersededCampaignResult(ctx, taskId, generation);
-      }
       const summary = error instanceof Error ? error.message : String(error);
-      return saveAttentionResult(activeCtx, campaignResultPath, summary, [], {
+      return saveAttentionResult(ctx, campaignResultPath, summary, [], {
         task_id: taskId,
         generation,
       });
@@ -5079,11 +4917,11 @@ export async function runImprovement(
     const { targets, fingerprint } = loadCurriculumTargets(gymRoot);
     const agent = safeName(input.agent, "may");
     if (!agent) throw new Error("Invalid curriculum agent");
-    const agentPath = join(dirname(ctx.projectsRoot), "agents", agent);
+    const agentPath = join(dirname(gymProjectsRoot(ctx)), "agents", agent);
     const agentFingerprint = `sha256:${fingerprintAgentLearningSurface(agentPath)}`;
     const campaignId = curriculumCampaignId(fingerprint, agentFingerprint);
     const checkpointPath = join(
-      ctx.projectsRoot,
+      gymProjectsRoot(ctx),
       "gym.app",
       ".state",
       "learning",
@@ -5148,15 +4986,14 @@ export async function runImprovement(
     // Two independent assessments may run together. Candidate construction,
     // integration, release verification, and promotion remain serialized.
     const experiments = await prepareCurriculumExperiments(
-      activeCtx,
-      activeLoop,
+      ctx,
+      loop,
       remaining.slice(0, 2),
       agent,
       campaignId,
       taskId,
       generation,
     );
-    assertCampaignLease(lease);
     for (const experiment of experiments) {
       const passive = experimentPassiveResult(experiment);
       if (!passive) continue;
@@ -5171,9 +5008,8 @@ export async function runImprovement(
       actionable.length &&
       experiments.some(({ assessmentWasFresh }) => assessmentWasFresh)
     ) {
-      assertCampaignLease(lease);
       writeJson(checkpointPath, checkpoint);
-      emitCurriculumContinuation(activeCtx, campaignId);
+      emitCurriculumContinuation(ctx, campaignId);
       const summary = `Gym checkpointed ${experiments.length} fresh assessment${experiments.length === 1 ? "" : "s"}; integration will resume from that evidence on the next wake.`;
       return ctx.done(summary, {
         state: "converged",
@@ -5187,14 +5023,13 @@ export async function runImprovement(
     }
     if (actionable.length) {
       const selected = await selectPriorityExperiment(
-        activeCtx,
+        ctx,
         actionable,
         input,
       );
-      assertCampaignLease(lease);
       const result = await runImprovementOnce(
-        activeCtx,
-        activeLoop,
+        ctx,
+        loop,
         selected.input,
         taskId,
         generation,
@@ -5202,12 +5037,11 @@ export async function runImprovement(
       );
       const outcome = workflowOutcome(result);
       if (outcome.state === "waiting" || outcome.state === "needs-owner") {
-        assertCampaignLease(lease);
         writeJson(checkpointPath, checkpoint);
         return result;
       }
       const selectedResultPath = join(
-        improvementStatePaths(activeCtx, taskId, generation, selected.scope)
+        improvementStatePaths(ctx, taskId, generation, selected.scope)
           .stateDir,
         "result.json",
       );
@@ -5215,10 +5049,9 @@ export async function runImprovement(
         readJson<Record<string, unknown>>(selectedResultPath);
       const trackState = selectedCheckpoint?.track_state;
       if (trackState !== "complete" && trackState !== "issue") {
-        assertCampaignLease(lease);
         writeJson(checkpointPath, checkpoint);
         return saveAttentionResult(
-          activeCtx,
+          ctx,
           selectedResultPath,
           "Gym completed a track without a structured track disposition.",
           [selected.assessmentPath, ...outcome.evidence],
@@ -5236,13 +5069,11 @@ export async function runImprovement(
       });
     }
 
-    assertCampaignLease(lease);
     writeJson(checkpointPath, checkpoint);
     const afterIds = new Set(checkpoint.tracks.map(({ id }) => id));
     const stillRemaining = targets.filter(({ id }) => !afterIds.has(id));
     if (stillRemaining.length) {
-      assertCampaignLease(lease);
-      emitCurriculumContinuation(activeCtx, campaignId);
+      emitCurriculumContinuation(ctx, campaignId);
       const summary = `Gym checkpointed this bounded training stage; ${stillRemaining.length} approved track${stillRemaining.length === 1 ? " remains" : "s remain"}.`;
       return ctx.done(summary, {
         state: "converged",
@@ -5274,9 +5105,6 @@ export async function runImprovement(
       actions: [],
     });
   } catch (error) {
-    if (error instanceof CampaignSupersededError) {
-      return supersededCampaignResult(ctx, taskId, generation);
-    }
     const summary = error instanceof Error ? error.message : String(error);
     return saveAttentionResult(ctx, campaignResultPath, summary, [], {
       task_id: taskId,
@@ -5285,7 +5113,7 @@ export async function runImprovement(
   }
 }
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
+export async function execute(ctx: WorkflowContext): Promise<GymExecutionResult> {
   return runImprovement(ctx);
 }
 
@@ -5304,7 +5132,7 @@ export async function verify(
   }
   const taskId = String(verification.taskId ?? "");
   const generation = Number(verification.generation);
-  const appDir = String(verification.appDir ?? "");
+  const appDir = String(verification.appRoot ?? verification.appDir ?? "");
   if (taskId !== "improve/may" || !Number.isInteger(generation) || !appDir) {
     return {
       accepted: true,
@@ -5441,7 +5269,9 @@ export async function verify(
     };
   }
   if (training?.schema_version === 2) {
-    const projectDir = String(verification.projectDir ?? "");
+    const projectDir = String(
+      verification.projectRoot ?? verification.projectDir ?? "",
+    );
     const targets = projectDir ? loadCurriculumTargets(projectDir).targets : [];
     const reviewed = new Set(training.tracks.map(({ id }) => id));
     const remaining = targets.filter(({ id }) => !reviewed.has(id));
@@ -5452,11 +5282,7 @@ export async function verify(
         evidence: [trainingPath],
       };
     }
-    const taskState = readJson<Record<string, unknown>>(
-      resolve(appDir, ".state", "tasks", "state.json"),
-    );
-    const trigger = record(record(taskState?.taskTriggers)[taskId]);
-    if (record(trigger.event).type) {
+    if (record(verification.pendingTrigger).type) {
       return {
         accepted: true,
         summary:

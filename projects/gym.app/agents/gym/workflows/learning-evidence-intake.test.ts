@@ -2,8 +2,8 @@ import { afterEach, expect, test } from "bun:test";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { WorkflowContext } from "@may-agent/sdk";
 import { execute } from "./learning-evidence-intake";
+import { canonicalGymTestContext } from "./lib/test-context";
 
 const roots: string[] = [];
 
@@ -19,8 +19,9 @@ function task(event: Record<string, unknown>): string {
 test("records positive learning evidence exactly once", async () => {
   const root = mkdtempSync(join(tmpdir(), "gym-learning-evidence-"));
   roots.push(root);
-  const ctx = {
-    projectsRoot: join(root, "projects"),
+  const projectsRoot = join(root, "projects");
+  const ctx = canonicalGymTestContext({
+    projectsRoot,
     task: task({
       type: "gym.learning.evidence.observed",
       polarity: "positive",
@@ -30,19 +31,13 @@ test("records positive learning evidence exactly once", async () => {
         reviewedVerdict: "good",
       },
     }),
-    done(summary: string) {
-      return { type: "done" as const, summary };
-    },
-    blocked(reason: string) {
-      return { type: "blocked" as const, reason };
-    },
-  } as unknown as WorkflowContext;
+  });
 
-  expect((await execute(ctx)).type).toBe("done");
-  expect((await execute(ctx)).type).toBe("done");
+  expect((await execute(ctx)).status).toBe("done");
+  expect((await execute(ctx)).status).toBe("done");
 
   const evidenceDir = join(
-    ctx.projectsRoot,
+    projectsRoot,
     "gym.app",
     ".state",
     "learning",

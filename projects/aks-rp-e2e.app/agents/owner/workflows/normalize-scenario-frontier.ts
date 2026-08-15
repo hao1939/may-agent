@@ -9,24 +9,20 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, join, relative } from "node:path";
-import type {
-  ProjectAppTaskAction,
-  WorkflowContext,
-  WorkflowIoContract,
-  WorkflowResult,
-} from "@may-agent/sdk/legacy";
-import { workflowResultVersion } from "@may-agent/sdk/legacy";
+import {
+  workflowResultVersion,
+  type ExecutionResult,
+  type TaskAction,
+  type TaskReconciliationContext,
+  type WorkflowContext,
+  type WorkflowIoContract,
+} from "@may-agent/sdk";
 import {
   learnedScenarioNormalizationAcceptance,
   loopFrontierAccounting,
   scenarioNormalizationTaskId,
   standingLoopDefinitions,
 } from "../../../task-loops.ts";
-import {
-  parseReconciliationTaskPayload,
-  parseTriggerEvent,
-  triggerValue,
-} from "../../app-ops/workflows/lib/workflow-input.ts";
 import { withCurrentOriginDevSnapshot } from "../../app-ops/workflows/lib/origin-dev-snapshot.ts";
 import {
   directCarrierQualityIssues,
@@ -216,8 +212,7 @@ function run(
 }
 
 function workflowInput(ctx: WorkflowContext): Record<string, unknown> {
-  const payload = parseReconciliationTaskPayload(ctx.task);
-  const input = payload?.input;
+  const input = ctx.reconciliation?.input ?? ctx.input;
   return input && typeof input === "object" && !Array.isArray(input)
     ? (input as Record<string, unknown>)
     : {};
@@ -337,30 +332,19 @@ export function runRequiredRepositoryCheck(
   };
 }
 
-function parseTaskField(raw: string, name: string): string {
-  return raw.match(new RegExp(`^${name}:\\s*(.+)$`, "m"))?.[1]?.trim() ?? "";
-}
-
 function resolveProjectDir(ctx: WorkflowContext): string {
-  return (
-    ctx.projectDir ||
-    parseTaskField(ctx.task, "project") ||
-    "/app/projects/aks-rp-e2e"
-  );
-}
-
-function resolveAppDir(ctx: WorkflowContext, projectDir: string): string {
-  return (
-    ctx.appDir ||
-    parseTaskField(ctx.task, "app") ||
-    (projectDir.endsWith(".app") ? projectDir : `${projectDir}.app`)
-  );
+  const projectDir = ctx.workspace?.projectRoot.trim();
+  if (!projectDir) {
+    throw new Error(
+      "normalize-scenario-frontier requires workspace.projectRoot",
+    );
+  }
+  return projectDir;
 }
 
 function desiredRunnableMin(ctx: WorkflowContext): number {
   const fallback = 3;
-  const event = parseTriggerEvent(ctx.task);
-  const raw = triggerValue(event, "desiredRunnableLeaves");
+  const raw = ctx.reconciliation?.trigger?.data.desiredRunnableLeaves;
   if (raw && typeof raw === "object" && !Array.isArray(raw)) {
     const min = Number((raw as { min?: unknown }).min);
     if (Number.isFinite(min) && min >= 1) return Math.floor(min);
@@ -657,16 +641,15 @@ function currentSourceQualitySpecIds(report: InventoryReport): string[] {
   ];
 }
 
-function stateReceipts(appDir: string): ReceiptRecord[] {
-  const state = readJson<Record<string, unknown>>(
-    join(appDir, ".state", "tasks", "state.json"),
-    {},
-  );
-  const receipts =
-    state.receipts && typeof state.receipts === "object"
-      ? (state.receipts as Record<string, ReceiptRecord>)
-      : {};
-  return Object.values(receipts);
+function stateReceipts(
+  reconciliation: TaskReconciliationContext | undefined,
+): ReceiptRecord[] {
+  return (reconciliation?.children.completed ?? []).map((child) => ({
+    parentId: child.parentId,
+    outcome: child.outcome,
+    summary: child.summary,
+    evidence: child.evidence,
+  }));
 }
 
 function nodeSpecIds(node: GraphNode): string[] {
@@ -890,7 +873,7 @@ function receiptHasCurrentAcceptedPass(
 }
 
 function currentSourceReviewedQualityLiveCoverage(
-  appDir: string,
+  reconciliation: TaskReconciliationContext | undefined,
   report: InventoryReport,
   worktreeDir: string,
   originDevCommit: string,
@@ -911,7 +894,7 @@ function currentSourceReviewedQualityLiveCoverage(
     };
   }
 
-  const receipts = stateReceipts(appDir);
+  const receipts = stateReceipts(reconciliation);
   const inventoryRows = normalizeInventoryRows(report);
   const covered = new Set<string>();
   for (const specId of specIds) {
@@ -1055,129 +1038,24 @@ function branchCandidateEvidence(
     : "unchecked";
 }
 
-function graphNodes(appDir: string): GraphNode[] {
-  const nodes: GraphNode[] = [];
-  const state = readJson<Record<string, unknown>>(
-    join(appDir, ".state", "tasks", "state.json"),
-    {},
-  );
-  const resources =
-    state.resources && typeof state.resources === "object"
-      ? (state.resources as Record<string, Record<string, unknown>>)
-      : {};
-  const attempts =
-    state.attempts && typeof state.attempts === "object"
-      ? (state.attempts as Record<string, Record<string, unknown>>)
-      : {};
-  const latestAttemptByTask = new Map<string, Record<string, unknown>>();
-  for (const attempt of Object.values(attempts)) {
-    const taskId = String(attempt.taskId ?? "").trim();
-    if (!taskId) continue;
-    const current = latestAttemptByTask.get(taskId);
-    if (
-      !current ||
-      String(attempt.startedAt ?? "").localeCompare(
-        String(current.startedAt ?? ""),
-      ) > 0
-    ) {
-      latestAttemptByTask.set(taskId, attempt);
-    }
-  }
-  for (const [id, resource] of Object.entries(resources)) {
-    const metadata =
-      resource.metadata &&
-      typeof resource.metadata === "object" &&
-      !Array.isArray(resource.metadata)
-        ? (resource.metadata as Record<string, unknown>)
-        : {};
-    const status =
-      resource.status &&
-      typeof resource.status === "object" &&
-      !Array.isArray(resource.status)
-        ? (resource.status as Record<string, unknown>)
-        : {};
-    const spec =
-      resource.spec &&
-      typeof resource.spec === "object" &&
-      !Array.isArray(resource.spec)
-        ? (resource.spec as Record<string, unknown>)
-        : {};
-    const state = String(status.phase ?? "")
-      .trim()
-      .toLowerCase();
-    const latestAttempt = latestAttemptByTask.get(id);
-    nodes.push({
-      id,
-      generation: Number(metadata.generation ?? 0),
-      state,
-      priority: String(spec.priority ?? ""),
-      readinessState: "",
-      parentId: String(spec.parentId ?? ""),
-      workflow: String(spec.workflow ?? ""),
-      input:
-        spec.input &&
-        typeof spec.input === "object" &&
-        !Array.isArray(spec.input)
-          ? (spec.input as Record<string, unknown>)
-          : {},
-      conditionIds: Array.isArray(status.conditionIds)
-        ? status.conditionIds.filter(
-            (value): value is string =>
-              typeof value === "string" && value.trim().length > 0,
-          )
-        : [],
-      latestAttemptHandler: String(latestAttempt?.handler ?? ""),
-      latestFailureReason: String(latestAttempt?.failureReason ?? ""),
-    });
-  }
-
-  const tree = readJson<Record<string, unknown>>(
-    join(appDir, ".state", "tasks", "tree.json"),
-    {},
-  );
-  const tasks =
-    tree.tasks && typeof tree.tasks === "object"
-      ? (tree.tasks as Record<string, Record<string, unknown>>)
-      : {};
-  for (const [id, task] of Object.entries(tasks)) {
-    const state = String(task.phase ?? "")
-      .trim()
-      .toLowerCase();
-    if (["done", "closed", "converged"].includes(state)) continue;
-    const latestAttempt = latestAttemptByTask.get(id);
-    const readiness =
-      task.readiness &&
-      typeof task.readiness === "object" &&
-      !Array.isArray(task.readiness)
-        ? (task.readiness as Record<string, unknown>)
-        : {};
-    nodes.push({
-      id,
-      generation: Number(task.generation ?? 0),
-      state,
-      priority: String(task.priority ?? ""),
-      readinessState: String(readiness.state ?? "")
-        .trim()
-        .toLowerCase(),
-      parentId: String(task.parent_id ?? task.parentId ?? ""),
-      workflow: String(task.workflow ?? ""),
-      input:
-        task.input &&
-        typeof task.input === "object" &&
-        !Array.isArray(task.input)
-          ? (task.input as Record<string, unknown>)
-          : {},
-      conditionIds: Array.isArray(task.condition_ids)
-        ? task.condition_ids.filter(
-            (value): value is string =>
-              typeof value === "string" && value.trim().length > 0,
-          )
-        : [],
-      latestAttemptHandler: String(latestAttempt?.handler ?? ""),
-      latestFailureReason: String(latestAttempt?.failureReason ?? ""),
-    });
-  }
-  return [...new Map(nodes.map((node) => [node.id, node])).values()];
+function graphNodes(
+  reconciliation: TaskReconciliationContext | undefined,
+): GraphNode[] {
+  return (reconciliation?.children.live ?? []).map((child) => ({
+    id: child.taskId,
+    generation: child.generation,
+    state: child.status,
+    priority: child.priority ?? "",
+    readinessState:
+      child.readiness?.state ??
+      (child.status === "waiting" ? "condition-blocked" : ""),
+    parentId: child.parentId,
+    workflow: child.workflow ?? "",
+    input: child.input,
+    conditionIds: child.conditions.map(({ id }) => id),
+    latestAttemptHandler: child.latestAttempt?.handler ?? "",
+    latestFailureReason: child.latestAttempt?.failureReason ?? "",
+  }));
 }
 
 function frontierPhase(node: GraphNode | undefined): string {
@@ -1194,7 +1072,7 @@ function frontierPhase(node: GraphNode | undefined): string {
 
 export function retryWorkflowAttentionAction(
   node: GraphNode,
-): ProjectAppTaskAction | null {
+): TaskAction | null {
   const workflowExecutionFailed =
     node.latestAttemptHandler === "workflow:spec-live-reconciliation" &&
     node.latestFailureReason === "HandlerExecutionFailed";
@@ -1223,8 +1101,8 @@ export function retryWorkflowAttentionAction(
 function workflowAttentionRetries<Row extends { residueTaskIds: string[] }>(
   rows: Row[],
   nodesById: ReadonlyMap<string, GraphNode>,
-): ProjectAppTaskAction[] {
-  const actions = new Map<string, ProjectAppTaskAction>();
+): TaskAction[] {
+  const actions = new Map<string, TaskAction>();
   for (const row of rows) {
     for (const taskId of row.residueTaskIds) {
       const node = nodesById.get(taskId);
@@ -1470,7 +1348,7 @@ function actionForRow(
   row: FrontierRow,
   originDevCommit: string,
   report: InventoryReport,
-): ProjectAppTaskAction {
+): TaskAction {
   const workRevision = digest(`${originDevCommit}:${row.adapterPath}`);
   const id = `domain/reconcile-scenario-adapter-${safeTaskIdPart(row.adapterPath)}-${workRevision.slice(0, 8)}`;
   return {
@@ -1522,7 +1400,7 @@ function actionForPlainCarrierRow(
   row: PlainCarrierRow,
   originDevCommit: string,
   report: InventoryReport,
-): ProjectAppTaskAction {
+): TaskAction {
   const workRevision = digest(`${originDevCommit}:${row.scenarioTestPath}`);
   const id = `domain/normalize-plain-scenario-carrier-${safeTaskIdPart(row.scenarioTestPath)}-${workRevision.slice(0, 8)}`;
   const owningSpecs = row.specIds.join(", ") || "its current consumers";
@@ -1582,7 +1460,7 @@ function actionForPlainCarrierRow(
 function workflowRepairForPlainCarrierRow(
   row: PlainCarrierRow,
   nodesById: ReadonlyMap<string, GraphNode>,
-): ProjectAppTaskAction | null {
+): TaskAction | null {
   if (row.specIds.length === 0) return null;
   const node = [...nodesById.values()].find(
     (candidate) => plainRowMatchesNode(row, candidate) && !candidate.workflow,
@@ -1590,6 +1468,7 @@ function workflowRepairForPlainCarrierRow(
   if (
     !node ||
     node.state !== "pending" ||
+    frontierPhase(node) !== "pending" ||
     !Number.isInteger(node.generation) ||
     node.generation < 1
   ) {
@@ -1607,7 +1486,7 @@ function workflowRepairForPlainCarrierRow(
 function routineNormalizationPriorityRepairs(
   nodesById: ReadonlyMap<string, GraphNode>,
   limit: number,
-): ProjectAppTaskAction[] {
+): TaskAction[] {
   return [...nodesById.values()]
     .filter(
       (node) =>
@@ -2084,7 +1963,7 @@ function actionForQualityRow(
   row: QualityFrontierRow,
   originDevCommit: string,
   report: InventoryReport,
-): ProjectAppTaskAction {
+): TaskAction {
   const workRevision = qualityRowWorkRevision(row, originDevCommit);
   const id = `domain/reconcile-direct-scenario-quality-${safeTaskIdPart(row.scenarioTestPath)}-${workRevision.slice(0, 8)}`;
   return {
@@ -2108,7 +1987,7 @@ function actionForQualityRow(
 function workflowRepairForQualityRow(
   row: QualityFrontierRow,
   nodesById: ReadonlyMap<string, GraphNode>,
-): ProjectAppTaskAction | null {
+): TaskAction | null {
   if (row.specIds.length === 0) return null;
   const node = [...nodesById.values()].find(
     (candidate) => qualityRowMatchesNode(row, candidate) && !candidate.workflow,
@@ -2135,7 +2014,7 @@ function qualityRowContractRepairs(
   originDevCommit: string,
   report: InventoryReport,
   nodesById: ReadonlyMap<string, GraphNode>,
-): ProjectAppTaskAction[] {
+): TaskAction[] {
   return row.representedTaskIds
     .map((taskId) => nodesById.get(taskId))
     .filter((node): node is GraphNode => Boolean(node))
@@ -2150,8 +2029,6 @@ function qualityRowContractRepairs(
           "pending",
           "runnable",
           "backlog",
-          "waiting",
-          "blocked",
         ].includes(node.state)
       ) {
         return false;
@@ -2203,13 +2080,12 @@ function capEvidence<Row>(
   ];
 }
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
+export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   const projectDir = resolveProjectDir(ctx);
-  const appDir = resolveAppDir(ctx, projectDir);
   const maxLeaves =
     standingLoopDefinitions[scenarioNormalizationTaskId].frontierLimit;
   const minRunnableLeaves = desiredRunnableMin(ctx);
-  const nodes = graphNodes(appDir);
+  const nodes = graphNodes(ctx.reconciliation);
   const nodesById = new Map(nodes.map((node) => [node.id, node]));
 
   return withCleanOriginDev(projectDir, (worktreeDir, source) => {
@@ -2232,7 +2108,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     const reviewedQualityLiveCoverage =
       inventoryReviewedQualityLiveCoverage.missing
         ? currentSourceReviewedQualityLiveCoverage(
-            appDir,
+            ctx.reconciliation,
             report,
             worktreeDir,
             originDevCommit,
@@ -2373,7 +2249,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         );
         const workflowRepairs = qualityRows
           .map((row) => workflowRepairForQualityRow(row, nodesById))
-          .filter((action): action is ProjectAppTaskAction => Boolean(action))
+          .filter((action): action is TaskAction => Boolean(action))
           .slice(0, Math.max(0, maxLeaves - priorityRepairs.length));
         const attentionRetries = workflowAttentionRetries(
           qualityRows,
@@ -2534,7 +2410,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         );
         const workflowRepairs = rows
           .map((row) => workflowRepairForPlainCarrierRow(row, nodesById))
-          .filter((action): action is ProjectAppTaskAction => Boolean(action))
+          .filter((action): action is TaskAction => Boolean(action))
           .slice(0, Math.max(0, maxLeaves - priorityRepairs.length));
         const attentionRetries = workflowAttentionRetries(
           rows,

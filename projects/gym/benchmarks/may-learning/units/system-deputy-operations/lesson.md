@@ -41,10 +41,11 @@ Trace the path in order:
 
 1. Was the intent accepted and persisted?
 2. Who owns it, and where was it targeted?
-3. Was delivery accepted or sent to an owner inbox?
-4. Did a domain consumer or handler claim it?
-5. Did the workflow run and update canonical state?
-6. Is there a typed response, trace closure, and terminal domain result?
+3. If it was addressed work, was it admitted to exactly one App inbox item?
+4. If it was a fact, did a declared task subscription, App subscription, exact
+   task wake, or observation route accept it?
+5. Did the accountable App complete, delegate, or attach durable task work?
+6. Is there a correlated App result, trace closure, and terminal domain proof?
 
 Stop at the first broken boundary. Name that layer, test the smallest repair,
 and keep competing hypotheses until evidence removes them.

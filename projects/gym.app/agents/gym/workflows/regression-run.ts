@@ -1,7 +1,14 @@
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
+import {
+  emitGymEvent,
+  gymAppRoot,
+  gymEvent,
+  gymProjectRoot,
+  gymProjectsRoot,
+} from "./lib/context";
 import { safeKey, triggerDetails } from "./lib/trigger";
 
 export const name = "regression-run";
@@ -119,12 +126,12 @@ function regressionFailure(
   benchmark: string,
   reason: string,
   evidence: Record<string, unknown>,
-): WorkflowResult {
+): ExecutionResult {
   const failureKey = createHash("sha256")
     .update(JSON.stringify({ benchmark, reason, evidence }))
     .digest("hex")
     .slice(0, 20);
-  const failureDir = join(ctx.projectsRoot, "gym.app", ".state", "failures");
+  const failureDir = join(gymAppRoot(ctx), ".state", "failures");
   const failurePath = join(failureDir, `${failureKey}.json`);
   mkdirSync(failureDir, { recursive: true });
   writeFileSync(
@@ -142,21 +149,17 @@ function regressionFailure(
       2,
     )}\n`,
   );
-  ctx.emit({
-    type: "gym.regression.failed",
-    project: "gym",
+  void emitGymEvent(ctx, gymEvent("gym.regression.failed", {
     benchmark,
     reason,
     failurePath,
     ...evidence,
-  });
-  ctx.emit({
-    type: "gym.review.requested",
-    project: "gym",
+  }));
+  void emitGymEvent(ctx, gymEvent("gym.review.requested", {
     kind: "regression-runtime",
     requestKey: `regression-runtime-${failureKey}`,
     failurePath,
-  });
+  }));
   return ctx.done(reason, {
     state: "converged",
     summary: reason,
@@ -168,8 +171,8 @@ function regressionFailure(
 export async function runRegression(
   ctx: WorkflowContext,
   processRunner: ProcessRunner = runProcess,
-): Promise<WorkflowResult> {
-  const details = triggerDetails(ctx.task);
+): Promise<ExecutionResult> {
+  const details = triggerDetails(ctx);
   if (!details)
     return ctx.blocked("Regression trigger event is missing or invalid");
 
@@ -186,7 +189,7 @@ export async function runRegression(
     return ctx.blocked(error instanceof Error ? error.message : String(error));
   }
 
-  const gymRoot = join(ctx.projectsRoot, "gym");
+  const gymRoot = gymProjectRoot(ctx);
   const command = [
     "bun",
     "run",
@@ -206,7 +209,7 @@ export async function runRegression(
     cwd: gymRoot,
     env: {
       ...process.env,
-      GYM_AGENTS_ROOT: join(dirname(ctx.projectsRoot), "agents"),
+      GYM_AGENTS_ROOT: join(dirname(gymProjectsRoot(ctx)), "agents"),
     },
   });
   if (result.exitCode !== 0) {
@@ -236,27 +239,23 @@ export async function runRegression(
 
   const outcome = summarizeRun(runDir);
   const runId = safeKey(outcome.run_id, "unknown-run");
-  const stateDir = join(ctx.projectsRoot, "gym.app", ".state", "runs");
+  const stateDir = join(gymAppRoot(ctx), ".state", "runs");
   const outcomePath = join(stateDir, `${runId}.json`);
   mkdirSync(stateDir, { recursive: true });
   writeFileSync(outcomePath, `${JSON.stringify(outcome, null, 2)}\n`);
 
-  ctx.emit({
-    type: "gym.regression.completed",
-    project: "gym",
+  await emitGymEvent(ctx, gymEvent("gym.regression.completed", {
     ...outcome,
     outcomePath,
-  });
+  }));
   if (outcome.review_required) {
-    ctx.emit({
-      type: "gym.review.requested",
-      project: "gym",
+    await emitGymEvent(ctx, gymEvent("gym.review.requested", {
       kind: "regression",
       requestKey: `regression-${runId}`,
       runId: outcome.run_id,
       runDir,
       outcomePath,
-    });
+    }));
   }
 
   const summary = `Gym regression ${String(outcome.run_id)} completed: ${JSON.stringify(outcome.counts)}.`;
@@ -268,6 +267,6 @@ export async function runRegression(
   });
 }
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
+export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   return runRegression(ctx);
 }
