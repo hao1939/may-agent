@@ -49,7 +49,7 @@ import {
 } from "@may-agent/sdk";
 import { loadProjectReadModel, projectRuntimePaths } from "./app-task-runtime-state.js";
 import { readTaskState, refreshAppTaskTreeProjection } from "./app-task-store.js";
-import { appTaskExecutionPaths, type AppTaskExecutionPaths } from "./app-task-output-paths.js";
+import { appTaskExecutionPaths, withAppTaskWorkspace, type AppTaskExecutionPaths } from "./app-task-output-paths.js";
 import type { TaskView } from "@may-agent/sdk/app";
 import { readRuntimeTaskView } from "./app-read.js";
 import { appOwnerReviewEvent } from "./app-input-event.js";
@@ -1344,6 +1344,7 @@ async function runTaskOwner(input: {
     outputSchema: appTaskOwnerResultSchema,
     toolPolicy: "full" as const,
     timeout: APP_TASK_OWNER_TIMEOUT_MS,
+    executionRoot: input.executionPaths.workspaceDir,
   };
   const dispatchOwner = async () =>
     typeof opts.manager.run === "function" &&
@@ -1360,6 +1361,7 @@ async function runTaskOwner(input: {
             outputSchema: ownerOptions.outputSchema,
             toolPolicy: ownerOptions.toolPolicy,
             timeoutMs: ownerOptions.timeout,
+            executionRoot: ownerOptions.executionRoot,
           });
           recordAppTaskAttemptSession(
             taskReconciliationConfig({
@@ -1680,7 +1682,7 @@ async function reconcileTask(input: {
               : (descriptor.app.workspace.branch ?? "dev"),
           previous,
         });
-        executionPaths = { ...executionPaths, workspaceDir: taskWorkspace.metadata.path };
+        executionPaths = withAppTaskWorkspace(executionPaths, taskWorkspace.metadata.path);
         if (!recordAppTaskAttemptWorkspace(config, primary, taskWorkspace.metadata)) {
           throw new Error(`Task attempt ${primary.attemptId} became stale while preparing its workspace`);
         }
