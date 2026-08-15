@@ -93,6 +93,7 @@ import {
   repairRunningAppTasksWithoutAttempt,
   recoverableAppTaskAttempts,
   releaseInterruptedAppTaskAttempt,
+  releaseLateTerminalWorkflowAppTaskAttempt,
   releaseStaleAppTaskResult,
   recordAppTaskAttemptSession,
   recordAppTaskAttemptWorkspace,
@@ -209,6 +210,14 @@ function readAppTaskSessionScope(persistDir: string | undefined, sessionId: stri
     binding: parseAppTaskSessionBinding(meta.task),
     workflowRunId: firstNonEmptyString(meta.workflowRunId),
   };
+}
+
+function workflowWasInterruptedByRestart(persistDir: string | undefined, workflowRunId: string | null): boolean {
+  if (!persistDir || !workflowRunId) return false;
+  const row = getDb(persistDir)
+    .prepare("SELECT status, result_reason FROM workflow_runs WHERE runId = ?")
+    .get(workflowRunId) as { status?: unknown; result_reason?: unknown } | undefined;
+  return row?.status === "interrupted" && row.result_reason === "Process restarted";
 }
 
 function taskRecoverySessionScopesMatch(
@@ -2809,6 +2818,33 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
           owner: descriptor.owner,
           maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
         });
+        if (
+          successfulOwner.binding?.appId === descriptor.id &&
+          workflowWasInterruptedByRestart(opts.persistDir, successfulOwner.workflowRunId)
+        ) {
+          const released = releaseLateTerminalWorkflowAppTaskAttempt(
+            config,
+            successfulOwner.binding,
+            successfulOwner.sessionId,
+            `Late terminal session ${successfulOwner.sessionId} cannot reattach to restart-interrupted workflow ${successfulOwner.workflowRunId}`,
+          );
+          if (released.released) {
+            enqueueAppTask(taskController, config, released.taskId, { front: true });
+            opts.bus.emit({
+              type: "project.task.recovery.requeued",
+              source: `app-task:${descriptor.id}:task-recovery`,
+              owner: `agent:${successfulOwner.owner}`,
+              target: { appId: descriptor.id },
+              data: {
+                project: descriptor.id,
+                taskId: released.taskId,
+                reason: "late-terminal-session-after-workflow-restart",
+                evidenceSessionId: successfulOwner.sessionId,
+                evidenceWorkflowRunId: successfulOwner.workflowRunId,
+              },
+            } as unknown as AgentEvent);
+          }
+        }
         for (const candidate of listHandlerExecutionFailedAppTasks(config)) {
           if (candidate.owner !== successfulOwner.owner) continue;
           if (
