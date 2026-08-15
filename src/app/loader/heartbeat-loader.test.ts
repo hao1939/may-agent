@@ -25,7 +25,7 @@ describe("generateAutoHeartbeats", () => {
     });
   });
 
-  it("uses project-app paths for app-local agents", () => {
+  it("uses App-local paths for app-local agents", () => {
     const root = mkdtempSync(join(tmpdir(), "may-heartbeat-app-"));
     const agentsRoot = join(root, "projects", "demo.app", "agents");
     createHeartbeatAgent(agentsRoot, "owner");

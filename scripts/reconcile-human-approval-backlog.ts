@@ -102,10 +102,7 @@ export function approvalBelongsToProject(
   item: Pick<OrphanedApprovalNotification, "approvalId" | "projectId">,
   project: string,
 ): boolean {
-  return (
-    projectName(item.projectId) === project ||
-    item.approvalId.startsWith(`${project}:`)
-  );
+  return projectName(item.projectId) === project || item.approvalId.startsWith(`${project}:`);
 }
 
 function alreadyResolvedApprovalIds(dbPath: string): Set<string> {
@@ -179,9 +176,7 @@ function projectName(projectId: string | undefined): string | undefined {
 
 async function main(): Promise<void> {
   const apply = process.argv.includes("--apply");
-  const projectArgument = process.argv.find((value) =>
-    value.startsWith("--project="),
-  );
+  const projectArgument = process.argv.find((value) => value.startsWith("--project="));
   const selectedProject = projectArgument?.slice("--project=".length).trim();
   const limitArgument = process.argv.find((value) => value.startsWith("--limit="));
   const limit = limitArgument ? Math.max(1, Number(limitArgument.slice("--limit=".length)) || 1) : Infinity;
@@ -191,8 +186,8 @@ async function main(): Promise<void> {
   const projectStatePath = resolve(
     process.env.PROJECT_TASK_STATE ?? resolve(appRoot, "projects/alpha-project.app/.state/tasks/state.json"),
   );
-  const projectAppPath = dirname(dirname(dirname(projectStatePath)));
-  const stateProject = basename(projectAppPath).replace(/\.app$/, "");
+  const appPath = dirname(dirname(dirname(projectStatePath)));
+  const stateProject = basename(appPath).replace(/\.app$/, "");
   const project = selectedProject || stateProject;
   const taskState = JSON.parse(readFileSync(projectStatePath, "utf8")) as TaskState;
   const resolved = alreadyResolvedApprovalIds(dbPath);
@@ -243,7 +238,7 @@ async function main(): Promise<void> {
           owner: "agent:may",
           project,
           projectId: project,
-          projectPath: `projects/${basename(projectAppPath)}`,
+          projectPath: `projects/${basename(appPath)}`,
           approvalKind: item.approvalKind,
           approvalId: item.approvalId,
           ...(item.waitId ? { waitId: item.waitId } : {}),

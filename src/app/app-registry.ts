@@ -1,11 +1,14 @@
-import { loadAppInboxDefinitions, type LoadedAppInboxDefinition } from "./loader/app-inbox-loader.js";
+import { randomUUID } from "node:crypto";
+import { loadAppDefinitions, type LoadedAppDefinition } from "./loader/app-loader.js";
 
 export type AppRegistrySnapshot = Readonly<{
+  /** Boot-unique durable identity; unlike generation it cannot collide after restart. */
+  id: string;
   generation: number;
-  entries: readonly Readonly<LoadedAppInboxDefinition>[];
+  entries: readonly Readonly<LoadedAppDefinition>[];
 }>;
 
-function immutableEntries(entries: LoadedAppInboxDefinition[]): readonly Readonly<LoadedAppInboxDefinition>[] {
+function immutableEntries(entries: LoadedAppDefinition[]): readonly Readonly<LoadedAppDefinition>[] {
   return Object.freeze(
     entries.map((entry) =>
       Object.freeze({
@@ -24,12 +27,15 @@ function immutableEntries(entries: LoadedAppInboxDefinition[]): readonly Readonl
  * still fenced by the immutable generation passed to it.
  */
 export class AppRegistry {
-  private current: AppRegistrySnapshot = Object.freeze({ generation: 0, entries: Object.freeze([]) });
+  private readonly bootId = randomUUID();
+  private current: AppRegistrySnapshot;
   private reloadQueue: Promise<void> = Promise.resolve();
 
-  constructor(private readonly projectsRoot: string) {}
+  constructor(private readonly projectsRoot: string) {
+    this.current = Object.freeze({ id: `${this.bootId}:0`, generation: 0, entries: Object.freeze([]) });
+  }
 
-  entries(): LoadedAppInboxDefinition[] {
+  entries(): LoadedAppDefinition[] {
     return this.current.entries.map((entry) => ({ appDir: entry.appDir, definition: entry.definition }));
   }
 
@@ -37,7 +43,7 @@ export class AppRegistry {
     return this.current;
   }
 
-  reload(apply?: (next: AppRegistrySnapshot) => void | Promise<void>): Promise<LoadedAppInboxDefinition[]> {
+  reload(apply?: (next: AppRegistrySnapshot) => void | Promise<void>): Promise<LoadedAppDefinition[]> {
     const operation = this.reloadQueue.then(() => this.performReload(apply));
     this.reloadQueue = operation.then(
       () => undefined,
@@ -48,10 +54,12 @@ export class AppRegistry {
 
   private async performReload(
     apply?: (next: AppRegistrySnapshot) => void | Promise<void>,
-  ): Promise<LoadedAppInboxDefinition[]> {
-    const next = await loadAppInboxDefinitions(this.projectsRoot);
+  ): Promise<LoadedAppDefinition[]> {
+    const next = await loadAppDefinitions(this.projectsRoot);
+    const generation = this.current.generation + 1;
     const prospective = Object.freeze({
-      generation: this.current.generation + 1,
+      id: `${this.bootId}:${generation}`,
+      generation,
       entries: immutableEntries(next),
     });
     await apply?.(prospective);

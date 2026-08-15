@@ -22,9 +22,6 @@
       "@may-agent/sdk/task": [
         "packages/sdk/src/task.ts"
       ],
-      "@may-agent/sdk/legacy": [
-        "packages/sdk/src/legacy.ts"
-      ],
       "@may-agent/sdk/testing": [
         "packages/sdk/src/testing.ts"
       ]

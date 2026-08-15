@@ -237,6 +237,44 @@ export async function execute(ctx) {
     });
   });
 
+  it("exposes only the App, project, and bounded attempt workspace roots", async () => {
+    const root = mkdtempSync(join(tmpdir(), "app-workflow-workspace-"));
+    const workflowDir = join(root, "workflows");
+    mkdirSync(workflowDir);
+    writeFileSync(
+      join(workflowDir, "workspace.ts"),
+      `
+export const name = "workspace";
+export const description = "App SDK workspace scope test";
+export async function execute(ctx) {
+  return ctx.done("workspace scoped", ctx.workspace);
+}
+`,
+    );
+    const executionPaths = {
+      appDir: join(root, "sample.app"),
+      projectDir: join(root, "sample"),
+      workspaceDir: join(root, "task-workspace"),
+    };
+    const runner = createWorkflowRunner({
+      manager: {} as any,
+      workflowDir,
+      agentName: "owner",
+      executionPaths,
+    });
+
+    const result = await runner.run("workspace", "input");
+    expect(result).toMatchObject({
+      type: "done",
+      output: {
+        appRoot: executionPaths.appDir,
+        projectRoot: executionPaths.projectDir,
+        root: executionPaths.workspaceDir,
+        output: executionPaths.workspaceDir,
+      },
+    });
+  });
+
   it("exposes App-authored input without parsing the legacy task prompt", async () => {
     const root = mkdtempSync(join(tmpdir(), "app-workflow-input-"));
     const workflowDir = join(root, "workflows");

@@ -1,4 +1,12 @@
-import { childEventTrace, eventData, type AgentEvent, type EventBus, type EventTrace, type Subscriber } from "../app/event-bus.js";
+import {
+  childEventTrace,
+  eventData,
+  type AgentEvent,
+  type EventBus,
+  type EventTrace,
+  type Subscriber,
+} from "../app/event-bus.js";
+import { appOwnerReviewEvent } from "../app/app-input-event.js";
 import { getDb } from "./requests.js";
 
 type ResumeManager = {
@@ -22,7 +30,7 @@ function parseData(value: unknown): Record<string, unknown> {
   if (typeof value !== "string") return {};
   try {
     const parsed = JSON.parse(value);
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed as Record<string, unknown> : {};
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : {};
   } catch {
     return {};
   }
@@ -30,14 +38,18 @@ function parseData(value: unknown): Record<string, unknown> {
 
 function findEscalationCreated(persistDir: string, escalationId: string): EscalationCreated | null {
   const db = getDb(persistDir);
-  const row = db.prepare(`
+  const row = db
+    .prepare(
+      `
     SELECT id, source, owner, data
     FROM events
     WHERE event_type = 'escalation.created'
       AND escalation_id = ?
     ORDER BY id DESC
     LIMIT 1
-  `).get(escalationId) as { id: number; source: string | null; owner: string | null; data: string | null } | undefined;
+  `,
+    )
+    .get(escalationId) as { id: number; source: string | null; owner: string | null; data: string | null } | undefined;
   if (!row) return null;
   return { rowId: row.id, source: row.source, owner: row.owner, data: parseData(row.data) };
 }
@@ -67,9 +79,10 @@ function shouldResume(outcome: string): boolean {
 
 function sourceSessionId(escalation: EscalationCreated): string | undefined {
   const data = escalation.data;
-  const resume = data.resume && typeof data.resume === "object" && !Array.isArray(data.resume)
-    ? data.resume as Record<string, unknown>
-    : {};
+  const resume =
+    data.resume && typeof data.resume === "object" && !Array.isArray(data.resume)
+      ? (data.resume as Record<string, unknown>)
+      : {};
   if (resume.kind === "session") {
     return nonEmptyString(resume.sessionId) ?? nonEmptyString(data.sourceSessionId);
   }
@@ -78,21 +91,24 @@ function sourceSessionId(escalation: EscalationCreated): string | undefined {
 
 function workflowRunIdContext(escalation: EscalationCreated): string | undefined {
   const data = escalation.data;
-  const resume = data.resume && typeof data.resume === "object" && !Array.isArray(data.resume)
-    ? data.resume as Record<string, unknown>
-    : {};
+  const resume =
+    data.resume && typeof data.resume === "object" && !Array.isArray(data.resume)
+      ? (data.resume as Record<string, unknown>)
+      : {};
   if (resume.kind === "workflow") {
     return nonEmptyString(resume.workflowRunId) ?? nonEmptyString(data.workflowRunId);
   }
   return nonEmptyString(data.workflowRunId);
 }
 
-function resumeInstruction(event: AgentEvent, outcome: string, sourceEscalationId: string, workflowRunId?: string): string {
+function resumeInstruction(
+  event: AgentEvent,
+  outcome: string,
+  sourceEscalationId: string,
+  workflowRunId?: string,
+): string {
   const data = eventData(event);
-  const lines = [
-    `Escalation ${sourceEscalationId} resolved.`,
-    `Outcome: ${outcome}.`,
-  ];
+  const lines = [`Escalation ${sourceEscalationId} resolved.`, `Outcome: ${outcome}.`];
   if (workflowRunId) lines.push(`Workflow run: ${workflowRunId}`);
   const summary = nonEmptyString(data.summary) ?? nonEmptyString(data.reason);
   if (summary) lines.push(`Summary: ${summary}`);
@@ -152,18 +168,20 @@ function wakeSourceOwner(
 ): { sourceKind: "project" | "workflow"; sourceRef: string } | null {
   const projectId = nonEmptyString(escalation.data.projectId) ?? nonEmptyString(escalation.data.project);
   if (projectId) {
-    bus.emit({
-      type: "project.owner.requested",
-      source: "escalation-lifecycle",
-      owner: sourceOwner(escalation, owner),
-      data: {
-        projectId,
-        project: projectId,
-        reason: "escalation-resolved",
-        resumeInstruction: resumeText,
-        ...baseData,
-      },
-    } as AgentEvent);
+    bus.emit(
+      appOwnerReviewEvent({
+        appId: projectId,
+        source: "escalation-lifecycle",
+        sourceId: `escalation:${escalation.rowId}`,
+        data: {
+          projectId,
+          project: projectId,
+          reason: "escalation-resolved",
+          resumeInstruction: resumeText,
+          ...baseData,
+        },
+      }),
+    );
     return { sourceKind: "project", sourceRef: projectId };
   }
 
@@ -236,7 +254,8 @@ export function createEscalationLifecycleSubscriber(opts: {
       return;
     }
 
-    const sourceEscalationId = nonEmptyString(sourceCreated.data.escalationId) ?? resolvedEscalationId ?? `event:${sourceCreated.rowId}`;
+    const sourceEscalationId =
+      nonEmptyString(sourceCreated.data.escalationId) ?? resolvedEscalationId ?? `event:${sourceCreated.rowId}`;
     const sessionId = sourceSessionId(sourceCreated);
     const workflowRunId = workflowRunIdContext(sourceCreated);
     const baseData = {

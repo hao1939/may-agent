@@ -8,8 +8,7 @@ import { getAgentCrons, reloadAgents } from "./agent-loader.js";
 
 export type AppGenerationReloadResult = {
   appIds: string[];
-  projectApps: number;
-  entries: number;
+  taskApps: number;
 };
 
 type ExecFileFn = (
@@ -144,14 +143,14 @@ export function createDaemonLifecycle(opts: {
       const parts: string[] = [];
       if (result.added.length > 0) parts.push(`${result.added.length} new (${result.added.join(", ")})`);
       if (result.updated.length > 0) parts.push(`${result.updated.length} updated (${result.updated.join(", ")})`);
-      if (appGeneration && appGeneration.projectApps > 0) {
-        parts.push(`${appGeneration.projectApps} project app(s), ${appGeneration.entries} trigger(s)`);
+      if (appGeneration && appGeneration.taskApps > 0) {
+        parts.push(`${appGeneration.taskApps} task-enabled App(s)`);
       }
       if (appGeneration) parts.push(`${appGeneration.appIds.length} durable App address(es)`);
       summary = `[reload] ${parts.join(", ")}`;
     } else {
       summary = appGeneration
-        ? `[reload] ${appGeneration.projectApps} project app(s), ${appGeneration.entries} trigger(s), ${appGeneration.appIds.length} durable App address(es)`
+        ? `[reload] ${appGeneration.taskApps} task-enabled App(s), ${appGeneration.appIds.length} durable App address(es)`
         : "[reload] No changes";
     }
     // info events are forwarded to stdout by attachConsoleUI (chat/console

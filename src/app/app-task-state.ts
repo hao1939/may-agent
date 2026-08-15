@@ -1,0 +1,90 @@
+import type { Condition, TaskAcceptanceBasis, TaskIntent } from "@may-agent/sdk";
+
+/** Host-private persisted Condition state. */
+export type AppTaskCondition = {
+  metadata: {
+    id: string;
+    generation: number;
+    resourceVersion: number;
+  };
+  spec: Omit<Condition, "id">;
+  status: {
+    observedGeneration: number;
+    state: "unknown" | "false" | "true";
+    observed?: unknown;
+    observedAt?: string;
+    evidence?: string[];
+  };
+};
+
+/** Observed Git workspace lineage for one task attempt; never desired spec. */
+export type AppTaskWorkspace = {
+  kind: "task-worktree";
+  path: string;
+  baseRef: string;
+  baseCommit: string;
+  branch: string;
+  headCommit: string;
+  disposition: "active" | "retained-for-recovery" | "branch-retained" | "removed";
+};
+
+export type AppTaskResource = {
+  metadata: {
+    id: string;
+    generation: number;
+    resourceVersion: number;
+  };
+  spec: Omit<TaskIntent, "id">;
+  status: {
+    observedGeneration: number;
+    phase: "pending" | "running" | "converged" | "waiting" | "attention";
+    currentAttemptId?: string;
+    summary?: string;
+    evidence?: string[];
+    conditionIds?: string[];
+    updatedAt: string;
+  };
+};
+
+export type AppTaskAttemptLease = {
+  id: string;
+  version: number;
+  lastActivityAt: string;
+  expiresAt: string;
+  runtimeId: string;
+  sessionId: string;
+};
+
+export type AppTaskAttempt = {
+  metadata: {
+    id: string;
+    resourceVersion: number;
+  };
+  taskId: string;
+  taskGeneration: number;
+  specHash: string;
+  owner: string;
+  handler: string;
+  runtimeId: string;
+  state: "running" | "completed" | "failed" | "interrupted";
+  reason: string;
+  trigger?: Record<string, unknown>;
+  startedAt: string;
+  finishedAt?: string;
+  summary?: string;
+  failureReason?: string;
+  attentionNotifiedAt?: string;
+  sessionId?: string;
+  lease?: AppTaskAttemptLease;
+  workspace?: AppTaskWorkspace;
+};
+
+export type AppTaskTrigger = {
+  taskId: string;
+  taskGeneration: number;
+  resourceVersion: number;
+  event: Record<string, unknown>;
+  observedAt: string;
+};
+
+export type AppTaskAcceptanceBasis = TaskAcceptanceBasis;

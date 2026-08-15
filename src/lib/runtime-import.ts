@@ -158,11 +158,16 @@ function mayAgentSdkRuntimeResolver(entrypoint: string): RuntimeBunPlugin {
   return {
     name: "may-agent-sdk-runtime-resolver",
     setup(build) {
-      build.onResolve({ filter: /^@may-agent\/sdk(?:\/(?:app|legacy|testing))?$/ }, (args) => {
-        return {
-          path: resolveSdkExport(args.path, args.importer || entrypoint),
-        };
-      });
+      build.onResolve(
+        {
+          filter: /^@may-agent\/sdk(?:\/(?:app|task|testing|workflow-guard))?$/,
+        },
+        (args) => {
+          return {
+            path: resolveSdkExport(args.path, args.importer || entrypoint),
+          };
+        },
+      );
 
       // When running from a compiled binary, Bun.build cannot resolve
       // bare-specifier dependencies of the SDK source (e.g. @earendil-works/pi-ai)
@@ -214,10 +219,10 @@ function resolveSdkExport(specifier: string, importer: string): string {
       ? "app.ts"
       : specifier === "@may-agent/sdk/task"
         ? "task.ts"
-        : specifier === "@may-agent/sdk/legacy"
-          ? "legacy.ts"
-          : specifier === "@may-agent/sdk/testing"
-            ? "testing.ts"
+        : specifier === "@may-agent/sdk/testing"
+          ? "testing.ts"
+          : specifier === "@may-agent/sdk/workflow-guard"
+            ? "workflow-guard.ts"
             : "index.ts";
   const candidates = sdkRootCandidates(importer).map((root) => join(root, "src", exportFile));
   const resolved = candidates.find((candidate) => existsSync(candidate));

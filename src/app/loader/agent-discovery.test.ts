@@ -3,7 +3,13 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { agentProjectRoot, agentRelativeDir, listAgentDirectories, listProjectAgentDirectories, resolveRuntimeAgentDirectory } from "./agent-discovery.ts";
+import {
+  agentProjectRoot,
+  agentRelativeDir,
+  listAgentDirectories,
+  listProjectAgentDirectories,
+  resolveRuntimeAgentDirectory,
+} from "./agent-discovery.ts";
 
 function tempRoot(): string {
   const root = join(tmpdir(), `agent-discovery-${Date.now()}-${Math.random().toString(36).slice(2)}`);
@@ -26,27 +32,7 @@ describe("project-local agent discovery", () => {
     }
   });
 
-  it("discovers legacy embedded project-app agents under .app/agents", () => {
-    const root = tempRoot();
-    try {
-      const project = join(root, "alpha-project");
-      mkdirSync(join(project, ".app", "agents", "aks-explorer"), { recursive: true });
-      writeFileSync(join(project, ".app", "project.md"), "---\nid: alpha-project\nowner: aks-explorer\nstatus: active\n---\n");
-      writeFileSync(join(project, ".app", "agents", "aks-explorer", "agent.json"), JSON.stringify({
-        name: "aks-explorer",
-        model: "test",
-        tools: [],
-      }));
-
-      expect(listProjectAgentDirectories(root).map((agent) => agent.dir)).toEqual([
-        join(project, ".app", "agents", "aks-explorer"),
-      ]);
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("discovers Project App V3 agents under sibling .app projects", () => {
+  it("discovers canonical App-local agents under sibling .app projects", () => {
     const root = tempRoot();
     try {
       const domainProject = join(root, "alpha-project");
@@ -57,11 +43,14 @@ describe("project-local agent discovery", () => {
       writeFileSync(join(domainProject, "README.md"), "# Alpha Project\n");
       writeFileSync(join(appProject, "app.ts"), "export default {};\n");
       writeFileSync(join(appProject, "project.md"), "# alpha-project app\n");
-      writeFileSync(join(agentDir, "agent.json"), JSON.stringify({
-        name: "aks-explorer",
-        model: "test",
-        tools: [],
-      }));
+      writeFileSync(
+        join(agentDir, "agent.json"),
+        JSON.stringify({
+          name: "aks-explorer",
+          model: "test",
+          tools: [],
+        }),
+      );
 
       const agents = listProjectAgentDirectories(root);
       expect(agents.map((agent) => agent.dir)).toEqual([agentDir]);
@@ -73,17 +62,14 @@ describe("project-local agent discovery", () => {
     }
   });
 
-  it("discovers owner agents for App inboxes without a legacy Project App module", () => {
+  it("requires the canonical app.ts frame for App-local agents", () => {
     const root = tempRoot();
     try {
       const appProject = join(root, "evaluation.app");
       const agentDir = join(appProject, "agents", "evaluator");
       mkdirSync(agentDir, { recursive: true });
-      writeFileSync(join(appProject, "inbox.ts"), "export default {} as unknown;\n");
-      writeFileSync(
-        join(agentDir, "agent.json"),
-        JSON.stringify({ name: "evaluator", model: "test", tools: [] }),
-      );
+      writeFileSync(join(appProject, "app.ts"), "export default {} as unknown;\n");
+      writeFileSync(join(agentDir, "agent.json"), JSON.stringify({ name: "evaluator", model: "test", tools: [] }));
 
       const agents = listProjectAgentDirectories(root);
       expect(agents.map((agent) => agent.dir)).toEqual([agentDir]);

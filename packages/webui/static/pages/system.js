@@ -114,7 +114,6 @@ function renderEventDeliveryHealth(health) {
     ['overdue pending', overduePending.length],
     ['orphan pairs', orphanPairs.length],
     ['overdue pairs', overdueOpen.length],
-    ['owner inbox open', Number(health.ownerInboxOpenCount || 0)],
   ];
   let html = `<div style="border:1px solid var(--border);border-radius:6px;background:var(--bg2);padding:12px">`;
   html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">`;

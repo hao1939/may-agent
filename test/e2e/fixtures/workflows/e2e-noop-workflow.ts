@@ -4,7 +4,7 @@
  * Used by e3b-workflow-discovery to validate that a workflow can be located
  * (via the agent's workflows/ dir) and dispatched end-to-end.
  */
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk/legacy";
+import type { WorkflowContext, WorkflowResult } from "../../../../src/lib/workflow.js";
 
 export const name = "e2e-noop-workflow";
 export const description = "Fixture workflow that completes immediately.";

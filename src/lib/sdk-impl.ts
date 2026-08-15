@@ -55,12 +55,12 @@ export interface SDKDeps {
 // ── Workflow path helpers ──────────────────────────────────────────────
 
 /**
- * Resolve the workflow directory for a project-app-owned agent.
- * When a project app provides its own agent (e.g. scout-knowledge-lib.app/agents/scout/),
+ * Resolve the workflow directory for a App-local agent.
+ * When an App provides its own agent (e.g. scout-knowledge-lib.app/agents/scout/),
  * the agent's workflows live at <projectId>.app/agents/<agent>/workflows/ rather than
  * the global agents/<agent>/workflows/ directory.
  */
-export function agentWorkflowDirForProjectApp(
+export function agentWorkflowDirForApp(
   projectsRoot: string,
   projectId: string | undefined,
   agentName: string,
@@ -74,10 +74,7 @@ export function agentWorkflowDirForProjectApp(
     .replace(/\/$/, "");
   if (!clean) return undefined;
 
-  const appDirs = [
-    join(projectsRoot, `${clean}.app`),
-    join(projectsRoot, clean, ".app"),
-  ];
+  const appDirs = [join(projectsRoot, `${clean}.app`), join(projectsRoot, clean, ".app")];
   const shortName = basename(clean);
   if (shortName && shortName !== clean) {
     appDirs.push(join(projectsRoot, `${shortName}.app`));
@@ -150,14 +147,10 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
       });
       const agentForWorkflow = opts?.source ?? deps.agentName;
       const globalWorkflowDir = join(deps.agentsRoot, agentForWorkflow, "workflows");
-      // When a project app owns the agent (e.g. scout in scout-knowledge-lib.app/agents/scout/),
-      // workflows live in the project-app agent dir, not the global agents/ dir.
-      const projectAppAgentWorkflowDir = agentWorkflowDirForProjectApp(
-        deps.projectsRoot,
-        opts?.projectId,
-        agentForWorkflow,
-      );
-      const workflowDir = projectAppAgentWorkflowDir ?? globalWorkflowDir;
+      // When an App owns the agent (e.g. scout in scout-knowledge-lib.app/agents/scout/),
+      // workflows live in the App-local agent dir, not the global agents/ dir.
+      const appAgentWorkflowDir = agentWorkflowDirForApp(deps.projectsRoot, opts?.projectId, agentForWorkflow);
+      const workflowDir = appAgentWorkflowDir ?? globalWorkflowDir;
       const { result, runId } = await runWorkflowDirect({
         workflowName: name,
         task,
@@ -212,10 +205,7 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
       getDb: () => getDb(deps.persistDir),
     }),
 
-    commands: createCommandService({
-      getDb: () => getDb(deps.persistDir),
-      emit: (event) => deps.bus.emit(event as any),
-    }),
+    commands: createCommandService(),
 
     metrics: createMetricService({
       getDb: () => getDb(deps.persistDir),

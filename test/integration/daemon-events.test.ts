@@ -46,7 +46,9 @@ describe("daemon event subscribers", () => {
     const bus = new EventBus();
     const events: any[] = [];
     const manager = {
-      resumeSession: () => { throw new Error("test: resume not wired"); },
+      resumeSession: () => {
+        throw new Error("test: resume not wired");
+      },
     };
 
     try {
@@ -88,7 +90,9 @@ describe("daemon event subscribers", () => {
     const bus = new EventBus();
     const events: any[] = [];
     const manager = {
-      resumeSession: () => { throw new Error("test: resume not wired"); },
+      resumeSession: () => {
+        throw new Error("test: resume not wired");
+      },
     };
 
     try {
@@ -125,7 +129,9 @@ describe("daemon event subscribers", () => {
     const bus = new EventBus();
     const events: any[] = [];
     const manager = {
-      resumeSession: () => { throw new Error("test: resume not wired"); },
+      resumeSession: () => {
+        throw new Error("test: resume not wired");
+      },
     };
     const originalSetTimeout = globalThis.setTimeout;
 
@@ -204,7 +210,9 @@ describe("daemon event subscribers", () => {
     const bus = new EventBus();
     const events: any[] = [];
     const manager = {
-      resumeSession: () => { throw new Error("test: resume not wired"); },
+      resumeSession: () => {
+        throw new Error("test: resume not wired");
+      },
       activeSessions: new Map<string, unknown>(),
     };
 
@@ -219,32 +227,41 @@ describe("daemon event subscribers", () => {
       });
 
       const db = getDb(persistDir);
-      expect(db.prepare("SELECT status, close_event_id FROM event_pair_runs WHERE open_event_id = ?").get(openEventId)).toMatchObject({
+      expect(
+        db.prepare("SELECT status, close_event_id FROM event_pair_runs WHERE open_event_id = ?").get(openEventId),
+      ).toMatchObject({
         status: "closed",
         close_event_id: expect.any(Number),
       });
       expect(
         db
           .prepare(
-            `SELECT event_type, source, json_extract(data, '$.reason') AS reason, json_extract(data, '$.openEventId') AS openEventId
+            `SELECT event_type, source,
+                    json_extract(data, '$.error') AS error,
+                    json_extract(data, '$.handlerRunId') AS handlerRunId
              FROM events
-             WHERE event_type = 'event-pair.orphan-gc.close'
-               AND json_extract(data, '$.openEventId') = ?`,
+             WHERE event_type = 'handler.failed'
+               AND json_extract(data, '$.handlerRunId') = ?`,
           )
-          .get(openEventId),
+          .get("handler:metrics-snapshot:seed:1"),
       ).toEqual({
-        event_type: "event-pair.orphan-gc.close",
+        event_type: "handler.failed",
         source: "runtime:restart-recovery",
-        reason: "runtime-restarted",
-        openEventId,
+        error: "Process restarted before the handler completed",
+        handlerRunId: "handler:metrics-snapshot:seed:1",
       });
-      expect(
-        db.prepare("SELECT close_event_id FROM event_pair_runs WHERE open_event_id = ?").get(openEventId),
-      ).toEqual(
-        db.prepare("SELECT id AS close_event_id FROM events WHERE event_type = 'event-pair.orphan-gc.close' AND json_extract(data, '$.openEventId') = ?").get(openEventId),
+      expect(db.prepare("SELECT close_event_id FROM event_pair_runs WHERE open_event_id = ?").get(openEventId)).toEqual(
+        db
+          .prepare(
+            "SELECT id AS close_event_id FROM events WHERE event_type = 'handler.failed' AND json_extract(data, '$.handlerRunId') = ?",
+          )
+          .get("handler:metrics-snapshot:seed:1"),
       );
       expect(events).toContainEqual(
-        expect.objectContaining({ type: "info", message: "[handler-recovery] Closed 1 stale handler pair(s) after restart" }),
+        expect.objectContaining({
+          type: "info",
+          message: "[handler-recovery] Closed 1 stale handler pair(s) after restart",
+        }),
       );
     } finally {
       rmSync(persistDir, { recursive: true, force: true });
@@ -292,7 +309,9 @@ describe("daemon event subscribers", () => {
     const bus = new EventBus();
     const events: any[] = [];
     const manager = {
-      resumeSession: () => { throw new Error("test: resume not wired"); },
+      resumeSession: () => {
+        throw new Error("test: resume not wired");
+      },
       activeSessions: new Map<string, unknown>(),
     };
 
@@ -318,26 +337,27 @@ describe("daemon event subscribers", () => {
           .prepare(
             `SELECT event_type, source,
                     json_extract(data, '$.reason') AS reason,
-                    json_extract(data, '$.pairName') AS pairName,
-                    json_extract(data, '$.correlationKey') AS correlationKey,
+                    json_extract(data, '$.workflowRunId') AS workflowRunId,
                     json_extract(data, '$.workflow') AS workflow,
-                    json_extract(data, '$.openEventId') AS openEventId
+                    json_extract(data, '$.workflowRunId') AS correlationKey
              FROM events
-             WHERE event_type = 'event-pair.orphan-gc.close'
-               AND json_extract(data, '$.openEventId') = ?`,
+             WHERE event_type = 'workflow.interrupted'
+               AND json_extract(data, '$.workflowRunId') = ?`,
           )
-          .get(openEventId),
+          .get("wr_restart_seed"),
       ).toEqual({
-        event_type: "event-pair.orphan-gc.close",
+        event_type: "workflow.interrupted",
         source: "runtime:restart-recovery",
         reason: "runtime-restarted",
-        pairName: "workflow",
         correlationKey: "wr_restart_seed",
+        workflowRunId: "wr_restart_seed",
         workflow: "platform-owner-review",
-        openEventId,
       });
       expect(events).toContainEqual(
-        expect.objectContaining({ type: "info", message: "[workflow-recovery] Closed 1 stale workflow pair(s) after restart" }),
+        expect.objectContaining({
+          type: "info",
+          message: "[workflow-recovery] Closed 1 stale workflow pair(s) after restart",
+        }),
       );
     } finally {
       rmSync(persistDir, { recursive: true, force: true });
@@ -349,7 +369,9 @@ describe("daemon event subscribers", () => {
     const bus = new EventBus();
     const events: any[] = [];
     const manager = {
-      resumeSession: () => { throw new Error("test: resume not wired"); },
+      resumeSession: () => {
+        throw new Error("test: resume not wired");
+      },
     };
 
     try {
@@ -397,7 +419,9 @@ describe("daemon event subscribers", () => {
         }),
       });
       expect(escalation.data).not.toHaveProperty("owner");
-      expect(events.some((event) => event.type === "message.created" && event.source === "system:circuit-breaker")).toBe(false);
+      expect(
+        events.some((event) => event.type === "message.created" && event.source === "system:circuit-breaker"),
+      ).toBe(false);
     } finally {
       rmSync(persistDir, { recursive: true, force: true });
     }
