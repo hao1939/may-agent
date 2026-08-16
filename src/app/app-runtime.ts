@@ -114,7 +114,11 @@ export function createProjectActionAccess(options: {
           semanticRecord.data && typeof semanticRecord.data === "object" && !Array.isArray(semanticRecord.data)
             ? (semanticRecord.data as Record<string, unknown>)
             : {};
+        const declaredDetails = Object.fromEntries(
+          Object.entries(semanticRecord).filter(([key]) => !["type", "source", "owner", "data"].includes(key)),
+        );
         semanticRecord.data = {
+          ...declaredDetails,
           ...data,
           project: typeof semanticRecord.project === "string" ? semanticRecord.project : appId,
           idempotencyKey,
