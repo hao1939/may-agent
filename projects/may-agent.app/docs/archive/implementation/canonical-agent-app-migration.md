@@ -1609,7 +1609,7 @@ Source and immutable-artifact verification observed:
 - zero design-integrity or canonical-boundary errors, with 48 workflows and
   five enabled host handlers checked against the exact final Runtime;
 - 102 passing May App tests with 389 assertions;
-- 665 passing AKS App tests with 2,243 assertions, plus 58 focused observer
+- 661 passing AKS App tests with 2,236 assertions, plus 58 focused observer
   tests with 158 assertions;
 - strict root, May App, and AKS App typechecks and AKS formatting; and
 - exact-artifact loading of all seven canonical Apps against SDK tree SHA-256
@@ -1629,3 +1629,14 @@ the exact `RELEASE_C_SAFE_DELIVERY_OK` result. No post-cutover
 executed naturally after startup: workspace-integrity event `5717555`,
 repo-ref events `5717556` and `5717557`, and scenario-inventory event
 `5717561` were persisted from the new artifact.
+
+While this evidence was being recorded, an autonomous repair committed
+`f9824eb793304c801ce514bfb40e19677f1813fb`. It made the workspace observer
+read `.state/tasks/tree.json` to infer live workspace ownership. The change was
+not deployed: review found that it bypassed the bounded observer SDK and made a
+runtime-owned projection App policy input. Corrective commit
+`8a46aa1dd7` restored the deployed watcher implementation byte-for-byte,
+clarified the accepted observer boundary, and added an integrity failure for
+raw task-persistence reads from App watchers. The post-correction AKS suite is
+the 661-test result above; production therefore already runs the corrected
+behavior from artifact `8aaf03b514`.
