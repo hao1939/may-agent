@@ -467,10 +467,10 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     return accepted(`agent:${agent}`);
   }
 
-  function handleSteer(sessionId: unknown, message: unknown, source?: string, event?: unknown): void {
+  function handleSteer(sessionId: unknown, message: unknown, source?: string, event?: unknown): boolean {
     const id = nonEmptyString(sessionId);
     const text = nonEmptyString(message);
-    if (!id || !text) return;
+    if (!id || !text) return false;
     try {
       if (manager.status().some((session) => session.sessionId === id)) {
         manager.send(id, text, { trace: childEventTrace(event) });
@@ -483,7 +483,9 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       }
     } catch (error) {
       log("warn", `[steer] ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
     }
+    return true;
   }
 
   function handleChatStart(event: unknown): DeliveryResult | void {
@@ -493,25 +495,22 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     const agent = nonEmptyString(data.agent) ?? "may";
     const source = eventSource(event, nonEmptyString(data.channel) ?? "human");
     if (agent === "may") {
-      bus.emit({
-        type: "human.input.received",
-        source,
-        owner: "agent:may",
-        data: {
-          actor: "human",
-          text: message,
-          inputId: nonEmptyString(data.requestId) ?? undefined,
-          conversation: {
-            id: nonEmptyString(data.conversationId) ?? undefined,
-            channel: nonEmptyString(data.channel) ?? source,
-            channelThreadId: nonEmptyString(data.channelThreadId) ?? undefined,
-            channelMessageId: integerField(data, "channelMessageId") ?? undefined,
-          },
-          target: { agent: "may" },
-          ...(isRecord(data.context) ? { context: data.context } : {}),
-        },
-      } as any);
-      return accepted("may-input-normalized");
+      admitMayInput(message, source, {
+        requestId: nonEmptyString(data.requestId) ?? undefined,
+        conversationId: nonEmptyString(data.conversationId) ?? undefined,
+        channel: nonEmptyString(data.channel) ?? source,
+        channelThreadId: nonEmptyString(data.channelThreadId) ?? undefined,
+        channelMessageId: integerField(data, "channelMessageId") ?? undefined,
+        context: isRecord(data.context) ? data.context : undefined,
+      });
+      return accepted("may-input-admitted");
+    }
+    const openingEventId = eventRowId(event);
+    const sessionPrefix = manager.getAgentDefinition?.(agent)?.sessionIdPrefix?.trim() || "s";
+    const sessionId = openingEventId ? `${sessionPrefix}_event_${openingEventId}` : undefined;
+    const existingSession = sessionId ? manager.getSessionSummary?.(sessionId) : undefined;
+    if (sessionId && existingSession && existingSession.status !== "unknown") {
+      return accepted(`agent:${agent}`, `direct chat already correlated to ${sessionId}`);
     }
     bus.emit({
       type: "message.created",
@@ -519,16 +518,17 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       owner: normalizeEventOwner(agent),
       data: { from: source, to: agent, content: message, intent: "chat.start", priority: "P0" },
     } as any);
-    const sessionId = manager.run(agent, message, {
+    const startedSessionId = manager.run(agent, message, {
+      ...(sessionId ? { sessionId } : {}),
       kind: "chat",
       autoClose: "never",
       source,
-      requestId: nonEmptyString(data.requestId) ?? undefined,
+      requestId: nonEmptyString(data.requestId) ?? (openingEventId ? `event:${openingEventId}` : undefined),
       conversationId: nonEmptyString(data.conversationId) ?? undefined,
       channelMessageId: integerField(data, "channelMessageId") ?? undefined,
       trace: childEventTrace(event),
     });
-    log("info", `[chat.start] Started ${agent} chat session: ${sessionId}`);
+    log("info", `[chat.start] Started ${agent} chat session: ${startedSessionId}`);
     return accepted(`agent:${agent}`);
   }
 
@@ -557,19 +557,98 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     return accepted(`agent:${event.agent}`);
   }
 
+  function admitMayInput(
+    message: string,
+    source: string,
+    metadata: {
+      requestId?: string;
+      conversationId?: string;
+      channel?: string;
+      channelThreadId?: string;
+      channelMessageId?: number;
+      context?: Record<string, unknown>;
+    } = {},
+  ): void {
+    bus.emit({
+      type: "app.input.requested",
+      source,
+      owner: "app:may",
+      data: {
+        appId: "may",
+        input: {
+          kind: "message",
+          data: { message, ...(metadata.context ? { context: metadata.context } : {}) },
+        },
+        source: { kind: "human", id: metadata.requestId ?? source },
+        conversationId: metadata.conversationId,
+        conversationSequence: metadata.channelMessageId,
+        channel: metadata.channel ?? source,
+        channelThreadId: metadata.channelThreadId,
+        channelMessageId: metadata.channelMessageId,
+        idempotencyKey: metadata.requestId,
+      },
+    } as any);
+  }
+
   function handleInput(message: string, source?: string): void {
     const text = message.trim();
     if (!text) return;
     const channel = source ?? "human";
-    bus.emit({
-      type: "human.input.received",
-      source: channel,
-      owner: "agent:may",
-      data: { actor: "human", text, conversation: { channel }, target: { agent: "may" } },
-    } as any);
+    const lower = text.toLowerCase();
+    if (lower === "cancel all") {
+      bus.emit({
+        type: "session.cancel_all.requested",
+        source: channel,
+        owner: "agent:may",
+        data: { reason: "human requested cancel all" },
+      });
+      return;
+    }
+    if (lower === "reload" || lower === "restart" || lower === "close") {
+      const type =
+        lower === "reload"
+          ? "runtime.reload.requested"
+          : lower === "restart"
+            ? "runtime.restart.requested"
+            : "runtime.shutdown.requested";
+      bus.emit({ type, source: channel, owner: "agent:may", data: { reason: `human requested ${lower}` } } as any);
+      return;
+    }
+    admitMayInput(text, channel);
   }
 
-  const unsubscribe = bus.subscribe((event) => {
+  const unsubscribeRequiredControls = bus.subscribeDurableRoute((event) => {
+    switch (event.type) {
+      case "chat.start.requested":
+        return handleChatStart(event);
+      case "session.steer.requested": {
+        const data = eventData(event);
+        return handleSteer(data.sessionId, data.message, eventSource(event), event)
+          ? accepted("session-steer")
+          : undefined;
+      }
+      case "session.cancel.requested": {
+        const sessionId = nonEmptyString(eventData(event).sessionId);
+        if (!sessionId) return;
+        manager.cancel(sessionId);
+        return accepted("session-cancel");
+      }
+      case "session.cancel_all.requested":
+        for (const session of manager.status()) if (session.status === "running") manager.cancel(session.sessionId);
+        return accepted("session-cancel-all");
+      case "runtime.reload.requested":
+        void options.reload();
+        return accepted("runtime-reload");
+      case "runtime.restart.requested":
+        options.restart();
+        return accepted("runtime-restart");
+      case "runtime.shutdown.requested":
+        options.shutdown();
+        return accepted("runtime-shutdown");
+    }
+  });
+
+  const unsubscribeCompatibility = bus.subscribe((event) => {
     switch (event.type) {
       case "input":
         if (typeof event.message === "string") handleInput(event.message, event.source);
@@ -579,23 +658,10 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       case "steer":
         handleSteer(event.sessionId, event.message, event.source, event);
         return accepted("session-steer");
-      case "session.steer.requested": {
-        const data = eventData(event);
-        handleSteer(data.sessionId, data.message, eventSource(event), event);
-        return accepted("session-steer");
-      }
-      case "chat.start.requested":
-        return handleChatStart(event);
       case "cancel":
         if (event.sessionId) manager.cancel(event.sessionId);
         return accepted("session-cancel");
-      case "session.cancel.requested": {
-        const id = nonEmptyString(eventData(event).sessionId);
-        if (id) manager.cancel(id);
-        return accepted("session-cancel");
-      }
       case "cancel_all":
-      case "session.cancel_all.requested":
         for (const session of manager.status()) if (session.status === "running") manager.cancel(session.sessionId);
         return accepted("session-cancel-all");
       case "project.comment.created": {
@@ -611,19 +677,22 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       case "fork":
         return handleFork(event);
       case "reload":
-      case "runtime.reload.requested":
         void options.reload();
         return accepted("runtime-reload");
       case "restart":
-      case "runtime.restart.requested":
         options.restart();
         return accepted("runtime-restart");
       case "shutdown":
-      case "runtime.shutdown.requested":
         options.shutdown();
         return accepted("runtime-shutdown");
     }
   });
 
-  return { handleInput, close: unsubscribe };
+  return {
+    handleInput,
+    close: () => {
+      unsubscribeRequiredControls();
+      unsubscribeCompatibility();
+    },
+  };
 }

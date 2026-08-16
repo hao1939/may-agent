@@ -41,7 +41,7 @@ describe("App inbox store", () => {
     }).item;
   }
 
-  it("creates idempotently within an App", () => {
+  it("creates identical input idempotently within an App", () => {
     const first = createAppInboxItem(db, {
       id: "first-id",
       appId: "may",
@@ -54,7 +54,7 @@ describe("App inbox store", () => {
       id: "second-id",
       appId: "may",
       source: { kind: "human", id: "user-1" },
-      input: { kind: "message", data: { text: "ignored duplicate" } },
+      input: { kind: "message", data: { text: "hello" } },
       idempotencyKey: "telegram:42",
       now: 200,
     });
@@ -63,6 +63,25 @@ describe("App inbox store", () => {
     expect(duplicate.created).toBe(false);
     expect(duplicate.item.id).toBe("first-id");
     expect(duplicate.item.input.data).toEqual({ text: "hello" });
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 1 });
+  });
+
+  it("rejects an idempotency key reused with different App input", () => {
+    createAppInboxItem(db, {
+      appId: "may",
+      source: { kind: "human", id: "user-1" },
+      input: { kind: "message", data: { text: "first" } },
+      idempotencyKey: "telegram:conflict",
+    });
+
+    expect(() =>
+      createAppInboxItem(db, {
+        appId: "may",
+        source: { kind: "human", id: "user-1" },
+        input: { kind: "message", data: { text: "different" } },
+        idempotencyKey: "telegram:conflict",
+      }),
+    ).toThrow("reused with different input");
     expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 1 });
   });
 

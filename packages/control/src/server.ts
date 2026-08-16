@@ -2,7 +2,7 @@ import { chmodSync, existsSync, mkdirSync, unlinkSync } from "node:fs";
 import { connect, createServer, type Server } from "node:net";
 import { dirname } from "node:path";
 import type { Duplex } from "node:stream";
-import { normalizeSocketFrame } from "./protocol.js";
+import { normalizeSocketFrame, type EventInput, type EventReceipt } from "./protocol.js";
 
 export type ControlEvent = Record<string, unknown> & { type: string };
 export type ControlEmitResult = { eventId?: number };
@@ -20,6 +20,8 @@ export interface AttachControlSocketOptions {
   getSessionId: () => string;
   getStatus: () => ControlStatusItem[];
   emitEvent: (event: ControlEvent) => ControlEmitResult | void;
+  publishEvent?: (event: EventInput) => EventReceipt;
+  getEvent?: (eventId: number) => unknown;
   describeProjectActions?: (projectId: string) => unknown[];
   admitAppInput?: (input: {
     appId: string;
@@ -140,6 +142,8 @@ export interface ControlSocketCoreOptions {
   getSessionId: () => string;
   getStatus: () => ControlStatusItem[];
   emitEvent: (event: ControlEvent) => ControlEmitResult | void;
+  publishEvent?: AttachControlSocketOptions["publishEvent"];
+  getEvent?: AttachControlSocketOptions["getEvent"];
   describeProjectActions?: AttachControlSocketOptions["describeProjectActions"];
   admitAppInput?: AttachControlSocketOptions["admitAppInput"];
   invokeProjectAction?: AttachControlSocketOptions["invokeProjectAction"];
@@ -158,6 +162,8 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
     getSessionId,
     getStatus,
     emitEvent,
+    publishEvent,
+    getEvent,
     admitAppInput,
     describeProjectActions,
     invokeProjectAction,
@@ -341,6 +347,77 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
           continue;
         }
 
+        if (normalized.kind === "control" && normalized.command === "publish") {
+          const input = frame.event;
+          if (!input || typeof input !== "object" || Array.isArray(input) || !publishEvent) {
+            writeFrame(socket, {
+              type: "error",
+              command: normalized.command,
+              message:
+                !input || typeof input !== "object" || Array.isArray(input)
+                  ? "publish requires object field 'event'"
+                  : "Event publication is unavailable",
+            });
+            continue;
+          }
+          try {
+            const event = input as Record<string, unknown>;
+            const eventType = typeof event.type === "string" ? event.type.trim() : "";
+            const data = event.data;
+            const target = event.target;
+            if (!eventType) throw new Error("Event type is required");
+            if (!data || typeof data !== "object" || Array.isArray(data)) {
+              throw new Error("Event data must be an object");
+            }
+            if (target !== undefined && (!target || typeof target !== "object" || Array.isArray(target))) {
+              throw new Error("Event target must be an object");
+            }
+            const receipt = publishEvent({
+              type: eventType,
+              ...(target ? { target: target as EventInput["target"] } : {}),
+              data: data as Record<string, unknown>,
+              ...(typeof event.idempotencyKey === "string" && event.idempotencyKey.trim()
+                ? { idempotencyKey: event.idempotencyKey.trim() }
+                : {}),
+            });
+            writeFrame(socket, { type: "ok", command: normalized.command, ...receipt });
+          } catch (error) {
+            writeFrame(socket, {
+              type: "error",
+              command: normalized.command,
+              message: error instanceof Error ? error.message : String(error),
+            });
+          }
+          continue;
+        }
+
+        if (normalized.kind === "control" && normalized.command === "event.get") {
+          const eventId = Number(frame.eventId);
+          if (!Number.isSafeInteger(eventId) || eventId <= 0 || !getEvent) {
+            writeFrame(socket, {
+              type: "error",
+              command: normalized.command,
+              message:
+                !Number.isSafeInteger(eventId) || eventId <= 0
+                  ? "eventId must be a positive integer"
+                  : "Event reads are unavailable",
+            });
+            continue;
+          }
+          try {
+            const event = getEvent(eventId);
+            if (!event) throw new Error(`Event ${eventId} was not found`);
+            writeFrame(socket, { type: "ok", command: normalized.command, event });
+          } catch (error) {
+            writeFrame(socket, {
+              type: "error",
+              command: normalized.command,
+              message: error instanceof Error ? error.message : String(error),
+            });
+          }
+          continue;
+        }
+
         if (normalized.kind === "control" && normalized.command === "app.input.admit") {
           const appId = typeof frame.appId === "string" ? frame.appId.trim() : "";
           const input = frame.input;
@@ -494,8 +571,19 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
 }
 
 export async function attachControlSocket(opts: AttachControlSocketOptions): Promise<ControlSocket> {
-  const { socketPath, getSessionId, getStatus, emitEvent, subscribeEvents, onDelivered, onInfo, agentName, instance } =
-    opts;
+  const {
+    socketPath,
+    getSessionId,
+    getStatus,
+    emitEvent,
+    publishEvent,
+    getEvent,
+    subscribeEvents,
+    onDelivered,
+    onInfo,
+    agentName,
+    instance,
+  } = opts;
   mkdirSync(dirname(socketPath), { recursive: true });
 
   if (existsSync(socketPath)) {
@@ -512,6 +600,8 @@ export async function attachControlSocket(opts: AttachControlSocketOptions): Pro
     getSessionId,
     getStatus,
     emitEvent,
+    publishEvent,
+    getEvent,
     admitAppInput: opts.admitAppInput,
     describeProjectActions: opts.describeProjectActions,
     invokeProjectAction: opts.invokeProjectAction,

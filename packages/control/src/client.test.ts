@@ -4,6 +4,8 @@ import {
   daemonSocketPath,
   emitDaemonEvent,
   emitDaemonEventWithRetry,
+  getEvent,
+  publishEvent,
   sendAgentMessage,
   sendDaemonEvent,
   sendDaemonInput,
@@ -86,6 +88,35 @@ function echoThenAckEndpoint(): SocketEndpoint {
   };
 }
 
+function simpleEventEndpoint(): SocketEndpoint {
+  return () => {
+    const stream = new Duplex({
+      read() {},
+      write(chunk, _encoding, callback) {
+        const frame = JSON.parse(String(chunk)) as Record<string, unknown>;
+        const response =
+          frame.type === "publish"
+            ? {
+                type: "ok",
+                command: "publish",
+                eventId: 73,
+                eventType: "project.owner.requested",
+                delivery: "recorded",
+              }
+            : {
+                type: "ok",
+                command: "event.get",
+                event: { event: { id: 73, type: "project.owner.requested" } },
+              };
+        queueMicrotask(() => stream.emit("data", Buffer.from(`${JSON.stringify(response)}\n`)));
+        callback();
+      },
+    });
+    queueMicrotask(() => stream.emit("connect"));
+    return stream;
+  };
+}
+
 describe("daemonSocketPath", () => {
   it("uses the convention instance/interface-agent socket path", () => {
     expect(daemonSocketPath("/state", { instance: "background", interfaceAgent: "may" })).toBe(
@@ -95,6 +126,25 @@ describe("daemonSocketPath", () => {
 
   it("defaults to the default may daemon socket", () => {
     expect(daemonSocketPath("/state")).toBe("/state/instances/default/may.sock");
+  });
+});
+
+describe("simple event client", () => {
+  it("publishes an EventInput and reads its bounded view", async () => {
+    await expect(
+      publishEvent(simpleEventEndpoint(), {
+        type: "project.owner.requested",
+        target: { appId: "sample" },
+        data: { reason: "review" },
+      }),
+    ).resolves.toEqual({
+      eventId: 73,
+      eventType: "project.owner.requested",
+      delivery: "recorded",
+    });
+    await expect(getEvent(simpleEventEndpoint(), 73)).resolves.toEqual({
+      event: { id: 73, type: "project.owner.requested" },
+    });
   });
 });
 
@@ -367,42 +417,38 @@ describe("emitDaemonEvent", () => {
     });
   });
 
-  it("sends May input through the canonical human turn and keeps direct agent chat direct", async () => {
+  it("publishes one May App input event and keeps direct agent chat direct", async () => {
     const writes: string[] = [];
 
     await expect(sendDaemonInput(captureEndpoint(writes), "hello May", "cli")).resolves.toMatchObject({
       type: "ok",
-      command: "human.input.received",
+      command: "publish",
     });
     await expect(sendAgentMessage(captureEndpoint(writes), "may", "review this", "cli")).resolves.toMatchObject({
       type: "ok",
-      command: "human.input.received",
+      command: "publish",
     });
     await expect(sendAgentMessage(captureEndpoint(writes), "dev", "fix it", "cli")).resolves.toMatchObject({
       type: "ok",
       command: "chat.start.requested",
     });
 
-    expect(JSON.parse(writes[0] ?? "")).toEqual({
-      type: "human.input.received",
-      source: "cli",
-      owner: "agent:may",
-      data: {
-        actor: "human",
-        text: "hello May",
-        conversation: { channel: "cli" },
-        target: { agent: "may" },
+    expect(JSON.parse(writes[0] ?? "")).toMatchObject({
+      type: "publish",
+      event: {
+        type: "app.input.requested",
+        target: { appId: "may" },
+        data: { input: { kind: "message", data: { message: "hello May" } }, channel: "cli" },
+        idempotencyKey: expect.stringMatching(/^control-input-/),
       },
     });
-    expect(JSON.parse(writes[1] ?? "")).toEqual({
-      type: "human.input.received",
-      source: "cli",
-      owner: "agent:may",
-      data: {
-        actor: "human",
-        text: "review this",
-        conversation: { channel: "cli" },
-        target: { agent: "may" },
+    expect(JSON.parse(writes[1] ?? "")).toMatchObject({
+      type: "publish",
+      event: {
+        type: "app.input.requested",
+        target: { appId: "may" },
+        data: { input: { kind: "message", data: { message: "review this" } }, channel: "cli" },
+        idempotencyKey: expect.stringMatching(/^control-input-/),
       },
     });
     expect(JSON.parse(writes[2] ?? "")).toEqual({

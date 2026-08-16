@@ -2,7 +2,7 @@ import { connect, Socket, type NetConnectOpts } from "node:net";
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import type { Duplex } from "node:stream";
-import { isSocketCommandType } from "./protocol.js";
+import { isSocketCommandType, type EventInput, type EventReceipt } from "./protocol.js";
 import { buildCanonicalEventEnvelope, normalizeEventOwner } from "./event-envelope.js";
 
 export interface SocketResponse {
@@ -166,6 +166,40 @@ export function sendSocketCommand(
   });
 }
 
+export async function publishEvent(
+  endpoint: SocketEndpoint,
+  event: EventInput,
+  opts?: { timeoutMs?: number },
+): Promise<EventReceipt> {
+  const response = await sendSocketCommand(endpoint, { type: "publish", event }, opts);
+  const eventId = Number(response.eventId);
+  const eventType = typeof response.eventType === "string" ? response.eventType : "";
+  const delivery = response.delivery;
+  if (
+    !Number.isSafeInteger(eventId) ||
+    eventId <= 0 ||
+    !eventType ||
+    (delivery !== "recorded" && delivery !== "accepted")
+  ) {
+    throw new Error("Daemon returned an invalid event receipt");
+  }
+  return {
+    eventId,
+    eventType,
+    delivery,
+    ...(Array.isArray(response.links) ? { links: response.links as EventReceipt["links"] } : {}),
+  };
+}
+
+export async function getEvent<T = unknown>(
+  endpoint: SocketEndpoint,
+  eventId: number,
+  opts?: { timeoutMs?: number },
+): Promise<T> {
+  const response = await sendSocketCommand(endpoint, { type: "event.get", eventId }, opts);
+  return response.event as T;
+}
+
 export interface SocketEvent {
   type: string;
   sessionId?: string;
@@ -312,17 +346,18 @@ export function sendDaemonInput(
   source = "control",
   opts?: { timeoutMs?: number },
 ): Promise<SocketResponse> {
-  return sendDaemonEvent(
+  return sendSocketCommand(
     endpoint,
     {
-      type: "human.input.received",
-      source,
-      owner: "agent:may",
-      data: {
-        actor: "human",
-        text: message,
-        conversation: { channel: source },
-        target: { agent: "may" },
+      type: "publish",
+      event: {
+        type: "app.input.requested",
+        target: { appId: "may" },
+        data: {
+          input: { kind: "message", data: { message } },
+          channel: source,
+        },
+        idempotencyKey: `control-input-${randomUUID()}`,
       },
     },
     opts,

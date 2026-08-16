@@ -1,7 +1,6 @@
 import { existsSync, mkdirSync, unlinkSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import type { SubagentManager } from "../lib/index.js";
-import type { EventBus } from "./event-bus.js";
+import type { EventInterface } from "./event-interface.js";
 import { attachSocketUI, type SocketUI } from "./transport/socket.js";
 import type { AttachControlSocketOptions } from "../../packages/control/src/server.js";
 
@@ -10,8 +9,15 @@ export interface InterfaceStartupOptions {
   persistDir: string;
   instanceLabel: string;
   interfaceAgent: string;
-  bus: EventBus;
-  manager: SubagentManager;
+  events: EventInterface;
+  getStatus: () => Array<{
+    agent: string;
+    sessionId: string;
+    status: string;
+    kind?: string;
+    task: string;
+  }>;
+  reportInfo: (message: string) => void;
   admitAppInput?: AttachControlSocketOptions["admitAppInput"];
   describeProjectActions?: AttachControlSocketOptions["describeProjectActions"];
   invokeProjectAction?: AttachControlSocketOptions["invokeProjectAction"];
@@ -42,8 +48,27 @@ export async function startInterfaceRuntime(options: InterfaceStartupOptions): P
   const socketUI = options.socketEnabled
     ? await attachSocketUI({
         socketPath,
-        bus: options.bus,
-        manager: options.manager,
+        events: options.events,
+        publishEvent: (input) =>
+          options.events.publish(input, {
+            source: "control-socket",
+            inputSource: { kind: "human", id: "control-socket" },
+          }),
+        publishCompatibilityEvent: (input) =>
+          options.events.publish(input, {
+            source: "control-socket",
+            inputSource: { kind: "human", id: "control-socket" },
+            allowUnregistered: true,
+          }),
+        getStatus: () =>
+          options.getStatus().map((item) => ({
+            agent: item.agent,
+            sessionId: item.sessionId,
+            status: item.status,
+            kind: item.kind ?? "",
+            task: item.task,
+          })),
+        reportInfo: options.reportInfo,
         admitAppInput: options.admitAppInput,
         describeProjectActions: options.describeProjectActions,
         invokeProjectAction: options.invokeProjectAction,
@@ -53,15 +78,11 @@ export async function startInterfaceRuntime(options: InterfaceStartupOptions): P
     : { close: () => {}, clientCount: () => 0 };
 
   if (options.socketEnabled) {
-    options.bus.emit({
-      type: "info",
-      message: `[instance:${options.instanceLabel}] PID ${process.pid}, socket ${socketName}`,
-    });
+    options.reportInfo(`[instance:${options.instanceLabel}] PID ${process.pid}, socket ${socketName}`);
   } else {
-    options.bus.emit({
-      type: "info",
-      message: `[instance:${options.instanceLabel}] PID ${process.pid}, socket disabled (use --socket to enable)`,
-    });
+    options.reportInfo(
+      `[instance:${options.instanceLabel}] PID ${process.pid}, socket disabled (use --socket to enable)`,
+    );
   }
 
   return { socketPath, socketUI };

@@ -5,8 +5,7 @@
  * filename still includes the interface agent (`may.sock`).
  */
 
-import { EVENT_INGRESS_SOURCE, EVENT_ROW_ID, type EventBus, type AgentEvent } from "../event-bus.js";
-import type { SubagentManager } from "../../lib/index.js";
+import type { EventInput, EventInterface, EventReceipt } from "../event-interface.js";
 import {
   attachControlSocket,
   type AttachControlSocketOptions,
@@ -17,8 +16,11 @@ export type { SocketFrame } from "../../../packages/control/src/protocol.js";
 
 export interface SocketUIOptions {
   socketPath: string;
-  bus: EventBus;
-  manager: SubagentManager;
+  events: Pick<EventInterface, "get" | "subscribe">;
+  publishEvent: (input: EventInput) => EventReceipt;
+  publishCompatibilityEvent: (input: EventInput) => EventReceipt;
+  getStatus: () => ControlStatusItem[];
+  reportInfo: (message: string) => void;
   /** Interface agent label, kept for compatibility with existing welcome frames. */
   agentName: string;
   /** Daemon instance label. */
@@ -30,42 +32,57 @@ export interface SocketUIOptions {
 
 export type SocketUI = ControlSocket;
 
-function toControlStatus(status: ReturnType<SubagentManager["status"]>): ControlStatusItem[] {
-  return status.map((item) => ({
-    agent: item.agent,
-    sessionId: item.sessionId,
-    status: item.status,
-    kind: item.kind ?? "",
-    task: item.task,
-  }));
+function text(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function legacyEventInput(event: Record<string, unknown> & { type: string }): EventInput {
+  const canonicalData = event.data;
+  const data =
+    canonicalData && typeof canonicalData === "object" && !Array.isArray(canonicalData)
+      ? { ...(canonicalData as Record<string, unknown>) }
+      : Object.fromEntries(
+          Object.entries(event).filter(
+            ([key]) => !["type", "source", "owner", "target", "timestamp", "trace"].includes(key),
+          ),
+        );
+  const rawTarget =
+    event.target && typeof event.target === "object" && !Array.isArray(event.target)
+      ? (event.target as Record<string, unknown>)
+      : {};
+  const target = {
+    appId: text(rawTarget.appId) ?? text(data.appId),
+    taskId: text(rawTarget.taskId) ?? text(data.taskId),
+    sessionId: text(rawTarget.sessionId) ?? text(data.sessionId),
+  };
+  const idempotencyKey = text(data.idempotencyKey);
+  return {
+    type: event.type,
+    ...(Object.values(target).some(Boolean) ? { target } : {}),
+    data,
+    ...(idempotencyKey ? { idempotencyKey } : {}),
+  };
 }
 
 export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
-  const { socketPath, bus, manager, agentName, instance } = opts;
+  const { socketPath, events, agentName, instance } = opts;
   return attachControlSocket({
     socketPath,
     // The canonical daemon has no mutable current-session authority. Keep the
     // legacy control-socket field empty; clients subscribe explicitly.
     getSessionId: () => "",
-    getStatus: () => toControlStatus(manager.status()),
-    emitEvent: (event) => {
-      Object.defineProperty(event, EVENT_INGRESS_SOURCE, { value: "control-socket", configurable: true });
-      const emitted = bus.emit(event as AgentEvent);
-      const eventId = emitted[EVENT_ROW_ID];
-      return Number.isInteger(eventId) && Number(eventId) > 0 ? { eventId: Number(eventId) } : {};
-    },
+    getStatus: opts.getStatus,
+    emitEvent: (event) => opts.publishCompatibilityEvent(legacyEventInput(event)),
+    publishEvent: opts.publishEvent,
+    getEvent: events.get,
     describeProjectActions: opts.describeProjectActions,
     admitAppInput: opts.admitAppInput,
     invokeProjectAction: opts.invokeProjectAction,
-    subscribeEvents: (handler) =>
-      bus.subscribe((event) => handler(event as unknown as Record<string, unknown> & { type: string })),
+    subscribeEvents: (handler) => events.subscribe({}, handler),
     onDelivered: (event, clientCount) => {
       const data = event.data && typeof event.data === "object" ? (event.data as Record<string, unknown>) : event;
-      bus.emit({
+      opts.publishCompatibilityEvent({
         type: "channel.delivery.completed",
-        source: "control-socket",
-        owner: "agent:may",
-        target: { human: true },
         data: {
           channel: typeof data.channel === "string" ? data.channel : "control-socket",
           clientCount,
@@ -75,9 +92,9 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
           appInboxItemId: data.appInboxItemId,
           appInboxRequestId: data.appInboxRequestId,
         },
-      } as any);
+      });
     },
-    onInfo: (message) => bus.emit({ type: "info", message }),
+    onInfo: opts.reportInfo,
     agentName,
     instance,
   });

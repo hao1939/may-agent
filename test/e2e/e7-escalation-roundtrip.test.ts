@@ -83,7 +83,7 @@ describe("E7: escalation lifecycle roundtrip", () => {
         },
         { timeoutMs: 5_000, intervalMs: 100, description: "escalation.created persisted" },
       );
-      expect(createdRows[0].source).toBe("e2e-test");
+      expect(createdRows[0].source).toBe("control-socket");
       expect(createdRows[0].owner).toBe("agent:may");
       expect(eventPayload(createdRows[0])).toEqual({
         escalationId,
@@ -137,7 +137,7 @@ describe("E7: escalation lifecycle roundtrip", () => {
       );
 
       const resolvedRow = result.resolved[0];
-      expect(resolvedRow.source).toBe("e2e-test");
+      expect(resolvedRow.source).toBe("control-socket");
       expect(resolvedRow.owner).toBe("agent:may");
       expect(eventPayload(resolvedRow)).toEqual({
         escalationId,
@@ -205,7 +205,7 @@ describe("E7: escalation lifecycle roundtrip", () => {
         },
         { timeoutMs: 5_000, intervalMs: 100, description: "needs_human escalation.created persisted" },
       );
-      expect(createdRows[0].source).toBe("e2e-test");
+      expect(createdRows[0].source).toBe("control-socket");
       expect(createdRows[0].owner).toBe("agent:may");
       expect(eventPayload(createdRows[0])).toEqual({
         escalationId,
@@ -249,7 +249,7 @@ describe("E7: escalation lifecycle roundtrip", () => {
         limit: 5,
       }).filter((e) => (e.data ?? "").includes(escalationId));
       expect(resolved.length).toBeGreaterThanOrEqual(1);
-      expect(resolved[0].source).toBe("e2e-test");
+      expect(resolved[0].source).toBe("control-socket");
       expect(resolved[0].owner).toBe("agent:may");
       expect(eventPayload(resolved[0])).toEqual({
         escalationId,

@@ -41,6 +41,7 @@ import { buildLoopTrace, type LoopTraceTarget } from "./read-model/loop-trace.js
 import { addSessionTranscriptToEventGraph, buildEventGraph } from "./read-model/event-graph.js";
 import { resolveRuntimeAgentDirectory } from "../loader/agent-discovery.js";
 import { getAppInboxItem, listAppInboxHealth, listAppInboxItems, type AppInboxQuery } from "../app-inbox-store.js";
+import { eventDeliveryContract, getEventView, PUBLIC_EVENT_TYPES } from "../event-interface.js";
 
 // ── Public API ────────────────────────────────────────────────────────
 
@@ -80,14 +81,57 @@ export function appInboxQueryFromUrl(url: URL): AppInboxQuery {
   };
 }
 
-type DaemonFrameResult = { ok: boolean; error?: string; eventId?: number };
+type DaemonFrameResult = {
+  ok: boolean;
+  error?: string;
+  eventId?: number;
+  eventType?: string;
+  delivery?: "recorded" | "accepted";
+  links?: unknown[];
+};
 
-export function buildEventIngressFrame(body: Record<string, unknown>, owner: string): Record<string, unknown> {
-  return buildCanonicalEventEnvelope(String(body.type ?? "").trim(), {
+export function buildEventIngressFrame(body: Record<string, unknown>): Record<string, unknown> {
+  const envelope = buildCanonicalEventEnvelope(String(body.type ?? "").trim(), {
     ...body,
     source: "web-ui",
-    owner: normalizeEventOwner(owner),
+    owner: "agent:may",
   });
+  const data = envelope.data as Record<string, unknown>;
+  const rawTarget =
+    body.target && typeof body.target === "object" && !Array.isArray(body.target)
+      ? (body.target as Record<string, unknown>)
+      : {};
+  const appId =
+    (typeof rawTarget.appId === "string" && rawTarget.appId.trim()) ||
+    (typeof rawTarget.project === "string" && rawTarget.project.trim()) ||
+    undefined;
+  const taskId =
+    (typeof rawTarget.taskId === "string" && rawTarget.taskId.trim()) ||
+    (typeof data.taskId === "string" && data.taskId.trim()) ||
+    undefined;
+  const sessionId =
+    (typeof rawTarget.sessionId === "string" && rawTarget.sessionId.trim()) ||
+    (typeof data.sessionId === "string" && data.sessionId.trim()) ||
+    undefined;
+  const target = {
+    ...(appId ? { appId } : {}),
+    ...(taskId ? { taskId } : {}),
+    ...(sessionId ? { sessionId } : {}),
+  };
+  const idempotencyKey =
+    (typeof body.idempotencyKey === "string" && body.idempotencyKey.trim()) ||
+    (typeof data.idempotencyKey === "string" && data.idempotencyKey.trim()) ||
+    undefined;
+  delete data.idempotencyKey;
+  return {
+    type: "publish",
+    event: {
+      type: envelope.type,
+      ...(Object.values(target).some(Boolean) ? { target } : {}),
+      data,
+      ...(idempotencyKey ? { idempotencyKey } : {}),
+    },
+  };
 }
 
 export function buildAppAdmissionCommand(input: {
@@ -123,18 +167,26 @@ export async function sendDaemonFrameWithRetry(
   send: typeof sendDaemonEvent = sendDaemonEvent,
   confirm?: (idempotencyKey: string) => number | undefined | Promise<number | undefined>,
 ): Promise<DaemonFrameResult> {
-  const originalData =
-    frame.data && typeof frame.data === "object" && !Array.isArray(frame.data)
+  const publishEvent =
+    frame.type === "publish" && frame.event && typeof frame.event === "object" && !Array.isArray(frame.event)
+      ? (frame.event as Record<string, unknown>)
+      : null;
+  const originalData = publishEvent
+    ? publishEvent.data && typeof publishEvent.data === "object" && !Array.isArray(publishEvent.data)
+      ? (publishEvent.data as Record<string, unknown>)
+      : {}
+    : frame.data && typeof frame.data === "object" && !Array.isArray(frame.data)
       ? (frame.data as Record<string, unknown>)
       : {};
   const idempotencyKey =
-    typeof originalData.idempotencyKey === "string" && originalData.idempotencyKey.trim()
-      ? originalData.idempotencyKey.trim()
-      : `web-${randomUUID()}`;
-  const durableFrame = {
-    ...frame,
-    data: { ...originalData, idempotencyKey },
-  };
+    typeof publishEvent?.idempotencyKey === "string" && publishEvent.idempotencyKey.trim()
+      ? publishEvent.idempotencyKey.trim()
+      : typeof originalData.idempotencyKey === "string" && originalData.idempotencyKey.trim()
+        ? originalData.idempotencyKey.trim()
+        : `web-${randomUUID()}`;
+  const durableFrame = publishEvent
+    ? { ...frame, event: { ...publishEvent, data: { ...originalData }, idempotencyKey } }
+    : { ...frame, data: { ...originalData, idempotencyKey } };
 
   for (const timeoutMs of [2_000, 5_000]) {
     try {
@@ -143,6 +195,11 @@ export async function sendDaemonFrameWithRetry(
       return {
         ok: true,
         ...(Number.isInteger(eventId) && eventId > 0 ? { eventId } : {}),
+        ...(typeof response.eventType === "string" ? { eventType: response.eventType } : {}),
+        ...(response.delivery === "recorded" || response.delivery === "accepted"
+          ? { delivery: response.delivery }
+          : {}),
+        ...(Array.isArray(response.links) ? { links: response.links } : {}),
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -3275,7 +3332,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
           error && typeof error === "object" && "kind" in error ? (error as { kind?: unknown }).kind : undefined;
         const compatibilityRequired =
           kind === "definitive" &&
-          (message.includes("does not accept this input") || message.includes("App input admission is unavailable"));
+          (message.includes("is not loaded") ||
+            message.includes("does not accept this input") ||
+            message.includes("App input admission is unavailable"));
         if (!compatibilityRequired) {
           return json({ ok: false, triggered: false, error: message }, 503);
         }
@@ -3553,6 +3612,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       const body = (await req.json()) as Record<string, unknown>;
       const type = typeof body.type === "string" ? body.type.trim() : "";
       if (!type) return json({ error: "type required" }, 400);
+      if (!PUBLIC_EVENT_TYPES.has(type)) return json({ error: `Event type '${type}' is not admitted by HTTP` }, 400);
       const data =
         body.data && typeof body.data === "object" && !Array.isArray(body.data)
           ? (body.data as Record<string, unknown>)
@@ -3565,34 +3625,40 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
             : "";
 
       let projectId = typeof data.projectId === "string" ? data.projectId : "";
-      let owner = typeof body.owner === "string" && body.owner.trim() ? body.owner.trim() : "agent:may";
       if (projectPath) {
         if (!isAllowedProjectPath(projectPath)) return json({ error: "Access denied" }, 403);
         const projectFile = resolveProjectFile(projectPath);
         if (!existsSync(projectFile)) return json({ error: "Project not found" }, 404);
         const identity = parseProjectIdentity(projectPath, readFileSync(projectFile, "utf-8"));
         projectId = projectId || identity.projectId;
-        owner =
-          typeof body.owner === "string" && body.owner.trim() ? body.owner.trim() : normalizeEventOwner(identity.owner);
       }
 
-      const trigger = await sendDaemonFrame(buildEventIngressFrame(body, owner));
+      const trigger = await sendDaemonFrame(buildEventIngressFrame(body));
       if (!trigger.ok) return json({ ok: false, triggered: false, error: trigger.error }, 503);
 
       return json(
         {
           ok: true,
           triggered: true,
-          eventType: type,
+          eventType: trigger.eventType ?? type,
           eventId: trigger.eventId,
+          delivery: trigger.delivery ?? "recorded",
+          links: trigger.links ?? [],
           reason: typeof data.reason === "string" ? data.reason : null,
           projectId: projectId || null,
         },
-        202,
+        eventDeliveryContract(type) === "required" && trigger.delivery !== "accepted" ? 202 : 201,
       );
     } catch (e: any) {
       return json({ error: e.message }, 500);
     }
+  }
+
+  function handleEventView(eventIdText: string): Response {
+    const eventId = Number(eventIdText);
+    if (!Number.isSafeInteger(eventId) || eventId <= 0) return json({ error: "event id must be positive" }, 400);
+    const view = getEventView(_db(), eventId);
+    return view ? json(view) : json({ error: `Event ${eventId} not found` }, 404);
   }
 
   function handleLoopTrace(url: URL): Response {
@@ -3656,9 +3722,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   //
   // Per webui.md "Plane C — Steering verbs": one event per verb, async.
 
-  async function sendDaemonFrame(
-    frame: Record<string, unknown>,
-  ): Promise<{ ok: boolean; error?: string; eventId?: number }> {
+  async function sendDaemonFrame(frame: Record<string, unknown>): Promise<DaemonFrameResult> {
     const socketPath = conventionSocketPath();
     return sendDaemonFrameWithRetry(socketPath, frame, sendDaemonEvent, (idempotencyKey) => {
       const row = _db()
@@ -4270,6 +4334,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         traceUrl.search = `?eventId=${eventTraceMatch[1]}`;
         return handleLoopTrace(traceUrl);
       }
+      const eventViewMatch = url.pathname.match(/^\/api\/events\/(\d+)$/);
+      if (eventViewMatch && req.method === "GET") return handleEventView(eventViewMatch[1]);
       if (url.pathname === "/api/events" && req.method === "POST") return handleEventIngress(req);
       if (url.pathname === "/api/events") return handleEvents(url);
       if (url.pathname === "/api/learning") return handleLearning(url);

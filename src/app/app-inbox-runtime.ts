@@ -7,6 +7,7 @@ import {
   type ObserverContext,
   type TaskIntent,
 } from "@may-agent/sdk";
+import type { EventInput, EventReceipt } from "../../packages/control/src/protocol.js";
 import type { SqliteDb } from "../lib/db.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "./event-bus.js";
 import { AppInboxHost, type AppInboxReconcileResult, type AppTaskAttacher } from "./app-inbox-host.js";
@@ -35,6 +36,7 @@ export type AppInboxRuntime = {
   host: AppInboxHost;
   close(): void;
   scanNow(): void;
+  setEventPublisher(publish: (input: EventInput, source: AppInputSource) => EventReceipt): void;
   enableDelivery(): void;
   reload(prepare?: AppRegistryReloadPreparation): Promise<string[]>;
 };
@@ -228,10 +230,38 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     },
   });
   observerRuntime.replace(loaded);
-  const scheduleActivations = new Map<
-    string,
-    { fingerprint: string; activatedAt: number; lastEventSlot?: number }
-  >();
+  let publishEvent: ((input: EventInput, source: AppInputSource) => EventReceipt) | undefined;
+  let publishingDelegations = false;
+  const publishPendingDelegations = (): void => {
+    if (!publishEvent || publishingDelegations) return;
+    publishingDelegations = true;
+    try {
+      for (const delegation of host.pendingDelegations()) {
+        try {
+          const receipt = publishEvent(
+            {
+              type: "app.input.requested",
+              target: { appId: delegation.appId },
+              data: { input: delegation.input, parentId: delegation.parentId },
+              idempotencyKey: delegation.idempotencyKey,
+            },
+            delegation.source,
+          );
+          if (receipt.delivery !== "accepted") {
+            throw new Error(`event ${receipt.eventId} remains ${receipt.delivery}`);
+          }
+        } catch (error) {
+          options.bus.emit({
+            type: "info",
+            message: `[app-inbox:delegation] ${error instanceof Error ? error.message : String(error)}`,
+          });
+        }
+      }
+    } finally {
+      publishingDelegations = false;
+    }
+  };
+  const scheduleActivations = new Map<string, { fingerprint: string; activatedAt: number; lastSlot?: number }>();
 
   const refreshScheduleActivations = (): void => {
     const activeKeys = new Set<string>();
@@ -251,7 +281,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           scheduleActivations.set(key, {
             fingerprint,
             activatedAt,
-            ...(!schedule.input ? { lastEventSlot: Math.floor(activatedAt / schedule.intervalMs) } : {}),
+            ...(!schedule.input ? { lastSlot: Math.floor(activatedAt / schedule.intervalMs) } : {}),
           });
         }
       }
@@ -340,6 +370,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       void work
         .then((outcome) => {
           report(appId, outcome);
+          publishPendingDelegations();
           pumpDeliveries();
         })
         .catch((error) => {
@@ -396,6 +427,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   };
 
   const scanNow = () => {
+    publishPendingDelegations();
     const currentTime = now();
     for (const { definition } of loaded) {
       for (const configuredSchedule of definition.schedules ?? []) {
@@ -404,7 +436,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         if (!activation) continue;
         const slot = Math.floor(currentTime / configuredSchedule.intervalMs);
         if (!configuredSchedule.input) {
-          if (activation.lastEventSlot === undefined || slot <= activation.lastEventSlot) continue;
+          if (activation.lastSlot === undefined || slot <= activation.lastSlot) continue;
           const event = configuredSchedule.event;
           options.bus.emit({
             ...event,
@@ -415,18 +447,27 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
               idempotencyKey: `schedule:${definition.id}:${configuredSchedule.id}:${slot}`,
             },
           } as AgentEvent);
-          activation.lastEventSlot = slot;
+          activation.lastSlot = slot;
           continue;
         }
+        if (activation.lastSlot !== undefined && slot <= activation.lastSlot) continue;
         const slotStartedAt = slot * configuredSchedule.intervalMs;
-        if ((configuredSchedule.catchUp ?? "latest") === "none" && slotStartedAt < activation.activatedAt) continue;
-        const admitted = host.admit({
-          appId: definition.id,
-          source: { kind: "system", id: `schedule:${definition.id}:${configuredSchedule.id}` },
-          input: configuredSchedule.input,
-          idempotencyKey: `schedule:${definition.id}:${configuredSchedule.id}:${slot}`,
+        if ((configuredSchedule.catchUp ?? "latest") === "none" && slotStartedAt < activation.activatedAt) {
+          activation.lastSlot = slot;
+          continue;
+        }
+        options.bus.emit({
+          type: "app.input.requested",
+          source: `app:${definition.id}:schedule:${configuredSchedule.id}`,
+          owner: `app:${definition.id}`,
+          data: {
+            appId: definition.id,
+            input: configuredSchedule.input,
+            source: { kind: "system", id: `schedule:${definition.id}:${configuredSchedule.id}` },
+            idempotencyKey: `schedule:${definition.id}:${configuredSchedule.id}:${slot}`,
+          },
         });
-        if (admitted.created) schedule(admitted.item.appId);
+        activation.lastSlot = slot;
       }
     }
     for (const appId of host.appIds()) schedule(appId);
@@ -455,6 +496,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             appId: command.appId,
             source: { kind: "system", id: identity },
             input: command.input,
+            originEventId: plan.eventId,
             idempotencyKey: `subscription:${command.appId}:${command.routeId}:${identity}`,
           });
           schedule(admitted.item.appId);
@@ -530,6 +572,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
               ? { kind: "app", id: message.sourceAppId }
               : { kind: "system", id: message.identity },
           input: message.input,
+          originEventId: eventRowId(event),
           channel: `agent:${message.sender}`,
           idempotencyKey: message.identity,
         });
@@ -554,9 +597,15 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         appId,
         source: inputSource(data.source, identity ?? `event:${event.type}`),
         input: requestedInput(data),
+        originEventId: eventRowId(event),
         parentId: typeof data.parentId === "string" ? data.parentId : undefined,
         conversationId: typeof data.conversationId === "string" ? data.conversationId : undefined,
-        conversationSequence: typeof data.conversationSequence === "number" ? data.conversationSequence : undefined,
+        conversationSequence:
+          typeof data.conversationId === "string"
+            ? typeof data.conversationSequence === "number"
+              ? data.conversationSequence
+              : eventRowId(event)
+            : undefined,
         channel: typeof data.channel === "string" ? data.channel : undefined,
         channelThreadId: typeof data.channelThreadId === "string" ? data.channelThreadId : undefined,
         channelMessageId: typeof data.channelMessageId === "number" ? data.channelMessageId : undefined,
@@ -834,6 +883,10 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   return {
     host,
     scanNow,
+    setEventPublisher(publish) {
+      publishEvent = publish;
+      scanNow();
+    },
     async reload(prepare) {
       const previousDefinitions = loaded.map((entry) => entry.definition);
       const next = await options.registry.reload(async (snapshot) => {

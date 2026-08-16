@@ -120,7 +120,7 @@ describe("E2: project comment roundtrip", () => {
         expect(result.nudges.length).toBeGreaterThanOrEqual(1);
 
         const createdRow = result.created[0];
-        expect(createdRow.source).toBe("e2e-test");
+        expect(createdRow.source).toBe("control-socket");
         expect(createdRow.owner).toBe("agent:may");
         expect(eventPayload(createdRow)).toEqual({
           projectPath: `projects/${projectId}`,
@@ -129,7 +129,7 @@ describe("E2: project comment roundtrip", () => {
         });
 
         const nudgeRow = result.nudges[0];
-        expect(nudgeRow.source).toBe("e2e-test");
+        expect(nudgeRow.source).toBe("control-socket");
         expect(nudgeRow.owner).toBe("agent:may");
         expect(eventPayload(nudgeRow)).toEqual({
           projectPath: `projects/${projectId}`,

@@ -21,20 +21,21 @@ describe("HTTP event ingress acknowledgement recovery", () => {
           decision: "approve",
           data: { projectId: "gym", projectPath: "/app/projects/gym.app/project.json" },
         },
-        "gym",
       ),
     ).toEqual({
-      type: "project.approval.submitted",
-      source: "web-ui",
-      owner: "agent:gym",
-      data: {
-        projectId: "gym",
-        projectPath: "/app/projects/gym.app/project.json",
-        approvalId: "approval-52",
-        taskId: "improve/may",
-        taskGeneration: 52,
-        artifactFingerprint: "sha256:artifact",
-        decision: "approve",
+      type: "publish",
+      event: {
+        type: "project.approval.submitted",
+        target: { taskId: "improve/may" },
+        data: {
+          projectId: "gym",
+          projectPath: "/app/projects/gym.app/project.json",
+          approvalId: "approval-52",
+          taskId: "improve/may",
+          taskGeneration: 52,
+          artifactFingerprint: "sha256:artifact",
+          decision: "approve",
+        },
       },
     });
   });
