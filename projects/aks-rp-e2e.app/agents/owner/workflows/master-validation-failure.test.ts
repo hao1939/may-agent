@@ -54,10 +54,12 @@ import {
   standaloneRecoveryChild,
   standaloneRecoveryChildAction,
   standaloneRecoveryCompletionProblem,
+  startupRecoveryFreshnessReview,
   testIssueReconciliationOptions,
   unpublishedTaskRepairReady,
   workspace,
 } from "./master-validation-failure.js";
+import { resumedPreparationDecision } from "./spec-live-reconciliation.js";
 
 function git(cwd: string, ...args: string[]): string {
   const result = spawnSync("git", args, { cwd, encoding: "utf8" });
@@ -175,6 +177,96 @@ function workflowContext(options: TestContextOptions = {}): WorkflowContext {
 }
 
 describe("master-validation failure workflow", () => {
+  test("routes s_1786458984860_47 startup recovery through the persisted freshness-only decision before investigation", () => {
+    const root = mkdtempSync(
+      join(tmpdir(), "master-validation-startup-resume-"),
+    );
+    try {
+      const taskId =
+        "domain/master-validation-failure/spec.traffic-azure-service-mesh.master-validation-functionality-istiocni-azurelinux";
+      const sourceCommit = "f12eccd60e60ddb96e4cae6eaf01bdbdf4d806d0";
+      const handoffPath = join(
+        root,
+        "preparation-head-correction-a132dc3688.json",
+      );
+      const findingsPath = join(
+        root,
+        "preparation-head-correction-a132dc3688.findings.json",
+      );
+      const currentContextPath = join(root, "current-context.json");
+      writeFileSync(
+        currentContextPath,
+        JSON.stringify({
+          taskId,
+          sourceCommit,
+          phase: "preparation-head-correction-a132dc3688",
+          handoffPath,
+        }),
+      );
+      writeFileSync(
+        findingsPath,
+        JSON.stringify({
+          taskId,
+          sourceCommit,
+          phase: "preparation-head-correction-a132dc3688",
+          review: {
+            decision: "test-current",
+            liveReady: true,
+            liveTarget: "staging",
+            condition: null,
+          },
+        }),
+      );
+      const input = parseFailureInput(`
+## Reconciliation Task
+${JSON.stringify({
+  taskId,
+  generation: 5,
+  input: {
+    specId:
+      "spec.traffic-azure-service-mesh.master-validation-functionality-istiocni-azurelinux",
+    pipelineRunId: "176113842",
+    failureFingerprint: "8435119a137582d4630d",
+    startupRecoveryResume: {
+      currentContextPath,
+      findingsPath,
+      interruptedSessionId: "s_1786458984860_47",
+      interruptedWorkflowRunId: "wr_1786457571551_v1a9",
+      preparedSourceCommit: sourceCommit,
+      requiredDecision: "test-current",
+      requiredLiveReady: true,
+      requiredTarget: "staging",
+      reviewScope:
+        "Freshness-only review of current-context and persisted findings; do not repeat broad research.",
+    },
+  },
+})}
+`)!;
+      const review = startupRecoveryFreshnessReview(input)!;
+      expect(review).toMatchObject({ sourceCommit });
+      expect(review.evidence).toEqual(
+        expect.arrayContaining([
+          "startup-recovery-interrupted-session:s_1786458984860_47",
+          "startup-recovery-interrupted-workflow-run:wr_1786457571551_v1a9",
+          `startup-recovery-prepared-source:${sourceCommit}`,
+          "startup-recovery-decision:test-current",
+          "startup-recovery-live-ready:true",
+          "startup-recovery-target:staging",
+          "startup-recovery-review-scope:freshness-only",
+        ]),
+      );
+      const options = testIssueReconciliationOptions("176113842", review);
+      expect(resumedPreparationDecision(options, sourceCommit)).toMatchObject({
+        decision: "test-current",
+        liveReady: true,
+        evidence: expect.arrayContaining(["freshness-only-resume:accepted"]),
+      });
+      expect(options.preparationResume).toEqual(review);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   test("resumes a clean task-owned repair without legacy child state", () => {
     expect(
       unpublishedTaskRepairReady({

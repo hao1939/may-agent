@@ -64,6 +64,18 @@ export type CampaignRepairContext = {
   expectedRemoteCommit: string;
 };
 
+export type StartupRecoveryResume = {
+  currentContextPath: string;
+  findingsPath: string;
+  interruptedSessionId: string;
+  interruptedWorkflowRunId: string;
+  preparedSourceCommit: string;
+  requiredDecision: string;
+  requiredLiveReady: boolean;
+  requiredTarget: string;
+  reviewScope: string;
+};
+
 export type FailureInput = {
   taskId: string;
   generation: number;
@@ -83,6 +95,7 @@ export type FailureInput = {
   priorStandaloneSourceCommit: string;
   requestedServiceOwner: string;
   campaignRepairReplay: CampaignRepairContext | null;
+  startupRecoveryResume: StartupRecoveryResume | null;
 };
 
 export type PullRequest = {
@@ -179,6 +192,30 @@ function text(value: unknown): string {
 
 function stringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.map(text).filter(Boolean) : [];
+}
+
+function parseStartupRecoveryResume(
+  value: unknown,
+): StartupRecoveryResume | null {
+  const resume = record(value);
+  const parsed: StartupRecoveryResume = {
+    currentContextPath: text(resume.currentContextPath),
+    findingsPath: text(resume.findingsPath),
+    interruptedSessionId: text(resume.interruptedSessionId),
+    interruptedWorkflowRunId: text(resume.interruptedWorkflowRunId),
+    preparedSourceCommit: text(resume.preparedSourceCommit),
+    requiredDecision: text(resume.requiredDecision),
+    requiredLiveReady: resume.requiredLiveReady === true,
+    requiredTarget: text(resume.requiredTarget),
+    reviewScope: text(resume.reviewScope),
+  };
+  return parsed.currentContextPath ||
+    parsed.findingsPath ||
+    parsed.interruptedSessionId ||
+    parsed.interruptedWorkflowRunId ||
+    parsed.preparedSourceCommit
+    ? parsed
+    : null;
 }
 
 function parseCampaignRepairReplay(
@@ -280,6 +317,9 @@ function failureInput(
     ),
     requestedServiceOwner: text(input.requestedServiceOwner),
     campaignRepairReplay: parseCampaignRepairReplay(input.campaignRepairReplay),
+    startupRecoveryResume: parseStartupRecoveryResume(
+      input.startupRecoveryResume,
+    ),
   };
   return parsed.taskId && parsed.specId && parsed.failureFingerprint
     ? parsed
@@ -1842,13 +1882,94 @@ export async function preserveVerificationAfterNestedReconciliation(
   return result;
 }
 
+export type StartupRecoveryFreshnessReview = {
+  sourceCommit: string;
+  summary: string;
+  evidence: string[];
+};
+
+export function startupRecoveryFreshnessReview(
+  input: FailureInput,
+): StartupRecoveryFreshnessReview | null {
+  const resume = input.startupRecoveryResume;
+  if (!resume) return null;
+  if (
+    !resume.currentContextPath ||
+    !resume.findingsPath ||
+    !resume.interruptedSessionId ||
+    !resume.interruptedWorkflowRunId ||
+    !/^[0-9a-f]{40}$/i.test(resume.preparedSourceCommit) ||
+    resume.requiredDecision !== "test-current" ||
+    resume.requiredLiveReady !== true ||
+    resume.requiredTarget !== "staging" ||
+    !/freshness-only/i.test(resume.reviewScope)
+  ) {
+    throw new Error(
+      "startupRecoveryResume is incomplete or requests a non-freshness recovery route",
+    );
+  }
+  if (
+    !existsSync(resume.currentContextPath) ||
+    !existsSync(resume.findingsPath)
+  ) {
+    throw new Error(
+      "startupRecoveryResume durable context or findings are missing",
+    );
+  }
+  const currentContext = record(
+    JSON.parse(readFileSync(resume.currentContextPath, "utf8")),
+  );
+  const findings = record(
+    JSON.parse(readFileSync(resume.findingsPath, "utf8")),
+  );
+  const review = record(findings.review);
+  const expectedHandoffPath = resume.findingsPath.replace(
+    /\.findings\.json$/,
+    ".json",
+  );
+  if (
+    text(currentContext.taskId) !== input.taskId ||
+    text(currentContext.sourceCommit) !== resume.preparedSourceCommit ||
+    text(currentContext.handoffPath) !== expectedHandoffPath ||
+    text(findings.taskId) !== input.taskId ||
+    text(findings.sourceCommit) !== resume.preparedSourceCommit ||
+    text(findings.phase) !== text(currentContext.phase) ||
+    text(review.decision) !== resume.requiredDecision ||
+    review.liveReady !== true ||
+    text(review.liveTarget) !== resume.requiredTarget ||
+    review.condition != null
+  ) {
+    throw new Error(
+      "startupRecoveryResume durable authority no longer matches the required prepared judgment",
+    );
+  }
+  return {
+    sourceCommit: resume.preparedSourceCommit,
+    summary: `Freshness-only recovery accepted persisted ${resume.requiredDecision}/liveReady=${String(resume.requiredLiveReady)}/${resume.requiredTarget} judgment for ${input.specId}.`,
+    evidence: [
+      `startup-recovery-interrupted-session:${resume.interruptedSessionId}`,
+      `startup-recovery-interrupted-workflow-run:${resume.interruptedWorkflowRunId}`,
+      `startup-recovery-current-context:${resume.currentContextPath}`,
+      `startup-recovery-findings:${resume.findingsPath}`,
+      `startup-recovery-prepared-source:${resume.preparedSourceCommit}`,
+      `startup-recovery-decision:${resume.requiredDecision}`,
+      `startup-recovery-live-ready:${String(resume.requiredLiveReady)}`,
+      `startup-recovery-target:${resume.requiredTarget}`,
+      "startup-recovery-review-scope:freshness-only",
+    ],
+  };
+}
+
 async function reconcileTestIssue(
   ctx: WorkflowContext,
   input: FailureInput,
 ): Promise<FailureWorkflowResult> {
   const result = await reconcileSpecLive(
     ctx,
-    testIssueReconciliationOptions(input.pipelineRunId),
+    testIssueReconciliationOptions(
+      input.pipelineRunId,
+      startupRecoveryFreshnessReview(input),
+    ),
   );
   return await preserveVerificationAfterNestedReconciliation(
     ctx,
@@ -1859,11 +1980,13 @@ async function reconcileTestIssue(
 
 export function testIssueReconciliationOptions(
   pipelineRunId: string,
+  preparationResume: StartupRecoveryFreshnessReview | null = null,
 ): SpecLiveReconciliationOptions {
   return {
     targetBranch: targetBranch,
     existingRecoveryAfterRunId: pipelineRunId,
     reusePriorIntegratedProof: true,
+    ...(preparationResume ? { preparationResume } : {}),
     // sourceBranch/sourceCommit on this task describe the failed aggregate
     // observation. They are not an unpublished source prerequisite for the
     // nested live verifier; the dedicated task worktree already preserves any
@@ -2180,6 +2303,33 @@ export async function execute(
   }
 
   try {
+    const startupResume = startupRecoveryFreshnessReview(input);
+    if (startupResume) {
+      if (git(workspaceDir, ["status", "--porcelain=v1"]).stdout) {
+        throw new Error(
+          "startupRecoveryResume cannot restore the prepared source into a dirty task worktree",
+        );
+      }
+      if (
+        git(
+          workspaceDir,
+          ["cat-file", "-e", `${startupResume.sourceCommit}^{commit}`],
+          true,
+        ).status !== 0
+      ) {
+        throw new Error(
+          `startupRecoveryResume prepared source ${startupResume.sourceCommit} is unavailable in the task repository`,
+        );
+      }
+      if (
+        git(workspaceDir, ["rev-parse", "HEAD"]).stdout !==
+        startupResume.sourceCommit
+      ) {
+        git(workspaceDir, ["reset", "--hard", startupResume.sourceCommit]);
+      }
+      return reconcileTestIssue(ctx, input);
+    }
+
     const standaloneRequested = requiresStandaloneVerification(input);
     if (!standaloneRequested) {
       const campaign = progressedCampaign(

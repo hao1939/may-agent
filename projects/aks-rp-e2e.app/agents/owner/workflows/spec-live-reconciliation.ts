@@ -312,7 +312,31 @@ export type SpecLiveReconciliationOptions = {
   reusePriorIntegratedProof?: boolean;
   reviewedScenarioPatch?: boolean;
   inputSourceIsObservation?: boolean;
+  preparationResume?: {
+    sourceCommit: string;
+    summary: string;
+    evidence: string[];
+  };
 };
+
+export function resumedPreparationDecision(
+  options: SpecLiveReconciliationOptions,
+  sourceCommit: string,
+): AgentDecision | null {
+  const resume = options.preparationResume;
+  if (!resume) return null;
+  if (resume.sourceCommit !== sourceCommit) {
+    throw new Error(
+      `freshness-only preparation resume source ${resume.sourceCommit} does not match task source ${sourceCommit}`,
+    );
+  }
+  return {
+    decision: "test-current",
+    liveReady: true,
+    summary: resume.summary,
+    evidence: [...resume.evidence, "freshness-only-resume:accepted"],
+  };
+}
 
 export type LiveExecutionTarget = {
   target: string;
@@ -8360,33 +8384,53 @@ export async function reconcileSpecLive(
         "Task:",
         taskDescription(ctx),
       ].join("\n\n");
-      let decision = await askAgent(ctx, preparationPrompt, {
-        scenarioNormalization: Boolean(normalizationInput),
-        continueDomainWorkOnValidation: true,
-        durableContext: {
-          contextDir,
-          taskId,
-          generation,
-          sourceCommit: () => git(workspaceDir, ["rev-parse", "HEAD"]).stdout,
-          phase: "preparation",
-        },
-        validateDecision: (candidate) =>
-          preparationDecisionProblem(
-            candidate,
-            Boolean(options.existingRecoveryAfterRunId),
-          ) ??
-          terminalDispositionDecisionProblem(
-            candidate,
-            allowTerminalDisposition,
-          ) ??
-          exactPassNeedsOwnerProblem(candidate, allowTerminalDisposition) ??
-          (["committed", "test-current", "accepted-pass"].includes(
-            candidate.decision,
-          )
-            ? scenarioQualityInvariantProblem(workspaceDir, normalizationInput)
-            : null) ??
-          semanticInvalidationDecisionProblem(candidate),
-      });
+      const preparationResume = options.preparationResume;
+      if (
+        preparationResume &&
+        preparationResume.sourceCommit !== sourceCommit
+      ) {
+        return ownerResult(
+          ctx,
+          `Freshness-only preparation resume names ${preparationResume.sourceCommit}, but the exact task source is ${sourceCommit}.`,
+          [
+            ...preparationResume.evidence,
+            `source-commit:${sourceCommit}`,
+            "freshness-only-resume:rejected-source-mismatch",
+          ],
+        );
+      }
+      let decision: AgentDecision =
+        resumedPreparationDecision(options, sourceCommit) ??
+        (await askAgent(ctx, preparationPrompt, {
+          scenarioNormalization: Boolean(normalizationInput),
+          continueDomainWorkOnValidation: true,
+          durableContext: {
+            contextDir,
+            taskId,
+            generation,
+            sourceCommit: () => git(workspaceDir, ["rev-parse", "HEAD"]).stdout,
+            phase: "preparation",
+          },
+          validateDecision: (candidate) =>
+            preparationDecisionProblem(
+              candidate,
+              Boolean(options.existingRecoveryAfterRunId),
+            ) ??
+            terminalDispositionDecisionProblem(
+              candidate,
+              allowTerminalDisposition,
+            ) ??
+            exactPassNeedsOwnerProblem(candidate, allowTerminalDisposition) ??
+            (["committed", "test-current", "accepted-pass"].includes(
+              candidate.decision,
+            )
+              ? scenarioQualityInvariantProblem(
+                  workspaceDir,
+                  normalizationInput,
+                )
+              : null) ??
+            semanticInvalidationDecisionProblem(candidate),
+        }));
       if (decision.decision === "waiting" && decision.condition) {
         return waitingResult(
           ctx,
