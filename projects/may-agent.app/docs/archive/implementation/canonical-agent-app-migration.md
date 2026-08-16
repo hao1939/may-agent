@@ -1586,3 +1586,46 @@ operations digest completed as handler event `5716796`, and session recovery
 completed as events `5716788` and `5716820`. Concurrent four-worker AKS
 recovery again caused intermittent readiness timeouts without process exit,
 state loss, handler load failure, or rollback.
+
+### Post-rollout legacy-residue cleanup
+
+A final active-source audit found two non-executing artifacts that the earlier
+authoring-boundary gate did not reject: an unused
+`may-agent.app/types/project-app.ts` shim re-exported the retired Project App
+types outside that package's TypeScript include set, and an unreferenced
+`ui.root-stale-20260710165437` snapshot remained in the live App root. The AKS
+observer collectors also called a local accumulator `emit`, even though the
+canonical adapter correctly returned the accumulated facts for host publication
+only after a successful observer run.
+
+Apps commit `8aaf03b514009b98b6a593509328c1b42ca12c9f` deleted both dead
+artifacts, renamed the collector-local operation to `record`, and extended the
+canonical integrity gate to reject retired `ProjectApp`,
+`ProjectAppAction`, and `ProjectAppContext` authoring types. No runtime
+contract, event shape, cadence, state path, or deployment image changed.
+
+Source and immutable-artifact verification observed:
+
+- zero design-integrity or canonical-boundary errors, with 48 workflows and
+  five enabled host handlers checked against the exact final Runtime;
+- 102 passing May App tests with 389 assertions;
+- 665 passing AKS App tests with 2,243 assertions, plus 58 focused observer
+  tests with 158 assertions;
+- strict root, May App, and AKS App typechecks and AKS formatting; and
+- exact-artifact loading of all seven canonical Apps against SDK tree SHA-256
+  `df3aed63ca86fcce14543e188fdb317a5de0917b5d110e87b0807c9c7d222018`.
+
+The immutable Apps source is
+`/app/.state/releases/apps/8aaf03b514009b98b6a593509328c1b42ca12c9f`.
+The Apps-only deployment kept Runtime image
+`localhost/may-agent:runtime-ac469750` and uses
+`/app/.state/releases/deploy/canonical-authoring-cleanup-8aaf03b5/compose.apps-8aaf03b5.yml`.
+After the recreate at `2026-08-16T16:20:53Z`, Docker returned healthy with a
+zero failing streak and the readiness endpoint returned `ready: true`.
+
+Retained item `app_944b9f18-e5dd-4636-9ac5-3d8fbe920ee5` remained done with
+the exact `RELEASE_C_SAFE_DELIVERY_OK` result. No post-cutover
+`handler.load-failed` event was recorded. The renamed observer boundary
+executed naturally after startup: workspace-integrity event `5717555`,
+repo-ref events `5717556` and `5717557`, and scenario-inventory event
+`5717561` were persisted from the new artifact.
