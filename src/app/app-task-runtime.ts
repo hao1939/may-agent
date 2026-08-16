@@ -93,6 +93,7 @@ import {
   repairRunningAppTasksWithoutAttempt,
   recoverableAppTaskAttempts,
   expiredOwnerSessionAppTaskAttempt,
+  terminalOwnerSessionAppTaskClaim,
   releaseInterruptedAppTaskAttempt,
   releaseLateTerminalWorkflowAppTaskAttempt,
   releaseTerminalSessionExpiredAppTaskAttempt,
@@ -539,6 +540,90 @@ export function normalizeTaskHandlerResult(
     ...admission.result,
     actions,
   };
+}
+
+type PersistedTerminalOwnerResultConsumption = {
+  claim: AppTaskClaim;
+  state: "converged" | "waiting";
+  summary: string;
+  evidence: string[];
+  actionsApplied: string[];
+  reconcileTaskIds: string[];
+};
+
+function readPersistedTerminalOwnerResult(persistDir: string | undefined, sessionId: string): unknown {
+  if (!persistDir) return undefined;
+  try {
+    const artifact = JSON.parse(readFileSync(join(persistDir, "sessions", sessionId, "result.json"), "utf8")) as {
+      status?: unknown;
+      finishParams?: { status?: unknown; result?: unknown };
+    };
+    if (artifact.status !== "done" || artifact.finishParams?.status !== "success") return undefined;
+    return artifact.finishParams.result;
+  } catch {
+    return undefined;
+  }
+}
+
+export function consumePersistedTerminalOwnerResult(input: {
+  persistDir?: string;
+  config: ReturnType<typeof taskReconciliationConfig>;
+  descriptor: AppTaskRuntimeDescriptor;
+  taskId: string;
+  sessionId: string;
+}): PersistedTerminalOwnerResultConsumption | null {
+  const raw = readPersistedTerminalOwnerResult(input.persistDir, input.sessionId);
+  if (raw === undefined) return null;
+  const claim = terminalOwnerSessionAppTaskClaim(input.config, input.taskId, input.sessionId);
+  if (!claim) return null;
+  const defaultParentId = readTaskState(input.config).root_task_id;
+  if (!defaultParentId) return null;
+  const result = normalizeTaskHandlerResult(
+    raw,
+    { type: "done", summary: `Recovered terminal owner result from session ${input.sessionId}`, runId: input.sessionId },
+    {
+      allowNeedsOwner: false,
+      defaultParentId,
+      rootParentAliases: [input.descriptor.id, basename(input.descriptor.projectDir)],
+      validateAction: input.descriptor.app.tasks?.validateAction,
+    },
+  );
+  if (result.state === "converged") {
+    const applied = completeAppTask(input.config, claim, {
+      summary: result.summary,
+      evidence: result.evidence,
+      actions: result.actions,
+      acceptanceBasis: { method: "owner-judgment", evidence: result.evidence },
+    });
+    if (applied.status !== "applied") return null;
+    return {
+      claim,
+      state: "converged",
+      summary: result.summary,
+      evidence: result.evidence,
+      actionsApplied: applied.actionsApplied,
+      reconcileTaskIds: applied.dependentTaskIds,
+    };
+  }
+  if (result.state === "waiting") {
+    const applied = deferAppTask(input.config, claim, {
+      disposition: "waiting",
+      summary: result.summary,
+      evidence: result.evidence,
+      actions: result.actions,
+      conditions: result.conditions,
+    });
+    if (applied.status !== "applied") return null;
+    return {
+      claim,
+      state: "waiting",
+      summary: result.summary,
+      evidence: result.evidence,
+      actionsApplied: applied.actionsApplied,
+      reconcileTaskIds: applied.reconcileTaskIds,
+    };
+  }
+  return null;
 }
 
 async function runTaskCapability(input: {
@@ -1591,6 +1676,36 @@ async function reconcileTask(input: {
   });
   if (primary.kind !== "claimed") {
     if (primary.kind === "busy") {
+      const active = readTaskState(config).attempts?.[primary.attemptId ?? ""];
+      const terminalSession = active?.sessionId && opts.persistDir ? readSessionMeta(opts.persistDir, active.sessionId) : null;
+      if (
+        active?.sessionId &&
+        terminalSession?.status === "done" &&
+        !hasLiveAppTaskSession(opts, active.sessionId)
+      ) {
+        const consumed = consumePersistedTerminalOwnerResult({
+          persistDir: opts.persistDir,
+          config,
+          descriptor,
+          taskId: input.taskId,
+          sessionId: active.sessionId,
+        });
+        if (consumed) {
+          emitTaskReconciliationEvent(opts, descriptor, undefined, "project.task.reconciled", input.taskId, {
+            route: "terminal-owner-result-recovery",
+            generation: consumed.claim.generation,
+            attemptId: consumed.claim.attemptId,
+            handler: consumed.claim.handler,
+            disposition: consumed.state,
+            summary: consumed.summary,
+            evidence: consumed.evidence,
+            actionsApplied: consumed.actionsApplied,
+            evidenceSessionId: active.sessionId,
+          });
+          if (consumed.state === "converged") emitAppTaskDependencyCompleted(opts, descriptor, input.taskId);
+          return consumed.reconcileTaskIds;
+        }
+      }
       const expired = expiredOwnerSessionAppTaskAttempt(config, input.taskId);
       const sessionId = expired?.sessionId;
       const session = sessionId && opts.persistDir ? readSessionMeta(opts.persistDir, sessionId) : null;
@@ -2549,6 +2664,43 @@ function recoverInterruptedAppTasks(
       if (recovery.sessionId && hasLiveAppTaskSession(opts, recovery.sessionId)) {
         continue;
       }
+      const persistedSession = recovery.sessionId && opts.persistDir
+        ? readSessionMeta(opts.persistDir, recovery.sessionId)
+        : null;
+      if (recovery.sessionId && persistedSession?.status === "done") {
+        const consumed = consumePersistedTerminalOwnerResult({
+          persistDir: opts.persistDir,
+          config,
+          descriptor,
+          taskId: recovery.taskId,
+          sessionId: recovery.sessionId,
+        });
+        if (consumed) {
+          emitTaskReconciliationEvent(
+            opts,
+            descriptor,
+            undefined,
+            "project.task.reconciled",
+            recovery.taskId,
+            {
+              route: "terminal-owner-result-recovery",
+              generation: consumed.claim.generation,
+              attemptId: consumed.claim.attemptId,
+              handler: consumed.claim.handler,
+              disposition: consumed.state,
+              summary: consumed.summary,
+              evidence: consumed.evidence,
+              actionsApplied: consumed.actionsApplied,
+              evidenceSessionId: recovery.sessionId,
+            },
+          );
+          if (consumed.state === "converged") emitAppTaskDependencyCompleted(opts, descriptor, recovery.taskId);
+          for (const taskId of consumed.reconcileTaskIds) {
+            if (controller && !descriptor.reconciliationPaused) enqueueAppTask(controller, config, taskId);
+          }
+          continue;
+        }
+      }
       if (
         includeFreshLeases &&
         recovery.sessionId &&
@@ -2921,6 +3073,9 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
               ...(successfulOwner.workflowRunId ? { evidenceWorkflowRunId: successfulOwner.workflowRunId } : {}),
             },
           } as unknown as AgentEvent);
+        }
+        if (successfulOwner.binding?.appId === descriptor.id) {
+          enqueueAppTask(taskController, config, successfulOwner.binding.taskId, { front: true });
         }
       }
     }

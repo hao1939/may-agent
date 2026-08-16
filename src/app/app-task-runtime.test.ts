@@ -8,9 +8,17 @@ import {
   admitLoadedCanonicalAppTaskEvent,
   attachLoadedAppTask,
   closeInstalledAppTaskRuntimes,
+  consumePersistedTerminalOwnerResult,
   installAppTaskRuntimes,
   readLoadedAppTaskView,
 } from "./app-task-runtime.js";
+import {
+  claimObservedAppTask,
+  observeAppTaskIntent,
+  recordAppTaskAttemptSession,
+  taskReconciliationConfig,
+} from "./app-task-reconciler.js";
+import { readTaskState } from "./app-task-store.js";
 
 const roots: string[] = [];
 const buses: EventBus[] = [];
@@ -187,5 +195,93 @@ describe("canonical App task runtime", () => {
         taskId: "work/event",
       }),
     ).toMatchObject({ id: "work/event", status: "pending" });
+  });
+
+  it("recovers one persisted terminal direct-owner result despite a fresh renewed lease", () => {
+    const f = fixture();
+    const persistDir = join(f.root, ".state");
+    const config = taskReconciliationConfig({
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      owner: "sample-owner",
+      maxConcurrent: 1,
+    });
+    const intent = {
+      id: "work/terminal",
+      parentId: "operations",
+      outcome: "Recover terminal owner result",
+      acceptance: ["Result is applied once"],
+      mode: "achieve" as const,
+      owner: "sample-owner",
+    };
+    observeAppTaskIntent(config, { intent, appOwner: "sample-owner" });
+    const claim = claimObservedAppTask(config, {
+      taskId: intent.id,
+      appOwner: "sample-owner",
+      handler: "auto",
+      reason: "test",
+      isOwnerRunnable: () => true,
+    });
+    if (claim.kind !== "claimed") throw new Error("expected direct-owner claim");
+    recordAppTaskAttemptSession(config, claim, "session-terminal");
+    const attempt = readTaskState(config).attempts![claim.attemptId];
+    expect(attempt.handler).toBe("owner:sample-owner");
+    expect(Date.parse(attempt.lease!.expiresAt)).toBeGreaterThan(Date.now());
+
+    mkdirSync(join(persistDir, "sessions", "session-terminal"), { recursive: true });
+    writeFileSync(
+      join(persistDir, "sessions", "session-terminal", "result.json"),
+      JSON.stringify({
+        status: "done",
+        finishParams: {
+          status: "success",
+          result: {
+            state: "waiting",
+            summary: "one child remains",
+            evidence: ["session:session-terminal"],
+            actions: [
+              {
+                kind: "create-task",
+                id: "work/terminal-child",
+                parentId: intent.id,
+                outcome: "Complete recovered child",
+                acceptance: ["Child converges"],
+              },
+            ],
+          },
+        },
+      }),
+    );
+    const descriptor = {
+      id: "sample",
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      owner: "sample-owner",
+      app: definition(),
+      reconciliationPaused: false,
+    };
+    expect(
+      consumePersistedTerminalOwnerResult({
+        persistDir,
+        config,
+        descriptor,
+        taskId: intent.id,
+        sessionId: "session-terminal",
+      }),
+    ).toMatchObject({ state: "waiting", actionsApplied: ["created work/terminal-child"] });
+    expect(
+      consumePersistedTerminalOwnerResult({
+        persistDir,
+        config,
+        descriptor,
+        taskId: intent.id,
+        sessionId: "session-terminal",
+      }),
+    ).toBeNull();
+    expect(readTaskState(config)).toMatchObject({
+      resources: { [intent.id]: { status: { phase: "waiting" } } },
+      attempts: { [claim.attemptId]: { state: "completed", sessionId: "session-terminal" } },
+      tasks: { "work/terminal-child": { parent_id: intent.id } },
+    });
   });
 });
