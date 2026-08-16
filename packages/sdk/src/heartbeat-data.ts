@@ -10,11 +10,33 @@
 
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
-import type { WorkflowContext, WorkflowResult } from "./legacy.js";
 import { checkCircuitBreaker, recordOutcome as recordCircuitOutcome } from "./circuit-breaker.js";
 import { shouldDispatch, recordDispatch, recordOutcome as recordDedupOutcome, cleanup as cleanupDispatchRecords } from "./dispatch-dedup-guard.js";
 import { listConfiguredAgents, resolveMetricOwner } from "./metric-ownership.js";
 import { parseProjectMeta } from "./project-schema.js";
+
+export type HeartbeatWorkflowResult =
+  | { type: "done"; summary: string; output?: unknown }
+  | { type: "blocked"; reason: string; context?: unknown };
+
+/** Private shape retained by the dormant heartbeat helper; not an App SDK contract. */
+export type HeartbeatWorkflowContext = {
+  agentsRoot?: string;
+  query: {
+    heartbeatContext(input: Record<string, unknown>): any;
+    events(input: Record<string, unknown>): { rows: unknown[] };
+  };
+  commands: { reviewInboxEvents(eventIds: number[], agent: string): unknown };
+  emit(event: { type: string; [key: string]: unknown }): void;
+  log(message: string): void;
+  runAgent(agent: string, task: string): Promise<any>;
+  summarize(result: unknown, options?: Record<string, unknown>): string;
+  done(summary: string, output?: unknown): HeartbeatWorkflowResult;
+  blocked(reason: string, context?: unknown): HeartbeatWorkflowResult;
+};
+
+type WorkflowContext = HeartbeatWorkflowContext;
+type WorkflowResult = HeartbeatWorkflowResult;
 
 /**
  * Find knowledge-base entries that mention a given metric id.

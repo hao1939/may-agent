@@ -2,11 +2,10 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "bun:test";
-import { genericHeartbeat } from "./heartbeat-data.js";
+import { genericHeartbeat, type HeartbeatWorkflowContext } from "./heartbeat-data.js";
 import { recordOutcome as recordCircuitOutcome } from "./circuit-breaker.js";
-import type { WorkflowContext } from "./legacy.js";
 
-function makeHeartbeatCtx(agentsRoot: string): WorkflowContext & { events: any[]; runAgentCalls: string[] } {
+function makeHeartbeatCtx(agentsRoot: string): HeartbeatWorkflowContext & { events: any[]; runAgentCalls: string[] } {
   const events: any[] = [];
   const runAgentCalls: string[] = [];
   return {
