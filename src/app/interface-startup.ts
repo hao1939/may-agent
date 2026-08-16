@@ -12,7 +12,6 @@ export interface InterfaceStartupOptions {
   interfaceAgent: string;
   bus: EventBus;
   manager: SubagentManager;
-  getSessionId: () => string;
   admitAppInput?: AttachControlSocketOptions["admitAppInput"];
   describeProjectActions?: AttachControlSocketOptions["describeProjectActions"];
   invokeProjectAction?: AttachControlSocketOptions["invokeProjectAction"];
@@ -45,7 +44,6 @@ export async function startInterfaceRuntime(options: InterfaceStartupOptions): P
         socketPath,
         bus: options.bus,
         manager: options.manager,
-        getSessionId: options.getSessionId,
         admitAppInput: options.admitAppInput,
         describeProjectActions: options.describeProjectActions,
         invokeProjectAction: options.invokeProjectAction,

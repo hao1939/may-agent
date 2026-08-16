@@ -19,7 +19,6 @@ export interface SocketUIOptions {
   socketPath: string;
   bus: EventBus;
   manager: SubagentManager;
-  getSessionId: () => string;
   /** Interface agent label, kept for compatibility with existing welcome frames. */
   agentName: string;
   /** Daemon instance label. */
@@ -42,10 +41,12 @@ function toControlStatus(status: ReturnType<SubagentManager["status"]>): Control
 }
 
 export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
-  const { socketPath, bus, manager, getSessionId, agentName, instance } = opts;
+  const { socketPath, bus, manager, agentName, instance } = opts;
   return attachControlSocket({
     socketPath,
-    getSessionId,
+    // The canonical daemon has no mutable current-session authority. Keep the
+    // legacy control-socket field empty; clients subscribe explicitly.
+    getSessionId: () => "",
     getStatus: () => toControlStatus(manager.status()),
     emitEvent: (event) => {
       Object.defineProperty(event, EVENT_INGRESS_SOURCE, { value: "control-socket", configurable: true });
