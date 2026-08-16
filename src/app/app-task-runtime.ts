@@ -92,8 +92,10 @@ import {
   repairPreviousRuntimeRecoveryAttention,
   repairRunningAppTasksWithoutAttempt,
   recoverableAppTaskAttempts,
+  expiredOwnerSessionAppTaskAttempt,
   releaseInterruptedAppTaskAttempt,
   releaseLateTerminalWorkflowAppTaskAttempt,
+  releaseTerminalSessionExpiredAppTaskAttempt,
   releaseStaleAppTaskResult,
   recordAppTaskAttemptSession,
   recordAppTaskAttemptWorkspace,
@@ -1588,6 +1590,39 @@ async function reconcileTask(input: {
     isOwnerRunnable: (owner) => opts.manager.hasAgent(owner),
   });
   if (primary.kind !== "claimed") {
+    if (primary.kind === "busy") {
+      const expired = expiredOwnerSessionAppTaskAttempt(config, input.taskId);
+      const sessionId = expired?.sessionId;
+      const session = sessionId && opts.persistDir ? readSessionMeta(opts.persistDir, sessionId) : null;
+      const terminalStatus =
+        session?.status === "done" || session?.status === "error" || session?.status === "interrupted"
+          ? session.status
+          : null;
+      if (expired && sessionId && terminalStatus && !hasLiveAppTaskSession(opts, sessionId)) {
+        const released = releaseTerminalSessionExpiredAppTaskAttempt(
+          config,
+          { ...expired, sessionId, terminalStatus },
+          `Expired reconciliation ${input.taskId} lost its synchronous caller after owner session completion`,
+        );
+        if (released.released) {
+          emitTaskReconciliationEvent(
+            opts,
+            descriptor,
+            undefined,
+            "project.task.recovery.requeued",
+            input.taskId,
+            {
+              route: "task-controller",
+              reason: "terminal-owner-session-expired-lease",
+              attemptId: expired.attemptId,
+              evidenceSessionId: sessionId,
+              terminalStatus,
+            },
+          );
+          return [input.taskId];
+        }
+      }
+    }
     const skip =
       primary.kind === "busy"
         ? { reason: "attempt-active", attemptId: primary.attemptId }
