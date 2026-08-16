@@ -195,12 +195,7 @@ export type MasterValidationProgress = {
     selected: number;
     observed: number;
     status:
-      | "pending"
-      | "queued"
-      | "running"
-      | "draining"
-      | "partial"
-      | "completed";
+      "pending" | "queued" | "running" | "draining" | "partial" | "completed";
   }>;
   specs: Array<{
     sliceId: string;
