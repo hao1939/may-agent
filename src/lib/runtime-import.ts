@@ -160,7 +160,7 @@ function mayAgentSdkRuntimeResolver(entrypoint: string): RuntimeBunPlugin {
     setup(build) {
       build.onResolve(
         {
-          filter: /^@may-agent\/sdk(?:\/(?:app|task|testing|workflow-guard))?$/,
+          filter: /^@may-agent\/sdk(?:\/(?:app|task|legacy|testing|workflow-guard))?$/,
         },
         (args) => {
           return {
@@ -219,11 +219,13 @@ function resolveSdkExport(specifier: string, importer: string): string {
       ? "app.ts"
       : specifier === "@may-agent/sdk/task"
         ? "task.ts"
-        : specifier === "@may-agent/sdk/testing"
-          ? "testing.ts"
-          : specifier === "@may-agent/sdk/workflow-guard"
-            ? "workflow-guard.ts"
-            : "index.ts";
+        : specifier === "@may-agent/sdk/legacy"
+          ? "legacy.ts"
+          : specifier === "@may-agent/sdk/testing"
+            ? "testing.ts"
+            : specifier === "@may-agent/sdk/workflow-guard"
+              ? "workflow-guard.ts"
+              : "index.ts";
   const candidates = sdkRootCandidates(importer).map((root) => join(root, "src", exportFile));
   const resolved = candidates.find((candidate) => existsSync(candidate));
   if (resolved) return resolved;

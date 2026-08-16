@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { listAppDefinitionFiles, loadAppDefinitions } from "./app-loader.js";
@@ -62,38 +62,100 @@ describe("canonical App loader", () => {
     });
   });
 
-  it("adapts a legacy ProjectApp before canonical validation", async () => {
+  it("prepares faithful Evaluation and AKS legacy fixtures for canonical and staged legacy hosts", async () => {
     const root = fixture();
-    const appPath = join(root, "evaluation.app", "app.js");
     writeFileSync(
-      appPath,
+      join(root, "evaluation.app", "app.js"),
       `export default {
-        id: "evaluation-legacy", version: 1, owner: "evaluator", description: "legacy",
+        id: "evaluation", version: 1, owner: "evaluator", description: "legacy",
         budget: { maxConcurrent: 3 },
-        schedules: [{ id: "pulse", enabled: true, intervalMs: 60000,
-          emits: [{ type: "evaluation.pulse", target: { project: "evaluation" } }]
+        schedules: [{ id: "evaluation-pipeline-review", enabled: true, intervalMs: 300000,
+          emits: [{ type: "evaluation.pipeline.check", project: "evaluation" }]
         }],
         events: ["evaluation.reviewed"],
         actions: { review: { description: "Review", inputSchema: {}, event: (data) => ({ type: "evaluation.review", data }) } },
         tasks: { accepts: ["evaluation.task"], resolve: (event) => ({ id: "review", outcome: event.type, acceptance: ["done"] }) }
       };\n`,
     );
+    mkdirSync(join(root, "alpha-project.app"), { recursive: true });
+    writeFileSync(
+      join(root, "alpha-project.app", "app.js"),
+      `export default {
+        id: "alpha-project", version: 1, owner: "app-ops", description: "legacy",
+        budget: { maxConcurrent: 4 },
+        schedules: [{ id: "task-controller", enabled: true, intervalMs: 60000,
+          emits: [{ type: "project.task.tick", project: "alpha-project" }]
+        }],
+        events: ["project.task.tick"],
+        tasks: { accepts: ["project.task.tick"], resolve: () => null }
+      };\n`,
+    );
 
-    const [{ definition }] = await loadAppDefinitions(root);
+    const loaded = await loadAppDefinitions(root);
+    const definition = loaded.find(({ definition: app }) => app.id === "evaluation")?.definition;
+    const aks = loaded.find(({ definition: app }) => app.id === "alpha-project")?.definition;
     expect(definition).toMatchObject({
-      id: "evaluation-legacy",
+      id: "evaluation",
       inputSchema: { type: "object" },
-      schedules: [{ id: "pulse:1", event: { type: "evaluation.pulse", data: {} } }],
+      schedules: [
+        {
+          id: "evaluation-pipeline-review:1",
+          event: { type: "evaluation.pipeline.check", data: {} },
+          emits: [{ type: "evaluation.pipeline.check", data: {} }],
+        },
+      ],
       observations: ["evaluation.reviewed"],
       tasks: { attach: true, subscriptions: ["evaluation.task"], maxConcurrent: 3 },
     });
-    expect(definition.actions?.review.toInput({ value: "ready" })).toEqual({
+    expect(aks).toMatchObject({
+      id: "alpha-project",
+      schedules: [
+        {
+          id: "task-controller:1",
+          event: { type: "project.task.tick", data: {} },
+          emits: [{ type: "project.task.tick", data: {} }],
+        },
+      ],
+      tasks: { attach: true, subscriptions: ["project.task.tick"], maxConcurrent: 4 },
+    });
+    expect(definition?.actions?.review.toInput({ value: "ready" })).toEqual({
       kind: "legacy-action",
       data: {
         actionId: "review",
         event: { type: "evaluation.review", data: { value: "ready" } },
       },
     });
+  });
+
+  it("prepares every current project App through the immutable staged SDK bundle path", async () => {
+    const stagedSdk = "/app/projects/may-agent/bundle/sdk-9c17ac0bc2332e7f4248b5653a9e981c1ecaa4d8";
+    if (!existsSync(stagedSdk) || !existsSync("/app/projects")) return;
+    const cacheRoot = mkdtempSync(join(tmpdir(), "app-loader-staged-"));
+    roots.push(cacheRoot);
+    const previousSdkRoot = process.env.MAY_AGENT_SDK_ROOT;
+    process.env.MAY_AGENT_SDK_ROOT = stagedSdk;
+    try {
+      const loaded = await loadAppDefinitions("/app/projects", {
+        forceBundle: true,
+        cacheDir: join(cacheRoot, "cache"),
+      });
+      expect(loaded.length).toBeGreaterThan(0);
+      const byId = new Map(loaded.map(({ definition }) => [definition.id, definition]));
+      const evaluation = byId.get("evaluation");
+      expect(evaluation).toBeDefined();
+      const pipelineReview = (evaluation?.schedules ?? []).filter((schedule) =>
+        schedule.id.startsWith("evaluation-pipeline-review"),
+      );
+      expect(pipelineReview.length).toBeGreaterThan(0);
+      for (const schedule of pipelineReview) {
+        expect((schedule as { emits?: unknown[] }).emits?.length ?? 0).toBeGreaterThan(0);
+        expect((schedule as { event?: { type?: string } }).event?.type).toBe("evaluation.pipeline.check");
+      }
+      expect(byId.get("alpha-project")).toBeDefined();
+    } finally {
+      if (previousSdkRoot === undefined) delete process.env.MAY_AGENT_SDK_ROOT;
+      else process.env.MAY_AGENT_SDK_ROOT = previousSdkRoot;
+    }
   });
 
   it("rejects duplicate App ids before starting the host", async () => {
