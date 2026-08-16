@@ -91,7 +91,7 @@ const emitted = [];
 const appDir = process.env.APP_DIR;
 const ctx = {
   appPath: (path) => resolve(appDir, path),
-  emit: (event) => emitted.push(event),
+  record: (event) => emitted.push(event),
   noop: (reason) => ({ reason }),
 };
 const result = await observeAksPipelines(ctx);
@@ -174,7 +174,7 @@ process.exit(1);
 import { observeAksPipelines } from "${join(import.meta.dir, "aks-pipeline.ts")}";
 const ctx = {
   appPath: (path) => resolve(process.env.APP_DIR, path),
-  emit: () => {},
+  record: () => {},
   noop: (reason) => ({ reason }),
 };
 let settled = false;

@@ -197,6 +197,6 @@ export async function observeWorkspaceIntegrityChanges(
   mkdirSync(dirname(statePath), { recursive: true });
   writeFileSync(statePath, `${JSON.stringify(observation, null, 2)}\n`);
   const changed = previous.fingerprint !== observation.fingerprint;
-  if (changed) ctx.emit(workspaceIntegrityChangedEvent(observation));
+  if (changed) ctx.record(workspaceIntegrityChangedEvent(observation));
   return { changed, ...observation };
 }

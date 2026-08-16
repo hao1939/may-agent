@@ -12,7 +12,7 @@ const context = {
 } as unknown as ObserverContext;
 
 describe("canonical AKS observer adapters", () => {
-  test("preserves the five legacy collector cadences without check events", () => {
+  test("preserves the five collector cadences without check events", () => {
     expect(
       aksObservers.map(({ id, intervalMs }) => ({ id, intervalMs })),
     ).toEqual([

@@ -1,4 +1,4 @@
-/** Host-private contract for legacy scheduled handlers.
+/** Host-private contract for scheduled maintenance handlers.
  *
  * These capabilities are supplied by the Runtime scheduler. They are not part
  * of the public Agent App SDK and must not leak into App-owned workflows.

@@ -509,7 +509,7 @@ function fixture(options?: {
   const emitted: Record<string, unknown>[] = [];
   const ctx = {
     appPath: (path: string) => resolve(appDir, path),
-    emit: (event: Record<string, unknown>) => emitted.push(event),
+    record: (event: Record<string, unknown>) => emitted.push(event),
     noop: (reason: string) => ({ reason }),
   } as AksObserverContext;
   return { ctx, emitted, resultPath, runPath, resultsRoot: dirname(resultDir) };

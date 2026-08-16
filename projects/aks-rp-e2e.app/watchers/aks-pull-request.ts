@@ -402,7 +402,7 @@ export async function observeAksPullRequests(
   // Replaying every historical terminal PR would flood the durable event bus
   // without adding a new fact or helping a live reconciliation.
   for (const value of selection.emitted)
-    ctx.emit(pullRequestObservationEvent(value));
+    ctx.record(pullRequestObservationEvent(value));
   return observed.length > 0
     ? { observed: observed.length, emitted: selection.emitted.length }
     : ctx.noop("No task-owned AKS pull requests were observed.");

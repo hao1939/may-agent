@@ -162,8 +162,8 @@ export async function observeRepoRefChanges(
 
   for (const observation of observations) {
     if (!observation) continue;
-    ctx.emit(repoRefObservedEvent(observation));
-    if (observation.changed) ctx.emit(repoRefChangedEvent(observation));
+    ctx.record(repoRefObservedEvent(observation));
+    if (observation.changed) ctx.record(repoRefChangedEvent(observation));
   }
 
   return {

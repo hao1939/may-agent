@@ -46,6 +46,8 @@ function checkApp(appDir: string): void {
       errors.push(`${display}: imports the retired legacy SDK`);
     if (/\bdefineProjectApp\b/.test(text))
       errors.push(`${display}: uses retired defineProjectApp`);
+    if (/\bProjectApp(?:Action|Context)?\b/.test(text))
+      errors.push(`${display}: uses a retired Project App authoring type`);
   }
 }
 

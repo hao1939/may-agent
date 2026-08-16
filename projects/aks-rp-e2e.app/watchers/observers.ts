@@ -51,7 +51,7 @@ async function collectFacts(
   const facts: AksObserverEvent[] = [];
   await collector({
     appPath: (path) => aksObserverPath(context, path),
-    emit(event) {
+    record(event) {
       facts.push(event);
     },
     noop(reason) {

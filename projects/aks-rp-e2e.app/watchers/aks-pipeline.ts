@@ -2492,7 +2492,7 @@ export async function observeAksPipelines(
         priorFingerprint: priorAdoFingerprints[observed.runId],
       })
     ) {
-      ctx.emit(pipelineLevelEvent(observed));
+      ctx.record(pipelineLevelEvent(observed));
     }
   }
 
@@ -2502,7 +2502,7 @@ export async function observeAksPipelines(
     const timeline = timelinesByRun.get(observed.runId) ?? [];
     const event = pipelineQueueOverdueEvent(observed, Date.now(), timeline);
     if (!event) continue;
-    ctx.emit(event);
+    ctx.record(event);
     overdueQueueRunIds.add(observed.runId);
     overdueQueues += 1;
   }
@@ -2542,7 +2542,7 @@ export async function observeAksPipelines(
       ),
       liveProgressFingerprints,
     )) {
-      ctx.emit(event);
+      ctx.record(event);
       observedEarlyNonpassing += 1;
     }
     const availableNames = await artifactNamesForRun(observed.runId);
@@ -2572,7 +2572,7 @@ export async function observeAksPipelines(
       if (planDirectoryReady(planRoot)) {
         observedArtifacts[planKey] = planRoot;
         if (!planWasReady) {
-          ctx.emit(
+          ctx.record(
             materializedArtifactEvent(observed, "plan-inputs", planRoot),
           );
         }
@@ -2590,7 +2590,7 @@ export async function observeAksPipelines(
             sourceBranch: observed.sourceBranch ?? "",
             sourceCommit: observed.sourceVersion ?? "",
           })) {
-            ctx.emit(pipelineFailureEvent(failure));
+            ctx.record(pipelineFailureEvent(failure));
             observedFailures += 1;
           }
         }
@@ -2625,7 +2625,7 @@ export async function observeAksPipelines(
         materializedResultArtifact = true;
       }
       observedArtifacts[key] = root;
-      ctx.emit(materializedArtifactEvent(observed, artifactName, root));
+      ctx.record(materializedArtifactEvent(observed, artifactName, root));
       for (const observation of specObservationsFromArtifact({
         root,
         pipelineRunId: observed.runId,
@@ -2633,7 +2633,7 @@ export async function observeAksPipelines(
         sourceCommit: observed.sourceVersion ?? "",
         artifactName,
       })) {
-        ctx.emit(pipelineSpecEvent(observation));
+        ctx.record(pipelineSpecEvent(observation));
       }
       for (const observation of nodeImagePublicationObservationsFromArtifact({
         root,
@@ -2642,7 +2642,7 @@ export async function observeAksPipelines(
         sourceCommit: observed.sourceVersion ?? "",
         artifactName,
       })) {
-        ctx.emit(nodeImagePublicationEvent(observation));
+        ctx.record(nodeImagePublicationEvent(observation));
       }
       if (shouldEmitMasterValidationFailure(observed)) {
         for (const failure of failureObservationsFromArtifact({
@@ -2652,7 +2652,7 @@ export async function observeAksPipelines(
           sourceCommit: observed.sourceVersion ?? "",
           artifactName,
         })) {
-          ctx.emit(pipelineFailureEvent(failure));
+          ctx.record(pipelineFailureEvent(failure));
           observedFailures += 1;
         }
       }
@@ -2703,7 +2703,7 @@ export async function observeAksPipelines(
       observedFailureCount: admissionFailures.length + artifactFailures.length,
     });
     if (noVerdictFailure) {
-      ctx.emit(pipelineFailureEvent(noVerdictFailure));
+      ctx.record(pipelineFailureEvent(noVerdictFailure));
       observedFailures += 1;
     }
     const expectedResultArtifactNames = [
@@ -2743,14 +2743,14 @@ export async function observeAksPipelines(
         if (
           terminalArtifactUnavailable[observed.runId] !== dispositionFingerprint
         ) {
-          ctx.emit(
+          ctx.record(
             terminalArtifactUnavailableEvent({
               run: observed,
               artifactNames: expectedResultArtifactNames,
               attempts,
             }),
           );
-          ctx.emit(
+          ctx.record(
             pipelineFailureEvent({
               pipelineRunId: observed.runId,
               sourceBranch: observed.sourceBranch ?? "",
@@ -2874,7 +2874,7 @@ export async function observeAksPipelines(
       localCompletionFingerprints[observed.runId] = observed.fingerprint;
       continue;
     }
-    ctx.emit(localResultCompletionEvent(observed));
+    ctx.record(localResultCompletionEvent(observed));
     localCompletionFingerprints[observed.runId] = observed.fingerprint;
     localResults += 1;
   }
@@ -2891,7 +2891,7 @@ export async function observeAksPipelines(
           }
         : observed;
     for (const event of pipelineObservationEvents(withArtifacts))
-      ctx.emit(event);
+      ctx.record(event);
   }
 
   const observedCount =

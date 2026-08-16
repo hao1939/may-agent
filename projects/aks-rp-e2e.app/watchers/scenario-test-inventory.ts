@@ -248,7 +248,7 @@ export async function observeScenarioTestInventory(
     }
   }
 
-  ctx.emit(scenarioTestInventoryObservationEvent(observation));
+  ctx.record(scenarioTestInventoryObservationEvent(observation));
   return {
     observed: observation.state,
     sourceRef: observation.sourceRef,
