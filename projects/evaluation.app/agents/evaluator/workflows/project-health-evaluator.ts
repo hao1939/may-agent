@@ -1394,8 +1394,13 @@ export function escalationPacket(
       .slice(0, 20)
       .map((row) => compactEscalationRow(row, "closed")),
     approvalDelivery,
-    recentApprovalDispatches: approvalDispatches
-      .slice(-20)
+    recentApprovalDispatches: [
+      ...approvalDispatches.filter((row) =>
+        /ignored|failed|error/i.test(String(row.result ?? "")),
+      ),
+      ...approvalDispatches.slice(-20),
+    ]
+      .filter((row, index, rows) => rows.indexOf(row) === index)
       .reverse()
       .map((row) => ({
         id: row.pathId ?? row.packetPath ?? row.ts,
@@ -1814,12 +1819,16 @@ function fallbackJudgment(
   const dispatchCounts = objectRecord(
     escalationCounts.approvalDispatchByResult,
   );
-  const failedApprovalDispatches = Object.entries(dispatchCounts).reduce(
+  const ignoredApprovalDispatches = Object.entries(dispatchCounts).reduce(
     (sum, [key, value]) =>
-      key !== "message.created" && typeof value === "number"
+      /ignored|failed|error/i.test(key) && typeof value === "number"
         ? sum + value
         : sum,
     0,
+  );
+  const undeliveredApprovalRequests = numberFromRecord(
+    escalationCounts,
+    "undeliveredApprovalRequests",
   );
   const totalLeaves = typeof counts?.leaves === "number" ? counts.leaves : 0;
   const unfinished = totalLeaves - (leafByPhase?.converged ?? 0);
@@ -1852,15 +1861,54 @@ function fallbackJudgment(
     };
   }
 
-  if (staleOpenEscalations > 0 || failedApprovalDispatches > 0) {
+  if (
+    staleOpenEscalations > 0 ||
+    ignoredApprovalDispatches > 0 ||
+    undeliveredApprovalRequests > 0
+  ) {
+    const failedDispatchRecords = asArray(escalations.recentApprovalDispatches)
+      .map(objectRecord)
+      .filter((row) =>
+        /ignored|failed|error/i.test(String(row.state ?? "")),
+      );
+    const undeliveredRecords = asArray(escalations.approvalDelivery)
+      .map(objectRecord)
+      .filter((row) => row.state === "undelivered");
+    const affectedArtifacts = [
+      ...failedDispatchRecords.map((row) =>
+        [
+          ".state/approval-dispatch-runs.jsonl",
+          row.pathId ? `pathId=${String(row.pathId)}` : null,
+          `ts=${String(row.ts ?? "unknown")}`,
+          `result=${String(row.state ?? "unknown")}`,
+          row.reason ? `reason=${String(row.reason)}` : null,
+        ]
+          .filter(Boolean)
+          .join("#"),
+      ),
+      ...undeliveredRecords.map(
+        (row) =>
+          `event:${String(row.requestEventId ?? "unknown")}#project.approval.requested#approvalId=${String(row.approvalId ?? "unknown")}`,
+      ),
+    ];
+    if (affectedArtifacts.length === 0) {
+      affectedArtifacts.push(
+        ".state/approval-dispatch-runs.jsonl#sampled-non-success-approval-dispatch-records",
+      );
+    }
     return {
       verdict: "concern",
-      mainConcern:
-        "The target has escalation/approval signals that may not be closing cleanly.",
+      mainConcern: `The sample has open escalation count ${String(numberFromRecord(escalationCounts, "open"))} and stale-open escalation count ${String(staleOpenEscalations)}; the remaining approval-delivery concern is ${String(ignoredApprovalDispatches)} ignored/failed dispatch record(s) and ${String(undeliveredApprovalRequests)} undelivered project.approval.requested event(s).`,
+      affectedArtifacts,
+      recommendedChange: `The ${target.targetProject} app owner should reconcile only the listed approval request/dispatch lineages through its normal task path; evaluation owns the assessment, not target-domain remediation.`,
+      verification: [
+        "For every listed event:<id>, query the runtime events row and a later project-health facts pair: delivery must be evidenced by an attention-review, channel-delivery, or notification record, or the later facts must record an explicit superseding/terminal disposition for that approvalId.",
+        "For every listed .state/approval-dispatch-runs.jsonl locator, match the exact pathId+ts when pathId exists or exact ts+result+reason otherwise; verify a later successful/superseding row for that lineage, and require the later project-health sample to keep open=0 and staleOpen=0 while identifying every remaining ignored/undelivered record by exact ledger locator or event ID.",
+      ],
       requestedHumanAction: "watch",
-      notify: true,
-      dedupeKey: `${target.targetProject}:escalation-use-needs-review`,
-      message: `${target.targetProject} has stale open escalation(s) or failed approval-dispatch records; check whether escalation is exact, watched, and useful.`,
+      notify: false,
+      dedupeKey: `${target.targetProject}:approval-delivery-evidence-gap`,
+      message: `${target.targetProject} sampled open=${String(numberFromRecord(escalationCounts, "open"))} and staleOpen=${String(staleOpenEscalations)} escalations; review the exact ignored approval-dispatch ledger rows and undelivered approval-request event IDs listed in the report. Target-domain remediation remains with the declared app owner.`,
     };
   }
 
@@ -1958,8 +2006,12 @@ export function reconcileJudgmentWithFacts(
     targetAppDir: "",
     reason: "evidence-floor",
   });
-  const evidenceBackedJudgment =
-    severity(evidenceFloor.verdict) > severity(judgment.verdict)
+  const approvalEvidenceFloor = evidenceFloor.dedupeKey.endsWith(
+    ":approval-delivery-evidence-gap",
+  );
+  const evidenceBackedJudgment = approvalEvidenceFloor
+    ? evidenceFloor
+    : severity(evidenceFloor.verdict) > severity(judgment.verdict)
       ? evidenceFloor
       : judgment;
   const requestedAction =

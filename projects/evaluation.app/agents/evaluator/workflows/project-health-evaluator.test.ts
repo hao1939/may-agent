@@ -161,6 +161,74 @@ describe("project health correction contract", () => {
     expect(source.text).toContain("deterministic fact-packet fallback");
   });
 
+  test("grounds approval-delivery concerns in exact records instead of empty named artifacts", () => {
+    const packet = {
+      taskTree: { counts: { leaves: 0, leafByPhase: {} } },
+      selfRecovery: { status: "strong", criticalMissing: [] },
+      escalations: {
+        counts: {
+          open: 0,
+          staleOpen: 0,
+          undeliveredApprovalRequests: 1,
+          approvalDispatchByResult: { ignored: 1, "message.created": 4 },
+        },
+        recentApprovalDispatches: [
+          {
+            state: "ignored",
+            pathId: "cleanup-approval",
+            ts: "2026-08-16T00:00:00.000Z",
+            packetPath: ".state/approval-packets/cleanup.md",
+          },
+        ],
+        approvalDelivery: [
+          {
+            requestEventId: 5686269,
+            approvalId: "aks-rp-e2e:approval:cleanup",
+            state: "undelivered",
+          },
+        ],
+      },
+    };
+
+    const canonical = reconcileJudgmentWithFacts(
+      { targetProject: "aks-rp-e2e.app" },
+      packet,
+      {
+        verdict: "concern",
+        mainConcern: "Stale escalation or approval concern.",
+        affectedArtifacts: [],
+        verification: ["The named artifact changes in a later review."],
+        requestedHumanAction: "watch",
+        notify: false,
+        dedupeKey: "aks-rp-e2e.app:generic",
+        message: "Review it.",
+      },
+    );
+
+    expect(canonical.mainConcern).toContain("open escalation count 0");
+    expect(canonical.mainConcern).toContain("stale-open escalation count 0");
+    expect(canonical.affectedArtifacts).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining(
+          ".state/approval-dispatch-runs.jsonl#pathId=cleanup-approval",
+        ),
+        expect.stringContaining("event:5686269#project.approval.requested"),
+      ]),
+    );
+    expect(canonical.verification).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("For every listed event:<id>"),
+        expect.stringContaining(
+          "For every listed .state/approval-dispatch-runs.jsonl locator",
+        ),
+      ]),
+    );
+    expect(canonical.dedupeKey).toBe(
+      "aks-rp-e2e.app:approval-delivery-evidence-gap",
+    );
+    expect(canonical.message).not.toContain("stale open escalation");
+  });
+
   test("publishes one canonical concern when structured ok contradicts surrounding concern prose", () => {
     const packet = {
       taskTree: {
