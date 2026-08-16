@@ -11,7 +11,6 @@ import {
   installAppTaskRuntimes,
   previewLoadedCanonicalAppTaskEvent,
   readLoadedAppTaskView,
-  runWithAppTaskRuntimeCapacity,
   startAppTaskRuntimeWatcher,
   type AppTaskRuntimeOptions,
 } from "./app-task-runtime.js";
@@ -20,7 +19,6 @@ export type AppTaskGenerationResult = { apps: number };
 
 export type AppTaskCapability = {
   close(): Promise<void>;
-  runOwner<T>(work: () => Promise<T>): Promise<T>;
   attach(input: Parameters<AppTaskAttacher>[0] & { appDir: string }): ReturnType<AppTaskAttacher>;
   admitEvent(input: {
     appId: string;
@@ -55,7 +53,6 @@ export function createAppTaskCapability(options: {
 }): AppTaskCapability {
   return {
     close: () => closeInstalledAppTaskRuntimes(options.bus),
-    runOwner: (work) => runWithAppTaskRuntimeCapacity(options.bus, work),
     attach: async (input) => attachLoadedAppTask({ ...input, bus: options.bus }),
     admitEvent: (input) => admitLoadedCanonicalAppTaskEvent({ ...input, bus: options.bus }),
     previewEvent: (input) => previewLoadedCanonicalAppTaskEvent({ ...input, bus: options.bus }),

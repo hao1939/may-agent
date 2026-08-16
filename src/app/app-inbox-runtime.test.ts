@@ -1023,6 +1023,60 @@ describe("App inbox runtime", () => {
     });
   });
 
+  it("publishes event schedules once per future slot without replaying the current slot at startup", async () => {
+    writeFileSync(
+      join(root, "evaluation.app", "app.js"),
+      `export default {
+        id: "scheduled",
+        version: 1,
+        owner: "evaluator",
+        inputSchema: { type: "object", properties: {} },
+        schedules: [{
+          id: "pulse", intervalMs: 60000,
+          event: {
+            type: "project.tick",
+            data: { project: "scheduled", reason: "scheduled-pulse" },
+            target: { appId: "scheduled", project: "scheduled" }
+          }
+        }],
+        observations: ["project.tick"]
+      };\n`,
+    );
+    let currentTime = 1;
+    let eventId = 1;
+    const events: AgentEvent[] = [];
+    const bus = new EventBus();
+    bus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, { value: eventId++, configurable: true });
+    });
+    bus.subscribe((event) => events.push(event));
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      manager: manager([]),
+      bus,
+      scanIntervalMs: 10_000,
+      now: () => currentTime,
+    });
+
+    expect(events.filter((event) => event.type === "project.tick")).toHaveLength(0);
+    currentTime = 60_001;
+    runtime.scanNow();
+    runtime.scanNow();
+
+    const pulses = events.filter((event) => event.type === "project.tick");
+    expect(pulses).toHaveLength(1);
+    expect(pulses[0]).toMatchObject({
+      source: "app:scheduled:schedule:pulse",
+      owner: "app:scheduled",
+      data: {
+        project: "scheduled",
+        reason: "scheduled-pulse",
+        idempotencyKey: "schedule:scheduled:pulse:1",
+      },
+    });
+  });
+
   it("starts without registered Apps and adopts definitions on reload", async () => {
     rmSync(join(root, "evaluation.app", "app.js"));
     runtime = await startAppInboxRuntime({
@@ -1703,7 +1757,7 @@ describe("App inbox runtime", () => {
       manager: manager(calls),
       bus,
       scanIntervalMs: 10_000,
-      maxConcurrentApps: 1,
+      maxConcurrentRequests: 1,
     });
     await Bun.sleep(20);
     const emit = (appId: string, value: string) =>
@@ -1729,5 +1783,82 @@ describe("App inbox runtime", () => {
       { app_id: "evaluation-canary" },
     ]);
     await waitUntil(() => requestIds.every((id) => runtime?.host.get(id)?.status === "done"));
+  });
+
+  it("runs independent requests up to the App inbox concurrency limit", async () => {
+    writeFileSync(
+      join(root, "evaluation.app", "app.js"),
+      `export default {
+        id: "evaluation-canary",
+        version: 1,
+        owner: "evaluator",
+        inputSchema: {
+          type: "object",
+          required: ["kind", "data"],
+          properties: { kind: { const: "probe" }, data: { type: "object" } }
+        },
+        inbox: { batch: "single", maxConcurrent: 2 }
+      };\n`,
+    );
+    const started: string[] = [];
+    const releases: Array<() => void> = [];
+    const blockingManager: AppOwnerManager = {
+      hasAgent: () => true,
+      run(_agent, prompt) {
+        const requestId = JSON.parse(prompt.match(/```json\n([\s\S]*?)\n```/)?.[1] ?? "[]")[0].id;
+        started.push(requestId);
+        return `session:${requestId}`;
+      },
+      waitFor(sessionId) {
+        return new Promise((resolve) => {
+          releases.push(() =>
+            resolve({
+              status: "done",
+              structuredResult: {
+                dispositions: [
+                  {
+                    requestId: sessionId.replace(/^session:/, ""),
+                    disposition: { type: "complete", summary: "done" },
+                  },
+                ],
+              },
+            }),
+          );
+        });
+      },
+      cancel() {},
+    };
+    const bus = new EventBus();
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      manager: blockingManager,
+      bus,
+      scanIntervalMs: 10_000,
+      maxConcurrentRequests: 4,
+    });
+    const emit = (value: string) =>
+      bus.emit({
+        type: "app.input.requested",
+        data: {
+          appId: "evaluation-canary",
+          input: { kind: "probe", data: { value } },
+          source: { kind: "system", id: "test" },
+        },
+      });
+    emit("one");
+    emit("two");
+    emit("three");
+
+    await waitUntil(() => started.length === 2);
+    await Bun.sleep(20);
+    expect(started).toHaveLength(2);
+
+    releases.shift()!();
+    await waitUntil(() => started.length === 3);
+    for (const release of releases.splice(0)) release();
+    await waitUntil(() =>
+      started.every((id) => runtime?.host.get(id)?.status === "done"),
+    );
   });
 });

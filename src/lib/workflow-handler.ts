@@ -1,12 +1,12 @@
 import type { CronEntry } from "./cron-tool.js";
-import type { EventEnvelope, HandlerContext, HandlerModule } from "./handler-context.js";
+import type { EventEnvelope, WorkflowHandlerContext } from "./handler-context.js";
 import type { RunOpts } from "./sdk.js";
 
 type MaybePromise<T> = T | Promise<T>;
 type ValueResolver<T> =
   | T
   | ((
-      ctx: HandlerContext,
+      ctx: WorkflowHandlerContext,
       event: EventEnvelope | undefined,
       entry: CronEntry,
     ) => MaybePromise<T>);
@@ -18,7 +18,7 @@ export interface WorkflowHandlerOptions {
   projectId?: ValueResolver<string | undefined>;
   includeEvent?: boolean;
   shouldRun?: (
-    ctx: HandlerContext,
+    ctx: WorkflowHandlerContext,
     event: EventEnvelope | undefined,
     entry: CronEntry,
   ) => boolean | Promise<boolean>;
@@ -26,14 +26,14 @@ export interface WorkflowHandlerOptions {
 
 async function resolveValue<T>(
   value: ValueResolver<T>,
-  ctx: HandlerContext,
+  ctx: WorkflowHandlerContext,
   event: EventEnvelope | undefined,
   entry: CronEntry,
 ): Promise<T> {
   if (typeof value === "function") {
     return (
       value as (
-        ctx: HandlerContext,
+        ctx: WorkflowHandlerContext,
         event: EventEnvelope | undefined,
         entry: CronEntry,
       ) => MaybePromise<T>
@@ -48,10 +48,8 @@ function appendEvent(task: string, event: EventEnvelope | undefined): string {
 }
 
 /** Internal adapter for the remaining agent-owned cron handler convention. */
-export function createWorkflowHandler(
-  options: WorkflowHandlerOptions,
-): HandlerModule["create"] {
-  return (ctx, entry) => async (event) => {
+export function createWorkflowHandler(options: WorkflowHandlerOptions) {
+  return (ctx: WorkflowHandlerContext, entry: CronEntry) => async (event?: EventEnvelope): Promise<void> => {
     if (options.shouldRun && !(await options.shouldRun(ctx, event, entry))) {
       ctx.sdk.log("info", `[workflow-handler:${entry.name}] skipped`);
       ctx.sdk.emit("handler.skipped", {

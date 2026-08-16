@@ -19,6 +19,7 @@ import {
   taskReconciliationConfig,
 } from "./app-task-reconciler.js";
 import { readTaskState } from "./app-task-store.js";
+import { HostCapacity } from "./host-capacity.js";
 
 const roots: string[] = [];
 const buses: EventBus[] = [];
@@ -93,6 +94,7 @@ function options(f: ReturnType<typeof fixture>, bus: EventBus) {
     projectRoot: f.root,
     manager: { hasAgent: () => true } as never,
     bus,
+    hostCapacity: new HostCapacity(2),
   };
 }
 
@@ -195,6 +197,76 @@ describe("canonical App task runtime", () => {
         taskId: "work/event",
       }),
     ).toMatchObject({ id: "work/event", status: "pending" });
+  });
+
+  it("keeps task admission durable while paused without starting reconciliation", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const seedPath = join(f.appDir, "tasks", "seed.json");
+    const seed = JSON.parse(await Bun.file(seedPath).text());
+    const stateDir = join(f.appDir, ".state", "tasks");
+    mkdirSync(stateDir, { recursive: true });
+    writeFileSync(join(stateDir, "state.json"), JSON.stringify({ ...seed, project_lifecycle: "paused" }));
+    await installAppTaskRuntimes({
+      ...options(f, bus),
+      appRegistrySnapshot: {
+        id: "boot:paused",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+
+    const request: Readonly<AppRequest> = {
+      id: "request-paused",
+      source: { kind: "human", id: "operator" },
+      input: { kind: "sample", data: {} },
+    };
+    const attached = await attachLoadedAppTask({
+      bus,
+      appDir: f.appDir,
+      appId: "sample",
+      attachment: {
+        kind: "desired",
+        intent: {
+          id: "work/paused-attachment",
+          parentId: "operations",
+          outcome: "Retain work while paused",
+          acceptance: ["Work runs after resume"],
+          mode: "achieve",
+        },
+      },
+      idempotencyKey: "attach:paused",
+      request,
+    });
+    expect(attached.taskId).toBe("work/paused-attachment");
+
+    expect(
+      admitLoadedCanonicalAppTaskEvent({
+        bus,
+        appId: "sample",
+        event: {
+          type: "sample.work",
+          source: "test",
+          owner: "agent:sample-owner",
+          data: { itemId: "paused-event" },
+        },
+        intent: {
+          id: "work/paused-event",
+          parentId: "operations",
+          outcome: "Retain event work while paused",
+          acceptance: ["Work runs after resume"],
+          mode: "achieve",
+        },
+      }),
+    ).toMatchObject({ accepted: true, route: "direct" });
+    expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId: attached.taskId })).toMatchObject({
+      id: "work/paused-attachment",
+      status: "pending",
+    });
+    expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId: "work/paused-event" })).toMatchObject({
+      id: "work/paused-event",
+      status: "pending",
+    });
   });
 
   it("recovers one persisted terminal direct-owner result despite a fresh renewed lease", () => {

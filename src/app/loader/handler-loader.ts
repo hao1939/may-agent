@@ -1,7 +1,13 @@
 import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { createWorkflowHandler, SubagentManager } from "../../lib/index.js";
-import type { HandlerContext, HandlerModule, EventEnvelope } from "../../lib/handler-context.js";
+import type {
+  HandlerContext,
+  HandlerModule,
+  HandlerSDK,
+  EventEnvelope,
+  WorkflowHandlerContext,
+} from "../../lib/handler-context.js";
 import type { CronEntry, WorkflowBackedHandler } from "../../lib/cron-tool.js";
 import { buildSessionHelpers } from "../../lib/runtime-ctx.js";
 import { buildAgentSDK } from "../../lib/sdk-impl.js";
@@ -34,7 +40,7 @@ export async function loadHandlersForAgentCrons(
     const handlersNeeded = entries.filter((e) => e.handler && !(cron as CronWithConfigPath).hasHandler?.(e.name));
 
     const sessionHelpers = buildSessionHelpers({ bus, persistDir, projectRoot, agentsRoot, sharedRoot, projectsRoot, agentName });
-    const sdk = buildAgentSDK({
+    const fullSdk = buildAgentSDK({
       bus,
       persistDir,
       projectRoot,
@@ -46,17 +52,27 @@ export async function loadHandlersForAgentCrons(
       callAgent: (agent, task, callOpts) => manager.callAgent(agent, task, callOpts) as any,
       triggerNow: (name) => cron.triggerNow(name),
     });
+    const sdk: HandlerSDK = {
+      emit: fullSdk.emit,
+      getDb: fullSdk.getDb,
+      query: fullSdk.query,
+      metrics: fullSdk.metrics,
+      log: fullSdk.log,
+      message: fullSdk.message,
+      paths: fullSdk.paths,
+    };
     const ctx: HandlerContext = {
       sdk,
       agentName,
       triggerNow: (entryName: string) => cron.triggerNow(entryName),
       ...sessionHelpers,
     };
+    const workflowCtx: WorkflowHandlerContext = { ...ctx, sdk: fullSdk };
 
     for (const entry of handlersNeeded) {
       const workflow = workflowHandler(entry);
       if (!workflow) continue;
-      cron.registerHandler(entry.name, createWorkflowBackedHandler(ctx, entry, workflow));
+      cron.registerHandler(entry.name, createWorkflowBackedHandler(workflowCtx, entry, workflow));
       registered.push(`${agentName}:${entry.name}`);
       bus.emit({
         type: "info",
@@ -134,7 +150,7 @@ export async function loadHandlersForAgentCrons(
       if (!entry.handler) return false;
       const workflow = workflowHandler(entry);
       if (workflow) {
-        cron.registerHandler(entryName, createWorkflowBackedHandler(ctx, entry, workflow));
+        cron.registerHandler(entryName, createWorkflowBackedHandler(workflowCtx, entry, workflow));
         bus.emit({
           type: "info",
           message: `[handler] Dynamically registered ${agentName}:${entryName} → workflow:${workflow.agent ? `${workflow.agent}/` : ""}${workflow.workflow}`,
@@ -209,14 +225,18 @@ function workflowHandler(entry: CronEntry): WorkflowBackedHandler | undefined {
   return handler && typeof handler === "object" && typeof handler.workflow === "string" ? handler : undefined;
 }
 
-function createWorkflowBackedHandler(ctx: HandlerContext, entry: CronEntry, handler: WorkflowBackedHandler) {
+function createWorkflowBackedHandler(
+  ctx: WorkflowHandlerContext,
+  entry: CronEntry,
+  handler: WorkflowBackedHandler,
+) {
   return createWorkflowHandler({
     workflow: handler.workflow,
     source: handler.agent ?? entry.agent ?? ctx.agentName,
     projectId: handler.projectId,
     task: handler.task,
     includeEvent: handler.includeEvent,
-  })(ctx as any, entry as any);
+  })(ctx, entry);
 }
 
 function resolveHandlerDir(agentsRoot: string, agentName: string, cron: CronWithConfigPath): string {
