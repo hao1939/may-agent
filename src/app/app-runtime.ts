@@ -22,7 +22,7 @@ import {
   startRequestedSession,
   type InstanceIdentity,
 } from "./daemon.js";
-import { EVENT_ROW_ID, EventBus } from "./event-bus.js";
+import { EVENT_INGRESS_SOURCE, EVENT_ROW_ID, EventBus, type AgentEvent } from "./event-bus.js";
 import { startInterfaceRuntime } from "./interface-startup.js";
 import type { ModelRegistry } from "./model-registry.js";
 import { parseWebPort, startWebMode } from "./modes/web.js";
@@ -74,6 +74,7 @@ export function createAppInputAdmission(options: {
 }
 
 export function createProjectActionAccess(options: {
+  bus: Pick<EventBus, "emit">;
   getRuntime: () => AppInboxRuntime | null;
   admit: NonNullable<AttachControlSocketOptions["admitAppInput"]>;
 }): {
@@ -91,11 +92,50 @@ export function createProjectActionAccess(options: {
       if (!runtime?.host.hasApp(input.projectId)) throw new Error(`App ${input.projectId} is not loaded`);
       const appId = input.projectId.trim().replace(/\.app$/, "");
       const appInput = runtime.host.actionInput(appId, input.actionId, input.params);
+      const idempotencyKey = input.idempotencyKey?.trim() || `action:${appId}:${input.actionId}:${randomUUID()}`;
+
+      // A staged legacy ProjectApp action already declares its semantic event.
+      // Preserve that declaration at the typed-action boundary instead of
+      // turning it into an owner-facing App inbox narrative.
+      if (appInput.kind === "legacy-action") {
+        const payload = appInput.data as Record<string, unknown>;
+        const declared = payload.event;
+        if (!declared || typeof declared !== "object" || Array.isArray(declared)) {
+          throw new Error(`Legacy action ${appId}.${input.actionId} did not declare an event`);
+        }
+        const semanticRecord = { ...(declared as Record<string, unknown>) };
+        const eventType = semanticRecord.type;
+        if (typeof eventType !== "string" || !eventType.trim()) {
+          throw new Error(`Legacy action ${appId}.${input.actionId} declared an event without a type`);
+        }
+        semanticRecord.source = `project-app:${appId}:action:${input.actionId}`;
+        semanticRecord.owner = `agent:${runtime.host.appOwner(appId)}`;
+        const data =
+          semanticRecord.data && typeof semanticRecord.data === "object" && !Array.isArray(semanticRecord.data)
+            ? (semanticRecord.data as Record<string, unknown>)
+            : {};
+        semanticRecord.data = {
+          ...data,
+          project: typeof semanticRecord.project === "string" ? semanticRecord.project : appId,
+          idempotencyKey,
+        };
+        Object.defineProperty(semanticRecord, EVENT_INGRESS_SOURCE, {
+          value: "control-socket",
+          configurable: true,
+        });
+        const emitted = options.bus.emit(semanticRecord as AgentEvent);
+        const eventId = Number(emitted[EVENT_ROW_ID]);
+        if (!Number.isSafeInteger(eventId) || eventId <= 0) {
+          throw new Error(`Action ${appId}.${input.actionId} did not produce a persisted semantic event`);
+        }
+        return { eventId, eventType };
+      }
+
       return options.admit({
         appId,
         input: appInput as Record<string, unknown>,
         source: { kind: "human", id: "control-socket:project-action" },
-        idempotencyKey: input.idempotencyKey?.trim() || `action:${appId}:${input.actionId}:${randomUUID()}`,
+        idempotencyKey,
       });
     },
   };
@@ -301,6 +341,7 @@ export async function runAppRuntime(opts: {
 
   const admitAppInput = createAppInputAdmission({ bus, getRuntime: () => appInboxRuntime });
   const projectActions = createProjectActionAccess({
+    bus,
     getRuntime: () => appInboxRuntime,
     admit: admitAppInput,
   });
